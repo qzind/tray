@@ -1,0 +1,93 @@
+;------------------
+; ${project.name} Launcher
+;------------------
+; Creates a ${project.filename}.exe launcher which performs automatic JRE detection
+
+!include x64.nsh
+!include LogicLib.nsh
+!addincludedir "${windows.nsis.addons}/Include"
+!include StdUtils.nsh
+
+; Run this exe as non-admin
+RequestExecutionLevel user
+
+; Application information
+Name "${project.name}"
+Caption "${project.name}"
+Icon "${basedir}\${branding.dir}\${windows.icon}"
+OutFile "${dist.dir}\${project.filename}.exe"
+ 
+SilentInstall silent
+AutoCloseWindow true
+ShowInstDetails nevershow
+
+; Full path to jar
+!define JAR "$EXEDIR\${project.filename}.jar"
+
+Section ""  
+  ${If} ${RunningX64}
+  ${DisableX64FSRedirection}
+  ${EndIf}
+  Call FindJRE
+  Pop $R0
+ 
+  ; change for your purpose (-jar etc.)
+  StrCpy $0 '"$R0" -jar "${JAR}"'
+ 
+  SetOutPath $EXEDIR
+
+  Exec $0
+  ${If} ${RunningX64}
+  ${EnableX64FSRedirection}
+  ${EndIf} 
+SectionEnd
+
+;  FindJRE (find "javaw.exe")
+;  1 - Search in .\jre directory (e.g. JRE Installed with application)
+;  2 - Search in JAVA_HOME environment variable
+;  3 - Search in the native registry
+;  4 - Search in the 32-bit registry
+;  5 - Fall-back to "javaw.exe" (such as in current dir or PATH) 
+Function FindJRE
+  Push $R0
+  Push $R1
+
+  ClearErrors
+  StrCpy $R0 "$EXEDIR\jre\bin\javaw.exe"
+  IfFileExists $R0 JreFound
+  StrCpy $R0 ""
+
+  ClearErrors
+  ReadEnvStr $R0 "JAVA_HOME"
+  StrCpy $R0 "$R0\bin\javaw.exe"
+  IfErrors 0 JreFound
+ 
+  ClearErrors
+  ReadRegStr $R1 HKLM "Software\JavaSoft\Java Runtime Environment" "CurrentVersion"
+  ReadRegStr $R0 HKLM "Software\JavaSoft\Java Runtime Environment\$R1" "JavaHome"
+  StrCpy $R0 "$R0\bin\javaw.exe"
+  IfErrors 0 JreFound
+  
+  ; Fall-back to 32-bit registry
+  ${If} ${RunningX64}
+  ClearErrors
+  ReadRegStr $R1 HKLM "Software\Wow6432Node\JavaSoft\Java Runtime Environment" "CurrentVersion"
+  ReadRegStr $R0 HKLM "Software\Wow6432Node\JavaSoft\Java Runtime Environment\$R1" "JavaHome"
+  StrCpy $R0 "$R0\bin\javaw.exe"
+  IfErrors 0 JreFound
+  ${EndIf}
+  
+  ; Give up.  Use javaw.exe and hope it works
+  StrCpy $R0 "javaw.exe"
+ 
+ JreFound:
+  Pop $R1
+  Exch $R0
+FunctionEnd
+
+Function .onInit
+    ${If} ${RunningX64}
+		;  Force 64-bit registry view by default
+        SetRegView 64
+    ${EndIf}
+FunctionEnd

@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="qz" default="distribute" basedir=".">
+
+    <target name="distribute" depends="init,clean,sign-jar,include-assets">
+        <echo message="Process complete" />
+    </target>
+
+    <target name="init">
+        <property environment="env"/>
+        <property file="ant/project.properties"/>
+
+        <!-- Your custom code signing properties here. Feel free to change. -->
+        <!-- The project will default to qz.ks if it doesn't exist -->
+        <property file="${basedir}/../private/private.properties"/>
+
+        <!-- The default code signing properties which uses qz.ks. -->
+        <!-- Please leave this value the netbeans default as a fallback. -->
+        <property file="ant/private/private.properties"/>
+
+        <echo message="Building ${project.filename} using JDK ${ant.java.version}" />
+    </target>
+
+    <target name="clean" depends="init">
+        <delete dir="${out.dir}"/>
+    </target>
+
+    <target name="compile-socket" depends="init">
+        <mkdir dir="${build.project.dir}"/>
+
+        <javac destdir="${build.project.dir}" source="${javac.source}" target="${javac.target}" includeantruntime="false">
+            <src path="${src.dir}"/>
+            <classpath>
+                <fileset dir="${lib.dir}">
+                    <include name="**/*.jar"/>
+                </fileset>
+                <fileset dir="${java.home}">
+                    <include name="**/*.jar"/>
+                </fileset>
+            </classpath>
+            <compilerarg value="-Xlint:-options"/>
+        </javac>
+
+        <!-- Include non-class files from src in build directory -->
+        <copy todir="${build.project.dir}">
+            <fileset dir="${src.dir}" excludes="**/*.java"/>
+        </copy>
+    </target>
+
+    <target name="build-jar" depends="compile-socket">
+        <echo>Building Jar for Socket use</echo>
+        <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.jar}" duplicate="preserve">
+            <fileset dir="${build.project.dir}"/>
+            <zipgroupfileset dir="${lib.dir}" includes="**/*.jar" excludes="**/jfxrt.jar"/>
+            <manifest>
+                <attribute name="Application-Name" value="${manifest.application.name}"/>
+                <attribute name="Main-Class" value="${manifest.main.socket.class}"/>
+                <attribute name="Permissions" value="${manifest.permissions}"/>
+            </manifest>
+        </jar>
+    </target>
+
+
+    <target name="sign-jar" depends="build-jar,sign-jar-self,sign-jar-tsa">
+        <path>
+            <fileset dir="${dist.dir}" includes="**/*.jar" />
+        </path>
+    </target>
+
+    <!-- tsaurl attribute cannot be empty, so separate methods are needed to sign both jars -->
+    <target name="sign-jar-self" unless="signing.tsaurl">
+		<echo>Self-signing Socket jar</echo>
+        <signjar jar="${dist.jar}"
+                 signedjar="${dist.jar}"
+                 alias="${signing.alias}"
+                 storepass="${signing.storepass}"
+                 keystore="${signing.keystore}"
+                 keypass="${signing.keypass}"
+                />
+    </target>
+
+    <target name="sign-jar-tsa" if="signing.tsaurl">
+		<echo>Signing Socket jar with timestamp</echo>
+        <signjar jar="${dist.jar}"
+                 signedjar="${dist.jar}"
+                 alias="${signing.alias}"
+                 storepass="${signing.storepass}"
+                 keystore="${signing.keystore}"
+                 keypass="${signing.keypass}"
+                 tsaurl="${signing.tsaurl}"
+                />
+    </target>
+
+    <!-- Get version information from JAR -->
+    <target name="get-version" depends="build-jar">
+        <property file="ant/project.properties"/>
+        <java jar="${dist.jar}" fork="true" outputproperty="build.version">
+            <arg value="--version"/>
+        </java>
+		
+        <!-- Fallback to a bogus version number if the above command failed -->
+        <property name="build.version" value="0.0.0" />
+        <echo>Version ${build.version}</echo>
+        <!-- Calculate installation size -->
+        <length property="build.bytes" mode="all">
+            <fileset dir="${dist.dir}" includes="**/*"/>
+        </length>
+        <script language="javascript">
+            <![CDATA[
+            project.setNewProperty("build.size", Math.round(project.getProperty("build.bytes") / 1024));
+            ]]>
+        </script>
+        <echo>Size: ${build.size} KB</echo>
+    </target>
+
+    <target name="include-assets" depends="init,get-version" >
+        <echo>Copying resource files to output</echo>
+
+        <copy todir="${dist.dir}/${demo.dir}/${asset.dir}">
+            <fileset dir="${asset.dir}">
+                <exclude name="**/*.properties"/>
+                <exclude name="**/branding/"/>
+            </fileset>
+        </copy>
+
+        <copy todir="${dist.dir}/${demo.dir}/${js.dir}">
+            <fileset dir="${js.dir}"/>
+        </copy>
+
+        <copy todir="${dist.dir}/${demo.dir}/${css.dir}">
+            <fileset dir="${css.dir}"/>
+        </copy>
+
+        <copy todir="${dist.dir}/${demo.dir}/${fonts.dir}">
+            <fileset dir="${fonts.dir}"/>
+        </copy>
+
+        <copy todir="${dist.dir}/${demo.dir}">
+            <fileset file="sample.html"/>
+        </copy>
+
+        <!-- Distribute socket with LICENSE only -->
+        <copy todir="${dist.dir}">
+            <fileset file="${basedir}/LICENSE.txt"/>
+        </copy>
+
+    </target>
+
+    <!--
+    ################################################################
+    #               Prepackage Steps - All Platforms               #
+    ################################################################
+    -->
+    <target name="prepackage">
+        <echo>Processing self-signing variables</echo>
+        <property file="ant/self-sign.properties"/>
+
+        <echo>Creating Firefox certificate config files</echo>
+        <copy file="${firefoxconfig.in}" tofile="${firefoxconfig.out}" >
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="${firefoxprefs.in}" tofile="${firefoxprefs.out}" >
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+    </target>
+
+    <!--
+    ################################################################
+    #                    Windows Installer                         #
+    ################################################################
+    -->
+    <target name="nsis" depends="build-exe,sign-exe-self,sign-exe-tsa"/>
+
+    <target name="build-exe" depends="distribute,prepackage,nsisbin-1,nsisbin-2,nsisbin-3">
+        <echo>Creating installer using ${nsisbin}</echo>
+
+        <property file="ant/windows/windows.properties"/>
+        <copy file="${branding.dir}/${windows.icon}" tofile="${dist.dir}/${windows.icon}" />
+
+        <copy file="${windows.packager.in}" tofile="${windows.packager.out}" overwrite="true">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="${windows.launcher.in}" tofile="${windows.launcher.out}" overwrite="true">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="${windows.keygen.in}" tofile="${windows.keygen.out}" >
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <exec executable="${nsisbin}" failonerror="true" >
+            <arg value="${windows.launcher.out}"/>
+        </exec>
+
+        <exec executable="${nsisbin}" failonerror="true" >
+            <arg value="${windows.packager.out}"/>
+        </exec>
+
+        <!-- Cleanup lingering icon (for other OS installers) -->
+        <delete file="${dist.dir}/${windows.icon}" />
+    </target>
+
+    <!-- Linux makensis -->
+    <target name="nsisbin-1" depends="init" unless="env.windir">
+        <property name="nsisbin" value="makensis"/>
+    </target>
+
+    <!-- Win32 makensis -->
+    <target name="nsisbin-2" depends="init" unless="env.ProgramFiles(x86)">
+        <property name="nsisexe" value="${env.ProgramFiles}/NSIS/makensis.exe"/>
+    </target>
+
+    <!-- Win64 makensis -->
+    <target name="nsisbin-3" depends="init" if="env.ProgramFiles(x86)">
+        <property name="nsisbin" value="${env.ProgramFiles(x86)}/NSIS/makensis.exe"/>
+    </target>
+
+    <!-- As seen with signing jars, tsaurl attribute cannot be empty, so separate methods are needed to sign both exes -->
+    <target name="sign-exe-self" depends="build-exe" unless="signing.tsaurl">
+        <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
+
+        <echo>Signing Windows Executable: No tsaurl was provided so this exe was not timestamped. Users will not be able to validate this exe after the signer certificate's expiration date or after any future revocation date.</echo>
+        <signexe file="${out.dir}/${project.filename}-${build.version}.exe"
+            name="${project.name}"
+            url="${vendor.website}"
+            keystore="${signing.keystore}"
+            alias="${signing.alias}"
+            storepass="${signing.storepass}"
+            keypass="${signing.keypass}"
+            />
+    </target>
+
+    <target name="sign-exe-tsa" depends="build-exe" if="signing.tsaurl">
+        <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
+
+        <echo>Signing Windows Executable:</echo>
+        <signexe file="${out.dir}/${project.filename}-${build.version}.exe"
+            name="${project.name}"
+            url="${vendor.website}"
+            keystore="${signing.keystore}"
+            alias="${signing.alias}"
+            storepass="${signing.storepass}"
+            keypass="${signing.keypass}"
+            tsaurl="${signing.tsaurl}"
+            />
+    </target>
+
+    <!--
+    ################################################################
+    #                     Apple Installer                          #
+    ################################################################
+    -->
+    <target name="pkgbuild" depends="distribute,prepackage">
+        <echo>Creating installer using pkgbuild</echo>
+
+        <property file="ant/apple/apple.properties"/>
+
+        <!--
+        ###################################
+        #   Build MacOS Bundle Structure  #
+        ###################################
+        -->
+
+        <!-- Contents/Resources/apple-icon.icns -->
+        <mkdir dir="${dist.dir}/${apple.resources}"/>
+        <copy file="${branding.dir}/${apple.icon}" tofile="${dist.dir}/${apple.resources}/${apple.icon}" />
+
+        <!-- Contents/MacOS/QZ\ Tray -->
+        <mkdir dir="${dist.dir}/${apple.macos}"/>
+        <copy file="${apple.launcher.in}" tofile="${apple.launcher.out}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="+x" file="${apple.launcher.out}"/>
+
+        <!-- Info.plist -->
+        <copy file="${apple.plist.in}" tofile="${apple.plist.out}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="${apple.packager.in}" tofile="${apple.packager.out}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="u+x" file="${apple.packager.out}"/>
+
+        <mkdir dir="${apple.scripts}"/>
+        <copy file="${apple.keygen.in}" tofile="${apple.keygen.out}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="u+x" file="${apple.keygen.out}"/>
+
+        <copy file="${apple.preinstall.in}" tofile="${apple.preinstall.out}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="u+x" file="${apple.preinstall.out}"/>
+
+        <copy file="${apple.postinstall.in}" tofile="${apple.postinstall.out}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="u+x" file="${apple.postinstall.out}"/>
+
+        <copy file="${apple.uninstall.in}" tofile="${apple.uninstall.out}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="u+x" file="${apple.uninstall.out}"/>
+
+        <copy file="${firefoxcert.in}" tofile="${firefoxcert.out}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="u+x" file="${firefoxcert.out}"/>
+
+        <copy file="${locator.in}" tofile="${locator.out}" >
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="u+x" file="${locator.out}"/>
+
+        <exec executable="${apple.packager.out}" failonerror="true" />
+
+        <!-- Cleanup lingering resources for other installer targets -->
+        <delete dir="${dist.dir}/${apple.resources}" />
+        <delete dir="${dist.dir}/${apple.macos}" />
+        <delete file="${dist.dir}/${apple.plist.out}" />
+    </target>
+
+    <!--
+    ################################################################
+    #                     Linux Installer                          #
+    ################################################################
+    -->
+    <target name="makeself" depends="distribute,prepackage">
+        <echo>Creating installer using makeself</echo>
+
+        <property file="ant/linux/linux.properties"/>
+        <copy file="${branding.dir}/${linux.icon}" tofile="${dist.dir}/${linux.icon}" />
+
+        <copy file="${linux.installer.in}" tofile="${linux.installer.out}" >
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="${linux.keygen.in}" tofile="${linux.keygen.out}" >
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="${linux.udev.in}" tofile="${linux.udev.out}" >
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="${linux.packager.in}" tofile="${linux.packager.out}" >
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <chmod perm="u+x" type="file">
+            <fileset dir="${build.dir}">
+                 <include name="**/*.sh"/>
+            </fileset>
+        </chmod>
+
+        <copy file="${firefoxcert.in}" tofile="${firefoxcert.out}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="u+x" file="${firefoxcert.out}"/>
+
+	<copy file="${locator.in}" tofile="${locator.out}" >
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="u+x" file="${locator.out}"/>
+
+        <exec executable="${linux.packager.out}" failonerror="true" />
+
+        <!-- Cleanup lingering icon (for other OS installers) -->
+        <delete file="${dist.dir}/${linux.icon}" />
+    </target>
+</project>

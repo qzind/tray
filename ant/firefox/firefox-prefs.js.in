@@ -1,0 +1,2 @@
+pref('general.config.filename', '${firefoxconfig.name}');
+pref('general.config.obscure_value', 0);

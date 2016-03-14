@@ -1,0 +1,559 @@
+/**
+ * @author Tres Finocchiaro
+ *
+ * Copyright (C) 2016 Tres Finocchiaro, QZ Industries, LLC
+ *
+ * LGPL 2.1 This is free software.  This software and source code are released under
+ * the "LGPL 2.1 License".  A copy of this license should be distributed with
+ * this software. http://www.gnu.org/licenses/lgpl-2.1.html
+ */
+
+/**********************************************************************************************
+ *                        Windows KeyGen Utility                                              *
+ **********************************************************************************************
+ *  Description:                                                                              *
+ *    Utility to create a private key and install its respective public certificate to the    *
+ *    system.  When run in "uninstall" mode, the public certificate is removed based on       *
+ *    matched publisher/vendor information.                                                   *
+ *                                                                                            *
+ *  INSTALL:                                                                                  *
+ *    1. Creates a self-signed Java Keystore for jetty wss://${jks.cn}                        *
+ *    2. Exports public certificate from Java Keystore                                        *
+ *    3. Imports into Windows trusted cert store                                              *
+ *    4. Imports into Firefox web browser (if installed)                                      *
+ *                                                                                            *
+ *  UNINSTALL                                                                                 *
+ *    1. Deletes certificate from Windows trusted cert store                                  *
+ *    2. Deletes certificate from Firefox web browser (if installed)                          *
+ *                                                                                            *
+ *  Depends:                                                                                  *
+ *    keytool.exe (distributed with jre: http://java.com)                                     *
+ *                                                                                            *
+ *  Usage:                                                                                    *
+ *    cscript //NoLogo ${windows.keygen.name}                                                      *
+ *            "C:\Program Files\${project.name}" install [hostname] [portable_firefox]                *
+ *                                                                                            *
+ *    cscript //NoLogo ${windows.keygen.name}                                                 *
+ *            "C:\Program Files\${project.name}" uninstall [hostname] [portable_firefox]                   *
+ *                                                                                            *
+ **********************************************************************************************/
+
+var shell = new ActiveXObject("WScript.shell");
+var fso = new ActiveXObject("Scripting.FileSystemObject");
+var newLine = "\r\n";
+
+// Uses passed-in parameter as install location.  Will fallback to registry if not provided.
+var qzInstall = getArg(0, getRegValue("HKLM\\Software\\${project.name}\\"));
+var installMode = getArg(1, "install");
+var cn = getArg(2, "${jks.cn}");
+var firefoxPortable = getArg(3, null);
+
+if (installMode == "install") {
+    var javaKey, jreHome, keyTool, keyStore, password, derCert, firefoxInstall;
+    if (createJavaKeystore()) {
+        try { installWindowsCertificate(); }
+        catch (err) { installWindowsXPCertificate(); }
+        if (hasFirefoxConflict()) {
+            alert("WARNING: ${project.name} installation would conflict with an existing Firefox AutoConfig rule.\n\n" +
+                "Please notify your administrator of this warning.\n\n" +
+                "The installer will continue, but ${project.name} will not function with Firefox until this conflict is resolved.",
+                "Firefox AutoConfig Warning");
+        } else {
+            if (firefoxInstall) {
+                installFirefoxCertificate();
+            }
+        }
+    }
+} else {
+    var firefoxInstall;
+    try { deleteWindowsCertificate(); }
+    catch (err) { deleteWindowsXPCertificate(); }
+    deleteFirefoxCertificate();
+}
+
+WScript.Quit(0);
+
+/**
+ * Deletes a file
+ */
+function deleteFile(filePath) {
+	if (fso.FileExists(filePath)) {
+		try {
+			fso.DeleteFile(filePath);
+		} catch (err) {
+			die("Unable to delete " + filePath);
+		}
+	}
+}
+
+/**
+ * Generates a random string to be used as a password
+ */
+function pw() {
+    var text = "";
+    var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    for( var i=0; i < parseInt("${jks.passlength}"); i++ ) {
+        text += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
+    return text;
+}
+
+/**
+ * Reads a registry value, taking 32-bit/64-bit architecture into consideration
+ */
+function getRegValue(path) {	
+	// If 64-bit OS, try 32-bit registry first
+	var arch = "";
+	if (shell.ExpandEnvironmentStrings("ProgramFiles(x86)")) {
+		path = path.replace("\\Software\\", "\\Software\\Wow6432Node\\");
+	}
+	
+	var regValue = "";
+	try {
+		regValue = shell.RegRead(path);
+	} catch (err) {
+		try {
+            // Fall back to 64-bit registry
+            path = path.replace("\\Software\\Wow6432Node\\", "\\Software\\");
+            regValue = shell.RegRead(path);
+		} catch (err) {}
+	}
+	return regValue;
+}
+
+/**
+ * Displays a message regarding whether or not a file exists
+ */
+function verifyExists(path, msg) {
+    debug(" - " + (fso.FileExists(path) ? "[success] " : "[failed] ") + msg);
+}
+
+/**
+ * Displays a message regarding whether or not a command succeeded
+ */
+function verifyExec(cmd, msg) {
+    debug(" - " + (shell.Run(cmd, 0, true) == 0 ? "[success] " : "[failed] ")  + msg);
+}
+
+/**
+ * Replaces "!install" with proper location, usually "C:\Program Files\", fixes forward slashes
+ */
+function fixPath(append) {
+    return append.replace("${jks.install}", qzInstall).replace(/\//g, "\\");
+}
+
+/**
+ * Displays an error message and exits the script
+ * @param msg
+ */
+function die(msg, status) {
+    WScript.Echo("ERROR: " + msg);
+    status = status ? status : -1;
+    WScript.Quit(status);
+}
+
+/**
+ * Displays a status message
+ * @param msg
+ */
+function debug(msg) {
+    WScript.Echo(msg);
+}
+
+/*
+ * Reads in a text file, expands the specified named variable replacements and writes it back out.
+ */
+function writeParsedConfig(inPath, outPath, replacements) {
+    var inFile = fso.OpenTextFile(inPath, 1, true);     // 1 = ForReading
+    var outFile = fso.OpenTextFile(outPath, 2, true);   // 2 = ForWriting
+
+    while(!inFile.AtEndOfStream) {
+        line = inFile.ReadLine()
+
+        // Process all variable replacements
+        for (var key in replacements) {
+            // Escape leading "$" prior to building regex
+            var varName = (key.indexOf("$") == 0 ? "\\" + key : key);
+            var re = new RegExp(varName, 'g')
+            line = line.replace(re, replacements[key]);
+        }
+        outFile.WriteLine(line);
+    }
+    inFile.close();
+    outFile.close();
+}
+
+/*
+ * Reads in a X509 certificate, stripping BEGIN, END and NEWLINE string
+ */
+function readPlainCert(certPath) {
+    var certFile = fso.OpenTextFile(certPath, 1, true);
+    var certData = "";
+    while (!certFile.AtEndOfStream) { certData += strip(certFile.ReadLine()); }
+    certFile.close();
+    return certData;
+}
+
+/*
+ * Strips non-base64 data (i.e RFC X509 --START, --END) from a string
+ */
+function strip(line) {
+    var X509 = ["-----BEGIN CERTIFICATE-----", "-----END CERTIFICATE-----", "\r", "\n"];
+    for (var i in X509) { line = line.replace(new RegExp(X509[i], 'g'), ''); }
+    return line;
+}
+
+/*
+ * Creates the Java Keystore
+ */
+function createJavaKeystore() {
+    javaKey = "HKLM\\Software\\JavaSoft\\Java Runtime Environment\\";
+    jreHome = getRegValue(javaKey + getRegValue(javaKey + "CurrentVersion") + "\\JavaHome");
+    keyTool = jreHome + "\\bin\\keytool.exe";
+    derCert = fixPath("${der.cert}");
+
+    if (jreHome == "") {
+        die("Can't find JavaHome.  Secure websockets will not work.", "${windows.err.java}");
+    }
+
+    if (qzInstall == "") {
+        die("Can't find ${project.name} installation path. Secure websockets will not work.", "${windows.err.install}");
+    }
+
+
+    keyStore = fixPath("${jks.keystore}");
+    password = pw();    // random password hash
+
+    var makeKeyStore = "${jks.command}"
+        .replace("${jks.keytool}", keyTool)
+        .replace("${jks.keystore}", keyStore)
+        .replace("${jks.storepass}", password)
+        .replace("${jks.keypass}", password);
+
+    // Handle CN=${jks.cn} override
+    if (cn != "${jks.cn}") {
+        makeKeyStore = makeKeyStore.replace("CN=${jks.cn},", "CN=" + cn + ",");
+    }
+
+    deleteFile(keyStore);   // remove old, if exists
+    debug("Creating keystore for wss://" + cn + " (this could take a minute)...");
+    shell.Run(makeKeyStore, 0, true);
+    verifyExists(keyStore, "Check keystore exists");
+
+    var file = fso.OpenTextFile(fixPath("${jks.properties}"), 2, true);
+    file.WriteLine("wss.alias=" + "${jks.alias}");
+    file.WriteLine("wss.keystore=" + keyStore.replace(/\\/g, "\\\\"));
+    file.WriteLine("wss.keypass=" + password);
+    file.WriteLine("wss.storepass=" + password);
+    file.WriteLine("wss.host=${jks.host}");
+    file.Close();
+
+    return true;
+}
+
+/*
+ * Exports certificate to native format
+ */
+function installWindowsCertificate() {
+    var makeDerCert = "${der.command}"
+        .replace("${jks.keytool}", keyTool)
+        .replace("${jks.keystore}", keyStore)
+        .replace("${jks.storepass}", password)
+        .replace("${jks.keypass}", password)
+        .replace("${der.cert}", derCert);
+
+    deleteFile(derCert);    // remove old, if exists
+    debug("Converting keystore to native certificate...");
+    shell.Run(makeDerCert, 0, true);
+    verifyExists(derCert, "Check certificate exists");
+
+    debug("Installing native certificate for secure websockets...");
+    var installDerCert = '${windows.keygen.tool} -addstore -f "${windows.keygen.store}" "' + derCert + '"';
+
+    // Windows Vista or higher
+    shell.Run(installDerCert, 0, true);
+    debug(" - " + (findWindowsMatches("") ? "[success] " : "[failed] ")  + "Check certificate installed");
+}
+
+function installWindowsXPCertificate() {
+    shell.Popup("Automatic certificate installation is not available for this platform.\n" +
+        "For secure websockets to function properly:\n\n" +
+        "     1.  Navigate to \"" + derCert + "\"\n" +
+        "     2.  Click \"Install Certificate...\"\n" +
+        "     3.  Click \"Place all certificates in the following store\"\n" +
+        "     4.  Browse to \"Trusted Root Certificate Authorities\"\n" +
+        "     5.  Click \"Finish\"\n" +
+        "     6.  Click \"Yes\" on thumbprint Security Warning\n\n" +
+        "Click OK to automatically launch the certificate import wizard now.\n", 0, "Warning - ${project.name}", 48);
+
+    // Do not wrap quotes around derCert, or this next line will fail
+    shell.Run("rundll32.exe cryptext.dll,CryptExtAddCER " + derCert, 1, true);
+}
+
+/*
+ * Gets the Firefox installation path, stores it a global variable "firefoxInstall"
+ */
+function getFirefoxInstall() {
+    //  Use provided install directory, if supplied
+    if (firefoxPortable) {
+        firefoxInstall = firefoxPortable + "\\App\\Firefox\\firefox.exe";
+        return firefoxInstall;
+    }
+
+    //  Determine if Firefox is installed
+    var firefoxKey = "HKLM\\Software\\Mozilla\\Mozilla Firefox";
+    var firefoxVer = getRegValue(firefoxKey + "\\");
+    if (!firefoxVer) {
+        debug(" - [skipped] Firefox was not detected");
+        return false;
+    } else {
+        debug(" - [success] Found Firefox " + firefoxVer);
+    }
+
+    // Determine full path to firefox.exe, i.e. "C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
+    firefoxInstall = getRegValue(firefoxKey + " " + firefoxVer + "\\bin\\PathToExe");
+
+    return firefoxInstall;
+}
+
+/*
+ * Iterates over the installed preferences file looking for a non-${project.name} AutoConfig rule
+ */
+function hasFirefoxConflict() {
+    if (!getFirefoxInstall()) { return false; }
+
+    debug("Searching for Firefox AutoConfig conflicts...");
+    // AutoConfig rule conflicts to search for
+    var conflicts = ["general.config.filename"];
+
+    // White-listed preference files, used for ${project.name} deployment
+    var exceptions = ["${firefoxprefs.name}"];
+    var folder = fso.GetFolder(firefoxInstall + "\\..\\defaults\\pref");
+    var o = new Enumerator(folder.Files);
+    for ( ; !o.atEnd(); o.moveNext()) {
+        var whitelist = false;
+        for (var i in exceptions) {
+            if (exceptions[i] == o.item().Name) {
+                debug(" - [skipping] ${project.name} config file: " + exceptions[i]);
+                whitelist = true;
+            }
+        }
+        if (!whitelist && parseFirefoxPref(o.item(), conflicts)) {
+            return true;
+        }
+    }
+    debug(" - [success] No conflicts found");
+    return false;
+}
+
+/*
+ * Reads a Firefox preference file for already existing AutoConfig rule conflicts
+ * Conflicts suggest an enterprise-type deployment environment.
+ * Returns true if a conflict exists.
+ */
+function parseFirefoxPref(file, conflicts) {
+    var inFile = fso.OpenTextFile(file.Path, 1, true);     // 1 = ForReading
+    var counter = 0;
+    while(!inFile.AtEndOfStream) {
+        var line = inFile.ReadLine()
+        counter++;
+        for (var i in conflicts) {
+            // Check for both quote styles, 'foo.bar.name' and "foo.bar.name"
+            if (line.indexOf("'" + conflicts[i] + "'") >= 0 ||
+                line.indexOf('"' + conflicts[i] + '"') >= 0) {
+                debug(" - [error] Conflict found in " + file.Name +
+                    "\n\t Conflict on line " + counter + ": \"" + line + "\"");
+                inFile.close();
+                return true;
+            }
+        }
+    }
+    inFile.close();
+    return false;
+}
+
+
+/*
+ * Delete certificate for Mozilla Firefox browser, which utilizes its own cert database
+ */
+function deleteFirefoxCertificate() {
+    if (!getFirefoxInstall()) { return; }
+
+    debug("Removing from Firefox...");
+    var firefoxCfg = firefoxInstall + "\\..\\${firefoxconfig.name}";
+
+    // Variable replacements for Firefox config file
+    var replacements = {
+        "${certData}" : "",
+        "${uninstall}" : "true",
+        "${timestamp}" : "-1",
+        "${commonName}" : cn,
+        "${trayApp}" : ""
+    };
+
+    // 1. readPlainCert() reads in certificate, stripping non-base64 content
+    // 2. writeParsedConfig(...) reads, parses and writes config file in same folder as firefox.exe
+    writeParsedConfig(fixPath("${firefoxconfig.install}"), firefoxCfg, replacements);
+    verifyExists(firefoxCfg, "Check Firefox config exists");
+}
+
+/*
+ * Install certificate for Mozilla Firefox browser, which utilizes its own cert database
+ */
+function installFirefoxCertificate() {
+    debug("Registering with Firefox...");
+    var firefoxCfg = firefoxInstall + "\\..\\${firefoxconfig.name}";
+
+    // Variable replacements for Firefox config file
+    var replacements = {
+        "${certData}" : readPlainCert(derCert),
+        "${uninstall}" : "false",
+        "${timestamp}" : new Date().getTime(),
+        "${commonName}" : cn,
+        "${trayApp}" : ""
+    };
+
+    // 1. readPlainCert() reads in certificate, stripping non-base64 content
+    // 2. writeParsedConfig(...) reads, parses and writes config file in same folder as firefox.exe
+    writeParsedConfig(fixPath("${firefoxconfig.install}"), firefoxCfg, replacements);
+    verifyExists(firefoxCfg, "Check Firefox config exists");
+
+    // Install the preference file tells Firefox to launches ${firefoxconfig.name} each time it starts
+    var firefoxPrefs = firefoxInstall + "\\..\\defaults\\pref\\${firefoxprefs.name}";
+    fso.CopyFile(fixPath("${firefoxprefs.install}"), firefoxPrefs);
+}
+
+/*
+ * Deletes windows certificates based on specific CN and OU values
+ */
+function deleteWindowsCertificate() {
+    debug("Deleting old certificates...");
+    var serialDelim = "||";
+    var matches = findWindowsMatches(serialDelim);
+
+    // If matches are found, delete them
+    if (matches) {
+        matches = matches.split(serialDelim);
+        for (var i in matches) {
+            if (matches[i]) {
+                shell.Run('${windows.keygen.tool} -delstore "${windows.keygen.store}" "' + matches[i] + '"', 1, true);
+            }
+        }
+
+        // Verify removal
+        matches = findWindowsMatches();
+        if (matches) {
+            debug(" - [failed] Some certificates not deleted");
+            return false;
+        } else {
+            debug(" - [success] Certificate(s) removed");
+        }
+    } else {
+        debug(" - [skipped] No matches found");
+    }
+    return true;
+}
+
+/*
+ * Certutil isn't available on Windows XP, show manual instructions instead
+ */
+function deleteWindowsXPCertificate() {
+    shell.Popup("Automatic certificate deletion is not available for this platform.\n" +
+        "To completely remove unused certificates:\n\n" +
+        "     1.  Manage computer certificates\n" +
+        "     2.  Click \"Trusted Root Certificate Authorities...\"\n" +
+        "     3.  Click \"Certificates\"\n" +
+        "     4.  Browse to \"${jks.cn}, ${vendor.company}\"\n" +
+        "     5.  Right Click, \"Delete\"\n" +
+        "Click OK to automatically launch the certificate manager.\n", 0, "Warning - ${project.name}", 48);
+
+    // Do not wrap quotes around derCert, or this next line will fail
+    shell.Run("mmc.exe certmgr.msc", 1, true);
+}
+
+
+/*
+ * Returns matching serial numbers delimited by two pipes, i.e "9876fedc||1234abcd"
+ */
+function findWindowsMatches(serialDelim) {
+    var matches = "";
+    var proc = shell.Exec('${windows.keygen.tool} -store "${windows.keygen.store}"');
+    var certData = "";
+    while (!proc.StdOut.AtEndOfStream) {
+        var line = proc.StdOut.ReadLine()
+        if (trim(line) != "") {
+            certData += line + newLine;
+        } else {
+            var serial = parseCertificateSerial(certData);
+            if (serial && isVendorMatch(certData)) {
+                matches += serial + serialDelim;
+            }
+            certData = "";
+        }
+    }
+    return matches;
+}
+
+/*
+ * Parses the supplied data for serialTag
+ * If found, returns the serial number of the certificate, i.e. "89e301a9"
+ */
+function parseCertificateSerial(certData) {
+    var serialTag = "Serial Number:";
+    if (certData.indexOf(newLine) != -1) {
+        var lines = certData.split(newLine);
+        for (var i in lines) {
+            var line = trim(lines[i]);
+            if (line.indexOf(serialTag) == 0) {
+                return trim(line.split(serialTag)[1]);
+            }
+        }
+    }
+    return false;
+}
+
+/*
+ * Parses the supplied data for issuerTag
+ * If found, parses the matched line for specific CN and OU values.
+ * Returns true if found
+ */
+function isVendorMatch(certData) {
+    var issuerTag = "Issuer:";
+    if (certData.indexOf(newLine) != -1) {
+        var lines = certData.split(newLine);
+        for (var i in lines) {
+            var line = trim(lines[i]);
+            if (line.indexOf(issuerTag) == 0) {
+                if (line.indexOf("OU=${vendor.company}") != -1 && line.indexOf("CN=" + cn) != -1) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+/*
+ * Functional equivalent of foo.trim()
+ */
+function trim(val) {
+    return val.replace(/^\s+/,'').replace(/\s+$/,'');
+}
+
+/*
+ * Gets then nth argument passed into this script
+ * Returns defaultVal if argument wasn't found
+ */
+function getArg(index, defaultVal) {
+    if (index >= WScript.Arguments.length || trim(WScript.Arguments(index)) == "") {
+        return defaultVal;
+    }
+    return WScript.Arguments(index);
+}
+
+/*
+ * Mimic an alert dialog, used only for OK_ONLY + WARNING (0 + 48)
+ */
+function alert(message, title) {
+    new ActiveXObject("WScript.Shell").Popup(message, 0, title == null ? "Warning" : title, 48);
+}

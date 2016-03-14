@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="EntryPointsManager">
+    <entry_points version="2.0" />
+    <list size="4">
+      <item index="0" class="java.lang.String" itemvalue="org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose" />
+      <item index="1" class="java.lang.String" itemvalue="org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect" />
+      <item index="2" class="java.lang.String" itemvalue="org.eclipse.jetty.websocket.api.annotations.OnWebSocketError" />
+      <item index="3" class="java.lang.String" itemvalue="org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage" />
+    </list>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_7" default="false" assert-keyword="true" jdk-15="true" project-jdk-name="1.7" project-jdk-type="JavaSDK" />
+</project>

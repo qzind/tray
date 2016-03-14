@@ -1,0 +1,17 @@
+matrix:
+  include:
+    - jdk: oraclejdk8 
+      env: TARGET=nsis
+    - jdk: oraclejdk8
+      env: TARGET=makeself
+    - jdk: oraclejdk7
+      env: TARGET=makeself
+    - jdk: openjdk7
+      env: TARGET=makeself
+    - os: osx
+      env: TARGET=pkgbuild
+language: java
+before_script: 
+    - sw_vers -productVersion && brew update && brew install ant; ant -version
+    - test -e /etc/lsb-release && sudo apt-get update -qq && sudo apt-get install -y makeself nsis; echo;
+script: ant $TARGET

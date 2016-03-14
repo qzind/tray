@@ -1,0 +1,2 @@
+# ${project.name} usb override settings
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", MODE="0666"

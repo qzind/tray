@@ -1,0 +1,41 @@
+#!/bin/bash
+###############################################################################
+#                         ${project.name} Apple OS X Postinstall                      #
+###############################################################################
+#  Description:                                                               #
+#    1. Removes certificate for secure websockets                             #
+#    2. Removes certificate in Firefox                                        #
+#    3. Removes application bundle                                            #
+#                                                                             #
+#  Usage:                                                                     #
+#    $ sudo ./uninstall                                                       #
+###############################################################################
+
+if [ "$(id -u)" != "0" ]; then
+   echo -e "\nThis script must be run with root (sudo) privileges" 1>&2
+   echo -e "${bash.failure}"
+   exit 1
+fi
+
+# Kill any running versions
+echo -e "Killing any running versions..."
+kill -9 $(ps -e |grep "${project.filename}.jar" |grep -v grep|awk '{print $1}') > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo -e "${bash.success}"
+else
+    echo -e "${bash.skipped}"
+fi
+
+# Uninstall ${project.name} system certificates
+"${apple.installdir}/auth/${apple.keygen.name}" "uninstall"
+
+if [ $? -eq 0 ]; then
+    # Uninstall Firefox certificate
+    "${apple.installdir}/auth/firefox/${firefoxcert.name}" "uninstall"
+fi
+
+echo -e "Cleanup is complete.  Removing ${apple.installdir}..."
+rm -rf "${apple.installdir}"
+echo -e "${bash.success}"
+
+echo -e "\nUninstall of ${project.name} complete.\n"

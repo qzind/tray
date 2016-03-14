@@ -1,0 +1,29 @@
+#!/bin/bash
+###############################################################################
+#                         ${project.name} Apple OS X Postinstall                      #
+###############################################################################
+#  Description:                                                               #
+#    1. Generates and installs certificate for secure websockets              #
+#    2. Installs certificate to Firefox                                       #
+#    3. Peforms any cleanup operations                                        #
+#    4. Launches app as user (not root)                                       #
+#                                                                             #
+#  Usage:                                                                     #
+#    $ ./postinstall                                                          #
+###############################################################################
+
+# Install ${project.name} certificate
+"${apple.installdir}/auth/${apple.keygen.name}" "install"
+
+if [ $? -eq 0 ]; then
+    # Install Firefox certificate
+    "${apple.installdir}/auth/firefox/${firefoxcert.name}" "install"
+fi
+
+# Cleanup resources from previous versions
+rm -rf "${apple.installdir}/demo/js/3rdparty"
+rm "${apple.installdir}/demo/js/qz-websocket.js"
+
+# Start ${project.name}
+echo -e "\nStarting ${project.name} as $USER..."
+su $USER -c "open -a \"${project.name}\""

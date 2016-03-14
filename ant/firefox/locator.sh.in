@@ -1,0 +1,115 @@
+#!/bin/bash
+###############################################################################
+#           ${project.name} Linux / Unix Program Locator                              #
+###############################################################################
+#  Description:                                                               #
+#   INSTALL:                                                                  #
+#     1. Searches for specified program's installation path                   #
+#                                                                             #
+#  Depends:                                                                   #
+#    - lsregister (Apple-only, provided by launch services)                   #
+#    - perl (standard with most modern Linux/Unix systems)                    #
+#                                                                             #
+#  Usage:                                                                     #
+#    $ ./${locator.name} "directoryName" [binName]                                 #
+#                                                                             #
+###############################################################################
+# Array of possible pref tag conflicts
+secondarylocations=("/lib64" "/lib")
+
+
+#
+# Calls lsregister -dump and parses the output for "/Firefox.app", etc.  Returns the very first result found.
+#
+function get_osx_targetdir()
+{
+	# OSX Array of possible lsregister command locations
+	lsregs=("/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister")
+	return_val=1
+	for i in "${lsregs[@]}"; do
+		if [ -f $i ]; then
+			IFS_backup=$IFS
+			#The filenames may have spaces, use the newline to seperate the array items
+			IFS=$'\n'
+			#"/$with_dir.app$", the first $ is the bash variable marker and the second is a wildcard meaning "is the end of the line"
+			targetdir=$($i -dump |grep -E "/$with_dir.app$" |grep -v "/Volumes/" |grep -v "/.Trash/" |cut -d'/' -f2-)
+			IFS=$IFS_backup
+			for r in "${targetdir[@]}"; do
+				#If it matches our top priority location, return. We are done.
+				if [[ "/$r" == "/Applications"* ]]; then
+					dir_out="/$r"
+					return 0
+				#If it matches our second priority, remember it and continue. (remembers last instance)
+				elif [[ "/$r" == "$HOME/Applications"* ]]; then
+					dir_out="/$r"
+					return_val=0
+				#If nothing else, remember it if we don't have anything else yet 
+				elif [ dir_out == "" ]; then
+					dir_out="/$r"
+					return_val=0
+				fi
+			done
+		fi
+	done
+	return $return_val
+}
+
+#
+# Uses "which" and "readlink" to locate firefox on Linux, etc
+#
+function get_targetdir()
+{
+	# Convert "Firefox" to "firefox", etc
+	lowerdir=$(echo "$with_dir" |tr '[:upper:]' '[:lower:]')
+	lowerbin=$(echo "$with_bin" |tr '[:upper:]' '[:lower:]')
+	location=$(readlink -f "$(which $lowerdir)")
+	targetdir=$(dirname "$location")
+	if [ -f "$targetdir/$lowerbin" ]; then
+		dir_out="$targetdir"
+		return 0
+	else
+		for d in "${secondarylocations[@]}"; do
+			targetdir=$(echo "$d")
+			if [ -f "$targetdir/$lowerdir/$lowerbin" ]; then
+				dir_out="$targetdir/$lowerdir"
+				return 0
+			fi
+		done
+		targetdir=""
+		return 1
+	fi
+	return 0
+}
+
+targetdir=""
+with_dir=""
+with_bin=""
+dir_out=""
+
+if [ "$#" == 0 ]; then
+	echo "No program specified, proper usage is locator <program name>"
+	exit 0
+elif [ "$#" == 1 ]; then
+	with_dir=$1
+	with_bin=$1
+else 
+	with_dir=$1
+	with_bin=$2
+fi 
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+	# Mac OSX
+	get_osx_targetdir
+else
+	# Linux, etc
+	get_targetdir
+fi
+
+echo "$dir_out"
+
+# Firefox was not found, skip Firefox certificate installation
+if [ -z "$targetdir" ] || [ "$targetdir" = "/" ]; then
+	echo "$1 not found"
+	exit 1
+fi
+exit 0

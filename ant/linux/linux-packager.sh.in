@@ -1,0 +1,29 @@
+#!/bin/bash
+###############################################################################
+#                         ${project.name} Linux Packager                              #
+###############################################################################
+#  Description:                                                               #
+#    1. Packages software for Linux self extracting archive and installer     #
+#                                                                             #
+#  Depends:                                                                   #
+#    makeself (sudo apt-get install makeself)                                 #
+#                                                                             #
+#  Usage:                                                                     #
+#    $ chmod +x linux-packager.sh                                             #
+#    $ ./linux-packager.sh                                                    #
+#                                                                             #
+###############################################################################
+echo
+echo "============================================"
+echo "            Packaging ${project.name}"
+echo "============================================"
+echo
+chmod +x "${linux.installer.out}"
+makeself "${dist.dir}" "${out.dir}/${project.filename}-${build.version}.run" "${project.name} Installer" "./${linux.installer.name}"
+code=$?
+echo
+echo "============================================"
+echo "                 Finished                   "
+echo "============================================"
+echo
+exit $code

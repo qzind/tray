@@ -1,0 +1,199 @@
+#!/bin/bash
+###############################################################################
+#           ${project.name} Linux / Unix Firefox Certificate Utility                  #
+###############################################################################
+#  Description:                                                               #
+#   INSTALL:                                                                  #
+#     1. Searches for Firefox installation path                               #
+#     2. Parses defaults/pref for potential Firefox AutoConfig conflicts      #
+#     3. Imports certificate into Firefox web browser using AutoConfig file   #
+#                                                                             #
+#   UNINSTALL:                                                                #
+#     1. Deletes certificate from Firefox web browser using AutoConfig file   #
+#                                                                             #
+#  Depends:                                                                   #
+#    - lsregister (Apple-only, provided by launch services)                   #
+#    - perl (standard with most modern Linux/Unix systems)                    #
+#                                                                             #
+#  Usage:                                                                     #
+#    $ ./${firefoxcert.name} "install" [hostname]                                 #
+#    $ ./${firefoxcert.name} "uninstall" [hostname]                               #
+#                                                                             #
+###############################################################################
+
+# Array of possible Firefox application names.
+appnames=("Firefox")	# "Firefox" "IceWeasel", etc
+
+# Array of possible pref tag conflicts
+conflicts=("general.config.filename")
+
+mask=755
+
+#
+# Uses "which" and "readlink" to locate firefox on Linux, etc
+#
+function get_ffdir()
+{
+	for i in "${appnames[@]}"; do
+		ffdirtemp=$("$locationdir/${locator.name}" $i)
+		if [ $? == 0 ]; then
+			ffdir="$ffdirtemp"
+			return 0
+		fi
+	done
+	return 1
+}
+
+echo "Searching for Firefox..."
+
+ffdir=""
+if [[ "$OSTYPE" == "darwin"* ]]; then
+	# Mac OSX
+	locationdir=$(cd "$(dirname "$0")"; pwd)
+	get_ffdir
+
+	bindir="$ffdir/Contents/Resources/"
+	prefdir="$ffdir/Contents/Resources/defaults/pref"
+	installdir="${apple.installdir}"
+	trayapp="$installdir"  # use .app package
+else
+	# Linux, etc
+	location=$(readlink -f "$0")
+	locationdir=$(dirname "$location")
+	get_ffdir
+
+	bindir="$ffdir"
+	prefdir="$ffdir/defaults/pref"
+	installdir="${linux.installdir}"
+	trayapp=""  # skip
+fi
+
+# Firefox was not found, skip Firefox certificate installation
+if [ -z "$ffdir" ] || [ "$ffdir" = "/" ]; then
+	echo -e "${bash.skipped} Firefox not found"
+	exit 0
+else
+    echo -e "${bash.success} $ffdir"
+fi
+
+
+# Substitution variables (!install, etc)
+install="${jks.install}"
+cname="${jks.cn}"
+dercert="${der.cert}"
+prefs="${firefoxprefs.install}"
+config="${firefoxconfig.install}"
+
+# Handle CN=${jks.cn} override
+if [ -n "$2" ]; then
+    cname="$2"
+fi
+
+# Perform substitutions
+dercertpath=$(echo "$dercert" | sed -e "s|$install|$installdir|g")
+prefspath=$(echo "$prefs" | sed -e "s|$install|$installdir|g")
+configpath=$(echo "$config" | sed -e "s|$install|$installdir|g")
+
+#
+# Uninstall mode
+#
+if [ "$1" == "uninstall" ]; then
+    echo "Searching for ${project.name} AutoConfig..."
+    if [ -f "$bindir/${firefoxconfig.name}" ]; then
+        echo -e "${bash.success} Check Firefox config exists"
+        cp "$configpath" "$bindir/${firefoxconfig.name}"
+        chmod $mask "$bindir/${firefoxconfig.name}"
+        # Replace ${certData} with the blank string
+        perl -pi -e "s#\\\${certData}##g" "$bindir/${firefoxconfig.name}"
+        ret1=$?
+        perl -pi -e "s#\\\${uninstall}#true#g" "$bindir/${firefoxconfig.name}"
+        ret2=$?
+        perl -pi -e "s#\\\${timestamp}#-1#g" "$bindir/${firefoxconfig.name}"
+        ret3=$?
+        perl -pi -e "s#\\\${commonName}#$cname#g" "$bindir/${firefoxconfig.name}"
+        ret4=$?
+        perl -pi -e "s#\\\${trayApp}##g" "$bindir/${firefoxconfig.name}"
+        ret5=$?
+        if [ $ret1 -eq 0 ] && [ $ret2 -eq 0 ] && [ $ret3 -eq 0 ] && [ $ret4 -eq 0 ] && [ $ret5 -eq 0 ]; then
+            echo -e "${bash.success} Certificate removed successfully"
+        else
+            echo -e "${bash.failure} ${project.name} Certificate removal failed"
+            exit 1
+        fi
+    else
+        echo -e "${bash.skipped} ${project.name} AutoConfig not found"
+    fi
+    exit 0
+fi
+
+#
+# Install mode (default)
+#
+echo -e "\nSearching for Firefox AutoConfig conflicts..."
+
+# Iterate over each preference file looking for conflicts
+for i in $prefdir/*; do
+	if [ "$i" == "$prefdir/${firefoxprefs.name}" ]; then
+		# skip, ${project.name} preferences
+		echo -e "${bash.skipped} Ignoring ${project.name} preference file \"${firefoxprefs.name}\""
+		continue
+	fi
+	for j in "${conflicts[@]}"; do
+		grep '"$j"' $i &>/dev/null
+		ret1=$?
+		grep "'$j'" $i &>/dev/null
+		ret2=$?
+		if [ $ret1 -eq 0 ] || [ $ret2 -eq 0 ]; then
+		   echo -e "${bash.failure} Conflict found while looking for \"$j\"\n\tin $i"
+		   exit 1
+		fi
+	done
+done
+
+echo -e "${bash.success} No conflicts found"
+
+
+
+echo -e "\nRegistering with Firefox..."
+cp "$prefspath" "$prefdir/${firefoxprefs.name}"
+cp "$configpath" "$bindir/${firefoxconfig.name}"
+chmod $mask "$prefdir/${firefoxprefs.name}"
+chmod $mask "$bindir/${firefoxconfig.name}"
+
+bcert="-----BEGIN CERTIFICATE-----"
+ecert="-----END CERTIFICATE-----"
+blank=""
+
+# Read certificate, stripping newlines
+certdata=$(cat "$dercertpath" |tr -d '\n'|tr -d '\r')
+
+# Strip all non-base64 data
+certdata=$(echo "$certdata" | sed -e "s|$bcert|$blank|g")
+certdata=$(echo "$certdata" | sed -e "s|$ecert|$blank|g")
+timestamp=$(date +%s)
+
+if [ -f "$bindir/${firefoxconfig.name}" ]; then
+	echo -e "${bash.success} Check ${project.name} AutoConfig exists"
+	# Replace ${certData} with the base64 string
+    perl -pi -e "s#\\\${certData}#$certdata#g" "$bindir/${firefoxconfig.name}"
+    ret1=$?
+    perl -pi -e "s#\\\${uninstall}#false#g" "$bindir/${firefoxconfig.name}"
+    ret2=$?
+    perl -pi -e "s#\\\${timestamp}#$timestamp#g" "$bindir/${firefoxconfig.name}"
+    ret3=$?
+    perl -pi -e "s#\\\${commonName}#$cname#g" "$bindir/${firefoxconfig.name}"
+    ret4=$?
+    perl -pi -e "s#\\\${trayApp}#$trayapp#g" "$bindir/${firefoxconfig.name}"
+    ret5=$?
+    if [ $ret1 -eq 0 ] && [ $ret2 -eq 0 ] && [ $ret3 -eq 0 ] && [ $ret4 -eq 0 ] && [ $ret5 -eq 0 ]; then
+        echo -e "${bash.success} Certificate installed"
+    else
+        echo -e "${bash.failure} Certificate installation failed"
+    fi
+else
+	echo -e "${bash.failure} Cannot locate ${project.name} AutoConfig"
+	exit 1
+fi
+
+exit 0
+

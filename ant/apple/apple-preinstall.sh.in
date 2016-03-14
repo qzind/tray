@@ -1,0 +1,43 @@
+#!/bin/bash
+###############################################################################
+#                         ${project.name} Apple OS X Preinstall                       #
+###############################################################################
+#  Description:                                                               #
+#    1. Checks for minimum Java version                                       #
+#    2. Kills any running instances                                           #
+#                                                                             #
+#  Usage:                                                                     #
+#    $ ./preinstall                                                           #
+###############################################################################
+
+# Check minimum java version
+function check_java() {
+	curver=$("${apple.jvmfallback}/java" -version 2>&1 | grep -i version | cut -d'"' -f2 | cut -d'.' -f1-2)
+	minver="${javac.target}"
+
+	if [ -z "$curver" ]; then
+		curver="0.0"
+	fi
+
+	if [ $(echo "$curver>=$minver" | bc -l) -eq 0 ]; then
+		osascript -e "tell app \"Installer\" to display dialog \"Java $minver is required for installation.\nDownload it now?\""
+		if [ $? -eq 0 ]; then
+			open "https://java.com/download/"
+		fi
+		exit 1
+	fi
+}
+
+# Use java_home command to check minimum Java version
+${apple.jvmver} > /dev/null 2>&1
+code=$?
+
+# Fallback on Internet Plug-Ins version if needed
+if [ $code -ne 0 ]; then
+	check_java
+	code=$?
+fi
+
+# Kill any running versions
+kill -9 $(ps -e |grep "${project.filename}.jar" |grep -v grep|awk '{print $1}') > /dev/null 2>&1
+exit $code

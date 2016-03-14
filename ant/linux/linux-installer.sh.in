@@ -1,0 +1,185 @@
+#!/bin/bash
+###############################################################################
+#                         ${project.name} Linux Installer                             #
+###############################################################################
+#  Description:                                                               #
+#    1. Stops any existing instances                                          #
+#    2. Patches Ubuntu Unity Desktop for tray icon support                    #
+#    3. Installs to current users home directory                              #
+#                                                                             #
+#  Usage:                                                                     #
+#    $ chmod +x ${linux.installer.name}                                            #
+#    $ sudo ./${linux.installer.name} [noprompt] [hostname]                        #
+#                                                                             #
+###############################################################################
+
+if [ "$(id -u)" != "0" ]; then
+   echo -e "\nThis script must be run with root (sudo) privileges" 1>&2
+   echo -e "${bash.failure}"
+   exit 1
+fi
+
+noprompt="$1"
+cname="$2"
+mask=755
+destdir="${linux.installdir}"
+shortcut="/usr/share/applications/${project.filename}.desktop"
+jarfile="${destdir}/${project.filename}.jar"
+
+# Confirmation dialog
+height=8; width=41
+function confirm_dialog() {
+   # Allow bypassing via 2nd param ("y" or "Y")
+   if [ "$2" == "-y" ]; then
+      echo "Param \"$2\" was supplied to confirmation dialog, supressing..."
+      return 0
+   fi
+   dialog --help > /dev/null 2>&1
+   if [ $? -ne 0 ]; then
+      # Legacy input fallback
+      echo -e "\n"; read -p "$1 [y/N] " -r; echo
+      if [[ $REPLY =~ ^[Yy]$ ]] ; then
+         return 0
+      else
+         echo -e "${bash.aborted}\n"
+         exit 1
+      fi
+   fi
+   dialog --title "Install ${project.name}" --backtitle "Install ${project.name}" --yesno "$1" $height $width
+   if [ $? -ne 0 ]; then
+      echo -e "\n\n${bash.aborted}\n"
+      exit 1
+   fi
+}
+
+# Progress dialog
+function progress_dialog() {
+   dialog --help > /dev/null 2>&1
+   if [ $? -ne 0 ]; then
+      # Fallback on old input prompt
+      echo -e "   - $2"; return 0
+   fi
+   echo "$1" | dialog --title "Install ${project.name}" \
+    --backtitle "Install ${project.name}" \
+    --gauge "$2" $height $width
+}
+
+# Check minimum java version
+function check_java() {
+   curver=$(java -version 2>&1 | grep -i version | awk -F"\"" '{ print $2 }' | awk -F"." '{ print $1 "." $2 }') 
+   minver="${javac.target}"
+
+   if [ -z "$curver" ]; then
+      curver="0.0"
+   fi
+
+   desired=$(echo -e "$minver\n$curver")
+   actual=$(echo "$desired" |sort -t '.' -k 1,1 -k 2,2 -n)
+
+   if [ "$desired" != "$actual" ]; then
+      echo -e "\n\n${bash.failure}\n"
+      echo -e "Please install Java ${javac.target} or higher to continue\n"
+      exit 1
+   fi
+}
+
+confirm_dialog "Are you sure you want to install ${project.name}?" "$noprompt"
+
+progress_dialog 5 "Checking for Java ${javac.target}+..."
+check_java
+
+progress_dialog 10 "Stopping any running versions..."
+pkill -f "java -jar ${jarfile}"
+
+progress_dialog 20 "Stopping any running versions..."
+rm -rf "${destdir}" > /dev/null 2>&1
+
+progress_dialog 25 "Creating directory..."
+mkdir -p "${destdir}" > /dev/null 2>&1
+
+progress_dialog 30 "Installing new version..."
+cp -R ./ "${destdir}"
+rm "${destdir}/`basename $0`"
+
+progress_dialog 40 "Creating desktop shortcut..."
+echo "[Desktop Entry]
+Type=Application
+Name=${project.name}
+Exec=java -jar \"${jarfile}\"
+Path=${destdir}
+Icon=${destdir}/${linux.icon}
+MimeType=application/x-qz;x-scheme-handler/qz;
+Terminal=false
+Comment=${project.name}" > "${shortcut}"
+chmod $mask "${shortcut}"
+
+# Tell the desktop to look for new mimetypes in the background
+makeself_umask=`umask`
+umask 0002 # more permissive umask for mimetype registration
+update-desktop-database > /dev/null 2>&1 &
+umask $makeself_umask
+
+# Ubuntu process restarter
+function restart_it() {
+    # Check for running process, kill it
+    ps -e |grep -q $1
+    if [ $? -eq 0 ]; then
+        progress_dialog $2 "Killing $1..."
+        killall -w $1 > /dev/null 2>&1
+    fi
+
+    # Make sure process isn't running, start it
+    ps -e |grep -q $1
+    if [ $? -ne 0 ]; then
+        progress_dialog $(($2 + 5)) "Starting $1..."
+        nohup $1 > /dev/null 2>&1 &
+    fi
+}
+
+# Check for Ubuntu to fix System Tray
+grep -q "Ubuntu" /etc/lsb-release > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    gsettings set com.canonical.Unity.Panel systray-whitelist "['all']" > /dev/null 2>&1
+    restart_it unity-panel-service 50
+    restart_it unity-2d-panel 60
+fi
+
+progress_dialog 70 "Generating certificate..."
+chmod $mask "$destdir/auth/${linux.keygen.name}"  > /dev/null 2>&1
+"$destdir/auth/${linux.keygen.name}" "$cname"
+
+progress_dialog 75 "Importing Firefox locator..."
+chmod $mask "$destdir/auth/firefox/${locator.name}"  > /dev/null 2>&1
+"$destdir/auth/firefox/${locator.name}"
+
+progress_dialog 80 "Importing Firefox certificate..."
+chmod $mask "$destdir/auth/firefox/${firefoxcert.name}"  > /dev/null 2>&1
+"$destdir/auth/firefox/${firefoxcert.name}" "install" "$cname"
+
+progress_dialog 85 "Checking for certutil..."
+which certutil > /dev/null 1>&2
+if [ $? -ne 0 ]; then
+    confirm_dialog "Certutil not found. Attempt to fetch now?" "$noprompt"
+    apt-get install -y libnss3-tools > /dev/null 2>&1
+    which certutil > /dev/null 1>&2
+    if [ $? -ne 0 ]; then
+       echo -e "\t- Success"
+    else
+       echo -e "\t- Failed"
+    fi
+fi
+
+progress_dialog 90 "Setting permissions..."
+chmod -R $mask "${destdir}" 
+
+progress_dialog 92 "Installing usb/udev rules..."
+rm -f "/lib/udev/rules.d/${linux.udev.name}" > /dev/null 2>&1
+mv "$destdir/${linux.udev.name}" "/lib/udev/rules.d/${linux.udev.name}" > /dev/null 2>&1
+
+cd "${destdir}"
+progress_dialog 95 "Installation complete... Starting ${project.name}..."
+# Start ${project.name} as the user that's logged in
+sudo -u $(logname) nohup "java" -jar "${jarfile}" > /dev/null 2>&1 &
+progress_dialog 100 "Finished.  QZ Tray should start automatically."
+echo
+exit 0

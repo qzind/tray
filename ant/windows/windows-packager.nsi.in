@@ -1,0 +1,203 @@
+!include MUI2.nsh
+!include x64.nsh
+!include LogicLib.nsh
+
+!ifdef NSIS_UNICODE
+	!addplugindir "${windows.nsis.addons}/Plugins/Release_Unicode"
+!else
+	!addplugindir "${windows.nsis.addons}/Plugins/Release_ANSI"
+!endif
+
+!addincludedir "${windows.nsis.addons}/Include/"
+!include StdUtils.nsh
+
+Name "${project.name}"
+OutFile "${out.dir}\${project.filename}-${build.version}.exe"
+RequestExecutionLevel admin
+
+;-------------------------------
+
+!define MUI_ICON "${basedir}\${branding.dir}\${windows.icon}"
+
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "${basedir}\LICENSE.txt"
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+
+!insertmacro MUI_LANGUAGE "English"
+
+;------------------------------
+
+Section
+  ; Sets the context of shell folders to "All Users"
+  SetShellVarContext all
+
+  ; Kills any running ${project.name} processes
+  nsExec::ExecToLog "wmic.exe process where $\"Name like '%java%' and CommandLine like '%${project.filename}.jar%'$\" call terminate"
+
+  ; Cleanup for wmic on Windows XP
+  SetShellVarContext current
+  Delete "$DESKTOP\TempWmicBatchFile.bat"
+  SetShellVarContext all
+
+  SetOutPath "$INSTDIR"
+
+  ; Cleanup resources from previous versions
+  DetailPrint "Cleaning up resources from previous versions..."
+  RMDir /r "$INSTDIR\demo\js\3rdparty"
+  Delete "$INSTDIR\demo\js\qz-websocket.js"
+
+  File /r "${dist.dir}\*"
+
+  WriteRegStr HKLM "Software\${project.name}" \
+                     "" "$INSTDIR"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${project.name}" \
+                   "DisplayName" "${project.name} ${build.version}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${project.name}" \
+                     "Publisher" "${vendor.company}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${project.name}" \
+                   "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${project.name}" \
+                   "DisplayIcon" "$INSTDIR\${windows.icon}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${project.name}" \
+                   "HelpLink" "${vendor.website}/support"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${project.name}" \
+                   "URLUpdateInfo" "${vendor.website}/download"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${project.name}" \
+                   "URLInfoAbout" "${vendor.website}/support"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${project.name}" \
+                   "DisplayVersion" "${build.version}"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${project.name}" \
+                   "EstimatedSize" "${build.size}"
+
+  ; Allow localhost connections for Microsoft Edge
+  DetailPrint "Whitelisting loopback connections for Microsoft Edge..."
+  nsExec::ExecToLog "CheckNetIsolation.exe LoopbackExempt -a -n=$\"Microsoft.MicrosoftEdge_8wekyb3d8bbwe$\""
+
+  ; Mimetype support, e.g. ${vendor.name}:launch
+  WriteRegStr HKCR "${vendor.name}" "" "URL:${project.name} Protocol"
+  WriteRegStr HKCR "${vendor.name}" "URL Protocol" ""
+  WriteRegStr HKCR "${vendor.name}\DefaultIcon" "" "$\"$INSTDIR\${windows.icon}$\",1"
+  WriteRegStr HKCR "${vendor.name}\shell\open\command" "" "$\"$INSTDIR\${project.filename}.exe$\" $\"%1$\""
+
+  WriteUninstaller "$INSTDIR\uninstall.exe"
+
+  ; Prevent launching exe from SysWOW64
+  ${If} ${RunningX64}
+  ${DisableX64FSRedirection}
+  ${EndIf}
+  
+  ; Handle edge-case where jscript support is unregistered
+  nsExec::ExecToLog "regsvr32.exe /s $\"%systemroot%\system32\jscript.dll$\""
+
+  ; Remove ${vendor.company} certificates
+  nsExec::ExecToLog "cscript.exe //NoLogo //E:jscript $\"$INSTDIR\auth\${windows.keygen.name}$\" $\"$INSTDIR$\" uninstall"
+  
+  keygen:
+  ; Exports a self-signed certificate and properties file
+  DetailPrint "Generating a unique certificate for HTTPS support..."
+  nsExec::ExecToLog "cscript.exe //NoLogo //E:jscript $\"$INSTDIR\auth\${windows.keygen.name}$\" $\"$INSTDIR$\" install"
+  Pop $0
+  
+  ${If} ${RunningX64}
+  ${EnableX64FSRedirection}
+  ${EndIf}
+  
+  ; Secure websockets is required, handle errors
+  ${If} "$0" != "0"
+    ${If} "$0" == "${windows.err.java}"
+      MessageBox MB_YESNO "Java is required for installation.  Download now?" IDYES true IDNO false
+        true:
+          ExecShell "open" "https://java.com/download/"
+          MessageBox MB_OK "Click OK after Java is installed to resume installation"
+          Goto keygen
+        false:
+          SetErrorLevel $0
+          Abort "Failed while checking for Java ${javac.source}"
+    ${Else}
+        Abort "Installation failed.  Please check log for details."
+    ${EndIf}
+  ${EndIf}
+
+  CreateShortCut "$SMPROGRAMS\${project.name}.lnk" "$INSTDIR\${project.filename}.exe" "" "$INSTDIR\${windows.icon}" 0
+
+  ; Delete matching firewall rules
+  DetailPrint "Removing ${project.name} firewall rules..."
+  nsExec::ExecToLog "netsh.exe advfirewall firewall delete rule name= $\"${project.name}$\""
+
+  ; Install new Firewall rules
+  DetailPrint "Installing ${project.name} inbound firewall rule..."
+  nsExec::ExecToLog "netsh.exe advfirewall firewall add rule name=$\"${project.name}$\" dir=in action=allow profile=any localport=8181,8282,8383,8484,8182,8283,8384,8485 localip=any protocol=tcp"
+
+  ; Launch a non-elevated instance of ${project.name}
+  ${StdUtils.ExecShellAsUser} $0 "$SMPROGRAMS\${project.name}.lnk" "open" ""
+SectionEnd
+
+;-------------------------------
+
+Section "Uninstall"
+  ; Sets the context of shell folders to "All Users"
+  SetShellVarContext all
+
+  ; Kills any running ${project.name} processes
+  nsExec::ExecToLog "wmic.exe process where $\"Name like '%java%' and CommandLine like '%${project.filename}.jar%'$\" call terminate"
+  ; Cleanup for wmic on Windows XP
+  Delete "$DESKTOP\TempWmicBatchFile.bat"
+
+  ; Prevent launching exe from SysWOW64
+  ${If} ${RunningX64}
+  ${DisableX64FSRedirection}
+  ${EndIf}
+  
+  ; Remove ${vendor.company} certificates
+  nsExec::ExecToLog "cscript.exe //NoLogo //E:jscript $\"$INSTDIR\auth\${windows.keygen.name}$\" $\"$INSTDIR$\" uninstall"
+
+  ${If} ${RunningX64}
+  ${EnableX64FSRedirection}
+  ${EndIf}
+  
+  ; Delete matching firewall rules
+  DetailPrint "Removing ${project.name} firewall rules..."
+  nsExec::ExecToLog "netsh.exe advfirewall firewall delete rule name= $\"${project.name}$\""
+
+  Delete "$SMPROGRAMS\${project.name}.lnk"
+  Delete "$INSTDIR\uninstall.exe"
+  RMDir /r "$INSTDIR"
+
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${project.name}"
+  DeleteRegKey HKLM "Software\${project.name}"
+
+  Delete "$DESKTOP\${project.name}.url"
+  Delete "$DESKTOP\${project.name}.lnk"
+
+  ; Sets the context of shell folders to current user
+  SetShellVarContext current
+  Delete "$DESKTOP\${project.name}.url"
+  Delete "$DESKTOP\${project.name}.lnk"
+  Delete "$SMPROGRAMS\${project.name}.lnk"
+SectionEnd
+
+;-------------------------------
+
+Function .onInit
+  ${If} ${RunningX64}
+      SetRegView 64
+  ${EndIf}
+  ${If} $InstDir == ""
+    ${If} ${RunningX64}
+      StrCpy $INSTDIR "$PROGRAMFILES64\${project.name}"
+    ${Else}
+      StrCpy $INSTDIR "$PROGRAMFILES\${project.name}"
+    ${EndIf}
+  ${EndIf}
+FunctionEnd
+
+Function un.onInit
+    ${If} ${RunningX64}
+        SetRegView 64
+    ${EndIf}
+FunctionEnd
+

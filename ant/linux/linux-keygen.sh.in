@@ -1,0 +1,85 @@
+#!/bin/bash
+###############################################################################################
+#                        ${project.name} Linux KeyGen Utility                                         #
+###############################################################################################
+#  Description:                                                                               #
+#     1. Creates a self-signed Java Keystore for jetty wss://localhost or [hostname]          #
+#     2. Exports public certificate from Java Keystore                                        #
+#                                                                                             #
+#  Depends:                                                                                   #
+#    java (sudo apt-get install openjdk-7-jre)                                                #
+#                                                                                             #
+#  Usage:                                                                                     #
+#    $ ./${linux.keygen.name} [hostname]                                                           #
+#                                                                                             #
+###############################################################################################
+
+# Random password hash
+password=$(cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-z0-9' | fold -w ${jks.passlength} | head -n 1)
+
+makekeystore="${jks.command}"
+makedercert="${der.command}"
+installdir="${linux.installdir}"
+
+# Substitution variables (!storepass, !keypass, !install, etc)
+install="${jks.install}"
+storepass="${jks.storepass}"
+keypass="${jks.keypass}"
+keystore="${jks.keystore}"
+dercert="${der.cert}"
+props="${jks.properties}"
+
+# Keystore generation variable substitutions
+keystorepath="${keystore/$install/$installdir}"
+makekeystore="${makekeystore/$storepass/$password}"
+makekeystore="${makekeystore/$keypass/$password}"
+makekeystore="${makekeystore/$keystore/$keystorepath}"
+
+# Handle CN=${jks.cn} override
+if [ -n "$1" ]; then
+    cname="CN=${jks.cn},"
+    override="CN=$1,"
+    makekeystore="${makekeystore/$cname/$override}"
+fi
+
+# Cert export variable substitutions
+dercertpath="${dercert/$install/$installdir}"
+makedercert="${makedercert/$storepass/$password}"
+makedercert="${makedercert/$keypass/$password}"
+makedercert="${makedercert/$keystore/$keystorepath}"
+makedercert="${makedercert/$dercert/$dercertpath}"
+
+# Property file containing jks signing info
+propspath="${props/$install/$installdir}"
+
+# Check to see if file exists
+function check_exists {
+    if [ -e "$1" ]; then
+        echo -e "${bash.success}\n"
+    else
+        echo -e "${bash.failure}\n"
+    fi
+}
+
+
+# Delete old keystore, if exists
+rm -f "$keystorepath" > /dev/null 2>&1
+
+echo "Creating keystore for secure websockets..."
+eval "$makekeystore" > /dev/null 2>&1
+check_exists "$keystorepath"
+
+echo "Converting keystore to native certificate..."
+eval "$makedercert" > /dev/null 2>&1
+check_exists "$dercertpath"
+
+echo "Writing properties file..."
+echo "wss.alias=${jks.alias}" > "$propspath"
+echo "wss.keystore=$keystorepath" >> "$propspath"
+echo "wss.keypass=$password" >> "$propspath"
+echo "wss.storepass=$password" >> "$propspath"
+echo "wss.host=${jks.host}" >> "$propspath"
+echo "" >> "$propspath"
+check_exists  "$propspath"
+
+exit 0

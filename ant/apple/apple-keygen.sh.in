@@ -1,0 +1,145 @@
+#!/bin/bash
+###############################################################################
+#                ${project.name} Apple OS X KeyGen Utility                            #
+###############################################################################
+#  Description:                                                               #
+#     1. Creates a self-signed Java Keystore for jetty wss://localhost        #
+#     2. Exports public certificate from Java Keystore                        #
+#     3. Imports into Apple OS X Trusted Root Certs                           #
+#                                                                             #
+#  Depends:                                                                   #
+#    java                                                                     #
+#                                                                             #
+#  Usage:                                                                     #
+#    $ ./${apple.keygen.name} "install"                                            #
+#    $ ./${apple.keygen.name} "uninstall"                                          #
+#                                                                             #
+###############################################################################
+
+# Random password hash
+password=$(cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-z0-9' | fold -w ${jks.passlength} | head -n 1)
+
+# Check for java
+${apple.jvmver} > /dev/null 2>&1
+fallback=$?
+
+makekeystore="${jks.command}"
+makedercert="${der.command}"
+installdir="${apple.installdir}"
+
+# Substitution variables (!storepass, !keypass, !install, etc)
+install="${jks.install}"
+storepass="${jks.storepass}"
+keypass="${jks.keypass}"
+keystore="${jks.keystore}"
+dercert="${der.cert}"
+props="${jks.properties}"
+keytool="${jks.keytool}"
+keytoolfallback="${apple.jvmfallback}/${jks.keytool}"
+
+# Keystore generation variable substitutions
+keystorepath=$(echo "$keystore" | sed -e "s|$install|$installdir|g")
+makekeystore=$(echo "$makekeystore" | sed -e "s|$storepass|$password|g")
+makekeystore=$(echo "$makekeystore" | sed -e "s|$keypass|$password|g")
+makekeystore=$(echo "$makekeystore" | sed -e "s|$keystore|$keystorepath|g")
+
+
+if [ $fallback -eq 0 ]; then
+    # Prefix with java_home --exec
+	makekeystore="${apple.jvmcmd} $makekeystore"
+else
+    # Fallback on Internet Plug-Ins version if needed
+	makekeystore=$(echo "$makekeystore" | sed -e "s|$keytool|$keytoolfallback|g")
+fi
+
+# Cert export variable substitutions
+dercertpath=$(echo "$dercert" | sed -e "s|$install|$installdir|g")
+makedercert=$(echo "$makedercert" | sed -e "s|$storepass|$password|g")
+makedercert=$(echo "$makedercert" | sed -e "s|$keypass|$password|g")
+makedercert=$(echo "$makedercert" | sed -e "s|$keystore|$keystorepath|g")
+makedercert=$(echo "$makedercert" | sed -e "s|$dercert|$dercertpath|g")
+
+if [ $fallback -eq 0 ]; then
+    # Prefix with java_home --exec
+	makedercert="${apple.jvmcmd} $makedercert"
+else
+    # Fallback on Internet Plug-Ins version if needed
+	makedercert=$(echo "$makedercert" | sed -e "s|$keytool|$keytoolfallback|g")
+fi
+
+
+# Property file containing jks signing info
+propspath=$(echo "$props" | sed -e "s|$install|$installdir|g")
+
+# Check to see if file exists
+function check_exists {
+    if [ -e "$1" ]; then
+        echo -e "${bash.success}\n"
+    else
+        echo -e "${bash.failure}\n"
+    fi
+}
+
+# Remove all matching system certificates
+function remove_certs {
+	hash=$(security find-certificate -e "${vendor.email}" -Z |grep ^SHA-1|rev|cut -d' ' -f1|rev)
+	if [ -n "$hash" ]; then
+		security delete-certificate -Z "$hash" > /dev/null 2>&1
+		# Recurse on self
+		remove_certs
+		return 0
+	fi
+	# No certs found, exit
+	return 1
+}
+
+#
+# Uninstall mode
+#
+if [ "$1" == "uninstall" ]; then
+    echo "Removing installed certificates (warnings are safe to ignore)..."
+	remove_certs
+	echo -e "${bash.success}\n"
+    exit 0
+fi
+
+#
+# Install mode
+#
+
+# Delete old keystore, if exists
+rm -f "$keystorepath" > /dev/null 2>&1
+
+echo "Creating keystore for secure websockets..."
+eval "$makekeystore" > /dev/null 2>&1
+check_exists "$keystorepath"
+
+echo "Converting keystore to native certificate..."
+eval "$makedercert" > /dev/null 2>&1
+check_exists "$dercertpath"
+
+echo "Writing properties file..."
+echo "wss.alias=${jks.alias}" > "$propspath"
+echo "wss.keystore=$keystorepath" >> "$propspath"
+echo "wss.keypass=$password" >> "$propspath"
+echo "wss.storepass=$password" >> "$propspath"
+echo "wss.host=${jks.host}" >> "$propspath"
+echo "" >> "$propspath"
+check_exists  "$propspath"
+
+echo "Removing old certificates (warnings are safe to ignore)..."
+remove_certs
+echo -e "${bash.success}\n"
+
+echo "Installing certificate..."
+
+# Install new certificate
+security add-trusted-cert -d -r "${apple.keygen.store}" -k "${apple.keychain}" "$dercertpath"
+if [ $? -eq 0 ]; then
+    echo -e "${bash.success}\n"
+else
+    echo -e "${bash.failure}\n"
+fi
+
+echo "Finished"
+exit 0

@@ -47,7 +47,7 @@ public class ConfirmDialog extends JDialog {
         optionsPanel = new JPanel();
         yesButton = new JButton("OK", iconCache.getIcon(IconCache.Icon.ALLOW_ICON));
         yesButton.setMnemonic(KeyEvent.VK_K);
-        noButton = new JButton("Cancel", iconCache.getIcon(IconCache.Icon.BLOCK_ICON));
+        noButton = new JButton("Cancel", iconCache.getIcon(IconCache.Icon.CANCEL_ICON));
         noButton.setMnemonic(KeyEvent.VK_C);
         yesButton.addActionListener(buttonAction);
         noButton.addActionListener(buttonAction);

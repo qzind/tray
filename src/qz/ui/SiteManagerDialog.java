@@ -7,10 +7,7 @@ import qz.common.Constants;
 import qz.utils.FileUtilities;
 
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
+import javax.swing.event.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -67,8 +64,8 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         splitPane.setResizeWeight(0.5);
 
         tabbedPane = new JTabbedPane();
-        appendListTab(allowList.getList(), "Allowed", IconCache.Icon.ALLOW_ICON, KeyEvent.VK_A);
-        appendListTab(blockList.getList(), "Blocked", IconCache.Icon.BLOCK_ICON, KeyEvent.VK_B);
+        appendListTab(allowList.getList(), Constants.ALLOWED, IconCache.Icon.ALLOW_ICON, KeyEvent.VK_A);
+        appendListTab(blockList.getList(), Constants.BLOCKED, IconCache.Icon.BLOCK_ICON, KeyEvent.VK_B);
 
         setHeader(tabbedPane.getSelectedIndex() == 0? Constants.WHITE_SITES:Constants.BLACK_SITES);
 
@@ -78,13 +75,33 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                 clearSelection();
 
                 switch(tabbedPane.getSelectedIndex()) {
-                    case 1: setHeader("Sites " + Constants.BLACK_LIST.toLowerCase());
+                    case 1: setHeader(Constants.BLACK_SITES);
                         blockList.getList().setSelectedIndex(0);
                         break;
                     default:
-                        setHeader("Sites " + Constants.WHITE_LIST.toLowerCase());
+                        setHeader(Constants.WHITE_SITES);
                         allowList.getList().setSelectedIndex(0);
                 }
+            }
+        });
+
+        allowList.getList().getModel().addListDataListener(new ListDataListener() {
+            @Override public void intervalAdded(ListDataEvent e) { refreshTabTitle(); }
+            @Override public void intervalRemoved(ListDataEvent e) { refreshTabTitle(); }
+            @Override public void contentsChanged(ListDataEvent e) { refreshTabTitle(); }
+            public void refreshTabTitle() {
+                String title = Constants.ALLOWED + (String.format(allowList.size() > 0 ? " (%s)" : "", allowList.size()));
+                tabbedPane.setTitleAt(0, title);
+            }
+        });
+
+        blockList.getList().getModel().addListDataListener(new ListDataListener() {
+            @Override public void intervalAdded(ListDataEvent e) { refreshTabTitle(); }
+            @Override public void intervalRemoved(ListDataEvent e) { refreshTabTitle(); }
+            @Override public void contentsChanged(ListDataEvent e) { refreshTabTitle(); }
+            public void refreshTabTitle() {
+                String title = Constants.BLOCKED + (String.format(blockList.size() > 0 ? " (%s)" : "", blockList.size()));
+                tabbedPane.setTitleAt(1, title);
             }
         });
 

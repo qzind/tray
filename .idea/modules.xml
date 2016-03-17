@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/qz-print.iml" filepath="$PROJECT_DIR$/.idea/qz-print.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/tray.iml" filepath="$PROJECT_DIR$/.idea/tray.iml" />
     </modules>
   </component>
 </project>
+

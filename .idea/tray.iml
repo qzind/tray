@@ -19,21 +19,12 @@
       <library>
         <CLASSES>
           <root url="file://$MODULE_DIR$/lib" />
-          <root url="file://$MODULE_DIR$/lib/communication" />
-          <root url="file://$MODULE_DIR$/lib/jre" />
-          <root url="file://$MODULE_DIR$/lib/logging" />
-          <root url="file://$MODULE_DIR$/lib/printing" />
-          <root url="file://$MODULE_DIR$/lib/websocket" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
-        <jarDirectory url="file://$MODULE_DIR$/lib" recursive="false" />
-        <jarDirectory url="file://$MODULE_DIR$/lib/communication" recursive="false" />
-        <jarDirectory url="file://$MODULE_DIR$/lib/jre" recursive="false" />
-        <jarDirectory url="file://$MODULE_DIR$/lib/logging" recursive="false" />
-        <jarDirectory url="file://$MODULE_DIR$/lib/printing" recursive="false" />
-        <jarDirectory url="file://$MODULE_DIR$/lib/websocket" recursive="false" />
+        <jarDirectory url="file://$MODULE_DIR$/lib" recursive="true" />
       </library>
     </orderEntry>
   </component>
 </module>
+

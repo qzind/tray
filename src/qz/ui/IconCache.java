@@ -53,6 +53,7 @@ public class IconCache {
         // Dialog icons
         ALLOW_ICON("qz-allow.png"),
         BLOCK_ICON("qz-block.png"),
+        CANCEL_ICON("qz-cancel.png"),
         VERIFIED_ICON("qz-trusted.png"),
         UNVERIFIED_ICON("qz-untrusted.png"),
         FIELD_ICON("qz-field.png"),
@@ -126,6 +127,7 @@ public class IconCache {
     private final HashMap<Icon,ImageIcon> imageIcons;
     private final HashMap<Icon,BufferedImage> images;
     private final Dimension scaleSize;
+    private static final Color TRANSPARENT = new Color(0,0,0,0);
 
     /**
      * Default constructor.
@@ -171,7 +173,7 @@ public class IconCache {
      * @return the ImageIcon that was added
      */
     public ImageIcon putIcon(Icon i, ImageIcon imageIcon) {
-        images.put(i, toBufferedImage(imageIcon.getImage()));
+        images.put(i, toBufferedImage(imageIcon.getImage(), TRANSPARENT));
         return imageIcons.put(i, imageIcon);
     }
 
@@ -211,9 +213,11 @@ public class IconCache {
      * @return a BufferedImage, scaled as needed
      */
     private BufferedImage getImageResource(Icon i) {
-        BufferedImage bi = getImageResource(i.getPath());
+        BufferedImage bi;
+        bi = getImageResource(i.getPath());
+
         if (bi != null && i.isScaled() && scaleSize != null) {
-            return toBufferedImage(bi.getScaledInstance(scaleSize.width, -1, Image.SCALE_SMOOTH));
+            return toBufferedImage(bi.getScaledInstance(scaleSize.width, -1, Image.SCALE_SMOOTH), TRANSPARENT);
         }
 
         return bi;
@@ -255,13 +259,11 @@ public class IconCache {
     /**
      * Creates an opaque icon image by setting transparent pixels to the specified bgColor
      *
-     * @param img The original transparency-enabled image
+     * @param icon The original transparency-enabled image
      * @return The image overlaid on the appropriate background color
      */
-    public static BufferedImage toOpaqueImage(ImageIcon img, Color bgColor) {
-        BufferedImage bi = new BufferedImage(img.getIconWidth(), img.getIconHeight(), BufferedImage.TYPE_INT_RGB);
-        bi.createGraphics().drawImage(img.getImage(), 0, 0, bgColor, null);
-        return bi;
+    public static BufferedImage toOpaqueImage(ImageIcon icon, Color bgColor) {
+        return toBufferedImage(icon.getImage(), bgColor);
     }
 
     /**
@@ -270,7 +272,7 @@ public class IconCache {
      * @param img The Image to be converted
      * @return The converted BufferedImage
      */
-    public static BufferedImage toBufferedImage(Image img) {
+    public static BufferedImage toBufferedImage(Image img, Color bgColor) {
         if (img instanceof BufferedImage) {
             return (BufferedImage)img;
         }
@@ -280,7 +282,7 @@ public class IconCache {
 
         // Draw the image on to the buffered image
         Graphics2D bGr = bi.createGraphics();
-        bGr.drawImage(img, 0, 0, null);
+        bGr.drawImage(img, 0, 0, bgColor, null);
         bGr.dispose();
 
         // Return the buffered image

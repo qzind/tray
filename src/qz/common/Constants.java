@@ -48,6 +48,9 @@ public class Constants {
     public static final String WHITE_SITES = "Sites permanently allowed access";
     public static final String BLACK_SITES = "Sites permanently blocked from access";
 
+    public static final String ALLOWED = "Allowed";
+    public static final String BLOCKED = "Blocked";
+
     public static final long VALID_SIGNING_PERIOD = 15 * 60 * 1000; //millis
     public static final int EXPIRY_WARN = 30;   // days
     public static final Color WARNING_COLOR = Color.RED;

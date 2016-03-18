@@ -85,12 +85,15 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             }
         });
 
-        allowList.getList().getModel().addListDataListener(new ListDataListener() {
+        final ListModel allowListModel = allowList.getList().getModel();
+        final ListModel blockListModel = blockList.getList().getModel();
+
+        allowListModel.addListDataListener(new ListDataListener() {
             @Override public void intervalAdded(ListDataEvent e) { refreshTabTitle(); }
             @Override public void intervalRemoved(ListDataEvent e) { refreshTabTitle(); }
             @Override public void contentsChanged(ListDataEvent e) { refreshTabTitle(); }
             public void refreshTabTitle() {
-                String title = Constants.ALLOWED + (String.format(allowList.size() > 0 ? " (%s)" : "", allowList.size()));
+                String title = Constants.ALLOWED + (String.format(allowListModel.getSize() > 0? " (%s)":"", allowListModel.getSize()));
                 tabbedPane.setTitleAt(0, title);
             }
         });
@@ -100,7 +103,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             @Override public void intervalRemoved(ListDataEvent e) { refreshTabTitle(); }
             @Override public void contentsChanged(ListDataEvent e) { refreshTabTitle(); }
             public void refreshTabTitle() {
-                String title = Constants.BLOCKED + (String.format(blockList.size() > 0 ? " (%s)" : "", blockList.size()));
+                String title = Constants.BLOCKED + (String.format(blockListModel.getSize() > 0? " (%s)":"", blockListModel.getSize()));
                 tabbedPane.setTitleAt(1, title);
             }
         });

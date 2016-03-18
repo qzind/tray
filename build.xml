@@ -28,7 +28,7 @@
     <target name="compile-socket" depends="init">
         <mkdir dir="${build.project.dir}"/>
 
-        <javac destdir="${build.project.dir}" source="${javac.source}" target="${javac.target}" includeantruntime="false">
+        <javac destdir="${build.project.dir}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8">
             <src path="${src.dir}"/>
             <classpath>
                 <fileset dir="${lib.dir}">

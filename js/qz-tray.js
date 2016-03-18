@@ -532,7 +532,7 @@ var qz = (function() {
 
                     var attempt = function(count) {
                         var nextAttempt = function() {
-                            if (count < options.retries) {
+                            if (options && count < options.retries) {
                                 attempt(count + 1);
                             } else {
                                 reject.apply(null, arguments);
@@ -563,6 +563,11 @@ var qz = (function() {
              */
             disconnect: function() {
                 return _qz.tools.promise(function(resolve, reject) {
+                    if (Array.isArray(_qz.websocket.pendingCalls)) {
+                        for (var i = 0; i < i < _qz.websocket.pendingCalls.length; i++) {
+                            _qz.websocket.pendingCalls[i].reject(evt);
+                        }
+                    }
                     if (qz.websocket.isActive()) {
                         _qz.websocket.connection.close();
                         _qz.websocket.connection.promise = { resolve: resolve, reject: reject };

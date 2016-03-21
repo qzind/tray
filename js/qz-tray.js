@@ -156,6 +156,12 @@ var qz = (function() {
 
                         _qz.websocket.callClose(evt);
                         _qz.websocket.connection = null;
+
+                        for(var uid in _qz.websocket.pendingCalls) {
+                            if (_qz.websocket.pendingCalls.hasOwnProperty(uid)) {
+                                _qz.websocket.pendingCalls[uid].reject(new Error("Connection closed before response received"));
+                            }
+                        }
                     };
 
                     //called for any errors with an open connection

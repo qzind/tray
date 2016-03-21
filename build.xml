@@ -54,7 +54,7 @@
             <zipgroupfileset dir="${lib.dir}" includes="**/*.jar" excludes="**/jfxrt.jar"/>
             <manifest>
                 <attribute name="Application-Name" value="${manifest.application.name}"/>
-                <attribute name="Main-Class" value="${manifest.main.socket.class}"/>
+                <attribute name="Main-Class" value="${manifest.main.class}"/>
                 <attribute name="Permissions" value="${manifest.permissions}"/>
             </manifest>
         </jar>

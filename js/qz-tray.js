@@ -307,14 +307,15 @@ var qz = (function() {
 
                 colorType: 'color',
                 copies: 1,
-                jobName: null,
                 density: 0,
                 duplex: false,
                 interpolation: 'bicubic',
+                jobName: null,
                 margins: 0,
                 orientation: null,
                 paperThickness: null,
                 printerTray: null,
+                rasterize: true,
                 rotation: 0,
                 scaleContent: true,
                 size: null,
@@ -570,7 +571,7 @@ var qz = (function() {
             disconnect: function() {
                 return _qz.tools.promise(function(resolve, reject) {
                     if (Array.isArray(_qz.websocket.pendingCalls)) {
-                        for (var i = 0; i < i < _qz.websocket.pendingCalls.length; i++) {
+                        for(var i = 0; i < i < _qz.websocket.pendingCalls.length; i++) {
                             _qz.websocket.pendingCalls[i].reject(evt);
                         }
                     }
@@ -690,10 +691,10 @@ var qz = (function() {
              *
              *  @param {string} [options.colorType='color'] Valid values <code>[color | grayscale | blackwhite]</code>
              *  @param {number} [options.copies=1] Number of copies to be printed.
-             *  @param {string} [options.jobName=null] Name to display in print queue.
              *  @param {number} [options.density=72] Pixel density (DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *  @param {boolean} [options.duplex=false] Double sided printing
              *  @param {string} [options.interpolation='bicubic'] Valid values <code>[bicubic | bilinear | nearest-neighbor]</code>. Controls how images are handled when resized.
+             *  @param {string} [options.jobName=null] Name to display in print queue.
              *  @param {Object|number} [options.margins=0] If just a number is provided, it is used as the margin for all sides.
              *   @param {number} [options.margins.top=0]
              *   @param {number} [options.margins.right=0]
@@ -702,6 +703,7 @@ var qz = (function() {
              *  @param {string} [options.orientation=null] Valid values <code>[portrait | landscape | reverse-landscape]</code>
              *  @param {number} [options.paperThickness=null]
              *  @param {string} [options.printerTray=null] //TODO - string?
+             *  @param {boolean} [options.rasterize=true] Whether documents should be rasterized before printing. Forced TRUE if <code>[options.density]</code> is specified.
              *  @param {number} [options.rotation=0] Image rotation in degrees.
              *  @param {boolean} [options.scaleContent=true] Scales print content to page size, keeping ratio.
              *  @param {Object} [options.size=null] Paper size.
@@ -783,8 +785,8 @@ var qz = (function() {
                 if (typeof data[i] === 'object') {
                     if ((!data[i].format && data[i].type.toUpperCase() !== 'RAW') //unspecified format and not raw -> assume file
                         || (data[i].format && (data[i].format.toUpperCase() === 'FILE'
-                            || data[i].format.toUpperCase() === 'IMAGE'
-                            || data[i].format.toUpperCase() === 'XML'))) {
+                        || data[i].format.toUpperCase() === 'IMAGE'
+                        || data[i].format.toUpperCase() === 'XML'))) {
                         data[i].data = _qz.tools.absolute(data[i].data);
                     }
                 }

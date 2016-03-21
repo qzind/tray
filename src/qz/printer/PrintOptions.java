@@ -68,9 +68,6 @@ public class PrintOptions {
                 psOptions.copies = 1;
             }
         }
-        if (!configOpts.isNull("jobName")) {
-            psOptions.jobName = configOpts.optString("jobName", null);
-        }
         if (!configOpts.isNull("density")) {
             try { psOptions.density = configOpts.getDouble("density"); }
             catch(JSONException e) { warn("double", "density", configOpts.opt("density")); }
@@ -90,6 +87,9 @@ public class PrintOptions {
                 default:
                     warn("valid value", "interpolation", configOpts.opt("interpolation")); break;
             }
+        }
+        if (!configOpts.isNull("jobName")) {
+            psOptions.jobName = configOpts.optString("jobName", null);
         }
         if (!configOpts.isNull("margins")) {
             Margins m = new Margins();
@@ -133,6 +133,10 @@ public class PrintOptions {
         }
         if (!configOpts.isNull("printerTray")) {
             psOptions.printerTray = configOpts.optString("printerTray", null);
+        }
+        if (!configOpts.isNull("rasterize")) {
+            try { psOptions.rasterize = configOpts.getBoolean("rasterize"); }
+            catch(JSONException e) { warn("boolean", "rasterize", configOpts.opt("rasterize")); }
         }
         if (!configOpts.isNull("rotation")) {
             try { psOptions.rotation = configOpts.getDouble("rotation"); }
@@ -233,7 +237,7 @@ public class PrintOptions {
         }
 
         public String getJobName(String defaultVal) {
-            return jobName == null || jobName.isEmpty() ? defaultVal : jobName;
+            return jobName == null || jobName.isEmpty()? defaultVal:jobName;
         }
     }
 
@@ -241,14 +245,15 @@ public class PrintOptions {
     public class Pixel {
         private ColorType colorType = ColorType.COLOR;                              //Color / black&white
         private int copies = 1;                                                     //Job copies
-        private String jobName = null;                                              //Job name
         private double density = 0;                                                 //Pixel density (DPI or DPMM)
         private boolean duplex = false;                                             //Double/single sided
         private Object interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC;  //Image interpolation
+        private String jobName = null;                                              //Job name
         private Margins margins = new Margins();                                    //Page margins
         private Orientation orientation = null;                                     //Page orientation
         private double paperThickness = -1;                                         //Paper thickness
         private String printerTray = null;                                          //Printer tray to use
+        private boolean rasterize = true;                                           //Whether documents are rasterized before printing
         private double rotation = 0;                                                //Image rotation
         private boolean scaleContent = true;                                        //Adjust paper size for best image fit
         private Size size = null;                                                   //Paper size
@@ -263,10 +268,6 @@ public class PrintOptions {
             return copies;
         }
 
-        public String getJobName(String defaultVal) {
-            return jobName == null || jobName.isEmpty() ? defaultVal : jobName;
-        }
-
         public double getDensity() {
             return density;
         }
@@ -277,6 +278,10 @@ public class PrintOptions {
 
         public Object getInterpolation() {
             return interpolation;
+        }
+
+        public String getJobName(String defaultVal) {
+            return jobName == null || jobName.isEmpty()? defaultVal:jobName;
         }
 
         public Margins getMargins() {
@@ -293,6 +298,10 @@ public class PrintOptions {
 
         public String getPrinterTray() {
             return printerTray;
+        }
+
+        public boolean isRasterize() {
+            return rasterize;
         }
 
         public double getRotation() {

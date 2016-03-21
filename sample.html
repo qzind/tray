@@ -298,6 +298,13 @@
                                         </div>
 
                                         <div class="form-group form-inline">
+                                            <label class="tip" for="pxlJobName" data-toggle="tooltip" title="Job title as it appears in print queue">
+                                                Job Name
+                                            </label>
+                                            <input type="text" id="pxlJobName" class="form-control pull-right" />
+                                        </div>
+
+                                        <div class="form-group form-inline">
                                             <label for="pxlOrientation">Orientation</label>
                                             <select id="pxlOrientation" class="form-control pull-right">
                                                 <option value="">Default</option>
@@ -308,13 +315,18 @@
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="pxlPaperThickness">Paper Thickness</label>
+                                            <label for="pxlPaperThickness">Paper<br/>Thickness</label>
                                             <input disabled type="number" step="any" id="pxlPaperThickness" class="form-control pull-right" />
                                         </div>
 
                                         <div class="form-group form-inline">
                                             <label for="pxlPrinterTray">Printer Tray</label>
                                             <input disabled type="text" id="pxlPrinterTray" class="form-control pull-right" />
+                                        </div>
+
+                                        <div class="form-group form-inline">
+                                            <label for="pxlRasterize">Rasterize</label>
+                                            <input type="checkbox" id="pxlRasterize" class="pull-right" />
                                         </div>
 
                                         <div class="form-group form-inline">
@@ -393,13 +405,6 @@
                                                 </label>
                                                 <input type="number" step="any" id="pxlSizeHeight" class="form-control pull-right" />
                                             </div>
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <label class="tip" for="pxlJobName" data-toggle="tooltip" title="Job title as it appears in print queue">
-                                                Job Name
-                                            </label>
-                                            <input type="text" id="pxlJobName" class="form-control pull-right" />
                                         </div>
                                     </div>
                                 </div>
@@ -1231,9 +1236,11 @@
         $("#pxlDensity").val('');
         $("#pxlDuplex").prop('checked', false);
         $("#pxlInterpolation").val("");
+        $("#pxlJobName").val("");
         $("#pxlOrientation").val("");
         $("#pxlPaperThickness").val(null);
         $("#pxlPrinterTray").val(null);
+        $("#pxlRasterize").prop('checked', true);
         $("#pxlRotation").val(0);
         $("#pxlScale").prop('checked', true);
         $("#pxlUnitsIN").prop('checked', true);
@@ -1545,14 +1552,15 @@
 
                             colorType: $("#pxlColorType").val(),
                             copies: copies,
-                            jobName: jobName,
                             density: $("#pxlDensity").val(),
                             duplex: $("#pxlDuplex").prop('checked'),
                             interpolation: $("#pxlInterpolation").val(),
+                            jobName: jobName,
                             margins: pxlMargins,
                             orientation: $("#pxlOrientation").val(),
                             paperThickness: $("#pxlPaperThickness").val(),
                             printerTray: $("#pxlPrinterTray").val(),
+                            rasterize: $("#pxlRasterize").prop('checked'),
                             rotation: $("#pxlRotation").val(),
                             scaleContent: $("#pxlScale").prop('checked'),
                             size: pxlSize,

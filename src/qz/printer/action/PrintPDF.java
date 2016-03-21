@@ -15,6 +15,8 @@ import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
+import javax.print.attribute.ResolutionSyntax;
+import javax.print.attribute.standard.PrinterResolution;
 import java.awt.print.Book;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
@@ -82,9 +84,14 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
 
+        double density = pxlOpts.getDensity();
+        if (density == 0 && pxlOpts.isRasterize()) {
+            density = ((PrinterResolution)output.getPrintService().getDefaultAttributeValue(PrinterResolution.class)).getFeedResolution(ResolutionSyntax.DPI);
+        }
+
         Book book = new Book();
         for(PDDocument doc : pdfs) {
-            book.append(new PDFPrintable(doc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false), page, doc.getNumberOfPages());
+            book.append(new PDFPrintable(doc, scale, false, (float)(density * pxlOpts.getUnits().as1Inch()), false), page, doc.getNumberOfPages());
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));

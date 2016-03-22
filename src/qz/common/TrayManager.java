@@ -95,7 +95,7 @@ public class TrayManager {
             }
 
             // Iterates over all images denoted by IconCache.getTypes() and caches them
-            iconCache = new IconCache(tray.getSize());
+            iconCache = new IconCache();
             tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON));
             tray.setToolTip(name);
 

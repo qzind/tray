@@ -85,24 +85,6 @@ public class IconCache {
                     return true;
                 default:
                     return false;
-
-            }
-        }
-
-        /**
-         * Returns whether or not this icon requires scaling to be used in the GUI
-         *
-         * @return true if this icon requires scaling
-         */
-        public boolean isScaled() {
-            switch(this) {
-                case LOGO_ICON:
-                case VERIFIED_ICON:
-                case UNVERIFIED_ICON:
-                case QUESTION_ICON:
-                    return false;
-                default:
-                    return true;
             }
         }
 
@@ -126,7 +108,6 @@ public class IconCache {
 
     private final HashMap<Icon,ImageIcon> imageIcons;
     private final HashMap<Icon,BufferedImage> images;
-    private final Dimension scaleSize;
     private static final Color TRANSPARENT = new Color(0,0,0,0);
 
     /**
@@ -136,20 +117,6 @@ public class IconCache {
     public IconCache() {
         imageIcons = new HashMap<>();
         images = new HashMap<>();
-        scaleSize = null;
-        buildIconCache();
-    }
-
-    /**
-     * Creates an icon cache, scaling icons to the specified Dimension scaleSize.
-     * Only icons which return true for IconCache.Icon.isScaled() will be scaled.  Others will be left alone.
-     *
-     * @param scaleSize The size to scale each appropriate image to.  See IconCache.Icon.isScaled()
-     */
-    public IconCache(Dimension scaleSize) {
-        imageIcons = new HashMap<>();
-        images = new HashMap<>();
-        this.scaleSize = scaleSize;
         buildIconCache();
     }
 
@@ -207,20 +174,13 @@ public class IconCache {
     }
 
     /**
-     * Returns a BufferedImage representing the IconCache.Icon specified taking scaleSize into account
+     * Returns a BufferedImage representing the IconCache.Icon
      *
      * @param i the IconCache.Icon containing an image path
-     * @return a BufferedImage, scaled as needed
+     * @return a BufferedImage
      */
     private BufferedImage getImageResource(Icon i) {
-        BufferedImage bi;
-        bi = getImageResource(i.getPath());
-
-        if (bi != null && i.isScaled() && scaleSize != null) {
-            return toBufferedImage(bi.getScaledInstance(scaleSize.width, -1, Image.SCALE_SMOOTH), TRANSPARENT);
-        }
-
-        return bi;
+        return getImageResource(i.getPath());
     }
 
     /**

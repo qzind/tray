@@ -41,6 +41,7 @@ public class WebApp extends Application {
     private static Stage stage;
     private static WebView webView;
     private static double pageWidth;
+    private static double pageHeight;
     private static double pageZoom;
 
     private static PauseTransition snap;
@@ -54,12 +55,14 @@ public class WebApp extends Application {
             if (newState == Worker.State.SUCCEEDED) {
                 try {
                     Reflect.on(webView).call("setZoom", pageZoom);
+                    log.trace("Zooming in by x{} for increased quality", pageZoom);
                 }
                 catch(ReflectException e) {
                     log.warn("Unable zoom, using default quality");
                     pageZoom = 1; //only zoom affects webView scaling
                 }
 
+                log.trace("Setting HTML page width to {}", (pageWidth * pageZoom));
                 webView.setPrefWidth(pageWidth * pageZoom);
                 webView.autosize();
 
@@ -68,10 +71,13 @@ public class WebApp extends Application {
                 resize.setOnFinished(new EventHandler<ActionEvent>() {
                     @Override
                     public void handle(ActionEvent actionEvent) {
-                        String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
-                        double height = Double.parseDouble(heightText);
+                        if (pageHeight <= 0) {
+                            String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
+                            pageHeight = Double.parseDouble(heightText);
+                        }
 
-                        webView.setPrefHeight(height * pageZoom);
+                        log.trace("Setting HTML page height to {}", (pageHeight * pageZoom));
+                        webView.setPrefHeight(pageHeight * pageZoom);
                         webView.autosize();
 
                         snap.playFromStart();
@@ -134,7 +140,7 @@ public class WebApp extends Application {
      * @param fromFile If the passed {@code source} is from a url/file location
      * @return BufferedImage of the rendered html
      */
-    public static BufferedImage capture(final String source, final boolean fromFile, final double width, final double zoom) throws IOException {
+    public static BufferedImage capture(final String source, final boolean fromFile, final double width, final double height, final double zoom) throws IOException {
         final AtomicReference<BufferedImage> capture = new AtomicReference<>();
         final AtomicReference<Throwable> error = new AtomicReference<>();
 
@@ -157,6 +163,7 @@ public class WebApp extends Application {
             public void run() {
                 try {
                     pageWidth = width;
+                    pageHeight = height;
                     pageZoom = zoom;
 
                     webView.setPrefSize(100, 100);

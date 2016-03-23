@@ -101,7 +101,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         PageFormat page = job.getPageFormat(null);
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page);
+        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, false);
 
         scaleImage = pxlOpts.isScaleContent();
         interpolation = pxlOpts.getInterpolation();

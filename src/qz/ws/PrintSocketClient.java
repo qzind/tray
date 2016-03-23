@@ -435,7 +435,7 @@ public class PrintSocketClient {
     private void processPrintRequest(Session session, String UID, JSONObject params) {
         try {
             PrintOutput output = new PrintOutput(params.optJSONObject("printer"));
-            PrintOptions options = new PrintOptions(params.optJSONObject("options"));
+            PrintOptions options = new PrintOptions(params.optJSONObject("options"), output);
 
             PrintProcessor processor = PrintingUtilities.getPrintProcessor(params.getJSONArray("data"));
             log.debug("Using {} to print", processor.getClass().getName());

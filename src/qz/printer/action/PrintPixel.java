@@ -28,7 +28,7 @@ public abstract class PrintPixel {
     private static final List<Integer> MAC_BAD_IMAGE_TYPES = Arrays.asList(BufferedImage.TYPE_BYTE_BINARY, BufferedImage.TYPE_CUSTOM);
 
 
-    protected PrintRequestAttributeSet applyDefaultSettings(PrintOptions.Pixel pxlOpts, PageFormat page) {
+    protected PrintRequestAttributeSet applyDefaultSettings(PrintOptions.Pixel pxlOpts, PageFormat page, boolean usePaper) {
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
 
         //apply general attributes
@@ -40,12 +40,6 @@ public abstract class PrintPixel {
         }
         if (pxlOpts.getOrientation() != null) {
             attributes.add(pxlOpts.getOrientation().getAsAttribute());
-        }
-
-        if (pxlOpts.getSize() != null) {
-            attributes.add(new MediaPrintableArea(0, 0, (float)pxlOpts.getSize().getWidth(), (float)pxlOpts.getSize().getHeight(), pxlOpts.getUnits().getMediaSizeUnits()));
-        } else {
-            attributes.add(new MediaPrintableArea(0, 0, (float)page.getWidth() / 72f, (float)page.getHeight() / 72f, PrintOptions.Unit.INCH.getMediaSizeUnits()));
         }
 
         //TODO - set paper thickness
@@ -66,31 +60,40 @@ public abstract class PrintPixel {
 
         float pageX = 0f;
         float pageY = 0f;
-        float pageW = (float)page.getWidth();
-        float pageH = (float)page.getHeight();
+        float pageW = (float)page.getWidth() / CONVERT;
+        float pageH = (float)page.getHeight() / CONVERT;
 
         //page size
         if (pxlOpts.getSize() != null && pxlOpts.getSize().getWidth() > 0 && pxlOpts.getSize().getHeight() > 0) {
-            pageW = (float)pxlOpts.getSize().getWidth() * CONVERT;
-            pageH = (float)pxlOpts.getSize().getHeight() * CONVERT;
+            pageW = (float)pxlOpts.getSize().getWidth();
+            pageH = (float)pxlOpts.getSize().getHeight();
 
-            paper.setSize(pageW, pageH);
+            if (usePaper) {
+                paper.setSize(pageW * CONVERT, pageH * CONVERT);
+            }
         }
 
         //margins
         if (pxlOpts.getMargins() != null) {
-            pageX += pxlOpts.getMargins().left() * CONVERT;
-            pageY += pxlOpts.getMargins().top() * CONVERT;
-            pageW -= (pxlOpts.getMargins().right() + pxlOpts.getMargins().left()) * CONVERT;
-            pageH -= (pxlOpts.getMargins().bottom() + pxlOpts.getMargins().top()) * CONVERT;
+            pageX += pxlOpts.getMargins().left();
+            pageY += pxlOpts.getMargins().top();
+            pageW -= (pxlOpts.getMargins().right() + pxlOpts.getMargins().left());
+            pageH -= (pxlOpts.getMargins().bottom() + pxlOpts.getMargins().top());
         }
 
         log.trace("Drawable area: {},{}:{},{}", pageX, pageY, pageW, pageH);
         if (pageW > 0 && pageH > 0) {
-            paper.setImageableArea(pageX, pageY, pageW, pageH);
-            page.setPaper(paper);
+            if (usePaper) {
+                paper.setImageableArea(pageX * CONVERT, pageY * CONVERT, pageW * CONVERT, pageH * CONVERT);
+                page.setPaper(paper);
+            } else {
+                attributes.add(new MediaPrintableArea(pageX, pageY, pageW, pageH, pxlOpts.getUnits().getMediaSizeUnits()));
+            }
         } else {
             log.warn("Could not apply custom size, using printer default");
+            if (!usePaper) {
+                attributes.add(new MediaPrintableArea(0, 0, (float)page.getWidth() / 72f, (float)page.getHeight() / 72f, PrintOptions.Unit.INCH.getMediaSizeUnits()));
+            }
         }
 
         log.trace("{}", Arrays.toString(attributes.toArray()));

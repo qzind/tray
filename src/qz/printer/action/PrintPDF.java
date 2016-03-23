@@ -80,7 +80,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         PageFormat page = job.getPageFormat(null);
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page);
+        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, true);
 
         Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
 

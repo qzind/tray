@@ -96,7 +96,7 @@ public class TrayManager {
 
             // Iterates over all images denoted by IconCache.getTypes() and caches them
             iconCache = new IconCache();
-            tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON));
+            tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
             tray.setToolTip(name);
 
             try {
@@ -523,7 +523,7 @@ public class TrayManager {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    tray.setImage(iconCache.getImage(i));
+                    tray.setImage(iconCache.getImage(i, tray.getSize()));
                 }
             });
         }

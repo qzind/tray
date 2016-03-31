@@ -90,7 +90,9 @@ public class UsbIO {
     }
 
     public void close() throws UsbException {
-        iface.release();
+        if (iface.isClaimed()) {
+            iface.release();
+        }
         streaming = false;
     }
 

@@ -315,7 +315,7 @@
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="pxlPaperThickness">Paper<br/>Thickness</label>
+                                            <label for="pxlPaperThickness">Paper<br />Thickness</label>
                                             <input disabled type="number" step="any" id="pxlPaperThickness" class="form-control pull-right" />
                                         </div>
 
@@ -559,22 +559,22 @@
                                     <div class="col-md-6">
                                         <div class="form-group form-inline">
                                             <label for="usbVendor">Vendor ID</label>
-                                            <input type="text" id="usbVendor" class="form-control pull-right" />
+                                            <input type="text" id="usbVendor" class="form-control pull-right" onblur="formatHexInput('usbVendor')" />
                                         </div>
 
                                         <div class="form-group form-inline">
                                             <label for="usbProduct">Product ID</label>
-                                            <input type="text" id="usbProduct" class="form-control pull-right" />
+                                            <input type="text" id="usbProduct" class="form-control pull-right" onblur="formatHexInput('usbProduct')" />
                                         </div>
 
                                         <div class="form-group form-inline">
                                             <label for="usbInterface">Device Interface</label>
-                                            <input type="text" id="usbInterface" class="form-control pull-right" />
+                                            <input type="text" id="usbInterface" class="form-control pull-right" onblur="formatHexInput('usbInterface')" />
                                         </div>
 
                                         <div class="form-group form-inline">
                                             <label for="usbEndpoint">Interface Endpoint</label>
-                                            <input type="text" id="usbEndpoint" class="form-control pull-right" />
+                                            <input type="text" id="usbEndpoint" class="form-control pull-right" onblur="formatHexInput('usbEndpoint')" />
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -1194,7 +1194,7 @@
 
     function openUsbStream() {
         qz.usb.openStream($("#usbVendor").val(), $("#usbProduct").val(), $("#usbEndpoint").val(), $("#usbResponse").val(), $("#usbStream").val()).then(function() {
-            pinMessage("Waiting on device", '' + $("#usbVendor").val().replace(/^0x/, '').toLowerCase() + $("#usbProduct").val().replace(/^0x/, '').toLowerCase());
+            pinMessage("Waiting on device", '' + $("#usbVendor").val() + $("#usbProduct").val());
         }).catch(displayError);
     }
 
@@ -1345,7 +1345,9 @@
     });
 
     qz.usb.setUsbCallbacks(function(keys, data) {
-        var pin = $('#' + keys[0] + keys[1]);
+        if (keys[0].substring(0, 2) != '0x') { keys[0] = '0x' + keys[0]; }
+        if (keys[1].substring(0, 2) != '0x') { keys[1] = '0x' + keys[1]; }
+        var pin = $('#' + (keys[0]) + (keys[1]));
 
         if (data.error == undefined) {
             if (window.readingWeight) {
@@ -1443,10 +1445,21 @@
 
     function usbButton(ids, data) {
         var click = "";
-        for (var i in ids) {
+        for(var i = 0; i < ids.length; i++) {
             click += "$('#" + ids[i] + "').val('0x" + data[i] + "');$('#" + ids[i] + "').fadeOut(300).fadeIn(500);";
         }
         return '<button class="btn btn-default btn-xs" onclick="' + click + '" data-dismiss="alert">Use This</button>';
+    }
+
+    function formatHexInput(inputId) {
+        var $input = $('#' + inputId);
+        var val = $input.val();
+
+        if (val.length > 0 && val.substring(0, 2) != '0x') {
+            val = '0x' + val;
+        }
+
+        $input.val(val.toLowerCase());
     }
 
 

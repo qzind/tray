@@ -66,12 +66,6 @@ public class UsbUtilities {
             descJSON.put("productId", UsbUtil.toHexString(desc.idProduct()));
             descJSON.put("hub", device.isUsbHub());
 
-            try {
-                descJSON.put("manufacturer", device.getManufacturerString());
-                descJSON.put("product", device.getProductString());
-            }
-            catch(Exception ignore) {} //various problems prevent reading this additional information
-
             deviceJSON.put(descJSON);
         }
 

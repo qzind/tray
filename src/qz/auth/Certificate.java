@@ -166,7 +166,8 @@ public class Certificate {
 
                     for(X509Certificate x509Certificate : x509Certificates) {
                         if (x509Certificate.equals(trustedRootCert.theCertificate)) {
-                            valid = true;
+                            Date now = new Date();
+                            valid = (getValidFromDate().compareTo(now) <= 0) && (getValidToDate().compareTo(now) > 0);
                         }
                     }
                 }

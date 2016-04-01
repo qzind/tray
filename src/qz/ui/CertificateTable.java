@@ -195,7 +195,7 @@ public class CertificateTable extends JTable {
                     return stylizeLabel(!cert.isTrusted()? STATUS_WARNING:STATUS_TRUSTED, label, isSelected);
                 case VALID_FROM:
                     boolean futureExpiration = cert.getValidFromDate().compareTo(now.getTime()) > 0;
-                    return stylizeLabel(futureExpiration? STATUS_WARNING:STATUS_NORMAL, label, isSelected, "future expiration");
+                    return stylizeLabel(futureExpiration? STATUS_WARNING:STATUS_NORMAL, label, isSelected, "future inception");
                 case VALID_TO:
                     boolean expiresSoon = cert.getValidToDate().compareTo(warn.getTime()) < 0;
                     boolean expired = cert.getValidToDate().compareTo(now.getTime()) < 0;

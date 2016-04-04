@@ -9,8 +9,7 @@
  */
 package qz.printer.action;
 
-import org.apache.commons.io.Charsets;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -25,9 +24,7 @@ import qz.printer.ImageWrapper;
 import qz.printer.LanguageType;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
-import qz.utils.ByteUtilities;
-import qz.utils.FileUtilities;
-import qz.utils.PrintingUtilities;
+import qz.utils.*;
 
 import javax.imageio.ImageIO;
 import javax.print.*;
@@ -290,25 +287,20 @@ public class PrintRaw implements PrintProcessor {
      */
     public void printToAlternate(PrintService service, byte[] cmds) throws IOException, PrintException {
         File tmp = File.createTempFile("qz_raw_", null);
-        printToFile(tmp, cmds);
+        try {
+            printToFile(tmp, cmds);
+            String[] lpCmd = new String[] {
+                    "lp", "-d", PrintingUtilities.getPrinterId(service.getName()), "-o", "raw", tmp.getAbsolutePath()
+            };
+            boolean success = ShellUtilities.execute(lpCmd);
 
-        String shellCmd = String.format("/usr/bin/lp -d \"%s\" -o raw \"%s\";", service.getName(), tmp.getAbsolutePath());
-        log.trace("Runtime Exec running: {}", shellCmd);
-
-        Process process = Runtime.getRuntime().exec(new String[] {"bash", "-c", shellCmd});
-        try { process.waitFor(); }catch(InterruptedException ignore) {}
-
-        BufferedReader buf = new BufferedReader(new InputStreamReader(process.getInputStream(), Charsets.UTF_8));
-        String output = IOUtils.toString(buf);
-        buf.close();
-
-        log.info("Runtime Exec returned: {}", output);
-        if (process.exitValue() != 0) {
-            throw new PrintException(String.format("Alternate printing returned a non-zero value (%d).%n%s", process.exitValue(), output));
-        }
-
-        if (!tmp.delete()) {
-            tmp.deleteOnExit();
+            if (!success) {
+                throw new PrintException("Alternate printing failed: " + StringUtils.join(lpCmd, ' '));
+            }
+        } finally {
+            if (!tmp.delete()) {
+                tmp.deleteOnExit();
+            }
         }
     }
 

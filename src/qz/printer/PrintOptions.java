@@ -4,12 +4,17 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.PrintingUtilities;
 
+import javax.print.attribute.ResolutionSyntax;
 import javax.print.attribute.Size2DSyntax;
 import javax.print.attribute.standard.Chromaticity;
 import javax.print.attribute.standard.OrientationRequested;
+import javax.print.attribute.standard.PrinterResolution;
 import java.awt.*;
 import java.awt.print.PageFormat;
+import java.awt.print.PrinterException;
+import java.awt.print.PrinterJob;
 
 public class PrintOptions {
 
@@ -17,12 +22,13 @@ public class PrintOptions {
 
     private Pixel psOptions = new Pixel();
     private Raw rawOptions = new Raw();
+    private Default defOptions = new Default();
 
 
     /**
      * Parses the provided JSON Object into relevant Pixel and Raw options
      */
-    public PrintOptions(JSONObject configOpts) {
+    public PrintOptions(JSONObject configOpts, PrintOutput output) {
         if (configOpts == null) { return; }
 
         //check for raw options
@@ -176,6 +182,28 @@ public class PrintOptions {
                     warn("valid value", "units", configOpts.opt("units")); break;
             }
         }
+
+        //grab any useful service defaults
+        PrinterResolution defaultRes = PrintingUtilities.getNativeDensity(output.getPrintService());
+        if (defaultRes != null) {
+            defOptions.density = defaultRes.getFeedResolution(psOptions.getUnits().getDPIUnits());
+
+            if (psOptions.isRasterize() && psOptions.getDensity() == 0) {
+                psOptions.density = defOptions.density;
+            }
+        }
+
+        if (output.isSetService()) {
+            try {
+                PrinterJob job = PrinterJob.getPrinterJob();
+                job.setPrintService(output.getPrintService());
+                PageFormat page = job.getPageFormat(null);
+                defOptions.pageSize = new Size(page.getWidth(), page.getHeight());
+            }
+            catch(PrinterException e) {
+                log.warn("Unable to find the default paper size");
+            }
+        }
     }
 
     /**
@@ -197,6 +225,8 @@ public class PrintOptions {
     public Pixel getPixelOptions() {
         return psOptions;
     }
+
+    public Default getDefaultOptions() { return defOptions; }
 
 
     // Option groups //
@@ -321,12 +351,35 @@ public class PrintOptions {
         }
     }
 
+    /** PrintService Defaults **/
+    public class Default {
+        private double density;
+        private Size pageSize;
+
+
+        public double getDensity() {
+            return density;
+        }
+
+        public Size getPageSize() {
+            return pageSize;
+        }
+    }
+
     // Sub options //
 
     /** Pixel page size options */
     public class Size {
         private double width = -1;  //Page width
         private double height = -1; //Page height
+
+
+        public Size() {}
+
+        public Size(double width, double height) {
+            this.width = width;
+            this.height = height;
+        }
 
         public double getWidth() {
             return width;
@@ -371,17 +424,19 @@ public class PrintOptions {
 
     /** Pixel dimension values */
     public enum Unit {
-        INCH(1.0f, 1.0f, Size2DSyntax.INCH), //1in = 1in
-        CM(.3937f, 2.54f, 10000),            //1cm = .3937in ; 1in = 2.54cm
-        MM(.03937f, 25.4f, Size2DSyntax.MM); //1mm = .03937in ; 1in = 25.4mm
+        INCH(ResolutionSyntax.DPI, 1.0f, 1.0f, Size2DSyntax.INCH),       //1in = 1in
+        CM(ResolutionSyntax.DPCM, .3937f, 2.54f, 10000),                 //1cm = .3937in ; 1in = 2.54cm
+        MM(ResolutionSyntax.DPCM * 10, .03937f, 25.4f, Size2DSyntax.MM); //1mm = .03937in ; 1in = 25.4mm
 
         private final float fromInch;
         private final float toInch; //multiplicand to convert to inches
+        private final int resSyntax;
         private final int µm;
 
-        Unit(float toIN, float fromIN, int µm) {
+        Unit(int resSyntax, float toIN, float fromIN, int µm) {
             toInch = toIN;
             fromInch = fromIN;
+            this.resSyntax = resSyntax;
             this.µm = µm;
         }
 
@@ -391,6 +446,10 @@ public class PrintOptions {
 
         public float as1Inch() {
             return fromInch;
+        }
+
+        public int getDPIUnits() {
+            return resSyntax;
         }
 
         public int getMediaSizeUnits() {

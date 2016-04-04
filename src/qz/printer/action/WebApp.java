@@ -140,7 +140,7 @@ public class WebApp extends Application {
      * @param fromFile If the passed {@code source} is from a url/file location
      * @return BufferedImage of the rendered html
      */
-    public static BufferedImage capture(final String source, final boolean fromFile, final double width, final double height, final double zoom) throws IOException {
+    public static synchronized BufferedImage capture(final String source, final boolean fromFile, final double width, final double height, final double zoom) throws IOException {
         final AtomicReference<BufferedImage> capture = new AtomicReference<>();
         final AtomicReference<Throwable> error = new AtomicReference<>();
 

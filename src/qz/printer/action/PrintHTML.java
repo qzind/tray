@@ -39,12 +39,13 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
             for(int i = 0; i < printData.length(); i++) {
                 JSONObject data = printData.getJSONObject(i);
+                if (data.optBoolean("processed")) { continue; } //in cases of failed captures on multi-pages
                 String source = data.getString("data");
 
                 PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase());
 
                 double pageZoom = pxlOpts.getDensity() / 72.0;
-                if (pageZoom <= 0) { pageZoom = 1; }
+                if (pageZoom <= 0 || data.optBoolean("forceOriginal")) { pageZoom = 1; }
 
                 double pageWidth = 0;
                 double pageHeight = 0;
@@ -66,11 +67,19 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
                 try {
                     images.add(WebApp.capture(source, (format == PrintingUtilities.Format.FILE), pageWidth, pageHeight, pageZoom));
+                    data.put("processed", true);
                 }
                 catch(IOException e) {
                     //JavaFX image loader becomes null if webView is too large, throwing an IllegalArgumentException on screen capture attempt
                     if (e.getCause() != null && e.getCause() instanceof IllegalArgumentException) {
-                        throw new UnsupportedOperationException("Image or Density is too large for HTML printing", e);
+                        if (data.optBoolean("forceOriginal")) {
+                            throw new UnsupportedOperationException("Image or Density is too large for HTML printing", e);
+                        } else {
+                            log.warn("HTML capture failed due to size, attempting at default zoom");
+                            data.put("forceOriginal", true);
+                            parseData(printData, options);
+                            return;
+                        }
                     }
 
                     throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as HTML", format, source), e);

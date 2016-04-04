@@ -15,13 +15,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.deploy.DeployUtilities;
 
+import javax.print.attribute.standard.PrinterResolution;
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Utility class for managing all {@code Runtime.exec(...)} functions.
@@ -31,6 +31,29 @@ import java.util.Objects;
 public class ShellUtilities {
 
     private static final Logger log = LoggerFactory.getLogger(ShellUtilities.class);
+
+    // Shell environment overrides.  null = don't override
+    public static String[] envp = null;
+
+    // Make sure all shell calls are LANG=en_US.UTF-8
+    static {
+        if (!SystemUtilities.isWindows()) {
+            // Cache existing; permit named overrides w/o full clobber
+            Map<String, String> env = new HashMap<String, String>(System.getenv());
+            if (SystemUtilities.isMac()) {
+                // Enable LANG overrides
+                env.put("SOFTWARE", "");
+            }
+            // Functional equivalent of "export LANG=en_US.UTF-8"
+            env.put("LANG", "C");
+            String[] envp = new String[env.size()];
+            int i = 0;
+            for (Map.Entry<String, String> o : env.entrySet())
+                envp[i++] = o.getKey() + "=" + o.getValue();
+
+            ShellUtilities.envp = envp;
+        }
+    }
 
     /**
      * Executes a synchronous shell command and returns true if the {@code Process.exitValue()} is {@code 0}.
@@ -42,15 +65,15 @@ public class ShellUtilities {
         log.debug("Executing: {}", Arrays.toString(commandArray));
         try {
             // Create and execute our new process
-            Process p = Runtime.getRuntime().exec(commandArray);
+            Process p = Runtime.getRuntime().exec(commandArray, envp);
             p.waitFor();
             return p.exitValue() == 0;
         }
         catch(InterruptedException ex) {
-            log.warn("InterruptedException waiting for a return value: {}", Arrays.toString(commandArray), ex);
+            log.warn("InterruptedException waiting for a return value: {} envp: {}", Arrays.toString(commandArray), Arrays.toString(envp), ex);
         }
         catch(IOException ex) {
-            log.error("IOException executing: {}", Arrays.toString(commandArray), ex);
+            log.error("IOException executing: {} envp: {}", Arrays.toString(commandArray), Arrays.toString(envp), ex);
         }
 
         return false;
@@ -82,7 +105,7 @@ public class ShellUtilities {
         BufferedReader stdInput = null;
         try {
             // Create and execute our new process
-            Process p = Runtime.getRuntime().exec(commandArray);
+            Process p = Runtime.getRuntime().exec(commandArray, envp);
             stdInput = new BufferedReader(new InputStreamReader(p.getInputStream(), Charsets.UTF_8));
             String s;
             while((s = stdInput.readLine()) != null) {
@@ -103,7 +126,7 @@ public class ShellUtilities {
             }
         }
         catch(IOException ex) {
-            log.error("IOException executing: {}", Arrays.toString(commandArray), ex);
+            log.error("IOException executing: {} envp: {}", Arrays.toString(commandArray), Arrays.toString(envp), ex);
         }
         finally {
             if (stdInput != null) {
@@ -112,6 +135,103 @@ public class ShellUtilities {
         }
 
         return "";
+    }
+
+    /**
+     * Executes a synchronous shell command and return the raw character result.
+     *
+     * @param commandArray  array of shell commands to execute
+     * @return The entire raw standard output of command
+     */
+    public static String executeRaw(String[] commandArray) {
+        log.debug("Executing: {}", Arrays.toString(commandArray));
+        InputStreamReader in = null;
+        try {
+            Process p = Runtime.getRuntime().exec(commandArray, envp);
+            in = new InputStreamReader(p.getInputStream(), Charsets.UTF_8);
+            StringBuilder out = new StringBuilder();
+            int c;
+            while((c=in.read()) != -1)
+                out.append((char)c);
+
+            return out.toString();
+        } catch(IOException ex) {
+            log.error("IOException executing: {} envp: {}", Arrays.toString(commandArray), Arrays.toString(envp), ex);
+        } finally {
+            if (in != null) {
+                try { in.close(); } catch(Exception ignore) {}
+            }
+        }
+
+        return "";
+    }
+
+    /**
+     * Returns a <code>HashMap</code> of name value pairs of printer name and printer description
+     * On Linux, the description field is intentionally mapped to the printer name to match the Linux Desktop/<code>.ppd</code> behavior
+     * On Mac, the description field is fetched separately to match the Mac Desktop/<code>.ppd</code> behavior
+     * @return <code>HashMap</code> of name value pairs of printer name and printer description
+     */
+    public static HashMap<String, String> getCupsPrinters() {
+        HashMap<String, String> descMap = new HashMap<String, String>();
+        String devices = ShellUtilities.executeRaw(new String[] {"lpstat", "-a"});
+
+        // Descriptions default to printer names
+        for (String line : devices.split("\\r?\\n")) {
+            String device = line.split(" ")[0];
+            descMap.put(device, device);
+        }
+
+        // Mac uses description as printer name, fetch it using lpstat
+        if (SystemUtilities.isMac()) {
+            String lookFor = "Description:";
+
+            for (Map.Entry<String, String> entry : descMap.entrySet()) {
+                String props = ShellUtilities.execute(new String[] {"lpstat", "-l", "-p", entry.getKey()}, new String[] {lookFor});
+                if (!props.isEmpty()) {
+                    for(String prop : props.split("\\r?\\n")) {
+                        if (prop.startsWith(lookFor)) {
+                            String[] desc = prop.split(lookFor);
+                            // cache the description so we can map it to the actual printer name
+                            descMap.put(entry.getKey(), desc[desc.length - 1].trim());
+                            log.info(entry.getKey() + ": " + desc[desc.length - 1]);
+                        }
+                    }
+                }
+            }
+        }
+
+        return descMap;
+    }
+
+    /**
+     * Fetches a <code>HashMap</code> of name value pairs of printer name and default density for CUPS enabled systems
+     * @return <code>HashMap</code> of name value pairs of printer name and default density
+     */
+    public static HashMap<String, PrinterResolution> getCupsDensities(HashMap<String, String> descMap) {
+        HashMap<String, PrinterResolution> densityMap = new HashMap<String, PrinterResolution>();
+        for (Map.Entry<String, String> entry : descMap.entrySet()) {
+                String out = ShellUtilities.execute(
+                        new String[]{"lpoptions", "-p", entry.getKey(), "-l"},
+                        new String[] {
+                                "Resolution"
+                        }
+                );
+            if (!out.isEmpty()) {
+                String[] parts = out.split("\\s+");
+                for (String part : parts) {
+                    // parse default, i.e. [200dpi *300dpi 600dpi]
+                    if (part.startsWith("*")) {
+                        int type = part.toLowerCase().contains("dpi") ? PrinterResolution.DPI : PrinterResolution.DPCM;
+                        int density = Integer.parseInt(part.replaceAll("\\D+", ""));
+                        log.debug("Parsed default density from CUPS {}/\"{}\": {} {}", entry.getKey(), entry.getValue(), density,
+                                  type == PrinterResolution.DPI ? "dpi" : "dpcm");
+                        densityMap.put(entry.getKey(), new PrinterResolution(density, density, type));
+                    }
+                }
+            }
+        }
+        return densityMap;
     }
 
     /**

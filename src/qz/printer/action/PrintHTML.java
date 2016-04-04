@@ -19,7 +19,6 @@ import qz.printer.PrintOptions;
 import qz.utils.PrintingUtilities;
 
 import java.awt.print.Printable;
-import java.awt.print.PrinterJob;
 import java.io.IOException;
 
 public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
@@ -36,6 +35,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
         try {
             WebApp.initialize();
+            PrintOptions.Pixel pxlOpts = options.getPixelOptions();
 
             for(int i = 0; i < printData.length(); i++) {
                 JSONObject data = printData.getJSONObject(i);
@@ -43,16 +43,29 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
                 PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase());
 
-                double pageWidth = PrinterJob.getPrinterJob().getPageFormat(null).getWidth();
-                if (!data.isNull("options")) {
-                    pageWidth = data.optJSONObject("options").optDouble("pageWidth", pageWidth);
-                }
-
-                double pageZoom = options.getPixelOptions().getDensity() / 72.0;
+                double pageZoom = pxlOpts.getDensity() / 72.0;
                 if (pageZoom <= 0) { pageZoom = 1; }
 
+                double pageWidth = 0;
+                double pageHeight = 0;
+
+                // web dimension use 96dpi (or equivalent dp/metric)
+                if (options.getDefaultOptions().getPageSize() != null) {
+                    pageWidth = options.getDefaultOptions().getPageSize().getWidth() * (96.0 / 72.0);
+                    //pageHeight = options.getDefaultOptions().getPageSize().getHeight() * (96.0 / 72.0);
+                }
+                if (!data.isNull("options")) {
+                    JSONObject dataOpt = data.getJSONObject("options");
+                    if (!dataOpt.isNull("pageWidth")) {
+                        pageWidth = data.optJSONObject("options").getDouble("pageWidth") * (96.0 / pxlOpts.getUnits().as1Inch());
+                    }
+                    if (!dataOpt.isNull("pageHeight")) {
+                        pageHeight = data.optJSONObject("options").getDouble("pageHeight") * (96.0 / pxlOpts.getUnits().as1Inch());
+                    }
+                }
+
                 try {
-                    images.add(WebApp.capture(source, (format == PrintingUtilities.Format.FILE), pageWidth, pageZoom));
+                    images.add(WebApp.capture(source, (format == PrintingUtilities.Format.FILE), pageWidth, pageHeight, pageZoom));
                 }
                 catch(IOException e) {
                     //JavaFX image loader becomes null if webView is too large, throwing an IllegalArgumentException on screen capture attempt

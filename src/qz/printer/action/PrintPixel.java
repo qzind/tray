@@ -28,7 +28,7 @@ public abstract class PrintPixel {
     private static final List<Integer> MAC_BAD_IMAGE_TYPES = Arrays.asList(BufferedImage.TYPE_BYTE_BINARY, BufferedImage.TYPE_CUSTOM);
 
 
-    protected PrintRequestAttributeSet applyDefaultSettings(PrintOptions.Pixel pxlOpts, PageFormat page, boolean usePaper) {
+    protected PrintRequestAttributeSet applyDefaultSettings(PrintOptions.Pixel pxlOpts, PageFormat page) {
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
 
         //apply general attributes
@@ -68,9 +68,7 @@ public abstract class PrintPixel {
             pageW = (float)pxlOpts.getSize().getWidth();
             pageH = (float)pxlOpts.getSize().getHeight();
 
-            if (usePaper) {
-                paper.setSize(pageW * CONVERT, pageH * CONVERT);
-            }
+            paper.setSize(pageW * CONVERT, pageH * CONVERT);
         }
 
         //margins
@@ -83,17 +81,12 @@ public abstract class PrintPixel {
 
         log.trace("Drawable area: {},{}:{},{}", pageX, pageY, pageW, pageH);
         if (pageW > 0 && pageH > 0) {
-            if (usePaper) {
-                paper.setImageableArea(pageX * CONVERT, pageY * CONVERT, pageW * CONVERT, pageH * CONVERT);
-                page.setPaper(paper);
-            } else {
-                attributes.add(new MediaPrintableArea(pageX, pageY, pageW, pageH, pxlOpts.getUnits().getMediaSizeUnits()));
-            }
+            attributes.add(new MediaPrintableArea(pageX, pageY, pageW, pageH, pxlOpts.getUnits().getMediaSizeUnits()));
+            paper.setImageableArea(pageX * CONVERT, pageY * CONVERT, pageW * CONVERT, pageH * CONVERT);
+            page.setPaper(paper);
         } else {
             log.warn("Could not apply custom size, using printer default");
-            if (!usePaper) {
-                attributes.add(new MediaPrintableArea(0, 0, (float)page.getWidth() / 72f, (float)page.getHeight() / 72f, PrintOptions.Unit.INCH.getMediaSizeUnits()));
-            }
+            attributes.add(new MediaPrintableArea(0, 0, (float)page.getWidth() / 72f, (float)page.getHeight() / 72f, PrintOptions.Unit.INCH.getMediaSizeUnits()));
         }
 
         log.trace("{}", Arrays.toString(attributes.toArray()));

@@ -90,7 +90,7 @@ public class PrintSocketServer {
 
         RollingFileAppender fileAppender = new RollingFileAppender();
         fileAppender.setLayout(new PatternLayout("%d{ISO8601} [%p] %m%n"));
-        fileAppender.setThreshold(Level.INFO);
+        fileAppender.setThreshold(Level.DEBUG);
         fileAppender.setFile(SystemUtilities.getDataDirectory() + File.separator + Constants.LOG_FILE + ".log");
         fileAppender.setRollingPolicy(rollingPolicy);
         fileAppender.setTriggeringPolicy(triggeringPolicy);

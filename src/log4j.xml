@@ -11,7 +11,7 @@
 
     <!-- Packages -->
     <category name="qz">
-        <level value="debug" />
+        <level value="trace" />
     </category>
 
     <!-- Classes -->

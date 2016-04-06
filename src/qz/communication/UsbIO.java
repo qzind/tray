@@ -5,7 +5,7 @@ import qz.utils.UsbUtilities;
 import javax.usb.*;
 import javax.usb.util.UsbUtil;
 
-public class UsbIO {
+public class UsbIO implements DeviceIO {
 
     private UsbDevice device;
     private UsbInterface iface;
@@ -13,28 +13,35 @@ public class UsbIO {
     private boolean streaming;
 
 
-    public UsbIO(short vendorId, short productId) throws UsbException {
-        this(UsbUtilities.findDevice(vendorId, productId));
+    public UsbIO(Short vendorId, Short productId, Byte iface) throws DeviceException {
+        this(UsbUtilities.findDevice(vendorId, productId), iface);
     }
 
-    public UsbIO(UsbDevice device) throws UsbException {
+    public UsbIO(UsbDevice device, Byte iface) throws DeviceException {
         if (device == null) {
-            throw new UsbException("USB device could not be found");
+            throw new DeviceException("USB device could not be found");
+        }
+        if (iface == null) {
+            throw new IllegalArgumentException("Device interface cannot be null");
         }
 
         this.device = device;
+        this.iface = device.getActiveUsbConfiguration().getUsbInterface(iface);
     }
 
-    public void open(byte ifc) throws UsbException {
-        iface = device.getActiveUsbConfiguration().getUsbInterface(ifc);
-
-        iface.claim(new UsbInterfacePolicy() {
-            @Override
-            public boolean forceClaim(UsbInterface usbInterface) {
-                // Releases kernel driver for systems that auto-claim usb devices
-                return true;
-            }
-        });
+    public void open() throws DeviceException {
+        try {
+            iface.claim(new UsbInterfacePolicy() {
+                @Override
+                public boolean forceClaim(UsbInterface usbInterface) {
+                    // Releases kernel driver for systems that auto-claim usb devices
+                    return true;
+                }
+            });
+        }
+        catch(UsbException e) {
+            throw new DeviceException(e);
+        }
     }
 
     public boolean isOpen() {
@@ -61,14 +68,24 @@ public class UsbIO {
         return UsbUtil.toHexString(iface.getUsbInterfaceDescriptor().iInterface());
     }
 
-    public byte[] readData(byte endpoint, int responseSize) throws UsbException {
-        byte[] response = new byte[responseSize];
-        exchangeData(endpoint, response);
-        return response;
+    public byte[] readData(int responseSize, Byte endpoint) throws DeviceException {
+        try {
+            byte[] response = new byte[responseSize];
+            exchangeData(endpoint, response);
+            return response;
+        }
+        catch(UsbException e) {
+            throw new DeviceException(e);
+        }
     }
 
-    public void sendData(byte endpoint, byte[] data) throws UsbException {
-        exchangeData(endpoint, data);
+    public void sendData(byte[] data, Byte endpoint) throws DeviceException {
+        try {
+            exchangeData(endpoint, data);
+        }
+        catch(UsbException e) {
+            throw new DeviceException(e);
+        }
     }
 
     /**
@@ -77,7 +94,11 @@ public class UsbIO {
      * @param endpoint Endpoint on the usb device interface to pass data across
      * @param data     Byte array of data to send, or to be written from a receive
      */
-    private synchronized void exchangeData(byte endpoint, byte[] data) throws UsbException {
+    private synchronized void exchangeData(Byte endpoint, byte[] data) throws UsbException {
+        if (endpoint == null) {
+            throw new IllegalArgumentException("Interface endpoint cannot be null");
+        }
+
         UsbPipe pipe = iface.getUsbEndpoint(endpoint).getUsbPipe();
         if (!pipe.isOpen()) { pipe.open(); }
 
@@ -89,9 +110,14 @@ public class UsbIO {
         }
     }
 
-    public void close() throws UsbException {
+    public void close() throws DeviceException {
         if (iface.isClaimed()) {
-            iface.release();
+            try {
+                iface.release();
+            }
+            catch(UsbException e) {
+                throw new DeviceException(e);
+            }
         }
         streaming = false;
     }

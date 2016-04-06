@@ -107,6 +107,7 @@
                 <li id="pxlTab" role="presentation"><a href="#pxlContent" role="tab" data-toggle="tab">Pixel Printing</a></li>
                 <li id="serialTab" role="presentation"><a href="#serialContent" role="tab" data-toggle="tab">Serial</a></li>
                 <li id="usbTab" role="presentation"><a href="#usbContent" role="tab" data-toggle="tab">USB</a></li>
+                <li id="hidTab" role="presentation"><a href="#hidContent" role="tab" data-toggle="tab">HID</a></li>
             </ul>
         </div>
 
@@ -540,7 +541,7 @@
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-default" onclick="openUsbStream()">Open Stream</button>
                                     <button type="button" class="btn btn-default" onclick="closeUsbStream()">Close Stream</button>
-                                    <button type="button" class="btn btn-default" id="scaleToggle" onclick="toggleScale()">Read as Weight</button>
+                                    <button type="button" class="btn btn-default scaleToggle" onclick="toggleScale()">Read as Weight</button>
                                 </div>
                             </div>
                         </div>
@@ -598,6 +599,97 @@
                                 <div class="row">
                                     <div class="col-md-12">
                                         <button type="button" class="btn btn-danger pull-right" onclick="resetUsbOptions();">Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="hidContent" class="tab-pane col-md-8">
+                <h3>HID</h3>
+                <hr />
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <div class="btn-toolbar">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-info" onclick="listHidDevices();">List Devices</button>
+                                </div>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-success" onclick="claimHidDevice()">Claim Device</button>
+                                    <button type="button" class="btn btn-warning" onclick="releaseHidDevice()">Release Device</button>
+                                </div>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-default" onclick="startHidListen()">Listen for Events</button>
+                                    <button type="button" class="btn btn-default" onclick="stopHidListen()">Stop Listening</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="btn-toolbar">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-default" onclick="sendHidData()">Send Raw Data</button>
+                                    <button type="button" class="btn btn-default" onclick="readHidData()">Read Raw Data</button>
+                                </div>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-default" onclick="openHidStream()">Open Stream</button>
+                                    <button type="button" class="btn btn-default" onclick="closeHidStream()">Close Stream</button>
+                                    <button type="button" class="btn btn-default scaleToggle" onclick="toggleScale()">Read as Weight</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 1em;">
+                    <div class="col-md-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">Options</h4>
+                            </div>
+
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group form-inline">
+                                            <label for="hidVendor">Vendor ID</label>
+                                            <input type="text" id="hidVendor" class="form-control pull-right" onblur="formatHexInput('hidVendor')" />
+                                        </div>
+
+                                        <div class="form-group form-inline">
+                                            <label for="hidProduct">Product ID</label>
+                                            <input type="text" id="hidProduct" class="form-control pull-right" onblur="formatHexInput('hidProduct')" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group form-inline">
+                                            <label for="hidData">Send Data</label>
+                                            <input type="text" id="hidData" class="form-control pull-right" />
+                                        </div>
+
+                                        <div class="form-group form-inline">
+                                            <label for="hidReport">Report Id</label>
+                                            <input type="text" id="hidReport" class="form-control pull-right" />
+                                        </div>
+
+                                        <div class="form-group form-inline">
+                                            <label for="hidResponse">Read size</label>
+                                            <input type="text" id="hidResponse" class="form-control pull-right" />
+                                        </div>
+
+                                        <div class="form-group form-inline">
+                                            <label for="hidStream" class="tip" data-toggle="tooltip" title="in milliseconds">Stream Interval</label>
+                                            <input type="text" id="hidStream" class="form-control pull-right" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr />
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <button type="button" class="btn btn-danger pull-right" onclick="resetHidOptions();">Reset</button>
                                     </div>
                                 </div>
                             </div>
@@ -1182,7 +1274,7 @@
     }
 
     function sendUsbData() {
-        qz.usb.sendData($("#usbVendor").val(), $("#usbProduct").val(), $("#usbEndpoint").val(), $("usbData").val()).catch(displayError);
+        qz.usb.sendData($("#usbVendor").val(), $("#usbProduct").val(), $("#usbEndpoint").val(), $("#usbData").val()).catch(displayError);
     }
 
     function readUsbData() {
@@ -1203,19 +1295,76 @@
         }).catch(displayError);
     }
 
-    function toggleScale() {
-        window.readingWeight = !readingWeight;
-
-        if (readingWeight) {
-            $("#scaleToggle").html("Read as Raw");
-        } else {
-            $("#scaleToggle").html("Read as Weight");
-        }
-    }
-
     function releaseUsbDevice() {
         qz.usb.releaseDevice($("#usbVendor").val(), $("#usbProduct").val()).then(function() {
             displayMessage("USB Device released");
+        }).catch(displayError);
+    }
+
+
+    /// HID ///
+    function listHidDevices() {
+        qz.hid.listDevices().then(function(data) {
+            var list = '';
+            for(var i = 0; i < data.length; i++) {
+                var device = data[i];
+
+                list += "<p>" +
+                        "   VendorID: <code>0x" + device.vendorId + "</code>" +
+                        usbButton(["hidVendor", "hidProduct"], [device.vendorId, device.productId]) + "<br/>" +
+                        "   ProductID: <code>0x" + device.productId + "</code><br/>" +
+                        "   Manufacturer: <code>" + device.manufacturer + "</code><br/>" +
+                        "   Product: <code>" + device.product + "</code><br/>" +
+                        "</p><hr/>";
+            }
+
+            pinMessage("<strong>Available hid devices:</strong><br/>" + list);
+        }).catch(displayError);
+    }
+
+    function startHidListen() {
+        qz.hid.startListening().then(function() {
+            displayMessage("Started listening for HID events");
+        }).catch(displayError);
+    }
+
+    function stopHidListen() {
+        qz.hid.stopListening().then(function() {
+            displayMessage("Stopped listening for HID events");
+        }).catch(displayError);
+    }
+
+    function claimHidDevice() {
+        qz.hid.claimDevice($("#hidVendor").val(), $("#hidProduct").val()).then(function() {
+            displayMessage("HID Device claimed");
+        }).catch(displayError);
+    }
+
+    function sendHidData() {
+        qz.hid.sendData($("#hidVendor").val(), $("#hidProduct").val(), $("#hidData").val(), $("#hidReport").val()).catch(displayError);
+    }
+
+    function readHidData() {
+        qz.hid.readData($("#hidVendor").val(), $("#hidProduct").val(), $("#hidResponse").val()).then(function(data) {
+            displayMessage("<strong>Raw response:</strong> " + data + "<br/>");
+        }).catch(displayError);
+    }
+
+    function openHidStream() {
+        qz.hid.openStream($("#hidVendor").val(), $("#hidProduct").val(), $("#hidResponse").val(), $("#hidStream").val()).then(function() {
+            pinMessage("Waiting on device", '' + $("#hidVendor").val() + $("#hidProduct").val());
+        }).catch(displayError);
+    }
+
+    function closeHidStream() {
+        qz.hid.closeStream($("#hidVendor").val(), $("#hidProduct").val()).then(function() {
+            $('#' + $("#hidVendor").val() + $("#hidProduct").val()).attr('id', '').html("Stream closed");
+        }).catch(displayError);
+    }
+
+    function releaseHidDevice() {
+        qz.hid.releaseDevice($("#hidVendor").val(), $("#hidProduct").val()).then(function() {
+            displayMessage("HID Device released");
         }).catch(displayError);
     }
 
@@ -1301,8 +1450,20 @@
         $("#usbResponse").val(8);
         $("#usbStream").val(10);
 
-        // M/T PS60 - V:0x0EB8 P:0xF000, I:0x0 E:0x81 (precision of 2)
-        // Dymo S100 - V:0x0922 P:0x8009, I:0x0 E:0x82 (precision of 1)
+        // M/T PS60 - V:0x0EB8 P:0xF000, I:0x0 E:0x81
+        // Dymo S100 - V:0x0922 P:0x8009, I:0x0 E:0x82
+    }
+
+    function resetHidOptions() {
+        $("#hidVendor").val('');
+        $("#hidProduct").val('');
+
+        $("#hidInterface").val('');
+        $("#hidEndpoint").val('');
+        $("#hidData").val('');
+        $("#hidReport").val('');
+        $("#hidResponse").val(8);
+        $("#hidStream").val(10);
     }
 
 
@@ -1314,6 +1475,7 @@
         resetPixelOptions();
         resetSerialOptions();
         resetUsbOptions();
+        resetHidOptions();
 
         startConnection();
 
@@ -1338,25 +1500,56 @@
 
     qz.websocket.setErrorCallbacks(handleConnectionError);
 
-    qz.serial.setSerialCallbacks(function(port, output) {
-        console.log('Serial', port, 'received output', output);
-        displayMessage("Received output from serial port [" + port + "]: <em>" + output + "</em>");
+    qz.serial.setSerialCallbacks(function(streamEvent) {
+        if (streamEvent.type !== 'ERROR') {
+            console.log('Serial', streamEvent.portName, 'received output', streamEvent.output);
+            displayMessage("Received output from serial port [" + streamEvent.portName + "]: <em>" + streamEvent.output + "</em>");
+        } else {
+            console.log(streamEvent.exception);
+            displayMessage("Received an error from serial port [" + streamEvent.portName + "]: <em>" + streamEvent.exception + "</em>", 'alert-error');
+
+        }
     });
 
-    qz.usb.setUsbCallbacks(function(keys, data) {
-        if (keys[0].substring(0, 2) != '0x') { keys[0] = '0x' + keys[0]; }
-        if (keys[1].substring(0, 2) != '0x') { keys[1] = '0x' + keys[1]; }
-        var pin = $('#' + (keys[0]) + (keys[1]));
+    qz.usb.setUsbCallbacks(function(streamEvent) {
+        var vendor = streamEvent.vendorId;
+        var product = streamEvent.productId;
 
-        if (data.error == undefined) {
+        if (vendor.substring(0, 2) != '0x') { vendor = '0x' + vendor; }
+        if (product.substring(0, 2) != '0x') { product = '0x' + product; }
+        var $pin = $('#' + vendor + product);
+
+        if (streamEvent.type !== 'ERROR') {
             if (window.readingWeight) {
-                pin.html("<strong>Weight:</strong> " + readScaleData(data, 2));
+                $pin.html("<strong>Weight:</strong> " + readScaleData(streamEvent.output, 2));
             } else {
-                pin.html("<strong>Raw data:</strong> " + data);
+                $pin.html("<strong>Raw data:</strong> " + streamEvent.output);
             }
         } else {
-            console.log(data.error);
-            pin.html("<strong>Error:</strong> " + data.error);
+            console.log(streamEvent.exception);
+            $pin.html("<strong>Error:</strong> " + streamEvent.exception);
+        }
+    });
+
+    qz.hid.setHidCallbacks(function(streamEvent) {
+        var vendor = streamEvent.vendorId;
+        var product = streamEvent.productId;
+
+        if (vendor.substring(0, 2) != '0x') { vendor = '0x' + vendor; }
+        if (product.substring(0, 2) != '0x') { product = '0x' + product; }
+        var $pin = $('#' + vendor + product);
+
+        if (streamEvent.type === 'RECEIVE') {
+            if (window.readingWeight) {
+                $pin.html("<strong>Weight:</strong> " + readScaleData(streamEvent.output, 2));
+            } else {
+                $pin.html("<strong>Raw data:</strong> " + streamEvent.output);
+            }
+        } else if (streamEvent.type === 'ACTION') {
+            displayMessage("<strong>Device status changed:</strong> " + "[v:" + vendor + " p:" + product + "] - " + streamEvent.actionType);
+        } else { //ERROR type
+            console.log(streamEvent.exception);
+            $pin.html("<strong>Error:</strong> " + streamEvent.exception);
         }
     });
 
@@ -1459,6 +1652,16 @@
         }
 
         $input.val(val.toLowerCase());
+    }
+
+    function toggleScale() {
+        window.readingWeight = !readingWeight;
+
+        if (readingWeight) {
+            $("#scaleToggle").html("Read as Raw");
+        } else {
+            $("#scaleToggle").html("Read as Weight");
+        }
     }
 
 

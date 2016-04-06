@@ -3,12 +3,17 @@ package qz.utils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.printer.PrintOptions;
+import qz.printer.PrintOutput;
 import qz.printer.action.*;
+import qz.ws.PrintSocketClient;
 
 import javax.print.PrintService;
 import javax.print.attribute.standard.PrinterResolution;
+import java.awt.print.PrinterAbortException;
 import java.util.HashMap;
 
 public class PrintingUtilities {
@@ -93,6 +98,38 @@ public class PrintingUtilities {
 
         log.debug("Found Resolution: {}", pRes);
         return pRes;
+    }
+
+
+    /**
+     * Determine print variables and send data to printer
+     *
+     * @param session WebSocket session
+     * @param UID     ID of call from web API
+     * @param params  Params of call from web API
+     */
+    public static void processPrintRequest(Session session, String UID, JSONObject params) {
+        try {
+            PrintOutput output = new PrintOutput(params.optJSONObject("printer"));
+            PrintOptions options = new PrintOptions(params.optJSONObject("options"), output);
+
+            PrintProcessor processor = PrintingUtilities.getPrintProcessor(params.getJSONArray("data"));
+            log.debug("Using {} to print", processor.getClass().getName());
+
+            processor.parseData(params.optJSONArray("data"), options);
+            processor.print(output, options);
+            log.info("Printing complete");
+
+            PrintSocketClient.sendResult(session, UID, null);
+        }
+        catch(PrinterAbortException e) {
+            log.warn("Printing cancelled");
+            PrintSocketClient.sendError(session, UID, "Printing cancelled");
+        }
+        catch(Exception e) {
+            log.error("Failed to print", e);
+            PrintSocketClient.sendError(session, UID, e);
+        }
     }
 
 }

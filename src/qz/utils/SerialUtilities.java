@@ -1,14 +1,20 @@
 package qz.utils;
 
-import jssc.SerialPort;
-import jssc.SerialPortList;
+import jssc.*;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.communication.SerialIO;
 import qz.exception.SerialException;
+import qz.ws.PrintSocketClient;
+import qz.ws.SocketConnection;
+import qz.ws.StreamEvent;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -275,6 +281,50 @@ public class SerialUtilities {
         }
 
         return baud;
+    }
+
+
+    public static void setupSerialPort(final Session session, String UID, SocketConnection connection, JSONObject params) throws JSONException {
+        final String portName = params.getString("port");
+        if (connection.getSerialPort(portName) != null) {
+            PrintSocketClient.sendError(session, UID, String.format("Serial port [%s] is already open.", portName));
+            return;
+        }
+
+        final SerialIO serial;
+        JSONObject bounds = params.getJSONObject("bounds");
+        if (bounds.isNull("width")) {
+            serial = new SerialIO(portName,
+                                  SerialUtilities.characterBytes(bounds.optString("start", "0x0002")),
+                                  SerialUtilities.characterBytes(bounds.optString("end", "0x000D")));
+        } else {
+            serial = new SerialIO(portName, bounds.getInt("width"));
+        }
+
+        try {
+            if (serial.open()) {
+                connection.addSerialPort(portName, serial);
+
+                //apply listener here, so we can send all replies to the browser
+                serial.applyPortListener(new SerialPortEventListener() {
+                    public void serialEvent(SerialPortEvent spe) {
+                        String output = serial.processSerialEvent(spe);
+                        log.debug("Received serial output: {}", output);
+
+                        StreamEvent event = new StreamEvent(StreamEvent.Stream.SERIAL, StreamEvent.Type.RECEIVE)
+                                .withData("portName", portName).withData("output", output);
+                        PrintSocketClient.sendStream(session, event);
+                    }
+                });
+
+                PrintSocketClient.sendResult(session, UID, null);
+            } else {
+                PrintSocketClient.sendError(session, UID, String.format("Unable to open serial port [%s]", portName));
+            }
+        }
+        catch(SerialPortException e) {
+            PrintSocketClient.sendError(session, UID, e);
+        }
     }
 
 }

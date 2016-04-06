@@ -269,6 +269,20 @@ var qz = (function() {
                 }
             },
 
+            dataPromise: function(callName, params, signature, signingTimestamp) {
+                return _qz.tools.promise(function(resolve, reject) {
+                    var msg = {
+                        call: callName,
+                        promise: { resolve: resolve, reject: reject },
+                        params: params,
+                        signature: signature,
+                        timestamp: signingTimestamp
+                    };
+
+                    _qz.websocket.connection.sendData(msg);
+                });
+            },
+
             /** Library of promises awaiting a response, uid -> promise */
             pendingCalls: {},
 
@@ -648,16 +662,7 @@ var qz = (function() {
              * @memberof qz.websocket
              */
             getNetworkInfo: function() {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'websocket.getNetworkInfo',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                return _qz.websocket.dataPromise('websocket.getNetworkInfo');
             }
 
         },
@@ -674,16 +679,7 @@ var qz = (function() {
              * @memberof qz.printers
              */
             getDefault: function() {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'printers.getDefault',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                return _qz.websocket.dataPromise('printers.getDefault');
             },
 
             /**
@@ -695,19 +691,7 @@ var qz = (function() {
              * @memberof qz.printers
              */
             find: function(query) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'printers.find',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            query: query
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                return _qz.websocket.dataPromise('printers.find', { query: query });
             }
         },
 
@@ -827,23 +811,12 @@ var qz = (function() {
                 }
             }
 
-            return _qz.tools.promise(function(resolve, reject) {
-                var msg = {
-                    call: 'print',
-                    promise: {
-                        resolve: resolve, reject: reject
-                    },
-                    params: {
-                        printer: config.getPrinter(),
-                        options: config.getOptions(),
-                        data: data
-                    },
-                    signature: signature,
-                    timestamp: signingTimestamp
-                };
-
-                _qz.websocket.connection.sendData(msg);
-            });
+            var params = {
+                printer: config.getPrinter(),
+                options: config.getOptions(),
+                data: data
+            };
+            return _qz.websocket.dataPromise('print', params, signature, signingTimestamp);
         },
 
 
@@ -858,16 +831,7 @@ var qz = (function() {
              * @memberof qz.serial
              */
             findPorts: function() {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'serial.findPorts',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                return _qz.websocket.dataPromise('serial.findPorts');
             },
 
             /**
@@ -893,20 +857,11 @@ var qz = (function() {
              * @memberof qz.serial
              */
             openPort: function(port, bounds) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'serial.openPort',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            port: port,
-                            bounds: bounds
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                var params = {
+                    port: port,
+                    bounds: bounds
+                };
+                return _qz.websocket.dataPromise('serial.openPort', params);
             },
 
             /**
@@ -929,21 +884,12 @@ var qz = (function() {
              * @memberof qz.serial
              */
             sendData: function(port, data, properties) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'serial.sendData',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            port: port,
-                            data: data,
-                            properties: properties
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                var params = {
+                    port: port,
+                    data: data,
+                    properties: properties
+                };
+                return _qz.websocket.dataPromise('serial.sendData', params);
             },
 
             /**
@@ -954,19 +900,7 @@ var qz = (function() {
              * @memberof qz.serial
              */
             closePort: function(port) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'serial.closePort',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            port: port
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                return _qz.websocket.dataPromise('serial.closePort', { port: port });
             }
         },
 
@@ -986,19 +920,7 @@ var qz = (function() {
              * @memberof qz.usb
              */
             listDevices: function(includeHubs) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'usb.listDevices',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            includeHubs: includeHubs
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                return _qz.websocket.dataPromise('usb.listDevices', { includeHubs: includeHubs });
             },
 
             /**
@@ -1009,20 +931,11 @@ var qz = (function() {
              * @memberof qz.usb
              */
             listInterfaces: function(vendorId, productId) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'usb.listInterfaces',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            vendorId: vendorId,
-                            productId: productId
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                var params = {
+                    vendorId: vendorId,
+                    productId: productId
+                };
+                return _qz.websocket.dataPromise('usb.listInterfaces', params);
             },
 
             /**
@@ -1034,21 +947,12 @@ var qz = (function() {
              * @memberof qz.usb
              */
             listEndpoints: function(vendorId, productId, iface) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'usb.listEndpoints',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            vendorId: vendorId,
-                            productId: productId,
-                            interface: iface
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                var params = {
+                    vendorId: vendorId,
+                    productId: productId,
+                    interface: iface
+                };
+                return _qz.websocket.dataPromise('usb.listEndpoints', params);
             },
 
             /**
@@ -1074,21 +978,12 @@ var qz = (function() {
              * @memberof qz.usb
              */
             claimDevice: function(vendorId, productId, iface) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'usb.claimDevice',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            vendorId: vendorId,
-                            productId: productId,
-                            interface: iface
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                var params = {
+                    vendorId: vendorId,
+                    productId: productId,
+                    interface: iface
+                };
+                return _qz.websocket.dataPromise('usb.claimDevice', params);
             },
 
             /**
@@ -1103,22 +998,13 @@ var qz = (function() {
              * @memberof qz.usb
              */
             sendData: function(vendorId, productId, endpoint, data) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'usb.sendData',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            vendorId: vendorId,
-                            productId: productId,
-                            endpoint: endpoint,
-                            data: data
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                var params = {
+                    vendorId: vendorId,
+                    productId: productId,
+                    endpoint: endpoint,
+                    data: data
+                };
+                return _qz.websocket.dataPromise('usb.sendData', params);
             },
 
             /**
@@ -1133,22 +1019,13 @@ var qz = (function() {
              * @memberof qz.usb
              */
             readData: function(vendorId, productId, endpoint, responseSize) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'usb.readData',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            vendorId: vendorId,
-                            productId: productId,
-                            endpoint: endpoint,
-                            responseSize: responseSize
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                var params = {
+                    vendorId: vendorId,
+                    productId: productId,
+                    endpoint: endpoint,
+                    responseSize: responseSize
+                };
+                return _qz.websocket.dataPromise('usb.readData', params);
             },
 
             /**
@@ -1166,23 +1043,14 @@ var qz = (function() {
              * @memberof qz.usb
              */
             openStream: function(vendorId, productId, endpoint, responseSize, interval) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'usb.openStream',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            vendorId: vendorId,
-                            productId: productId,
-                            endpoint: endpoint,
-                            responseSize: responseSize,
-                            interval: interval
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                var params = {
+                    vendorId: vendorId,
+                    productId: productId,
+                    endpoint: endpoint,
+                    responseSize: responseSize,
+                    interval: interval
+                };
+                return _qz.websocket.dataPromise('usb.openStream', params);
             },
 
             /**
@@ -1196,21 +1064,12 @@ var qz = (function() {
              * @memberof qz.usb
              */
             closeStream: function(vendorId, productId, endpoint) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'usb.closeStream',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            vendorId: vendorId,
-                            productId: productId,
-                            endpoint: endpoint
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                var params = {
+                    vendorId: vendorId,
+                    productId: productId,
+                    endpoint: endpoint
+                };
+                return _qz.websocket.dataPromise('usb.closeStream', params);
             },
 
             /**
@@ -1223,20 +1082,11 @@ var qz = (function() {
              * @memberof qz.usb
              */
             releaseDevice: function(vendorId, productId) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'usb.releaseDevice',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        },
-                        params: {
-                            vendorId: vendorId,
-                            productId: productId
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                var params = {
+                    vendorId: vendorId,
+                    productId: productId
+                };
+                return _qz.websocket.dataPromise('usb.releaseDevice', params);
             }
         },
 
@@ -1294,16 +1144,7 @@ var qz = (function() {
              * @memberof qz.api
              */
             getVersion: function() {
-                return _qz.tools.promise(function(resolve, reject) {
-                    var msg = {
-                        call: 'getVersion',
-                        promise: {
-                            resolve: resolve, reject: reject
-                        }
-                    };
-
-                    _qz.websocket.connection.sendData(msg);
-                });
+                return _qz.websocket.dataPromise('getVersion');
             },
 
             /**

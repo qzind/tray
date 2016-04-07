@@ -255,7 +255,7 @@ public class PrintSocketClient {
             }
         }
 
-        if (false && call.isDialogShown() && !allowedFromDialog(shownCertificate, prompt)) {
+        if (call.isDialogShown() && !allowedFromDialog(shownCertificate, prompt)) {
             sendError(session, UID, "Request blocked");
             return;
         }

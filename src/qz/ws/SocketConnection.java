@@ -60,7 +60,9 @@ public class SocketConnection {
     }
 
     public void stopListening() {
-        hidListener.close();
+        if (hidListener != null) {
+            hidListener.close();
+        }
         hidListener = null;
     }
 
@@ -116,6 +118,8 @@ public class SocketConnection {
                 pm.get(p).close();
             }
         }
+
+        stopListening();
     }
 
 }

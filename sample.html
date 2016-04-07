@@ -1521,7 +1521,7 @@
 
         if (streamEvent.type !== 'ERROR') {
             if (window.readingWeight) {
-                $pin.html("<strong>Weight:</strong> " + readScaleData(streamEvent.output, 2));
+                $pin.html("<strong>Weight:</strong> " + readScaleData(streamEvent.output));
             } else {
                 $pin.html("<strong>Raw data:</strong> " + streamEvent.output);
             }
@@ -1541,7 +1541,7 @@
 
         if (streamEvent.type === 'RECEIVE') {
             if (window.readingWeight) {
-                $pin.html("<strong>Weight:</strong> " + readScaleData(streamEvent.output, 2));
+                $pin.html("<strong>Weight:</strong> " + readScaleData(streamEvent.output));
             } else {
                 $pin.html("<strong>Raw data:</strong> " + streamEvent.output);
             }

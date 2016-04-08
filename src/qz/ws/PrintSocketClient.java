@@ -444,6 +444,8 @@ public class PrintSocketClient {
             processor.print(output, options);
             log.info("Printing complete");
 
+            PrintingUtilities.releasePrintProcessor(processor);
+
             sendResult(session, UID, null);
         }
         catch(PrinterAbortException e) {

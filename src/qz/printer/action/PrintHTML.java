@@ -30,6 +30,10 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
         super();
     }
 
+    @Override
+    public PrintingUtilities.Type getType() {
+        return PrintingUtilities.Type.HTML;
+    }
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
@@ -87,6 +91,9 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
             }
 
             log.debug("Parsed {} html records", images.size());
+        }
+        catch(IOException e) {
+            throw new UnsupportedOperationException("Unable to start JavaFX service", e);
         }
         catch(NoClassDefFoundError e) {
             throw new UnsupportedOperationException("JavaFX libraries not found", e);

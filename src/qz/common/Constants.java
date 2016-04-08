@@ -1,7 +1,6 @@
 package qz.common;
 
 import java.awt.*;
-import java.io.PrintStream;
 
 /**
  * Created by robert on 7/9/2014.
@@ -9,15 +8,8 @@ import java.io.PrintStream;
 public class Constants {
     public static final String HEXES = "0123456789ABCDEF";
     public static final char[] HEXES_ARRAY = HEXES.toCharArray();
-    public static final int OUTPUT_STREAM_SIZE = 20480;
     public static final int BYTE_BUFFER_SIZE = 8192;
-    public static final int APPEND_XML = 1;
     public static final String VERSION = "2.0.0-RC4";
-    public static final int APPEND_RAW = 2;
-    public static final int APPEND_IMAGE = 3;
-    public static final int APPEND_IMAGE_PS = 4;
-    public static final int APPEND_PDF = 8;
-    public static final int APPEND_HTML = 16;
 
     /* QZ-Tray Constants */
     public static final String BLOCK_FILE = "blocked";
@@ -55,6 +47,8 @@ public class Constants {
     public static final int EXPIRY_WARN = 30;   // days
     public static final Color WARNING_COLOR = Color.RED;
     public static final Color TRUSTED_COLOR = Color.BLUE;
+
+    public static final long MEMORY_PER_PRINT = 512000000; // 512MB
 
     public static final String RAW_PRINT = ABOUT_TITLE + " Raw Print";
     public static final String IMAGE_PRINT = ABOUT_TITLE + " Pixel Print";

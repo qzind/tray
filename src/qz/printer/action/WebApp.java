@@ -104,13 +104,26 @@ public class WebApp extends Application {
     }
 
     /** Starts JavaFX thread if not already running */
-    public static void initialize() {
+    public static synchronized void initialize() throws IOException {
         if (instance == null) {
             new Thread() {
                 public void run() {
                     Application.launch(WebApp.class);
                 }
             }.start();
+        }
+
+        for(int i = 0; i < PAUSES; i++) {
+            if (webView != null) {
+                break;
+            }
+
+            log.trace("Waiting for JavaFX..");
+            try { Thread.sleep(1000); } catch(Exception ignore) {}
+        }
+
+        if (webView == null) {
+            throw new IOException("JavaFX did not start");
         }
     }
 
@@ -145,17 +158,8 @@ public class WebApp extends Application {
         final AtomicReference<Throwable> error = new AtomicReference<>();
 
         //ensure JavaFX has started before we run
-        for(int i = 0; i < PAUSES; i++) {
-            if (webView != null) {
-                break;
-            }
-
-            log.trace("Waiting for JavaFX..");
-            try { Thread.sleep(1000); } catch(Exception ignore) {}
-        }
-
         if (webView == null) {
-            throw new IOException("JavaFX did not start");
+            throw new IOException("JavaFX has not been started");
         }
 
         // run these actions on the JavaFX thread

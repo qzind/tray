@@ -1,11 +1,14 @@
 package qz.utils;
 
+import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.printer.action.*;
+import qz.common.Constants;
+import qz.printer.action.PrintProcessor;
+import qz.printer.action.ProcessorFactory;
 
 import javax.print.PrintService;
 import javax.print.attribute.standard.PrinterResolution;
@@ -17,6 +20,8 @@ public class PrintingUtilities {
 
     private static HashMap<String,String> CUPS_DESC; //name -> description
     private static HashMap<String,PrinterResolution> CUPS_DPI; //description -> default dpi
+
+    private static GenericKeyedObjectPool<Type,PrintProcessor> processorPool;
 
 
     private PrintingUtilities() {}
@@ -30,7 +35,7 @@ public class PrintingUtilities {
     }
 
 
-    public static PrintProcessor getPrintProcessor(JSONArray printData) throws JSONException {
+    public synchronized static PrintProcessor getPrintProcessor(JSONArray printData) throws JSONException {
         JSONObject data = printData.optJSONObject(0);
 
         Type type;
@@ -40,21 +45,37 @@ public class PrintingUtilities {
             type = Type.valueOf(data.optString("type", "RAW").toUpperCase());
         }
 
-        switch(type) {
-            case HTML:
-                return new PrintHTML();
-            case IMAGE: default:
-                return new PrintImage();
-            case PDF:
-                return new PrintPDF();
-            case RAW:
-                return new PrintRaw();
+        try {
+            if (processorPool == null) {
+                processorPool = new GenericKeyedObjectPool<>(new ProcessorFactory());
+
+                long memory = Runtime.getRuntime().maxMemory();
+                if (memory < Long.MAX_VALUE) {
+                    int maxInst = (int)(memory / Constants.MEMORY_PER_PRINT);
+                    log.debug("Allowing {} simultaneous processors based on memory available", maxInst);
+                    processorPool.setMaxTotal(maxInst);
+                    processorPool.setMaxTotalPerKey(maxInst);
+                }
+
+            }
+
+            return processorPool.borrowObject(type);
         }
+        catch(Exception e) {
+            throw new IllegalArgumentException(String.format("Unable to find processor for %s type", type.name()));
+        }
+    }
+
+    public static void releasePrintProcessor(PrintProcessor processor) {
+        try {
+            processorPool.returnObject(processor.getType(), processor);
+        }
+        catch(Exception ignore) {}
     }
 
     /**
      * Gets the printerId for use with CUPS commands
-     * @param printerName
+     *
      * @return Id of the printer for use with CUPS commands
      */
     public static String getPrinterId(String printerName) {

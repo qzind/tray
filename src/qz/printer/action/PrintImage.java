@@ -56,6 +56,10 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         images = new ArrayList<>();
     }
 
+    @Override
+    public PrintingUtilities.Type getType() {
+        return PrintingUtilities.Type.IMAGE;
+    }
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
@@ -202,6 +206,15 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
         return g2d;
+    }
+
+    @Override
+    public void cleanup() {
+        images.clear();
+
+        scaleImage = false;
+        imageRotation = 0;
+        interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC;
     }
 
 }

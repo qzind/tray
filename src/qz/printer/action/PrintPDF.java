@@ -37,6 +37,10 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         pdfs = new ArrayList<>();
     }
 
+    @Override
+    public PrintingUtilities.Type getType() {
+        return PrintingUtilities.Type.PDF;
+    }
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
@@ -91,10 +95,14 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         job.setPageable(book);
 
         printCopies(output, pxlOpts, job, attributes);
+    }
 
+    @Override
+    public void cleanup() {
         for(PDDocument doc : pdfs) {
             try { doc.close(); } catch(IOException ignore) {}
         }
-    }
 
+        pdfs.clear();
+    }
 }

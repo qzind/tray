@@ -44,8 +44,8 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
                 PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase());
 
-                double pageZoom = pxlOpts.getDensity() / 72.0;
-                if (pageZoom <= 0 || data.optBoolean("forceOriginal")) { pageZoom = 1; }
+                double pageZoom = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()) / 72.0;
+                if (pageZoom <= 1 || data.optBoolean("forceOriginal")) { pageZoom = 1; }
 
                 double pageWidth = 0;
                 double pageHeight = 0;

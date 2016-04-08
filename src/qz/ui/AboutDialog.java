@@ -28,7 +28,7 @@ public class AboutDialog extends BasicDialog {
     }
 
     public void initComponents() {
-        JComponent header = setHeader(new JLabel(getIcon(IconCache.Icon.LOGO_ICON)));
+        JComponent header = setHeader(new JLabel(getIcon(IconCache.Icon.BANNER_ICON)));
         header.setBorder(new EmptyBorder(Constants.BORDER_PADDING, 0, Constants.BORDER_PADDING, 0));
 
         gridPanel = new JPanel();

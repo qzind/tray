@@ -36,9 +36,9 @@ public class IconCache {
      */
     public enum Icon {
         // Tray icons
-        DEFAULT_ICON("qz-default.png"),
-        WARNING_ICON("qz-warning.png"),
-        DANGER_ICON("qz-danger.png"),
+        DEFAULT_ICON("qz-default.png", "qz-default-20.png", "qz-default-24.png", "qz-default-32.png"),
+        WARNING_ICON("qz-warning.png", "qz-warning-20.png", "qz-warning-24.png", "qz-warning-32.png"),
+        DANGER_ICON("qz-danger.png", "qz-danger-20.png", "qz-danger-24.png", "qz-danger-32.png"),
 
         // Menu Item icons
         EXIT_ICON("qz-exit.png"),
@@ -60,17 +60,17 @@ public class IconCache {
         DELETE_ICON("qz-delete.png"),
         QUESTION_ICON("qz-question.png"),
 
-        // Logo
-        LOGO_ICON("qz-logo.png");
+        // Banner
+        BANNER_ICON("qz-banner.png");
 
-        final String fileName;
+        final String[] fileNames;
 
         /**
          * Default constructor
          *
-         * @param fileName path to image
+         * @param fileNames path(s) to image
          */
-        Icon(String fileName) { this.fileName = fileName; }
+        Icon(String ... fileNames) { this.fileNames = fileNames; }
 
         /**
          * Returns whether or not this icon is used for the SystemTray
@@ -96,18 +96,35 @@ public class IconCache {
          *
          * @return full path to Icon resource
          */
-        public String getPath() { return RESOURCES_DIR + fileName; }
+        public String getPath() { return RESOURCES_DIR + getId(); }
 
         /**
-         * Returns the file name of the Icon resource
+         * Returns the full path to the Icon resource with the specified width suffix.
+         * Width is determined solely by filename suffix.  e.g. foo-32.png
          *
-         * @return file name of Icon resource
+         * @param size size of desired image
+         * @return icon file name
          */
-        public String getFileName() { return fileName; }
+        public String getId(Dimension size) {
+            if (size != null) {
+                for(String fileName : fileNames) {
+                    if (fileName.endsWith("-" + size.width + ".png")) {
+                        return fileName;
+                    }
+                }
+            }
+            return getId();
+        }
+
+        public String getId() {
+            return fileNames[0];
+        }
+
+        public String[] getIds() { return fileNames; }
     }
 
-    private final HashMap<Icon,ImageIcon> imageIcons;
-    private final HashMap<Icon,BufferedImage> images;
+    private final HashMap<String,ImageIcon> imageIcons;
+    private final HashMap<String,BufferedImage> images;
     private static final Color TRANSPARENT = new Color(0,0,0,0);
 
     /**
@@ -126,22 +143,12 @@ public class IconCache {
      */
     private void buildIconCache() {
         for(Icon i : Icon.values()) {
-            BufferedImage bi = getImageResource(i);
-            imageIcons.put(i, new ImageIcon(bi));
-            images.put(i, bi);
+            for (String id : i.getIds()) {
+                BufferedImage bi = getImageResource(RESOURCES_DIR + id);
+                imageIcons.put(id, new ImageIcon(bi));
+                images.put(id, bi);
+            }
         }
-    }
-
-    /**
-     * Adds/overwrites an ImageIcon in the cache
-     *
-     * @param i         an IconCache.Icon
-     * @param imageIcon an ImageIcon
-     * @return the ImageIcon that was added
-     */
-    public ImageIcon putIcon(Icon i, ImageIcon imageIcon) {
-        images.put(i, toBufferedImage(imageIcon.getImage(), TRANSPARENT));
-        return imageIcons.put(i, imageIcon);
     }
 
     /**
@@ -151,7 +158,15 @@ public class IconCache {
      * @return the ImageIcon in the cache
      */
     public ImageIcon getIcon(Icon i) {
-        return imageIcons.get(i);
+        return imageIcons.get(i.getId());
+    }
+
+    public ImageIcon getIcon(String id) {
+        return imageIcons.get(id);
+    }
+
+    public ImageIcon getIcon(Icon i, Dimension size) {
+        return imageIcons.get(i.getId(size));
     }
 
     /**
@@ -161,7 +176,11 @@ public class IconCache {
      * @return the Image in the cache
      */
     public BufferedImage getImage(Icon i) {
-        return images.get(i);
+        return images.get(i.getId());
+    }
+
+    public BufferedImage getImage(Icon i, Dimension size) {
+        return images.get(i.getId(size));
     }
 
     /**
@@ -171,16 +190,6 @@ public class IconCache {
      */
     public static Icon[] getTypes() {
         return Icon.values();
-    }
-
-    /**
-     * Returns a BufferedImage representing the IconCache.Icon
-     *
-     * @param i the IconCache.Icon containing an image path
-     * @return a BufferedImage
-     */
-    private BufferedImage getImageResource(Icon i) {
-        return getImageResource(i.getPath());
     }
 
     /**
@@ -212,8 +221,12 @@ public class IconCache {
      * @param i       the IconCache.Icon
      * @param bgColor the java Color used for the transparent pixels
      */
-    public void toOpaqueImage(Icon i, Color bgColor) {
-        putIcon(i, new ImageIcon(toOpaqueImage(getIcon(i), bgColor)));
+    public void setBgColor(Icon i, Color bgColor) {
+        for (String id : i.getIds()) {
+            ImageIcon imageIcon = new ImageIcon(toOpaqueImage(getIcon(id), bgColor));
+            images.put(id, toBufferedImage(imageIcon.getImage(), TRANSPARENT));
+            imageIcons.put(id, imageIcon);
+        }
     }
 
     /**
@@ -233,7 +246,7 @@ public class IconCache {
      * @return The converted BufferedImage
      */
     public static BufferedImage toBufferedImage(Image img, Color bgColor) {
-        if (img instanceof BufferedImage) {
+        if (img instanceof BufferedImage && bgColor == TRANSPARENT) {
             return (BufferedImage)img;
         }
 

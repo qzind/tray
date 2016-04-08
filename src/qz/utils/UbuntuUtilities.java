@@ -97,7 +97,7 @@ public class UbuntuUtilities {
         if (SystemUtilities.isUbuntu()) {
             for(IconCache.Icon i : IconCache.getTypes()) {
                 if (i.isTrayIcon()) {
-                    iconCache.toOpaqueImage(i, getTrayColor());
+                    iconCache.setBgColor(i, getTrayColor());
                 }
             }
         }

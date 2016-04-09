@@ -79,21 +79,18 @@ public class PrintingUtilities {
      * @return Id of the printer for use with CUPS commands
      */
     public static String getPrinterId(String printerName) {
-        if (!SystemUtilities.isMac()) {
-            return printerName;
-        }
-
         if (CUPS_DESC == null || !CUPS_DESC.containsValue(printerName)) {
             CUPS_DESC = ShellUtilities.getCupsPrinters();
         }
 
-        for(String name : CUPS_DESC.keySet()) {
-            if (CUPS_DESC.get(name).equals(printerName)) {
-                return name;
+        if (SystemUtilities.isMac()) {
+            for(String name : CUPS_DESC.keySet()) {
+                if (CUPS_DESC.get(name).equals(printerName)) {
+                    return name;
+                }
             }
+            log.warn("Could not locate printerId matching {}", printerName);
         }
-
-        log.warn("Could not locate printerId matching {}", printerName);
         return printerName;
     }
 

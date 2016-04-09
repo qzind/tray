@@ -51,7 +51,7 @@ public class PrintingUtilities {
 
                 long memory = Runtime.getRuntime().maxMemory();
                 if (memory < Long.MAX_VALUE) {
-                    int maxInst = (int)(memory / Constants.MEMORY_PER_PRINT);
+                    int maxInst = Math.max(1, (int)(memory / Constants.MEMORY_PER_PRINT));
                     log.debug("Allowing {} simultaneous processors based on memory available", maxInst);
                     processorPool.setMaxTotal(maxInst);
                     processorPool.setMaxTotalPerKey(maxInst);

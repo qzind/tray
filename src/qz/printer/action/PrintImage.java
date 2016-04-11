@@ -25,6 +25,7 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
 import java.awt.*;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
@@ -191,7 +192,14 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         Graphics2D g2d = withRenderHints(result.createGraphics());
         g2d.translate((eWidth - sWidth) / 2, (eHeight - sHeight) / 2);
         g2d.rotate(rads, sWidth / 2, sHeight / 2);
-        g2d.drawRenderedImage(image, null);
+
+        if (angle % 90 == 0 || interpolation == RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR) {
+            g2d.drawRenderedImage(image, null);
+        } else {
+            g2d.setPaint(new TexturePaint(image, new Rectangle2D.Float(0, 0, image.getWidth(), image.getHeight())));
+            g2d.fillRect(0, 0, image.getWidth(), image.getHeight());
+        }
+
         g2d.dispose();
 
         return result;

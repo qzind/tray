@@ -49,14 +49,16 @@ public class PrintingUtilities {
             if (processorPool == null) {
                 processorPool = new GenericKeyedObjectPool<>(new ProcessorFactory());
 
-                long memory = Runtime.getRuntime().maxMemory();
+                long memory = Runtime.getRuntime().maxMemory() / 1000000;
+                if (memory < Constants.MEMORY_PER_PRINT) {
+                    log.warn("Memory available is less than minimum required ({}/{} MB)", memory, Constants.MEMORY_PER_PRINT);
+                }
                 if (memory < Long.MAX_VALUE) {
                     int maxInst = Math.max(1, (int)(memory / Constants.MEMORY_PER_PRINT));
-                    log.debug("Allowing {} simultaneous processors based on memory available", maxInst);
+                    log.debug("Allowing {} simultaneous processors based on memory available ({} MB)", maxInst, memory);
                     processorPool.setMaxTotal(maxInst);
                     processorPool.setMaxTotalPerKey(maxInst);
                 }
-
             }
 
             return processorPool.borrowObject(type);

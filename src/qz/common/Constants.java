@@ -48,7 +48,7 @@ public class Constants {
     public static final Color WARNING_COLOR = Color.RED;
     public static final Color TRUSTED_COLOR = Color.BLUE;
 
-    public static final long MEMORY_PER_PRINT = 512000000; // 512MB
+    public static final long MEMORY_PER_PRINT = 512; //MB
 
     public static final String RAW_PRINT = ABOUT_TITLE + " Raw Print";
     public static final String IMAGE_PRINT = ABOUT_TITLE + " Pixel Print";

@@ -30,6 +30,10 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
         super();
     }
 
+    @Override
+    public PrintingUtilities.Type getType() {
+        return PrintingUtilities.Type.HTML;
+    }
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
@@ -44,8 +48,8 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
                 PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase());
 
-                double pageZoom = pxlOpts.getDensity() / 72.0;
-                if (pageZoom <= 0 || data.optBoolean("forceOriginal")) { pageZoom = 1; }
+                double pageZoom = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()) / 72.0;
+                if (pageZoom <= 1 || data.optBoolean("forceOriginal")) { pageZoom = 1; }
 
                 double pageWidth = 0;
                 double pageHeight = 0;
@@ -87,6 +91,9 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
             }
 
             log.debug("Parsed {} html records", images.size());
+        }
+        catch(IOException e) {
+            throw new UnsupportedOperationException("Unable to start JavaFX service", e);
         }
         catch(NoClassDefFoundError e) {
             throw new UnsupportedOperationException("JavaFX libraries not found", e);

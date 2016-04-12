@@ -11,8 +11,11 @@
 
 package qz.deploy;
 
+import mslinks.ShellLink;
 import qz.common.Constants;
 import qz.utils.ShellUtilities;
+
+import java.io.IOException;
 
 /**
  * @author Tres Finocchiaro
@@ -30,7 +33,7 @@ public class WindowsDeploy extends DeployUtilities {
                 "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\",
                 "add",
                 getShortcutName(),
-                quoteWrap(fixWhitespaces(getJarPath()))
+                quoteWrap(getAppPath())
         );
     }
 
@@ -55,7 +58,7 @@ public class WindowsDeploy extends DeployUtilities {
 
     @Override
     public boolean removeDesktopShortcut() {
-        return deleteFile(System.getenv("userprofile") + "\\Desktop\\" + getShortcutName() + ".url");
+        return deleteFile(System.getenv("userprofile") + "\\Desktop\\" + getShortcutName() + ".lnk");
     }
 
 
@@ -70,7 +73,7 @@ public class WindowsDeploy extends DeployUtilities {
 
     @Override
     public boolean hasDesktopShortcut() {
-        return fileExists(System.getenv("userprofile") + "\\Desktop\\" + getShortcutName() + ".url");
+        return fileExists(System.getenv("userprofile") + "\\Desktop\\" + getShortcutName() + ".lnk");
     }
 
     /**
@@ -120,36 +123,25 @@ public class WindowsDeploy extends DeployUtilities {
     }
 
     /**
-     * Creates a Windows ".url" shortcut
+     * Creates a Windows ".lnk" shortcut
      *
      * @param folderPath Absolute path to a jar file
      * @return Whether or not the shortcut  was created successfully
      */
     private boolean createShortcut(String folderPath) {
-        String workingPath = getParentDirectory(getJarPath());
-        String shortcutPath = folderPath + getShortcutName() + ".url";
-
-        // Create the shortcut's parent folder if it does not exist
-        return createParentFolder(shortcutPath) && writeArrayToFile(shortcutPath, new String[] {
-                "[InternetShortcut]",
-                "URL=" + fixURL(getJarPath()),
-                workingPath.trim().isEmpty()? "":"WorkingDirectory=" + fixURL(workingPath),
-                // SHELL32.DLL:16 is a printer icon on all Windows Operating systems
-                "IconIndex=" + (useQzIcon? 0:16),
-                "IconFile=" + (useQzIcon? qzIcon:defaultIcon),
-                "HotKey=0"
-        });
+        try {
+            ShellLink.createLink(getAppPath(), folderPath + getShortcutName() + ".lnk");
+        } catch (IOException ex) {
+            log.warn("Error creating desktop shortcut", ex);
+            return false;
+        }
+        return true;
     }
 
     /**
-     * Attempts to correct URL path conversions that occur on old JREs and older
-     * Windows versions.  For now, just addresses invalid forward slashes, but
-     * there could be other URLs which will need special consideration.
-     *
-     * @param filePath The absolute file path to convert
-     * @return The converted path
+     * Returns path to executable jar or windows executable
      */
-    private static String fixURL(String filePath) {
-        return "file:///" + filePath.replace("\\", "/");
+    private String getAppPath() {
+        return fixWhitespaces(getJarPath()).replaceAll(".jar$", ".exe");
     }
 }

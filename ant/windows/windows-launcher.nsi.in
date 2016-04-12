@@ -32,7 +32,7 @@ Section ""
   Pop $R0
  
   ; change for your purpose (-jar etc.)
-  StrCpy $0 '"$R0" -jar "${JAR}"'
+  StrCpy $0 '"$R0" ${launch.opts} -jar "${JAR}"'
  
   SetOutPath $EXEDIR
 

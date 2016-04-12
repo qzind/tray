@@ -257,11 +257,10 @@ public class ShellUtilities {
      * supplied searchValues are found within the standard output.
      *
      * @param scriptBody   AppleScript text to execute
-     * @param searchValue1 first value to search for
-     * @param searchValue2 second value to search for
+     * @param searchValues List of stdout strings to search for
      * @return true if the supplied searchValues are found within the standard output.
      */
-    public static boolean executeAppleScript(String scriptBody, String searchValue1, String searchValue2) {
+    public static boolean executeAppleScript(String scriptBody, String ... searchValues) {
         if (!SystemUtilities.isMac()) {
             log.error("AppleScript can only be invoked from Apple OS");
             return false;
@@ -269,7 +268,7 @@ public class ShellUtilities {
 
         // Empty string returned by execute(...) means the values weren't found
         return !execute(new String[] {"osascript", "-e", scriptBody},
-                        new String[] {searchValue1, searchValue2}).isEmpty();
+                        searchValues).isEmpty();
     }
 
     public static boolean setRegistryDWORD(String keyPath, String name, int data) {

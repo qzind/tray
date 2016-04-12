@@ -63,6 +63,10 @@ public class PrintRaw implements PrintProcessor {
         commands = new ByteArrayBuilder();
     }
 
+    @Override
+    public PrintingUtilities.Type getType() {
+        return PrintingUtilities.Type.RAW;
+    }
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
@@ -297,11 +301,18 @@ public class PrintRaw implements PrintProcessor {
             if (!success) {
                 throw new PrintException("Alternate printing failed: " + StringUtils.join(lpCmd, ' '));
             }
-        } finally {
+        }
+        finally {
             if (!tmp.delete()) {
                 tmp.deleteOnExit();
             }
         }
+    }
+
+    @Override
+    public void cleanup() {
+        commands.clear();
+        encoding = null;
     }
 
 }

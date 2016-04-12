@@ -4,12 +4,15 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.utils.PrintingUtilities;
 
 import javax.print.PrintException;
 import java.awt.print.PrinterException;
 
 public interface PrintProcessor {
 
+
+    PrintingUtilities.Type getType();
 
     /**
      * Used to parse information passed from the web API for printing.
@@ -28,5 +31,9 @@ public interface PrintProcessor {
      */
     void print(PrintOutput output, PrintOptions options) throws PrintException, PrinterException;
 
+    /**
+     * Reset a processor back to it's initial state.
+     */
+    void cleanup();
 
 }

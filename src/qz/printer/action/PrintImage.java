@@ -25,6 +25,7 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
 import java.awt.*;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
@@ -56,6 +57,10 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         images = new ArrayList<>();
     }
 
+    @Override
+    public PrintingUtilities.Type getType() {
+        return PrintingUtilities.Type.IMAGE;
+    }
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
@@ -131,15 +136,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
             imgToPrint = rotate(imgToPrint, imageRotation);
         }
 
-        Graphics2D graphics2D = (Graphics2D)graphics;
-        // Suggested by Bahadir 8/23/2012
-        graphics2D.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
-        graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, interpolation);
-        graphics2D.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
-        graphics2D.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        graphics2D.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-
+        Graphics2D graphics2D = withRenderHints((Graphics2D)graphics);
         log.trace("{}", graphics2D.getRenderingHints());
 
 
@@ -182,7 +179,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
      * @param angle Rotation angle in degrees
      * @return Rotated image data
      */
-    private static BufferedImage rotate(BufferedImage image, double angle) {
+    private BufferedImage rotate(BufferedImage image, double angle) {
         double rads = Math.toRadians(angle);
         double sin = Math.abs(Math.sin(rads)), cos = Math.abs(Math.cos(rads));
 
@@ -192,13 +189,40 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[0].getDefaultConfiguration();
         BufferedImage result = gc.createCompatibleImage(eWidth, eHeight, Transparency.TRANSLUCENT);
 
-        Graphics2D g2d = result.createGraphics();
+        Graphics2D g2d = withRenderHints(result.createGraphics());
         g2d.translate((eWidth - sWidth) / 2, (eHeight - sHeight) / 2);
         g2d.rotate(rads, sWidth / 2, sHeight / 2);
-        g2d.drawRenderedImage(image, null);
+
+        if (angle % 90 == 0 || interpolation == RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR) {
+            g2d.drawRenderedImage(image, null);
+        } else {
+            g2d.setPaint(new TexturePaint(image, new Rectangle2D.Float(0, 0, image.getWidth(), image.getHeight())));
+            g2d.fillRect(0, 0, image.getWidth(), image.getHeight());
+        }
+
         g2d.dispose();
 
         return result;
+    }
+
+    private Graphics2D withRenderHints(Graphics2D g2d) {
+        g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, interpolation);
+        g2d.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+        return g2d;
+    }
+
+    @Override
+    public void cleanup() {
+        images.clear();
+
+        scaleImage = false;
+        imageRotation = 0;
+        interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC;
     }
 
 }

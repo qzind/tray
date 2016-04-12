@@ -1,14 +1,17 @@
 package qz.utils;
 
+import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
-import qz.printer.action.*;
+import qz.printer.action.PrintProcessor;
+import qz.printer.action.ProcessorFactory;
 import qz.ws.PrintSocketClient;
 
 import javax.print.PrintService;
@@ -23,6 +26,8 @@ public class PrintingUtilities {
     private static HashMap<String,String> CUPS_DESC; //name -> description
     private static HashMap<String,PrinterResolution> CUPS_DPI; //description -> default dpi
 
+    private static GenericKeyedObjectPool<Type,PrintProcessor> processorPool;
+
 
     private PrintingUtilities() {}
 
@@ -35,7 +40,7 @@ public class PrintingUtilities {
     }
 
 
-    public static PrintProcessor getPrintProcessor(JSONArray printData) throws JSONException {
+    public synchronized static PrintProcessor getPrintProcessor(JSONArray printData) throws JSONException {
         JSONObject data = printData.optJSONObject(0);
 
         Type type;
@@ -45,39 +50,54 @@ public class PrintingUtilities {
             type = Type.valueOf(data.optString("type", "RAW").toUpperCase());
         }
 
-        switch(type) {
-            case HTML:
-                return new PrintHTML();
-            case IMAGE: default:
-                return new PrintImage();
-            case PDF:
-                return new PrintPDF();
-            case RAW:
-                return new PrintRaw();
+        try {
+            if (processorPool == null) {
+                processorPool = new GenericKeyedObjectPool<>(new ProcessorFactory());
+
+                long memory = Runtime.getRuntime().maxMemory() / 1000000;
+                if (memory < Constants.MEMORY_PER_PRINT) {
+                    log.warn("Memory available is less than minimum required ({}/{} MB)", memory, Constants.MEMORY_PER_PRINT);
+                }
+                if (memory < Long.MAX_VALUE) {
+                    int maxInst = Math.max(1, (int)(memory / Constants.MEMORY_PER_PRINT));
+                    log.debug("Allowing {} simultaneous processors based on memory available ({} MB)", maxInst, memory);
+                    processorPool.setMaxTotal(maxInst);
+                    processorPool.setMaxTotalPerKey(maxInst);
+                }
+            }
+
+            return processorPool.borrowObject(type);
         }
+        catch(Exception e) {
+            throw new IllegalArgumentException(String.format("Unable to find processor for %s type", type.name()));
+        }
+    }
+
+    public static void releasePrintProcessor(PrintProcessor processor) {
+        try {
+            processorPool.returnObject(processor.getType(), processor);
+        }
+        catch(Exception ignore) {}
     }
 
     /**
      * Gets the printerId for use with CUPS commands
-     * @param printerName
+     *
      * @return Id of the printer for use with CUPS commands
      */
     public static String getPrinterId(String printerName) {
-        if (!SystemUtilities.isMac()) {
-            return printerName;
-        }
-
         if (CUPS_DESC == null || !CUPS_DESC.containsValue(printerName)) {
             CUPS_DESC = ShellUtilities.getCupsPrinters();
         }
 
-        for(String name : CUPS_DESC.keySet()) {
-            if (CUPS_DESC.get(name).equals(printerName)) {
-                return name;
+        if (SystemUtilities.isMac()) {
+            for(String name : CUPS_DESC.keySet()) {
+                if (CUPS_DESC.get(name).equals(printerName)) {
+                    return name;
+                }
             }
+            log.warn("Could not locate printerId matching {}", printerName);
         }
-
-        log.warn("Could not locate printerId matching {}", printerName);
         return printerName;
     }
 
@@ -119,6 +139,8 @@ public class PrintingUtilities {
             processor.parseData(params.optJSONArray("data"), options);
             processor.print(output, options);
             log.info("Printing complete");
+
+            releasePrintProcessor(processor);
 
             PrintSocketClient.sendResult(session, UID, null);
         }

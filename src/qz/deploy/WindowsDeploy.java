@@ -11,7 +11,7 @@
 
 package qz.deploy;
 
-import org.mslinks.ShellLink;
+import mslinks.ShellLink;
 import qz.common.Constants;
 import qz.utils.ShellUtilities;
 

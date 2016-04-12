@@ -19,6 +19,10 @@ import org.joor.Reflect;
 import org.joor.ReflectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -53,6 +57,19 @@ public class WebApp extends Application {
             log.trace("New state: {} > {}", oldState, newState);
 
             if (newState == Worker.State.SUCCEEDED) {
+                //ensure html tag doesn't use scrollbars, clipping page instead
+                Document doc = webView.getEngine().getDocument();
+                NodeList tags = doc.getElementsByTagName("html");
+                if (tags != null && tags.getLength() > 0) {
+                    Node base = tags.item(0);
+                    Attr applied = (Attr)base.getAttributes().getNamedItem("style");
+                    if (applied == null) {
+                        applied = doc.createAttribute("style");
+                    }
+                    applied.setValue(applied.getValue() + "; overflow: hidden;");
+                    base.getAttributes().setNamedItem(applied);
+                }
+
                 try {
                     Reflect.on(webView).call("setZoom", pageZoom);
                     log.trace("Zooming in by x{} for increased quality", pageZoom);

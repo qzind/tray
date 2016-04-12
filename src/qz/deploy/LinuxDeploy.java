@@ -12,7 +12,10 @@ package qz.deploy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.common.Constants;
+import qz.utils.ShellUtilities;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 
@@ -35,64 +38,52 @@ public class LinuxDeploy extends DeployUtilities {
 
     @Override
     public boolean removeStartupShortcut() {
-        return deleteFile(System.getProperty("user.home") + "/.config/autostart/" + getShortcutName() + ".desktop");
+        return deleteFile(System.getProperty("user.home") + "/.config/autostart/" + getShortcutName());
     }
 
     @Override
     public boolean removeDesktopShortcut() {
-        return deleteFile(System.getProperty("user.home") + "/Desktop/" + getShortcutName() + ".desktop");
+        return deleteFile(System.getProperty("user.home") + "/Desktop/" + getShortcutName());
     }
 
 
     @Override
     public boolean hasStartupShortcut() {
-        return fileExists(System.getProperty("user.home") + "/.config/autostart/" + getShortcutName() + ".desktop");
+        return fileExists(System.getProperty("user.home") + "/.config/autostart/" + getShortcutName());
     }
 
     @Override
     public boolean hasDesktopShortcut() {
-        return fileExists(System.getProperty("user.home") + "/Desktop/" + getShortcutName() + ".desktop");
-    }
-
-    @Override
-    public String getJarPath() {
-        String jarPath = super.getJarPath();
-        try {
-            jarPath = URLDecoder.decode(jarPath, "UTF-8");
-        }
-        catch(UnsupportedEncodingException e) {
-            log.error("Error decoding URL: {}", jarPath, e);
-        }
-        return jarPath;
+        return fileExists(System.getProperty("user.home") + "/Desktop/" + getShortcutName());
     }
 
     /**
      * Creates a Linux ".desktop" shortcut
      *
-     * @param folderPath Absolute path to a jar file
+     * @param target target location of shortcut
      * @return Whether or not the shortcut was created successfully
      */
-    private boolean createShortcut(String folderPath) {
-        String workingPath = getParentDirectory();
-        String shortcutPath = folderPath + getShortcutName() + ".desktop";
-
-        // Create the shortcut's parent folder if it does not exist
-        return createParentFolder(shortcutPath) && writeArrayToFile(shortcutPath, new String[] {
-                "[Desktop Entry]",
-                "Type=Application",
-                "Name=" + getShortcutName(),
-                "Exec=java -jar \"" + getJarPath() + "\"",
-                workingPath.trim().isEmpty()? "":"Path=" + workingPath,
-                //"IconIndex=" + iconIndex,
-                "Icon=" + getIconPath(),
-                "Terminal=false",
-                "Comment=" + getShortcutName()
-        });
+    public boolean createShortcut(String target) {
+       return ShellUtilities.execute(new String[] {
+               "cp", getAppPath(), target
+       });
     }
 
-    private String getIconPath() {
-        String linuxIcon = getParentDirectory() + "/linux-icon.svg";
-        return fileExists(linuxIcon)? linuxIcon:"printer";
+    @Override
+    public String getShortcutName() {
+        return Constants.PROPS_FILE + ".desktop";
+    }
+
+    /**
+     * Returns the path to the jar executable or desktop launcher
+     * @return
+     */
+    public String getAppPath() {
+        String launcher = "/usr/share/applications/" + getShortcutName() + ".desktop";
+        if (new File(launcher).exists()) {
+            return launcher;
+        }
+        return getJarPath();
     }
 }
 

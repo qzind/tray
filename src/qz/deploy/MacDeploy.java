@@ -29,9 +29,8 @@ public class MacDeploy extends DeployUtilities {
     public boolean hasStartupShortcut() {
         return ShellUtilities.executeAppleScript(
                 "tell application \"System Events\" to get the name "
-                        + "of every login item where name is \"" + getShortcutName() + "\" or "
-                        + "name is \"" + getJarName() + "\"",
-                getShortcutName(), getJarName()
+                        + "of every login item where name is \"" + getShortcutName() + "\"",
+                getShortcutName()
         );
     }
 
@@ -44,7 +43,7 @@ public class MacDeploy extends DeployUtilities {
     public boolean createStartupShortcut() {
         return ShellUtilities.executeAppleScript(
                 "tell application \"System Events\" to make login item "
-                        + "at end with properties {path:\"" + getJarPath() + "\", "
+                        + "at end with properties {path:\"" + getAppPath() + "\", "
                         + "hidden:true, name:\"" + getShortcutName() + "\"}"
         );
     }
@@ -74,17 +73,10 @@ public class MacDeploy extends DeployUtilities {
 
     @Override
     public boolean createDesktopShortcut() {
-        String target = getJarPath();
-        if (target.contains("/Applications/")) {
-            // Use the parent folder instead i.e. "/Applications/QZ Tray.app"
-            File f = new File(getJarPath());
-            if (f.getParent() != null) {
-                target = f.getParent();
-            }
-        }
+
 
         return ShellUtilities.execute(new String[] {
-                "ln", "-sf", target,
+                "ln", "-sf", getAppPath(),
                 System.getProperty("user.home") + "/Desktop/" + getShortcutName()
         });
     }
@@ -133,37 +125,17 @@ public class MacDeploy extends DeployUtilities {
     }
 
     /**
-     * Executes a native AppleScript macro against the OS, useful for creating
-     * shortcuts
-     *
-     * @param scriptBody
-     * @param parseOutput
-     * @param lookFor
-     * @return
-     *
-     * private static boolean callAppleScript(String scriptBody, String[]
-     * lookFor) { log.log(Level.INFO, "Running AppleScript: {0} {1} {2}", new
-     * Object[]{"osascript", "-e", scriptBody});
-     *
-     * try { // Create and execute our new process Process p =
-     * Runtime.getRuntime().exec(new String[]{"osascript", "-e", scriptBody});
-     * if (lookFor != null) { return parseOutput(p, lookFor); } else {
-     * p.waitFor(); return p.exitValue() == 0; } } catch (InterruptedException
-     * ex) { log.log(Level.WARNING, "AppleScript process was interrupted while
-     * executing: {0}{1}", new Object[]{scriptBody, ex.getLocalizedMessage()});
-     * } catch (IOException ex) { log.log(Level.SEVERE, "AppleScript IO Error
-     * while executing: {0}{1}", new Object[]{scriptBody,
-     * ex.getLocalizedMessage()}); } return false; }
-     *
-     * /**
-     *
-     * @return
-     *
-     * private static boolean parseOutput(Process p, String[] lookFor) throws
-     * IOException { BufferedReader stdInput = new BufferedReader(new
-     * InputStreamReader(p.getInputStream())); String s; while ((s =
-     * stdInput.readLine()) != null) { for (String search : lookFor) { if
-     * (s.contains(search.trim())) { return true; } } } return false;
-    }
+     * Returns path to executable jar or app bundle
      */
+    public String getAppPath() {
+        String target = getJarPath();
+        if (target.contains("/Applications/")) {
+            // Use the parent folder instead i.e. "/Applications/QZ Tray.app"
+            File f = new File(getJarPath());
+            if (f.getParent() != null) {
+                return f.getParent();
+            }
+        }
+        return target;
+    }
 }

@@ -105,7 +105,7 @@ progress_dialog 40 "Creating desktop shortcut..."
 echo "[Desktop Entry]
 Type=Application
 Name=${project.name}
-Exec=java -jar \"${jarfile}\"
+Exec=java ${launch.opts} -jar \"${jarfile}\"
 Path=${destdir}
 Icon=${destdir}/${linux.icon}
 MimeType=application/x-qz;x-scheme-handler/qz;

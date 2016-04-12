@@ -28,7 +28,7 @@ import java.util.Properties;
 public abstract class DeployUtilities {
 
     // System logger
-    private static final Logger log = LoggerFactory.getLogger(DeployUtilities.class);
+    protected static final Logger log = LoggerFactory.getLogger(DeployUtilities.class);
 
     // Default shortcut name to create
     static private final String DEFAULT_SHORTCUT_NAME = "Java Shortcut";

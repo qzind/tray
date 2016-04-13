@@ -459,17 +459,19 @@ public class PrintOptions {
 
     /** Pixel page orientation option */
     public enum Orientation {
-        PORTRAIT(OrientationRequested.PORTRAIT, PageFormat.PORTRAIT),
-        REVERSE_PORTRAIT(OrientationRequested.PORTRAIT, PageFormat.PORTRAIT),
-        LANDSCAPE(OrientationRequested.LANDSCAPE, PageFormat.LANDSCAPE),
-        REVERSE_LANDSCAPE(OrientationRequested.REVERSE_LANDSCAPE, PageFormat.REVERSE_LANDSCAPE);
+        PORTRAIT(OrientationRequested.PORTRAIT, PageFormat.PORTRAIT, 0),
+        REVERSE_PORTRAIT(OrientationRequested.PORTRAIT, PageFormat.PORTRAIT, 180),
+        LANDSCAPE(OrientationRequested.LANDSCAPE, PageFormat.LANDSCAPE, 270),
+        REVERSE_LANDSCAPE(OrientationRequested.REVERSE_LANDSCAPE, PageFormat.REVERSE_LANDSCAPE, 90);
 
         private final OrientationRequested asAttribute; //OrientationRequested const
         private final int asFormat; //PageFormat const
+        private final int degreesRot; //degrees rotated
 
-        Orientation(OrientationRequested asAttribute, int asFormat) {
+        Orientation(OrientationRequested asAttribute, int asFormat, int degreesRot) {
             this.asAttribute = asAttribute;
             this.asFormat = asFormat;
+            this.degreesRot = degreesRot;
         }
 
 
@@ -479,6 +481,10 @@ public class PrintOptions {
 
         public int getAsFormat() {
             return asFormat;
+        }
+
+        public int getDegreesRot() {
+            return degreesRot;
         }
     }
 

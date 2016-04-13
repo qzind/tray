@@ -1,6 +1,7 @@
 package qz.printer.action;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.printing.PDFPrintable;
 import org.apache.pdfbox.printing.Scaling;
 import org.codehaus.jettison.json.JSONArray;
@@ -88,6 +89,13 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         Book book = new Book();
         for(PDDocument doc : pdfs) {
+            //force orientation change at data level
+            if (pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
+                for(PDPage pd : doc.getPages()) {
+                    pd.setRotation(pxlOpts.getOrientation().getDegreesRot());
+                }
+            }
+
             book.append(new PDFPrintable(doc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false), page, doc.getNumberOfPages());
         }
 

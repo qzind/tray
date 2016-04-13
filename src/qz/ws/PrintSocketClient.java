@@ -483,9 +483,11 @@ public class PrintSocketClient {
                 serial.applyPortListener(new SerialPortEventListener() {
                     public void serialEvent(SerialPortEvent spe) {
                         String output = serial.processSerialEvent(spe);
-                        log.debug("Received serial output: {}", output);
 
-                        sendStream(session, StreamType.SERIAL, portName, output);
+                        if (output != null) {
+                            log.debug("Received serial output: {}", output);
+                            sendStream(session, StreamType.SERIAL, portName, output);
+                        }
                     }
                 });
 

@@ -12,9 +12,12 @@
 
 package qz.common;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Provides a simple and efficient way for concatenating byte arrays, similar
@@ -23,30 +26,17 @@ import java.util.ArrayList;
  *
  * @author Antoni Ten Monro's
  */
-
-@SuppressWarnings("UnusedDeclaration") //Library class, may be used outside of project context
+@SuppressWarnings("UnusedDeclaration") //Library class
 public final class ByteArrayBuilder {
 
-    private ArrayList<byte[]> buffer;
+    private List<Byte> buffer;
 
-    private int length = 0;
-
-    private byte[] contents = null;
-
-    /**
-     * Gives the number of bytes currently stored in this <code>ByteArrayBuilder</code>
-     *
-     * @return the number of bytes in the <code>ByteArrayBuilder</code>
-     */
-    public int getLength() {
-        return length;
-    }
 
     /**
      * Creates a new <code>ByteArrayBuilder</code> and sets initial capacity to 10
      */
     public ByteArrayBuilder() {
-        buffer = new ArrayList<>(10);
+        this(null);
     }
 
     /**
@@ -56,7 +46,7 @@ public final class ByteArrayBuilder {
      * @param initialCapacity the initial capacity of the <code>ByteArrayBuilder</code>
      */
     public ByteArrayBuilder(int initialCapacity) {
-        buffer = new ArrayList<>(initialCapacity);
+        this(null, initialCapacity);
     }
 
     /**
@@ -66,8 +56,7 @@ public final class ByteArrayBuilder {
      * @param initialContents the initial contents of the ByteArrayBuilder
      */
     public ByteArrayBuilder(byte[] initialContents) {
-        this();
-        append(initialContents);
+        this(initialContents, 16);
     }
 
     /**
@@ -78,21 +67,36 @@ public final class ByteArrayBuilder {
      * @param initialCapacity the initial capacity of the <code>ByteArrayBuilder</code>
      */
     public ByteArrayBuilder(byte[] initialContents, int initialCapacity) {
-        this(initialCapacity);
-        append(initialContents);
-    }
-
-    private void resetContents() {
-        contents = null;
+        buffer = new ArrayList<>(initialCapacity);
+        if (initialContents != null) {
+            append(initialContents);
+        }
     }
 
     /**
      * Empties the <code>ByteArrayBuilder</code>
      */
     public void clear() {
-        length = 0;
-        resetContents();
         buffer.clear();
+    }
+
+    /**
+     * Clear a portion of the <code>ByteArrayBuilder</code>
+     *
+     * @param startIndex Starting index, inclusive
+     * @param endIndex   Ending index, exclusive
+     */
+    public final void clearRange(int startIndex, int endIndex) {
+        buffer.subList(startIndex, endIndex).clear();
+    }
+
+    /**
+     * Gives the number of bytes currently stored in this <code>ByteArrayBuilder</code>
+     *
+     * @return the number of bytes in the <code>ByteArrayBuilder</code>
+     */
+    public int getLength() {
+        return buffer.size();
     }
 
     /**
@@ -103,9 +107,9 @@ public final class ByteArrayBuilder {
      * @return this <code>ByteArrayBuilder</code>
      */
     public final ByteArrayBuilder append(byte[] bytes) {
-        resetContents();
-        length += bytes.length;
-        buffer.add(bytes);
+        for(byte b : bytes) {
+            buffer.add(b);
+        }
         return this;
     }
 
@@ -135,22 +139,11 @@ public final class ByteArrayBuilder {
 
     /**
      * Returns the full contents of this <code>ByteArrayBuilder</code> as
-     * a single <code>byte</code> array. The result is cached, so multiple
-     * calls with no changes to the contents of the <code>ByteArrayBuilder</code>
-     * are efficient.
+     * a single <code>byte</code> array.
      *
      * @return The contents of this <code>ByteArrayBuilder</code> as a single <code>byte</code> array
      */
     public byte[] getByteArray() {
-        if (contents == null) {
-            contents = new byte[getLength()];
-            int pos = 0;
-            for(byte[] bs : buffer) {
-                System.arraycopy(bs, 0, contents, pos, bs.length);
-                pos += bs.length;
-            }
-        }
-
-        return contents;
+        return ArrayUtils.toPrimitive(buffer.toArray(new Byte[buffer.size()]));
     }
 }

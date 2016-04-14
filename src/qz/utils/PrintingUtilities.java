@@ -66,6 +66,7 @@ public class PrintingUtilities {
                 }
             }
 
+            log.trace("Waiting for processor, {}/{} already in use", processorPool.getNumActive(), processorPool.getMaxTotal());
             return processorPool.borrowObject(type);
         }
         catch(Exception e) {
@@ -75,6 +76,7 @@ public class PrintingUtilities {
 
     public static void releasePrintProcessor(PrintProcessor processor) {
         try {
+            log.trace("Returning processor back to pool");
             processorPool.returnObject(processor.getType(), processor);
         }
         catch(Exception ignore) {}

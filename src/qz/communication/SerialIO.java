@@ -4,6 +4,7 @@ import jssc.*;
 import org.apache.commons.codec.binary.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.common.ByteArrayBuilder;
 import qz.utils.ByteUtilities;
 import qz.utils.SerialUtilities;
 
@@ -21,6 +22,8 @@ public class SerialIO {
 
     private String portName;
     private SerialPort port;
+
+    private ByteArrayBuilder data = new ByteArrayBuilder();
 
     // bytes denoting boundaries for messages received from serial port
     private byte[] dataBegin;
@@ -90,28 +93,30 @@ public class SerialIO {
         try {
             // Receive data
             if (event.isRXCHAR()) {
-                byte[] data = port.readBytes(event.getEventValue(), TIMEOUT);
+                data.append(port.readBytes(event.getEventValue(), TIMEOUT));
 
                 if (width == null) {
                     //delimited response
-                    Integer[] beginPos = ByteUtilities.indicesOfMatches(data, dataBegin);
-                    Integer[] endPos = ByteUtilities.indicesOfMatches(data, dataEnd);
+                    Integer[] beginPos = ByteUtilities.indicesOfMatches(data.getByteArray(), dataBegin);
+                    Integer[] endPos = ByteUtilities.indicesOfMatches(data.getByteArray(), dataEnd);
 
                     if (beginPos.length > 0 && endPos.length > 0) {
-                        int begin = beginPos[beginPos.length - 1];
-                        int end = endPos[endPos.length - 1];
+                        int begin = beginPos[0] + 1;
+                        int end = endPos[0];
 
                         byte[] output = new byte[end - begin];
-                        System.arraycopy(data, begin, output, 0, end - begin);
+                        System.arraycopy(data.getByteArray(), begin, output, 0, end - begin);
 
+                        data.clearRange(begin - 1, end + 1); //begin/end indexes don't include delimiters
                         return StringUtils.newStringUtf8(output);
                     }
-                } else {
+                } else if (data.getLength() >= width) {
                     //fixed width response
                     byte[] output = new byte[width];
-                    System.arraycopy(data, 0, output, 0, width);
+                    System.arraycopy(data.getByteArray(), 0, output, 0, width);
 
-                    return new String(output);
+                    data.clearRange(0, width);
+                    return StringUtils.newStringUtf8(output);
                 }
             }
         }

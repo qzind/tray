@@ -49,12 +49,17 @@ public class WebApp extends Application {
     private static double pageZoom;
 
     private static PauseTransition snap;
+    private static int captureStall = 0;
 
     //listens for a Succeeded state to activate image capture
     private static ChangeListener<Worker.State> stateListener = new ChangeListener<Worker.State>() {
         @Override
         public void changed(ObservableValue<? extends Worker.State> ov, Worker.State oldState, Worker.State newState) {
             log.trace("New state: {} > {}", oldState, newState);
+
+            if (captureStall >= PAUSES) {
+                return; //we've already stopped listening for capture, don't do more work
+            }
 
             if (newState == Worker.State.SUCCEEDED) {
                 //ensure html tag doesn't use scrollbars, clipping page instead
@@ -80,6 +85,7 @@ public class WebApp extends Application {
                 }
 
                 log.trace("Setting HTML page width to {}", (pageWidth * pageZoom));
+                webView.setMinWidth(pageWidth * pageZoom);
                 webView.setPrefWidth(pageWidth * pageZoom);
                 webView.autosize();
 
@@ -94,6 +100,7 @@ public class WebApp extends Application {
                         }
 
                         log.trace("Setting HTML page height to {}", (pageHeight * pageZoom));
+                        webView.setMinHeight(pageHeight * pageZoom);
                         webView.setPrefHeight(pageHeight * pageZoom);
                         webView.autosize();
 
@@ -110,6 +117,7 @@ public class WebApp extends Application {
     private static ChangeListener<Number> workDoneListener = new ChangeListener<Number>() {
         @Override
         public void changed(ObservableValue<? extends Number> ov, Number oldWork, Number newWork) {
+            captureStall = 0; //still working, keep capture from marked as failed
             log.trace("Done: {} > {}", oldWork, newWork);
         }
     };
@@ -187,6 +195,7 @@ public class WebApp extends Application {
                     pageHeight = height;
                     pageZoom = zoom;
 
+                    webView.setMinSize(100, 100);
                     webView.setPrefSize(100, 100);
                     webView.autosize();
 
@@ -227,8 +236,9 @@ public class WebApp extends Application {
         });
 
         //wait for the image to be captured or an error to be thrown
+        //if html fails to continue loading for period, fail the capture
         Throwable t = error.get();
-        for(int i = 0; i < PAUSES; i++) {
+        for(captureStall = 0; captureStall < PAUSES; captureStall++) {
             if (capture.get() != null || (t = error.get()) != null) {
                 break;
             }

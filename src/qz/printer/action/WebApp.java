@@ -85,6 +85,7 @@ public class WebApp extends Application {
                 }
 
                 log.trace("Setting HTML page width to {}", (pageWidth * pageZoom));
+                webView.setMinWidth(pageWidth * pageZoom);
                 webView.setPrefWidth(pageWidth * pageZoom);
                 webView.autosize();
 
@@ -99,6 +100,7 @@ public class WebApp extends Application {
                         }
 
                         log.trace("Setting HTML page height to {}", (pageHeight * pageZoom));
+                        webView.setMinHeight(pageHeight * pageZoom);
                         webView.setPrefHeight(pageHeight * pageZoom);
                         webView.autosize();
 
@@ -193,6 +195,7 @@ public class WebApp extends Application {
                     pageHeight = height;
                     pageZoom = zoom;
 
+                    webView.setMinSize(100, 100);
                     webView.setPrefSize(100, 100);
                     webView.autosize();
 

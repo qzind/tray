@@ -309,11 +309,13 @@ public class SerialUtilities {
                 serial.applyPortListener(new SerialPortEventListener() {
                     public void serialEvent(SerialPortEvent spe) {
                         String output = serial.processSerialEvent(spe);
-                        log.debug("Received serial output: {}", output);
 
-                        StreamEvent event = new StreamEvent(StreamEvent.Stream.SERIAL, StreamEvent.Type.RECEIVE)
-                                .withData("portName", portName).withData("output", output);
-                        PrintSocketClient.sendStream(session, event);
+                        if (output != null) {
+                            log.debug("Received serial output: {}", output);
+                            StreamEvent event = new StreamEvent(StreamEvent.Stream.SERIAL, StreamEvent.Type.RECEIVE)
+                                    .withData("portName", portName).withData("output", output);
+                            PrintSocketClient.sendStream(session, event);
+                        }
                     }
                 });
 

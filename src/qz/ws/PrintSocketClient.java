@@ -432,19 +432,17 @@ public class PrintSocketClient {
      * @param UID     ID of call from web API
      * @param params  Params of call from web API
      */
-    private void processPrintRequest(Session session, String UID, JSONObject params) {
+    private void processPrintRequest(Session session, String UID, JSONObject params) throws JSONException {
+        PrintProcessor processor = PrintingUtilities.getPrintProcessor(params.getJSONArray("data"));
+        log.debug("Using {} to print", processor.getClass().getName());
+
         try {
             PrintOutput output = new PrintOutput(params.optJSONObject("printer"));
             PrintOptions options = new PrintOptions(params.optJSONObject("options"), output);
 
-            PrintProcessor processor = PrintingUtilities.getPrintProcessor(params.getJSONArray("data"));
-            log.debug("Using {} to print", processor.getClass().getName());
-
             processor.parseData(params.optJSONArray("data"), options);
             processor.print(output, options);
             log.info("Printing complete");
-
-            PrintingUtilities.releasePrintProcessor(processor);
 
             sendResult(session, UID, null);
         }
@@ -456,6 +454,8 @@ public class PrintSocketClient {
             log.error("Failed to print", e);
             sendError(session, UID, e);
         }
+
+        PrintingUtilities.releasePrintProcessor(processor);
     }
 
     private void setupSerialPort(final Session session, String UID, SocketConnection connection, JSONObject params) throws JSONException {

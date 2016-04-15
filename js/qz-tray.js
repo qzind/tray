@@ -729,7 +729,7 @@ var qz = (function() {
              *   @param {number} [options.size.height=null] Page height.
              *  @param {string} [options.units='in'] Page units, applies to paper size, margins, and density. Valid value <code>[in | cm | mm]</code>
              *
-             *  @param {boolean} [options.altPrinting=false]
+             *  @param {boolean} [options.altPrinting=false] Print the specified file using CUPS command line arguments.  Has no effect on Windows.
              *  @param {string} [options.encoding=null] Character set
              *  @param {string} [options.endOfDoc=null]
              *  @param {number} [options.perSpool=1] Number of pages per spool.

@@ -225,10 +225,9 @@ public class ShellUtilities {
                     // parse default, i.e. [200dpi *300x300dpi 600dpi]
                     if (part.startsWith("*")) {
                         int type = part.toLowerCase().contains("dpi")? PrinterResolution.DPI:PrinterResolution.DPCM;
-                        int density;
 
                         try {
-                            density = Integer.parseInt(part.split("x")[0].replaceAll("\\D+", ""));
+                            int density = Integer.parseInt(part.split("x")[0].replaceAll("\\D+", ""));
                             densityMap.put(entry.getKey(), new PrinterResolution(density, density, type));
                             log.debug("Parsed default density from CUPS {}: {}{}", entry.getKey(), density,
                                       type == PrinterResolution.DPI? "dpi":"dpcm");

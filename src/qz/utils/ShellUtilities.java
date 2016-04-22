@@ -211,21 +211,29 @@ public class ShellUtilities {
     public static HashMap<String, PrinterResolution> getCupsDensities(HashMap<String, String> descMap) {
         HashMap<String, PrinterResolution> densityMap = new HashMap<String, PrinterResolution>();
         for (Map.Entry<String, String> entry : descMap.entrySet()) {
-                String out = ShellUtilities.execute(
-                        new String[]{"lpoptions", "-p", entry.getKey(), "-l"},
-                        new String[] {
-                                "Resolution"
-                        }
-                );
+            String out = ShellUtilities.execute(
+                new String[]{"lpoptions", "-p", entry.getKey(), "-l"},
+                new String[] {
+                        "Resolution"
+                }
+            );
             if (!out.isEmpty()) {
                 String[] parts = out.split("\\s+");
                 for (String part : parts) {
-                    // parse default, i.e. [200dpi *300dpi 600dpi]
+                    // parse default, i.e. [200dpi *300x300dpi 600dpi]
                     if (part.startsWith("*")) {
-                        int type = part.toLowerCase().contains("dpi") ? PrinterResolution.DPI : PrinterResolution.DPCM;
-                        int density = Integer.parseInt(part.replaceAll("\\D+", ""));
-                        log.debug("Parsed default density from CUPS {}/\"{}\": {} {}", entry.getKey(), entry.getValue(), density,
-                                  type == PrinterResolution.DPI ? "dpi" : "dpcm");
+                        int type = part.toLowerCase().contains("dpi")? PrinterResolution.DPI:PrinterResolution.DPCM;
+                        int density;
+
+                        try {
+                            density = Integer.parseInt(part.split("x")[0].replaceAll("\\D+", ""));
+                            log.debug("Parsed default density from CUPS {}: {}{}", entry.getKey(), density,
+                                      type == PrinterResolution.DPI? "dpi":"dpcm");
+                        }
+                        catch(NumberFormatException e) {
+                            density = 0;
+                            log.warn("Error parsing default density from CUPS {}: {}", entry.getKey(), part);
+                        }
                         densityMap.put(entry.getKey(), new PrinterResolution(density, density, type));
                     }
                 }

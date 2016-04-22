@@ -77,20 +77,22 @@ public class WindowsDeploy extends DeployUtilities {
     }
 
     /**
-     * Enables websockets in IE by checking "Automatically detect intranet network"
+     * Enables websockets in IE/Edge by unchecking "Include all local (intranet) sites not listed in other zones"
+     * This has no effect on domain networks with "Automatically detect intranet network" checked.
+     * In addition, Edge requires CheckNetIsolation command to be effective.
      *
      * @return true if successful
      */
     public static boolean configureIntranetZone() {
         String path = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Zones\\1";
         String name = "Flags";
-        int value = 256;
+        int value = 16;
 
-        // If the above value does not exist, add it using bitwise OR, thus enabling this setting
+        // If the above value is set, remove it using bitwise XOR, thus disabling this setting
         int data = ShellUtilities.getRegistryDWORD(path, name);
         if (data != -1) {
-            if ((data & value) != value) {
-                return ShellUtilities.setRegistryDWORD(path, name, data | value);
+            if ((data & value) == value) {
+                return ShellUtilities.setRegistryDWORD(path, name, data ^ value);
             }
             return true; // already set
         }

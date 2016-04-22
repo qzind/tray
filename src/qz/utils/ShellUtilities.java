@@ -215,7 +215,8 @@ public class ShellUtilities {
                 new String[]{"lpoptions", "-p", entry.getKey(), "-l"},
                 new String[] {
                         "Resolution/",
-                        "Printer Resolution:"
+                        "Printer Resolution:",
+                        "Output Resolution:"
                 }
             );
             if (!out.isEmpty()) {
@@ -228,14 +229,13 @@ public class ShellUtilities {
 
                         try {
                             density = Integer.parseInt(part.split("x")[0].replaceAll("\\D+", ""));
+                            densityMap.put(entry.getKey(), new PrinterResolution(density, density, type));
                             log.debug("Parsed default density from CUPS {}: {}{}", entry.getKey(), density,
                                       type == PrinterResolution.DPI? "dpi":"dpcm");
-                        }
-                        catch(NumberFormatException e) {
-                            density = 0;
+                        } catch(NumberFormatException e) {
+                            densityMap.put(entry.getKey(), null);
                             log.warn("Error parsing default density from CUPS {}: {}", entry.getKey(), part);
                         }
-                        densityMap.put(entry.getKey(), new PrinterResolution(density, density, type));
                     }
                 }
             }

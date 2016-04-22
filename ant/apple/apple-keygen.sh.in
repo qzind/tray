@@ -1,6 +1,6 @@
 #!/bin/bash
 ##########################################################################################
-#                ${socket.name} Apple OS X KeyGen Utility                                #
+#                ${project.name} Apple OS X KeyGen Utility                               #
 ##########################################################################################
 #  Description:                                                                          #
 #     1. Creates a self-signed Java Keystore for jetty wss://localhost or [hostname]     #

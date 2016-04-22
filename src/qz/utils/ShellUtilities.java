@@ -214,7 +214,8 @@ public class ShellUtilities {
             String out = ShellUtilities.execute(
                 new String[]{"lpoptions", "-p", entry.getKey(), "-l"},
                 new String[] {
-                        "Resolution"
+                        "Resolution/",
+                        "Printer Resolution:"
                 }
             );
             if (!out.isEmpty()) {

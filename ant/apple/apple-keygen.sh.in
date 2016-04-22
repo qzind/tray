@@ -1,20 +1,20 @@
 #!/bin/bash
-###############################################################################
-#                ${project.name} Apple OS X KeyGen Utility                            #
-###############################################################################
-#  Description:                                                               #
-#     1. Creates a self-signed Java Keystore for jetty wss://localhost        #
-#     2. Exports public certificate from Java Keystore                        #
-#     3. Imports into Apple OS X Trusted Root Certs                           #
-#                                                                             #
-#  Depends:                                                                   #
-#    java                                                                     #
-#                                                                             #
-#  Usage:                                                                     #
-#    $ ./${apple.keygen.name} "install"                                            #
-#    $ ./${apple.keygen.name} "uninstall"                                          #
-#                                                                             #
-###############################################################################
+##########################################################################################
+#                ${socket.name} Apple OS X KeyGen Utility                                #
+##########################################################################################
+#  Description:                                                                          #
+#     1. Creates a self-signed Java Keystore for jetty wss://localhost or [hostname]     #
+#     2. Exports public certificate from Java Keystore                                   #
+#     3. Imports into Apple OS X Trusted Root Certs                                      #
+#                                                                                        #
+#  Depends:                                                                              #
+#    java                                                                                #
+#                                                                                        #
+#  Usage:                                                                                #
+#    $ ./${apple.keygen.name} "install" [hostname]                                       #
+#    $ ./${apple.keygen.name} "uninstall"                                                #
+#                                                                                        #
+##########################################################################################
 
 # Random password hash
 password=$(cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-z0-9' | fold -w ${jks.passlength} | head -n 1)
@@ -92,6 +92,12 @@ function remove_certs {
 	# No certs found, exit
 	return 1
 }
+
+# Handle CN=${jks.cn} override
+if [ -n "$2" ]; then 
+    cname="${jks.cn}"
+    makekeystore=$(echo "$makekeystore" | sed -e "s|$cname|$2|g")
+fi
 
 #
 # Uninstall mode

@@ -79,11 +79,7 @@ public class LinuxDeploy extends DeployUtilities {
      * @return
      */
     public String getAppPath() {
-        String launcher = "/usr/share/applications/" + getShortcutName() + ".desktop";
-        if (new File(launcher).exists()) {
-            return launcher;
-        }
-        return getJarPath();
+        return "/usr/share/applications/" + getShortcutName();
     }
 }
 

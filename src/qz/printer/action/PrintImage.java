@@ -136,10 +136,6 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
             imgToPrint = rotate(imgToPrint, imageRotation);
         }
 
-        Graphics2D graphics2D = withRenderHints((Graphics2D)graphics);
-        log.trace("{}", graphics2D.getRenderingHints());
-
-
         // apply image scaling
         double boundW = pageFormat.getImageableWidth();
         double boundH = pageFormat.getImageableHeight();
@@ -165,8 +161,12 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         log.trace("Image size: {},{}", imgW, imgH);
 
         // Now we perform our rendering
-        graphics2D.drawImage(imgToPrint, (int)boundX, (int)boundY, (int)boundX + imgW, (int)boundY + imgH,
+        BufferedImage buffer = new BufferedImage((int)boundX + imgW, (int)boundY + imgH, imgToPrint.getType());
+        Graphics2D g2d = withRenderHints(buffer.createGraphics());
+        g2d.drawImage(imgToPrint, (int)boundX, (int)boundY, (int)boundX + imgW, (int)boundY + imgH,
                              0, 0, imgToPrint.getWidth(), imgToPrint.getHeight(), null);
+        graphics.drawImage(buffer, 0, 0, null);
+        g2d.dispose();
 
         // Valid page
         return PAGE_EXISTS;
@@ -208,6 +208,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
     private Graphics2D withRenderHints(Graphics2D g2d) {
         g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, interpolation);
+        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
         g2d.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);

@@ -567,14 +567,15 @@ var qz = (function() {
                     if (qz.websocket.isActive()) {
                         reject(new Error("An open connection with QZ Tray already exists"));
                         return;
+                    } else if (_qz.websocket.connection != null) {
+                        reject(new Error("The current connection attempt has not returned yet"));
+                        return;
                     }
 
                     if (!_qz.tools.ws) {
                         reject(new Error("WebSocket not supported by this browser"));
                         return;
-                    }
-
-                    if (!_qz.tools.ws.CLOSED || _qz.tools.ws.CLOSED == 2) {
+                    } else if (!_qz.tools.ws.CLOSED || _qz.tools.ws.CLOSED == 2) {
                         reject(new Error("Unsupported WebSocket version detected: HyBi-00/Hixie-76"));
                         return;
                     }

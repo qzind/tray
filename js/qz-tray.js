@@ -591,6 +591,7 @@ var qz = (function() {
                             if (options && count < options.retries) {
                                 attempt(count + 1);
                             } else {
+                                _qz.websocket.connection = null;
                                 reject.apply(null, arguments);
                             }
                         };

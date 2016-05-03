@@ -620,11 +620,6 @@ var qz = (function() {
              */
             disconnect: function() {
                 return _qz.tools.promise(function(resolve, reject) {
-                    if (Array.isArray(_qz.websocket.pendingCalls)) {
-                        for(var i = 0; i < i < _qz.websocket.pendingCalls.length; i++) {
-                            _qz.websocket.pendingCalls[i].reject(evt);
-                        }
-                    }
                     if (qz.websocket.isActive()) {
                         _qz.websocket.connection.close();
                         _qz.websocket.connection.promise = { resolve: resolve, reject: reject };

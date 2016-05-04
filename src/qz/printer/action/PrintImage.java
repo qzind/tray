@@ -10,12 +10,12 @@
  */
 package qz.printer.action;
 
+import net.sourceforge.iharder.Base64;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import net.sourceforge.iharder.Base64;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
@@ -48,6 +48,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
     protected List<BufferedImage> images;
 
+    protected double dpiScale = 1;
     protected boolean scaleImage = false;
     protected Object interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC;
     protected double imageRotation = 0;
@@ -77,7 +78,16 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
                     bi = ImageIO.read(new URL(data.getString("data")));
                 }
 
-                images.add(bi);
+                //scale up to print density
+                dpiScale = options.getPixelOptions().getDensity() / 72.0;
+                log.debug("Scaling image up by x{}", dpiScale);
+
+                BufferedImage scaled = new BufferedImage((int)(bi.getWidth() * dpiScale), (int)(bi.getHeight() * dpiScale), bi.getType());
+                Graphics2D g2d = withRenderHints(scaled.createGraphics(), options.getPixelOptions().getInterpolation());
+                g2d.drawImage(bi, 0, 0, (int)(bi.getWidth() * dpiScale), (int)(bi.getHeight() * dpiScale), null);
+                g2d.dispose();
+
+                images.add(scaled);
             }
             catch(IIOException e) {
                 if (e.getCause() != null && e.getCause() instanceof FileNotFoundException) {
@@ -140,17 +150,17 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         double boundW = pageFormat.getImageableWidth();
         double boundH = pageFormat.getImageableHeight();
 
-        int imgW = imgToPrint.getWidth();
-        int imgH = imgToPrint.getHeight();
+        double imgW = imgToPrint.getWidth() / dpiScale;
+        double imgH = imgToPrint.getHeight() / dpiScale;
 
         if (scaleImage) {
             // scale image to smallest edge, keeping size ratio
             if (((float)imgToPrint.getWidth() / (float)imgToPrint.getHeight()) >= (boundW / boundH)) {
-                imgW = (int)boundW;
-                imgH = (int)(imgToPrint.getHeight() / (imgToPrint.getWidth() / boundW));
+                imgW = boundW;
+                imgH = (imgToPrint.getHeight() / (imgToPrint.getWidth() / boundW));
             } else {
-                imgW = (int)(imgToPrint.getWidth() / (imgToPrint.getHeight() / boundH));
-                imgH = (int)boundH;
+                imgW = (imgToPrint.getWidth() / (imgToPrint.getHeight() / boundH));
+                imgH = boundH;
             }
         }
 
@@ -161,12 +171,11 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         log.trace("Image size: {},{}", imgW, imgH);
 
         // Now we perform our rendering
-        BufferedImage buffer = new BufferedImage((int)boundX + imgW, (int)boundY + imgH, imgToPrint.getType());
-        Graphics2D g2d = withRenderHints(buffer.createGraphics());
-        g2d.drawImage(imgToPrint, (int)boundX, (int)boundY, (int)boundX + imgW, (int)boundY + imgH,
+        Graphics2D graphics2D = withRenderHints((Graphics2D)graphics, interpolation);
+        log.trace("{}", graphics2D.getRenderingHints());
+
+        graphics2D.drawImage(imgToPrint, (int)boundX, (int)boundY, (int)(boundX + imgW), (int)(boundY + imgH),
                              0, 0, imgToPrint.getWidth(), imgToPrint.getHeight(), null);
-        graphics.drawImage(buffer, 0, 0, null);
-        g2d.dispose();
 
         // Valid page
         return PAGE_EXISTS;
@@ -189,7 +198,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[0].getDefaultConfiguration();
         BufferedImage result = gc.createCompatibleImage(eWidth, eHeight, Transparency.TRANSLUCENT);
 
-        Graphics2D g2d = withRenderHints(result.createGraphics());
+        Graphics2D g2d = withRenderHints(result.createGraphics(), interpolation);
         g2d.translate((eWidth - sWidth) / 2, (eHeight - sHeight) / 2);
         g2d.rotate(rads, sWidth / 2, sHeight / 2);
 
@@ -205,7 +214,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         return result;
     }
 
-    private Graphics2D withRenderHints(Graphics2D g2d) {
+    private Graphics2D withRenderHints(Graphics2D g2d, Object interpolation) {
         g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, interpolation);
         g2d.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);

@@ -150,7 +150,6 @@ chmod $mask "$destdir/auth/${linux.keygen.name}"  > /dev/null 2>&1
 
 progress_dialog 75 "Importing Firefox locator..."
 chmod $mask "$destdir/auth/firefox/${locator.name}"  > /dev/null 2>&1
-"$destdir/auth/firefox/${locator.name}"
 
 progress_dialog 80 "Importing Firefox certificate..."
 chmod $mask "$destdir/auth/firefox/${firefoxcert.name}"  > /dev/null 2>&1
@@ -178,8 +177,13 @@ mv "$destdir/${linux.udev.name}" "/lib/udev/rules.d/${linux.udev.name}" > /dev/n
 
 cd "${destdir}"
 progress_dialog 95 "Installation complete... Starting ${project.name}..."
-# Start ${project.name} as the user that's logged in
-sudo -u $(logname) nohup "java" -jar "${jarfile}" > /dev/null 2>&1 &
-progress_dialog 100 "Finished.  QZ Tray should start automatically."
+which sudo > /dev/null 1>&2
+if [ $? -ne 0 ]; then
+    progress_dialog 100 "Finished.  Please launch ${project.name} manually."
+else
+    # Start ${project.name} as the user that's logged in
+    sudo -u $(logname) nohup "java" -jar "${jarfile}" > /dev/null 2>&1 &
+    progress_dialog 100 "Finished.  ${project.name} should start automatically."
+fi
 echo
 exit 0

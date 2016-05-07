@@ -79,7 +79,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
                 }
 
                 //scale up to print density
-                dpiScale = options.getPixelOptions().getDensity() / 72.0;
+                dpiScale = (options.getPixelOptions().getDensity() * options.getPixelOptions().getUnits().as1Inch()) / 72.0;
                 log.debug("Scaling image up by x{}", dpiScale);
 
                 BufferedImage scaled = new BufferedImage((int)(bi.getWidth() * dpiScale), (int)(bi.getHeight() * dpiScale), bi.getType());

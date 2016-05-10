@@ -42,10 +42,9 @@ var qz = (function() {
         },
 
 
-        //stream types (PrintSocketClient.StreamType)
+        //stream types
         streams: {
-            serial: 'SERIAL',
-            usb: 'USB'
+            serial: 'SERIAL', usb: 'USB'
         },
 
 
@@ -223,12 +222,17 @@ var qz = (function() {
                                 _qz.websocket.connection.close(4003, "Connected to incompatible QZ Tray version");
 
                             } else {
-                                if (returned.type == _qz.streams.serial) {
-                                    _qz.serial.callSerial(returned.key, returned.data)
-                                } else if (returned.type == _qz.streams.usb) {
-                                    _qz.usb.callUsb(returned.key, returned.data);
-                                } else {
-                                    _qz.log.warn("Cannot determine stream type for callback", returned);
+                                //streams (callbacks only, no promises)
+                                switch(returned.type) {
+                                    case _qz.streams.serial:
+                                        _qz.serial.callSerial(JSON.parse(returned.event));
+                                        break;
+                                    case _qz.streams.usb:
+                                        _qz.usb.callUsb(JSON.parse(returned.event));
+                                        break;
+                                    default:
+                                        _qz.log.warn("Cannot determine stream type for callback", returned);
+                                        break;
                                 }
                             }
 
@@ -347,13 +351,13 @@ var qz = (function() {
             /** List of functions called when receiving data from serial connection. */
             serialCallbacks: [],
             /** Calls all functions registered to listen for serial events. */
-            callSerial: function(port, output) {
+            callSerial: function(streamEvent) {
                 if (Array.isArray(_qz.serial.serialCallbacks)) {
                     for(var i = 0; i < _qz.serial.serialCallbacks.length; i++) {
-                        _qz.serial.serialCallbacks[i](port, output);
+                        _qz.serial.serialCallbacks[i](streamEvent);
                     }
                 } else {
-                    _qz.serial.serialCallbacks(port, output);
+                    _qz.serial.serialCallbacks(streamEvent);
                 }
             }
         },
@@ -362,14 +366,14 @@ var qz = (function() {
         usb: {
             /** List of functions called when receiving data from usb connection. */
             usbCallbacks: [],
-            /** Calls all functions registered to listen for usb events. Key[vendor,product,interface,endpoint] */
-            callUsb: function(keys, data) {
+            /** Calls all functions registered to listen for usb events. */
+            callUsb: function(streamEvent) {
                 if (Array.isArray(_qz.usb.usbCallbacks)) {
                     for(var i = 0; i < _qz.usb.usbCallbacks.length; i++) {
-                        _qz.usb.usbCallbacks[i](keys, data);
+                        _qz.usb.usbCallbacks[i](streamEvent);
                     }
                 } else {
-                    _qz.usb.usbCallbacks(keys, data);
+                    _qz.usb.usbCallbacks(streamEvent);
                 }
             }
         },
@@ -833,6 +837,9 @@ var qz = (function() {
 
             /**
              * List of functions called for any response from open serial ports.
+             * Event data will contain <code>{string} portName</code> for all types.
+             *  For RECEIVE types, <code>{string} output</code>.
+             *  For ERROR types, <code>{string} exception</code>.
              *
              * @param {Function|Array<Function>} calls Single or array of <code>Function({string} portName, {string} output)</code> calls.
              *
@@ -954,9 +961,11 @@ var qz = (function() {
 
             /**
              * List of functions called for any response from open usb devices.
+             * Event data will contain <code>{string} vendorId</code> and <code>{string} productId</code> for all types.
+             *  For RECEIVE types, <code>{Array} output</code> (in hexadecimal format).
+             *  For ERROR types, <code>{string} exception</code>.
              *
-             * @param {Function|Array<Function>} calls Single or array of <code>Function({string[]} keys, {string[]} rawData)</code> calls.
-             *                                         Key array is formatted as [vendor, product, interface, endpoint]. Raw data is in hexadecimal format.
+             * @param {Function|Array<Function>} calls Single or array of <code>Function({Object} eventData)</code> calls.
              *
              * @memberof qz.usb
              */
@@ -998,7 +1007,7 @@ var qz = (function() {
                 var params = {
                     vendorId: vendorId,
                     productId: productId,
-                    endpoint: endpoint,
+                    exchangePoint: endpoint,
                     data: data
                 };
                 return _qz.websocket.dataPromise('usb.sendData', params);
@@ -1019,7 +1028,7 @@ var qz = (function() {
                 var params = {
                     vendorId: vendorId,
                     productId: productId,
-                    endpoint: endpoint,
+                    exchangePoint: endpoint,
                     responseSize: responseSize
                 };
                 return _qz.websocket.dataPromise('usb.readData', params);
@@ -1043,7 +1052,7 @@ var qz = (function() {
                 var params = {
                     vendorId: vendorId,
                     productId: productId,
-                    endpoint: endpoint,
+                    exchangePoint: endpoint,
                     responseSize: responseSize,
                     interval: interval
                 };
@@ -1064,7 +1073,7 @@ var qz = (function() {
                 var params = {
                     vendorId: vendorId,
                     productId: productId,
-                    endpoint: endpoint
+                    exchangePoint: endpoint
                 };
                 return _qz.websocket.dataPromise('usb.closeStream', params);
             },

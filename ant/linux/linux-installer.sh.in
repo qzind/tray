@@ -182,7 +182,7 @@ if [ $? -ne 0 ]; then
     progress_dialog 100 "Finished.  Please launch ${project.name} manually."
 else
     # Start ${project.name} as the user that's logged in
-    sudo -u $(logname) nohup "java" -jar "${jarfile}" > /dev/null 2>&1 &
+    sudo -u $(logname) nohup "java" -jar ${launch.opts} "${jarfile}" > /dev/null 2>&1 &
     progress_dialog 100 "Finished.  ${project.name} should start automatically."
 fi
 echo

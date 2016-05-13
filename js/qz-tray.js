@@ -225,9 +225,17 @@ var qz = (function() {
                                 //streams (callbacks only, no promises)
                                 switch(returned.type) {
                                     case _qz.streams.serial:
+                                        if (!returned.event) {
+                                            returned.event = JSON.stringify({ portName: returned.key, output: returned.data });
+                                        }
+
                                         _qz.serial.callSerial(JSON.parse(returned.event));
                                         break;
                                     case _qz.streams.usb:
+                                        if (!returned.event) {
+                                            returned.event = JSON.stringify({ vendorId: returned.key[0], productId: returned.key[1], output: returned.data });
+                                        }
+
                                         _qz.usb.callUsb(JSON.parse(returned.event));
                                         break;
                                     default:
@@ -1007,7 +1015,7 @@ var qz = (function() {
                 var params = {
                     vendorId: vendorId,
                     productId: productId,
-                    exchangePoint: endpoint,
+                    endpoint: endpoint,
                     data: data
                 };
                 return _qz.websocket.dataPromise('usb.sendData', params);
@@ -1028,7 +1036,7 @@ var qz = (function() {
                 var params = {
                     vendorId: vendorId,
                     productId: productId,
-                    exchangePoint: endpoint,
+                    endpoint: endpoint,
                     responseSize: responseSize
                 };
                 return _qz.websocket.dataPromise('usb.readData', params);
@@ -1052,7 +1060,7 @@ var qz = (function() {
                 var params = {
                     vendorId: vendorId,
                     productId: productId,
-                    exchangePoint: endpoint,
+                    endpoint: endpoint,
                     responseSize: responseSize,
                     interval: interval
                 };
@@ -1073,7 +1081,7 @@ var qz = (function() {
                 var params = {
                     vendorId: vendorId,
                     productId: productId,
-                    exchangePoint: endpoint
+                    endpoint: endpoint
                 };
                 return _qz.websocket.dataPromise('usb.closeStream', params);
             },

@@ -1182,7 +1182,7 @@
     }
 
     function sendUsbData() {
-        qz.usb.sendData($("#usbVendor").val(), $("#usbProduct").val(), $("#usbEndpoint").val(), $("usbData").val()).catch(displayError);
+        qz.usb.sendData($("#usbVendor").val(), $("#usbProduct").val(), $("#usbEndpoint").val(), $("#usbData").val()).catch(displayError);
     }
 
     function readUsbData() {
@@ -1301,8 +1301,8 @@
         $("#usbResponse").val(8);
         $("#usbStream").val(10);
 
-        // M/T PS60 - V:0x0EB8 P:0xF000, I:0x0 E:0x81 (precision of 2)
-        // Dymo S100 - V:0x0922 P:0x8009, I:0x0 E:0x82 (precision of 1)
+        // M/T PS60 - V:0x0EB8 P:0xF000, I:0x0 E:0x81
+        // Dymo S100 - V:0x0922 P:0x8009, I:0x0 E:0x82
     }
 
 
@@ -1338,28 +1338,36 @@
 
     qz.websocket.setErrorCallbacks(handleConnectionError);
 
-    qz.serial.setSerialCallbacks(function(port, output) {
-        console.log('Serial', port, 'received output', output);
-        displayMessage("Received output from serial port [" + port + "]: <em>" + output + "</em>");
-    });
-
-    qz.usb.setUsbCallbacks(function(keys, data) {
-        if (keys[0].substring(0, 2) != '0x') { keys[0] = '0x' + keys[0]; }
-        if (keys[1].substring(0, 2) != '0x') { keys[1] = '0x' + keys[1]; }
-        var pin = $('#' + (keys[0]) + (keys[1]));
-
-        if (data.error == undefined) {
-            if (window.readingWeight) {
-                pin.html("<strong>Weight:</strong> " + readScaleData(data, 2));
-            } else {
-                pin.html("<strong>Raw data:</strong> " + data);
-            }
+    qz.serial.setSerialCallbacks(function(streamEvent) {
+        if (streamEvent.type !== 'ERROR') {
+            console.log('Serial', streamEvent.portName, 'received output', streamEvent.output);
+            displayMessage("Received output from serial port [" + streamEvent.portName + "]: <em>" + streamEvent.output + "</em>");
         } else {
-            console.log(data.error);
-            pin.html("<strong>Error:</strong> " + data.error);
+            console.log(streamEvent.exception);
+            displayMessage("Received an error from serial port [" + streamEvent.portName + "]: <em>" + streamEvent.exception + "</em>", 'alert-error');
+
         }
     });
 
+    qz.usb.setUsbCallbacks(function(streamEvent) {
+        var vendor = streamEvent.vendorId;
+        var product = streamEvent.productId;
+
+        if (vendor.substring(0, 2) != '0x') { vendor = '0x' + vendor; }
+        if (product.substring(0, 2) != '0x') { product = '0x' + product; }
+        var $pin = $('#' + vendor + product);
+
+        if (streamEvent.type !== 'ERROR') {
+            if (window.readingWeight) {
+                $pin.html("<strong>Weight:</strong> " + readScaleData(streamEvent.output));
+            } else {
+                $pin.html("<strong>Raw data:</strong> " + streamEvent.output);
+            }
+        } else {
+            console.log(streamEvent.exception);
+            $pin.html("<strong>Error:</strong> " + streamEvent.exception);
+        }
+    });
 
     var qzVersion = 0;
     function findVersion() {

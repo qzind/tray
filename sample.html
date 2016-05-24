@@ -1089,7 +1089,7 @@
         qz.serial.findPorts().then(function(data) {
             var list = '';
             for(var i = 0; i < data.length; i++) {
-                list += "&nbsp; " + data[i] + "<br/>";
+                list += "&nbsp; <code>" + data[i] + "</code>" + serialButton(["serialPort"], [data[i]]) + "<br/>";
             }
 
             displayMessage("<strong>Available serial ports:</strong><br/>" + list);
@@ -1454,6 +1454,14 @@
         var click = "";
         for(var i = 0; i < ids.length; i++) {
             click += "$('#" + ids[i] + "').val('0x" + data[i] + "');$('#" + ids[i] + "').fadeOut(300).fadeIn(500);";
+        }
+        return '<button class="btn btn-default btn-xs" onclick="' + click + '" data-dismiss="alert">Use This</button>';
+    }
+
+    function serialButton (serialPort, data) {
+        var click = "";
+        for(var i = 0; i < serialPort.length; i++ ) {
+            click += "$('#" + serialPort[i] + "').val('" + data[i] + "');$('#" + serialPort[i] + "').fadeOut(300).fadeIn(500);";
         }
         return '<button class="btn btn-default btn-xs" onclick="' + click + '" data-dismiss="alert">Use This</button>';
     }

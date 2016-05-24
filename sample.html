@@ -1458,7 +1458,7 @@
         return '<button class="btn btn-default btn-xs" onclick="' + click + '" data-dismiss="alert">Use This</button>';
     }
 
-	function serialButton (serialPort, data) {
+    function serialButton (serialPort, data) {
         var click = "";
         for(var i = 0; i < serialPort.length; i++ ) {
             click += "$('#" + serialPort[i] + "').val('" + data[i] + "');$('#" + serialPort[i] + "').fadeOut(300).fadeIn(500);";

@@ -79,10 +79,10 @@ public class Certificate {
 
     static {
         try {
-            String overridePath = System.getProperty("trustedRootCert");
-            if (overridePath != null) {
+            File caCert = new File("ca.pem");
+            if (caCert.exists()) {
                 try {
-                    trustedRootCert = new Certificate(FileUtilities.readLocalFile(overridePath));
+                    trustedRootCert = new Certificate(FileUtilities.readLocalFile(caCert.getPath()));
                     overrideTrustedRootCert = true;
                 }
                 catch(IOException e) {

@@ -2,7 +2,7 @@
 
 <project name="qz" default="distribute" basedir=".">
 
-    <target name="distribute" depends="init,clean,sign-jar,include-assets">
+    <target name="distribute" depends="init,clean,sign-jar,include-assets,include-ca">
         <echo message="Process complete" />
     </target>
 
@@ -144,6 +144,14 @@
             <fileset file="${basedir}/LICENSE.txt"/>
         </copy>
 
+    </target>
+
+    <target name="check-ca">
+        <available file="ca.pem" property="ca-exists" />
+    </target>
+
+    <target name="include-ca" depends="check-ca" if="ca-exists">
+        <copy file="ca.pem" todir="${dist.dir}" />
     </target>
 
     <!--

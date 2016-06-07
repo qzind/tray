@@ -18,6 +18,7 @@ import javax.print.PrintService;
 import javax.print.attribute.standard.PrinterResolution;
 import java.awt.print.PrinterAbortException;
 import java.util.HashMap;
+import java.util.Locale;
 
 public class PrintingUtilities {
 
@@ -47,7 +48,7 @@ public class PrintingUtilities {
         if (data == null) {
             type = Type.RAW;
         } else {
-            type = Type.valueOf(data.optString("type", "RAW").toUpperCase());
+            type = Type.valueOf(data.optString("type", "RAW").toUpperCase(Locale.ENGLISH));
         }
 
         try {

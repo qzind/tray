@@ -28,6 +28,7 @@ import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class PrintPDF extends PrintPixel implements PrintProcessor {
 
@@ -50,7 +51,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
 
-            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase());
+            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase(Locale.ENGLISH));
 
             try {
                 PDDocument doc;

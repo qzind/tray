@@ -15,6 +15,7 @@ import java.awt.*;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
+import java.util.Locale;
 
 public class PrintOptions {
 
@@ -60,7 +61,7 @@ public class PrintOptions {
         //check for pixel options
         if (!configOpts.isNull("colorType")) {
             try {
-                psOptions.colorType = ColorType.valueOf(configOpts.optString("colorType").toUpperCase());
+                psOptions.colorType = ColorType.valueOf(configOpts.optString("colorType").toUpperCase(Locale.ENGLISH));
             }
             catch(IllegalArgumentException e) {
                 warn("valid value", "colorType", configOpts.opt("colorType"));
@@ -127,7 +128,7 @@ public class PrintOptions {
         }
         if (!configOpts.isNull("orientation")) {
             try {
-                psOptions.orientation = Orientation.valueOf(configOpts.optString("orientation").replaceAll("\\-", "_").toUpperCase());
+                psOptions.orientation = Orientation.valueOf(configOpts.optString("orientation").replaceAll("\\-", "_").toUpperCase(Locale.ENGLISH));
             }
             catch(IllegalArgumentException e) {
                 warn("valid value", "orientation", configOpts.opt("orientation"));

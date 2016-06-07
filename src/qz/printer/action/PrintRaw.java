@@ -82,7 +82,7 @@ public class PrintRaw implements PrintProcessor {
             JSONObject opt = data.optJSONObject("options");
             if (opt == null) { opt = new JSONObject(); }
 
-            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "PLAIN").toUpperCase());
+            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "PLAIN").toUpperCase(Locale.ENGLISH));
             PrintOptions.Raw rawOpts = options.getRawOptions();
 
             encoding = rawOpts.getEncoding();

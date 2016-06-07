@@ -20,6 +20,7 @@ import qz.utils.PrintingUtilities;
 
 import java.awt.print.Printable;
 import java.io.IOException;
+import java.util.Locale;
 
 public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
@@ -46,7 +47,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
                 if (data.optBoolean("processed")) { continue; } //in cases of failed captures on multi-pages
                 String source = data.getString("data");
 
-                PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase());
+                PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase(Locale.ENGLISH));
 
                 double pageZoom = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()) / 72.0;
                 if (pageZoom <= 1 || data.optBoolean("forceOriginal")) { pageZoom = 1; }

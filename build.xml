@@ -146,12 +146,16 @@
 
     </target>
 
-    <target name="check-ca">
-        <available file="ca.pem" property="ca-exists" />
+    <target name="check-ca" if="cacert.path">
+        <available file="${cacert.path}/${cacert.filename}" property="ca-exists" />
     </target>
 
     <target name="include-ca" depends="check-ca" if="ca-exists">
-        <copy file="ca.pem" todir="${dist.dir}" />
+        <copy file="${cacert.path}/${cacert.filename}" todir="${dist.dir}" />
+        <propertyfile
+            file="${dist.dir}/${project.filename}.properties">
+            <entry key="ca.certificate" value="${cacert.filename}" />
+        </propertyfile>
     </target>
 
     <!--

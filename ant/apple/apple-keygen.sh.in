@@ -125,7 +125,7 @@ eval "$makedercert" > /dev/null 2>&1
 check_exists "$dercertpath"
 
 echo "Writing properties file..."
-echo "wss.alias=${jks.alias}" > "$propspath"
+echo "wss.alias=${jks.alias}" >> "$propspath"
 echo "wss.keystore=$keystorepath" >> "$propspath"
 echo "wss.keypass=$password" >> "$propspath"
 echo "wss.storepass=$password" >> "$propspath"

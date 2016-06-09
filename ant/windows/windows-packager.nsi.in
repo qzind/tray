@@ -47,8 +47,7 @@ Section
 
   ; Cleanup resources from previous versions
   DetailPrint "Cleaning up resources from previous versions..."
-  RMDir /r "$INSTDIR\demo\js\3rdparty"
-  Delete "$INSTDIR\demo\js\qz-websocket.js"
+  RMDir /r "$INSTDIR"
 
   File /r "${dist.dir}\*"
 

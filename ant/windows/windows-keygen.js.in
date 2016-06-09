@@ -240,7 +240,7 @@ function createJavaKeystore() {
     shell.Run(makeKeyStore, 0, true);
     verifyExists(keyStore, "Check keystore exists");
 
-    var file = fso.OpenTextFile(fixPath("${jks.properties}"), 2, true);
+    var file = fso.OpenTextFile(fixPath("${jks.properties}"), 8, true);
     file.WriteLine("wss.alias=" + "${jks.alias}");
     file.WriteLine("wss.keystore=" + keyStore.replace(/\\/g, "\\\\"));
     file.WriteLine("wss.keypass=" + password);

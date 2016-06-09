@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.sourceforge.iharder.Base64;
 import qz.common.Constants;
+import qz.deploy.DeployUtilities;
 import qz.utils.ByteUtilities;
 import qz.utils.FileUtilities;
 
@@ -28,6 +29,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Properties;
 
 /**
  * Created by Steven on 1/27/2015. Package: qz.auth Project: qz-print
@@ -79,6 +81,21 @@ public class Certificate {
 
     static {
         try {
+            Properties sslProperties = DeployUtilities.loadSSLProperties();
+            String certFile = sslProperties.getProperty("ca.certificate");
+            if (certFile != null) {
+                File caCert = new File(certFile);
+                if (caCert.exists()) {
+                    try {
+                        trustedRootCert = new Certificate(FileUtilities.readLocalFile(caCert.getPath()));
+                        overrideTrustedRootCert = true;
+                    }
+                    catch(IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
             String overridePath = System.getProperty("trustedRootCert");
             if (overridePath != null) {
                 try {

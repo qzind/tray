@@ -86,6 +86,7 @@ public class Certificate {
             if (certFile != null) {
                 File jar = new File(DeployUtilities.detectJarPath());
                 File caCert = new File(jar.getParent(), certFile);
+                log.debug("Using certificate in: " + caCert.getPath());
                 if (caCert.exists()) {
                     try {
                         trustedRootCert = new Certificate(FileUtilities.readLocalFile(caCert.getPath()));

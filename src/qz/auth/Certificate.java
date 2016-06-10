@@ -84,7 +84,8 @@ public class Certificate {
             Properties sslProperties = DeployUtilities.loadSSLProperties();
             String certFile = sslProperties.getProperty("ca.certificate");
             if (certFile != null) {
-                File caCert = new File(certFile);
+                File jar = new File(DeployUtilities.detectJarPath());
+                File caCert = new File(jar.getParent(), certFile);
                 if (caCert.exists()) {
                     try {
                         trustedRootCert = new Certificate(FileUtilities.readLocalFile(caCert.getPath()));

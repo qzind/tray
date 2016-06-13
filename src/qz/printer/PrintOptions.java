@@ -188,10 +188,15 @@ public class PrintOptions {
         PrinterResolution defaultRes = PrintingUtilities.getNativeDensity(output.getPrintService());
         if (defaultRes != null) {
             defOptions.density = defaultRes.getFeedResolution(psOptions.getUnits().getDPIUnits());
-
-            if (psOptions.isRasterize() && psOptions.getDensity() == 0) {
-                psOptions.density = defOptions.density;
+        } else {
+            try { defOptions.density = configOpts.getDouble("fallbackDensity"); }
+            catch(JSONException e) {
+                warn("double", "fallbackDensity", configOpts.opt("fallbackDensity"));
+                defOptions.density = 600;
             }
+        }
+        if (psOptions.isRasterize() && psOptions.getDensity() == 0) {
+            psOptions.density = defOptions.density;
         }
 
         if (output.isSetService()) {

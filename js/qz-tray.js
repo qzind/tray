@@ -335,6 +335,7 @@ var qz = (function() {
                 copies: 1,
                 density: 0,
                 duplex: false,
+                fallbackDensity: 600,
                 interpolation: 'bicubic',
                 jobName: null,
                 margins: 0,
@@ -720,6 +721,7 @@ var qz = (function() {
              *  @param {number} [options.copies=1] Number of copies to be printed.
              *  @param {number} [options.density=72] Pixel density (DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *  @param {boolean} [options.duplex=false] Double sided printing
+             *  @param {number} [options.fallbackDensity=600] Value used when default density value cannot be read, or in cases where reported as "Normal" by the driver.
              *  @param {string} [options.interpolation='bicubic'] Valid values <code>[bicubic | bilinear | nearest-neighbor]</code>. Controls how images are handled when resized.
              *  @param {string} [options.jobName=null] Name to display in print queue.
              *  @param {Object|number} [options.margins=0] If just a number is provided, it is used as the margin for all sides.

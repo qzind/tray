@@ -7,6 +7,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.hid4java.HidDevice;
 import org.hid4java.HidManager;
 import org.hid4java.HidServices;
+import qz.utils.SystemUtilities;
 
 import javax.usb.util.UsbUtil;
 import java.util.List;
@@ -47,13 +48,20 @@ public class HidUtilities {
         }
 
         List<HidDevice> devices = service.getAttachedHidDevices();
-        for(HidDevice device : devices) {
-            if (device.isVidPidSerial(vendorId, productId, null)) {
-                return device;
+        HidDevice device = null;
+        for(HidDevice d : devices) {
+            if (d.isVidPidSerial(vendorId, productId, null)) {
+                device = d;
             }
         }
 
-        return null;
+        // FIXME: Prevent hard crash on OSX
+        // Per upstream Mac bug https://github.com/gary-rowe/hid4java/issues/37
+        if (SystemUtilities.isMac()) {
+            service.shutdown();
+        }
+
+        return device;
     }
 
 }

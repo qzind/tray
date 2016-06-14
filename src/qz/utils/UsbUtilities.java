@@ -23,7 +23,7 @@ public class UsbUtilities {
 
     public static Short hexToShort(String hex) {
         if (hex == null || hex.isEmpty()) {
-            return null; //throw new IllegalArgumentException("Identifier cannot be empty");
+            return null;
         }
 
         if (hex.startsWith("0x")) { hex = hex.substring(2); }
@@ -32,7 +32,7 @@ public class UsbUtilities {
 
     public static Byte hexToByte(String hex) {
         if (hex == null || hex.isEmpty()) {
-            return null; //throw new IllegalArgumentException("Identifier cannot be empty");
+            return null;
         }
 
         if (hex.startsWith("0x")) { hex = hex.substring(2); }
@@ -177,7 +177,7 @@ public class UsbUtilities {
                     public void run() {
                         int interval = params.optInt("interval", 100);
                         int size = params.optInt("responseSize");
-                        Byte endpoint = UsbUtilities.hexToByte(params.optString("exchangePoint"));
+                        Byte endpoint = UsbUtilities.hexToByte(params.optString("endpoint"));
 
                         StreamEvent event = new StreamEvent(streamType, StreamEvent.Type.RECEIVE)
                                 .withData("vendorId", usb.getVendorId()).withData("productId", usb.getProductId());

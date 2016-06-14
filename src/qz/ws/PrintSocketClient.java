@@ -371,7 +371,7 @@ public class PrintSocketClient {
             case HID_SEND_DATA: {
                 DeviceIO usb = connection.getDevice(vendorId, productId);
                 if (usb != null) {
-                    usb.sendData(StringUtils.getBytesUtf8(params.optString("data")), UsbUtilities.hexToByte(params.optString("exchangePoint")));
+                    usb.sendData(StringUtils.getBytesUtf8(params.optString("data")), UsbUtilities.hexToByte(params.optString("endpoint")));
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, String.format("USB Device [v:%s p:%s] must be claimed first.", params.opt("vendorId"), params.opt("productId")));
@@ -383,7 +383,7 @@ public class PrintSocketClient {
             case HID_READ_DATA: {
                 DeviceIO usb = connection.getDevice(vendorId, productId);
                 if (usb != null) {
-                    byte[] response = usb.readData(params.optInt("responseSize"), UsbUtilities.hexToByte(params.optString("exchangePoint")));
+                    byte[] response = usb.readData(params.optInt("responseSize"), UsbUtilities.hexToByte(params.optString("endpoint")));
                     JSONArray hex = new JSONArray();
                     for(byte b : response) {
                         hex.put(UsbUtil.toHexString(b));

@@ -18,7 +18,14 @@ public class HidUtilities {
 
 
     public static List<HidDevice> getHidDevices() {
-        return service.getAttachedHidDevices();
+        List<HidDevice> devices = service.getAttachedHidDevices();
+
+        // FIXME: Prevent hard crash on OSX
+        // Per upstream Mac bug https://github.com/gary-rowe/hid4java/issues/37
+        if (SystemUtilities.isMac()) {
+            service.shutdown();
+        }
+        return devices;
     }
 
     public static JSONArray getHidDevicesJSON() throws JSONException {
@@ -47,21 +54,14 @@ public class HidUtilities {
             throw new IllegalArgumentException("Product ID cannot be null");
         }
 
-        List<HidDevice> devices = service.getAttachedHidDevices();
-        HidDevice device = null;
-        for(HidDevice d : devices) {
-            if (d.isVidPidSerial(vendorId, productId, null)) {
-                device = d;
+        List<HidDevice> devices = getHidDevices();
+        for(HidDevice device : devices) {
+            if (device.isVidPidSerial(vendorId, productId, null)) {
+                return device;
             }
         }
 
-        // FIXME: Prevent hard crash on OSX
-        // Per upstream Mac bug https://github.com/gary-rowe/hid4java/issues/37
-        if (SystemUtilities.isMac()) {
-            service.shutdown();
-        }
-
-        return device;
+        return null;
     }
 
 }

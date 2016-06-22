@@ -1521,7 +1521,10 @@
 
         if (streamEvent.type !== 'ERROR') {
             if (window.readingWeight) {
-                $pin.html("<strong>Weight:</strong> " + readScaleData(streamEvent.output));
+                var weight = readScaleData(streamEvent.output);
+                if (weight) {
+                    $pin.html("<strong>Weight:</strong> " + weight);
+                }
             } else {
                 $pin.html("<strong>Raw data:</strong> " + streamEvent.output);
             }
@@ -1541,7 +1544,10 @@
 
         if (streamEvent.type === 'RECEIVE') {
             if (window.readingWeight) {
-                $pin.html("<strong>Weight:</strong> " + readScaleData(streamEvent.output));
+                var weight = readScaleData(streamEvent.output);
+                if (weight) {
+                    $pin.html("<strong>Weight:</strong> " + weight);
+                }
             } else {
                 $pin.html("<strong>Raw data:</strong> " + streamEvent.output);
             }
@@ -1666,6 +1672,11 @@
 
     /** Attempts to parse scale reading from USB raw output */
     function readScaleData(data) {
+        // Filter erroneous data
+        if (data.slice(2, 8).join('') == "000000000000") {
+            return null;
+        }
+
         // Get status
         var status = parseInt(data[1], 16);
         switch(status) {

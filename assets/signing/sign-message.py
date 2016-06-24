@@ -32,7 +32,6 @@ for arg in sys.argv:
 
 # Load the private key
 # http://chandlerproject.org/Projects/MeTooCrypto
-from M2Crypto import EVP
 key = EVP.load_key_string(open(mykey).read(), mypass)
 
 # Create the signature

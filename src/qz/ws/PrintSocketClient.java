@@ -61,6 +61,16 @@ public class PrintSocketClient {
         USB_CLOSE_STREAM("usb.closeStream", false, "use a USB device"),
         USB_RELEASE_DEVICE("usb.releaseDevice", false, "release a USB device"),
 
+        HID_LIST_DEVICES("hid.listDevices", true, "access USB devices"),
+        HID_START_LISTENING("hid.startListening", true, "listen for USB devices"),
+        HID_STOP_LISTENING("hid.stopListening", false),
+        HID_CLAIM_DEVICE("hid.claimDevice", true, "claim a USB device"),
+        HID_SEND_DATA("hid.sendData", true, "use a USB device"),
+        HID_READ_DATA("hid.readData", true, "use a USB device"),
+        HID_OPEN_STREAM("hid.openStream", true, "use a USB device"),
+        HID_CLOSE_STREAM("hid.closeStream", false, "use a USB device"),
+        HID_RELEASE_DEVICE("hid.releaseDevice", false, "release a USB device"),
+
         WEBSOCKET_GET_NETWORK_INFO("websocket.getNetworkInfo", true),
         GET_VERSION("getVersion", false),
 
@@ -316,11 +326,35 @@ public class PrintSocketClient {
             case USB_LIST_ENDPOINTS:
                 sendResult(session, UID, UsbUtilities.getInterfaceEndpointsJSON(vendorId, productId, UsbUtilities.hexToByte(params.getString("interface"))));
                 break;
+            case HID_LIST_DEVICES:
+                sendResult(session, UID, HidUtilities.getHidDevicesJSON());
+                break;
+            case HID_START_LISTENING:
+                if (!connection.isListening()) {
+                    connection.startListening(new HidListener(session));
+                    sendResult(session, UID, null);
+                } else {
+                    sendError(session, UID, "Already listening HID device events");
+                }
+                break;
+            case HID_STOP_LISTENING:
+                if (connection.isListening()) {
+                    connection.stopListening();
+                    sendResult(session, UID, null);
+                } else {
+                    sendError(session, UID, "Not already listening HID device events");
+                }
+                break;
 
-            case USB_CLAIM_DEVICE: {
+            case USB_CLAIM_DEVICE:
+            case HID_CLAIM_DEVICE: {
                 if (connection.getDevice(vendorId, productId) == null) {
-                    DeviceIO device = new UsbIO(vendorId, productId, UsbUtilities.hexToByte(params.optString("interface")));
-
+                    DeviceIO device;
+                    if (call == Method.USB_CLAIM_DEVICE) {
+                        device = new UsbIO(vendorId, productId, UsbUtilities.hexToByte(params.optString("interface")));
+                    } else {
+                        device = new HidIO(vendorId, productId);
+                    }
                     device.open();
                     if (device.isOpen()) {
                         connection.addDevice(vendorId, productId, device);
@@ -334,7 +368,8 @@ public class PrintSocketClient {
 
                 break;
             }
-            case USB_SEND_DATA: {
+            case USB_SEND_DATA:
+            case HID_SEND_DATA: {
                 DeviceIO usb = connection.getDevice(vendorId, productId);
                 if (usb != null) {
                     usb.sendData(StringUtils.getBytesUtf8(params.optString("data")), UsbUtilities.hexToByte(params.optString("endpoint")));
@@ -345,7 +380,8 @@ public class PrintSocketClient {
 
                 break;
             }
-            case USB_READ_DATA: {
+            case USB_READ_DATA:
+            case HID_READ_DATA: {
                 DeviceIO usb = connection.getDevice(vendorId, productId);
                 if (usb != null) {
                     byte[] response = usb.readData(params.optInt("responseSize"), UsbUtilities.hexToByte(params.optString("endpoint")));
@@ -360,12 +396,14 @@ public class PrintSocketClient {
 
                 break;
             }
-            case USB_OPEN_STREAM: {
-                StreamEvent.Stream stream = StreamEvent.Stream.USB;
+            case USB_OPEN_STREAM:
+            case HID_OPEN_STREAM: {
+                StreamEvent.Stream stream = (call == Method.USB_OPEN_STREAM? StreamEvent.Stream.USB:StreamEvent.Stream.HID);
                 UsbUtilities.setupUsbStream(session, UID, connection, params, stream);
                 break;
             }
-            case USB_CLOSE_STREAM: {
+            case USB_CLOSE_STREAM:
+            case HID_CLOSE_STREAM: {
                 DeviceIO usb = connection.getDevice(vendorId, productId);
                 if (usb != null && usb.isStreaming()) {
                     usb.setStreaming(false);
@@ -376,7 +414,8 @@ public class PrintSocketClient {
 
                 break;
             }
-            case USB_RELEASE_DEVICE: {
+            case USB_RELEASE_DEVICE:
+            case HID_RELEASE_DEVICE: {
                 DeviceIO usb = connection.getDevice(vendorId, productId);
                 if (usb != null) {
                     usb.close();

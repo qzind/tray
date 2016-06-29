@@ -4,9 +4,7 @@ import jssc.SerialPortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
-import qz.communication.DeviceException;
-import qz.communication.DeviceIO;
-import qz.communication.SerialIO;
+import qz.communication.*;
 import qz.utils.UsbUtilities;
 
 import java.util.HashMap;
@@ -17,6 +15,8 @@ public class SocketConnection {
 
 
     private Certificate certificate;
+
+    private HidListener hidListener;
 
     // serial port -> open SerialIO
     private final HashMap<String,SerialIO> openSerialPorts = new HashMap<>();
@@ -48,6 +48,22 @@ public class SocketConnection {
 
     public void removeSerialPort(String port) {
         openSerialPorts.remove(port);
+    }
+
+
+    public boolean isListening() {
+        return hidListener != null;
+    }
+
+    public void startListening(HidListener listener) {
+        hidListener = listener;
+    }
+
+    public void stopListening() {
+        if (hidListener != null) {
+            hidListener.close();
+        }
+        hidListener = null;
     }
 
 
@@ -102,6 +118,8 @@ public class SocketConnection {
                 pm.get(p).close();
             }
         }
+
+        stopListening();
     }
 
 }

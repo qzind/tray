@@ -22,7 +22,7 @@
 ###############################################################################
 
 # Array of possible Firefox application names.
-appnames=("Firefox")	# "Firefox" "IceWeasel", etc
+appnames=("IceWeasel" "Firefox")	# "Firefox" "IceWeasel", etc
 
 # Array of possible pref tag conflicts
 conflicts=("general.config.filename")

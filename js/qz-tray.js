@@ -338,6 +338,7 @@ var qz = (function() {
                 copies: 1,
                 density: 0,
                 duplex: false,
+                fallbackDensity: 600,
                 interpolation: 'bicubic',
                 jobName: null,
                 margins: 0,
@@ -598,14 +599,15 @@ var qz = (function() {
                     if (qz.websocket.isActive()) {
                         reject(new Error("An open connection with QZ Tray already exists"));
                         return;
+                    } else if (_qz.websocket.connection != null) {
+                        reject(new Error("The current connection attempt has not returned yet"));
+                        return;
                     }
 
                     if (!_qz.tools.ws) {
                         reject(new Error("WebSocket not supported by this browser"));
                         return;
-                    }
-
-                    if (!_qz.tools.ws.CLOSED || _qz.tools.ws.CLOSED == 2) {
+                    } else if (!_qz.tools.ws.CLOSED || _qz.tools.ws.CLOSED == 2) {
                         reject(new Error("Unsupported WebSocket version detected: HyBi-00/Hixie-76"));
                         return;
                     }
@@ -621,6 +623,7 @@ var qz = (function() {
                             if (options && count < options.retries) {
                                 attempt(count + 1);
                             } else {
+                                _qz.websocket.connection = null;
                                 reject.apply(null, arguments);
                             }
                         };
@@ -649,11 +652,6 @@ var qz = (function() {
              */
             disconnect: function() {
                 return _qz.tools.promise(function(resolve, reject) {
-                    if (Array.isArray(_qz.websocket.pendingCalls)) {
-                        for(var i = 0; i < i < _qz.websocket.pendingCalls.length; i++) {
-                            _qz.websocket.pendingCalls[i].reject(evt);
-                        }
-                    }
                     if (qz.websocket.isActive()) {
                         _qz.websocket.connection.close();
                         _qz.websocket.connection.promise = { resolve: resolve, reject: reject };
@@ -742,6 +740,7 @@ var qz = (function() {
              *  @param {number} [options.copies=1] Number of copies to be printed.
              *  @param {number} [options.density=72] Pixel density (DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *  @param {boolean} [options.duplex=false] Double sided printing
+             *  @param {number} [options.fallbackDensity=600] Value used when default density value cannot be read, or in cases where reported as "Normal" by the driver.
              *  @param {string} [options.interpolation='bicubic'] Valid values <code>[bicubic | bilinear | nearest-neighbor]</code>. Controls how images are handled when resized.
              *  @param {string} [options.jobName=null] Name to display in print queue.
              *  @param {Object|number} [options.margins=0] If just a number is provided, it is used as the margin for all sides.
@@ -760,7 +759,7 @@ var qz = (function() {
              *   @param {number} [options.size.height=null] Page height.
              *  @param {string} [options.units='in'] Page units, applies to paper size, margins, and density. Valid value <code>[in | cm | mm]</code>
              *
-             *  @param {boolean} [options.altPrinting=false]
+             *  @param {boolean} [options.altPrinting=false] Print the specified file using CUPS command line arguments.  Has no effect on Windows.
              *  @param {string} [options.encoding=null] Character set
              *  @param {string} [options.endOfDoc=null]
              *  @param {number} [options.perSpool=1] Number of pages per spool.

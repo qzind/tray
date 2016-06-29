@@ -49,12 +49,16 @@ public class LinuxDeploy extends DeployUtilities {
 
     @Override
     public boolean hasStartupShortcut() {
-        return fileExists(System.getProperty("user.home") + "/.config/autostart/" + getShortcutName());
+        String target = System.getProperty("user.home") + "/.config/autostart/";
+        upgradeLegacyShortcut(target);
+        return fileExists(target + getShortcutName());
     }
 
     @Override
     public boolean hasDesktopShortcut() {
-        return fileExists(System.getProperty("user.home") + "/Desktop/" + getShortcutName());
+        String target = System.getProperty("user.home") + "/Desktop/";
+        upgradeLegacyShortcut(target);
+        return fileExists(target + getShortcutName());
     }
 
     /**
@@ -79,11 +83,21 @@ public class LinuxDeploy extends DeployUtilities {
      * @return
      */
     public String getAppPath() {
-        String launcher = "/usr/share/applications/" + getShortcutName() + ".desktop";
-        if (new File(launcher).exists()) {
-            return launcher;
+        return "/usr/share/applications/" + getShortcutName();
+    }
+
+    /**
+     * Upgrade 1.9 shortcut to new 2.0 format
+     * @return
+     */
+    private boolean upgradeLegacyShortcut(String target) {
+        String shortcut = target + Constants.ABOUT_TITLE + ".desktop";
+        if (fileExists(shortcut)) {
+            if (ShellUtilities.execute(new String[] { "rm", shortcut })) {
+                return createShortcut(target);
+            }
         }
-        return getJarPath();
+        return false;
     }
 }
 

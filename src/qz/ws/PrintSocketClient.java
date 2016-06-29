@@ -7,6 +7,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -536,6 +537,9 @@ public class PrintSocketClient {
     private static void send(Session session, JSONObject reply) {
         try {
             session.getRemote().sendString(reply.toString());
+        }
+        catch(WebSocketException e) {
+            log.error("Could not send message", e);
         }
         catch(IOException e) {
             log.error("Send failed", e);

@@ -1,7 +1,11 @@
 package qz.printer.action;
 
+import net.sourceforge.iharder.Base64;
+import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import org.apache.pdfbox.printing.PDFPrintable;
 import org.apache.pdfbox.printing.Scaling;
 import org.codehaus.jettison.json.JSONArray;
@@ -9,23 +13,22 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import net.sourceforge.iharder.Base64;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
+import java.awt.geom.AffineTransform;
 import java.awt.print.Book;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
-import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class PrintPDF extends PrintPixel implements PrintProcessor {
 
@@ -48,7 +51,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
 
-            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase());
+            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase(Locale.ENGLISH));
 
             try {
                 PDDocument doc;
@@ -89,9 +92,13 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         Book book = new Book();
         for(PDDocument doc : pdfs) {
-            //force orientation change at data level
-            if (pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
-                for(PDPage pd : doc.getPages()) {
+            for(PDPage pd : doc.getPages()) {
+                if (pxlOpts.getRotation() % 360 != 0) {
+                    rotatePage(doc, pd, pxlOpts.getRotation());
+                }
+
+                //force orientation change at data level
+                if (pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
                     pd.setRotation(pxlOpts.getOrientation().getDegreesRot());
                 }
             }
@@ -103,6 +110,36 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         job.setPageable(book);
 
         printCopies(output, pxlOpts, job, attributes);
+    }
+
+    private void rotatePage(PDDocument doc, PDPage page, double rotation) {
+        try {
+            //copy page to object for manipulation
+            PDFormXObject xobject = new PDFormXObject(doc);
+            InputStream src = page.getContents();
+            OutputStream dest = xobject.getStream().createOutputStream();
+
+            try { IOUtils.copy(src, dest); }
+            finally {
+                IOUtils.closeQuietly(src);
+                IOUtils.closeQuietly(dest);
+            }
+
+            xobject.setResources(page.getResources());
+            xobject.setBBox(page.getBBox());
+
+            //draw our object at a rotated angle
+            AffineTransform transform = new AffineTransform();
+            transform.rotate(Math.toRadians(360 - rotation), xobject.getBBox().getWidth() / 2.0, xobject.getBBox().getHeight() / 2.0);
+            xobject.setMatrix(transform);
+
+            PDPageContentStream stream = new PDPageContentStream(doc, page);
+            stream.drawForm(xobject);
+            stream.close();
+        }
+        catch(IOException e) {
+            log.warn("Failed to rotate PDF page for printing");
+        }
     }
 
     @Override

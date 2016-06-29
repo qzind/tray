@@ -1221,7 +1221,7 @@ var qz = (function() {
                 var params = {
                     vendorId: vendorId,
                     productId: productId,
-                    exchangePoint: reportId,
+                    endpoint: reportId,
                     data: data
                 };
                 return _qz.websocket.dataPromise('hid.sendData', params);

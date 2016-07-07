@@ -84,6 +84,9 @@
                             <button type="button" class="btn btn-default btn-sm" onclick="findDefaultPrinter(true);">Find Default Printer</button>
                             <button type="button" class="btn btn-default btn-sm" onclick="findPrinters();">Find All Printers</button>
                         </div>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-default btn-sm" onclick="detailPrinters();">Get Printer Details</button>
+                        </div>
                     </div>
                     <hr />
                     <div class="form-group">
@@ -931,7 +934,21 @@
                 list += "&nbsp; " + data[i] + "<br/>";
             }
 
-            displayMessage("<strong>Available printers:</strong><br/>" + list);
+            displayMessage("<strong>Available printers:</strong><br/>" + list, null, 15000);
+        }).catch(displayError);
+    }
+
+    function detailPrinters() {
+        qz.printers.details().then(function(data) {
+            var list = '';
+            for(var i = 0; i < data.length; i++) {
+                list += "<li>&nbsp; " + (data[i].default ? "* " : "") +
+                        data[i].name + " (" + data[i].driver + ")" +
+                        " @ " + data[i].density + "dpi" +
+                        "</li>";
+            }
+
+            displayMessage("<strong>Printer details:</strong><br/><ul>" + list + "</ul>", null, 15000);
         }).catch(displayError);
     }
 
@@ -1768,10 +1785,10 @@
         displayMessage(err, 'alert-danger');
     }
 
-    function displayMessage(msg, css) {
+    function displayMessage(msg, css, time) {
         if (css == undefined) { css = 'alert-info'; }
 
-        var timeout = setTimeout(function() { $('#' + timeout).alert('close'); }, 5000);
+        var timeout = setTimeout(function() { $('#' + timeout).alert('close'); }, time ? time : 5000);
 
         var alert = $("<div/>").addClass('alert alert-dismissible fade in ' + css)
                 .css('max-height', '20em').css('overflow', 'auto')
@@ -1823,7 +1840,7 @@
 
     function serialButton(serialPort, data) {
         var click = "";
-        for(var i = 0; i < serialPort.length; i++ ) {
+        for(var i = 0; i < serialPort.length; i++) {
             click += "$('#" + serialPort[i] + "').val('" + data[i] + "');$('#" + serialPort[i] + "').fadeOut(300).fadeIn(500);";
         }
         return '<button class="btn btn-default btn-xs" onclick="' + click + '" data-dismiss="alert">Use This</button>';

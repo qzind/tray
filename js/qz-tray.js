@@ -821,6 +821,17 @@ var qz = (function() {
              */
             find: function(query, signature, signingTimestamp) {
                 return _qz.websocket.dataPromise('printers.find', { query: query }, signature, signingTimestamp);
+            },
+
+            /**
+             * Provides a list, with additional information, for each printer available to QZ.
+             *
+             * @returns {Promise<Array<Object>|Object|Error>}
+             *
+             * @memberof qz.printers
+             */
+            details: function() {
+                return _qz.websocket.dataPromise('printers.detail');
             }
         },
 

@@ -13,7 +13,6 @@ package qz.utils;
 import org.apache.commons.io.Charsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.deploy.DeployUtilities;
 
 import javax.print.attribute.standard.PrinterResolution;
 import java.awt.*;
@@ -21,7 +20,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Utility class for managing all {@code Runtime.exec(...)} functions.
@@ -39,7 +41,7 @@ public class ShellUtilities {
     static {
         if (!SystemUtilities.isWindows()) {
             // Cache existing; permit named overrides w/o full clobber
-            Map<String, String> env = new HashMap<String, String>(System.getenv());
+            Map<String, String> env = new HashMap<>(System.getenv());
             if (SystemUtilities.isMac()) {
                 // Enable LANG overrides
                 env.put("SOFTWARE", "");
@@ -173,7 +175,7 @@ public class ShellUtilities {
      * @return <code>HashMap</code> of name value pairs of printer name and printer description
      */
     public static HashMap<String, String> getCupsPrinters() {
-        HashMap<String, String> descMap = new HashMap<String, String>();
+        HashMap<String, String> descMap = new HashMap<>();
         String devices = ShellUtilities.executeRaw(new String[] {"lpstat", "-a"});
 
         // Descriptions default to printer names
@@ -209,7 +211,7 @@ public class ShellUtilities {
      * @return <code>HashMap</code> of name value pairs of printer name and default density
      */
     public static HashMap<String, PrinterResolution> getCupsDensities(HashMap<String, String> descMap) {
-        HashMap<String, PrinterResolution> densityMap = new HashMap<String, PrinterResolution>();
+        HashMap<String, PrinterResolution> densityMap = new HashMap<>();
         for (Map.Entry<String, String> entry : descMap.entrySet()) {
             String out = ShellUtilities.execute(
                 new String[]{"lpoptions", "-p", entry.getKey(), "-l"},
@@ -335,9 +337,9 @@ public class ShellUtilities {
         if (SystemUtilities.isMac()) {
             // Mac tries to open the .app rather than browsing it.  Instead, pass a child with -R to select it in finder
             File[] files = directory.listFiles();
-            if (files.length > 0) {
+            if (files != null && files.length > 0) {
                 // Get first child
-                File child = directory.listFiles()[0];
+                File child = files[0];
                 if (ShellUtilities.execute(new String[] {"open", "-R", child.getCanonicalPath()})) {
                     return;
                 }

@@ -139,6 +139,20 @@ public class PrintingUtilities {
         return densities;
     }
 
+    public static String getDriver(PrintService service) {
+        String driver;
+
+        if (SystemUtilities.isWindows()) {
+            String keyPath = "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print\\Printers\\" + service.getName().replaceAll("\\\\", ",");
+            driver = ShellUtilities.execute(new String[] {"reg", "query", keyPath, "/v", "Printer Driver"}, new String[] {"REG_SZ"});
+            driver = driver.substring(driver.indexOf("REG_SZ") + 6).trim();
+        } else {
+            driver = ShellUtilities.execute(new String[] {"lpstat", "-l", "-p", service.getName()}, new String[] {"Interface:"});
+            driver = driver.substring(10).trim();
+        }
+
+        return driver;
+    }
 
     /**
      * Determine print variables and send data to printer

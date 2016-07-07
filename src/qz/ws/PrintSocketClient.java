@@ -42,6 +42,7 @@ public class PrintSocketClient {
     private enum Method {
         PRINTERS_GET_DEFAULT("printers.getDefault", true, "access connected printers"),
         PRINTERS_FIND("printers.find", true, "access connected printers"),
+        PRINTERS_DETAIL("printers.detail", true, "access connected printers"),
         PRINT("print", true, "print to %s"),
 
         SERIAL_FIND_PORTS("serial.findPorts", true, "access serial ports"),
@@ -274,15 +275,24 @@ public class PrintSocketClient {
                 break;
             case PRINTERS_FIND:
                 if (params.has("query")) {
-                    String name = PrintServiceMatcher.getPrinterJSON(params.getString("query"));
+                    String name = PrintServiceMatcher.findPrinterName(params.getString("query"));
                     if (name != null) {
                         sendResult(session, UID, name);
                     } else {
                         sendError(session, UID, "Specified printer could not be found.");
                     }
                 } else {
-                    sendResult(session, UID, PrintServiceMatcher.getPrintersJSON());
+                    JSONArray services = PrintServiceMatcher.getPrintersJSON();
+                    JSONArray names = new JSONArray();
+                    for(int i = 0; i < services.length(); i++) {
+                        names.put(services.getJSONObject(i).getString("name"));
+                    }
+
+                    sendResult(session, UID, names);
                 }
+                break;
+            case PRINTERS_DETAIL:
+                sendResult(session, UID, PrintServiceMatcher.getPrintersJSON());
                 break;
 
             case PRINT:

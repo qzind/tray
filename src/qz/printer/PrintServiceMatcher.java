@@ -12,11 +12,15 @@ package qz.printer;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.PrintingUtilities;
 
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
+import javax.print.attribute.ResolutionSyntax;
+import javax.print.attribute.standard.PrinterResolution;
 
 public class PrintServiceMatcher {
 
@@ -27,6 +31,16 @@ public class PrintServiceMatcher {
         log.debug("Found {} printers", printers.length);
 
         return printers;
+    }
+
+    public static String findPrinterName(String query) throws JSONException {
+        PrintService service = PrintServiceMatcher.matchService(query);
+
+        if (service != null) {
+            return service.getName();
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -81,22 +95,23 @@ public class PrintServiceMatcher {
     public static JSONArray getPrintersJSON() throws JSONException {
         JSONArray list = new JSONArray();
 
+        PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
+
         PrintService[] printers = getPrintServices();
         for(PrintService ps : printers) {
-            list.put(ps.getName());
+            JSONObject jsonService = new JSONObject();
+            jsonService.put("name", ps.getName());
+            jsonService.put("driver", PrintingUtilities.getDriver(ps));
+            jsonService.put("default", ps == defaultService);
+
+            PrinterResolution res = PrintingUtilities.getNativeDensity(ps);
+            int density = -1; if (res != null) { density = res.getFeedResolution(ResolutionSyntax.DPI); }
+            jsonService.put("density", density);
+
+            list.put(jsonService);
         }
 
         return list;
-    }
-
-    public static String getPrinterJSON(String query) throws JSONException {
-        PrintService service = PrintServiceMatcher.matchService(query);
-
-        if (service != null) {
-            return service.getName();
-        } else {
-            return null;
-        }
     }
 
 }

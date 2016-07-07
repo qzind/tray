@@ -147,7 +147,7 @@ public class PrintingUtilities {
             driver = ShellUtilities.execute(new String[] {"reg", "query", keyPath, "/v", "Printer Driver"}, new String[] {"REG_SZ"});
             driver = driver.substring(driver.indexOf("REG_SZ") + 6).trim();
         } else {
-            driver = ShellUtilities.execute(new String[] {"lpstat", "-l", "-p", service.getName()}, new String[] {"Interface:"});
+            driver = ShellUtilities.execute(new String[] {"lpstat", "-l", "-p", getPrinterId(service.getName())}, new String[] {"Interface:"});
             driver = driver.substring(10).trim();
         }
 

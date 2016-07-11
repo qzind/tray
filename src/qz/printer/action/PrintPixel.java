@@ -28,7 +28,7 @@ public abstract class PrintPixel {
     private static final List<Integer> MAC_BAD_IMAGE_TYPES = Arrays.asList(BufferedImage.TYPE_BYTE_BINARY, BufferedImage.TYPE_CUSTOM);
 
 
-    protected PrintRequestAttributeSet applyDefaultSettings(PrintOptions.Pixel pxlOpts, PageFormat page) {
+    protected PrintRequestAttributeSet applyDefaultSettings(PrintOptions.Pixel pxlOpts, PageFormat page, Media[] supported) {
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
 
         //apply general attributes
@@ -41,9 +41,16 @@ public abstract class PrintPixel {
         if (pxlOpts.getOrientation() != null) {
             attributes.add(pxlOpts.getOrientation().getAsAttribute());
         }
+        if (pxlOpts.getPrinterTray() != null) {
+            for(Media m: supported){
+                if (m.toString().equals(pxlOpts.getPrinterTray())) {
+                    attributes.add(m);
+                    break;
+                }
+            }
+        }
 
         //TODO - set paper thickness
-        //TODO - set printer tray
 
 
         // Java prints using inches at 72dpi

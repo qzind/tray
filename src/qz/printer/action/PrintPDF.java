@@ -19,6 +19,7 @@ import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
+import javax.print.attribute.standard.Media;
 import java.awt.geom.AffineTransform;
 import java.awt.print.Book;
 import java.awt.print.PageFormat;
@@ -86,7 +87,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         PageFormat page = job.getPageFormat(null);
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page);
+        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, (Media[])output.getPrintService().getSupportedAttributeValues(Media.class, null, null));
 
         Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
 

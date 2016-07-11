@@ -20,6 +20,7 @@ import qz.utils.PrintingUtilities;
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 import javax.print.attribute.ResolutionSyntax;
+import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.PrinterResolution;
 
 public class PrintServiceMatcher {
@@ -103,6 +104,12 @@ public class PrintServiceMatcher {
             jsonService.put("name", ps.getName());
             jsonService.put("driver", PrintingUtilities.getDriver(ps));
             jsonService.put("default", ps == defaultService);
+
+            int trays = 0;
+            for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
+                if (m.toString().startsWith("Tray")) { trays++; }
+            }
+            jsonService.put("trays", trays);
 
             PrinterResolution res = PrintingUtilities.getNativeDensity(ps);
             int density = -1; if (res != null) { density = res.getFeedResolution(ResolutionSyntax.DPI); }

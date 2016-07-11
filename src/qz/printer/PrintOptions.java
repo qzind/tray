@@ -173,7 +173,8 @@ public class PrintOptions {
             catch(JSONException e) { warn("double", "paperThickness", configOpts.opt("paperThickness")); }
         }
         if (!configOpts.isNull("printerTray")) {
-            psOptions.printerTray = configOpts.optString("printerTray", null);
+            try { psOptions.printerTray = "Tray " + configOpts.getInt("printerTray"); }
+            catch(JSONException e) { warn("int", "paperTray", configOpts.opt("printerTray")); }
         }
         if (!configOpts.isNull("rasterize")) {
             try { psOptions.rasterize = configOpts.getBoolean("rasterize"); }
@@ -256,6 +257,7 @@ public class PrintOptions {
      * @param actualValue  Invalid value passed
      */
     private static void warn(String expectedType, String name, Object actualValue) {
+        if (actualValue == null || String.valueOf(actualValue).isEmpty()) { return; } //no need to report an unsupplied value
         log.warn("Cannot read {} as a {} for {}, using default", actualValue, expectedType, name);
     }
 

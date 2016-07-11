@@ -25,6 +25,7 @@ import qz.utils.SystemUtilities;
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
+import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.OrientationRequested;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
@@ -112,7 +113,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         PageFormat page = job.getPageFormat(null);
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page);
+        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, (Media[])output.getPrintService().getSupportedAttributeValues(Media.class, null, null));
 
         scaleImage = pxlOpts.isScaleContent();
         interpolation = pxlOpts.getInterpolation();

@@ -124,6 +124,12 @@ public class PrintServiceMatcher {
             jsonService.put("driver", PrintingUtilities.getDriver(ps));
             jsonService.put("default", ps == defaultService);
 
+            int trays = 0;
+            for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
+                if (m.toString().startsWith("Tray")) { trays++; }
+            }
+            jsonService.put("trays", trays);
+
             PrinterResolution res = PrintingUtilities.getNativeDensity(ps);
             int density = -1; if (res != null) { density = res.getFeedResolution(ResolutionSyntax.DPI); }
             jsonService.put("density", density);

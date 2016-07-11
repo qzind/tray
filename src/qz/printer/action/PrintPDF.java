@@ -104,7 +104,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         job.setPrintService(output.getPrintService());
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, job.getPageFormat(null));
+        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, job.getPageFormat(null), (Media[])output.getPrintService().getSupportedAttributeValues(Media.class, null, null));
 
         // Disable attributes per https://github.com/qzind/tray/issues/174
         if (SystemUtilities.isMac() && Constants.JAVA_VERSION.compareWithBuildsTo(Version.valueOf("1.8.0+202")) < 0) {

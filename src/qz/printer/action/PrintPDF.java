@@ -88,7 +88,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         PageFormat page = job.getPageFormat(null);
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page);
+        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, (Media[])output.getPrintService().getSupportedAttributeValues(Media.class, null, null));
 
         if (SystemUtilities.isMac()) {
             log.warn("OSX cannot use attributes with PDF prints, disabling");

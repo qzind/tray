@@ -325,7 +325,7 @@
 
                                         <div class="form-group form-inline">
                                             <label for="pxlPrinterTray">Printer Tray</label>
-                                            <input disabled type="text" id="pxlPrinterTray" class="form-control pull-right" />
+                                            <input type="number" id="pxlPrinterTray" class="form-control pull-right" />
                                         </div>
 
                                         <div class="form-group form-inline">
@@ -928,6 +928,7 @@
             for(var i = 0; i < data.length; i++) {
                 list += "<li>&nbsp; " + (data[i].default ? "* " : "") +
                         data[i].name + " (" + data[i].driver + ")" +
+                        (data[i].trays > 0 ? " with " + data[i].trays + " Trays" : "") +
                         " @ " + data[i].density + "dpi" +
                         "</li>";
             }

@@ -143,9 +143,23 @@ public class PrintingUtilities {
         String driver;
 
         if (SystemUtilities.isWindows()) {
-            String keyPath = "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print\\Printers\\" + service.getName().replaceAll("\\\\", ",");
+            String regName = service.getName().replaceAll("\\\\", ",");
+            String keyPath = "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print\\Printers\\" + regName;
+
             driver = ShellUtilities.execute(new String[] {"reg", "query", keyPath, "/v", "Printer Driver"}, new String[] {"REG_SZ"});
-            driver = driver.substring(driver.indexOf("REG_SZ") + 6).trim();
+            if (!driver.isEmpty()) {
+                driver = driver.substring(driver.indexOf("REG_SZ") + 6).trim();
+            } else {
+                String serverName = regName.replaceAll(",,(.+),.+", "$1");
+
+                keyPath = "HKCU\\Printers\\Connections\\" + regName;
+                String guid = ShellUtilities.execute(new String[] {"reg", "query", keyPath, "/v", "GuidPrinter"}, new String[] {"REG_SZ"});
+                guid = guid.substring(guid.indexOf("REG_SZ") + 6).trim();
+
+                keyPath = "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Providers\\Client Side Rendering Print Provider\\Servers\\" + serverName + "\\Printers\\{" + guid + "}";
+                driver = ShellUtilities.execute(new String[] {"reg", "query", keyPath, "/v", "Printer Driver"}, new String[] {"REG_SZ"});
+                driver = driver.substring(driver.indexOf("REG_SZ") + 6).trim();
+            }
         } else {
             driver = ShellUtilities.execute(new String[] {"lpstat", "-l", "-p", getPrinterId(service.getName())}, new String[] {"Interface:"});
             driver = driver.substring(10).trim();

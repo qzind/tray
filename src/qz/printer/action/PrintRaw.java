@@ -130,9 +130,9 @@ public class PrintRaw implements PrintProcessor {
         iw.setCharset(Charset.forName(encoding));
 
         //ESCP only
-        int density = opt.optInt("density", -1);
+        int density = opt.optInt("dotDensity", -1);
         if (density == -1) {
-            String dStr = opt.optString("density", null);
+            String dStr = opt.optString("dotDensity", null);
             if (dStr != null && !dStr.isEmpty()) {
                 switch(dStr.toLowerCase()) {
                     case "single": density = 32; break;

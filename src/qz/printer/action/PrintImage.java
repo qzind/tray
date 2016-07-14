@@ -66,6 +66,8 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
+        dpiScale = (options.getPixelOptions().getDensity() * options.getPixelOptions().getUnits().as1Inch()) / 72.0;
+
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
 
@@ -79,16 +81,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
                     bi = ImageIO.read(new URL(data.getString("data")));
                 }
 
-                //scale up to print density
-                dpiScale = (options.getPixelOptions().getDensity() * options.getPixelOptions().getUnits().as1Inch()) / 72.0;
-                log.debug("Scaling image up by x{}", dpiScale);
-
-                BufferedImage scaled = new BufferedImage((int)(bi.getWidth() * dpiScale), (int)(bi.getHeight() * dpiScale), bi.getType());
-                Graphics2D g2d = withRenderHints(scaled.createGraphics(), options.getPixelOptions().getInterpolation());
-                g2d.drawImage(bi, 0, 0, (int)(bi.getWidth() * dpiScale), (int)(bi.getHeight() * dpiScale), null);
-                g2d.dispose();
-
-                images.add(scaled);
+                images.add(bi);
             }
             catch(IIOException e) {
                 if (e.getCause() != null && e.getCause() instanceof FileNotFoundException) {
@@ -140,9 +133,19 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         }
         log.trace("Requested page {} for printing", pageIndex);
 
-
         BufferedImage imgToPrint = images.get(pageIndex);
-        imgToPrint = fixColorModel(imgToPrint);
+
+        //scale up to print density (using less of a stretch if image is already larger than page)
+        double upScale = dpiScale * Math.min((pageFormat.getImageableWidth() / imgToPrint.getWidth()), (pageFormat.getImageableHeight() / imgToPrint.getHeight()));
+        if (upScale > dpiScale) { upScale = dpiScale; } else if (upScale < 1) { upScale = 1; }
+        log.debug("Scaling image up by x{}", upScale);
+
+        BufferedImage scaled = new BufferedImage((int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), imgToPrint.getType());
+        Graphics2D g2d = withRenderHints(scaled.createGraphics(), interpolation);
+        g2d.drawImage(imgToPrint, 0, 0, (int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), null);
+        g2d.dispose();
+
+        imgToPrint = fixColorModel(scaled);
         if (imageRotation % 360 != 0) {
             imgToPrint = rotate(imgToPrint, imageRotation);
         }
@@ -230,6 +233,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
     public void cleanup() {
         images.clear();
 
+        dpiScale = 1.0;
         scaleImage = false;
         imageRotation = 0;
         interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC;

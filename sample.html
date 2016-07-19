@@ -1726,17 +1726,12 @@
         // xor on 0 causes issues
         if (precision == -256) { precision = 0; }
 
-        // Get weight
-        data.splice(0, 4);
-        data.reverse();
-        var weight = parseInt(data.join(''), 16);
-
-        weight *= Math.pow(10, precision);
-        weight = weight.toFixed(Math.abs(precision));
-
         // Get units
         var units = parseInt(data[2], 16);
         switch(units) {
+            case 2:
+                units = 'g';
+                break;
             case 3:
                 units = 'kg';
                 break;
@@ -1747,6 +1742,14 @@
             default:
                 units = 'lbs';
         }
+
+        // Get weight
+        data.splice(0, 4);
+        data.reverse();
+        var weight = parseInt(data.join(''), 16);
+
+        weight *= Math.pow(10, precision);
+        weight = weight.toFixed(Math.abs(precision));
 
         return weight + units + ' - ' + status;
     }

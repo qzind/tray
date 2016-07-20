@@ -154,15 +154,21 @@ public class PrintingUtilities {
 
                 keyPath = "HKCU\\Printers\\Connections\\" + regName;
                 String guid = ShellUtilities.execute(new String[] {"reg", "query", keyPath, "/v", "GuidPrinter"}, new String[] {"REG_SZ"});
-                guid = guid.substring(guid.indexOf("REG_SZ") + 6).trim();
+                if (!guid.isEmpty()) {
+                    guid = guid.substring(guid.indexOf("REG_SZ") + 6).trim();
 
-                keyPath = "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Providers\\Client Side Rendering Print Provider\\Servers\\" + serverName + "\\Printers\\" + guid;
-                driver = ShellUtilities.execute(new String[] {"reg", "query", keyPath, "/v", "Printer Driver"}, new String[] {"REG_SZ"});
-                driver = driver.substring(driver.indexOf("REG_SZ") + 6).trim();
+                    keyPath = "HKLM\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Providers\\Client Side Rendering Print Provider\\Servers\\" + serverName + "\\Printers\\" + guid;
+                    driver = ShellUtilities.execute(new String[] {"reg", "query", keyPath, "/v", "Printer Driver"}, new String[] {"REG_SZ"});
+                    if (!driver.isEmpty()) {
+                        driver = driver.substring(driver.indexOf("REG_SZ") + 6).trim();
+                    }
+                }
             }
         } else {
             driver = ShellUtilities.execute(new String[] {"lpstat", "-l", "-p", getPrinterId(service.getName())}, new String[] {"Interface:"});
-            driver = driver.substring(10).trim();
+            if (!driver.isEmpty()) {
+                driver = driver.substring(10).trim();
+            }
         }
 
         return driver;

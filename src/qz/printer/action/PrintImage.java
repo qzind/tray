@@ -133,19 +133,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         }
         log.trace("Requested page {} for printing", pageIndex);
 
-        BufferedImage imgToPrint = images.get(pageIndex);
-
-        //scale up to print density (using less of a stretch if image is already larger than page)
-        double upScale = dpiScale * Math.min((pageFormat.getImageableWidth() / imgToPrint.getWidth()), (pageFormat.getImageableHeight() / imgToPrint.getHeight()));
-        if (upScale > dpiScale) { upScale = dpiScale; } else if (upScale < 1) { upScale = 1; }
-        log.debug("Scaling image up by x{}", upScale);
-
-        BufferedImage scaled = new BufferedImage((int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), imgToPrint.getType());
-        Graphics2D g2d = withRenderHints(scaled.createGraphics(), interpolation);
-        g2d.drawImage(imgToPrint, 0, 0, (int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), null);
-        g2d.dispose();
-
-        imgToPrint = fixColorModel(scaled);
+        BufferedImage imgToPrint = fixColorModel(images.get(pageIndex));
         if (imageRotation % 360 != 0) {
             imgToPrint = rotate(imgToPrint, imageRotation);
         }
@@ -158,6 +146,18 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         double imgH = imgToPrint.getHeight() / dpiScale;
 
         if (scaleImage) {
+            //scale up to print density (using less of a stretch if image is already larger than page)
+            double upScale = dpiScale * Math.min((pageFormat.getImageableWidth() / imgToPrint.getWidth()), (pageFormat.getImageableHeight() / imgToPrint.getHeight()));
+            if (upScale > dpiScale) { upScale = dpiScale; } else if (upScale < 1) { upScale = 1; }
+            log.debug("Scaling image up by x{}", upScale);
+
+            BufferedImage scaled = new BufferedImage((int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), imgToPrint.getType());
+            Graphics2D g2d = withRenderHints(scaled.createGraphics(), interpolation);
+            g2d.drawImage(imgToPrint, 0, 0, (int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), null);
+            g2d.dispose();
+
+            imgToPrint = scaled;
+
             // scale image to smallest edge, keeping size ratio
             if (((float)imgToPrint.getWidth() / (float)imgToPrint.getHeight()) >= (boundW / boundH)) {
                 imgW = boundW;

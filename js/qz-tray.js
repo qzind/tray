@@ -617,7 +617,7 @@ var qz = (function() {
                         if (options == undefined) { options = {}; }
 
                         //respect forcing secure ports if it is defined, otherwise disable
-                        if (options.usingSecure === 'undefined') {
+                        if (options.usingSecure === undefined) {
                             _qz.log.trace("Disabling secure ports due to insecure page");
                             options.usingSecure = false;
                         }

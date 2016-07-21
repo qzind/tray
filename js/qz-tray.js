@@ -615,7 +615,12 @@ var qz = (function() {
                     //disable secure ports if page is not secure
                     if (typeof location === 'undefined' || location.protocol !== 'https:') {
                         if (options == undefined) { options = {}; }
-                        options.usingSecure = false;
+
+                        //respect forcing secure ports if it is defined, otherwise disable
+                        if (options.usingSecure === undefined) {
+                            _qz.log.trace("Disabling secure ports due to insecure page");
+                            options.usingSecure = false;
+                        }
                     }
 
                     var attempt = function(count) {

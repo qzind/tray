@@ -1,6 +1,6 @@
 matrix:
   include:
-    - jdk: oraclejdk8 
+    - jdk: oraclejdk8
       env: TARGET=nsis
     - jdk: oraclejdk8
       env: TARGET=makeself
@@ -14,7 +14,7 @@ matrix:
       jdk: oraclejdk11
       env: TARGET=pkgbuild
 language: java
-before_script: 
+before_script:
     - sw_vers -productVersion && brew update && brew install ant; ant -version
     - test -e /etc/lsb-release && sudo apt-get update -qq && sudo apt-get install -y makeself nsis; echo;
 script: ant $TARGET

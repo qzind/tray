@@ -10,6 +10,9 @@
 
 package qz.printer.action;
 
+import com.sun.javafx.print.PrintHelper;
+import com.sun.javafx.print.Units;
+import javafx.print.*;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -21,6 +24,8 @@ import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
 
+import javax.print.PrintException;
+import java.awt.print.PrinterException;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.swing.*;
 import java.awt.*;
@@ -33,9 +38,14 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
-public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
+public class PrintHTML implements PrintProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(PrintHTML.class);
 
@@ -45,7 +55,6 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
 
     public PrintHTML() {
-        super();
         models = new ArrayList<>();
     }
 
@@ -62,18 +71,13 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
             for(int i = 0; i < printData.length(); i++) {
                 JSONObject data = printData.getJSONObject(i);
-                if (data.optBoolean("processed")) { continue; } //in cases of failed captures on multi-pages
                 String source = data.getString("data");
 
                 PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase(Locale.ENGLISH));
 
-                double pageZoom = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()) / 72.0;
-                if (pageZoom <= 1 || data.optBoolean("forceOriginal")) { pageZoom = 1; }
-
                 double pageWidth = 0;
                 double pageHeight = 0;
 
-                // web dimension use 96dpi (or equivalent dp/metric)
                 if (options.getDefaultOptions().getPageSize() != null) {
                     pageWidth = options.getDefaultOptions().getPageSize().getWidth();
                     //pageHeight = options.getDefaultOptions().getPageSize().getHeight();
@@ -90,7 +94,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
                     }
                 }
 
-                models.add(new WebAppModel(source, (format != PrintingUtilities.Format.FILE), pageWidth, pageHeight, pxlOpts.isScaleContent(), pageZoom));
+                models.add(new WebAppModel(source, (format != PrintingUtilities.Format.FILE), pageWidth, pageHeight, pxlOpts.isScaleContent()));
             }
 
             log.debug("Parsed {} html records", models.size());
@@ -104,35 +108,119 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
     }
 
     @Override
-    public void print(PrintOutput output, PrintOptions options) throws PrinterException {
+    public void print(PrintOutput output, PrintOptions options) throws PrintException, PrinterException {
         if (options.getPixelOptions().isLegacy()) {
             printLegacy(output, options);
         } else {
+            Printer fxPrinter = null;
+            for(Printer p : Printer.getAllPrinters()) {
+                if (p.getName().equals(output.getPrintService().getName())) {
+                    fxPrinter = p;
+                    break;
+                }
+            }
+            if (fxPrinter == null) {
+                throw new PrinterException("Cannot find printer under the JavaFX libraries");
+            }
+
+            PrinterJob job = PrinterJob.createPrinterJob(fxPrinter);
+
+
+            // apply option settings
+            PrintOptions.Pixel pxlOpts = options.getPixelOptions();
+            JobSettings settings = job.getJobSettings();
+            settings.setJobName(pxlOpts.getJobName(Constants.HTML_PRINT));
+            settings.setPrintQuality(PrintQuality.NORMAL);
+
+            if (pxlOpts.getColorType() != null) {
+                settings.setPrintColor(pxlOpts.getColorType().getAsPrintColor());
+            }
+            if (pxlOpts.isDuplex()) {
+                settings.setPrintSides(PrintSides.DUPLEX);
+            }
+            if (pxlOpts.getPrinterTray() != null) {
+                fxPrinter.getPrinterAttributes().getSupportedPaperSources().stream()
+                        .filter(source -> pxlOpts.getPrinterTray().equals(source.getName())).forEach(settings::setPaperSource);
+            }
+
+            if (pxlOpts.getDensity() > 0) {
+                settings.setPrintResolution(PrintHelper.createPrintResolution((int)pxlOpts.getDensity(), (int)pxlOpts.getDensity()));
+            }
+
+            Paper paper = fxPrinter.getPrinterAttributes().getDefaultPaper();
+            if (pxlOpts.getSize() != null) {
+                double convert = 1;
+                Units units = pxlOpts.getUnits().getAsUnits();
+                if (units == null) {
+                    convert = 10; //need to adjust from cm to mm only for DPCM sizes
+                    units = Units.MM;
+                }
+                paper = PrintHelper.createPaper("Custom", pxlOpts.getSize().getWidth() * convert, pxlOpts.getSize().getHeight() * convert, units);
+            }
+
+            PageOrientation orient = fxPrinter.getPrinterAttributes().getDefaultPageOrientation();
+            if (pxlOpts.getOrientation() != null) {
+                orient = pxlOpts.getOrientation().getAsPageOrient();
+            }
+
+            try {
+                PageLayout layout;
+                PrintOptions.Margins m = pxlOpts.getMargins();
+                if (m != null) {
+                    //force access to the page layout constructor as the adjusted margins on small sizes are wildly inaccurate
+                    Constructor<PageLayout> plCon = PageLayout.class.getDeclaredConstructor(Paper.class, PageOrientation.class, double.class, double.class, double.class, double.class);
+                    plCon.setAccessible(true);
+
+                    //margins defined as pnt (1/72nds)
+                    double asPnt = pxlOpts.getUnits().toInches() * 72;
+                    layout = plCon.newInstance(paper, orient, m.left() * asPnt, m.right() * asPnt, m.top() * asPnt, m.bottom() * asPnt);
+                } else {
+                    //if margins are not provided, use as much space as javafx says is possible
+                    layout = fxPrinter.createPageLayout(paper, orient, Printer.MarginType.HARDWARE_MINIMUM);
+                }
+
+                //force our layout as the default to avoid default-margin exceptions on small paper sizes
+                Field field = fxPrinter.getClass().getDeclaredField("defPageLayout");
+                field.setAccessible(true);
+                field.set(fxPrinter, layout);
+
+                try {
+                    //force access because custom layouts need margins validated
+                    Method method = job.getClass().getDeclaredMethod("validatePageLayout", PageLayout.class);
+                    method.setAccessible(true);
+
+                    //will fail for small sizes, this is expected as have to force margins for that size anyway
+                    layout = (PageLayout)method.invoke(job, layout);
+                }
+                catch(Exception ignore) {}
+
+                settings.setPageLayout(layout);
+            }
+            catch(Exception e) {
+                log.error("Failed to set custom layout", e);
+            }
+
+            log.trace("{}", settings.toString());
+
+
             for(WebAppModel model : models) {
                 try {
-                    images.add(WebApp.capture(model));
-                }
-                catch(IOException e) {
-                    //JavaFX image loader becomes null if webView is too large, throwing an IllegalArgumentException on screen capture attempt
-                    if (e.getCause() != null && e.getCause() instanceof IllegalArgumentException) {
-                        try {
-                            log.warn("HTML capture failed due to size, attempting at default zoom");
-                            model.setZoom(1.0);
-                            images.add(WebApp.capture(model));
-                        }
-                        catch(Throwable re) {
-                            throw new UnsupportedOperationException("Image or Density is too large for HTML printing", re);
+                    if (pxlOpts.getCopies() > fxPrinter.getPrinterAttributes().getMaxCopies()) {
+                        for(int i = 0; i < pxlOpts.getCopies(); i++) {
+                            WebApp.print(job, model);
                         }
                     } else {
-                        throw new PrinterException(e.getMessage());
+                        settings.setCopies(pxlOpts.getCopies());
+                        WebApp.print(job, model);
                     }
                 }
                 catch(Throwable t) {
-                    throw new UnsupportedOperationException("Failed to capture HTML", t);
+                    throw new PrintException(t.getMessage());
                 }
             }
 
-            super.print(output, options);
+            //send pending prints
+            job.endJob();
         }
     }
 
@@ -187,9 +275,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
     @Override
     public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
-        if (legacyLabel == null) {
-            return super.print(graphics, pageFormat, pageIndex);
-        } else {
+        if (legacyLabel != null) {
             if (graphics == null) { throw new PrinterException("No graphics specified"); }
             if (pageFormat == null) { throw new PrinterException("No page format specified"); }
 
@@ -209,10 +295,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
     @Override
     public void cleanup() {
-        super.cleanup();
-
         models.clear();
         legacyLabel = null;
     }
-
 }

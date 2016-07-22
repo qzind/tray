@@ -126,7 +126,7 @@ public class PrintServiceMatcher {
 
             int trays = 0;
             for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
-                if (m.toString().startsWith("Tray")) { trays++; }
+                if (m.toString().trim().startsWith("Tray")) { trays++; }
             }
             jsonService.put("trays", trays);
 

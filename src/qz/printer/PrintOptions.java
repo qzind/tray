@@ -1,5 +1,8 @@
 package qz.printer;
 
+import com.sun.javafx.print.Units;
+import javafx.print.PageOrientation;
+import javafx.print.PrintColor;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -458,20 +461,22 @@ public class PrintOptions {
 
     /** Pixel dimension values */
     public enum Unit {
-        INCH(ResolutionSyntax.DPI, 1.0f, 1.0f, Size2DSyntax.INCH),       //1in = 1in
-        CM(ResolutionSyntax.DPCM, .3937f, 2.54f, 10000),                 //1cm = .3937in ; 1in = 2.54cm
-        MM(ResolutionSyntax.DPCM * 10, .03937f, 25.4f, Size2DSyntax.MM); //1mm = .03937in ; 1in = 25.4mm
+        INCH(ResolutionSyntax.DPI, 1.0f, 1.0f, Size2DSyntax.INCH, Units.INCH),     //1in = 1in
+        CM(ResolutionSyntax.DPCM, .3937f, 2.54f, 10000, null),                     //1cm = .3937in ; 1in = 2.54cm
+        MM(ResolutionSyntax.DPCM * 10, .03937f, 25.4f, Size2DSyntax.MM, Units.MM); //1mm = .03937in ; 1in = 25.4mm
 
         private final float fromInch;
         private final float toInch; //multiplicand to convert to inches
         private final int resSyntax;
         private final int µm;
+        private final Units units;
 
-        Unit(int resSyntax, float toIN, float fromIN, int µm) {
+        Unit(int resSyntax, float toIN, float fromIN, int µm, Units units) {
             toInch = toIN;
             fromInch = fromIN;
             this.resSyntax = resSyntax;
             this.µm = µm;
+            this.units = units;
         }
 
         public float toInches() {
@@ -489,32 +494,42 @@ public class PrintOptions {
         public int getMediaSizeUnits() {
             return µm;
         }
+
+        public Units getAsUnits() {
+            return units;
+        }
     }
 
     /** Pixel page orientation option */
     public enum Orientation {
-        PORTRAIT(OrientationRequested.PORTRAIT, PageFormat.PORTRAIT, 0),
-        REVERSE_PORTRAIT(OrientationRequested.PORTRAIT, PageFormat.PORTRAIT, 180),
-        LANDSCAPE(OrientationRequested.LANDSCAPE, PageFormat.LANDSCAPE, 270),
-        REVERSE_LANDSCAPE(OrientationRequested.REVERSE_LANDSCAPE, PageFormat.REVERSE_LANDSCAPE, 90);
+        PORTRAIT(OrientationRequested.PORTRAIT, PageOrientation.PORTRAIT, PageFormat.PORTRAIT, 0),
+        REVERSE_PORTRAIT(OrientationRequested.PORTRAIT, PageOrientation.REVERSE_PORTRAIT, PageFormat.PORTRAIT, 180),
+        LANDSCAPE(OrientationRequested.LANDSCAPE, PageOrientation.LANDSCAPE, PageFormat.LANDSCAPE, 270),
+        REVERSE_LANDSCAPE(OrientationRequested.REVERSE_LANDSCAPE, PageOrientation.REVERSE_LANDSCAPE, PageFormat.REVERSE_LANDSCAPE, 90);
 
-        private final OrientationRequested asAttribute; //OrientationRequested const
-        private final int asFormat; //PageFormat const
-        private final int degreesRot; //degrees rotated
+        private final OrientationRequested orientationRequested;
+        private final PageOrientation pageOrientation;
+        private final int orientationFormat;
+        private final int degreesRot;
 
-        Orientation(OrientationRequested asAttribute, int asFormat, int degreesRot) {
-            this.asAttribute = asAttribute;
-            this.asFormat = asFormat;
+        Orientation(OrientationRequested orientationRequested, PageOrientation pageOrientation, int orientationFormat, int degreesRot) {
+            this.orientationRequested = orientationRequested;
+            this.pageOrientation = pageOrientation;
+            this.orientationFormat = orientationFormat;
             this.degreesRot = degreesRot;
         }
 
 
-        public OrientationRequested getAsAttribute() {
-            return asAttribute;
+        public OrientationRequested getAsOrientRequested() {
+            return orientationRequested;
         }
 
-        public int getAsFormat() {
-            return asFormat;
+        public PageOrientation getAsPageOrient() {
+            return pageOrientation;
+        }
+
+        public int getAsOrientFormat() {
+            return orientationFormat;
         }
 
         public int getDegreesRot() {
@@ -524,20 +539,26 @@ public class PrintOptions {
 
     /** Pixel page color option */
     public enum ColorType {
-        COLOR(Chromaticity.COLOR),
-        GREYSCALE(Chromaticity.MONOCHROME),
-        GRAYSCALE(Chromaticity.MONOCHROME),
-        BLACKWHITE(Chromaticity.MONOCHROME);
+        COLOR(Chromaticity.COLOR, PrintColor.COLOR),
+        GREYSCALE(Chromaticity.MONOCHROME, PrintColor.MONOCHROME),
+        GRAYSCALE(Chromaticity.MONOCHROME, PrintColor.MONOCHROME),
+        BLACKWHITE(Chromaticity.MONOCHROME, PrintColor.MONOCHROME);
 
-        private Chromaticity chromatic;
+        private final Chromaticity chromatic;
+        private final PrintColor printColor;
 
-        ColorType(Chromaticity chromatic) {
+        ColorType(Chromaticity chromatic, PrintColor printColor) {
             this.chromatic = chromatic;
+            this.printColor = printColor;
         }
 
 
-        public Chromaticity getChromatic() {
+        public Chromaticity getAsChromaticity() {
             return chromatic;
+        }
+
+        public PrintColor getAsPrintColor() {
+            return printColor;
         }
     }
 

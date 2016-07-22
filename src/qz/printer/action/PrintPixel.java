@@ -37,13 +37,13 @@ public abstract class PrintPixel {
 
         //apply general attributes
         if (pxlOpts.getColorType() != null) {
-            attributes.add(pxlOpts.getColorType().getChromatic());
+            attributes.add(pxlOpts.getColorType().getAsChromaticity());
         }
         if (pxlOpts.isDuplex()) {
             attributes.add(Sides.DUPLEX);
         }
         if (pxlOpts.getOrientation() != null) {
-            attributes.add(pxlOpts.getOrientation().getAsAttribute());
+            attributes.add(pxlOpts.getOrientation().getAsOrientRequested());
         }
         if (pxlOpts.getPrinterTray() != null) {
             for(Media m: supported){

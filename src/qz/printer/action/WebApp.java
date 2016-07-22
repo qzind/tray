@@ -4,19 +4,14 @@ import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
-import javafx.embed.swing.SwingFXUtils;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
+import javafx.print.PageLayout;
+import javafx.print.PrinterJob;
 import javafx.scene.Scene;
-import javafx.scene.SnapshotParameters;
-import javafx.scene.image.WritableImage;
+import javafx.scene.transform.Scale;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import org.joor.Reflect;
-import org.joor.ReflectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -24,7 +19,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,11 +38,8 @@ public class WebApp extends Application {
 
     private static WebApp instance = null;
 
-    private static Stage stage;
     private static WebView webView;
-    private static double pageWidth;
     private static double pageHeight;
-    private static double pageZoom;
 
     private static final AtomicBoolean started = new AtomicBoolean(false);
     private static final AtomicBoolean complete = new AtomicBoolean(false);
@@ -57,70 +48,43 @@ public class WebApp extends Application {
     private static PauseTransition snap;
 
     //listens for a Succeeded state to activate image capture
-    private static ChangeListener<Worker.State> stateListener = new ChangeListener<Worker.State>() {
-        @Override
-        public void changed(ObservableValue<? extends Worker.State> ov, Worker.State oldState, Worker.State newState) {
-            log.trace("New state: {} > {}", oldState, newState);
+    private static ChangeListener<Worker.State> stateListener = (ov, oldState, newState) -> {
+        log.trace("New state: {} > {}", oldState, newState);
 
-            if (newState == Worker.State.SUCCEEDED) {
-                //ensure html tag doesn't use scrollbars, clipping page instead
-                Document doc = webView.getEngine().getDocument();
-                NodeList tags = doc.getElementsByTagName("html");
-                if (tags != null && tags.getLength() > 0) {
-                    Node base = tags.item(0);
-                    Attr applied = (Attr)base.getAttributes().getNamedItem("style");
-                    if (applied == null) {
-                        applied = doc.createAttribute("style");
-                    }
-                    applied.setValue(applied.getValue() + "; overflow: hidden;");
-                    base.getAttributes().setNamedItem(applied);
+        if (newState == Worker.State.SUCCEEDED) {
+            //ensure html tag doesn't use scrollbars, clipping page instead
+            Document doc = webView.getEngine().getDocument();
+            NodeList tags = doc.getElementsByTagName("html");
+            if (tags != null && tags.getLength() > 0) {
+                Node base = tags.item(0);
+                Attr applied = (Attr)base.getAttributes().getNamedItem("style");
+                if (applied == null) {
+                    applied = doc.createAttribute("style");
                 }
-
-                try {
-                    Reflect.on(webView).call("setZoom", pageZoom);
-                    log.trace("Zooming in by x{} for increased quality", pageZoom);
-                }
-                catch(ReflectException e) {
-                    log.warn("Unable zoom, using default quality");
-                    pageZoom = 1; //only zoom affects webView scaling
-                }
-
-                log.trace("Setting HTML page width to {}", (pageWidth * pageZoom));
-                webView.setMinWidth(pageWidth * pageZoom);
-                webView.setPrefWidth(pageWidth * pageZoom);
-                webView.autosize();
-
-                //we have to resize the width first, for responsive html, then calculate the best fit height
-                final PauseTransition resize = new PauseTransition(Duration.millis(100));
-                resize.setOnFinished(new EventHandler<ActionEvent>() {
-                    @Override
-                    public void handle(ActionEvent actionEvent) {
-                        if (pageHeight <= 0) {
-                            String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
-                            pageHeight = Double.parseDouble(heightText);
-                        }
-
-                        log.trace("Setting HTML page height to {}", (pageHeight * pageZoom));
-                        webView.setMinHeight(pageHeight * pageZoom);
-                        webView.setPrefHeight(pageHeight * pageZoom);
-                        webView.autosize();
-
-                        snap.playFromStart();
-                    }
-                });
-
-                resize.playFromStart();
+                applied.setValue(applied.getValue() + "; overflow: hidden;");
+                base.getAttributes().setNamedItem(applied);
             }
+
+            //we have to resize the width first, for responsive html, then calculate the best fit height
+            if (pageHeight <= 0) {
+                String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
+                pageHeight = Double.parseDouble(heightText);
+
+                log.trace("Setting HTML page height to {}", pageHeight);
+                webView.setMinHeight(pageHeight);
+                webView.setPrefHeight(pageHeight);
+                webView.setMaxHeight(pageHeight);
+                webView.autosize();
+            }
+
+            webView.setZoom(72d / 96d); //account for difference in print vs web dpi
+
+            snap.playFromStart();
         }
     };
 
     //listens for load progress
-    private static ChangeListener<Number> workDoneListener = new ChangeListener<Number>() {
-        @Override
-        public void changed(ObservableValue<? extends Number> ov, Number oldWork, Number newWork) {
-            log.trace("Done: {} > {}", oldWork, newWork);
-        }
-    };
+    private static ChangeListener<Number> workDoneListener = (ov, oldWork, newWork) -> log.trace("Done: {} > {}", oldWork, newWork);
 
 
     /** Called by JavaFX thread */
@@ -156,10 +120,7 @@ public class WebApp extends Application {
         log.debug("Started JavaFX");
 
         webView = new WebView();
-        Scene sc = new Scene(webView);
-
-        stage = st;
-        stage.setScene(sc);
+        st.setScene(new Scene(webView));
 
         Worker<Void> worker = webView.getEngine().getLoadWorker();
         worker.stateProperty().addListener(stateListener);
@@ -169,82 +130,80 @@ public class WebApp extends Application {
         Platform.setImplicitExit(false);
     }
 
-
     /**
-     * Sets up capture to run on JavaFX thread and returns snapshot of rendered page
+     * Prints the loaded source specified in the passed {@code model}.
      *
-     * @param model Data about the html to be rendered for capture
-     * @return BufferedImage of the rendered html
+     * @param job   A setup JavaFx {@code PrinterJob}
+     * @param model The model specifying the web page parameters
+     * @throws Throwable JavaFx will throw a generic {@code Throwable} class for any issues
      */
-    public static synchronized BufferedImage capture(final WebAppModel model) throws Throwable {
-        final AtomicReference<BufferedImage> capture = new AtomicReference<>();
-        complete.set(false);
-        thrown.set(null);
+    public static synchronized void print(final PrinterJob job, final WebAppModel model) throws Throwable {
+        final AtomicBoolean complete = new AtomicBoolean(false);
+        final AtomicReference<Throwable> thrown = new AtomicReference<>();
 
         //ensure JavaFX has started before we run
         if (!started.get()) {
             throw new IOException("JavaFX has not been started");
         }
 
-        // run these actions on the JavaFX thread
-        Platform.runLater(new Thread() {
-            public void run() {
+        Platform.runLater(() -> {
+            ChangeListener<Throwable> tt = (obs, oldExc, newExc) -> {
+                if (newExc != null) { thrown.set(newExc); }
+            };
+            webView.getEngine().getLoadWorker().exceptionProperty().addListener(tt);
+
+            log.trace("Setting starting size {}:{}", model.getWebWidth(), model.getWebHeight());
+            webView.setMinSize(model.getWebWidth(), model.getWebHeight());
+            webView.setPrefSize(model.getWebWidth(), model.getWebHeight());
+            webView.setMaxSize(model.getWebWidth(), model.getWebHeight());
+            webView.autosize();
+
+            pageHeight = model.getWebHeight();
+
+            //reset additive properties
+            webView.getTransforms().clear();
+            webView.setZoom(1.0);
+
+            snap = new PauseTransition(Duration.millis(100));
+            snap.setOnFinished(actionEvent -> {
                 try {
-                    pageWidth = model.getWebWidth();
-                    pageHeight = model.getWebHeight();
-                    pageZoom = model.getZoom();
-
-                    webView.setMinSize(100, 100);
-                    webView.setPrefSize(100, 100);
-                    webView.autosize();
-
-                    stage.show(); //FIXME - will not capture without showing stage
-                    stage.toBack();
-
-                    //ran when engine reaches SUCCEEDED state, takes snapshot of loaded html
-                    snap = new PauseTransition(Duration.millis(100));
-                    snap.setOnFinished(new EventHandler<ActionEvent>() {
-                        @Override
-                        public void handle(ActionEvent actionEvent) {
-                            try {
-                                log.debug("Attempting image capture");
-
-                                WritableImage snapshot = webView.snapshot(new SnapshotParameters(), null);
-                                capture.set(SwingFXUtils.fromFXImage(snapshot, null));
-
-                                complete.set(true);
-                            }
-                            catch(Throwable t) {
-                                thrown.set(t);
-                            }
-                            finally {
-                                stage.hide(); //hide stage so users won't have to manually close it
-                            }
+                    PageLayout layout = job.getJobSettings().getPageLayout();
+                    if (model.isScaled()) {
+                        double scale = 1.0;
+                        if ((webView.getWidth() / webView.getHeight()) >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
+                            scale = layout.getPrintableWidth() / webView.getWidth();
+                        } else {
+                            scale = layout.getPrintableHeight() / webView.getHeight();
                         }
-                    });
-
-                    //actually begin loading the html
-                    if (model.isPlainText()) {
-                        webView.getEngine().loadContent(model.getSource(), "text/html");
-                    } else {
-                        webView.getEngine().load(model.getSource());
+                        webView.getTransforms().add(new Scale(scale, scale));
                     }
+
+                    log.info("{}x{}", webView.getWidth(), webView.getHeight());
+
+                    Platform.runLater(() -> {
+                        complete.set(job.printPage(webView));
+                        webView.getEngine().getLoadWorker().exceptionProperty().removeListener(tt);
+                    });
                 }
-                catch(Throwable t) {
-                    thrown.set(t);
-                }
+                catch(Exception e) { thrown.set(e); }
+            });
+
+
+            if (model.isPlainText()) {
+                webView.getEngine().loadContent(model.getSource(), "text/html");
+            } else {
+                webView.getEngine().load(model.getSource());
             }
         });
 
         Throwable t = null;
-        while(!complete.get() && (t = thrown.get()) == null) {
-            log.trace("Waiting on capture..");
+        while((job.getJobStatus() == PrinterJob.JobStatus.NOT_STARTED || job.getJobStatus() == PrinterJob.JobStatus.PRINTING)
+                && !complete.get() && (t = thrown.get()) == null) {
+            log.trace("Waiting on print..");
             try { Thread.sleep(1000); } catch(Exception ignore) {}
         }
 
         if (t != null) { throw t; }
-
-        return capture.get();
     }
 
 }

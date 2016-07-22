@@ -5,6 +5,7 @@ matrix:
     - jdk: oraclejdk8
       env: TARGET=makeself
     - os: osx
+      jdk: oraclejdk8
       env: TARGET=pkgbuild
 language: java
 before_script: 

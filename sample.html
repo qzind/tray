@@ -1166,22 +1166,21 @@
     function printHTML() {
         var config = getUpdatedConfig();
 
-        var colA = '<h2>*&nbsp; QZ Print Plugin HTML Printing &nbsp;*</h2>' +
-                '<span style="color: #F00;">Version:</span> ' + qzVersion + '<br/>' +
-                '<span style="color: #F00;">Visit:</span> https://qz.io/';
-        var colB = '<img src="' + getPath() + '/assets/img/image_sample.png">';
-
         var printData = [
             {
                 type: 'html',
                 format: 'plain',
-                data: '<html>' +
-                '   <table style="font-family: monospace; border: 1px;">' +
-                '       <tr style="height: 6cm;">' +
-                '           <td valign="top">' + colA + '</td>' +
-                '           <td valign="top">' + colB + '</td>' +
-                '       </tr>' +
-                '   </table>' +
+                data: '<html style="font-family: monospace; border: 1px solid #000;">' +
+                '    <div style="float: left; margin-left: .5em;">' +
+                '        <h2>* QZ Tray HTML Sample Print *</h2>' +
+                '        <p>' +
+                '            <span style="color: #D00;">Version:</span> ' + qzVersion + '<br/>' +
+                '            <span style="color: #D00;">Source:</span> https://qz.io/' +
+                '        </p>' +
+                '    </div>' +
+                '    <div style="float: right">' +
+                '        <img src="' + getPath() + '/assets/img/image_sample.png" />' +
+                '    </div>' +
                 '</html>'
             }
         ];

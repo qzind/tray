@@ -41,9 +41,9 @@ public abstract class PrintPixel {
         if (pxlOpts.getOrientation() != null) {
             attributes.add(pxlOpts.getOrientation().getAsOrientRequested());
         }
-        if (pxlOpts.getPrinterTray() != null) {
-            for(Media m: supported){
-                if (m.toString().trim().equals(pxlOpts.getPrinterTray())) {
+        if (pxlOpts.getPrinterTray() != null && !pxlOpts.getPrinterTray().isEmpty()) {
+            for(Media m : supported) {
+                if (m.toString().trim().equals(pxlOpts.getPrinterTray().trim())) {
                     attributes.add(m);
                     break;
                 }

@@ -167,8 +167,6 @@ public class WebApp extends Application {
                         webView.getTransforms().add(new Scale(scale, scale));
                     }
 
-                    log.info("{}x{}", webView.getWidth(), webView.getHeight());
-
                     Platform.runLater(() -> {
                         complete.set(job.printPage(webView));
                         webView.getEngine().getLoadWorker().exceptionProperty().removeListener(tt);

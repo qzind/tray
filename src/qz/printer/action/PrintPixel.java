@@ -47,7 +47,7 @@ public abstract class PrintPixel {
         }
         if (pxlOpts.getPrinterTray() != null && !pxlOpts.getPrinterTray().isEmpty()) {
             for(Media m : supported) {
-                if (m.toString().trim().equals(pxlOpts.getPrinterTray().trim())) {
+                if (m.toString().trim().equalsIgnoreCase(pxlOpts.getPrinterTray().trim())) {
                     attributes.add(m);
                     break;
                 }

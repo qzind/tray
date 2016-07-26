@@ -56,7 +56,7 @@ public abstract class PrintPixel {
         }
 
         //apply sizing and margins
-        Paper paper = new Paper();
+        Paper paper = page.getPaper();
 
         float pageX = 0f;
         float pageY = 0f;

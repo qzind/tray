@@ -184,24 +184,15 @@ public class PrintHTML implements PrintProcessor {
                     double asPnt = pxlOpts.getUnits().toInches() * 72;
                     layout = plCon.newInstance(paper, orient, m.left() * asPnt, m.right() * asPnt, m.top() * asPnt, m.bottom() * asPnt);
                 } else {
-                    //if margins are not provided, use as much space as javafx says is possible
-                    layout = fxPrinter.createPageLayout(paper, orient, Printer.MarginType.HARDWARE_MINIMUM);
+                    //if margins are not provided, use default paper margins
+                    PageLayout valid = fxPrinter.getDefaultPageLayout();
+                    layout = fxPrinter.createPageLayout(paper, orient, valid.getLeftMargin(), valid.getRightMargin(), valid.getTopMargin(), valid.getBottomMargin());
                 }
 
                 //force our layout as the default to avoid default-margin exceptions on small paper sizes
                 Field field = fxPrinter.getClass().getDeclaredField("defPageLayout");
                 field.setAccessible(true);
                 field.set(fxPrinter, layout);
-
-                try {
-                    //force access because custom layouts need margins validated
-                    Method method = job.getClass().getDeclaredMethod("validatePageLayout", PageLayout.class);
-                    method.setAccessible(true);
-
-                    //will fail for small sizes, this is expected as have to force margins for that size anyway
-                    layout = (PageLayout)method.invoke(job, layout);
-                }
-                catch(Exception ignore) {}
 
                 settings.setPageLayout(layout);
             }

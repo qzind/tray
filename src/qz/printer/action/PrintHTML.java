@@ -28,6 +28,8 @@ import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintException;
+import javax.print.attribute.standard.Copies;
+import javax.print.attribute.standard.CopiesSupported;
 import java.awt.print.PrinterException;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.swing.*;
@@ -44,7 +46,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -139,7 +140,7 @@ public class PrintHTML implements PrintProcessor {
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
             JobSettings settings = job.getJobSettings();
             settings.setJobName(pxlOpts.getJobName(Constants.HTML_PRINT));
-            settings.setPrintQuality(PrintQuality.NORMAL);
+            settings.setPrintQuality(PrintQuality.HIGH);
 
             if (pxlOpts.getColorType() != null) {
                 settings.setPrintColor(pxlOpts.getColorType().getAsPrintColor());
@@ -200,23 +201,29 @@ public class PrintHTML implements PrintProcessor {
                 log.error("Failed to set custom layout", e);
             }
 
+            settings.setCopies(pxlOpts.getCopies());
             log.trace("{}", settings.toString());
 
+            //javaFX lies about this value, so pull from original print service
+            CopiesSupported cSupport = (CopiesSupported)output.getPrintService()
+                    .getSupportedAttributeValues(Copies.class, output.getPrintService().getSupportedDocFlavors()[0], null);
 
-            for(WebAppModel model : models) {
-                try {
-                    if (pxlOpts.getCopies() > fxPrinter.getPrinterAttributes().getMaxCopies()) {
-                        for(int i = 0; i < pxlOpts.getCopies(); i++) {
-                            WebApp.print(job, model);
-                        }
-                    } else {
-                        settings.setCopies(pxlOpts.getCopies());
+            try {
+                if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
+                    for(WebAppModel model : models) {
                         WebApp.print(job, model);
                     }
+                } else {
+                    settings.setCopies(1); //manually handle copies if they are not supported
+                    for(int i = 0; i < pxlOpts.getCopies(); i++) {
+                        for(WebAppModel model : models) {
+                            WebApp.print(job, model);
+                        }
+                    }
                 }
-                catch(Throwable t) {
-                    throw new PrintException(t.getMessage());
-                }
+            }
+            catch(Throwable t) {
+                throw new PrintException(t.getMessage());
             }
 
             //send pending prints

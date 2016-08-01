@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.0.0
+ * @version 2.0.1
  * @overview QZ Tray Connector
  * <p/>
  * Connects a web client to the QZ Tray software.
@@ -1136,6 +1136,7 @@ var qz = (function() {
          * Many of these calls can be accomplished from the <code>qz.usb</code> namespace,
          * but HID allows for simpler interaction
          * @namespace qz.hid
+         * @since 2.0.1
          */
         hid: {
             /**
@@ -1143,6 +1144,7 @@ var qz = (function() {
              * If available, also returns manufacturer and product descriptions.
              *
              * @returns {Promise<Array<Object>|Error>} Array of JSON objects containing information on connected HID devices.
+             * @since 2.0.1
              *
              * @memberof qz.hid
              */
@@ -1155,6 +1157,7 @@ var qz = (function() {
              * Reported under the ACTION type in the streamEvent on callbacks.
              *
              * @returns {Promise<null|Error>}
+             * @since 2.0.1
              *
              * @see qz.hid.setHidCallbacks
              *
@@ -1168,6 +1171,7 @@ var qz = (function() {
              * Stop listening for HID device actions.
              *
              * @returns {Promise<null|Error>}
+             * @since 2.0.1
              *
              * @see qz.hid.setHidCallbacks
              *
@@ -1182,9 +1186,10 @@ var qz = (function() {
              * Event data will contain <code>{string} vendorId</code> and <code>{string} productId</code> for all types.
              *  For RECEIVE types, <code>{Array} output</code> (in hexadecimal format).
              *  For ERROR types, <code>{string} exception</code>.
-             *  For ACTION types, <code>{string} actionType<code>.
+             *  For ACTION types, <code>{string} actionType</code>.
              *
              * @param {Function|Array<Function>} calls Single or array of <code>Function({Object} eventData)</code> calls.
+             * @since 2.0.1
              *
              * @memberof qz.hid
              */
@@ -1198,6 +1203,7 @@ var qz = (function() {
              * @param vendorId Hex string of HID device's vendor ID.
              * @param productId Hex string of HID device's product ID.
              * @returns {Promise<null|Error>}
+             * @since 2.0.1
              *
              * @memberof qz.hid
              */
@@ -1218,8 +1224,9 @@ var qz = (function() {
              * @param [reportId=0x00] First byte of the data packet signifying the HID report ID.
              *                        Must be 0x00 for devices only supporting a single report.
              * @returns {Promise<null|Error>}
+             * @since 2.0.1
              *
-             * @memberof qz.usb
+             * @memberof qz.hid
              */
             sendData: function(vendorId, productId, data, reportId) {
                 var params = {
@@ -1238,6 +1245,7 @@ var qz = (function() {
              * @param productId Hex string of HID device's product ID.
              * @param responseSize Size of the byte array to receive a response in.
              * @returns {Promise<Array<string>|Error>} List of (hexadecimal) bytes received from the HID device.
+             * @since 2.0.1
              *
              * @memberof qz.hid
              */
@@ -1258,6 +1266,7 @@ var qz = (function() {
              * @param responseSize Size of the byte array to receive a response in.
              * @param [interval=100] Frequency to send read data back, in milliseconds.
              * @returns {Promise<null|Error>}
+             * @since 2.0.1
              *
              * @see qz.hid.setHidCallbacks
              *
@@ -1279,6 +1288,7 @@ var qz = (function() {
              * @param vendorId Hex string of HID device's vendor ID.
              * @param productId Hex string of HID device's product ID.
              * @returns {Promise<null|Error>}
+             * @since 2.0.1
              *
              * @memberof qz.hid
              */
@@ -1296,6 +1306,7 @@ var qz = (function() {
              * @param vendorId Hex string of HID device's vendor ID.
              * @param productId Hex string of HID device's product ID.
              * @returns {Promise<null|Error>}
+             * @since 2.0.1
              *
              * @memberof qz.hid
              */

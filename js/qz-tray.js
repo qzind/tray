@@ -1186,7 +1186,7 @@ var qz = (function() {
              * Event data will contain <code>{string} vendorId</code> and <code>{string} productId</code> for all types.
              *  For RECEIVE types, <code>{Array} output</code> (in hexadecimal format).
              *  For ERROR types, <code>{string} exception</code>.
-             *  For ACTION types, <code>{string} actionType<code>.
+             *  For ACTION types, <code>{string} actionType</code>.
              *
              * @param {Function|Array<Function>} calls Single or array of <code>Function({Object} eventData)</code> calls.
              * @since 2.0.1

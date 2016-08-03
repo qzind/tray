@@ -1,17 +1,22 @@
 #!/bin/bash
 ##########################################################################################
-#                ${project.name} Apple OS X KeyGen Utility                               #
+#                             ${project.name} MacOS KeyGen Utility                               #
 ##########################################################################################
 #  Description:                                                                          #
-#     1. Creates a self-signed Java Keystore for jetty wss://localhost or [hostname]     #
-#     2. Exports public certificate from Java Keystore                                   #
-#     3. Imports into Apple OS X Trusted Root Certs                                      #
+#    1. Creates a self-signed Java Keystore for jetty wss://localhost or [hostname]      #
+#    2. Exports public certificate from Java Keystore                                    #
+#    3. Imports into Apple OS X Trusted Root Certs                                       #
+#                                                                                        #
+#       Note:  If [sslcert] and [sslkey] are specified, import to browser/OS is omitted. #
 #                                                                                        #
 #  Depends:                                                                              #
 #    java                                                                                #
 #                                                                                        #
+#  Optional:                                                                             #
+#    openssl - Required if providing [sslcert], [sslkey] parameters                      #
+#                                                                                        #
 #  Usage:                                                                                #
-#    $ ./${apple.keygen.name} "install" [hostname]                                       #
+#    $ ./${apple.keygen.name} "install" [hostname] [sslcert] [sslkey]                    #
 #    $ ./${apple.keygen.name} "uninstall"                                                #
 #                                                                                        #
 ##########################################################################################
@@ -23,7 +28,17 @@ password=$(cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-z0-9' | fold -w ${jks.pas
 ${apple.jvmver} > /dev/null 2>&1
 fallback=$?
 
-makekeystore="${jks.command}"
+#
+# Handle trusted ssl certificate
+if [[ -n $3 && -n $4 ]]; then
+    sslcertpath="$3"
+    sslkeypath="$4"
+    makekeystore="${ssl.convert}"
+else
+    makekeystore="${jks.command}"
+fi
+
+
 makedercert="${der.command}"
 installdir="${apple.installdir}"
 
@@ -71,13 +86,58 @@ fi
 # Property file containing jks signing info
 propspath=$(echo "$props" | sed -e "s|$install|$installdir|g")
 
+# Convert trusted SSL cert to jks
+function create_pkcs12 {
+    echo "Creating PKCS12 keypair..."
+    keypair="${ssl.keypair}"
+    sslcert="${ssl.cert}"
+    sslkey="${ssl.key}"
+    generated="${ssl.command}"
+
+    keypairpath=$(echo "$keypair" | sed -e "s|$install|$installdir|g")
+    generated=$(echo "$generated" | sed -e "s|$keypair|$keypairpath|g")
+    generated=$(echo "$generated" | sed -e "s|$sslcert|$sslcertpath|g")
+    generated=$(echo "$generated" | sed -e "s|$sslkey|$sslkeypath|g")
+    generated=$(echo "$generated" | sed -e "s|$keypass|$password|g")
+
+    makekeystore=$(echo "$makekeystore" | sed -e "s|$keypair|$keypairpath|g")
+
+    eval "$generated" > /dev/null 2>&1
+    check_exists "$keypairpath"
+
+    if [ $? -ne 0 ]; then
+        echo "Error creating PKCS12 keypair from $sslcertpath, $sslkeypath to $keypairpath"
+        echo -e "${bash.failure}\n"
+        exit 1
+    fi
+
+    # Remove lingering self-signed certs
+    rm "$dercertpath" > /dev/null 2>&1
+
+    return 0
+}
+
+# Write out the secure websocket properties file
+function write_properties {
+    echo "Writing properties file..."
+    echo "wss.alias=${jks.alias}" > "$propspath"
+    echo "wss.keystore=$keystorepath" >> "$propspath"
+    echo "wss.keypass=$password" >> "$propspath"
+    echo "wss.storepass=$password" >> "$propspath"
+    echo "wss.host=${jks.host}" >> "$propspath"
+    echo "" >> "$propspath"
+    check_exists  "$propspath"
+    return $?
+}
+
 # Check to see if file exists
 function check_exists {
     if [ -e "$1" ]; then
         echo -e "${bash.success}\n"
-    else
-        echo -e "${bash.failure}\n"
+        return 0
     fi
+    echo -e "${bash.failure}\n"
+    return 1
 }
 
 # Remove all matching system certificates
@@ -116,6 +176,19 @@ fi
 # Delete old keystore, if exists
 rm -f "$keystorepath" > /dev/null 2>&1
 
+# Handle trusted ssl certificate, if specified
+if [ -n "$sslcertpath" ]; then
+    create_pkcs12
+    echo "Creating keystore for secure websockets..."
+    eval "$makekeystore" > /dev/null 2>&1
+    check_exists "$keystorepath"
+    write_properties
+    status=$?
+    echo "Finished"
+    exit $status
+fi
+
+# Handle self-signed certificate
 echo "Creating keystore for secure websockets..."
 eval "$makekeystore" > /dev/null 2>&1
 check_exists "$keystorepath"
@@ -124,14 +197,7 @@ echo "Converting keystore to native certificate..."
 eval "$makedercert" > /dev/null 2>&1
 check_exists "$dercertpath"
 
-echo "Writing properties file..."
-echo "wss.alias=${jks.alias}" > "$propspath"
-echo "wss.keystore=$keystorepath" >> "$propspath"
-echo "wss.keypass=$password" >> "$propspath"
-echo "wss.storepass=$password" >> "$propspath"
-echo "wss.host=${jks.host}" >> "$propspath"
-echo "" >> "$propspath"
-check_exists  "$propspath"
+write_properties
 
 echo "Removing old certificates (warnings are safe to ignore)..."
 remove_certs

@@ -1,18 +1,18 @@
 #!/bin/bash
-###############################################################################
-#                         ${project.name} Apple OS X Packager                         #
-###############################################################################
-#  Description:                                                               #
-#    1. Packages software into an Apple pkg installer                         #
-#                                                                             #
-#  Depends:                                                                   #
-#    pkgbuild                                                                 #
-#                                                                             #
-#  Usage:                                                                     #
-#    $ chmod +x apple-packager.sh                                             #
-#    $ ./apple-packager.sh                                                    #
-#                                                                             #
-###############################################################################
+##########################################################################################
+#                                  ${project.name} MacOS Packager                                #
+##########################################################################################
+#  Description:                                                                          #
+#    1. Packages software into an Apple pkg installer                                    #
+#                                                                                        #
+#  Depends:                                                                              #
+#    pkgbuild, security                                                                  #
+#                                                                                        #
+#  Usage:                                                                                #
+#    $ chmod +x ${apple.packager.name}                                                   #
+#    $ ./${apple.packager.name}                                                          #
+#                                                                                        #
+##########################################################################################
 echo
 echo "============================================"
 echo "            Packaging ${project.name}"

@@ -22,6 +22,8 @@
  *    3. Imports into Windows trusted cert store                                              *
  *    4. Imports into Firefox web browser (if installed)                                      *
  *                                                                                            *
+ *       Note:  If [ssl_cert] and [ssl_key] are specified, import to browser/OS is omitted.   *
+ *                                                                                            *
  *  UNINSTALL                                                                                 *
  *    1. Deletes certificate from Windows trusted cert store                                  *
  *    2. Deletes certificate from Firefox web browser (if installed)                          *
@@ -31,10 +33,10 @@
  *                                                                                            *
  *  Usage:                                                                                    *
  *    cscript //NoLogo ${windows.keygen.name}                                                      *
- *            "C:\Program Files\${project.name}" install [hostname] [portable_firefox]                *
+ *      "C:\Program Files\${project.name}" install [hostname] [portable_firefox] [ssl_cert] [ssl_key] *
  *                                                                                            *
- *    cscript //NoLogo ${windows.keygen.name}                                                 *
- *            "C:\Program Files\${project.name}" uninstall [hostname] [portable_firefox]                   *
+ *    cscript //NoLogo ${windows.keygen.name}                                                      *
+ *      "C:\Program Files\${project.name}" uninstall [hostname] [portable_firefox]                    *
  *                                                                                            *
  **********************************************************************************************/
 
@@ -47,10 +49,17 @@ var qzInstall = getArg(0, getRegValue("HKLM\\Software\\${project.name}\\"));
 var installMode = getArg(1, "install");
 var cn = getArg(2, "${jks.cn}");
 var firefoxPortable = getArg(3, null);
+var sslCert = getArg(4, null);
+var sslKey = getArg(5, null);
+
+var firefoxInstall;
 
 if (installMode == "install") {
-    var javaKey, jreHome, keyTool, keyStore, password, derCert, firefoxInstall;
-    if (createJavaKeystore()) {
+    var javaKey, jreHome, keyTool, keyStore, password, derCert;
+    if (sslCert && sslKey) {
+        createPKCS12();
+        createJavaKeystore();
+    } else if (createJavaKeystore()) {
         try { installWindowsCertificate(); }
         catch (err) { installWindowsXPCertificate(); }
         if (hasFirefoxConflict()) {
@@ -59,13 +68,10 @@ if (installMode == "install") {
                 "The installer will continue, but ${project.name} will not function with Firefox until this conflict is resolved.",
                 "Firefox AutoConfig Warning");
         } else {
-            if (firefoxInstall) {
-                installFirefoxCertificate();
-            }
+            installFirefoxCertificate();
         }
     }
 } else {
-    var firefoxInstall;
     try { deleteWindowsCertificate(); }
     catch (err) { deleteWindowsXPCertificate(); }
     deleteFirefoxCertificate();
@@ -90,12 +96,15 @@ function deleteFile(filePath) {
  * Generates a random string to be used as a password
  */
 function pw() {
-    var text = "";
+    if (password) {
+        return password;
+    }
+    password = "";
     var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
     for( var i=0; i < parseInt("${jks.passlength}"); i++ ) {
-        text += chars.charAt(Math.floor(Math.random() * chars.length));
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
 	}
-    return text;
+    return password;
 }
 
 /**
@@ -125,21 +134,26 @@ function getRegValue(path) {
  * Displays a message regarding whether or not a file exists
  */
 function verifyExists(path, msg) {
-    debug(" - " + (fso.FileExists(path) ? "[success] " : "[failed] ") + msg);
+    var success = fso.FileExists(path);
+    debug(" - " + (success ? "[success] " : "[failed] ") + msg);
+    return success;
 }
 
 /**
  * Displays a message regarding whether or not a command succeeded
  */
 function verifyExec(cmd, msg) {
-    debug(" - " + (shell.Run(cmd, 0, true) == 0 ? "[success] " : "[failed] ")  + msg);
+    var success = shell.Run(cmd, 0, true) == 0;
+    debug(" - " + (success ? "[success] " : "[failed] ")  + msg);
+    return success;
 }
 
 /**
  * Replaces "!install" with proper location, usually "C:\Program Files\", fixes forward slashes
  */
-function fixPath(append) {
-    return append.replace("${jks.install}", qzInstall).replace(/\//g, "\\");
+function fixPath(path) {
+    var removeTrailing = qzInstall.replace(/\\$/, "").replace(/\/$/, "");
+    return path.replace("${jks.install}", removeTrailing).replace(/\//g, "\\");
 }
 
 /**
@@ -220,19 +234,31 @@ function createJavaKeystore() {
         die("Can't find ${project.name} installation path. Secure websockets will not work.", "${windows.err.install}");
     }
 
-
     keyStore = fixPath("${jks.keystore}");
-    password = pw();    // random password hash
 
-    var makeKeyStore = "${jks.command}"
-        .replace("${jks.keytool}", keyTool)
-        .replace("${jks.keystore}", keyStore)
-        .replace("${jks.storepass}", password)
-        .replace("${jks.keypass}", password);
+    var makeKeyStore;
+    if (sslCert) {
+        makeKeyStore = "${ssl.convert}"
+            .replace("${jks.keytool}", keyTool)
+            .replace("${ssl.keypair}", fixPath("${ssl.keypair}"))
+            .replace("${jks.keystore}", keyStore)
+            .replace("${jks.storepass}", pw())
+            .replace("${jks.keypass}", pw())
+            .replace("${jks.keypass}", pw()); // second ${jks.keypass}
 
-    // Handle CN=${jks.cn} override
-    if (cn != "${jks.cn}") {
-        makeKeyStore = makeKeyStore.replace("CN=${jks.cn},", "CN=" + cn + ",");
+        // Remove any lingering self-signed certs
+        deleteFile(derCert);
+    } else {
+        makeKeyStore = "${jks.command}"
+            .replace("${jks.keytool}", keyTool)
+            .replace("${jks.keystore}", keyStore)
+            .replace("${jks.storepass}", pw())
+            .replace("${jks.keypass}", pw());
+
+        // Handle CN=${jks.cn} override
+        if (cn != "${jks.cn}") {
+            makeKeyStore = makeKeyStore.replace("CN=${jks.cn},", "CN=" + cn + ",");
+        }
     }
 
     deleteFile(keyStore);   // remove old, if exists
@@ -243,8 +269,8 @@ function createJavaKeystore() {
     var file = fso.OpenTextFile(fixPath("${jks.properties}"), 2, true);
     file.WriteLine("wss.alias=" + "${jks.alias}");
     file.WriteLine("wss.keystore=" + keyStore.replace(/\\/g, "\\\\"));
-    file.WriteLine("wss.keypass=" + password);
-    file.WriteLine("wss.storepass=" + password);
+    file.WriteLine("wss.keypass=" + pw());
+    file.WriteLine("wss.storepass=" + pw());
     file.WriteLine("wss.host=${jks.host}");
     file.Close();
 
@@ -258,8 +284,8 @@ function installWindowsCertificate() {
     var makeDerCert = "${der.command}"
         .replace("${jks.keytool}", keyTool)
         .replace("${jks.keystore}", keyStore)
-        .replace("${jks.storepass}", password)
-        .replace("${jks.keypass}", password)
+        .replace("${jks.storepass}", pw())
+        .replace("${jks.keypass}", pw())
         .replace("${der.cert}", derCert);
 
     deleteFile(derCert);    // remove old, if exists
@@ -401,6 +427,10 @@ function deleteFirefoxCertificate() {
  * Install certificate for Mozilla Firefox browser, which utilizes its own cert database
  */
 function installFirefoxCertificate() {
+    if (!firefoxInstall) {
+        debug("Skipping Firefox cert install...");
+        return;
+    }
     debug("Registering with Firefox...");
     var firefoxCfg = firefoxInstall + "\\..\\${firefoxconfig.name}";
 
@@ -422,6 +452,26 @@ function installFirefoxCertificate() {
     var firefoxPrefs = firefoxInstall + "\\..\\defaults\\pref\\${firefoxprefs.name}";
     fso.CopyFile(fixPath("${firefoxprefs.install}"), firefoxPrefs);
 }
+
+/*
+ * Convert Trusted SSL certificate to Java Keystore for use with secure websockets
+ */
+function createPKCS12() {
+    var keyPair = fixPath("${ssl.keypair}");
+
+    var generated = "${ssl.command}"
+        .replace("${ssl.keypair}", keyPair)
+        .replace("${ssl.cert}", sslCert)
+        .replace("${ssl.key}", sslKey)
+        .replace("${jks.keypass}", pw());
+
+    debug("Creating PKCS12 keypair (this requires openssl)...");
+    if (!verifyExec(generated, "Creating PKCS12 keypair")) {
+        die("Error creating PKCS12 keypair from: " + sslCert + ", " + sslKey + " to " + keyPair);
+    }
+}
+
+
 
 /*
  * Deletes windows certificates based on specific CN and OU values

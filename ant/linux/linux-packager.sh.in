@@ -1,18 +1,18 @@
 #!/bin/bash
-###############################################################################
-#                         ${project.name} Linux Packager                              #
-###############################################################################
-#  Description:                                                               #
-#    1. Packages software for Linux self extracting archive and installer     #
-#                                                                             #
-#  Depends:                                                                   #
-#    makeself (sudo apt-get install makeself)                                 #
-#                                                                             #
-#  Usage:                                                                     #
-#    $ chmod +x linux-packager.sh                                             #
-#    $ ./linux-packager.sh                                                    #
-#                                                                             #
-###############################################################################
+##########################################################################################
+#                                ${project.name} Linux Packager                                  #
+##########################################################################################
+#  Description:                                                                          #
+#    1. Packages software for Linux self extracting archive and installer                #
+#                                                                                        #
+#  Depends:                                                                              #
+#    makeself (sudo apt-get install makeself)                                            #
+#                                                                                        #
+#  Usage:                                                                                #
+#    $ chmod +x ${linux.packager.name}                                                        #
+#    $ ./${linux.packager.name}                                                               #
+#                                                                                        #
+##########################################################################################
 echo
 echo "============================================"
 echo "            Packaging ${project.name}"

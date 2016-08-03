@@ -1,7 +1,7 @@
 package qz.printer.action;
 
 import com.github.zafarkhaja.semver.Version;
-import net.sourceforge.iharder.Base64;
+import org.apache.commons.ssl.Base64;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -25,6 +25,7 @@ import qz.utils.SystemUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
 import java.awt.*;
+import javax.print.attribute.standard.Media;
 import java.awt.geom.AffineTransform;
 import java.awt.print.PageFormat;
 import java.awt.print.Paper;
@@ -51,8 +52,8 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     }
 
     @Override
-    public PrintingUtilities.Type getType() {
-        return PrintingUtilities.Type.PDF;
+    public PrintingUtilities.Format getFormat() {
+        return PrintingUtilities.Format.PDF;
     }
 
     @Override
@@ -60,12 +61,12 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
 
-            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase(Locale.ENGLISH));
+            PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
 
             try {
                 PDDocument doc;
-                if (format == PrintingUtilities.Format.BASE64) {
-                    doc = PDDocument.load(new ByteArrayInputStream(Base64.decode(data.getString("data"))));
+                if (flavor == PrintingUtilities.Flavor.BASE64) {
+                    doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data.getString("data"))));
                 } else {
                     doc = PDDocument.load(new URL(data.getString("data")).openStream());
                 }
@@ -77,7 +78,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 throw new UnsupportedOperationException("PDF file specified could not be found.", e);
             }
             catch(IOException e) {
-                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as a PDF file", format, data.getString("data")), e);
+                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as a PDF file", flavor, data.getString("data")), e);
             }
         }
 
@@ -88,7 +89,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     public PrintRequestAttributeSet applyDefaultSettings(PrintOptions.Pixel pxlOpts, PageFormat page) {
         if (pxlOpts.getOrientation() != null) {
             //page orient does not set properly on pdfs with orientation requested attribute
-            page.setOrientation(pxlOpts.getOrientation().getAsFormat());
+            page.setOrientation(pxlOpts.getOrientation().getAsOrientFormat());
         }
 
         return super.applyDefaultSettings(pxlOpts, page);
@@ -115,6 +116,17 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
         RenderingHints hints = new RenderingHints(buildRenderingHints(pxlOpts.getDithering(), pxlOpts.getInterpolation()));
+        double useDensity = pxlOpts.getDensity();
+
+        if (!pxlOpts.isRasterize()) {
+            if (pxlOpts.getDensity() > 0) {
+                //rasterization is automatically performed upon supplying a density, warn user if they aren't expecting this
+                log.warn("Supplying a print density for PDF printing rasterizes the document.");
+            } else if (SystemUtilities.isMac()) {
+                log.warn("OSX systems cannot print vector PDF's, forcing raster to prevent crash.");
+                useDensity = options.getDefaultOptions().getDensity();
+            }
+        }
 
         BookBundle bundle = new BookBundle();
 
@@ -146,7 +158,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
             }
 
-            bundle.append(new PDFWrapper(doc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation(), hints), page, doc.getNumberOfPages());
+            bundle.append(new PDFWrapper(doc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation(), hints), page, doc.getNumberOfPages());
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));

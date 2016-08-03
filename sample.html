@@ -171,6 +171,15 @@
                                 <button type="button" class="btn btn-default" onclick="printFile('epl_sample.txt');">epl_sample.txt</button>
                             </div>
                         </div>
+                        <div class="form-group">
+                            <div>
+                                <label>Raster Print</label>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-default" onclick="printRawPDF();">PDF</button>
+                                <button type="button" class="btn btn-default" onclick="printRawHTML();">HTML</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -968,7 +977,7 @@
             'A310,86,0,3,1,1,N,"TEST PRINT SUCCESSFUL"\n',
             'A310,116,0,3,1,1,N,"FROM SAMPLE.HTML"\n',
             'A310,146,0,3,1,1,N,"QZ.IO"\n',
-            { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: { language: 'EPL', x: 150, y: 300 } },
+            { type: 'raw', format: 'image', flavor: 'file', data: 'assets/img/image_sample_bw.png', options: { language: 'EPL', x: 150, y: 300 } },
             '\nP1,1\n'
         ];
 
@@ -981,12 +990,12 @@
         var printData = [
             '^XA\n',
             '^FO50,100',
-            { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: { language: 'ZPLII' } },
-	    '^FS\n',
-	    '^FO50,300^ADN,36,20^FDPRINTED USING^FS\n',
+            { type: 'raw', format: 'image', flavor: 'file', data: 'assets/img/image_sample_bw.png', options: { language: 'ZPLII' } },
+            '^FS\n',
+            '^FO50,300^ADN,36,20^FDPRINTED USING^FS\n',
             '^FO50,350^ADN,36,20^FDQZ-TRAY ^FS\n',
-	    '^FO50,400^ADN,36,20^FDVERSION ' + qzVersion + '^FS\n' + '\n',
-	    '^XZ\n'
+            '^FO50,400^ADN,36,20^FDVERSION ' + qzVersion + '^FS\n' + '\n',
+            '^XZ\n'
         ];
 
         qz.print(config, printData).catch(displayError);
@@ -1013,8 +1022,10 @@
         var config = getUpdatedConfig();
 
         var printData = [
+            //defaults to 'flavor: file'
             { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: { language: 'ESCPOS', dotDensity: 'single' } },
-            { type: 'raw', data: '\nPrinted using qz-tray plugin.\n\n\n\n\n\n' }
+            //defaults to 'type: raw', 'format: command', and 'flavor: plain'
+            { data: '\nPrinted using qz-tray plugin.\n\n\n\n\n\n' }
         ];
 
         qz.print(config, printData).catch(displayError);
@@ -1053,11 +1064,12 @@
         var len = (data.length + 2).toString(16);
         if (len.length < 2) { len = '0' + len; }
 
+        //defaults to 'type: raw' and 'format: command'
         return [
-            { type: 'raw', format: 'hex', data: 'x00x00x00' },  // Append 3 NULs
-            { type: 'raw', format: 'hex', data: 'x' + len },    // Append our command length, in base16
-            { type: 'raw', format: 'plain', data: data },       // Append our command
-            { type: 'raw', format: 'plain', data: '\r' }        // Append carriage return
+            { flavor: 'hex', data: 'x00x00x00' },  // Append 3 NULs
+            { flavor: 'hex', data: 'x' + len },    // Append our command length, in base16
+            { flavor: 'plain', data: data },       // Append our command
+            { flavor: 'plain', data: '\r' }        // Append carriage return
         ];
     }
 
@@ -1072,8 +1084,7 @@
         //noinspection SpellCheckingInspection
         var printData = [
             {
-                type: 'raw',
-                format: 'base64',
+                type: 'raw', format: 'command', flavor: 'base64',
                 data: 'Ck4KcTYwOQpRMjAzLDI2CkI1LDI2LDAsMUEsMyw3LDE1MixCLCIxMjM0IgpBMzEwLDI2LDAsMywx' +
                 'LDEsTiwiU0tVIDAwMDAwIE1GRyAwMDAwIgpBMzEwLDU2LDAsMywxLDEsTiwiUVogUFJJTlQgQVBQ' +
                 'TEVUIgpBMzEwLDg2LDAsMywxLDEsTiwiVEVTVCBQUklOVCBTVUNDRVNTRlVMIgpBMzEwLDExNiww' +
@@ -1161,7 +1172,7 @@
         var config = getUpdatedConfig();
 
         var printData = [
-            { type: 'raw', format: 'xml', data: 'assets/zpl_sample.xml', options: { xmlTag: 'v7:Image' } }
+            { type: 'raw', format: 'command', flavor: 'xml', data: 'assets/zpl_sample.xml', options: { xmlTag: 'v7:Image' } }
         ];
 
         qz.print(config, printData).catch(displayError);
@@ -1170,18 +1181,19 @@
     function printHex() {
         var config = getUpdatedConfig();
 
+        //defaults to 'type: raw' and 'format: command'
         var printData = [
-            { type: 'raw', format: 'hex', data: '4e0d0a713630390d0a513230332c32360d0a42352c32362c' },
-            { type: 'raw', format: 'hex', data: '302c31412c332c372c3135322c422c2231323334220d0a41' },
-            { type: 'raw', format: 'hex', data: '3331302c32362c302c332c312c312c4e2c22534b55203030' },
-            { type: 'raw', format: 'hex', data: '303030204d46472030303030220d0a413331302c35362c30' },
-            { type: 'raw', format: 'hex', data: '2c332c312c312c4e2c22515a205072696e7420506c756769' },
-            { type: 'raw', format: 'hex', data: '6e220d0a413331302c38362c302c332c312c312c4e2c2254' },
-            { type: 'raw', format: 'hex', data: '657374207072696e74207375636365737366756c220d0a41' },
-            { type: 'raw', format: 'hex', data: '3331302c3131362c302c332c312c312c4e2c2266726f6d20' },
-            { type: 'raw', format: 'hex', data: '73616d706c652e68746d6c220d0a413331302c3134362c30' },
-            { type: 'raw', format: 'hex', data: '2c332c312c312c4e2c227072696e7448657828292066756e' },
-            { type: 'raw', format: 'hex', data: '6374696f6e2e220d0a50312c310d0a' }
+            { flavor: 'hex', data: '4e0d0a713630390d0a513230332c32360d0a42352c32362c' },
+            { flavor: 'hex', data: '302c31412c332c372c3135322c422c2231323334220d0a41' },
+            { flavor: 'hex', data: '3331302c32362c302c332c312c312c4e2c22534b55203030' },
+            { flavor: 'hex', data: '303030204d46472030303030220d0a413331302c35362c30' },
+            { flavor: 'hex', data: '2c332c312c312c4e2c22515a205072696e7420506c756769' },
+            { flavor: 'hex', data: '6e220d0a413331302c38362c302c332c312c312c4e2c2254' },
+            { flavor: 'hex', data: '657374207072696e74207375636365737366756c220d0a41' },
+            { flavor: 'hex', data: '3331302c3131362c302c332c312c312c4e2c2266726f6d20' },
+            { flavor: 'hex', data: '73616d706c652e68746d6c220d0a413331302c3134362c30' },
+            { flavor: 'hex', data: '2c332c312c312c4e2c227072696e7448657828292066756e' },
+            { flavor: 'hex', data: '6374696f6e2e220d0a50312c310d0a' }
         ];
 
         qz.print(config, printData).catch(displayError);
@@ -1191,7 +1203,31 @@
         var config = getUpdatedConfig();
 
         var printData = [
-            { type: 'raw', format: 'file', data: 'assets/' + file }
+            { type: 'raw', format: 'command', flavor: 'file', data: 'assets/' + file }
+        ];
+
+        qz.print(config, printData).catch(displayError);
+    }
+
+    function printRawPDF() {
+        var config = getUpdatedConfig();
+
+        var printData = [
+            '^XA\n',
+            { type: 'raw', format: 'pdf', flavor: 'file', data: 'assets/pdf_sample.pdf', options: { language: 'ZPLII' } },
+            '^XZ\n'
+        ];
+
+        qz.print(config, printData).catch(displayError);
+    }
+
+    function printRawHTML() {
+        var config = getUpdatedConfig();
+
+        var printData = [
+            '^XA\n',
+            { type: 'raw', format: 'html', flavor: 'file', data: 'https://qz.io/about/', options: { language: 'ZPLII', pageWidth: 480 } },
+            '^XZ\n'
         ];
 
         qz.print(config, printData).catch(displayError);
@@ -1204,8 +1240,9 @@
 
         var printData = [
             {
-                type: 'html',
-                format: 'plain',
+                type: 'pixel',
+                format: 'html',
+                flavor: 'plain',
                 data: '<html style="font-family: monospace; border: 1px solid #000;">' +
                 '    <div style="float: left; margin-left: .5em;">' +
                 '        <h2>* QZ Tray HTML Sample Print *</h2>' +
@@ -1228,7 +1265,7 @@
         var config = getUpdatedConfig();
 
         var printData = [
-            { type: 'pdf', data: 'assets/pdf_sample.pdf' }
+            { type: 'pixel', format: 'pdf', flavor: 'file', data: 'assets/pdf_sample.pdf' }
         ];
 
         qz.print(config, printData).catch(displayError);
@@ -1238,7 +1275,9 @@
         var config = getUpdatedConfig();
 
         var printData = [
-            { type: 'image', data: 'assets/img/image_sample.png' }
+            { type: 'pixel', format: 'image', flavor: 'file', data: 'assets/img/image_sample.png' }
+            //also valid, as format and flavor will default to proper values:
+//             { type: 'pixel', data: 'assets/img/image_sample.png' }
         ];
 
         qz.print(config, printData).catch(displayError);
@@ -1563,7 +1602,7 @@
         $("#pxlOrientation").val("");
         $("#pxlPaperThickness").val(null);
         $("#pxlPrinterTray").val(null);
-        $("#pxlRasterize").prop('checked', true);
+        $("#pxlRasterize").prop('checked', false);
         $("#pxlRotation").val(0);
         $("#pxlScale").prop('checked', true);
         $("#pxlUnitsIN").prop('checked', true);

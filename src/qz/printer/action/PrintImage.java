@@ -10,7 +10,7 @@
  */
 package qz.printer.action;
 
-import net.sourceforge.iharder.Base64;
+import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -61,23 +61,21 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
     }
 
     @Override
-    public PrintingUtilities.Type getType() {
-        return PrintingUtilities.Type.IMAGE;
+    public PrintingUtilities.Format getFormat() {
+        return PrintingUtilities.Format.IMAGE;
     }
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
-        dpiScale = (options.getPixelOptions().getDensity() * options.getPixelOptions().getUnits().as1Inch()) / 72.0;
-
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
 
-            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase(Locale.ENGLISH));
+            PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
 
             try {
                 BufferedImage bi;
-                if (format == PrintingUtilities.Format.BASE64) {
-                    bi = ImageIO.read(new ByteArrayInputStream(Base64.decode(data.getString("data"))));
+                if (flavor == PrintingUtilities.Flavor.BASE64) {
+                    bi = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(data.getString("data"))));
                 } else {
                     bi = ImageIO.read(new URL(data.getString("data")));
                 }
@@ -88,11 +86,11 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
                 if (e.getCause() != null && e.getCause() instanceof FileNotFoundException) {
                     throw new UnsupportedOperationException("Image file specified could not be found.", e);
                 } else {
-                    throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as an image", format, data.getString("data")), e);
+                    throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as an image", flavor, data.getString("data")), e);
                 }
             }
             catch(IOException e) {
-                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as an image", format, data.getString("data")), e);
+                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as an image", flavor, data.getString("data")), e);
             }
         }
 

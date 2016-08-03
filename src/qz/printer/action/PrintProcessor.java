@@ -12,7 +12,7 @@ import java.awt.print.PrinterException;
 public interface PrintProcessor {
 
 
-    PrintingUtilities.Type getType();
+    PrintingUtilities.Format getFormat();
 
     /**
      * Used to parse information passed from the web API for printing.

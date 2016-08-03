@@ -152,7 +152,7 @@ public class PrintOptions {
         }
         if (!configOpts.isNull("orientation")) {
             try {
-                psOptions.orientation = Orientation.valueOf(configOpts.optString("orientation").replaceAll("\\-", "_").toUpperCase(Locale.ENGLISH));
+                psOptions.orientation = Orientation.valueOf(configOpts.optString("orientation").replaceAll("-", "_").toUpperCase(Locale.ENGLISH));
             }
             catch(IllegalArgumentException e) {
                 warn("valid value", "orientation", configOpts.opt("orientation"));

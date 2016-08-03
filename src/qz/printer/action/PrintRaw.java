@@ -11,6 +11,8 @@ package qz.printer.action;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.ssl.Base64;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -24,7 +26,10 @@ import qz.printer.ImageWrapper;
 import qz.printer.LanguageType;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
-import qz.utils.*;
+import qz.utils.ByteUtilities;
+import qz.utils.FileUtilities;
+import qz.utils.PrintingUtilities;
+import qz.utils.ShellUtilities;
 
 import javax.imageio.ImageIO;
 import javax.print.*;
@@ -64,9 +69,10 @@ public class PrintRaw implements PrintProcessor {
     }
 
     @Override
-    public PrintingUtilities.Type getType() {
-        return PrintingUtilities.Type.RAW;
+    public PrintingUtilities.Format getFormat() {
+        return PrintingUtilities.Format.COMMAND;
     }
+
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
@@ -75,14 +81,14 @@ public class PrintRaw implements PrintProcessor {
             if (data == null) {
                 data = new JSONObject();
                 data.put("data", printData.getString(i));
-                data.put("format", "PLAIN");
             }
 
             String cmd = data.getString("data");
             JSONObject opt = data.optJSONObject("options");
             if (opt == null) { opt = new JSONObject(); }
 
-            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "PLAIN").toUpperCase(Locale.ENGLISH));
+            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "COMMAND").toUpperCase(Locale.ENGLISH));
+            PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "PLAIN").toUpperCase(Locale.ENGLISH));
             PrintOptions.Raw rawOpts = options.getRawOptions();
 
             encoding = rawOpts.getEncoding();
@@ -90,48 +96,88 @@ public class PrintRaw implements PrintProcessor {
 
             try {
                 switch(format) {
-                    case BASE64:
-                        commands.append(Base64.decodeBase64(cmd));
-                        break;
-                    case FILE:
-                        commands.append(FileUtilities.readRawFile(cmd));
+                    case HTML:
+                        commands.append(getHtmlWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.PLAIN).getImageCommand());
                         break;
                     case IMAGE:
-                        commands.append(getImageWrapper(cmd, opt).getImageCommand());
+                        commands.append(getImageWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.BASE64).getImageCommand());
                         break;
-                    case HEX:
-                        commands.append(ByteUtilities.hexStringToByteArray(cmd));
+                    case PDF:
+                        commands.append(getPdfWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.BASE64).getImageCommand());
                         break;
-                    case XML:
-                        commands.append(Base64.decodeBase64(FileUtilities.readXMLFile(cmd, opt.optString("xmlTag"))));
-                        break;
-                    case PLAIN:
+                    case COMMAND:
                     default:
-                        commands.append(cmd.getBytes(encoding));
+                        switch(flavor) {
+                            case BASE64:
+                                commands.append(Base64.decodeBase64(cmd));
+                                break;
+                            case FILE:
+                                commands.append(FileUtilities.readRawFile(cmd));
+                                break;
+                            case HEX:
+                                commands.append(ByteUtilities.hexStringToByteArray(cmd));
+                                break;
+                            case XML:
+                                commands.append(Base64.decodeBase64(FileUtilities.readXMLFile(cmd, opt.optString("xmlTag"))));
+                                break;
+                            case PLAIN:
+                            default:
+                                commands.append(cmd.getBytes(encoding));
+                                break;
+                        }
                         break;
                 }
             }
             catch(Exception e) {
-                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as a raw command", format, data.getString("data")), e);
+                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s into a raw %s command", flavor, data.getString("data"), format), e);
             }
         }
     }
 
-    private ImageWrapper getImageWrapper(String cmd, JSONObject opt) throws IOException, JSONException {
-        BufferedImage buf;
+    private ImageWrapper getImageWrapper(String data, JSONObject opt, boolean fromFile) throws IOException {
+        BufferedImage bi;
 
-        if (cmd.startsWith("data:image/") && cmd.contains(";base64,")) {
-            String[] parts = cmd.split(";base64,");
-            cmd = parts[parts.length - 1];
-        }
-
-        if (Base64.isArrayByteBase64(cmd.getBytes())) {
-            buf = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(cmd)));
+        if (fromFile) {
+            bi = ImageIO.read(new URL(data));
         } else {
-            buf = ImageIO.read(new URL(cmd));
+            bi = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(data)));
         }
 
-        ImageWrapper iw = new ImageWrapper(buf, LanguageType.getType(opt.optString("language")));
+        return getWrapper(bi, opt);
+    }
+
+    private ImageWrapper getPdfWrapper(String data, JSONObject opt, boolean fromFile) throws IOException {
+        PDDocument doc;
+
+        if (fromFile) {
+            doc = PDDocument.load(new URL(data).openStream());
+        } else {
+            doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data)));
+        }
+
+        BufferedImage bi = new PDFRenderer(doc).renderImage(0);
+        return getWrapper(bi, opt);
+    }
+
+    private ImageWrapper getHtmlWrapper(String data, JSONObject opt, boolean fromFile) throws IOException {
+        BufferedImage bi;
+
+        try {
+            WebApp.initialize(); //starts if not already started
+
+            WebAppModel model = new WebAppModel(data, !fromFile, opt.optInt("pageWidth"), opt.optInt("pageHeight"), false);
+            bi = WebApp.raster(model);
+        }
+        catch(Throwable t) {
+            log.error("Failed to capture html raster");
+            throw new IOException(t);
+        }
+
+        return getWrapper(bi, opt);
+    }
+
+    private ImageWrapper getWrapper(BufferedImage img, JSONObject opt) {
+        ImageWrapper iw = new ImageWrapper(img, LanguageType.getType(opt.optString("language")));
         iw.setCharset(Charset.forName(encoding));
 
         //ESC/POS only
@@ -156,6 +202,7 @@ public class PrintRaw implements PrintProcessor {
 
         return iw;
     }
+
 
     @Override
     public void print(PrintOutput output, PrintOptions options) throws PrintException {
@@ -195,7 +242,6 @@ public class PrintRaw implements PrintProcessor {
             }
         }
     }
-
 
     /**
      * A brute-force, however surprisingly elegant way to send a file to a networked printer.
@@ -316,6 +362,7 @@ public class PrintRaw implements PrintProcessor {
             }
         }
     }
+
 
     @Override
     public void cleanup() {

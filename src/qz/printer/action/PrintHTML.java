@@ -24,7 +24,6 @@ import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
 
-import javax.print.PrintException;
 import javax.print.attribute.standard.Copies;
 import javax.print.attribute.standard.CopiesSupported;
 import java.awt.print.PrinterException;
@@ -46,7 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class PrintHTML implements PrintProcessor {
+public class PrintHTML extends PrintImage implements PrintProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(PrintHTML.class);
 
@@ -56,12 +55,13 @@ public class PrintHTML implements PrintProcessor {
 
 
     public PrintHTML() {
+        super();
         models = new ArrayList<>();
     }
 
     @Override
-    public PrintingUtilities.Type getType() {
-        return PrintingUtilities.Type.HTML;
+    public PrintingUtilities.Format getFormat() {
+        return PrintingUtilities.Format.HTML;
     }
 
     @Override
@@ -74,7 +74,7 @@ public class PrintHTML implements PrintProcessor {
                 JSONObject data = printData.getJSONObject(i);
                 String source = data.getString("data");
 
-                PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase(Locale.ENGLISH));
+                PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
 
                 double pageWidth = 0;
                 double pageHeight = 0;
@@ -95,7 +95,7 @@ public class PrintHTML implements PrintProcessor {
                     }
                 }
 
-                models.add(new WebAppModel(source, (format != PrintingUtilities.Format.FILE), pageWidth, pageHeight, pxlOpts.isScaleContent()));
+                models.add(new WebAppModel(source, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, pxlOpts.isScaleContent()));
             }
 
             log.debug("Parsed {} html records", models.size());
@@ -109,10 +109,21 @@ public class PrintHTML implements PrintProcessor {
     }
 
     @Override
-    public void print(PrintOutput output, PrintOptions options) throws PrintException, PrinterException {
+    public void print(PrintOutput output, PrintOptions options) throws PrinterException {
         if (options.getPixelOptions().isLegacy()) {
             printLegacy(output, options);
+        } else if (options.getPixelOptions().isRasterize()) {
+            //grab a snapshot of the pages for PrintImage instead of printing directly
+            for(WebAppModel model : models) {
+                try { images.add(WebApp.raster(model)); }
+                catch(Throwable t) {
+                    throw new PrinterException("Failed to take raster of web page, image size is too large");
+                }
+            }
+
+            super.print(output, options);
         } else {
+
             Printer fxPrinter = null;
             for(Printer p : Printer.getAllPrinters()) {
                 if (p.getName().equals(output.getPrintService().getName())) {
@@ -214,7 +225,7 @@ public class PrintHTML implements PrintProcessor {
                 }
             }
             catch(Throwable t) {
-                throw new PrintException(t.getMessage());
+                throw new PrinterException(t.getMessage());
             }
 
             //send pending prints
@@ -273,7 +284,9 @@ public class PrintHTML implements PrintProcessor {
 
     @Override
     public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
-        if (legacyLabel != null) {
+        if (legacyLabel == null) {
+            super.print(graphics, pageFormat, pageIndex);
+        } else {
             if (graphics == null) { throw new PrinterException("No graphics specified"); }
             if (pageFormat == null) { throw new PrinterException("No page format specified"); }
 
@@ -293,6 +306,8 @@ public class PrintHTML implements PrintProcessor {
 
     @Override
     public void cleanup() {
+        super.cleanup();
+
         models.clear();
         legacyLabel = null;
     }

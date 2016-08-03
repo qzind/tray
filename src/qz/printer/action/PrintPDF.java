@@ -1,6 +1,6 @@
 package qz.printer.action;
 
-import net.sourceforge.iharder.Base64;
+import org.apache.commons.ssl.Base64;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -44,8 +44,8 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     }
 
     @Override
-    public PrintingUtilities.Type getType() {
-        return PrintingUtilities.Type.PDF;
+    public PrintingUtilities.Format getFormat() {
+        return PrintingUtilities.Format.PDF;
     }
 
     @Override
@@ -53,12 +53,12 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
 
-            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase(Locale.ENGLISH));
+            PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
 
             try {
                 PDDocument doc;
-                if (format == PrintingUtilities.Format.BASE64) {
-                    doc = PDDocument.load(new ByteArrayInputStream(Base64.decode(data.getString("data"))));
+                if (flavor == PrintingUtilities.Flavor.BASE64) {
+                    doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data.getString("data"))));
                 } else {
                     doc = PDDocument.load(new URL(data.getString("data")).openStream());
                 }
@@ -69,7 +69,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 throw new UnsupportedOperationException("PDF file specified could not be found.", e);
             }
             catch(IOException e) {
-                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as a PDF file", format, data.getString("data")), e);
+                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as a PDF file", flavor, data.getString("data")), e);
             }
         }
 
@@ -96,6 +96,17 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         }
 
         Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
+        double useDensity = pxlOpts.getDensity();
+
+        if (!pxlOpts.isRasterize()) {
+            if (pxlOpts.getDensity() > 0) {
+                //rasterization is automatically performed upon supplying a density, warn user if they aren't expecting this
+                log.warn("Supplying a print density for PDF printing rasterizes the document.");
+            } else if (SystemUtilities.isMac()) {
+                log.warn("OSX systems cannot print vector PDF's, forcing raster to prevent crash.");
+                useDensity = options.getDefaultOptions().getDensity();
+            }
+        }
 
         PDDocument masterDoc = new PDDocument();
         PDFMergerUtility mu = new PDFMergerUtility();
@@ -123,7 +134,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));
-        job.setPrintable(new PDFPrintable(masterDoc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false), page);
+        job.setPrintable(new PDFPrintable(masterDoc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false), page);
 
         printCopies(output, pxlOpts, job, attributes);
 

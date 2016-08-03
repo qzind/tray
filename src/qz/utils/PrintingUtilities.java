@@ -17,6 +17,7 @@ import qz.ws.PrintSocketClient;
 import javax.print.PrintService;
 import javax.print.attribute.standard.PrinterResolution;
 import java.awt.print.PrinterAbortException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -27,28 +28,37 @@ public class PrintingUtilities {
     private static HashMap<String,String> CUPS_DESC; //name -> description
     private static HashMap<String,PrinterResolution> CUPS_DPI; //description -> default dpi
 
-    private static GenericKeyedObjectPool<Type,PrintProcessor> processorPool;
+    private static GenericKeyedObjectPool<Format,PrintProcessor> processorPool;
 
 
     private PrintingUtilities() {}
 
     public enum Type {
-        HTML, IMAGE, PDF, RAW
+        PIXEL, RAW
     }
 
     public enum Format {
-        BASE64, FILE, IMAGE, PLAIN, HEX, XML
+        COMMAND, HTML, IMAGE, PDF
+    }
+
+    public enum Flavor {
+        BASE64, FILE, HEX, PLAIN, XML
     }
 
 
     public synchronized static PrintProcessor getPrintProcessor(JSONArray printData) throws JSONException {
         JSONObject data = printData.optJSONObject(0);
+        if (data == null) { data = new JSONObject(); }
+        convertVersion(data);
 
-        Type type;
-        if (data == null) {
-            type = Type.RAW;
+        Type type = Type.valueOf(data.optString("type", "RAW").toUpperCase(Locale.ENGLISH));
+
+        Format format;
+        if (type == Type.RAW) {
+            //avoids pulling a pixel print processor, the actual format will be used in impl
+            format = Format.COMMAND;
         } else {
-            type = Type.valueOf(data.optString("type", "RAW").toUpperCase(Locale.ENGLISH));
+            format = Format.valueOf(data.optString("format", "IMAGE").toUpperCase(Locale.ENGLISH));
         }
 
         try {
@@ -68,17 +78,47 @@ public class PrintingUtilities {
             }
 
             log.trace("Waiting for processor, {}/{} already in use", processorPool.getNumActive(), processorPool.getMaxTotal());
-            return processorPool.borrowObject(type);
+
+            return processorPool.borrowObject(format);
         }
         catch(Exception e) {
             throw new IllegalArgumentException(String.format("Unable to find processor for %s type", type.name()));
         }
     }
 
+    /**
+     * Version 2.1 introduced the flavor attribute to apply better control on raw data.
+     * Essentially format became flavor, type become format, and type was rewritten.
+     * Though a few exceptions exist due to the way additional raw options used to be handled.
+     * <p>
+     * This method will take the data object, and if it uses any old terminology it will update the value to the new set.
+     *
+     * @param data JSONObject of printData, will update any values by reference
+     */
+    private static void convertVersion(JSONObject data) throws JSONException {
+        if (!data.isNull("flavor")) { return; } //flavor exists only in new version, no need to convert
+
+        if (!data.isNull("format")) {
+            String format = data.getString("format").toUpperCase();
+            if (Arrays.asList("BASE64", "FILE", "HEX", "PLAIN", "XML").contains(format)) {
+                data.put("flavor", format);
+                data.remove("format");
+            }
+        }
+
+        if (!data.isNull("type")) {
+            String type = data.getString("type").toUpperCase();
+            if (Arrays.asList("HTML", "IMAGE", "PDF").contains(type)) {
+                data.put("type", "PIXEL");
+                data.put("format", type);
+            }
+        }
+    }
+
     public static void releasePrintProcessor(PrintProcessor processor) {
         try {
             log.trace("Returning processor back to pool");
-            processorPool.returnObject(processor.getType(), processor);
+            processorPool.returnObject(processor.getFormat(), processor);
         }
         catch(Exception ignore) {}
     }

@@ -17,6 +17,7 @@ import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
+import qz.utils.SystemUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
 import java.awt.geom.AffineTransform;
@@ -87,6 +88,11 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page);
+
+        if (SystemUtilities.isMac()) {
+            log.warn("OSX cannot use attributes with PDF prints, disabling");
+            attributes.clear();
+        }
 
         Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
 

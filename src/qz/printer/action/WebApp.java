@@ -5,9 +5,14 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.concurrent.Worker;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.print.PageLayout;
 import javafx.print.PrinterJob;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
+import javafx.scene.image.WritableImage;
 import javafx.scene.transform.Scale;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
@@ -19,6 +24,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,9 +43,12 @@ public class WebApp extends Application {
 
     private static WebApp instance = null;
 
+    private static Stage stage;
     private static WebView webView;
     private static double pageHeight;
 
+    private static final AtomicBoolean complete = new AtomicBoolean(false);
+    private static final AtomicReference<Throwable> thrown = new AtomicReference<>();
     private static PauseTransition snap;
 
     //listens for a Succeeded state to activate image capture
@@ -115,6 +124,7 @@ public class WebApp extends Application {
 
         webView = new WebView();
         st.setScene(new Scene(webView));
+        stage = st;
 
         Worker<Void> worker = webView.getEngine().getLoadWorker();
         worker.stateProperty().addListener(stateListener);
@@ -124,22 +134,79 @@ public class WebApp extends Application {
         Platform.setImplicitExit(false);
     }
 
+    public static synchronized void print(final PrinterJob job, final WebAppModel model) throws Throwable {
+        load(model, (event) -> {
+            try {
+                PageLayout layout = job.getJobSettings().getPageLayout();
+                if (model.isScaled()) {
+                    double scale = 1.0;
+                    if ((webView.getWidth() / webView.getHeight()) >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
+                        scale = layout.getPrintableWidth() / webView.getWidth();
+                    } else {
+                        scale = layout.getPrintableHeight() / webView.getHeight();
+                    }
+                    webView.getTransforms().add(new Scale(scale, scale));
+                }
+
+                Platform.runLater(() -> complete.set(job.printPage(webView)));
+            }
+            catch(Exception e) { thrown.set(e); }
+        });
+
+        Throwable t = null;
+        while((job.getJobStatus() == PrinterJob.JobStatus.NOT_STARTED || job.getJobStatus() == PrinterJob.JobStatus.PRINTING)
+                && !complete.get() && (t = thrown.get()) == null) {
+            log.trace("Waiting on print..");
+            try { Thread.sleep(1000); } catch(Exception ignore) {}
+        }
+
+        if (t != null) { throw t; }
+    }
+
+    public static synchronized BufferedImage raster(final WebAppModel model) throws Throwable {
+        AtomicReference<BufferedImage> capture = new AtomicReference<>();
+
+        Platform.runLater(() -> {
+            stage.show();
+            stage.toBack();
+        });
+
+        load(model, (event) -> {
+            try {
+                WritableImage snapshot = webView.snapshot(new SnapshotParameters(), null);
+                capture.set(SwingFXUtils.fromFXImage(snapshot, null));
+
+                complete.set(true);
+            }
+            catch(Throwable t) { thrown.set(t); }
+            finally { stage.hide(); }
+        });
+
+        Throwable t = null;
+        while(!complete.get() && (t = thrown.get()) == null) {
+            log.trace("Waiting on capture..");
+            try { Thread.sleep(1000); } catch(Exception ignore) {}
+        }
+
+        if (t != null) { throw t; }
+
+        return capture.get();
+    }
+
     /**
      * Prints the loaded source specified in the passed {@code model}.
      *
-     * @param job   A setup JavaFx {@code PrinterJob}
-     * @param model The model specifying the web page parameters
-     * @throws Throwable JavaFx will throw a generic {@code Throwable} class for any issues
+     * @param model  The model specifying the web page parameters.
+     * @param action EventHandler that will be ran when the WebView completes loading.
      */
-    public static synchronized void print(final PrinterJob job, final WebAppModel model) throws Throwable {
-        final AtomicBoolean complete = new AtomicBoolean(false);
-        final AtomicReference<Throwable> thrown = new AtomicReference<>();
+    private static synchronized void load(WebAppModel model, EventHandler<ActionEvent> action) {
+        complete.set(false);
+        thrown.set(null);
 
         Platform.runLater(() -> {
-            ChangeListener<Throwable> tt = (obs, oldExc, newExc) -> {
+            webView.getEngine().getLoadWorker().exceptionProperty().addListener((obs, oldExc, newExc) -> {
                 if (newExc != null) { thrown.set(newExc); }
-            };
-            webView.getEngine().getLoadWorker().exceptionProperty().addListener(tt);
+            });
 
             log.trace("Setting starting size {}:{}", model.getWebWidth(), model.getWebHeight());
             webView.setMinSize(model.getWebWidth(), model.getWebHeight());
@@ -154,27 +221,7 @@ public class WebApp extends Application {
             webView.setZoom(1.0);
 
             snap = new PauseTransition(Duration.millis(100));
-            snap.setOnFinished(actionEvent -> {
-                try {
-                    PageLayout layout = job.getJobSettings().getPageLayout();
-                    if (model.isScaled()) {
-                        double scale = 1.0;
-                        if ((webView.getWidth() / webView.getHeight()) >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
-                            scale = layout.getPrintableWidth() / webView.getWidth();
-                        } else {
-                            scale = layout.getPrintableHeight() / webView.getHeight();
-                        }
-                        webView.getTransforms().add(new Scale(scale, scale));
-                    }
-
-                    Platform.runLater(() -> {
-                        complete.set(job.printPage(webView));
-                        webView.getEngine().getLoadWorker().exceptionProperty().removeListener(tt);
-                    });
-                }
-                catch(Exception e) { thrown.set(e); }
-            });
-
+            snap.setOnFinished(action);
 
             if (model.isPlainText()) {
                 webView.getEngine().loadContent(model.getSource(), "text/html");
@@ -182,15 +229,6 @@ public class WebApp extends Application {
                 webView.getEngine().load(model.getSource());
             }
         });
-
-        Throwable t = null;
-        while((job.getJobStatus() == PrinterJob.JobStatus.NOT_STARTED || job.getJobStatus() == PrinterJob.JobStatus.PRINTING)
-                && !complete.get() && (t = thrown.get()) == null) {
-            log.trace("Waiting on print..");
-            try { Thread.sleep(1000); } catch(Exception ignore) {}
-        }
-
-        if (t != null) { throw t; }
     }
 
 }

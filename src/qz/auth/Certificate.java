@@ -6,12 +6,12 @@ import com.estontorise.simplersa.interfaces.RSAKey;
 import com.estontorise.simplersa.interfaces.RSATool;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.ssl.Base64;
 import org.apache.commons.ssl.X509CertificateChainBuilder;
 import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.jce.PrincipalUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import net.sourceforge.iharder.Base64;
 import qz.common.Constants;
 import qz.utils.ByteUtilities;
 import qz.utils.FileUtilities;
@@ -147,11 +147,11 @@ public class Certificate {
 
             //Strip beginning and end
             String[] split = in.split("--START INTERMEDIATE CERT--");
-            byte[] serverCertificate = Base64.decode(split[0].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
+            byte[] serverCertificate = Base64.decodeBase64(split[0].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
 
             X509Certificate theIntermediateCertificate;
             if (split.length == 2) {
-                byte[] intermediateCertificate = Base64.decode(split[1].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
+                byte[] intermediateCertificate = Base64.decodeBase64(split[1].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
                 theIntermediateCertificate = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(intermediateCertificate));
             } else {
                 theIntermediateCertificate = null; //Self-signed
@@ -268,7 +268,7 @@ public class Certificate {
             //On errors, assume failure.
             try {
                 String hash = DigestUtils.sha256Hex(data);
-                return tool.verifyWithKey(StringUtils.getBytesUtf8(hash), Base64.decode(signature), thePublicKey);
+                return tool.verifyWithKey(StringUtils.getBytesUtf8(hash), Base64.decodeBase64(signature), thePublicKey);
             }
             catch(Exception e) {
                 log.error("Unable to verify signature", e);

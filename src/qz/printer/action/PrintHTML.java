@@ -23,7 +23,6 @@ import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
 
-import javax.print.PrintException;
 import javax.print.attribute.standard.Copies;
 import javax.print.attribute.standard.CopiesSupported;
 import java.awt.print.PrinterException;
@@ -34,19 +33,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class PrintHTML implements PrintProcessor {
+public class PrintHTML extends PrintImage implements PrintProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(PrintHTML.class);
 
     private List<WebAppModel> models;
 
     public PrintHTML() {
+        super();
         models = new ArrayList<>();
     }
 
     @Override
-    public PrintingUtilities.Type getType() {
-        return PrintingUtilities.Type.HTML;
+    public PrintingUtilities.Format getFormat() {
+        return PrintingUtilities.Format.HTML;
     }
 
     @Override
@@ -58,7 +58,7 @@ public class PrintHTML implements PrintProcessor {
                 JSONObject data = printData.getJSONObject(i);
                 String source = data.getString("data");
 
-                PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase(Locale.ENGLISH));
+                PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
 
                 double pageWidth = 0;
                 double pageHeight = 0;
@@ -79,7 +79,7 @@ public class PrintHTML implements PrintProcessor {
                     }
                 }
 
-                models.add(new WebAppModel(source, (format != PrintingUtilities.Format.FILE), pageWidth, pageHeight, pxlOpts.isScaleContent()));
+                models.add(new WebAppModel(source, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, pxlOpts.isScaleContent()));
             }
 
             log.debug("Parsed {} html records", models.size());
@@ -93,117 +93,132 @@ public class PrintHTML implements PrintProcessor {
     }
 
     @Override
-    public void print(PrintOutput output, PrintOptions options) throws PrintException, PrinterException {
-        Printer fxPrinter = null;
-        for(Printer p : Printer.getAllPrinters()) {
-            if (p.getName().equals(output.getPrintService().getName())) {
-                fxPrinter = p;
-                break;
-            }
-        }
-        if (fxPrinter == null) {
-            throw new PrinterException("Cannot find printer under the JavaFX libraries");
-        }
-
-        PrinterJob job = PrinterJob.createPrinterJob(fxPrinter);
-
-
-        // apply option settings
-        PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        JobSettings settings = job.getJobSettings();
-        settings.setJobName(pxlOpts.getJobName(Constants.HTML_PRINT));
-        settings.setPrintQuality(PrintQuality.HIGH);
-
-        if (pxlOpts.getColorType() != null) {
-            settings.setPrintColor(pxlOpts.getColorType().getAsPrintColor());
-        }
-        if (pxlOpts.isDuplex()) {
-            settings.setPrintSides(PrintSides.DUPLEX);
-        }
-        if (pxlOpts.getPrinterTray() != null) {
-            fxPrinter.getPrinterAttributes().getSupportedPaperSources().stream()
-                    .filter(source -> pxlOpts.getPrinterTray().equals(source.getName())).forEach(settings::setPaperSource);
-        }
-
-        if (pxlOpts.getDensity() > 0) {
-            settings.setPrintResolution(PrintHelper.createPrintResolution((int)pxlOpts.getDensity(), (int)pxlOpts.getDensity()));
-        }
-
-        Paper paper = fxPrinter.getPrinterAttributes().getDefaultPaper();
-        if (pxlOpts.getSize() != null) {
-            double convert = 1;
-            Units units = pxlOpts.getUnits().getAsUnits();
-            if (units == null) {
-                convert = 10; //need to adjust from cm to mm only for DPCM sizes
-                units = Units.MM;
-            }
-            paper = PrintHelper.createPaper("Custom", pxlOpts.getSize().getWidth() * convert, pxlOpts.getSize().getHeight() * convert, units);
-        }
-
-        PageOrientation orient = fxPrinter.getPrinterAttributes().getDefaultPageOrientation();
-        if (pxlOpts.getOrientation() != null) {
-            orient = pxlOpts.getOrientation().getAsPageOrient();
-        }
-
-        try {
-            PageLayout layout;
-            PrintOptions.Margins m = pxlOpts.getMargins();
-            if (m != null) {
-                //force access to the page layout constructor as the adjusted margins on small sizes are wildly inaccurate
-                Constructor<PageLayout> plCon = PageLayout.class.getDeclaredConstructor(Paper.class, PageOrientation.class, double.class, double.class, double.class, double.class);
-                plCon.setAccessible(true);
-
-                //margins defined as pnt (1/72nds)
-                double asPnt = pxlOpts.getUnits().toInches() * 72;
-                layout = plCon.newInstance(paper, orient, m.left() * asPnt, m.right() * asPnt, m.top() * asPnt, m.bottom() * asPnt);
-            } else {
-                //if margins are not provided, use default paper margins
-                PageLayout valid = fxPrinter.getDefaultPageLayout();
-                layout = fxPrinter.createPageLayout(paper, orient, valid.getLeftMargin(), valid.getRightMargin(), valid.getTopMargin(), valid.getBottomMargin());
-            }
-
-            //force our layout as the default to avoid default-margin exceptions on small paper sizes
-            Field field = fxPrinter.getClass().getDeclaredField("defPageLayout");
-            field.setAccessible(true);
-            field.set(fxPrinter, layout);
-
-            settings.setPageLayout(layout);
-        }
-        catch(Exception e) {
-            log.error("Failed to set custom layout", e);
-        }
-
-        settings.setCopies(pxlOpts.getCopies());
-        log.trace("{}", settings.toString());
-
-        //javaFX lies about this value, so pull from original print service
-        CopiesSupported cSupport = (CopiesSupported)output.getPrintService()
-                .getSupportedAttributeValues(Copies.class, output.getPrintService().getSupportedDocFlavors()[0], null);
-
-        try {
-            if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
-                for(WebAppModel model : models) {
-                    WebApp.print(job, model);
+    public void print(PrintOutput output, PrintOptions options) throws PrinterException {
+        if (options.getPixelOptions().isRasterize()) {
+            //grab a snapshot of the pages for PrintImage instead of printing directly
+            for(WebAppModel model : models) {
+                try { images.add(WebApp.raster(model)); }
+                catch(Throwable t) {
+                    throw new PrinterException("Failed to take raster of web page, image size is too large");
                 }
-            } else {
-                settings.setCopies(1); //manually handle copies if they are not supported
-                for(int i = 0; i < pxlOpts.getCopies(); i++) {
+            }
+
+            super.print(output, options);
+        } else {
+
+            Printer fxPrinter = null;
+            for(Printer p : Printer.getAllPrinters()) {
+                if (p.getName().equals(output.getPrintService().getName())) {
+                    fxPrinter = p;
+                    break;
+                }
+            }
+            if (fxPrinter == null) {
+                throw new PrinterException("Cannot find printer under the JavaFX libraries");
+            }
+
+            PrinterJob job = PrinterJob.createPrinterJob(fxPrinter);
+
+
+            // apply option settings
+            PrintOptions.Pixel pxlOpts = options.getPixelOptions();
+            JobSettings settings = job.getJobSettings();
+            settings.setJobName(pxlOpts.getJobName(Constants.HTML_PRINT));
+            settings.setPrintQuality(PrintQuality.HIGH);
+
+            if (pxlOpts.getColorType() != null) {
+                settings.setPrintColor(pxlOpts.getColorType().getAsPrintColor());
+            }
+            if (pxlOpts.isDuplex()) {
+                settings.setPrintSides(PrintSides.DUPLEX);
+            }
+            if (pxlOpts.getPrinterTray() != null) {
+                fxPrinter.getPrinterAttributes().getSupportedPaperSources().stream()
+                        .filter(source -> pxlOpts.getPrinterTray().equals(source.getName())).forEach(settings::setPaperSource);
+            }
+
+            if (pxlOpts.getDensity() > 0) {
+                settings.setPrintResolution(PrintHelper.createPrintResolution((int)pxlOpts.getDensity(), (int)pxlOpts.getDensity()));
+            }
+
+            Paper paper = fxPrinter.getPrinterAttributes().getDefaultPaper();
+            if (pxlOpts.getSize() != null) {
+                double convert = 1;
+                Units units = pxlOpts.getUnits().getAsUnits();
+                if (units == null) {
+                    convert = 10; //need to adjust from cm to mm only for DPCM sizes
+                    units = Units.MM;
+                }
+                paper = PrintHelper.createPaper("Custom", pxlOpts.getSize().getWidth() * convert, pxlOpts.getSize().getHeight() * convert, units);
+            }
+
+            PageOrientation orient = fxPrinter.getPrinterAttributes().getDefaultPageOrientation();
+            if (pxlOpts.getOrientation() != null) {
+                orient = pxlOpts.getOrientation().getAsPageOrient();
+            }
+
+            try {
+                PageLayout layout;
+                PrintOptions.Margins m = pxlOpts.getMargins();
+                if (m != null) {
+                    //force access to the page layout constructor as the adjusted margins on small sizes are wildly inaccurate
+                    Constructor<PageLayout> plCon = PageLayout.class.getDeclaredConstructor(Paper.class, PageOrientation.class, double.class, double.class, double.class, double.class);
+                    plCon.setAccessible(true);
+
+                    //margins defined as pnt (1/72nds)
+                    double asPnt = pxlOpts.getUnits().toInches() * 72;
+                    layout = plCon.newInstance(paper, orient, m.left() * asPnt, m.right() * asPnt, m.top() * asPnt, m.bottom() * asPnt);
+                } else {
+                    //if margins are not provided, use default paper margins
+                    PageLayout valid = fxPrinter.getDefaultPageLayout();
+                    layout = fxPrinter.createPageLayout(paper, orient, valid.getLeftMargin(), valid.getRightMargin(), valid.getTopMargin(), valid.getBottomMargin());
+                }
+
+                //force our layout as the default to avoid default-margin exceptions on small paper sizes
+                Field field = fxPrinter.getClass().getDeclaredField("defPageLayout");
+                field.setAccessible(true);
+                field.set(fxPrinter, layout);
+
+                settings.setPageLayout(layout);
+            }
+            catch(Exception e) {
+                log.error("Failed to set custom layout", e);
+            }
+
+            settings.setCopies(pxlOpts.getCopies());
+            log.trace("{}", settings.toString());
+
+            //javaFX lies about this value, so pull from original print service
+            CopiesSupported cSupport = (CopiesSupported)output.getPrintService()
+                    .getSupportedAttributeValues(Copies.class, output.getPrintService().getSupportedDocFlavors()[0], null);
+
+            try {
+                if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
                     for(WebAppModel model : models) {
                         WebApp.print(job, model);
                     }
+                } else {
+                    settings.setCopies(1); //manually handle copies if they are not supported
+                    for(int i = 0; i < pxlOpts.getCopies(); i++) {
+                        for(WebAppModel model : models) {
+                            WebApp.print(job, model);
+                        }
+                    }
                 }
             }
-        }
-        catch(Throwable t) {
-            throw new PrintException(t.getMessage());
-        }
+            catch(Throwable t) {
+                throw new PrinterException(t.getMessage());
+            }
 
-        //send pending prints
-        job.endJob();
+            //send pending prints
+            job.endJob();
+        }
     }
 
     @Override
     public void cleanup() {
+        super.cleanup();
+
         models.clear();
     }
 }

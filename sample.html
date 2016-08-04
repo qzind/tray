@@ -1696,7 +1696,7 @@
     /** Attempts to parse scale reading from USB raw output */
     function readScaleData(data) {
         // Filter erroneous data
-        if (data.slice(2, 8).join('') == "000000000000") {
+        if (data.length < 4 || data.slice(2, 8).join('') == "000000000000") {
             return null;
         }
 

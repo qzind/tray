@@ -348,3 +348,7 @@ code {
     color: #31708F;
     background-color: #D9EDF7;
 }
+
+input[type='radio'] {
+    margin-left: .5em;
+}

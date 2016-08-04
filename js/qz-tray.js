@@ -836,8 +836,8 @@ var qz = (function() {
         print: function(config, data, signature, signingTimestamp) {
             //change relative links to absolute
             for(var i = 0; i < data.length; i++) {
-                if (typeof data[i] === 'object') {
-                    if ((!data[i].format && data[i].type.toUpperCase() !== 'RAW') //unspecified format and not raw -> assume file
+                if (data[i].constructor === Object) {
+                    if ((!data[i].format && data[i].type && data[i].type.toUpperCase() !== 'RAW') //unspecified format and not raw -> assume file
                         || (data[i].format && (data[i].format.toUpperCase() === 'FILE'
                         || data[i].format.toUpperCase() === 'IMAGE'
                         || data[i].format.toUpperCase() === 'XML'))) {

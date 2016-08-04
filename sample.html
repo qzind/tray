@@ -104,6 +104,7 @@
             </div>
         </div>
 
+
         <div class="col-md-8">
             <ul class="nav nav-tabs" role="tablist">
                 <li id="rawTab" role="presentation" class="active"><a href="#rawContent" role="tab" data-toggle="tab">Raw Printing</a></li>
@@ -138,28 +139,15 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <div>
-                                <label>Print Sample To Type</label>
-                            </div>
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-default" onclick="printEPL();">EPL</button>
-                                <button type="button" class="btn btn-default" onclick="printZPL();">ZPL</button>
-                                <button type="button" class="btn btn-default" onclick="printESCPOS();">ESC/POS</button>
-                                <button type="button" class="btn btn-default" onclick="printEPCL();">EPCL (Zebra Card Printer)</button>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div>
                                 <label>Print Data</label>
                             </div>
                             <div class="btn-group">
+                                <button type="button" class="btn btn-default" onclick="printCommand();">Commands</button>
                                 <button type="button" class="btn btn-default" onclick="printBase64();">Base64</button>
                                 <button type="button" class="btn btn-default" onclick="printXML();">XML</button>
                                 <button type="button" class="btn btn-default" onclick="printHex();">Hex</button>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="col-md-6">
                         <div class="form-group">
                             <div>
                                 <label>Print From File</label>
@@ -170,11 +158,15 @@
                                 <button type="button" class="btn btn-default" onclick="printFile('epl_sample.txt');">epl_sample.txt</button>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="col-md-6">
                         <div class="form-group">
                             <div>
                                 <label>Raster Print</label>
                             </div>
                             <div class="btn-group">
+                                <button type="button" class="btn btn-default" onclick="printRawImage();">Image</button>
                                 <button type="button" class="btn btn-default" onclick="printRawPDF();">PDF</button>
                                 <button type="button" class="btn btn-default" onclick="printRawHTML();">HTML</button>
                             </div>
@@ -185,53 +177,116 @@
                 <div class="row" style="margin-top: 1em;">
                     <div class="col-md-12">
                         <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <h4 class="panel-title">Options</h4>
-                            </div>
-
                             <div class="panel-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group form-inline">
-                                            <label for="rawEncoding">Encoding</label>
-                                            <input type="text" id="rawEncoding" class="form-control pull-right" />
-                                        </div>
 
-                                        <div class="form-group form-inline">
-                                            <label for="rawEndOfDoc">End Of Doc</label>
-                                            <input type="text" id="rawEndOfDoc" class="form-control pull-right" />
-                                        </div>
+                                <fieldset>
+                                    <legend>Config Options</legend>
 
-                                        <div class="form-group form-inline">
-                                            <label for="rawPerSpool">Per Spool</label>
-                                            <input type="number" id="rawPerSpool" class="form-control pull-right" />
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group form-inline">
+                                                <label for="rawEncoding">Encoding</label>
+                                                <input type="text" id="rawEncoding" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="rawEndOfDoc">End Of Doc</label>
+                                                <input type="text" id="rawEndOfDoc" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="rawPerSpool">Per Spool</label>
+                                                <input type="number" id="rawPerSpool" class="form-control pull-right" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group form-inline">
+                                                <label for="rawAltPrinting">Alternate Printing</label>
+                                                <input type="checkbox" id="rawAltPrinting" class="pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="rawCopies">Copies</label>
+                                                <input type="number" id="rawCopies" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label class="tip" for="rawJobName" data-toggle="tooltip" title="Job title as it appears in print queue">
+                                                    Job Name
+                                                </label>
+                                                <input type="text" id="rawJobName" class="form-control pull-right" />
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group form-inline">
-                                            <label for="rawAltPrinting">Alternate Printing</label>
-                                            <input type="checkbox" id="rawAltPrinting" class="pull-right" />
-                                        </div>
+                                </fieldset>
 
-                                        <div class="form-group form-inline">
-                                            <label for="rawCopies">Copies</label>
-                                            <input type="number" id="rawCopies" class="form-control pull-right" />
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <label class="tip" for="rawJobName" data-toggle="tooltip" title="Job title as it appears in print queue">
-                                                Job Name
-                                            </label>
-                                            <input type="text" id="rawJobName" class="form-control pull-right" />
-                                        </div>
-                                    </div>
-                                </div>
                                 <hr />
+
+                                <fieldset>
+                                    <legend>Printer Options</legend>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Language</label>
+                                                <div>
+                                                    <label>
+                                                        <input type="radio" name="pLanguage" id="pLangEPL" value="EPL" />
+                                                        EPL / EPL2
+                                                    </label>
+                                                    <label>
+                                                        <input type="radio" name="pLanguage" id="pLangZPL" value="ZPL" />
+                                                        ZPL / ZPL2
+                                                    </label>
+                                                    <br />
+                                                    <label>
+                                                        <input type="radio" name="pLanguage" id="pLangESCP" value="ESCP" />
+                                                        ESC/POS
+                                                    </label>
+                                                    <label>
+                                                        <input type="radio" name="pLanguage" id="pLangEPCL" value="EPCL" />
+                                                        EPCL
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="form-group form-inline">
+                                                <label for="pX">Image X</label>
+                                                <input type="number" id="pX" class="form-control pull-right" />
+                                            </div>
+                                            <div class="form-group form-inline">
+                                                <label for="pY">Image Y</label>
+                                                <input type="number" id="pY" class="form-control pull-right" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group form-inline">
+                                                <label for="pDotDensity">Dot Density</label>
+                                                <input type="text" id="pDotDensity" class="form-control pull-right" />
+                                            </div>
+                                            <div class="form-group form-inline">
+                                                <label for="pXml">XML Tag</label>
+                                                <input type="text" id="pXml" class="form-control pull-right" />
+                                            </div>
+                                            <div class="form-group form-inline">
+                                                <label for="pRawWidth" class="tip" data-toggle="tooltip" title="In pixels">HTML Page Width</label>
+                                                <input type="number" id="pRawWidth" class="form-control pull-right" />
+                                            </div>
+                                            <div class="form-group form-inline">
+                                                <label for="pRawHeight" class="tip" data-toggle="tooltip" title="In pixels">HTML Page Height</label>
+                                                <input type="number" id="pRawHeight" class="form-control pull-right" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </fieldset>
+
+                                <hr />
+
                                 <div class="row">
                                     <div class="col-md-12">
                                         <button type="button" class="btn btn-danger pull-right" onclick="resetRawOptions();">Reset</button>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -266,167 +321,195 @@
                 <div class="row" style="margin-top: 1em;">
                     <div class="col-md-12">
                         <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <h4 class="panel-title">Options</h4>
-                            </div>
-
                             <div class="panel-body">
-                                <div class="row">
-                                    <div class="col-md-6">
 
-                                        <div class="form-group form-inline">
-                                            <label for="pxlColorType">Color Type</label>
-                                            <select id="pxlColorType" class="form-control pull-right">
-                                                <option value="color">Color</option>
-                                                <option value="grayscale">Grayscale</option>
-                                                <option value="blackwhite">Black & White</option>
-                                            </select>
+                                <fieldset>
+                                    <legend>Config Options</legend>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlColorType">Color Type</label>
+                                                <select id="pxlColorType" class="form-control pull-right">
+                                                    <option value="color">Color</option>
+                                                    <option value="grayscale">Grayscale</option>
+                                                    <option value="blackwhite">Black & White</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlCopies">Copies</label>
+                                                <input type="number" id="pxlCopies" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlDensity" class="tip" data-toggle="tooltip"
+                                                       title="DPI, DPCM, or DPMM depending on units specified">Density
+                                                </label>
+                                                <input type="number" id="pxlDensity" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlDuplex"> Duplex</label>
+                                                <input type="checkbox" id="pxlDuplex" class="pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlInterpolation">Interpolation</label>
+                                                <select id="pxlInterpolation" class="form-control pull-right">
+                                                    <option value="">Default</option>
+                                                    <option value="bicubic">Bicubic</option>
+                                                    <option value="bilinear">Bilinear</option>
+                                                    <option value="nearest-neighbor">Nearest Neighbor</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label class="tip" for="pxlJobName" data-toggle="tooltip" title="Job title as it appears in print queue">
+                                                    Job Name
+                                                </label>
+                                                <input type="text" id="pxlJobName" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlLegacy">Legacy Printing</label>
+                                                <input type="checkbox" id="pxlLegacy" class="pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlOrientation">Orientation</label>
+                                                <select id="pxlOrientation" class="form-control pull-right">
+                                                    <option value="">Default</option>
+                                                    <option value="portrait">Portrait</option>
+                                                    <option value="landscape">Landscape</option>
+                                                    <option value="reverse-landscape">Landscape - Reverse</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlPaperThickness">Paper<br />Thickness</label>
+                                                <input disabled type="number" step="any" id="pxlPaperThickness" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlPrinterTray">Printer Tray</label>
+                                                <input type="text" id="pxlPrinterTray" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlRasterize">Rasterize</label>
+                                                <input type="checkbox" id="pxlRasterize" class="pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlRotation">Rotation</label>
+                                                <input type="number" step="any" id="pxlRotation" class="form-control pull-right" />
+                                            </div>
                                         </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Units</label>
+                                                <div>
+                                                    <label>
+                                                        <input type="radio" name="pxlUnits" id="pxlUnitsIN" value="in" />
+                                                        IN
+                                                    </label>
+                                                    <label>
+                                                        <input type="radio" name="pxlUnits" id="pxlUnitsMM" value="mm" />
+                                                        MM
+                                                    </label>
+                                                    <label>
+                                                        <input type="radio" name="pxlUnits" id="pxlUnitsCM" value="cm" />
+                                                        CM
+                                                    </label>
+                                                </div>
+                                            </div>
 
-                                        <div class="form-group form-inline">
-                                            <label for="pxlCopies">Copies</label>
-                                            <input type="number" id="pxlCopies" class="form-control pull-right" />
-                                        </div>
+                                            <div class="form-group form-inline">
+                                                <label for="pxlScale">Scale Content:</label>
+                                                <input type="checkbox" id="pxlScale" class="pull-right" />
+                                            </div>
 
-                                        <div class="form-group form-inline">
-                                            <label for="pxlDensity" class="tip" data-toggle="tooltip"
-                                                   title="DPI, DPCM, or DPMM depending on units specified">Density
-                                            </label>
-                                            <input type="number" id="pxlDensity" class="form-control pull-right" />
-                                        </div>
+                                            <div class="form-group">
+                                                <label for="pxlMargins" class="tip" data-toggle="tooltip" title="In relation to units specified">Margins</label>
+                                                (
+                                                <label for="pxlMarginsActive" class="inline">Individual:</label>
+                                                <input type="checkbox" id="pxlMarginsActive" onclick="checkMarginsActive();">
+                                                )
+                                                <input type="number" step="any" id="pxlMargins" class="form-control" />
+                                            </div>
+                                            <div class="inline" id="pxlMarginsGroup">
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlMarginsTop">&nbsp; Top:</label>
+                                                    <input type="number" step="any" id="pxlMarginsTop" class="form-control pull-right" />
+                                                </div>
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlMarginsRight">&nbsp; Right:</label>
+                                                    <input type="number" step="any" id="pxlMarginsRight" class="form-control pull-right" />
+                                                </div>
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlMarginsBottom">&nbsp; Bottom:</label>
+                                                    <input type="number" step="any" id="pxlMarginsBottom" class="form-control pull-right" />
+                                                </div>
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlMarginsLeft">&nbsp; Left:</label>
+                                                    <input type="number" step="any" id="pxlMarginsLeft" class="form-control pull-right" />
+                                                </div>
+                                            </div>
 
-                                        <div class="form-group form-inline">
-                                            <label for="pxlDuplex"> Duplex</label>
-                                            <input type="checkbox" id="pxlDuplex" class="pull-right" />
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <label for="pxlInterpolation">Interpolation</label>
-                                            <select id="pxlInterpolation" class="form-control pull-right">
-                                                <option value="">Default</option>
-                                                <option value="bicubic">Bicubic</option>
-                                                <option value="bilinear">Bilinear</option>
-                                                <option value="nearest-neighbor">Nearest Neighbor</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <label class="tip" for="pxlJobName" data-toggle="tooltip" title="Job title as it appears in print queue">
-                                                Job Name
-                                            </label>
-                                            <input type="text" id="pxlJobName" class="form-control pull-right" />
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <label for="pxlLegacy">Legacy Printing</label>
-                                            <input type="checkbox" id="pxlLegacy" class="pull-right" />
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <label for="pxlOrientation">Orientation</label>
-                                            <select id="pxlOrientation" class="form-control pull-right">
-                                                <option value="">Default</option>
-                                                <option value="portrait">Portrait</option>
-                                                <option value="landscape">Landscape</option>
-                                                <option value="reverse-landscape">Landscape - Reverse</option>
-                                            </select>
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <label for="pxlPaperThickness">Paper<br />Thickness</label>
-                                            <input disabled type="number" step="any" id="pxlPaperThickness" class="form-control pull-right" />
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <label for="pxlPrinterTray">Printer Tray</label>
-                                            <input type="text" id="pxlPrinterTray" class="form-control pull-right" />
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <label for="pxlRasterize">Rasterize</label>
-                                            <input type="checkbox" id="pxlRasterize" class="pull-right" />
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <label for="pxlRotation">Rotation</label>
-                                            <input type="number" step="any" id="pxlRotation" class="form-control pull-right" />
+                                            <div class="form-group">
+                                                <label class="inline">Size</label>
+                                                (
+                                                <label for="pxlSizeActive" class="inline">Enable:</label>
+                                                <input type="checkbox" id="pxlSizeActive" onclick="checkSizeActive();" />
+                                                )
+                                            </div>
+                                            <div class="inline" id="pxlSizeGroup">
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlSizeWidth" class="tip" data-toggle="tooltip" title="In relation to units specified">
+                                                        &nbsp; Width:
+                                                    </label>
+                                                    <input type="number" step="any" id="pxlSizeWidth" class="form-control pull-right" />
+                                                </div>
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlSizeHeight" class="tip" data-toggle="tooltip" title="In relation to units specified">
+                                                        &nbsp; Height:
+                                                    </label>
+                                                    <input type="number" step="any" id="pxlSizeHeight" class="form-control pull-right" />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Units</label>
-                                            <div>
-                                                <label>
-                                                    <input type="radio" name="pxlUnits" id="pxlUnitsIN" value="in" />
-                                                    IN
-                                                </label>
-                                                <label>
-                                                    <input type="radio" name="pxlUnits" id="pxlUnitsMM" value="mm" />
-                                                    MM
-                                                </label>
-                                                <label>
-                                                    <input type="radio" name="pxlUnits" id="pxlUnitsCM" value="cm" />
-                                                    CM
-                                                </label>
-                                            </div>
-                                        </div>
+                                </fieldset>
 
-                                        <div class="form-group form-inline">
-                                            <label for="pxlScale">Scale Content:</label>
-                                            <input type="checkbox" id="pxlScale" class="pull-right" />
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label for="pxlMargins" class="tip" data-toggle="tooltip" title="In relation to units specified">Margins</label>
-                                            (
-                                            <label for="pxlMarginsActive" class="inline">Individual:</label>
-                                            <input type="checkbox" id="pxlMarginsActive" onclick="checkMarginsActive();">
-                                            )
-                                            <input type="number" step="any" id="pxlMargins" class="form-control" />
-                                        </div>
-                                        <div class="inline" id="pxlMarginsGroup">
-                                            <div class="form-group form-inline">
-                                                <label for="pxlMarginsTop">&nbsp; Top:</label>
-                                                <input type="number" step="any" id="pxlMarginsTop" class="form-control pull-right" />
-                                            </div>
-                                            <div class="form-group form-inline">
-                                                <label for="pxlMarginsRight">&nbsp; Right:</label>
-                                                <input type="number" step="any" id="pxlMarginsRight" class="form-control pull-right" />
-                                            </div>
-                                            <div class="form-group form-inline">
-                                                <label for="pxlMarginsBottom">&nbsp; Bottom:</label>
-                                                <input type="number" step="any" id="pxlMarginsBottom" class="form-control pull-right" />
-                                            </div>
-                                            <div class="form-group form-inline">
-                                                <label for="pxlMarginsLeft">&nbsp; Left:</label>
-                                                <input type="number" step="any" id="pxlMarginsLeft" class="form-control pull-right" />
-                                            </div>
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label class="inline">Size</label>
-                                            (
-                                            <label for="pxlSizeActive" class="inline">Enable:</label>
-                                            <input type="checkbox" id="pxlSizeActive" onclick="checkSizeActive();" />
-                                            )
-                                        </div>
-                                        <div class="inline" id="pxlSizeGroup">
-                                            <div class="form-group form-inline">
-                                                <label for="pxlSizeWidth" class="tip" data-toggle="tooltip" title="In relation to units specified">
-                                                    &nbsp; Width:
-                                                </label>
-                                                <input type="number" step="any" id="pxlSizeWidth" class="form-control pull-right" />
-                                            </div>
-                                            <div class="form-group form-inline">
-                                                <label for="pxlSizeHeight" class="tip" data-toggle="tooltip" title="In relation to units specified">
-                                                    &nbsp; Height:
-                                                </label>
-                                                <input type="number" step="any" id="pxlSizeHeight" class="form-control pull-right" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                                 <hr />
+
+                                <fieldset>
+                                    <legend>Printer Options</legend>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group form-inline">
+                                                <label for="pPxlWidth" class="tip" data-toggle="tooltip" title="In relation to units specified">HTML Page
+                                                    Width
+                                                </label>
+                                                <input type="number" id="pPxlWidth" class="form-control pull-right" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group form-inline">
+                                                <label for="pPxlHeight" class="tip" data-toggle="tooltip" title="In relation to units specified">HTML Page
+                                                    Height
+                                                </label>
+                                                <input type="number" id="pPxlHeight" class="form-control pull-right" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </fieldset>
+
+                                <hr />
+
                                 <div class="row">
                                     <div class="col-md-12">
                                         <button type="button" class="btn btn-danger pull-right" onclick="resetPixelOptions();">Reset</button>
@@ -562,10 +645,12 @@
                                 </div>
                                 <div class="btn-group" data-toggle="buttons">
                                     <label id="usbRawRadio" class="btn btn-default active">
-                                        <input type="radio" autocomplete="off" checked>Raw
+                                        <input type="radio" autocomplete="off" checked>
+                                        Raw
                                     </label>
                                     <label id="usbWeightRadio" class="btn btn-default">
-                                        <input type="radio" autocomplete="off">Weight
+                                        <input type="radio" autocomplete="off">
+                                        Weight
                                     </label>
                                 </div>
                             </div>
@@ -666,10 +751,12 @@
                                 </div>
                                 <div class="btn-group" data-toggle="buttons">
                                     <label id="hidRawRadio" class="btn btn-default active">
-                                        <input type="radio" autocomplete="off" checked>Raw
+                                        <input type="radio" autocomplete="off" checked>
+                                        Raw
                                     </label>
                                     <label id="hidWeightRadio" class="btn btn-default">
-                                        <input type="radio" autocomplete="off">Weight
+                                        <input type="radio" autocomplete="off">
+                                        Weight
                                     </label>
                                 </div>
                             </div>
@@ -963,59 +1050,51 @@
 
 
     /// Raw Printers ///
-    function printEPL() {
+    function printCommand() {
         var config = getUpdatedConfig();
+        var lang = getUpdatedOptions().language; //print options not used with this flavor, just check language requested
 
-        var printData = [
-            '\nN\n',
-            'q609\n',
-            'Q203,26\n',
-            'B5,26,0,1A,3,7,152,B,"1234"\n',
-            'A310,26,0,3,1,1,N,"SKU 00000 MFG 0000"\n',
-            'A310,56,0,3,1,1,N,"QZ PRINT APPLET"\n',
-            'A310,86,0,3,1,1,N,"TEST PRINT SUCCESSFUL"\n',
-            'A310,116,0,3,1,1,N,"FROM SAMPLE.HTML"\n',
-            'A310,146,0,3,1,1,N,"QZ.IO"\n',
-            { type: 'raw', format: 'image', flavor: 'file', data: 'assets/img/image_sample_bw.png', options: { language: 'EPL', x: 150, y: 300 } },
-            '\nP1,1\n'
-        ];
+        var printData;
+        switch(lang) {
+            case 'EPL':
+                printData = [
+                    '\nN\n',
+                    'q609\n',
+                    'Q203,26\n',
+                    'B5,26,0,1A,3,7,152,B,"1234"\n',
+                    'A310,26,0,3,1,1,N,"SKU 00000 MFG 0000"\n',
+                    'A310,56,0,3,1,1,N,"TEST PRINT SUCCESSFUL"\n',
+                    'A310,86,0,3,1,1,N,"FROM SAMPLE.HTML"\n',
+                    'A310,116,0,3,1,1,N,"PRINTED WITH QZ ' + qzVersion + '"\n',
+                    '\nP1,1\n'
+                ];
+                break;
+            case 'ZPL':
+                printData = [
+                    '^XA\n',
+                    '^FO50,50^ADN,36,20^FDPRINTED WITH QZ ' + qzVersion + '\n',
+                    '^FS\n',
+                    '^XZ\n'
+                ];
+                break;
+            case 'ESCP':
+                printData = [
+                    //defaults to 'type: raw', 'format: command', and 'flavor: plain'
+                    { data: '\nPRINTED WITH QZ' + qzVersion + '.\n\n\n\n\n\n' }
+                ];
+                break;
+            case 'EPCL':
+                printData = buildEPCL();
+                break;
+            default:
+                displayError("Sample page cannot print commands using this printer language");
+                return;
+        }
 
         qz.print(config, printData).catch(displayError);
     }
 
-    function printZPL() {
-        var config = getUpdatedConfig();
-
-        var printData = [
-            '^XA\n',
-            '^FO50,100',
-            { type: 'raw', format: 'image', flavor: 'file', data: 'assets/img/image_sample_bw.png', options: { language: 'ZPLII' } },
-            '^FS\n',
-            '^FO50,300^ADN,36,20^FDPRINTED USING^FS\n',
-            '^FO50,350^ADN,36,20^FDQZ-TRAY ^FS\n',
-            '^FO50,400^ADN,36,20^FDVERSION ' + qzVersion + '^FS\n' + '\n',
-            '^XZ\n'
-        ];
-
-        qz.print(config, printData).catch(displayError);
-    }
-
-    function printESCPOS() {
-        var config = getUpdatedConfig();
-
-        var printData = [
-            //defaults to 'flavor: file'
-            { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: { language: 'ESCPOS', dotDensity: 'single' } },
-            //defaults to 'type: raw', 'format: command', and 'flavor: plain'
-            { data: '\nPrinted using qz-tray plugin.\n\n\n\n\n\n' }
-        ];
-
-        qz.print(config, printData).catch(displayError);
-    }
-
-    function printEPCL() {
-        var config = getUpdatedConfig();
-
+    function buildEPCL() {
         var printData = [];
         $.merge(printData, convertEPCL('+RIB 4'));     // Monochrome ribbon
         $.merge(printData, convertEPCL('F'));          // Clear monochrome print buffer
@@ -1030,7 +1109,7 @@
         $.merge(printData, convertEPCL('I 10'));       // Print card (10 returns to print ready pos.)
         $.merge(printData, convertEPCL('MO'));         // Move card to output hopper
 
-        qz.print(config, printData).catch(displayError);
+        return printData;
     }
 
     /**
@@ -1055,8 +1134,10 @@
         ];
     }
 
+    /* Sample EPL Only */
     function printBase64() {
         var config = getUpdatedConfig();
+        //print options not used with this flavor
 
         // Send base64 encoded characters/raw commands to qz using data type 'base64'.
         // This will automatically convert provided base64 encoded text into text/ascii/bytes, etc.
@@ -1150,11 +1231,13 @@
         qz.print(config, printData).catch(displayError);
     }
 
+    /* Sample ZPL Only */
     function printXML() {
         var config = getUpdatedConfig();
+        var opts = getUpdatedOptions();
 
         var printData = [
-            { type: 'raw', format: 'command', flavor: 'xml', data: 'assets/zpl_sample.xml', options: { xmlTag: 'v7:Image' } }
+            { type: 'raw', format: 'command', flavor: 'xml', data: 'assets/zpl_sample.xml', options: opts }
         ];
 
         qz.print(config, printData).catch(displayError);
@@ -1162,54 +1245,162 @@
 
     function printHex() {
         var config = getUpdatedConfig();
+        var lang = getUpdatedOptions().language; //print options not used with this flavor, just check language requested
 
-        //defaults to 'type: raw' and 'format: command'
-        var printData = [
-            { flavor: 'hex', data: '4e0d0a713630390d0a513230332c32360d0a42352c32362c' },
-            { flavor: 'hex', data: '302c31412c332c372c3135322c422c2231323334220d0a41' },
-            { flavor: 'hex', data: '3331302c32362c302c332c312c312c4e2c22534b55203030' },
-            { flavor: 'hex', data: '303030204d46472030303030220d0a413331302c35362c30' },
-            { flavor: 'hex', data: '2c332c312c312c4e2c22515a205072696e7420506c756769' },
-            { flavor: 'hex', data: '6e220d0a413331302c38362c302c332c312c312c4e2c2254' },
-            { flavor: 'hex', data: '657374207072696e74207375636365737366756c220d0a41' },
-            { flavor: 'hex', data: '3331302c3131362c302c332c312c312c4e2c2266726f6d20' },
-            { flavor: 'hex', data: '73616d706c652e68746d6c220d0a413331302c3134362c30' },
-            { flavor: 'hex', data: '2c332c312c312c4e2c227072696e7448657828292066756e' },
-            { flavor: 'hex', data: '6374696f6e2e220d0a50312c310d0a' }
-        ];
+        var printData;
+        switch(lang) {
+            case 'EPL':
+                //defaults to 'type: raw' and 'format: command'
+                printData = [
+                    { flavor: 'hex', data: '4e0d0a713630390d0a513230332c32360d0a42352c32362c3' },
+                    { flavor: 'hex', data: '02c31412c332c372c3135322c422c2239383736220d0a4133' },
+                    { flavor: 'hex', data: '31302c32362c302c332c312c312c4e2c22534b55203030303' },
+                    { flavor: 'hex', data: '030204d46472030303030220d0a413331302c35362c302c33' },
+                    { flavor: 'hex', data: '2c312c312c4e2c2254455354205052494e542053554343455' },
+                    { flavor: 'hex', data: '35346554c220d0a413331302c38362c302c332c312c312c4e' },
+                    { flavor: 'hex', data: '2c225553494e472068657820434f4d4d414e4453220d0a413' },
+                    { flavor: 'hex', data: '331302c3131362c302c332c312c312c4e2c225052494e5445' },
+                    { flavor: 'hex', data: '44205749544820515a2054524159220d0a50312c31' }
+                ];
+                break;
+            case 'ZPL':
+                printData = [
+                    { flavor: 'hex', data: '5e58410d0a5e464f35302c35300d0a5e41444e2c33362c3' },
+                    { flavor: 'hex', data: '2300d0a5e46445052494e544544205749544820515a2054' },
+                    { flavor: 'hex', data: '5241590d0a5e46445553494e472068657820434f4d4d414' },
+                    { flavor: 'hex', data: 'e44530d0a5e46530d0a5e585a' }
+                ];
+                break;
+            case 'ESCP':
+                printData = [
+                    { flavor: 'hex', data: '0d0a5052494e544544205749544820515a20545241590d0a0d0a' },
+                    { flavor: 'hex', data: '5553494e472068657820434f4d4d414e44530d0a0d0a0d0a0d0a' }
+                ];
+                break;
+            default:
+                displayError("Sample page cannot print hex commands using this printer language");
+                break;
+        }
+
 
         qz.print(config, printData).catch(displayError);
     }
 
-    function printFile(file) {
+    function printRawImage() {
         var config = getUpdatedConfig();
+        var opts = getUpdatedOptions();
 
-        var printData = [
-            { type: 'raw', format: 'command', flavor: 'file', data: 'assets/' + file }
-        ];
+        var printData;
+        switch(opts.language) {
+            case 'EPL':
+                printData = [
+                    '\nN\n',
+                    'q609\n',
+                    'Q203,26\n',
+                    { type: 'raw', format: 'image', flavor: 'file', data: 'assets/img/image_sample_bw.png', options: opts },
+                    '\nP1,1\n'
+                ];
+                break;
+            case 'ZPL':
+                printData = [
+                    '^XA\n',
+                    { type: 'raw', format: 'image', flavor: 'file', data: 'assets/img/image_sample_bw.png', options: opts },
+                    '^FS\n',
+                    '^XZ\n'
+                ];
+                break;
+            case 'ESCP':
+                printData = [
+                    //defaults to 'flavor: file'
+                    { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: opts },
+                ];
+                break;
+            default:
+                displayError("Cannot print images using this printer language");
+                return;
+        }
 
         qz.print(config, printData).catch(displayError);
     }
 
     function printRawPDF() {
         var config = getUpdatedConfig();
+        var opts = getUpdatedOptions();
 
-        var printData = [
-            '^XA\n',
-            { type: 'raw', format: 'pdf', flavor: 'file', data: 'assets/pdf_sample.pdf', options: { language: 'ZPLII' } },
-            '^XZ\n'
-        ];
+        var printData;
+        switch(opts.language) {
+            case 'EPL':
+                printData = [
+                    '\nN\n',
+                    'q609\n',
+                    'Q203,26\n',
+                    { type: 'raw', format: 'pdf', flavor: 'file', data: 'assets/pdf_sample.pdf', options: opts },
+                    '\nP1,1\n'
+                ];
+                break;
+            case 'ZPL':
+                printData = [
+                    '^XA\n',
+                    { type: 'raw', format: 'pdf', flavor: 'file', data: 'assets/pdf_sample.pdf', options: opts },
+                    '^FS\n',
+                    '^XZ\n'
+                ];
+                break;
+            case 'ESCP':
+                printData = [
+                    { type: 'raw', format: 'pdf', flavor: 'file', data: 'assets/pdf_sample.pdf', options: opts }
+                ];
+                break;
+            default:
+                displayError("Cannot print PDFs using this printer language");
+                break;
+        }
 
         qz.print(config, printData).catch(displayError);
     }
 
     function printRawHTML() {
         var config = getUpdatedConfig();
+        var opts = getUpdatedOptions();
+
+        var printData;
+        switch(opts.language) {
+            case 'EPL':
+                printData = [
+                    '\nN\n',
+                    'q609\n',
+                    'Q203,26\n',
+                    { type: 'raw', format: 'html', flavor: 'file', data: 'https://qz.io/about/', options: opts },
+                    '\nP1,1\n'
+                ];
+                break;
+            case 'ZPL':
+                printData = [
+                    '^XA\n',
+                    { type: 'raw', format: 'html', flavor: 'file', data: 'https://qz.io/about/', options: opts },
+                    '^FS\n',
+                    '^XZ\n'
+                ];
+                break;
+            case 'ESCP':
+                printData = [
+                    { type: 'raw', format: 'html', flavor: 'file', data: 'https://qz.io/about/', options: opts }
+                ];
+                break;
+            default:
+                displayError("Cannot print HTML using this printer language");
+                break;
+        }
+
+        qz.print(config, printData).catch(displayError);
+    }
+
+    function printFile(file) {
+        var config = getUpdatedConfig();
+        //print options not used with this flavor
 
         var printData = [
-            '^XA\n',
-            { type: 'raw', format: 'html', flavor: 'file', data: 'https://qz.io/about/', options: { language: 'ZPLII', pageWidth: 480 } },
-            '^XZ\n'
+            { type: 'raw', format: 'command', flavor: 'file', data: 'assets/' + file }
         ];
 
         qz.print(config, printData).catch(displayError);
@@ -1219,6 +1410,7 @@
     /// Pixel Printers ///
     function printHTML() {
         var config = getUpdatedConfig();
+        var opts = getUpdatedOptions(true);
 
         var printData = [
             {
@@ -1236,7 +1428,8 @@
                 '    <div style="float: right">' +
                 '        <img src="' + getPath() + '/assets/img/image_sample.png" />' +
                 '    </div>' +
-                '</html>'
+                '</html>',
+                options: opts
             }
         ];
 
@@ -1245,6 +1438,7 @@
 
     function printPDF() {
         var config = getUpdatedConfig();
+        //print options not used with this flavor
 
         var printData = [
             { type: 'pixel', format: 'pdf', flavor: 'file', data: 'assets/pdf_sample.pdf' }
@@ -1255,6 +1449,7 @@
 
     function printImage() {
         var config = getUpdatedConfig();
+        //print options not used with this flavor
 
         var printData = [
             { type: 'pixel', format: 'image', flavor: 'file', data: 'assets/img/image_sample.png' }
@@ -1569,14 +1764,25 @@
 
     /// Resets ///
     function resetRawOptions() {
+        //config
         $("#rawPerSpool").val(1);
         $("#rawEncoding").val(null);
         $("#rawEndOfDoc").val(null);
         $("#rawAltPrinting").prop('checked', false);
         $("#rawCopies").val(1);
+
+        //printer
+        $("#pLangEPL").prop('checked', true);
+        $("#pX").val('150');
+        $("#pY").val('180');
+        $("#pDotDensity").val('single');
+        $("#pXml").val('v7:Image');
+        $("#pRawWidth").val('480');
+        $("#pRawHeight").val('');
     }
 
     function resetPixelOptions() {
+        //config
         $("#pxlColorType").val("color");
         $("#pxlCopies").val(1);
         $("#pxlDensity").val('');
@@ -1604,6 +1810,10 @@
         $("#pxlSizeHeight").val('');
         $("#pxlSizeActive").prop('checked', false);
         $("#pxlSizeGroup").css('display', 'none');
+
+        //printer
+        $("#pPxlWidth").val('');
+        $("#pPxlHeight").val('');
     }
 
     function checkSizeActive() {
@@ -1687,7 +1897,7 @@
             }
         });
 
-        $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+        $('a[data-toggle="tab"]').on('shown.bs.tab', function() {
             if (window.readingWeight) {
                 $("#usbWeightRadio").click();
                 $("#hidWeightRadio").click();
@@ -2006,6 +2216,25 @@
                             size: pxlSize,
                             units: $("input[name='pxlUnits']:checked").val()
                         });
+    }
+
+    function getUpdatedOptions(onlyPixel) {
+        if (onlyPixel) {
+            return {
+                pageWidth: $("#pPxlWidth").val(),
+                pageHeight: $("#pPxlHeight").val()
+            };
+        } else {
+            return {
+                language: $("input[name='pLanguage']:checked").val(),
+                x: $("#pX").val(),
+                y: $("#pY").val(),
+                dotDensity: $("#pDotDensity").val(),
+                xmlTag: $("#pXml").val(),
+                pageWidth: $("#pRawWidth").val(),
+                pageHeight: $("#pRawHeight").val()
+            };
+        }
     }
 
     function setPrintFile() {

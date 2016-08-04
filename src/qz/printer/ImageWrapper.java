@@ -262,8 +262,7 @@ public class ImageWrapper {
         * See also: https://support.zebra.com/cpws/docs/eltron/gw_command.htm
         */
         for(int rgbpixel : rgbPixels) {
-            pixels[i++] = languageType.requiresImageOutputInverted()? !isBlack(rgbpixel):
-                    isBlack(rgbpixel);
+            pixels[i++] = languageType.requiresImageOutputInverted() != isBlack(rgbpixel);
         }
         setImageAsBooleanArray(pixels);
     }
@@ -308,12 +307,9 @@ public class ImageWrapper {
 
         switch(languageType) {
             case ESCP:
-            case ESCP2:
-            case ESCPOS:
                 appendEpsonSlices(getByteBuffer());
                 break;
             case ZPL:
-            case ZPLII:
                 String zplHexAsString = ByteUtilities.getHexString(getImageAsIntArray());
                 int byteLen = zplHexAsString.length() / 2;
                 int perRow = byteLen / getHeight();
@@ -324,7 +320,6 @@ public class ImageWrapper {
                 getByteBuffer().append(zpl, charset);
                 break;
             case EPL:
-            case EPL2:
                 StringBuilder epl = new StringBuilder("GW")
                         .append(getxPos()).append(",")
                         .append(getyPos()).append(",")

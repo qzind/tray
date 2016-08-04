@@ -20,14 +20,10 @@ import java.util.List;
  */
 public enum LanguageType {
 
-    ZPLII(false, true, "ZEBRA", "ZPL2"),
-    ZPL(false, true),
-    EPL2(true, true, "EPLII"),
-    EPL(true, true),
+    ZPL(false, true, "ZPL", "ZPL2", "ZPLII", "ZEBRA"),
+    EPL(true, true, "EPL", "EPL2", "EPLII"),
     CPCL(false, true),
-    ESCP(false, false, "ESC", "ESC/P"),
-    ESCP2(false, false, "ESC/P2"),
-    ESCPOS(false, false, "ESC/POS", "EPSON"),
+    ESCP(false, false, "ESCP", "ESCP2", "ESCPOS", "ESC", "ESC/P", "ESC/P2", "ESCP/P2", "ESC/POS", "ESC\\P", "EPSON"),
     UNKNOWN(false, false);
 
 

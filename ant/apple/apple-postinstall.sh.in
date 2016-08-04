@@ -1,16 +1,16 @@
 #!/bin/bash
-###############################################################################
-#                         ${project.name} Apple OS X Postinstall                      #
-###############################################################################
-#  Description:                                                               #
-#    1. Generates and installs certificate for secure websockets              #
-#    2. Installs certificate to Firefox                                       #
-#    3. Peforms any cleanup operations                                        #
-#    4. Launches app as user (not root)                                       #
-#                                                                             #
-#  Usage:                                                                     #
-#    $ ./postinstall                                                          #
-###############################################################################
+##########################################################################################
+#                                 ${project.name} MacOS Postinstall                              #
+##########################################################################################
+#  Description:                                                                          #
+#    1. Generates and installs certificate for secure websockets                         #
+#    2. Installs certificate into Firefox (if installed)                                 #
+#    3. Performs any cleanup operations                                                  #
+#    4. Launches app as user (not root)                                                  #
+#                                                                                        #
+#  Usage:                                                                                #
+#    $ ./postinstall                                                                     #
+##########################################################################################
 
 # Install ${project.name} certificate
 "${apple.installdir}/auth/${apple.keygen.name}" "install"

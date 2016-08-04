@@ -1,17 +1,27 @@
 #!/bin/bash
-###############################################################################
-#                         ${project.name} Linux Installer                             #
-###############################################################################
-#  Description:                                                               #
-#    1. Stops any existing instances                                          #
-#    2. Patches Ubuntu Unity Desktop for tray icon support                    #
-#    3. Installs to current users home directory                              #
-#                                                                             #
-#  Usage:                                                                     #
-#    $ chmod +x ${linux.installer.name}                                            #
-#    $ sudo ./${linux.installer.name} [noprompt] [hostname]                        #
-#                                                                             #
-###############################################################################
+##########################################################################################
+#                            ${project.name} Linux Installer                                     #
+##########################################################################################
+#  Description:                                                                          #
+#    1. Stops any existing instances                                                     #
+#    2. Patches Ubuntu Unity Desktop for tray icon support                               #
+#    3. Installs to /opt/${project.filename}/                                                         #
+#    4. Installs certificate to OS using certutil                                        #
+#    5. Installs certificate into Firefox (if installed)                                 #
+#                                                                                        #
+#       Note:  If [sslcert] and [sslkey] are specified, import to browser/OS is omitted. #
+#                                                                                        #
+#  Depends:                                                                              #
+#    java, certutil                                                                      #
+#                                                                                        #
+#  Optional:                                                                             #
+#    openssl - Required if providing [sslcert], [sslkey] parameters                      #
+#                                                                                        #
+#  Usage:                                                                                #
+#    $ chmod +x ${linux.installer.name}                                                       #
+#    $ sudo ./${linux.installer.name} [noprompt] [hostname] [sslcert] [sslkey]                #
+#                                                                                        #
+##########################################################################################
 
 if [ "$(id -u)" != "0" ]; then
    echo -e "\nThis script must be run with root (sudo) privileges" 1>&2
@@ -21,6 +31,8 @@ fi
 
 noprompt="$1"
 cname="$2"
+sslcert="$3"
+sslkey="$4"
 mask=755
 destdir="${linux.installdir}"
 shortcut="/usr/share/applications/${project.filename}.desktop"
@@ -89,7 +101,8 @@ progress_dialog 5 "Checking for Java ${javac.target}+..."
 check_java
 
 progress_dialog 10 "Stopping any running versions..."
-pkill -f "java -jar ${jarfile}"
+pkill -f "java -jar ${jarfile}" > /dev/null 2>&1
+pkill -f "java -jar ${launch.opts} ${jarfile}" > /dev/null 2>&1
 
 progress_dialog 20 "Stopping any running versions..."
 rm -rf "${destdir}" > /dev/null 2>&1
@@ -146,25 +159,29 @@ fi
 
 progress_dialog 70 "Generating certificate..."
 chmod $mask "$destdir/auth/${linux.keygen.name}"  > /dev/null 2>&1
-"$destdir/auth/${linux.keygen.name}" "$cname"
+"$destdir/auth/${linux.keygen.name}" "$cname" "$sslcert" "$sslkey"
 
-progress_dialog 75 "Importing Firefox locator..."
-chmod $mask "$destdir/auth/firefox/${locator.name}"  > /dev/null 2>&1
+if [[ -n $sslcert && -n $sslkey ]]; then
+    progress_dialog 75 "Skipping OS/browser cert import..."
+else
+    progress_dialog 75 "Importing Firefox locator..."
+    chmod $mask "$destdir/auth/firefox/${locator.name}"  > /dev/null 2>&1
 
-progress_dialog 80 "Importing Firefox certificate..."
-chmod $mask "$destdir/auth/firefox/${firefoxcert.name}"  > /dev/null 2>&1
-"$destdir/auth/firefox/${firefoxcert.name}" "install" "$cname"
+    progress_dialog 80 "Importing Firefox certificate..."
+    chmod $mask "$destdir/auth/firefox/${firefoxcert.name}"  > /dev/null 2>&1
+    "$destdir/auth/firefox/${firefoxcert.name}" "install" "$cname"
 
-progress_dialog 85 "Checking for certutil..."
-which certutil > /dev/null 1>&2
-if [ $? -ne 0 ]; then
-    confirm_dialog "Certutil not found. Attempt to fetch now?" "$noprompt"
-    apt-get install -y libnss3-tools > /dev/null 2>&1
+    progress_dialog 85 "Checking for certutil..."
     which certutil > /dev/null 1>&2
     if [ $? -ne 0 ]; then
-       echo -e "\t- Success"
-    else
-       echo -e "\t- Failed"
+        confirm_dialog "Certutil not found. Attempt to fetch now?" "$noprompt"
+        apt-get install -y libnss3-tools > /dev/null 2>&1
+        which certutil > /dev/null 1>&2
+        if [ $? -ne 0 ]; then
+           echo -e "\t- Success"
+        else
+           echo -e "\t- Failed"
+        fi
     fi
 fi
 

@@ -1,15 +1,15 @@
 #!/bin/bash
-###############################################################################
-#                         ${project.name} Apple OS X Postinstall                      #
-###############################################################################
-#  Description:                                                               #
-#    1. Removes certificate for secure websockets                             #
-#    2. Removes certificate in Firefox                                        #
-#    3. Removes application bundle                                            #
-#                                                                             #
-#  Usage:                                                                     #
-#    $ sudo ./uninstall                                                       #
-###############################################################################
+##################################################################################################
+#                                    ${project.name} MacOS Uninstall                                     #
+##################################################################################################
+#  Description:                                                                                  #
+#    1. Removes certificate for secure websockets                                                #
+#    2. Removes certificate in Firefox                                                           #
+#    3. Removes application bundle                                                               #
+#                                                                                                #
+#  Usage:                                                                                        #
+#    $ sudo ./uninstall                                                                          #
+##################################################################################################
 
 if [ "$(id -u)" != "0" ]; then
    echo -e "\nThis script must be run with root (sudo) privileges" 1>&2

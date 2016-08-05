@@ -142,7 +142,7 @@ public class PrintRaw implements PrintProcessor {
                 }
             }
             catch(Exception e) {
-                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s into a raw %s command", flavor, data.getString("data"), format), e);
+                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s into a raw %s command: %s", flavor, data.getString("data"), format, e.getLocalizedMessage()), e);
             }
         }
     }

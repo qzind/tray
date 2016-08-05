@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.0.4;
+ * @version 2.1.0
  * @overview QZ Tray Connector
  * <p/>
  * Connects a web client to the QZ Tray software.
@@ -28,7 +28,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
-        VERSION: "2.0.4",                              //must match @version above
+        VERSION: "2.1.0",                              //must match @version above
         DEBUG: false,
 
         log: {
@@ -371,7 +371,7 @@ var qz = (function() {
                 orientation: null,
                 paperThickness: null,
                 printerTray: null,
-                rasterize: true,
+                rasterize: false,
                 rotation: 0,
                 scaleContent: true,
                 size: null,
@@ -828,7 +828,8 @@ var qz = (function() {
              *  @param {string} [options.orientation=null] Valid values <code>[portrait | landscape | reverse-landscape]</code>
              *  @param {number} [options.paperThickness=null]
              *  @param {string|number} [options.printerTray=null] Printer tray to pull from. The number N assumes string equivalent of 'Tray N'. Uses printer default if NULL.
-             *  @param {boolean} [options.rasterize=true] Whether documents should be rasterized before printing. Forced TRUE if <code>[options.density]</code> is specified.
+             *  @param {boolean} [options.rasterize=false] Whether documents should be rasterized before printing.
+             *                                             Specifying <code>[options.density]</code> for PDF print formats will set this to <code>true</code>.
              *  @param {number} [options.rotation=0] Image rotation in degrees.
              *  @param {boolean} [options.scaleContent=true] Scales print content to page size, keeping ratio.
              *  @param {Object} [options.size=null] Paper size.
@@ -880,22 +881,26 @@ var qz = (function() {
          * ex. <code>'{"call":"<callName>","params":{...},"timestamp":1450000000}'</code>
          *
          * @param {Object<Config>} config Previously created config object.
-         * @param {Array<Object|string>} data Array of data being sent to the printer. String values are interpreted the same as the default <code>[raw]</code> object value.
+         * @param {Array<Object|string>} data Array of data being sent to the printer.<br/>
+         *      String values are interpreted as <code>{type: 'raw', format: 'command', flavor: 'plain', data: &lt;string>}</code>.
          *  @param {string} data.data
-         *  @param {string} data.type Valid values <code>[html | image | pdf | raw]</code>
-         *  @param {string} [data.format] Format of data provided.<p/>
-         *      For <code>[html]</code> types, valid formats include <code>[file(default) | plain]</code>.<p/>
-         *      For <code>[image]</code> types, valid formats include <code>[base64 | file(default)]</code>.<p/>
-         *      For <code>[pdf]</code> types, valid format include <code>[base64 | file(default)]</code>.<p/>
-         *      For <code>[raw]</code> types, valid formats include <code>[base64 | file | hex | plain(default) | image | xml]</code>.
+         *  @param {string} data.type Printing type. Valid types are <code>[pixel | raw*]</code>. *Default
+         *  @param {string} data.format Format of data type used. *Default per type<p/>
+         *      For <code>[pixel]</code> types, valid formats are <code>[html | image* | pdf]</code>.<p/>
+         *      For <code>[raw]</code> types, valid formats are <code>[command* | html | image | pdf]</code>.
+         *  @param {string} data.flavor Flavor of data format used. *Default per format<p/>
+         *      For <code>[command]</code> formats, valid flavors are <code>[base64 | file | hex | plain* | xml]</code>.<p/>
+         *      For <code>[html]</code> formats, valid flavors are <code>[file* | plain]</code>.<p/>
+         *      For <code>[image]</code> formats, valid flavors are <code>[base64 | file*]</code>.<p/>
+         *      For <code>[pdf]</code> formats, valid flavors are <code>[base64 | file*]</code>.
          *  @param {Object} [data.options]
-         *   @param {string} [data.options.language] Required with <code>[raw]</code> type <code>[image]</code> format. Printer language.
-         *   @param {number} [data.options.x] Optional with <code>[raw]</code> type <code>[image]</code> format. The X position of the image.
-         *   @param {number} [data.options.y] Optional with <code>[raw]</code> type <code>[image]</code> format. The Y position of the image.
-         *   @param {string|number} [data.options.dotDensity] Optional with <code>[raw]</code> type <code>[image]</code> format.
-         *   @param {string} [data.options.xmlTag] Required with <code>[xml]</code> format. Tag name containing base64 formatted data.
-         *   @param {number} [data.options.pageWidth] Optional with <code>[html]</code> type printing. Width of the web page to render. Defaults to paper width.
-         *   @param {number} [data.options.pageHeight] Optional with <code>[html]</code> type printing. Height of the web page to render. Defaults to adjusted web page height.
+         *   @param {string} [data.options.language] Required with <code>[raw]</code> type + <code>[image]</code> format. Printer language.
+         *   @param {number} [data.options.x] Optional with <code>[raw]</code> type + <code>[image]</code> format. The X position of the image.
+         *   @param {number} [data.options.y] Optional with <code>[raw]</code> type + <code>[image]</code> format. The Y position of the image.
+         *   @param {string|number} [data.options.dotDensity] Optional with <code>[raw]</code> type + <code>[image]</code> format.
+         *   @param {string} [data.options.xmlTag] Required with <code>[xml]</code> flavor. Tag name containing base64 formatted data.
+         *   @param {number} [data.options.pageWidth] Optional with <code>[html]</code> format. Width of the web page to render. Defaults to paper width.
+         *   @param {number} [data.options.pageHeight] Optional with <code>[html]</code> format. Height of the web page to render. Defaults to adjusted web page height.
          * @param {boolean} [signature] Pre-signed signature of JSON string containing <code>call</code>, <code>params</code>, and <code>timestamp</code>.
          * @param {number} [signingTimestamp] Required with <code>signature</code>. Timestamp used with pre-signed content.
          *
@@ -909,10 +914,23 @@ var qz = (function() {
             //change relative links to absolute
             for(var i = 0; i < data.length; i++) {
                 if (data[i].constructor === Object) {
-                    if ((!data[i].format && data[i].type && data[i].type.toUpperCase() !== 'RAW') //unspecified format and not raw -> assume file
-                        || (data[i].format && (data[i].format.toUpperCase() === 'FILE'
-                        || (data[i].format.toUpperCase() === 'IMAGE' && !(data[i].data.indexOf("data:image/") === 0 && data[i].data.indexOf(";base64,") !== 0))
-                        || data[i].format.toUpperCase() === 'XML'))) {
+                    var absolute = false;
+
+                    if (data[i].flavor) {
+                        //if flavor is known, we can directly check for absolute flavor types
+                        var flavor = data[i].flavor.toUpperCase();
+                        if (flavor === 'FILE' || flavor === 'IMAGE' || flavor === 'XML') {
+                            absolute = true;
+                        }
+                    } else if (data[i].format && data[i].format.toUpperCase() !== 'COMMAND') {
+                        //if flavor is not known, all valid pixel formats default to file flavor
+                        absolute = true;
+                    } else if (data[i].type && data[i].type.toUpperCase() === 'PIXEL') {
+                        //if all we know is pixel type, then it is image's file flavor
+                        absolute = true;
+                    }
+
+                    if (absolute) {
                         data[i].data = _qz.tools.absolute(data[i].data);
                     }
                 }

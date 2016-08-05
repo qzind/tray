@@ -90,7 +90,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
                 }
             }
             catch(IOException e) {
-                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as an image", flavor, data.getString("data")), e);
+                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as an image: %s", flavor, data.getString("data"), e.getLocalizedMessage()), e);
             }
         }
 

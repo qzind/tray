@@ -69,7 +69,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 throw new UnsupportedOperationException("PDF file specified could not be found.", e);
             }
             catch(IOException e) {
-                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as a PDF file", flavor, data.getString("data")), e);
+                throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as a PDF file: %s", flavor, data.getString("data"), e.getLocalizedMessage()), e);
             }
         }
 

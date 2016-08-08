@@ -1280,8 +1280,6 @@
             case 'EPL':
                 printData = [
                     '\nN\n',
-                    'q609\n',
-                    'Q203,26\n',
                     { type: 'raw', format: 'image', flavor: 'file', data: 'assets/img/image_sample_bw.png', options: opts },
                     '\nP1,1\n'
                 ];
@@ -1290,7 +1288,6 @@
                 printData = [
                     '^XA\n',
                     { type: 'raw', format: 'image', flavor: 'file', data: 'assets/img/image_sample_bw.png', options: opts },
-                    '^FS\n',
                     '^XZ\n'
                 ];
                 break;
@@ -1327,7 +1324,6 @@
                 printData = [
                     '^XA\n',
                     { type: 'raw', format: 'pdf', flavor: 'file', data: 'assets/pdf_sample.pdf', options: opts },
-                    '^FS\n',
                     '^XZ\n'
                 ];
                 break;
@@ -1363,7 +1359,6 @@
                 printData = [
                     '^XA\n',
                     { type: 'raw', format: 'html', flavor: 'file', data: 'https://qz.io/about/', options: opts },
-                    '^FS\n',
                     '^XZ\n'
                 ];
                 break;
@@ -1423,10 +1418,10 @@
 
     function printPDF() {
         var config = getUpdatedConfig();
-        //print options not used with this flavor
+        var opts = getUpdatedOptions(true);
 
         var printData = [
-            { type: 'pixel', format: 'pdf', flavor: 'file', data: 'assets/pdf_sample.pdf' }
+            { type: 'pixel', format: 'pdf', flavor: 'file', data: 'assets/pdf_sample.pdf', options: opts }
         ];
 
         qz.print(config, printData).catch(displayError);

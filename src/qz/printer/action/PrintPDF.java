@@ -23,9 +23,7 @@ import qz.utils.SystemUtilities;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.OrientationRequested;
 import java.awt.geom.AffineTransform;
-import java.awt.print.PageFormat;
-import java.awt.print.PrinterException;
-import java.awt.print.PrinterJob;
+import java.awt.print.*;
 import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
@@ -37,6 +35,8 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     private static final Logger log = LoggerFactory.getLogger(PrintPDF.class);
 
     private List<PDDocument> pdfs;
+    private double docWidth = 0;
+    private double docHeight = 0;
 
 
     public PrintPDF() {
@@ -52,6 +52,17 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
+
+            if (!data.isNull("options")) {
+                JSONObject dataOpt = data.getJSONObject("options");
+
+                if (!dataOpt.isNull("pageWidth") && dataOpt.optDouble("pageWidth") > 0) {
+                    docWidth = dataOpt.optDouble("pageWidth") * (72.0 / options.getPixelOptions().getUnits().as1Inch());
+                }
+                if (!dataOpt.isNull("pageHeight") && dataOpt.optDouble("pageHeight") > 0) {
+                    docHeight = dataOpt.optDouble("pageHeight") * (72.0 / options.getPixelOptions().getUnits().as1Inch());
+                }
+            }
 
             PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
 
@@ -86,6 +97,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         PrinterJob job = PrinterJob.getPrinterJob();
         job.setPrintService(output.getPrintService());
         PageFormat page = job.getPageFormat(null);
+        PageFormat usePF = page;
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, (Media[])output.getPrintService().getSupportedAttributeValues(Media.class, null, null));
@@ -125,6 +137,18 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     }
                 }
 
+                //trick pdfbox into an alternate doc size if specified
+                if (docWidth > 0 || docHeight > 0) {
+                    usePF = (PageFormat)page.clone();
+                    Paper paper = usePF.getPaper();
+
+                    if (docWidth <= 0) { docWidth = paper.getImageableWidth(); }
+                    if (docHeight <= 0) { docHeight = paper.getImageableHeight(); }
+
+                    paper.setImageableArea(paper.getImageableX(), paper.getImageableY(), docWidth, docHeight);
+                    usePF.setPaper(paper);
+                }
+
                 mu.appendDocument(masterDoc, doc);
             }
 
@@ -135,7 +159,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));
-        job.setPrintable(new PDFPrintable(masterDoc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false), page);
+        job.setPrintable(new PDFPrintable(masterDoc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false), usePF);
 
         printCopies(output, pxlOpts, job, attributes);
 
@@ -179,5 +203,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         }
 
         pdfs.clear();
+        docWidth = 0;
+        docHeight = 0;
     }
 }

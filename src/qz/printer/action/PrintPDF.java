@@ -25,12 +25,10 @@ import qz.utils.SystemUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
 import java.awt.*;
+import javax.print.attribute.standard.OrientationRequested;
 import javax.print.attribute.standard.Media;
 import java.awt.geom.AffineTransform;
-import java.awt.print.PageFormat;
-import java.awt.print.Paper;
-import java.awt.print.PrinterException;
-import java.awt.print.PrinterJob;
+import java.awt.print.*;
 import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
@@ -44,6 +42,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     private List<PDDocument> originals;
     private List<PDDocument> printables;
     private Splitter splitter = new Splitter();
+
+    private double docWidth = 0;
+    private double docHeight = 0;
 
 
     public PrintPDF() {
@@ -60,6 +61,17 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
+
+            if (!data.isNull("options")) {
+                JSONObject dataOpt = data.getJSONObject("options");
+
+                if (!dataOpt.isNull("pageWidth") && dataOpt.optDouble("pageWidth") > 0) {
+                    docWidth = dataOpt.optDouble("pageWidth") * (72.0 / options.getPixelOptions().getUnits().as1Inch());
+                }
+                if (!dataOpt.isNull("pageHeight") && dataOpt.optDouble("pageHeight") > 0) {
+                    docHeight = dataOpt.optDouble("pageHeight") * (72.0 / options.getPixelOptions().getUnits().as1Inch());
+                }
+            }
 
             PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
 
@@ -158,7 +170,20 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
             }
 
-            bundle.append(new PDFWrapper(doc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation(), hints), page, doc.getNumberOfPages());
+            //trick pdfbox into an alternate doc size if specified
+            PageFormat usePF = page;
+            if (docWidth > 0 || docHeight > 0) {
+                usePF = (PageFormat)page.clone();
+                Paper paper = usePF.getPaper();
+
+                if (docWidth <= 0) { docWidth = paper.getImageableWidth(); }
+                if (docHeight <= 0) { docHeight = paper.getImageableHeight(); }
+
+                paper.setImageableArea(paper.getImageableX(), paper.getImageableY(), docWidth, docHeight);
+                usePF.setPaper(paper);
+            }
+
+            bundle.append(new PDFWrapper(doc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation(), hints), usePF, doc.getNumberOfPages());
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));
@@ -208,5 +233,8 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         originals.clear();
         printables.clear();
+
+        docWidth = 0;
+        docHeight = 0;
     }
 }

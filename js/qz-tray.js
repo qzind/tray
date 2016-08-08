@@ -931,8 +931,10 @@ var qz = (function() {
          *   @param {boolean|string|Array<Array<number>>} [data.options.overlay=false] Optional with <code>[raw]</code> type <code>[image]</code> format.
          *      Boolean sets entire layer, string sets mask image, Array sets array of rectangles in format <code>[x1,y1,x2,y2]</code>.
          *   @param {string} [data.options.xmlTag] Required with <code>[xml]</code> flavor. Tag name containing base64 formatted data.
-         *   @param {number} [data.options.pageWidth] Optional with <code>[html]</code> format. Width of the web page to render. Defaults to paper width.
-         *   @param {number} [data.options.pageHeight] Optional with <code>[html]</code> format. Height of the web page to render. Defaults to adjusted web page height.
+         *   @param {number} [data.options.pageWidth] Optional with <code>[html | pdf]</code> formats. Width of the web page to render.
+         *      Defaults to paper width.
+         *   @param {number} [data.options.pageHeight] Optional with <code>[html | pdf]</code> formats. Height of the web page to render.
+         *      Defaults to paper height for <code>[pdf]</code>, or auto sized for <code>[html]</code>.
          * @param {boolean} [signature] Pre-signed signature of JSON string containing <code>call</code>, <code>params</code>, and <code>timestamp</code>.
          * @param {number} [signingTimestamp] Required with <code>signature</code>. Timestamp used with pre-signed content.
          *

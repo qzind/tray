@@ -72,10 +72,10 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                     JSONObject dataOpt = data.getJSONObject("options");
 
                     if (!dataOpt.isNull("pageWidth") && dataOpt.optDouble("pageWidth") > 0) {
-                        pageWidth = data.optJSONObject("options").optDouble("pageWidth") * (72.0 / pxlOpts.getUnits().as1Inch());
+                        pageWidth = dataOpt.optDouble("pageWidth") * (72.0 / pxlOpts.getUnits().as1Inch());
                     }
                     if (!dataOpt.isNull("pageHeight") && dataOpt.optDouble("pageWidth") > 0) {
-                        pageHeight = data.optJSONObject("options").optDouble("pageHeight") * (72.0 / pxlOpts.getUnits().as1Inch());
+                        pageHeight = dataOpt.optDouble("pageHeight") * (72.0 / pxlOpts.getUnits().as1Inch());
                     }
                 }
 

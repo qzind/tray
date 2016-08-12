@@ -181,6 +181,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
                 paper.setImageableArea(paper.getImageableX(), paper.getImageableY(), docWidth, docHeight);
                 usePF.setPaper(paper);
+                scale = Scaling.SCALE_TO_FIT; //to get custom size we need to force scaling
             }
 
             bundle.append(new PDFWrapper(doc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation(), hints), usePF, doc.getNumberOfPages());

@@ -147,6 +147,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
                     paper.setImageableArea(paper.getImageableX(), paper.getImageableY(), docWidth, docHeight);
                     usePF.setPaper(paper);
+                    scale = Scaling.SCALE_TO_FIT; //to get custom size we need to force scaling
                 }
 
                 mu.appendDocument(masterDoc, doc);

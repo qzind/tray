@@ -13,6 +13,7 @@ import com.ibm.icu.text.ArabicShapingException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.ssl.Base64;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -168,7 +169,17 @@ public class PrintRaw implements PrintProcessor {
             doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data)));
         }
 
-        BufferedImage bi = new PDFRenderer(doc).renderImage(0);
+        double scale;
+        PDRectangle rect = doc.getPage(0).getBBox();
+        double pw = opt.optDouble("pageWidth", 0), ph = opt.optDouble("pageHeight", 0);
+        if (ph <= 0 || (pw > 0 && (rect.getWidth() / rect.getHeight()) >= (pw / ph))) {
+            scale = pw / rect.getWidth();
+        } else {
+            scale = ph / rect.getHeight();
+        }
+        if (scale <= 0) { scale = 1.0; }
+
+        BufferedImage bi = new PDFRenderer(doc).renderImage(0, (float)scale);
         return getWrapper(bi, opt);
     }
 

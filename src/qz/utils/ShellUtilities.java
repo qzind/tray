@@ -192,9 +192,11 @@ public class ShellUtilities {
                     for(String prop : props.split("\\r?\\n")) {
                         if (prop.startsWith(lookFor)) {
                             String[] desc = prop.split(lookFor);
-                            // cache the description so we can map it to the actual printer name
-                            descMap.put(entry.getKey(), desc[desc.length - 1].trim());
-                            log.info(entry.getKey() + ": " + desc[desc.length - 1]);
+                            if (desc.length > 0) {
+                                // cache the description so we can map it to the actual printer name
+                                descMap.put(entry.getKey(), desc[desc.length - 1].trim());
+                                log.info(entry.getKey() + ": " + desc[desc.length - 1].trim());
+                            }
                         }
                     }
                 }

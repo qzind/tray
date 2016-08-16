@@ -54,16 +54,17 @@ var qz = (function() {
 
             /** Default parameters used on new connections. Override values using options parameter on {@link qz.websocket.connect}. */
             connectConfig: {
-                host: "localhost",      //host QZ Tray is running on
-                usingSecure: true,      //boolean use of secure protocol
+                host: ["localhost", "localhost.qz.io"], //hosts QZ Tray can be running on
+                hostIndex: 0,                           //internal var - index on host array
+                usingSecure: true,                      //boolean use of secure protocol
                 protocol: {
-                    secure: "wss://",   //secure websocket
-                    insecure: "ws://"   //insecure websocket
+                    secure: "wss://",                   //secure websocket
+                    insecure: "ws://"                   //insecure websocket
                 },
                 port: {
                     secure: [8181, 8282, 8383, 8484],   //list of secure ports QZ Tray could be listening on
                     insecure: [8182, 8283, 8384, 8485], //list of insecure ports QZ Tray could be listening on
-                    usingIndex: 0                       //array index of port being used by connection
+                    portIndex: 0                        //internal var - index on active port array
                 },
                 keepAlive: 60,                          //time between pings to keep connection alive, in seconds
                 retries: 0,                             //number of times to reconnect before failing
@@ -75,9 +76,9 @@ var qz = (function() {
                 findConnection: function(config, resolve, reject) {
                     var address;
                     if (config.usingSecure) {
-                        address = config.protocol.secure + config.host + ":" + config.port.secure[config.port.usingIndex];
+                        address = config.protocol.secure + config.host[config.hostIndex] + ":" + config.port.secure[config.port.portIndex];
                     } else {
-                        address = config.protocol.insecure + config.host + ":" + config.port.insecure[config.port.usingIndex];
+                        address = config.protocol.insecure + config.host[config.hostIndex] + ":" + config.port.insecure[config.port.portIndex];
                     }
 
                     try {
@@ -122,13 +123,18 @@ var qz = (function() {
                         _qz.websocket.connection.onerror = function(evt) {
                             _qz.log.trace(evt);
 
-                            config.port.usingIndex++;
+                            config.port.portIndex++;
 
-                            if ((config.usingSecure && config.port.usingIndex >= config.port.secure.length)
-                                || (!config.usingSecure && config.port.usingIndex >= config.port.insecure.length)) {
-                                //give up, all hope is lost
-                                reject(new Error("Unable to establish connection with QZ"));
-                                return;
+                            if ((config.usingSecure && config.port.portIndex >= config.port.secure.length)
+                                || (!config.usingSecure && config.port.portIndex >= config.port.insecure.length)) {
+                                if (config.hostIndex >= config.host.length) {
+                                    //give up, all hope is lost
+                                    reject(new Error("Unable to establish connection with QZ"));
+                                    return;
+                                } else {
+                                    config.hostIndex++;
+                                    config.port.portIndex = 0;
+                                }
                             }
 
                             // recursive call until connection established or all ports are exhausted
@@ -584,7 +590,7 @@ var qz = (function() {
              * Call to setup connection with QZ Tray on user's system.
              *
              * @param {Object} [options] Configuration options for the web socket connection.
-             *  @param {string} [options.host='localhost'] Host running the QZ Tray software.
+             *  @param {string|Array<string>} [options.host=['localhost', 'localhost.qz.io']] Host running the QZ Tray software.
              *  @param {boolean} [options.usingSecure=true] If the web socket should try to use secure ports for connecting.
              *  @param {number} [options.keepAlive=60] Seconds between keep-alive pings to keep connection open. Set to 0 to disable.
              *  @param {number} [options.retries=0] Number of times to reconnect before failing.
@@ -617,10 +623,15 @@ var qz = (function() {
                         if (options == undefined) { options = {}; }
 
                         //respect forcing secure ports if it is defined, otherwise disable
-                        if (options.usingSecure === undefined) {
+                        if (typeof options.usingSecure === 'undefined') {
                             _qz.log.trace("Disabling secure ports due to insecure page");
                             options.usingSecure = false;
                         }
+                    }
+
+                    //ensure any hosts are passed to internals as an array
+                    if (typeof options.host !== 'undefined' && !Array.isArray(options.host)) {
+                        options.host = [options.host];
                     }
 
                     var attempt = function(count) {

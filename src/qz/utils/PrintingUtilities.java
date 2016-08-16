@@ -191,8 +191,13 @@ public class PrintingUtilities {
         } else {
             driver = ShellUtilities.execute(new String[] {"lpstat", "-l", "-p", getPrinterId(service.getName())}, new String[] {"Interface:"});
             if (!driver.isEmpty()) {
-                driver = driver.substring(10).trim();
+                driver = ShellUtilities.execute(new String[] {"grep", "*PCFileName:", driver.substring(10).trim()}, new String[] {"*PCFileName:"});
+                if (!driver.isEmpty()) {
+                    return driver.substring(12).replace("\"", "").trim();
+                }
             }
+            /// Assume CUPS, raw
+            return "TEXTONLY.ppd";
         }
 
         return driver;

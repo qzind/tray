@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.0.1
+ * @version 2.0.1-1
  * @overview QZ Tray Connector
  * <p/>
  * Connects a web client to the QZ Tray software.

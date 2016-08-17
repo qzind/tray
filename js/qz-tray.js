@@ -618,10 +618,11 @@ var qz = (function() {
                         return;
                     }
 
+                    //ensure some form of options exists for value checks
+                    if (options == undefined) { options = {}; }
+
                     //disable secure ports if page is not secure
                     if (typeof location === 'undefined' || location.protocol !== 'https:') {
-                        if (options == undefined) { options = {}; }
-
                         //respect forcing secure ports if it is defined, otherwise disable
                         if (typeof options.usingSecure === 'undefined') {
                             _qz.log.trace("Disabling secure ports due to insecure page");

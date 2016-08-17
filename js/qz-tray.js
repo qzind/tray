@@ -74,6 +74,25 @@ var qz = (function() {
             setup: {
                 /** Loop through possible ports to open connection, sets web socket calls that will settle the promise. */
                 findConnection: function(config, resolve, reject) {
+                    var deeper = function() {
+                        config.port.portIndex++;
+
+                        if ((config.usingSecure && config.port.portIndex >= config.port.secure.length)
+                            || (!config.usingSecure && config.port.portIndex >= config.port.insecure.length)) {
+                            if (config.hostIndex >= config.host.length - 1) {
+                                //give up, all hope is lost
+                                reject(new Error("Unable to establish connection with QZ"));
+                                return;
+                            } else {
+                                config.hostIndex++;
+                                config.port.portIndex = 0;
+                            }
+                        }
+
+                        // recursive call until connection established or all ports are exhausted
+                        _qz.websocket.setup.findConnection(config, resolve, reject);
+                    };
+
                     var address;
                     if (config.usingSecure) {
                         address = config.protocol.secure + config.host[config.hostIndex] + ":" + config.port.secure[config.port.portIndex];
@@ -87,6 +106,8 @@ var qz = (function() {
                     }
                     catch(err) {
                         _qz.log.error(err);
+                        deeper();
+                        return;
                     }
 
                     if (_qz.websocket.connection != null) {
@@ -122,26 +143,10 @@ var qz = (function() {
                         //called for errors during setup (such as invalid ports), reject connect promise only if all ports have been tried
                         _qz.websocket.connection.onerror = function(evt) {
                             _qz.log.trace(evt);
-
-                            config.port.portIndex++;
-
-                            if ((config.usingSecure && config.port.portIndex >= config.port.secure.length)
-                                || (!config.usingSecure && config.port.portIndex >= config.port.insecure.length)) {
-                                if (config.hostIndex >= config.host.length) {
-                                    //give up, all hope is lost
-                                    reject(new Error("Unable to establish connection with QZ"));
-                                    return;
-                                } else {
-                                    config.hostIndex++;
-                                    config.port.portIndex = 0;
-                                }
-                            }
-
-                            // recursive call until connection established or all ports are exhausted
-                            _qz.websocket.setup.findConnection(config, resolve, reject);
+                            deeper();
                         };
                     } else {
-                        reject(new Error("Unable to establish connection with QZ"));
+                        reject(new Error("Unable to create a websocket connection"));
                     }
                 },
 

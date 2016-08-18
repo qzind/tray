@@ -82,6 +82,12 @@ else
 	makedercert=$(echo "$makedercert" | sed -e "s|$keytool|$keytoolfallback|g")
 fi
 
+# // Handle "community" mode, custom signing auth cert
+if [ -n "${build.type}" ]; then
+    authcert="${authcert.install}"
+    authcertpath=$(echo "$authcert" | sed -e "s|$install|$installdir|g")
+fi
+
 
 # Property file containing jks signing info
 propspath=$(echo "$props" | sed -e "s|$install|$installdir|g")
@@ -125,6 +131,9 @@ function write_properties {
     echo "wss.keypass=$password" >> "$propspath"
     echo "wss.storepass=$password" >> "$propspath"
     echo "wss.host=${jks.host}" >> "$propspath"
+    if [ -n "$authcertpath" ]; then
+        echo "authcert.override=$authcertpath" >> "$propspath"
+    fi
     echo "" >> "$propspath"
     check_exists  "$propspath"
     return $?

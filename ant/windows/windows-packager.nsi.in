@@ -12,7 +12,7 @@
 !include StdUtils.nsh
 
 Name "${project.name}"
-OutFile "${out.dir}\${project.filename}-${build.version}.exe"
+OutFile "${out.dir}\${project.filename}${build.type}-${build.version}.exe"
 RequestExecutionLevel admin
 
 ;-------------------------------

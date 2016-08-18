@@ -19,7 +19,7 @@ echo "            Packaging ${project.name}"
 echo "============================================"
 echo
 chmod +x "${linux.installer.out}"
-makeself "${dist.dir}" "${out.dir}/${project.filename}-${build.version}.run" "${project.name} Installer" "./${linux.installer.name}"
+makeself "${dist.dir}" "${out.dir}/${project.filename}${build.type}-${build.version}.run" "${project.name} Installer" "./${linux.installer.name}"
 code=$?
 echo
 echo "============================================"

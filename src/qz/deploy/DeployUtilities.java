@@ -333,15 +333,15 @@ public abstract class DeployUtilities {
     /**
      * Returns a properties object containing the SSL properties infor
      */
-    public static Properties loadSSLProperties() {
-        Properties sslProps = new Properties();
-        String sslPropertiesFile = DeployUtilities.detectPropertiesPath();
-        log.info("SSL properties file from " + sslPropertiesFile);
+    public static Properties loadTrayProperties() {
+        Properties trayProps = new Properties();
+        String trayPropsPath = DeployUtilities.detectPropertiesPath();
+        log.info("Main properties file " + trayPropsPath);
 
-        File propsFile = new File(sslPropertiesFile);
+        File propsFile = new File(trayPropsPath);
         try(FileInputStream inputStream = new FileInputStream(propsFile)) {
-            sslProps.load(inputStream);
-            return sslProps;
+            trayProps.load(inputStream);
+            return trayProps;
         }
         catch(IOException e) {
             e.printStackTrace();

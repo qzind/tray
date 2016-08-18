@@ -52,6 +52,7 @@ public class PrintSocketServer {
 
 
     private static TrayManager trayManager;
+    private static Properties trayProperties;
 
 
     public static void main(String[] args) {
@@ -106,22 +107,22 @@ public class PrintSocketServer {
         final AtomicInteger securePortIndex = new AtomicInteger(0);
         final AtomicInteger insecurePortIndex = new AtomicInteger(0);
 
-        Properties sslProperties = DeployUtilities.loadSSLProperties();
+        trayProperties = getTrayProperties();
 
         while(!running.get() && securePortIndex.get() < SECURE_PORTS.size() && insecurePortIndex.get() < INSECURE_PORTS.size()) {
             Server server = new Server(INSECURE_PORTS.get(insecurePortIndex.get()));
 
-            if (sslProperties != null) {
+            if (trayProperties != null) {
                 // Bind the secure socket on the proper port number (i.e. 9341), add it as an additional connector
                 SslContextFactory sslContextFactory = new SslContextFactory();
-                sslContextFactory.setKeyStorePath(sslProperties.getProperty("wss.keystore"));
-                sslContextFactory.setKeyStorePassword(sslProperties.getProperty("wss.storepass"));
+                sslContextFactory.setKeyStorePath(trayProperties.getProperty("wss.keystore"));
+                sslContextFactory.setKeyStorePassword(trayProperties.getProperty("wss.storepass"));
 
                 SslConnectionFactory sslConnection = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
                 HttpConnectionFactory httpConnection = new HttpConnectionFactory(new HttpConfiguration());
 
                 ServerConnector connector = new ServerConnector(server, sslConnection, httpConnection);
-                connector.setHost(sslProperties.getProperty("wss.host"));
+                connector.setHost(trayProperties.getProperty("wss.host"));
                 connector.setPort(SECURE_PORTS.get(securePortIndex.get()));
                 server.addConnector(connector);
             } else {
@@ -171,5 +172,12 @@ public class PrintSocketServer {
      */
     public static TrayManager getTrayManager() {
         return trayManager;
+    }
+
+    public static Properties getTrayProperties() {
+        if (trayProperties == null) {
+            trayProperties = DeployUtilities.loadTrayProperties();
+        }
+        return trayProperties;
     }
 }

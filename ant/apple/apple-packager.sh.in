@@ -41,7 +41,7 @@ eval "pkgbuild --identifier \"${project.filename}\" \
 	--scripts \"${apple.scripts}\" \
 	--version \"${build.version}\" \
 	${signing}\
-	\"${out.dir}/${project.filename}-${build.version}${suffix}.pkg\""
+	\"${out.dir}/${project.filename}${build.type}-${build.version}${suffix}.pkg\""
 code=$?
 
 echo

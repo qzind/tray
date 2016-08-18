@@ -234,7 +234,7 @@ function createJavaKeystore() {
         die("Can't find ${project.name} installation path. Secure websockets will not work.", "${windows.err.install}");
     }
 
-    keyStore = fixPath("${jks.keystore}");
+    var keyStore = fixPath("${jks.keystore}");
 
     var makeKeyStore;
     if (sslCert) {
@@ -266,12 +266,18 @@ function createJavaKeystore() {
     shell.Run(makeKeyStore, 0, true);
     verifyExists(keyStore, "Check keystore exists");
 
+    // Handle "community" mode, custom signing auth cert
+    var authCert = "${build.type}" ? fixPath("${authcert.install}").replace(/\\/g, "\\\\") : "";
+
+
     var file = fso.OpenTextFile(fixPath("${jks.properties}"), 2, true);
     file.WriteLine("wss.alias=" + "${jks.alias}");
     file.WriteLine("wss.keystore=" + keyStore.replace(/\\/g, "\\\\"));
     file.WriteLine("wss.keypass=" + pw());
     file.WriteLine("wss.storepass=" + pw());
     file.WriteLine("wss.host=${jks.host}");
+    if (authCert)
+        file.WriteLine("authcert.override=" + authCert);
     file.Close();
 
     return true;

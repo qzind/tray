@@ -2,7 +2,7 @@
 
 <project name="qz" default="distribute" basedir=".">
 
-    <target name="distribute" depends="init,clean,sign-jar,include-assets">
+    <target name="distribute" depends="init,clean,sign-jar,override-authcert,include-assets">
         <echo message="Process complete" />
     </target>
 
@@ -111,6 +111,17 @@
             ]]>
         </script>
         <echo>Size: ${build.size} KB</echo>
+    </target>
+
+    <target name="internal-authcert" unless="authcert.use">
+        <echo>Using internal cert for signing auth</echo>
+        <property name="build.type" value=""/>
+    </target>
+
+    <target name="override-authcert" depends="internal-authcert" if="authcert.use">
+        <echo>Bundling with manual cert for signing auth: ${authcert.use}</echo>
+        <copy file="${authcert.use}" tofile="${authcert.build}" overwrite="true"></copy>
+        <property name="build.type" value="-community"/>
     </target>
 
     <target name="include-assets" depends="init,get-version" >
@@ -222,7 +233,7 @@
         <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
 
         <echo>Signing Windows Executable: No tsaurl was provided so this exe was not timestamped. Users will not be able to validate this exe after the signer certificate's expiration date or after any future revocation date.</echo>
-        <signexe file="${out.dir}/${project.filename}-${build.version}.exe"
+        <signexe file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"
             name="${project.name}"
             url="${vendor.website}"
             keystore="${signing.keystore}"
@@ -236,7 +247,7 @@
         <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
 
         <echo>Signing Windows Executable:</echo>
-        <signexe file="${out.dir}/${project.filename}-${build.version}.exe"
+        <signexe file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"
             name="${project.name}"
             url="${vendor.website}"
             keystore="${signing.keystore}"

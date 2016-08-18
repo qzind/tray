@@ -15,6 +15,7 @@ import net.sourceforge.iharder.Base64;
 import qz.common.Constants;
 import qz.utils.ByteUtilities;
 import qz.utils.FileUtilities;
+import qz.ws.PrintSocketServer;
 
 import javax.security.cert.CertificateParsingException;
 import java.io.*;
@@ -28,6 +29,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Properties;
 
 /**
  * Created by Steven on 1/27/2015. Package: qz.auth Project: qz-print
@@ -79,7 +81,13 @@ public class Certificate {
 
     static {
         try {
-            String overridePath = System.getProperty("trustedRootCert");
+            String overridePath;
+            Properties trayProperties = PrintSocketServer.getTrayProperties();
+            if (trayProperties != null && trayProperties.containsKey("authcert.override")) {
+                overridePath = trayProperties.getProperty("authcert.override");
+            } else {
+                overridePath = System.getProperty("trustedRootCert");
+            }
             if (overridePath != null) {
                 try {
                     trustedRootCert = new Certificate(FileUtilities.readLocalFile(overridePath));

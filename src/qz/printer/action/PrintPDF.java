@@ -25,10 +25,14 @@ import qz.utils.SystemUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
 import java.awt.*;
+import javax.print.attribute.standard.MediaPrintableArea;
 import javax.print.attribute.standard.OrientationRequested;
 import javax.print.attribute.standard.Media;
 import java.awt.geom.AffineTransform;
-import java.awt.print.*;
+import java.awt.print.PageFormat;
+import java.awt.print.Paper;
+import java.awt.print.PrinterException;
+import java.awt.print.PrinterJob;
 import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
@@ -118,7 +122,25 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         job.setPrintService(output.getPrintService());
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
+        Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
+
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, job.getPageFormat(null), (Media[])output.getPrintService().getSupportedAttributeValues(Media.class, null, null));
+
+        //trick pdfbox into an alternate doc size if specified
+        if (docWidth > 0 || docHeight > 0) {
+            Paper paper = page.getPaper();
+
+            if (docWidth <= 0) { docWidth = page.getImageableWidth(); }
+            if (docHeight <= 0) { docHeight = page.getImageableHeight(); }
+
+            paper.setImageableArea(paper.getImageableX(), paper.getImageableY(), docWidth, docHeight);
+            page.setPaper(paper);
+
+            scale = Scaling.SCALE_TO_FIT; //to get custom size we need to force scaling
+
+            //pdf uses imageable area from Paper, so this can be safely removed
+            attributes.remove(MediaPrintableArea.class);
+        }
 
         // Disable attributes per https://github.com/qzind/tray/issues/174
         if (SystemUtilities.isMac() && Constants.JAVA_VERSION.compareWithBuildsTo(Version.valueOf("1.8.0+202")) < 0) {
@@ -126,7 +148,6 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             attributes.clear();
         }
 
-        Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
         RenderingHints hints = new RenderingHints(buildRenderingHints(pxlOpts.getDithering(), pxlOpts.getInterpolation()));
         double useDensity = pxlOpts.getDensity();
 
@@ -170,21 +191,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
             }
 
-            //trick pdfbox into an alternate doc size if specified
-            PageFormat usePF = page;
-            if (docWidth > 0 || docHeight > 0) {
-                usePF = (PageFormat)page.clone();
-                Paper paper = usePF.getPaper();
-
-                if (docWidth <= 0) { docWidth = paper.getImageableWidth(); }
-                if (docHeight <= 0) { docHeight = paper.getImageableHeight(); }
-
-                paper.setImageableArea(paper.getImageableX(), paper.getImageableY(), docWidth, docHeight);
-                usePF.setPaper(paper);
-                scale = Scaling.SCALE_TO_FIT; //to get custom size we need to force scaling
-            }
-
-            bundle.append(new PDFWrapper(doc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation(), hints), usePF, doc.getNumberOfPages());
+            bundle.append(new PDFWrapper(doc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation(), hints), page, doc.getNumberOfPages());
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));

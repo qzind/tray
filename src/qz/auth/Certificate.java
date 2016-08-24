@@ -227,9 +227,9 @@ public class Certificate {
         }
 
         // Add this certificate to the whitelist if the previous certificate was whitelisted
-        File allowed = FileUtilities.getFile(Constants.ALLOW_FILE);
-        if (existsInFile(previousFingerprint, allowed)) {
-            FileUtilities.printLineToFile(Constants.ALLOW_FILE, data());
+        File allowed = FileUtilities.getFile(Constants.ALLOW_FILE, true);
+        if (existsInAnyFile(previousFingerprint, allowed)) {
+            FileUtilities.printLineToFile(Constants.ALLOW_FILE, data(), true);
         }
     }
 
@@ -308,30 +308,36 @@ public class Certificate {
 
     /** Checks if the certificate has been added to the local trusted store */
     public boolean isSaved() {
-        File allowed = FileUtilities.getFile(Constants.ALLOW_FILE);
-        return existsInFile(getFingerprint(), allowed);
+        File allowed = FileUtilities.getFile(Constants.ALLOW_FILE, true);
+        File allowedShared = FileUtilities.getFile(Constants.ALLOW_FILE, false);
+        return existsInAnyFile(getFingerprint(), allowedShared, allowed);
     }
 
     /** Checks if the certificate has been added to the local blocked store */
     public boolean isBlocked() {
-        File blocks = FileUtilities.getFile(Constants.BLOCK_FILE);
-        return existsInFile(getFingerprint(), blocks);
+        File blocks = FileUtilities.getFile(Constants.BLOCK_FILE, true);
+        File blocksShared = FileUtilities.getFile(Constants.BLOCK_FILE, false);
+        return existsInAnyFile(getFingerprint(), blocksShared, blocks);
     }
 
-    private static boolean existsInFile(String fingerprint, File file) {
-        try(BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line;
-            while((line = br.readLine()) != null) {
+    private static boolean existsInAnyFile(String fingerprint, File... files) {
+        for(File file : files) {
+            if (file == null) { continue; }
+
+            try(BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                while((line = br.readLine()) != null) {
                 if (line.contains("\t")) {
                     String print = line.substring(0, line.indexOf("\t"));
                     if (print.equals(fingerprint)) {
                         return true;
                     }
+                    }
                 }
             }
-        }
-        catch(IOException e) {
-            e.printStackTrace();
+            catch(IOException e) {
+                e.printStackTrace();
+            }
         }
 
         return false;

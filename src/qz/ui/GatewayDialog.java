@@ -28,7 +28,9 @@ public class GatewayDialog extends JDialog {
     private JPanel optionsPanel;
 
     private JCheckBox persistentCheckBox;
+    private JCheckBox sharedCheckBox;
     private JPanel bottomPanel;
+    private JPanel bottomCheckPanel;
 
     private JPanel mainPanel;
 
@@ -69,33 +71,43 @@ public class GatewayDialog extends JDialog {
         certInfoLabel = new LinkLabel();
         certTable = new CertificateTable(cert, iconCache);
         certScrollPane = new JScrollPane(certTable);
-        certInfoLabel.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                certTable.setCertificate(cert);
-                certTable.autoSize();
-                JOptionPane.showMessageDialog(
-                        GatewayDialog.this,
-                        certScrollPane,
-                        "Certificate",
-                        JOptionPane.PLAIN_MESSAGE);
-            }
+        certInfoLabel.addActionListener(e -> {
+            certTable.setCertificate(cert);
+            certTable.autoSize();
+            JOptionPane.showMessageDialog(
+                    GatewayDialog.this,
+                    certScrollPane,
+                    "Certificate",
+                    JOptionPane.PLAIN_MESSAGE);
         });
 
         bottomPanel = new JPanel();
         bottomPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
         persistentCheckBox = new JCheckBox("Remember this decision", false);
         persistentCheckBox.setMnemonic(KeyEvent.VK_R);
-        persistentCheckBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                allowButton.setEnabled(!persistentCheckBox.isSelected() || cert.isTrusted());
-            }
+        persistentCheckBox.addActionListener(e -> {
+            allowButton.setEnabled(!persistentCheckBox.isSelected() || cert.isTrusted());
+            sharedCheckBox.setVisible(persistentCheckBox.isSelected());
+            bottomCheckPanel.invalidate();
+            repaint();
+            pack();
         });
-        persistentCheckBox.setAlignmentX(RIGHT_ALIGNMENT);
+        persistentCheckBox.setAlignmentX(LEFT_ALIGNMENT);
+
+        sharedCheckBox = new JCheckBox("Set for all users", false);
+        sharedCheckBox.setMnemonic(KeyEvent.VK_S);
+        sharedCheckBox.setAlignmentX(LEFT_ALIGNMENT);
+        sharedCheckBox.setVisible(false);
+
+        bottomCheckPanel = new JPanel();
+        bottomCheckPanel.setLayout(new BoxLayout(bottomCheckPanel, BoxLayout.Y_AXIS));
+        bottomCheckPanel.setAlignmentX(RIGHT_ALIGNMENT);
+
+        bottomCheckPanel.add(persistentCheckBox);
+        bottomCheckPanel.add(sharedCheckBox);
 
         bottomPanel.add(certInfoLabel);
-        bottomPanel.add(persistentCheckBox);
+        bottomPanel.add(bottomCheckPanel);
 
         optionsPanel.add(allowButton);
         optionsPanel.add(blockButton);
@@ -154,6 +166,8 @@ public class GatewayDialog extends JDialog {
 
         approved = false;
         persistentCheckBox.setSelected(false);
+        sharedCheckBox.setSelected(false);
+        sharedCheckBox.setVisible(false);
         allowButton.setEnabled(true);
         allowButton.requestFocusInWindow();
         pack();
@@ -164,7 +178,11 @@ public class GatewayDialog extends JDialog {
     }
 
     public boolean isPersistent() {
-        return this.persistentCheckBox.isSelected();
+        return persistentCheckBox.isSelected();
+    }
+
+    public boolean isSharedPersistence() {
+        return sharedCheckBox.isSelected();
     }
 
     public void setCertificate(Certificate cert) {

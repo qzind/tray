@@ -101,7 +101,8 @@ public class TrayManager {
 
             try {
                 SystemTray.getSystemTray().add(tray);
-            } catch (AWTException awt) {
+            }
+            catch(AWTException awt) {
                 log.error("Could not attach tray", awt);
             }
         } else {
@@ -135,12 +136,7 @@ public class TrayManager {
      * @param args arguments to pass to main
      */
     public static void main(String args[]) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new TrayManager();
-            }
-        });
+        SwingUtilities.invokeLater(TrayManager::new);
     }
 
     /**
@@ -253,11 +249,7 @@ public class TrayManager {
         }
     };
 
-    private final ActionListener desktopListener = new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-            shortcutToggle(e, DeployUtilities.ToggleType.DESKTOP);
-        }
-    };
+    private final ActionListener desktopListener = e -> shortcutToggle(e, DeployUtilities.ToggleType.DESKTOP);
 
     private final ActionListener savedListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
@@ -265,21 +257,18 @@ public class TrayManager {
         }
     };
 
-    private final ActionListener anonymousListener = new ActionListener() {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            boolean checkBoxState = true;
-            if (e.getSource() instanceof JCheckBoxMenuItem) {
-                checkBoxState = ((JCheckBoxMenuItem)e.getSource()).getState();
-            }
+    private final ActionListener anonymousListener = e -> {
+        boolean checkBoxState = true;
+        if (e.getSource() instanceof JCheckBoxMenuItem) {
+            checkBoxState = ((JCheckBoxMenuItem)e.getSource()).getState();
+        }
 
-            log.debug("Block unsigned: {}", checkBoxState);
+        log.debug("Block unsigned: {}", checkBoxState);
 
-            if (checkBoxState) {
-                blackList(Certificate.UNKNOWN);
-            } else {
-                FileUtilities.deleteFromFile(Constants.BLOCK_FILE, Certificate.UNKNOWN.data());
-            }
+        if (checkBoxState) {
+            blackList(Certificate.UNKNOWN, true);
+        } else {
+            FileUtilities.deleteFromFile(Constants.BLOCK_FILE, Certificate.UNKNOWN.data(), true);
         }
     };
 
@@ -290,11 +279,7 @@ public class TrayManager {
         }
     };
 
-    private final ActionListener startupListener = new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-            shortcutToggle(e, DeployUtilities.ToggleType.STARTUP);
-        }
-    };
+    private final ActionListener startupListener = e -> shortcutToggle(e, DeployUtilities.ToggleType.STARTUP);
 
     /**
      * Sets the default reload action (in this case, <code>Thread.start()</code>) to be fired
@@ -392,19 +377,14 @@ public class TrayManager {
             return false;
         } else {
             try {
-                SwingUtilities.invokeAndWait(new Runnable() {
-                    @Override
-                    public void run() {
-                        gatewayDialog.prompt("%s wants to " + prompt, cert);
-                    }
-                });
+                SwingUtilities.invokeAndWait(() -> gatewayDialog.prompt("%s wants to " + prompt, cert));
             }
             catch(Exception ignore) {}
 
             if (gatewayDialog.isApproved()) {
                 log.info("Allowed {} to {}", cert.getCommonName(), prompt);
                 if (gatewayDialog.isPersistent()) {
-                    whiteList(cert);
+                    whiteList(cert, !gatewayDialog.isSharedPersistence());
                 }
             } else {
                 log.info("Denied {} to {}", cert.getCommonName(), prompt);
@@ -412,7 +392,7 @@ public class TrayManager {
                     if (Certificate.UNKNOWN.equals(cert)) {
                         anonymousItem.doClick(); // if always block anonymous requests -> flag menu item
                     } else {
-                        blackList(cert);
+                        blackList(cert, !gatewayDialog.isSharedPersistence());
                     }
                 }
             }
@@ -421,14 +401,20 @@ public class TrayManager {
         return gatewayDialog.isApproved();
     }
 
-    private void whiteList(Certificate cert) {
-        FileUtilities.printLineToFile(Constants.ALLOW_FILE, cert.data());
-        displayInfoMessage(String.format(Constants.WHITE_LIST, cert.getOrganization()));
+    private void whiteList(Certificate cert, boolean local) {
+        if (FileUtilities.printLineToFile(Constants.ALLOW_FILE, cert.data(), local)) {
+            displayInfoMessage(String.format(Constants.WHITE_LIST, cert.getOrganization()));
+        } else {
+            displayErrorMessage("Failed to write to file (Insufficient user privileges)");
+        }
     }
 
-    private void blackList(Certificate cert) {
-        FileUtilities.printLineToFile(Constants.BLOCK_FILE, cert.data());
-        displayInfoMessage(String.format(Constants.BLACK_LIST, cert.getOrganization()));
+    private void blackList(Certificate cert, boolean local) {
+        if (FileUtilities.printLineToFile(Constants.BLOCK_FILE, cert.data(), local)) {
+            displayInfoMessage(String.format(Constants.BLACK_LIST, cert.getOrganization()));
+        } else {
+            displayErrorMessage("Failed to write to file (Insufficient user privileges)");
+        }
     }
 
     /**
@@ -447,20 +433,17 @@ public class TrayManager {
             aboutDialog.setServer(server);
             setDefaultIcon();
 
-            setReloadThread(new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        setDangerIcon();
-                        running.set(false);
-                        securePortIndex.set(0);
-                        insecurePortIndex.set(0);
+            setReloadThread(new Thread(() -> {
+                try {
+                    setDangerIcon();
+                    running.set(false);
+                    securePortIndex.set(0);
+                    insecurePortIndex.set(0);
 
-                        server.stop();
-                    }
-                    catch(Exception e) {
-                        displayErrorMessage("Error stopping print socket: " + e.getLocalizedMessage());
-                    }
+                    server.stop();
+                }
+                catch(Exception e) {
+                    displayErrorMessage("Error stopping print socket: " + e.getLocalizedMessage());
                 }
             }));
         } else {
@@ -522,12 +505,7 @@ public class TrayManager {
     /** Thread safe method for setting the specified icon */
     private void setIcon(final IconCache.Icon i) {
         if (tray != null) {
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    tray.setImage(iconCache.getImage(i, tray.getSize()));
-                }
-            });
+            SwingUtilities.invokeLater(() -> tray.setImage(iconCache.getImage(i, tray.getSize())));
         }
     }
 
@@ -540,13 +518,10 @@ public class TrayManager {
      */
     private void displayMessage(final String caption, final String text, final TrayIcon.MessageType level) {
         if (tray != null) {
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    boolean showAllNotifications = prefs.getBoolean(notificationsKey, false);
-                    if (showAllNotifications || level == TrayIcon.MessageType.ERROR) {
-                        tray.displayMessage(caption, text, level);
-                    }
+            SwingUtilities.invokeLater(() -> {
+                boolean showAllNotifications = prefs.getBoolean(notificationsKey, false);
+                if (showAllNotifications || level == TrayIcon.MessageType.ERROR) {
+                    tray.displayMessage(caption, text, level);
                 }
             });
         }

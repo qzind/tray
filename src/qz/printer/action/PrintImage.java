@@ -151,7 +151,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
             if (upScale > dpiScale) { upScale = dpiScale; } else if (upScale < 1) { upScale = 1; }
             log.debug("Scaling image up by x{}", upScale);
 
-            BufferedImage scaled = new BufferedImage((int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), imgToPrint.getType());
+            BufferedImage scaled = new BufferedImage((int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2d = withRenderHints(scaled.createGraphics(), interpolation);
             g2d.drawImage(imgToPrint, 0, 0, (int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), null);
             g2d.dispose();

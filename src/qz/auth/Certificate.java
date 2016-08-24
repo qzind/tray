@@ -280,28 +280,34 @@ public class Certificate {
 
     /** Checks if the certificate has been added to the local trusted store */
     public boolean isSaved() {
-        File allowed = FileUtilities.getFile(Constants.ALLOW_FILE);
-        return existsInFile(allowed);
+        File allowed = FileUtilities.getFile(Constants.ALLOW_FILE, true);
+        File allowedShared = FileUtilities.getFile(Constants.ALLOW_FILE, false);
+        return existsInAnyFile(allowedShared, allowed);
     }
 
     /** Checks if the certificate has been added to the local blocked store */
     public boolean isBlocked() {
-        File blocks = FileUtilities.getFile(Constants.BLOCK_FILE);
-        return existsInFile(blocks);
+        File blocks = FileUtilities.getFile(Constants.BLOCK_FILE, true);
+        File blocksShared = FileUtilities.getFile(Constants.BLOCK_FILE, false);
+        return existsInAnyFile(blocksShared, blocks);
     }
 
-    private boolean existsInFile(File file) {
-        try(BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line;
-            while((line = br.readLine()) != null) {
-                String print = line.substring(0, line.indexOf("\t"));
-                if (print.equals(getFingerprint())) {
-                    return true;
+    private boolean existsInAnyFile(File... files) {
+        for(File file : files) {
+            if (file == null) { continue; }
+
+            try(BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                while((line = br.readLine()) != null) {
+                    String print = line.substring(0, line.indexOf("\t"));
+                    if (print.equals(getFingerprint())) {
+                        return true;
+                    }
                 }
             }
-        }
-        catch(IOException e) {
-            e.printStackTrace();
+            catch(IOException e) {
+                e.printStackTrace();
+            }
         }
 
         return false;

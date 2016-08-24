@@ -19,6 +19,7 @@ public class Constants {
     public static final String PROPS_FILE = "qz-tray"; // .properties extension is assumed
     public static final String PREFS_FILE = "prefs"; // .properties extension is assumed
     public static final String DATA_DIR = "qz";
+    public static final String SHARED_DATA_DIR = "shared";
     public static final int LOG_SIZE = 524288;
     public static final int LOG_ROTATIONS = 5;
 

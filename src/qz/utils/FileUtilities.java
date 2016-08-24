@@ -61,8 +61,9 @@ public class FileUtilities {
             "url" // Internet Shortcut
     };
 
-    /* User resource files */
-    private static HashMap<String,File> fileMap = new HashMap<>();
+    /* resource files */
+    private static HashMap<String,File> localFileMap = new HashMap<>();
+    private static HashMap<String,File> sharedFileMap = new HashMap<>();
 
 
     public static boolean isBadExtension(String fileName) {
@@ -144,52 +145,82 @@ public class FileUtilities {
     }
 
 
-    public static void printLineToFile(String fileName, String message) {
-        try(FileWriter fw = new FileWriter(getFile(fileName), true)) {
+    public static boolean printLineToFile(String fileName, String message, boolean local) {
+        File file = getFile(fileName, local);
+        if (file == null) { return false; }
+
+        try(FileWriter fw = new FileWriter(file, true)) {
             message += "\r\n";
             fw.write(message);
             fw.flush();
+            return true;
         }
         catch(IOException e) {
             log.error("Cannot write to file {}", fileName, e);
         }
+
+        return false;
     }
 
-    public static File getFile(String name) {
+    public static File getFile(String name, boolean local) {
+        HashMap<String,File> fileMap;
+        if (local) {
+            fileMap = localFileMap;
+        } else {
+            fileMap = sharedFileMap;
+        }
+
         if (!fileMap.containsKey(name) || fileMap.get(name) == null) {
-            String fileLoc = SystemUtilities.getDataDirectory();
+            String fileLoc;
+            if (local) {
+                fileLoc = SystemUtilities.getDataDirectory();
+            } else {
+                fileLoc = SystemUtilities.getSharedDirectory();
+            }
+
+            File locDir = new File(fileLoc);
+            File file = new File(fileLoc + File.separator + name + ".dat");
 
             try {
-                File locDir = new File(fileLoc);
-                File file = new File(fileLoc + File.separator + name + ".dat");
-
                 locDir.mkdirs();
                 file.createNewFile();
-
-                fileMap.put(name, file);
             }
             catch(IOException e) {
-                log.error("Cannot get file", e);
+                //failure is possible due to user permissions on shared files
+                log.error("Cannot setup file {} ({})", name, local? "Local":"Shared", e);
+            }
+
+            if (file.exists()) {
+                fileMap.put(name, file);
             }
         }
 
         return fileMap.get(name);
     }
 
-    public static void deleteFile(String name) {
-        File file = fileMap.get(name);
+    public static void deleteFile(String name, boolean local) {
+        File file;
+        if (local) {
+            file = localFileMap.get(name);
+        } else {
+            file = sharedFileMap.get(name);
+        }
 
         if (file != null && !file.delete()) {
             log.warn("Unable to delete file {}", name);
             file.deleteOnExit();
         }
 
-        fileMap.put(name, null);
+        if (local) {
+            localFileMap.put(name, null);
+        } else {
+            sharedFileMap.put(name, null);
+        }
     }
 
-    public static boolean deleteFromFile(String fileName, String deleteLine) {
-        File file = getFile(fileName);
-        File temp = getFile(Constants.TEMP_FILE);
+    public static boolean deleteFromFile(String fileName, String deleteLine, boolean local) {
+        File file = getFile(fileName, local);
+        File temp = getFile(Constants.TEMP_FILE, true);
 
         try(BufferedReader br = new BufferedReader(new FileReader(file)); BufferedWriter bw = new BufferedWriter(new FileWriter(temp))) {
             String line;
@@ -203,7 +234,7 @@ public class FileUtilities {
             bw.close();
             br.close();
 
-            deleteFile(fileName);
+            deleteFile(fileName, local);
             return temp.renameTo(file);
         }
         catch(IOException e) {

@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.TrayManager;
+import qz.deploy.DeployUtilities;
 
 import javax.swing.*;
 import java.awt.*;
@@ -96,6 +97,13 @@ public class SystemUtilities {
         } else {
             parent = System.getProperty("user.dir");
         }
+
+        return parent + File.separator + folder;
+    }
+
+    public static String getSharedDirectory() {
+        String parent = DeployUtilities.getSystemShortcutCreator().getParentDirectory();
+        String folder = Constants.SHARED_DATA_DIR;
 
         return parent + File.separator + folder;
     }

@@ -7,10 +7,9 @@ import qz.common.Constants;
 import qz.utils.FileUtilities;
 
 import javax.swing.*;
-import javax.swing.event.*;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.File;
@@ -32,8 +31,8 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
     private JTabbedPane tabbedPane;
 
-    private ContainerList<Certificate> allowList;
-    private ContainerList<Certificate> blockList;
+    private ContainerList<CertificateDisplay> allowList;
+    private ContainerList<CertificateDisplay> blockList;
 
     private CertificateTable certTable;
 
@@ -41,7 +40,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
     private Thread readerThread;
     private AtomicBoolean threadRunning;
-    private AtomicReference<Certificate> deleteCertificate;
+    private AtomicReference<CertificateDisplay> deleteCertificate;
 
     private long allowTick = -1;
     private long blockTick = -1;
@@ -69,19 +68,16 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
         setHeader(tabbedPane.getSelectedIndex() == 0? Constants.WHITE_SITES:Constants.BLACK_SITES);
 
-        tabbedPane.addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(ChangeEvent e) {
-                clearSelection();
+        tabbedPane.addChangeListener(e -> {
+            clearSelection();
 
-                switch(tabbedPane.getSelectedIndex()) {
-                    case 1: setHeader(Constants.BLACK_SITES);
-                        blockList.getList().setSelectedIndex(0);
-                        break;
-                    default:
-                        setHeader(Constants.WHITE_SITES);
-                        allowList.getList().setSelectedIndex(0);
-                }
+            switch(tabbedPane.getSelectedIndex()) {
+                case 1: setHeader(Constants.BLACK_SITES);
+                    blockList.getList().setSelectedIndex(0);
+                    break;
+                default:
+                    setHeader(Constants.WHITE_SITES);
+                    allowList.getList().setSelectedIndex(0);
             }
         });
 
@@ -89,9 +85,15 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         final ListModel blockListModel = blockList.getList().getModel();
 
         allowListModel.addListDataListener(new ListDataListener() {
-            @Override public void intervalAdded(ListDataEvent e) { refreshTabTitle(); }
-            @Override public void intervalRemoved(ListDataEvent e) { refreshTabTitle(); }
-            @Override public void contentsChanged(ListDataEvent e) { refreshTabTitle(); }
+            @Override
+            public void intervalAdded(ListDataEvent e) { refreshTabTitle(); }
+
+            @Override
+            public void intervalRemoved(ListDataEvent e) { refreshTabTitle(); }
+
+            @Override
+            public void contentsChanged(ListDataEvent e) { refreshTabTitle(); }
+
             public void refreshTabTitle() {
                 String title = Constants.ALLOWED + (String.format(allowListModel.getSize() > 0? " (%s)":"", allowListModel.getSize()));
                 tabbedPane.setTitleAt(0, title);
@@ -99,9 +101,15 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         });
 
         blockList.getList().getModel().addListDataListener(new ListDataListener() {
-            @Override public void intervalAdded(ListDataEvent e) { refreshTabTitle(); }
-            @Override public void intervalRemoved(ListDataEvent e) { refreshTabTitle(); }
-            @Override public void contentsChanged(ListDataEvent e) { refreshTabTitle(); }
+            @Override
+            public void intervalAdded(ListDataEvent e) { refreshTabTitle(); }
+
+            @Override
+            public void intervalRemoved(ListDataEvent e) { refreshTabTitle(); }
+
+            @Override
+            public void contentsChanged(ListDataEvent e) { refreshTabTitle(); }
+
             public void refreshTabTitle() {
                 String title = Constants.BLOCKED + (String.format(blockListModel.getSize() > 0? " (%s)":"", blockListModel.getSize()));
                 tabbedPane.setTitleAt(1, title);
@@ -110,13 +118,10 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
         // TODO:  Add certificate manual import capabilities
         deleteButton = addPanelButton("Delete", IconCache.Icon.DELETE_ICON, KeyEvent.VK_D);
-        deleteButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                deleteCertificate.set(getSelectedCertificate());
-                deleteButton.setEnabled(false);
-                clearSelection();
-            }
+        deleteButton.addActionListener(e -> {
+            deleteCertificate.set(getSelectedCertificate());
+            deleteButton.setEnabled(false);
+            clearSelection();
         });
         deleteButton.setEnabled(false);
         addKeyListener(KeyEvent.VK_DELETE, deleteButton);
@@ -151,26 +156,18 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     }
 
     public SiteManagerDialog selectFirst() {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                getSelectedList().getList().setSelectedIndex(0);
-            }
-        });
+        SwingUtilities.invokeLater(() -> getSelectedList().getList().setSelectedIndex(0));
 
         return this;
     }
 
     private void addCertificateSelectionListener(final JList list) {
-        list.addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                if (list.getSelectedValue() instanceof Certificate) {
-                    certTable.setCertificate((Certificate)list.getSelectedValue());
-                    deleteButton.setEnabled(true);
-                } else {
-                    deleteButton.setEnabled(false);
-                }
+        list.addListSelectionListener(e -> {
+            if (list.getSelectedValue() instanceof CertificateDisplay) {
+                certTable.setCertificate(((CertificateDisplay)list.getSelectedValue()).getCert());
+                deleteButton.setEnabled(true);
+            } else {
+                deleteButton.setEnabled(false);
             }
         });
     }
@@ -190,8 +187,12 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         @Override
         public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
             JLabel label = (JLabel)super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            if (value instanceof Certificate) {
-                label.setIcon(SiteManagerDialog.super.getIcon(IconCache.Icon.SAVED_ICON));
+            if (value instanceof CertificateDisplay) {
+                if (((CertificateDisplay)value).isLocal()) {
+                    label.setIcon(SiteManagerDialog.super.getIcon(IconCache.Icon.SAVED_ICON));
+                } else {
+                    label.setIcon(SiteManagerDialog.super.getIcon(IconCache.Icon.DESKTOP_ICON));
+                }
             } else {
                 label.setIcon(null);
             }
@@ -202,9 +203,9 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     /**
      * Thread safe remove certificate from GUI and filesystem
      */
-    public SiteManagerDialog removeCertificate(Certificate certificate) {
-        final ContainerList<Certificate> certList = getSelectedList();
-        if (certificate != null && FileUtilities.deleteFromFile(certList.getTag().toString(), certificate.data())) {
+    public SiteManagerDialog removeCertificate(CertificateDisplay certificate) {
+        final ContainerList<CertificateDisplay> certList = getSelectedList();
+        if (certificate != null && FileUtilities.deleteFromFile(certList.getTag().toString(), certificate.getCert().data(), certificate.isLocal())) {
             certList.remove(certificate);
         } else {
             log.warn("Error removing {} from the list of {} sites", certificate, getSelectedTabName().toLowerCase());
@@ -213,8 +214,8 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         return this;
     }
 
-    private Certificate getSelectedCertificate() {
-        return (Certificate)getSelectedList().getList().getSelectedValue();
+    private CertificateDisplay getSelectedCertificate() {
+        return (CertificateDisplay)getSelectedList().getList().getSelectedValue();
     }
 
     private String getSelectedTabName() {
@@ -225,7 +226,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         return "";
     }
 
-    private ContainerList<Certificate> getSelectedList() {
+    private ContainerList<CertificateDisplay> getSelectedList() {
         if (tabbedPane.getSelectedIndex() == 0) {
             return allowList;
         }
@@ -242,8 +243,11 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     public void run() {
         threadRunning.set(true);
 
-        File allowFile = FileUtilities.getFile(Constants.ALLOW_FILE);
-        File blockFile = FileUtilities.getFile(Constants.BLOCK_FILE);
+        File allowFile = FileUtilities.getFile(Constants.ALLOW_FILE, true);
+        File allowFileShare = FileUtilities.getFile(Constants.ALLOW_FILE, false);
+
+        File blockFile = FileUtilities.getFile(Constants.BLOCK_FILE, true);
+        File blockFileShare = FileUtilities.getFile(Constants.BLOCK_FILE, false);
 
         boolean initialSelection = true;
 
@@ -255,12 +259,16 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             if (isVisible()) {
                 if (deleteCertificate.get() != null) {
                     removeCertificate(deleteCertificate.getAndSet(null));
-                } else if (allowFile.lastModified() > allowTick) {
-                    allowTick = allowFile.lastModified();
-                    readCertificates(allowList, allowFile);
-                } else if (blockFile.lastModified() > blockTick) {
-                    blockTick = blockFile.lastModified();
-                    readCertificates(blockList, blockFile);
+                } else if (allowFile.lastModified() > allowTick
+                        || (allowFileShare != null && allowFileShare.lastModified() > allowTick)) {
+                    allowTick = Math.max(allowFile.lastModified(), (allowFileShare == null? 0:allowFileShare.lastModified()));
+                    readCertificates(allowList, allowFileShare, false);
+                    readCertificates(allowList, allowFile, true);
+                } else if (blockFile.lastModified() > blockTick
+                        || (blockFileShare != null && blockFileShare.lastModified() > blockTick)) {
+                    blockTick = Math.max(blockFile.lastModified(), (blockFileShare == null? 0:blockFileShare.lastModified()));
+                    readCertificates(blockList, blockFileShare, false);
+                    readCertificates(blockList, blockFile, true);
                 } else {
                     sleep(2000);
                 }
@@ -284,10 +292,13 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
      * @param certList The {@code ArrayList} requiring updating
      * @param file     The data file containing allow/block certificate information
      */
-    public ArrayList<Certificate> readCertificates(ArrayList<Certificate> certList, File file) {
+    public ArrayList<CertificateDisplay> readCertificates(ArrayList<CertificateDisplay> certList, File file, boolean local) {
+        if (file == null) { return certList; }
+
         try(BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
             while((line = br.readLine()) != null) {
+                if (line.startsWith("#")) { continue; } //treat these lines as comments
                 String[] data = line.split("\\t");
 
                 if (data.length == Certificate.saveFields.length) {
@@ -296,9 +307,10 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                         dataMap.put(Certificate.saveFields[i], data[i]);
                     }
 
-                    Certificate certificate = Certificate.loadCertificate(dataMap);
+                    CertificateDisplay certificate = new CertificateDisplay(Certificate.loadCertificate(dataMap), local);
+
                     // Don't include the unsigned certificate if we are blocking it, there is a menu option instead
-                    if (!certList.contains(certificate) && !Certificate.UNKNOWN.equals(certificate)) {
+                    if (!certList.contains(certificate) && !Certificate.UNKNOWN.equals(certificate.getCert())) {
                         certList.add(certificate);
                     }
                 }
@@ -310,4 +322,5 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
         return certList;
     }
+
 }

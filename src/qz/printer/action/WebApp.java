@@ -84,7 +84,9 @@ public class WebApp extends Application {
                 webView.autosize();
             }
 
-            webView.setZoom(72d / 96d); //account for difference in print vs web dpi
+            //account for difference in print vs web dpi
+            double scale = 72d / 96d;
+            webView.getTransforms().add(new Scale(scale, scale));
 
             snap.playFromStart();
         }

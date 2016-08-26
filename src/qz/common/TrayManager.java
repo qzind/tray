@@ -264,9 +264,9 @@ public class TrayManager {
         log.debug("Block unsigned: {}", checkBoxState);
 
         if (checkBoxState) {
-            blackList(Certificate.UNKNOWN, true);
+            blackList(Certificate.UNKNOWN);
         } else {
-            FileUtilities.deleteFromFile(Constants.BLOCK_FILE, Certificate.UNKNOWN.data(), true);
+            FileUtilities.deleteFromFile(Constants.BLOCK_FILE, Certificate.UNKNOWN.data());
         }
     };
 
@@ -382,7 +382,7 @@ public class TrayManager {
             if (gatewayDialog.isApproved()) {
                 log.info("Allowed {} to {}", cert.getCommonName(), prompt);
                 if (gatewayDialog.isPersistent()) {
-                    whiteList(cert, !gatewayDialog.isSharedPersistence());
+                    whiteList(cert);
                 }
             } else {
                 log.info("Denied {} to {}", cert.getCommonName(), prompt);
@@ -390,7 +390,7 @@ public class TrayManager {
                     if (Certificate.UNKNOWN.equals(cert)) {
                         anonymousItem.doClick(); // if always block anonymous requests -> flag menu item
                     } else {
-                        blackList(cert, !gatewayDialog.isSharedPersistence());
+                        blackList(cert);
                     }
                 }
             }
@@ -399,16 +399,16 @@ public class TrayManager {
         return gatewayDialog.isApproved();
     }
 
-    private void whiteList(Certificate cert, boolean local) {
-        if (FileUtilities.printLineToFile(Constants.ALLOW_FILE, cert.data(), local)) {
+    private void whiteList(Certificate cert) {
+        if (FileUtilities.printLineToFile(Constants.ALLOW_FILE, cert.data())) {
             displayInfoMessage(String.format(Constants.WHITE_LIST, cert.getOrganization()));
         } else {
             displayErrorMessage("Failed to write to file (Insufficient user privileges)");
         }
     }
 
-    private void blackList(Certificate cert, boolean local) {
-        if (FileUtilities.printLineToFile(Constants.BLOCK_FILE, cert.data(), local)) {
+    private void blackList(Certificate cert) {
+        if (FileUtilities.printLineToFile(Constants.BLOCK_FILE, cert.data())) {
             displayInfoMessage(String.format(Constants.BLACK_LIST, cert.getOrganization()));
         } else {
             displayErrorMessage("Failed to write to file (Insufficient user privileges)");

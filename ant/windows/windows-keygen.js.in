@@ -234,7 +234,7 @@ function createJavaKeystore() {
         die("Can't find ${project.name} installation path. Secure websockets will not work.", "${windows.err.install}");
     }
 
-    var keyStore = fixPath("${jks.keystore}");
+    keyStore = fixPath("${jks.keystore}");
 
     var makeKeyStore;
     if (sslCert) {

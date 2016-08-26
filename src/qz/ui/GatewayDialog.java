@@ -27,9 +27,7 @@ public class GatewayDialog extends JDialog {
     private JPanel optionsPanel;
 
     private JCheckBox persistentCheckBox;
-    private JCheckBox sharedCheckBox;
     private JPanel bottomPanel;
-    private JPanel bottomCheckPanel;
 
     private JPanel mainPanel;
 
@@ -84,29 +82,11 @@ public class GatewayDialog extends JDialog {
         bottomPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
         persistentCheckBox = new JCheckBox("Remember this decision", false);
         persistentCheckBox.setMnemonic(KeyEvent.VK_R);
-        persistentCheckBox.addActionListener(e -> {
-            allowButton.setEnabled(!persistentCheckBox.isSelected() || cert.isTrusted());
-            sharedCheckBox.setVisible(persistentCheckBox.isSelected());
-            bottomCheckPanel.invalidate();
-            repaint();
-            pack();
-        });
-        persistentCheckBox.setAlignmentX(LEFT_ALIGNMENT);
-
-        sharedCheckBox = new JCheckBox("Set for all users", false);
-        sharedCheckBox.setMnemonic(KeyEvent.VK_S);
-        sharedCheckBox.setAlignmentX(LEFT_ALIGNMENT);
-        sharedCheckBox.setVisible(false);
-
-        bottomCheckPanel = new JPanel();
-        bottomCheckPanel.setLayout(new BoxLayout(bottomCheckPanel, BoxLayout.Y_AXIS));
-        bottomCheckPanel.setAlignmentX(RIGHT_ALIGNMENT);
-
-        bottomCheckPanel.add(persistentCheckBox);
-        bottomCheckPanel.add(sharedCheckBox);
+        persistentCheckBox.addActionListener(e -> allowButton.setEnabled(!persistentCheckBox.isSelected() || cert.isTrusted()));
+        persistentCheckBox.setAlignmentX(RIGHT_ALIGNMENT);
 
         bottomPanel.add(certInfoLabel);
-        bottomPanel.add(bottomCheckPanel);
+        bottomPanel.add(persistentCheckBox);
 
         optionsPanel.add(allowButton);
         optionsPanel.add(blockButton);
@@ -173,8 +153,6 @@ public class GatewayDialog extends JDialog {
 
         approved = false;
         persistentCheckBox.setSelected(false);
-        sharedCheckBox.setSelected(false);
-        sharedCheckBox.setVisible(false);
         allowButton.setEnabled(true);
         allowButton.requestFocusInWindow();
         pack();
@@ -186,10 +164,6 @@ public class GatewayDialog extends JDialog {
 
     public boolean isPersistent() {
         return persistentCheckBox.isSelected();
-    }
-
-    public boolean isSharedPersistence() {
-        return sharedCheckBox.isSelected();
     }
 
     public void setCertificate(Certificate cert) {

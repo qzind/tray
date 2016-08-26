@@ -523,10 +523,11 @@
                             <div class="btn-toolbar">
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-info" onclick="listUsbDevices();">List Devices</button>
-                                    <button type="button" class="btn btn-info" onclick="listUsbDeviceInterfaces();">List Device Interfaces</button>
-                                    <button type="button" class="btn btn-info" onclick="listUsbInterfaceEndpoints();">List Interface Endpoints</button>
+                                    <button type="button" class="btn btn-info" onclick="listUsbDeviceInterfaces();">List Interfaces</button>
+                                    <button type="button" class="btn btn-info" onclick="listUsbInterfaceEndpoints();">List Endpoints</button>
                                 </div>
                                 <div class="btn-group">
+                                    <button type="button" class="btn btn-info" onclick="checkUsbDevice()">Check Claimed</button>
                                     <button type="button" class="btn btn-success" onclick="claimUsbDevice()">Claim Device</button>
                                     <button type="button" class="btn btn-warning" onclick="releaseUsbDevice()">Release Device</button>
                                 </div>
@@ -626,6 +627,7 @@
                                     <button type="button" class="btn btn-info" onclick="listHidDevices();">List Devices</button>
                                 </div>
                                 <div class="btn-group">
+                                    <button type="button" class="btn btn-info" onclick="checkHidDevice()">Check Claimed</button>
                                     <button type="button" class="btn btn-success" onclick="claimHidDevice()">Claim Device</button>
                                     <button type="button" class="btn btn-warning" onclick="releaseHidDevice()">Release Device</button>
                                 </div>
@@ -1287,6 +1289,12 @@
         }).catch(displayError);
     }
 
+    function checkUsbDevice() {
+        qz.hid.isClaimed($("#usbVendor").val(), $("#usbProduct").val()).then(function(claimed) {
+            displayMessage("USB Device is " + (claimed ? "" : "not ") + "claimed");
+        }).catch(displayError);
+    }
+
     function sendUsbData() {
         qz.usb.sendData($("#usbVendor").val(), $("#usbProduct").val(), $("#usbEndpoint").val(), $("#usbData").val()).catch(displayError);
     }
@@ -1351,6 +1359,12 @@
     function claimHidDevice() {
         qz.hid.claimDevice($("#hidVendor").val(), $("#hidProduct").val()).then(function() {
             displayMessage("HID Device claimed");
+        }).catch(displayError);
+    }
+
+    function checkHidDevice() {
+        qz.hid.isClaimed($("#hidVendor").val(), $("#hidProduct").val()).then(function(claimed) {
+            displayMessage("HID Device is " + (claimed ? "" : "not ") + "claimed");
         }).catch(displayError);
     }
 

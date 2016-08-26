@@ -1050,6 +1050,24 @@ var qz = (function() {
             },
 
             /**
+             * Check the current claim state of a USB device.
+             *
+             * @param vendorId Hex string of USB device's vendor ID.
+             * @param productId Hex string of USB device's product ID.
+             * @returns {Promise<boolean|Error>}
+             *
+             * @since 2.0.2
+             * @memberOf qz.usb
+             */
+            isClaimed: function(vendorId, productId) {
+                var params = {
+                    vendorId: vendorId,
+                    productId: productId
+                };
+                return _qz.websocket.dataPromise('usb.isClaimed', params);
+            },
+
+            /**
              * Send data to a claimed USB device.
              *
              * @param vendorId Hex string of USB device's vendor ID.
@@ -1236,6 +1254,24 @@ var qz = (function() {
                     productId: productId
                 };
                 return _qz.websocket.dataPromise('hid.claimDevice', params);
+            },
+
+            /**
+             * Check the current claim state of a HID device.
+             *
+             * @param vendorId Hex string of HID device's vendor ID.
+             * @param productId Hex string of HID device's product ID.
+             * @returns {Promise<boolean|Error>}
+             *
+             * @since 2.0.2
+             * @memberOf qz.hid
+             */
+            isClaimed: function(vendorId, productId) {
+                var params = {
+                    vendorId: vendorId,
+                    productId: productId
+                };
+                return _qz.websocket.dataPromise('hid.isClaimed', params);
             },
 
             /**

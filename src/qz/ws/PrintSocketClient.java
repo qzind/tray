@@ -54,6 +54,7 @@ public class PrintSocketClient {
         USB_LIST_INTERFACES("usb.listInterfaces", true, "access USB devices"),
         USB_LIST_ENDPOINTS("usb.listEndpoints", true, "access USB devices"),
         USB_CLAIM_DEVICE("usb.claimDevice", true, "claim a USB device"),
+        USB_CLAIMED("usb.isClaimed", false, "check USB claim status"),
         USB_SEND_DATA("usb.sendData", true, "use a USB device"),
         USB_READ_DATA("usb.readData", true, "use a USB device"),
         USB_OPEN_STREAM("usb.openStream", true, "use a USB device"),
@@ -64,6 +65,7 @@ public class PrintSocketClient {
         HID_START_LISTENING("hid.startListening", true, "listen for USB devices"),
         HID_STOP_LISTENING("hid.stopListening", false),
         HID_CLAIM_DEVICE("hid.claimDevice", true, "claim a USB device"),
+        HID_CLAIMED("hid.isClaimed", false, "check USB claim status"),
         HID_SEND_DATA("hid.sendData", true, "use a USB device"),
         HID_READ_DATA("hid.readData", true, "use a USB device"),
         HID_OPEN_STREAM("hid.openStream", true, "use a USB device"),
@@ -365,6 +367,11 @@ public class PrintSocketClient {
                     sendError(session, UID, String.format("USB Device [v:%s p:%s] is already claimed.", params.opt("vendorId"), params.opt("productId")));
                 }
 
+                break;
+            }
+            case USB_CLAIMED:
+            case HID_CLAIMED: {
+                sendResult(session, UID, connection.getDevice(vendorId, productId) != null);
                 break;
             }
             case USB_SEND_DATA:

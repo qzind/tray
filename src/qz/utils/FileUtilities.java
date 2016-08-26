@@ -145,8 +145,8 @@ public class FileUtilities {
     }
 
 
-    public static boolean printLineToFile(String fileName, String message, boolean local) {
-        File file = getFile(fileName, local);
+    public static boolean printLineToFile(String fileName, String message) {
+        File file = getFile(fileName, true);
         if (file == null) { return false; }
 
         try(FileWriter fw = new FileWriter(file, true)) {
@@ -198,28 +198,19 @@ public class FileUtilities {
         return fileMap.get(name);
     }
 
-    public static void deleteFile(String name, boolean local) {
-        File file;
-        if (local) {
-            file = localFileMap.get(name);
-        } else {
-            file = sharedFileMap.get(name);
-        }
+    public static void deleteFile(String name) {
+        File file = localFileMap.get(name);
 
         if (file != null && !file.delete()) {
             log.warn("Unable to delete file {}", name);
             file.deleteOnExit();
         }
 
-        if (local) {
-            localFileMap.put(name, null);
-        } else {
-            sharedFileMap.put(name, null);
-        }
+        localFileMap.put(name, null);
     }
 
-    public static boolean deleteFromFile(String fileName, String deleteLine, boolean local) {
-        File file = getFile(fileName, local);
+    public static boolean deleteFromFile(String fileName, String deleteLine) {
+        File file = getFile(fileName, true);
         File temp = getFile(Constants.TEMP_FILE, true);
 
         try(BufferedReader br = new BufferedReader(new FileReader(file)); BufferedWriter bw = new BufferedWriter(new FileWriter(temp))) {
@@ -234,7 +225,7 @@ public class FileUtilities {
             bw.close();
             br.close();
 
-            deleteFile(fileName, local);
+            deleteFile(fileName);
             return temp.renameTo(file);
         }
         catch(IOException e) {

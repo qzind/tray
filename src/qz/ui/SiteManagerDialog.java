@@ -205,7 +205,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
      */
     public SiteManagerDialog removeCertificate(CertificateDisplay certificate) {
         final ContainerList<CertificateDisplay> certList = getSelectedList();
-        if (certificate != null && FileUtilities.deleteFromFile(certList.getTag().toString(), certificate.getCert().data(), certificate.isLocal())) {
+        if (certificate != null && FileUtilities.deleteFromFile(certList.getTag().toString(), certificate.getCert().data())) {
             certList.remove(certificate);
         } else {
             log.warn("Error removing {} from the list of {} sites", certificate, getSelectedTabName().toLowerCase());

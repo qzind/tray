@@ -137,6 +137,7 @@
         <copy todir="${dist.dir}/${demo.dir}/${js.dir}">
             <fileset dir="${js.dir}">
                 <exclude name="**/package.json"/>
+                <exclude name="**/README.md"/>
             </fileset>
         </copy>
 

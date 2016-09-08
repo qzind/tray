@@ -1,0 +1,32 @@
+{
+    "name": "qz-tray",
+    "version": "2.0.1-1B",
+    "description": "Connects a web client to the QZ Tray software.  Enables printing and device communication from javascript. ",
+    "main": "qz-tray.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/qzind/tray.git"
+    },
+    "keywords": [
+        "Printing",
+        "USB",
+        "Serial",
+        "RS232",
+        "USB",
+        "Scales",
+        "Zebra",
+        "Epson",
+        "Star",
+        "Citizen",
+        "BOCA"
+    ],
+    "author": "QZ Industries, LLC",
+    "license": "LGPL-2.1",
+    "bugs": {
+        "url": "https://github.com/qzind/tray/issues"
+    },
+    "homepage": "https://github.com/qzind/tray#readme"
+}

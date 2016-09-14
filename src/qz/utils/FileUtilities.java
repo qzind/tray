@@ -96,6 +96,25 @@ public class FileUtilities {
         return path.contains(SystemUtilities.getDataDirectory());
     }
 
+    public static boolean isSymlink(String filePath) {
+        log.info("Verifying symbolic link: {}", filePath);
+        boolean returnVal = false;
+        if (filePath != null) {
+            File f = new File(filePath);
+            if (f.exists()) {
+                try {
+                    File canonicalFile = (f.getParent() == null? f:f.getParentFile().getCanonicalFile());
+                    returnVal = !canonicalFile.getCanonicalFile().equals(canonicalFile.getAbsoluteFile());
+                }
+                catch(IOException ex) {
+                    log.error("IOException checking for symlink", ex);
+                }
+            }
+        }
+
+        log.info("Symbolic link result: {}", returnVal);
+        return returnVal;
+    }
 
     public static String readLocalFile(String file) throws IOException {
         return new String(readFile(new DataInputStream(new FileInputStream(file))), Charsets.UTF_8);

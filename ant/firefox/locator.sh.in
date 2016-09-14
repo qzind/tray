@@ -64,7 +64,7 @@ function get_targetdir()
 	lowerbin=$(echo "$with_bin" |tr '[:upper:]' '[:lower:]')
 	location=$(readlink -f "$(which $lowerdir)")
 	targetdir=$(dirname "$location")
-	if [ -f "$targetdir/$lowerbin" ]; then
+	if [[ "$targetdir" != "/usr/bin" ]] && [ -f "$targetdir/$lowerbin" ]; then
 		dir_out="$targetdir"
 		return 0
 	else

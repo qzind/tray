@@ -26,6 +26,11 @@ else
     echo -e "${bash.skipped}"
 fi
 
+# Remove startup entry
+site=$(echo "${vendor.website}"|rev|cut -d/ -f1|rev)
+package=$(echo "$site" |rev |cut -d. -f1|rev).$(echo "$site" |rev |cut -d. -f2|rev).${project.filename}
+rm -f /Library/LaunchAgents/$package.plist
+
 # Uninstall ${project.name} system certificates
 "${apple.installdir}/auth/${apple.keygen.name}" "uninstall"
 

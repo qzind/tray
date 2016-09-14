@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.0.1-2
+ * @version 2.0.1-3
  * @overview QZ Tray Connector
  * <p/>
  * Connects a web client to the QZ Tray software.
@@ -135,7 +135,7 @@ var qz = (function() {
                         //called during websocket close during setup
                         _qz.websocket.connection.onclose = function() {
                             // Safari compatibility fix to raise error event
-                            if (navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {
+                            if (typeof navigator !== 'undefined' && navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {
                                 _qz.websocket.connection.onerror();
                             }
                         };

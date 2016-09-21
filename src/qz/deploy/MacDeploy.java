@@ -11,41 +11,44 @@ package qz.deploy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.FileUtilities;
 import qz.utils.ShellUtilities;
 
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.IOException;
+import java.io.FileWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 
 /**
  * @author Tres Finocchiaro
  */
-public class MacDeploy extends DeployUtilities {
+class MacDeploy extends DeployUtilities {
 
     private static final Logger log = LoggerFactory.getLogger(MacDeploy.class);
 
+    private String autostartToggle = getAppPath() + "/.autostart";
+    private String desktopShortcut = System.getProperty("user.home") + "/Desktop/" + getShortcutName();
+
     @Override
     public boolean hasStartupShortcut() {
-        return ShellUtilities.executeAppleScript(
-                "tell application \"System Events\" to get the name "
-                        + "of every login item where name is \"" + getShortcutName() + "\"",
-                getShortcutName()
-        );
+        removeLegacyStartup();
+        try {
+            return FileUtilities.readLocalFile(autostartToggle).contains("1");
+        } catch (Exception err) {
+            log.warn("Could not read .autostart file", err);
+        }
+        return false;
     }
 
     @Override
     public boolean hasDesktopShortcut() {
-        return isSymlink(System.getProperty("user.home") + "/Desktop/" + getShortcutName());
+        return FileUtilities.isSymlink(desktopShortcut);
     }
 
     @Override
     public boolean createStartupShortcut() {
-        return ShellUtilities.executeAppleScript(
-                "tell application \"System Events\" to make login item "
-                        + "at end with properties {path:\"" + getAppPath() + "\", "
-                        + "hidden:true, name:\"" + getShortcutName() + "\"}"
-        );
+        return writeAutostart(1);
     }
 
     @Override
@@ -61,28 +64,26 @@ public class MacDeploy extends DeployUtilities {
         return jarPath;
     }
 
-    /**
-     * Returns the jar's filename, which may be the identity of the startup
-     * entry
-     *
-     * @return The jar's filename without the preceeding path information
-     */
     private String getJarName() {
         return new File(getJarPath()).getName();
     }
 
     @Override
     public boolean createDesktopShortcut() {
-
-
-        return ShellUtilities.execute(new String[] {
-                "ln", "-sf", getAppPath(),
-                System.getProperty("user.home") + "/Desktop/" + getShortcutName()
-        });
+        return ShellUtilities.execute(new String[] {"ln", "-sf", getAppPath(), desktopShortcut});
     }
 
     @Override
     public boolean removeStartupShortcut() {
+        return writeAutostart(0);
+    }
+
+    @Override
+    public boolean removeDesktopShortcut() {
+        return ShellUtilities.execute(new String[] {"unlink", desktopShortcut});
+    }
+
+    private boolean removeLegacyStartup() {
         return ShellUtilities.executeAppleScript(
                 "tell application \"System Events\" to delete "
                         + "every login item where name is \"" + getShortcutName() + "\" or "
@@ -90,44 +91,20 @@ public class MacDeploy extends DeployUtilities {
         );
     }
 
-    @Override
-    public boolean removeDesktopShortcut() {
-        return ShellUtilities.execute(new String[] {
-                "unlink",
-                System.getProperty("user.home") + "/Desktop/" + getShortcutName()
-        });
-    }
-
-    /**
-     * Determines if the specified file is a symbolic link.
-     *
-     * @param filePath path of file to check for symbolic link
-     * @return true if a symbolic link is found
-     */
-    public static boolean isSymlink(String filePath) {
-        log.info("Verifying symbolic link: {}", filePath);
-        boolean returnVal = false;
-        if (filePath != null) {
-            File f = new File(filePath);
-            if (f.exists()) {
-                try {
-                    File canonicalFile = (f.getParent() == null? f:f.getParentFile().getCanonicalFile());
-                    returnVal = !canonicalFile.getCanonicalFile().equals(canonicalFile.getAbsoluteFile());
-                }
-                catch(IOException ex) {
-                    log.error("IOException checking for symlink", ex);
-                }
-            }
+    private boolean writeAutostart(int i) {
+        try(BufferedWriter w = new BufferedWriter(new FileWriter(autostartToggle))) {
+            w.write("" + i);
+            return true;
+        } catch(Exception err) {
+            log.warn("Could not write to .autostart", err);
         }
-
-        log.info("Symbolic link result: {}", returnVal);
-        return returnVal;
+        return false;
     }
 
     /**
      * Returns path to executable jar or app bundle
      */
-    public String getAppPath() {
+    private String getAppPath() {
         String target = getJarPath();
         if (target.contains("/Applications/")) {
             // Use the parent folder instead i.e. "/Applications/QZ Tray.app"

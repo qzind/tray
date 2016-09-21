@@ -20,6 +20,12 @@ iconpath=$installpath/${apple.resources}/${apple.icon}
 ${apple.jvmver} > /dev/null 2>&1
 fallback=$?
 
+# If launched at startup, check override first
+if [[ "$1" == "--autostart" ]] && [[ "$(cat "$installpath/.autostart")" == "0" ]]; then
+    echo "Skipping autostart"
+    exit 0
+fi
+
 # Fallback on Internet Plug-Ins version if needed
 if [ $fallback -eq 0 ]; then
 	${apple.jvmcmd} java ${launch.opts} -Xdock:name="${project.name}" -Xdock:icon="$iconpath" -jar "$jarpath"

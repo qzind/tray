@@ -165,6 +165,12 @@ if [ -n "$sslcertpath" ]; then
     exit $status
 fi
 
+# Check for keytool command
+"${jks.keytool} -help" > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    export PATH=$PATH:/usr/java/latest/bin/ 
+fi
+
 echo "Creating keystore for secure websockets..."
 eval "$makekeystore" > /dev/null 2>&1
 check_exists "$keystorepath"

@@ -218,6 +218,8 @@
             <filterchain><expandproperties/></filterchain>
         </copy>
 
+        <copy file="${windows.cleanup.in}" tofile="${windows.cleanup.out}" />
+
         <exec executable="${nsisbin}" failonerror="true" >
             <arg value="${windows.launcher.out}"/>
         </exec>

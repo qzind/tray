@@ -44,7 +44,7 @@ function get_osx_targetdir()
 				elif [[ "/$r" == "$HOME/Applications"* ]]; then
 					dir_out="/$r"
 					return_val=0
-				#If nothing else, remember it if we don't have anything else yet 
+				#If nothing else, remember it if we don't have anything else yet
 				elif [ dir_out == "" ]; then
 					dir_out="/$r"
 					return_val=0
@@ -66,7 +66,7 @@ function get_targetdir()
 	lowerbin=$(echo "$with_bin" |tr '[:upper:]' '[:lower:]')
 	location=$(readlink -f "$(which $lowerdir 2> /dev/null)")
 	targetdir=$(dirname "$location")
-	if [ -f "$targetdir/$lowerbin" ] && file -b "$targetdir/$lowerbin" |grep -q ELF; then
+	if [[ "$targetdir" != "/usr/bin" ]] && [ -f "$targetdir/$lowerbin" ] && file -b "$targetdir/$lowerbin" |grep -q ELF; then
 		dir_out="$targetdir"
 		return 0
 	else
@@ -94,10 +94,10 @@ if [ "$#" == 0 ]; then
 elif [ "$#" == 1 ]; then
 	with_dir=$1
 	with_bin=$1
-else 
+else
 	with_dir=$1
 	with_bin=$2
-fi 
+fi
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Mac OSX

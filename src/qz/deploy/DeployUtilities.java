@@ -114,7 +114,7 @@ public abstract class DeployUtilities {
      * @param toggleType Shortcut type, i.e. <code>ToggleType.STARTUP</code> or <code>ToggleType.DESKTOP</code>
      * @return Whether or not the shortcut already exists
      */
-    public boolean hasShortcut(ToggleType toggleType) {
+    private boolean hasShortcut(ToggleType toggleType) {
         boolean hasShortcut = false;
         switch(toggleType) {
             case STARTUP:
@@ -166,7 +166,7 @@ public abstract class DeployUtilities {
      * @return The calculated working path value, or an empty string if one
      * could not be determined
      */
-    static String getParentDirectory(String filePath) {
+    private static String getParentDirectory(String filePath) {
         // Working path should always default to the JARs parent folder
         int lastSlash = filePath.lastIndexOf(File.separator);
         return lastSlash < 0? "":filePath.substring(0, lastSlash);
@@ -200,25 +200,6 @@ public abstract class DeployUtilities {
         } else {
             return new LinuxDeploy();
         }
-    }
-
-    /**
-     * Creates all appropriate parent folders for the file path specified
-     *
-     * @param filePath The file in which to create parent directories for
-     * @return Whether or not the parent folder creation was successful
-     */
-    static boolean createParentFolder(String filePath) {
-        String parentDirectory = getParentDirectory(filePath);
-        File f = new File(parentDirectory);
-        try {
-            f.mkdirs();
-            return f.exists();
-        }
-        catch(SecurityException e) {
-            log.error("Error while creating parent directories for: {}", filePath, e);
-        }
-        return false;
     }
 
     /**
@@ -296,7 +277,8 @@ public abstract class DeployUtilities {
      * @param filePath The full file path to set the execute flag on
      * @return <code>true</code> if successful, <code>false</code> otherwise
      */
-    static boolean setExecutable(String filePath) {
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private static boolean setExecutable(String filePath) {
         if (!SystemUtilities.isWindows()) {
             try {
                 File f = new File(filePath);
@@ -315,7 +297,7 @@ public abstract class DeployUtilities {
     /**
      * Gets the path to qz-tray.properties
      */
-    public static String detectPropertiesPath() {
+    private static String detectPropertiesPath() {
         // Use supplied path from IDE or command line
         // i.e  -DsslPropertiesFile=C:\qz-tray.properties
         String override = System.getProperty("sslPropertiesFile");
@@ -354,7 +336,7 @@ public abstract class DeployUtilities {
      * @return A String value representing the absolute path to the currently running
      * jar
      */
-    public static String detectJarPath() {
+    private static String detectJarPath() {
         try {
             String jarPath = new File(DeployUtilities.class.getProtectionDomain()
                                     .getCodeSource().getLocation().getPath()).getCanonicalPath();
@@ -377,15 +359,6 @@ public abstract class DeployUtilities {
             jarPath = detectJarPath();
         }
         return jarPath;
-    }
-
-    /**
-     * Set the jar path for which we will create a shortcut for
-     *
-     * @param jarPath The full file path of the jar file
-     */
-    public void setJarPath(String jarPath) {
-        this.jarPath = jarPath;
     }
 
     /**

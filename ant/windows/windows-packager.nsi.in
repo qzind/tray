@@ -99,7 +99,10 @@ Section
 
   ; Remove ${vendor.company} certificates
   nsExec::ExecToLog "cscript.exe //NoLogo //E:jscript $\"$INSTDIR\auth\${windows.keygen.name}$\" $\"$INSTDIR$\" uninstall"
-  
+
+  ; Perform cleanup operations from previous install
+  nsExec::ExecToLog "cscript.exe //NoLogo //E:jscript $\"$INSTDIR\utils\${windows.cleanup.name}$\" $\"${project.name}$\""
+
   keygen:
   ; Exports a self-signed certificate and properties file
   DetailPrint "Generating a unique certificate for HTTPS support..."
@@ -127,6 +130,10 @@ Section
   ${EndIf}
 
   CreateShortCut "$SMPROGRAMS\${project.name}.lnk" "$INSTDIR\${project.filename}.exe" "" "$INSTDIR\${windows.icon}" 0
+  CreateShortCut "$SMSTARTUP\${project.name}.lnk" "$INSTDIR\${project.filename}.exe" "" "$INSTDIR\${windows.icon}" 0
+
+  ; Grant R+W to Authenticated Users (S-1-5-11)
+  AccessControl::GrantOnFile "$SMSTARTUP\${project.name}.lnk" "(S-1-5-11)" "GenericRead + GenericWrite"
 
   ; Delete matching firewall rules
   DetailPrint "Removing ${project.name} firewall rules..."
@@ -188,6 +195,7 @@ Section "Uninstall"
 
   Delete "$DESKTOP\${project.name}.url"
   Delete "$DESKTOP\${project.name}.lnk"
+  Delete "$SMSTARTUP\${project.name}.lnk"
 
   ; Sets the context of shell folders to current user
   SetShellVarContext current

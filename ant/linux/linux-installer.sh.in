@@ -240,6 +240,24 @@ rm -f "/lib/udev/rules.d/${linux.udev.name}" > /dev/null 2>&1
 mv "$destdir/${linux.udev.name}" "/lib/udev/rules.d/${linux.udev.name}" > /dev/null 2>&1
 udevadm control --reload-rules > /dev/null 2>&1
 
+progress_dialog 93 "Cleaning up old versions..."
+
+# Remove old startup entries
+for i in /home/* ; do
+    if [ -n "${project.filename}" ]; then
+    	rm "$i/.config/autostart/${project.filename}.desktop" > /dev/null 2>&1
+    fi
+    if [ -n "${project.name}" ]; then 
+    	rm "$i/.config/autostart/${project.name}.desktop" > /dev/null 2>&1
+    fi
+done
+
+progress_dialog 94 "Adding startup entry..."
+cp "${shortcut}" "/etc/xdg/autostart/${project.filename}.desktop"
+
+# Allow oridinary users to write
+chmod 777 "/etc/xdg/autostart/${project.filename}.desktop"
+
 cd "${destdir}"
 progress_dialog 95 "Installation complete... Starting ${project.name}..."
 which sudo > /dev/null 2>&1

@@ -20,6 +20,33 @@ if [ $? -eq 0 ]; then
     "${apple.installdir}/auth/firefox/${firefoxcert.name}" "install"
 fi
 
+# Install startup
+site=$(echo "${vendor.website}"|rev|cut -d/ -f1|rev)
+package=$(echo "$site" |rev |cut -d. -f1|rev).$(echo "$site" |rev |cut -d. -f2|rev).${project.filename}
+cat > /Library/LaunchAgents/$package.plist << EOT
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>$package</string>
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key><false/>
+        <key>AfterInitialDemand</key><false/>
+    </dict>
+    <key>RunAtLoad</key><true/>
+    <key>ProgramArguments</key>
+    <array>
+        <string>${apple.installdir}/${apple.macos}/${project.name}</string>
+        <string>--autostart</string>
+    </array>
+</dict>
+</plist>
+EOT
+
+printf 1 > "${apple.installdir}/.autostart"
+chmod 777 "${apple.installdir}/.autostart"
+
 # Cleanup resources from previous versions
 rm -rf "${apple.installdir}/demo/js/3rdparty"
 rm "${apple.installdir}/demo/js/qz-websocket.js"

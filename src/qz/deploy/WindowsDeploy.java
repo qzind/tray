@@ -12,7 +12,6 @@
 package qz.deploy;
 
 import mslinks.ShellLink;
-import qz.common.Constants;
 import qz.utils.ShellUtilities;
 
 import java.io.IOException;
@@ -21,20 +20,11 @@ import java.io.IOException;
  * @author Tres Finocchiaro
  */
 public class WindowsDeploy extends DeployUtilities {
-
-    // Try using ${windows.icon} first, if it exists
-    private static String qzIcon = System.getenv("programfiles").replace(" (x86)", "") + "\\" + Constants.ABOUT_TITLE + "\\windows-icon.ico";
-    private static String defaultIcon = System.getenv("windir") + "\\system32\\SHELL32.dll";
-    private static boolean useQzIcon = fileExists(qzIcon);
+    private static String DELETED_ICON = System.getenv("windir") + "\\system32\\SHELL32.dll";
 
     @Override
     public boolean createStartupShortcut() {
-        return ShellUtilities.executeRegScript(
-                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\",
-                "add",
-                getShortcutName(),
-                quoteWrap(getAppPath())
-        );
+        return createShortcut(getStartupDirectory());
     }
 
     @Override
@@ -44,11 +34,17 @@ public class WindowsDeploy extends DeployUtilities {
 
     @Override
     public boolean removeStartupShortcut() {
-        return ShellUtilities.executeRegScript(
-                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\",
-                "delete",
-                getShortcutName()
-        );
+        try {
+            // Dummy shortcut
+            ShellLink link = ShellLink.createLink("%SystemRoot%\\system32\\rundll32.exe", getStartupDirectory() + getShortcutName() + ".lnk");
+            link.setIconLocation(DELETED_ICON);
+            link.getHeader().setIconIndex(131);
+            link.saveTo(getStartupDirectory() + getShortcutName() + ".lnk");
+            return true;
+        } catch (Exception ex) {
+            log.warn("Error removing startup shortcut", ex);
+            return false;
+        }
     }
 
     @Override
@@ -59,11 +55,16 @@ public class WindowsDeploy extends DeployUtilities {
 
     @Override
     public boolean hasStartupShortcut() {
-        return ShellUtilities.executeRegScript(
-                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\",
-                "query",
-                getShortcutName()
-        );
+        try {
+            ShellLink link = new ShellLink(getStartupDirectory() + getShortcutName() + ".lnk");
+            return link.getIconLocation() == null || !link.getIconLocation().equals(DELETED_ICON);
+        } catch (NegativeArraySizeException ignore) {
+            // Per mslinks issues #4
+            return true;
+        } catch (Exception ex) {
+            log.warn("Error detecting startup shortcut", ex);
+            return false;
+        }
     }
 
     @Override
@@ -72,9 +73,8 @@ public class WindowsDeploy extends DeployUtilities {
     }
 
     /**
-     * Enables websockets in IE/Edge by unchecking "Include all local (intranet) sites not listed in other zones"
-     * This has no effect on domain networks with "Automatically detect intranet network" checked.
-     * In addition, Edge requires CheckNetIsolation command to be effective.
+     * Remove flag "Include all local (intranet) sites not listed in other zones". Requires CheckNetIsolation
+     * to be effective; Has no effect on domain networks with "Automatically detect intranet network" checked.
      *
      * @return true if successful
      */
@@ -85,20 +85,11 @@ public class WindowsDeploy extends DeployUtilities {
 
         // If the above value is set, remove it using bitwise XOR, thus disabling this setting
         int data = ShellUtilities.getRegistryDWORD(path, name);
-        if (data != -1) {
-            if ((data & value) == value) {
-                return ShellUtilities.setRegistryDWORD(path, name, data ^ value);
-            }
-            return true; // already set
-        }
-        return false;
+        return data != -1 && ((data & value) != value || ShellUtilities.setRegistryDWORD(path, name, data ^ value));
     }
 
     /**
-     * Legacy Edge version: Configure loopback connections via
-     * - about:flags > Developer Settings > Allow localhost loopback
-     *
-     * Modern Edge versions: Utilize CheckNetIsolation.exe via desktop installer instead.
+     * Set legacy Edge flag: about:flags > Developer Settings > Allow localhost loopback
      *
      * @return true if successful
      */
@@ -109,23 +100,7 @@ public class WindowsDeploy extends DeployUtilities {
 
         // If the above value does not exist, add it using bitwise OR, thus enabling this setting
         int data = ShellUtilities.getRegistryDWORD(path, name);
-        if (data != -1) {
-            if ((data & value) != value) {
-                return ShellUtilities.setRegistryDWORD(path, name, data | value);
-            }
-            return true; // already set
-        }
-        return false;
-    }
-
-    /**
-     * Returns the string with Windows formatted escaped double quotes, useful for
-     * inserting registry keys
-     *
-     * @return The supplied string wrapped in double quotes
-     */
-    private String quoteWrap(String text) {
-        return "\\\"" + text + "\\\"";
+        return data != -1 && ((data & value) == value || ShellUtilities.setRegistryDWORD(path, name, data | value));
     }
 
     /**
@@ -149,5 +124,13 @@ public class WindowsDeploy extends DeployUtilities {
      */
     private String getAppPath() {
         return getJarPath().replaceAll(".jar$", ".exe");
+    }
+
+    private static String getStartupDirectory() {
+        if (System.getenv("programdata") == null) {
+            // XP
+            return System.getenv("allusersprofile") + "\\Start Menu\\Programs\\Startup\\";
+        }
+        return System.getenv("programdata") + "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\";
     }
 }

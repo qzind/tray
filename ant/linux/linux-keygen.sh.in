@@ -142,6 +142,12 @@ if [ -n "$trustedcertpath" ]; then
     exit 0
 fi
 
+# Check for keytool command
+"${jks.keytool} -help" > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    export PATH=$PATH:/usr/java/latest/bin/
+fi
+
 # Handle self-signed certificate
 echo -e "\nCreating keystore for secure websockets..."
 # Delete old files if exist

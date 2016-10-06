@@ -14,9 +14,11 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
+import javax.print.attribute.standard.PrinterName;
 
 public class PrintServiceMatcher {
 
@@ -49,12 +51,33 @@ public class PrintServiceMatcher {
 
             if (printerName.equals(printerSearch)) {
                 exact = ps;
+                break;
             }
             if (printerName.startsWith(printerSearch)) {
                 begins = ps;
+                continue;
             }
             if (printerName.contains(printerSearch)) {
                 partial = ps;
+                continue;
+            }
+
+            if (SystemUtilities.isMac()) {
+                // 1.9 style printer names
+                PrinterName name = ps.getAttribute(PrinterName.class);
+                if (name == null) continue;
+                printerName = name.getValue().toLowerCase();
+                if (printerName.equals(printerSearch)) {
+                    exact = ps;
+                    continue;
+                }
+                if (printerName.startsWith(printerSearch)) {
+                    begins = ps;
+                    continue;
+                }
+                if (printerName.contains(printerSearch)) {
+                    partial = ps;
+                }
             }
         }
 

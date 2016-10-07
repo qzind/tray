@@ -442,13 +442,22 @@ var qz = (function() {
             },
 
             stringify: function(object) {
-                //old versions of prototype affect stringify
-                var pjson = Array.prototype.toJSON;
-                delete Array.prototype.toJSON;
+                var pjson, removeToJSON;
+                
+                // old versions of prototype affect stringify
+                // try to remove toJSON only if exists
+                removeToJSON = Array.prototype.hasOwnProperty('toJSON');
+                if (removeToJSON) {
+                    pjson = Array.prototype.toJSON;
+                    delete Array.prototype.toJSON;
+                }
 
                 var result = JSON.stringify(object);
 
-                Array.prototype.toJSON = pjson;
+                // add back toJSON method
+                if (removeToJSON) {
+                    Array.prototype.toJSON = pjson;
+                }
 
                 return result;
             },

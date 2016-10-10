@@ -1,7 +1,7 @@
 '
 ' Echoes the signed message and exits
 '
-Public Sub SignMessage(String message)
+Public Sub SignMessage(message As String)
 
      '**********************************************************
      '*           WARNING   WARNING   WARNING                  *

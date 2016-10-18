@@ -15,9 +15,12 @@ import qz.printer.action.ProcessorFactory;
 import qz.ws.PrintSocketClient;
 
 import javax.print.PrintService;
+import javax.print.attribute.ResolutionSyntax;
 import javax.print.attribute.standard.PrinterResolution;
 import java.awt.print.PrinterAbortException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 
 public class PrintingUtilities {
@@ -121,6 +124,17 @@ public class PrintingUtilities {
 
         log.debug("Found Resolution: {}", pRes);
         return pRes;
+    }
+
+    public static List<Integer> getSupportedDensities(PrintService service) {
+        List<Integer> densities = new ArrayList<>();
+
+        PrinterResolution[] resSupport = (PrinterResolution[])service.getSupportedAttributeValues(PrinterResolution.class, service.getSupportedDocFlavors()[0], null);
+        for(PrinterResolution res : resSupport) {
+            densities.add(res.getFeedResolution(ResolutionSyntax.DPI));
+        }
+
+        return densities;
     }
 
 

@@ -1,5 +1,6 @@
 package qz.printer;
 
+import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
@@ -15,6 +16,7 @@ import java.awt.*;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
+import java.util.List;
 import java.util.Locale;
 
 public class PrintOptions {
@@ -76,8 +78,30 @@ public class PrintOptions {
             }
         }
         if (!configOpts.isNull("density")) {
-            try { psOptions.density = configOpts.getDouble("density"); }
-            catch(JSONException e) { warn("double", "density", configOpts.opt("density")); }
+            JSONArray possibleDPIs = configOpts.optJSONArray("density");
+            if (possibleDPIs != null && possibleDPIs.length() > 0) {
+                int usableDpi = -1;
+
+                List<Integer> rSupport = PrintingUtilities.getSupportedDensities(output.getPrintService());
+                if (!rSupport.isEmpty()) {
+                    for(int i = 0; i < possibleDPIs.length(); i++) {
+                        if (rSupport.contains(possibleDPIs.optInt(i))) {
+                            usableDpi = possibleDPIs.optInt(i);
+                            break;
+                        }
+                    }
+                }
+
+                if (usableDpi == -1) {
+                    log.warn("Supported printer densities not found, using first value provided");
+                    usableDpi = possibleDPIs.optInt(0);
+                }
+
+                psOptions.density = usableDpi;
+            } else {
+                try { psOptions.density = configOpts.getDouble("density"); }
+                catch(JSONException e) { warn("double", "density", configOpts.opt("density")); }
+            }
         }
         if (!configOpts.isNull("duplex")) {
             try { psOptions.duplex = configOpts.getBoolean("duplex"); }

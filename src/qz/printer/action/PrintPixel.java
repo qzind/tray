@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.print.attribute.HashPrintRequestAttributeSet;
@@ -100,16 +101,9 @@ public abstract class PrintPixel {
 
         PrinterResolution rUsing = (PrinterResolution)attributes.get(PrinterResolution.class);
         if (rUsing != null) {
-            PrinterResolution[] rSupport = (PrinterResolution[])output.getPrintService().getSupportedAttributeValues(PrinterResolution.class, output.getPrintService().getSupportedDocFlavors()[0], attributes);
-            if (rSupport != null) {
-                boolean usingSupported = false;
-                for(PrinterResolution r : rSupport) {
-                    if (rUsing.equals(r)) {
-                        usingSupported = true;
-                        break;
-                    }
-                }
-                if (!usingSupported) {
+            List<Integer> rSupport = PrintingUtilities.getSupportedDensities(output.getPrintService());
+            if (!rSupport.isEmpty()) {
+                if (!rSupport.contains(rUsing.getFeedResolution(ResolutionSyntax.DPI))) {
                     log.warn("Not using a supported DPI for printing");
                     log.debug("Available DPI: {}", ArrayUtils.toString(rSupport));
                 }

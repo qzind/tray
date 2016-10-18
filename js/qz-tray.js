@@ -448,7 +448,9 @@ var qz = (function() {
 
                 var result = JSON.stringify(object);
 
-                Array.prototype.toJSON = pjson;
+                if (pjson) {
+                    Array.prototype.toJSON = pjson;
+                }
 
                 return result;
             },

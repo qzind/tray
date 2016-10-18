@@ -714,6 +714,15 @@ var qz = (function() {
              */
             getNetworkInfo: function() {
                 return _qz.websocket.dataPromise('websocket.getNetworkInfo');
+            },
+
+            /**
+             * @returns {Promise<Array<Object>|Error>} Array of JSON objects containing information on connected network adapters.
+             *
+             * @memberof qz.websocket
+             */
+            getAllNetworkInfo: function() {
+                return _qz.websocket.dataPromise('websocket.getAllNetworkInfo');
             }
 
         },

@@ -61,7 +61,7 @@
                             <button type="button" class="btn btn-success" onclick="startConnection();">Connect</button>
                             <button type="button" class="btn btn-warning" onclick="endConnection();">Disconnect</button>
                         </div>
-                        <button type="button" class="btn btn-info" onclick="listNetworkInfo();">List Network Info</button>
+                        <button type="button" class="btn btn-info" onclick="listAllNetworkInfo();">List Network Info</button>
                     </div>
                 </div>
             </div>
@@ -971,23 +971,21 @@
         }
     }
 
-    function listNetworkInfo() {
-        qz.websocket.getNetworkInfo().then(function(data) {
-            if (data.macAddress == null) { data.macAddress = 'UNKNOWN'; }
-            if (data.ipAddress == null) { data.ipAddress = "UNKNOWN"; }
-
-            var macFormatted = '';
-            for(var i = 0; i < data.macAddress.length; i++) {
-                macFormatted += data.macAddress[i];
-                if (i % 2 == 1 && i < data.macAddress.length - 1) {
-                    macFormatted += ":";
-                }
+    function listAllNetworkInfo() {
+        qz.websocket.getAllNetworkInfo().then(function(data) {
+            var list = '';
+            for(var i = 0; i < data.length; i++) {
+                list += "<li><strong>Mac Address:</strong> " + data[i].macAddress.match( /.{1,2}/g ).join(':') +
+                        (data[i].primary ? " <strong>(Primary)</strong>" : "") + "<ul>" +
+                        "<li><strong>IP Address:</strong> " + data[i].ipAddress + "</li>" +
+                        "<li><strong>Up:</strong> " + data[i].up + "</li>" +
+                        "<li><strong>ID:</strong> " + data[i].id + "</li>" +
+                        "</ul></li>";
             }
 
-            displayMessage("<strong>IP:</strong> " + data.ipAddress + "<br/><strong>Physical Address:</strong> " + macFormatted);
+            pinMessage("<strong>Network details:</strong><br/><ul>" + list + "</ul>");
         }).catch(displayError);
     }
-
 
     /// Detection ///
     function findPrinter(query, set) {

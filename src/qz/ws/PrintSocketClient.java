@@ -72,6 +72,7 @@ public class PrintSocketClient {
         HID_RELEASE_DEVICE("hid.releaseDevice", false, "release a USB device"),
 
         WEBSOCKET_GET_NETWORK_INFO("websocket.getNetworkInfo", true),
+        WEBSOCKET_GET_ALL_NETWORK_INFO("websocket.getAllNetworkInfo", true),
         GET_VERSION("getVersion", false),
 
         INVALID("", false);
@@ -439,7 +440,15 @@ public class PrintSocketClient {
             }
 
             case WEBSOCKET_GET_NETWORK_INFO:
-                sendResult(session, UID, NetworkUtilities.getNetworkJSON());
+                sendResult(session, UID, NetworkUtilities.getAdapterJSON());
+                break;
+            case WEBSOCKET_GET_ALL_NETWORK_INFO:
+                JSONArray all = NetworkUtilities.getAdaptersJSON();
+                if (all != null) {
+                    sendResult(session, UID, NetworkUtilities.getAdaptersJSON());
+                } else {
+                    sendError(session, UID, "Unable to initialize network utilities");
+                }
                 break;
             case GET_VERSION:
                 sendResult(session, UID, Constants.VERSION);

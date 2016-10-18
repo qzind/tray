@@ -9,15 +9,16 @@
  */
 package qz.utils;
 
+import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.joor.Reflect;
-import org.joor.ReflectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.Enumeration;
 
 /**
  * @author Tres
@@ -28,15 +29,38 @@ public class NetworkUtilities {
 
     private static NetworkUtilities instance;
 
-    private String ipAddress;
-    private String macAddress;
+    private static class Adapter {
+        private String hardwareAddress;
+        private String inetAddress;
+        private String id;
+        private boolean up;
+        private boolean primary;
+        Adapter(String hardwareAddress, String inetAddress, boolean up, boolean primary) {
+            this.hardwareAddress = hardwareAddress;
+            if (inetAddress != null && inetAddress.contains("%")) {
+                String[] split = inetAddress.split("%");
+                this.inetAddress = split[0];
+                this.id = split[split.length - 1];
+            } else {
+                this.inetAddress = inetAddress;
+            }
+            this.up = up;
+            this.primary = primary;
+        }
+        String getHardwareAddress() { return hardwareAddress; }
+        String getInetAddress() { return inetAddress; }
+        boolean isUp() { return up; }
+        boolean isPrimary() { return primary; }
+        String getId() { return id; }
+    }
 
+    private ArrayList<Adapter> adapters;
 
     public static NetworkUtilities getInstance() {
         return getInstance("google.com", 443);
     }
 
-    public static NetworkUtilities getInstance(String hostname, int port) {
+    private static NetworkUtilities getInstance(String hostname, int port) {
         if (instance == null) {
             try {
                 instance = new NetworkUtilities(hostname, port);
@@ -49,47 +73,115 @@ public class NetworkUtilities {
         return instance;
     }
 
-    private NetworkUtilities(String hostname, int port) throws IOException, ReflectException {
+    private NetworkUtilities(String hostname, int port) throws SocketException {
         gatherNetworkInfo(hostname, port);
     }
 
-    private void gatherNetworkInfo(String hostname, int port) throws IOException, ReflectException {
-        log.info("Initiating a temporary connection to \"{}:{}\" to determine main Network Interface", hostname, port);
+    private ArrayList<Adapter> getAdapters() {
+        return adapters;
+    }
 
-        SocketAddress endpoint = new InetSocketAddress(hostname, port);
-        Socket socket = new Socket();
-        socket.connect(endpoint);
+    private void gatherNetworkInfo(String hostname, int port) throws SocketException {
+        adapters = new ArrayList<>();
+        InetAddress primary = getPrimaryInetAddress(hostname, port);
+        Enumeration<NetworkInterface> all = NetworkInterface.getNetworkInterfaces();
+        while (all.hasMoreElements()){
+            NetworkInterface i = all.nextElement();
+            Enumeration<InetAddress> addresses = i.getInetAddresses();
+            String inetAddress = null;
+            boolean isUp = false;
+            boolean isPrimary = false;
 
-        InetAddress localAddress = socket.getLocalAddress();
-        ipAddress = localAddress.getHostAddress();
-        socket.close();
+            String hardwareAddress = getMac(i);
+            while (addresses.hasMoreElements() && hardwareAddress != null){
+                InetAddress a = addresses.nextElement();
+                inetAddress = a.getHostAddress();
+                isUp = i.isUp();
+                if (a.equals(primary))
+                    isPrimary = true;
+            }
 
-
-        NetworkInterface networkInterface = NetworkInterface.getByInetAddress(localAddress);
-        Reflect r = Reflect.on(networkInterface);
-        byte[] b = r.call("getHardwareAddress").get();
-        if (b != null && b.length > 0) {
-            macAddress = ByteUtilities.bytesToHex(b);
+            if (inetAddress != null) {
+                adapters.add(new Adapter(hardwareAddress, inetAddress, isUp, isPrimary));
+            }
         }
     }
 
-
-    public String getHardwareAddress() {
-        return macAddress;
+    private static String getMac(InetAddress inet) {
+        try {
+            return ByteUtilities.bytesToHex(NetworkInterface.getByInetAddress(inet).getHardwareAddress());
+        }
+        catch(Exception ignore) {}
+        return null;
     }
 
-    public String getInetAddress() {
-        return ipAddress;
+    private static String getMac(NetworkInterface iface) {
+        try {
+            return ByteUtilities.bytesToHex(iface.getHardwareAddress());
+        }
+        catch (Exception ignore) {}
+        return null;
     }
 
+    private static InetAddress getPrimaryInetAddress(String hostname, int port) {
+        log.info("Initiating a temporary connection to \"{}:{}\" to determine main Network Interface", hostname, port);
 
-    public static JSONObject getNetworkJSON() throws JSONException {
-        JSONObject network = new JSONObject();
+        Socket socket = null;
+        try {
+            SocketAddress endpoint = new InetSocketAddress(hostname, port);
+            socket = new Socket();
+            socket.connect(endpoint);
+            return socket.getLocalAddress();
+        } catch(IOException e) {
+            log.warn("Could not fetch primary adapter", e);
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (Exception ignore) {}
+            }
+        }
 
+        return null;
+    }
+
+    public static JSONArray getAdaptersJSON() throws JSONException {
+        JSONArray network = new JSONArray();
         NetworkUtilities netUtil = getInstance();
         if (netUtil != null) {
-            network.put("ipAddress", netUtil.getInetAddress());
-            network.put("macAddress", netUtil.getHardwareAddress());
+            ArrayList<Adapter> adapters = getInstance().getAdapters();
+            for (Adapter a : adapters) {
+                JSONObject adapter = new JSONObject();
+                adapter.put("ipAddress", a.getInetAddress())
+                        .put("macAddress", a.getHardwareAddress())
+                        .put("up", a.isUp())
+                        .put("primary", a.isPrimary())
+                        .put("id", a.getId());
+                network.put(adapter);
+            }
+        }
+
+        return network;
+    }
+
+    public static JSONObject getAdapterJSON() throws JSONException {
+        JSONObject network = new JSONObject();
+        NetworkUtilities netUtil = getInstance();
+        if (netUtil != null) {
+            ArrayList<Adapter> adapters = getInstance().getAdapters();
+            for (Adapter a : adapters) {
+                if (a.isPrimary()) {
+                    network.put("ipAddress", a.getInetAddress())
+                            .put("macAddress", a.getHardwareAddress())
+                            .put("up", a.isUp())
+                            .put("primary", true)
+                            .put("id", a.id);
+                    break;
+                }
+            }
+            if (!network.has("ipAddress")) {
+                network.put("error", "Unable to determine primary adapter");
+            }
         } else {
             network.put("error", "Unable to initialize network utilities");
         }

@@ -29,32 +29,12 @@ public class NetworkUtilities {
 
     private static NetworkUtilities instance;
 
-    private static class Adapter {
-        private String hardwareAddress;
-        private String inetAddress;
-        private String id;
-        private boolean up;
-        private boolean primary;
-        Adapter(String hardwareAddress, String inetAddress, boolean up, boolean primary) {
-            this.hardwareAddress = hardwareAddress;
-            if (inetAddress != null && inetAddress.contains("%")) {
-                String[] split = inetAddress.split("%");
-                this.inetAddress = split[0];
-                this.id = split[split.length - 1];
-            } else {
-                this.inetAddress = inetAddress;
-            }
-            this.up = up;
-            this.primary = primary;
-        }
-        String getHardwareAddress() { return hardwareAddress; }
-        String getInetAddress() { return inetAddress; }
-        boolean isUp() { return up; }
-        boolean isPrimary() { return primary; }
-        String getId() { return id; }
-    }
-
     private ArrayList<Adapter> adapters;
+
+
+    private NetworkUtilities(String hostname, int port) throws SocketException {
+        gatherNetworkInfo(hostname, port);
+    }
 
     public static NetworkUtilities getInstance() {
         return getInstance("google.com", 443);
@@ -62,43 +42,74 @@ public class NetworkUtilities {
 
     private static NetworkUtilities getInstance(String hostname, int port) {
         if (instance == null) {
-            try {
-                instance = new NetworkUtilities(hostname, port);
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
+            try { instance = new NetworkUtilities(hostname, port); }
+            catch(Exception e) { e.printStackTrace(); }
         }
 
         return instance;
     }
 
-    private NetworkUtilities(String hostname, int port) throws SocketException {
-        gatherNetworkInfo(hostname, port);
+
+    public static JSONArray getAdaptersJSON() throws JSONException {
+        JSONArray network = new JSONArray();
+        NetworkUtilities netUtil = getInstance();
+
+        if (netUtil != null) {
+            ArrayList<Adapter> adapters = getInstance().adapters;
+            for(Adapter adapter : adapters) {
+                network.put(new JSONObject()
+                                    .put("ipAddress", adapter.inetAddress)
+                                    .put("macAddress", adapter.hardwareAddress)
+                                    .put("primary", adapter.primary)
+                                    .put("up", adapter.up)
+                                    .put("id", adapter.id)
+                );
+            }
+        } else {
+            network.put(new JSONObject().put("error", "Unable to initialize network utilities"));
+        }
+
+        return network;
     }
 
-    private ArrayList<Adapter> getAdapters() {
-        return adapters;
+    public static JSONObject getAdapterJSON() throws JSONException {
+        JSONArray adapters = getAdaptersJSON();
+
+        for(int i = 0; i < adapters.length(); i++) {
+            JSONObject adapter = adapters.getJSONObject(i);
+            if (adapter.getBoolean("primary")) {
+                return adapter;
+            }
+        }
+
+        // returned only if primary cannot be found
+        return new JSONObject().put("error", "Unable to determine primary adapter");
     }
+
 
     private void gatherNetworkInfo(String hostname, int port) throws SocketException {
         adapters = new ArrayList<>();
-        InetAddress primary = getPrimaryInetAddress(hostname, port);
-        Enumeration<NetworkInterface> all = NetworkInterface.getNetworkInterfaces();
-        while (all.hasMoreElements()){
-            NetworkInterface i = all.nextElement();
-            Enumeration<InetAddress> addresses = i.getInetAddresses();
-            String inetAddress = null;
-            boolean isUp = false;
-            boolean isPrimary = false;
 
-            String hardwareAddress = getMac(i);
-            while (addresses.hasMoreElements() && hardwareAddress != null){
-                InetAddress a = addresses.nextElement();
-                inetAddress = a.getHostAddress();
-                isUp = i.isUp();
-                if (a.equals(primary))
-                    isPrimary = true;
+        InetAddress primary = getPrimaryInetAddress(hostname, port);
+
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while(interfaces.hasMoreElements()) {
+            NetworkInterface iface = interfaces.nextElement();
+
+            String hardwareAddress = getMac(iface);
+            String inetAddress = null;
+            boolean isPrimary = false;
+            boolean isUp = false;
+
+            if (hardwareAddress != null) {
+                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                while(addresses.hasMoreElements() && !isPrimary) {
+                    InetAddress address = addresses.nextElement();
+
+                    inetAddress = address.getHostAddress();
+                    isPrimary = address.equals(primary);
+                    isUp = iface.isUp();
+                }
             }
 
             if (inetAddress != null) {
@@ -107,19 +118,12 @@ public class NetworkUtilities {
         }
     }
 
-    private static String getMac(InetAddress inet) {
-        try {
-            return ByteUtilities.bytesToHex(NetworkInterface.getByInetAddress(inet).getHardwareAddress());
-        }
-        catch(Exception ignore) {}
-        return null;
-    }
-
     private static String getMac(NetworkInterface iface) {
         try {
             return ByteUtilities.bytesToHex(iface.getHardwareAddress());
         }
-        catch (Exception ignore) {}
+        catch(Exception ignore) {}
+
         return null;
     }
 
@@ -128,64 +132,42 @@ public class NetworkUtilities {
 
         Socket socket = null;
         try {
-            SocketAddress endpoint = new InetSocketAddress(hostname, port);
             socket = new Socket();
-            socket.connect(endpoint);
+            socket.connect(new InetSocketAddress(hostname, port));
+
             return socket.getLocalAddress();
-        } catch(IOException e) {
+        }
+        catch(IOException e) {
             log.warn("Could not fetch primary adapter", e);
-        } finally {
+        }
+        finally {
             if (socket != null) {
-                try {
-                    socket.close();
-                } catch (Exception ignore) {}
+                try { socket.close(); }
+                catch(Exception ignore) {}
             }
         }
 
         return null;
     }
 
-    public static JSONArray getAdaptersJSON() throws JSONException {
-        JSONArray network = new JSONArray();
-        NetworkUtilities netUtil = getInstance();
-        if (netUtil != null) {
-            ArrayList<Adapter> adapters = getInstance().getAdapters();
-            for (Adapter a : adapters) {
-                JSONObject adapter = new JSONObject();
-                adapter.put("ipAddress", a.getInetAddress())
-                        .put("macAddress", a.getHardwareAddress())
-                        .put("up", a.isUp())
-                        .put("primary", a.isPrimary())
-                        .put("id", a.getId());
-                network.put(adapter);
+
+    private static class Adapter {
+        private String hardwareAddress, inetAddress, id;
+        private boolean up, primary;
+
+        Adapter(String hardwareAddress, String inetAddress, boolean up, boolean primary) {
+            this.hardwareAddress = hardwareAddress;
+            this.primary = primary;
+            this.up = up;
+
+            if (inetAddress != null && inetAddress.contains("%")) {
+                String[] split = inetAddress.split("%");
+                this.inetAddress = split[0];
+                id = split[split.length - 1];
+            } else {
+                this.inetAddress = inetAddress;
             }
         }
-
-        return network;
     }
 
-    public static JSONObject getAdapterJSON() throws JSONException {
-        JSONObject network = new JSONObject();
-        NetworkUtilities netUtil = getInstance();
-        if (netUtil != null) {
-            ArrayList<Adapter> adapters = getInstance().getAdapters();
-            for (Adapter a : adapters) {
-                if (a.isPrimary()) {
-                    network.put("ipAddress", a.getInetAddress())
-                            .put("macAddress", a.getHardwareAddress())
-                            .put("up", a.isUp())
-                            .put("primary", true)
-                            .put("id", a.id);
-                    break;
-                }
-            }
-            if (!network.has("ipAddress")) {
-                network.put("error", "Unable to determine primary adapter");
-            }
-        } else {
-            network.put("error", "Unable to initialize network utilities");
-        }
-
-        return network;
-    }
 }

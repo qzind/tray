@@ -443,12 +443,7 @@ public class PrintSocketClient {
                 sendResult(session, UID, NetworkUtilities.getAdapterJSON());
                 break;
             case WEBSOCKET_GET_ALL_NETWORK_INFO:
-                JSONArray all = NetworkUtilities.getAdaptersJSON();
-                if (all != null) {
-                    sendResult(session, UID, NetworkUtilities.getAdaptersJSON());
-                } else {
-                    sendError(session, UID, "Unable to initialize network utilities");
-                }
+                sendResult(session, UID, NetworkUtilities.getAdaptersJSON());
                 break;
             case GET_VERSION:
                 sendResult(session, UID, Constants.VERSION);

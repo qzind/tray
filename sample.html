@@ -975,12 +975,17 @@
         qz.websocket.getAllNetworkInfo().then(function(data) {
             var list = '';
             for(var i = 0; i < data.length; i++) {
-                list += "<li><strong>Mac Address:</strong> " + data[i].macAddress.match( /.{1,2}/g ).join(':') +
-                        (data[i].primary ? " <strong>(Primary)</strong>" : "") + "<ul>" +
-                        "<li><strong>IP Address:</strong> " + data[i].ipAddress + "</li>" +
-                        "<li><strong>Up:</strong> " + data[i].up + "</li>" +
-                        "<li><strong>ID:</strong> " + data[i].id + "</li>" +
-                        "</ul></li>";
+                var info = data[i];
+
+                list += "<li>" +
+                        "   <strong>Mac Address:</strong> " + info.macAddress.match(/.{1,2}/g).join(':') +
+                        (info.primary ? " <strong>(Primary)</strong>" : "") +
+                        "   <ul>" +
+                        "       <li><strong>IP Address:</strong> " + info.ipAddress + "</li>" +
+                        "       <li><strong>Up:</strong> " + info.up + "</li>" +
+                        (info.id ? "<li><strong>ID:</strong> " + info.id + "</li>" : "") +
+                        "   </ul>" +
+                        "</li>";
             }
 
             pinMessage("<strong>Network details:</strong><br/><ul>" + list + "</ul>");

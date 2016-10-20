@@ -61,7 +61,7 @@
                             <button type="button" class="btn btn-success" onclick="startConnection();">Connect</button>
                             <button type="button" class="btn btn-warning" onclick="endConnection();">Disconnect</button>
                         </div>
-                        <button type="button" class="btn btn-info" onclick="listAllNetworkInfo();">List Network Info</button>
+                        <button type="button" class="btn btn-info" onclick="listNetworkDevices();">List Network Info</button>
                     </div>
                 </div>
             </div>
@@ -971,19 +971,30 @@
         }
     }
 
-    function listAllNetworkInfo() {
-        qz.websocket.getAllNetworkInfo().then(function(data) {
+
+    function listNetworkDevices() {
+        qz.networking.devices().then(function(data) {
             var list = '';
             for(var i = 0; i < data.length; i++) {
                 var info = data[i];
 
+                var listItems = function(obj) {
+                    var html = '';
+                    var labels = { mac: 'MAC', ip: 'IP', up: 'Up', name: 'Name', ip4: 'IPv4', ip6: 'IPv6', id: 'ID', primary: 'Primary'};
+                    Object.keys(obj).forEach(function(key,index) {
+                        if (key == 'name' || key == 'id') return;
+                        if (key != 'ip' && obj[key] == obj['ip']) return;
+                        var label = labels.hasOwnProperty(key) ? labels[key] : key;
+                        var value = typeof obj[key] == 'Object' ? value.join(', ') : obj[key];
+                        value = key == 'mac' ? obj[key].match(/.{1,2}/g).join(':') : value;
+                        html += '<li><strong>' + label + ':</strong> ' + value + '</li>';
+                    });
+                    return html;
+                };
                 list += "<li>" +
-                        "   <strong>Mac Address:</strong> " + info.macAddress.match(/.{1,2}/g).join(':') +
-                        (info.primary ? " <strong>(Primary)</strong>" : "") +
+                        "   <strong>" + (info.name || "UNKNOWN") + (info.id ? " (" + info.id + ")" : "") + "</strong>" +
                         "   <ul>" +
-                        "       <li><strong>IP Address:</strong> " + info.ipAddress + "</li>" +
-                        "       <li><strong>Up:</strong> " + info.up + "</li>" +
-                        (info.id ? "<li><strong>ID:</strong> " + info.id + "</li>" : "") +
+                        listItems(info) +
                         "   </ul>" +
                         "</li>";
             }

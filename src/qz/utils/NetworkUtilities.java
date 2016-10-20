@@ -29,102 +29,48 @@ public class NetworkUtilities {
 
     private static NetworkUtilities instance;
 
-    private ArrayList<Adapter> adapters;
+    private ArrayList<Device> devices;
 
-
-    private NetworkUtilities(String hostname, int port) throws SocketException {
-        gatherNetworkInfo(hostname, port);
-    }
-
-    public static NetworkUtilities getInstance() {
-        return getInstance("google.com", 443);
-    }
-
-    private static NetworkUtilities getInstance(String hostname, int port) {
+    private static NetworkUtilities getInstance() {
         if (instance == null) {
-            try { instance = new NetworkUtilities(hostname, port); }
+            try { instance = new NetworkUtilities(); }
             catch(Exception e) { e.printStackTrace(); }
         }
 
         return instance;
     }
 
-
-    public static JSONArray getAdaptersJSON() throws JSONException {
+    public static JSONArray getDevicesJSON() throws JSONException {
         JSONArray network = new JSONArray();
-        NetworkUtilities netUtil = getInstance();
 
-        if (netUtil != null) {
-            ArrayList<Adapter> adapters = getInstance().adapters;
-            for(Adapter adapter : adapters) {
-                network.put(new JSONObject()
-                                    .put("ipAddress", adapter.inetAddress)
-                                    .put("macAddress", adapter.hardwareAddress)
-                                    .put("primary", adapter.primary)
-                                    .put("up", adapter.up)
-                                    .put("id", adapter.id)
-                );
-            }
-        } else {
+        try {
+            for(Device d : getInstance().gatherDevices())
+                network.put(d.toJSON());
+        } catch (SocketException ignore) {
             network.put(new JSONObject().put("error", "Unable to initialize network utilities"));
         }
-
         return network;
     }
 
-    public static JSONObject getAdapterJSON() throws JSONException {
-        JSONArray adapters = getAdaptersJSON();
-
-        for(int i = 0; i < adapters.length(); i++) {
-            JSONObject adapter = adapters.getJSONObject(i);
-            if (adapter.getBoolean("primary")) {
-                return adapter;
-            }
-        }
-
-        // returned only if primary cannot be found
-        return new JSONObject().put("error", "Unable to determine primary adapter");
-    }
-
-
-    private void gatherNetworkInfo(String hostname, int port) throws SocketException {
-        adapters = new ArrayList<>();
-
-        InetAddress primary = getPrimaryInetAddress(hostname, port);
-
-        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-        while(interfaces.hasMoreElements()) {
-            NetworkInterface iface = interfaces.nextElement();
-
-            String hardwareAddress = getMac(iface);
-            String inetAddress = null;
-            boolean isPrimary = false;
-            boolean isUp = false;
-
-            if (hardwareAddress != null) {
-                Enumeration<InetAddress> addresses = iface.getInetAddresses();
-                while(addresses.hasMoreElements() && !isPrimary) {
-                    InetAddress address = addresses.nextElement();
-
-                    inetAddress = address.getHostAddress();
-                    isPrimary = address.equals(primary);
-                    isUp = iface.isUp();
-                }
-            }
-
-            if (inetAddress != null) {
-                adapters.add(new Adapter(hardwareAddress, inetAddress, isUp, isPrimary));
-            }
+    public static JSONObject getDeviceJSON() throws JSONException {
+        if (Device.PRIMARY != null) {
+            return Device.PRIMARY.toJSON();
+        } else {
+            return new JSONObject().put("error", "Unable to initialize network utilities");
         }
     }
 
-    private static String getMac(NetworkInterface iface) {
-        try {
-            return ByteUtilities.bytesToHex(iface.getHardwareAddress());
-        }
-        catch(Exception ignore) {}
+    private ArrayList<Device> gatherDevices() throws SocketException {
+        if (devices == null) {
+            devices = new ArrayList<>();
 
-        return null;
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while(interfaces.hasMoreElements()) {
+                NetworkInterface iface = interfaces.nextElement();
+                devices.add(new Device(iface));
+            }
+        }
+        return devices;
     }
 
     private static InetAddress getPrimaryInetAddress(String hostname, int port) {
@@ -151,22 +97,96 @@ public class NetworkUtilities {
     }
 
 
-    private static class Adapter {
-        private String hardwareAddress, inetAddress, id;
-        private boolean up, primary;
+    private static class Device {
+        static Device PRIMARY = null;
 
-        Adapter(String hardwareAddress, String inetAddress, boolean up, boolean primary) {
-            this.hardwareAddress = hardwareAddress;
-            this.primary = primary;
-            this.up = up;
+        static {
+            try {
+                PRIMARY = new Device(getPrimaryInetAddress("google.com", 443));
+            } catch (SocketException ignore) {}
+        }
 
-            if (inetAddress != null && inetAddress.contains("%")) {
-                String[] split = inetAddress.split("%");
-                this.inetAddress = split[0];
-                id = split[split.length - 1];
-            } else {
-                this.inetAddress = inetAddress;
+        String mac, ip, id, name;
+        ArrayList<String> ip4, ip6;
+        boolean up, primary;
+
+        Device(InetAddress inet) throws SocketException {
+            this(NetworkInterface.getByInetAddress(inet));
+            ip = inet.getHostAddress(); //use primary
+        }
+
+        Device(NetworkInterface iface) {
+            try {
+                mac = ByteUtilities.bytesToHex(iface.getHardwareAddress());
+            } catch(Exception ignore) {}
+            try {
+                up = iface.isUp();
+            } catch(SocketException ignore) {
+                up = false;
             }
+
+            ip4 = new ArrayList<>();
+            ip6 = new ArrayList<>();
+
+            name = iface.getDisplayName();
+
+            Enumeration<InetAddress> addresses = iface.getInetAddresses();
+            while(addresses.hasMoreElements()) {
+                InetAddress address = addresses.nextElement();
+                if (address instanceof Inet4Address)  {
+                    ip4.add(address.getHostAddress());
+                } else if (address instanceof Inet6Address) {
+                    String ip6 = address.getHostAddress();
+                    if (ip6.contains("%")) {
+                        String[] split = ip6.split("%");
+                        this.ip6.add(split[0]);
+                        id = split[split.length - 1];
+                    } else {
+                        this.ip6.add(ip6);
+                    }
+                } else {
+                    log.warn("InetAddress type " + address.getClass().getName() + " unsupported");
+                }
+
+                if (ip6.size() > 0) {
+                    ip = ip6.get(0);
+                } else if (ip4.size() > 0) {
+                    ip = ip4.get(0);
+                }
+            }
+            primary = this.equals(PRIMARY);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof Device) {
+                Device device = (Device)obj;
+                boolean ip4match = ip4 != null && ip4.containsAll(device.ip4);
+                boolean ip6match = ip6 != null && ip6.containsAll(device.ip6);
+                return mac != null && mac.equals(device.mac) && ip4match && ip6match;
+            }
+            return false;
+        }
+
+        static JSONArray toJSONArray(ArrayList<String> list) {
+            if (list != null && list.size() > 0) {
+                JSONArray array = new JSONArray();
+                list.forEach(array::put);
+                return array;
+            }
+            return null;
+        }
+
+        JSONObject toJSON() throws JSONException {
+            return new JSONObject()
+                    .put("name", name)
+                    .put("mac", mac)
+                    .put("ip", ip)
+                    .put("ip4", toJSONArray(ip4))
+                    .put("ip6", toJSONArray(ip6))
+                    .put("primary", primary)
+                    .put("up", up)
+                    .put("id", id);
         }
     }
 

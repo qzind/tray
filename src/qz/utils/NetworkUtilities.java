@@ -44,9 +44,11 @@ public class NetworkUtilities {
         JSONArray network = new JSONArray();
 
         try {
-            for(Device d : getInstance().gatherDevices())
-                network.put(d.toJSON());
-        } catch (SocketException ignore) {
+            for(Device device : getInstance().gatherDevices()) {
+                network.put(device.toJSON());
+            }
+        }
+        catch(SocketException ignore) {
             network.put(new JSONObject().put("error", "Unable to initialize network utilities"));
         }
         return network;
@@ -70,6 +72,7 @@ public class NetworkUtilities {
                 devices.add(new Device(iface));
             }
         }
+
         return devices;
     }
 
@@ -98,12 +101,12 @@ public class NetworkUtilities {
 
 
     private static class Device {
+
         static Device PRIMARY = null;
 
         static {
-            try {
-                PRIMARY = new Device(getPrimaryInetAddress("google.com", 443));
-            } catch (SocketException ignore) {}
+            try { PRIMARY = new Device(getPrimaryInetAddress("google.com", 443)); }
+            catch(SocketException ignore) {}
         }
 
         String mac, ip, id, name;
@@ -116,14 +119,8 @@ public class NetworkUtilities {
         }
 
         Device(NetworkInterface iface) {
-            try {
-                mac = ByteUtilities.bytesToHex(iface.getHardwareAddress());
-            } catch(Exception ignore) {}
-            try {
-                up = iface.isUp();
-            } catch(SocketException ignore) {
-                up = false;
-            }
+            try { mac = ByteUtilities.bytesToHex(iface.getHardwareAddress()); } catch(Exception ignore) {}
+            try { up = iface.isUp(); } catch(SocketException ignore) {}
 
             ip4 = new ArrayList<>();
             ip6 = new ArrayList<>();
@@ -133,7 +130,7 @@ public class NetworkUtilities {
             Enumeration<InetAddress> addresses = iface.getInetAddresses();
             while(addresses.hasMoreElements()) {
                 InetAddress address = addresses.nextElement();
-                if (address instanceof Inet4Address)  {
+                if (address instanceof Inet4Address) {
                     ip4.add(address.getHostAddress());
                 } else if (address instanceof Inet6Address) {
                     String ip6 = address.getHostAddress();
@@ -145,7 +142,7 @@ public class NetworkUtilities {
                         this.ip6.add(ip6);
                     }
                 } else {
-                    log.warn("InetAddress type " + address.getClass().getName() + " unsupported");
+                    log.warn("InetAddress type {} unsupported", address.getClass().getName());
                 }
 
                 if (ip6.size() > 0) {
@@ -154,7 +151,8 @@ public class NetworkUtilities {
                     ip = ip4.get(0);
                 }
             }
-            primary = this.equals(PRIMARY);
+
+            primary = equals(PRIMARY);
         }
 
         @Override
@@ -165,6 +163,7 @@ public class NetworkUtilities {
                 boolean ip6match = ip6 != null && ip6.containsAll(device.ip6);
                 return mac != null && mac.equals(device.mac) && ip4match && ip6match;
             }
+
             return false;
         }
 
@@ -174,6 +173,7 @@ public class NetworkUtilities {
                 list.forEach(array::put);
                 return array;
             }
+
             return null;
         }
 

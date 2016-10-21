@@ -973,29 +973,32 @@
 
 
     function listNetworkDevices() {
+        var listItems = function(obj) {
+            var html = '';
+            var labels = { mac: 'MAC', ip: 'IP', up: 'Up', ip4: 'IPv4', ip6: 'IPv6', primary: 'Primary' };
+
+            Object.keys(labels).forEach(function(key) {
+                if (!obj.hasOwnProperty(key)) { return; }
+                if (key !== 'ip' && obj[key] == obj['ip']) { return; }
+
+                var value = obj[key];
+                if (key === 'mac') { value = obj[key].match(/.{1,2}/g).join(':'); }
+                if (typeof obj[key] === 'object') { value = value.join(', '); }
+
+                html += '<li><strong>' + labels[key] + ':</strong> ' + value + '</li>';
+            });
+
+            return html;
+        };
+
         qz.networking.devices().then(function(data) {
             var list = '';
             for(var i = 0; i < data.length; i++) {
                 var info = data[i];
 
-                var listItems = function(obj) {
-                    var html = '';
-                    var labels = { mac: 'MAC', ip: 'IP', up: 'Up', name: 'Name', ip4: 'IPv4', ip6: 'IPv6', id: 'ID', primary: 'Primary'};
-                    Object.keys(obj).forEach(function(key,index) {
-                        if (key == 'name' || key == 'id') return;
-                        if (key != 'ip' && obj[key] == obj['ip']) return;
-                        var label = labels.hasOwnProperty(key) ? labels[key] : key;
-                        var value = typeof obj[key] == 'Object' ? value.join(', ') : obj[key];
-                        value = key == 'mac' ? obj[key].match(/.{1,2}/g).join(':') : value;
-                        html += '<li><strong>' + label + ':</strong> ' + value + '</li>';
-                    });
-                    return html;
-                };
                 list += "<li>" +
                         "   <strong>" + (info.name || "UNKNOWN") + (info.id ? " (" + info.id + ")" : "") + "</strong>" +
-                        "   <ul>" +
-                        listItems(info) +
-                        "   </ul>" +
+                        "   <ul>" + listItems(info) + "</ul>" +
                         "</li>";
             }
 

@@ -716,8 +716,8 @@ var qz = (function() {
             getNetworkInfo: function() {
                 return _qz.tools.promise(function(resolve, reject) {
                     _qz.websocket.dataPromise('networking.device').then(function(data) {
-                        resolve({ipAddress: data.ip, macAddress: data.mac});
-                    });
+                        resolve({ ipAddress: data.ip, macAddress: data.mac });
+                    }, reject);
                 });
             }
         },
@@ -1378,7 +1378,7 @@ var qz = (function() {
          */
         networking: {
             /**
-             * @returns {Promise<Object<{name: string, mac: string, ip: string, ip4: Array<string>, ip6: Array<string>, primary: boolean, up: boolean, id: string}>|Error>} Connected system's network information.
+             * @returns {Promise<Object|Error>} Connected system's network information.
              *
              * @memberof qz.networking
              * @since 2.1.0
@@ -1388,14 +1388,14 @@ var qz = (function() {
             },
 
             /**
-             * @returns {Promise<Array<Object<{name: string, mac: string, ip: string, ip4: Array<string>, ip6: Array<string>, primary: boolean, up: boolean, id: string}>>|Error>} Connected system's network information.
+             * @returns {Promise<Array<Object>|Error>} Connected system's network information.
              *
              * @memberof qz.networking
              * @since 2.1.0
              */
             devices: function() {
                 return _qz.websocket.dataPromise('networking.devices');
-            },
+            }
         },
 
 

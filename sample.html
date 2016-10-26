@@ -61,7 +61,7 @@
                             <button type="button" class="btn btn-success" onclick="startConnection();">Connect</button>
                             <button type="button" class="btn btn-warning" onclick="endConnection();">Disconnect</button>
                         </div>
-                        <button type="button" class="btn btn-info" onclick="listNetworkInfo();">List Network Info</button>
+                        <button type="button" class="btn btn-info" onclick="listNetworkDevices();">List Network Info</button>
                     </div>
                 </div>
             </div>
@@ -991,23 +991,40 @@
         }
     }
 
-    function listNetworkInfo() {
-        qz.websocket.getNetworkInfo().then(function(data) {
-            if (data.macAddress == null) { data.macAddress = 'UNKNOWN'; }
-            if (data.ipAddress == null) { data.ipAddress = "UNKNOWN"; }
 
-            var macFormatted = '';
-            for(var i = 0; i < data.macAddress.length; i++) {
-                macFormatted += data.macAddress[i];
-                if (i % 2 == 1 && i < data.macAddress.length - 1) {
-                    macFormatted += ":";
-                }
+    function listNetworkDevices() {
+        var listItems = function(obj) {
+            var html = '';
+            var labels = { mac: 'MAC', ip: 'IP', up: 'Up', ip4: 'IPv4', ip6: 'IPv6', primary: 'Primary' };
+
+            Object.keys(labels).forEach(function(key) {
+                if (!obj.hasOwnProperty(key)) { return; }
+                if (key !== 'ip' && obj[key] == obj['ip']) { return; }
+
+                var value = obj[key];
+                if (key === 'mac') { value = obj[key].match(/.{1,2}/g).join(':'); }
+                if (typeof obj[key] === 'object') { value = value.join(', '); }
+
+                html += '<li><strong>' + labels[key] + ':</strong> ' + value + '</li>';
+            });
+
+            return html;
+        };
+
+        qz.networking.devices().then(function(data) {
+            var list = '';
+            for(var i = 0; i < data.length; i++) {
+                var info = data[i];
+
+                list += "<li>" +
+                        "   <strong>" + (info.name || "UNKNOWN") + (info.id ? " (" + info.id + ")" : "") + "</strong>" +
+                        "   <ul>" + listItems(info) + "</ul>" +
+                        "</li>";
             }
 
-            displayMessage("<strong>IP:</strong> " + data.ipAddress + "<br/><strong>Physical Address:</strong> " + macFormatted);
+            pinMessage("<strong>Network details:</strong><br/><ul>" + list + "</ul>");
         }).catch(displayError);
     }
-
 
     /// Detection ///
     function findPrinter(query, set) {

@@ -759,17 +759,23 @@ var qz = (function() {
             },
 
             /**
+             * @deprecated Since 2.1.0.  Please use qz.networking.device() instead
+             *
              * @param {string} [hostname] Hostname to try to connect to when determining network interfaces, defaults to "google.com"
              * @param {number} [port] Port to use with custom hostname, defaults to 443
              *
-             * @returns {Promise<Object<{ipAddress: String, macAddress: String}>|Error>} Connected system's network information.
+             * @returns {Promise<Object<{ipAddress: string, macAddress: string}>|Error>} Connected system's network information.
              *
              * @memberof qz.websocket
              */
             getNetworkInfo: function(hostname, port) {
-                return _qz.websocket.dataPromise('websocket.getNetworkInfo', {
-                    hostname: hostname,
-                    port: port
+                return _qz.tools.promise(function(resolve, reject) {
+                    _qz.websocket.dataPromise('networking.device', {
+                        hostname: hostname,
+                        port: port
+                    }).then(function(data) {
+                        resolve({ ipAddress: data.ip, macAddress: data.mac });
+                    }, reject);
                 });
             },
 
@@ -786,7 +792,6 @@ var qz = (function() {
                     throw new Error("A connection to QZ has not been established yet");
                 }
             }
-
         },
 
 
@@ -1544,6 +1549,43 @@ var qz = (function() {
             }
         },
 
+        /**
+         * Calls related to networking information
+         * @namespace qz.networking
+         * @since 2.1.0
+         */
+        networking: {
+            /**
+             * @param {string} [hostname] Hostname to try to connect to when determining network interfaces, defaults to "google.com"
+             * @param {number} [port] Port to use with custom hostname, defaults to 443
+             * @returns {Promise<Object|Error>} Connected system's network information.
+             *
+             * @memberof qz.networking
+             * @since 2.1.0
+             */
+            device: function(hostname, port) {
+                return _qz.websocket.dataPromise('networking.device', {
+                    hostname: hostname,
+                    port: port
+                });
+            },
+
+            /**
+             * @param {string} [hostname] Hostname to try to connect to when determining network interfaces, defaults to "google.com"
+             * @param {number} [port] Port to use with custom hostname, defaults to 443
+             * @returns {Promise<Array<Object>|Error>} Connected system's network information.
+             *
+             * @memberof qz.networking
+             * @since 2.1.0
+             */
+            devices: function(hostname, port) {
+                return _qz.websocket.dataPromise('networking.devices', {
+                    hostname: hostname,
+                    port: port
+                });
+            }
+        },
+
 
         /**
          * Calls related to signing connection requests.
@@ -1583,11 +1625,11 @@ var qz = (function() {
              * Show or hide QZ api debugging statements in the browser console.
              *
              * @param {boolean} show Whether the debugging logs for QZ should be shown. Hidden by default.
-             *
+             * @returns {boolean} Value of debugging flag
              * @memberof qz.api
              */
             showDebug: function(show) {
-                _qz.DEBUG = show;
+                return (_qz.DEBUG = show);
             },
 
             /**

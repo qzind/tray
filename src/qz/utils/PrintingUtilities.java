@@ -130,8 +130,10 @@ public class PrintingUtilities {
         List<Integer> densities = new ArrayList<>();
 
         PrinterResolution[] resSupport = (PrinterResolution[])service.getSupportedAttributeValues(PrinterResolution.class, service.getSupportedDocFlavors()[0], null);
-        for(PrinterResolution res : resSupport) {
-            densities.add(res.getFeedResolution(ResolutionSyntax.DPI));
+        if (resSupport != null) {
+            for(PrinterResolution res : resSupport) {
+                densities.add(res.getFeedResolution(ResolutionSyntax.DPI));
+            }
         }
 
         return densities;

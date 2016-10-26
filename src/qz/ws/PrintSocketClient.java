@@ -70,7 +70,8 @@ public class PrintSocketClient {
         HID_CLOSE_STREAM("hid.closeStream", false, "use a USB device"),
         HID_RELEASE_DEVICE("hid.releaseDevice", false, "release a USB device"),
 
-        WEBSOCKET_GET_NETWORK_INFO("websocket.getNetworkInfo", true),
+        NETWORKING_DEVICE("networking.device", true),
+        NETWORKING_DEVICES("networking.devices", true),
         GET_VERSION("getVersion", false),
 
         INVALID("", false);
@@ -457,8 +458,11 @@ public class PrintSocketClient {
                 break;
             }
 
-            case WEBSOCKET_GET_NETWORK_INFO:
-                sendResult(session, UID, NetworkUtilities.getNetworkJSON(params.optString("hostname", "google.com"), params.optInt("port", 443)));
+            case NETWORKING_DEVICE:
+                sendResult(session, UID, NetworkUtilities.getDeviceJSON(params.optString("hostname", "google.com"), params.optInt("port", 443)));
+                break;
+            case NETWORKING_DEVICES:
+                sendResult(session, UID, NetworkUtilities.getDevicesJSON(params.optString("hostname", "google.com"), params.optInt("port", 443)));
                 break;
             case GET_VERSION:
                 sendResult(session, UID, Constants.VERSION);

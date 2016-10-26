@@ -710,14 +710,18 @@ var qz = (function() {
             },
 
             /**
-             * @returns {Promise<Object<{ipAddress: String, macAddress: String}>|Error>} Connected system's network information.
+             * @deprecated Since 2.1.0.  Please use qz.networking.device() instead
              *
+             * @returns {Promise<Object<{ipAddress: string, macAddress: string}>|Error>} Connected system's network information.
              * @memberof qz.websocket
              */
             getNetworkInfo: function() {
-                return _qz.websocket.dataPromise('websocket.getNetworkInfo');
+                return _qz.tools.promise(function(resolve, reject) {
+                    _qz.websocket.dataPromise('networking.device').then(function(data) {
+                        resolve({ ipAddress: data.ip, macAddress: data.mac });
+                    }, reject);
+                });
             }
-
         },
 
 
@@ -1406,6 +1410,33 @@ var qz = (function() {
             }
         },
 
+        /**
+         * Calls related to networking information
+         * @namespace qz.networking
+         * @since 2.1.0
+         */
+        networking: {
+            /**
+             * @returns {Promise<Object|Error>} Connected system's network information.
+             *
+             * @memberof qz.networking
+             * @since 2.1.0
+             */
+            device: function() {
+                return _qz.websocket.dataPromise('networking.device');
+            },
+
+            /**
+             * @returns {Promise<Array<Object>|Error>} Connected system's network information.
+             *
+             * @memberof qz.networking
+             * @since 2.1.0
+             */
+            devices: function() {
+                return _qz.websocket.dataPromise('networking.devices');
+            }
+        },
+
 
         /**
          * Calls related to signing connection requests.
@@ -1445,11 +1476,11 @@ var qz = (function() {
              * Show or hide QZ api debugging statements in the browser console.
              *
              * @param {boolean} show Whether the debugging logs for QZ should be shown. Hidden by default.
-             *
+             * @returns {boolean} Value of debugging flag
              * @memberof qz.api
              */
             showDebug: function(show) {
-                _qz.DEBUG = show;
+                return (_qz.DEBUG = show);
             },
 
             /**

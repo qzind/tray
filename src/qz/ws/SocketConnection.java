@@ -4,7 +4,10 @@ import jssc.SerialPortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
-import qz.communication.*;
+import qz.communication.DeviceException;
+import qz.communication.DeviceIO;
+import qz.communication.HidListener;
+import qz.communication.SerialIO;
 import qz.utils.UsbUtilities;
 
 import java.util.HashMap;
@@ -101,11 +104,15 @@ public class SocketConnection {
         openDevices.get(vendor).remove(product);
     }
 
+    public synchronized void openDevice(DeviceIO device, short vendorId, short productId) throws DeviceException {
+        device.open();
+        addDevice(vendorId, productId, device);
+    }
 
     /**
      * Explicitly closes all open serial and usb connections setup through this object
      */
-    public void disconnect() throws SerialPortException, DeviceException {
+    public synchronized void disconnect() throws SerialPortException, DeviceException {
         log.info("Closing all communication channels for {}", certificate.getCommonName());
 
         for(String p : openSerialPorts.keySet()) {

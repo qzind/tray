@@ -356,9 +356,12 @@ public class PrintSocketClient {
                     } else {
                         device = new HidIO(vendorId, productId);
                     }
-                    device.open();
+
+                    if (session.isOpen()) {
+                        connection.openDevice(device, vendorId, productId);
+                    }
+
                     if (device.isOpen()) {
-                        connection.addDevice(vendorId, productId, device);
                         sendResult(session, UID, null);
                     } else {
                         sendError(session, UID, "Failed to open connection to device");

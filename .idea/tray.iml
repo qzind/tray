@@ -6,8 +6,6 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/jssc_2.6.0_qz/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/pdf-renderer_0.9.1_qz/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/out" />
     </content>
     <orderEntry type="inheritedJdk" />
@@ -27,4 +25,3 @@
     </orderEntry>
   </component>
 </module>
-

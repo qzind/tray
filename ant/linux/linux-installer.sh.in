@@ -172,11 +172,11 @@ else
     "$destdir/auth/firefox/${firefoxcert.name}" "install" "$cname"
 
     progress_dialog 85 "Checking for certutil..."
-    which certutil > /dev/null 1>&2
+    which certutil > /dev/null 2>&1
     if [ $? -ne 0 ]; then
         confirm_dialog "Certutil not found. Attempt to fetch now?" "$noprompt"
         apt-get install -y libnss3-tools > /dev/null 2>&1
-        which certutil > /dev/null 1>&2
+        which certutil > /dev/null 2>&1
         if [ $? -ne 0 ]; then
            echo -e "\t- Success"
         else
@@ -194,12 +194,12 @@ mv "$destdir/${linux.udev.name}" "/lib/udev/rules.d/${linux.udev.name}" > /dev/n
 
 cd "${destdir}"
 progress_dialog 95 "Installation complete... Starting ${project.name}..."
-which sudo > /dev/null 1>&2
+which sudo > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     progress_dialog 100 "Finished.  Please launch ${project.name} manually."
 else
     # Start ${project.name} as the user that's logged in
-    sudo -u $(logname) nohup "java" -jar ${launch.opts} "${jarfile}" > /dev/null 2>&1 &
+    sudo -u $(logname 2>/dev/null || echo $SUDO_USER) nohup "java" -jar ${launch.opts} "${jarfile}" > /dev/null 2>&1 &
     progress_dialog 100 "Finished.  ${project.name} should start automatically."
 fi
 echo

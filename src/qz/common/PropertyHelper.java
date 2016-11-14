@@ -1,17 +1,17 @@
 package qz.common;
 
+import org.slf4j.LoggerFactory;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  * Created by Tres on 12/16/2015.
  */
 public class PropertyHelper extends Properties {
-    private static Logger log = Logger.getLogger(PropertyHelper.class.getName());
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(TrayManager.class);
     private String file;
 
     /**
@@ -57,7 +57,7 @@ public class PropertyHelper extends Properties {
             f = new FileInputStream(file);
             load(f);
         } catch (IOException e) {
-            log.log(Level.SEVERE, "Error loading " + file, e);
+            log.warn("Could not load file: {}, reason: {}", file, e.getLocalizedMessage());
         } finally {
             if (f != null) {
                 try { f.close(); } catch(Throwable ignore) {};
@@ -71,7 +71,7 @@ public class PropertyHelper extends Properties {
             f = new FileOutputStream(file);
             this.store(f, null);
         } catch (IOException e) {
-            log.log(Level.SEVERE, "Error saving " + file, e);
+            log.error("Error saving file: {}", file, e);
         } finally {
             if (f != null) {
                 try { f.close(); } catch(Throwable ignore) {};

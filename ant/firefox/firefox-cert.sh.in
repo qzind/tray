@@ -104,15 +104,15 @@ if [ "$1" == "uninstall" ]; then
         cp "$configpath" "$bindir/${firefoxconfig.name}"
         chmod $mask "$bindir/${firefoxconfig.name}"
         # Replace ${certData} with the blank string
-        perl -pi -e "s#\\\${certData}##g" "$bindir/${firefoxconfig.name}"
+        perl -pi -e "s#\\\$\{certData\}##g" "$bindir/${firefoxconfig.name}"
         ret1=$?
-        perl -pi -e "s#\\\${uninstall}#true#g" "$bindir/${firefoxconfig.name}"
+        perl -pi -e "s#\\\$\{uninstall\}#true#g" "$bindir/${firefoxconfig.name}"
         ret2=$?
-        perl -pi -e "s#\\\${timestamp}#-1#g" "$bindir/${firefoxconfig.name}"
+        perl -pi -e "s#\\\$\{timestamp\}#-1#g" "$bindir/${firefoxconfig.name}"
         ret3=$?
-        perl -pi -e "s#\\\${commonName}#$cname#g" "$bindir/${firefoxconfig.name}"
+        perl -pi -e "s#\\\$\{commonName\}#$cname#g" "$bindir/${firefoxconfig.name}"
         ret4=$?
-        perl -pi -e "s#\\\${trayApp}##g" "$bindir/${firefoxconfig.name}"
+        perl -pi -e "s#\\\$\{trayApp\}##g" "$bindir/${firefoxconfig.name}"
         ret5=$?
         if [ $ret1 -eq 0 ] && [ $ret2 -eq 0 ] && [ $ret3 -eq 0 ] && [ $ret4 -eq 0 ] && [ $ret5 -eq 0 ]; then
             echo -e "${bash.success} Certificate removed successfully"
@@ -175,15 +175,15 @@ timestamp=$(date +%s)
 if [ -f "$bindir/${firefoxconfig.name}" ]; then
 	echo -e "${bash.success} Check ${project.name} AutoConfig exists"
 	# Replace ${certData} with the base64 string
-    perl -pi -e "s#\\\${certData}#$certdata#g" "$bindir/${firefoxconfig.name}"
+    perl -pi -e "s#\\\$\{certData\}#$certdata#g" "$bindir/${firefoxconfig.name}"
     ret1=$?
-    perl -pi -e "s#\\\${uninstall}#false#g" "$bindir/${firefoxconfig.name}"
+    perl -pi -e "s#\\\$\{uninstall\}#false#g" "$bindir/${firefoxconfig.name}"
     ret2=$?
-    perl -pi -e "s#\\\${timestamp}#$timestamp#g" "$bindir/${firefoxconfig.name}"
+    perl -pi -e "s#\\\$\{timestamp\}#$timestamp#g" "$bindir/${firefoxconfig.name}"
     ret3=$?
-    perl -pi -e "s#\\\${commonName}#$cname#g" "$bindir/${firefoxconfig.name}"
+    perl -pi -e "s#\\\$\{commonName\}#$cname#g" "$bindir/${firefoxconfig.name}"
     ret4=$?
-    perl -pi -e "s#\\\${trayApp}#$trayapp#g" "$bindir/${firefoxconfig.name}"
+    perl -pi -e "s#\\\$\{trayApp\}#$trayapp#g" "$bindir/${firefoxconfig.name}"
     ret5=$?
     if [ $ret1 -eq 0 ] && [ $ret2 -eq 0 ] && [ $ret3 -eq 0 ] && [ $ret4 -eq 0 ] && [ $ret5 -eq 0 ]; then
         echo -e "${bash.success} Certificate installed"

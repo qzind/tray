@@ -28,6 +28,9 @@ public class LinuxDeploy extends DeployUtilities {
 
     @Override
     public boolean createStartupShortcut() {
+        ShellUtilities.execute(new String[] {
+                "mkdir", "-p", System.getProperty("user.home") + "/.config/autostart/"
+        });
         return createShortcut(System.getProperty("user.home") + "/.config/autostart/");
     }
 

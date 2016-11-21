@@ -25,7 +25,7 @@
         <delete dir="${out.dir}"/>
     </target>
 
-    <target name="compile-socket" depends="init">
+    <target name="compile-socket" depends="init,constants.java">
         <mkdir dir="${build.project.dir}"/>
 
         <javac destdir="${build.project.dir}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8">
@@ -91,16 +91,39 @@
                 />
     </target>
 
-    <!-- Get version information from JAR -->
+    <!-- Get version information from git -->
+    <available file=".git" type="dir" property="git.present"/>
+
+    <target name="git.revision" description="Store git revision in ${repository.version}" if="git.present">
+        <!-- http://stackoverflow.com/questions/2974106/how-to-lookup-the-latest-git-commit-hash-from-an-ant-build-script -->
+        <exec executable="git" outputproperty="git.revision" failifexecutionfails="false" errorproperty="">
+            <arg value="describe"/>
+            <arg value="--tags"/>
+            <arg value="--always"/>
+            <arg value="HEAD"/>
+        </exec>
+        <script language="javascript">
+            rev = project.getProperty('git.revision').trim() || "v0.0.0-0";
+            rev = rev.slice(1); // Remove 'v' prefix
+            rev = rev.split('-');
+            project.setProperty('git.lastTag', rev[0]);
+            project.setProperty('git.commitsSinceLastTag', rev[1]);
+            project.setProperty('build.version', rev[0]+"-"+rev[1]);
+        </script>
+        <echo>Version ${build.version}</echo>
+    </target>
+
+    <target name="constants.java" depends="git.revision" description="build Constants.java from template">
+        <copy file="src/qz/common/Constants.java.template" tofile="src/qz/common/Constants.java" overwrite="yes">
+            <filterchain>
+                <expandproperties/>
+            </filterchain>
+        </copy>
+    </target>
+
     <target name="get-version" depends="build-jar">
         <property file="ant/project.properties"/>
-        <java jar="${dist.jar}" fork="true" outputproperty="build.version">
-            <arg value="--version"/>
-        </java>
-		
-        <!-- Fallback to a bogus version number if the above command failed -->
-        <property name="build.version" value="0.0.0" />
-        <echo>Version ${build.version}</echo>
+
         <!-- Calculate installation size -->
         <length property="build.bytes" mode="all">
             <fileset dir="${dist.dir}" includes="**/*"/>

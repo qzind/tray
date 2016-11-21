@@ -9,26 +9,26 @@ public class Constants {
     public static final String HEXES = "0123456789ABCDEF";
     public static final char[] HEXES_ARRAY = HEXES.toCharArray();
     public static final int BYTE_BUFFER_SIZE = 8192;
-    public static final String VERSION = "2.0.2";
+    public static final String VERSION = "${build.version}";
 
     /* QZ-Tray Constants */
     public static final String BLOCK_FILE = "blocked";
     public static final String ALLOW_FILE = "allowed";
     public static final String TEMP_FILE = "temp";
     public static final String LOG_FILE = "debug";
-    public static final String PROPS_FILE = "qz-tray"; // .properties extension is assumed
+    public static final String PROPS_FILE = "${project.filename}"; // .properties extension is assumed
     public static final String PREFS_FILE = "prefs"; // .properties extension is assumed
-    public static final String DATA_DIR = "qz";
+    public static final String DATA_DIR = "${vendor.name}";
     public static final int LOG_SIZE = 524288;
     public static final int LOG_ROTATIONS = 5;
 
     public static final int BORDER_PADDING = 10;
 
-    public static final String ABOUT_TITLE = "QZ Tray";
-    public static final String ABOUT_URL = "https://qz.io";
-    public static final String ABOUT_COMPANY = "QZ Industries, LLC";
+    public static final String ABOUT_TITLE = "${project.name}";
+    public static final String ABOUT_URL = "${vendor.website}";
+    public static final String ABOUT_COMPANY = "${vendor.company}";
 
-    public static final String TRUSTED_PUBLISHER = String.format("Verified by %s", Constants.ABOUT_COMPANY);
+    public static final String TRUSTED_PUBLISHER = "Verified by ${vendor.company}";
     public static final String UNTRUSTED_PUBLISHER = "Untrusted website";
 
     public static final String PROBE_REQUEST = "getProgramName";

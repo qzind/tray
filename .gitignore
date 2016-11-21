@@ -9,3 +9,5 @@
 /.idea/compiler.xml
 /README.md
 .DS_Store
+src/qz/common/Constants.java
+out

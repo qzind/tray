@@ -932,8 +932,8 @@ var qz = (function() {
              *  @param {string} [properties.baudRate=9600]
              *  @param {string} [properties.dataBits=8]
              *  @param {string} [properties.stopBits=1]
-             *  @param {string} [properties.parity='NONE']
-             *  @param {string} [properties.flowControl='NONE']
+             *  @param {string} [properties.parity='NONE'] Valid values <code>[NONE| EVEN | ODD | MARK | SPACE]</code>
+             *  @param {string} [properties.flowControl='NONE'] Valid values <code>[NONE | XONXOFF_OUT | XONXOFF_IN | RTSCTS_OUT | RTSCTS_IN]</code>
              *
              * @returns {Promise<null|Error>}
              *

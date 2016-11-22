@@ -295,7 +295,7 @@ public class SerialUtilities {
         JSONObject bounds = params.getJSONObject("bounds");
         if (bounds.isNull("width")) {
             serial = new SerialIO(portName,
-                                  SerialUtilities.characterBytes(bounds.optString("start", "0x0002")),
+                                  SerialUtilities.characterBytes(bounds.optString("begin", "0x0002")),
                                   SerialUtilities.characterBytes(bounds.optString("end", "0x000D")));
         } else {
             serial = new SerialIO(portName, bounds.getInt("width"));
@@ -306,16 +306,14 @@ public class SerialUtilities {
                 connection.addSerialPort(portName, serial);
 
                 //apply listener here, so we can send all replies to the browser
-                serial.applyPortListener(new SerialPortEventListener() {
-                    public void serialEvent(SerialPortEvent spe) {
-                        String output = serial.processSerialEvent(spe);
+                serial.applyPortListener(spe -> {
+                    String output = serial.processSerialEvent(spe);
 
-                        if (output != null) {
-                            log.debug("Received serial output: {}", output);
-                            StreamEvent event = new StreamEvent(StreamEvent.Stream.SERIAL, StreamEvent.Type.RECEIVE)
-                                    .withData("portName", portName).withData("output", output);
-                            PrintSocketClient.sendStream(session, event);
-                        }
+                    if (output != null) {
+                        log.debug("Received serial output: {}", output);
+                        StreamEvent event = new StreamEvent(StreamEvent.Stream.SERIAL, StreamEvent.Type.RECEIVE)
+                                .withData("portName", portName).withData("output", output);
+                        PrintSocketClient.sendStream(session, event);
                     }
                 });
 

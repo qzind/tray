@@ -73,6 +73,7 @@ public class HidIO implements DeviceIO {
         if (isOpen()) {
             device.close();
         }
+        streaming = false;
     }
 
 }

@@ -949,7 +949,7 @@ var qz = (function() {
             /**
              * @param {string} port Name of port to open.
              * @param {Object} bounds Boundaries of serial port output.
-             *  @param {string} [bounds.begin=0x0002] Character denoting start of serial response. Not used if <code>width</code is provided.
+             *  @param {string} [bounds.start=0x0002] Character denoting start of serial response. Not used if <code>width</code is provided.
              *  @param {string} [bounds.end=0x000D] Character denoting end of serial response. Not used if <code>width</code> is provided.
              *  @param {number} [bounds.width] Used for fixed-width response serial communication.
              *

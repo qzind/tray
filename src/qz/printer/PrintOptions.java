@@ -1,5 +1,8 @@
 package qz.printer;
 
+import com.sun.javafx.print.Units;
+import javafx.print.PageOrientation;
+import javafx.print.PrintColor;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;

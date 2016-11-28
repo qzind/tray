@@ -21,6 +21,8 @@ import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
+import javax.print.attribute.standard.Media;
+import javax.print.attribute.standard.MediaPrintableArea;
 import javax.print.attribute.standard.OrientationRequested;
 import java.awt.geom.AffineTransform;
 import java.awt.print.PageFormat;

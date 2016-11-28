@@ -15,6 +15,7 @@ import mslinks.ShellLink;
 import qz.utils.ShellUtilities;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 
 /**
  * @author Tres Finocchiaro
@@ -41,7 +42,8 @@ public class WindowsDeploy extends DeployUtilities {
             link.getHeader().setIconIndex(131);
             link.saveTo(getStartupDirectory() + getShortcutName() + ".lnk");
             return true;
-        } catch (Exception ex) {
+        }
+        catch(Exception ex) {
             log.warn("Error removing startup shortcut", ex);
             return false;
         }
@@ -58,13 +60,19 @@ public class WindowsDeploy extends DeployUtilities {
         try {
             ShellLink link = new ShellLink(getStartupDirectory() + getShortcutName() + ".lnk");
             return link.getIconLocation() == null || !link.getIconLocation().equals(DELETED_ICON);
-        } catch (NegativeArraySizeException ignore) {
+        }
+        catch(NegativeArraySizeException ignore) {
             // Per mslinks issues #4
             return true;
-        } catch (Exception ex) {
-            log.warn("Error detecting startup shortcut", ex);
-            return false;
         }
+        catch(NoSuchFileException ignore) {
+            log.warn("Startup shortcut does not exist");
+        }
+        catch(Exception ex) {
+            log.error("Error detecting startup shortcut", ex);
+        }
+
+        return false;
     }
 
     @Override
@@ -112,7 +120,8 @@ public class WindowsDeploy extends DeployUtilities {
     private boolean createShortcut(String folderPath) {
         try {
             ShellLink.createLink(getAppPath(), folderPath + getShortcutName() + ".lnk");
-        } catch (IOException ex) {
+        }
+        catch(IOException ex) {
             log.warn("Error creating desktop shortcut", ex);
             return false;
         }

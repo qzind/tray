@@ -15,12 +15,16 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 import sun.awt.AppContext;
 
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
+import javax.print.attribute.ResolutionSyntax;
+import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.PrinterName;
+import javax.print.attribute.standard.PrinterResolution;
 
 public class PrintServiceMatcher {
 
@@ -80,7 +84,7 @@ public class PrintServiceMatcher {
             if (SystemUtilities.isMac()) {
                 // 1.9 style printer names
                 PrinterName name = ps.getAttribute(PrinterName.class);
-                if (name == null) continue;
+                if (name == null) { continue; }
                 printerName = name.getValue().toLowerCase();
                 if (printerName.equals(printerSearch)) {
                     exact = ps;

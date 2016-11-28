@@ -178,6 +178,8 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         Graphics2D graphics2D = withRenderHints((Graphics2D)graphics, interpolation);
         log.trace("{}", graphics2D.getRenderingHints());
 
+        log.debug("Memory: {}m/{}m", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576, Runtime.getRuntime().maxMemory() / 1048576);
+
         graphics2D.drawImage(imgToPrint, (int)boundX, (int)boundY, (int)(boundX + imgW), (int)(boundY + imgH),
                              0, 0, imgToPrint.getWidth(), imgToPrint.getHeight(), null);
 

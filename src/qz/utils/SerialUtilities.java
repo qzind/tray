@@ -295,7 +295,7 @@ public class SerialUtilities {
         JSONObject bounds = params.getJSONObject("bounds");
         if (bounds.isNull("width")) {
             serial = new SerialIO(portName,
-                                  SerialUtilities.characterBytes(bounds.optString("begin", "0x0002")),
+                                  SerialUtilities.characterBytes(bounds.optString("start", "0x0002")),
                                   SerialUtilities.characterBytes(bounds.optString("end", "0x000D")));
         } else {
             serial = new SerialIO(portName, bounds.getInt("width"));

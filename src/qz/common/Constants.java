@@ -38,6 +38,9 @@ public class Constants {
     public static final String PROBE_REQUEST = "getProgramName";
     public static final String PROBE_RESPONSE = ABOUT_TITLE;
 
+    public static final String PREFS_NOTIFICATIONS = "tray.notifications";
+    public static final String PREFS_HEADLESS = "tray.headless";
+
     public static final String WHITE_LIST = "Permanently allowed \"%s\" to access local resources";
     public static final String BLACK_LIST = "Permanently blocked \"%s\" from accessing local resources";
 

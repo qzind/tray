@@ -52,11 +52,13 @@ public class PrintSocketServer {
     private static TrayManager trayManager;
     private static Properties trayProperties;
 
+    private static boolean headless;
+
 
     public static void main(String[] args) {
-        for(String s : args) {
+        for(String arg : args) {
             // Print version information and exit
-            if ("-v".equals(s) || "--version".equals(s)) {
+            if ("-v".equals(arg) || "--version".equals(arg)) {
                 System.out.println(Constants.VERSION);
                 System.exit(0);
             }
@@ -74,6 +76,10 @@ public class PrintSocketServer {
                 }
                 System.exit(0);
             }
+
+            if ("-h".equals(arg) || "--headless".equals(arg)) {
+                headless = true;
+            }
         }
 
         log.info(Constants.ABOUT_TITLE + " version: {}", Constants.VERSION);
@@ -82,12 +88,7 @@ public class PrintSocketServer {
         setupFileLogging();
 
         try {
-            SwingUtilities.invokeAndWait(new Runnable() {
-                @Override
-                public void run() {
-                    trayManager = new TrayManager();
-                }
-            });
+            SwingUtilities.invokeAndWait(() -> trayManager = new TrayManager(headless));
             runServer();
         }
         catch(Exception e) {
@@ -97,7 +98,7 @@ public class PrintSocketServer {
         log.warn("The web socket server is no longer running");
     }
 
-    public static void setupFileLogging() {
+    private static void setupFileLogging() {
         FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
         rollingPolicy.setFileNamePattern(SystemUtilities.getDataDirectory() + File.separator + Constants.LOG_FILE + ".log.%i");
         rollingPolicy.setMaxIndex(Constants.LOG_ROTATIONS);

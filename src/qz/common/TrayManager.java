@@ -45,6 +45,8 @@ public class TrayManager {
 
     private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
 
+    private boolean headless;
+
     // The cached icons
     private final IconCache iconCache;
 
@@ -67,18 +69,26 @@ public class TrayManager {
     private final DeployUtilities shortcutCreator;
 
     private final PropertyHelper prefs;
-    private String notificationsKey = "tray.notifications";
 
     // Action to run when reload is triggered
     private Thread reloadThread;
 
+    public TrayManager() {
+        this(false);
+    }
+
     /**
      * Create a AutoHideJSystemTray with the specified name/text
      */
-    public TrayManager() {
+    public TrayManager(boolean isHeadless) {
         name = Constants.ABOUT_TITLE + " " + Constants.VERSION;
 
         prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
+
+        headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false);
+        if (headless) {
+            log.info("Running in headless mode");
+        }
 
         // Setup the shortcut name so that the UI components can use it
         shortcutCreator = DeployUtilities.getSystemShortcutCreator();
@@ -86,7 +96,7 @@ public class TrayManager {
 
         SystemUtilities.setSystemLookAndFeel();
 
-        if (SystemTray.isSupported()) {
+        if (SystemTray.isSupported() && !headless) {
             Image blank = new ImageIcon(new byte[1]).getImage();
             if (SystemUtilities.isWindows()) {
                 tray = new JXTrayIcon(blank);
@@ -129,7 +139,9 @@ public class TrayManager {
         // The ok/cancel dialog
         confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
 
-        addMenuItems();
+        if (tray != null) {
+            addMenuItems();
+        }
     }
 
     /**
@@ -170,7 +182,7 @@ public class TrayManager {
         JCheckBoxMenuItem notificationsItem = new JCheckBoxMenuItem("Show all notifications");
         notificationsItem.setToolTipText("Shows all connect/disconnect messages, useful for debugging purposes");
         notificationsItem.setMnemonic(KeyEvent.VK_S);
-        notificationsItem.setState(prefs.getBoolean(notificationsKey, false));
+        notificationsItem.setState(prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false));
         notificationsItem.addActionListener(notificationsListener);
 
         JMenuItem openItem = new JMenuItem("Open file location", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
@@ -234,7 +246,7 @@ public class TrayManager {
         @Override
         public void actionPerformed(ActionEvent e) {
             JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
-            prefs.setProperty(notificationsKey, j.getState());
+            prefs.setProperty(Constants.PREFS_NOTIFICATIONS, j.getState());
         }
     };
 
@@ -310,7 +322,7 @@ public class TrayManager {
 
     private final ActionListener exitListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
-            boolean showAllNotifications = prefs.getBoolean(notificationsKey, false);
+            boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
             if (!showAllNotifications || confirmDialog.prompt("Exit " + name + "?")) { exit(0); }
         }
     };
@@ -379,7 +391,7 @@ public class TrayManager {
             return false;
         } else {
             try {
-                SwingUtilities.invokeAndWait(() -> gatewayDialog.prompt("%s wants to " + prompt, cert, position));
+                SwingUtilities.invokeAndWait(() -> gatewayDialog.prompt("%s wants to " + prompt, cert, position, !headless));
             }
             catch(Exception ignore) {}
 
@@ -432,8 +444,11 @@ public class TrayManager {
             singleInstanceCheck(PrintSocketServer.INSECURE_PORTS, insecurePortIndex.get());
 
             displayInfoMessage("Server started on port(s) " + TrayManager.getPorts(server));
-            aboutDialog.setServer(server);
-            setDefaultIcon();
+
+            if (!headless) {
+                aboutDialog.setServer(server);
+                setDefaultIcon();
+            }
 
             setReloadThread(new Thread(() -> {
                 try {
@@ -519,13 +534,17 @@ public class TrayManager {
      * @param level   The message type: Level.INFO, .WARN, .SEVERE
      */
     private void displayMessage(final String caption, final String text, final TrayIcon.MessageType level) {
-        if (tray != null) {
-            SwingUtilities.invokeLater(() -> {
-                boolean showAllNotifications = prefs.getBoolean(notificationsKey, false);
-                if (showAllNotifications || level == TrayIcon.MessageType.ERROR) {
-                    tray.displayMessage(caption, text, level);
-                }
-            });
+        if (!headless) {
+            if (tray != null) {
+                SwingUtilities.invokeLater(() -> {
+                    boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
+                    if (showAllNotifications || level == TrayIcon.MessageType.ERROR) {
+                        tray.displayMessage(caption, text, level);
+                    }
+                });
+            }
+        } else {
+            log.info("{}: [{}] {}", caption, level, text);
         }
     }
 

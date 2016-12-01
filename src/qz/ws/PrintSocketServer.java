@@ -10,6 +10,7 @@
 
 package qz.ws;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.rolling.FixedWindowRollingPolicy;
@@ -23,14 +24,17 @@ import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.auth.Certificate;
 import qz.common.Constants;
 import qz.common.SecurityInfo;
 import qz.common.TrayManager;
 import qz.deploy.DeployUtilities;
+import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 import java.io.File;
+import java.io.FileReader;
 import java.net.BindException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,30 +60,38 @@ public class PrintSocketServer {
 
 
     public static void main(String[] args) {
-        for(String arg : args) {
-            // Print version information and exit
-            if ("-v".equals(arg) || "--version".equals(arg)) {
-                System.out.println(Constants.VERSION);
-                System.exit(0);
-            }
-            // Print library list and exits
-            if ("-l".equals(s) || "--libinfo".equals(s)) {
-                String format = "%-40s%s%n";
-                System.out.printf(format, "LIBRARY NAME:", "VERSION:");
-                SortedMap<String, String> libVersions = SecurityInfo.getLibVersions();
-                for (Map.Entry<String, String> entry: libVersions.entrySet()) {
-                    if (entry.getValue() == null) {
-                        System.out.printf(format, entry.getKey(), "(unknown)");
-                    } else {
-                        System.out.printf(format, entry.getKey(), entry.getValue());
-                    }
-                }
-                System.exit(0);
-            }
+        List<String> sArgs = Arrays.asList(args);
 
-            if ("-h".equals(arg) || "--headless".equals(arg)) {
-                headless = true;
+        if (sArgs.contains("-a") || sArgs.contains("--whitelist")) {
+            int fileIndex = Math.max(sArgs.indexOf("-a"), sArgs.indexOf("--whitelist")) + 1;
+            addToList(Constants.ALLOW_FILE, new File(sArgs.get(fileIndex)));
+            System.exit(0);
+        }
+        if (sArgs.contains("-b") || sArgs.contains("--blacklist")) {
+            int fileIndex = Math.max(sArgs.indexOf("-b"), sArgs.indexOf("--blacklist")) + 1;
+            addToList(Constants.BLOCK_FILE, new File(sArgs.get(fileIndex)));
+            System.exit(0);
+        }
+        // Print library list and exits
+        if ("-l".equals(s) || "--libinfo".equals(s)) {
+            String format = "%-40s%s%n";
+            System.out.printf(format, "LIBRARY NAME:", "VERSION:");
+            SortedMap<String, String> libVersions = SecurityInfo.getLibVersions();
+            for (Map.Entry<String, String> entry: libVersions.entrySet()) {
+                if (entry.getValue() == null) {
+                    System.out.printf(format, entry.getKey(), "(unknown)");
+                } else {
+                    System.out.printf(format, entry.getKey(), entry.getValue());
+                }
             }
+            System.exit(0);
+        }
+        if (sArgs.contains("-h") || sArgs.contains("--headless")) {
+            headless = true;
+        }
+        if (sArgs.contains("-v") || sArgs.contains("--version")) {
+            System.out.println(Constants.VERSION);
+            System.exit(0);
         }
 
         log.info(Constants.ABOUT_TITLE + " version: {}", Constants.VERSION);
@@ -96,6 +108,22 @@ public class PrintSocketServer {
         }
 
         log.warn("The web socket server is no longer running");
+    }
+
+    private static void addToList(String list, File certFile) {
+        try {
+            FileReader fr = new FileReader(certFile);
+            Certificate cert = new Certificate(IOUtils.toString(fr));
+
+            if (FileUtilities.printLineToFile(list, cert.data())) {
+                log.info("Successfully added {} to {} list", cert.getOrganization(), list);
+            } else {
+                log.warn("Failed to add certificate to {} list (Insufficient user privileges)", list);
+            }
+        }
+        catch(Exception e) {
+            log.error("Failed to add certificate:", e);
+        }
     }
 
     private static void setupFileLogging() {

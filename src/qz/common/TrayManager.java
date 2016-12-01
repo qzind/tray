@@ -85,7 +85,7 @@ public class TrayManager {
 
         prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
 
-        headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false);
+        headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || !SystemTray.isSupported();
         if (headless) {
             log.info("Running in headless mode");
         }
@@ -95,8 +95,9 @@ public class TrayManager {
         shortcutCreator.setShortcutName(Constants.ABOUT_TITLE);
 
         SystemUtilities.setSystemLookAndFeel();
+        iconCache = new IconCache();
 
-        if (SystemTray.isSupported() && !headless) {
+        if (!headless) {
             Image blank = new ImageIcon(new byte[1]).getImage();
             if (SystemUtilities.isWindows()) {
                 tray = new JXTrayIcon(blank);
@@ -107,7 +108,6 @@ public class TrayManager {
             }
 
             // Iterates over all images denoted by IconCache.getTypes() and caches them
-            iconCache = new IconCache();
             tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
             tray.setToolTip(name);
 
@@ -115,10 +115,9 @@ public class TrayManager {
                 SystemTray.getSystemTray().add(tray);
             }
             catch(AWTException awt) {
-                log.error("Could not attach tray", awt);
+                log.error("Could not attach tray, forcing headless mode", awt);
+                headless = true;
             }
-        } else {
-            iconCache = new IconCache();
         }
 
         // Linux specific tasks

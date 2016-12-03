@@ -22,22 +22,29 @@
 #                                                       #
 #########################################################
 
-import os, base64, sys ; from M2Crypto import EVP
-mykey = os.path.dirname(__file__) + "/private-key.pem"
-mypass = lambda(ignore) : "S3cur3P@ssw0rd"
+import base64
+import os
+import sys
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+
+
+mykey = os.path.join(os.path.dirname(__file__), "private-key.pem")
+mypass = "S3cur3P@ssw0rd"
 
 # Treat command line argument as message to be signed
 for arg in sys.argv:
-    message = arg
+    message = arg.encode('utf-8')
 
 # Load the private key
-# http://chandlerproject.org/Projects/MeTooCrypto
-key = EVP.load_key_string(open(mykey).read(), mypass)
+key = serialization.load_pem_private_key(
+    open(mykey).read(), password=mypass, backend=default_backend()
+)
 
 # Create the signature
-key.sign_init()
-key.sign_update(message.encode("utf-8"))
-signature = key.sign_final()
+signature = key.sign(message, padding.PKCS1v15(), hashes.SHA1())
 
 # Echo the signature
 print base64.b64encode(signature)

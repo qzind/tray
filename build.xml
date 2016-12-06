@@ -200,6 +200,8 @@
             <filterchain><expandproperties/></filterchain>
         </copy>
 
+        <copy file="${windows.cleanup.in}" tofile="${windows.cleanup.out}" />
+
         <copy file="${windows.keygen.in}" tofile="${windows.keygen.out}" >
             <filterchain><expandproperties/></filterchain>
         </copy>
@@ -369,6 +371,11 @@
                  <include name="**/*.sh"/>
             </fileset>
         </chmod>
+
+        <copy file="${linux.uninstall.in}" tofile="${linux.uninstall.out}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="u+x" file="${linux.uninstall.out}"/>
 
         <copy file="${firefoxcert.in}" tofile="${firefoxcert.out}">
             <filterchain><expandproperties/></filterchain>

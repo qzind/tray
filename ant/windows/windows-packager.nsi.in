@@ -158,6 +158,9 @@ Section "Uninstall"
   ${If} ${RunningX64}
   ${EnableX64FSRedirection}
   ${EndIf}
+
+  ; Remove startup entries
+  nsExec::ExecToLog "cscript.exe //NoLogo //E:jscript $\"$INSTDIR\utils\${windows.cleanup.name}$\" $\"${project.name}$\""
   
   ; Delete matching firewall rules
   DetailPrint "Removing ${project.name} firewall rules..."

@@ -1,0 +1,64 @@
+#!/bin/bash
+
+echo -e "Stopping any running versions..."
+pkill -f "java -jar ${linux.installdir}/${project.filename}.jar" > /dev/null 2>&1
+a=$?
+pkill -f "java -jar ${launch.opts} ${linux.installdir}/${project.filename}.jar" > /dev/null 2>&1
+if [ $a -eq 0 -o $? -eq 0 ]; then
+    echo -e "${bash.success}"
+else
+    echo -e "${bash.skipped}"
+fi
+
+# Remove Firefox certificate
+"${linux.installdir}/auth/firefox/${firefoxcert.name}" "uninstall"
+
+echo -e "Cleaning up shortcuts and certificates..."
+# Remove startup entries and certificates for all users
+a=0
+b=0
+for i in /home/* ; do
+    # Remove 1.9/2.0 style startup shortcuts
+    if [ -n "${project.filename}" ]; then
+    	rm "$i/.config/autostart/${project.filename}.desktop" > /dev/null 2>&1
+    	let "a++"
+    fi
+    if [ -n "${project.name}" ]; then
+    	rm "$i/.config/autostart/${project.name}.desktop" > /dev/null 2>&1
+    	let "a++"
+    fi
+
+    certutil -D -d "sql:$i/.pki/nssdb" -n "${vendor.company}" > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        let "b++"
+    fi
+done
+
+if [ $a -ne 0 ]; then
+    echo -e "${bash.success} Removed $a startup entries"
+else
+    echo -e "${bash.skipped} No startup entries found"
+fi
+
+if [ $b -ne 0 ]; then
+    echo -e "${bash.success} Removed $b certificates"
+else
+    echo -e "${bash.skipped} No certificates found"
+fi
+
+echo -e "Removing application shortuct..."
+rm -rf "/usr/share/applications/${project.filename}.desktop" > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo -e "${bash.success}"
+else
+    echo -e "${bash.skipped}"
+fi
+
+echo -e "Cleanup is complete.  Removing ${linux.installdir}..."
+rm -rf "${linux.installdir}"
+if [ $? -eq 0 ]; then
+    echo -e "${bash.success}"
+fi
+
+echo -e "Finished.\n"
+exit 0

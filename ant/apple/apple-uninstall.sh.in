@@ -19,7 +19,7 @@ fi
 
 # Kill any running versions
 echo -e "Killing any running versions..."
-kill -9 $(ps -e |grep "${project.filename}.jar" |grep -v grep|awk '{print $1}') > /dev/null 2>&1
+kill -9 $(ps -e |grep "${project.filename}.jar" |sed "/grep/d"|awk '{print $1}') > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo -e "${bash.success}"
 else

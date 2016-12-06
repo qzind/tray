@@ -34,6 +34,13 @@ if [ $? -eq 0 ]; then
     "${apple.installdir}/auth/firefox/${firefoxcert.name}" "uninstall"
 fi
 
+# Remove 1.9/2.0 style lingering startup shortcuts
+users=$(dscl . list /Users | sed "/^_/d")
+a=0
+while read -r line; do
+    sudo -u "$line" osascript -e "tell application \"System Events\" to delete every login item where name is \"${project.name}\"" > /dev/null 2>&1
+done <<< "$users"
+
 echo -e "Cleanup is complete.  Removing ${apple.installdir}..."
 rm -rf "${apple.installdir}"
 echo -e "${bash.success}"

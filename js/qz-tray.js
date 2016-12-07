@@ -15,7 +15,6 @@
  *     Can be overridden via <code>qz.api.setSha256Type</code> to remove dependency.
  */
 var qz = (function() {
-    var _version = "2.0.3";                           //must match @version above
 
 ///// POLYFILLS /////
 
@@ -29,6 +28,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
+        VERSION: "2.0.3",                              //must match @version above
         DEBUG: false,
 
         log: {
@@ -1471,16 +1471,13 @@ var qz = (function() {
         },
 
         /**
-         * Get version of this JavaScript library
+         * Version of this JavaScript library
          *
-         * @returns {string} Version number of this JavaScript library
+         * @constant {string}
          *
          * @memberof qz
          */
-        version: function() {
-            return _version;
-        }
-
+        version: _qz.VERSION
     };
 
 })();

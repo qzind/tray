@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.0.1-3
+ * @version 2.0.3;
  * @overview QZ Tray Connector
  * <p/>
  * Connects a web client to the QZ Tray software.
@@ -15,6 +15,7 @@
  *     Can be overridden via <code>qz.api.setSha256Type</code> to remove dependency.
  */
 var qz = (function() {
+    var _version = "2.0.3";                           //must match @version above
 
 ///// POLYFILLS /////
 
@@ -1467,6 +1468,17 @@ var qz = (function() {
             setWebSocketType: function(ws) {
                 _qz.tools.ws = ws;
             }
+        },
+
+        /**
+         * Get version of this JavaScript library
+         *
+         * @returns {string} Version number of this JavaScript library
+         *
+         * @memberof qz
+         */
+        version: function() {
+            return _version;
         }
 
     };

@@ -174,16 +174,25 @@ public class GatewayDialog extends JDialog {
         this.description = description;
     }
 
-    public boolean prompt(String description, Certificate cert, Point position, boolean visible) {
+    public boolean prompt(String description, Certificate cert, Point position) {
         //reset dialog state on new prompt
         approved = false;
         persistentCheckBox.setSelected(false);
+
+        if (cert == null || cert.isBlocked()) {
+            approved = false;
+            return false;
+        }
+        if (cert.isTrusted() && cert.isSaved()) {
+            approved = true;
+            return true;
+        }
 
         setDescription(description);
         setCertificate(cert);
         refreshComponents();
         SystemUtilities.centerDialog(this, position);
-        setVisible(visible);
+        setVisible(true);
 
         return isApproved();
     }

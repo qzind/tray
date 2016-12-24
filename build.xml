@@ -92,12 +92,9 @@
     </target>
 
     <!-- Get version information from git -->
-    <property environment="env"/>
-    <available file="git" filepath="${env.PATH}" property="git.present"/>
-
-    <target name="git.revision" description="Store git revision in ${repository.version}" if="git.present">
+    <target name="git.revision" description="Store git revision in ${repository.version}">
         <!-- http://stackoverflow.com/questions/2974106/how-to-lookup-the-latest-git-commit-hash-from-an-ant-build-script -->
-        <exec executable="git" outputproperty="git.revision" failifexecutionfails="false">
+        <exec executable="git" outputproperty="git.revision" failifexecutionfails="false" failonerror="false" resultproperty="git.returncode">
             <arg value="describe"/>
             <arg value="--tags"/>
             <arg value="--always"/>
@@ -108,7 +105,7 @@
         <script language="javascript">
             var rev = project.getProperty('git.revision');
             var version;
-            if (rev) {
+            if (rev &amp;&amp; project.getProperty('git.returncode') === "0") {
                 rev = rev.trim().slice(1); // Remove 'v' prefix
                 rev = rev.split('-');
                 project.setProperty('git.lastTag', rev[0]);
@@ -126,6 +123,7 @@
         </script>
         <property name="build.version" value="${build.version}"/>
         <echo message="Version ${build.version}"/>
+        <echo message="RC ${git.returncode}"/>
   </target>
 
     <target name="constants.java" depends="build.version" description="build Constants.java from template">

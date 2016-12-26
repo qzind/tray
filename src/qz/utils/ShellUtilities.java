@@ -20,6 +20,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -327,6 +329,44 @@ public class ShellUtilities {
         return -1;
     }
 
+    public static void browseURL(URI uri) throws IOException {
+        try {
+            // Prevent GTK2/3 conflict caused by Desktop.getDesktop()
+            if (dorkbox.systemTray.jna.linux.Gtk.isGtk3) {
+                throw new IOException("Falling back to xdg-open");
+            }
+            // The default, java recommended usage
+            Desktop.getDesktop().browse(uri);
+        } catch (IOException io) {
+            // Fallback on xdg-open for Linux/Unix
+            if (SystemUtilities.isUnix() && ShellUtilities.execute(new String[] {"xdg-open", uri.toString()})) {
+                return;
+            }
+            throw io;
+        }
+    }
+
+    public static void launchEmail(String address) throws IOException {
+        URI uri = null;
+        try {
+            uri = new URI(address);
+            // Prevent GTK2/3 conflict caused by Desktop.getDesktop()
+            if (dorkbox.systemTray.jna.linux.Gtk.isGtk3) {
+                throw new IOException("Falling back to xdg-open");
+            }
+            // The default, java recommended usage
+            Desktop.getDesktop().mail(uri);
+        } catch(URISyntaxException e) {
+            log.warn("Invalid URI: %s", address);
+        } catch (IOException io) {
+            // Fallback on xdg-open for Linux/Unix
+            if (SystemUtilities.isUnix() && ShellUtilities.execute(new String[] {"xdg-email", uri.toString()})) {
+                return;
+            }
+            throw io;
+        }
+    }
+
     /**
      * Opens the specified path in the system-default file browser.  Works around several OS limitations:
      *  - Apple tries to launch <code>.app</code> bundle directories as applications rather than browsing contents
@@ -348,16 +388,17 @@ public class ShellUtilities {
             }
         } else {
             try {
+                // Prevent GTK2/3 conflict caused by Desktop.getDesktop()
+                if (dorkbox.systemTray.jna.linux.Gtk.isGtk3) {
+                    throw new IOException("Falling back to xdg-open");
+                }
                 // The default, java recommended usage
-                Desktop d = Desktop.getDesktop();
-                d.open(directory);
+                Desktop.getDesktop().open(directory);
                 return;
             } catch (IOException io) {
-                if (SystemUtilities.isLinux()) {
-                    // Fallback on xdg-open for Linux
-                    if (ShellUtilities.execute(new String[] {"xdg-open", path})) {
+                // Fallback on xdg-open for Linux
+                if (SystemUtilities.isUnix() && ShellUtilities.execute(new String[] {"xdg-open", path})) {
                         return;
-                    }
                 }
                 throw io;
             }

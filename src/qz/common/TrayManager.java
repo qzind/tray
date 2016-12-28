@@ -101,8 +101,11 @@ public class TrayManager {
         shortcutCreator = DeployUtilities.getSystemShortcutCreator();
         shortcutCreator.setShortcutName(Constants.ABOUT_TITLE);
 
-        // Todo DON'T FORGET TO ADDRESS THIS
-        // SystemUtilities.setSystemLookAndFeel();
+        // TODO: DON'T FORGET TO ADDRESS THIS. It causes a gtk2 vs 3 error on elementaryOS
+        // This at least mitigates the problem, still need to fix
+        if (!dorkbox.util.OS.isLinux() || dorkbox.systemTray.jna.linux.Gtk.isGtk2) {
+            SystemUtilities.setSystemLookAndFeel();
+        }
 
         // Constructor iterates over all images denoted by IconCache.getTypes() and caches them
         iconCache = new IconCache();
@@ -399,7 +402,6 @@ public class TrayManager {
                     log.info("Denied {} to {}", cert.getCommonName(), prompt);
                     if (gatewayDialog.isPersistent()) {
                         if (Certificate.UNKNOWN.equals(cert)) {
-                            //TODO check this
                             anonymousItem.setChecked(true); // if always block anonymous requests -> flag menu item
                         } else {
                             blackList(cert);
@@ -521,9 +523,10 @@ public class TrayManager {
     /** Thread safe method for setting the specified icon */
     private void setIcon(final IconCache.Icon i) {
         if (tray != null) {
-            //todo add size
-            //SwingUtilities.invokeLater(() -> tray.setImage(iconCache.getImage(i, tray.getSize())));
-            SwingUtilities.invokeLater(() -> tray.setImage(iconCache.getImage(i)));
+            // Gross, if you know a better way, feel free to change this
+            Image blank = new ImageIcon(new byte[1]).getImage();
+            Dimension size = new TrayIcon(blank).getSize();
+            tray.setImage(iconCache.getImage(i, size));
         }
     }
 
@@ -540,8 +543,8 @@ public class TrayManager {
                 SwingUtilities.invokeLater(() -> {
                     boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
                     if (showAllNotifications || level == TrayIcon.MessageType.ERROR) {
-                        //todo add notification support
-                        //tray.displayMessage(caption, text, level);
+                        // TODO: add notification support to dorkbox.systemtray
+                        // tray.displayMessage(caption, text, level);
                     }
                 });
             }

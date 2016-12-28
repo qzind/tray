@@ -34,24 +34,21 @@ public class LinkLabel extends JLabel {
     public LinkLabel(final String text) {
         super(linkify(text));
         initialize();
-        addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    // Sense the action based on the content of the text
-                    if (text.contains("@")) {
-                        //todo This will cause gtk errors on elementary... I think...
-                        Desktop.getDesktop().mail(new URI(text));
-                    } else {
-                        File filePath = new File(text);
-                        //todo fix
-                        //ShellUtilities.browseDirectory(filePath.isDirectory() ? text : filePath.getParent());
-                    }
+        addActionListener(e -> {
+            try {
+                // Sense the action based on the content of the text
+                if (text.contains("@")) {
+                    //TODO This will cause gtk errors on elementary... I think...
+                    Desktop.getDesktop().mail(new URI(text));
+                } else {
+                    File filePath = new File(text);
+                    boolean avoidGTK2 = dorkbox.util.OS.isLinux() && !dorkbox.systemTray.jna.linux.Gtk.isGtk2;
+                    ShellUtilities.browseDirectory(filePath.isDirectory() ? text : filePath.getParent(), avoidGTK2);
+                }
 
-                }
-                catch(Exception ex) {
-                    log.error("", ex);
-                }
+            }
+            catch(Exception ex) {
+                log.error("", ex);
             }
         });
     }

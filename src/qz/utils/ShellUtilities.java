@@ -338,6 +338,7 @@ public class ShellUtilities {
     public static void browseDirectory(String path, boolean forceXDGOpen) throws IOException {
         File directory = new File(path);
         if (forceXDGOpen) {
+            // Doing this early dodges an uncatchable gtk error from getdesktop on systems running gtk3
             if (ShellUtilities.execute(new String[] {"xdg-open", path})) {
                 return;
             }
@@ -353,7 +354,6 @@ public class ShellUtilities {
             }
         } else {
             try {
-                // Todo this causes a GTK error, should check to see if we are using gtk3 first
                 // The default, java recommended usage
                 Desktop d = Desktop.getDesktop();
                 d.open(directory);

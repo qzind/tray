@@ -15,6 +15,7 @@
     <orderEntry type="library" name="JQuery" level="application" />
     <orderEntry type="library" name="bootstrap" level="application" />
     <orderEntry type="library" name="bootstrap-select" level="application" />
+    <orderEntry type="library" name="pdfbox-app-2.0.3" level="project" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
@@ -27,4 +28,3 @@
     </orderEntry>
   </component>
 </module>
-

@@ -10,6 +10,7 @@
 
 package qz.common;
 
+import dorkbox.systemTray.jna.linux.Gtk;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -222,7 +223,7 @@ public class TrayManager {
         }
         tray.getMenu().add(new Separator());
 
-        Checkbox startupItem = new Checkbox("Automatically start", savedListener);
+        Checkbox startupItem = new Checkbox("Automatically start", startupListener);
         startupItem.setShortcut('s');
         startupItem.setChecked(shortcutCreator.hasStartupShortcut());
         //anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
@@ -245,8 +246,8 @@ public class TrayManager {
     private final ActionListener openListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
             try {
-                boolean isGTK3 = System.getProperty("jdk.gtk.version", "2") == "3";
-                ShellUtilities.browseDirectory(shortcutCreator.getParentDirectory(), isGTK3);
+                boolean avoidGTK2 = dorkbox.util.OS.isLinux() && !dorkbox.systemTray.jna.linux.Gtk.isGtk2;
+                ShellUtilities.browseDirectory(shortcutCreator.getParentDirectory(), avoidGTK2);
             }
             catch(Exception ex) {
                 if (!SystemUtilities.isLinux() || !ShellUtilities.execute(new String[] {"xdg-open", shortcutCreator.getParentDirectory()})) {

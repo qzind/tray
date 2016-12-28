@@ -86,8 +86,6 @@ public class TrayManager {
 
         prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
 
-        // Currently there is no systemTray.isSupported method
-        // headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || !SystemTray.isSupported();
         headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false);
         if (headless) {
             log.info("Running in headless mode");
@@ -110,10 +108,14 @@ public class TrayManager {
             try {
                 tray = SystemTray.getNative();
                 tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON));
-                // tray.setToolTip(name); Not supported by Dorkbox
+                // tray.setToolTip(name); Not supported by Dorkbox (yet)
             }
-            catch(Exception e) {
-                log.error("Could not attach tray, forcing headless mode", e);
+            catch(Exception e ) {
+                log.error("Could not initialize tray, forcing headless mode", e);
+                headless = true;
+            }
+            if (!headless && (tray == null)) {
+                log.error("Unknown tray init error, most likely unsupported os, Forcing headless mode");
                 headless = true;
             }
         }
@@ -138,6 +140,8 @@ public class TrayManager {
 
         if (tray != null) {
             addMenuItems();
+        } else {
+
         }
     }
 

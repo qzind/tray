@@ -31,6 +31,10 @@
         <javac destdir="${build.project.dir}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8">
             <src path="${src.dir}"/>
             <classpath>
+                <!-- pdfbox org.bouncycastle conflicts with simple rsa -->
+                <path id="plugin.override">
+                    <pathelement path="${lib.dir}/printing/pdfbox-app-2.0.3.jar" />
+                </path>
                 <fileset dir="${lib.dir}">
                     <include name="**/*.jar"/>
                 </fileset>

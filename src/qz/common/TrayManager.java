@@ -97,7 +97,7 @@ public class TrayManager {
 
         // TODO: DON'T FORGET TO ADDRESS THIS. It causes a gtk2 vs 3 error on elementaryOS
         // This at least mitigates the problem, still need to fix
-        if (!dorkbox.util.OS.isLinux() || dorkbox.systemTray.jna.linux.Gtk.isGtk2) {
+        if (!dorkbox.systemTray.jna.linux.Gtk.isGtk3) {
             SystemUtilities.setSystemLookAndFeel();
         }
 
@@ -164,7 +164,7 @@ public class TrayManager {
             sitesItem.setShortcut('m');
             advancedMenu.add(sitesItem);
 
-            Checkbox anonymousItem = new Checkbox("Block Anonymous Requests", anonymousListener);
+            anonymousItem = new Checkbox("Block Anonymous Requests", anonymousListener);
             anonymousItem.setShortcut('k');
             anonymousItem.setChecked(Certificate.UNKNOWN.isBlocked());
             //anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
@@ -197,7 +197,7 @@ public class TrayManager {
         aboutItem.setShortcut('b');
         tray.getMenu().add(aboutItem);
 
-        aboutDialog = new AboutDialog(null, iconCache, name);
+        aboutDialog = new AboutDialog(iconCache, name);
         {
             JMenuItem siteButton = new JMenuItem("Site Manager...", iconCache.getIcon(IconCache.Icon.SAVED_ICON));
             siteButton.setMnemonic(KeyEvent.VK_M);
@@ -242,8 +242,7 @@ public class TrayManager {
     private final ActionListener openListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
             try {
-                boolean avoidGTK2 = dorkbox.util.OS.isLinux() && !dorkbox.systemTray.jna.linux.Gtk.isGtk2;
-                ShellUtilities.browseDirectory(shortcutCreator.getParentDirectory(), avoidGTK2);
+                ShellUtilities.browseDirectory(shortcutCreator.getParentDirectory(), dorkbox.systemTray.jna.linux.Gtk.isGtk3);
             }
             catch(Exception ex) {
                 if (!SystemUtilities.isLinux() || !ShellUtilities.execute(new String[] {"xdg-open", shortcutCreator.getParentDirectory()})) {
@@ -396,6 +395,7 @@ public class TrayManager {
                     if (gatewayDialog.isPersistent()) {
                         if (Certificate.UNKNOWN.equals(cert)) {
                             anonymousItem.setChecked(true); // if always block anonymous requests -> flag menu item
+                            anonymousListener.actionPerformed(new ActionEvent(anonymousItem, ActionEvent.ACTION_PERFORMED, ""));
                         } else {
                             blackList(cert);
                         }
@@ -516,10 +516,7 @@ public class TrayManager {
     /** Thread safe method for setting the specified icon */
     private void setIcon(final IconCache.Icon i) {
         if (tray != null) {
-            // Gross, if you know a better way, feel free to change this
-            Image blank = new ImageIcon(new byte[1]).getImage();
-            Dimension size = new TrayIcon(blank).getSize();
-            tray.setImage(iconCache.getImage(i, size));
+            tray.setImage(iconCache.getImage(i, new Dimension(32,32)));
         }
     }
 

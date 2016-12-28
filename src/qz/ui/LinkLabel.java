@@ -38,11 +38,17 @@ public class LinkLabel extends JLabel {
             try {
                 // Sense the action based on the content of the text
                 if (text.contains("@")) {
-                    //TODO This will cause gtk errors on elementary... I think...
-                    Desktop.getDesktop().mail(new URI(text));
+                    if (dorkbox.systemTray.jna.linux.Gtk.isGtk3) {
+                        if (ShellUtilities.execute(new String[] {"xdg-email", new URI(text).toString()})) {
+                            return;
+                        }
+                    }
+                    else {
+                        Desktop.getDesktop().mail(new URI(text));
+                    }
                 } else {
                     File filePath = new File(text);
-                    boolean avoidGTK2 = dorkbox.util.OS.isLinux() && !dorkbox.systemTray.jna.linux.Gtk.isGtk2;
+                    boolean avoidGTK2 = dorkbox.systemTray.jna.linux.Gtk.isGtk3;
                     ShellUtilities.browseDirectory(filePath.isDirectory() ? text : filePath.getParent(), avoidGTK2);
                 }
 
@@ -76,7 +82,7 @@ public class LinkLabel extends JLabel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    boolean avoidGTK2 = dorkbox.util.OS.isLinux() && !dorkbox.systemTray.jna.linux.Gtk.isGtk2;
+                    boolean avoidGTK2 = dorkbox.systemTray.jna.linux.Gtk.isGtk3;
                     ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent(), avoidGTK2);
                 }
                 catch(IOException ex) {

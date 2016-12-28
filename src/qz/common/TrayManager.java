@@ -154,11 +154,6 @@ public class TrayManager {
      * Builds the swing pop-up menu with the specified items
      */
     private void addMenuItems() {
-        tray = SystemTray.getNative();
-
-        tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON));
-        //systemTray.setToolTipText(name);
-
         Menu advancedMenu = new Menu("Advanced", iconCache.getImage(IconCache.Icon.SETTINGS_ICON));
         advancedMenu.setShortcut('a');
         tray.getMenu().add(advancedMenu);

@@ -337,7 +337,11 @@ public class ShellUtilities {
      */
     public static void browseDirectory(String path, boolean forceXDGOpen) throws IOException {
         File directory = new File(path);
-        if (SystemUtilities.isMac()) {
+        if (forceXDGOpen) {
+            if (ShellUtilities.execute(new String[] {"xdg-open", path})) {
+                return;
+            }
+        } else if (SystemUtilities.isMac()) {
             // Mac tries to open the .app rather than browsing it.  Instead, pass a child with -R to select it in finder
             File[] files = directory.listFiles();
             if (files != null && files.length > 0) {

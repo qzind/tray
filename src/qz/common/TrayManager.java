@@ -231,95 +231,14 @@ public class TrayManager {
         MenuItem exitItem = new MenuItem("Exit", iconCache.getImage(IconCache.Icon.EXIT_ICON), exitListener);
         exitItem.setShortcut('x');
         tray.getMenu().add(exitItem);
-
-        /*JPopupMenu popup = new JPopupMenu();
-
-        JMenu advancedMenu = new JMenu("Advanced");
-        advancedMenu.setMnemonic(KeyEvent.VK_A);
-        advancedMenu.setIcon(iconCache.getIcon(IconCache.Icon.SETTINGS_ICON));
-
-        JMenuItem sitesItem = new JMenuItem("Site Manager...", iconCache.getIcon(IconCache.Icon.SAVED_ICON));
-        sitesItem.setMnemonic(KeyEvent.VK_M);
-        sitesItem.addActionListener(savedListener);
-        sitesDialog = new SiteManagerDialog(sitesItem, iconCache);
-
-        anonymousItem = new JCheckBoxMenuItem("Block Anonymous Requests");
-        anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
-        anonymousItem.setMnemonic(KeyEvent.VK_K);
-        anonymousItem.setState(Certificate.UNKNOWN.isBlocked());
-        anonymousItem.addActionListener(anonymousListener);
-
-        JMenuItem logItem = new JMenuItem("View Logs...", iconCache.getIcon(IconCache.Icon.LOG_ICON));
-        logItem.setMnemonic(KeyEvent.VK_L);
-        logItem.addActionListener(logListener);
-        logDialog = new LogDialog(logItem, iconCache);
-
-        JCheckBoxMenuItem notificationsItem = new JCheckBoxMenuItem("Show all notifications");
-        notificationsItem.setToolTipText("Shows all connect/disconnect messages, useful for debugging purposes");
-        notificationsItem.setMnemonic(KeyEvent.VK_S);
-        notificationsItem.setState(prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false));
-        notificationsItem.addActionListener(notificationsListener);
-
-        JMenuItem openItem = new JMenuItem("Open file location", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
-        openItem.setMnemonic(KeyEvent.VK_O);
-        openItem.addActionListener(openListener);
-
-        JMenuItem desktopItem = new JMenuItem("Create Desktop shortcut", iconCache.getIcon(IconCache.Icon.DESKTOP_ICON));
-        desktopItem.setMnemonic(KeyEvent.VK_D);
-        desktopItem.addActionListener(desktopListener);
-
-        advancedMenu.add(sitesItem);
-        advancedMenu.add(anonymousItem);
-        advancedMenu.add(logItem);
-        advancedMenu.add(notificationsItem);
-        advancedMenu.add(new JSeparator());
-        advancedMenu.add(openItem);
-        advancedMenu.add(desktopItem);
-
-
-        JMenuItem reloadItem = new JMenuItem("Reload", iconCache.getIcon(IconCache.Icon.RELOAD_ICON));
-        reloadItem.setMnemonic(KeyEvent.VK_R);
-        reloadItem.addActionListener(reloadListener);
-
-        JMenuItem aboutItem = new JMenuItem("About...", iconCache.getIcon(IconCache.Icon.ABOUT_ICON));
-        aboutItem.setMnemonic(KeyEvent.VK_B);
-        aboutItem.addActionListener(aboutListener);
-        aboutDialog = new AboutDialog(aboutItem, iconCache, name);
-        aboutDialog.addPanelButton(sitesItem);
-        aboutDialog.addPanelButton(logItem);
-        aboutDialog.addPanelButton(openItem);
-
-        if (SystemUtilities.isMac()) {
-            MacUtilities.registerAboutDialog(aboutDialog);
-            MacUtilities.registerQuitHandler(this);
-        }
-
-        JSeparator separator = new JSeparator();
-
-        JCheckBoxMenuItem startupItem = new JCheckBoxMenuItem("Automatically start");
-        startupItem.setMnemonic(KeyEvent.VK_S);
-        startupItem.setState(shortcutCreator.hasStartupShortcut());
-        startupItem.addActionListener(startupListener);
-
-        JMenuItem exitItem = new JMenuItem("Exit", iconCache.getIcon(IconCache.Icon.EXIT_ICON));
-        exitItem.addActionListener(exitListener);
-
-        popup.add(advancedMenu);
-        popup.add(reloadItem);
-        popup.add(aboutItem);
-        popup.add(startupItem);
-        popup.add(separator);
-        popup.add(exitItem);
-
-        tray.setJPopupMenu(popup);*/
     }
 
 
     private final ActionListener notificationsListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
-            prefs.setProperty(Constants.PREFS_NOTIFICATIONS, j.getState());
+            Checkbox j = (Checkbox)e.getSource();
+            prefs.setProperty(Constants.PREFS_NOTIFICATIONS, j.getChecked());
         }
     };
 
@@ -347,8 +266,8 @@ public class TrayManager {
 
     private final ActionListener anonymousListener = e -> {
         boolean checkBoxState = true;
-        if (e.getSource() instanceof JCheckBoxMenuItem) {
-            checkBoxState = ((JCheckBoxMenuItem)e.getSource()).getState();
+        if (e.getSource() instanceof Checkbox) {
+            checkBoxState = ((Checkbox)e.getSource()).getChecked();
         }
 
         log.debug("Block unsigned: {}", checkBoxState);
@@ -416,8 +335,8 @@ public class TrayManager {
     private void shortcutToggle(ActionEvent e, DeployUtilities.ToggleType toggleType) {
         // Assume true in case its a regular JMenuItem
         boolean checkBoxState = true;
-        if (e.getSource() instanceof JCheckBoxMenuItem) {
-            checkBoxState = ((JCheckBoxMenuItem)e.getSource()).getState();
+        if (e.getSource() instanceof Checkbox) {
+            checkBoxState = ((Checkbox)e.getSource()).getChecked();
         }
 
         if (shortcutCreator.getJarPath() == null) {
@@ -447,8 +366,8 @@ public class TrayManager {
             }
         }
 
-        if (e.getSource() instanceof JCheckBoxMenuItem) {
-            ((JCheckBoxMenuItem)e.getSource()).setState(checkBoxState);
+        if (e.getSource() instanceof Checkbox) {
+            ((Checkbox)e.getSource()).setChecked(checkBoxState);
         }
     }
 
@@ -620,7 +539,7 @@ public class TrayManager {
                 SwingUtilities.invokeLater(() -> {
                     boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
                     if (showAllNotifications || level == TrayIcon.MessageType.ERROR) {
-                        //todo
+                        //todo add notification support
                         //tray.displayMessage(caption, text, level);
                     }
                 });

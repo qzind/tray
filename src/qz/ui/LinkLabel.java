@@ -40,6 +40,7 @@ public class LinkLabel extends JLabel {
                 try {
                     // Sense the action based on the content of the text
                     if (text.contains("@")) {
+                        //todo This will cause gtk errors on elementary... I think...
                         Desktop.getDesktop().mail(new URI(text));
                     } else {
                         File filePath = new File(text);

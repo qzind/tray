@@ -348,9 +348,9 @@ public class ShellUtilities {
             }
         } else {
             try {
-                // The default, java recommended usage
-                Desktop d = Desktop.getDesktop();
-                d.open(directory);
+                // Desktop.open was using GTK 2.x, this was in conflict with our GTK 3.x SystemTray implementation
+                // Relying on xdg is less than perfect, replace this if you know a better way
+                Runtime.getRuntime().exec("xdg-open " + directory);
                 return;
             } catch (IOException io) {
                 if (SystemUtilities.isLinux()) {

@@ -34,6 +34,12 @@ import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import dorkbox.systemTray.Checkbox;
+import dorkbox.systemTray.Menu;
+import dorkbox.systemTray.MenuItem;
+import dorkbox.systemTray.Separator;
+import dorkbox.systemTray.SystemTray;
+
 /**
  * Manages the icons and actions associated with the TrayIcon
  *
@@ -49,7 +55,7 @@ public class TrayManager {
     private final IconCache iconCache;
 
     // Custom swing pop-up menu
-    private JXTrayIcon tray;
+    private SystemTray tray;
 
     private ConfirmDialog confirmDialog;
     private GatewayDialog gatewayDialog;
@@ -58,7 +64,7 @@ public class TrayManager {
     private SiteManagerDialog sitesDialog;
 
     // Need a class reference to this so we can set it from the request dialog window
-    private JCheckBoxMenuItem anonymousItem;
+    private Checkbox anonymousItem;
 
     // The name this UI component will use, i.e "QZ Print 1.9.0"
     private final String name;
@@ -83,7 +89,9 @@ public class TrayManager {
 
         prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
 
-        headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || !SystemTray.isSupported();
+        // Currently there is no systemTray.isSupported method
+        // headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || !SystemTray.isSupported();
+        headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false);
         if (headless) {
             log.info("Running in headless mode");
         }
@@ -92,36 +100,26 @@ public class TrayManager {
         shortcutCreator = DeployUtilities.getSystemShortcutCreator();
         shortcutCreator.setShortcutName(Constants.ABOUT_TITLE);
 
-        SystemUtilities.setSystemLookAndFeel();
+        // Todo DON'T FORGET TO ADDRESS THIS
+        // SystemUtilities.setSystemLookAndFeel();
+
+        // Constructor iterates over all images denoted by IconCache.getTypes() and caches them
         iconCache = new IconCache();
 
         if (!headless) {
-            Image blank = new ImageIcon(new byte[1]).getImage();
-            if (SystemUtilities.isWindows()) {
-                tray = new JXTrayIcon(blank);
-            } else if (SystemUtilities.isMac()) {
-                tray = new ClassicTrayIcon(blank);
-            } else {
-                tray = new ModernTrayIcon(blank);
-            }
-
-            // Iterates over all images denoted by IconCache.getTypes() and caches them
-            tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
-            tray.setToolTip(name);
-
             try {
-                SystemTray.getSystemTray().add(tray);
+                tray = SystemTray.getNative();
+                tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON));
+                // tray.setToolTip(name); Not supported by Dorkbox
             }
-            catch(AWTException awt) {
-                log.error("Could not attach tray, forcing headless mode", awt);
+            catch(Exception e) {
+                log.error("Could not attach tray, forcing headless mode", e);
                 headless = true;
             }
         }
 
         // Linux specific tasks
         if (SystemUtilities.isLinux()) {
-            // Fix the tray icon to look proper on Ubuntu
-            UbuntuUtilities.fixTrayIcons(iconCache);
             // Install cert into user's nssdb for Chrome, etc
             LinuxCertificate.installCertificate();
         } else if (SystemUtilities.isWindows()) {
@@ -156,7 +154,72 @@ public class TrayManager {
      * Builds the swing pop-up menu with the specified items
      */
     private void addMenuItems() {
-        JPopupMenu popup = new JPopupMenu();
+        tray = SystemTray.getNative();
+
+        tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON));
+        //systemTray.setToolTipText(name);
+
+        Menu advancedMenu = new Menu("Advanced", iconCache.getImage(IconCache.Icon.SETTINGS_ICON));
+        advancedMenu.setShortcut('a');
+        tray.getMenu().add(advancedMenu);
+        {
+            MenuItem sitesItem = new MenuItem("Site Manager...", iconCache.getImage(IconCache.Icon.SAVED_ICON), savedListener);
+            sitesItem.setShortcut('m');
+            advancedMenu.add(sitesItem);
+            //sitesDialog = new SiteManagerDialog(sitesItem, iconCache);
+
+            Checkbox anonymousItem = new Checkbox("Block Anonymous Requests", anonymousListener);
+            anonymousItem.setShortcut('k');
+            anonymousItem.setChecked(Certificate.UNKNOWN.isBlocked());
+            //anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
+            advancedMenu.add(anonymousItem);
+
+            MenuItem logItem = new MenuItem("View Logs...", iconCache.getImage(IconCache.Icon.LOG_ICON), logListener);
+            sitesItem.setShortcut('l');
+            advancedMenu.add(logItem);
+            //logDialog = new SiteManagerDialog(logItem, iconCache);
+
+            Checkbox notificationsItem = new Checkbox("Show all notifications", notificationsListener);
+            notificationsItem.setShortcut('s');
+            notificationsItem.setChecked(prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false));
+            //anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
+            advancedMenu.add(notificationsItem);
+
+            MenuItem openItem = new MenuItem("Open file location", iconCache.getImage(IconCache.Icon.FOLDER_ICON), openListener);
+            sitesItem.setShortcut('o');
+            advancedMenu.add(openItem);
+
+            MenuItem desktopItem = new MenuItem("Create Desktop shortcut", iconCache.getImage(IconCache.Icon.DESKTOP_ICON), desktopListener);
+            sitesItem.setShortcut('d');
+            advancedMenu.add(desktopItem);
+        }
+
+        MenuItem reloadItem = new MenuItem("Reload", iconCache.getImage(IconCache.Icon.RELOAD_ICON), reloadListener);
+        reloadItem.setShortcut('r');
+        tray.getMenu().add(reloadItem);
+
+        MenuItem aboutItem = new MenuItem("About...", iconCache.getImage(IconCache.Icon.ABOUT_ICON), aboutListener);
+        aboutItem.setShortcut('b');
+        tray.getMenu().add(aboutItem);
+
+        //aboutDialog = new AboutDialog(aboutItem, iconCache, name);
+        //aboutDialog.addPanelButton(sitesItem);
+        //aboutDialog.addPanelButton(logItem);
+        //aboutDialog.addPanelButton(openItem);
+
+        tray.getMenu().add(new Separator());
+
+        Checkbox startupItem = new Checkbox("Automatically start", savedListener);
+        startupItem.setShortcut('s');
+        startupItem.setChecked(shortcutCreator.hasStartupShortcut());
+        //anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
+        tray.getMenu().add(startupItem);
+
+        MenuItem exitItem = new MenuItem("Exit", iconCache.getImage(IconCache.Icon.RELOAD_ICON), exitListener);
+        exitItem.setShortcut('x');
+        tray.getMenu().add(exitItem);
+
+        /*JPopupMenu popup = new JPopupMenu();
 
         JMenu advancedMenu = new JMenu("Advanced");
         advancedMenu.setMnemonic(KeyEvent.VK_A);
@@ -235,7 +298,7 @@ public class TrayManager {
         popup.add(separator);
         popup.add(exitItem);
 
-        tray.setJPopupMenu(popup);
+        tray.setJPopupMenu(popup);*/
     }
 
 
@@ -402,7 +465,8 @@ public class TrayManager {
                     log.info("Denied {} to {}", cert.getCommonName(), prompt);
                     if (gatewayDialog.isPersistent()) {
                         if (Certificate.UNKNOWN.equals(cert)) {
-                            anonymousItem.doClick(); // if always block anonymous requests -> flag menu item
+                            //TODO check this
+                            anonymousItem.setChecked(true); // if always block anonymous requests -> flag menu item
                         } else {
                             blackList(cert);
                         }
@@ -523,7 +587,9 @@ public class TrayManager {
     /** Thread safe method for setting the specified icon */
     private void setIcon(final IconCache.Icon i) {
         if (tray != null) {
-            SwingUtilities.invokeLater(() -> tray.setImage(iconCache.getImage(i, tray.getSize())));
+            //todo add size
+            //SwingUtilities.invokeLater(() -> tray.setImage(iconCache.getImage(i, tray.getSize())));
+            SwingUtilities.invokeLater(() -> tray.setImage(iconCache.getImage(i)));
         }
     }
 
@@ -540,7 +606,8 @@ public class TrayManager {
                 SwingUtilities.invokeLater(() -> {
                     boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
                     if (showAllNotifications || level == TrayIcon.MessageType.ERROR) {
-                        tray.displayMessage(caption, text, level);
+                        //todo
+                        //tray.displayMessage(caption, text, level);
                     }
                 });
             }

@@ -140,8 +140,6 @@ public class TrayManager {
 
         if (tray != null) {
             addMenuItems();
-        } else {
-
         }
     }
 

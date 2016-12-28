@@ -166,7 +166,6 @@ public class TrayManager {
             MenuItem sitesItem = new MenuItem("Site Manager...", iconCache.getImage(IconCache.Icon.SAVED_ICON), savedListener);
             sitesItem.setShortcut('m');
             advancedMenu.add(sitesItem);
-            //sitesDialog = new SiteManagerDialog(sitesItem, iconCache);
 
             Checkbox anonymousItem = new Checkbox("Block Anonymous Requests", anonymousListener);
             anonymousItem.setShortcut('k');
@@ -177,7 +176,6 @@ public class TrayManager {
             MenuItem logItem = new MenuItem("View Logs...", iconCache.getImage(IconCache.Icon.LOG_ICON), logListener);
             sitesItem.setShortcut('l');
             advancedMenu.add(logItem);
-            //logDialog = new SiteManagerDialog(logItem, iconCache);
 
             Checkbox notificationsItem = new Checkbox("Show all notifications", notificationsListener);
             notificationsItem.setShortcut('s');
@@ -203,11 +201,25 @@ public class TrayManager {
         tray.getMenu().add(aboutItem);
 
         aboutDialog = new AboutDialog(null, iconCache, name);
-        //Todo add these
-        //aboutDialog.addPanelButton(sitesItem);
-        //aboutDialog.addPanelButton(logItem);
-        //aboutDialog.addPanelButton(openItem);
+        {
+            JMenuItem siteButton = new JMenuItem("Site Manager...", iconCache.getIcon(IconCache.Icon.SAVED_ICON));
+            siteButton.setMnemonic(KeyEvent.VK_M);
+            siteButton.addActionListener(savedListener);
+            sitesDialog = new SiteManagerDialog(siteButton, iconCache);
 
+            JMenuItem logButton = new JMenuItem("View Logs...", iconCache.getIcon(IconCache.Icon.LOG_ICON));
+            logButton.setMnemonic(KeyEvent.VK_L);
+            logButton.addActionListener(logListener);
+            logDialog = new LogDialog(logButton, iconCache);
+
+            JMenuItem openButton = new JMenuItem("Open file location", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
+            openButton.setMnemonic(KeyEvent.VK_O);
+            openButton.addActionListener(openListener);
+
+            aboutDialog.addPanelButton(siteButton);
+            aboutDialog.addPanelButton(logButton);
+            aboutDialog.addPanelButton(openButton);
+        }
         tray.getMenu().add(new Separator());
 
         Checkbox startupItem = new Checkbox("Automatically start", savedListener);

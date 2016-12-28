@@ -22,7 +22,7 @@ public class AboutDialog extends BasicDialog {
     String name;
 
     public AboutDialog(JMenuItem menuItem, IconCache iconCache, String name) {
-        super(menuItem, iconCache);
+        super(null, "About", iconCache);
         this.name = name;
         initComponents();
     }

@@ -202,7 +202,8 @@ public class TrayManager {
         aboutItem.setShortcut('b');
         tray.getMenu().add(aboutItem);
 
-        //aboutDialog = new AboutDialog(aboutItem, iconCache, name);
+        aboutDialog = new AboutDialog(null, iconCache, name);
+        //Todo add these
         //aboutDialog.addPanelButton(sitesItem);
         //aboutDialog.addPanelButton(logItem);
         //aboutDialog.addPanelButton(openItem);
@@ -215,7 +216,7 @@ public class TrayManager {
         //anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
         tray.getMenu().add(startupItem);
 
-        MenuItem exitItem = new MenuItem("Exit", iconCache.getImage(IconCache.Icon.RELOAD_ICON), exitListener);
+        MenuItem exitItem = new MenuItem("Exit", iconCache.getImage(IconCache.Icon.EXIT_ICON), exitListener);
         exitItem.setShortcut('x');
         tray.getMenu().add(exitItem);
 
@@ -313,7 +314,8 @@ public class TrayManager {
     private final ActionListener openListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
             try {
-                ShellUtilities.browseDirectory(shortcutCreator.getParentDirectory());
+                boolean isGTK3 = System.getProperty("jdk.gtk.version", "2") == "3";
+                ShellUtilities.browseDirectory(shortcutCreator.getParentDirectory(), isGTK3);
             }
             catch(Exception ex) {
                 if (!SystemUtilities.isLinux() || !ShellUtilities.execute(new String[] {"xdg-open", shortcutCreator.getParentDirectory()})) {

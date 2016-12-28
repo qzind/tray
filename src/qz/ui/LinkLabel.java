@@ -44,7 +44,8 @@ public class LinkLabel extends JLabel {
                         Desktop.getDesktop().mail(new URI(text));
                     } else {
                         File filePath = new File(text);
-                        ShellUtilities.browseDirectory(filePath.isDirectory() ? text : filePath.getParent());
+                        //todo fix
+                        //ShellUtilities.browseDirectory(filePath.isDirectory() ? text : filePath.getParent());
                     }
 
                 }
@@ -77,12 +78,13 @@ public class LinkLabel extends JLabel {
         addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
-                    ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent());
-                }
-                catch(IOException ex) {
-                    log.error("", ex);
-                }
+                //try {
+                //    //todo fix
+                //    //ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent());
+                //}
+                //catch(IOException ex) {
+                //    log.error("", ex);
+                //}
             }
         });
     }

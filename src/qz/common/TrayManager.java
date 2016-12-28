@@ -10,11 +10,9 @@
 
 package qz.common;
 
-import dorkbox.systemTray.jna.linux.Gtk;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.jdesktop.swinghelper.tray.JXTrayIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
@@ -22,8 +20,6 @@ import qz.deploy.DeployUtilities;
 import qz.deploy.LinuxCertificate;
 import qz.deploy.WindowsDeploy;
 import qz.ui.*;
-import qz.ui.tray.ClassicTrayIcon;
-import qz.ui.tray.ModernTrayIcon;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;

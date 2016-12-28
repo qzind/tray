@@ -75,13 +75,13 @@ public class LinkLabel extends JLabel {
         addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //try {
-                //    //todo fix
-                //    //ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent());
-                //}
-                //catch(IOException ex) {
-                //    log.error("", ex);
-                //}
+                try {
+                    boolean avoidGTK2 = dorkbox.util.OS.isLinux() && !dorkbox.systemTray.jna.linux.Gtk.isGtk2;
+                    ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent(), avoidGTK2);
+                }
+                catch(IOException ex) {
+                    log.error("", ex);
+                }
             }
         });
     }

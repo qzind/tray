@@ -6,14 +6,14 @@
 
 .btn-primary {
     color: #FFFFFF;
-    background-color: #71B215;
-    border-color: #629B12;
+    background-color: #44AB53;
+    border-color: #3D994A;
 }
 
 .btn-success {
     color: #FFF;
-    background-color: #567928;
-    border-color: #486622;
+    background-color: #2A6831;
+    border-color: #235628;
 }
 
 .btn-warning {
@@ -40,13 +40,13 @@
 }
 
 .btn-primary:hover {
-    background-color: #548410;
-    border-color: #456E0D;
+    background-color: #358741;
+    border-color: #2E7438;
 }
 
 .btn-success:hover {
-    background-color: #3B531B;
-    border-color: #2D4015;
+    background-color: #1B4420;
+    border-color: #143217;
 }
 
 .btn-warning:hover {
@@ -70,13 +70,13 @@
 }
 
 .btn-primary:active {
-    background-color: #548410;
-    border-color: #456E0D;
+    background-color: #358741;
+    border-color: #2E7438;
 }
 
 .btn-success:active {
-    background-color: #3B531B;
-    border-color: #2D4015;
+    background-color: #1B4420;
+    border-color: #143217;
 }
 
 .btn-warning:active {
@@ -100,13 +100,13 @@
 }
 
 .btn-primary.disabled {
-    background-color: #73B715;
-    border-color: #65A013;
+    background-color: #45AF55;
+    border-color: #3E9C4C;
 }
 
 .btn-success.disabled {
-    background-color: #597D29;
-    border-color: #4B6A23;
+    background-color: #2B6C33;
+    border-color: #24592A;
 }
 
 .btn-warning.disabled {
@@ -125,16 +125,16 @@
 }
 
 a {
-    color: #71B215;
+    color: #44AB53;
 }
 
 a:hover,
 a:focus {
-    color: #456E0D;
+    color: #2E7438;
 }
 
 .text-primary {
-    color: #71B215;
+    color: #44AB53;
 }
 
 .text-danger {
@@ -150,7 +150,7 @@ a:focus {
 }
 
 .navbar-default {
-    background-color: #71B215;
+    background-color: #44AB53;
 }
 
 .navbar-default .navbar-nav > li > a,
@@ -166,7 +166,7 @@ a:focus {
 }
 
 .navbar-default .navbar-nav > li > a:hover {
-    background-color: #629B12;
+    background-color: #3D994A;
 }
 
 .navbar-default .navbar-toggle > .icon-bar {
@@ -175,7 +175,7 @@ a:focus {
 
 .navbar-default .navbar-toggle:focus > .icon-bar {
     background-color: #555;
-    color: #456E0D;
+    color: #2E7438;
 }
 
 .navbar-default .navbar-toggle:hover > .icon-bar {
@@ -183,16 +183,16 @@ a:focus {
 }
 
 .navbar-default .navbar-toggle:hover {
-    background-color: #629B12;
+    background-color: #3D994A;
 }
 
 .panel.panel-primary {
-    border-color: #629B12;
+    border-color: #3D994A;
 }
 
 .panel.panel-primary .panel-heading {
-    border-color: #629B12;
-    background-color: #629B12;
+    border-color: #3D994A;
+    background-color: #3D994A;
 }
 
 .alert.alert-warning a {

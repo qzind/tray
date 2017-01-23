@@ -88,6 +88,12 @@ public class WebApp extends Application {
             double scale = 72d / 96d;
             webView.getTransforms().add(new Scale(scale, scale));
 
+            double increase = 96d / 72d;
+            webView.setMinWidth(webView.getWidth() * increase);
+            webView.setPrefWidth(webView.getWidth() * increase);
+            webView.setMaxWidth(webView.getWidth() * increase);
+            webView.autosize();
+
             snap.playFromStart();
         }
     };
@@ -104,11 +110,7 @@ public class WebApp extends Application {
     /** Starts JavaFX thread if not already running */
     public static synchronized void initialize() throws IOException {
         if (instance == null) {
-            new Thread() {
-                public void run() {
-                    Application.launch(WebApp.class);
-                }
-            }.start();
+            new Thread(() -> Application.launch(WebApp.class)).start();
         }
 
         for(int i = 0; i < (TIMEOUT * 1000); i += SLEEP) {
@@ -152,7 +154,7 @@ public class WebApp extends Application {
             try {
                 PageLayout layout = job.getJobSettings().getPageLayout();
                 if (model.isScaled()) {
-                    double scale = 1.0;
+                    double scale;
                     if ((webView.getWidth() / webView.getHeight()) >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
                         scale = layout.getPrintableWidth() / webView.getWidth();
                     } else {

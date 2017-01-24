@@ -1,4 +1,5 @@
 /out/
+/js/node_modules
 /.idea/workspace.xml
 /.idea/uiDesigner.xml
 /.idea/compiler.xml

@@ -163,7 +163,7 @@ public class ByteUtilities {
         }
 
         //include any builder matches below 'count'
-        if (!byteArrayList.contains(builder)) {
+        if (!byteArrayList.contains(builder) && builder.getLength() > 0 ) {
             byteArrayList.add(builder);
         }
 

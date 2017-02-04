@@ -106,7 +106,7 @@ public class TrayManager {
 
         if (!headless) {
             try {
-                tray = SystemTray.getNative();
+                tray = SystemTray.get();
                 tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON));
                 // tray.setToolTip(name); Not supported by Dorkbox (yet)
             }

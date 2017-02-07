@@ -54,7 +54,7 @@ public class LinkLabel extends JLabel {
         initialize();
         addActionListener(e -> {
             try {
-                Desktop.getDesktop().browse(url.toURI());
+                ShellUtilities.browseURL(url.toURI());
             }
             catch(Exception ex) {
                 log.error("", ex);

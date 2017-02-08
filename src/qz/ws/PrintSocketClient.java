@@ -15,10 +15,7 @@ import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
-import qz.utils.NetworkUtilities;
-import qz.utils.PrintingUtilities;
-import qz.utils.SerialUtilities;
-import qz.utils.UsbUtilities;
+import qz.utils.*;
 
 import javax.print.PrintServiceLookup;
 import javax.security.cert.CertificateParsingException;
@@ -328,11 +325,19 @@ public class PrintSocketClient {
                 sendResult(session, UID, UsbUtilities.getInterfaceEndpointsJSON(vendorId, productId, UsbUtilities.hexToByte(params.getString("interface"))));
                 break;
             case HID_LIST_DEVICES:
-                sendResult(session, UID, HidUtilities.getHidDevicesJSON());
+                if (SystemUtilities.isWindows()) {
+                    sendResult(session, UID, PJHA_HidUtilities.getHidDevicesJSON());
+                } else {
+                    sendResult(session, UID, H4J_HidUtilities.getHidDevicesJSON());
+                }
                 break;
             case HID_START_LISTENING:
                 if (!connection.isListening()) {
-                    connection.startListening(new HidListener(session));
+                    if (SystemUtilities.isWindows()) {
+                        connection.startListening(new PJHA_HidListener(session));
+                    } else {
+                        connection.startListening(new H4J_HidListener(session));
+                    }
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, "Already listening HID device events");
@@ -354,7 +359,11 @@ public class PrintSocketClient {
                     if (call == Method.USB_CLAIM_DEVICE) {
                         device = new UsbIO(vendorId, productId, UsbUtilities.hexToByte(params.optString("interface")));
                     } else {
-                        device = new HidIO(vendorId, productId);
+                        if (SystemUtilities.isWindows()) {
+                            device = new PJHA_HidIO(vendorId, productId);
+                        } else {
+                            device = new H4J_HidIO(vendorId, productId);
+                        }
                     }
 
                     if (session.isOpen()) {

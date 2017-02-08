@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.communication.DeviceException;
 import qz.communication.DeviceIO;
-import qz.communication.HidListener;
+import qz.communication.DeviceListener;
 import qz.communication.SerialIO;
 import qz.utils.UsbUtilities;
 
@@ -19,7 +19,7 @@ public class SocketConnection {
 
     private Certificate certificate;
 
-    private HidListener hidListener;
+    private DeviceListener deviceListener;
 
     // serial port -> open SerialIO
     private final HashMap<String,SerialIO> openSerialPorts = new HashMap<>();
@@ -55,18 +55,18 @@ public class SocketConnection {
 
 
     public boolean isListening() {
-        return hidListener != null;
+        return deviceListener != null;
     }
 
-    public void startListening(HidListener listener) {
-        hidListener = listener;
+    public void startListening(DeviceListener listener) {
+        deviceListener = listener;
     }
 
     public void stopListening() {
-        if (hidListener != null) {
-            hidListener.close();
+        if (deviceListener != null) {
+            deviceListener.close();
         }
-        hidListener = null;
+        deviceListener = null;
     }
 
 

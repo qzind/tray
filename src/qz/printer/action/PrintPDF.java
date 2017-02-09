@@ -2,7 +2,6 @@ package qz.printer.action;
 
 import net.sourceforge.iharder.Base64;
 import org.apache.pdfbox.io.IOUtils;
-import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -15,6 +14,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
+import qz.printer.BookBundle;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
@@ -97,38 +97,28 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
 
-        PDDocument masterDoc = new PDDocument();
-        PDFMergerUtility mu = new PDFMergerUtility();
+        BookBundle bundle = new BookBundle();
 
-        try {
-            for(PDDocument doc : pdfs) {
-                for(PDPage pd : doc.getPages()) {
-                    if (pxlOpts.getRotation() % 360 != 0) {
-                        rotatePage(doc, pd, pxlOpts.getRotation());
-                    }
-
-                    if (!attributes.containsKey(OrientationRequested.class) && pxlOpts.getOrientation() != null &&
-                            pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
-                        //force orientation change at data level
-                        pd.setRotation(pxlOpts.getOrientation().getDegreesRot());
-                    }
+        for(PDDocument doc : pdfs) {
+            for(PDPage pd : doc.getPages()) {
+                if (pxlOpts.getRotation() % 360 != 0) {
+                    rotatePage(doc, pd, pxlOpts.getRotation());
                 }
 
-                mu.appendDocument(masterDoc, doc);
+                if (!attributes.containsKey(OrientationRequested.class) && pxlOpts.getOrientation() != null
+                        && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
+                    //force orientation change at data level
+                    pd.setRotation(pxlOpts.getOrientation().getDegreesRot());
+                }
             }
 
-            mu.mergeDocuments(null);
-        }
-        catch(IOException e) {
-            throw new PrinterException(e.getLocalizedMessage());
+            bundle.append(new PDFPrintable(doc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false), page, doc.getNumberOfPages());
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));
-        job.setPrintable(new PDFPrintable(masterDoc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false), page);
+        job.setPrintable(bundle);
 
         printCopies(output, pxlOpts, job, attributes);
-
-        try { masterDoc.close(); } catch(Exception ignore) {}
     }
 
     private void rotatePage(PDDocument doc, PDPage page, double rotation) {

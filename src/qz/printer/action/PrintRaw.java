@@ -120,6 +120,11 @@ public class PrintRaw implements PrintProcessor {
     private ImageWrapper getImageWrapper(String cmd, JSONObject opt) throws IOException, JSONException {
         BufferedImage buf;
 
+        if (cmd.startsWith("data:image/") && cmd.contains(";base64,")) {
+            String[] parts = cmd.split(";base64,");
+            cmd = parts[parts.length - 1];
+        }
+
         if (Base64.isArrayByteBase64(cmd.getBytes())) {
             buf = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(cmd)));
         } else {

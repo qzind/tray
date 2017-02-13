@@ -4,18 +4,18 @@ import org.hid4java.HidDevice;
 
 import javax.usb.util.UsbUtil;
 
-public class HidIO implements DeviceIO {
+public class H4J_HidIO implements DeviceIO {
 
     private HidDevice device;
 
     private boolean streaming;
 
 
-    public HidIO(Short vendorId, Short productId) throws DeviceException {
-        this(HidUtilities.findDevice(vendorId, productId));
+    public H4J_HidIO(Short vendorId, Short productId) throws DeviceException {
+        this(H4J_HidUtilities.findDevice(vendorId, productId));
     }
 
-    public HidIO(HidDevice device) throws DeviceException {
+    public H4J_HidIO(HidDevice device) throws DeviceException {
         if (device == null) {
             throw new DeviceException("HID device could not be found");
         }

@@ -12,14 +12,14 @@ import qz.ws.StreamEvent;
 
 import javax.usb.util.UsbUtil;
 
-public class HidListener implements HidServicesListener {
+public class H4J_HidListener implements DeviceListener, HidServicesListener {
 
-    private static final Logger log = LoggerFactory.getLogger(HidListener.class);
+    private static final Logger log = LoggerFactory.getLogger(H4J_HidListener.class);
 
     private Session session;
 
 
-    public HidListener(Session session) {
+    public H4J_HidListener(Session session) {
         HidManager.getHidServices().addHidServicesListener(this);
 
         this.session = session;
@@ -52,6 +52,7 @@ public class HidListener implements HidServicesListener {
     }
 
 
+    @Override
     public void close() {
         HidManager.getHidServices().removeUsbServicesListener(this);
     }

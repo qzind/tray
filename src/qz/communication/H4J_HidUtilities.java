@@ -12,7 +12,7 @@ import qz.utils.SystemUtilities;
 import javax.usb.util.UsbUtil;
 import java.util.List;
 
-public class HidUtilities {
+public class H4J_HidUtilities {
 
     private static HidServices service = HidManager.getHidServices();
 

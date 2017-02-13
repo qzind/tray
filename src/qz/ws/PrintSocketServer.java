@@ -161,6 +161,7 @@ public class PrintSocketServer {
             }
             catch(Exception e) {
                 e.printStackTrace();
+                trayManager.displayErrorMessage(e.getLocalizedMessage());
             }
         }
     }

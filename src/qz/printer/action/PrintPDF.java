@@ -116,7 +116,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));
-        job.setPrintable(bundle);
+        job.setPageable(bundle.wrapAndPresent());
 
         printCopies(output, pxlOpts, job, attributes);
     }

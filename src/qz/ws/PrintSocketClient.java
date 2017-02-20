@@ -448,7 +448,7 @@ public class PrintSocketClient {
             }
 
             case WEBSOCKET_GET_NETWORK_INFO:
-                sendResult(session, UID, NetworkUtilities.getNetworkJSON());
+                sendResult(session, UID, NetworkUtilities.getNetworkJSON(params.optString("hostname", "google.com"), params.optInt("port", 443)));
                 break;
             case GET_VERSION:
                 sendResult(session, UID, Constants.VERSION);

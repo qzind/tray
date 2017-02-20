@@ -32,10 +32,6 @@ public class NetworkUtilities {
     private String macAddress;
 
 
-    public static NetworkUtilities getInstance() {
-        return getInstance("google.com", 443);
-    }
-
     public static NetworkUtilities getInstance(String hostname, int port) {
         if (instance == null) {
             try {
@@ -83,10 +79,10 @@ public class NetworkUtilities {
     }
 
 
-    public static JSONObject getNetworkJSON() throws JSONException {
+    public static JSONObject getNetworkJSON(String hostname, int port) throws JSONException {
         JSONObject network = new JSONObject();
 
-        NetworkUtilities netUtil = getInstance();
+        NetworkUtilities netUtil = getInstance(hostname, port);
         if (netUtil != null) {
             network.put("ipAddress", netUtil.getInetAddress());
             network.put("macAddress", netUtil.getHardwareAddress());

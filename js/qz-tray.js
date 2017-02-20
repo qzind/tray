@@ -711,12 +711,18 @@ var qz = (function() {
             },
 
             /**
+             * @param {string} [hostname] Hostname to try to connect to when determining network interfaces, defaults to "google.com"
+             * @param {number} [port] Port to use with custom hostname, defaults to 443
+             *
              * @returns {Promise<Object<{ipAddress: String, macAddress: String}>|Error>} Connected system's network information.
              *
              * @memberof qz.websocket
              */
-            getNetworkInfo: function() {
-                return _qz.websocket.dataPromise('websocket.getNetworkInfo');
+            getNetworkInfo: function(hostname, port) {
+                return _qz.websocket.dataPromise('websocket.getNetworkInfo', {
+                    hostname: hostname,
+                    port: port
+                });
             }
 
         },
@@ -1493,7 +1499,8 @@ var qz = (function() {
             qz.api.setSha256Type(function(data) {
                 return crypto.createHash('sha256').update(data).digest('hex');
             });
-        } catch(ignore) {}
+        }
+        catch(ignore) {}
     } else {
         window.qz = qz;
     }

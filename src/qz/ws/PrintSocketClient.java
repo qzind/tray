@@ -47,6 +47,10 @@ public class PrintSocketClient {
         SERIAL_SEND_DATA("serial.sendData", true, "send data over a serial port"),
         SERIAL_CLOSE_PORT("serial.closePort", true, "close a serial port"),
 
+        FILE_OPEN("file.open", true, "open a file"),
+        FILE_SEND_DATA("file.sendData", true, "send data to a file"),
+        FILE_CLOSE("file.close", true, "close a file"),
+
         USB_LIST_DEVICES("usb.listDevices", true, "access USB devices"),
         USB_LIST_INTERFACES("usb.listInterfaces", true, "access USB devices"),
         USB_LIST_ENDPOINTS("usb.listEndpoints", true, "access USB devices"),
@@ -286,6 +290,30 @@ public class PrintSocketClient {
                 PrintingUtilities.processPrintRequest(session, UID, params);
                 break;
 
+            case FILE_OPEN:
+                FileIoUtilities.setupFile(session, UID, connection, params);
+                break;
+            case FILE_SEND_DATA: {
+                FileIO file = connection.getFile(params.optString("path"));
+                if (file != null) {
+                    file.sendData(params.optString("data"), params.getBoolean("append"));
+                    sendResult(session, UID, null);
+                } else {
+                    sendError(session, UID, String.format("File [%s] must be opened first.", params.optString("path")));
+                }
+                break;
+            }
+            case FILE_CLOSE: {
+               FileIO file = connection.getFile(params.optString("path"));
+                if (file != null) {
+                    file.close();
+                    connection.removeFile(params.optString("path"));
+                    sendResult(session, UID, null);
+                } else {
+                    sendError(session, UID, String.format("File [%s] is not open.", params.optString("path")));
+                }
+                break;
+            }
             case SERIAL_FIND_PORTS:
                 sendResult(session, UID, SerialUtilities.getSerialPortsJSON());
                 break;

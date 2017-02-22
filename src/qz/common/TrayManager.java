@@ -107,8 +107,7 @@ public class TrayManager {
                     throw new UnsupportedOperationException("Unable to attach tray for this OS");
                 }
                 tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON));
-                // TODO: Not yet supported
-                // tray.setToolTip(name);
+                tray.setTooltip(name);
             }
             catch(Exception e ) {
                 log.error("Could not initialize tray, forcing headless mode", e);

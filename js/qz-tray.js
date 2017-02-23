@@ -477,7 +477,7 @@ var qz = (function() {
             ws: typeof WebSocket !== 'undefined' ? WebSocket : null,
 
             absolute: function(loc) {
-                if (document && typeof document.createElement === 'function') {
+                if (typeof window !== 'undefined' && typeof document.createElement === 'function') {
                     var a = document.createElement("a");
                     a.href = loc;
                     return a.href;

@@ -162,13 +162,13 @@ public class TrayManager {
             anonymousItem = new Checkbox("Block Anonymous Requests", anonymousListener);
             anonymousItem.setShortcut('k');
             anonymousItem.setChecked(Certificate.UNKNOWN.isBlocked());
-            // TODO: Not yet supported
-            // anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
             advancedMenu.add(anonymousItem);
 
             MenuItem logItem = new MenuItem("View Logs...", iconCache.getImage(IconCache.Icon.LOG_ICON), logListener);
             sitesItem.setShortcut('l');
             advancedMenu.add(logItem);
+
+            advancedMenu.add(new Separator());
 
             MenuItem openItem = new MenuItem("Open file location", iconCache.getImage(IconCache.Icon.FOLDER_ICON), openListener);
             sitesItem.setShortcut('o');
@@ -212,8 +212,6 @@ public class TrayManager {
         Checkbox startupItem = new Checkbox("Automatically start", startupListener);
         startupItem.setShortcut('s');
         startupItem.setChecked(shortcutCreator.hasStartupShortcut());
-        // TODO: Not yet supported
-        // anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
         tray.getMenu().add(startupItem);
 
         MenuItem exitItem = new MenuItem("Exit", iconCache.getImage(IconCache.Icon.EXIT_ICON), exitListener);

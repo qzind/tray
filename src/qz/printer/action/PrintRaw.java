@@ -43,6 +43,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -151,7 +152,9 @@ public class PrintRaw implements PrintProcessor {
         PDDocument doc;
 
         if (fromFile) {
-            doc = PDDocument.load(new URL(data).openStream());
+            URLConnection urlConn = new URL(data).openConnection();
+            urlConn.setRequestProperty("User-Agent", Constants.HTTP_USER_AGENT);
+            doc = PDDocument.load(urlConn.getInputStream());
         } else {
             doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data)));
         }

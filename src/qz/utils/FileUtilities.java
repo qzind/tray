@@ -24,6 +24,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.HashMap;
 
 
@@ -121,7 +122,9 @@ public class FileUtilities {
     }
 
     public static byte[] readRawFile(String url) throws IOException {
-        return readFile(new DataInputStream(new URL(url).openStream()));
+        URLConnection urlConn = new URL(url).openConnection();
+        urlConn.setRequestProperty("User-Agent", Constants.HTTP_USER_AGENT);
+        return readFile(new DataInputStream(urlConn.getInputStream()));
     }
 
     private static byte[] readFile(DataInputStream in) throws IOException {

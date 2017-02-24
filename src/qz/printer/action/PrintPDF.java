@@ -31,6 +31,7 @@ import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.*;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -76,7 +77,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 if (flavor == PrintingUtilities.Flavor.BASE64) {
                     doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data.getString("data"))));
                 } else {
-                    doc = PDDocument.load(new URL(data.getString("data")).openStream());
+                    URLConnection urlConn = new URL(data.getString("data")).openConnection();
+                    urlConn.setRequestProperty("User-Agent", Constants.HTTP_USER_AGENT);
+                    doc = PDDocument.load(urlConn.getInputStream());
                 }
 
                 pdfs.add(doc);

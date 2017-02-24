@@ -37,6 +37,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -123,7 +124,9 @@ public class PrintRaw implements PrintProcessor {
         if (Base64.isArrayByteBase64(cmd.getBytes())) {
             buf = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(cmd)));
         } else {
-            buf = ImageIO.read(new URL(cmd));
+            URLConnection urlConn = new URL(cmd).openConnection();
+            urlConn.setRequestProperty("User-Agent", Constants.HTTP_USER_AGENT);
+            buf = ImageIO.read(urlConn.getInputStream());
         }
 
         ImageWrapper iw = new ImageWrapper(buf, LanguageType.getType(opt.optString("language")));

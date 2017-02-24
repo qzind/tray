@@ -35,6 +35,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -78,7 +79,9 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
                 if (format == PrintingUtilities.Format.BASE64) {
                     bi = ImageIO.read(new ByteArrayInputStream(Base64.decode(data.getString("data"))));
                 } else {
-                    bi = ImageIO.read(new URL(data.getString("data")));
+                    URLConnection urlConn = new URL(data.getString("data")).openConnection();
+                    urlConn.setRequestProperty("User-Agent", Constants.HTTP_USER_AGENT);
+                    bi = ImageIO.read(urlConn.getInputStream());
                 }
 
                 images.add(bi);

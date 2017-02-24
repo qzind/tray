@@ -55,4 +55,10 @@ public class Constants {
     public static final String PDF_PRINT = ABOUT_TITLE + " PDF Print";
     public static final String HTML_PRINT = ABOUT_TITLE + " HTML Print";
 
+    public static final String HTTP_USER_AGENT = String.format("QZTray/%s (%s; %s) Java/%s (%s)",
+            Constants.VERSION,
+            System.getProperty("os.name"),
+            System.getProperty("os.version"),
+            System.getProperty("java.version"),
+            System.getProperty("java.vendor"));
 }

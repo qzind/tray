@@ -3,10 +3,14 @@ package qz.auth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import qz.common.Constants;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 
 /**
@@ -35,10 +39,7 @@ public class CRL {
             new Thread() {
                 @Override
                 public void run() {
-                    log.info("Loading CRL from {}", CRL_URL);
-
-
-                    try(BufferedReader br = new BufferedReader(new InputStreamReader(new URL(CRL_URL).openStream()))) {
+                    try(BufferedReader br = crlReader()) {
                         String line;
                         while((line = br.readLine()) != null) {
                             //Ignore empty and commented lines
@@ -66,5 +67,12 @@ public class CRL {
 
     public boolean isLoaded() {
         return loaded;
+    }
+
+    private static BufferedReader crlReader() throws MalformedURLException, IOException {
+        log.info("Loading CRL from {}", CRL_URL);
+        URLConnection urlConn = new URL(CRL_URL).openConnection();
+        urlConn.setRequestProperty("User-Agent", Constants.HTTP_USER_AGENT);
+        return new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
     }
 }

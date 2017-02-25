@@ -15,6 +15,8 @@ import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
+import qz.printer.status.PrinterStatusMonitor;
+import qz.printer.status.PrinterListener;
 import qz.utils.NetworkUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.SerialUtilities;
@@ -44,6 +46,8 @@ public class PrintSocketClient {
         PRINTERS_GET_DEFAULT("printers.getDefault", true, "access connected printers"),
         PRINTERS_FIND("printers.find", true, "access connected printers"),
         PRINTERS_DETAIL("printers.detail", true, "access connected printers"),
+        PRINTERS_START_LISTENING("printers.startListening", true, "listen for printer status"),
+        PRINTERS_STOP_LISTENING("printers.stopListening", false),
         PRINT("print", true, "print to %s"),
 
         SERIAL_FIND_PORTS("serial.findPorts", true, "access serial ports"),
@@ -295,11 +299,27 @@ public class PrintSocketClient {
             case PRINTERS_DETAIL:
                 sendResult(session, UID, PrintServiceMatcher.getPrintersJSON());
                 break;
-
+            case PRINTERS_START_LISTENING:
+                if (PrinterStatusMonitor.isListening()) {
+                    PrinterStatusMonitor.stopListening();
+                    PrinterStatusMonitor.closeNotificationThreads();
+                }
+                //TODO is the listener really necessary?
+                PrinterStatusMonitor.addStatusListener(new PrinterListener(session));
+                if (PrinterStatusMonitor.launchNotificationThreads(params.getJSONArray("printerNames"))) {
+                    sendResult(session, UID, null);
+                } else {
+                    sendError(session, UID, String.format("Printer(s) \"[%s]\" not found.", params.optString("printerNames")));
+                }
+                break;
+            case PRINTERS_STOP_LISTENING:
+                PrinterStatusMonitor.stopListening();
+                PrinterStatusMonitor.closeNotificationThreads();
+                sendResult(session, UID, null);
+                break;
             case PRINT:
                 PrintingUtilities.processPrintRequest(session, UID, params);
                 break;
-
             case SERIAL_FIND_PORTS:
                 sendResult(session, UID, SerialUtilities.getSerialPortsJSON());
                 break;

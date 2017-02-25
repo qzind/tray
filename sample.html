@@ -112,6 +112,7 @@
                 <li id="serialTab" role="presentation"><a href="#serialContent" role="tab" data-toggle="tab">Serial</a></li>
                 <li id="usbTab" role="presentation"><a href="#usbContent" role="tab" data-toggle="tab">USB</a></li>
                 <li id="hidTab" role="presentation"><a href="#hidContent" role="tab" data-toggle="tab">HID</a></li>
+                <li id="statusTab" role="presentation"><a href="#statusContent" role="tab" data-toggle="tab">Status</a></li>
             </ul>
         </div>
 
@@ -805,6 +806,49 @@
                                 <div class="row">
                                     <div class="col-md-12">
                                         <button type="button" class="btn btn-danger pull-right" onclick="resetHidOptions();">Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><div id="statusContent" class="tab-pane col-md-8">
+                <h3>Printer Status</h3>
+                <hr />
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <div class="btn-toolbar">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-default" onclick="startPrintersListen()">Listen to All Printers</button>
+                                    <button type="button" class="btn btn-default" onclick="startPrintersListen($('#configPrinter').html())">Listen to Current Printer</button>
+                                </div>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-default" onclick="stopPrintersListen()">Stop Listening</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 1em;">
+                    <div class="col-md-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">Event Log</h4>
+                            </div>
+
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div id="printersLog">No logs</div>
+                                    </div>
+                                </div>
+                                <hr />
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <button type="button" class="btn btn-danger pull-right" onclick="clearPrintersLog();">Clear</button>
                                     </div>
                                 </div>
                             </div>
@@ -1662,6 +1706,18 @@
         }).catch(displayError);
     }
 
+    function startPrintersListen(printerName) {
+        qz.printers.startListening(printerName).then(function() {
+            displayMessage("Started listening for printer events");
+        }).catch(displayError);
+    }
+
+    function stopPrintersListen() {
+        qz.printers.stopListening().then(function() {
+            displayMessage("Stopped listening for printer events");
+        }).catch(displayError);
+    }
+
 
     /// Resets ///
     function resetRawOptions() {
@@ -1775,6 +1831,9 @@
         $("#hidStream").val(10);
     }
 
+    function clearPrintersLog() {
+        $("#printersLog").html("No logs");
+    }
 
     /// Page load ///
     $(document).ready(function() {
@@ -1880,6 +1939,23 @@
         }
     });
 
+    qz.printers.setPrinterCallbacks(function(streamEvent) {
+        var printerName = streamEvent.printerName;
+        var color;
+        switch(streamEvent.severity) {
+            case 'INFO':
+                //This should get its color from css, but this code is temperary
+                color = 'black';
+                break;
+            case 'WARN':
+                color = 'brown';
+                break;
+            case 'FATAL':
+                color = 'red';
+        }
+        addPrintersLog(streamEvent.message, color);
+    });
+
     var qzVersion = 0;
     function findVersion() {
         qz.api.getVersion().then(function(data) {
@@ -1928,6 +2004,21 @@
         alert.html("<button type='button' class='close' data-dismiss='alert'>&times;</button>" + msg);
 
         $("#qz-alert").append(alert);
+    }
+
+    //FIXME Should be replaced with traffic-light style indicator with tooltip text
+    function addPrintersLog(msg, color, time) {
+        if (color == undefined) { color = "#000000"; }
+        msg = '<span style="color: ' + color + '">' + new Date($.now()).toString() + ": " + msg + "</span>";
+        var currentText = $("#printersLog").html();
+
+        if (currentText != "No logs") {
+            msg = msg + "<br>" + currentText;
+        }
+
+        msg.substring(0, Math.min(length, 4000));
+
+        $("#printersLog").html(msg);
     }
 
     function pinMessage(msg, id, css) {

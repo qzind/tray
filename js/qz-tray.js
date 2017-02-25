@@ -44,7 +44,7 @@ var qz = (function() {
 
         //stream types
         streams: {
-            serial: 'SERIAL', usb: 'USB', hid: 'HID'
+            serial: 'SERIAL', usb: 'USB', hid: 'HID', printer: 'PRINTER'
         },
 
 
@@ -252,6 +252,11 @@ var qz = (function() {
                                     case _qz.streams.hid:
                                         _qz.hid.callHid(JSON.parse(returned.event));
                                         break;
+                                    case _qz.streams.printer:
+                                        //FIXME Change to trace log, or remove
+                                        _qz.log.info("Received printer status", returned.event);
+                                        _qz.printers.callPrinter(JSON.parse(returned.event));
+                                        break;
                                     default:
                                         _qz.log.warn("Cannot determine stream type for callback", returned);
                                         break;
@@ -413,6 +418,22 @@ var qz = (function() {
                     }
                 } else {
                     _qz.hid.hidCallbacks(streamEvent);
+                }
+            }
+        },
+
+
+        printers: {
+            /** List of functions called when receiving data from printer connection. */
+            printerCallbacks: [],
+            /** Calls all functions registered to listen for printer events. */
+            callPrinter: function(streamEvent) {
+                if (Array.isArray(_qz.printers.sprinterCallbacks)) {
+                    for(var i = 0; i < _qz.printers.printerCallbacks.length; i++) {
+                        _qz.printers.printerCallbacks[i](streamEvent);
+                    }
+                } else {
+                    _qz.printers.printerCallbacks(streamEvent);
                 }
             }
         },
@@ -755,11 +776,63 @@ var qz = (function() {
              * Provides a list, with additional information, for each printer available to QZ.
              *
              * @returns {Promise<Array<Object>|Object|Error>}
+             * @since 2.1.0
              *
              * @memberof qz.printers
              */
             details: function() {
                 return _qz.websocket.dataPromise('printers.detail');
+            },
+
+            /**
+             * Start listening for printer status events, such as paper_jam events.
+             * Reported under the ACTION type in the streamEvent on callbacks.
+             *
+             * @returns {Promise<null|Error>}
+             * @since 2.1.0
+             *
+             * @see qz.printers.setPrinterCallbacks
+             *
+             * @param {null|string|Array<string>} printers list of printers to listen to, null listens to all.
+             *
+             * @memberof qz.printers
+             */
+            startListening: function(printers) {
+                if (!Array.isArray(printers)) printers = [printers];
+                var params = {
+                    printerNames : printers
+                };
+                return _qz.websocket.dataPromise('printers.startListening', params);
+            },
+
+            /**
+             * Stop listening for printer status actions.
+             *
+             * @returns {Promise<null|Error>}
+             * @since 2.1.0
+             *
+             * @see qz.printers.setPrinterCallbacks
+             *
+             * @memberof qz.printers
+             */
+            stopListening: function() {
+                return _qz.websocket.dataPromise('printers.stopListening');
+            },
+
+            /**
+             * List of functions called for any printer status change.
+             * Event data will contain <code>{string} printerName</code> and <code>{string} status</code> for all types.
+             *  For RECEIVE types, <code>{Array} output</code> (in hexadecimal format).
+             *  For ERROR types, <code>{string} exception</code>.
+             *  For ACTION types, <code>{string} actionType</code>.
+             *
+             * @param {Function|Array<Function>} calls Single or array of <code>Function({Object} eventData)</code> calls.
+             * @since 2.1.0
+             *
+             * @memberof qz.printers
+             */
+            setPrinterCallbacks: function(calls) {
+                _qz.printers.printerCallbacks = calls;
             }
         },
 
@@ -941,7 +1014,7 @@ var qz = (function() {
             /**
              * @param {string} port Name of port to open.
              * @param {Object} bounds Boundaries of serial port output.
-             *  @param {string} [bounds.start=0x0002] Character denoting start of serial response. Not used if <code>width</code is provided.
+             *  @param {string} [bounds.start=0x0002] Character denoting start of serial response. Not used if <code>width</code> is provided.
              *  @param {string} [bounds.end=0x000D] Character denoting end of serial response. Not used if <code>width</code> is provided.
              *  @param {number} [bounds.width] Used for fixed-width response serial communication.
              *

@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.utils.ConnectionUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 
@@ -77,9 +78,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 if (flavor == PrintingUtilities.Flavor.BASE64) {
                     doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data.getString("data"))));
                 } else {
-                    URLConnection urlConn = new URL(data.getString("data")).openConnection();
-                    urlConn.setRequestProperty("User-Agent", Constants.HTTP_USER_AGENT);
-                    doc = PDDocument.load(urlConn.getInputStream());
+                    doc = PDDocument.load(ConnectionUtilities.getInputStream(data.getString("data")));
                 }
 
                 pdfs.add(doc);

@@ -28,6 +28,7 @@ import qz.printer.LanguageType;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.ByteUtilities;
+import qz.utils.ConnectionUtilities;
 import qz.utils.FileUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.ShellUtilities;
@@ -152,9 +153,7 @@ public class PrintRaw implements PrintProcessor {
         PDDocument doc;
 
         if (fromFile) {
-            URLConnection urlConn = new URL(data).openConnection();
-            urlConn.setRequestProperty("User-Agent", Constants.HTTP_USER_AGENT);
-            doc = PDDocument.load(urlConn.getInputStream());
+            doc = PDDocument.load(ConnectionUtilities.getInputStream(data));
         } else {
             doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data)));
         }

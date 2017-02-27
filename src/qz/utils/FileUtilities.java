@@ -19,6 +19,7 @@ import org.xml.sax.SAXException;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
 import qz.exception.NullCommandException;
+import qz.utils.ConnectionUtilities;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -122,9 +123,7 @@ public class FileUtilities {
     }
 
     public static byte[] readRawFile(String url) throws IOException {
-        URLConnection urlConn = new URL(url).openConnection();
-        urlConn.setRequestProperty("User-Agent", Constants.HTTP_USER_AGENT);
-        return readFile(new DataInputStream(urlConn.getInputStream()));
+        return readFile(new DataInputStream(ConnectionUtilities.getInputStream(url)));
     }
 
     private static byte[] readFile(DataInputStream in) throws IOException {

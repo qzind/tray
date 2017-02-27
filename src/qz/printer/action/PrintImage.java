@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.utils.ConnectionUtilities;
 import qz.utils.PrintingUtilities;
 
 import javax.imageio.IIOException;
@@ -78,9 +79,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
                 if (flavor == PrintingUtilities.Flavor.BASE64) {
                     bi = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(data.getString("data"))));
                 } else {
-                    URLConnection urlConn = new URL(data.getString("data")).openConnection();
-                    urlConn.setRequestProperty("User-Agent", Constants.HTTP_USER_AGENT);
-                    bi = ImageIO.read(urlConn.getInputStream());
+                    bi = ImageIO.read(ConnectionUtilities.getInputStream(data.getString("data")));
                 }
 
                 images.add(bi);

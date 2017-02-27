@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import qz.common.Constants;
+import qz.utils.ConnectionUtilities;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -71,8 +72,6 @@ public class CRL {
 
     private static BufferedReader crlReader() throws MalformedURLException, IOException {
         log.info("Loading CRL from {}", CRL_URL);
-        URLConnection urlConn = new URL(CRL_URL).openConnection();
-        urlConn.setRequestProperty("User-Agent", Constants.HTTP_USER_AGENT);
-        return new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
+        return new BufferedReader(new InputStreamReader(ConnectionUtilities.getInputStream(CRL_URL)));
     }
 }

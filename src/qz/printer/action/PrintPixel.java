@@ -41,7 +41,6 @@ public abstract class PrintPixel {
         }
         if (pxlOpts.getOrientation() != null) {
             attributes.add(pxlOpts.getOrientation().getAsAttribute());
-            page.setOrientation(pxlOpts.getOrientation().getAsFormat());
         }
 
         //TODO - set paper thickness

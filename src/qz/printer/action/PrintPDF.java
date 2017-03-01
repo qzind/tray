@@ -21,7 +21,6 @@ import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
-import javax.print.attribute.standard.OrientationRequested;
 import java.awt.geom.AffineTransform;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
@@ -105,8 +104,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     rotatePage(doc, pd, pxlOpts.getRotation());
                 }
 
-                if (!attributes.containsKey(OrientationRequested.class) && pxlOpts.getOrientation() != null
-                        && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
+                if (pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
                     //force orientation change at data level
                     pd.setRotation(pxlOpts.getOrientation().getDegreesRot());
                 }

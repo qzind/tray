@@ -13,7 +13,10 @@ import javafx.print.PrinterJob;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.image.WritableImage;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Scale;
+import javafx.scene.transform.Transform;
+import javafx.scene.transform.Translate;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -86,6 +89,7 @@ public class WebApp extends Application {
             webView.getTransforms().add(new Scale(scale, scale));
 
             double increase = 96d / 72d;
+            log.trace("Setting HTML page width to {}", webView.getWidth() * increase);
             webView.setMinWidth(webView.getWidth() * increase);
             webView.setPrefWidth(webView.getWidth() * increase);
             webView.setMaxWidth(webView.getWidth() * increase);
@@ -152,7 +156,38 @@ public class WebApp extends Application {
                     webView.getTransforms().add(new Scale(scale, scale));
                 }
 
-                Platform.runLater(() -> complete.set(job.printPage(webView)));
+                Platform.runLater(() -> {
+                    double useScale = 1;
+                    for(Transform t : webView.getTransforms()) {
+                        if (t instanceof Scale) { useScale *= ((Scale)t).getX(); }
+                    }
+
+                    PageLayout page = job.getJobSettings().getPageLayout();
+                    Rectangle printBounds = new Rectangle(0, 0, page.getPrintableWidth(), page.getPrintableHeight());
+                    log.debug("Paper area: {},{}:{},{}", (int)page.getLeftMargin(), (int)page.getTopMargin(),
+                              (int)page.getPrintableWidth(), (int)page.getPrintableHeight());
+
+                    Translate activePage = new Translate();
+                    webView.getTransforms().add(activePage);
+
+                    int columnsNeed = (int)Math.ceil(webView.getWidth() / printBounds.getWidth() * useScale);
+                    int rowsNeed = (int)Math.ceil(webView.getHeight() / printBounds.getHeight() * useScale);
+                    log.debug("Document will be printed across {} pages", columnsNeed * rowsNeed);
+
+                    for(int row = 0; row < rowsNeed; row++) {
+                        for(int col = 0; col < columnsNeed; col++) {
+                            activePage.setX((-col * printBounds.getWidth()) / useScale);
+                            activePage.setY((-row * printBounds.getHeight()) / useScale);
+
+                            job.printPage(webView);
+                        }
+                    }
+
+                    //reset state
+                    webView.getTransforms().remove(activePage);
+
+                    complete.set(true);
+                });
             }
             catch(Exception e) { thrown.set(e); }
         });

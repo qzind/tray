@@ -97,6 +97,28 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         log.debug("Parsed {} images for printing", images.size());
     }
 
+    private List<BufferedImage> breakupOverPages(BufferedImage img, PageFormat page) {
+        List<BufferedImage> splits = new ArrayList<>();
+
+        Rectangle printBounds = new Rectangle(0, 0, (int)page.getImageableWidth(), (int)page.getImageableHeight());
+
+        int columnsNeed = (int)Math.ceil(img.getWidth() / page.getImageableWidth());
+        int rowsNeed = (int)Math.ceil(img.getHeight() / page.getImageableHeight());
+        log.trace("Image to be printed across {} pages", columnsNeed * rowsNeed);
+
+        for(int row = 0; row < rowsNeed; row++) {
+            for(int col = 0; col < columnsNeed; col++) {
+                Rectangle clip = new Rectangle((col * printBounds.width), (row * printBounds.height), printBounds.width, printBounds.height);
+                if (clip.x + clip.width > img.getWidth()) { clip.width = img.getWidth() - clip.x; }
+                if (clip.y + clip.height > img.getHeight()) { clip.height = img.getHeight() - clip.y; }
+
+                splits.add(img.getSubimage(clip.x, clip.y, clip.width, clip.height));
+            }
+        }
+
+        return splits;
+    }
+
     @Override
     public void print(PrintOutput output, PrintOptions options) throws PrinterException {
         if (images.isEmpty()) {
@@ -114,6 +136,15 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         scaleImage = pxlOpts.isScaleContent();
         interpolation = pxlOpts.getInterpolation();
         imageRotation = pxlOpts.getRotation();
+
+        if (!scaleImage) {
+            //breakup large images to print across pages as needed
+            List<BufferedImage> split = new ArrayList<>();
+            for(BufferedImage bi : images) {
+                split.addAll(breakupOverPages(bi, page));
+            }
+            images = split;
+        }
 
         job.setJobName(pxlOpts.getJobName(Constants.IMAGE_PRINT));
         job.setPrintable(this, job.validatePage(page));

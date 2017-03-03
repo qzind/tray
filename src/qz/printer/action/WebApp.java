@@ -86,8 +86,16 @@ public class WebApp extends Application {
                 webView.autosize();
             }
 
-            //scale web dimensions down to print dpi
-            webView.getTransforms().add(new Scale(WEB_SCALE, WEB_SCALE));
+            //account for difference in print vs web dpi
+            double scale = 72d / 96d;
+            webView.getTransforms().add(new Scale(scale, scale));
+
+            double increase = 96d / 72d;
+            log.trace("Setting HTML page width to {}", webView.getWidth() * increase);
+            webView.setMinWidth(webView.getWidth() * increase);
+            webView.setPrefWidth(webView.getWidth() * increase);
+            webView.setMaxWidth(webView.getWidth() * increase);
+            webView.autosize();
 
             snap.playFromStart();
         }

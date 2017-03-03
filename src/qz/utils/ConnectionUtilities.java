@@ -21,13 +21,14 @@ import qz.common.Constants;
 
 public final class ConnectionUtilities {
 
-    private static final String USER_AGENT = String.format("%s/%s (%s; %s) Java/%s (%s)",
+    private static final String USER_AGENT = String.format("%s/%s (%s; %s; %s) Java/%s (%s)",
         Constants.ABOUT_TITLE.replaceAll("[^a-zA-Z]", ""),
         StringUtils.join(ArrayUtils.subarray(StringUtils.split(Constants.VERSION, "."), 0, 2), "."),
         System.getProperty("os.name"),
         System.getProperty("os.version"),
+        System.getProperty("os.arch"),
         StringUtils.join(ArrayUtils.subarray(StringUtils.split(System.getProperty("java.version"), "."), 0, 2), "."),
-        System.getProperty("java.vendor"));
+        System.getProperty("java.vm.name"));
 
     /**
      * Returns an input stream that reads from the URL.

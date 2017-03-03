@@ -44,6 +44,8 @@ public class WebApp extends Application {
 
     private static final int STARTUP_PAUSE = 5; //number of pauses before assuming failure
 
+    private static final double WEB_SCALE = 72d / 96d;
+
     private static WebApp instance = null;
 
     private static Stage stage;
@@ -72,7 +74,7 @@ public class WebApp extends Application {
                 base.getAttributes().setNamedItem(applied);
             }
 
-            //we have to resize the width first, for responsive html, then calculate the best fit height
+            //width was resized earlier (for responsive html), then calculate the best fit height
             if (pageHeight <= 0) {
                 String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
                 pageHeight = Double.parseDouble(heightText);
@@ -84,16 +86,8 @@ public class WebApp extends Application {
                 webView.autosize();
             }
 
-            //account for difference in print vs web dpi
-            double scale = 72d / 96d;
-            webView.getTransforms().add(new Scale(scale, scale));
-
-            double increase = 96d / 72d;
-            log.trace("Setting HTML page width to {}", webView.getWidth() * increase);
-            webView.setMinWidth(webView.getWidth() * increase);
-            webView.setPrefWidth(webView.getWidth() * increase);
-            webView.setMaxWidth(webView.getWidth() * increase);
-            webView.autosize();
+            //scale web dimensions down to print dpi
+            webView.getTransforms().add(new Scale(WEB_SCALE, WEB_SCALE));
 
             snap.playFromStart();
         }
@@ -148,10 +142,10 @@ public class WebApp extends Application {
                 PageLayout layout = job.getJobSettings().getPageLayout();
                 if (model.isScaled()) {
                     double scale;
-                    if ((webView.getWidth() / webView.getHeight()) >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
-                        scale = layout.getPrintableWidth() / webView.getWidth();
+                    if ((webView.getWidth() / webView.getHeight()) / WEB_SCALE >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
+                        scale = (layout.getPrintableWidth() / webView.getWidth()) / WEB_SCALE;
                     } else {
-                        scale = layout.getPrintableHeight() / webView.getHeight();
+                        scale = (layout.getPrintableHeight() / webView.getHeight()) / WEB_SCALE;
                     }
                     webView.getTransforms().add(new Scale(scale, scale));
                 }

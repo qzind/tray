@@ -491,8 +491,8 @@ public class PrintOptions {
     public enum Orientation {
         PORTRAIT(OrientationRequested.PORTRAIT, PageFormat.PORTRAIT, 0),
         REVERSE_PORTRAIT(OrientationRequested.PORTRAIT, PageFormat.PORTRAIT, 180),
-        LANDSCAPE(OrientationRequested.LANDSCAPE, PageFormat.LANDSCAPE, 90),
-        REVERSE_LANDSCAPE(OrientationRequested.REVERSE_LANDSCAPE, PageFormat.REVERSE_LANDSCAPE, 270);
+        LANDSCAPE(OrientationRequested.LANDSCAPE, PageFormat.LANDSCAPE, 270),
+        REVERSE_LANDSCAPE(OrientationRequested.REVERSE_LANDSCAPE, PageFormat.REVERSE_LANDSCAPE, 90);
 
         private final OrientationRequested asAttribute; //OrientationRequested const
         private final int asFormat; //PageFormat const

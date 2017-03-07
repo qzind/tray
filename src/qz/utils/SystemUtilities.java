@@ -75,6 +75,13 @@ public class SystemUtilities {
         return parent + File.separator + folder;
     }
 
+    /**
+     * Detect 32-bit JVM on 64-bit Windows
+     * @return
+     */
+    public static boolean isWow64() {
+        return isWindows() && System.getProperty("os.arch").contains("amd64") && System.getenv("%PROGRAMFILES(x86)%") != null;
+    }
 
     /**
      * Determine if the current Operating System is Windows

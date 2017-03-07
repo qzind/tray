@@ -80,7 +80,8 @@ public class SystemUtilities {
      * @return
      */
     public static boolean isWow64() {
-        return isWindows() && System.getProperty("os.arch").contains("amd64") && System.getenv("%PROGRAMFILES(x86)%") != null;
+        String arch = System.getProperty("os.arch");
+        return isWindows() && !arch.contains("x86_64") && !arch.contains("amd64") && System.getenv("PROGRAMFILES(x86)") != null;
     }
 
     /**

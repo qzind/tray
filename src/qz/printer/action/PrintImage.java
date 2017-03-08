@@ -140,6 +140,9 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         }
 
 
+        //allows pages view to rotate in different orientations
+        graphics.drawString(" ", 0, 0);
+
         BufferedImage imgToPrint = fixColorModel(images.get(pageIndex));
         if (imageRotation % 360 != 0) {
             imgToPrint = rotate(imgToPrint, imageRotation);

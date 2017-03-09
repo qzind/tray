@@ -70,19 +70,18 @@ public final class ConnectionUtilities {
             return String.format("Macintosh; %s %s", System.getProperty("os.name"), System.getProperty("os.version").replace('.', '_'));
         } else if(SystemUtilities.isLinux()) {
             //detect display manager
-            String displayManager = "";
+            String linuxOS = "";
             String[] parts = StringUtils.split(System.getProperty("awt.toolkit"), ".");
             //assume sun.awt.X11.XToolKit namespace
             if (parts != null && parts.length > 2) {
-                displayManager = parts[2] + "; ";
+                linuxOS = parts[2];
             }
             if (SystemUtilities.isUbuntu()) {
-                return displayManager + "Ubuntu";
+                linuxOS += (linuxOS.isEmpty() ? "" : "; ") + "Ubuntu";
             } else if(SystemUtilities.isFedora()) {
-                return displayManager + "Fedora";
-            } else {
-                return displayManager;
+                linuxOS += (linuxOS.isEmpty()? "" : "; ") + "Fedora";
             }
+            return linuxOS;
         }
         return System.getProperty("os.name");
     }

@@ -3,10 +3,11 @@ package qz.auth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import qz.utils.ConnectionUtilities;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URL;
 import java.util.ArrayList;
 
 /**
@@ -37,8 +38,7 @@ public class CRL {
                 public void run() {
                     log.info("Loading CRL from {}", CRL_URL);
 
-
-                    try(BufferedReader br = new BufferedReader(new InputStreamReader(new URL(CRL_URL).openStream()))) {
+                    try(BufferedReader br = new BufferedReader(new InputStreamReader(ConnectionUtilities.getInputStream(CRL_URL)))) {
                         String line;
                         while((line = br.readLine()) != null) {
                             //Ignore empty and commented lines

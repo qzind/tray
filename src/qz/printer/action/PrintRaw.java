@@ -28,6 +28,7 @@ import qz.printer.LanguageType;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.ByteUtilities;
+import qz.utils.ConnectionUtilities;
 import qz.utils.FileUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.ShellUtilities;
@@ -42,7 +43,6 @@ import javax.print.event.PrintJobListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -139,7 +139,7 @@ public class PrintRaw implements PrintProcessor {
         BufferedImage bi;
 
         if (fromFile) {
-            bi = ImageIO.read(new URL(data));
+            bi = ImageIO.read(ConnectionUtilities.getInputStream(data));
         } else {
             bi = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(data)));
         }
@@ -151,7 +151,7 @@ public class PrintRaw implements PrintProcessor {
         PDDocument doc;
 
         if (fromFile) {
-            doc = PDDocument.load(new URL(data).openStream());
+            doc = PDDocument.load(ConnectionUtilities.getInputStream(data));
         } else {
             doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data)));
         }

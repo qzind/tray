@@ -9,6 +9,7 @@
  */
 package qz.utils;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -73,7 +74,7 @@ public final class ConnectionUtilities {
             String linuxOS = "";
             String[] parts = StringUtils.split(System.getProperty("awt.toolkit"), ".");
             //assume sun.awt.X11.XToolKit namespace
-            if (parts != null && parts.length > 2) {
+            if (!GraphicsEnvironment.isHeadless() && parts != null && parts.length > 2) {
                 linuxOS = parts[2];
             }
             if (SystemUtilities.isUbuntu()) {

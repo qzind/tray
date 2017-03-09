@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.utils.ConnectionUtilities;
 import qz.utils.PrintingUtilities;
 
 import javax.imageio.IIOException;
@@ -35,7 +36,6 @@ import java.awt.print.PrinterJob;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -77,7 +77,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
                 if (flavor == PrintingUtilities.Flavor.BASE64) {
                     bi = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(data.getString("data"))));
                 } else {
-                    bi = ImageIO.read(new URL(data.getString("data")));
+                    bi = ImageIO.read(ConnectionUtilities.getInputStream(data.getString("data")));
                 }
 
                 images.add(bi);

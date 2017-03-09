@@ -35,9 +35,6 @@ public class BookBundle extends Book implements Printable {
                 lastStarted = pageIndex;
             }
 
-            log.debug("Paper area: {},{}:{},{}", (int)format.getImageableX(), (int)format.getImageableY(),
-                      (int)format.getImageableWidth(), (int)format.getImageableHeight());
-
             return printable.print(g, format, pageIndex - lastStarted);
         }
 

@@ -7,7 +7,6 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
-import org.apache.pdfbox.printing.PDFPrintable;
 import org.apache.pdfbox.printing.Scaling;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -16,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.printer.BookBundle;
+import qz.printer.PDFWrapper;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
@@ -24,6 +24,7 @@ import qz.utils.SystemUtilities;
 import javax.print.attribute.PrintRequestAttributeSet;
 import java.awt.geom.AffineTransform;
 import java.awt.print.PageFormat;
+import java.awt.print.Paper;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.*;
@@ -77,6 +78,13 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     }
 
     @Override
+    public PrintRequestAttributeSet applyDefaultSettings(PrintOptions.Pixel pxlOpts, PageFormat page) {
+        //page orient does not set properly on pdfs with orientation requested attribute
+        page.setOrientation(pxlOpts.getOrientation().getAsFormat());
+        return super.applyDefaultSettings(pxlOpts, page);
+    }
+
+    @Override
     public void print(PrintOutput output, PrintOptions options) throws PrinterException {
         if (pdfs.isEmpty()) {
             log.warn("Nothing to print");
@@ -107,12 +115,14 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
 
                 if (pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
-                    //force orientation change at data level
-                    pd.setRotation(pxlOpts.getOrientation().getDegreesRot());
+                    //flip imageable area dimensions when in landscape
+                    Paper repap = page.getPaper();
+                    repap.setImageableArea(repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());
+                    page.setPaper(repap);
                 }
             }
 
-            bundle.append(new PDFPrintable(doc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false), page, doc.getNumberOfPages());
+            bundle.append(new PDFWrapper(doc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false), page, doc.getNumberOfPages());
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));

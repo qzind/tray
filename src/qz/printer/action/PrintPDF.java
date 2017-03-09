@@ -18,6 +18,7 @@ import qz.printer.BookBundle;
 import qz.printer.PDFWrapper;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.utils.ConnectionUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 
@@ -31,7 +32,6 @@ import java.awt.print.Paper;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.*;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -77,7 +77,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 if (flavor == PrintingUtilities.Flavor.BASE64) {
                     doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data.getString("data"))));
                 } else {
-                    doc = PDDocument.load(new URL(data.getString("data")).openStream());
+                    doc = PDDocument.load(ConnectionUtilities.getInputStream(data.getString("data")));
                 }
 
                 pdfs.add(doc);

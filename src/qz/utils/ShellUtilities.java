@@ -332,11 +332,17 @@ public class ShellUtilities {
      *  - Apple tries to launch <code>.app</code> bundle directories as applications rather than browsing contents
      *  - Linux has mixed support for <code>Desktop.getDesktop()</code>.  Adds <code>xdg-open</code> fallback.
      * @param path The directory to browse
+     * @param forceXDGOpen forces xdg-open to avoid GTK version collisions
      * @throws IOException
      */
-    public static void browseDirectory(String path) throws IOException {
+    public static void browseDirectory(String path, boolean forceXDGOpen) throws IOException {
         File directory = new File(path);
-        if (SystemUtilities.isMac()) {
+        if (forceXDGOpen) {
+            // Doing this early dodges an uncatchable gtk error from getdesktop on systems running gtk3
+            if (ShellUtilities.execute(new String[] {"xdg-open", path})) {
+                return;
+            }
+        } else if (SystemUtilities.isMac()) {
             // Mac tries to open the .app rather than browsing it.  Instead, pass a child with -R to select it in finder
             File[] files = directory.listFiles();
             if (files != null && files.length > 0) {

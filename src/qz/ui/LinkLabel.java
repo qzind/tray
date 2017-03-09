@@ -34,22 +34,27 @@ public class LinkLabel extends JLabel {
     public LinkLabel(final String text) {
         super(linkify(text));
         initialize();
-        addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    // Sense the action based on the content of the text
-                    if (text.contains("@")) {
-                        Desktop.getDesktop().mail(new URI(text));
-                    } else {
-                        File filePath = new File(text);
-                        ShellUtilities.browseDirectory(filePath.isDirectory() ? text : filePath.getParent());
+        addActionListener(e -> {
+            try {
+                // Sense the action based on the content of the text
+                if (text.contains("@")) {
+                    if (dorkbox.systemTray.jna.linux.Gtk.isGtk3) {
+                        if (ShellUtilities.execute(new String[] {"xdg-email", new URI(text).toString()})) {
+                            return;
+                        }
                     }
+                    else {
+                        Desktop.getDesktop().mail(new URI(text));
+                    }
+                } else {
+                    File filePath = new File(text);
+                    boolean avoidGTK2 = dorkbox.systemTray.jna.linux.Gtk.isGtk3;
+                    ShellUtilities.browseDirectory(filePath.isDirectory() ? text : filePath.getParent(), avoidGTK2);
+                }
 
-                }
-                catch(Exception ex) {
-                    log.error("", ex);
-                }
+            }
+            catch(Exception ex) {
+                log.error("", ex);
             }
         });
     }
@@ -77,7 +82,8 @@ public class LinkLabel extends JLabel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent());
+                    boolean avoidGTK2 = dorkbox.systemTray.jna.linux.Gtk.isGtk3;
+                    ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent(), avoidGTK2);
                 }
                 catch(IOException ex) {
                     log.error("", ex);

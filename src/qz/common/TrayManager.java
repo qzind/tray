@@ -13,7 +13,6 @@ package qz.common;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.jdesktop.swinghelper.tray.JXTrayIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
@@ -21,8 +20,6 @@ import qz.deploy.DeployUtilities;
 import qz.deploy.LinuxCertificate;
 import qz.deploy.WindowsDeploy;
 import qz.ui.*;
-import qz.ui.tray.ClassicTrayIcon;
-import qz.ui.tray.ModernTrayIcon;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
@@ -33,6 +30,12 @@ import java.awt.event.*;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import dorkbox.systemTray.Checkbox;
+import dorkbox.systemTray.Menu;
+import dorkbox.systemTray.MenuItem;
+import dorkbox.systemTray.Separator;
+import dorkbox.systemTray.SystemTray;
 
 /**
  * Manages the icons and actions associated with the TrayIcon
@@ -49,7 +52,7 @@ public class TrayManager {
     private final IconCache iconCache;
 
     // Custom swing pop-up menu
-    private JXTrayIcon tray;
+    private SystemTray tray;
 
     private ConfirmDialog confirmDialog;
     private GatewayDialog gatewayDialog;
@@ -58,7 +61,7 @@ public class TrayManager {
     private SiteManagerDialog sitesDialog;
 
     // Need a class reference to this so we can set it from the request dialog window
-    private JCheckBoxMenuItem anonymousItem;
+    private Checkbox anonymousItem;
 
     // The name this UI component will use, i.e "QZ Print 1.9.0"
     private final String name;
@@ -83,7 +86,7 @@ public class TrayManager {
 
         prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
 
-        headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || !SystemTray.isSupported();
+        headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false);
         if (headless) {
             log.info("Running in headless mode");
         }
@@ -92,36 +95,33 @@ public class TrayManager {
         shortcutCreator = DeployUtilities.getSystemShortcutCreator();
         shortcutCreator.setShortcutName(Constants.ABOUT_TITLE);
 
-        SystemUtilities.setSystemLookAndFeel();
+        // TODO: DON'T FORGET TO ADDRESS THIS. It causes a gtk2 vs 3 error on elementaryOS
+        // This at least mitigates the problem, still need to fix
+        if (!dorkbox.systemTray.jna.linux.Gtk.isGtk3) {
+            SystemUtilities.setSystemLookAndFeel();
+        }
+
+        // Constructor iterates over all images denoted by IconCache.getTypes() and caches them
         iconCache = new IconCache();
 
         if (!headless) {
-            Image blank = new ImageIcon(new byte[1]).getImage();
-            if (SystemUtilities.isWindows()) {
-                tray = new JXTrayIcon(blank);
-            } else if (SystemUtilities.isMac()) {
-                tray = new ClassicTrayIcon(blank);
-            } else {
-                tray = new ModernTrayIcon(blank);
-            }
-
-            // Iterates over all images denoted by IconCache.getTypes() and caches them
-            tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
-            tray.setToolTip(name);
-
             try {
-                SystemTray.getSystemTray().add(tray);
+                tray = SystemTray.get();
+                tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON));
+                // tray.setToolTip(name); Not supported by Dorkbox (yet)
             }
-            catch(AWTException awt) {
-                log.error("Could not attach tray, forcing headless mode", awt);
+            catch(Exception e ) {
+                log.error("Could not initialize tray, forcing headless mode", e);
+                headless = true;
+            }
+            if (!headless && (tray == null)) {
+                log.error("Unknown tray init error, most likely unsupported os, Forcing headless mode");
                 headless = true;
             }
         }
 
         // Linux specific tasks
         if (SystemUtilities.isLinux()) {
-            // Fix the tray icon to look proper on Ubuntu
-            UbuntuUtilities.fixTrayIcons(iconCache);
             // Install cert into user's nssdb for Chrome, etc
             LinuxCertificate.installCertificate();
         } else if (SystemUtilities.isWindows()) {
@@ -156,101 +156,93 @@ public class TrayManager {
      * Builds the swing pop-up menu with the specified items
      */
     private void addMenuItems() {
-        JPopupMenu popup = new JPopupMenu();
+        Menu advancedMenu = new Menu("Advanced", iconCache.getImage(IconCache.Icon.SETTINGS_ICON));
+        advancedMenu.setShortcut('a');
+        tray.getMenu().add(advancedMenu);
+        {
+            MenuItem sitesItem = new MenuItem("Site Manager...", iconCache.getImage(IconCache.Icon.SAVED_ICON), savedListener);
+            sitesItem.setShortcut('m');
+            advancedMenu.add(sitesItem);
 
-        JMenu advancedMenu = new JMenu("Advanced");
-        advancedMenu.setMnemonic(KeyEvent.VK_A);
-        advancedMenu.setIcon(iconCache.getIcon(IconCache.Icon.SETTINGS_ICON));
+            anonymousItem = new Checkbox("Block Anonymous Requests", anonymousListener);
+            anonymousItem.setShortcut('k');
+            anonymousItem.setChecked(Certificate.UNKNOWN.isBlocked());
+            //anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
+            advancedMenu.add(anonymousItem);
 
-        JMenuItem sitesItem = new JMenuItem("Site Manager...", iconCache.getIcon(IconCache.Icon.SAVED_ICON));
-        sitesItem.setMnemonic(KeyEvent.VK_M);
-        sitesItem.addActionListener(savedListener);
-        sitesDialog = new SiteManagerDialog(sitesItem, iconCache);
+            MenuItem logItem = new MenuItem("View Logs...", iconCache.getImage(IconCache.Icon.LOG_ICON), logListener);
+            sitesItem.setShortcut('l');
+            advancedMenu.add(logItem);
 
-        anonymousItem = new JCheckBoxMenuItem("Block Anonymous Requests");
-        anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
-        anonymousItem.setMnemonic(KeyEvent.VK_K);
-        anonymousItem.setState(Certificate.UNKNOWN.isBlocked());
-        anonymousItem.addActionListener(anonymousListener);
+            Checkbox notificationsItem = new Checkbox("Show all notifications", notificationsListener);
+            notificationsItem.setShortcut('s');
+            notificationsItem.setChecked(prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false));
+            //anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
+            advancedMenu.add(notificationsItem);
 
-        JMenuItem logItem = new JMenuItem("View Logs...", iconCache.getIcon(IconCache.Icon.LOG_ICON));
-        logItem.setMnemonic(KeyEvent.VK_L);
-        logItem.addActionListener(logListener);
-        logDialog = new LogDialog(logItem, iconCache);
+            MenuItem openItem = new MenuItem("Open file location", iconCache.getImage(IconCache.Icon.FOLDER_ICON), openListener);
+            sitesItem.setShortcut('o');
+            advancedMenu.add(openItem);
 
-        JCheckBoxMenuItem notificationsItem = new JCheckBoxMenuItem("Show all notifications");
-        notificationsItem.setToolTipText("Shows all connect/disconnect messages, useful for debugging purposes");
-        notificationsItem.setMnemonic(KeyEvent.VK_S);
-        notificationsItem.setState(prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false));
-        notificationsItem.addActionListener(notificationsListener);
-
-        JMenuItem openItem = new JMenuItem("Open file location", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
-        openItem.setMnemonic(KeyEvent.VK_O);
-        openItem.addActionListener(openListener);
-
-        JMenuItem desktopItem = new JMenuItem("Create Desktop shortcut", iconCache.getIcon(IconCache.Icon.DESKTOP_ICON));
-        desktopItem.setMnemonic(KeyEvent.VK_D);
-        desktopItem.addActionListener(desktopListener);
-
-        advancedMenu.add(sitesItem);
-        advancedMenu.add(anonymousItem);
-        advancedMenu.add(logItem);
-        advancedMenu.add(notificationsItem);
-        advancedMenu.add(new JSeparator());
-        advancedMenu.add(openItem);
-        advancedMenu.add(desktopItem);
-
-
-        JMenuItem reloadItem = new JMenuItem("Reload", iconCache.getIcon(IconCache.Icon.RELOAD_ICON));
-        reloadItem.setMnemonic(KeyEvent.VK_R);
-        reloadItem.addActionListener(reloadListener);
-
-        JMenuItem aboutItem = new JMenuItem("About...", iconCache.getIcon(IconCache.Icon.ABOUT_ICON));
-        aboutItem.setMnemonic(KeyEvent.VK_B);
-        aboutItem.addActionListener(aboutListener);
-        aboutDialog = new AboutDialog(aboutItem, iconCache, name);
-        aboutDialog.addPanelButton(sitesItem);
-        aboutDialog.addPanelButton(logItem);
-        aboutDialog.addPanelButton(openItem);
-
-        if (SystemUtilities.isMac()) {
-            MacUtilities.registerAboutDialog(aboutDialog);
-            MacUtilities.registerQuitHandler(this);
+            MenuItem desktopItem = new MenuItem("Create Desktop shortcut", iconCache.getImage(IconCache.Icon.DESKTOP_ICON), desktopListener);
+            sitesItem.setShortcut('d');
+            advancedMenu.add(desktopItem);
         }
 
-        JSeparator separator = new JSeparator();
+        MenuItem reloadItem = new MenuItem("Reload", iconCache.getImage(IconCache.Icon.RELOAD_ICON), reloadListener);
+        reloadItem.setShortcut('r');
+        tray.getMenu().add(reloadItem);
 
-        JCheckBoxMenuItem startupItem = new JCheckBoxMenuItem("Automatically start");
-        startupItem.setMnemonic(KeyEvent.VK_S);
-        startupItem.setState(shortcutCreator.hasStartupShortcut());
-        startupItem.addActionListener(startupListener);
+        MenuItem aboutItem = new MenuItem("About...", iconCache.getImage(IconCache.Icon.ABOUT_ICON), aboutListener);
+        aboutItem.setShortcut('b');
+        tray.getMenu().add(aboutItem);
 
-        JMenuItem exitItem = new JMenuItem("Exit", iconCache.getIcon(IconCache.Icon.EXIT_ICON));
-        exitItem.addActionListener(exitListener);
+        aboutDialog = new AboutDialog(iconCache, name);
+        {
+            JMenuItem siteButton = new JMenuItem("Site Manager...", iconCache.getIcon(IconCache.Icon.SAVED_ICON));
+            siteButton.setMnemonic(KeyEvent.VK_M);
+            siteButton.addActionListener(savedListener);
+            sitesDialog = new SiteManagerDialog(siteButton, iconCache);
 
-        popup.add(advancedMenu);
-        popup.add(reloadItem);
-        popup.add(aboutItem);
-        popup.add(startupItem);
-        popup.add(separator);
-        popup.add(exitItem);
+            JMenuItem logButton = new JMenuItem("View Logs...", iconCache.getIcon(IconCache.Icon.LOG_ICON));
+            logButton.setMnemonic(KeyEvent.VK_L);
+            logButton.addActionListener(logListener);
+            logDialog = new LogDialog(logButton, iconCache);
 
-        tray.setJPopupMenu(popup);
+            JMenuItem openButton = new JMenuItem("Open file location", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
+            openButton.setMnemonic(KeyEvent.VK_O);
+            openButton.addActionListener(openListener);
+
+            aboutDialog.addPanelButton(siteButton);
+            aboutDialog.addPanelButton(logButton);
+            aboutDialog.addPanelButton(openButton);
+        }
+        tray.getMenu().add(new Separator());
+
+        Checkbox startupItem = new Checkbox("Automatically start", startupListener);
+        startupItem.setShortcut('s');
+        startupItem.setChecked(shortcutCreator.hasStartupShortcut());
+        //anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
+        tray.getMenu().add(startupItem);
+
+        MenuItem exitItem = new MenuItem("Exit", iconCache.getImage(IconCache.Icon.EXIT_ICON), exitListener);
+        exitItem.setShortcut('x');
+        tray.getMenu().add(exitItem);
     }
 
 
     private final ActionListener notificationsListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
-            prefs.setProperty(Constants.PREFS_NOTIFICATIONS, j.getState());
+            Checkbox j = (Checkbox)e.getSource();
+            prefs.setProperty(Constants.PREFS_NOTIFICATIONS, j.getChecked());
         }
     };
 
     private final ActionListener openListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
             try {
-                ShellUtilities.browseDirectory(shortcutCreator.getParentDirectory());
+                ShellUtilities.browseDirectory(shortcutCreator.getParentDirectory(), dorkbox.systemTray.jna.linux.Gtk.isGtk3);
             }
             catch(Exception ex) {
                 if (!SystemUtilities.isLinux() || !ShellUtilities.execute(new String[] {"xdg-open", shortcutCreator.getParentDirectory()})) {
@@ -270,8 +262,8 @@ public class TrayManager {
 
     private final ActionListener anonymousListener = e -> {
         boolean checkBoxState = true;
-        if (e.getSource() instanceof JCheckBoxMenuItem) {
-            checkBoxState = ((JCheckBoxMenuItem)e.getSource()).getState();
+        if (e.getSource() instanceof Checkbox) {
+            checkBoxState = ((Checkbox)e.getSource()).getChecked();
         }
 
         log.debug("Block unsigned: {}", checkBoxState);
@@ -339,8 +331,8 @@ public class TrayManager {
     private void shortcutToggle(ActionEvent e, DeployUtilities.ToggleType toggleType) {
         // Assume true in case its a regular JMenuItem
         boolean checkBoxState = true;
-        if (e.getSource() instanceof JCheckBoxMenuItem) {
-            checkBoxState = ((JCheckBoxMenuItem)e.getSource()).getState();
+        if (e.getSource() instanceof Checkbox) {
+            checkBoxState = ((Checkbox)e.getSource()).getChecked();
         }
 
         if (shortcutCreator.getJarPath() == null) {
@@ -370,8 +362,8 @@ public class TrayManager {
             }
         }
 
-        if (e.getSource() instanceof JCheckBoxMenuItem) {
-            ((JCheckBoxMenuItem)e.getSource()).setState(checkBoxState);
+        if (e.getSource() instanceof Checkbox) {
+            ((Checkbox)e.getSource()).setChecked(checkBoxState);
         }
     }
 
@@ -402,7 +394,8 @@ public class TrayManager {
                     log.info("Denied {} to {}", cert.getCommonName(), prompt);
                     if (gatewayDialog.isPersistent()) {
                         if (Certificate.UNKNOWN.equals(cert)) {
-                            anonymousItem.doClick(); // if always block anonymous requests -> flag menu item
+                            anonymousItem.setChecked(true); // if always block anonymous requests -> flag menu item
+                            anonymousListener.actionPerformed(new ActionEvent(anonymousItem, ActionEvent.ACTION_PERFORMED, ""));
                         } else {
                             blackList(cert);
                         }
@@ -523,7 +516,7 @@ public class TrayManager {
     /** Thread safe method for setting the specified icon */
     private void setIcon(final IconCache.Icon i) {
         if (tray != null) {
-            SwingUtilities.invokeLater(() -> tray.setImage(iconCache.getImage(i, tray.getSize())));
+            tray.setImage(iconCache.getImage(i, new Dimension(32,32)));
         }
     }
 
@@ -540,7 +533,8 @@ public class TrayManager {
                 SwingUtilities.invokeLater(() -> {
                     boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
                     if (showAllNotifications || level == TrayIcon.MessageType.ERROR) {
-                        tray.displayMessage(caption, text, level);
+                        // TODO: add notification support to dorkbox.systemtray
+                        // tray.displayMessage(caption, text, level);
                     }
                 });
             }

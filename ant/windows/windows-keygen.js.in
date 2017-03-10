@@ -336,8 +336,16 @@ function getFirefoxInstall() {
     var firefoxKey = "HKLM\\Software\\Mozilla\\Mozilla Firefox";
     var firefoxVer = getRegValue(firefoxKey + "\\");
     if (!firefoxVer) {
-        debug(" - [skipped] Firefox was not detected");
-        return false;
+        // Look for Extended Support Release
+        firefoxVer = getRegValue(firefoxKey + " ESR\\");
+        if (firefoxVer) {
+            firefoxVer += " ESR";
+            debug(" - [success] Found Firefox " + firefoxVer);
+        }
+        else {
+            debug(" - [skipped] Firefox was not detected");
+            return false;
+        }
     } else {
         debug(" - [success] Found Firefox " + firefoxVer);
     }

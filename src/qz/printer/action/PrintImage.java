@@ -20,7 +20,6 @@ import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
-import sun.print.PeekGraphics;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -134,7 +133,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         }
         log.trace("Requested page {} for printing", pageIndex);
 
-        if (graphics instanceof PeekGraphics) {
+        if (graphics.getClass().getCanonicalName().equals("sun.print.PeekGraphics")) {
             //java uses class only to query if a page needs printed - save memory/time by short circuiting
             return PAGE_EXISTS;
         }

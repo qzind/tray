@@ -258,6 +258,7 @@ function createJavaKeystore() {
         // Handle CN=${jks.cn} override
         if (cn != "${jks.cn}") {
             makeKeyStore = makeKeyStore.replace("CN=${jks.cn},", "CN=" + cn + ",");
+            makeKeyStore = makeKeyStore.replace(" -ext san=dns:${jks.cn},dns:${jks.cnalt}", "");
         }
     }
 

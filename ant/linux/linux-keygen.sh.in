@@ -52,7 +52,10 @@ makekeystore="${makekeystore/$keystore/$keystorepath}"
 if [ -n "$1" ]; then
     cname="CN=${jks.cn},"
     override="CN=$1,"
+    san=" -ext san=dns:${jks.cn},dns:${jks.cnalt}"
+    blank=""
     makekeystore="${makekeystore/$cname/$override}"
+    makekeystore="${makekeystore/$san/$blank}"
 fi
 
 # Cert export variable substitutions

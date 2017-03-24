@@ -166,6 +166,8 @@ function remove_certs {
 if [ -n "$2" ]; then 
     cname="${jks.cn}"
     makekeystore=$(echo "$makekeystore" | sed -e "s|$cname|$2|g")
+    san=" -ext san=dns:${jks.cn},dns:${jks.cnalt}"
+    makekeystore=$(echo "$makekeystore" | sed -e "s|$san||g")
 fi
 
 #

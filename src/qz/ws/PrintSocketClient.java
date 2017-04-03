@@ -23,7 +23,7 @@ import javax.usb.util.UsbUtil;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.Semaphore;
 
 
 @WebSocket
@@ -32,7 +32,7 @@ public class PrintSocketClient {
     private static final Logger log = LoggerFactory.getLogger(PrintSocketClient.class);
 
     private final TrayManager trayManager = PrintSocketServer.getTrayManager();
-    private static final AtomicBoolean dialogOpen = new AtomicBoolean(false);
+    private static final Semaphore dialogAvailable = new Semaphore(1, true);
 
     //websocket port -> Connection
     private static final HashMap<Integer,SocketConnection> openConnections = new HashMap<>();
@@ -462,14 +462,12 @@ public class PrintSocketClient {
 
     private boolean allowedFromDialog(Certificate certificate, String prompt) {
         //wait until previous prompts are closed
-        while(dialogOpen.get()) {
-            try { Thread.sleep(1000); } catch(Exception ignore) {}
-        }
+        try { dialogAvailable.acquire(); } catch(InterruptedException ignore) {}
 
-        dialogOpen.set(true);
         //prompt user for access
         boolean allowed = trayManager.showGatewayDialog(certificate, prompt);
-        dialogOpen.set(false);
+
+        dialogAvailable.release();
 
         return allowed;
     }

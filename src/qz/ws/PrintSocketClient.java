@@ -462,7 +462,13 @@ public class PrintSocketClient {
 
     private boolean allowedFromDialog(Certificate certificate, String prompt) {
         //wait until previous prompts are closed
-        try { dialogAvailable.acquire(); } catch(InterruptedException ignore) {}
+        try {
+            dialogAvailable.acquire();
+        }
+        catch(InterruptedException e) {
+            log.warn("Failed to acquire dialog", e);
+            return false;
+        }
 
         //prompt user for access
         boolean allowed = trayManager.showGatewayDialog(certificate, prompt);

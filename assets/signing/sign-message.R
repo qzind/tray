@@ -35,9 +35,8 @@ key <- read_key(file = mykey,
                 password = mypass)
 
 # Create the signature
-sig <-
-  signature_create(serialize(message, NULL), 
-                   key = key, 
-                   password = mypass)
+sig <- signature_create(serialize(message, NULL), 
+                        key = key, 
+                        password = mypass)
 
 print(sig)

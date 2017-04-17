@@ -1,5 +1,6 @@
 package qz.printer.action;
 
+import com.github.zafarkhaja.semver.Version;
 import net.sourceforge.iharder.Base64;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -89,8 +90,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page);
 
-        if (SystemUtilities.isMac()) {
-            log.warn("OSX cannot use attributes with PDF prints, disabling");
+        // Disable attributes per https://github.com/qzind/tray/issues/174
+        if (SystemUtilities.isMac() && Constants.JAVA_VERSION.lessThan(Version.valueOf("1.8.0-152"))) {
+            log.warn("MacOS and Java < 8u152 cannot use attributes with PDF prints, disabling");
             attributes.clear();
         }
 

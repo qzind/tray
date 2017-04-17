@@ -31,12 +31,9 @@ mypass <- "S3cur3P@ssw0rd"
 message <- enc2utf8(commandArgs(trailingOnly = TRUE))
 
 # Load the private key
-key <- read_key(file = mykey,
-                password = mypass)
+key <- read_key(file = mykey, password = mypass)
 
 # Create the signature
-sig <- signature_create(serialize(message, NULL), 
-                        key = key, 
-                        password = mypass)
+sig <- signature_create(serialize(message, NULL), key = key, password = mypass)
 
 print(sig)

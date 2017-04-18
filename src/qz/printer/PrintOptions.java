@@ -216,7 +216,7 @@ public class PrintOptions {
             try { defOptions.density = configOpts.getDouble("fallbackDensity"); }
             catch(JSONException e) {
                 warn("double", "fallbackDensity", configOpts.opt("fallbackDensity"));
-                defOptions.density = 600;
+                defOptions.density = new PrinterResolution(600, 600, ResolutionSyntax.DPI).getFeedResolution(psOptions.getUnits().getDPIUnits());
             }
         }
         if (psOptions.isRasterize() && psOptions.getDensity() == 0) {

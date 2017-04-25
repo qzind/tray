@@ -162,12 +162,31 @@ function remove_certs {
 	return 1
 }
 
+# Check for IPv4 address
+function ip4 {
+    if [[ $1 =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        return 0
+    fi
+    return 1
+}
+
 # Handle CN=${jks.cn} override
-if [ -n "$2" ]; then 
-    cname="${jks.cn}"
-    makekeystore=$(echo "$makekeystore" | sed -e "s|$cname|$2|g")
-    san=" -ext san=dns:${jks.cn},dns:${jks.cnalt}"
-    makekeystore=$(echo "$makekeystore" | sed -e "s|$san||g")
+if [ -n "$2" ]; then
+    cname="CN=${jks.cn},"
+    newcname="CN=$2,"
+    san="san=dns:${jks.cn},"
+    newsan="san=dns:$2,"
+    newipsan="san=ip:$2,"
+    cnalt=",dns:${jks.cnalt}"
+    newcnalt=""
+
+    makekeystore=$(echo "$makekeystore" | sed -e "s|$cname|$newcname|g")
+    if ip4 "$2"; then
+        makekeystore=$(echo "$makekeystore" | sed -e "s|$san|$newipsan|g")
+    else
+        makekeystore=$(echo "$makekeystore" | sed -e "s|$san|$newsan|g")
+    fi
+    makekeystore=$(echo "$makekeystore" | sed -e "s|$cnalt|$newcnalt|g")
 fi
 
 #

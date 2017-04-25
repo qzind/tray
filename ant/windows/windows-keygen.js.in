@@ -257,8 +257,18 @@ function createJavaKeystore() {
 
         // Handle CN=${jks.cn} override
         if (cn != "${jks.cn}") {
+            // Replace "${jks.cn}" with override value
             makeKeyStore = makeKeyStore.replace("CN=${jks.cn},", "CN=" + cn + ",");
-            makeKeyStore = makeKeyStore.replace(" -ext san=dns:${jks.cn},dns:${jks.cnalt}", "");
+
+            // Use "san=ip:" versus "san=dns:"
+            if (isIp4(cn)) {
+                makeKeyStore = makeKeyStore.replace("san=dns:${jks.cn},", "san=ip:" + cn + ",");
+            } else {
+                makeKeyStore = makeKeyStore.replace("san=dns:${jks.cn},", "san=dns:" + cn + ",");
+            }
+
+            // Strip "${jks.cnalt}"
+            makeKeyStore = makeKeyStore.replace(",dns:${jks.cnalt}", "");
         }
     }
 
@@ -603,6 +613,21 @@ function isVendorMatch(certData) {
  */
 function trim(val) {
     return val.replace(/^\s+/,'').replace(/\s+$/,'');
+}
+
+/*
+ * Parses a string to determine if it is an IPv4 address
+ */
+function isIp4(host) {
+    var parts = host.split(".");
+    var counter = 0;
+    for (var i = 0; i < parts.length; i++) {
+        if (isNaN(parseInt(parts[i]))) {
+            return false;
+        }
+        counter++
+    }
+    return counter == 4;
 }
 
 /*

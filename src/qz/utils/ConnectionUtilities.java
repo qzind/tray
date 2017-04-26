@@ -44,7 +44,7 @@ public final class ConnectionUtilities {
                                       getOS(),
                                       getArch(),
                                       Constants.ABOUT_TITLE.replaceAll("[^a-zA-Z]", ""),
-                                      Constants.VERSION.MAJOR_MINOR,
+                                      Constants.VERSION.getNormalVersion(),
                                       System.getProperty("java.vm.specification.version")
             );
             log.debug("User agent string for URL requests: {}", userAgent);

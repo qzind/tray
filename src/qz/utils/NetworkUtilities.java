@@ -30,11 +30,11 @@ public class NetworkUtilities {
     private static NetworkUtilities instance;
 
     private ArrayList<Device> devices;
-    private Device primary;
+    private Device primaryDevice;
 
 
     private NetworkUtilities(String hostname, int port) {
-        try { primary = new Device(getPrimaryInetAddress(hostname, port), true); }
+        try { primaryDevice = new Device(getPrimaryInetAddress(hostname, port), true); }
         catch(SocketException ignore) {}
     }
 
@@ -62,7 +62,7 @@ public class NetworkUtilities {
     }
 
     public static JSONObject getDeviceJSON(String hostname, int port) throws JSONException {
-        Device primary = getInstance(hostname, port).primary;
+        Device primary = getInstance(hostname, port).primaryDevice;
 
         if (primary != null) {
             return primary.toJSON();
@@ -78,7 +78,11 @@ public class NetworkUtilities {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             while(interfaces.hasMoreElements()) {
                 NetworkInterface iface = interfaces.nextElement();
-                devices.add(new Device(iface));
+
+                Device next = new Device(iface);
+                next.primary = next.equals(primaryDevice);
+
+                devices.add(next);
             }
         }
 
@@ -88,7 +92,7 @@ public class NetworkUtilities {
     private static InetAddress getPrimaryInetAddress(String hostname, int port) {
         log.info("Initiating a temporary connection to \"{}:{}\" to determine main Network Interface", hostname, port);
 
-        try (Socket socket = new Socket()) {
+        try(Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(hostname, port));
 
             return socket.getLocalAddress();

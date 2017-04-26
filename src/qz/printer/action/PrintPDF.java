@@ -102,13 +102,13 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     }
 
     @Override
-    public PrintRequestAttributeSet applyDefaultSettings(PrintOptions.Pixel pxlOpts, PageFormat page) {
+    public PrintRequestAttributeSet applyDefaultSettings(PrintOptions.Pixel pxlOpts, PageFormat page, Media[] supported) {
         if (pxlOpts.getOrientation() != null) {
             //page orient does not set properly on pdfs with orientation requested attribute
             page.setOrientation(pxlOpts.getOrientation().getAsOrientFormat());
         }
 
-        return super.applyDefaultSettings(pxlOpts, page);
+        return super.applyDefaultSettings(pxlOpts, page, supported);
     }
 
     @Override

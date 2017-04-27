@@ -599,6 +599,9 @@ var qz = (function() {
              *
              * @param {Object} [options] Configuration options for the web socket connection.
              *  @param {string|Array<string>} [options.host=['localhost', 'localhost.qz.io']] Host running the QZ Tray software.
+             *  @param {Object} [options.port] Config options for ports to cycle.
+             *   @param {Array<number>} [options.port.secure=[8181, 8282, 8383, 8484]] Array of secure (WSS) ports to try
+             *   @param {Array<number>} [options.port.insecure=[8182, 8283, 8384, 8485]] Array of insecure (WS) ports to try
              *  @param {boolean} [options.usingSecure=true] If the web socket should try to use secure ports for connecting.
              *  @param {number} [options.keepAlive=60] Seconds between keep-alive pings to keep connection open. Set to 0 to disable.
              *  @param {number} [options.retries=0] Number of times to reconnect before failing.

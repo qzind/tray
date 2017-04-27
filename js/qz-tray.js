@@ -75,6 +75,20 @@ var qz = (function() {
             setup: {
                 /** Loop through possible ports to open connection, sets web socket calls that will settle the promise. */
                 findConnection: function(config, resolve, reject) {
+                    //force flag if missing ports
+                    if (!config.port.secure.length) {
+                        if (!config.port.insecure.length) {
+                            reject(new Error("No ports have been specified to connect over"));
+                            return;
+                        } else if (config.usingSecure) {
+                            _qz.log.error("No secure ports specified - forcing insecure connection");
+                            config.usingSecure = false;
+                        }
+                    } else if (!config.port.insecure.length && !config.usingSecure) {
+                        _qz.log.trace("No insecure ports specified - forcing secure connection");
+                        config.usingSecure = true;
+                    }
+
                     var deeper = function() {
                         config.port.portIndex++;
 
@@ -599,6 +613,9 @@ var qz = (function() {
              *
              * @param {Object} [options] Configuration options for the web socket connection.
              *  @param {string|Array<string>} [options.host=['localhost', 'localhost.qz.io']] Host running the QZ Tray software.
+             *  @param {Object} [options.port] Config options for ports to cycle.
+             *   @param {Array<number>} [options.port.secure=[8181, 8282, 8383, 8484]] Array of secure (WSS) ports to try
+             *   @param {Array<number>} [options.port.insecure=[8182, 8283, 8384, 8485]] Array of insecure (WS) ports to try
              *  @param {boolean} [options.usingSecure=true] If the web socket should try to use secure ports for connecting.
              *  @param {number} [options.keepAlive=60] Seconds between keep-alive pings to keep connection open. Set to 0 to disable.
              *  @param {number} [options.retries=0] Number of times to reconnect before failing.

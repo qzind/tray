@@ -740,6 +740,20 @@ var qz = (function() {
                     hostname: hostname,
                     port: port
                 });
+            },
+
+            /**
+             * @returns {Object<{socket: String, host: String, port: Number}>} Details of active websocket connection
+             *
+             * @memberof qz.websocket
+             */
+            getConnectionInfo: function() {
+                if (_qz.websocket.connection) {
+                    var url = _qz.websocket.connection.url.split(/[:\/]+/g);
+                    return { socket: url[0], host: url[1], port: +url[2] };
+                } else {
+                    throw new Error("A connection to QZ has not been established yet");
+                }
             }
 
         },

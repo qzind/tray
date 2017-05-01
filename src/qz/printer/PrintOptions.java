@@ -211,12 +211,14 @@ public class PrintOptions {
         //grab any useful service defaults
         PrinterResolution defaultRes = PrintingUtilities.getNativeDensity(output.getPrintService());
         if (defaultRes != null) {
-            defOptions.density = defaultRes.getFeedResolution(psOptions.getUnits().getDPIUnits());
+            //convert dphi to unit-dependant density ourselves (to keep as double type)
+            defOptions.density = (double)defaultRes.getFeedResolution(1) / psOptions.getUnits().getDPIUnits();
         } else {
             try { defOptions.density = configOpts.getDouble("fallbackDensity"); }
             catch(JSONException e) {
                 warn("double", "fallbackDensity", configOpts.opt("fallbackDensity"));
-                defOptions.density = new PrinterResolution(600, 600, ResolutionSyntax.DPI).getFeedResolution(psOptions.getUnits().getDPIUnits());
+                //manually convert default dphi to a density value based on units
+                defOptions.density = 60000d / psOptions.getUnits().getDPIUnits();
             }
         }
         if (psOptions.isRasterize() && psOptions.getDensity() == 0) {

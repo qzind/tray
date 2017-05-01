@@ -470,7 +470,10 @@ var qz = (function() {
                 return result;
             },
 
-            hash: typeof Sha256 !== 'undefined' ? Sha256.hash : null,
+            hash: function(data) {
+                return Sha256.hash(data);
+            },
+
             ws: typeof WebSocket !== 'undefined' ? WebSocket : null,
 
             absolute: function(loc) {

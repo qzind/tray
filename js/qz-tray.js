@@ -485,6 +485,33 @@ var qz = (function() {
                 return loc;
             },
 
+            relative: function(data) {
+                for(var i = 0; i < data.length; i++) {
+                    if (data[i].constructor === Object) {
+                        var absolute = false;
+
+                        if (data[i].flavor) {
+                            //if flavor is known, we can directly check for absolute flavor types
+                            var flavor = data[i].flavor.toUpperCase();
+                            if (flavor === 'FILE' || flavor === 'IMAGE' || flavor === 'XML') {
+                                absolute = true;
+                            }
+                        } else if (data[i].format && data[i].format.toUpperCase() !== 'COMMAND') {
+                            //if flavor is not known, all valid pixel formats default to file flavor
+                            absolute = true;
+                        } else if (data[i].type && data[i].type.toUpperCase() === 'PIXEL') {
+                            //if all we know is pixel type, then it is image's file flavor
+                            absolute = true;
+                        }
+
+                        if (absolute) {
+                            //change relative links to absolute
+                            data[i].data = _qz.tools.absolute(data[i].data);
+                        }
+                    }
+                }
+            },
+
             /** Performs deep copy to target from remaining params */
             extend: function(target) {
                 //special case when reassigning properties as objects in a deep copy
@@ -551,9 +578,9 @@ var qz = (function() {
 
         /**
          * Alter any of the printer options currently applied to this config.
-         * @param newOpts {Object} The options to change. See <code>qz.config.setDefaults</code> docs for available values.
+         * @param newOpts {Object} The options to change. See <code>qz.configs.setDefaults</code> docs for available values.
          *
-         * @see qz.config.setDefaults
+         * @see qz.configs.setDefaults
          */
         this.reconfigure = function(newOpts) {
             _qz.tools.extend(this.config, newOpts);
@@ -865,7 +892,7 @@ var qz = (function() {
              *
              * @returns {Config} The new config.
              *
-             * @see config.setDefaults
+             * @see configs.setDefaults
              *
              * @memberof qz.configs
              */
@@ -885,7 +912,7 @@ var qz = (function() {
          * following the format of the "call" and "params" keys in the API call, with the addition of a "timestamp" key in milliseconds
          * ex. <code>'{"call":"<callName>","params":{...},"timestamp":1450000000}'</code>
          *
-         * @param {Object<Config>} config Previously created config object.
+         * @param {Object<Config>|Array<Object<Config>>} configs Previously created config object or objects.
          * @param {Array<Object|string>} data Array of data being sent to the printer.<br/>
          *      String values are interpreted as <code>{type: 'raw', format: 'command', flavor: 'plain', data: &lt;string>}</code>.
          *  @param {string} data.data
@@ -905,50 +932,109 @@ var qz = (function() {
          *   @param {string|number} [data.options.dotDensity] Optional with <code>[raw]</code> type + <code>[image]</code> format.
          *   @param {string} [data.options.xmlTag] Required with <code>[xml]</code> flavor. Tag name containing base64 formatted data.
          *   @param {number} [data.options.pageWidth] Optional with <code>[html | pdf]</code> formats. Width of the rendering.
-         *      Defaults to paper width.
+         *       Defaults to paper width.
          *   @param {number} [data.options.pageHeight] Optional with <code>[html | pdf]</code> formats. Height of the rendering.
-         *      Defaults to paper height for <code>[pdf]</code>, or auto sized for <code>[html]</code>.
-         * @param {boolean} [signature] Pre-signed signature of JSON string containing <code>call</code>, <code>params</code>, and <code>timestamp</code>.
-         * @param {number} [signingTimestamp] Required with <code>signature</code>. Timestamp used with pre-signed content.
+         *       Defaults to paper height for <code>[pdf]</code>, or auto sized for <code>[html]</code>.
+         * @param {...*} [arguments] Additionally three more parameters can be specified:<p/>
+         *     <code>{boolean} [resumeOnError=false]</code> Whether the chain should continue printing if it hits an error on one the the prints.<p/>
+         *     <code>{string|Array<string>} [signature]</code> Pre-signed signature(s) of the JSON string for containing <code>call</code>, <code>params</code>, and <code>timestamp</code>.<p/>
+         *     <code>{number|Array<number>} [signingTimestamps]</code> Required to match with <code>signature</code>. Timestamps for each of the passed pre-signed content.
          *
          * @returns {Promise<null|Error>}
          *
-         * @see qz.config.create
+         * @see qz.configs.create
          *
          * @memberof qz
          */
-        print: function(config, data, signature, signingTimestamp) {
-            //change relative links to absolute
-            for(var i = 0; i < data.length; i++) {
-                if (data[i].constructor === Object) {
-                    var absolute = false;
+        print: function(configs, data) {
+            var resumeOnError = false,
+                signatures = null,
+                signaturesTimestamps = null;
 
-                    if (data[i].flavor) {
-                        //if flavor is known, we can directly check for absolute flavor types
-                        var flavor = data[i].flavor.toUpperCase();
-                        if (flavor === 'FILE' || flavor === 'IMAGE' || flavor === 'XML') {
-                            absolute = true;
-                        }
-                    } else if (data[i].format && data[i].format.toUpperCase() !== 'COMMAND') {
-                        //if flavor is not known, all valid pixel formats default to file flavor
-                        absolute = true;
-                    } else if (data[i].type && data[i].type.toUpperCase() === 'PIXEL') {
-                        //if all we know is pixel type, then it is image's file flavor
-                        absolute = true;
-                    }
+            //find optional parameters
+            if (arguments.length >= 3) {
+                if (typeof arguments[2] === 'boolean') {
+                    resumeOnError = arguments[2];
 
-                    if (absolute) {
-                        data[i].data = _qz.tools.absolute(data[i].data);
+                    if (arguments.length >= 5) {
+                        signatures = arguments[3];
+                        signaturesTimestamps = arguments[4];
                     }
+                } else if (arguments.length >= 4) {
+                    signatures = arguments[2];
+                    signaturesTimestamps = arguments[3];
                 }
+
+                //ensure values are arrays for consistency
+                if (signatures && !Array.isArray(signatures)) { signatures = [signatures]; }
+                if (signaturesTimestamps && !Array.isArray(signaturesTimestamps)) { signaturesTimestamps = [signaturesTimestamps]; }
             }
 
-            var params = {
-                printer: config.getPrinter(),
-                options: config.getOptions(),
-                data: data
+            if (!Array.isArray(configs)) { configs = [configs]; }
+
+            //clean up data formatting
+            _qz.tools.relative(data);
+
+            var sendToPrint = function(mapping) {
+                var params = {
+                    printer: mapping.config.getPrinter(),
+                    options: mapping.config.getOptions(),
+                    data: mapping.data
+                };
+
+                return _qz.websocket.dataPromise('print', params, mapping.signature, mapping.timestamp);
             };
-            return _qz.websocket.dataPromise('print', params, signature, signingTimestamp);
+
+            //presort to group config data
+            var map = {};
+            var signIdx = 0;
+            for(var i = 0; i < configs.length || i < data.length; i++) {
+                var cfg = configs[Math.min(i, configs.length - 1)];
+                var ref = cfg.printer.name;
+
+                if (!map[ref]) {
+                    map[ref] = {
+                        config: cfg,
+                        data: [],
+                        signature: signatures[signIdx],
+                        timestamp: signaturesTimestamps[signIdx]
+                    };
+                    signIdx++;
+                }
+
+                map[ref].data.push(data[Math.min(i, data.length - 1)]);
+            }
+
+            //chain instead of Promise.all, so resumeOnError can collect each error
+            var chain = [];
+            for(var set in map) {
+                (function(set_) {
+                    chain.push(function() { return sendToPrint(map[set_]); });
+                })(set);
+            }
+
+            //setup to catch errors if needed
+            var fallThrough = null;
+            if (resumeOnError) {
+                var fallen = [];
+                fallThrough = function(err) { fallen.push(err); };
+
+                //final promise to reject any errors as a group
+                chain.push(function() {
+                    return _qz.tools.promise(function(resolve, reject) {
+                        fallen.length ? reject(fallen) : resolve();
+                    });
+                });
+            }
+
+            var last = null;
+            chain.reduce(function(sequence, link) {
+                last = sequence.catch(fallThrough).then(link); //catch is ignored if fallThrough is null
+                return last;
+            }, _qz.tools.promise(function(r) { r(); })); //an immediately resolved promise to start off the chain
+
+            //return last promise so users can chain off final action or catch when stopping on error
+            return last;
         },
 
 

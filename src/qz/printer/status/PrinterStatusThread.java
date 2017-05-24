@@ -3,9 +3,6 @@ package qz.printer.status;
 import com.sun.jna.platform.win32.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.printer.status.PrinterStatusMonitor.PrinterStatus;
-
-import static qz.printer.status.PrinterStatusMonitor.statusLookup;
 
 public class PrinterStatusThread extends Thread {
 
@@ -14,7 +11,7 @@ public class PrinterStatusThread extends Thread {
     private boolean keepMonitoring, closing = false;
     private final String printerName;
     private final Winspool spool = Winspool.INSTANCE;
-    private int lastStatus = 0;
+    private int lastStatus = -1;
 
     private WinNT.HANDLEByReference phPrinterObject;
     private WinNT.HANDLE hChangeObject;
@@ -72,20 +69,15 @@ public class PrinterStatusThread extends Thread {
             if (lastStatus != statusCode) {
                 lastStatus = statusCode;
                 //TODO Remove this debugging log
-                PrinterStatus status = getStatus(statusCode);
-                status.printerName = printerName;
-                log.debug("Change Result " + status);
-                PrinterStatusMonitor.statusChanged(status);
+                PrinterStatus[] status = PrinterStatus.getFromWMICode(statusCode);
+                for (PrinterStatus printerStatus : status) {
+                    log.debug("Change Result " + status);
+                    PrinterStatusMonitor.statusChanged(printerStatus, printerName);
+                }
             }
         } else {
             issueError();
         }
-    }
-
-    private PrinterStatus getStatus(int statusCode) {
-        PrinterStatus statusResult = statusLookup(statusCode);
-        statusResult.printerName = printerName;
-        return statusResult;
     }
 
     private void issueError() {

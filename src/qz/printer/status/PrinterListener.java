@@ -17,17 +17,17 @@ public class PrinterListener implements EventListener{
         this.session = session;
     }
 
-    public void statusChanged (PrinterStatusMonitor.PrinterStatus status) {
-        PrintSocketClient.sendStream(session, createStatusStream(status));
+    public void statusChanged (PrinterStatus status, String printerName) {
+        PrintSocketClient.sendStream(session, createStatusStream(status, printerName));
     }
 
-    private StreamEvent createStatusStream(PrinterStatusMonitor.PrinterStatus status) {
+    private StreamEvent createStatusStream(PrinterStatus status, String printerName) {
         //TODO Put real data here
         return new StreamEvent(StreamEvent.Stream.PRINTER, StreamEvent.Type.ACTION)
-                .withData("printerName", status.printerName)
-                .withData("statusCode", status.statusCode)
-                .withData("statusText", status.statusText)
-                .withData("severity", status.severity.toString())
+                .withData("printerName", printerName)
+                .withData("statusCode", status.getCode())
+                .withData("statusText", status.getName())
+                .withData("severity", status.getSeverity())
                 .withData("message", status.toString());
     }
 }

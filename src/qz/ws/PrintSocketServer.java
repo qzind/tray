@@ -159,7 +159,7 @@ public class PrintSocketServer {
                 log.warn("Could not start secure WebSocket");
             }
 
-            CupsStatusServer.runServer();
+            //CupsStatusServer.runServer();
 
             try {
                 final WebSocketHandler wsHandler = new WebSocketHandler() {

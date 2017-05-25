@@ -28,6 +28,6 @@ public class PrinterListener implements EventListener{
                 .withData("statusCode", status.getCode())
                 .withData("statusText", status.getName())
                 .withData("severity", status.getSeverity())
-                .withData("message", status.toString());
+                .withData("message", status.getName() + ": Level " + status.getSeverity() + ", StatusCode " + status.getCode() + ", From " + printerName);
     }
 }

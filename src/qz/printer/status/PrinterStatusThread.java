@@ -68,9 +68,10 @@ public class PrinterStatusThread extends Thread {
             int statusCode = WinspoolUtil.getPrinterInfo2(printerName).Status;
             if (lastStatus != statusCode) {
                 lastStatus = statusCode;
-                //TODO Remove this debugging log
+                //TODO this is not a good place to turn the code into an array, clean up/simplify the entire chain of calls
                 PrinterStatus[] status = PrinterStatus.getFromWMICode(statusCode);
                 for (PrinterStatus printerStatus : status) {
+                    //TODO Remove this debugging log
                     log.debug("Change Result " + status);
                     PrinterStatusMonitor.statusChanged(printerStatus, printerName);
                 }

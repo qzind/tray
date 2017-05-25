@@ -112,12 +112,12 @@ public enum PrinterStatus {
     public static PrinterStatus[] getFromWMICode(int code) {
         if (code == 0) return new PrinterStatus[]{OK};
 
-        int bits = Integer.bitCount(code);
-        PrinterStatus[] statusArray = new PrinterStatus[bits];
+        int bitPopulation = Integer.bitCount(code);
+        PrinterStatus[] statusArray = new PrinterStatus[bitPopulation];
         int mask = 1;
 
-        while (bits > 0){
-            if ((mask&code) > 0) statusArray[--bits] = codeLookupTable.get(mask);
+        while (bitPopulation > 0){
+            if ((mask&code) > 0) statusArray[--bitPopulation] = codeLookupTable.get(mask);
             mask = mask<<1;
         }
         return statusArray;

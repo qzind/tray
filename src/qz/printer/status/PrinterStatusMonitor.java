@@ -28,7 +28,7 @@ public class PrinterStatusMonitor {
 
         if (notificationThreadCollection.isEmpty()) {
             Winspool.PRINTER_INFO_1[] printers = WinspoolUtil.getPrinterInfo1();
-            /*for(int n = 0; n < printers.length; n++) {
+            for(int n = 0; n < printers.length; n++) {
                 if (allPrinters || nameString.contains("\"" + printers[n].pName + "\"")) {
                     printerFound = true;
                     //TODO Remove this debugging log
@@ -37,7 +37,7 @@ public class PrinterStatusMonitor {
                     notificationThreadCollection.put(printers[n].pName, notificationThread);
                     notificationThread.start();
                 }
-            }*/
+            }
         } else {
             log.warn("Attempted to launch printer status notification threads twice, ignoring.");
         }

@@ -300,16 +300,17 @@ public class PrintSocketClient {
                 sendResult(session, UID, PrintServiceMatcher.getPrintersJSON());
                 break;
             case PRINTERS_START_LISTENING:
+                //TODO this is untested, may contain bugs
                 if (PrinterStatusMonitor.isListening()) {
-                    PrinterStatusMonitor.stopListening();
-                    PrinterStatusMonitor.closeNotificationThreads();
-                }
-                //TODO is the listener really necessary?
-                PrinterStatusMonitor.addStatusListener(new PrinterListener(session));
-                if (PrinterStatusMonitor.launchNotificationThreads(params.getJSONArray("printerNames"))) {
-                    sendResult(session, UID, null);
+                    PrinterStatusMonitor.addStatusListener(new PrinterListener(session));
                 } else {
-                    sendError(session, UID, String.format("Printer(s) \"[%s]\" not found.", params.optString("printerNames")));
+                    //TODO is the listener really necessary?
+                    PrinterStatusMonitor.addStatusListener(new PrinterListener(session));
+                    if (PrinterStatusMonitor.launchNotificationThreads(params.getJSONArray("printerNames"))) {
+                        sendResult(session, UID, null);
+                    } else {
+                        sendError(session, UID, String.format("Printer(s) \"[%s]\" not found.", params.optString("printerNames")));
+                    }
                 }
                 break;
             case PRINTERS_STOP_LISTENING:

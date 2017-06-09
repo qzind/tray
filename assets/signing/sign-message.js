@@ -28,7 +28,7 @@
  *
  * Steps:
  *     1. Convert private key to jsrsasign compatible format:
- *        openssl rsa -in private-key.key -out private-key-updated.key
+ *        openssl rsa -in private-key.pem -out private-key-updated.pem
  *
  *     2. Include jsrsasign into your web page
  *        <script src="https://cdn.rawgit.com/kjur/jsrsasign/master/jsrsasign-all-min.js"></script>

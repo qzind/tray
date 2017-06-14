@@ -990,8 +990,8 @@ var qz = (function() {
          */
         print: function(configs, data) {
             var resumeOnError = false,
-                signatures = null,
-                signaturesTimestamps = null;
+                signatures = [],
+                signaturesTimestamps = [];
 
             //find optional parameters
             if (arguments.length >= 3) {
@@ -1032,7 +1032,7 @@ var qz = (function() {
             var signIdx = 0;
             for(var i = 0; i < configs.length || i < data.length; i++) {
                 var cfg = configs[Math.min(i, configs.length - 1)];
-                var ref = cfg.printer.name;
+                var ref = cfg.printer ? cfg.printer.name : null;
 
                 if (!map[ref]) {
                     map[ref] = {

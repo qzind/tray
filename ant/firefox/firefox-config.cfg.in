@@ -1,9 +1,16 @@
 //##############################################################################
 //#     Firefox AutoConfig for ${project.name} Software ${vendor.website}                  #
 //##############################################################################
+//# Copyright (C) 2017 Tres Finocchiaro, QZ Industries, LLC                    #
+//#                                                                            #
+//# LGPL 2.1 This is free software.  This software and source code are         #
+//# released under the "LGPL 2.1 License".  A copy of this license should be   #
+//# distributed with this software. http://www.gnu.org/licenses/lgpl-2.1.html  #
+//#                                                                            #
 //# NOTE:  This certificate is unique and private to THIS PC ONLY.  It was     #
 //# created on-the-fly at install time for secure websockets to function with  #
 //# ${project.name} software.                                                          #
+//#                                                                            #
 //# For questions please visit ${vendor.website}/support                           #
 //##############################################################################
 

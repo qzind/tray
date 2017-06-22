@@ -179,7 +179,7 @@
     -->
     <target name="prepackage">
         <echo>Processing self-signing variables</echo>
-        <property file="ant/self-sign.properties"/>
+        <property file="ant/ssl.properties"/>
 
         <echo>Creating Firefox certificate config files</echo>
         <copy file="${firefoxconfig.in}" tofile="${firefoxconfig.out}" >

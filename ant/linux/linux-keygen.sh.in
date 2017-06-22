@@ -1,52 +1,36 @@
 #!/bin/bash
 ##########################################################################################
-#                             ${project.name} Linux KeyGen Util                                  #
+#                             ${project.name} Linux KeyGen Utility                               #
 ##########################################################################################
 #  Description:                                                                          #
-#     1. Creates a self-signed Java Keystore for jetty wss://localhost or [hostname]     #
-#     2. Exports public certificate from Java Keystore
-#
-#     Note:  If [sslcert] and [sslkey] are specified, import to browser/OS is omitted.   #
+#    1. Creates a self-signed Java Keystore for jetty wss://localhost or [hostname]      #
+#    2. Exports public certificate from Java Keystore                                    #
+#                                                                                        #
+#       Note:  If [trustedcert] and [trustedkey] are specified, import to browser/OS is  #
+#              omitted.                                                                  #
 #                                                                                        #
 #  Depends:                                                                              #
 #    java                                                                                #
 #                                                                                        #
 #  Optional:                                                                             #
-#    openssl - Required if providing [sslcert], [sslkey] parameters                      #
+#    openssl - Required if providing [trustedcert], [trustedkey] parameters              #
 #                                                                                        #
 #  Usage:                                                                                #
-#    $ ./${linux.keygen.name} [hostname] [sslcert] [sslkey]                                   #
+#    $ ./${linux.keygen.name} [hostname] [trustedcert] [trustedkey]                           #
 #                                                                                        #
 ##########################################################################################
 
-# Random password hash
-password=$(cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-z0-9' | fold -w ${jks.passlength} | head -n 1)
+# Handle CN=${ssl.cn} override
+cnoverride="$2"
 
 # Handle trusted ssl certificate
 if [[ -n $2 && -n $3 ]]; then
-    sslcertpath="$2"
-    sslkeypath="$3"
-    makekeystore="${ssl.convert}"
-else
-    makekeystore="${jks.command}"
+    trustedcertpath="$3"
+    trustedkeypath="$4"
 fi
 
-makedercert="${der.command}"
-installdir="${linux.installdir}"
-
-# Substitution variables (!storepass, !keypass, !install, etc)
-install="${jks.install}"
-storepass="${jks.storepass}"
-keypass="${jks.keypass}"
-keystore="${jks.keystore}"
-dercert="${der.cert}"
-props="${jks.properties}"
-
-# Keystore generation variable substitutions
-keystorepath="${keystore/$install/$installdir}"
-makekeystore="${makekeystore/$storepass/$password}"
-makekeystore="${makekeystore/$keypass/$password}"
-makekeystore="${makekeystore/$keystore/$keystorepath}"
+# Random password hash
+password=$(cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-z0-9' | fold -w ${ssl.passlength} | head -n 1)
 
 # Check for IPv4 address
 function ip4 {
@@ -56,124 +40,130 @@ function ip4 {
     return 1
 }
 
-# Handle CN=${jks.cn} override
-if [ -n "$1" ]; then
-    cname="CN=${jks.cn},"
-    newcname="CN=$1,"
-    san="san=dns:${jks.cn},"
-    newsan="san=dns:$1,"
-    newipsan="san=ip:$1,"
-    cnalt=",dns:${jks.cnalt}"
-    newcnalt=""
+# Replace all install-time variables
+function replace_vars {
+    # TODO: OpenSUSE as well as some others don't have keytool in $PATH
+    cmd=$(echo "$1" | sed -e "s|\"keytool\"|keytool|g")
 
-    makekeystore="${makekeystore/$cname/$newcname}"
-    if ip4 "$1"; then
-        makekeystore="${makekeystore/$san/$newipsan}"
-    else
-        makekeystore="${makekeystore/$san/$newsan}"
-    fi
-    makekeystore="${makekeystore/$cnalt/$newcnalt}"
-fi
-
-# Cert export variable substitutions
-dercertpath="${dercert/$install/$installdir}"
-makedercert="${makedercert/$storepass/$password}"
-makedercert="${makedercert/$keypass/$password}"
-makedercert="${makedercert/$keystore/$keystorepath}"
-makedercert="${makedercert/$dercert/$dercertpath}"
-
-# // Handle "community" mode, custom signing auth cert
-if [ -n "${build.type}" ]; then
-    authcert="${authcert.install}"
-    authcertpath="${authcert/$install/$installdir}"
-fi
-
-# Property file containing jks signing info
-propspath="${props/$install/$installdir}"
-
-# Convert trusted SSL cert to jks
-function create_pkcs12 {
-    echo "Creating PKCS12 keypair..."
-    keypair="${ssl.keypair}"
-    sslcert="${ssl.cert}"
-    sslkey="${ssl.key}"
-    generated="${ssl.command}"
-
-    keypairpath="${keypair/$install/$installdir}"
-    generated="${generated/$keypair/$keypairpath}"
-    generated="${generated/$sslcert/$sslcertpath}"
-    generated="${generated/$sslkey/$sslkeypath}"
-    generated="${generated/$keypass/$password}"
-
-    makekeystore="${makekeystore/$keypair/$keypairpath}"
-    makekeystore="${makekeystore/$keypass/$password}" # second ${jks.keypass}
-
-    eval "$generated" > /dev/null 2>&1
-    check_exists "$keypairpath"
-
-    if [ $? -ne 0 ]; then
-        echo "Error creating PKCS12 keypair from $sslcertpath, $sslkeypath to $keypairpath"
-        echo -e "${bash.failure}\n"
-        exit 1
+    # Handle CN=${ssl.cn} override
+    if [ -n "$cnoverride" ]; then
+        cmd=$(echo "$cmd" | sed -e "s|CN=${ssl.cn},|$cnoverride|g")
+        if ip4 "$cnoverride"; then
+            cmd=$(echo "$cmd" | sed -e "s|san=dns:${ssl.cn},|san=ip:$cnoverride,|g")
+        else
+            cmd=$(echo "$cmd" | sed -e "s|san=dns:${ssl.cn},|san=dns:$cnoverride,|g")
+        fi
+        # Remove dangling san
+        cmd=$(echo "$cmd" | sed -e "s|,dns:${ssl.cnalt}||g")
     fi
 
-    # Remove lingering self-signed certs
-    rm "$dercertpath" > /dev/null 2>&1
+    cmd=$(echo "$cmd" | sed -e "s|\!install|${linux.installdir}|g")
+    cmd=$(echo "$cmd" | sed -e "s|\!storepass|$password|g")
+    cmd=$(echo "$cmd" | sed -e "s|\!keypass|$password|g")
+    cmd=$(echo "$cmd" | sed -e "s|\!sslcert|$trustedcertpath|g")
+    cmd=$(echo "$cmd" | sed -e "s|\!sslkey|$trustedkeypath|g")
 
+    echo "$cmd"
     return 0
 }
 
+# Handle "community" mode, custom signing auth cert
+if [ -n "${build.type}" ]; then
+    authcertpath=$(echo "${authcert.install}" | sed -e "s|\!install|${linux.installdir}|g")
+fi
+
 # Write out the secure websocket properties file
 function write_properties {
-    echo "Writing properties file..."
-    echo "wss.alias=${jks.alias}" > "$propspath"
+    propspath=$(echo "$1" | sed -e "s|\!install|${linux.installdir}|g")
+    keystorepath=$(echo "${ssl.jks}" | sed -e "s|\!install|${linux.installdir}|g")
+    echo "wss.alias=${ssl.alias}" > "$propspath"
     echo "wss.keystore=$keystorepath" >> "$propspath"
     echo "wss.keypass=$password" >> "$propspath"
     echo "wss.storepass=$password" >> "$propspath"
-    echo "wss.host=${jks.host}" >> "$propspath"
+    echo "wss.host=${ssl.host}" >> "$propspath"
     if [ -n "$authcertpath" ]; then
         echo "authcert.override=$authcertpath" >> "$propspath"
     fi
     echo "" >> "$propspath"
-    check_exists  "$propspath"
+    check_exists "$propspath"
     return $?
 }
 
-# Check to see if file exists
+# Delete a file if exists
+function delete_file {
+    testfile=$(echo "$1" | sed -e "s|\!install|${linux.installdir}|g")
+    rm -f "$testfile" > /dev/null 2>&1
+    return 0
+}
+
+# Check to see if file exists with optional message
 function check_exists {
-    if [ -e "$1" ]; then
-        echo -e "${bash.success}\n"
+    testfile=$(echo "$1" | sed -e "s|\!install|${linux.installdir}|g")
+    if [ -e "$testfile" ]; then
+        if [ -n "$2" ]; then
+            echo -e "${bash.success} $2 $testfile"
+        else
+            echo -e "${bash.success} $testfile"
+        fi
         return 0
+    fi
+    echo -e "${bash.failure} $testfile"
+    return 1
+}
+
+# Runs a steps, optionally checks for a file
+# e.g: run_step "Description" "ls -al *.txt > ./out" "./out"
+function run_step {
+    if eval "$(replace_vars "$2") > /dev/null 2>&1"; then
+        if [ -z "$3" ]; then
+            echo -e "${bash.success} $1"
+            return 0
+        elif check_exists "$3" "$1"; then
+            return 0
+        else
+            return 1
+        fi
     fi
     echo -e "${bash.failure}\n"
     return 1
 }
 
-
-# Delete old keystore, if exists
-rm -f "$keystorepath" > /dev/null 2>&1
+# Delete old files if exist
+delete_file "${ssl.jks}"
+delete_file "${ssl.crt}"
 
 # Handle trusted ssl certificate, if specified
-if [ -n "$sslcertpath" ]; then
-    create_pkcs12
-    echo "Creating keystore for secure websockets..."
-    eval "$makekeystore" > /dev/null 2>&1
-    check_exists "$keystorepath"
-    write_properties
-    status=$?
-    echo "Finished"
-    exit $status
+if [ -n "$trustedcertpath" ]; then
+    echo -e "\nCreating keystore for secure websockets..."
+    eval "$(replace_vars "${trusted.convert}")" > /dev/null 2>&1 || exit 1
+    check_exists "${ssl.jks}" || exit 1
+    write_properties "${ssl.properties}" || exit 1
+    echo -e "\n[Finished ${linux.keygen.name}]\n"
+    exit 0
 fi
 
-echo "Creating keystore for secure websockets..."
-eval "$makekeystore" > /dev/null 2>&1
-check_exists "$keystorepath"
+# Handle self-signed certificate
+echo -e "\nCreating keystore for secure websockets..."
+# Delete old files if exist
+delete_file "${ca.jks}"
+delete_file "${ca.crt}"
+delete_file "${ssl.csr}"
 
-echo "Converting keystore to native certificate..."
-eval "$makedercert" > /dev/null 2>&1
-check_exists "$dercertpath"
+run_step "Creating a CA keypair" "${ca.jkscmd}" "${ca.jks}" || exit 1
+run_step "Exporting CA certificate" "${ca.crtcmd}" "${ca.crt}" || exit 1
+run_step "Creating an SSL keypair" "${ssl.jkscmd}" "${ssl.jks}" || exit 1
+run_step "Creating an SSL CSR" "${ssl.jkscsr}" "${ssl.csr}" || exit 1
+run_step "Issuing SSL certificate from CA" "${ssl.crtcmd}" "${ssl.crt}" || exit 1
+run_step "Importing CA certificate into SSL keypair" "${ssl.importca}" "" || exit 1
+run_step "Importing chained SSL certificate into SSL keypair" "${ssl.importssl}" "" || exit 1
 
-write_properties
-status=$?
-echo "Finished"
-exit $status
+echo -e "\nWriting properties file..."
+write_properties "${ssl.properties}" || exit 1
+
+echo -e "\nCleaning up..."
+delete_file "${ca.jks}"
+delete_file "${ssl.csr}"
+delete_file "${ssl.crt}"
+
+echo -e "\n[Finished ${linux.keygen.name}]\n"
+exit 0

@@ -9,17 +9,18 @@
 #    4. Installs certificate to OS using certutil                                        #
 #    5. Installs certificate into Firefox (if installed)                                 #
 #                                                                                        #
-#       Note:  If [sslcert] and [sslkey] are specified, import to browser/OS is omitted. #
+#       Note:  If [trustedcert] and [trustedkey] are specified, import to browser/OS is  #
+#              omitted.                                                                  #
 #                                                                                        #
 #  Depends:                                                                              #
 #    java, certutil                                                                      #
 #                                                                                        #
 #  Optional:                                                                             #
-#    openssl - Required if providing [sslcert], [sslkey] parameters                      #
+#    openssl - Required if providing [trustedcert], [trustedkey] parameters              #
 #                                                                                        #
 #  Usage:                                                                                #
 #    $ chmod +x ${linux.installer.name}                                                       #
-#    $ sudo ./${linux.installer.name} [noprompt] [hostname] [sslcert] [sslkey]                #
+#    $ sudo ./${linux.installer.name} [noprompt] [hostname] [trustedcert] [trustedkey]        #
 #                                                                                        #
 ##########################################################################################
 
@@ -31,8 +32,8 @@ fi
 
 noprompt="$1"
 cname="$2"
-sslcert="$3"
-sslkey="$4"
+trustedcert="$3"
+trustedkey="$4"
 mask=755
 destdir="${linux.installdir}"
 shortcut="/usr/share/applications/${project.filename}.desktop"
@@ -159,9 +160,9 @@ fi
 
 progress_dialog 70 "Generating certificate..."
 chmod $mask "$destdir/auth/${linux.keygen.name}"  > /dev/null 2>&1
-"$destdir/auth/${linux.keygen.name}" "$cname" "$sslcert" "$sslkey"
+"$destdir/auth/${linux.keygen.name}" "$cname" "$trustedcert" "$trustedkey"
 
-if [[ -n $sslcert && -n $sslkey ]]; then
+if [[ -n $trustedcert && -n $trustedkey ]]; then
     progress_dialog 75 "Skipping OS/browser cert import..."
 else
     progress_dialog 75 "Importing Firefox locator..."
@@ -191,6 +192,7 @@ chmod -R $mask "${destdir}"
 progress_dialog 92 "Installing usb/udev rules..."
 rm -f "/lib/udev/rules.d/${linux.udev.name}" > /dev/null 2>&1
 mv "$destdir/${linux.udev.name}" "/lib/udev/rules.d/${linux.udev.name}" > /dev/null 2>&1
+udevadm control --reload-rules > /dev/null 2>&1
 
 cd "${destdir}"
 progress_dialog 95 "Installation complete... Starting ${project.name}..."

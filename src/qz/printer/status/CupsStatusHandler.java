@@ -1,5 +1,6 @@
 package qz.printer.status;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.slf4j.Logger;
@@ -21,11 +22,11 @@ import java.io.IOException;
  * Created by kyle on 4/27/17.
  */
 public class CupsStatusHandler extends AbstractHandler {
+
     private static final Logger log = LoggerFactory.getLogger(CupsStatusHandler.class);
     private static String lastGuid;
 
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException {
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         baseRequest.setHandled(true);
         if (request.getReader().readLine() != null) {
             try {
@@ -41,10 +42,7 @@ public class CupsStatusHandler extends AbstractHandler {
     }
 
     private void parseXML(XMLEventReader eventReader) throws XMLStreamException {
-        boolean isDescription = false;
-        boolean isGuid = false;
-        boolean isFirstGuid = true;
-        boolean running = true;
+        boolean isDescription = false, isGuid = false, isFirstGuid = true, running = true;
         String firstGuid = "";
         String description = "";
 
@@ -78,8 +76,13 @@ public class CupsStatusHandler extends AbstractHandler {
                             running = false;
                             break;
                         } else {
-                            System.out.println("GUID: "
-                                                       + characters.getData() + ", Description: " + description);
+                            String printerName =  StringUtils.substringBeforeLast(description, "\"");
+                            printerName = StringUtils.substringAfter(printerName, "\"");
+                            if (!printerName.isEmpty()) {
+                                PrinterStatusMonitor.statusChanged(CupsUtils.getStatuses(printerName), printerName);
+                                //Todo Remove this debugging log
+                                log.warn("GUID: " + characters.getData() + ", Description: " + description);
+                            }
                         }
                         isGuid = false;
                     }

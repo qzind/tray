@@ -17,8 +17,10 @@ public class PrinterListener implements EventListener{
         this.session = session;
     }
 
-    public void statusChanged (PrinterStatus status, String printerName) {
-        PrintSocketClient.sendStream(session, createStatusStream(status, printerName));
+    public void statusChanged (PrinterStatus[] statuses, String printerName) {
+        for (PrinterStatus printerStatus : statuses) {
+            PrintSocketClient.sendStream(session, createStatusStream(printerStatus, printerName));
+        }
     }
 
     private StreamEvent createStatusStream(PrinterStatus status, String printerName) {

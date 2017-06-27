@@ -11,6 +11,8 @@ import com.sun.jna.Pointer;
 public interface Cups extends Library {
     Cups INSTANCE = (Cups) Native.loadLibrary("cups", Cups.class);
 
+    //See https://www.cups.org/doc/api-cups.html and https://www.cups.org/doc/api-httpipp.html for usage
+
     Pointer cupsEncryption();
     Pointer httpConnectEncrypt(String host, int port, Pointer encryption);
     Pointer cupsDoRequest(Pointer http, Pointer request, String resource);
@@ -25,6 +27,7 @@ public interface Cups extends Library {
     String ippTagString(int tag);
     String ippGetName(Pointer attr);
     String ippGetString(Pointer attr, int element, String language);
+    String ippEnumString (String attrname, int enumvalue);
 
     int ippPort();
     int httpAssembleURI(int encoding, Memory uri, int urilen, String sceme, String username, String host, int port, String resourcef);

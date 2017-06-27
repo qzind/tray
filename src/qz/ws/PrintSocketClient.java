@@ -306,7 +306,7 @@ public class PrintSocketClient {
                 } else {
                     //TODO is the listener really necessary?
                     PrinterStatusMonitor.addStatusListener(new PrinterListener(session));
-                    if (PrinterStatusMonitor.launchNotificationThreads(params.getJSONArray("printerNames"))) {
+                    if (PrinterStatusMonitor.startListening(params.getJSONArray("printerNames"))) {
                         sendResult(session, UID, null);
                     } else {
                         sendError(session, UID, String.format("Printer(s) \"[%s]\" not found.", params.optString("printerNames")));

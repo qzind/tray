@@ -15,8 +15,8 @@ import java.util.List;
 public class CupsStatusServer {
     private static final Logger log = LoggerFactory.getLogger(CupsStatusServer.class);
 
-
     public static final List<Integer> CUPS_RSS_PORTS = Collections.unmodifiableList(Arrays.asList(8586, 8687, 8788, 8889));
+
     public static int cupsRSSPort = -1;
     private static Server server;
 

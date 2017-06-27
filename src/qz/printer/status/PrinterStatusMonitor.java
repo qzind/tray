@@ -3,12 +3,14 @@ package qz.printer.status;
 import com.sun.jna.platform.win32.Winspool;
 import com.sun.jna.platform.win32.WinspoolUtil;
 import org.apache.commons.lang3.StringEscapeUtils;
-import org.apache.log4j.Level;
 import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+
+import static qz.printer.status.CupsStatusServer.runServer;
+import static qz.utils.SystemUtilities.isWindows;
 
 /**
  * Created by Kyle on 2/23/2017.
@@ -51,6 +53,15 @@ public class PrinterStatusMonitor {
         notificationThreadCollection.clear();
     }
 
+    public static synchronized boolean startListening (JSONArray printerNames) {
+        if (isWindows()) {
+            return launchNotificationThreads(printerNames);
+        } else {
+            runServer();
+            return true;
+        }
+    }
+
     public static synchronized void addStatusListener (PrinterListener listener) {
         statusListeners.add(listener);
     }
@@ -67,9 +78,9 @@ public class PrinterStatusMonitor {
         statusListeners.clear();
     }
 
-    public static void statusChanged (PrinterStatus status, String printerName) {
+    public static void statusChanged (PrinterStatus[] statuses, String printerName) {
         for (PrinterListener sl: statusListeners) {
-            sl.statusChanged(status, printerName);
+            sl.statusChanged(statuses, printerName);
         }
     }
 }

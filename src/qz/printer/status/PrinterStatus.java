@@ -1,7 +1,8 @@
 package qz.printer.status;
 
 import org.apache.log4j.Level;
-import qz.ws.StreamEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.SortedMap;
@@ -39,6 +40,8 @@ public enum PrinterStatus {
     SERVER_UNKNOWN("SERVER_UNKNOWN", Level.WARN, 0x00800000),
     POWER_SAVE("POWER_SAVE", Level.INFO, 0x01000000),
     UNKNOWN_STATUS("UNKNOWN_STATUS", Level.FATAL, 0x02000000);
+
+    private static final Logger log = LoggerFactory.getLogger(PrinterStatus.class);
 
     private static final SortedMap<Integer, PrinterStatus> codeLookupTable = Collections.unmodifiableSortedMap(initCodeMap());
     private static final SortedMap<String, PrinterStatus> cupsLookupTable = Collections.unmodifiableSortedMap(initCupsMap());
@@ -132,6 +135,7 @@ public enum PrinterStatus {
         reason = reason.toLowerCase();
         reason = reason.replace("-error", "").replace("-warning", "").replace("-report", "");
         PrinterStatus s = cupsLookupTable.get(reason);
+        if (s == null) log.warn("Status: \"" + reason + "\" is unrecognised.");
         return s;
     }
 }

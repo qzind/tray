@@ -81,7 +81,7 @@ public class CupsStatusHandler extends AbstractHandler {
                             if (!printerName.isEmpty()) {
                                 PrinterStatusMonitor.statusChanged(CupsUtils.getStatuses(printerName), printerName);
                                 //Todo Remove this debugging log
-                                log.warn("GUID: " + characters.getData() + ", Description: " + description);
+                                //log.warn("GUID: " + characters.getData() + ", Description: " + description);
                             }
                         }
                         isGuid = false;

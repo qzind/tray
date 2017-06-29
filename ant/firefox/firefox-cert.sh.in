@@ -76,29 +76,22 @@ else
     echo -e "${bash.success} $ffdir"
 fi
 
-
-# Substitution variables (!install, etc)
-install="${jks.install}"
-cname="${jks.cn}"
-dercert="${der.cert}"
-prefs="${firefoxprefs.install}"
-config="${firefoxconfig.install}"
-
-# Handle CN=${jks.cn} override
+# Handle CN=${ssl.cn} override
+cname="${ssl.cn}"
 if [ -n "$2" ]; then
     cname="$2"
 fi
 
 # Perform substitutions
-dercertpath=$(echo "$dercert" | sed -e "s|$install|$installdir|g")
-prefspath=$(echo "$prefs" | sed -e "s|$install|$installdir|g")
-configpath=$(echo "$config" | sed -e "s|$install|$installdir|g")
+dercertpath=$(echo "${ca.crt}" | sed -e "s|\!install|$installdir|g")
+prefspath=$(echo "${firefoxprefs.install}" | sed -e "s|\!install|$installdir|g")
+configpath=$(echo "${firefoxconfig.install}" | sed -e "s|\!install|$installdir|g")
 
 #
 # Uninstall mode
 #
 if [ "$1" == "uninstall" ]; then
-    echo "Searching for ${project.name} AutoConfig..."
+    echo -e "\nSearching for ${project.name} AutoConfig..."
     if [ -f "$bindir/${firefoxconfig.name}" ]; then
         echo -e "${bash.success} Check Firefox config exists"
         cp "$configpath" "$bindir/${firefoxconfig.name}"
@@ -123,6 +116,7 @@ if [ "$1" == "uninstall" ]; then
     else
         echo -e "${bash.skipped} ${project.name} AutoConfig not found"
     fi
+    echo -e "\n[Finished ${firefoxcert.name}]\n"
     exit 0
 fi
 
@@ -195,5 +189,6 @@ else
 	exit 1
 fi
 
+echo -e "\n[Finished ${firefoxcert.name}]\n"
 exit 0
 

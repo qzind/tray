@@ -7,160 +7,40 @@
 #    2. Exports public certificate from Java Keystore                                    #
 #    3. Imports into Apple OS X Trusted Root Certs                                       #
 #                                                                                        #
-#       Note:  If [sslcert] and [sslkey] are specified, import to browser/OS is omitted. #
+#       Note:  If [trustedcert] and [trustedkey] are specified, import to browser/OS is  #
+#              omitted.                                                                  #
 #                                                                                        #
 #  Depends:                                                                              #
 #    java                                                                                #
 #                                                                                        #
 #  Optional:                                                                             #
-#    openssl - Required if providing [sslcert], [sslkey] parameters                      #
+#    openssl - Required if providing [trustedcert], [trustedkey] parameters              #
 #                                                                                        #
 #  Usage:                                                                                #
-#    $ ./${apple.keygen.name} "install" [hostname] [sslcert] [sslkey]                    #
+#    $ ./${apple.keygen.name} "install" [hostname] [trustedcert] [trustedkey]            #
 #    $ ./${apple.keygen.name} "uninstall"                                                #
 #                                                                                        #
 ##########################################################################################
 
-# Random password hash
-password=$(cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-z0-9' | fold -w ${jks.passlength} | head -n 1)
+# Handle CN=${ssl.cn} override
+cnoverride="$2"
 
-# Check for java
-${apple.jvmver} > /dev/null 2>&1
-fallback=$?
-
-#
 # Handle trusted ssl certificate
 if [[ -n $3 && -n $4 ]]; then
-    sslcertpath="$3"
-    sslkeypath="$4"
-    makekeystore="${ssl.convert}"
-else
-    makekeystore="${jks.command}"
+    trustedcertpath="$3"
+    trustedkeypath="$4"
 fi
 
+# Random password hash
+password=$(cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-z0-9' | fold -w ${ssl.passlength} | head -n 1)
 
-makedercert="${der.command}"
-installdir="${apple.installdir}"
-
-# Substitution variables (!storepass, !keypass, !install, etc)
-install="${jks.install}"
-storepass="${jks.storepass}"
-keypass="${jks.keypass}"
-keystore="${jks.keystore}"
-dercert="${der.cert}"
-props="${jks.properties}"
-keytool="${jks.keytool}"
-keytoolfallback="${apple.jvmfallback}/${jks.keytool}"
-
-# Keystore generation variable substitutions
-keystorepath=$(echo "$keystore" | sed -e "s|$install|$installdir|g")
-makekeystore=$(echo "$makekeystore" | sed -e "s|$storepass|$password|g")
-makekeystore=$(echo "$makekeystore" | sed -e "s|$keypass|$password|g")
-makekeystore=$(echo "$makekeystore" | sed -e "s|$keystore|$keystorepath|g")
-
-
-if [ $fallback -eq 0 ]; then
+if ${apple.jvmver} > /dev/null 2>&1; then
     # Prefix with java_home --exec
-	makekeystore="${apple.jvmcmd} $makekeystore"
+    keytoolcmd="${apple.jvmcmd} keytool"
 else
     # Fallback on Internet Plug-Ins version if needed
-	makekeystore=$(echo "$makekeystore" | sed -e "s|$keytool|$keytoolfallback|g")
+    keytoolcmd="${apple.jvmfallback}/keytool"
 fi
-
-# Cert export variable substitutions
-dercertpath=$(echo "$dercert" | sed -e "s|$install|$installdir|g")
-makedercert=$(echo "$makedercert" | sed -e "s|$storepass|$password|g")
-makedercert=$(echo "$makedercert" | sed -e "s|$keypass|$password|g")
-makedercert=$(echo "$makedercert" | sed -e "s|$keystore|$keystorepath|g")
-makedercert=$(echo "$makedercert" | sed -e "s|$dercert|$dercertpath|g")
-
-if [ $fallback -eq 0 ]; then
-    # Prefix with java_home --exec
-	makedercert="${apple.jvmcmd} $makedercert"
-else
-    # Fallback on Internet Plug-Ins version if needed
-	makedercert=$(echo "$makedercert" | sed -e "s|$keytool|$keytoolfallback|g")
-fi
-
-# // Handle "community" mode, custom signing auth cert
-if [ -n "${build.type}" ]; then
-    authcert="${authcert.install}"
-    authcertpath=$(echo "$authcert" | sed -e "s|$install|$installdir|g")
-fi
-
-
-# Property file containing jks signing info
-propspath=$(echo "$props" | sed -e "s|$install|$installdir|g")
-
-# Convert trusted SSL cert to jks
-function create_pkcs12 {
-    echo "Creating PKCS12 keypair..."
-    keypair="${ssl.keypair}"
-    sslcert="${ssl.cert}"
-    sslkey="${ssl.key}"
-    generated="${ssl.command}"
-
-    keypairpath=$(echo "$keypair" | sed -e "s|$install|$installdir|g")
-    generated=$(echo "$generated" | sed -e "s|$keypair|$keypairpath|g")
-    generated=$(echo "$generated" | sed -e "s|$sslcert|$sslcertpath|g")
-    generated=$(echo "$generated" | sed -e "s|$sslkey|$sslkeypath|g")
-    generated=$(echo "$generated" | sed -e "s|$keypass|$password|g")
-
-    makekeystore=$(echo "$makekeystore" | sed -e "s|$keypair|$keypairpath|g")
-
-    eval "$generated" > /dev/null 2>&1
-    check_exists "$keypairpath"
-
-    if [ $? -ne 0 ]; then
-        echo "Error creating PKCS12 keypair from $sslcertpath, $sslkeypath to $keypairpath"
-        echo -e "${bash.failure}\n"
-        exit 1
-    fi
-
-    # Remove lingering self-signed certs
-    rm "$dercertpath" > /dev/null 2>&1
-
-    return 0
-}
-
-# Write out the secure websocket properties file
-function write_properties {
-    echo "Writing properties file..."
-    echo "wss.alias=${jks.alias}" > "$propspath"
-    echo "wss.keystore=$keystorepath" >> "$propspath"
-    echo "wss.keypass=$password" >> "$propspath"
-    echo "wss.storepass=$password" >> "$propspath"
-    echo "wss.host=${jks.host}" >> "$propspath"
-    if [ -n "$authcertpath" ]; then
-        echo "authcert.override=$authcertpath" >> "$propspath"
-    fi
-    echo "" >> "$propspath"
-    check_exists  "$propspath"
-    return $?
-}
-
-# Check to see if file exists
-function check_exists {
-    if [ -e "$1" ]; then
-        echo -e "${bash.success}\n"
-        return 0
-    fi
-    echo -e "${bash.failure}\n"
-    return 1
-}
-
-# Remove all matching system certificates
-function remove_certs {
-	hash=$(security find-certificate -e "${vendor.email}" -Z |grep ^SHA-1|rev|cut -d' ' -f1|rev)
-	if [ -n "$hash" ]; then
-		security delete-certificate -Z "$hash" > /dev/null 2>&1
-		# Recurse on self
-		remove_certs
-		return 0
-	fi
-	# No certs found, exit
-	return 1
-}
 
 # Check for IPv4 address
 function ip4 {
@@ -170,32 +50,116 @@ function ip4 {
     return 1
 }
 
-# Handle CN=${jks.cn} override
-if [ -n "$2" ]; then
-    cname="CN=${jks.cn},"
-    newcname="CN=$2,"
-    san="san=dns:${jks.cn},"
-    newsan="san=dns:$2,"
-    newipsan="san=ip:$2,"
-    cnalt=",dns:${jks.cnalt}"
-    newcnalt=""
+# Replace all install-time variables
+function replace_vars {
+    cmd=$(echo "$1" | sed -e "s|\"keytool\"|$keytoolcmd|g")
 
-    makekeystore=$(echo "$makekeystore" | sed -e "s|$cname|$newcname|g")
-    if ip4 "$2"; then
-        makekeystore=$(echo "$makekeystore" | sed -e "s|$san|$newipsan|g")
-    else
-        makekeystore=$(echo "$makekeystore" | sed -e "s|$san|$newsan|g")
+    # Handle CN=${ssl.cn} override
+    if [ -n "$cnoverride" ]; then
+        cmd=$(echo "$cmd" | sed -e "s|CN=${ssl.cn},|CN=$cnoverride,|g")
+        if ip4 "$cnoverride"; then
+            cmd=$(echo "$cmd" | sed -e "s|san=dns:${ssl.cn},|san=ip:$cnoverride,|g")
+        else
+            cmd=$(echo "$cmd" | sed -e "s|san=dns:${ssl.cn},|san=dns:$cnoverride,|g")
+        fi
+        # Remove dangling san
+        cmd=$(echo "$cmd" | sed -e "s|,dns:${ssl.cnalt}||g")
     fi
-    makekeystore=$(echo "$makekeystore" | sed -e "s|$cnalt|$newcnalt|g")
+
+    cmd=$(echo "$cmd" | sed -e "s|\!install|${apple.installdir}|g")
+    cmd=$(echo "$cmd" | sed -e "s|\!storepass|$password|g")
+    cmd=$(echo "$cmd" | sed -e "s|\!keypass|$password|g")
+    cmd=$(echo "$cmd" | sed -e "s|\!sslcert|$trustedcertpath|g")
+    cmd=$(echo "$cmd" | sed -e "s|\!sslkey|$trustedkeypath|g")
+
+    echo "$cmd"
+    return 0
+}
+
+# Handle "community" mode, custom signing auth cert
+if [ -n '${build.type}' ]; then
+    authcertpath=$(echo "${authcert.install}" | sed -e "s|\!install|${apple.installdir}|g")
 fi
+
+# Write out the secure websocket properties file
+function write_properties {
+    propspath=$(echo "$1" | sed -e "s|\!install|${apple.installdir}|g")
+    keystorepath=$(echo "${ssl.jks}" | sed -e "s|\!install|${apple.installdir}|g")
+    echo "wss.alias=${ssl.alias}" > "$propspath"
+    echo "wss.keystore=$keystorepath" >> "$propspath"
+    echo "wss.keypass=$password" >> "$propspath"
+    echo "wss.storepass=$password" >> "$propspath"
+    echo "wss.host=${ssl.host}" >> "$propspath"
+    if [ -n "$authcertpath" ]; then
+        echo "authcert.override=$authcertpath" >> "$propspath"
+    fi
+    echo "" >> "$propspath"
+    check_exists "$propspath"
+    return $?
+}
+
+# Delete a file if exists
+function delete_file {
+    testfile=$(echo "$1" | sed -e "s|\!install|${apple.installdir}|g")
+    rm -f "$testfile" > /dev/null 2>&1
+    return 0
+}
+
+# Check to see if file exists with optional message
+function check_exists {
+    testfile=$(echo "$1" | sed -e "s|\!install|${apple.installdir}|g")
+    if [ -e "$testfile" ]; then
+        if [ -n "$2" ]; then
+            echo -e "${bash.success} $2 $testfile"
+        else
+            echo -e "${bash.success} $testfile"
+        fi
+        return 0
+    fi
+    echo -e "${bash.failure} $testfile"
+    return 1
+}
+
+# Remove all matching system certificates
+function remove_certs {
+    if security find-certificate -e "${vendor.email}" -Z  > /dev/null 2>&1; then
+        echo -e "${bash.success} Found certificate matching ${vendor.email}"
+        hash=$(security find-certificate -e "${vendor.email}" -Z |grep ^SHA-1|rev|cut -d' ' -f1|rev)
+        if [ -n "$hash" ]; then
+            # Remove and recurse
+            security delete-certificate -Z "$hash" > /dev/null 2>&1 && remove_certs
+        fi
+    else
+        echo -e "${bash.success} No more matching certificates found"
+	fi
+
+    return 0
+}
+
+# Runs a steps, optionally checks for a file
+# e.g: run_step "Description" "ls -al *.txt > ./out" "./out"
+function run_step {
+    if eval "$(replace_vars "$2") > /dev/null 2>&1"; then
+        if [ -z "$3" ]; then
+            echo -e "${bash.success} $1"
+            return 0
+        elif check_exists "$3" "$1"; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+    echo -e "${bash.failure}\n"
+    return 1
+}
 
 #
 # Uninstall mode
 #
 if [ "$1" == "uninstall" ]; then
-    echo "Removing installed certificates (warnings are safe to ignore)..."
+    echo -e "\nRemoving installed certificates..."
 	remove_certs
-	echo -e "${bash.success}\n"
+	echo -e "\n[Finished ${apple.keygen.name}]\n"
     exit 0
 fi
 
@@ -203,45 +167,48 @@ fi
 # Install mode
 #
 
-# Delete old keystore, if exists
-rm -f "$keystorepath" > /dev/null 2>&1
+# Delete old files if exist
+delete_file "${ssl.jks}"
+delete_file "${ssl.crt}"
 
 # Handle trusted ssl certificate, if specified
-if [ -n "$sslcertpath" ]; then
-    create_pkcs12
-    echo "Creating keystore for secure websockets..."
-    eval "$makekeystore" > /dev/null 2>&1
-    check_exists "$keystorepath"
-    write_properties
-    status=$?
-    echo "Finished"
-    exit $status
+if [ -n "$trustedcertpath" ]; then
+    echo -e "\nCreating keystore for secure websockets..."
+    run_step "\nConverting to PKCS12 keypair" "${trusted.command}" "${trusted.keypair}"
+    run_step "\nConverting to jks format" "${trusted.convert}" "${ssl.jks}"
+    write_properties "${ssl.properties}" || exit 1
+    echo -e "\n[Finished ${apple.keygen.name}]\n"
+    exit 0
 fi
 
 # Handle self-signed certificate
-echo "Creating keystore for secure websockets..."
-eval "$makekeystore" > /dev/null 2>&1
-check_exists "$keystorepath"
+echo -e "\nCreating keystore for secure websockets..."
+# Delete old files if exist
+delete_file "${ca.jks}"
+delete_file "${ca.crt}"
+delete_file "${ssl.csr}"
 
-echo "Converting keystore to native certificate..."
-eval "$makedercert" > /dev/null 2>&1
-check_exists "$dercertpath"
+run_step "Creating a CA keypair" "${ca.jkscmd}" "${ca.jks}" || exit 1
+run_step "Exporting CA certificate" "${ca.crtcmd}" "${ca.crt}" || exit 1
+run_step "Creating an SSL keypair" "${ssl.jkscmd}" "${ssl.jks}" || exit 1
+run_step "Creating an SSL CSR" "${ssl.jkscsr}" "${ssl.csr}" || exit 1
+run_step "Issuing SSL certificate from CA" "${ssl.crtcmd}" "${ssl.crt}" || exit 1
+run_step "Importing CA certificate into SSL keypair" "${ssl.importca}" "" || exit 1
+run_step "Importing chained SSL certificate into SSL keypair" "${ssl.importssl}" "" || exit 1
 
-write_properties
+echo -e "\nWriting properties file..."
+write_properties "${ssl.properties}" || exit 1
 
-echo "Removing old certificates (warnings are safe to ignore)..."
+echo -e "\nRemoving installed certificates..."
 remove_certs
-echo -e "${bash.success}\n"
-
-echo "Installing certificate..."
 
 # Install new certificate
-security add-trusted-cert -d -r "${apple.keygen.store}" -k "${apple.keychain}" "$dercertpath"
-if [ $? -eq 0 ]; then
-    echo -e "${bash.success}\n"
-else
-    echo -e "${bash.failure}\n"
-fi
+run_step "Installing certificate" "${apple.keygen.install}" "" || exit 1
 
-echo "Finished"
+echo -e "\nCleaning up..."
+delete_file "${ca.jks}"
+delete_file "${ssl.csr}"
+delete_file "${ssl.crt}"
+
+echo -e "\n[Finished ${apple.keygen.name}]\n"
 exit 0

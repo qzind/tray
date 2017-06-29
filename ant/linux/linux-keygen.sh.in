@@ -21,12 +21,12 @@
 ##########################################################################################
 
 # Handle CN=${ssl.cn} override
-cnoverride="$2"
+cnoverride="$1"
 
 # Handle trusted ssl certificate
 if [[ -n $2 && -n $3 ]]; then
-    trustedcertpath="$3"
-    trustedkeypath="$4"
+    trustedcertpath="$2"
+    trustedkeypath="$3"
 fi
 
 # Random password hash

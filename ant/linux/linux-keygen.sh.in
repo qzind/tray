@@ -47,7 +47,7 @@ function replace_vars {
 
     # Handle CN=${ssl.cn} override
     if [ -n "$cnoverride" ]; then
-        cmd=$(echo "$cmd" | sed -e "s|CN=${ssl.cn},|$cnoverride|g")
+        cmd=$(echo "$cmd" | sed -e "s|CN=${ssl.cn},|CN=$cnoverride,|g")
         if ip4 "$cnoverride"; then
             cmd=$(echo "$cmd" | sed -e "s|san=dns:${ssl.cn},|san=ip:$cnoverride,|g")
         else

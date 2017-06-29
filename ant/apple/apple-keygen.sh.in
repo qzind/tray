@@ -174,8 +174,8 @@ delete_file "${ssl.crt}"
 # Handle trusted ssl certificate, if specified
 if [ -n "$trustedcertpath" ]; then
     echo -e "\nCreating keystore for secure websockets..."
-    eval "$(replace_vars "${trusted.convert}")" > /dev/null 2>&1 || exit 1
-    check_exists "${ssl.jks}" || exit 1
+    run_step "\nConverting to PKCS12 keypair" "${trusted.command}" "${trusted.keypair}"
+    run_step "\nConverting to jks format" "${trusted.convert}" "${ssl.jks}"
     write_properties "${ssl.properties}" || exit 1
     echo -e "\n[Finished ${apple.keygen.name}]\n"
     exit 0

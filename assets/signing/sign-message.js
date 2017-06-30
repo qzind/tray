@@ -31,7 +31,7 @@
  *        openssl rsa -in private-key.pem -out private-key-updated.pem
  *
  *     2. Include jsrsasign into your web page
- *        <script src="https://cdn.rawgit.com/kjur/jsrsasign/master/jsrsasign-all-min.js"></script>
+ *        <script src="https://cdn.rawgit.com/kjur/jsrsasign/89f70bd4872473733f10579a77b554c81f3a7136/jsrsasign-all-min.js"></script>
  *
  *     3. Include this script into your web page
  *        <script src="path/to/sign-message.js"></script>

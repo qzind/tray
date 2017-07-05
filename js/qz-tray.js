@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.0.3-2;
+ * @version 2.0.4;
  * @overview QZ Tray Connector
  * <p/>
  * Connects a web client to the QZ Tray software.
@@ -28,7 +28,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
-        VERSION: "2.0.3-2",                              //must match @version above
+        VERSION: "2.0.4",                              //must match @version above
         DEBUG: false,
 
         log: {

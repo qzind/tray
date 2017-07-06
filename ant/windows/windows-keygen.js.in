@@ -141,12 +141,12 @@ function pw() {
 /**
  * Reads a registry value, taking 32-bit/64-bit architecture into consideration
  */
-function getRegValue(path) {	
+function getRegValue(path) {
 	// If 64-bit OS, try 32-bit registry first
 	if (shell.ExpandEnvironmentStrings("ProgramFiles(x86)")) {
 		path = path.replace("\\Software\\", "\\Software\\Wow6432Node\\");
 	}
-	
+
 	var regValue = "";
 	try {
 		regValue = shell.RegRead(path);
@@ -331,8 +331,12 @@ function writePropertiesFile() {
  */
 function installWindowsCertificate() {
     console.log("Installing native certificate for secure websockets...");
-    verifyExec(replaceVars("${windows.keygen.install}"), "Installing native certificate") &&
-    console.log(" - " + (findWindowsMatches("") ? "[success] " : "[failed] ")  + "Checking certificate installed");
+    var success = verifyExec(replaceVars("${windows.keygen.install}"), "Installing native certificate") && findWindowsMatches("");
+    if (success) {
+        console.log(" - [success] Checking certificate installed");
+    } else {
+        throw "${windows.keygen.tool} failed";
+    }
 }
 
 function installWindowsXPCertificate() {
@@ -530,7 +534,10 @@ function deleteWindowsCertificate() {
         matches = matches.split(serialDelim);
         for (var i in matches) {
             if (matches[i]) {
-                verifyExec(replaceVars("${windows.keygen.uninstall}").replaceAll("!match", matches[i]), 'Remove "${vendor.company}" ' + matches[i] + ' certificate');
+                var success = verifyExec(replaceVars("${windows.keygen.uninstall}").replaceAll("!match", matches[i]), 'Remove "${vendor.company}" ' + matches[i] + ' certificate');
+                if (!success) {
+                    throw "${windows.keygen.tool} failed";
+                }
             }
         }
 

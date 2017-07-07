@@ -64,6 +64,7 @@ public class CupsUtils {
                                    System.getProperty("user.name"));
 
         Pointer response = Cups.INSTANCE.cupsDoRequest(http, request, "/");
+        //todo remove this
         //parseResponse(response);
         Pointer attr = Cups.INSTANCE.ippFindAttribute(response, "printer-state-reasons",
                                                           Cups.INSTANCE.ippTagValue("keyword"));
@@ -73,7 +74,7 @@ public class CupsUtils {
             int attrCount = Cups.INSTANCE.ippGetCount(attr);
             for(int i = 0; i < attrCount; i++) {
                 String data = Cups.INSTANCE.ippGetString(attr, i, "");
-                PrinterStatus s = PrinterStatus.getFromCupsString(data);
+                PrinterStatus s = PrinterStatus.getFromCupsString(data, printerName);
                 if (s != null) statuses.add(s);
             }
         }

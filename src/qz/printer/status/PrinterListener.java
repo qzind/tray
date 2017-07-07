@@ -17,19 +17,19 @@ public class PrinterListener implements EventListener{
         this.session = session;
     }
 
-    public void statusChanged (PrinterStatus[] statuses, String printerName) {
+    public void statusChanged (PrinterStatus[] statuses) {
         for (PrinterStatus printerStatus : statuses) {
-            PrintSocketClient.sendStream(session, createStatusStream(printerStatus, printerName));
+            PrintSocketClient.sendStream(session, createStatusStream(printerStatus));
         }
     }
 
-    private StreamEvent createStatusStream(PrinterStatus status, String printerName) {
-        //TODO Put real data here
+    private StreamEvent createStatusStream(PrinterStatus status) {
         return new StreamEvent(StreamEvent.Stream.PRINTER, StreamEvent.Type.ACTION)
-                .withData("printerName", printerName)
-                .withData("statusCode", status.getCode())
-                .withData("statusText", status.getName())
-                .withData("severity", status.getSeverity())
-                .withData("message", status.getName() + ": Level " + status.getSeverity() + ", StatusCode " + status.getCode() + ", From " + printerName);
+                .withData("printerName", status.issuingPrinterName)
+                .withData("statusCode", status.type.getCode())
+                .withData("statusText", status.type.getName())
+                .withData("severity", status.type.getSeverity())
+                .withData("cupsString", status.getCupsString())
+                .withData("message", status.toString());
     }
 }

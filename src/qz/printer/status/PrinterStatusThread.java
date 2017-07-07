@@ -68,8 +68,8 @@ public class PrinterStatusThread extends Thread {
             int statusCode = WinspoolUtil.getPrinterInfo2(printerName).Status;
             if (lastStatus != statusCode) {
                 lastStatus = statusCode;
-                PrinterStatus[] statuses = PrinterStatus.getFromWMICode(statusCode);
-                PrinterStatusMonitor.statusChanged(statuses, printerName);
+                PrinterStatus[] statuses = PrinterStatus.getFromWMICode(statusCode, printerName);
+                PrinterStatusMonitor.statusChanged(statuses);
             }
         } else {
             issueError();

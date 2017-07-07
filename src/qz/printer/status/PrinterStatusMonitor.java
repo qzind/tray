@@ -78,9 +78,9 @@ public class PrinterStatusMonitor {
         statusListeners.clear();
     }
 
-    public static void statusChanged (PrinterStatus[] statuses, String printerName) {
+    public static void statusChanged (PrinterStatus[] statuses) {
         for (PrinterListener sl: statusListeners) {
-            sl.statusChanged(statuses, printerName);
+            sl.statusChanged(statuses);
         }
     }
 }

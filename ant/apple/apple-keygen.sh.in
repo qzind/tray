@@ -39,7 +39,7 @@ if ${apple.jvmver} > /dev/null 2>&1; then
     keytoolcmd="${apple.jvmcmd} keytool"
 else
     # Fallback on Internet Plug-Ins version if needed
-    keytoolcmd="${apple.jvmfallback}/keytool"
+    keytoolcmd="\"${apple.jvmfallback}/keytool\""
 fi
 
 # Check for IPv4 address

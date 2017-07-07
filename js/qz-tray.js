@@ -945,7 +945,7 @@ var qz = (function() {
          * ex. <code>'{"call":"<callName>","params":{...},"timestamp":1450000000}'</code>
          *
          * @param {Object<Config>|Array<Object<Config>>} configs Previously created config object or objects.
-         * @param {Array<Object|string>} data Array of data being sent to the printer.<br/>
+         * @param {Array<Object|string>|Array<Array<Object|string>>} data Array of data being sent to the printer.<br/>
          *      String values are interpreted as <code>{type: 'raw', format: 'command', flavor: 'plain', data: &lt;string>}</code>.
          *  @param {string} data.data
          *  @param {string} data.type Printing type. Valid types are <code>[pixel | raw*]</code>. *Default
@@ -1005,10 +1005,13 @@ var qz = (function() {
                 if (signaturesTimestamps && !Array.isArray(signaturesTimestamps)) { signaturesTimestamps = [signaturesTimestamps]; }
             }
 
-            if (!Array.isArray(configs)) { configs = [configs]; }
+            if (!Array.isArray(configs)) { configs = [configs]; } //single config -> array of configs
+            if (!Array.isArray(data[0])) { data = [data]; } //single data array -> array of data arrays
 
             //clean up data formatting
-            _qz.tools.relative(data);
+            for(var d = 0; d < data.length; d++) {
+                _qz.tools.relative(data[d]);
+            }
 
             var sendToPrint = function(mapping) {
                 var params = {
@@ -1020,32 +1023,19 @@ var qz = (function() {
                 return _qz.websocket.dataPromise('print', params, mapping.signature, mapping.timestamp);
             };
 
-            //presort to group config data
-            var map = {};
-            var signIdx = 0;
-            for(var i = 0; i < configs.length || i < data.length; i++) {
-                var cfg = configs[Math.min(i, configs.length - 1)];
-                var ref = cfg.printer ? cfg.printer.name : null;
-
-                if (!map[ref]) {
-                    map[ref] = {
-                        config: cfg,
-                        data: [],
-                        signature: signatures[signIdx],
-                        timestamp: signaturesTimestamps[signIdx]
-                    };
-                    signIdx++;
-                }
-
-                map[ref].data.push(data[Math.min(i, data.length - 1)]);
-            }
-
             //chain instead of Promise.all, so resumeOnError can collect each error
             var chain = [];
-            for(var set in map) {
-                (function(set_) {
-                    chain.push(function() { return sendToPrint(map[set_]); });
-                })(set);
+            for(var i = 0; i < configs.length || i < data.length; i++) {
+                (function(i_) {
+                    var map = {
+                        config: configs[Math.min(i_, configs.length - 1)],
+                        data: data[Math.min(i_, data.length - 1)],
+                        signature: signatures[i_],
+                        timestamp: signaturesTimestamps[i_]
+                    };
+
+                    chain.push(function() { return sendToPrint(map) });
+                })(i);
             }
 
             //setup to catch errors if needed

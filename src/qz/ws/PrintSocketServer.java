@@ -117,6 +117,7 @@ public class PrintSocketServer {
                 SslContextFactory sslContextFactory = new SslContextFactory();
                 sslContextFactory.setKeyStorePath(trayProperties.getProperty("wss.keystore"));
                 sslContextFactory.setKeyStorePassword(trayProperties.getProperty("wss.storepass"));
+                sslContextFactory.setKeyManagerPassword(trayProperties.getProperty("wss.keypass"));
 
                 SslConnectionFactory sslConnection = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
                 HttpConnectionFactory httpConnection = new HttpConnectionFactory(new HttpConfiguration());

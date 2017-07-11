@@ -3,6 +3,7 @@ package qz.printer.action;
 import com.github.zafarkhaja.semver.Version;
 import net.sourceforge.iharder.Base64;
 import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -37,6 +38,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(PrintPDF.class);
 
+    private Splitter splitter = new Splitter();
     private List<PDDocument> pdfs;
 
 
@@ -64,7 +66,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     doc = PDDocument.load(new URL(data.getString("data")).openStream());
                 }
 
-                pdfs.add(doc);
+                pdfs.addAll(splitter.split(doc));
             }
             catch(FileNotFoundException e) {
                 throw new UnsupportedOperationException("PDF file specified could not be found.", e);
@@ -96,10 +98,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         PrinterJob job = PrinterJob.getPrinterJob();
         job.setPrintService(output.getPrintService());
-        PageFormat page = job.getPageFormat(null);
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page);
+        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, job.getPageFormat(null));
 
         // Disable attributes per https://github.com/qzind/tray/issues/174
         if (SystemUtilities.isMac()) { // && Constants.JAVA_VERSION.lessThan(Version.valueOf("1.8.0-152"))) {
@@ -112,6 +113,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         BookBundle bundle = new BookBundle();
 
         for(PDDocument doc : pdfs) {
+            PageFormat page = job.getPageFormat(null);
+            applyDefaultSettings(pxlOpts, page);
+
             for(PDPage pd : doc.getPages()) {
                 if (pxlOpts.getRotation() % 360 != 0) {
                     rotatePage(doc, pd, pxlOpts.getRotation());

@@ -7,6 +7,7 @@ import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import org.apache.pdfbox.printing.Scaling;
 import org.codehaus.jettison.json.JSONArray;
@@ -38,12 +39,14 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(PrintPDF.class);
 
+    private List<PDDocument> originals;
+    private List<PDDocument> printables;
     private Splitter splitter = new Splitter();
-    private List<PDDocument> pdfs;
 
 
     public PrintPDF() {
-        pdfs = new ArrayList<>();
+        originals = new ArrayList<>();
+        printables = new ArrayList<>();
     }
 
     @Override
@@ -66,7 +69,8 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     doc = PDDocument.load(new URL(data.getString("data")).openStream());
                 }
 
-                pdfs.addAll(splitter.split(doc));
+                originals.add(doc);
+                printables.addAll(splitter.split(doc));
             }
             catch(FileNotFoundException e) {
                 throw new UnsupportedOperationException("PDF file specified could not be found.", e);
@@ -76,7 +80,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             }
         }
 
-        log.debug("Parsed {} files for printing", pdfs.size());
+        log.debug("Parsed {} files for printing", printables.size());
     }
 
     @Override
@@ -91,7 +95,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
     @Override
     public void print(PrintOutput output, PrintOptions options) throws PrinterException {
-        if (pdfs.isEmpty()) {
+        if (printables.isEmpty()) {
             log.warn("Nothing to print");
             return;
         }
@@ -112,7 +116,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         BookBundle bundle = new BookBundle();
 
-        for(PDDocument doc : pdfs) {
+        for(PDDocument doc : printables) {
             PageFormat page = job.getPageFormat(null);
             applyDefaultSettings(pxlOpts, page);
 
@@ -122,7 +126,8 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
 
                 if (pxlOpts.getOrientation() == null) {
-                    if ((pd.getRotation() / 90) % 2 == 1) {
+                    PDRectangle bounds = pd.getBBox();
+                    if (bounds.getWidth() > bounds.getHeight() || (pd.getRotation() / 90) % 2 == 1) {
                         log.info("Adjusting orientation to print landscape PDF source");
                         page.setOrientation(PrintOptions.Orientation.LANDSCAPE.getAsFormat());
                     }
@@ -175,10 +180,14 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
     @Override
     public void cleanup() {
-        for(PDDocument doc : pdfs) {
+        for(PDDocument doc : printables) {
+            try { doc.close(); } catch(IOException ignore) {}
+        }
+        for(PDDocument doc : originals) {
             try { doc.close(); } catch(IOException ignore) {}
         }
 
-        pdfs.clear();
+        originals.clear();
+        printables.clear();
     }
 }

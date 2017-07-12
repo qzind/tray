@@ -77,6 +77,8 @@ public class CupsUtils {
                 PrinterStatus s = PrinterStatus.getFromCupsString(data, printerName);
                 if (s != null) statuses.add(s);
             }
+        } else {
+            statuses.add(new PrinterStatus(PrinterStatusType.NOT_AVAILABLE, printerName, ""));
         }
 
         Cups.INSTANCE.ippDelete(response);

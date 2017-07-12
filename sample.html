@@ -946,10 +946,13 @@
 
         var printData = [
             '^XA\n',
-            '^FO50,50^ADN,36,20^FDPRINTED USING QZ PRINT PLUGIN ' + qzVersion + '\n',
+            '^FO50,100',
             { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: { language: 'ZPLII' } },
-            '^FS\n',
-            '^XZ\n'
+			'^FS\n',
+			'^FO50,300^ADN,36,20^FDPRINTED USING^FS\n',
+			'^FO50,350^ADN,36,20^FDQZ-TRAY ^FS\n', 
+			'^FO50,400^ADN,36,20^FDVERSION ' + qzVersion + '^FS\n' + '\n' ,
+			'^XZ\n'
         ];
 
         qz.print(config, printData).catch(displayError);

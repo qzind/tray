@@ -2,14 +2,11 @@ package qz.printer.status;
 
 import com.sun.jna.platform.win32.Winspool;
 import com.sun.jna.platform.win32.WinspoolUtil;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-
-import static qz.printer.status.CupsStatusServer.runServer;
 import static qz.utils.SystemUtilities.isWindows;
 
 /**
@@ -20,18 +17,17 @@ public class PrinterStatusMonitor {
     private static final Logger log = LoggerFactory.getLogger(PrinterStatusMonitor.class);
 
     private static final HashMap<String, Thread> notificationThreadCollection = new HashMap<String, Thread>();
-    private static final List<PrinterListener> statusListeners = new ArrayList<PrinterListener>();
+    public static final List<String> printersListening = new ArrayList<>();
 
-    public static synchronized boolean launchNotificationThreads(JSONArray printerNames) {
+    private static PrinterListener statusListener;
+
+    public static synchronized boolean launchNotificationThreads() {
         boolean printerFound = false;
-        boolean allPrinters = printerNames.isNull(0);
-        //Unescaping isn't built into json.toString()
-        String nameString = StringEscapeUtils.unescapeJson(printerNames.toString());
 
         if (notificationThreadCollection.isEmpty()) {
             Winspool.PRINTER_INFO_1[] printers = WinspoolUtil.getPrinterInfo1();
             for(int n = 0; n < printers.length; n++) {
-                if (allPrinters || nameString.contains("\"" + printers[n].pName + "\"")) {
+                if (printersListening.isEmpty() || printersListening.contains(printers[n].pName)) {
                     printerFound = true;
                     //TODO Remove this debugging log
                     log.warn("Listening for events on printer " + printers[n].pName);
@@ -54,33 +50,52 @@ public class PrinterStatusMonitor {
     }
 
     public static synchronized boolean startListening (JSONArray printerNames) {
+        stopListening();
+        if (!printerNames.toString().equals("[null]")) {
+            try {
+                for(int i = 0; i < printerNames.length(); i++) {
+                    printersListening.add(printerNames.getString(i));
+                }
+            }
+            catch(Exception e) {
+                log.warn("invalid printer names format for subscription");
+            }
+        }
         if (isWindows()) {
-            return launchNotificationThreads(printerNames);
+            return launchNotificationThreads();
         } else {
-            runServer();
+            CupsStatusServer.runServer();
             return true;
         }
     }
 
     public static synchronized void addStatusListener (PrinterListener listener) {
-        statusListeners.add(listener);
+        statusListener = listener;
     }
 
-    public static void removeStatusListener (PrinterListener listener) {
-        statusListeners.remove(listener);
+    //todo remove maybe
+    public static void removeStatusListener() {
+        statusListener = null;
     }
 
-    public static synchronized boolean isListening() {
-        return !statusListeners.isEmpty();
+    public static synchronized boolean hasStatusListener() {
+        return statusListener != null;
     }
 
     public static synchronized void stopListening() {
-        statusListeners.clear();
+        printersListening.clear();
+        if (isWindows()) {
+            closeNotificationThreads();
+        } else {
+            CupsStatusServer.stopServer();
+        }
+    }
+
+    public static boolean isListeningTo (String PrinterName){
+        return printersListening.contains(PrinterName) || printersListening.isEmpty();
     }
 
     public static void statusChanged (PrinterStatus[] statuses) {
-        for (PrinterListener sl: statusListeners) {
-            sl.statusChanged(statuses);
-        }
+        statusListener.statusChanged(statuses);
     }
 }

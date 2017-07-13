@@ -45,5 +45,18 @@ public class CupsStatusServer {
             log.warn("Could not start CUPS event server. No printer status changes will be reported.");
         }
     }
+    public static void stopServer() {
+        if (server != null) {
+            server.setStopTimeout(10000);
+            new Thread(() -> {
+                try {
+                    server.stop();
+                }
+                catch(Exception ex) {
+                    log.warn("Failed to stop status server.");
+                }
+            }).start();
+        }
+    }
 }
 

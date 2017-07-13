@@ -78,7 +78,7 @@ public class CupsStatusHandler extends AbstractHandler {
                         } else {
                             String printerName =  StringUtils.substringBeforeLast(description, "\"");
                             printerName = StringUtils.substringAfter(printerName, "\"");
-                            if (!printerName.isEmpty()) {
+                            if (!printerName.isEmpty() && PrinterStatusMonitor.isListeningTo(printerName)) {
                                 PrinterStatusMonitor.statusChanged(CupsUtils.getStatuses(printerName));
                                 //Todo Remove this debugging log
                                 //log.warn("GUID: " + characters.getData() + ", Description: " + description);

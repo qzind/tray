@@ -168,7 +168,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                 settings.setPrintResolution(PrintHelper.createPrintResolution((int)pxlOpts.getDensity(), (int)pxlOpts.getDensity()));
             }
 
-            Paper paper = fxPrinter.getPrinterAttributes().getDefaultPaper();
+            Paper paper;
             if (pxlOpts.getSize() != null) {
                 double convert = 1;
                 Units units = pxlOpts.getUnits().getAsUnits();
@@ -177,6 +177,9 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                     units = Units.MM;
                 }
                 paper = PrintHelper.createPaper("Custom", pxlOpts.getSize().getWidth() * convert, pxlOpts.getSize().getHeight() * convert, units);
+            } else {
+                PrintOptions.Size paperSize = options.getDefaultOptions().getPageSize();
+                paper = PrintHelper.createPaper("Default", paperSize.getWidth(), paperSize.getHeight(), Units.POINT);
             }
 
             PageOrientation orient = fxPrinter.getPrinterAttributes().getDefaultPageOrientation();

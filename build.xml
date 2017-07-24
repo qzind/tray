@@ -58,7 +58,6 @@
             <fileset dir="${src.dir}" excludes="**/*.java"/>
         </copy>
 
-        <!-- Distribute socket with LICENSE only -->
         <copy todir="${dist.dir}">
             <fileset file="${basedir}/LICENSE.txt"/>
         </copy>

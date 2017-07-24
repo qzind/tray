@@ -141,7 +141,7 @@
         <property name="build.type" value="-community"/>
     </target>
 
-    <target name="include-assets" depends="init,get-version" if="${dist.include_demo}">
+    <target name="include-assets" depends="init,get-version" unless="dist.minimal">
         <echo>Copying resource files to output</echo>
 
         <copy todir="${dist.dir}/${demo.dir}/${asset.dir}">

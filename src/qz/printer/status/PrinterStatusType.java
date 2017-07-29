@@ -113,6 +113,11 @@ public enum PrinterStatusType {
         tempMap.put("developer-low", TONER_LOW);
         tempMap.put("developer-empty", NO_TONER);
         tempMap.put("interpreter-resource-unavailable", SERVER_UNKNOWN);
+        //CUPS DEFINED STATES
+        tempMap.put("offline", OFFLINE);
+        tempMap.put("cups-insecure-filter", SERVER_UNKNOWN);
+        tempMap.put("cups-missing-filter", ERROR);
+        tempMap.put("cups-waiting-for-job-completed", PRINTING);
         return tempMap;
     }
 }

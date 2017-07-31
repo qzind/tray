@@ -3,6 +3,7 @@ package qz.printer.status;
 import com.sun.jna.Pointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.net.util.URLUtil;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -96,7 +97,8 @@ public class CupsUtils {
             }
             try {
                 String data = Cups.INSTANCE.ippGetString(attr, 0, "");
-                int port = (new URI(data)).getPort();
+
+                int port = new URI(data).getPort();
                 if (CupsStatusServer.CUPS_RSS_PORTS.contains(port)) {
                     Pointer idAttr = Cups.INSTANCE.ippFindNextAttribute(response, "notify-subscription-id",
                                                                         Cups.INSTANCE.ippTagValue("Integer"));
@@ -104,11 +106,9 @@ public class CupsUtils {
                     int id = Cups.INSTANCE.ippGetInteger(idAttr, 0);
                     endSubscription(id);
                     //Todo Remove this debugging log
-                    log.warn("ending {}", id);
+                    log.warn("Ending subscription #{}", id);
                 }
-            } catch(Exception e) {
-                log.warn("Error getting subscription data: " + e.toString());
-            }
+            } catch(Exception ignore) { }
             attr = Cups.INSTANCE.ippFindNextAttribute(response, "notify-recipient-uri",
                                                       Cups.INSTANCE.ippTagValue("uri"));
         }
@@ -117,6 +117,8 @@ public class CupsUtils {
     }
 
     static void startSubscription(int rssPort) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> endSubscription(subid)));
+
         Pointer request = Cups.INSTANCE.ippNewRequest(Cups.INSTANCE.ippOpValue("Create-Printer-Subscription"));
 
         Cups.INSTANCE.ippAddString(request,

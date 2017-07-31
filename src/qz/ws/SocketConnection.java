@@ -4,10 +4,8 @@ import jssc.SerialPortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
-import qz.communication.DeviceException;
-import qz.communication.DeviceIO;
-import qz.communication.HidListener;
-import qz.communication.SerialIO;
+import qz.communication.*;
+import qz.printer.status.PrinterStatusListener;
 import qz.utils.UsbUtilities;
 
 import java.util.HashMap;
@@ -19,7 +17,8 @@ public class SocketConnection {
 
     private Certificate certificate;
 
-    private HidListener hidListener;
+    private DeviceListener deviceListener;
+    private PrinterStatusListener statusListener;
 
     // serial port -> open SerialIO
     private final HashMap<String,SerialIO> openSerialPorts = new HashMap<>();
@@ -55,18 +54,37 @@ public class SocketConnection {
 
 
     public boolean isListening() {
-        return hidListener != null;
+        return deviceListener != null;
     }
 
-    public void startListening(HidListener listener) {
-        hidListener = listener;
+    public void startListening(DeviceListener listener) {
+        deviceListener = listener;
     }
 
     public void stopListening() {
-        if (hidListener != null) {
-            hidListener.close();
+        if (deviceListener != null) {
+            deviceListener.close();
         }
-        hidListener = null;
+        deviceListener = null;
+    }
+
+    public boolean hasStatusListener() {
+        return statusListener != null;
+    }
+
+    public void startStatusListener(PrinterStatusListener listener) {
+        statusListener = listener;
+    }
+
+    public void stopStatusListener() {
+        if (statusListener != null) {
+            statusListener.close();
+        }
+        statusListener = null;
+    }
+
+    public PrinterStatusListener getStatusListener() {
+        return statusListener;
     }
 
 
@@ -127,6 +145,7 @@ public class SocketConnection {
         }
 
         stopListening();
+        stopStatusListener();
     }
 
 }

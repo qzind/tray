@@ -20,7 +20,7 @@ public class CupsStatusServer {
     public static int cupsRSSPort = -1;
     private static Server server;
 
-    public static void runServer() {
+    public static synchronized void runServer() {
         CupsUtils.initCupsStuff();
         CupsUtils.clearSubscriptions();
         boolean started = false;
@@ -45,7 +45,13 @@ public class CupsStatusServer {
             log.warn("Could not start CUPS event server. No printer status changes will be reported.");
         }
     }
-    public static void stopServer() {
+
+    public static synchronized boolean isRunning() {
+        if (server == null) return false;
+        return server.isRunning();
+    }
+
+    public static synchronized void stopServer() {
         if (server != null) {
             server.setStopTimeout(10000);
             new Thread(() -> {

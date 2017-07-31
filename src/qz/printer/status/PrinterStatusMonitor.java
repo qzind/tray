@@ -3,8 +3,10 @@ package qz.printer.status;
 import com.sun.jna.platform.win32.Winspool;
 import com.sun.jna.platform.win32.WinspoolUtil;
 import org.codehaus.jettison.json.JSONArray;
+import org.eclipse.jetty.util.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.ws.SocketConnection;
 
 import java.util.*;
 import static qz.utils.SystemUtilities.isWindows;
@@ -16,10 +18,9 @@ import static qz.utils.SystemUtilities.isWindows;
 public class PrinterStatusMonitor {
     private static final Logger log = LoggerFactory.getLogger(PrinterStatusMonitor.class);
 
-    private static final HashMap<String, Thread> notificationThreadCollection = new HashMap<String, Thread>();
+    private static final HashMap<String, Thread> notificationThreadCollection = new HashMap<>();
+    private static final MultiMap<SocketConnection> clientPrinterConnections = new MultiMap<>();
     public static final List<String> printersListening = new ArrayList<>();
-
-    private static PrinterListener statusListener;
 
     public static synchronized boolean launchNotificationThreads() {
         boolean printerFound = false;
@@ -49,37 +50,22 @@ public class PrinterStatusMonitor {
         notificationThreadCollection.clear();
     }
 
-    public static synchronized boolean startListening (JSONArray printerNames) {
-        stopListening();
-        if (!printerNames.toString().equals("[null]")) {
-            try {
-                for(int i = 0; i < printerNames.length(); i++) {
-                    printersListening.add(printerNames.getString(i));
-                }
+    public static synchronized boolean startListening (SocketConnection connection, JSONArray printerNames) {
+        //stopListening();
+        try {
+            for(int i = 0; i < printerNames.length(); i++) {
+                clientPrinterConnections.add(printerNames.getString(i), connection);
             }
-            catch(Exception e) {
-                log.warn("invalid printer names format for subscription");
-            }
+        }
+        catch(Exception e) {
+            log.warn("invalid printer names format for subscription");
         }
         if (isWindows()) {
             return launchNotificationThreads();
         } else {
-            CupsStatusServer.runServer();
+            if (!CupsStatusServer.isRunning()) CupsStatusServer.runServer();
             return true;
         }
-    }
-
-    public static synchronized void addStatusListener (PrinterListener listener) {
-        statusListener = listener;
-    }
-
-    //todo remove maybe
-    public static void removeStatusListener() {
-        statusListener = null;
-    }
-
-    public static synchronized boolean hasStatusListener() {
-        return statusListener != null;
     }
 
     public static synchronized void stopListening() {
@@ -92,10 +78,21 @@ public class PrinterStatusMonitor {
     }
 
     public static boolean isListeningTo (String PrinterName){
-        return printersListening.contains(PrinterName) || printersListening.isEmpty();
+        return clientPrinterConnections.containsKey(PrinterName) || clientPrinterConnections.containsKey("null");
     }
 
     public static void statusChanged (PrinterStatus[] statuses) {
-        statusListener.statusChanged(statuses);
+        HashSet<SocketConnection> connections = new HashSet<>();
+        for (PrinterStatus ps : statuses) {
+            if (clientPrinterConnections.containsKey(ps.issuingPrinterName)) {
+                connections.addAll(clientPrinterConnections.get(ps.issuingPrinterName));
+            }
+            if (clientPrinterConnections.containsKey("null")) {
+                connections.addAll(clientPrinterConnections.get("null"));
+            }
+            for(SocketConnection sc : connections) {
+                sc.getStatusListener().statusChanged(ps);
+            }
+        }
     }
 }

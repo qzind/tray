@@ -12,7 +12,7 @@ import qz.ws.StreamEvent;
 
 import javax.usb.util.UsbUtil;
 
-public class HidListener implements HidServicesListener {
+public class HidListener implements HidServicesListener, DeviceListener {
 
     private static final Logger log = LoggerFactory.getLogger(HidListener.class);
 

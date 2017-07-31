@@ -15,8 +15,8 @@ import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
+import qz.printer.status.PrinterStatusListener;
 import qz.printer.status.PrinterStatusMonitor;
-import qz.printer.status.PrinterListener;
 import qz.utils.NetworkUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.SerialUtilities;
@@ -300,10 +300,10 @@ public class PrintSocketClient {
                 sendResult(session, UID, PrintServiceMatcher.getPrintersJSON());
                 break;
             case PRINTERS_START_LISTENING:
-                if (!PrinterStatusMonitor.hasStatusListener()) {
-                    PrinterStatusMonitor.addStatusListener(new PrinterListener(session));
+                if (!connection.hasStatusListener()) {
+                    connection.startStatusListener(new PrinterStatusListener(session));
                 }
-                if (PrinterStatusMonitor.startListening(params.getJSONArray("printerNames"))) {
+                if (PrinterStatusMonitor.startListening(connection, params.getJSONArray("printerNames"))) {
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, String.format("Printer(s) \"[%s]\" not found.", params.optString("printerNames")));

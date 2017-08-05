@@ -9,7 +9,7 @@ import qz.ws.StreamEvent;
 
 import java.util.EventListener;
 
-public class PrinterStatusListener implements EventListener, DeviceListener {
+public class PrinterStatusListener implements EventListener {
 
     private static final Logger log = LoggerFactory.getLogger(PrinterStatusListener.class);
     private Session session;
@@ -30,9 +30,5 @@ public class PrinterStatusListener implements EventListener, DeviceListener {
                 .withData("severity", status.type.getSeverity())
                 .withData("cupsString", status.getCupsString())
                 .withData("message", status.toString());
-    }
-
-    public void close() {
-        //todo tell monitor that this is closing
     }
 }

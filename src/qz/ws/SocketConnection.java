@@ -1,11 +1,13 @@
 package qz.ws;
 
 import jssc.SerialPortException;
+import org.codehaus.jettison.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.communication.*;
 import qz.printer.status.PrinterStatusListener;
+import qz.printer.status.PrinterStatusMonitor;
 import qz.utils.UsbUtilities;
 
 import java.util.HashMap;
@@ -68,22 +70,20 @@ public class SocketConnection {
         deviceListener = null;
     }
 
-    public boolean hasStatusListener() {
+    public synchronized boolean hasStatusListener() {
         return statusListener != null;
     }
 
-    public void startStatusListener(PrinterStatusListener listener) {
+    public synchronized void startStatusListener(PrinterStatusListener listener) {
         statusListener = listener;
     }
 
-    public void stopStatusListener() {
-        if (statusListener != null) {
-            statusListener.close();
-        }
+    public synchronized void stopStatusListener() {
+        PrinterStatusMonitor.closeListener(this);
         statusListener = null;
     }
 
-    public PrinterStatusListener getStatusListener() {
+    public synchronized PrinterStatusListener getStatusListener() {
         return statusListener;
     }
 

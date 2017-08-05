@@ -300,9 +300,12 @@ public class PrintSocketClient {
                 sendResult(session, UID, PrintServiceMatcher.getPrintersJSON());
                 break;
             case PRINTERS_START_LISTENING:
-                if (!connection.hasStatusListener()) {
+                if (connection.hasStatusListener()) {
+                    PrinterStatusMonitor.closeListener(connection);
+                } else {
                     connection.startStatusListener(new PrinterStatusListener(session));
                 }
+
                 if (PrinterStatusMonitor.startListening(connection, params.getJSONArray("printerNames"))) {
                     sendResult(session, UID, null);
                 } else {
@@ -310,8 +313,9 @@ public class PrintSocketClient {
                 }
                 break;
             case PRINTERS_STOP_LISTENING:
-                PrinterStatusMonitor.stopListening();
-                PrinterStatusMonitor.closeNotificationThreads();
+                if (connection.hasStatusListener()) {
+                    connection.stopStatusListener();
+                }
                 sendResult(session, UID, null);
                 break;
             case PRINT:

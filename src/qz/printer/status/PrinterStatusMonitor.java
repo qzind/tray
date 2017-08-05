@@ -22,7 +22,7 @@ public class PrinterStatusMonitor {
     private static final MultiMap<SocketConnection> clientPrinterConnections = new MultiMap<>();
     public static final List<String> printersListening = new ArrayList<>();
 
-    public static synchronized boolean launchNotificationThreads() {
+    public synchronized static boolean launchNotificationThreads() {
         boolean printerFound = false;
 
         if (notificationThreadCollection.isEmpty()) {
@@ -43,15 +43,14 @@ public class PrinterStatusMonitor {
         return printerFound;
     }
 
-    public static synchronized void closeNotificationThreads() {
+    public synchronized static void closeNotificationThreads() {
         for(Map.Entry<String, Thread> entry : notificationThreadCollection.entrySet()) {
             entry.getValue().interrupt();
         }
         notificationThreadCollection.clear();
     }
 
-    public static synchronized boolean startListening (SocketConnection connection, JSONArray printerNames) {
-        //stopListening();
+    public synchronized static boolean startListening (SocketConnection connection, JSONArray printerNames) {
         try {
             for(int i = 0; i < printerNames.length(); i++) {
                 clientPrinterConnections.add(printerNames.getString(i), connection);
@@ -68,7 +67,15 @@ public class PrinterStatusMonitor {
         }
     }
 
-    public static synchronized void stopListening() {
+    public synchronized static void closeListener(SocketConnection connection) {
+        for (Map.Entry<String, List<SocketConnection>> e: clientPrinterConnections.entrySet()) {
+            if (e.getValue().contains(connection)) {
+                clientPrinterConnections.removeValue(e.getKey(),connection);
+            }
+        }
+    }
+
+    public synchronized static void stopListening() {
         printersListening.clear();
         if (isWindows()) {
             closeNotificationThreads();
@@ -77,11 +84,11 @@ public class PrinterStatusMonitor {
         }
     }
 
-    public static boolean isListeningTo (String PrinterName){
+    public synchronized static boolean isListeningTo (String PrinterName){
         return clientPrinterConnections.containsKey(PrinterName) || clientPrinterConnections.containsKey("null");
     }
 
-    public static void statusChanged (PrinterStatus[] statuses) {
+    public synchronized static void statusChanged (PrinterStatus[] statuses) {
         HashSet<SocketConnection> connections = new HashSet<>();
         for (PrinterStatus ps : statuses) {
             if (clientPrinterConnections.containsKey(ps.issuingPrinterName)) {

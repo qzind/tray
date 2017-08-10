@@ -8,7 +8,7 @@ public class PrinterStatusThread extends Thread {
 
     private static final Logger log = LoggerFactory.getLogger(PrinterStatusMonitor.class);
 
-    private boolean keepMonitoring, closing = false;
+    private boolean closing = false;
     private final String printerName;
     private final Winspool spool = Winspool.INSTANCE;
     private int lastStatus = -1;
@@ -17,13 +17,18 @@ public class PrinterStatusThread extends Thread {
     private WinNT.HANDLE hChangeObject;
     private WinDef.DWORDByReference pdwChangeResult;
 
-    public PrinterStatusThread(String s) {
+    public PrinterStatusThread(String s, int status) {
         super("Printer Status Monitor " + s);
+        lastStatus = status;
         printerName = s;
     }
     @Override
     public void run() {
         attachToSystem();
+
+        //Todo do we want this? If so this only works for the first client to connect
+        //PrinterStatus[] statuses = PrinterStatus.getFromWMICode(lastStatus, printerName);
+        //PrinterStatusMonitor.statusChanged(statuses);
 
         if (hChangeObject != null){
             while (!closing) {
@@ -90,6 +95,8 @@ public class PrinterStatusThread extends Thread {
     public void interrupt() {
         closing = true;
         spool.FindClosePrinterChangeNotification(hChangeObject);
+        //Todo Remove this debugging log
+        log.warn("Closing thread listening for events on printer " + printerName);
         super.interrupt();
     }
 }

@@ -18,29 +18,42 @@ import static qz.utils.SystemUtilities.isWindows;
 public class PrinterStatusMonitor {
     private static final Logger log = LoggerFactory.getLogger(PrinterStatusMonitor.class);
 
+    private static Thread printerConnectionsThread;
     private static final HashMap<String, Thread> notificationThreadCollection = new HashMap<>();
     private static final MultiMap<SocketConnection> clientPrinterConnections = new MultiMap<>();
-    public static final List<String> printersListening = new ArrayList<>();
 
     public synchronized static boolean launchNotificationThreads() {
-        boolean printerFound = false;
+        ArrayList<String> printerNameList = new ArrayList();
 
-        if (notificationThreadCollection.isEmpty()) {
-            Winspool.PRINTER_INFO_1[] printers = WinspoolUtil.getPrinterInfo1();
-            for(int n = 0; n < printers.length; n++) {
-                if (printersListening.isEmpty() || printersListening.contains(printers[n].pName)) {
-                    printerFound = true;
-                    //TODO Remove this debugging log
-                    log.warn("Listening for events on printer " + printers[n].pName);
-                    Thread notificationThread = new PrinterStatusThread(printers[n].pName);
-                    notificationThreadCollection.put(printers[n].pName, notificationThread);
-                    notificationThread.start();
-                }
+        Winspool.PRINTER_INFO_2[] printers = WinspoolUtil.getPrinterInfo2();
+        for(int n = 0; n < printers.length; n++) {
+            printerNameList.add(printers[n].pPrinterName);
+            if (!notificationThreadCollection.containsKey(printers[n].pPrinterName)) {
+                //TODO Remove this debugging log
+                log.warn("Listening for events on printer " + printers[n].pPrinterName);
+                Thread notificationThread = new PrinterStatusThread(printers[n].pPrinterName, printers[n].Status);
+                notificationThreadCollection.put(printers[n].pPrinterName, notificationThread);
+                notificationThread.start();
             }
-        } else {
-            log.warn("Attempted to launch printer status notification threads twice, ignoring.");
         }
-        return printerFound;
+        //cull threads that don't have associated printers
+        for (Map.Entry<String, Thread> e: notificationThreadCollection.entrySet()) {
+            if (!printerNameList.contains(e.getKey())) {
+                e.getValue().interrupt();
+                notificationThreadCollection.remove(e.getKey());
+            }
+        }
+
+        if (printerConnectionsThread == null) {
+            printerConnectionsThread = new PrinterConnectionsThread();
+            printerConnectionsThread.start();
+        }
+
+        return true;
+    }
+
+    public synchronized static void relaunchThreads() {
+        launchNotificationThreads();
     }
 
     public synchronized static void closeNotificationThreads() {
@@ -48,6 +61,8 @@ public class PrinterStatusMonitor {
             entry.getValue().interrupt();
         }
         notificationThreadCollection.clear();
+        if (printerConnectionsThread != null) printerConnectionsThread.interrupt();
+        printerConnectionsThread = null;
     }
 
     public synchronized static boolean startListening (SocketConnection connection, JSONArray printerNames) {
@@ -68,19 +83,23 @@ public class PrinterStatusMonitor {
     }
 
     public synchronized static void closeListener(SocketConnection connection) {
+        ArrayList<String> itemsToDelete = new ArrayList();
         for (Map.Entry<String, List<SocketConnection>> e: clientPrinterConnections.entrySet()) {
             if (e.getValue().contains(connection)) {
-                clientPrinterConnections.removeValue(e.getKey(),connection);
+                itemsToDelete.add(e.getKey());
             }
         }
-    }
+        //Don't move this into the earlier loop, it causes a ConcurrentModificationException
+        for (String s: itemsToDelete){
+            clientPrinterConnections.removeValue(s,connection);
+        }
 
-    public synchronized static void stopListening() {
-        printersListening.clear();
-        if (isWindows()) {
-            closeNotificationThreads();
-        } else {
-            CupsStatusServer.stopServer();
+        if (clientPrinterConnections.isEmpty()) {
+            if (isWindows()) {
+                closeNotificationThreads();
+            } else {
+                CupsStatusServer.stopServer();
+            }
         }
     }
 

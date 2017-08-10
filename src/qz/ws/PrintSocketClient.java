@@ -306,11 +306,8 @@ public class PrintSocketClient {
                     connection.startStatusListener(new PrinterStatusListener(session));
                 }
 
-                if (PrinterStatusMonitor.startListening(connection, params.getJSONArray("printerNames"))) {
-                    sendResult(session, UID, null);
-                } else {
-                    sendError(session, UID, String.format("Printer(s) \"[%s]\" not found.", params.optString("printerNames")));
-                }
+                PrinterStatusMonitor.startListening(connection, params.getJSONArray("printerNames"));
+                sendResult(session, UID, null);
                 break;
             case PRINTERS_STOP_LISTENING:
                 if (connection.hasStatusListener()) {

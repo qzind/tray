@@ -80,25 +80,33 @@ public class PrinterStatusMonitor {
         }
     }
 
-    public synchronized static void sendStatuses(SocketConnection connection) {
+    public synchronized static void sendStatuses (SocketConnection connection) {
         boolean sendForAllPrinters = false;
-        ArrayList<String> targetPrinters = new ArrayList();
+        ArrayList<PrinterStatus> printers;
+
+        if (isWindows()) {
+            printers = new ArrayList();
+            Winspool.PRINTER_INFO_2[] wmiPrinters = WinspoolUtil.getPrinterInfo2();
+            for (Winspool.PRINTER_INFO_2 p : wmiPrinters) {
+                printers.addAll(Arrays.asList(PrinterStatus.getFromWMICode(p.Status, p.pPrinterName)));
+            }
+        } else {
+            printers = CupsUtils.getAllStatuses();
+        }
 
         List<SocketConnection> connections = clientPrinterConnections.get("null");
         if (connections != null) {
             sendForAllPrinters = connections.contains(connection);
         }
 
-        Winspool.PRINTER_INFO_2[] printers = WinspoolUtil.getPrinterInfo2();
-        for(int n = 0; n < printers.length; n++) {
+        for(PrinterStatus ps : printers) {
             if (sendForAllPrinters) {
-                PrinterStatus[] ps = PrinterStatus.getFromWMICode(printers[n].Status, printers[n].pPrinterName);
                 connection.getStatusListener().statusChanged(ps);
-            }
-            connections = clientPrinterConnections.get(printers[n].pPrinterName);
-            if ((connections != null) && connections.contains(connection)) {
-                PrinterStatus[] ps = PrinterStatus.getFromWMICode(printers[n].Status, printers[n].pPrinterName);
-                connection.getStatusListener().statusChanged(ps);
+            } else {
+                connections = clientPrinterConnections.get(ps.issuingPrinterName);
+                if ((connections != null) && connections.contains(connection)) {
+                    connection.getStatusListener().statusChanged(ps);
+                }
             }
         }
     }

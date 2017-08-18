@@ -87,6 +87,43 @@ public class CupsUtils {
         return statuses.toArray(new PrinterStatus[statuses.size()]);
     }
 
+    public static ArrayList<PrinterStatus> getAllStatuses() {
+        ArrayList<PrinterStatus> statuses = new ArrayList<>();
+        Pointer request = Cups.INSTANCE.ippNewRequest(Cups.INSTANCE.ippOpValue("CUPS-Get-Printers"));
+
+        Cups.INSTANCE.ippAddString(request,
+                                   Cups.INSTANCE.ippTagValue("Operation"),
+                                   Cups.INSTANCE.ippTagValue("Name"),
+                                   "requesting-user-name",
+                                   "",
+                                   System.getProperty("user.name"));
+        Pointer response = Cups.INSTANCE.cupsDoRequest(http, request, "/");
+        Pointer attr = Cups.INSTANCE.ippFindAttribute(response, "printer-state-reasons",
+                                                      Cups.INSTANCE.ippTagValue("keyword"));
+
+        while (attr != Pointer.NULL) {
+            //save reasons until we have name, we need to go through the attrs in order
+            String[] reasons = new String[Cups.INSTANCE.ippGetCount(attr)];
+            for(int i = 0; i < reasons.length; i++) {
+                reasons[i] = Cups.INSTANCE.ippGetString(attr, i, "");
+            }
+
+            attr = Cups.INSTANCE.ippFindNextAttribute(response, "printer-name",
+                                                      Cups.INSTANCE.ippTagValue("Name"));
+            String name = Cups.INSTANCE.ippGetString(attr, 0, "");
+
+            for(String reason : reasons) {
+                statuses.add(PrinterStatus.getFromCupsString(reason, name));
+            }
+
+            //for next loop
+            attr = Cups.INSTANCE.ippFindNextAttribute(response, "printer-state-reasons",
+                                                      Cups.INSTANCE.ippTagValue("keyword"));
+        }
+        Cups.INSTANCE.ippDelete(response);
+        return statuses;
+    }
+
     public static boolean clearSubscriptions() {
         Pointer response = listSubscriptions();
         Pointer attr = Cups.INSTANCE.ippFindAttribute(response, "notify-recipient-uri",

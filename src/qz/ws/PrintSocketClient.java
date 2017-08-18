@@ -316,6 +316,7 @@ public class PrintSocketClient {
                 } else {
                     sendError(session, UID, String.format("No printer listeners started for this client."));
                 }
+                sendResult(session, UID, null);
                 break;
             case PRINTERS_STOP_LISTENING:
                 if (connection.hasStatusListener()) {

@@ -3,6 +3,7 @@ package qz.printer.status;
 import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.common.Constants;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -15,7 +16,7 @@ import java.util.List;
 public class CupsStatusServer {
     private static final Logger log = LoggerFactory.getLogger(CupsStatusServer.class);
 
-    public static final List<Integer> CUPS_RSS_PORTS = Collections.unmodifiableList(Arrays.asList(8586, 8687, 8788, 8889));
+    public static final List<Integer> CUPS_RSS_PORTS = Collections.unmodifiableList(Arrays.asList(Constants.CUPS_RSS_PORTS));
 
     public static int cupsRSSPort = -1;
     private static Server server;

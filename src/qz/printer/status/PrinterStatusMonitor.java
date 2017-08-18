@@ -29,8 +29,6 @@ public class PrinterStatusMonitor {
         for(int n = 0; n < printers.length; n++) {
             printerNameList.add(printers[n].pPrinterName);
             if (!notificationThreadCollection.containsKey(printers[n].pPrinterName)) {
-                //TODO Remove this debugging log
-                log.warn("Listening for events on printer " + printers[n].pPrinterName);
                 Thread notificationThread = new PrinterStatusThread(printers[n].pPrinterName, printers[n].Status);
                 notificationThreadCollection.put(printers[n].pPrinterName, notificationThread);
                 notificationThread.start();
@@ -79,6 +77,29 @@ public class PrinterStatusMonitor {
         } else {
             if (!CupsStatusServer.isRunning()) CupsStatusServer.runServer();
             return true;
+        }
+    }
+
+    public synchronized static void sendStatuses(SocketConnection connection) {
+        boolean sendForAllPrinters = false;
+        ArrayList<String> targetPrinters = new ArrayList();
+
+        List<SocketConnection> connections = clientPrinterConnections.get("null");
+        if (connections != null) {
+            sendForAllPrinters = connections.contains(connection);
+        }
+
+        Winspool.PRINTER_INFO_2[] printers = WinspoolUtil.getPrinterInfo2();
+        for(int n = 0; n < printers.length; n++) {
+            if (sendForAllPrinters) {
+                PrinterStatus[] ps = PrinterStatus.getFromWMICode(printers[n].Status, printers[n].pPrinterName);
+                connection.getStatusListener().statusChanged(ps);
+            }
+            connections = clientPrinterConnections.get(printers[n].pPrinterName);
+            if ((connections != null) && connections.contains(connection)) {
+                PrinterStatus[] ps = PrinterStatus.getFromWMICode(printers[n].Status, printers[n].pPrinterName);
+                connection.getStatusListener().statusChanged(ps);
+            }
         }
     }
 

@@ -22,6 +22,12 @@ public class PrinterStatusListener implements EventListener {
         PrintSocketClient.sendStream(session, createStatusStream(printerStatus));
     }
 
+    public void statusChanged (PrinterStatus[] printerStatuses) {
+        for (PrinterStatus ps : printerStatuses) {
+            PrintSocketClient.sendStream(session, createStatusStream(ps));
+        }
+    }
+
     private StreamEvent createStatusStream(PrinterStatus status) {
         return new StreamEvent(StreamEvent.Stream.PRINTER, StreamEvent.Type.ACTION)
                 .withData("printerName", status.issuingPrinterName)

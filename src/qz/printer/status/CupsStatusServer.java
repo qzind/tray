@@ -56,6 +56,8 @@ public class CupsStatusServer {
             server.setStopTimeout(10000);
             new Thread(() -> {
                 try {
+                    //Todo Remove this debugging log
+                    log.warn("Stopping CUPS status server");
                     server.stop();
                 }
                 catch(Exception ex) {

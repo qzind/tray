@@ -19,16 +19,14 @@ public class PrinterStatusThread extends Thread {
 
     public PrinterStatusThread(String s, int status) {
         super("Printer Status Monitor " + s);
+        //TODO Remove this debugging log
+        log.warn("Listening for events on printer " + s);
         lastStatus = status;
         printerName = s;
     }
     @Override
     public void run() {
         attachToSystem();
-
-        //Todo do we want this? If so this only works for the first client to connect
-        //PrinterStatus[] statuses = PrinterStatus.getFromWMICode(lastStatus, printerName);
-        //PrinterStatusMonitor.statusChanged(statuses);
 
         if (hChangeObject != null){
             while (!closing) {

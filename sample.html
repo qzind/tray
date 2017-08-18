@@ -823,6 +823,7 @@
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-default" onclick="startPrintersListen()">Listen to All Printers</button>
                                     <button type="button" class="btn btn-default" onclick="startPrintersListen($('#configPrinter').html())">Listen to Current Printer</button>
+                                    <button type="button" class="btn btn-default" onclick="getPrintersStatus()">Request current status</button>
                                 </div>
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-default" onclick="stopPrintersListen()">Stop Listening</button>
@@ -1709,6 +1710,12 @@
     function startPrintersListen(printerName) {
         qz.printers.startListening(printerName).then(function() {
             displayMessage("Started listening for printer events");
+        }).catch(displayError);
+    }
+
+    function getPrintersStatus() {
+        qz.printers.getStatus().then(function() {
+            displayMessage("Requesting all printer statuses for listened printers");
         }).catch(displayError);
     }
 

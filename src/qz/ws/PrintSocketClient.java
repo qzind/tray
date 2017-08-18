@@ -47,6 +47,7 @@ public class PrintSocketClient {
         PRINTERS_FIND("printers.find", true, "access connected printers"),
         PRINTERS_DETAIL("printers.detail", true, "access connected printers"),
         PRINTERS_START_LISTENING("printers.startListening", true, "listen for printer status"),
+        PRINTERS_GET_STATUS("printers.getStatus", false),
         PRINTERS_STOP_LISTENING("printers.stopListening", false),
         PRINT("print", true, "print to %s"),
 
@@ -308,6 +309,13 @@ public class PrintSocketClient {
 
                 PrinterStatusMonitor.startListening(connection, params.getJSONArray("printerNames"));
                 sendResult(session, UID, null);
+                break;
+            case PRINTERS_GET_STATUS:
+                if (connection.hasStatusListener()) {
+                    PrinterStatusMonitor.sendStatuses(connection);
+                } else {
+                    sendError(session, UID, String.format("No printer listeners started for this client."));
+                }
                 break;
             case PRINTERS_STOP_LISTENING:
                 if (connection.hasStatusListener()) {

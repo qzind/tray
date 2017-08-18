@@ -253,8 +253,6 @@ var qz = (function() {
                                         _qz.hid.callHid(JSON.parse(returned.event));
                                         break;
                                     case _qz.streams.printer:
-                                        //FIXME Change to trace log, or remove
-                                        _qz.log.info("Received printer status", returned.event);
                                         _qz.printers.callPrinter(JSON.parse(returned.event));
                                         break;
                                     default:
@@ -817,6 +815,18 @@ var qz = (function() {
              */
             stopListening: function() {
                 return _qz.websocket.dataPromise('printers.stopListening');
+            },
+
+            /**
+             * Causes all listened printers to send a status to this client, as though they had a status change.
+             *
+             * @returns {Promise<null|Error>}
+             * @since 2.1.0
+             *
+             * @see qz.printers.startListening
+             */
+            getStatus: function() {
+                return _qz.websocket.dataPromise('printers.getStatus');
             },
 
             /**

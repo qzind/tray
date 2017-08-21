@@ -15,8 +15,8 @@ import static qz.utils.SystemUtilities.isWindows;
  * Created by Kyle on 2/23/2017.
  */
 
-public class PrinterStatusMonitor {
-    private static final Logger log = LoggerFactory.getLogger(PrinterStatusMonitor.class);
+public class StatusMonitor {
+    private static final Logger log = LoggerFactory.getLogger(StatusMonitor.class);
 
     private static Thread printerConnectionsThread;
     private static final HashMap<String, Thread> notificationThreadCollection = new HashMap<>();
@@ -29,7 +29,7 @@ public class PrinterStatusMonitor {
         for(int n = 0; n < printers.length; n++) {
             printerNameList.add(printers[n].pPrinterName);
             if (!notificationThreadCollection.containsKey(printers[n].pPrinterName)) {
-                Thread notificationThread = new PrinterStatusThread(printers[n].pPrinterName, printers[n].Status);
+                Thread notificationThread = new WMIPrinterStatusThread(printers[n].pPrinterName, printers[n].Status);
                 notificationThreadCollection.put(printers[n].pPrinterName, notificationThread);
                 notificationThread.start();
             }
@@ -43,7 +43,7 @@ public class PrinterStatusMonitor {
         }
 
         if (printerConnectionsThread == null) {
-            printerConnectionsThread = new PrinterConnectionsThread();
+            printerConnectionsThread = new WMIPrinterConnectionsThread();
             printerConnectionsThread.start();
         }
 

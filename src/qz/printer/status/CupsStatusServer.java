@@ -36,14 +36,14 @@ public class CupsStatusServer {
                 started = true;
             }
             catch(Exception e) {
-                log.warn("Could not start CUPS event server on port {}, using fallback port.", p);
+                log.warn("Could not start CUPS status server on port {}, using fallback port.", p);
             }
             if (started) {
                 break;
             }
         }
         if (!started) {
-            log.warn("Could not start CUPS event server. No printer status changes will be reported.");
+            log.warn("Could not start CUPS status server. No printer status changes will be reported.");
         }
     }
 
@@ -54,15 +54,15 @@ public class CupsStatusServer {
 
     public static synchronized void stopServer() {
         if (server != null) {
+            CupsUtils.freeIppObjs();
             server.setStopTimeout(10000);
             new Thread(() -> {
                 try {
-                    //Todo Remove this debugging log
                     log.warn("Stopping CUPS status server");
                     server.stop();
                 }
                 catch(Exception ex) {
-                    log.warn("Failed to stop status server.");
+                    log.warn("Failed to stop CUPS status server.");
                 }
             }).start();
         }

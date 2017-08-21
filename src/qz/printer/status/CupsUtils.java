@@ -14,17 +14,21 @@ import java.util.ArrayList;
 public class CupsUtils {
     private static final Logger log = LoggerFactory.getLogger(CupsUtils.class);
 
+    private static boolean httpInitialised = false;
     private static Pointer http;
     private static int cupsPort;
-    private static int subid = -1;
+    private static int subscriptionID = -1;
 
 
-    static void initCupsStuff() {
-        cupsPort = Cups.INSTANCE.ippPort();
-        http = Cups.INSTANCE.httpConnectEncrypt(
-                Cups.INSTANCE.cupsServer(),
-                Cups.INSTANCE.ippPort(),
-                Cups.INSTANCE.cupsEncryption());
+    synchronized static void initCupsStuff() {
+        if (!httpInitialised) {
+            httpInitialised = true;
+            cupsPort = Cups.INSTANCE.ippPort();
+            http = Cups.INSTANCE.httpConnectEncrypt(
+                    Cups.INSTANCE.cupsServer(),
+                    Cups.INSTANCE.ippPort(),
+                    Cups.INSTANCE.cupsEncryption());
+        }
     }
 
     static Pointer listSubscriptions() {
@@ -65,8 +69,6 @@ public class CupsUtils {
                                    System.getProperty("user.name"));
 
         Pointer response = Cups.INSTANCE.cupsDoRequest(http, request, "/");
-        //todo remove this
-        //parseResponse(response);
         Pointer attr = Cups.INSTANCE.ippFindAttribute(response, "printer-state-reasons",
                                                           Cups.INSTANCE.ippTagValue("keyword"));
         ArrayList<PrinterStatus> statuses = new ArrayList<>();
@@ -116,7 +118,7 @@ public class CupsUtils {
                 statuses.add(PrinterStatus.getFromCupsString(reason, name));
             }
 
-            //for next loop
+            //for next loop iteration
             attr = Cups.INSTANCE.ippFindNextAttribute(response, "printer-state-reasons",
                                                       Cups.INSTANCE.ippTagValue("keyword"));
         }
@@ -141,9 +143,8 @@ public class CupsUtils {
                                                                         Cups.INSTANCE.ippTagValue("Integer"));
 
                     int id = Cups.INSTANCE.ippGetInteger(idAttr, 0);
+                    log.warn("Ending CUPS subscription #{}", id);
                     endSubscription(id);
-                    //Todo Remove this debugging log
-                    log.warn("Ending subscription #{}", id);
                 }
             } catch(Exception ignore) { }
             attr = Cups.INSTANCE.ippFindNextAttribute(response, "notify-recipient-uri",
@@ -154,7 +155,7 @@ public class CupsUtils {
     }
 
     static void startSubscription(int rssPort) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> endSubscription(subid)));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> endSubscription(subscriptionID)));
 
         Pointer request = Cups.INSTANCE.ippNewRequest(Cups.INSTANCE.ippOpValue("Create-Printer-Subscription"));
 
@@ -191,7 +192,7 @@ public class CupsUtils {
 
         Pointer attr = Cups.INSTANCE.ippFindAttribute(response, "notify-subscription-id",
                                                       Cups.INSTANCE.ippTagValue("integer"));
-        if (attr != Pointer.NULL) subid = Cups.INSTANCE.ippGetInteger(attr, 0);
+        if (attr != Pointer.NULL) subscriptionID = Cups.INSTANCE.ippGetInteger(attr, 0);
 
         Cups.INSTANCE.ippDelete(response);
     }
@@ -214,46 +215,10 @@ public class CupsUtils {
         Cups.INSTANCE.ippDelete(response);
     }
 
-    public static void freeIppObjs() {
-        Cups.INSTANCE.httpClose(http);
-    }
-
-
-    //TODO Remove these functions
-    static void parseResponse(Pointer response) {
-        Pointer attr = Cups.INSTANCE.ippFirstAttribute(response);
-        while (true) {
-            if (attr == Pointer.NULL) {
-                break;
-            }
-            System.out.println(parseAttr(attr));
-            attr = Cups.INSTANCE.ippNextAttribute(response);
+    public synchronized static void freeIppObjs() {
+        if (httpInitialised) {
+            httpInitialised = false;
+            Cups.INSTANCE.httpClose(http);
         }
-        System.out.println("------------------------");
-    }
-    static String parseAttr(Pointer attr){
-        int valueTag = Cups.INSTANCE.ippGetValueTag(attr);
-        int attrCount = Cups.INSTANCE.ippGetCount(attr);
-        String data = "";
-        String attrName = Cups.INSTANCE.ippGetName(attr);
-        for (int i = 0; i < attrCount; i++) {
-            if (valueTag == Cups.INSTANCE.ippTagValue("Integer")) {
-                data += Cups.INSTANCE.ippGetInteger(attr, i);
-            } else if (valueTag == Cups.INSTANCE.ippTagValue("Boolean")) {
-                data += (Cups.INSTANCE.ippGetInteger(attr, i) == 1);
-            } else if (valueTag == Cups.INSTANCE.ippTagValue("Enum")) {
-                data += Cups.INSTANCE.ippEnumString(attrName, Cups.INSTANCE.ippGetInteger(attr, i));
-            } else {
-                data += Cups.INSTANCE.ippGetString(attr, i, "");
-            }
-            if (i + 1 < attrCount) {
-                data += ", ";
-            }
-        }
-
-        if (attrName == null){
-            return "------------------------";
-        }
-        return String.format("%s: %d %s {%s}", attrName, attrCount, Cups.INSTANCE.ippTagString(valueTag), data);
     }
 }

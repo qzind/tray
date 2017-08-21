@@ -4,14 +4,14 @@ import com.sun.jna.platform.win32.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PrinterConnectionsThread extends Thread {
+public class WMIPrinterConnectionsThread extends Thread {
 
-    private static final Logger log = LoggerFactory.getLogger(PrinterConnectionsThread.class);
+    private static final Logger log = LoggerFactory.getLogger(WMIPrinterConnectionsThread.class);
 
     private boolean running = true;
     private Winspool.PRINTER_INFO_1[] currentPrinterList;
 
-    public PrinterConnectionsThread() {
+    public WMIPrinterConnectionsThread() {
         super("Printer Connection Monitor");
     }
 
@@ -23,9 +23,9 @@ public class PrinterConnectionsThread extends Thread {
             Winspool.PRINTER_INFO_1[] newPrinterList = WinspoolUtil.getPrinterInfo1();
 
             if (newPrinterList.length != currentPrinterList.length){
-                PrinterStatusMonitor.relaunchThreads();
+                StatusMonitor.relaunchThreads();
             } else if (!arrayEquiv(currentPrinterList, newPrinterList)) {
-                PrinterStatusMonitor.relaunchThreads();
+                StatusMonitor.relaunchThreads();
             }
             currentPrinterList = newPrinterList;
         }
@@ -43,8 +43,6 @@ public class PrinterConnectionsThread extends Thread {
     @Override
     public void interrupt() {
         running = false;
-        //Todo Remove this debugging log
-        log.warn("Closing thread Printer Connection Monitor");
         super.interrupt();
     }
 }

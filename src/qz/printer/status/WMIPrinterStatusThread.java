@@ -4,9 +4,9 @@ import com.sun.jna.platform.win32.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PrinterStatusThread extends Thread {
+public class WMIPrinterStatusThread extends Thread {
 
-    private static final Logger log = LoggerFactory.getLogger(PrinterStatusMonitor.class);
+    private static final Logger log = LoggerFactory.getLogger(StatusMonitor.class);
 
     private boolean closing = false;
     private final String printerName;
@@ -17,10 +17,8 @@ public class PrinterStatusThread extends Thread {
     private WinNT.HANDLE hChangeObject;
     private WinDef.DWORDByReference pdwChangeResult;
 
-    public PrinterStatusThread(String s, int status) {
+    public WMIPrinterStatusThread(String s, int status) {
         super("Printer Status Monitor " + s);
-        //TODO Remove this debugging log
-        log.warn("Listening for events on printer " + s);
         lastStatus = status;
         printerName = s;
     }
@@ -30,12 +28,8 @@ public class PrinterStatusThread extends Thread {
 
         if (hChangeObject != null){
             while (!closing) {
-                //TODO Remove this debugging log
-                //log.warn("locking on printer notification");
                 waitOnChange();
                 if (closing) break;
-                //TODO Remove this debugging log
-                //log.warn("lock on print notification was released.");
                 ingestChange();
             }
         }
@@ -72,7 +66,7 @@ public class PrinterStatusThread extends Thread {
             if (lastStatus != statusCode) {
                 lastStatus = statusCode;
                 PrinterStatus[] statuses = PrinterStatus.getFromWMICode(statusCode, printerName);
-                PrinterStatusMonitor.statusChanged(statuses);
+                StatusMonitor.statusChanged(statuses);
             }
         } else {
             issueError();
@@ -81,8 +75,9 @@ public class PrinterStatusThread extends Thread {
 
     private void issueError() {
         int errorCode = Kernel32.INSTANCE.GetLastError();
-        //TODO Remove this debugging log
-        log.warn("Error number: " + errorCode + " This should also be sent to clients");
+        log.error("WMI Error number: " + errorCode + " This should be reported");
+        PrinterStatus[] unknownError = {new PrinterStatus(PrinterStatusType.UNKNOWN_STATUS, printerName)};
+        StatusMonitor.statusChanged(unknownError);
         try {
             //if the error repeats, we don't want to lock up the cpu
             Thread.sleep(1000);
@@ -93,8 +88,6 @@ public class PrinterStatusThread extends Thread {
     public void interrupt() {
         closing = true;
         spool.FindClosePrinterChangeNotification(hChangeObject);
-        //Todo Remove this debugging log
-        log.warn("Closing thread listening for events on printer " + printerName);
         super.interrupt();
     }
 }

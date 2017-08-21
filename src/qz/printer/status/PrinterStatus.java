@@ -28,14 +28,6 @@ public class PrinterStatus {
         this.cupsString = cupsString;
     }
 
-    public String getCupsString() {
-        return cupsString;
-    }
-
-    public String getIssuingPrinterName() {
-        return issuingPrinterName;
-    }
-
     public static PrinterStatus[] getFromWMICode(int code, String issuingPrinterName) {
         if (code == 0) return new PrinterStatus[]{new PrinterStatus(OK, issuingPrinterName)};
 

@@ -3,29 +3,20 @@ package qz.printer.status;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.communication.DeviceListener;
 import qz.ws.PrintSocketClient;
 import qz.ws.StreamEvent;
 
-import java.util.EventListener;
+public class StatusSession {
 
-public class PrinterStatusListener implements EventListener {
-
-    private static final Logger log = LoggerFactory.getLogger(PrinterStatusListener.class);
+    private static final Logger log = LoggerFactory.getLogger(StatusSession.class);
     private Session session;
 
-    public PrinterStatusListener(Session session) {
+    public StatusSession(Session session) {
         this.session = session;
     }
 
     public void statusChanged (PrinterStatus printerStatus) {
         PrintSocketClient.sendStream(session, createStatusStream(printerStatus));
-    }
-
-    public void statusChanged (PrinterStatus[] printerStatuses) {
-        for (PrinterStatus ps : printerStatuses) {
-            PrintSocketClient.sendStream(session, createStatusStream(ps));
-        }
     }
 
     private StreamEvent createStatusStream(PrinterStatus status) {
@@ -34,7 +25,7 @@ public class PrinterStatusListener implements EventListener {
                 .withData("statusCode", status.type.getCode())
                 .withData("statusText", status.type.getName())
                 .withData("severity", status.type.getSeverity())
-                .withData("cupsString", status.getCupsString())
+                .withData("cupsString", status.cupsString)
                 .withData("message", status.toString());
     }
 }

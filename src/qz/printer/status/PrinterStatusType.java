@@ -73,6 +73,7 @@ public enum PrinterStatusType {
         }
         return tempMap;
     }
+
     private static SortedMap<String,PrinterStatusType> initCupsMap() {
         SortedMap<String,PrinterStatusType> tempMap = new TreeMap<>();
         tempMap.put("other", UNKNOWN_STATUS);
@@ -93,21 +94,21 @@ public enum PrinterStatusType {
         tempMap.put("interlock-open", DOOR_OPEN);
         tempMap.put("door-open", DOOR_OPEN);
         tempMap.put("input-tray-missing", PAPER_PROBLEM);
-        //todo not a great match
+        //not a great match
         tempMap.put("media-low", TONER_LOW);
         tempMap.put("media-empty", PAPER_OUT);
         tempMap.put("output-tray-missing", PAPER_PROBLEM);
-        //todo not a great match
+        //not a great match
         tempMap.put("output-area-almost-full", TONER_LOW);
         tempMap.put("output-area-full", OUTPUT_BIN_FULL);
         tempMap.put("marker-supply-low", TONER_LOW);
         tempMap.put("marker-supply-empty", NO_TONER);
-        //todo not a great match
+        //not a great match
         tempMap.put("marker-waste-almost-full", TONER_LOW);
         tempMap.put("marker-waste-full", NO_TONER);
         tempMap.put("fuser-over-temp", WARMING_UP);
         tempMap.put("fuser-under-temp", WARMING_UP);
-        //todo not a great match
+        //not a great match
         tempMap.put("opc-near-eol", TONER_LOW);
         tempMap.put("opc-life-over", NO_TONER);
         tempMap.put("developer-low", TONER_LOW);

@@ -15,8 +15,8 @@ import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
-import qz.printer.status.PrinterStatusListener;
-import qz.printer.status.PrinterStatusMonitor;
+import qz.printer.status.StatusSession;
+import qz.printer.status.StatusMonitor;
 import qz.utils.NetworkUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.SerialUtilities;
@@ -302,17 +302,17 @@ public class PrintSocketClient {
                 break;
             case PRINTERS_START_LISTENING:
                 if (connection.hasStatusListener()) {
-                    PrinterStatusMonitor.closeListener(connection);
+                    StatusMonitor.closeListener(connection);
                 } else {
-                    connection.startStatusListener(new PrinterStatusListener(session));
+                    connection.startStatusListener(new StatusSession(session));
                 }
 
-                PrinterStatusMonitor.startListening(connection, params.getJSONArray("printerNames"));
+                StatusMonitor.startListening(connection, params.getJSONArray("printerNames"));
                 sendResult(session, UID, null);
                 break;
             case PRINTERS_GET_STATUS:
                 if (connection.hasStatusListener()) {
-                    PrinterStatusMonitor.sendStatuses(connection);
+                    StatusMonitor.sendStatuses(connection);
                 } else {
                     sendError(session, UID, String.format("No printer listeners started for this client."));
                 }

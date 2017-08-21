@@ -75,13 +75,6 @@ public class SystemUtilities {
         return parent + File.separator + folder;
     }
 
-    public static String getSharedDirectory() {
-        String parent = DeployUtilities.getSystemShortcutCreator().getParentDirectory();
-        String folder = Constants.SHARED_DATA_DIR;
-
-        return parent + File.separator + folder;
-    }
-
     /**
      * Detect 32-bit JVM on 64-bit Windows
      * @return

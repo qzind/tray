@@ -59,6 +59,7 @@
           <option name="FINALLY_ON_NEW_LINE" value="true" />
           <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
           <option name="ALIGN_MULTILINE_PARAMETERS_IN_CALLS" value="true" />
+          <option name="ALIGN_MULTILINE_BINARY_OPERATION" value="true" />
           <option name="SPACE_BEFORE_WHILE_PARENTHESES" value="false" />
           <option name="SPACE_BEFORE_FOR_PARENTHESES" value="false" />
           <option name="SPACE_BEFORE_CATCH_PARENTHESES" value="false" />

@@ -1,9 +1,5 @@
-/pdf-renderer_0.9.1_qz/build/
-/pdf-renderer_0.9.1_qz/dist/
-/jssc_2.6.0_qz/build/
-/jssc_2.6.0_qz/dist/
-/qz-print/build/
-/qz-print/out/
+/out/
+/js/node_modules
 /.idea/workspace.xml
 /.idea/uiDesigner.xml
 /.idea/compiler.xml

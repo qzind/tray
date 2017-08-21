@@ -48,11 +48,31 @@ makekeystore="${makekeystore/$storepass/$password}"
 makekeystore="${makekeystore/$keypass/$password}"
 makekeystore="${makekeystore/$keystore/$keystorepath}"
 
+# Check for IPv4 address
+function ip4 {
+    if [[ $1 =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        return 0
+    fi
+    return 1
+}
+
 # Handle CN=${jks.cn} override
 if [ -n "$1" ]; then
     cname="CN=${jks.cn},"
-    override="CN=$1,"
-    makekeystore="${makekeystore/$cname/$override}"
+    newcname="CN=$1,"
+    san="san=dns:${jks.cn},"
+    newsan="san=dns:$1,"
+    newipsan="san=ip:$1,"
+    cnalt=",dns:${jks.cnalt}"
+    newcnalt=""
+
+    makekeystore="${makekeystore/$cname/$newcname}"
+    if ip4 "$1"; then
+        makekeystore="${makekeystore/$san/$newipsan}"
+    else
+        makekeystore="${makekeystore/$san/$newsan}"
+    fi
+    makekeystore="${makekeystore/$cnalt/$newcnalt}"
 fi
 
 # Cert export variable substitutions

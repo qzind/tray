@@ -28,9 +28,21 @@
     <target name="compile-socket" depends="init">
         <mkdir dir="${build.project.dir}"/>
 
+        <!-- find the pdfbox jar -->
+        <path id="find.jar">
+            <fileset dir="${lib.dir}/printing/">
+                <include name="pdfbox*.jar"/>
+            </fileset>
+        </path>
+        <property name="pdfbox.path" value="${toString:find.jar}" />
+
         <javac destdir="${build.project.dir}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8">
             <src path="${src.dir}"/>
             <classpath>
+                <!-- prefer bouncycastle from pdfbox over simplersa -->
+                <path id="plugin.override">
+                    <pathelement path="${pdfbox.path}" />
+                </path>
                 <fileset dir="${lib.dir}">
                     <include name="**/*.jar"/>
                 </fileset>
@@ -199,6 +211,8 @@
         <copy file="${windows.launcher.in}" tofile="${windows.launcher.out}" overwrite="true">
             <filterchain><expandproperties/></filterchain>
         </copy>
+
+        <copy file="${windows.cleanup.in}" tofile="${windows.cleanup.out}" />
 
         <copy file="${windows.keygen.in}" tofile="${windows.keygen.out}" >
             <filterchain><expandproperties/></filterchain>
@@ -371,6 +385,11 @@
                  <include name="**/*.sh"/>
             </fileset>
         </chmod>
+
+        <copy file="${linux.uninstall.in}" tofile="${linux.uninstall.out}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="u+x" file="${linux.uninstall.out}"/>
 
         <copy file="${firefoxcert.in}" tofile="${firefoxcert.out}">
             <filterchain><expandproperties/></filterchain>

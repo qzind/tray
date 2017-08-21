@@ -17,10 +17,7 @@ import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.status.StatusSession;
 import qz.printer.status.StatusMonitor;
-import qz.utils.NetworkUtilities;
-import qz.utils.PrintingUtilities;
-import qz.utils.SerialUtilities;
-import qz.utils.UsbUtilities;
+import qz.utils.*;
 
 import javax.print.PrintServiceLookup;
 import javax.security.cert.CertificateParsingException;
@@ -28,7 +25,7 @@ import javax.usb.util.UsbUtil;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.Semaphore;
 
 
 @WebSocket
@@ -37,7 +34,7 @@ public class PrintSocketClient {
     private static final Logger log = LoggerFactory.getLogger(PrintSocketClient.class);
 
     private final TrayManager trayManager = PrintSocketServer.getTrayManager();
-    private static final AtomicBoolean dialogOpen = new AtomicBoolean(false);
+    private static final Semaphore dialogAvailable = new Semaphore(1, true);
 
     //websocket port -> Connection
     private static final HashMap<Integer,SocketConnection> openConnections = new HashMap<>();
@@ -366,11 +363,19 @@ public class PrintSocketClient {
                 sendResult(session, UID, UsbUtilities.getInterfaceEndpointsJSON(vendorId, productId, UsbUtilities.hexToByte(params.getString("interface"))));
                 break;
             case HID_LIST_DEVICES:
-                sendResult(session, UID, HidUtilities.getHidDevicesJSON());
+                if (SystemUtilities.isWindows()) {
+                    sendResult(session, UID, PJHA_HidUtilities.getHidDevicesJSON());
+                } else {
+                    sendResult(session, UID, H4J_HidUtilities.getHidDevicesJSON());
+                }
                 break;
             case HID_START_LISTENING:
                 if (!connection.isListening()) {
-                    connection.startListening(new HidListener(session));
+                    if (SystemUtilities.isWindows()) {
+                        connection.startListening(new PJHA_HidListener(session));
+                    } else {
+                        connection.startListening(new H4J_HidListener(session));
+                    }
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, "Already listening HID device events");
@@ -392,7 +397,11 @@ public class PrintSocketClient {
                     if (call == Method.USB_CLAIM_DEVICE) {
                         device = new UsbIO(vendorId, productId, UsbUtilities.hexToByte(params.optString("interface")));
                     } else {
-                        device = new HidIO(vendorId, productId);
+                        if (SystemUtilities.isWindows()) {
+                            device = new PJHA_HidIO(vendorId, productId);
+                        } else {
+                            device = new H4J_HidIO(vendorId, productId);
+                        }
                     }
 
                     if (session.isOpen()) {
@@ -477,10 +486,10 @@ public class PrintSocketClient {
             }
 
             case NETWORKING_DEVICE:
-                sendResult(session, UID, NetworkUtilities.getDeviceJSON());
+                sendResult(session, UID, NetworkUtilities.getDeviceJSON(params.optString("hostname", "google.com"), params.optInt("port", 443)));
                 break;
             case NETWORKING_DEVICES:
-                sendResult(session, UID, NetworkUtilities.getDevicesJSON());
+                sendResult(session, UID, NetworkUtilities.getDevicesJSON(params.optString("hostname", "google.com"), params.optInt("port", 443)));
                 break;
             case GET_VERSION:
                 sendResult(session, UID, Constants.VERSION);
@@ -494,14 +503,18 @@ public class PrintSocketClient {
 
     private boolean allowedFromDialog(Certificate certificate, String prompt) {
         //wait until previous prompts are closed
-        while(dialogOpen.get()) {
-            try { Thread.sleep(1000); } catch(Exception ignore) {}
+        try {
+            dialogAvailable.acquire();
+        }
+        catch(InterruptedException e) {
+            log.warn("Failed to acquire dialog", e);
+            return false;
         }
 
-        dialogOpen.set(true);
         //prompt user for access
         boolean allowed = trayManager.showGatewayDialog(certificate, prompt);
-        dialogOpen.set(false);
+
+        dialogAvailable.release();
 
         return allowed;
     }

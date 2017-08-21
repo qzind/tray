@@ -30,21 +30,28 @@ public class NetworkUtilities {
     private static NetworkUtilities instance;
 
     private ArrayList<Device> devices;
+    private Device primaryDevice;
 
-    private static NetworkUtilities getInstance() {
+
+    private NetworkUtilities(String hostname, int port) {
+        try { primaryDevice = new Device(getPrimaryInetAddress(hostname, port), true); }
+        catch(SocketException ignore) {}
+    }
+
+    public static NetworkUtilities getInstance(String hostname, int port) {
         if (instance == null) {
-            try { instance = new NetworkUtilities(); }
+            try { instance = new NetworkUtilities(hostname, port); }
             catch(Exception e) { e.printStackTrace(); }
         }
 
         return instance;
     }
 
-    public static JSONArray getDevicesJSON() throws JSONException {
+    public static JSONArray getDevicesJSON(String hostname, int port) throws JSONException {
         JSONArray network = new JSONArray();
 
         try {
-            for(Device device : getInstance().gatherDevices()) {
+            for(Device device : getInstance(hostname, port).gatherDevices()) {
                 network.put(device.toJSON());
             }
         }
@@ -54,9 +61,11 @@ public class NetworkUtilities {
         return network;
     }
 
-    public static JSONObject getDeviceJSON() throws JSONException {
-        if (Device.PRIMARY != null) {
-            return Device.PRIMARY.toJSON();
+    public static JSONObject getDeviceJSON(String hostname, int port) throws JSONException {
+        Device primary = getInstance(hostname, port).primaryDevice;
+
+        if (primary != null) {
+            return primary.toJSON();
         } else {
             return new JSONObject().put("error", "Unable to initialize network utilities");
         }
@@ -69,7 +78,11 @@ public class NetworkUtilities {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
             while(interfaces.hasMoreElements()) {
                 NetworkInterface iface = interfaces.nextElement();
-                devices.add(new Device(iface));
+
+                Device next = new Device(iface);
+                next.primary = next.equals(primaryDevice);
+
+                devices.add(next);
             }
         }
 
@@ -79,9 +92,7 @@ public class NetworkUtilities {
     private static InetAddress getPrimaryInetAddress(String hostname, int port) {
         log.info("Initiating a temporary connection to \"{}:{}\" to determine main Network Interface", hostname, port);
 
-        Socket socket = null;
-        try {
-            socket = new Socket();
+        try(Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(hostname, port));
 
             return socket.getLocalAddress();
@@ -89,33 +100,20 @@ public class NetworkUtilities {
         catch(IOException e) {
             log.warn("Could not fetch primary adapter", e);
         }
-        finally {
-            if (socket != null) {
-                try { socket.close(); }
-                catch(Exception ignore) {}
-            }
-        }
 
         return null;
     }
 
-
     private static class Device {
-
-        static Device PRIMARY = null;
-
-        static {
-            try { PRIMARY = new Device(getPrimaryInetAddress("google.com", 443)); }
-            catch(SocketException ignore) {}
-        }
 
         String mac, ip, id, name;
         ArrayList<String> ip4, ip6;
         boolean up, primary;
 
-        Device(InetAddress inet) throws SocketException {
+        Device(InetAddress inet, boolean primary) throws SocketException {
             this(NetworkInterface.getByInetAddress(inet));
             ip = inet.getHostAddress(); //use primary
+            this.primary = primary;
         }
 
         Device(NetworkInterface iface) {
@@ -151,8 +149,6 @@ public class NetworkUtilities {
                     ip = ip4.get(0);
                 }
             }
-
-            primary = equals(PRIMARY);
         }
 
         @Override

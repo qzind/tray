@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.utils.ConnectionUtilities;
 import qz.utils.PrintingUtilities;
 
 import javax.imageio.IIOException;
@@ -35,7 +36,6 @@ import java.awt.print.PrinterJob;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -77,7 +77,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
                 if (flavor == PrintingUtilities.Flavor.BASE64) {
                     bi = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(data.getString("data"))));
                 } else {
-                    bi = ImageIO.read(new URL(data.getString("data")));
+                    bi = ImageIO.read(ConnectionUtilities.getInputStream(data.getString("data")));
                 }
 
                 images.add(bi);
@@ -163,6 +163,15 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         }
         log.trace("Requested page {} for printing", pageIndex);
 
+        if (graphics.getClass().getCanonicalName().equals("sun.print.PeekGraphics")) {
+            //java uses class only to query if a page needs printed - save memory/time by short circuiting
+            return PAGE_EXISTS;
+        }
+
+
+        //allows pages view to rotate in different orientations
+        graphics.drawString(" ", 0, 0);
+
         BufferedImage imgToPrint = fixColorModel(images.get(pageIndex));
         if (imageRotation % 360 != 0) {
             imgToPrint = rotate(imgToPrint, imageRotation);
@@ -207,6 +216,8 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         // Now we perform our rendering
         Graphics2D graphics2D = withRenderHints((Graphics2D)graphics, interpolation);
         log.trace("{}", graphics2D.getRenderingHints());
+
+        log.debug("Memory: {}m/{}m", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576, Runtime.getRuntime().maxMemory() / 1048576);
 
         graphics2D.drawImage(imgToPrint, (int)boundX, (int)boundY, (int)(boundX + imgW), (int)(boundY + imgH),
                              0, 0, imgToPrint.getWidth(), imgToPrint.getHeight(), null);

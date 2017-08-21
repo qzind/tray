@@ -230,7 +230,7 @@ public class PrintingUtilities {
             PrintOutput output = new PrintOutput(params.optJSONObject("printer"));
             PrintOptions options = new PrintOptions(params.optJSONObject("options"), output);
 
-            processor.parseData(params.optJSONArray("data"), options);
+            processor.parseData(params.getJSONArray("data"), options);
             processor.print(output, options);
             log.info("Printing complete");
 
@@ -244,8 +244,9 @@ public class PrintingUtilities {
             log.error("Failed to print", e);
             PrintSocketClient.sendError(session, UID, e);
         }
-
-        PrintingUtilities.releasePrintProcessor(processor);
+        finally {
+            PrintingUtilities.releasePrintProcessor(processor);
+        }
     }
 
 }

@@ -28,6 +28,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
+        VERSION: "2.1.0",                              //must match @version above
         DEBUG: false,
 
         log: {
@@ -352,7 +353,7 @@ var qz = (function() {
                 copies: 1,
                 density: 0,
                 duplex: false,
-                fallbackDensity: 600,
+                fallbackDensity: null,
                 interpolation: 'bicubic',
                 jobName: null,
                 margins: 0,
@@ -486,6 +487,33 @@ var qz = (function() {
                 return loc;
             },
 
+            relative: function(data) {
+                for(var i = 0; i < data.length; i++) {
+                    if (data[i].constructor === Object) {
+                        var absolute = false;
+
+                        if (data[i].flavor) {
+                            //if flavor is known, we can directly check for absolute flavor types
+                            var flavor = data[i].flavor.toUpperCase();
+                            if (flavor === 'FILE' || flavor === 'IMAGE' || flavor === 'XML') {
+                                absolute = true;
+                            }
+                        } else if (data[i].format && data[i].format.toUpperCase() !== 'COMMAND') {
+                            //if flavor is not known, all valid pixel formats default to file flavor
+                            absolute = true;
+                        } else if (data[i].type && data[i].type.toUpperCase() === 'PIXEL') {
+                            //if all we know is pixel type, then it is image's file flavor
+                            absolute = true;
+                        }
+
+                        if (absolute) {
+                            //change relative links to absolute
+                            data[i].data = _qz.tools.absolute(data[i].data);
+                        }
+                    }
+                }
+            },
+
             /** Performs deep copy to target from remaining params */
             extend: function(target) {
                 //special case when reassigning properties as objects in a deep copy
@@ -552,9 +580,9 @@ var qz = (function() {
 
         /**
          * Alter any of the printer options currently applied to this config.
-         * @param newOpts {Object} The options to change. See <code>qz.config.setDefaults</code> docs for available values.
+         * @param newOpts {Object} The options to change. See <code>qz.configs.setDefaults</code> docs for available values.
          *
-         * @see qz.config.setDefaults
+         * @see qz.configs.setDefaults
          */
         this.reconfigure = function(newOpts) {
             _qz.tools.extend(this.config, newOpts);
@@ -617,6 +645,9 @@ var qz = (function() {
              *
              * @param {Object} [options] Configuration options for the web socket connection.
              *  @param {string|Array<string>} [options.host=['localhost', 'localhost.qz.io']] Host running the QZ Tray software.
+             *  @param {Object} [options.port] Config options for ports to cycle.
+             *   @param {Array<number>} [options.port.secure=[8181, 8282, 8383, 8484]] Array of secure (WSS) ports to try
+             *   @param {Array<number>} [options.port.insecure=[8182, 8283, 8384, 8485]] Array of insecure (WS) ports to try
              *  @param {boolean} [options.usingSecure=true] If the web socket should try to use secure ports for connecting.
              *  @param {number} [options.keepAlive=60] Seconds between keep-alive pings to keep connection open. Set to 0 to disable.
              *  @param {number} [options.retries=0] Number of times to reconnect before failing.
@@ -731,12 +762,20 @@ var qz = (function() {
             /**
              * @deprecated Since 2.1.0.  Please use qz.networking.device() instead
              *
+             * @param {string} [hostname] Hostname to try to connect to when determining network interfaces, defaults to "google.com"
+             * @param {number} [port] Port to use with custom hostname, defaults to 443
+             *
+             * @returns {Promise<Object<{ipAddress: string, macAddress: string}>|Error>} Connected system's network information.
+             *
              * @returns {Promise<Object<{ipAddress: string, macAddress: string}>|Error>} Connected system's network information.
              * @memberof qz.websocket
              */
-            getNetworkInfo: function() {
+            getNetworkInfo: function(hostname, port) {
                 return _qz.tools.promise(function(resolve, reject) {
-                    _qz.websocket.dataPromise('networking.device').then(function(data) {
+                    _qz.websocket.dataPromise('networking.device', {
+                        hostname: hostname,
+                        port: port
+                    }).then(function(data) {
                         resolve({ ipAddress: data.ip, macAddress: data.mac });
                     }, reject);
                 });
@@ -774,7 +813,6 @@ var qz = (function() {
              * Provides a list, with additional information, for each printer available to QZ.
              *
              * @returns {Promise<Array<Object>|Object|Error>}
-             * @since 2.1.0
              *
              * @memberof qz.printers
              */
@@ -863,7 +901,7 @@ var qz = (function() {
              *  @param {number|Array<number>} [options.density=72] Pixel density (DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *      If provided as an array, uses the first supported density found (or the first entry if none found).
              *  @param {boolean} [options.duplex=false] Double sided printing
-             *  @param {number} [options.fallbackDensity=600] Value used when default density value cannot be read, or in cases where reported as "Normal" by the driver.
+             *  @param {number} [options.fallbackDensity=null] Value used when default density value cannot be read, or in cases where reported as "Normal" by the driver, (in DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *  @param {string} [options.interpolation='bicubic'] Valid values <code>[bicubic | bilinear | nearest-neighbor]</code>. Controls how images are handled when resized.
              *  @param {string} [options.jobName=null] Name to display in print queue.
              *  @param {Object|number} [options.margins=0] If just a number is provided, it is used as the margin for all sides.
@@ -906,7 +944,7 @@ var qz = (function() {
              *
              * @returns {Config} The new config.
              *
-             * @see config.setDefaults
+             * @see configs.setDefaults
              *
              * @memberof qz.configs
              */
@@ -926,8 +964,8 @@ var qz = (function() {
          * following the format of the "call" and "params" keys in the API call, with the addition of a "timestamp" key in milliseconds
          * ex. <code>'{"call":"<callName>","params":{...},"timestamp":1450000000}'</code>
          *
-         * @param {Object<Config>} config Previously created config object.
-         * @param {Array<Object|string>} data Array of data being sent to the printer.<br/>
+         * @param {Object<Config>|Array<Object<Config>>} configs Previously created config object or objects.
+         * @param {Array<Object|string>|Array<Array<Object|string>>} data Array of data being sent to the printer.<br/>
          *      String values are interpreted as <code>{type: 'raw', format: 'command', flavor: 'plain', data: &lt;string>}</code>.
          *  @param {string} data.data
          *  @param {string} data.type Printing type. Valid types are <code>[pixel | raw*]</code>. *Default
@@ -946,50 +984,99 @@ var qz = (function() {
          *   @param {string|number} [data.options.dotDensity] Optional with <code>[raw]</code> type + <code>[image]</code> format.
          *   @param {string} [data.options.xmlTag] Required with <code>[xml]</code> flavor. Tag name containing base64 formatted data.
          *   @param {number} [data.options.pageWidth] Optional with <code>[html | pdf]</code> formats. Width of the rendering.
-         *      Defaults to paper width.
+         *       Defaults to paper width.
          *   @param {number} [data.options.pageHeight] Optional with <code>[html | pdf]</code> formats. Height of the rendering.
-         *      Defaults to paper height for <code>[pdf]</code>, or auto sized for <code>[html]</code>.
-         * @param {boolean} [signature] Pre-signed signature of JSON string containing <code>call</code>, <code>params</code>, and <code>timestamp</code>.
-         * @param {number} [signingTimestamp] Required with <code>signature</code>. Timestamp used with pre-signed content.
+         *       Defaults to paper height for <code>[pdf]</code>, or auto sized for <code>[html]</code>.
+         * @param {...*} [arguments] Additionally three more parameters can be specified:<p/>
+         *     <code>{boolean} [resumeOnError=false]</code> Whether the chain should continue printing if it hits an error on one the the prints.<p/>
+         *     <code>{string|Array<string>} [signature]</code> Pre-signed signature(s) of the JSON string for containing <code>call</code>, <code>params</code>, and <code>timestamp</code>.<p/>
+         *     <code>{number|Array<number>} [signingTimestamps]</code> Required to match with <code>signature</code>. Timestamps for each of the passed pre-signed content.
          *
          * @returns {Promise<null|Error>}
          *
-         * @see qz.config.create
+         * @see qz.configs.create
          *
          * @memberof qz
          */
-        print: function(config, data, signature, signingTimestamp) {
-            //change relative links to absolute
-            for(var i = 0; i < data.length; i++) {
-                if (data[i].constructor === Object) {
-                    var absolute = false;
+        print: function(configs, data) {
+            var resumeOnError = false,
+                signatures = [],
+                signaturesTimestamps = [];
 
-                    if (data[i].flavor) {
-                        //if flavor is known, we can directly check for absolute flavor types
-                        var flavor = data[i].flavor.toUpperCase();
-                        if (flavor === 'FILE' || flavor === 'IMAGE' || flavor === 'XML') {
-                            absolute = true;
-                        }
-                    } else if (data[i].format && data[i].format.toUpperCase() !== 'COMMAND') {
-                        //if flavor is not known, all valid pixel formats default to file flavor
-                        absolute = true;
-                    } else if (data[i].type && data[i].type.toUpperCase() === 'PIXEL') {
-                        //if all we know is pixel type, then it is image's file flavor
-                        absolute = true;
-                    }
+            //find optional parameters
+            if (arguments.length >= 3) {
+                if (typeof arguments[2] === 'boolean') {
+                    resumeOnError = arguments[2];
 
-                    if (absolute) {
-                        data[i].data = _qz.tools.absolute(data[i].data);
+                    if (arguments.length >= 5) {
+                        signatures = arguments[3];
+                        signaturesTimestamps = arguments[4];
                     }
+                } else if (arguments.length >= 4) {
+                    signatures = arguments[2];
+                    signaturesTimestamps = arguments[3];
                 }
+
+                //ensure values are arrays for consistency
+                if (signatures && !Array.isArray(signatures)) { signatures = [signatures]; }
+                if (signaturesTimestamps && !Array.isArray(signaturesTimestamps)) { signaturesTimestamps = [signaturesTimestamps]; }
             }
 
-            var params = {
-                printer: config.getPrinter(),
-                options: config.getOptions(),
-                data: data
+            if (!Array.isArray(configs)) { configs = [configs]; } //single config -> array of configs
+            if (!Array.isArray(data[0])) { data = [data]; } //single data array -> array of data arrays
+
+            //clean up data formatting
+            for(var d = 0; d < data.length; d++) {
+                _qz.tools.relative(data[d]);
+            }
+
+            var sendToPrint = function(mapping) {
+                var params = {
+                    printer: mapping.config.getPrinter(),
+                    options: mapping.config.getOptions(),
+                    data: mapping.data
+                };
+
+                return _qz.websocket.dataPromise('print', params, mapping.signature, mapping.timestamp);
             };
-            return _qz.websocket.dataPromise('print', params, signature, signingTimestamp);
+
+            //chain instead of Promise.all, so resumeOnError can collect each error
+            var chain = [];
+            for(var i = 0; i < configs.length || i < data.length; i++) {
+                (function(i_) {
+                    var map = {
+                        config: configs[Math.min(i_, configs.length - 1)],
+                        data: data[Math.min(i_, data.length - 1)],
+                        signature: signatures[i_],
+                        timestamp: signaturesTimestamps[i_]
+                    };
+
+                    chain.push(function() { return sendToPrint(map) });
+                })(i);
+            }
+
+            //setup to catch errors if needed
+            var fallThrough = null;
+            if (resumeOnError) {
+                var fallen = [];
+                fallThrough = function(err) { fallen.push(err); };
+
+                //final promise to reject any errors as a group
+                chain.push(function() {
+                    return _qz.tools.promise(function(resolve, reject) {
+                        fallen.length ? reject(fallen) : resolve();
+                    });
+                });
+            }
+
+            var last = null;
+            chain.reduce(function(sequence, link) {
+                last = sequence.catch(fallThrough).then(link); //catch is ignored if fallThrough is null
+                return last;
+            }, _qz.tools.promise(function(r) { r(); })); //an immediately resolved promise to start off the chain
+
+            //return last promise so users can chain off final action or catch when stopping on error
+            return last;
         },
 
 
@@ -1024,7 +1111,7 @@ var qz = (function() {
             /**
              * @param {string} port Name of port to open.
              * @param {Object} bounds Boundaries of serial port output.
-             *  @param {string} [bounds.start=0x0002] Character denoting start of serial response. Not used if <code>width</code> is provided.
+             *  @param {string} [bounds.start=0x0002] Character denoting start of serial response. Not used if <code>width</code is provided.
              *  @param {string} [bounds.end=0x000D] Character denoting end of serial response. Not used if <code>width</code> is provided.
              *  @param {number} [bounds.width] Used for fixed-width response serial communication.
              *
@@ -1500,23 +1587,33 @@ var qz = (function() {
          */
         networking: {
             /**
+             * @param {string} [hostname] Hostname to try to connect to when determining network interfaces, defaults to "google.com"
+             * @param {number} [port] Port to use with custom hostname, defaults to 443
              * @returns {Promise<Object|Error>} Connected system's network information.
              *
              * @memberof qz.networking
              * @since 2.1.0
              */
-            device: function() {
-                return _qz.websocket.dataPromise('networking.device');
+            device: function(hostname, port) {
+                return _qz.websocket.dataPromise('networking.device', {
+                    hostname: hostname,
+                    port: port
+                });
             },
 
             /**
+             * @param {string} [hostname] Hostname to try to connect to when determining network interfaces, defaults to "google.com"
+             * @param {number} [port] Port to use with custom hostname, defaults to 443
              * @returns {Promise<Array<Object>|Error>} Connected system's network information.
              *
              * @memberof qz.networking
              * @since 2.1.0
              */
-            devices: function() {
-                return _qz.websocket.dataPromise('networking.devices');
+            devices: function(hostname, port) {
+                return _qz.websocket.dataPromise('networking.devices', {
+                    hostname: hostname,
+                    port: port
+                });
             }
         },
 
@@ -1612,8 +1709,16 @@ var qz = (function() {
             setWebSocketType: function(ws) {
                 _qz.tools.ws = ws;
             }
-        }
+        },
 
+        /**
+         * Version of this JavaScript library
+         *
+         * @constant {string}
+         *
+         * @memberof qz
+         */
+        version: _qz.VERSION
     };
 
 })();
@@ -1629,7 +1734,8 @@ var qz = (function() {
             qz.api.setSha256Type(function(data) {
                 return crypto.createHash('sha256').update(data).digest('hex');
             });
-        } catch(ignore) {}
+        }
+        catch(ignore) {}
     } else {
         window.qz = qz;
     }

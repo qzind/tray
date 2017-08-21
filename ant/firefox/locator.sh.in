@@ -32,7 +32,7 @@ function get_osx_targetdir()
 			#The filenames may have spaces, use the newline to seperate the array items
 			IFS=$'\n'
 			#"/$with_dir.app$", the first $ is the bash variable marker and the second is a wildcard meaning "is the end of the line"
-			targetdir=$($i -dump |grep -E "/$with_dir.app$" |grep -v "/Volumes/" |grep -v "/.Trash/" |cut -d'/' -f2-)
+			targetdir=$($i -dump |grep -E "/$with_dir.app$" |sed "/\/Volumes\//d" |sed "/\/.Trash\//d" |cut -d'/' -f2-)
 			IFS=$IFS_backup
 			for r in "${targetdir[@]}"; do
 				#If it matches our top priority location, return. We are done.

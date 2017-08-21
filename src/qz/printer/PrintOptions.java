@@ -220,7 +220,7 @@ public class PrintOptions {
             try { defOptions.density = configOpts.getDouble("fallbackDensity"); }
             catch(JSONException e) {
                 warn("double", "fallbackDensity", configOpts.opt("fallbackDensity"));
-                defOptions.density = 600;
+                defOptions.density = new PrinterResolution(600, 600, ResolutionSyntax.DPI).getFeedResolution(psOptions.getUnits().getDPIUnits());
             }
         }
         if (psOptions.isRasterize() && psOptions.getDensity() == 0) {
@@ -500,18 +500,20 @@ public class PrintOptions {
 
     /** Pixel page orientation option */
     public enum Orientation {
-        PORTRAIT(OrientationRequested.PORTRAIT, PageOrientation.PORTRAIT, 0),
-        REVERSE_PORTRAIT(OrientationRequested.PORTRAIT, PageOrientation.REVERSE_PORTRAIT, 180),
-        LANDSCAPE(OrientationRequested.LANDSCAPE, PageOrientation.LANDSCAPE, 90),
-        REVERSE_LANDSCAPE(OrientationRequested.REVERSE_LANDSCAPE, PageOrientation.REVERSE_LANDSCAPE, 270);
+        PORTRAIT(OrientationRequested.PORTRAIT, PageOrientation.PORTRAIT, PageFormat.PORTRAIT, 0),
+        REVERSE_PORTRAIT(OrientationRequested.PORTRAIT, PageOrientation.REVERSE_PORTRAIT, PageFormat.PORTRAIT, 180),
+        LANDSCAPE(OrientationRequested.LANDSCAPE, PageOrientation.LANDSCAPE, PageFormat.LANDSCAPE, 270),
+        REVERSE_LANDSCAPE(OrientationRequested.REVERSE_LANDSCAPE, PageOrientation.REVERSE_LANDSCAPE, PageFormat.REVERSE_LANDSCAPE, 90);
 
         private final OrientationRequested orientationRequested;
         private final PageOrientation pageOrientation;
+        private final int orientationFormat;
         private final int degreesRot;
 
-        Orientation(OrientationRequested orientationRequested, PageOrientation pageOrientation, int degreesRot) {
+        Orientation(OrientationRequested orientationRequested, PageOrientation pageOrientation, int orientationFormat, int degreesRot) {
             this.orientationRequested = orientationRequested;
             this.pageOrientation = pageOrientation;
+            this.orientationFormat = orientationFormat;
             this.degreesRot = degreesRot;
         }
 
@@ -522,6 +524,10 @@ public class PrintOptions {
 
         public PageOrientation getAsPageOrient() {
             return pageOrientation;
+        }
+
+        public int getAsOrientFormat() {
+            return orientationFormat;
         }
 
         public int getDegreesRot() {

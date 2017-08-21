@@ -19,11 +19,11 @@ import org.xml.sax.SAXException;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
 import qz.exception.NullCommandException;
+import qz.utils.ConnectionUtilities;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
-import java.net.URL;
 import java.util.HashMap;
 
 
@@ -121,7 +121,7 @@ public class FileUtilities {
     }
 
     public static byte[] readRawFile(String url) throws IOException {
-        return readFile(new DataInputStream(new URL(url).openStream()));
+        return readFile(new DataInputStream(ConnectionUtilities.getInputStream(url)));
     }
 
     private static byte[] readFile(DataInputStream in) throws IOException {

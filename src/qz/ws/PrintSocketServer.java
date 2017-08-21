@@ -86,6 +86,7 @@ public class PrintSocketServer {
         setupFileLogging();
 
         try {
+            log.info("Starting {} {}", Constants.ABOUT_TITLE, Constants.VERSION);
             SwingUtilities.invokeAndWait(() -> trayManager = new TrayManager(headless));
             runServer();
         }
@@ -193,6 +194,7 @@ public class PrintSocketServer {
             }
             catch(Exception e) {
                 e.printStackTrace();
+                trayManager.displayErrorMessage(e.getLocalizedMessage());
             }
         }
     }

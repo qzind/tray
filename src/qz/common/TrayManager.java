@@ -226,7 +226,9 @@ public class TrayManager {
         popup.add(separator);
         popup.add(exitItem);
 
-        tray.setJPopupMenu(popup);
+        if (tray != null) {
+            tray.setJPopupMenu(popup);
+        }
     }
 
 

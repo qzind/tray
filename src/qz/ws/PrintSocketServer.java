@@ -28,7 +28,6 @@ import qz.auth.Certificate;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.deploy.DeployUtilities;
-import qz.printer.status.CupsStatusServer;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
@@ -160,8 +159,6 @@ public class PrintSocketServer {
                 log.warn("Could not start secure WebSocket");
             }
 
-            //CupsStatusServer.runServer();
-
             try {
                 final WebSocketHandler wsHandler = new WebSocketHandler() {
                     @Override
@@ -194,7 +191,6 @@ public class PrintSocketServer {
             }
             catch(Exception e) {
                 e.printStackTrace();
-                trayManager.displayErrorMessage(e.getLocalizedMessage());
             }
         }
     }

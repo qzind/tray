@@ -21,8 +21,8 @@ public class AboutDialog extends BasicDialog {
 
     String name;
 
-    public AboutDialog(JMenuItem menuItem, IconCache iconCache, String name) {
-        super(menuItem, iconCache);
+    public AboutDialog(IconCache iconCache, String name) {
+        super(null, "About", iconCache);
         this.name = name;
         initComponents();
     }

@@ -59,7 +59,6 @@ public class CupsUtils {
                                    Cups.INSTANCE.ippTagValue("uri"),
                                    "printer-uri",
                                    "",
-                                   //todo does this need to be sanitized?
                                    "ipp://localhost:" + cupsPort + "/printers/" + printerName);
         Cups.INSTANCE.ippAddString(request,
                                    Cups.INSTANCE.ippTagValue("Operation"),

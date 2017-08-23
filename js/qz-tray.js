@@ -767,7 +767,6 @@ var qz = (function() {
              *
              * @returns {Promise<Object<{ipAddress: string, macAddress: string}>|Error>} Connected system's network information.
              *
-             * @returns {Promise<Object<{ipAddress: string, macAddress: string}>|Error>} Connected system's network information.
              * @memberof qz.websocket
              */
             getNetworkInfo: function(hostname, port) {

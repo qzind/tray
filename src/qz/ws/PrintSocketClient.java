@@ -321,6 +321,7 @@ public class PrintSocketClient {
             case PRINT:
                 PrintingUtilities.processPrintRequest(session, UID, params);
                 break;
+
             case SERIAL_FIND_PORTS:
                 sendResult(session, UID, SerialUtilities.getSerialPortsJSON());
                 break;

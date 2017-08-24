@@ -188,18 +188,15 @@ public class SystemUtilities {
         return uname;
     }
 
-    public static boolean setSystemLookAndFeel() {
-        // Prevent GTK2/3 conflict caused by GTKLookAndFeel
-        if (dorkbox.systemTray.jna.linux.Gtk.isGtk3) {
-            return false;
-        }
+    public static void setSystemLookAndFeel() {
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            return true;
-        } catch (Exception e) {
+            return;
+        }
+        catch(Exception e) {
             LoggerFactory.getLogger(SystemUtilities.class).warn("Error getting the default look and feel");
         }
-        return false;
+        return;
     }
 }

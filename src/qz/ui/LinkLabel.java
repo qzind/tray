@@ -37,10 +37,10 @@ public class LinkLabel extends JLabel {
             try {
                 // Sense the action based on the content of the text
                 if (text.contains("@")) {
-                    ShellUtilities.launchEmail(text);
+                    dorkbox.util.Desktop.launchEmail(text);
                 } else {
                     File filePath = new File(text);
-                    ShellUtilities.browseDirectory(filePath.isDirectory() ? text : filePath.getParent());
+                    dorkbox.util.Desktop.browseDirectory(filePath.isDirectory() ? text : filePath.getParent());
                 }
             }
             catch(Exception ex) {
@@ -54,7 +54,7 @@ public class LinkLabel extends JLabel {
         initialize();
         addActionListener(e -> {
             try {
-                ShellUtilities.browseURL(url.toURI());
+                dorkbox.util.Desktop.browseURL(url.toURI());
             }
             catch(Exception ex) {
                 log.error("", ex);
@@ -67,7 +67,7 @@ public class LinkLabel extends JLabel {
         initialize();
         addActionListener(e -> {
             try {
-                ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent());
+                dorkbox.util.Desktop.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent());
             }
             catch(IOException ex) {
                 log.error("", ex);

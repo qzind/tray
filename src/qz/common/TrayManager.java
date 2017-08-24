@@ -222,7 +222,7 @@ public class TrayManager {
     private final ActionListener openListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
             try {
-                ShellUtilities.browseDirectory(shortcutCreator.getParentDirectory());
+                dorkbox.util.Desktop.browseDirectory(shortcutCreator.getParentDirectory());
             }
             catch(Exception ex) {
                 if (!SystemUtilities.isLinux() || !ShellUtilities.execute(new String[] {"xdg-open", shortcutCreator.getParentDirectory()})) {

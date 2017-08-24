@@ -23,7 +23,7 @@ public class StatusMonitor {
     private static final MultiMap<SocketConnection> clientPrinterConnections = new MultiMap<>();
 
     public synchronized static boolean launchNotificationThreads() {
-        ArrayList<String> printerNameList = new ArrayList();
+        ArrayList<String> printerNameList = new ArrayList<>();
 
         Winspool.PRINTER_INFO_2[] printers = WinspoolUtil.getAllPrinterInfo2();
         for(int n = 0; n < printers.length; n++) {
@@ -85,7 +85,7 @@ public class StatusMonitor {
         ArrayList<PrinterStatus> printers;
 
         if (isWindows()) {
-            printers = new ArrayList();
+            printers = new ArrayList<>();
             Winspool.PRINTER_INFO_2[] wmiPrinters = WinspoolUtil.getAllPrinterInfo2();
             for (Winspool.PRINTER_INFO_2 p : wmiPrinters) {
                 printers.addAll(Arrays.asList(PrinterStatus.getFromWMICode(p.Status, p.pPrinterName)));
@@ -112,7 +112,7 @@ public class StatusMonitor {
     }
 
     public synchronized static void closeListener(SocketConnection connection) {
-        ArrayList<String> itemsToDelete = new ArrayList();
+        ArrayList<String> itemsToDelete = new ArrayList<>();
         for (Map.Entry<String, List<SocketConnection>> e: clientPrinterConnections.entrySet()) {
             if (e.getValue().contains(connection)) {
                 itemsToDelete.add(e.getKey());

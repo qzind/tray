@@ -9,7 +9,7 @@ public class WMIPrinterConnectionsThread extends Thread {
     private static final Logger log = LoggerFactory.getLogger(WMIPrinterConnectionsThread.class);
 
     private boolean running = true;
-    private Winspool.PRINTER_INFO_1[] currentPrinterList;
+    private Winspool.PRINTER_INFO_2[] currentPrinterList;
 
     public WMIPrinterConnectionsThread() {
         super("Printer Connection Monitor");
@@ -17,10 +17,10 @@ public class WMIPrinterConnectionsThread extends Thread {
 
     @Override
     public void run() {
-        currentPrinterList = WinspoolUtil.getPrinterInfo1();
+        currentPrinterList = WinspoolUtil.getAllPrinterInfo2();
         while (running) {
             try {sleep(1000);} catch (Exception ignore) {}
-            Winspool.PRINTER_INFO_1[] newPrinterList = WinspoolUtil.getPrinterInfo1();
+            Winspool.PRINTER_INFO_2[] newPrinterList = WinspoolUtil.getAllPrinterInfo2();
 
             if (newPrinterList.length != currentPrinterList.length){
                 StatusMonitor.relaunchThreads();
@@ -31,9 +31,9 @@ public class WMIPrinterConnectionsThread extends Thread {
         }
     }
 
-    private boolean arrayEquiv (Winspool.PRINTER_INFO_1[] a, Winspool.PRINTER_INFO_1[] b) {
+    private boolean arrayEquiv (Winspool.PRINTER_INFO_2[] a, Winspool.PRINTER_INFO_2[] b) {
         for (int i = 0; i < a.length; i++) {
-            if (!a[i].pName.equals(b[i].pName)) {
+            if (!a[i].pPrinterName.equals(b[i].pPrinterName)) {
                 return false;
             }
         }

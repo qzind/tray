@@ -4,10 +4,9 @@ import jssc.SerialPortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
-import qz.communication.DeviceException;
-import qz.communication.DeviceIO;
-import qz.communication.DeviceListener;
-import qz.communication.SerialIO;
+import qz.communication.*;
+import qz.printer.status.StatusSession;
+import qz.printer.status.StatusMonitor;
 import qz.utils.UsbUtilities;
 
 import java.util.HashMap;
@@ -20,6 +19,7 @@ public class SocketConnection {
     private Certificate certificate;
 
     private DeviceListener deviceListener;
+    private StatusSession statusListener;
 
     // serial port -> open SerialIO
     private final HashMap<String,SerialIO> openSerialPorts = new HashMap<>();
@@ -67,6 +67,23 @@ public class SocketConnection {
             deviceListener.close();
         }
         deviceListener = null;
+    }
+
+    public synchronized boolean hasStatusListener() {
+        return statusListener != null;
+    }
+
+    public synchronized void startStatusListener(StatusSession listener) {
+        statusListener = listener;
+    }
+
+    public synchronized void stopStatusListener() {
+        StatusMonitor.closeListener(this);
+        statusListener = null;
+    }
+
+    public synchronized StatusSession getStatusListener() {
+        return statusListener;
     }
 
 
@@ -127,6 +144,7 @@ public class SocketConnection {
         }
 
         stopListening();
+        stopStatusListener();
     }
 
 }

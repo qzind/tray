@@ -10,6 +10,7 @@
 
 package qz.utils;
 
+import dorkbox.util.OSUtil;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.deploy.DeployUtilities;
@@ -188,14 +189,16 @@ public class SystemUtilities {
         return uname;
     }
 
-    public static boolean setSystemLookAndFeel() {
+    public static void setSystemLookAndFeel() {
+        if (OSUtil.Linux.isUbuntu() && (OSUtil.DesktopEnv.get().equals(OSUtil.DesktopEnv.Env.Unity) ||
+                OSUtil.DesktopEnv.get().equals(OSUtil.DesktopEnv.Env.Unity7))) return;
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            return true;
-        } catch (Exception e) {
+            return;
+        }
+        catch(Exception e) {
             LoggerFactory.getLogger(SystemUtilities.class).warn("Error getting the default look and feel");
         }
-        return false;
     }
 }

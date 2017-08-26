@@ -15,6 +15,8 @@ import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
+import qz.printer.status.StatusSession;
+import qz.printer.status.StatusMonitor;
 import qz.utils.*;
 
 import javax.print.PrintServiceLookup;
@@ -41,6 +43,9 @@ public class PrintSocketClient {
         PRINTERS_GET_DEFAULT("printers.getDefault", true, "access connected printers"),
         PRINTERS_FIND("printers.find", true, "access connected printers"),
         PRINTERS_DETAIL("printers.detail", true, "access connected printers"),
+        PRINTERS_START_LISTENING("printers.startListening", true, "listen for printer status"),
+        PRINTERS_GET_STATUS("printers.getStatus", false),
+        PRINTERS_STOP_LISTENING("printers.stopListening", false),
         PRINT("print", true, "print to %s"),
 
         SERIAL_FIND_PORTS("serial.findPorts", true, "access serial ports"),
@@ -115,7 +120,6 @@ public class PrintSocketClient {
     @OnWebSocketConnect
     public void onConnect(Session session) {
         log.info("Connection opened from {} on socket port {}", session.getRemoteAddress(), session.getLocalAddress().getPort());
-        trayManager.displayInfoMessage("Client connected");
 
         //new connections are unknown until they send a proper certificate
         openConnections.put(session.getRemoteAddress().getPort(), new SocketConnection(Certificate.UNKNOWN));
@@ -124,7 +128,6 @@ public class PrintSocketClient {
     @OnWebSocketClose
     public void onClose(Session session, int closeCode, String reason) {
         log.info("Connection closed: {} - {}", closeCode, reason);
-        trayManager.displayInfoMessage("Client disconnected");
 
         Integer port = session.getRemoteAddress().getPort();
         SocketConnection closed = openConnections.remove(port);
@@ -141,7 +144,6 @@ public class PrintSocketClient {
     @OnWebSocketError
     public void onError(Session session, Throwable error) {
         log.error("Connection error", error);
-        trayManager.displayErrorMessage(error.getMessage());
     }
 
     @OnWebSocketMessage
@@ -292,7 +294,30 @@ public class PrintSocketClient {
             case PRINTERS_DETAIL:
                 sendResult(session, UID, PrintServiceMatcher.getPrintersJSON());
                 break;
+            case PRINTERS_START_LISTENING:
+                if (connection.hasStatusListener()) {
+                    StatusMonitor.closeListener(connection);
+                } else {
+                    connection.startStatusListener(new StatusSession(session));
+                }
 
+                StatusMonitor.startListening(connection, params.getJSONArray("printerNames"));
+                sendResult(session, UID, null);
+                break;
+            case PRINTERS_GET_STATUS:
+                if (connection.hasStatusListener()) {
+                    StatusMonitor.sendStatuses(connection);
+                } else {
+                    sendError(session, UID, String.format("No printer listeners started for this client."));
+                }
+                sendResult(session, UID, null);
+                break;
+            case PRINTERS_STOP_LISTENING:
+                if (connection.hasStatusListener()) {
+                    connection.stopStatusListener();
+                }
+                sendResult(session, UID, null);
+                break;
             case PRINT:
                 PrintingUtilities.processPrintRequest(session, UID, params);
                 break;

@@ -12,7 +12,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 
@@ -34,22 +33,18 @@ public class LinkLabel extends JLabel {
     public LinkLabel(final String text) {
         super(linkify(text));
         initialize();
-        addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    // Sense the action based on the content of the text
-                    if (text.contains("@")) {
-                        Desktop.getDesktop().mail(new URI(text));
-                    } else {
-                        File filePath = new File(text);
-                        ShellUtilities.browseDirectory(filePath.isDirectory() ? text : filePath.getParent());
-                    }
-
+        addActionListener(e -> {
+            try {
+                // Sense the action based on the content of the text
+                if (text.contains("@")) {
+                    dorkbox.util.Desktop.launchEmail(text);
+                } else {
+                    File filePath = new File(text);
+                    dorkbox.util.Desktop.browseDirectory(filePath.isDirectory() ? text : filePath.getParent());
                 }
-                catch(Exception ex) {
-                    log.error("", ex);
-                }
+            }
+            catch(Exception ex) {
+                log.error("", ex);
             }
         });
     }
@@ -57,15 +52,12 @@ public class LinkLabel extends JLabel {
     public LinkLabel(final URL url) {
         super(linkify(url.toString()));
         initialize();
-        addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    Desktop.getDesktop().browse(url.toURI());
-                }
-                catch(Exception ex) {
-                    log.error("", ex);
-                }
+        addActionListener(e -> {
+            try {
+                dorkbox.util.Desktop.browseURL(url.toURI());
+            }
+            catch(Exception ex) {
+                log.error("", ex);
             }
         });
     }
@@ -73,15 +65,12 @@ public class LinkLabel extends JLabel {
     public LinkLabel(final File filePath) {
         super(linkify(filePath.getPath()));
         initialize();
-        addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent());
-                }
-                catch(IOException ex) {
-                    log.error("", ex);
-                }
+        addActionListener(e -> {
+            try {
+                dorkbox.util.Desktop.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent());
+            }
+            catch(IOException ex) {
+                log.error("", ex);
             }
         });
     }
@@ -129,9 +118,4 @@ public class LinkLabel extends JLabel {
             actionListeners.add(action);
         }
     }
-
-    public void removeActionListener(ActionListener action) {
-        actionListeners.remove(action);
-    }
-
 }

@@ -20,6 +20,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -325,44 +327,6 @@ public class ShellUtilities {
         }
 
         return -1;
-    }
-
-    /**
-     * Opens the specified path in the system-default file browser.  Works around several OS limitations:
-     *  - Apple tries to launch <code>.app</code> bundle directories as applications rather than browsing contents
-     *  - Linux has mixed support for <code>Desktop.getDesktop()</code>.  Adds <code>xdg-open</code> fallback.
-     * @param path The directory to browse
-     * @throws IOException
-     */
-    public static void browseDirectory(String path) throws IOException {
-        File directory = new File(path);
-        if (SystemUtilities.isMac()) {
-            // Mac tries to open the .app rather than browsing it.  Instead, pass a child with -R to select it in finder
-            File[] files = directory.listFiles();
-            if (files != null && files.length > 0) {
-                // Get first child
-                File child = files[0];
-                if (ShellUtilities.execute(new String[] {"open", "-R", child.getCanonicalPath()})) {
-                    return;
-                }
-            }
-        } else {
-            try {
-                // The default, java recommended usage
-                Desktop d = Desktop.getDesktop();
-                d.open(directory);
-                return;
-            } catch (IOException io) {
-                if (SystemUtilities.isLinux()) {
-                    // Fallback on xdg-open for Linux
-                    if (ShellUtilities.execute(new String[] {"xdg-open", path})) {
-                        return;
-                    }
-                }
-                throw io;
-            }
-        }
-        throw new IOException("Unable to open " + path);
     }
 
     /**

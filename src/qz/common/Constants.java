@@ -12,7 +12,7 @@ public class Constants {
     public static final String HEXES = "0123456789ABCDEF";
     public static final char[] HEXES_ARRAY = HEXES.toCharArray();
     public static final int BYTE_BUFFER_SIZE = 8192;
-    public static final Version VERSION = Version.valueOf("2.1.0-RC1");
+    public static final Version VERSION = Version.valueOf("2.1.0-RC2");
     public static final Version JAVA_VERSION = SystemUtilities.getJavaVersion();
     public static final String JAVA_VENDOR = System.getProperty("java.vendor");
 

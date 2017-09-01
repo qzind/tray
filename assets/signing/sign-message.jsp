@@ -68,7 +68,7 @@ private String getSignature(Object o) {
  */
 public byte[] readData(String resourcePath) throws IOException {
 	String file = getServletConfig().getServletContext().getRealPath("/") + "\\js\\assets\\" + resourcePath;
-    FileInputStream is = new FileInputStream(file);
+	FileInputStream is = new FileInputStream(file);
 			
 	//InputStream is = getServletContext().getResourceAsStream(resourcePath);
 	if (is == null) {

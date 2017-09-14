@@ -578,17 +578,18 @@ function deleteWindowsXPCertificate() {
 function findWindowsMatches(serialDelim) {
     var matches = "";
     var proc = shell.Exec('${windows.keygen.tool} -store "${windows.keygen.store}"');
-    var certData = "";
+    var certBlock = "";
     while (!proc.StdOut.AtEndOfStream) {
         var line = proc.StdOut.ReadLine()
-        if (trim(line) != "") {
-            certData += line + newLine;
+        // Read certBlock in block sections
+        if (line.indexOf("================") === -1) {
+            certBlock += line + newLine;
         } else {
-            var serial = parseCertificateSerial(certData);
-            if (serial && isVendorMatch(certData)) {
+            var serial = parseCertificateSerial(certBlock);
+            if (serial && isVendorMatch(certBlock)) {
                 matches += serial + serialDelim;
             }
-            certData = "";
+            certBlock = "";
         }
     }
     return matches;
@@ -598,15 +599,13 @@ function findWindowsMatches(serialDelim) {
  * Parses the supplied data for serialTag
  * If found, returns the serial number of the certificate, i.e. "89e301a9"
  */
-function parseCertificateSerial(certData) {
-    var serialTag = "Serial Number:";
-    if (certData.indexOf(newLine) != -1) {
-        var lines = certData.split(newLine);
-        for (var i in lines) {
-            var line = trim(lines[i]);
-            if (line.indexOf(serialTag) == 0) {
-                return trim(line.split(serialTag)[1]);
-            }
+function parseCertificateSerial(certBlock) {
+    // First line should have serial
+    var lines = certBlock.split(newLine);
+    if (lines.length > 0) {
+        var serialParts = lines[0].split(":");
+        if (serialParts.length > 0) {
+            return trim(serialParts[1]);
         }
     }
     return false;
@@ -617,17 +616,15 @@ function parseCertificateSerial(certData) {
  * If found, parses the matched line for specific CN and OU values.
  * Returns true if found
  */
-function isVendorMatch(certData) {
-    var issuerTag = "Issuer:";
-    if (certData.indexOf(newLine) != -1) {
-        var lines = certData.split(newLine);
-        for (var i in lines) {
-            var line = trim(lines[i]);
-            if (line.indexOf(issuerTag) == 0) {
-                if (line.indexOf("OU=${vendor.company}") != -1 && line.indexOf("CN=" + (cnOverride || "${ssl.cn}")) != -1) {
-                    return true;
-                }
-            }
+function isVendorMatch(certBlock) {
+    // Second line should have issuer
+    var lines = certBlock.split(newLine);
+    if (lines.length > 0) {
+        var issuerLine = lines[1];
+        var i = issuerLine.indexOf(":") + 1;
+        if (i > 1) {
+            var issuer = trim(issuerLine.substring(i, issuerLine.length));
+            return issuer.indexOf("OU=${vendor.company}") !== -1 && issuer.indexOf("CN=" + (cnOverride || "${ssl.cn}")) !== -1;
         }
     }
     return false;
@@ -637,7 +634,7 @@ function isVendorMatch(certData) {
  * Functional equivalent of foo.trim()
  */
 function trim(val) {
-    return val.replace(/^\s+/,'').replace(/\s+$/,'');
+    return val ? val.replace(/^\s+/,'').replace(/\s+$/,'') : val;
 }
 
 /*

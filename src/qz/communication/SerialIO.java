@@ -22,6 +22,7 @@ public class SerialIO {
 
     private String portName;
     private SerialPort port;
+    private SerialProperties props;
 
     private ByteArrayBuilder data = new ByteArrayBuilder();
 
@@ -131,12 +132,30 @@ public class SerialIO {
     }
 
     /**
+     * Sets and caches the properties as to not set them every data call
+     *
+     * @throws SerialPortException If the properties fail to set
+     */
+    private void setProperties(SerialProperties props) throws SerialPortException {
+        boolean equals = this.props != null &&
+                this.props.getBaudRate() == props.getBaudRate() &&
+                this.props.getDataBits() == props.getDataBits() &&
+                this.props.getFlowControl() == props.getFlowControl() &&
+                this.props.getParity() == props.getParity() &&
+                this.props.getStopBits() == props.getStopBits();
+
+        if (!equals) {
+            port.setParams(props.getBaudRate(), props.getDataBits(), props.getStopBits(), props.getParity());
+            port.setFlowControlMode(props.getFlowControl());
+            this.props = props;
+        }
+    }
+
+    /**
      * Applies the port parameters and writes the buffered data to the serial port.
      */
     public void sendData(SerialProperties props, String data) throws SerialPortException {
-        port.setParams(props.getBaudRate(), props.getDataBits(), props.getStopBits(), props.getParity());
-        port.setFlowControlMode(props.getFlowControl());
-
+        setProperties(props);
         log.debug("Sending data over [{}]", portName);
         port.writeBytes(SerialUtilities.characterBytes(data));
     }

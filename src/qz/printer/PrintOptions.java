@@ -6,6 +6,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.PrintingUtilities;
+import qz.utils.SystemUtilities;
 
 import javax.print.attribute.ResolutionSyntax;
 import javax.print.attribute.Size2DSyntax;
@@ -36,7 +37,13 @@ public class PrintOptions {
 
         //check for raw options
         if (!configOpts.isNull("altPrinting")) {
-            try { rawOptions.altPrinting = configOpts.getBoolean("altPrinting"); }
+            try {
+                rawOptions.altPrinting = configOpts.getBoolean("altPrinting");
+                if (rawOptions.altPrinting && SystemUtilities.isWindows()) {
+                    log.warn("Alternate raw printing is not supported on Windows");
+                    rawOptions.altPrinting = false;
+                }
+            }
             catch(JSONException e) { warn("boolean", "altPrinting", configOpts.opt("altPrinting")); }
         }
         if (!configOpts.isNull("encoding")) {

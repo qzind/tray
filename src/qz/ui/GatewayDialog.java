@@ -193,15 +193,6 @@ public class GatewayDialog extends JDialog {
     public boolean prompt(String description, Certificate cert) {
         persistentCheckBox.setSelected(false); // prevents re-adding a persistent site to the list it's already on
 
-        if (cert == null || cert.isBlocked()) {
-            approved = false;
-            return false;
-        }
-        if (cert.isTrusted() && cert.isSaved()) {
-            approved = true;
-            return true;
-        }
-
         setDescription(description);
         setCertificate(cert);
         setVisible(true);

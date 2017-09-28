@@ -460,7 +460,15 @@ public class PrintSocketClient {
         }
     }
 
-    private boolean allowedFromDialog(Certificate certificate, String prompt) {
+    private boolean allowedFromDialog(Certificate cert, String prompt) {
+        //If cert can be resolved before the lock, do so and return
+        if (cert == null || cert.isBlocked()) {
+            return false;
+        }
+        if (cert.isTrusted() && cert.isSaved()) {
+            return true;
+        }
+
         //wait until previous prompts are closed
         try {
             dialogAvailable.acquire();
@@ -471,7 +479,7 @@ public class PrintSocketClient {
         }
 
         //prompt user for access
-        boolean allowed = trayManager.showGatewayDialog(certificate, prompt);
+        boolean allowed = trayManager.showGatewayDialog(cert, prompt);
 
         dialogAvailable.release();
 

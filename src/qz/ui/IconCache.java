@@ -202,7 +202,7 @@ public class IconCache {
      */
     private static BufferedImage getImageResource(String imagePath) {
         try {
-            InputStream is = IconCache.class.getClass().getResourceAsStream(imagePath);
+            InputStream is = IconCache.class.getResourceAsStream(imagePath);
             if (is != null) {
                 return ImageIO.read(is);
             } else {

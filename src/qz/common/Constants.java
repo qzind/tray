@@ -1,6 +1,7 @@
 package qz.common;
 
 import com.github.zafarkhaja.semver.Version;
+import qz.utils.SystemUtilities;
 
 import java.awt.*;
 
@@ -12,7 +13,7 @@ public class Constants {
     public static final char[] HEXES_ARRAY = HEXES.toCharArray();
     public static final int BYTE_BUFFER_SIZE = 8192;
     public static final Version VERSION = Version.valueOf("2.0.4");
-    public static final Version JAVA_VERSION = Version.valueOf(System.getProperty("java.version").replaceFirst("_", "-"));
+    public static final Version JAVA_VERSION = SystemUtilities.getJavaVersion();
 
     /* QZ-Tray Constants */
     public static final String BLOCK_FILE = "blocked";

@@ -10,6 +10,7 @@
 
 package qz.utils;
 
+import com.github.zafarkhaja.semver.Version;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 
@@ -36,6 +37,31 @@ public class SystemUtilities {
      */
     public static String getOS() {
         return OS_NAME;
+    }
+
+
+    /**
+     * Provides a JDK9-friendly wrapper around the inconsistent and poorly standardized Java internal versioning.
+     * This may eventually be superseded by <code>java.lang.Runtime.Version</code>, but the codebase will first need to be switched to JDK9 level.
+     * @return Semantically formatted Java Runtime version
+     */
+    public static Version getJavaVersion() {
+        String version = System.getProperty("java.version");
+        String[] parts = version.split("\\D+");
+        switch (parts.length) {
+            case 0:
+                return Version.forIntegers(1, 0, 0);
+            case 1:
+                // Assume JDK9 format
+                return Version.forIntegers(1, Integer.parseInt(parts[0]), 0);
+            case 2:
+                // Unknown format
+                return Version.forIntegers(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), 0);
+            case 3:
+            default:
+                // Assume JDK8 and lower format
+                return Version.forIntegers(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+        }
     }
 
 

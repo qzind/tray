@@ -69,9 +69,9 @@ qz.security.setSignaturePromise(function(toSign) {
         try {
             var pk = KEYUTIL.getKey(privateKey);
             var sig = new KJUR.crypto.Signature({"alg": "SHA1withRSA"});
-			sig.init(pk); 
-			sig.updateString(toSign);
-			var hex = sig.sign();
+            sig.init(pk); 
+            sig.updateString(toSign);
+            var hex = sig.sign();
             console.log("DEBUG: \n\n" + stob64(hextorstr(hex)));
             resolve(stob64(hextorstr(hex)));
         } catch (err) {

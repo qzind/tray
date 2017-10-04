@@ -27,16 +27,14 @@
  *     - qz-tray.js
  *
  * Steps:
- *     1. Convert private key to jsrsasign compatible format:
- *        openssl rsa -in private-key.pem -out private-key-updated.pem
  *
- *     2. Include jsrsasign into your web page
- *        <script src="https://cdn.rawgit.com/kjur/jsrsasign/89f70bd4872473733f10579a77b554c81f3a7136/jsrsasign-all-min.js"></script>
+ *     1. Include jsrsasign 8.0.4 into your web page
+ *        <script src="https://cdn.rawgit.com/kjur/jsrsasign/c057d3447b194fa0a3fdcea110579454898e093d/jsrsasign-all-min.js"></script>
  *
- *     3. Include this script into your web page
+ *     2. Include this script into your web page
  *        <script src="path/to/sign-message.js"></script>
  *
- *     4. Remove any other references to setSignaturePromise
+ *     3. Remove any other references to setSignaturePromise
  */
 var privateKey = "-----BEGIN RSA PRIVATE KEY-----\n" +
     "MIIEpQIBAAKCAQEAxePDxH2+BbHsiQNEpx67TYtnpBKpFXDeSX7LxTBQ1E9XNex7\n" +
@@ -69,9 +67,11 @@ var privateKey = "-----BEGIN RSA PRIVATE KEY-----\n" +
 qz.security.setSignaturePromise(function(toSign) {
     return function(resolve, reject) {
         try {
-            var pk = new RSAKey();
-            pk.readPrivateKeyFromPEMString(strip(privateKey));
-            var hex = pk.signString(toSign, 'sha1');
+            var pk = KEYUTIL.getKey(privateKey);
+            var sig = new KJUR.crypto.Signature({"alg": "SHA1withRSA"});
+			sig.init(pk); 
+			sig.updateString(toSign);
+			var hex = sig.sign();
             console.log("DEBUG: \n\n" + stob64(hextorstr(hex)));
             resolve(stob64(hextorstr(hex)));
         } catch (err) {
@@ -80,9 +80,3 @@ qz.security.setSignaturePromise(function(toSign) {
         }
     };
 });
-
-function strip(key) {
-    if (key.indexOf('-----') !== -1) {
-        return key.split('-----')[2].replace(/\r?\n|\r/g, '');
-    }
-}

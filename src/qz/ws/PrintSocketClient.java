@@ -177,7 +177,7 @@ public class PrintSocketClient {
                 }
                 catch(CertificateParsingException ignore) {}
 
-                if (allowedFromDialog(certificate, "connect to QZ")) {
+                if (allowedFromDialog(certificate, "connect to " + Constants.ABOUT_TITLE)) {
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, "Connection blocked by client");
@@ -238,7 +238,7 @@ public class PrintSocketClient {
 
         if (call == Method.INVALID && (UID == null || UID.isEmpty())) {
             //incorrect message format, likely incompatible qz version
-            session.close(4003, "Connected to incompatible QZ Tray version");
+            session.close(4003, "Connected to incompatible " + Constants.ABOUT_TITLE + " version");
             return;
         }
 

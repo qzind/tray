@@ -140,7 +140,7 @@
                             <div class="btn-group">
                                 <button type="button" class="btn btn-default" onclick="printEPL();">EPL</button>
                                 <button type="button" class="btn btn-default" onclick="printZPL();">ZPL</button>
-                                <button type="button" class="btn btn-default" onclick="printESCP();">ESCP</button>
+                                <button type="button" class="btn btn-default" onclick="printESCPOS();">ESC/POS</button>
                                 <button type="button" class="btn btn-default" onclick="printEPCL();">EPCL (Zebra Card Printer)</button>
                             </div>
                         </div>
@@ -958,11 +958,11 @@
         qz.print(config, printData).catch(displayError);
     }
 
-    function printESCP() {
+    function printESCPOS() {
         var config = getUpdatedConfig();
 
         var printData = [
-            { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: { language: 'ESCP', dotDensity: 'single' } },
+            { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: { language: 'ESCPOS', dotDensity: 'single' } },
             { type: 'raw', data: '\nPrinted using qz-tray plugin.\n\n\n\n\n\n' }
         ];
 

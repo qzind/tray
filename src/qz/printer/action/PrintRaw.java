@@ -134,7 +134,7 @@ public class PrintRaw implements PrintProcessor {
         ImageWrapper iw = new ImageWrapper(buf, LanguageType.getType(opt.optString("language")));
         iw.setCharset(Charset.forName(encoding));
 
-        //ESCP only
+        //ESC/POS only
         int density = opt.optInt("dotDensity", -1);
         if (density == -1) {
             String dStr = opt.optString("dotDensity", null);

@@ -71,9 +71,9 @@ public class ImageWrapper {
     private LanguageType languageType;
     private Charset charset = Charset.defaultCharset();
     private int imageQuantizationMethod = CHECK_LUMA;
-    private int xPos = 0;   // X coordinate used for EPL2, CPCL.  Irrelevant for ZPLII, ESC/P, etc
-    private int yPos = 0;   // Y coordinate used for EPL2, CPCL.  Irrelevant for ZPLII, ESC/P, etc
-    private int dotDensity = 32;  // Generally 32 = Single (normal) 33 = Double (higher res) for ESCP.  Irrelevant for all other languages.
+    private int xPos = 0;   // X coordinate used for EPL2, CPCL.  Irrelevant for ZPLII, ESC/POS, etc
+    private int yPos = 0;   // Y coordinate used for EPL2, CPCL.  Irrelevant for ZPLII, ESC/POS, etc
+    private int dotDensity = 32;  // Generally 32 = Single (normal) 33 = Double (higher res) for ESC/POS.  Irrelevant for all other languages.
 
     /**
      * Creates a new
@@ -309,6 +309,7 @@ public class ImageWrapper {
         switch(languageType) {
             case ESCP:
             case ESCP2:
+            case ESCPOS:
                 appendEpsonSlices(getByteBuffer());
                 break;
             case ZPL:

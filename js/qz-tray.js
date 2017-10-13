@@ -214,11 +214,17 @@ var qz = (function() {
                                     timestamp: obj.timestamp
                                 };
 
-                                _qz.tools.hashPromise(_qz.tools.stringify(signObj))
-                                .then(function(hashed) {
+                                //make a hashing promise if not already one
+                                var hashing = _qz.tools.hash(_qz.tools.stringify(signObj));
+                                if (!hashing.then) {
+                                    hashing = _qz.tools.promise(function(resolve) {
+                                        resolve(hashing);
+                                    });
+                                }
+
+                                hashing.then(function(hashed) {
                                     return _qz.security.callSign(hashed);
-                                })
-                                .then(function(signature) {
+                                }).then(function(signature) {
                                     _qz.log.trace("Signature for call", signature);
                                     obj.signature = signature;
                                     _qz.signContent = undefined;
@@ -473,10 +479,8 @@ var qz = (function() {
                 return result;
             },
 
-            hashPromise: function(data) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    resolve(Sha256.hash(data));
-                });
+            hash: function(data) {
+                return Sha256.hash(data);
             },
 
             ws: typeof WebSocket !== 'undefined' ? WebSocket : null,
@@ -905,8 +909,8 @@ var qz = (function() {
                 if (data[i].constructor === Object) {
                     if ((!data[i].format && data[i].type && data[i].type.toUpperCase() !== 'RAW') //unspecified format and not raw -> assume file
                         || (data[i].format && (data[i].format.toUpperCase() === 'FILE'
-                        || (data[i].format.toUpperCase() === 'IMAGE' && !(data[i].data.indexOf("data:image/") === 0 && data[i].data.indexOf(";base64,") !== 0))
-                        || data[i].format.toUpperCase() === 'XML'))) {
+                            || (data[i].format.toUpperCase() === 'IMAGE' && !(data[i].data.indexOf("data:image/") === 0 && data[i].data.indexOf(";base64,") !== 0))
+                            || data[i].format.toUpperCase() === 'XML'))) {
                         data[i].data = _qz.tools.absolute(data[i].data);
                     }
                 }
@@ -1491,18 +1495,6 @@ var qz = (function() {
             },
 
             /**
-             * Change the SHA-256 hashing Promise used by QZ API.
-             * Should be called before any initialization to avoid possible errors.
-             *
-             * @param {Function} promiseHash <code>Function({function} jsonData)</code> Should return a function, <code>Function({function} resolve)</code>, that
-             *     will hash the data and resolve the created promise.
-             * @memberof qz.api
-             */
-            setSha256Promise: function(promiseHash) {
-                _qz.tools.hashPromise = promiseHash;
-            },
-
-            /**
              * Change the SHA-256 hashing function used by QZ API.
              * Should be called before any initialization to avoid possible errors.
              *
@@ -1511,11 +1503,7 @@ var qz = (function() {
              * @memberof qz.api
              */
             setSha256Type: function(hasher) {
-                _qz.tools.hashPromise = function(data) {
-                    return _qz.tools.promise(function(resolve, reject) {
-                        resolve(hasher(data));
-                    });
-                };
+                _qz.tools.hash = hasher;
             },
 
             /**

@@ -214,11 +214,14 @@ var qz = (function() {
                                     timestamp: obj.timestamp
                                 };
 
-                                _qz.security.callSign(_qz.tools.hash(_qz.tools.stringify(signObj))).then(function(signature) {
+                                _qz.tools.hashPromise(_qz.tools.stringify(signObj))
+                                .then(function(hashed) {
+                                    return _qz.security.callSign(hashed);
+                                })
+                                .then(function(signature) {
                                     _qz.log.trace("Signature for call", signature);
                                     obj.signature = signature;
                                     _qz.signContent = undefined;
-
                                     _qz.websocket.connection.send(_qz.tools.stringify(obj));
                                 });
                             } else {
@@ -470,8 +473,10 @@ var qz = (function() {
                 return result;
             },
 
-            hash: function(data) {
-                return Sha256.hash(data);
+            hashPromise: function(data) {
+                return _qz.tools.promise(function(resolve, reject) {
+                    resolve(Sha256.hash(data));
+                });
             },
 
             ws: typeof WebSocket !== 'undefined' ? WebSocket : null,
@@ -1426,7 +1431,7 @@ var qz = (function() {
              * Set promise resolver for calls to acquire the site's certificate.
              *
              * @param {Function} promiseCall <code>Function({function} resolve)</code> called as promise for getting the public certificate.
-             *        Should call <code>resolve</code> parameter with the result.
+             *     Should call <code>resolve</code> parameter with the result.
              *
              * @memberof qz.security
              */
@@ -1438,7 +1443,7 @@ var qz = (function() {
              * Set promise creator for calls to sign API calls.
              *
              * @param {Function} promiseGen <code>Function({function} toSign)</code> Should return a function, <code>Function({function} resolve)</code>, that
-             *                              will sign the content and resolve the created promise.
+             *     will sign the content and resolve the created promise.
              * @memberof qz.security
              */
             setSignaturePromise: function(promiseGen) {
@@ -1486,7 +1491,19 @@ var qz = (function() {
             },
 
             /**
-             * Change the SHA-256 hashing library used by QZ API.
+             * Change the SHA-256 hashing Promise used by QZ API.
+             * Should be called before any initialization to avoid possible errors.
+             *
+             * @param {Function} promiseHash <code>Function({function} jsonData)</code> Should return a function, <code>Function({function} resolve)</code>, that
+             *     will hash the data and resolve the created promise.
+             * @memberof qz.api
+             */
+            setSha256Promise: function(promiseHash) {
+                _qz.tools.hashPromise = promiseHash;
+            },
+
+            /**
+             * Change the SHA-256 hashing function used by QZ API.
              * Should be called before any initialization to avoid possible errors.
              *
              * @param {Function} hasher <code>Function({function} message)</code> called to create hash of passed string.
@@ -1494,7 +1511,11 @@ var qz = (function() {
              * @memberof qz.api
              */
             setSha256Type: function(hasher) {
-                _qz.tools.hash = hasher;
+                _qz.tools.hashPromise = function(data) {
+                    return _qz.tools.promise(function(resolve, reject) {
+                        resolve(hasher(data));
+                    });
+                };
             },
 
             /**

@@ -18,7 +18,7 @@ public class CRL {
     private static final Logger log = LoggerFactory.getLogger(CRL.class);
 
     /** The URL to the QZ CRL. Should not be changed except for dev tests */
-    public static final String CRL_URL = "https://crl..io";
+    public static final String CRL_URL = "https://crl.qz.io";
 
     private static CRL instance = null;
 

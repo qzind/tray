@@ -51,7 +51,7 @@ public class CRL {
                         log.info("Successfully loaded {} CRL entries from {}", instance.revokedHashes.size(), CRL_URL);
                     }
                     catch(IOException e) {
-                        log.error("Error loading CRL from {}", CRL_URL, e);
+                        log.warn("Unable to access CRL from {}, {}", CRL_URL, e.toString());
                     }
                 }
             }.start();

@@ -18,7 +18,7 @@ public class CRL {
     private static final Logger log = LoggerFactory.getLogger(CRL.class);
 
     /** The URL to the QZ CRL. Should not be changed except for dev tests */
-    public static final String CRL_URL = "https://crl.qz.io";
+    public static final String CRL_URL = "https://crl..io";
 
     private static CRL instance = null;
 
@@ -51,7 +51,7 @@ public class CRL {
                         log.info("Successfully loaded {} CRL entries from {}", instance.revokedHashes.size(), CRL_URL);
                     }
                     catch(IOException e) {
-                        log.warn("Error loading CRL from {}, {}", CRL_URL, e.toString());
+                        log.warn("Unable to access CRL from {}, {}", CRL_URL, e.toString());
                     }
                 }
             }.start();

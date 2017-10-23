@@ -21,7 +21,7 @@
 // #                                                       #
 // #########################################################
 /* Steps:
-*     1. Convert private key to jsrsasign compatible format:
+*     1. Convert private key to golang compatible format:
 *        openssl rsa -in private-key.pem -out private-key-updated.pem
 */
 package main

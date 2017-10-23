@@ -49,6 +49,9 @@ func main() {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Content-Type", "text/plain")
+
 	rsaPrivateKey, err := decodeKey(privateKey)
 
 	if err != nil {
@@ -67,7 +70,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		displayError(w,"Error from signing: %s\n", err); return
 	}
-	w.Header().Add("Content-Type", "text/plain")
 	fmt.Fprintf(w, base64.StdEncoding.EncodeToString(signature))
 }
 

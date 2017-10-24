@@ -114,7 +114,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
 
-        BookBundle bundle = new BookBundle();
+        BookBundle bundle = new BookBundle(pxlOpts.getOrientation(), pxlOpts.isScaleContent());
 
         for(PDDocument doc : printables) {
             PageFormat page = job.getPageFormat(null);
@@ -139,7 +139,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
             }
 
-            bundle.append(new PDFWrapper(doc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false), page, doc.getNumberOfPages());
+            bundle.append(doc, new PDFWrapper(doc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false), page, doc.getNumberOfPages());
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));

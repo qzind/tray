@@ -44,18 +44,16 @@ var observer = {
 
         // Deletes the certificate, if it exists
         function deleteCertificate() {
-            var nick1 = "${commonName} - ${vendor.company}";
-            var nick2 = "${commonName} - ${vendor.company} #2";
-            if (certExists(nick1)) {
-                certdb.deleteCertificate(certdb.findCertByNickname(null, nick1));
-            }
-            if (certExists(nick2)) {
-                certdb.deleteCertificate(certdb.findCertByNickname(null, nick2));
-            }
-
-            // Mark as removed
-            if (!certExists(nick1) && !certExists(nick2)) {
-                pref("${project.filename}.installer.timestamp", "-1");
+            var certdb = getCertDB();
+            var certs = certdb.getCerts();
+            var enumerator = certs.getEnumerator();
+            while (enumerator.hasMoreElements()) {
+                var cert = enumerator.getNext().QueryInterface(Components.interfaces.nsIX509Cert);
+                if (cert.containsEmailAddress("${vendor.email}")) {
+                    try {
+                        certdb.deleteCertificate(cert);
+                    } catch (ignore) {}
+                }
             }
         }
 

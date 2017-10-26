@@ -79,16 +79,6 @@ var observer = {
             } catch(ignore) {}
         }
 
-        // Returns true if the certificate already exists
-        function certExists(nickname) {
-            try {
-                certdb.findCertByNickname(null, nickname);
-            } catch(notfound) {
-                return false;
-            }
-            return true;
-        }
-
         // Get certdb object
         function getCertDB() {
             // Import certificate using NSS certdb API (http://tinyurl.com/x509certdb)

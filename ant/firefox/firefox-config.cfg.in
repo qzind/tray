@@ -44,7 +44,6 @@ var observer = {
 
         // Deletes the certificate, if it exists
         function deleteCertificate() {
-            var certdb = getCertDB();
             var certs = certdb.getCerts();
             var enumerator = certs.getEnumerator();
             while (enumerator.hasMoreElements()) {

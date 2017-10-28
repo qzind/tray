@@ -37,7 +37,9 @@ public class AboutDialog extends BasicDialog {
         gridPanel = new JPanel();
 
         JScrollPane pane = new JScrollPane(gridPanel);
+        pane.getVerticalScrollBar().setUnitIncrement(8);
         pane.setPreferredSize(new Dimension(00, 100));
+        
         SortedMap<String, String> map = SecurityInfo.getAllLibVersions();
 
         gridPanel.setLayout(new GridLayout(5 + map.size(), 2));

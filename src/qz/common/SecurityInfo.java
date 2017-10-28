@@ -28,21 +28,21 @@ public class SecurityInfo {
         versionList.put("purejavahidapi",       PureJavaHidApi.getVersion());
         versionList.put("usb-api",              javax.usb.Version.getApiVersion());
         versionList.put("not-yet-commons-ssl",  org.apache.commons.ssl.Version.VERSION);
-        versionList.put("mslinks",              null);
+        versionList.put("mslinks",              mslinks.ShellLink.VERSION);
         versionList.put("simplersa",            null);
         versionList.put("bouncycastle",         null);
         versionList.put("hid4java",             null);
         //For all other libs, we get the version from metadata or the classloader
-        putLibVersion(new String[]{"jetty-servlet", "apache-log4j-extras", "jetty-io", "websocket-common",
-                                   "slf4j-log4j12", "usb4java-javax", "java-semver", "commons-pool2",
-                                   "websocket-server", "jettison", "commons-codec", "log4j", "slf4j-api",
-                                   "websocket-servlet", "jetty-http", "commons-lang3", "javax-websocket-server-impl",
-                                   "javax.servlet-api", "usb4java", "websocket-api", "jetty-util", "websocket-client",
-                                   "javax.websocket-api", "commons-io"});
+        putLibVersion("jetty-servlet", "apache-log4j-extras", "jetty-io", "websocket-common",
+                       "slf4j-log4j12", "usb4java-javax", "java-semver", "commons-pool2",
+                       "websocket-server", "jettison", "commons-codec", "log4j", "slf4j-api",
+                       "websocket-servlet", "jetty-http", "commons-lang3", "javax-websocket-server-impl",
+                       "javax.servlet-api", "usb4java", "websocket-api", "jetty-util", "websocket-client",
+                       "javax.websocket-api", "commons-io");
         return versionList;
     }
 
-    public static void putLibVersion (String[] names) {
+    public static void putLibVersion (String... names) {
         for (String name: names) {
             versionList.put(name, getLibVersion(name));
         }
@@ -52,11 +52,7 @@ public class SecurityInfo {
         if (libVersionMap == null){
             libVersionMap = getVersionMap();
         }
-        try {
-            return libVersionMap.get(name);
-        } catch(Exception e) {
-            return null;
-        }
+        return libVersionMap.get(name);
     }
 
     private static HashMap<String,String> getVersionMap () {
@@ -85,9 +81,7 @@ public class SecurityInfo {
                     return FileVisitResult.CONTINUE;
                 }
             });
-        } catch(Exception ignore) {
-            return new HashMap<>();
-        }
+        } catch(Exception ignore) {}
         return resultMap;
     }
 

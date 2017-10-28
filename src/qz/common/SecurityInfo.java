@@ -33,35 +33,19 @@ public class SecurityInfo {
         versionList.put("bouncycastle",         null);
         versionList.put("hid4java",             null);
         //For all other libs, we get the version from metadata or the classloader
-        putLibVersion("jetty-servlet");
-        putLibVersion("apache-log4j-extras");
-        putLibVersion("jetty-io");
-        putLibVersion("websocket-common");
-        putLibVersion("slf4j-log4j12");
-        putLibVersion("usb4java-javax");
-        putLibVersion("java-semver");
-        putLibVersion("commons-pool2");
-        putLibVersion("websocket-server");
-        putLibVersion("jettison");
-        putLibVersion("commons-codec");
-        putLibVersion("log4j");
-        putLibVersion("slf4j-api");
-        putLibVersion("websocket-servlet");
-        putLibVersion("jetty-http");
-        putLibVersion("commons-lang3");
-        putLibVersion("javax-websocket-server-impl");
-        putLibVersion("javax.servlet-api");
-        putLibVersion("usb4java");
-        putLibVersion("websocket-api");
-        putLibVersion("jetty-util");
-        putLibVersion("websocket-client");
-        putLibVersion("javax.websocket-api");
-        putLibVersion("commons-io");
+        putLibVersion(new String[]{"jetty-servlet", "apache-log4j-extras", "jetty-io", "websocket-common",
+                                   "slf4j-log4j12", "usb4java-javax", "java-semver", "commons-pool2",
+                                   "websocket-server", "jettison", "commons-codec", "log4j", "slf4j-api",
+                                   "websocket-servlet", "jetty-http", "commons-lang3", "javax-websocket-server-impl",
+                                   "javax.servlet-api", "usb4java", "websocket-api", "jetty-util", "websocket-client",
+                                   "javax.websocket-api", "commons-io"});
         return versionList;
     }
 
-    public static void putLibVersion (String name) {
-        versionList.put(name, getLibVersion(name));
+    public static void putLibVersion (String[] names) {
+        for (String name: names) {
+            versionList.put(name, getLibVersion(name));
+        }
     }
 
     public static String getLibVersion (String name) {

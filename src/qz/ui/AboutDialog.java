@@ -2,6 +2,7 @@ package qz.ui;
 
 import org.eclipse.jetty.server.*;
 import qz.common.Constants;
+import qz.common.SecurityInfo;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -9,6 +10,8 @@ import javax.swing.border.EtchedBorder;
 import java.awt.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
+import java.util.SortedMap;
 
 /**
  * Created by Tres on 2/26/2015.
@@ -33,7 +36,11 @@ public class AboutDialog extends BasicDialog {
 
         gridPanel = new JPanel();
 
-        gridPanel.setLayout(new GridLayout(4, 2));
+        JScrollPane pane = new JScrollPane(gridPanel);
+        pane.setPreferredSize(new Dimension(00, 100));
+        SortedMap<String, String> map = SecurityInfo.getAllLibVersions();
+
+        gridPanel.setLayout(new GridLayout(4 + map.size(), 2));
         gridPanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
 
         wsLabel = new JLabel("None");
@@ -58,8 +65,17 @@ public class AboutDialog extends BasicDialog {
             gridPanel.add(new LinkLabel(Constants.ABOUT_URL));
         }
 
+        for (Map.Entry<String, String> entry: map.entrySet()) {
+            gridPanel.add(createLabel(entry.getKey(), true));
+            if (entry.getValue() == null) {
+                gridPanel.add(createLabel("Unknown", true));
+            } else {
+                gridPanel.add(createLabel(entry.getValue(), false));
+            }
+        }
+
         shadeComponents();
-        setContent(gridPanel, true);
+        setContent(pane, true);
     }
 
     public void shadeComponents() {

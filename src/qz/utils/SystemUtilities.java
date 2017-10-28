@@ -205,65 +205,6 @@ public class SystemUtilities {
         return uname;
     }
 
-    public static String getLibVersion (String name, String packageName) {
-        //todo try getting name from classloader
-        //if not, look at the jar metadata
-        if (libVersionMap == null){
-            libVersionMap = getVersionMap();
-        }
-        return libVersionMap.get(name);
-    }
-
-    private static ConcurrentHashMap<String,String> getVersionMap () {
-        //Results by <lib name, version>
-        final ConcurrentHashMap<String,String> resultMap = new ConcurrentHashMap<>();
-        try {
-            final ArrayList<Thread> threads = new ArrayList<>();
-            //Hack to get a ref to our jar
-            URI jarLocation = new URI("jar:" + SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().toString());
-            //This jdk1.7x nio util lets us look into the jar, without it we would need ZipStream
-            FileSystem fs = FileSystems.newFileSystem(jarLocation, new HashMap<String,String>());
-
-            Files.walkFileTree(fs.getPath("/META-INF/maven"), new HashSet<FileVisitOption>(), 3, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(final Path file, BasicFileAttributes attrs) {
-                    if (file.toString().endsWith(".properties")) {
-                        //launch a thread to scrape our data, keep a ref to the thread
-                        Thread t = new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    List<String> data = Files.readAllLines(file, Charset.defaultCharset());
-                                    String id = data.get(4);
-                                    id = id.substring(id.lastIndexOf('=') + 1);
-                                    String version = data.get(2);
-                                    version = version.substring(version.lastIndexOf('=') + 1);
-                                    resultMap.put(id, version);
-                                }
-                                catch(Exception ignore) {}
-                            }
-                        });
-                        threads.add(t);
-                        t.start();
-                    }
-
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-
-            //Wait for all threads to finish
-            for(Thread t : threads) t.join();
-
-            for(Map.Entry<String,String> item : resultMap.entrySet()) {
-                System.out.println(item.getKey() + " : " + item.getValue());
-            }
-        } catch(Exception ignore) {
-            return null;
-        }
-
-        return resultMap;
-    }
-
     public static boolean setSystemLookAndFeel() {
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);

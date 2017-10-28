@@ -16,12 +16,6 @@ import qz.common.Constants;
 
 import javax.swing.*;
 import java.io.File;
-import java.net.URI;
-import java.nio.charset.Charset;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Utility class for OS detection functions.
@@ -32,7 +26,6 @@ public class SystemUtilities {
 
     // Name of the os, i.e. "Windows XP", "Mac OS X"
     private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
-    private static ConcurrentHashMap<String,String> libVersionMap = new ConcurrentHashMap<>();
 
     private static String uname;
     private static String linuxRelease;

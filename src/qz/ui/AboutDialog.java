@@ -40,7 +40,7 @@ public class AboutDialog extends BasicDialog {
         pane.setPreferredSize(new Dimension(00, 100));
         SortedMap<String, String> map = SecurityInfo.getAllLibVersions();
 
-        gridPanel.setLayout(new GridLayout(4 + map.size(), 2));
+        gridPanel.setLayout(new GridLayout(5 + map.size(), 2));
         gridPanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
 
         wsLabel = new JLabel("None");
@@ -64,13 +64,15 @@ public class AboutDialog extends BasicDialog {
         catch(MalformedURLException ex) {
             gridPanel.add(new LinkLabel(Constants.ABOUT_URL));
         }
+        gridPanel.add(createLabel("Library Name:", true));
+        gridPanel.add(createLabel("Version:", true));
 
         for (Map.Entry<String, String> entry: map.entrySet()) {
-            gridPanel.add(createLabel(entry.getKey(), true));
+            gridPanel.add(createLabel("    " + entry.getKey(), true));
             if (entry.getValue() == null) {
-                gridPanel.add(createLabel("Unknown", true));
+                gridPanel.add(createLabel("    Unknown", true));
             } else {
-                gridPanel.add(createLabel(entry.getValue(), false));
+                gridPanel.add(createLabel("    " +entry.getValue(), false));
             }
         }
 

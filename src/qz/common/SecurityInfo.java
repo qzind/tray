@@ -32,7 +32,6 @@ public class SecurityInfo {
         versionList.put("mslinks",              mslinks.ShellLink.VERSION);
         versionList.put("simplersa",            null);
         versionList.put("bouncycastle",         "" + new BouncyCastleProvider().getVersion());
-        versionList.put("hid4java",             null);
         //For all other libs, we get the version from metadata or the classloader
         putLibVersion("jetty-servlet", "apache-log4j-extras", "jetty-io", "websocket-common",
                        "slf4j-log4j12", "usb4java-javax", "java-semver", "commons-pool2",

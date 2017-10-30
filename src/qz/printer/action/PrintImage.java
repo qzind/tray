@@ -118,6 +118,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         interpolation = pxlOpts.getInterpolation();
         imageRotation = pxlOpts.getRotation();
 
+        //reverse fix for OSX
         if (SystemUtilities.isMac() && pxlOpts.getOrientation() != null
                 && pxlOpts.getOrientation().getAsAttribute() == OrientationRequested.REVERSE_LANDSCAPE) {
             imageRotation += 180;

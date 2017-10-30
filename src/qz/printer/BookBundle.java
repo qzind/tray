@@ -23,28 +23,11 @@ public class BookBundle extends Book implements Printable {
 
     private static final Logger log = LoggerFactory.getLogger(BookBundle.class);
 
-    private List<PDDocument> refDocs = new ArrayList<>();
-    private OrientationRequested orient = null;
-    private boolean scale = false;
-
     private Printable lastPrint;
     private int lastStarted;
 
-    public BookBundle(PrintOptions.Orientation orientation, boolean scaled) {
+    public BookBundle() {
         super();
-
-        if (orientation != null) {
-            orient = orientation.getAsAttribute();
-        }
-        scale = scaled;
-    }
-
-    public void append(PDDocument doc, Printable painter, PageFormat page, int numPages) {
-        for(int i = 0; i < numPages; i++) {
-            refDocs.add(doc);
-        }
-
-        append(painter, page, numPages);
     }
 
     @Override
@@ -58,48 +41,10 @@ public class BookBundle extends Book implements Printable {
                 lastStarted = pageIndex;
             }
 
-            log.debug("Paper area: {},{}:{},{}", (int)format.getImageableX(), (int)format.getImageableY(),
-                      (int)format.getImageableWidth(), (int)format.getImageableHeight());
-
-            if (SystemUtilities.isMac()) {
-                adjustPrintForOrientation(g, format, pageIndex);
-            }
-
             return printable.print(g, format, pageIndex - lastStarted);
         }
 
         return NO_SUCH_PAGE;
-    }
-
-    /** Fixes landscape orientations on OSX */
-    private void adjustPrintForOrientation(Graphics g, PageFormat format, int pageIndex) {
-        PDRectangle bounds = refDocs.get(pageIndex).getPage(pageIndex - lastStarted).getBBox();
-        double topAdjust = 0, leftAdjust = 0;
-
-        if (orient == OrientationRequested.LANDSCAPE) {
-            //adjust down page to account for wrong origin corner
-            if (scale) {
-                //only adjusts vertically, so only check if scale affects width
-                if ((bounds.getWidth() / bounds.getHeight()) < (format.getImageableWidth() / format.getImageableHeight())) {
-                    leftAdjust = format.getImageableHeight() - (bounds.getWidth() * (format.getImageableWidth() / bounds.getHeight()));
-                }
-            } else {
-                leftAdjust = format.getImageableHeight() - bounds.getWidth();
-            }
-        } else if (orient == OrientationRequested.REVERSE_LANDSCAPE) {
-            //adjust across page to account for wrong origin corner
-            if (scale) {
-                //only adjusts horizontally, so only check is scale affects height
-                if ((bounds.getWidth() / bounds.getHeight()) >= (format.getImageableWidth() / format.getImageableHeight())) {
-                    topAdjust = format.getImageableWidth() - (bounds.getHeight() * (format.getImageableHeight() / bounds.getWidth()));
-                }
-            } else {
-                topAdjust = format.getImageableWidth() - bounds.getHeight();
-            }
-        }
-
-        //landscape will have only rotated doc, this adjusts page so [0,0] appears to come from correct corner
-        g.translate((int)topAdjust, (int)leftAdjust);
     }
 
     /**

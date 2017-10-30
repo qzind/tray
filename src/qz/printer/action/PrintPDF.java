@@ -114,7 +114,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
 
-        BookBundle bundle = new BookBundle(pxlOpts.getOrientation(), pxlOpts.isScaleContent());
+        BookBundle bundle = new BookBundle();
 
         for(PDDocument doc : printables) {
             PageFormat page = job.getPageFormat(null);
@@ -136,10 +136,15 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     Paper repap = page.getPaper();
                     repap.setImageableArea(repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());
                     page.setPaper(repap);
+
+                    //reverse fix for OSX
+                    if (SystemUtilities.isMac() && pxlOpts.getOrientation() == PrintOptions.Orientation.REVERSE_LANDSCAPE) {
+                        pd.setRotation(pd.getRotation() + 180);
+                    }
                 }
             }
 
-            bundle.append(doc, new PDFWrapper(doc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false), page, doc.getNumberOfPages());
+            bundle.append(new PDFWrapper(doc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation()), page, doc.getNumberOfPages());
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));

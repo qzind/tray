@@ -64,10 +64,10 @@ public class PrintSocketServer {
             if ("-l".equals(s) || "--libinfo".equals(s)) {
                 String format = "%-40s%s%n";
                 System.out.printf(format, "LIBRARY NAME:", "VERSION:");
-                SortedMap<String, String> map = SecurityInfo.getAllLibVersions();
-                for (Map.Entry<String, String> entry: map.entrySet()) {
+                SortedMap<String, String> libVersions = SecurityInfo.getLibVersions();
+                for (Map.Entry<String, String> entry: libVersions.entrySet()) {
                     if (entry.getValue() == null) {
-                        System.out.printf(format, entry.getKey(), "UNKNOWN");
+                        System.out.printf(format, entry.getKey(), "(unknown)");
                     } else {
                         System.out.printf(format, entry.getKey(), entry.getValue());
                     }

@@ -21,13 +21,31 @@ public class AboutDialog extends BasicDialog {
     JPanel gridPanel;
     JLabel wssLabel;
     JLabel wsLabel;
-
+    SortedMap<String, String> libVersions;
     String name;
 
     public AboutDialog(JMenuItem menuItem, IconCache iconCache, String name) {
         super(menuItem, iconCache);
         this.name = name;
         initComponents();
+    }
+
+    @Override
+    public void setVisible(boolean b) {
+        if (libVersions == null) {
+            libVersions = SecurityInfo.getLibVersions();
+            GridLayout layout = (GridLayout)gridPanel.getLayout();
+            layout.setRows(layout.getRows() + libVersions.size());
+
+            gridPanel.add(createLabel("Library Name:", true));
+            gridPanel.add(createLabel("Version:", true));
+            for (Map.Entry<String, String> entry: libVersions.entrySet()) {
+                gridPanel.add(createLabel("    " + entry.getKey(), false));
+                gridPanel.add(createLabel("    "  + (entry.getValue() == null ? "(unknown)" : entry.getValue()), false));
+            }
+            shadeComponents();
+        }
+        super.setVisible(b);
     }
 
     public void initComponents() {
@@ -39,10 +57,7 @@ public class AboutDialog extends BasicDialog {
         JScrollPane pane = new JScrollPane(gridPanel);
         pane.getVerticalScrollBar().setUnitIncrement(8);
         pane.setPreferredSize(new Dimension(00, 100));
-        
-        SortedMap<String, String> map = SecurityInfo.getAllLibVersions();
-
-        gridPanel.setLayout(new GridLayout(5 + map.size(), 2));
+        gridPanel.setLayout(new GridLayout(5, 2));
         gridPanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
 
         wsLabel = new JLabel("None");
@@ -65,17 +80,6 @@ public class AboutDialog extends BasicDialog {
         }
         catch(MalformedURLException ex) {
             gridPanel.add(new LinkLabel(Constants.ABOUT_URL));
-        }
-        gridPanel.add(createLabel("Library Name:", true));
-        gridPanel.add(createLabel("Version:", true));
-
-        for (Map.Entry<String, String> entry: map.entrySet()) {
-            gridPanel.add(createLabel("    " + entry.getKey(), true));
-            if (entry.getValue() == null) {
-                gridPanel.add(createLabel("    Unknown", true));
-            } else {
-                gridPanel.add(createLabel("    " +entry.getValue(), false));
-            }
         }
 
         shadeComponents();

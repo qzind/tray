@@ -3,86 +3,82 @@ package qz.common;
 import com.sun.jna.Native;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.jetty.util.Jetty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import purejavahidapi.PureJavaHidApi;
-
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 /**
- * Created by Kyle on 10/27/2017.
+ * Created by Kyle B. on 10/27/2017.
  */
 public class SecurityInfo {
-    private static HashMap<String, String> libVersionMap;
-    private static SortedMap<String, String> versionList;
+    private static final Logger log = LoggerFactory.getLogger(SecurityInfo.class);
 
-    public static SortedMap<String, String> getAllLibVersions(){
-        versionList = new TreeMap<String,String>();
-        //This is the preferred way to get versions, but not every lib saves its version internally
-        versionList.put("jna.Native",           Native.VERSION_NATIVE);
-        versionList.put("jna",                  Native.VERSION);
-        versionList.put("jssc",                 jssc.SerialNativeInterface.getLibraryBaseVersion());
-        versionList.put("jetty",                Jetty.VERSION);
-        versionList.put("pdfbox",               org.apache.pdfbox.util.Version.getVersion());
-        versionList.put("purejavahidapi",       PureJavaHidApi.getVersion());
-        versionList.put("usb-api",              javax.usb.Version.getApiVersion());
-        versionList.put("not-yet-commons-ssl",  org.apache.commons.ssl.Version.VERSION);
-        versionList.put("mslinks",              mslinks.ShellLink.VERSION);
-        versionList.put("simplersa",            null);
-        versionList.put("bouncycastle",         "" + new BouncyCastleProvider().getVersion());
-        //For all other libs, we get the version from metadata or the classloader
-        putLibVersion("jetty-servlet", "apache-log4j-extras", "jetty-io", "websocket-common",
+    public static SortedMap<String, String> getLibVersions(){
+        SortedMap<String, String> libVersions = new TreeMap<>();
+
+        // Use API-provided mechanism if available
+        libVersions.put("jna (native)",         Native.VERSION_NATIVE);
+        libVersions.put("jna",                  Native.VERSION);
+        libVersions.put("jssc",                 jssc.SerialNativeInterface.getLibraryBaseVersion());
+        libVersions.put("jetty",                Jetty.VERSION);
+        libVersions.put("pdfbox",               org.apache.pdfbox.util.Version.getVersion());
+        libVersions.put("purejavahidapi",       PureJavaHidApi.getVersion());
+        libVersions.put("usb-api",              javax.usb.Version.getApiVersion());
+        libVersions.put("not-yet-commons-ssl",  org.apache.commons.ssl.Version.VERSION);
+        libVersions.put("mslinks",              mslinks.ShellLink.VERSION);
+        libVersions.put("simplersa",            null);
+        libVersions.put("bouncycastle",         "" + new BouncyCastleProvider().getVersion());
+
+        // Fallback to maven manifest information
+        HashMap<String, String> mavenVersions = getMavenVersions();
+
+        String[] mavenLibs = { "jetty-servlet", "apache-log4j-extras", "jetty-io", "websocket-common",
                        "slf4j-log4j12", "usb4java-javax", "java-semver", "commons-pool2",
                        "websocket-server", "jettison", "commons-codec", "log4j", "slf4j-api",
                        "websocket-servlet", "jetty-http", "commons-lang3", "javax-websocket-server-impl",
                        "javax.servlet-api", "usb4java", "websocket-api", "jetty-util", "websocket-client",
-                       "javax.websocket-api", "commons-io");
-        return versionList;
-    }
+                       "javax.websocket-api", "commons-io" };
 
-    public static void putLibVersion (String... names) {
-        for (String name: names) {
-            versionList.put(name, getLibVersion(name));
+        for (String lib : mavenLibs) {
+            libVersions.put(lib, mavenVersions.get(lib));
         }
+
+        return libVersions;
     }
 
-    public static String getLibVersion (String name) {
-        if (libVersionMap == null){
-            libVersionMap = getVersionMap();
-        }
-        return libVersionMap.get(name);
-    }
-
-    private static HashMap<String,String> getVersionMap () {
-        //Results by <lib name, version>
-        final HashMap<String,String> resultMap = new HashMap<>();
+    /**
+     * Fetches embedded version information based on maven properties
+     * @return HashMap of library name, version
+     */
+    private static HashMap<String,String> getMavenVersions() {
+        final HashMap<String,String> mavenVersions = new HashMap<>();
+        String jar = "jar:" + SecurityInfo.class.getProtectionDomain().getCodeSource().getLocation().toString();
         try {
-            //Hack to get a ref to our jar
-            URI jarLocation = new URI("jar:" + SecurityInfo.class.getProtectionDomain().getCodeSource().getLocation().toString());
-            //This jdk1.7x nio util lets us look into the jar, without it we would need ZipStream
-            FileSystem fs = FileSystems.newFileSystem(jarLocation, new HashMap<String,String>());
-
+            FileSystem fs = FileSystems.newFileSystem(new URI(jar), new HashMap<String,String>());
             Files.walkFileTree(fs.getPath("/META-INF/maven"), new HashSet<FileVisitOption>(), 3, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     if (file.toString().endsWith(".properties")) {
                         try {
-                            List<String> data = Files.readAllLines(file, Charset.defaultCharset());
-                            String id = data.get(4);
-                            id = id.substring(id.lastIndexOf('=') + 1);
-                            String version = data.get(2);
-                            version = version.substring(version.lastIndexOf('=') + 1);
-                            resultMap.put(id, version);
+                            Properties props = new Properties();
+                            props.load(Files.newInputStream(file, StandardOpenOption.READ));
+                            mavenVersions.put(props.getProperty("artifactId"), props.getProperty("version"));
                         }
-                        catch(Exception ignore) {}
+                        catch(Exception e) {
+                            log.warn("Error reading properties from {}", file, e);
+                        }
                     }
                     return FileVisitResult.CONTINUE;
                 }
             });
-        } catch(Exception ignore) {}
-        return resultMap;
+        } catch(Exception ignore) {
+            log.warn("Could not open {} for version information {}.  Most libraries will list as (unknown)", jar);
+        }
+        return mavenVersions;
     }
 
 }

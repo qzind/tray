@@ -76,7 +76,7 @@ public class SecurityInfo {
                 }
             });
         } catch(Exception ignore) {
-            log.warn("Could not open {} for version information {}.  Most libraries will list as (unknown)", jar);
+            log.warn("Could not open {} for version information.  Most libraries will list as (unknown)", jar);
         }
         return mavenVersions;
     }

@@ -98,6 +98,7 @@ public class PrintSocketServer {
         fileAppender.setFile(SystemUtilities.getDataDirectory() + File.separator + Constants.LOG_FILE + ".log");
         fileAppender.setRollingPolicy(rollingPolicy);
         fileAppender.setTriggeringPolicy(triggeringPolicy);
+        fileAppender.setEncoding("UTF-8");
 
         fileAppender.setImmediateFlush(true);
         fileAppender.activateOptions();

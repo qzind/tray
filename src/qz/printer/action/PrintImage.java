@@ -20,10 +20,12 @@ import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
+import qz.utils.SystemUtilities;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
+import javax.print.attribute.standard.OrientationRequested;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
@@ -53,7 +55,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
     protected boolean scaleImage = false;
     protected Object interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC;
     protected double imageRotation = 0;
-
+    protected boolean manualReverse = false;
 
     public PrintImage() {
         images = new ArrayList<>();
@@ -116,6 +118,13 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         interpolation = pxlOpts.getInterpolation();
         imageRotation = pxlOpts.getRotation();
 
+        //reverse fix for OSX
+        if (SystemUtilities.isMac() && pxlOpts.getOrientation() != null
+                && pxlOpts.getOrientation().getAsAttribute() == OrientationRequested.REVERSE_LANDSCAPE) {
+            imageRotation += 180;
+            manualReverse = true;
+        }
+
         job.setJobName(pxlOpts.getJobName(Constants.IMAGE_PRINT));
         job.setPrintable(this, job.validatePage(page));
 
@@ -133,11 +142,14 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         }
         log.trace("Requested page {} for printing", pageIndex);
 
-        if (graphics.getClass().getCanonicalName().equals("sun.print.PeekGraphics")) {
+        if ("sun.print.PeekGraphics".equals(graphics.getClass().getCanonicalName())) {
             //java uses class only to query if a page needs printed - save memory/time by short circuiting
             return PAGE_EXISTS;
         }
 
+
+        //allows pages view to rotate in different orientations
+        graphics.drawString(" ", 0, 0);
 
         BufferedImage imgToPrint = fixColorModel(images.get(pageIndex));
         if (imageRotation % 360 != 0) {
@@ -186,8 +198,13 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
         log.debug("Memory: {}m/{}m", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576, Runtime.getRuntime().maxMemory() / 1048576);
 
-        graphics2D.drawImage(imgToPrint, (int)boundX, (int)boundY, (int)(boundX + imgW), (int)(boundY + imgH),
-                             0, 0, imgToPrint.getWidth(), imgToPrint.getHeight(), null);
+        if (!manualReverse) {
+            graphics2D.drawImage(imgToPrint, (int)boundX, (int)boundY, (int)(boundX + imgW), (int)(boundY + imgH),
+                                 0, 0, imgToPrint.getWidth(), imgToPrint.getHeight(), null);
+        } else {
+            graphics2D.drawImage(imgToPrint, (int)(boundW + boundX - imgW), (int)(boundH + boundY - imgH), (int)(boundW + boundX), (int)(boundH + boundY),
+                                 0, 0, imgToPrint.getWidth(), imgToPrint.getHeight(), null);
+        }
 
         // Valid page
         return PAGE_EXISTS;
@@ -245,6 +262,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         scaleImage = false;
         imageRotation = 0;
         interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC;
+        manualReverse = false;
     }
 
 }

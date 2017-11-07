@@ -3,11 +3,12 @@ package qz.printer.action;
 import com.github.zafarkhaja.semver.Version;
 import net.sourceforge.iharder.Base64;
 import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
-import org.apache.pdfbox.printing.PDFPrintable;
 import org.apache.pdfbox.printing.Scaling;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -16,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.printer.BookBundle;
+import qz.printer.PDFWrapper;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
@@ -24,6 +26,7 @@ import qz.utils.SystemUtilities;
 import javax.print.attribute.PrintRequestAttributeSet;
 import java.awt.geom.AffineTransform;
 import java.awt.print.PageFormat;
+import java.awt.print.Paper;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.*;
@@ -36,11 +39,14 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(PrintPDF.class);
 
-    private List<PDDocument> pdfs;
+    private List<PDDocument> originals;
+    private List<PDDocument> printables;
+    private Splitter splitter = new Splitter();
 
 
     public PrintPDF() {
-        pdfs = new ArrayList<>();
+        originals = new ArrayList<>();
+        printables = new ArrayList<>();
     }
 
     @Override
@@ -63,7 +69,8 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     doc = PDDocument.load(new URL(data.getString("data")).openStream());
                 }
 
-                pdfs.add(doc);
+                originals.add(doc);
+                printables.addAll(splitter.split(doc));
             }
             catch(FileNotFoundException e) {
                 throw new UnsupportedOperationException("PDF file specified could not be found.", e);
@@ -73,22 +80,31 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             }
         }
 
-        log.debug("Parsed {} files for printing", pdfs.size());
+        log.debug("Parsed {} files for printing", printables.size());
+    }
+
+    @Override
+    public PrintRequestAttributeSet applyDefaultSettings(PrintOptions.Pixel pxlOpts, PageFormat page) {
+        if (pxlOpts.getOrientation() != null) {
+            //page orient does not set properly on pdfs with orientation requested attribute
+            page.setOrientation(pxlOpts.getOrientation().getAsFormat());
+        }
+
+        return super.applyDefaultSettings(pxlOpts, page);
     }
 
     @Override
     public void print(PrintOutput output, PrintOptions options) throws PrinterException {
-        if (pdfs.isEmpty()) {
+        if (printables.isEmpty()) {
             log.warn("Nothing to print");
             return;
         }
 
         PrinterJob job = PrinterJob.getPrinterJob();
         job.setPrintService(output.getPrintService());
-        PageFormat page = job.getPageFormat(null);
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page);
+        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, job.getPageFormat(null));
 
         // Disable attributes per https://github.com/qzind/tray/issues/174
         if (SystemUtilities.isMac()) { // && Constants.JAVA_VERSION.lessThan(Version.valueOf("1.8.0-152"))) {
@@ -100,19 +116,35 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         BookBundle bundle = new BookBundle();
 
-        for(PDDocument doc : pdfs) {
+        for(PDDocument doc : printables) {
+            PageFormat page = job.getPageFormat(null);
+            applyDefaultSettings(pxlOpts, page);
+
             for(PDPage pd : doc.getPages()) {
                 if (pxlOpts.getRotation() % 360 != 0) {
                     rotatePage(doc, pd, pxlOpts.getRotation());
                 }
 
-                if (pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
-                    //force orientation change at data level
-                    pd.setRotation(pxlOpts.getOrientation().getDegreesRot());
+                if (pxlOpts.getOrientation() == null) {
+                    PDRectangle bounds = pd.getBBox();
+                    if (bounds.getWidth() > bounds.getHeight() || (pd.getRotation() / 90) % 2 == 1) {
+                        log.info("Adjusting orientation to print landscape PDF source");
+                        page.setOrientation(PrintOptions.Orientation.LANDSCAPE.getAsFormat());
+                    }
+                } else if (pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
+                    //flip imageable area dimensions when in landscape
+                    Paper repap = page.getPaper();
+                    repap.setImageableArea(repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());
+                    page.setPaper(repap);
+
+                    //reverse fix for OSX
+                    if (SystemUtilities.isMac() && pxlOpts.getOrientation() == PrintOptions.Orientation.REVERSE_LANDSCAPE) {
+                        pd.setRotation(pd.getRotation() + 180);
+                    }
                 }
             }
 
-            bundle.append(new PDFPrintable(doc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false), page, doc.getNumberOfPages());
+            bundle.append(new PDFWrapper(doc, scale, false, (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation()), page, doc.getNumberOfPages());
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));
@@ -153,10 +185,14 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
     @Override
     public void cleanup() {
-        for(PDDocument doc : pdfs) {
+        for(PDDocument doc : printables) {
+            try { doc.close(); } catch(IOException ignore) {}
+        }
+        for(PDDocument doc : originals) {
             try { doc.close(); } catch(IOException ignore) {}
         }
 
-        pdfs.clear();
+        originals.clear();
+        printables.clear();
     }
 }

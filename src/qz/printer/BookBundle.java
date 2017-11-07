@@ -1,13 +1,19 @@
 package qz.printer;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.SystemUtilities;
 
+import javax.print.attribute.standard.OrientationRequested;
 import java.awt.*;
 import java.awt.print.Book;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Wrapper of the {@code Book} class as a {@code Printable} type,
@@ -34,9 +40,6 @@ public class BookBundle extends Book implements Printable {
                 lastPrint = printable;
                 lastStarted = pageIndex;
             }
-
-            log.debug("Paper area: {},{}:{},{}", (int)format.getImageableX(), (int)format.getImageableY(),
-                      (int)format.getImageableWidth(), (int)format.getImageableHeight());
 
             return printable.print(g, format, pageIndex - lastStarted);
         }

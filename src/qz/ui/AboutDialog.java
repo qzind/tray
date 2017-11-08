@@ -2,6 +2,7 @@ package qz.ui;
 
 import org.eclipse.jetty.server.*;
 import qz.common.Constants;
+import qz.common.SecurityInfo;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -9,6 +10,8 @@ import javax.swing.border.EtchedBorder;
 import java.awt.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
+import java.util.SortedMap;
 
 /**
  * Created by Tres on 2/26/2015.
@@ -18,7 +21,7 @@ public class AboutDialog extends BasicDialog {
     JPanel gridPanel;
     JLabel wssLabel;
     JLabel wsLabel;
-
+    SortedMap<String, String> libVersions;
     String name;
 
     public AboutDialog(JMenuItem menuItem, IconCache iconCache, String name) {
@@ -27,13 +30,34 @@ public class AboutDialog extends BasicDialog {
         initComponents();
     }
 
+    @Override
+    public void setVisible(boolean b) {
+        if (libVersions == null) {
+            libVersions = SecurityInfo.getLibVersions();
+            GridLayout layout = (GridLayout)gridPanel.getLayout();
+            layout.setRows(layout.getRows() + libVersions.size());
+
+            gridPanel.add(createLabel("Library Name:", true));
+            gridPanel.add(createLabel("Version:", true));
+            for (Map.Entry<String, String> entry: libVersions.entrySet()) {
+                gridPanel.add(createLabel("    " + entry.getKey(), false));
+                gridPanel.add(createLabel("    "  + (entry.getValue() == null ? "(unknown)" : entry.getValue()), false));
+            }
+            shadeComponents();
+        }
+        super.setVisible(b);
+    }
+
     public void initComponents() {
         JComponent header = setHeader(new JLabel(getIcon(IconCache.Icon.BANNER_ICON)));
         header.setBorder(new EmptyBorder(Constants.BORDER_PADDING, 0, Constants.BORDER_PADDING, 0));
 
         gridPanel = new JPanel();
 
-        gridPanel.setLayout(new GridLayout(4, 2));
+        JScrollPane pane = new JScrollPane(gridPanel);
+        pane.getVerticalScrollBar().setUnitIncrement(8);
+        pane.setPreferredSize(new Dimension(00, 100));
+        gridPanel.setLayout(new GridLayout(5, 2));
         gridPanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
 
         wsLabel = new JLabel("None");
@@ -59,7 +83,7 @@ public class AboutDialog extends BasicDialog {
         }
 
         shadeComponents();
-        setContent(gridPanel, true);
+        setContent(pane, true);
     }
 
     public void shadeComponents() {

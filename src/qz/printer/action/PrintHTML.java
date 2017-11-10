@@ -89,7 +89,9 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                 double pageWidth = 0;
                 double pageHeight = 0;
 
-                if (options.getDefaultOptions().getPageSize() != null) {
+                if (pxlOpts.getSize() != null) {
+                    pageWidth = pxlOpts.getSize().getWidth() * (72.0 / pxlOpts.getUnits().as1Inch());
+                } else if (options.getDefaultOptions().getPageSize() != null) {
                     pageWidth = options.getDefaultOptions().getPageSize().getWidth();
                     //pageHeight = options.getDefaultOptions().getPageSize().getHeight();
                 }

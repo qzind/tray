@@ -53,6 +53,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
         try {
             WebApp.initialize();
+            PrintOptions.Pixel pxlOpts = options.getPixelOptions();
 
             for(int i = 0; i < printData.length(); i++) {
                 JSONObject data = printData.getJSONObject(i);
@@ -63,18 +64,19 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                 double pageWidth = 0;
                 double pageHeight = 0;
 
-                if (options.getDefaultOptions().getPageSize() != null) {
+                if (pxlOpts.getSize() != null) {
+                    pageWidth = pxlOpts.getSize().getWidth() * (72.0 / pxlOpts.getUnits().as1Inch());
+                } else if (options.getDefaultOptions().getPageSize() != null) {
                     pageWidth = options.getDefaultOptions().getPageSize().getWidth();
                 }
 
-                PrintOptions.Pixel pxlOpts = options.getPixelOptions();
                 if (!data.isNull("options")) {
                     JSONObject dataOpt = data.getJSONObject("options");
 
                     if (!dataOpt.isNull("pageWidth") && dataOpt.optDouble("pageWidth") > 0) {
                         pageWidth = dataOpt.optDouble("pageWidth") * (72.0 / pxlOpts.getUnits().as1Inch());
                     }
-                    if (!dataOpt.isNull("pageHeight") && dataOpt.optDouble("pageWidth") > 0) {
+                    if (!dataOpt.isNull("pageHeight") && dataOpt.optDouble("pageHeight") > 0) {
                         pageHeight = dataOpt.optDouble("pageHeight") * (72.0 / pxlOpts.getUnits().as1Inch());
                     }
                 }

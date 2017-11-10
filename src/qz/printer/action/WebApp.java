@@ -93,6 +93,7 @@ public class WebApp extends Application {
             webView.getTransforms().add(new Scale(WEB_SCALE, WEB_SCALE));
 
             snap.playFromStart();
+            stage.hide();
         }
     };
 
@@ -148,6 +149,12 @@ public class WebApp extends Application {
      * @throws Throwable JavaFx will throw a generic {@code Throwable} class for any issues
      */
     public static synchronized void print(final PrinterJob job, final WebAppModel model) throws Throwable {
+        //NOTE: stop-gap for #231, breaks headless support
+        Platform.runLater(() -> {
+            stage.show();
+            stage.toBack();
+        });
+
         load(model, (event) -> {
             try {
                 PageLayout layout = job.getJobSettings().getPageLayout();
@@ -195,6 +202,7 @@ public class WebApp extends Application {
                 });
             }
             catch(Exception e) { thrown.set(e); }
+            finally { stage.hide(); }
         });
 
         Throwable t = null;

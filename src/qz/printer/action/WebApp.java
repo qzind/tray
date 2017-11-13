@@ -93,7 +93,6 @@ public class WebApp extends Application {
             webView.getTransforms().add(new Scale(WEB_SCALE, WEB_SCALE));
 
             snap.playFromStart();
-            stage.hide();
         }
     };
 

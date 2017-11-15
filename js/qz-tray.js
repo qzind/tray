@@ -214,11 +214,20 @@ var qz = (function() {
                                     timestamp: obj.timestamp
                                 };
 
-                                _qz.security.callSign(_qz.tools.hash(_qz.tools.stringify(signObj))).then(function(signature) {
+                                //make a hashing promise if not already one
+                                var hashing = _qz.tools.hash(_qz.tools.stringify(signObj));
+                                if (!hashing.then) {
+                                    hashing = _qz.tools.promise(function(resolve) {
+                                        resolve(hashing);
+                                    });
+                                }
+
+                                hashing.then(function(hashed) {
+                                    return _qz.security.callSign(hashed);
+                                }).then(function(signature) {
                                     _qz.log.trace("Signature for call", signature);
                                     obj.signature = signature;
                                     _qz.signContent = undefined;
-
                                     _qz.websocket.connection.send(_qz.tools.stringify(obj));
                                 });
                             } else {
@@ -900,8 +909,8 @@ var qz = (function() {
                 if (data[i].constructor === Object) {
                     if ((!data[i].format && data[i].type && data[i].type.toUpperCase() !== 'RAW') //unspecified format and not raw -> assume file
                         || (data[i].format && (data[i].format.toUpperCase() === 'FILE'
-                        || (data[i].format.toUpperCase() === 'IMAGE' && !(data[i].data.indexOf("data:image/") === 0 && data[i].data.indexOf(";base64,") !== 0))
-                        || data[i].format.toUpperCase() === 'XML'))) {
+                            || (data[i].format.toUpperCase() === 'IMAGE' && !(data[i].data.indexOf("data:image/") === 0 && data[i].data.indexOf(";base64,") !== 0))
+                            || data[i].format.toUpperCase() === 'XML'))) {
                         data[i].data = _qz.tools.absolute(data[i].data);
                     }
                 }
@@ -1426,7 +1435,7 @@ var qz = (function() {
              * Set promise resolver for calls to acquire the site's certificate.
              *
              * @param {Function} promiseCall <code>Function({function} resolve)</code> called as promise for getting the public certificate.
-             *        Should call <code>resolve</code> parameter with the result.
+             *     Should call <code>resolve</code> parameter with the result.
              *
              * @memberof qz.security
              */
@@ -1438,7 +1447,7 @@ var qz = (function() {
              * Set promise creator for calls to sign API calls.
              *
              * @param {Function} promiseGen <code>Function({function} toSign)</code> Should return a function, <code>Function({function} resolve)</code>, that
-             *                              will sign the content and resolve the created promise.
+             *     will sign the content and resolve the created promise.
              * @memberof qz.security
              */
             setSignaturePromise: function(promiseGen) {
@@ -1486,7 +1495,7 @@ var qz = (function() {
             },
 
             /**
-             * Change the SHA-256 hashing library used by QZ API.
+             * Change the SHA-256 hashing function used by QZ API.
              * Should be called before any initialization to avoid possible errors.
              *
              * @param {Function} hasher <code>Function({function} message)</code> called to create hash of passed string.

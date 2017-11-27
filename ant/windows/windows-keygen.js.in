@@ -1,7 +1,7 @@
 /**
  * @author Tres Finocchiaro
  *
- * Copyright (C) 2016 Tres Finocchiaro, QZ Industries, LLC
+ * Copyright (C) 2017 Tres Finocchiaro, QZ Industries, LLC
  *
  * LGPL 2.1 This is free software.  This software and source code are released under
  * the "LGPL 2.1 License".  A copy of this license should be distributed with
@@ -17,7 +17,7 @@
  *    matched publisher/vendor information.                                                   *
  *                                                                                            *
  *  INSTALL:                                                                                  *
- *    1. Creates a self-signed Java Keystore for jetty wss://${jks.cn}                        *
+ *    1. Creates a self-signed Java Keystore for jetty wss://${ssl.cn}                        *
  *    2. Exports public certificate from Java Keystore                                        *
  *    3. Imports into Windows trusted cert store                                              *
  *    4. Imports into Firefox web browser (if installed)                                      *
@@ -47,16 +47,34 @@ var newLine = "\r\n";
 // Uses passed-in parameter as install location.  Will fallback to registry if not provided.
 var qzInstall = getArg(0, getRegValue("HKLM\\Software\\${project.name}\\"));
 var installMode = getArg(1, "install");
-var cn = getArg(2, "${jks.cn}");
+var cnOverride = getArg(2, null);
 var firefoxPortable = getArg(3, null);
-var sslCert = getArg(4, null);
-var sslKey = getArg(5, null);
+var trusted = { cert: getArg(4, null), key: getArg(5, null) };
 
 var firefoxInstall;
 
+/**
+ * Prototypes and polyfills
+ */
+String.prototype.replaceAll = function(search, replacement) {
+    var target = this;
+    return target.replace(new RegExp(search, 'g'), replacement);
+};
+
+if (typeof console === 'undefined') {
+    var console = {
+        log: function(msg) { WScript.Echo(msg); },
+        warn: function(msg) { WScript.Echo("WARN: " + msg); },
+        error: function(object, status) {
+            WScript.Echo("ERROR: " + (typeof object === 'object' ? object.message : object));
+            WScript.Quit(status ? status : -1);
+        }
+    }
+}
+
 if (installMode == "install") {
-    var javaKey, jreHome, keyTool, keyStore, password, derCert;
-    if (sslCert && sslKey) {
+    var password, javaEnv;
+    if (trusted.cert && trusted.key) {
         createPKCS12();
         createJavaKeystore();
     } else if (createJavaKeystore()) {
@@ -87,36 +105,48 @@ function deleteFile(filePath) {
 		try {
 			fso.DeleteFile(filePath);
 		} catch (err) {
-			die("Unable to delete " + filePath);
+			console.error("Unable to delete " + filePath);
 		}
 	}
+}
+
+function java() {
+    if (!javaEnv) {
+        var regKey = "HKLM\\Software\\JavaSoft\\Java Runtime Environment\\";
+        var jreHome = getRegValue(regKey + getRegValue(regKey + "CurrentVersion") + "\\JavaHome");
+        var keyTool = jreHome + "\\bin\\keytool.exe";
+        javaEnv = {
+            regKey: regKey,
+            jreHome: jreHome,
+            keyTool: keyTool
+        };
+    }
+    return javaEnv;
 }
 
 /**
  * Generates a random string to be used as a password
  */
 function pw() {
-    if (password) {
-        return password;
+    if (!password) {
+        password = "";
+        var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+        for( var i=0; i < parseInt("${ssl.passlength}"); i++ ) {
+            password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
     }
-    password = "";
-    var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    for( var i=0; i < parseInt("${jks.passlength}"); i++ ) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
-	}
     return password;
 }
 
 /**
  * Reads a registry value, taking 32-bit/64-bit architecture into consideration
  */
-function getRegValue(path) {	
+function getRegValue(path) {
 	// If 64-bit OS, try 32-bit registry first
-	var arch = "";
 	if (shell.ExpandEnvironmentStrings("ProgramFiles(x86)")) {
 		path = path.replace("\\Software\\", "\\Software\\Wow6432Node\\");
 	}
-	
+
 	var regValue = "";
 	try {
 		regValue = shell.RegRead(path);
@@ -135,7 +165,7 @@ function getRegValue(path) {
  */
 function verifyExists(path, msg) {
     var success = fso.FileExists(path);
-    debug(" - " + (success ? "[success] " : "[failed] ") + msg);
+    console.log(" - " + (success ? "[success] " : "[failed] ") + msg);
     return success;
 }
 
@@ -143,9 +173,14 @@ function verifyExists(path, msg) {
  * Displays a message regarding whether or not a command succeeded
  */
 function verifyExec(cmd, msg) {
-    var success = shell.Run(cmd, 0, true) == 0;
-    debug(" - " + (success ? "[success] " : "[failed] ")  + msg);
-    return success;
+    try {
+        var success = shell.Run(cmd, 0, true) == 0;
+        console.log(" - " + (success ? "[success] " : "[failed] ") + msg);
+        return success;
+    } catch(err) {
+        console.log(' - [failed] Error executing "' + cmd + '"');
+        return false;
+    }
 }
 
 /**
@@ -153,26 +188,31 @@ function verifyExec(cmd, msg) {
  */
 function fixPath(path) {
     var removeTrailing = qzInstall.replace(/\\$/, "").replace(/\/$/, "");
-    return path.replace("${jks.install}", removeTrailing).replace(/\//g, "\\");
+    return path.replace("!install", removeTrailing).replace(/\//g, "\\");
 }
 
-/**
- * Displays an error message and exits the script
- * @param msg
- */
-function die(msg, status) {
-    WScript.Echo("ERROR: " + msg);
-    status = status ? status : -1;
-    WScript.Quit(status);
-}
+function replaceVars(cmd) {
+    var c = cmd;
 
-/**
- * Displays a status message
- * @param msg
- */
-function debug(msg) {
-    WScript.Echo(msg);
-}
+    // Handle CN=${ssl.cn} override
+    if (cnOverride) {
+        c = c.replace("CN=${ssl.cn},", "CN=" + cnOverride + ",")
+            .replace("san=dns:${ssl.cn},", "san=" + (isIp4(cnOverride) ? "ip:" : "dns:" ) + cnOverride + ",")
+            .replace(",dns:${ssl.cnalt}", "");
+    }
+
+    return c.replaceAll("${ca.jks}", fixPath("${ca.jks}"))
+            .replaceAll("${ca.crt}", fixPath("${ca.crt}"))
+            .replaceAll("${ssl.jks}", fixPath("${ssl.jks}"))
+            .replaceAll("${ssl.crt}", fixPath("${ssl.crt}"))
+            .replaceAll("${ssl.csr}", fixPath("${ssl.csr}"))
+            .replaceAll("!storepass", pw())
+            .replaceAll("!keypass", pw())
+            .replaceAll("!sslcert", trusted.cert)
+            .replaceAll("!sslkey", trusted.key)
+            .replaceAll("keytool", java().keyTool)
+            .replaceAll("${trusted.keypair}", fixPath("${trusted.keypair}"));
+ }
 
 /*
  * Reads in a text file, expands the specified named variable replacements and writes it back out.
@@ -186,6 +226,7 @@ function writeParsedConfig(inPath, outPath, replacements) {
 
         // Process all variable replacements
         for (var key in replacements) {
+            if (!replacements.hasOwnProperty(key)) continue;
             // Escape leading "$" prior to building regex
             var varName = (key.indexOf("$") == 0 ? "\\" + key : key);
             var re = new RegExp(varName, 'g')
@@ -221,107 +262,87 @@ function strip(line) {
  * Creates the Java Keystore
  */
 function createJavaKeystore() {
-    javaKey = "HKLM\\Software\\JavaSoft\\Java Runtime Environment\\";
-    jreHome = getRegValue(javaKey + getRegValue(javaKey + "CurrentVersion") + "\\JavaHome");
-    keyTool = jreHome + "\\bin\\keytool.exe";
-    derCert = fixPath("${der.cert}");
+    var success = false;
 
-    if (jreHome == "") {
-        die("Can't find JavaHome.  Secure websockets will not work.", "${windows.err.java}");
+    if (!java().jreHome) {
+        console.error("Can't find JavaHome.  Secure websockets will not work.", "${windows.err.java}");
     }
 
-    if (qzInstall == "") {
-        die("Can't find ${project.name} installation path. Secure websockets will not work.", "${windows.err.install}");
+    if (!qzInstall) {
+        console.error("Can't find ${project.name} installation path. Secure websockets will not work.", "${windows.err.install}");
     }
 
-    keyStore = fixPath("${jks.keystore}");
+    deleteFile(fixPath("${ssl.jks}"));
+    deleteFile(fixPath("${ssl.crt}"));
 
-    var makeKeyStore;
-    if (sslCert) {
-        makeKeyStore = "${ssl.convert}"
-            .replace("${jks.keytool}", keyTool)
-            .replace("${ssl.keypair}", fixPath("${ssl.keypair}"))
-            .replace("${jks.keystore}", keyStore)
-            .replace("${jks.storepass}", pw())
-            .replace("${jks.keypass}", pw())
-            .replace("${jks.keypass}", pw()); // second ${jks.keypass}
+    console.log("Creating keystore for wss://" + (cnOverride || "${ssl.cn}") + " (this could take a minute)...");
 
-        // Remove any lingering self-signed certs
-        deleteFile(derCert);
+    if (trusted.cert) {
+        success = verifyExec(replaceVars("${trusted.convert}"), "Converting trusted keypair to Java format");
     } else {
-        makeKeyStore = "${jks.command}"
-            .replace("${jks.keytool}", keyTool)
-            .replace("${jks.keystore}", keyStore)
-            .replace("${jks.storepass}", pw())
-            .replace("${jks.keypass}", pw());
+        deleteFile(fixPath("${ca.jks}"));
+        deleteFile(fixPath("${ca.crt}"));
+        deleteFile(fixPath("${ssl.jks}"));
+        deleteFile(fixPath("${ssl.csr}"));
 
-        // Handle CN=${jks.cn} override
-        if (cn != "${jks.cn}") {
-            // Replace "${jks.cn}" with override value
-            makeKeyStore = makeKeyStore.replace("CN=${jks.cn},", "CN=" + cn + ",");
+        success = verifyExec(replaceVars("${ca.jkscmd}"), "Creating a CA keypair: ${ca.jks}") &&
+            verifyExec(replaceVars("${ca.crtcmd}"), "Exporting CA certificate: ${ca.crt}") &&
+            verifyExec(replaceVars("${ssl.jkscmd}"), "Creating an SSL keypair: ${ssl.jks}") &&
+            verifyExec(replaceVars("${ssl.jkscsr}"), "Creating an SSL CSR: ${ssl.csr}") &&
+            verifyExec(replaceVars("${ssl.crtcmd}"), "Issuing SSL certificate from CA: ${ssl.crt}") &&
+            verifyExec(replaceVars("${ssl.importca}"), "Importing CA certificate into SSL keypair: ${ssl.crt}") &&
+            verifyExec(replaceVars("${ssl.importssl}"), "Importing chained SSL certificate into SSL keypair: ${ca.crt}");
 
-            // Use "san=ip:" versus "san=dns:"
-            if (isIp4(cn)) {
-                makeKeyStore = makeKeyStore.replace("san=dns:${jks.cn},", "san=ip:" + cn + ",");
-            } else {
-                makeKeyStore = makeKeyStore.replace("san=dns:${jks.cn},", "san=dns:" + cn + ",");
-            }
-
-            // Strip "${jks.cnalt}"
-            makeKeyStore = makeKeyStore.replace(",dns:${jks.cnalt}", "");
-        }
+        deleteFile(fixPath("${ca.jks}"));
+        deleteFile(fixPath("${ssl.csr}"));
+        deleteFile(fixPath("${ssl.crt}"));
     }
 
-    deleteFile(keyStore);   // remove old, if exists
-    debug("Creating keystore for wss://" + cn + " (this could take a minute)...");
-    shell.Run(makeKeyStore, 0, true);
-    verifyExists(keyStore, "Check keystore exists");
+    return success && writePropertiesFile();
+}
+
+/*
+ * Writes ${ssl.properties}
+ */
+function writePropertiesFile() {
+    console.log("Writing ${ssl.properties}...");
 
     // Handle "community" mode, custom signing auth cert
     var authCert = "${build.type}" ? fixPath("${authcert.install}").replace(/\\/g, "\\\\") : "";
 
-
-    var file = fso.OpenTextFile(fixPath("${jks.properties}"), 2, true);
-    file.WriteLine("wss.alias=" + "${jks.alias}");
-    file.WriteLine("wss.keystore=" + keyStore.replace(/\\/g, "\\\\"));
-    file.WriteLine("wss.keypass=" + pw());
-    file.WriteLine("wss.storepass=" + pw());
-    file.WriteLine("wss.host=${jks.host}");
-    if (authCert)
-        file.WriteLine("authcert.override=" + authCert);
-    file.Close();
-
-    return true;
+    try {
+        var file = fso.OpenTextFile(fixPath("${ssl.properties}"), 2, true);
+        file.WriteLine("wss.alias=" + "${ssl.alias}");
+        file.WriteLine("wss.keystore=" + fixPath("${ssl.jks}").replace(/\\/g, "\\\\"));
+        file.WriteLine("wss.keypass=" + pw());
+        file.WriteLine("wss.storepass=" + pw());
+        file.WriteLine("wss.host=${ssl.host}");
+        file.Write(authCert ? "authcert.override=" + authCert + newLine : "");
+        file.Close();
+        console.log(" - [success] Writing SSL properties file: ${ssl.properties}");
+        return true;
+    } catch(err) {
+        console.log(" - [failed] Error writing: ${ssl.properties}");
+    }
 }
 
 /*
  * Exports certificate to native format
  */
 function installWindowsCertificate() {
-    var makeDerCert = "${der.command}"
-        .replace("${jks.keytool}", keyTool)
-        .replace("${jks.keystore}", keyStore)
-        .replace("${jks.storepass}", pw())
-        .replace("${jks.keypass}", pw())
-        .replace("${der.cert}", derCert);
-
-    deleteFile(derCert);    // remove old, if exists
-    debug("Converting keystore to native certificate...");
-    shell.Run(makeDerCert, 0, true);
-    verifyExists(derCert, "Check certificate exists");
-
-    debug("Installing native certificate for secure websockets...");
-    var installDerCert = '${windows.keygen.tool} -addstore -f "${windows.keygen.store}" "' + derCert + '"';
-
-    // Windows Vista or higher
-    shell.Run(installDerCert, 0, true);
-    debug(" - " + (findWindowsMatches("") ? "[success] " : "[failed] ")  + "Check certificate installed");
+    console.log("Installing native certificate for secure websockets...");
+    var success = verifyExec(replaceVars("${windows.keygen.install}"), "Installing native certificate") && findWindowsMatches("");
+    if (success) {
+        console.log(" - [success] Checking certificate installed");
+    } else {
+        throw "${windows.keygen.tool} failed";
+    }
 }
 
 function installWindowsXPCertificate() {
     shell.Popup("Automatic certificate installation is not available for this platform.\n" +
         "For secure websockets to function properly:\n\n" +
-        "     1.  Navigate to \"" + derCert + "\"\n" +
+        "     1.  Navigate to \"" + fixPath("${ca.crt}") + "\"\n" +
         "     2.  Click \"Install Certificate...\"\n" +
         "     3.  Click \"Place all certificates in the following store\"\n" +
         "     4.  Browse to \"Trusted Root Certificate Authorities\"\n" +
@@ -329,14 +350,16 @@ function installWindowsXPCertificate() {
         "     6.  Click \"Yes\" on thumbprint Security Warning\n\n" +
         "Click OK to automatically launch the certificate import wizard now.\n", 0, "Warning - ${project.name}", 48);
 
-    // Do not wrap quotes around derCert, or this next line will fail
-    shell.Run("rundll32.exe cryptext.dll,CryptExtAddCER " + derCert, 1, true);
+    // Do not wrap quotes around ${ca.crt}, or this next line will fail
+    shell.Run("rundll32.exe cryptext.dll,CryptExtAddCER " + fixPath("${ca.crt}"), 1, true);
 }
 
 /*
  * Gets the Firefox installation path, stores it a global variable "firefoxInstall"
  */
 function getFirefoxInstall() {
+    console.log("Searching for Firefox...");
+
     //  Use provided install directory, if supplied
     if (firefoxPortable) {
         firefoxInstall = firefoxPortable + "\\App\\Firefox\\firefox.exe";
@@ -351,14 +374,14 @@ function getFirefoxInstall() {
         firefoxVer = getRegValue(firefoxKey + " ESR\\");
         if (firefoxVer) {
             firefoxVer += " ESR";
-            debug(" - [success] Found Firefox " + firefoxVer);
+            console.log(" - [success] Found Firefox " + firefoxVer);
         }
         else {
-            debug(" - [skipped] Firefox was not detected");
+            console.log(" - [skipped] Firefox was not detected");
             return false;
         }
     } else {
-        debug(" - [success] Found Firefox " + firefoxVer);
+        console.log(" - [success] Found Firefox " + firefoxVer);
     }
 
     // Determine full path to firefox.exe, i.e. "C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
@@ -373,7 +396,7 @@ function getFirefoxInstall() {
 function hasFirefoxConflict() {
     if (!getFirefoxInstall()) { return false; }
 
-    debug("Searching for Firefox AutoConfig conflicts...");
+    console.log("Searching for Firefox AutoConfig conflicts...");
     // AutoConfig rule conflicts to search for
     var conflicts = ["general.config.filename"];
 
@@ -385,7 +408,7 @@ function hasFirefoxConflict() {
         var whitelist = false;
         for (var i in exceptions) {
             if (exceptions[i] == o.item().Name) {
-                debug(" - [skipping] ${project.name} config file: " + exceptions[i]);
+                console.log(" - [skipped] Writing ${project.name} config file: " + exceptions[i]);
                 whitelist = true;
             }
         }
@@ -393,7 +416,7 @@ function hasFirefoxConflict() {
             return true;
         }
     }
-    debug(" - [success] No conflicts found");
+    console.log(" - [success] No conflicts found");
     return false;
 }
 
@@ -412,7 +435,7 @@ function parseFirefoxPref(file, conflicts) {
             // Check for both quote styles, 'foo.bar.name' and "foo.bar.name"
             if (line.indexOf("'" + conflicts[i] + "'") >= 0 ||
                 line.indexOf('"' + conflicts[i] + '"') >= 0) {
-                debug(" - [error] Conflict found in " + file.Name +
+                console.log(" - [error] Conflict found in " + file.Name +
                     "\n\t Conflict on line " + counter + ": \"" + line + "\"");
                 inFile.close();
                 return true;
@@ -430,7 +453,7 @@ function parseFirefoxPref(file, conflicts) {
 function deleteFirefoxCertificate() {
     if (!getFirefoxInstall()) { return; }
 
-    debug("Removing from Firefox...");
+    console.log("Removing from Firefox...");
     var firefoxCfg = firefoxInstall + "\\..\\${firefoxconfig.name}";
 
     // Variable replacements for Firefox config file
@@ -438,14 +461,14 @@ function deleteFirefoxCertificate() {
         "${certData}" : "",
         "${uninstall}" : "true",
         "${timestamp}" : "-1",
-        "${commonName}" : cn,
+        "${commonName}" : (cnOverride || "${ssl.cn}"),
         "${trayApp}" : ""
     };
 
     // 1. readPlainCert() reads in certificate, stripping non-base64 content
     // 2. writeParsedConfig(...) reads, parses and writes config file in same folder as firefox.exe
     writeParsedConfig(fixPath("${firefoxconfig.install}"), firefoxCfg, replacements);
-    verifyExists(firefoxCfg, "Check Firefox config exists");
+    verifyExists(firefoxCfg, "Firefox config exists");
 }
 
 /*
@@ -453,25 +476,25 @@ function deleteFirefoxCertificate() {
  */
 function installFirefoxCertificate() {
     if (!firefoxInstall) {
-        debug("Skipping Firefox cert install...");
+        console.log("Skipping Firefox cert install...");
         return;
     }
-    debug("Registering with Firefox...");
+    console.log("Registering with Firefox...");
     var firefoxCfg = firefoxInstall + "\\..\\${firefoxconfig.name}";
 
     // Variable replacements for Firefox config file
     var replacements = {
-        "${certData}" : readPlainCert(derCert),
+        "${certData}" : readPlainCert(fixPath("${ca.crt}")),
         "${uninstall}" : "false",
         "${timestamp}" : new Date().getTime(),
-        "${commonName}" : cn,
+        "${commonName}" : (cnOverride || "${ssl.cn}"),
         "${trayApp}" : ""
     };
 
     // 1. readPlainCert() reads in certificate, stripping non-base64 content
     // 2. writeParsedConfig(...) reads, parses and writes config file in same folder as firefox.exe
     writeParsedConfig(fixPath("${firefoxconfig.install}"), firefoxCfg, replacements);
-    verifyExists(firefoxCfg, "Check Firefox config exists");
+    verifyExists(firefoxCfg, "Checking Firefox config exists");
 
     // Install the preference file tells Firefox to launches ${firefoxconfig.name} each time it starts
     var firefoxPrefs = firefoxInstall + "\\..\\defaults\\pref\\${firefoxprefs.name}";
@@ -482,17 +505,17 @@ function installFirefoxCertificate() {
  * Convert Trusted SSL certificate to Java Keystore for use with secure websockets
  */
 function createPKCS12() {
-    var keyPair = fixPath("${ssl.keypair}");
+    var keyPair = fixPath("${trusted.keypair}");
 
-    var generated = "${ssl.command}"
-        .replace("${ssl.keypair}", keyPair)
-        .replace("${ssl.cert}", sslCert)
-        .replace("${ssl.key}", sslKey)
-        .replace("${jks.keypass}", pw());
+    var generated = "${trusted.command}"
+        .replace("${trusted.keypair}", keyPair)
+        .replace("${trusted.crt}", trusted.cert)
+        .replace("${trusted.jks}", trusted.key)
+        .replace("!keypass", pw());
 
-    debug("Creating PKCS12 keypair (this requires openssl)...");
+    console.log("Creating PKCS12 keypair (this requires openssl)...");
     if (!verifyExec(generated, "Creating PKCS12 keypair")) {
-        die("Error creating PKCS12 keypair from: " + sslCert + ", " + sslKey + " to " + keyPair);
+        console.error("Error creating PKCS12 keypair from: " + trusted.cert + ", " + trusted.key + " to " + keyPair);
     }
 }
 
@@ -502,7 +525,7 @@ function createPKCS12() {
  * Deletes windows certificates based on specific CN and OU values
  */
 function deleteWindowsCertificate() {
-    debug("Deleting old certificates...");
+    console.log("Deleting old certificates...");
     var serialDelim = "||";
     var matches = findWindowsMatches(serialDelim);
 
@@ -511,20 +534,23 @@ function deleteWindowsCertificate() {
         matches = matches.split(serialDelim);
         for (var i in matches) {
             if (matches[i]) {
-                shell.Run('${windows.keygen.tool} -delstore "${windows.keygen.store}" "' + matches[i] + '"', 1, true);
+                var success = verifyExec(replaceVars("${windows.keygen.uninstall}").replaceAll("!match", matches[i]), 'Remove "${vendor.company}" ' + matches[i] + ' certificate');
+                if (!success) {
+                    throw "${windows.keygen.tool} failed";
+                }
             }
         }
 
         // Verify removal
         matches = findWindowsMatches();
         if (matches) {
-            debug(" - [failed] Some certificates not deleted");
+            console.log(" - [failed] Some certificates not deleted");
             return false;
         } else {
-            debug(" - [success] Certificate(s) removed");
+            console.log(" - [success] Certificate(s) removed");
         }
     } else {
-        debug(" - [skipped] No matches found");
+        console.log(" - [skipped] No matches found");
     }
     return true;
 }
@@ -538,11 +564,10 @@ function deleteWindowsXPCertificate() {
         "     1.  Manage computer certificates\n" +
         "     2.  Click \"Trusted Root Certificate Authorities...\"\n" +
         "     3.  Click \"Certificates\"\n" +
-        "     4.  Browse to \"${jks.cn}, ${vendor.company}\"\n" +
+        "     4.  Browse to \"${ssl.cn}, ${vendor.company}\"\n" +
         "     5.  Right Click, \"Delete\"\n" +
         "Click OK to automatically launch the certificate manager.\n", 0, "Warning - ${project.name}", 48);
 
-    // Do not wrap quotes around derCert, or this next line will fail
     shell.Run("mmc.exe certmgr.msc", 1, true);
 }
 
@@ -553,17 +578,18 @@ function deleteWindowsXPCertificate() {
 function findWindowsMatches(serialDelim) {
     var matches = "";
     var proc = shell.Exec('${windows.keygen.tool} -store "${windows.keygen.store}"');
-    var certData = "";
+    var certBlock = "";
     while (!proc.StdOut.AtEndOfStream) {
         var line = proc.StdOut.ReadLine()
-        if (trim(line) != "") {
-            certData += line + newLine;
+        // Read certBlock in block sections
+        if (line.indexOf("================") === -1) {
+            certBlock += line + newLine;
         } else {
-            var serial = parseCertificateSerial(certData);
-            if (serial && isVendorMatch(certData)) {
+            var serial = parseCertificateSerial(certBlock);
+            if (serial && isVendorMatch(certBlock)) {
                 matches += serial + serialDelim;
             }
-            certData = "";
+            certBlock = "";
         }
     }
     return matches;
@@ -573,15 +599,13 @@ function findWindowsMatches(serialDelim) {
  * Parses the supplied data for serialTag
  * If found, returns the serial number of the certificate, i.e. "89e301a9"
  */
-function parseCertificateSerial(certData) {
-    var serialTag = "Serial Number:";
-    if (certData.indexOf(newLine) != -1) {
-        var lines = certData.split(newLine);
-        for (var i in lines) {
-            var line = trim(lines[i]);
-            if (line.indexOf(serialTag) == 0) {
-                return trim(line.split(serialTag)[1]);
-            }
+function parseCertificateSerial(certBlock) {
+    // First line should have serial
+    var lines = certBlock.split(newLine);
+    if (lines.length > 0) {
+        var serialParts = lines[0].split(":");
+        if (serialParts.length > 0) {
+            return trim(serialParts[1]);
         }
     }
     return false;
@@ -592,17 +616,15 @@ function parseCertificateSerial(certData) {
  * If found, parses the matched line for specific CN and OU values.
  * Returns true if found
  */
-function isVendorMatch(certData) {
-    var issuerTag = "Issuer:";
-    if (certData.indexOf(newLine) != -1) {
-        var lines = certData.split(newLine);
-        for (var i in lines) {
-            var line = trim(lines[i]);
-            if (line.indexOf(issuerTag) == 0) {
-                if (line.indexOf("OU=${vendor.company}") != -1 && line.indexOf("CN=" + cn) != -1) {
-                    return true;
-                }
-            }
+function isVendorMatch(certBlock) {
+    // Second line should have issuer
+    var lines = certBlock.split(newLine);
+    if (lines.length > 0) {
+        var issuerLine = lines[1];
+        var i = issuerLine.indexOf(":") + 1;
+        if (i > 1) {
+            var issuer = trim(issuerLine.substring(i, issuerLine.length));
+            return issuer.indexOf("OU=${vendor.company}") !== -1 && issuer.indexOf("CN=" + (cnOverride || "${ssl.cn}")) !== -1;
         }
     }
     return false;
@@ -612,7 +634,7 @@ function isVendorMatch(certData) {
  * Functional equivalent of foo.trim()
  */
 function trim(val) {
-    return val.replace(/^\s+/,'').replace(/\s+$/,'');
+    return val ? val.replace(/^\s+/,'').replace(/\s+$/,'') : val;
 }
 
 /*

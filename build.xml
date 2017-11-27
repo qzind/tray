@@ -57,6 +57,10 @@
         <copy todir="${build.project.dir}">
             <fileset dir="${src.dir}" excludes="**/*.java"/>
         </copy>
+
+        <copy todir="${dist.dir}">
+            <fileset file="${basedir}/LICENSE.txt"/>
+        </copy>
     </target>
 
     <target name="build-jar" depends="compile-socket">
@@ -136,7 +140,7 @@
         <property name="build.type" value="-community"/>
     </target>
 
-    <target name="include-assets" depends="init,get-version" >
+    <target name="include-assets" depends="init,get-version" unless="dist.minimal">
         <echo>Copying resource files to output</echo>
 
         <copy todir="${dist.dir}/${demo.dir}/${asset.dir}">
@@ -164,12 +168,6 @@
         <copy todir="${dist.dir}/${demo.dir}">
             <fileset file="sample.html"/>
         </copy>
-
-        <!-- Distribute socket with LICENSE only -->
-        <copy todir="${dist.dir}">
-            <fileset file="${basedir}/LICENSE.txt"/>
-        </copy>
-
     </target>
 
     <!--
@@ -179,7 +177,7 @@
     -->
     <target name="prepackage">
         <echo>Processing self-signing variables</echo>
-        <property file="ant/self-sign.properties"/>
+        <property file="ant/ssl.properties"/>
 
         <echo>Creating Firefox certificate config files</echo>
         <copy file="${firefoxconfig.in}" tofile="${firefoxconfig.out}" >

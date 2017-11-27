@@ -75,6 +75,20 @@ var qz = (function() {
             setup: {
                 /** Loop through possible ports to open connection, sets web socket calls that will settle the promise. */
                 findConnection: function(config, resolve, reject) {
+                    //force flag if missing ports
+                    if (!config.port.secure.length) {
+                        if (!config.port.insecure.length) {
+                            reject(new Error("No ports have been specified to connect over"));
+                            return;
+                        } else if (config.usingSecure) {
+                            _qz.log.error("No secure ports specified - forcing insecure connection");
+                            config.usingSecure = false;
+                        }
+                    } else if (!config.port.insecure.length && !config.usingSecure) {
+                        _qz.log.trace("No insecure ports specified - forcing secure connection");
+                        config.usingSecure = true;
+                    }
+
                     var deeper = function() {
                         config.port.portIndex++;
 
@@ -475,11 +489,14 @@ var qz = (function() {
                 return result;
             },
 
-            hash: typeof Sha256 !== 'undefined' ? Sha256.hash : null,
+            hash: function(data) {
+                return Sha256.hash(data);
+            },
+
             ws: typeof WebSocket !== 'undefined' ? WebSocket : null,
 
             absolute: function(loc) {
-                if (document && typeof document.createElement === 'function') {
+                if (typeof window !== 'undefined' && typeof document.createElement === 'function') {
                     var a = document.createElement("a");
                     a.href = loc;
                     return a.href;
@@ -778,6 +795,20 @@ var qz = (function() {
                         resolve({ ipAddress: data.ip, macAddress: data.mac });
                     }, reject);
                 });
+            },
+
+            /**
+             * @returns {Object<{socket: String, host: String, port: Number}>} Details of active websocket connection
+             *
+             * @memberof qz.websocket
+             */
+            getConnectionInfo: function() {
+                if (_qz.websocket.connection) {
+                    var url = _qz.websocket.connection.url.split(/[:\/]+/g);
+                    return { socket: url[0], host: url[1], port: +url[2] };
+                } else {
+                    throw new Error("A connection to QZ has not been established yet");
+                }
             }
         },
 
@@ -1655,11 +1686,11 @@ var qz = (function() {
              * Show or hide QZ api debugging statements in the browser console.
              *
              * @param {boolean} show Whether the debugging logs for QZ should be shown. Hidden by default.
-             * @returns {boolean} Value of debugging flag
+             *
              * @memberof qz.api
              */
             showDebug: function(show) {
-                return (_qz.DEBUG = show);
+                _qz.DEBUG = show;
             },
 
             /**

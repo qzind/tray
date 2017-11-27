@@ -1,6 +1,6 @@
 #
+# Python Django example for views.py
 # Echoes the signed message and exits
-# usage:  python sign-message.py "test"
 #
 
 #########################################################
@@ -24,28 +24,31 @@
 
 import base64
 import os
-import sys
-
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
+from django.http import HttpResponse, HttpResponseBadRequest
 
+def index(request):
+    if request.method == 'GET':
+        message = request.GET.get('request')
+    else:
+        message = request.POST.get('request')
 
-mykey = os.path.join(os.path.dirname(__file__), "private-key.pem")
-mypass = "S3cur3P@ssw0rd"
+    if message == '' or message == None:
+        return HttpResponseBadRequest("Signing request needs 'request' parameter")
 
-# Treat command line argument as message to be signed
-for arg in sys.argv:
-    message = arg.encode('utf-8')
+    mykey = os.path.join(os.path.dirname(__file__), "private-key.pem")
+    mypass = 'S3cur3P@ssw0rd' # or mypass = None
 
-# Load the private key
-key = serialization.load_pem_private_key(
-    open(mykey).read(), password=mypass, backend=default_backend()
-)
+    # Load the private key
+    key = serialization.load_pem_private_key(
+        open(mykey).read(), mypass.encode('utf-8'), backend=default_backend()
+    )
 
-# Create the signature
-signature = key.sign(message, padding.PKCS1v15(), hashes.SHA1())
+    # Create the signature
+    signature = key.sign(message.encode('utf-8'), padding.PKCS1v15(), hashes.SHA1())
 
-# Echo the signature
-print base64.b64encode(signature)
-exit(0)
+    # Echo the signature
+    return HttpResponse(base64.b64encode(signature), content_type="text/plain")
+

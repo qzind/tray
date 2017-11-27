@@ -27,10 +27,10 @@ public class LinuxCertificate {
     private static String nssdb = "sql:" + System.getenv("HOME") + "/.pki/nssdb";
 
     private static String getCertificatePath() {
-        // We assume that if the keystore is "qz-tray.jks", the cert must be "qz-tray.crt"
+        // We assume that if the keystore is "qz-tray.jks", the cert must be "root-ca.crt"
         Properties sslProperties = DeployUtilities.loadTrayProperties();
         if (sslProperties != null) {
-            return sslProperties.getProperty("wss.keystore").replaceAll("\\.jks$", ".crt");
+            return sslProperties.getProperty("wss.keystore").replace(Constants.PROPS_FILE + ".jks", "root-ca.crt");
         }
 
         return null;

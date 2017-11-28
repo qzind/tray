@@ -104,6 +104,7 @@ check_java
 progress_dialog 10 "Stopping any running versions..."
 pkill -f "java -jar ${jarfile}" > /dev/null 2>&1
 pkill -f "java -jar ${launch.opts} ${jarfile}" > /dev/null 2>&1
+pkill -f "java ${launch.opts} -jar ${jarfile}" > /dev/null 2>&1
 
 progress_dialog 20 "Stopping any running versions..."
 rm -rf "${destdir}" > /dev/null 2>&1
@@ -201,7 +202,7 @@ if [ $? -ne 0 ]; then
     progress_dialog 100 "Finished.  Please launch ${project.name} manually."
 else
     # Start ${project.name} as the user that's logged in
-    sudo -u $(logname 2>/dev/null || echo $SUDO_USER) nohup "java" -jar ${launch.opts} "${jarfile}" > /dev/null 2>&1 &
+    sudo -u $(logname 2>/dev/null || echo $SUDO_USER) nohup "java" ${launch.opts} -jar "${jarfile}" > /dev/null 2>&1 &
     progress_dialog 100 "Finished.  ${project.name} should start automatically."
 fi
 echo

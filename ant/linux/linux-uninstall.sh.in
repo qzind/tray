@@ -3,7 +3,7 @@
 echo -e "Stopping any running versions..."
 pkill -f "java -jar ${linux.installdir}/${project.filename}.jar" > /dev/null 2>&1
 a=$?
-pkill -f "java -jar ${launch.opts} ${linux.installdir}/${project.filename}.jar" > /dev/null 2>&1
+pkill -f "java ${launch.opts} -jar ${linux.installdir}/${project.filename}.jar" > /dev/null 2>&1
 if [ $a -eq 0 -o $? -eq 0 ]; then
     echo -e "${bash.success}"
 else

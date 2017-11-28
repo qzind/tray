@@ -122,6 +122,7 @@ public class SocketConnection {
         for(Short v : openDevices.keySet()) {
             HashMap<Short,DeviceIO> pm = openDevices.get(v);
             for(Short p : pm.keySet()) {
+                pm.get(p).setStreaming(false);
                 pm.get(p).close();
             }
         }

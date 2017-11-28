@@ -4,6 +4,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.communication.DeviceException;
@@ -194,6 +195,10 @@ public class UsbUtilities {
 
                                 try { Thread.sleep(interval); } catch(Exception ignore) {}
                             }
+                        }
+                        catch(WebSocketException e) {
+                            usb.setStreaming(false);
+                            log.error("USB stream error", e);
                         }
                         catch(DeviceException e) {
                             usb.setStreaming(false);

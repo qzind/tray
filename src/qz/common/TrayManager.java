@@ -134,7 +134,12 @@ public class TrayManager {
         }
 
         if (tray != null) {
-            addMenuItems();
+            if (tray.getMenu() != null) {
+                addMenuItems();
+            } else {
+                // Tray-less, create orphaned dialogs
+                addDialogs();
+            }
         }
     }
 
@@ -186,7 +191,21 @@ public class TrayManager {
         MenuItem aboutItem = new MenuItem("About...", iconCache.getImage(IconCache.Icon.ABOUT_ICON), aboutListener);
         aboutItem.setShortcut('b');
         tray.getMenu().add(aboutItem);
+        addDialogs();
 
+        tray.getMenu().add(new Separator());
+
+        Checkbox startupItem = new Checkbox("Automatically start", startupListener);
+        startupItem.setShortcut('s');
+        startupItem.setChecked(shortcutCreator.hasStartupShortcut());
+        tray.getMenu().add(startupItem);
+
+        MenuItem exitItem = new MenuItem("Exit", iconCache.getImage(IconCache.Icon.EXIT_ICON), exitListener);
+        exitItem.setShortcut('x');
+        tray.getMenu().add(exitItem);
+    }
+
+    private void addDialogs() {
         aboutDialog = new AboutDialog(iconCache, name);
         {
             JMenuItem siteButton = new JMenuItem("Site Manager...", iconCache.getIcon(IconCache.Icon.SAVED_ICON));
@@ -207,16 +226,6 @@ public class TrayManager {
             aboutDialog.addPanelButton(logButton);
             aboutDialog.addPanelButton(openButton);
         }
-        tray.getMenu().add(new Separator());
-
-        Checkbox startupItem = new Checkbox("Automatically start", startupListener);
-        startupItem.setShortcut('s');
-        startupItem.setChecked(shortcutCreator.hasStartupShortcut());
-        tray.getMenu().add(startupItem);
-
-        MenuItem exitItem = new MenuItem("Exit", iconCache.getImage(IconCache.Icon.EXIT_ICON), exitListener);
-        exitItem.setShortcut('x');
-        tray.getMenu().add(exitItem);
     }
 
     private final ActionListener openListener = new ActionListener() {

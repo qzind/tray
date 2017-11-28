@@ -190,7 +190,7 @@ public class SystemUtilities {
 
     public static boolean setSystemLookAndFeel() {
         // Prevent GTK2/3 conflict caused by GTKLookAndFeel
-        if (dorkbox.systemTray.jna.linux.Gtk.isGtk3) {
+        if (dorkbox.util.jna.linux.Gtk.isGtk3) {
             return false;
         }
         try {

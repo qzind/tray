@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static dorkbox.util.jna.linux.Gtk.isGtk3;
+
 /**
  * Utility class for managing all {@code Runtime.exec(...)} functions.
  *
@@ -332,7 +334,7 @@ public class ShellUtilities {
     public static void browseURL(URI uri) throws IOException {
         try {
             // Prevent GTK2/3 conflict caused by Desktop.getDesktop()
-            if (dorkbox.systemTray.jna.linux.Gtk.isGtk3) {
+            if (isGtk3) {
                 throw new IOException("Falling back to xdg-open");
             }
             // The default, java recommended usage
@@ -351,7 +353,7 @@ public class ShellUtilities {
         try {
             uri = new URI(address);
             // Prevent GTK2/3 conflict caused by Desktop.getDesktop()
-            if (dorkbox.systemTray.jna.linux.Gtk.isGtk3) {
+            if (isGtk3) {
                 throw new IOException("Falling back to xdg-open");
             }
             // The default, java recommended usage
@@ -389,7 +391,7 @@ public class ShellUtilities {
         } else {
             try {
                 // Prevent GTK2/3 conflict caused by Desktop.getDesktop()
-                if (dorkbox.systemTray.jna.linux.Gtk.isGtk3) {
+                if (isGtk3) {
                     throw new IOException("Falling back to xdg-open");
                 }
                 // The default, java recommended usage

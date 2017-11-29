@@ -1,5 +1,7 @@
 package qz.communication;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import purejavahidapi.HidDevice;
 import purejavahidapi.HidDeviceInfo;
 import purejavahidapi.InputReportListener;
@@ -10,6 +12,8 @@ import javax.usb.util.UsbUtil;
 import java.io.IOException;
 
 public class PJHA_HidIO implements DeviceIO {
+
+    private static final Logger log = LoggerFactory.getLogger(PJHA_HidIO.class);
 
     private HidDeviceInfo deviceInfo;
     private HidDevice device;
@@ -92,10 +96,17 @@ public class PJHA_HidIO implements DeviceIO {
 
     public void close() {
         if (isOpen()) {
-            device.setInputReportListener(null);
-            device.close();
+            try {
+                device.setInputReportListener(null);
+                device.close();
+            }
+            catch(IllegalStateException e) {
+                log.warn("Device already closed");
+            }
         }
+
         streaming = false;
+        device = null;
     }
 
 }

@@ -204,22 +204,26 @@ public class SerialUtilities {
             case "none":
                 log.trace("Parsed serial setting: FLOWCONTROL_NONE");
                 return SerialPort.FLOWCONTROL_NONE;
-            case "x":
-            case "xonxoff":
-            case "xonxoff_out":
-                log.trace("Parsed serial setting: FLOWCONTROL_XONXOFF_OUT");
-                return SerialPort.FLOWCONTROL_XONXOFF_OUT;
             case "xonxoff_in":
                 log.trace("Parsed serial setting: FLOWCONTROL_XONXOFF_IN");
                 return SerialPort.FLOWCONTROL_XONXOFF_IN;
-            case "p":
-            case "rtscts":
-            case "rtscts_out":
-                log.trace("Parsed serial setting: FLOWCONTROL_RTSCTS_OUT");
-                return SerialPort.FLOWCONTROL_RTSCTS_OUT;
+            case "xonxoff_out":
+                log.trace("Parsed serial setting: FLOWCONTROL_XONXOFF_OUT");
+                return SerialPort.FLOWCONTROL_XONXOFF_OUT;
+            case "x":
+            case "xonxoff":
+                log.trace("Parsed serial setting: FLOWCONTROL_XONXOFF_INOUT");
+                return SerialPort.FLOWCONTROL_XONXOFF_IN | SerialPort.FLOWCONTROL_XONXOFF_OUT;
             case "rtscts_in":
                 log.trace("Parsed serial setting: FLOWCONTROL_RTSCTS_IN");
                 return SerialPort.FLOWCONTROL_RTSCTS_IN;
+            case "rtscts_out":
+                log.trace("Parsed serial setting: FLOWCONTROL_RTSCTS_OUT");
+                return SerialPort.FLOWCONTROL_RTSCTS_OUT;
+            case "p":
+            case "rtscts":
+                log.trace("Parsed serial setting: FLOWCONTROL_RTSCTS_INOUT");
+                return SerialPort.FLOWCONTROL_RTSCTS_IN | SerialPort.FLOWCONTROL_RTSCTS_OUT;
             default:
                 log.error("Flow control value of {} could not be parsed", control);
                 return -1;

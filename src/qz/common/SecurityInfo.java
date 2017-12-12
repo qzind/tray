@@ -23,7 +23,7 @@ public class SecurityInfo {
         // Use API-provided mechanism if available
         libVersions.put("jna (native)",         Native.VERSION_NATIVE);
         libVersions.put("jna",                  Native.VERSION);
-        libVersions.put("jssc",                 jssc.SerialNativeInterface.getLibraryBaseVersion());
+        libVersions.put("jssc",                 jssc.SerialNativeInterface.getLibraryVersion());
         libVersions.put("jetty",                Jetty.VERSION);
         libVersions.put("pdfbox",               org.apache.pdfbox.util.Version.getVersion());
         libVersions.put("purejavahidapi",       PureJavaHidApi.getVersion());

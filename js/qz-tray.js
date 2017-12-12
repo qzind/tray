@@ -158,6 +158,9 @@ var qz = (function() {
                         //called for errors during setup (such as invalid ports), reject connect promise only if all ports have been tried
                         _qz.websocket.connection.onerror = function(evt) {
                             _qz.log.trace(evt);
+
+                            _qz.websocket.connection = null;
+
                             deeper();
                         };
                     } else {

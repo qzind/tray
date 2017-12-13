@@ -178,7 +178,7 @@ var qz = (function() {
                         _qz.log.info("Closed connection with QZ Tray");
 
                         //if this is set, then an explicit close call was made
-                        if (_qz.websocket.connection.promise != undefined) {
+                        if (_qz.websocket.connection && _qz.websocket.connection.promise != undefined) {
                             _qz.websocket.connection.promise.resolve();
                         }
 

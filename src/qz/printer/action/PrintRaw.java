@@ -241,7 +241,10 @@ public class PrintRaw implements PrintProcessor {
 
         DocPrintJob printJob = service.createPrintJob();
 
+        waitForPrint(printJob, doc, attributes);
+    }
 
+    protected void waitForPrint(DocPrintJob printJob, Doc doc, PrintRequestAttributeSet attributes) throws PrintException {
         final AtomicBoolean finished = new AtomicBoolean(false);
         printJob.addPrintJobListener(new PrintJobListener() {
             @Override

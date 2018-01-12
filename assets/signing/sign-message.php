@@ -24,13 +24,22 @@
 
 // Sample key.  Replace with one used for CSR generation
 $KEY = 'private-key.pem';
-$PASS = 'S3cur3P@ssw0rd';
+//$PASS = 'S3cur3P@ssw0rd';
 
 $req = $_GET['request'];
-$privateKey = openssl_get_privatekey(file_get_contents($KEY), $PASS);
+$privateKey = openssl_get_privatekey(file_get_contents($KEY) /*, $PASS */);
 
 $signature = null;
 openssl_sign($req, $signature, $privateKey);
+
+/*
+// Or alternately, via phpseclib
+include('Crypt/RSA.php');
+$rsa = new Crypt_RSA();
+$rsa->loadKey(file_get_contents($KEY));
+$rsa->setSignatureMode(CRYPT_RSA_SIGNATURE_PKCS1);
+$signature = $rsa->sign($req);
+*/
 
 if ($signature) {
 	header("Content-type: text/plain");

@@ -45,7 +45,7 @@ var qz = (function() {
 
         //stream types
         streams: {
-            serial: 'SERIAL', usb: 'USB', hid: 'HID'
+            serial: 'SERIAL', usb: 'USB', hid: 'HID', file: 'FILE'
         },
 
 
@@ -279,6 +279,8 @@ var qz = (function() {
                                     case _qz.streams.hid:
                                         _qz.hid.callHid(JSON.parse(returned.event));
                                         break;
+                                    case _qz.streams.file:
+                                        _qz.file.callFile(JSON.parse(returned.event));
                                     default:
                                         _qz.log.warn("Cannot determine stream type for callback", returned);
                                         break;
@@ -440,6 +442,20 @@ var qz = (function() {
                     }
                 } else {
                     _qz.hid.hidCallbacks(streamEvent);
+                }
+            }
+        },
+
+
+        file: {
+            fileCallbacks: [],
+            callFile: function(streamEvent) {
+                if (Array.isArray(_qz.file.fileCallbacks)) {
+                      for(var i = 0; i < _qz.file.fileCallbacks.length; i++) {
+                          _qz.file.fileCallbacks[i](streamEvent);
+                      }
+                } else {
+                    _qz.file.fileCallbacks(streamEvent);
                 }
             }
         },
@@ -926,6 +942,33 @@ var qz = (function() {
             return _qz.websocket.dataPromise('print', params, signature, signingTimestamp);
         },
 
+
+        file: {
+          setFileCallbacks: function(calls) {
+              _qz.file.fileCallbacks = calls;
+          },
+
+          open: function(path, receiveCallbacks) {
+              var rc = typeof receiveCallbacks !== 'undefined' ? receiveCallbacks : true;
+              var params = {
+                  path: path,
+                  receiveCallbacks: rc
+              }
+              return _qz.websocket.dataPromise('file.open', params);
+          },
+
+          sendData: function(path, data, append) {
+              var params = {
+                  path: path,
+                  data: data,
+                  append: append || false
+              };
+              return _qz.websocket.dataPromise('file.sendData', params);
+          },
+          close: function(path) {
+              return _qz.websocket.dataPromise('file.close', { path: path });
+          }
+        },
 
         /**
          * Calls related to interaction with serial ports.

@@ -7,6 +7,7 @@ import qz.auth.Certificate;
 import qz.communication.DeviceException;
 import qz.communication.DeviceIO;
 import qz.communication.DeviceListener;
+import qz.communication.FileIO;
 import qz.communication.SerialIO;
 import qz.utils.UsbUtilities;
 
@@ -27,6 +28,7 @@ public class SocketConnection {
     //vendor id -> product id -> open DeviceIO
     private final HashMap<Short,HashMap<Short,DeviceIO>> openDevices = new HashMap<>();
 
+    private final HashMap<String,FileIO> openFiles = new HashMap<>();
 
     public SocketConnection(Certificate cert) {
         certificate = cert;
@@ -110,10 +112,14 @@ public class SocketConnection {
     }
 
     /**
-     * Explicitly closes all open serial and usb connections setup through this object
+     * Explicitly closes all open files, serial and usb connections setup through this object
      */
     public synchronized void disconnect() throws SerialPortException, DeviceException {
         log.info("Closing all communication channels for {}", certificate.getCommonName());
+
+        for(String f : openFiles.keySet()) {
+          openFiles.get(f).close();
+        }
 
         for(String p : openSerialPorts.keySet()) {
             openSerialPorts.get(p).close();
@@ -129,5 +135,17 @@ public class SocketConnection {
 
         stopListening();
     }
+
+	public FileIO getFile(String filePath) {
+		return openFiles.get(filePath);
+	}
+
+	public void addFile(String filePath, FileIO file) {
+		openFiles.put(filePath, file);
+	}
+	
+	public void removeFile(String filePath) {
+		openFiles.remove(filePath);
+	}
 
 }

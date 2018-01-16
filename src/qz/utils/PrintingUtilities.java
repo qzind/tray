@@ -36,7 +36,7 @@ public class PrintingUtilities {
     private PrintingUtilities() {}
 
     public enum Type {
-        HTML, IMAGE, PDF, RAW
+        HTML, IMAGE, PDF, RAW, DIRECT
     }
 
     public enum Format {

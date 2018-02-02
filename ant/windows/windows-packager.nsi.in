@@ -172,6 +172,9 @@ Section "Uninstall"
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${project.name}"
   DeleteRegKey HKLM "Software\${project.name}"
 
+  ; Remove URI handler
+  DeleteRegKey HKCR "${vendor.name}"
+
   Delete "$DESKTOP\${project.name}.url"
   Delete "$DESKTOP\${project.name}.lnk"
 

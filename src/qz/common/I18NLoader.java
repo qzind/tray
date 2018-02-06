@@ -11,7 +11,7 @@ public class I18NLoader {
 
     private static final Logger log = LoggerFactory.getLogger(I18NLoader.class);
 
-    private static ResourceBundle msg = ResourceBundle.getBundle(I18N_LOCATION);
+    private static ResourceBundle msg = Utf8ResourceBundle.getBundle(I18N_LOCATION);
 
     public static String gettext(String id) {
         try {

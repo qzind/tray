@@ -2,6 +2,7 @@ package qz.ui;
 
 import qz.auth.Certificate;
 import qz.common.Constants;
+import static qz.common.I18NLoader.gettext;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -58,9 +59,9 @@ public class GatewayDialog extends JDialog {
         descriptionPanel.setBorder(new EmptyBorder(3, 3, 3, 3));
 
         optionsPanel = new JPanel();
-        allowButton = new JButton("Allow", iconCache.getIcon(IconCache.Icon.ALLOW_ICON));
+        allowButton = new JButton(gettext("Allow"), iconCache.getIcon(IconCache.Icon.ALLOW_ICON));
         allowButton.setMnemonic(KeyEvent.VK_A);
-        blockButton = new JButton("Block", iconCache.getIcon(IconCache.Icon.BLOCK_ICON));
+        blockButton = new JButton(gettext("Block"), iconCache.getIcon(IconCache.Icon.BLOCK_ICON));
         blockButton.setMnemonic(KeyEvent.VK_B);
         allowButton.addActionListener(buttonAction);
         blockButton.addActionListener(buttonAction);
@@ -74,13 +75,13 @@ public class GatewayDialog extends JDialog {
             JOptionPane.showMessageDialog(
                     GatewayDialog.this,
                     certScrollPane,
-                    "Certificate",
+                    gettext("Certificate"),
                     JOptionPane.PLAIN_MESSAGE);
         });
 
         bottomPanel = new JPanel();
         bottomPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-        persistentCheckBox = new JCheckBox("Remember this decision", false);
+        persistentCheckBox = new JCheckBox(gettext("Remember this decision"), false);
         persistentCheckBox.setMnemonic(KeyEvent.VK_R);
         persistentCheckBox.addActionListener(e -> allowButton.setEnabled(!persistentCheckBox.isSelected() || cert.isTrusted()));
         persistentCheckBox.setAlignmentX(RIGHT_ALIGNMENT);
@@ -118,8 +119,8 @@ public class GatewayDialog extends JDialog {
 
             // Require confirmation for permanent block
             if (!approved && persistentCheckBox.isSelected()) {
-                ConfirmDialog confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
-                String message = Constants.BLACK_LIST.replace(" blocked ", " block ") + "?";
+                ConfirmDialog confirmDialog = new ConfirmDialog(null, gettext("Please Confirm"), iconCache);
+                String message = Constants.BLACK_LIST_PROMPT;
                 message = String.format(message, cert == null? "":cert.getCommonName());
                 if (!confirmDialog.prompt(message)) {
                     return;
@@ -144,7 +145,7 @@ public class GatewayDialog extends JDialog {
                                              String.format(description, "<p>" + cert.getCommonName()) +
                                              "</p><strong>" + (cert.isTrusted()? Constants.TRUSTED_PUBLISHER:Constants.UNTRUSTED_PUBLISHER) + "</strong>" +
                                              "</html>");
-            certInfoLabel.setText("Certificate information");
+            certInfoLabel.setText(gettext("Certificate information"));
             verifiedLabel.setIcon(iconCache.getIcon(cert.isTrusted()? IconCache.Icon.VERIFIED_ICON:IconCache.Icon.UNVERIFIED_ICON));
         } else {
             descriptionLabel.setText(description);
@@ -202,4 +203,3 @@ public class GatewayDialog extends JDialog {
         return isApproved();
     }
 }
-

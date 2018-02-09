@@ -37,11 +37,6 @@ public class PDFWrapper implements Printable {
 
     @Override
     public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
-        if ("sun.print.PeekGraphics".equals(graphics.getClass().getCanonicalName())) {
-            //java uses class only to query if a page needs printed - save memory/time by short circuiting
-            return PAGE_EXISTS;
-        }
-
         log.debug("Paper area: {},{}:{},{}", (int)pageFormat.getImageableX(), (int)pageFormat.getImageableY(),
                   (int)pageFormat.getImageableWidth(), (int)pageFormat.getImageableHeight());
 

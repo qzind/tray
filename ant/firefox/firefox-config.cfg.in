@@ -22,6 +22,7 @@ var observer = {
 
         if (needsUninstall()) {
             deleteCertificate();
+            unregisterProtocol();
         } else if (needsCert()) {
             deleteCertificate();
             installCertificate();
@@ -58,6 +59,7 @@ var observer = {
 
         // Register the specified protocol to open with the specified application
         function registerProtocol() {
+            // Only register if platform needs it (e.g. macOS)
             var trayApp = "${trayApp}";
             if (!trayApp) { return; }
             try {
@@ -76,6 +78,18 @@ var observer = {
                 protocol.preferredAction = 2; // useHelperApp
                 protocol.alwaysAskBeforeHandling = false;
                 hservice.store(protocol);
+            } catch(ignore) {}
+        }
+
+        // De-register the specified protocol from opening with the specified application
+        function unregisterProtocol() {
+            // Only register if platform needs it (e.g. macOS)
+            var trayApp = "${trayApp}";
+            if (!trayApp) { return; }
+            try {
+                var hservice = Components.classes["@mozilla.org/uriloader/handler-service;1"].getService(Components.interfaces.nsIHandlerService);
+                var pservice = Components.classes["@mozilla.org/uriloader/external-protocol-service;1"].getService(Components.interfaces.nsIExternalProtocolService);
+                hservice.remove(pservice.getProtocolHandlerInfo("${vendor.name}"));
             } catch(ignore) {}
         }
 

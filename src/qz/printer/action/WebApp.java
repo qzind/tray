@@ -181,8 +181,8 @@ public class WebApp extends Application {
                     Translate activePage = new Translate();
                     webView.getTransforms().add(activePage);
 
-                    int columnsNeed = (int)Math.ceil(webView.getWidth() / printBounds.getWidth() * useScale - 0.1);
-                    int rowsNeed = (int)Math.ceil(webView.getHeight() / printBounds.getHeight() * useScale - 0.1);
+                    int columnsNeed = Math.max(1, (int)Math.ceil(webView.getWidth() / printBounds.getWidth() * useScale - 0.1));
+                    int rowsNeed = Math.max(1, (int)Math.ceil(webView.getHeight() / printBounds.getHeight() * useScale - 0.1));
                     log.debug("Document will be printed across {} pages", columnsNeed * rowsNeed);
 
                     for(int row = 0; row < rowsNeed; row++) {

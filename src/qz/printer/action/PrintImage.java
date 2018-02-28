@@ -243,7 +243,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         return result;
     }
 
-    private Graphics2D withRenderHints(Graphics2D g2d, Object interpolation) {
+    protected Graphics2D withRenderHints(Graphics2D g2d, Object interpolation) {
         g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, interpolation);
         g2d.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);

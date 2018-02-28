@@ -129,6 +129,9 @@ public class PrintOptions {
         if (!configOpts.isNull("jobName")) {
             psOptions.jobName = configOpts.optString("jobName", null);
         }
+        if (!configOpts.isNull("legacy")) {
+            psOptions.legacy = configOpts.optBoolean("legacy", false);
+        }
         if (!configOpts.isNull("margins")) {
             Margins m = new Margins();
             JSONObject subMargins = configOpts.optJSONObject("margins");
@@ -318,6 +321,7 @@ public class PrintOptions {
         private boolean duplex = false;                                             //Double/single sided
         private Object interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC;  //Image interpolation
         private String jobName = null;                                              //Job name
+        private boolean legacy = false;                                             //Legacy printing
         private Margins margins = new Margins();                                    //Page margins
         private Orientation orientation = null;                                     //Page orientation
         private double paperThickness = -1;                                         //Paper thickness
@@ -351,6 +355,10 @@ public class PrintOptions {
 
         public String getJobName(String defaultVal) {
             return jobName == null || jobName.isEmpty()? defaultVal:jobName;
+        }
+
+        public boolean isLegacy() {
+            return legacy;
         }
 
         public Margins getMargins() {

@@ -10,6 +10,7 @@
 
 package qz.printer.action;
 
+import org.apache.commons.io.IOUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -28,6 +29,8 @@ import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -158,16 +161,24 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
         try {
             for(WebAppModel model : models) {
-                legacyLabel.setText(model.getSource());
+                if (model.isPlainText()) {
+                    legacyLabel.setText(model.getSource());
+                } else {
+                    try(InputStream fis = new URL(model.getSource()).openStream()) {
+                        String webPage = IOUtils.toString(fis).replaceAll("^[\\s\\S]+<(HTML|html)\\b.*?>", "<html>");
+                        legacyLabel.setText(webPage);
+                    }
+                }
 
                 legacyFrame.pack();
                 legacyFrame.setVisible(true);
 
                 job.setPrintable(this);
                 printCopies(output, pxlOpts, job, attributes);
-
-                legacyFrame.setVisible(false);
             }
+        }
+        catch(Exception e) {
+            throw new PrinterException(e.getMessage());
         }
         finally {
             legacyFrame.dispose();

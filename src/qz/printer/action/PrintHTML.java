@@ -165,7 +165,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
                     legacyLabel.setText(model.getSource());
                 } else {
                     try(InputStream fis = new URL(model.getSource()).openStream()) {
-                        String webPage = IOUtils.toString(fis).replaceAll("^[\\s\\S]+<(HTML|html)\\b.*?>", "<html>");
+                        String webPage = IOUtils.toString(fis, "UTF-8").replaceAll("^[\\s\\S]+<(HTML|html)\\b.*?>", "<html>");
                         legacyLabel.setText(webPage);
                     }
                 }

@@ -25,7 +25,6 @@
 library(openssl)
 
 mykey <- "private-key.pem"
-mypass <- "S3cur3P@ssw0rd"
 
 # Treat command line argument as message to be signed
 message <- enc2utf8(commandArgs(trailingOnly = TRUE))
@@ -34,6 +33,6 @@ message <- enc2utf8(commandArgs(trailingOnly = TRUE))
 key <- read_key(file = mykey, password = mypass)
 
 # Create the signature
-sig <- signature_create(serialize(message, NULL), key = key, password = mypass)
+sig <- signature_create(serialize(message, NULL), key = key)
 
 print(sig)

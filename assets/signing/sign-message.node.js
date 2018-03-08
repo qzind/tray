@@ -23,7 +23,7 @@
 // #########################################################
 
 var key = "private-key.pem";
-var pass = "S3cur3P@ssw0rd";
+//var pass = "S3cur3P@ssw0rd";
 
 app.get('/sign', function(req, res) {
     var crypto = require('crypto');
@@ -35,7 +35,7 @@ app.get('/sign', function(req, res) {
         var sign = crypto.createSign('SHA1');
 
         sign.update(toSign);
-        var signature = sign.sign({ key: privateKey, passphrase: pass }, 'base64');
+        var signature = sign.sign({ key: privateKey/*, passphrase: pass */ }, 'base64');
 
         res.set('Content-Type', 'text/plain');
         res.send(signature);

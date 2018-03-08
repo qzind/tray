@@ -5,7 +5,7 @@ Public Sub SignMessage(message As String)
 
      '**********************************************************
      '*           WARNING   WARNING   WARNING                  *
-     '**********************************************************													*
+     '**********************************************************
      '*                                                        *
      '* This file is intended for demonstration purposes only. *
      '* only.                                                  *
@@ -27,9 +27,8 @@ Public Sub SignMessage(message As String)
      ' openssl pkcs12 -export -inkey private-key.pem -in digital-certificate.txt -out private-key.pfx
 	
 	Dim KEY = "private-key.pfx"
-	Dim PASS = "S3cur3P@ssw0rd"
 	
-	Dim cert = New X509Certificate2(KEY, PASS, X509KeyStorageFlags.MachineKeySet Or X509KeyStorageFlags.PersistKeySet Or X509KeyStorageFlags.Exportable)
+	Dim cert = New X509Certificate2(KEY, X509KeyStorageFlags.MachineKeySet Or X509KeyStorageFlags.PersistKeySet Or X509KeyStorageFlags.Exportable)
 	Dim csp As RSACryptoServiceProvider = CType(cert.PrivateKey,RSACryptoServiceProvider)
 	
 	Dim data As Byte() = New ASCIIEncoding().GetBytes(message)

@@ -34,7 +34,7 @@ let request = "test data"
 
 // How to associate a private key with the X509Certificate2 class in .net
 // openssl pkcs12 -export -in private-key.pem -inkey digital-certificate.txt -out private-key.pfx
-let cert = new X509Certificate2("private-key.pfx", "S3cur3P@ssw0rd")
+let cert = new X509Certificate2("private-key.pfx")
 
 let sha1 = new SHA1CryptoServiceProvider()
 

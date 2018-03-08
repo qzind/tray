@@ -39,7 +39,7 @@ def index(request):
         return HttpResponseBadRequest("Signing request needs 'request' parameter")
 
     mykey = os.path.join(os.path.dirname(__file__), "private-key.pem")
-    mypass = 'S3cur3P@ssw0rd' # or mypass = None
+    mypass = None # or mypass = 'S3cur3P@ssw0rd'
 
     # Load the private key
     key = serialization.load_pem_private_key(

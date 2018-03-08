@@ -26,9 +26,9 @@ public void SignMessage(String message)
     // How to associate a private key with the X509Certificate2 class in .net
     // openssl pkcs12 -export -inkey private-key.pem -in digital-certificate.txt -out private-key.pfx
 	var KEY = "private-key.pfx";
-	var PASS = "S3cur3P@ssw0rd";
+	//var PASS = "S3cur3P@ssw0rd";
 
-	var cert = new X509Certificate2( KEY, PASS, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable );
+	var cert = new X509Certificate2( KEY,/*PASS,*/ X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable );
 	RSACryptoServiceProvider csp = (RSACryptoServiceProvider)cert.PrivateKey;
 
 	byte[] data = new ASCIIEncoding().GetBytes(message);

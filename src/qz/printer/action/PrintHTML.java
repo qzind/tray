@@ -89,6 +89,9 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
                     throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s as HTML", format, source), e);
                 }
+                catch(Throwable t) {
+                    throw new UnsupportedOperationException("Failed to capture HTML", t);
+                }
             }
 
             log.debug("Parsed {} html records", images.size());

@@ -26,6 +26,7 @@ import org.w3c.dom.NodeList;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -47,6 +48,9 @@ public class WebApp extends Application {
     private static double pageWidth;
     private static double pageHeight;
     private static double pageZoom;
+
+    private static final AtomicBoolean complete = new AtomicBoolean(false);
+    private static final AtomicReference<Throwable> thrown = new AtomicReference<>();
 
     private static PauseTransition snap;
     private static int captureStall = 0;
@@ -178,9 +182,10 @@ public class WebApp extends Application {
      * @param fromFile If the passed {@code source} is from a url/file location
      * @return BufferedImage of the rendered html
      */
-    public static synchronized BufferedImage capture(final String source, final boolean fromFile, final double width, final double height, final double zoom) throws IOException {
+    public static synchronized BufferedImage capture(final String source, final boolean fromFile, final double width, final double height, final double zoom) throws Throwable {
         final AtomicReference<BufferedImage> capture = new AtomicReference<>();
-        final AtomicReference<Throwable> error = new AtomicReference<>();
+        complete.set(false);
+        thrown.set(null);
 
         //ensure JavaFX has started before we run
         if (webView == null) {
@@ -212,9 +217,11 @@ public class WebApp extends Application {
 
                                 WritableImage snapshot = webView.snapshot(new SnapshotParameters(), null);
                                 capture.set(SwingFXUtils.fromFXImage(snapshot, null));
+
+                                complete.set(true);
                             }
                             catch(Throwable t) {
-                                error.set(t);
+                                thrown.set(t);
                             }
                             finally {
                                 stage.hide(); //hide stage so users won't have to manually close it
@@ -230,26 +237,18 @@ public class WebApp extends Application {
                     }
                 }
                 catch(Throwable t) {
-                    error.set(t);
+                    thrown.set(t);
                 }
             }
         });
 
-        //wait for the image to be captured or an error to be thrown
-        //if html fails to continue loading for period, fail the capture
-        Throwable t = error.get();
-        for(captureStall = 0; captureStall < PAUSES; captureStall++) {
-            if (capture.get() != null || (t = error.get()) != null) {
-                break;
-            }
-
-            log.trace("Waiting for capture..");
+        Throwable t = null;
+        while(!complete.get() && (t = thrown.get()) == null) {
+            log.trace("Waiting on capture..");
             try { Thread.sleep(1000); } catch(Exception ignore) {}
         }
 
-        if (capture.get() == null) {
-            throw new IOException(t);
-        }
+        if (t != null) { throw t; }
 
         return capture.get();
     }

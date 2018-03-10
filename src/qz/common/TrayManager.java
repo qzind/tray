@@ -29,7 +29,9 @@ import qz.ws.SingleInstanceChecker;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -386,12 +388,18 @@ public class TrayManager {
         JOptionPane.showMessageDialog(null, message, name, JOptionPane.ERROR_MESSAGE);
     }
 
-    public boolean showGatewayDialog(final Certificate cert, final String prompt) {
+    public boolean showGatewayDialog(final Certificate cert, final String prompt, final Point position) {
         if (cert == null) {
             displayErrorMessage("Invalid certificate");
             return false;
         } else {
             try {
+                if (position.getX() != 0 && position.getY() != 0) {
+                    //account for own size when centering
+                    position.translate((int)(-gatewayDialog.getWidth() / 2.0), (int)(-gatewayDialog.getHeight() / 2.0));
+                    gatewayDialog.setLocation(position);
+                }
+
                 SwingUtilities.invokeAndWait(new Runnable() {
                     @Override
                     public void run() {

@@ -21,6 +21,7 @@ import qz.utils.*;
 import javax.print.PrintServiceLookup;
 import javax.security.cert.CertificateParsingException;
 import javax.usb.util.UsbUtil;
+import java.awt.*;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
@@ -178,7 +179,7 @@ public class PrintSocketClient {
                 }
                 catch(CertificateParsingException ignore) {}
 
-                if (allowedFromDialog(certificate, "connect to " + Constants.ABOUT_TITLE)) {
+                if (allowedFromDialog(certificate, "connect to " + Constants.ABOUT_TITLE, findDialogPosition(json.optJSONObject("position")))) {
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, "Connection blocked by client");
@@ -255,7 +256,7 @@ public class PrintSocketClient {
             }
         }
 
-        if (call.isDialogShown() && !allowedFromDialog(shownCertificate, prompt)) {
+        if (call.isDialogShown() && !allowedFromDialog(shownCertificate, prompt, findDialogPosition(json.optJSONObject("position")))) {
             sendError(session, UID, "Request blocked");
             return;
         }
@@ -461,7 +462,7 @@ public class PrintSocketClient {
         }
     }
 
-    private boolean allowedFromDialog(Certificate cert, String prompt) {
+    private boolean allowedFromDialog(Certificate cert, String prompt, Point position) {
         //If cert can be resolved before the lock, do so and return
         if (cert == null || cert.isBlocked()) {
             return false;
@@ -480,11 +481,20 @@ public class PrintSocketClient {
         }
 
         //prompt user for access
-        boolean allowed = trayManager.showGatewayDialog(cert, prompt);
+        boolean allowed = trayManager.showGatewayDialog(cert, prompt, position);
 
         dialogAvailable.release();
 
         return allowed;
+    }
+
+    private Point findDialogPosition(JSONObject positionData) {
+        Point pos = new Point(0, 0);
+        if (positionData != null) {
+            pos.move(positionData.optInt("x"), positionData.optInt("y"));
+        }
+
+        return pos;
     }
 
 

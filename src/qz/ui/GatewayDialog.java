@@ -138,11 +138,17 @@ public class GatewayDialog extends JDialog {
     };
 
     @Override
-    public void setVisible(boolean b) {
-        if (b) {
-            refreshComponents();
+    public void setLocation(Point position) {
+        if (position.getX() != 0 && position.getY() != 0) {
+            //adjust for dpi scaling
+            double dpiScale = Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+            position.move((int)(position.getX() * dpiScale), (int)(position.getY() * dpiScale));
+
+            //account for own size when centering
+            position.translate((int)(-getWidth() / 2.0), (int)(-getHeight() / 2.0));
         }
-        super.setVisible(b);
+
+        super.setLocation(position);
     }
 
     public final void refreshComponents() {
@@ -190,12 +196,15 @@ public class GatewayDialog extends JDialog {
         this.description = description;
     }
 
-    public boolean prompt(String description, Certificate cert) {
+    public boolean prompt(String description, Certificate cert, Point position) {
         persistentCheckBox.setSelected(false); // prevents re-adding a persistent site to the list it's already on
 
         setDescription(description);
         setCertificate(cert);
+        refreshComponents();
+        setLocation(position);
         setVisible(true);
+
         return isApproved();
     }
 }

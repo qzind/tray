@@ -397,6 +397,12 @@ public class TrayManager {
                 if (position.getX() != 0 && position.getY() != 0) {
                     //account for own size when centering
                     position.translate((int)(-gatewayDialog.getWidth() / 2.0), (int)(-gatewayDialog.getHeight() / 2.0));
+
+                    //adjust for dpi scaling
+                    double dpiScale = Toolkit.getDefaultToolkit().getScreenResolution() / 96;
+                    position.move((int)(position.getX() * dpiScale), (int)(position.getY() * dpiScale));
+
+                    log.debug("Dialog position at {}x{}", position.getX(), position.getY());
                     gatewayDialog.setLocation(position);
                 }
 

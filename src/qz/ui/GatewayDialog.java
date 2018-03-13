@@ -169,10 +169,10 @@ public class GatewayDialog extends JDialog {
         try {
             // CGraphicsDevice is missing from openjdk, so reflection is needed
             GraphicsDevice screen = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-            Class c = Class.forName("sun.awt.CGraphicsDevice");
+            Class<?> c = Class.forName("sun.awt.CGraphicsDevice");
             Method m = c.getDeclaredMethod("getScaleFactor");
             Object o = m.invoke(screen);
-            return ((Integer)o).intValue();
+            return (Integer)o;
         } catch (Throwable t) {
             log.warn("Could't detect dpi scale for window placement", t);
             return 1;

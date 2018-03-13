@@ -6,7 +6,6 @@ import qz.auth.Certificate;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.utils.SystemUtilities;
-import sun.awt.CGraphicsDevice;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;

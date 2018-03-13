@@ -2,6 +2,7 @@ package qz.ui;
 
 import qz.auth.Certificate;
 import qz.common.Constants;
+import sun.awt.CGraphicsDevice;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -141,7 +142,11 @@ public class GatewayDialog extends JDialog {
     public void setLocation(Point position) {
         if (position.getX() != 0 && position.getY() != 0) {
             //adjust for dpi scaling
-            double dpiScale = Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+            GraphicsDevice screen = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+            //workaround mac scaling per issue #284
+            double dpiScale = screen instanceof CGraphicsDevice ?
+                ((CGraphicsDevice) screen).getScaleFactor() :
+                    Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
             position.move((int)(position.getX() * dpiScale), (int)(position.getY() * dpiScale));
 
             //account for own size when centering

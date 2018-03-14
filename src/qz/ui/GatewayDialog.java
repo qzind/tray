@@ -1,10 +1,7 @@
 package qz.ui;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.common.Constants;
-import qz.common.TrayManager;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
@@ -13,15 +10,12 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.lang.reflect.Method;
 
 /**
  * Created by Tres on 2/19/2015.
  * A basic allow/block dialog with support for displaying Certificate information
  */
 public class GatewayDialog extends JDialog {
-    private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
-
     private JLabel verifiedLabel;
     private JLabel descriptionLabel;
     private LinkLabel certInfoLabel;
@@ -144,41 +138,6 @@ public class GatewayDialog extends JDialog {
         }
     };
 
-    @Override
-    public void setLocation(Point position) {
-        if (position.getX() != 0 && position.getY() != 0) {
-            //adjust for dpi scaling
-            double dpiScale = getDpiScale();
-            position.move((int)(position.getX() * dpiScale), (int)(position.getY() * dpiScale));
-
-            //account for own size when centering
-            position.translate((int)(-getWidth() / 2.0), (int)(-getHeight() / 2.0));
-        }
-
-        super.setLocation(position);
-    }
-
-    /**
-     * Shim for detecting default screen scaling per issue #284
-     * @return Logical dpi scale as dpi/96
-     */
-    private static double getDpiScale() {
-        if(!SystemUtilities.isMac()) {
-            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
-        }
-        try {
-            // CGraphicsDevice is missing from openjdk, so reflection is needed
-            GraphicsDevice screen = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-            Class<?> c = Class.forName("sun.awt.CGraphicsDevice");
-            Method m = c.getDeclaredMethod("getScaleFactor");
-            Object o = m.invoke(screen);
-            return (Integer)o;
-        } catch (Throwable t) {
-            log.warn("Could't detect dpi scale for window placement", t);
-            return 1;
-        }
-    }
-
     public final void refreshComponents() {
         if (cert != null) {
             // TODO:  Add name, publisher
@@ -230,7 +189,7 @@ public class GatewayDialog extends JDialog {
         setDescription(description);
         setCertificate(cert);
         refreshComponents();
-        setLocation(position);
+        SystemUtilities.centerDialog(this, position);
         setVisible(true);
 
         return isApproved();

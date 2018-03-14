@@ -11,11 +11,15 @@
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
+import qz.common.TrayManager;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.File;
+import java.lang.reflect.Method;
 
 /**
  * Utility class for OS detection functions.
@@ -26,6 +30,7 @@ public class SystemUtilities {
 
     // Name of the os, i.e. "Windows XP", "Mac OS X"
     private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
+    private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
 
     private static String uname;
     private static String linuxRelease;
@@ -207,5 +212,50 @@ public class SystemUtilities {
             LoggerFactory.getLogger(SystemUtilities.class).warn("Error getting the default look and feel");
         }
         return false;
+    }
+
+    /**
+     * Attempts to center a dialog provided a center point from a web browser at 96-dpi
+     * Useful for following a browser window on multiple-monitor setups
+     * @param dialog A dialog's whom's width and height are used for finding the center position
+     * @param position The center point of a screen as calculated from a web browser at 96-dpi
+     * @return <code>true</code> if the operation is successful
+     */
+    public static void centerDialog(Dialog dialog, Point position) {
+        if (position == null || position.getX() == 0 || position.getY() == 0) {
+            log.debug("Invalid dialog position provided: {}, we'll center on first monitor instead", position);
+            dialog.setLocationRelativeTo(null);
+            return;
+        };
+
+        //adjust for dpi scaling
+        double dpiScale = getDpiScale();
+        Point p = new Point((int)(position.getX() * dpiScale), (int)(position.getY() * dpiScale));
+
+        //account for own size when centering
+        p.translate((int)(-dialog.getWidth() / 2.0), (int)(-dialog.getHeight() / 2.0));
+        log.debug("Calculated dialog centered at: {}", p);
+        dialog.setLocation(p);
+    }
+
+    /**
+     * Shim for detecting default screen scaling per issue #284
+     * @return Logical dpi scale as dpi/96
+     */
+    private static double getDpiScale() {
+        if(!SystemUtilities.isMac()) {
+            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+        }
+        try {
+            // CGraphicsDevice is missing from openjdk, so reflection is needed
+            GraphicsDevice screen = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+            Class<?> c = Class.forName("sun.awt.CGraphicsDevice");
+            Method m = c.getDeclaredMethod("getScaleFactor");
+            Object o = m.invoke(screen);
+            return (Integer)o;
+        } catch (Throwable t) {
+            log.warn("Could't detect dpi scale for window placement", t);
+            return 1;
+        }
     }
 }

@@ -19,7 +19,6 @@ import qz.common.TrayManager;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.lang.reflect.Method;
 
 /**
  * Utility class for OS detection functions.
@@ -243,19 +242,6 @@ public class SystemUtilities {
      * @return Logical dpi scale as dpi/96
      */
     private static double getDpiScale() {
-        if(!SystemUtilities.isMac()) {
-            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
-        }
-        try {
-            // CGraphicsDevice is missing from openjdk, so reflection is needed
-            GraphicsDevice screen = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-            Class<?> c = Class.forName("sun.awt.CGraphicsDevice");
-            Method m = c.getDeclaredMethod("getScaleFactor");
-            Object o = m.invoke(screen);
-            return (Integer)o;
-        } catch (Throwable t) {
-            log.warn("Could't detect dpi scale for window placement", t);
-            return 1;
-        }
+        return SystemUtilities.isMac() ? 1 : Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
     }
 }

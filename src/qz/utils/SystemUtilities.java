@@ -216,8 +216,8 @@ public class SystemUtilities {
 
     /**
      * Attempts to center a dialog provided a center point from a web browser at 96-dpi
-     * Useful for following a browser window on multiple-monitor setups
-     * @param dialog A dialog's whom's width and height are used for finding the center position
+     * Useful for tracking a browser window on multiple-monitor setups
+     * @param dialog A dialog whom's width and height are used for calculating center-fit position
      * @param position The center point of a screen as calculated from a web browser at 96-dpi
      * @return <code>true</code> if the operation is successful
      */

@@ -179,7 +179,8 @@ public class PrintSocketClient {
                 }
                 catch(CertificateParsingException ignore) {}
 
-                if (allowedFromDialog(certificate, "connect to " + Constants.ABOUT_TITLE, findDialogPosition(json.optJSONObject("position")))) {
+                if (allowedFromDialog(certificate, "connect to " + Constants.ABOUT_TITLE,
+                                      findDialogPosition(session, json.optJSONObject("position")))) {
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, "Connection blocked by client");
@@ -256,7 +257,8 @@ public class PrintSocketClient {
             }
         }
 
-        if (call.isDialogShown() && !allowedFromDialog(shownCertificate, prompt, findDialogPosition(json.optJSONObject("position")))) {
+        if (call.isDialogShown()
+                && !allowedFromDialog(shownCertificate, prompt, findDialogPosition(session, json.optJSONObject("position")))) {
             sendError(session, UID, "Request blocked");
             return;
         }
@@ -488,9 +490,9 @@ public class PrintSocketClient {
         return allowed;
     }
 
-    private Point findDialogPosition(JSONObject positionData) {
+    private Point findDialogPosition(Session session, JSONObject positionData) {
         Point pos = new Point(0, 0);
-        if (positionData != null) {
+        if (session.getRemoteAddress().getAddress().isLoopbackAddress() && positionData != null) {
             pos.move(positionData.optInt("x"), positionData.optInt("y"));
         }
 

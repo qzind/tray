@@ -10,6 +10,7 @@ import qz.utils.SystemUtilities;
 
 import javax.usb.util.UsbUtil;
 import java.io.IOException;
+import java.util.Vector;
 
 public class PJHA_HidIO implements DeviceIO {
 
@@ -18,7 +19,7 @@ public class PJHA_HidIO implements DeviceIO {
     private HidDeviceInfo deviceInfo;
     private HidDevice device;
 
-    private byte[] latestData;
+    private Vector<byte[]> dataBuffer;
     private boolean streaming;
 
 
@@ -32,6 +33,7 @@ public class PJHA_HidIO implements DeviceIO {
         }
 
         this.deviceInfo = deviceInfo;
+        dataBuffer = new Vector<>();
     }
 
     public void open() throws DeviceException {
@@ -41,7 +43,7 @@ public class PJHA_HidIO implements DeviceIO {
                 device.setInputReportListener(new InputReportListener() {
                     @Override
                     public void onInputReport(HidDevice source, byte id, byte[] data, int len) {
-                        latestData = data;
+                        dataBuffer.add(data);
                     }
                 });
             }
@@ -73,9 +75,11 @@ public class PJHA_HidIO implements DeviceIO {
 
     public byte[] readData(int responseSize, Byte unused) throws DeviceException {
         byte[] response = new byte[responseSize];
-        if (latestData == null) {
+        if (dataBuffer.isEmpty()) {
             return new byte[0]; //no data received yet
         }
+
+        byte[] latestData = dataBuffer.remove(0);
         if (SystemUtilities.isWindows()) {
             //windows missing the leading byte
             System.arraycopy(latestData, 0, response, 1, Math.min(responseSize - 1, latestData.length));

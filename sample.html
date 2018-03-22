@@ -679,6 +679,16 @@
                                             <label for="hidProduct">Product ID</label>
                                             <input type="text" id="hidProduct" class="form-control pull-right" onblur="formatHexInput('hidProduct')" />
                                         </div>
+
+                                        <div class="form-group form-inline">
+                                            <label for="hidUsagePage">Usage Page</label>
+                                            <input type="text" id="hidUsagePage" class="form-control pull-right" onblur="formatHexInput('hidUsagePage')" />
+                                        </div>
+
+                                        <div class="form-group form-inline">
+                                            <label for="hidSerial">Serial Number</label>
+                                            <input type="text" id="hidSerial" class="form-control pull-right" />
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group form-inline">
@@ -950,7 +960,7 @@
             { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: { language: 'ZPLII' } },
 	    '^FS\n',
 	    '^FO50,300^ADN,36,20^FDPRINTED USING^FS\n',
-	    '^FO50,350^ADN,36,20^FDQZ-TRAY ^FS\n', 
+            '^FO50,350^ADN,36,20^FDQZ-TRAY ^FS\n',
 	    '^FO50,400^ADN,36,20^FDVERSION ' + qzVersion + '^FS\n' + '\n',
 	    '^XZ\n'
         ];
@@ -1335,12 +1345,15 @@
                 var device = data[i];
 
                 list += "<p>" +
-                        "   VendorID: <code>0x" + device.vendorId + "</code>" +
-                        usbButton(["hidVendor", "hidProduct"], [device.vendorId, device.productId]) + "<br/>" +
-                        "   ProductID: <code>0x" + device.productId + "</code><br/>" +
-                        "   Manufacturer: <code>" + device.manufacturer + "</code><br/>" +
-                        "   Product: <code>" + device.product + "</code><br/>" +
-                        "</p><hr/>";
+                    "   VendorID: <code>0x" + device.vendorId + "</code>" +
+                    usbButton(["hidVendor", "hidProduct", "hidUsagePage", "hidSerial"],
+                              [device.vendorId, device.productId, device.usagePage, device.serial]) + "<br/>" +
+                    "   ProductID: <code>0x" + device.productId + "</code><br/>" +
+                    (device.usagePage ? "   Usage Page: <code>0x" + device.usagePage + "</code><br/>" : "") +
+                    (device.serial ? "   Serial: <code>" + device.serial + "</code><br/>" : "") +
+                    (device.manufacturer ? "   Manufacturer: <code>" + device.manufacturer + "</code><br/>" : "") +
+                    (device.product ? "   Product: <code>" + device.product + "</code><br/>" : "") +
+                    "</p><hr/>";
             }
 
             pinMessage("<strong>Available hid devices:</strong><br/>" + list);
@@ -1488,6 +1501,8 @@
     function resetHidOptions() {
         $("#hidVendor").val('');
         $("#hidProduct").val('');
+        $("#hidUsagePage").val('');
+        $("#hidSerial").val('');
 
         $("#hidInterface").val('');
         $("#hidEndpoint").val('');
@@ -1686,7 +1701,8 @@
     function usbButton(ids, data) {
         var click = "";
         for(var i = 0; i < ids.length; i++) {
-            click += "$('#" + ids[i] + "').val('0x" + data[i] + "');$('#" + ids[i] + "').fadeOut(300).fadeIn(500);";
+            var $id = "$('#" + ids[i] + "')";
+            click += $id + ".val('" + (data[i] ? data[i] : "") + "');" + $id + ".blur();" + $id + ".fadeOut(300).fadeIn(500);";
         }
         return '<button class="btn btn-default btn-xs" onclick="' + click + '" data-dismiss="alert">Use This</button>';
     }

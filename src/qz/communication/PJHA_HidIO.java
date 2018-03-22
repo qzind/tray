@@ -22,8 +22,8 @@ public class PJHA_HidIO implements DeviceIO {
     private boolean streaming;
 
 
-    public PJHA_HidIO(Short vendorId, Short productId) throws DeviceException {
-        this(PJHA_HidUtilities.findDevice(vendorId, productId));
+    public PJHA_HidIO(Short vendorId, Short productId, Short usagePage, String serial) throws DeviceException {
+        this(PJHA_HidUtilities.findDevice(vendorId, productId, usagePage, serial));
     }
 
     public PJHA_HidIO(HidDeviceInfo deviceInfo) throws DeviceException {

@@ -11,8 +11,8 @@ public class H4J_HidIO implements DeviceIO {
     private boolean streaming;
 
 
-    public H4J_HidIO(Short vendorId, Short productId) throws DeviceException {
-        this(H4J_HidUtilities.findDevice(vendorId, productId));
+    public H4J_HidIO(Short vendorId, Short productId, Short usagePage, String serial) throws DeviceException {
+        this(H4J_HidUtilities.findDevice(vendorId, productId, usagePage, serial));
     }
 
     public H4J_HidIO(HidDevice device) throws DeviceException {

@@ -360,10 +360,13 @@ public class PrintSocketClient {
                     if (call == Method.USB_CLAIM_DEVICE) {
                         device = new UsbIO(vendorId, productId, UsbUtilities.hexToByte(params.optString("interface")));
                     } else {
+                        Short usagePage = UsbUtilities.hexToShort(params.optString("usagePage"));
+                        String serial = params.optString("serial");
+
                         if (SystemUtilities.isWindows()) {
-                            device = new PJHA_HidIO(vendorId, productId);
+                            device = new PJHA_HidIO(vendorId, productId, usagePage, serial);
                         } else {
-                            device = new H4J_HidIO(vendorId, productId);
+                            device = new H4J_HidIO(vendorId, productId, usagePage, serial);
                         }
                     }
 

@@ -21,6 +21,8 @@ public class PJHA_HidUtilities {
 
             deviceJSON.put("vendorId", UsbUtil.toHexString(device.getVendorId()))
                     .put("productId", UsbUtil.toHexString(device.getProductId()))
+                    .put("usagePage", UsbUtil.toHexString(device.getUsagePage()))
+                    .put("serial", device.getSerialNumberString())
                     .put("manufacturer", device.getManufacturerString())
                     .put("product", device.getProductString());
 
@@ -30,7 +32,7 @@ public class PJHA_HidUtilities {
         return devicesJSON;
     }
 
-    public static HidDeviceInfo findDevice(Short vendorId, Short productId) {
+    public static HidDeviceInfo findDevice(Short vendorId, Short productId, Short usagePage, String serial) {
         if (vendorId == null) {
             throw new IllegalArgumentException("Vendor ID cannot be null");
         }
@@ -41,7 +43,9 @@ public class PJHA_HidUtilities {
 
         List<HidDeviceInfo> devList = PureJavaHidApi.enumerateDevices();
         for(HidDeviceInfo device : devList) {
-            if (device.getVendorId() == vendorId && device.getProductId() == productId) {
+            if (device.getVendorId() == vendorId && device.getProductId() == productId
+                    && (usagePage == null || usagePage == device.getUsagePage())
+                    && (serial == null || serial == device.getSerialNumberString())) {
                 return device;
             }
         }

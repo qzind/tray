@@ -45,7 +45,7 @@ public class PJHA_HidUtilities {
         for(HidDeviceInfo device : devList) {
             if (device.getVendorId() == vendorId && device.getProductId() == productId
                     && (usagePage == null || usagePage == device.getUsagePage())
-                    && (serial == null || serial == device.getSerialNumberString())) {
+                    && (serial == null || serial.equals(device.getSerialNumberString()))) {
                 return device;
             }
         }

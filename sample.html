@@ -598,7 +598,7 @@
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="usbStream" class="tip" data-toggle="tooltip" title="in milliseconds">Stream Interval</label>
+                                            <label for="usbStream" class="tip" data-toggle="tooltip" title="Streaming Only: In milliseconds">Stream Interval</label>
                                             <input type="text" id="usbStream" class="form-control pull-right" />
                                         </div>
                                     </div>
@@ -681,12 +681,12 @@
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="hidUsagePage">Usage Page</label>
+                                            <label for="hidUsagePage" class="tip" data-toggle="tooltip" title="Optional: For devices that expose multiple endpoints">Usage Page</label>
                                             <input type="text" id="hidUsagePage" class="form-control pull-right" onblur="formatHexInput('hidUsagePage')" />
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="hidSerial">Serial Number</label>
+                                            <label for="hidSerial" class="tip" data-toggle="tooltip" title="Optional: For distinguishing between identical devices">Serial Number</label>
                                             <input type="text" id="hidSerial" class="form-control pull-right" />
                                         </div>
                                     </div>
@@ -707,7 +707,7 @@
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="hidStream" class="tip" data-toggle="tooltip" title="in milliseconds">Stream Interval</label>
+                                            <label for="hidStream" class="tip" data-toggle="tooltip" title="Streaming Only: In milliseconds">Stream Interval</label>
                                             <input type="text" id="hidStream" class="form-control pull-right" />
                                         </div>
                                     </div>
@@ -1585,7 +1585,7 @@
         $("#usbEndpoint").val('');
         $("#usbData").val('');
         $("#usbResponse").val(8);
-        $("#usbStream").val(10);
+        $("#usbStream").val(100);
 
         // M/T PS60 - V:0x0EB8 P:0xF000, I:0x0 E:0x81
         // Dymo S100 - V:0x0922 P:0x8009, I:0x0 E:0x82
@@ -1602,7 +1602,7 @@
         $("#hidData").val('');
         $("#hidReport").val('');
         $("#hidResponse").val(8);
-        $("#hidStream").val(10);
+        $("#hidStream").val(100);
     }
 
 

@@ -261,7 +261,7 @@ public class PrintSocketClient {
         }
 
         // used in usb calls
-        DeviceOptions dOpts = new DeviceOptions(params);
+        DeviceOptions dOpts = new DeviceOptions(params, DeviceOptions.DeviceMode.parse(call.callName));
 
 
         //call appropriate methods

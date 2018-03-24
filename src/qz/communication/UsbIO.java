@@ -13,20 +13,18 @@ public class UsbIO implements DeviceIO {
     private boolean streaming;
 
 
-    public UsbIO(Short vendorId, Short productId, Byte iface) throws DeviceException {
-        this(UsbUtilities.findDevice(vendorId, productId), iface);
-    }
+    public UsbIO(DeviceOptions dOpts) throws DeviceException {
+        UsbDevice device = UsbUtilities.findDevice(dOpts.getVendorId(), dOpts.getProductId());
 
-    public UsbIO(UsbDevice device, Byte iface) throws DeviceException {
         if (device == null) {
             throw new DeviceException("USB device could not be found");
         }
-        if (iface == null) {
+        if (dOpts.getInterfaceId() == null) {
             throw new IllegalArgumentException("Device interface cannot be null");
         }
 
         this.device = device;
-        this.iface = device.getActiveUsbConfiguration().getUsbInterface(iface);
+        this.iface = device.getActiveUsbConfiguration().getUsbInterface(dOpts.getInterfaceId());
     }
 
     public void open() throws DeviceException {

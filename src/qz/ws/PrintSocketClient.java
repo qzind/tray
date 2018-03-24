@@ -261,8 +261,7 @@ public class PrintSocketClient {
         }
 
         // used in usb calls
-        Short vendorId = UsbUtilities.hexToShort(params.optString("vendorId"));
-        Short productId = UsbUtilities.hexToShort(params.optString("productId"));
+        DeviceOptions dOpts = new DeviceOptions(params);
 
 
         //call appropriate methods
@@ -320,10 +319,10 @@ public class PrintSocketClient {
                 sendResult(session, UID, UsbUtilities.getUsbDevicesJSON(params.getBoolean("includeHubs")));
                 break;
             case USB_LIST_INTERFACES:
-                sendResult(session, UID, UsbUtilities.getDeviceInterfacesJSON(vendorId, productId));
+                sendResult(session, UID, UsbUtilities.getDeviceInterfacesJSON(dOpts));
                 break;
             case USB_LIST_ENDPOINTS:
-                sendResult(session, UID, UsbUtilities.getInterfaceEndpointsJSON(vendorId, productId, UsbUtilities.hexToByte(params.getString("interface"))));
+                sendResult(session, UID, UsbUtilities.getInterfaceEndpointsJSON(dOpts));
                 break;
             case HID_LIST_DEVICES:
                 if (SystemUtilities.isWindows()) {
@@ -355,23 +354,20 @@ public class PrintSocketClient {
 
             case USB_CLAIM_DEVICE:
             case HID_CLAIM_DEVICE: {
-                if (connection.getDevice(vendorId, productId) == null) {
+                if (connection.getDevice(dOpts) == null) {
                     DeviceIO device;
                     if (call == Method.USB_CLAIM_DEVICE) {
-                        device = new UsbIO(vendorId, productId, UsbUtilities.hexToByte(params.optString("interface")));
+                        device = new UsbIO(dOpts);
                     } else {
-                        Short usagePage = UsbUtilities.hexToShort(params.optString("usagePage"));
-                        String serial = params.optString("serial");
-
                         if (SystemUtilities.isWindows()) {
-                            device = new PJHA_HidIO(vendorId, productId, usagePage, serial);
+                            device = new PJHA_HidIO(dOpts);
                         } else {
-                            device = new H4J_HidIO(vendorId, productId, usagePage, serial);
+                            device = new H4J_HidIO(dOpts);
                         }
                     }
 
                     if (session.isOpen()) {
-                        connection.openDevice(device, vendorId, productId);
+                        connection.openDevice(device, dOpts);
                     }
 
                     if (device.isOpen()) {
@@ -387,14 +383,14 @@ public class PrintSocketClient {
             }
             case USB_CLAIMED:
             case HID_CLAIMED: {
-                sendResult(session, UID, connection.getDevice(vendorId, productId) != null);
+                sendResult(session, UID, connection.getDevice(dOpts) != null);
                 break;
             }
             case USB_SEND_DATA:
             case HID_SEND_DATA: {
-                DeviceIO usb = connection.getDevice(vendorId, productId);
+                DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
-                    usb.sendData(StringUtils.getBytesUtf8(params.optString("data")), UsbUtilities.hexToByte(params.optString("endpoint")));
+                    usb.sendData(StringUtils.getBytesUtf8(params.optString("data")), dOpts.getEndpoint());
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, String.format("USB Device [v:%s p:%s] must be claimed first.", params.opt("vendorId"), params.opt("productId")));
@@ -404,9 +400,9 @@ public class PrintSocketClient {
             }
             case USB_READ_DATA:
             case HID_READ_DATA: {
-                DeviceIO usb = connection.getDevice(vendorId, productId);
+                DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
-                    byte[] response = usb.readData(params.optInt("responseSize"), UsbUtilities.hexToByte(params.optString("endpoint")));
+                    byte[] response = usb.readData(dOpts.getResponseSize(), dOpts.getEndpoint());
                     JSONArray hex = new JSONArray();
                     for(byte b : response) {
                         hex.put(UsbUtil.toHexString(b));
@@ -421,12 +417,12 @@ public class PrintSocketClient {
             case USB_OPEN_STREAM:
             case HID_OPEN_STREAM: {
                 StreamEvent.Stream stream = (call == Method.USB_OPEN_STREAM? StreamEvent.Stream.USB:StreamEvent.Stream.HID);
-                UsbUtilities.setupUsbStream(session, UID, connection, params, stream);
+                UsbUtilities.setupUsbStream(session, UID, connection, dOpts, stream);
                 break;
             }
             case USB_CLOSE_STREAM:
             case HID_CLOSE_STREAM: {
-                DeviceIO usb = connection.getDevice(vendorId, productId);
+                DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null && usb.isStreaming()) {
                     usb.setStreaming(false);
                     sendResult(session, UID, null);
@@ -438,10 +434,10 @@ public class PrintSocketClient {
             }
             case USB_RELEASE_DEVICE:
             case HID_RELEASE_DEVICE: {
-                DeviceIO usb = connection.getDevice(vendorId, productId);
+                DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
                     usb.close();
-                    connection.removeDevice(vendorId, productId);
+                    connection.removeDevice(dOpts);
 
                     sendResult(session, UID, null);
                 } else {

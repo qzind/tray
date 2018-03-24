@@ -19,12 +19,13 @@ public class PJHA_HidIO implements DeviceIO {
     private HidDeviceInfo deviceInfo;
     private HidDevice device;
 
+    private static final int BUFFER_SIZE = 32;
     private Vector<byte[]> dataBuffer;
     private boolean streaming;
 
 
-    public PJHA_HidIO(Short vendorId, Short productId, Short usagePage, String serial) throws DeviceException {
-        this(PJHA_HidUtilities.findDevice(vendorId, productId, usagePage, serial));
+    public PJHA_HidIO(DeviceOptions dOpts) throws DeviceException {
+        this(PJHA_HidUtilities.findDevice(dOpts.getVendorId(), dOpts.getProductId(), dOpts.getUsagePage(), dOpts.getSerial()));
     }
 
     public PJHA_HidIO(HidDeviceInfo deviceInfo) throws DeviceException {
@@ -33,7 +34,16 @@ public class PJHA_HidIO implements DeviceIO {
         }
 
         this.deviceInfo = deviceInfo;
-        dataBuffer = new Vector<>();
+
+        dataBuffer = new Vector<byte[]>() {
+            @Override
+            public synchronized boolean add(byte[] e) {
+                while(this.size() >= BUFFER_SIZE) {
+                    this.remove(0);
+                }
+                return super.add(e);
+            }
+        };
     }
 
     public void open() throws DeviceException {
@@ -43,7 +53,9 @@ public class PJHA_HidIO implements DeviceIO {
                 device.setInputReportListener(new InputReportListener() {
                     @Override
                     public void onInputReport(HidDevice source, byte id, byte[] data, int len) {
-                        dataBuffer.add(data);
+                        byte[] dataCopy = new byte[len];
+                        System.arraycopy(data, 0, dataCopy, 0, len);
+                        dataBuffer.add(dataCopy);
                     }
                 });
             }

@@ -58,7 +58,8 @@ public class DeviceOptions {
             usagePage = UsbUtilities.hexToShort(parameters.optString("usagePage"));
         }
         if (!parameters.isNull("serial")) {
-            serial = parameters.optString("serial", null);
+            serial = parameters.optString("serial", "");
+            serial = serial.isEmpty() ? null : serial;
         }
     }
 

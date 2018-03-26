@@ -16,6 +16,7 @@ import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
 import qz.utils.*;
+import static qz.common.I18NLoader.gettext;
 
 import javax.print.PrintServiceLookup;
 import javax.security.cert.CertificateParsingException;
@@ -36,39 +37,40 @@ public class PrintSocketClient {
 
     //websocket port -> Connection
     private static final HashMap<Integer,SocketConnection> openConnections = new HashMap<>();
+    private static final String USE_USB_DEVICE_STRING = gettext("use a USB device");
 
     private enum Method {
-        PRINTERS_GET_DEFAULT("printers.getDefault", true, "access connected printers"),
-        PRINTERS_FIND("printers.find", true, "access connected printers"),
-        PRINTERS_DETAIL("printers.detail", true, "access connected printers"),
-        PRINT("print", true, "print to %s"),
+        PRINTERS_GET_DEFAULT("printers.getDefault", true, gettext("access connected printers")),
+        PRINTERS_FIND("printers.find", true, gettext("access connected printers")),
+        PRINTERS_DETAIL("printers.detail", true, gettext("access connected printers")),
+        PRINT("print", true, gettext("print to %s")),
 
-        SERIAL_FIND_PORTS("serial.findPorts", true, "access serial ports"),
-        SERIAL_OPEN_PORT("serial.openPort", true, "open a serial port"),
-        SERIAL_SEND_DATA("serial.sendData", true, "send data over a serial port"),
-        SERIAL_CLOSE_PORT("serial.closePort", true, "close a serial port"),
+        SERIAL_FIND_PORTS("serial.findPorts", true, gettext("access serial ports")),
+        SERIAL_OPEN_PORT("serial.openPort", true, gettext("open a serial port")),
+        SERIAL_SEND_DATA("serial.sendData", true, gettext("send data over a serial port")),
+        SERIAL_CLOSE_PORT("serial.closePort", true, gettext("close a serial port")),
 
-        USB_LIST_DEVICES("usb.listDevices", true, "access USB devices"),
-        USB_LIST_INTERFACES("usb.listInterfaces", true, "access USB devices"),
-        USB_LIST_ENDPOINTS("usb.listEndpoints", true, "access USB devices"),
-        USB_CLAIM_DEVICE("usb.claimDevice", true, "claim a USB device"),
-        USB_CLAIMED("usb.isClaimed", false, "check USB claim status"),
-        USB_SEND_DATA("usb.sendData", true, "use a USB device"),
-        USB_READ_DATA("usb.readData", true, "use a USB device"),
-        USB_OPEN_STREAM("usb.openStream", true, "use a USB device"),
-        USB_CLOSE_STREAM("usb.closeStream", false, "use a USB device"),
-        USB_RELEASE_DEVICE("usb.releaseDevice", false, "release a USB device"),
+        USB_LIST_DEVICES("usb.listDevices", true, gettext("access USB devices")),
+        USB_LIST_INTERFACES("usb.listInterfaces", true, gettext("access USB devices")),
+        USB_LIST_ENDPOINTS("usb.listEndpoints", true, gettext("access USB devices")),
+        USB_CLAIM_DEVICE("usb.claimDevice", true, gettext("claim a USB device")),
+        USB_CLAIMED("usb.isClaimed", false, gettext("check USB claim status")),
+        USB_SEND_DATA("usb.sendData", true, USE_USB_DEVICE_STRING),
+        USB_READ_DATA("usb.readData", true, USE_USB_DEVICE_STRING),
+        USB_OPEN_STREAM("usb.openStream", true, USE_USB_DEVICE_STRING),
+        USB_CLOSE_STREAM("usb.closeStream", false, USE_USB_DEVICE_STRING),
+        USB_RELEASE_DEVICE("usb.releaseDevice", false, gettext("release a USB device")),
 
-        HID_LIST_DEVICES("hid.listDevices", true, "access USB devices"),
-        HID_START_LISTENING("hid.startListening", true, "listen for USB devices"),
+        HID_LIST_DEVICES("hid.listDevices", true, gettext("access USB devices")),
+        HID_START_LISTENING("hid.startListening", true, gettext("listen for USB devices")),
         HID_STOP_LISTENING("hid.stopListening", false),
-        HID_CLAIM_DEVICE("hid.claimDevice", true, "claim a USB device"),
-        HID_CLAIMED("hid.isClaimed", false, "check USB claim status"),
-        HID_SEND_DATA("hid.sendData", true, "use a USB device"),
-        HID_READ_DATA("hid.readData", true, "use a USB device"),
-        HID_OPEN_STREAM("hid.openStream", true, "use a USB device"),
-        HID_CLOSE_STREAM("hid.closeStream", false, "use a USB device"),
-        HID_RELEASE_DEVICE("hid.releaseDevice", false, "release a USB device"),
+        HID_CLAIM_DEVICE("hid.claimDevice", true, gettext("claim a USB device")),
+        HID_CLAIMED("hid.isClaimed", false, gettext("check USB claim status")),
+        HID_SEND_DATA("hid.sendData", true, USE_USB_DEVICE_STRING),
+        HID_READ_DATA("hid.readData", true, USE_USB_DEVICE_STRING),
+        HID_OPEN_STREAM("hid.openStream", true, USE_USB_DEVICE_STRING),
+        HID_CLOSE_STREAM("hid.closeStream", false, USE_USB_DEVICE_STRING),
+        HID_RELEASE_DEVICE("hid.releaseDevice", false, gettext("release a USB device")),
 
         NETWORKING_DEVICE("networking.device", true),
         NETWORKING_DEVICES("networking.devices", true),
@@ -82,7 +84,7 @@ public class PrintSocketClient {
         private boolean dialogShown;
 
         Method(String callName, boolean dialogShown) {
-            this(callName, dialogShown, "access local resources");
+            this(callName, dialogShown, gettext("access local resources"));
         }
 
         Method(String callName, boolean dialogShown, String dialogPrompt) {
@@ -179,7 +181,7 @@ public class PrintSocketClient {
                 }
                 catch(CertificateParsingException ignore) {}
 
-                if (allowedFromDialog(certificate, "connect to QZ")) {
+                if (allowedFromDialog(certificate, gettext("connect to QZ"))) {
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, "Connection blocked by client");

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.common.Constants;
 import qz.utils.FileUtilities;
+import static qz.common.I18NLoader.gettext;
 
 import javax.swing.*;
 import javax.swing.event.ListDataEvent;
@@ -117,7 +118,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         });
 
         // TODO:  Add certificate manual import capabilities
-        deleteButton = addPanelButton("Delete", IconCache.Icon.DELETE_ICON, KeyEvent.VK_D);
+        deleteButton = addPanelButton(gettext("Delete"), IconCache.Icon.DELETE_ICON, KeyEvent.VK_D);
         deleteButton.addActionListener(e -> {
             deleteCertificate.set(getSelectedCertificate());
             deleteButton.setEnabled(false);

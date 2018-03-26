@@ -4,6 +4,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.WriterAppender;
 import qz.utils.SystemUtilities;
+import static qz.common.I18NLoader.gettext;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -38,7 +39,7 @@ public class LogDialog extends BasicDialog {
         setIconImage(getImage(IconCache.Icon.LOG_ICON));
 
         LinkLabel logDirLabel = new LinkLabel(SystemUtilities.getDataDirectory() + File.separator);
-        logDirLabel.setText("Open Log Location");
+        logDirLabel.setText(gettext("Open Log Location"));
         setHeader(logDirLabel);
 
         logArea = new JTextArea(ROWS, COLS);
@@ -47,7 +48,7 @@ public class LogDialog extends BasicDialog {
         logArea.setWrapStyleWord(true);
 
         // TODO:  Fix button panel resizing issues
-        clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);
+        clearButton = addPanelButton(gettext("Clear"), IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);
         clearButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

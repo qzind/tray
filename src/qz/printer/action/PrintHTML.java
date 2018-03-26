@@ -120,7 +120,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
                             model.setZoom(1.0);
                             images.add(WebApp.capture(model));
                         }
-                        catch(IOException re) {
+                        catch(Throwable re) {
                             throw new UnsupportedOperationException("Image or Density is too large for HTML printing", re);
                         }
                     } else {

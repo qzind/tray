@@ -1,6 +1,7 @@
 package qz.ui;
 
 import qz.common.Constants;
+import static qz.common.I18NLoader.gettext;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -49,7 +50,7 @@ public class BasicDialog extends JDialog {
         buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.add(new JSeparator(JSeparator.HORIZONTAL));
         buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        closeButton = addPanelButton("Close", IconCache.Icon.ALLOW_ICON, KeyEvent.VK_C);
+        closeButton = addPanelButton(gettext("Close"), IconCache.Icon.ALLOW_ICON, KeyEvent.VK_C);
         closeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

@@ -395,7 +395,7 @@ public class TrayManager {
         } else {
             if (!headless) {
                 try {
-                    SwingUtilities.invokeAndWait(() -> gatewayDialog.prompt("%s wants to " + prompt, cert, position));
+                    SwingUtilities.invokeAndWait(() -> gatewayDialog.prompt(String.format(gettext("%%s wants to %s"), prompt), cert, position));
                 }
                 catch(Exception ignore) {}
 

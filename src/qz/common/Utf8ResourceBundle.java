@@ -2,6 +2,7 @@ package qz.common;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
+import java.util.Locale;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 
@@ -29,6 +30,19 @@ public abstract class Utf8ResourceBundle {
     public static final ResourceBundle getBundle(final String baseName) {
         return createUtf8PropertyResourceBundle(
                 ResourceBundle.getBundle(baseName));
+    }
+
+    /**
+     * Gets the unicode friendly resource bundle with specified locale
+     *
+     * @param baseName base name for the resource
+     * @param locale locale for the resource
+     * @see ResourceBundle#getBundle(String)
+     * @return Unicode friendly resource bundle
+     */
+    public static final ResourceBundle getBundle(final String baseName, Locale locale) {
+        return createUtf8PropertyResourceBundle(
+                ResourceBundle.getBundle(baseName, locale));
     }
 
     /**

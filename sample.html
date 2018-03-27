@@ -598,7 +598,7 @@
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="usbStream" class="tip" data-toggle="tooltip" title="in milliseconds">Stream Interval</label>
+                                            <label for="usbStream" class="tip" data-toggle="tooltip" title="Streaming Only: In milliseconds">Stream Interval</label>
                                             <input type="text" id="usbStream" class="form-control pull-right" />
                                         </div>
                                     </div>
@@ -679,6 +679,16 @@
                                             <label for="hidProduct">Product ID</label>
                                             <input type="text" id="hidProduct" class="form-control pull-right" onblur="formatHexInput('hidProduct')" />
                                         </div>
+
+                                        <div class="form-group form-inline">
+                                            <label for="hidUsagePage" class="tip" data-toggle="tooltip" title="Optional: For devices that expose multiple endpoints">Usage Page</label>
+                                            <input type="text" id="hidUsagePage" class="form-control pull-right" onblur="formatHexInput('hidUsagePage')" />
+                                        </div>
+
+                                        <div class="form-group form-inline">
+                                            <label for="hidSerial" class="tip" data-toggle="tooltip" title="Optional: For distinguishing between identical devices">Serial Number</label>
+                                            <input type="text" id="hidSerial" class="form-control pull-right" />
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group form-inline">
@@ -697,7 +707,7 @@
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="hidStream" class="tip" data-toggle="tooltip" title="in milliseconds">Stream Interval</label>
+                                            <label for="hidStream" class="tip" data-toggle="tooltip" title="Streaming Only: In milliseconds">Stream Interval</label>
                                             <input type="text" id="hidStream" class="form-control pull-right" />
                                         </div>
                                     </div>
@@ -950,7 +960,7 @@
             { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: { language: 'ZPLII' } },
 	    '^FS\n',
 	    '^FO50,300^ADN,36,20^FDPRINTED USING^FS\n',
-	    '^FO50,350^ADN,36,20^FDQZ-TRAY ^FS\n', 
+            '^FO50,350^ADN,36,20^FDQZ-TRAY ^FS\n',
 	    '^FO50,400^ADN,36,20^FDVERSION ' + qzVersion + '^FS\n' + '\n',
 	    '^XZ\n'
         ];
@@ -1250,9 +1260,9 @@
                 if (device.hub) { list += "USB Hub"; }
 
                 list += "<p>" +
-                        "   VendorID: <code>0x" + device.vendorId + "</code>" +
-                        usbButton(["usbVendor", "usbProduct"], [device.vendorId, device.productId]) + "<br/>" +
-                        "   ProductID: <code>0x" + device.productId + "</code><br/>";
+                    "   VendorID: <code>0x" + device.vendorId + "</code>" +
+                    usbButton(["usbVendor", "usbProduct"], [device.vendorId, device.productId]) + "<br/>" +
+                    "   ProductID: <code>0x" + device.productId + "</code><br/>";
 
                 if (device.manufacturer) { list += "   Manufacturer: <code>" + device.manufacturer + "</code><br/>"; }
                 if (device.product) { list += "   Product: <code>" + device.product + "</code><br/>"; }
@@ -1265,65 +1275,111 @@
     }
 
     function listUsbDeviceInterfaces() {
-        qz.usb.listInterfaces($("#usbVendor").val(), $("#usbProduct").val()).then(function(data) {
-            var list = '';
-            for(var i = 0; i < data.length; i++) {
-                list += "&nbsp; <code>0x" + data[i] + "</code>" + usbButton(["usbInterface"], [data[i]]) + "<br/>";
-            }
+        qz.usb.listInterfaces({
+                                  vendorId: $("#usbVendor").val(),
+                                  productId: $("#usbProduct").val()
+                              })
+            .then(function(data) {
+                var list = '';
+                for(var i = 0; i < data.length; i++) {
+                    list += "&nbsp; <code>0x" + data[i] + "</code>" + usbButton(["usbInterface"], [data[i]]) + "<br/>";
+                }
 
-            displayMessage("<strong>Available device interfaces:</strong><br/>" + list);
-        }).catch(displayError);
+                displayMessage("<strong>Available device interfaces:</strong><br/>" + list);
+            }).catch(displayError);
     }
 
     function listUsbInterfaceEndpoints() {
-        qz.usb.listEndpoints($("#usbVendor").val(), $("#usbProduct").val(), $("#usbInterface").val()).then(function(data) {
-            var list = '';
-            for(var i = 0; i < data.length; i++) {
-                list += "&nbsp; <code>0x" + data[i] + "</code>" + usbButton(["usbEndpoint"], [data[i]]) + "<br/>";
-            }
+        qz.usb.listEndpoints({
+                                 vendorId: $("#usbVendor").val(),
+                                 productId: $("#usbProduct").val(),
+                                 interface: $("#usbInterface").val()
+                             })
+            .then(function(data) {
+                var list = '';
+                for(var i = 0; i < data.length; i++) {
+                    list += "&nbsp; <code>0x" + data[i] + "</code>" + usbButton(["usbEndpoint"], [data[i]]) + "<br/>";
+                }
 
-            displayMessage("<strong>Available interface endpoints:</strong><br/>" + list);
-        }).catch(displayError);
+                displayMessage("<strong>Available interface endpoints:</strong><br/>" + list);
+            }).catch(displayError);
     }
 
     function claimUsbDevice() {
-        qz.usb.claimDevice($("#usbVendor").val(), $("#usbProduct").val(), $("#usbInterface").val()).then(function() {
-            displayMessage("USB Device claimed");
-        }).catch(displayError);
+        qz.usb.claimDevice({
+                               vendorId: $("#usbVendor").val(),
+                               productId: $("#usbProduct").val(),
+                               interface: $("#usbInterface").val()
+                           })
+            .then(function() {
+                displayMessage("USB Device claimed");
+            }).catch(displayError);
     }
 
     function checkUsbDevice() {
-        qz.hid.isClaimed($("#usbVendor").val(), $("#usbProduct").val()).then(function(claimed) {
-            displayMessage("USB Device is " + (claimed ? "" : "not ") + "claimed");
-        }).catch(displayError);
+        qz.hid.isClaimed({
+                             vendorId: $("#usbVendor").val(),
+                             productId: $("#usbProduct").val()
+                         })
+            .then(function(claimed) {
+                displayMessage("USB Device is " + (claimed ? "" : "not ") + "claimed");
+            }).catch(displayError);
     }
 
     function sendUsbData() {
-        qz.usb.sendData($("#usbVendor").val(), $("#usbProduct").val(), $("#usbEndpoint").val(), $("#usbData").val()).catch(displayError);
+        qz.usb.sendData({
+                            vendorId: $("#usbVendor").val(),
+                            productId: $("#usbProduct").val(),
+                            endpoint: $("#usbEndpoint").val(),
+                            data: $("#usbData").val()
+                        })
+            .catch(displayError);
     }
 
     function readUsbData() {
-        qz.usb.readData($("#usbVendor").val(), $("#usbProduct").val(), $("#usbEndpoint").val(), $("#usbResponse").val()).then(function(data) {
-            displayMessage("<strong>Response:</strong> " + (window.readingWeight ? readScaleData(data) : data) + "<br/>");
-        }).catch(displayError);
+        qz.usb.readData({
+                            vendorId: $("#usbVendor").val(),
+                            productId: $("#usbProduct").val(),
+                            endpoint: $("#usbEndpoint").val(),
+                            responseSize: $("#usbResponse").val()
+                        })
+            .then(function(data) {
+                displayMessage("<strong>Response:</strong> " + (window.readingWeight ? readScaleData(data) : data) + "<br/>");
+            }).catch(displayError);
     }
 
     function openUsbStream() {
-        qz.usb.openStream($("#usbVendor").val(), $("#usbProduct").val(), $("#usbEndpoint").val(), $("#usbResponse").val(), $("#usbStream").val()).then(function() {
-            pinMessage("Waiting on device", '' + $("#usbVendor").val() + $("#usbProduct").val());
-        }).catch(displayError);
+        qz.usb.openStream({
+                              vendorId: $("#usbVendor").val(),
+                              productId: $("#usbProduct").val(),
+                              endpoint: $("#usbEndpoint").val(),
+                              responseSize: $("#usbResponse").val(),
+                              interval: $("#usbStream").val()
+                          })
+            .then(function() {
+                pinMessage("Waiting on device", '' + $("#usbVendor").val() + $("#usbProduct").val());
+            }).catch(displayError);
     }
 
     function closeUsbStream() {
-        qz.usb.closeStream($("#usbVendor").val(), $("#usbProduct").val(), $("#usbEndpoint").val()).then(function() {
-            $('#' + $("#usbVendor").val() + $("#usbProduct").val()).attr('id', '').html("Stream closed");
-        }).catch(displayError);
+        qz.usb.closeStream({
+                               vendorId: $("#usbVendor").val(),
+                               productId: $("#usbProduct").val(),
+                               endpoint: $("#usbEndpoint").val()
+                           })
+            .then(function() {
+                $('#' + $("#usbVendor").val() + $("#usbProduct").val()).attr('id', '').html("Stream closed");
+            }).catch(displayError);
     }
 
     function releaseUsbDevice() {
-        qz.usb.releaseDevice($("#usbVendor").val(), $("#usbProduct").val()).then(function() {
-            displayMessage("USB Device released");
-        }).catch(displayError);
+        qz.usb.releaseDevice({
+                                 vendorId: $("#usbVendor").val(),
+                                 productId: $("#usbProduct").val()
+                             })
+            .then(function() {
+                displayMessage("USB Device released");
+            }).catch(displayError);
     }
 
 
@@ -1335,12 +1391,15 @@
                 var device = data[i];
 
                 list += "<p>" +
-                        "   VendorID: <code>0x" + device.vendorId + "</code>" +
-                        usbButton(["hidVendor", "hidProduct"], [device.vendorId, device.productId]) + "<br/>" +
-                        "   ProductID: <code>0x" + device.productId + "</code><br/>" +
-                        "   Manufacturer: <code>" + device.manufacturer + "</code><br/>" +
-                        "   Product: <code>" + device.product + "</code><br/>" +
-                        "</p><hr/>";
+                    "   VendorID: <code>0x" + device.vendorId + "</code>" +
+                    usbButton(["hidVendor", "hidProduct", "hidUsagePage", "hidSerial"],
+                              [device.vendorId, device.productId, device.usagePage, device.serial]) + "<br/>" +
+                    "   ProductID: <code>0x" + device.productId + "</code><br/>" +
+                    (device.usagePage ? "   Usage Page: <code>0x" + device.usagePage + "</code><br/>" : "") +
+                    (device.serial ? "   Serial: <code>" + device.serial + "</code><br/>" : "") +
+                    (device.manufacturer ? "   Manufacturer: <code>" + device.manufacturer + "</code><br/>" : "") +
+                    (device.product ? "   Product: <code>" + device.product + "</code><br/>" : "") +
+                    "</p><hr/>";
             }
 
             pinMessage("<strong>Available hid devices:</strong><br/>" + list);
@@ -1360,43 +1419,90 @@
     }
 
     function claimHidDevice() {
-        qz.hid.claimDevice($("#hidVendor").val(), $("#hidProduct").val()).then(function() {
-            displayMessage("HID Device claimed");
-        }).catch(displayError);
+        qz.hid.claimDevice({
+                               vendorId: $("#hidVendor").val(),
+                               productId: $("#hidProduct").val(),
+                               usagePage: $("#hidUsagePage").val(),
+                               serial: $("#hidSerial").val()
+                           })
+            .then(function() {
+                displayMessage("HID Device claimed");
+            }).catch(displayError);
     }
 
     function checkHidDevice() {
-        qz.hid.isClaimed($("#hidVendor").val(), $("#hidProduct").val()).then(function(claimed) {
-            displayMessage("HID Device is " + (claimed ? "" : "not ") + "claimed");
-        }).catch(displayError);
+        qz.hid.isClaimed({
+                             vendorId: $("#hidVendor").val(),
+                             productId: $("#hidProduct").val(),
+                             usagePage: $("#hidUsagePage").val(),
+                             serial: $("#hidSerial").val()
+                         })
+            .then(function(claimed) {
+                displayMessage("HID Device is " + (claimed ? "" : "not ") + "claimed");
+            }).catch(displayError);
     }
 
     function sendHidData() {
-        qz.hid.sendData($("#hidVendor").val(), $("#hidProduct").val(), $("#hidData").val(), $("#hidReport").val()).catch(displayError);
+        qz.hid.sendData({
+                            vendorId: $("#hidVendor").val(),
+                            productId: $("#hidProduct").val(),
+                            usagePage: $("#hidUsagePage").val(),
+                            serial: $("#hidSerial").val(),
+                            data: $("#hidData").val(),
+                            endpoint: $("#hidReport").val()
+                        })
+            .catch(displayError);
     }
 
     function readHidData() {
-        qz.hid.readData($("#hidVendor").val(), $("#hidProduct").val(), $("#hidResponse").val()).then(function(data) {
-            displayMessage("<strong>Response:</strong> " + (window.readingWeight ? readScaleData(data) : data) + "<br/>");
-        }).catch(displayError);
+        qz.hid.readData({
+                            vendorId: $("#hidVendor").val(),
+                            productId: $("#hidProduct").val(),
+                            usagePage: $("#hidUsagePage").val(),
+                            serial: $("#hidSerial").val(),
+                            responseSize: $("#hidResponse").val()
+                        })
+            .then(function(data) {
+                displayMessage("<strong>Response:</strong> " + (window.readingWeight ? readScaleData(data) : data) + "<br/>");
+            }).catch(displayError);
     }
 
     function openHidStream() {
-        qz.hid.openStream($("#hidVendor").val(), $("#hidProduct").val(), $("#hidResponse").val(), $("#hidStream").val()).then(function() {
-            pinMessage("Waiting on device", '' + $("#hidVendor").val() + $("#hidProduct").val());
-        }).catch(displayError);
+        qz.hid.openStream({
+                              vendorId: $("#hidVendor").val(),
+                              productId: $("#hidProduct").val(),
+                              usagePage: $("#hidUsagePage").val(),
+                              serial: $("#hidSerial").val(),
+                              responseSize: $("#hidResponse").val(),
+                              interval: $("#hidStream").val()
+                          })
+            .then(function() {
+                pinMessage("Waiting on device", '' + $("#hidVendor").val() + $("#hidProduct").val());
+            }).catch(displayError);
     }
 
     function closeHidStream() {
-        qz.hid.closeStream($("#hidVendor").val(), $("#hidProduct").val()).then(function() {
-            $('#' + $("#hidVendor").val() + $("#hidProduct").val()).attr('id', '').html("Stream closed");
-        }).catch(displayError);
+        qz.hid.closeStream({
+                               vendorId: $("#hidVendor").val(),
+                               productId: $("#hidProduct").val(),
+                               usagePage: $("#hidUsagePage").val(),
+                               serial: $("#hidSerial").val()
+                           })
+            .then(function() {
+                $('#' + $("#hidVendor").val() + $("#hidProduct").val()).attr('id', '').html("Stream closed");
+            }).catch(displayError);
     }
 
     function releaseHidDevice() {
-        qz.hid.releaseDevice($("#hidVendor").val(), $("#hidProduct").val()).then(function() {
-            displayMessage("HID Device released");
-        }).catch(displayError);
+        qz.hid.releaseDevice({
+                                 vendorId: $("#hidVendor").val(),
+                                 productId: $("#hidProduct").val(),
+                                 usagePage: $("#hidUsagePage").val(),
+                                 serial: $("#hidSerial").val()
+                             })
+            .then(function() {
+                displayMessage("HID Device released");
+            }).catch(displayError);
     }
 
 
@@ -1479,7 +1585,7 @@
         $("#usbEndpoint").val('');
         $("#usbData").val('');
         $("#usbResponse").val(8);
-        $("#usbStream").val(10);
+        $("#usbStream").val(100);
 
         // M/T PS60 - V:0x0EB8 P:0xF000, I:0x0 E:0x81
         // Dymo S100 - V:0x0922 P:0x8009, I:0x0 E:0x82
@@ -1488,13 +1594,15 @@
     function resetHidOptions() {
         $("#hidVendor").val('');
         $("#hidProduct").val('');
+        $("#hidUsagePage").val('');
+        $("#hidSerial").val('');
 
         $("#hidInterface").val('');
         $("#hidEndpoint").val('');
         $("#hidData").val('');
         $("#hidReport").val('');
         $("#hidResponse").val(8);
-        $("#hidStream").val(10);
+        $("#hidStream").val(100);
     }
 
 
@@ -1686,7 +1794,8 @@
     function usbButton(ids, data) {
         var click = "";
         for(var i = 0; i < ids.length; i++) {
-            click += "$('#" + ids[i] + "').val('0x" + data[i] + "');$('#" + ids[i] + "').fadeOut(300).fadeIn(500);";
+            var $id = "$('#" + ids[i] + "')";
+            click += $id + ".val('" + (data[i] ? data[i] : "") + "');" + $id + ".blur();" + $id + ".fadeOut(300).fadeIn(500);";
         }
         return '<button class="btn btn-default btn-xs" onclick="' + click + '" data-dismiss="alert">Use This</button>';
     }

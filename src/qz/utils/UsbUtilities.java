@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.communication.DeviceException;
 import qz.communication.DeviceIO;
+import qz.communication.DeviceOptions;
 import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
 import qz.ws.StreamEvent;
@@ -128,10 +129,10 @@ public class UsbUtilities {
         return findDevice(vendorId, productId).getActiveUsbConfiguration().getUsbInterfaces();
     }
 
-    public static JSONArray getDeviceInterfacesJSON(Short vendorId, Short productId) throws DeviceException {
+    public static JSONArray getDeviceInterfacesJSON(DeviceOptions dOpts) throws DeviceException {
         JSONArray ifaceJSON = new JSONArray();
 
-        List ifaces = getDeviceInterfaces(vendorId, productId);
+        List ifaces = getDeviceInterfaces(dOpts.getVendorId(), dOpts.getProductId());
         for(Object o : ifaces) {
             UsbInterface iface = (UsbInterface)o;
             UsbInterfaceDescriptor desc = iface.getUsbInterfaceDescriptor();
@@ -150,10 +151,10 @@ public class UsbUtilities {
         return findDevice(vendorId, productId).getActiveUsbConfiguration().getUsbInterface(iface).getUsbEndpoints();
     }
 
-    public static JSONArray getInterfaceEndpointsJSON(Short vendorId, Short productId, Byte iface) throws DeviceException {
+    public static JSONArray getInterfaceEndpointsJSON(DeviceOptions dOpts) throws DeviceException {
         JSONArray endJSON = new JSONArray();
 
-        List endpoints = getInterfaceEndpoints(vendorId, productId, iface);
+        List endpoints = getInterfaceEndpoints(dOpts.getVendorId(), dOpts.getProductId(), dOpts.getInterfaceId());
         for(Object o : endpoints) {
             UsbEndpoint endpoint = (UsbEndpoint)o;
             UsbEndpointDescriptor desc = endpoint.getUsbEndpointDescriptor();
@@ -166,8 +167,8 @@ public class UsbUtilities {
 
 
     // shared by usb and hid streaming
-    public static void setupUsbStream(final Session session, String UID, SocketConnection connection, final JSONObject params, final StreamEvent.Stream streamType) {
-        final DeviceIO usb = connection.getDevice(params.optString("vendorId"), params.optString("productId"));
+    public static void setupUsbStream(final Session session, String UID, SocketConnection connection, final DeviceOptions dOpts, final StreamEvent.Stream streamType) {
+        final DeviceIO usb = connection.getDevice(dOpts);
 
         if (usb != null) {
             if (!usb.isStreaming()) {
@@ -176,9 +177,9 @@ public class UsbUtilities {
                 new Thread() {
                     @Override
                     public void run() {
-                        int interval = params.optInt("interval", 100);
-                        int size = params.optInt("responseSize");
-                        Byte endpoint = UsbUtilities.hexToByte(params.optString("endpoint"));
+                        int interval = dOpts.getInterval();
+                        int size = dOpts.getResponseSize();
+                        Byte endpoint = dOpts.getEndpoint();
 
                         StreamEvent event = new StreamEvent(streamType, StreamEvent.Type.RECEIVE)
                                 .withData("vendorId", usb.getVendorId()).withData("productId", usb.getProductId());
@@ -213,10 +214,10 @@ public class UsbUtilities {
 
                 PrintSocketClient.sendResult(session, UID, null);
             } else {
-                PrintSocketClient.sendError(session, UID, String.format("USB Device [v:%s p:%s] is already streaming data.", params.opt("vendorId"), params.opt("productId")));
+                PrintSocketClient.sendError(session, UID, String.format("USB Device [v:%s p:%s] is already streaming data.", dOpts.getVendorId(), dOpts.getProductId()));
             }
         } else {
-            PrintSocketClient.sendError(session, UID, String.format("USB Device [v:%s p:%s] must be claimed first.", params.opt("vendorId"), params.opt("productId")));
+            PrintSocketClient.sendError(session, UID, String.format("USB Device [v:%s p:%s] must be claimed first.", dOpts.getVendorId(), dOpts.getProductId()));
         }
     }
 

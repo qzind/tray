@@ -1034,35 +1034,39 @@ var qz = (function() {
             },
 
             /**
-             * @param vendorId Hex string of USB device's vendor ID.
-             * @param productId Hex string of USB device's product ID.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of USB device's vendor ID.
+             *  @param deviceInfo.productId Hex string of USB device's product ID.
              * @returns {Promise<Array<string>|Error>} List of available (hexadecimal) interfaces on a USB device.
              *
              * @memberof qz.usb
              */
-            listInterfaces: function(vendorId, productId) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId
-                };
-                return _qz.websocket.dataPromise('usb.listInterfaces', params);
+            listInterfaces: function(deviceInfo) {
+                if (typeof deviceInfo !== 'object') { deviceInfo = { vendorId: arguments[0], productId: arguments[1] }; } //backwards compatibility
+
+                return _qz.websocket.dataPromise('usb.listInterfaces', deviceInfo);
             },
 
             /**
-             * @param vendorId Hex string of USB device's vendor ID.
-             * @param productId Hex string of USB device's product ID.
-             * @param iface Hex string of interface on the USB device to search.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of USB device's vendor ID.
+             *  @param deviceInfo.productId Hex string of USB device's product ID.
+             *  @param deviceInfo.iface Hex string of interface on the USB device to search.
              * @returns {Promise<Array<string>|Error>} List of available (hexadecimal) endpoints on a USB device's interface.
              *
              * @memberof qz.usb
              */
-            listEndpoints: function(vendorId, productId, iface) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId,
-                    interface: iface
-                };
-                return _qz.websocket.dataPromise('usb.listEndpoints', params);
+            listEndpoints: function(deviceInfo) {
+                //backwards compatibility
+                if (typeof deviceInfo !== 'object') {
+                    deviceInfo = {
+                        vendorId: arguments[0],
+                        productId: arguments[1],
+                        interface: arguments[2]
+                    };
+                }
+
+                return _qz.websocket.dataPromise('usb.listEndpoints', deviceInfo);
             },
 
             /**
@@ -1082,141 +1086,164 @@ var qz = (function() {
             /**
              * Claim a USB device's interface to enable sending/reading data across an endpoint.
              *
-             * @param vendorId Hex string of USB device's vendor ID.
-             * @param productId Hex string of USB device's product ID.
-             * @param iface Hex string of interface on the USB device to claim.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of USB device's vendor ID.
+             *  @param deviceInfo.productId Hex string of USB device's product ID.
+             *  @param deviceInfo.interface Hex string of interface on the USB device to claim.
              * @returns {Promise<null|Error>}
              *
              * @memberof qz.usb
              */
-            claimDevice: function(vendorId, productId, iface) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId,
-                    interface: iface
-                };
-                return _qz.websocket.dataPromise('usb.claimDevice', params);
+            claimDevice: function(deviceInfo) {
+                //backwards compatibility
+                if (typeof deviceInfo !== 'object') {
+                    deviceInfo = {
+                        vendorId: arguments[0],
+                        productId: arguments[1],
+                        interface: arguments[2]
+                    };
+                }
+
+                return _qz.websocket.dataPromise('usb.claimDevice', deviceInfo);
             },
 
             /**
              * Check the current claim state of a USB device.
              *
-             * @param vendorId Hex string of USB device's vendor ID.
-             * @param productId Hex string of USB device's product ID.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of USB device's vendor ID.
+             *  @param deviceInfo.productId Hex string of USB device's product ID.
              * @returns {Promise<boolean|Error>}
              *
              * @since 2.0.2
              * @memberOf qz.usb
              */
-            isClaimed: function(vendorId, productId) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId
-                };
-                return _qz.websocket.dataPromise('usb.isClaimed', params);
+            isClaimed: function(deviceInfo) {
+                if (typeof deviceInfo !== 'object') { deviceInfo = { vendorId: arguments[0], productId: arguments[1] }; } //backwards compatibility
+
+                return _qz.websocket.dataPromise('usb.isClaimed', deviceInfo);
             },
 
             /**
              * Send data to a claimed USB device.
              *
-             * @param vendorId Hex string of USB device's vendor ID.
-             * @param productId Hex string of USB device's product ID.
-             * @param endpoint Hex string of endpoint on the claimed interface for the USB device.
-             * @param data Bytes to send over specified endpoint.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of USB device's vendor ID.
+             *  @param deviceInfo.productId Hex string of USB device's product ID.
+             *  @param deviceInfo.endpoint Hex string of endpoint on the claimed interface for the USB device.
+             *  @param deviceInfo.data Bytes to send over specified endpoint.
              * @returns {Promise<null|Error>}
              *
              * @memberof qz.usb
              */
-            sendData: function(vendorId, productId, endpoint, data) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId,
-                    endpoint: endpoint,
-                    data: data
-                };
-                return _qz.websocket.dataPromise('usb.sendData', params);
+            sendData: function(deviceInfo) {
+                //backwards compatibility
+                if (typeof deviceInfo !== 'object') {
+                    deviceInfo = {
+                        vendorId: arguments[0],
+                        productId: arguments[1],
+                        endpoint: arguments[2],
+                        data: arguments[3]
+                    };
+                }
+
+                return _qz.websocket.dataPromise('usb.sendData', deviceInfo);
             },
 
             /**
              * Read data from a claimed USB device.
              *
-             * @param vendorId Hex string of USB device's vendor ID.
-             * @param productId Hex string of USB device's product ID.
-             * @param endpoint Hex string of endpoint on the claimed interface for the USB device.
-             * @param responseSize Size of the byte array to receive a response in.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of USB device's vendor ID.
+             *  @param deviceInfo.productId Hex string of USB device's product ID.
+             *  @param deviceInfo.endpoint Hex string of endpoint on the claimed interface for the USB device.
+             *  @param deviceInfo.responseSize Size of the byte array to receive a response in.
              * @returns {Promise<Array<string>|Error>} List of (hexadecimal) bytes received from the USB device.
              *
              * @memberof qz.usb
              */
-            readData: function(vendorId, productId, endpoint, responseSize) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId,
-                    endpoint: endpoint,
-                    responseSize: responseSize
-                };
-                return _qz.websocket.dataPromise('usb.readData', params);
+            readData: function(deviceInfo) {
+                //backwards compatibility
+                if (typeof deviceInfo !== 'object') {
+                    deviceInfo = {
+                        vendorId: arguments[0],
+                        productId: arguments[1],
+                        endpoint: arguments[2],
+                        responseSize: arguments[3]
+                    };
+                }
+
+                return _qz.websocket.dataPromise('usb.readData', deviceInfo);
             },
 
             /**
              * Provides a continuous stream of read data from a claimed USB device.
              *
-             * @param vendorId Hex string of USB device's vendor ID.
-             * @param productId Hex string of USB device's product ID.
-             * @param endpoint Hex string of endpoint on the claimed interface for the USB device.
-             * @param responseSize Size of the byte array to receive a response in.
-             * @param [interval=100] Frequency to send read data back, in milliseconds.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of USB device's vendor ID.
+             *  @param deviceInfo.productId Hex string of USB device's product ID.
+             *  @param deviceInfo.endpoint Hex string of endpoint on the claimed interface for the USB device.
+             *  @param deviceInfo.responseSize Size of the byte array to receive a response in.
+             *  @param deviceInfo.interval=100 Frequency to send read data back, in milliseconds.
              * @returns {Promise<null|Error>}
              *
              * @see qz.usb.setUsbCallbacks
              *
              * @memberof qz.usb
              */
-            openStream: function(vendorId, productId, endpoint, responseSize, interval) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId,
-                    endpoint: endpoint,
-                    responseSize: responseSize,
-                    interval: interval
-                };
-                return _qz.websocket.dataPromise('usb.openStream', params);
+            openStream: function(deviceInfo) {
+                //backwards compatibility
+                if (typeof deviceInfo !== 'object') {
+                    deviceInfo = {
+                        vendorId: arguments[0],
+                        productId: arguments[1],
+                        endpoint: arguments[2],
+                        responseSize: arguments[3],
+                        interval: arguments[4]
+                    };
+                }
+
+                return _qz.websocket.dataPromise('usb.openStream', deviceInfo);
             },
 
             /**
              * Stops the stream of read data from a claimed USB device.
              *
-             * @param vendorId Hex string of USB device's vendor ID.
-             * @param productId Hex string of USB device's product ID.
-             * @param endpoint Hex string of endpoint on the claimed interface for the USB device.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of USB device's vendor ID.
+             *  @param deviceInfo.productId Hex string of USB device's product ID.
+             *  @param deviceInfo.endpoint Hex string of endpoint on the claimed interface for the USB device.
              * @returns {Promise<null|Error>}
              *
              * @memberof qz.usb
              */
-            closeStream: function(vendorId, productId, endpoint) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId,
-                    endpoint: endpoint
-                };
-                return _qz.websocket.dataPromise('usb.closeStream', params);
+            closeStream: function(deviceInfo) {
+                //backwards compatibility
+                if (typeof deviceInfo !== 'object') {
+                    deviceInfo = {
+                        vendorId: arguments[0],
+                        productId: arguments[1],
+                        endpoint: arguments[2]
+                    };
+                }
+
+                return _qz.websocket.dataPromise('usb.closeStream', deviceInfo);
             },
 
             /**
              * Release a claimed USB device to free resources after sending/reading data.
              *
-             * @param vendorId Hex string of USB device's vendor ID.
-             * @param productId Hex string of USB device's product ID.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of USB device's vendor ID.
+             *  @param deviceInfo.productId Hex string of USB device's product ID.
              * @returns {Promise<null|Error>}
              *
              * @memberof qz.usb
              */
-            releaseDevice: function(vendorId, productId) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId
-                };
-                return _qz.websocket.dataPromise('usb.releaseDevice', params);
+            releaseDevice: function(deviceInfo) {
+                if (typeof deviceInfo !== 'object') { deviceInfo = { vendorId: arguments[0], productId: arguments[1] }; } //backwards compatibility
+
+                return _qz.websocket.dataPromise('usb.releaseDevice', deviceInfo);
             }
         },
 
@@ -1290,89 +1317,109 @@ var qz = (function() {
             /**
              * Claim a HID device to enable sending/reading data across.
              *
-             * @param vendorId Hex string of HID device's vendor ID.
-             * @param productId Hex string of HID device's product ID.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of HID device's vendor ID.
+             *  @param deviceInfo.productId Hex string of HID device's product ID.
+             *  @param deviceInfo.usagePage Hex string of HID device's usage page when multiple are present.
+             *  @param deviceInfo.serial Serial ID of HID device.
              * @returns {Promise<null|Error>}
              * @since 2.0.1
              *
              * @memberof qz.hid
              */
-            claimDevice: function(vendorId, productId) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId
-                };
-                return _qz.websocket.dataPromise('hid.claimDevice', params);
+            claimDevice: function(deviceInfo) {
+                if (typeof deviceInfo !== 'object') { deviceInfo = { vendorId: arguments[0], productId: arguments[1] }; } //backwards compatibility
+
+                return _qz.websocket.dataPromise('hid.claimDevice', deviceInfo);
             },
 
             /**
              * Check the current claim state of a HID device.
              *
-             * @param vendorId Hex string of HID device's vendor ID.
-             * @param productId Hex string of HID device's product ID.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of HID device's vendor ID.
+             *  @param deviceInfo.productId Hex string of HID device's product ID.
+             *  @param deviceInfo.usagePage Hex string of HID device's usage page when multiple are present.
+             *  @param deviceInfo.serial Serial ID of HID device.
              * @returns {Promise<boolean|Error>}
              *
              * @since 2.0.2
              * @memberOf qz.hid
              */
-            isClaimed: function(vendorId, productId) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId
-                };
-                return _qz.websocket.dataPromise('hid.isClaimed', params);
+            isClaimed: function(deviceInfo) {
+                if (typeof deviceInfo !== 'object') { deviceInfo = { vendorId: arguments[0], productId: arguments[1] }; } //backwards compatibility
+
+                return _qz.websocket.dataPromise('hid.isClaimed', deviceInfo);
             },
 
             /**
              * Send data to a claimed HID device.
              *
-             * @param vendorId Hex string of USB device's vendor ID.
-             * @param productId Hex string of USB device's product ID.
-             * @param data Bytes to send over specified endpoint.
-             * @param [reportId=0x00] First byte of the data packet signifying the HID report ID.
-             *                        Must be 0x00 for devices only supporting a single report.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of HID device's vendor ID.
+             *  @param deviceInfo.productId Hex string of HID device's product ID.
+             *  @param deviceInfo.usagePage Hex string of HID device's usage page when multiple are present.
+             *  @param deviceInfo.serial Serial ID of HID device.
+             *  @param deviceInfo.data Bytes to send over specified endpoint.
+             *  @param deviceInfo.endpoint=0x00 First byte of the data packet signifying the HID report ID.
+             *                             Must be 0x00 for devices only supporting a single report.
+             *  @param deviceInfo.reportId=0x00 Alias for <code>deviceInfo.endpoint</code>. Not used if endpoint is provided.
              * @returns {Promise<null|Error>}
              * @since 2.0.1
              *
              * @memberof qz.hid
              */
-            sendData: function(vendorId, productId, data, reportId) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId,
-                    endpoint: reportId,
-                    data: data
-                };
-                return _qz.websocket.dataPromise('hid.sendData', params);
+            sendData: function(deviceInfo) {
+                //backwards compatibility
+                if (typeof deviceInfo !== 'object') {
+                    deviceInfo = {
+                        vendorId: arguments[0],
+                        productId: arguments[1],
+                        data: arguments[2],
+                        endpoint: arguments[3]
+                    };
+                }
+
+                return _qz.websocket.dataPromise('hid.sendData', deviceInfo);
             },
 
             /**
              * Read data from a claimed HID device.
              *
-             * @param vendorId Hex string of HID device's vendor ID.
-             * @param productId Hex string of HID device's product ID.
-             * @param responseSize Size of the byte array to receive a response in.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of HID device's vendor ID.
+             *  @param deviceInfo.productId Hex string of HID device's product ID.
+             *  @param deviceInfo.usagePage Hex string of HID device's usage page when multiple are present.
+             *  @param deviceInfo.serial Serial ID of HID device.
+             *  @param deviceInfo.responseSize Size of the byte array to receive a response in.
              * @returns {Promise<Array<string>|Error>} List of (hexadecimal) bytes received from the HID device.
              * @since 2.0.1
              *
              * @memberof qz.hid
              */
-            readData: function(vendorId, productId, responseSize) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId,
-                    responseSize: responseSize
-                };
-                return _qz.websocket.dataPromise('hid.readData', params);
+            readData: function(deviceInfo) {
+                //backwards compatibility
+                if (typeof deviceInfo !== 'object') {
+                    deviceInfo = {
+                        vendorId: arguments[0],
+                        productId: arguments[1],
+                        responseSize: arguments[2]
+                    };
+                }
+
+                return _qz.websocket.dataPromise('hid.readData', deviceInfo);
             },
 
             /**
              * Provides a continuous stream of read data from a claimed HID device.
              *
-             * @param vendorId Hex string of UHIDSB device's vendor ID.
-             * @param productId Hex string of HID device's product ID.
-             * @param responseSize Size of the byte array to receive a response in.
-             * @param [interval=100] Frequency to send read data back, in milliseconds.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of HID device's vendor ID.
+             *  @param deviceInfo.productId Hex string of HID device's product ID.
+             *  @param deviceInfo.usagePage Hex string of HID device's usage page when multiple are present.
+             *  @param deviceInfo.serial Serial ID of HID device.
+             *  @param deviceInfo.responseSize Size of the byte array to receive a response in.
+             *  @param deviceInfo.interval=100 Frequency to send read data back, in milliseconds.
              * @returns {Promise<null|Error>}
              * @since 2.0.1
              *
@@ -1380,50 +1427,56 @@ var qz = (function() {
              *
              * @memberof qz.hid
              */
-            openStream: function(vendorId, productId, responseSize, interval) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId,
-                    responseSize: responseSize,
-                    interval: interval
-                };
-                return _qz.websocket.dataPromise('hid.openStream', params);
+            openStream: function(deviceInfo) {
+                //backwards compatibility
+                if (typeof deviceInfo !== 'object') {
+                    deviceInfo = {
+                        vendorId: arguments[0],
+                        productId: arguments[1],
+                        responseSize: arguments[2],
+                        interval: arguments[3]
+                    };
+                }
+
+                return _qz.websocket.dataPromise('hid.openStream', deviceInfo);
             },
 
             /**
              * Stops the stream of read data from a claimed HID device.
              *
-             * @param vendorId Hex string of HID device's vendor ID.
-             * @param productId Hex string of HID device's product ID.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of HID device's vendor ID.
+             *  @param deviceInfo.productId Hex string of HID device's product ID.
+             *  @param deviceInfo.usagePage Hex string of HID device's usage page when multiple are present.
+             *  @param deviceInfo.serial Serial ID of HID device.
              * @returns {Promise<null|Error>}
              * @since 2.0.1
              *
              * @memberof qz.hid
              */
-            closeStream: function(vendorId, productId) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId
-                };
-                return _qz.websocket.dataPromise('hid.closeStream', params);
+            closeStream: function(deviceInfo) {
+                if (typeof deviceInfo !== 'object') { deviceInfo = { vendorId: arguments[0], productId: arguments[1] }; } //backwards compatibility
+
+                return _qz.websocket.dataPromise('hid.closeStream', deviceInfo);
             },
 
             /**
              * Release a claimed HID device to free resources after sending/reading data.
              *
-             * @param vendorId Hex string of HID device's vendor ID.
-             * @param productId Hex string of HID device's product ID.
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of HID device's vendor ID.
+             *  @param deviceInfo.productId Hex string of HID device's product ID.
+             *  @param deviceInfo.usagePage Hex string of HID device's usage page when multiple are present.
+             *  @param deviceInfo.serial Serial ID of HID device.
              * @returns {Promise<null|Error>}
              * @since 2.0.1
              *
              * @memberof qz.hid
              */
-            releaseDevice: function(vendorId, productId) {
-                var params = {
-                    vendorId: vendorId,
-                    productId: productId
-                };
-                return _qz.websocket.dataPromise('hid.releaseDevice', params);
+            releaseDevice: function(deviceInfo) {
+                if (typeof deviceInfo !== 'object') { deviceInfo = { vendorId: arguments[0], productId: arguments[1] }; } //backwards compatibility
+
+                return _qz.websocket.dataPromise('hid.releaseDevice', deviceInfo);
             }
         },
 

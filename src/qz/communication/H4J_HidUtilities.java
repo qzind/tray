@@ -37,6 +37,8 @@ public class H4J_HidUtilities {
 
             deviceJSON.put("vendorId", UsbUtil.toHexString(device.getVendorId()))
                     .put("productId", UsbUtil.toHexString(device.getProductId()))
+                    .put("usagePage", UsbUtil.toHexString((short)device.getUsagePage()))
+                    .put("serial", device.getSerialNumber())
                     .put("manufacturer", device.getManufacturer())
                     .put("product", device.getProduct());
 
@@ -46,7 +48,8 @@ public class H4J_HidUtilities {
         return devicesJSON;
     }
 
-    public static HidDevice findDevice(Short vendorId, Short productId) {
+
+    public static HidDevice findDevice(Short vendorId, Short productId, Short usagePage, String serial) {
         if (vendorId == null) {
             throw new IllegalArgumentException("Vendor ID cannot be null");
         }
@@ -56,7 +59,8 @@ public class H4J_HidUtilities {
 
         List<HidDevice> devices = getHidDevices();
         for(HidDevice device : devices) {
-            if (device.isVidPidSerial(vendorId, productId, null)) {
+            if (device.isVidPidSerial(vendorId, productId, serial)
+                    && (usagePage == null || usagePage == (short)device.getUsagePage())) {
                 return device;
             }
         }

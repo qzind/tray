@@ -379,6 +379,7 @@ var qz = (function() {
                 fallbackDensity: null,
                 interpolation: 'bicubic',
                 jobName: null,
+                legacy: false,
                 margins: 0,
                 orientation: null,
                 paperThickness: null,
@@ -820,6 +821,7 @@ var qz = (function() {
              *  @param {number} [options.fallbackDensity=null] Value used when default density value cannot be read, or in cases where reported as "Normal" by the driver, (in DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *  @param {string} [options.interpolation='bicubic'] Valid values <code>[bicubic | bilinear | nearest-neighbor]</code>. Controls how images are handled when resized.
              *  @param {string} [options.jobName=null] Name to display in print queue.
+             *  @param {boolean} [options.legacy=false] If legacy style printing should be used.
              *  @param {Object|number} [options.margins=0] If just a number is provided, it is used as the margin for all sides.
              *   @param {number} [options.margins.top=0]
              *   @param {number} [options.margins.right=0]

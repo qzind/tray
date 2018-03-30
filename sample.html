@@ -306,6 +306,11 @@
                                         </div>
 
                                         <div class="form-group form-inline">
+                                            <label for="pxlLegacy">Legacy Printing</label>
+                                            <input type="checkbox" id="pxlLegacy" class="pull-right" />
+                                        </div>
+
+                                        <div class="form-group form-inline">
                                             <label for="pxlOrientation">Orientation</label>
                                             <select id="pxlOrientation" class="form-control pull-right">
                                                 <option value="">Default</option>
@@ -1522,6 +1527,7 @@
         $("#pxlDuplex").prop('checked', false);
         $("#pxlInterpolation").val("");
         $("#pxlJobName").val("");
+        $("#pxlLegacy").prop('checked', false);
         $("#pxlOrientation").val("");
         $("#pxlPaperThickness").val(null);
         $("#pxlPrinterTray").val(null);
@@ -1933,6 +1939,7 @@
                             duplex: $("#pxlDuplex").prop('checked'),
                             interpolation: $("#pxlInterpolation").val(),
                             jobName: jobName,
+                            legacy: $("#pxlLegacy").prop('checked'),
                             margins: pxlMargins,
                             orientation: $("#pxlOrientation").val(),
                             paperThickness: $("#pxlPaperThickness").val(),

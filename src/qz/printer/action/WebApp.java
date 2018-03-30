@@ -178,11 +178,10 @@ public class WebApp extends Application {
     /**
      * Sets up capture to run on JavaFX thread and returns snapshot of rendered page
      *
-     * @param source   The html to be rendered for capture
-     * @param fromFile If the passed {@code source} is from a url/file location
+     * @param model Data about the html to be rendered for capture
      * @return BufferedImage of the rendered html
      */
-    public static synchronized BufferedImage capture(final String source, final boolean fromFile, final double width, final double height, final double zoom) throws Throwable {
+    public static synchronized BufferedImage capture(final WebAppModel model) throws Throwable {
         final AtomicReference<BufferedImage> capture = new AtomicReference<>();
         complete.set(false);
         thrown.set(null);
@@ -196,9 +195,9 @@ public class WebApp extends Application {
         Platform.runLater(new Thread() {
             public void run() {
                 try {
-                    pageWidth = width;
-                    pageHeight = height;
-                    pageZoom = zoom;
+                    pageWidth = model.getWebWidth();
+                    pageHeight = model.getWebHeight();
+                    pageZoom = model.getZoom();
 
                     webView.setMinSize(100, 100);
                     webView.setPrefSize(100, 100);
@@ -230,10 +229,10 @@ public class WebApp extends Application {
                     });
 
                     //actually begin loading the html
-                    if (fromFile) {
-                        webView.getEngine().load(source);
+                    if (model.isPlainText()) {
+                        webView.getEngine().loadContent(model.getSource(), "text/html");
                     } else {
-                        webView.getEngine().loadContent(source, "text/html");
+                        webView.getEngine().load(model.getSource());
                     }
                 }
                 catch(Throwable t) {

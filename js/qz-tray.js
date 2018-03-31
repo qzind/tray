@@ -209,6 +209,12 @@ var qz = (function() {
                             _qz.websocket.pendingCalls[obj.uid] = obj.promise;
                         }
 
+                        // track requesting monitor
+                        obj.position = {
+                            x: screen ? ((screen.availWidth || screen.width) / 2) + (screen.left || screen.availLeft) : 0,
+                            y: screen ? ((screen.availHeight || screen.height) / 2) + (screen.top || screen.availTop) : 0
+                        };
+
                         try {
                             if (obj.call != undefined && obj.signature == undefined) {
                                 var signObj = {

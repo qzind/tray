@@ -2,6 +2,7 @@ package qz.ui;
 
 import qz.auth.Certificate;
 import qz.common.Constants;
+import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -137,14 +138,6 @@ public class GatewayDialog extends JDialog {
         }
     };
 
-    @Override
-    public void setVisible(boolean b) {
-        if (b) {
-            refreshComponents();
-        }
-        super.setVisible(b);
-    }
-
     public final void refreshComponents() {
         if (cert != null) {
             // TODO:  Add name, publisher
@@ -190,12 +183,15 @@ public class GatewayDialog extends JDialog {
         this.description = description;
     }
 
-    public boolean prompt(String description, Certificate cert) {
+    public boolean prompt(String description, Certificate cert, Point position) {
         persistentCheckBox.setSelected(false); // prevents re-adding a persistent site to the list it's already on
 
         setDescription(description);
         setCertificate(cert);
+        refreshComponents();
+        SystemUtilities.centerDialog(this, position);
         setVisible(true);
+
         return isApproved();
     }
 }

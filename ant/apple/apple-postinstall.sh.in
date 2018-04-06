@@ -26,4 +26,4 @@ rm "${apple.installdir}/demo/js/qz-websocket.js"
 
 # Start ${project.name}
 echo -e "\nStarting ${project.name} as $USER..."
-su $USER -c "open -a \"${project.name}\""
+su $USER -c "open \"${apple.installdir}\""

@@ -62,9 +62,12 @@ public class SystemUtilities {
                 // Unknown format
                 return Version.forIntegers(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), 0);
             case 3:
+                // Assume JDK8 and lower; missing build metadata
+                return Version.forIntegers(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+            case 4:
             default:
                 // Assume JDK8 and lower format
-                return Version.forIntegers(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+                return Version.forIntegers(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2])).setBuildMetadata(parts[3]);
         }
     }
 

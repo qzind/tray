@@ -1,6 +1,5 @@
 package qz.printer.action;
 
-import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.ssl.Base64;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.multipdf.Splitter;
@@ -28,7 +27,6 @@ import javax.print.attribute.PrintRequestAttributeSet;
 import java.awt.*;
 import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.MediaPrintableArea;
-import javax.print.attribute.standard.OrientationRequested;
 import java.awt.geom.AffineTransform;
 import java.awt.print.PageFormat;
 import java.awt.print.Paper;
@@ -126,22 +124,6 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, job.getPageFormat(null), (Media[])output.getPrintService().getSupportedAttributeValues(Media.class, null, null));
 
-        //trick pdfbox into an alternate doc size if specified
-        if (docWidth > 0 || docHeight > 0) {
-            Paper paper = page.getPaper();
-
-            if (docWidth <= 0) { docWidth = page.getImageableWidth(); }
-            if (docHeight <= 0) { docHeight = page.getImageableHeight(); }
-
-            paper.setImageableArea(paper.getImageableX(), paper.getImageableY(), docWidth, docHeight);
-            page.setPaper(paper);
-
-            scale = Scaling.SCALE_TO_FIT; //to get custom size we need to force scaling
-
-            //pdf uses imageable area from Paper, so this can be safely removed
-            attributes.remove(MediaPrintableArea.class);
-        }
-
         // Disable attributes per https://github.com/qzind/tray/issues/174
         if (SystemUtilities.isMac() && Constants.JAVA_VERSION.compareWithBuildsTo(Version.valueOf("1.8.0+202")) < 0) {
             log.warn("MacOS and Java < 1.8.0u202 cannot use attributes with PDF prints, disabling");
@@ -165,7 +147,23 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         for(PDDocument doc : printables) {
             PageFormat page = job.getPageFormat(null);
-            applyDefaultSettings(pxlOpts, page);
+            applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
+
+            //trick pdfbox into an alternate doc size if specified
+            if (docWidth > 0 || docHeight > 0) {
+                Paper paper = page.getPaper();
+
+                if (docWidth <= 0) { docWidth = page.getImageableWidth(); }
+                if (docHeight <= 0) { docHeight = page.getImageableHeight(); }
+
+                paper.setImageableArea(paper.getImageableX(), paper.getImageableY(), docWidth, docHeight);
+                page.setPaper(paper);
+
+                scale = Scaling.SCALE_TO_FIT; //to get custom size we need to force scaling
+
+                //pdf uses imageable area from Paper, so this can be safely removed
+                attributes.remove(MediaPrintableArea.class);
+            }
 
             for(PDPage pd : doc.getPages()) {
                 if (pxlOpts.getRotation() % 360 != 0) {
@@ -176,7 +174,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     PDRectangle bounds = pd.getBBox();
                     if ((page.getImageableHeight() > page.getImageableWidth() && bounds.getWidth() > bounds.getHeight()) || (pd.getRotation() / 90) % 2 == 1) {
                         log.info("Adjusting orientation to print landscape PDF source");
-                        page.setOrientation(PrintOptions.Orientation.LANDSCAPE.getAsFormat());
+                        page.setOrientation(PrintOptions.Orientation.LANDSCAPE.getAsOrientFormat());
                     }
                 } else if (pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
                     //flip imageable area dimensions when in landscape

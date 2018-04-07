@@ -28,11 +28,7 @@ import qz.printer.ImageWrapper;
 import qz.printer.LanguageType;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
-import qz.utils.ByteUtilities;
-import qz.utils.ConnectionUtilities;
-import qz.utils.FileUtilities;
-import qz.utils.PrintingUtilities;
-import qz.utils.ShellUtilities;
+import qz.utils.*;
 
 import javax.imageio.ImageIO;
 import javax.print.*;
@@ -189,7 +185,7 @@ public class PrintRaw implements PrintProcessor {
         try {
             WebApp.initialize(); //starts if not already started
 
-            WebAppModel model = new WebAppModel(data, !fromFile, opt.optInt("pageWidth"), opt.optInt("pageHeight"), false);
+            WebAppModel model = new WebAppModel(data, !fromFile, opt.optInt("pageWidth"), opt.optInt("pageHeight"), false, opt.optDouble("zoom"));
             bi = WebApp.raster(model);
         }
         catch(Throwable t) {

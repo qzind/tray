@@ -28,7 +28,7 @@ public class PDFWrapper implements Printable {
         this.document = document;
         this.scaling = scaling;
         if (orientation != null) {
-            this.orientation = orientation.getAsAttribute();
+            this.orientation = orientation.getAsOrientRequested();
         }
 
         printable = new PDFPrintable(document, scaling, showPageBorder, dpi, center);

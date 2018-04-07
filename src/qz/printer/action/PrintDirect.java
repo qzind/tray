@@ -31,12 +31,12 @@ public class PrintDirect extends PrintRaw {
     private static final Logger log = LoggerFactory.getLogger(PrintDirect.class);
 
     private ArrayList<String> prints = new ArrayList<>();
-    private ArrayList<PrintingUtilities.Format> formats = new ArrayList<>();
+    private ArrayList<PrintingUtilities.Flavor> flavors = new ArrayList<>();
 
 
     @Override
-    public PrintingUtilities.Type getType() {
-        return PrintingUtilities.Type.DIRECT;
+    public PrintingUtilities.Format getFormat() {
+        return PrintingUtilities.Format.DIRECT;
     }
 
     @Override
@@ -46,7 +46,7 @@ public class PrintDirect extends PrintRaw {
             if (data == null) { continue; }
 
             prints.add(data.getString("data"));
-            formats.add(PrintingUtilities.Format.valueOf(data.optString("format", "PLAIN").toUpperCase(Locale.ENGLISH)));
+            flavors.add(PrintingUtilities.Flavor.valueOf(data.optString("flavor", "PLAIN").toUpperCase(Locale.ENGLISH)));
         }
     }
 
@@ -60,7 +60,7 @@ public class PrintDirect extends PrintRaw {
             InputStream stream = null;
 
             try {
-                switch(formats.get(i)) {
+                switch(flavors.get(i)) {
                     case BASE64:
                         stream = new Base64InputStream(new ByteArrayInputStream(prints.get(i).getBytes("UTF-8")));
                         break;
@@ -91,7 +91,7 @@ public class PrintDirect extends PrintRaw {
     @Override
     public void cleanup() {
         prints.clear();
-        formats.clear();
+        flavors.clear();
     }
 
 }

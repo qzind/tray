@@ -4,8 +4,6 @@ matrix:
       env: TARGET=nsis
     - jdk: oraclejdk8
       env: TARGET=makeself
-    - jdk: openjdk7
-      env: TARGET=makeself
     - os: osx
       osx_image: xcode8.2
       env: TARGET=pkgbuild

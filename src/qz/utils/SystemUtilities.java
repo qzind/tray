@@ -20,6 +20,9 @@ import qz.deploy.DeployUtilities;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.util.List;
 
 /**
  * Utility class for OS detection functions.
@@ -35,6 +38,11 @@ public class SystemUtilities {
     private static String uname;
     private static String linuxRelease;
 
+    /**
+     * Sun property pointing the main class and its arguments.
+     * Might not be defined on non Hotspot VM implementations.
+     */
+    public static final String SUN_JAVA_COMMAND = "sun.java.command";
 
     /**
      * @return Lowercase version of the operating system name
@@ -48,12 +56,13 @@ public class SystemUtilities {
     /**
      * Provides a JDK9-friendly wrapper around the inconsistent and poorly standardized Java internal versioning.
      * This may eventually be superseded by <code>java.lang.Runtime.Version</code>, but the codebase will first need to be switched to JDK9 level.
+     *
      * @return Semantically formatted Java Runtime version
      */
     public static Version getJavaVersion() {
         String version = System.getProperty("java.version");
         String[] parts = version.split("\\D+");
-        switch (parts.length) {
+        switch(parts.length) {
             case 0:
                 return Version.forIntegers(1, 0, 0);
             case 1:
@@ -110,7 +119,6 @@ public class SystemUtilities {
 
     /**
      * Detect 32-bit JVM on 64-bit Windows
-     * @return
      */
     public static boolean isWow64() {
         String arch = System.getProperty("os.arch");
@@ -226,7 +234,8 @@ public class SystemUtilities {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             return true;
-        } catch (Exception e) {
+        }
+        catch(Exception e) {
             LoggerFactory.getLogger(SystemUtilities.class).warn("Error getting the default look and feel");
         }
         return false;
@@ -235,7 +244,8 @@ public class SystemUtilities {
     /**
      * Attempts to center a dialog provided a center point from a web browser at 96-dpi
      * Useful for tracking a browser window on multiple-monitor setups
-     * @param dialog A dialog whom's width and height are used for calculating center-fit position
+     *
+     * @param dialog   A dialog whom's width and height are used for calculating center-fit position
      * @param position The center point of a screen as calculated from a web browser at 96-dpi
      * @return <code>true</code> if the operation is successful
      */
@@ -244,7 +254,7 @@ public class SystemUtilities {
             log.debug("Invalid dialog position provided: {}, we'll center on first monitor instead", position);
             dialog.setLocationRelativeTo(null);
             return;
-        };
+        } ;
 
         //adjust for dpi scaling
         double dpiScale = getDpiScale();
@@ -258,9 +268,74 @@ public class SystemUtilities {
 
     /**
      * Shim for detecting default screen scaling per issue #284
+     *
      * @return Logical dpi scale as dpi/96
      */
     private static double getDpiScale() {
-        return SystemUtilities.isMac() ? 1 : Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+        return SystemUtilities.isMac()? 1:Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+    }
+
+    /**
+     * Restart the current Java application
+     *
+     * @param runBeforeRestart some custom code to be run before restarting
+     */
+    public static void restartApplication(Runnable runBeforeRestart) {
+        try {
+            // java binary
+            String java = System.getProperty("java.home") + "/bin/java";
+            // vm arguments
+            List<String> vmArguments = ManagementFactory.getRuntimeMXBean().getInputArguments();
+            StringBuilder vmArgsOneLine = new StringBuilder();
+            for(String arg : vmArguments) {
+                // if it's the agent argument : we ignore it otherwise the
+                // address of the old application and the new one will be in conflict
+                if (!arg.contains("-agentlib")) {
+                    vmArgsOneLine.append(arg);
+                    vmArgsOneLine.append(" ");
+                }
+            }
+            // init the command to execute, add the vm args
+            final StringBuffer cmd = new StringBuffer("\"" + java + "\" " + vmArgsOneLine);
+
+            // program main and program arguments
+            String[] mainCommand = System.getProperty(SUN_JAVA_COMMAND).split(" ");
+            // program main is a jar
+            if (mainCommand[0].endsWith(".jar")) {
+                // if it's a jar, add -jar mainJar
+                cmd.append("-jar ").append(new File(mainCommand[0]).getPath());
+            } else {
+                // else it's a .class, add the classpath and mainClass
+                cmd.append("-cp \"").append(System.getProperty("java.class.path")).append("\" ").append(mainCommand[0]);
+            }
+            // finally add program arguments
+            for(int i = 1; i < mainCommand.length; i++) {
+                cmd.append(" ");
+                cmd.append(mainCommand[i]);
+            }
+            // execute the command in a shutdown hook, to be sure that all the
+            // resources have been disposed before restarting the application
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    Runtime.getRuntime().exec(cmd.toString());
+
+                    // Give the process some time to start
+                    Thread.sleep(2000);
+                }
+                catch(IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }));
+            // execute some custom code before restarting
+            if (runBeforeRestart != null) {
+                runBeforeRestart.run();
+            }
+            // exit
+            System.exit(0);
+        }
+        catch(Exception e) {
+            // something went wrong
+            throw new RuntimeException("Error while trying to restart the application", e);
+        }
     }
 }

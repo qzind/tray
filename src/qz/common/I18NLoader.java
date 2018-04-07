@@ -3,16 +3,28 @@ package qz.common;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Locale;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
+import java.util.*;
+
+import static qz.utils.SystemUtilities.restartApplication;
+
 
 public class I18NLoader {
     private final static String I18N_LOCATION = "qz.common.resources.messages";
+    private final static String I18N_LOCALE_PROPERTY = "locale";
+    private final static String DEFAULT_LOCALE = "en";
 
     private static final Logger log = LoggerFactory.getLogger(I18NLoader.class);
 
-    private static ResourceBundle msg = Utf8ResourceBundle.getBundle(I18N_LOCATION);
+    private static ResourceBundle msg;
+    private static PropertyHelper prefs;
+
+    public static final List<Locale> SUPPORTED_LOCALES = Collections.unmodifiableList(Arrays.asList(
+            Locale.forLanguageTag("de"),
+            Locale.forLanguageTag("en"),
+            Locale.forLanguageTag("fr"),
+            Locale.forLanguageTag("zh-CN"),
+            Locale.forLanguageTag("zh-TW")
+    ));
 
     /**
      * Get localized strings
@@ -32,11 +44,30 @@ public class I18NLoader {
         }
     }
 
+    public static Locale getCurrentLocale() {
+        return Locale.forLanguageTag(prefs.getProperty(I18N_LOCALE_PROPERTY, DEFAULT_LOCALE));
+    }
+
     /**
      * Change Locale for the i18n system
+     *
      * @param locale Locale to change to
      */
     public static void changeLocale(Locale locale) {
-        msg = Utf8ResourceBundle.getBundle(I18N_LOCATION, locale);
+        prefs.setProperty(I18N_LOCALE_PROPERTY, locale.toLanguageTag());
+        prefs.save();
+
+        restartApplication(() -> log.info("restart because of locale change"));
+    }
+
+    /**
+     * set global user properties helper
+     *
+     * @param propertyHelper PropertyHelper
+     */
+    public static void setup(PropertyHelper propertyHelper) {
+        prefs = propertyHelper;
+        msg = Utf8ResourceBundle.getBundle(I18N_LOCATION, getCurrentLocale());
     }
 }
+

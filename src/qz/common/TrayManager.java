@@ -44,6 +44,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class TrayManager {
 
+    private static PropertyHelper prefs;
+
+    static {
+        prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
+        I18NLoader.setup(prefs);
+    }
+
     private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
 
     private boolean headless;
@@ -57,6 +64,7 @@ public class TrayManager {
     private ConfirmDialog confirmDialog;
     private GatewayDialog gatewayDialog;
     private AboutDialog aboutDialog;
+    private LanguageSelectionDialog languageSelectionDialog;
     private LogDialog logDialog;
     private SiteManagerDialog sitesDialog;
 
@@ -68,8 +76,6 @@ public class TrayManager {
 
     // The shortcut and startup helper
     private final DeployUtilities shortcutCreator;
-
-    private final PropertyHelper prefs;
 
     // Action to run when reload is triggered
     private Thread reloadThread;
@@ -83,9 +89,6 @@ public class TrayManager {
      */
     public TrayManager(boolean isHeadless) {
         name = Constants.ABOUT_TITLE + " " + Constants.VERSION;
-
-        prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
-
         headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || !SystemTray.isSupported();
         if (headless) {
             log.info("Running in headless mode");
@@ -176,6 +179,12 @@ public class TrayManager {
         anonymousItem.setState(Certificate.UNKNOWN.isBlocked());
         anonymousItem.addActionListener(anonymousListener);
 
+        JMenuItem changeLanguageItem = new JMenuItem(gettext("Change Language..."), iconCache.getIcon(IconCache.Icon.LANGUAGE_ICON));
+        changeLanguageItem.setMnemonic(KeyEvent.VK_C);
+        changeLanguageItem.addActionListener(changeLocaleListener);
+
+        languageSelectionDialog = new LanguageSelectionDialog(changeLanguageItem, iconCache);
+
         JMenuItem logItem = new JMenuItem(gettext("View Logs..."), iconCache.getIcon(IconCache.Icon.LOG_ICON));
         logItem.setMnemonic(KeyEvent.VK_L);
         logItem.addActionListener(logListener);
@@ -196,6 +205,7 @@ public class TrayManager {
         desktopItem.addActionListener(desktopListener);
 
         advancedMenu.add(sitesItem);
+        advancedMenu.add(changeLanguageItem);
         advancedMenu.add(anonymousItem);
         advancedMenu.add(logItem);
         advancedMenu.add(notificationsItem);
@@ -319,6 +329,12 @@ public class TrayManager {
     private final ActionListener aboutListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
             aboutDialog.setVisible(true);
+        }
+    };
+
+    private final ActionListener changeLocaleListener = new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+            languageSelectionDialog.setVisible(true);
         }
     };
 

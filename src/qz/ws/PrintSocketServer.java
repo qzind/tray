@@ -73,7 +73,7 @@ public class PrintSocketServer {
             System.exit(0);
         }
         // Print library list and exits
-        if ("-l".equals(s) || "--libinfo".equals(s)) {
+        if (sArgs.contains("-l") || sArgs.contains("--libinfo")) {
             String format = "%-40s%s%n";
             System.out.printf(format, "LIBRARY NAME:", "VERSION:");
             SortedMap<String, String> libVersions = SecurityInfo.getLibVersions();

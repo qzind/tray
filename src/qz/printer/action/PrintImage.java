@@ -26,7 +26,6 @@ import qz.utils.SystemUtilities;
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
-import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.OrientationRequested;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
@@ -133,7 +132,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         PageFormat page = job.getPageFormat(null);
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, (Media[])output.getPrintService().getSupportedAttributeValues(Media.class, null, null));
+        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
 
         scaleImage = pxlOpts.isScaleContent();
         interpolation = pxlOpts.getInterpolation();
@@ -141,7 +140,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
         //reverse fix for OSX
         if (SystemUtilities.isMac() && pxlOpts.getOrientation() != null
-                && pxlOpts.getOrientation().getAsAttribute() == OrientationRequested.REVERSE_LANDSCAPE) {
+                && pxlOpts.getOrientation().getAsOrientRequested() == OrientationRequested.REVERSE_LANDSCAPE) {
             imageRotation += 180;
             manualReverse = true;
         }

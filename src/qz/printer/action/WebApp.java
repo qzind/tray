@@ -52,6 +52,7 @@ public class WebApp extends Application {
     private static WebView webView;
     private static double pageHeight;
 
+    private static final AtomicBoolean startup = new AtomicBoolean(false);
     private static final AtomicBoolean complete = new AtomicBoolean(false);
     private static final AtomicReference<Throwable> thrown = new AtomicReference<>();
 
@@ -107,16 +108,17 @@ public class WebApp extends Application {
     public static synchronized void initialize() throws IOException {
         if (instance == null) {
             new Thread(() -> Application.launch(WebApp.class)).start();
+            startup.set(false);
         }
 
         for(int i = 0; i < STARTUP_PAUSE; i++) {
-            if (webView != null) { break; }
+            if (startup.get()) { break; }
 
             log.trace("Waiting for JavaFX..");
             try { Thread.sleep(1000); } catch(Exception ignore) {}
         }
 
-        if (webView == null) {
+        if (!startup.get()) {
             throw new IOException("JavaFX did not start");
         }
     }
@@ -124,6 +126,7 @@ public class WebApp extends Application {
     @Override
     public void start(Stage st) throws Exception {
         log.debug("Started JavaFX");
+        startup.set(true);
 
         webView = new WebView();
         st.setScene(new Scene(webView));

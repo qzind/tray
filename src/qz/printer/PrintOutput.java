@@ -5,6 +5,7 @@ import org.codehaus.jettison.json.JSONObject;
 import qz.utils.FileUtilities;
 
 import javax.print.PrintService;
+import javax.print.attribute.standard.Media;
 import java.io.File;
 
 public class PrintOutput {
@@ -76,6 +77,10 @@ public class PrintOutput {
 
     public int getPort() {
         return port;
+    }
+
+    public Media[] getSupportedMedia() {
+        return (Media[])service.getSupportedAttributeValues(Media.class, null, null);
     }
 
 }

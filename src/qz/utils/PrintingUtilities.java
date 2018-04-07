@@ -33,11 +33,11 @@ public class PrintingUtilities {
     private PrintingUtilities() {}
 
     public enum Type {
-        PIXEL, RAW, DIRECT
+        PIXEL, RAW
     }
 
     public enum Format {
-        COMMAND, HTML, IMAGE, PDF
+        COMMAND, DIRECT, HTML, IMAGE, PDF
     }
 
     public enum Flavor {

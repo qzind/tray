@@ -24,23 +24,18 @@ import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
 
+import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.Copies;
 import javax.print.attribute.standard.CopiesSupported;
-import java.awt.print.PrinterException;
-import javax.print.attribute.PrintRequestAttributeSet;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.print.PageFormat;
-import java.awt.print.Printable;
 import java.awt.print.PrinterException;
-import java.awt.print.PrinterJob;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -76,6 +71,9 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
                 PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
 
+                double pageZoom = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()) / 72.0;
+                if (pageZoom <= 1 || data.optBoolean("forceOriginal")) { pageZoom = 1; }
+
                 double pageWidth = 0;
                 double pageHeight = 0;
 
@@ -97,7 +95,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                     }
                 }
 
-                models.add(new WebAppModel(source, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, pxlOpts.isScaleContent()));
+                models.add(new WebAppModel(source, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, pxlOpts.isScaleContent(), pageZoom));
             }
 
             log.debug("Parsed {} html records", models.size());
@@ -241,11 +239,11 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
     private void printLegacy(PrintOutput output, PrintOptions options) throws PrinterException {
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
 
-        PrinterJob job = PrinterJob.getPrinterJob();
+        java.awt.print.PrinterJob job = java.awt.print.PrinterJob.getPrinterJob();
         job.setPrintService(output.getPrintService());
         PageFormat page = job.getPageFormat(null);
 
-        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page);
+        PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
 
         //setup swing ui
         JFrame legacyFrame = new JFrame(pxlOpts.getJobName(Constants.HTML_PRINT));
@@ -264,10 +262,10 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
         try {
             for(WebAppModel model : models) {
                 if (model.isPlainText()) {
-                    legacyLabel.setText(model.getSource());
+                    legacyLabel.setText(cleanHtmlContent(model.getSource()));
                 } else {
                     try(InputStream fis = new URL(model.getSource()).openStream()) {
-                        String webPage = IOUtils.toString(fis, "UTF-8").replaceAll("^[\\s\\S]+<(HTML|html)\\b.*?>", "<html>");
+                        String webPage = cleanHtmlContent(IOUtils.toString(fis, "UTF-8"));
                         legacyLabel.setText(webPage);
                     }
                 }
@@ -287,10 +285,14 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
         }
     }
 
+    private String cleanHtmlContent(String html) {
+        return html.replaceAll("^[\\s\\S]*<(HTML|html)\\b.*?>", "<html>");
+    }
+
     @Override
     public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
         if (legacyLabel == null) {
-            super.print(graphics, pageFormat, pageIndex);
+            return super.print(graphics, pageFormat, pageIndex);
         } else {
             if (graphics == null) { throw new PrinterException("No graphics specified"); }
             if (pageFormat == null) { throw new PrinterException("No page format specified"); }

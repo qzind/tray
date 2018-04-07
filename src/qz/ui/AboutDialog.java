@@ -3,6 +3,7 @@ package qz.ui;
 import org.eclipse.jetty.server.*;
 import qz.common.Constants;
 import qz.common.SecurityInfo;
+import static qz.common.I18NLoader.gettext;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -60,21 +61,21 @@ public class AboutDialog extends BasicDialog {
         gridPanel.setLayout(new GridLayout(5, 2));
         gridPanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
 
-        wsLabel = new JLabel("None");
-        wssLabel = new JLabel("None.  No https support.");
+        wsLabel = new JLabel(gettext("None"));
+        wssLabel = new JLabel(gettext("None.  No https support."));
         wssLabel.setForeground(Constants.WARNING_COLOR);
         wssLabel.setFont(wsLabel.getFont().deriveFont(Font.BOLD));
 
-        gridPanel.add(createLabel("Software:", true));
+        gridPanel.add(createLabel(gettext("Software:"), true));
         gridPanel.add(createLabel(name));
 
-        gridPanel.add(createLabel("Secure Socket:", true));
+        gridPanel.add(createLabel(gettext("Secure Socket:"), true));
         gridPanel.add(wssLabel);
 
-        gridPanel.add(createLabel("Fallback Socket:", true));
+        gridPanel.add(createLabel(gettext("Fallback Socket:"), true));
         gridPanel.add(wsLabel);
 
-        gridPanel.add(createLabel("Publisher:", true));
+        gridPanel.add(createLabel(gettext("Publisher:"), true));
         try {
             gridPanel.add(new LinkLabel(new URL(Constants.ABOUT_URL)));
         }

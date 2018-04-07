@@ -30,9 +30,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
-import qz.common.Constants;
-import qz.common.SecurityInfo;
-import qz.common.TrayManager;
+import qz.common.*;
 import qz.deploy.DeployUtilities;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
@@ -63,7 +61,6 @@ public class PrintSocketServer {
     private static Properties trayProperties;
 
     private static boolean headless;
-
 
     public static void main(String[] args) {
         List<String> sArgs = Arrays.asList(args);

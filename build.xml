@@ -4,12 +4,20 @@
     <property file="ant/project.properties"/>
     <import file="ant/javafx.xml"/>
 
-    <target name="distribute" depends="init,clean,sign-jar,download-javafx,override-authcert,include-assets">
+    <target name="distribute" depends="init,clean,sign-jar,download-javafx,override-authcert,extract-gettext,include-assets">
         <echo message="Process complete" />
     </target>
 
     <target name="init">
+
+        <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
+
         <property environment="env"/>
+
+        <property name="task.src.dir" value="${basedir}/ant/tasks/src"/>
+        <property name="task.classes.dir" value="${basedir}/out/tasks/classes"/>
+        <property name="task.jar" value="${basedir}/out/tasks/extractGettextTask.jar"/>
+
 
         <!-- Your custom code signing properties here. Feel free to change. -->
         <!-- The project will default to qz.ks if it doesn't exist -->
@@ -43,6 +51,8 @@
 
     <target name="clean" depends="init">
         <delete dir="${out.dir}"/>
+        <delete dir="${task.classes.dir}" failonerror="false"/>
+        <delete file="${task.jar}"/>
     </target>
 
     <target name="compile-socket" depends="init">
@@ -164,6 +174,20 @@
         <echo>Bundling with manual cert for signing auth: ${authcert.use}</echo>
         <copy file="${authcert.use}" tofile="${authcert.build}" overwrite="true"></copy>
         <property name="build.type" value="-community"/>
+    </target>
+
+    <target name="build-extract-gettext-task" description="Build and JARs the Extract gettext Ant Task" depends="init">
+        <mkdir dir="${task.classes.dir}"/>
+        <javac srcdir="${task.src.dir}" destdir="${task.classes.dir}"/>
+        <jar destfile="${task.jar}" basedir="${task.classes.dir}"/>
+    </target>
+
+    <target name="extract-gettext" depends="build-extract-gettext-task">
+        <taskdef name="extractGettext" classname="qz.ExtractGettext" classpath="${task.jar}"/>
+        <extractGettext
+                src="${src.dir}"
+                translations="${src.dir}/qz/common/resources"
+        />
     </target>
 
     <target name="include-assets" depends="init,get-version" unless="dist.minimal">

@@ -156,7 +156,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
             images = split;
         }
 
-        job.setJobName(pxlOpts.getJobName(Constants.IMAGE_PRINT));
+        job.setJobName(pxlOpts.getJobName(Constants.IMAGE_PRINT.get()));
         job.setPrintable(this, job.validatePage(page));
 
         printCopies(output, pxlOpts, job, attributes);

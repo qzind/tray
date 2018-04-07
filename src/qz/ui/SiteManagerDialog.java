@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.common.Constants;
 import qz.utils.FileUtilities;
+import static qz.common.I18NLoader.gettext;
 
 import javax.swing.*;
 import javax.swing.event.ListDataEvent;
@@ -63,20 +64,20 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         splitPane.setResizeWeight(0.5);
 
         tabbedPane = new JTabbedPane();
-        appendListTab(allowList.getList(), Constants.ALLOWED, IconCache.Icon.ALLOW_ICON, KeyEvent.VK_A);
-        appendListTab(blockList.getList(), Constants.BLOCKED, IconCache.Icon.BLOCK_ICON, KeyEvent.VK_B);
+        appendListTab(allowList.getList(), Constants.ALLOWED.get(), IconCache.Icon.ALLOW_ICON, KeyEvent.VK_A);
+        appendListTab(blockList.getList(), Constants.BLOCKED.get(), IconCache.Icon.BLOCK_ICON, KeyEvent.VK_B);
 
-        setHeader(tabbedPane.getSelectedIndex() == 0? Constants.WHITE_SITES:Constants.BLACK_SITES);
+        setHeader(tabbedPane.getSelectedIndex() == 0? Constants.WHITE_SITES.get():Constants.BLACK_SITES.get());
 
         tabbedPane.addChangeListener(e -> {
             clearSelection();
 
             switch(tabbedPane.getSelectedIndex()) {
-                case 1: setHeader(Constants.BLACK_SITES);
+                case 1: setHeader(Constants.BLACK_SITES.get());
                     blockList.getList().setSelectedIndex(0);
                     break;
                 default:
-                    setHeader(Constants.WHITE_SITES);
+                    setHeader(Constants.WHITE_SITES.get());
                     allowList.getList().setSelectedIndex(0);
             }
         });
@@ -117,7 +118,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         });
 
         // TODO:  Add certificate manual import capabilities
-        deleteButton = addPanelButton("Delete", IconCache.Icon.DELETE_ICON, KeyEvent.VK_D);
+        deleteButton = addPanelButton(gettext("Delete"), IconCache.Icon.DELETE_ICON, KeyEvent.VK_D);
         deleteButton.addActionListener(e -> {
             deleteCertificate.set(getSelectedCertificate());
             deleteButton.setEnabled(false);

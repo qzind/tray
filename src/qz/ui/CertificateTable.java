@@ -3,6 +3,7 @@ package qz.ui;
 import org.joor.Reflect;
 import qz.auth.Certificate;
 import qz.common.Constants;
+import static qz.common.I18NLoader.gettext;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -19,12 +20,12 @@ public class CertificateTable extends JTable {
      * Certificate fields to be displayed (and the corresponding function to Reflect upon)
      */
     enum CertificateField {
-        ORGANIZATION("Organization", "getOrganization"),
-        COMMON_NAME("Common Name", "getCommonName"),
-        TRUSTED("Trusted", "isTrusted"),
-        VALID_FROM("Valid From", "getValidFrom"),
-        VALID_TO("Valid To", "getValidTo"),
-        FINGERPRINT("Fingerprint", "getFingerprint");
+        ORGANIZATION(gettext("Organization"), "getOrganization"),
+        COMMON_NAME(gettext("Common Name"), "getCommonName"),
+        TRUSTED(gettext("Trusted"), "isTrusted"),
+        VALID_FROM(gettext("Valid From"), "getValidFrom"),
+        VALID_TO(gettext("Valid To"), "getValidTo"),
+        FINGERPRINT(gettext("Fingerprint"), "getFingerprint");
 
         String description;
         String callBack;
@@ -89,8 +90,8 @@ public class CertificateTable extends JTable {
             @Override
             public boolean isCellEditable(int x, int y) { return false; }
         };
-        model.addColumn("Field");
-        model.addColumn("Value");
+        model.addColumn(gettext("Field"));
+        model.addColumn(gettext("Value"));
 
         getTableHeader().setReorderingAllowed(false);
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -191,7 +192,7 @@ public class CertificateTable extends JTable {
             if (field == null) { return stylizeLabel(STATUS_NORMAL, label, isSelected); }
             switch(field) {
                 case TRUSTED:
-                    label.setText(cert.isTrusted()? Constants.TRUSTED_PUBLISHER:Constants.UNTRUSTED_PUBLISHER);
+                    label.setText(cert.isTrusted()? Constants.TRUSTED_PUBLISHER.get():Constants.UNTRUSTED_PUBLISHER.get());
                     return stylizeLabel(!cert.isTrusted()? STATUS_WARNING:STATUS_TRUSTED, label, isSelected);
                 case VALID_FROM:
                     boolean futureExpiration = cert.getValidFromDate().compareTo(now.getTime()) > 0;
@@ -199,7 +200,7 @@ public class CertificateTable extends JTable {
                 case VALID_TO:
                     boolean expiresSoon = cert.getValidToDate().compareTo(warn.getTime()) < 0;
                     boolean expired = cert.getValidToDate().compareTo(now.getTime()) < 0;
-                    String reason = expiresSoon? "expired":"expires soon";
+                    String reason = expiresSoon? gettext("expired") : gettext("expires soon");
                     return stylizeLabel(expiresSoon || expired? STATUS_WARNING:STATUS_NORMAL, label, isSelected, reason);
                 default:
                     return stylizeLabel(STATUS_NORMAL, label, isSelected);

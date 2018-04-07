@@ -1,5 +1,7 @@
 package qz.ui;
 
+import static qz.common.I18NLoader.gettext;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -42,12 +44,12 @@ public class ConfirmDialog extends JDialog {
         descriptionPanel.add(questionLabel);
         descriptionPanel.add(messageLabel);
         descriptionPanel.setBorder(new EmptyBorder(3, 3, 3, 3));
-        messageLabel.setText("Are you sure?");
+        messageLabel.setText(gettext("Are you sure?"));
 
         optionsPanel = new JPanel();
-        yesButton = new JButton("OK", iconCache.getIcon(IconCache.Icon.ALLOW_ICON));
+        yesButton = new JButton(gettext("OK"), iconCache.getIcon(IconCache.Icon.ALLOW_ICON));
         yesButton.setMnemonic(KeyEvent.VK_K);
-        noButton = new JButton("Cancel", iconCache.getIcon(IconCache.Icon.CANCEL_ICON));
+        noButton = new JButton(gettext("Cancel"), iconCache.getIcon(IconCache.Icon.CANCEL_ICON));
         noButton.setMnemonic(KeyEvent.VK_C);
         yesButton.addActionListener(buttonAction);
         noButton.addActionListener(buttonAction);
@@ -105,4 +107,3 @@ public class ConfirmDialog extends JDialog {
         return isApproved();
     }
 }
-

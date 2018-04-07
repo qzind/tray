@@ -38,8 +38,8 @@ public class AboutDialog extends BasicDialog {
             GridLayout layout = (GridLayout)gridPanel.getLayout();
             layout.setRows(layout.getRows() + libVersions.size());
 
-            gridPanel.add(createLabel("Library Name:", true));
-            gridPanel.add(createLabel("Version:", true));
+            gridPanel.add(createLabel(gettext("Library Name:"), true));
+            gridPanel.add(createLabel(gettext("Version:"), true));
             for (Map.Entry<String, String> entry: libVersions.entrySet()) {
                 gridPanel.add(createLabel("    " + entry.getKey(), false));
                 gridPanel.add(createLabel("    "  + (entry.getValue() == null ? "(unknown)" : entry.getValue()), false));

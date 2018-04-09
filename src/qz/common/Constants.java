@@ -5,11 +5,16 @@ import qz.utils.SystemUtilities;
 import static qz.common.I18NLoader.gettext;
 
 import java.awt.*;
+import java.io.File;
 
 /**
  * Created by robert on 7/9/2014.
  */
 public class Constants {
+    public static final PropertyHelper USER_PREFS = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties", true);
+    static {
+        I18NLoader.setup(USER_PREFS);
+    }
     public static final String HEXES = "0123456789ABCDEF";
     public static final char[] HEXES_ARRAY = HEXES.toCharArray();
     public static final int BYTE_BUFFER_SIZE = 8192;

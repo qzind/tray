@@ -26,6 +26,7 @@ import qz.ui.tray.ModernTrayIcon;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
+import static qz.common.Constants.USER_PREFS;
 import static qz.common.I18NLoader.gettext;
 
 import javax.swing.*;
@@ -33,7 +34,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,14 +44,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Tres Finocchiaro
  */
 public class TrayManager {
-
-    private static PropertyHelper prefs;
-
-    static {
-        prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
-        I18NLoader.setup(prefs);
-    }
-
     private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
 
     private boolean headless;
@@ -89,7 +81,7 @@ public class TrayManager {
      */
     public TrayManager(boolean isHeadless) {
         name = Constants.ABOUT_TITLE + " " + Constants.VERSION;
-        headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || !SystemTray.isSupported();
+        headless = isHeadless || USER_PREFS.getBoolean(Constants.PREFS_HEADLESS, false) || !SystemTray.isSupported();
         if (headless) {
             log.info("Running in headless mode");
         }
@@ -191,7 +183,7 @@ public class TrayManager {
         JCheckBoxMenuItem notificationsItem = new JCheckBoxMenuItem(gettext("Show all notifications"));
         notificationsItem.setToolTipText(gettext("Shows all connect/disconnect messages, useful for debugging purposes"));
         notificationsItem.setMnemonic(KeyEvent.VK_S);
-        notificationsItem.setState(prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false));
+        notificationsItem.setState(USER_PREFS.getBoolean(Constants.PREFS_NOTIFICATIONS, false));
         notificationsItem.addActionListener(notificationsListener);
 
         JMenuItem openItem = new JMenuItem(gettext("Open file location"), iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
@@ -267,7 +259,7 @@ public class TrayManager {
         @Override
         public void actionPerformed(ActionEvent e) {
             JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
-            prefs.setProperty(Constants.PREFS_NOTIFICATIONS, j.getState());
+            USER_PREFS.setProperty(Constants.PREFS_NOTIFICATIONS, j.getState());
         }
     };
 
@@ -343,14 +335,14 @@ public class TrayManager {
 
     private final ActionListener exitListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
-            boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
+            boolean showAllNotifications = USER_PREFS.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
             //: %s will be replaced by the name of the software in runtime
             if (!showAllNotifications || confirmDialog.prompt(String.format(gettext("Exit %s?"), name))) { exit(0); }
         }
     };
 
     public void exit(int returnCode) {
-        prefs.save();
+        USER_PREFS.save();
         System.exit(returnCode);
     }
 
@@ -563,7 +555,7 @@ public class TrayManager {
         if (!headless) {
             if (tray != null) {
                 SwingUtilities.invokeLater(() -> {
-                    boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
+                    boolean showAllNotifications = USER_PREFS.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
                     if (showAllNotifications || level == TrayIcon.MessageType.ERROR) {
                         tray.displayMessage(caption, text, level);
                     }

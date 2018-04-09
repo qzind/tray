@@ -32,11 +32,12 @@ public class PropertyHelper extends Properties {
     /**
      * Custom constructor, attempts to load from file
      * @param file File to load properties from
+     * @param silent Suppresses console warnings on failed load
      */
-    public PropertyHelper(String file) {
+    public PropertyHelper(String file, boolean silent) {
         super();
         this.file = file;
-        load(file);
+        load(file, silent);
     }
 
     public boolean getBoolean(String key, boolean defaultVal) {
@@ -51,13 +52,15 @@ public class PropertyHelper extends Properties {
         setProperty(key, "" + value);
     }
 
-    public void load(String file) {
+    public void load(String file, boolean silent) {
         FileInputStream f = null;
         try {
             f = new FileInputStream(file);
             load(f);
         } catch (IOException e) {
-            log.warn("Could not load file: {}, reason: {}", file, e.getLocalizedMessage());
+            if (!silent) {
+                log.warn("Could not load file: {}, reason: {}", file, e.getLocalizedMessage());
+            }
         } finally {
             if (f != null) {
                 try { f.close(); } catch(Throwable ignore) {};

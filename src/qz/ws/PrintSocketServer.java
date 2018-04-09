@@ -77,8 +77,8 @@ public class PrintSocketServer {
         if (sArgs.contains("-l") || sArgs.contains("--libinfo")) {
             String format = "%-40s%s%n";
             System.out.printf(format, "LIBRARY NAME:", "VERSION:");
-            SortedMap<String,String> libVersions = SecurityInfo.getLibVersions();
-            for(Map.Entry<String,String> entry : libVersions.entrySet()) {
+            SortedMap<String, String> libVersions = SecurityInfo.getLibVersions();
+            for (Map.Entry<String, String> entry: libVersions.entrySet()) {
                 if (entry.getValue() == null) {
                     System.out.printf(format, entry.getKey(), "(unknown)");
                 } else {

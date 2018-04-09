@@ -56,13 +56,12 @@ public class SystemUtilities {
     /**
      * Provides a JDK9-friendly wrapper around the inconsistent and poorly standardized Java internal versioning.
      * This may eventually be superseded by <code>java.lang.Runtime.Version</code>, but the codebase will first need to be switched to JDK9 level.
-     *
      * @return Semantically formatted Java Runtime version
      */
     public static Version getJavaVersion() {
         String version = System.getProperty("java.version");
         String[] parts = version.split("\\D+");
-        switch(parts.length) {
+        switch (parts.length) {
             case 0:
                 return Version.forIntegers(1, 0, 0);
             case 1:
@@ -119,6 +118,7 @@ public class SystemUtilities {
 
     /**
      * Detect 32-bit JVM on 64-bit Windows
+     * @return
      */
     public static boolean isWow64() {
         String arch = System.getProperty("os.arch");
@@ -234,8 +234,7 @@ public class SystemUtilities {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             return true;
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             LoggerFactory.getLogger(SystemUtilities.class).warn("Error getting the default look and feel");
         }
         return false;
@@ -244,8 +243,7 @@ public class SystemUtilities {
     /**
      * Attempts to center a dialog provided a center point from a web browser at 96-dpi
      * Useful for tracking a browser window on multiple-monitor setups
-     *
-     * @param dialog   A dialog whom's width and height are used for calculating center-fit position
+     * @param dialog A dialog whom's width and height are used for calculating center-fit position
      * @param position The center point of a screen as calculated from a web browser at 96-dpi
      * @return <code>true</code> if the operation is successful
      */
@@ -254,7 +252,7 @@ public class SystemUtilities {
             log.debug("Invalid dialog position provided: {}, we'll center on first monitor instead", position);
             dialog.setLocationRelativeTo(null);
             return;
-        } ;
+        };
 
         //adjust for dpi scaling
         double dpiScale = getDpiScale();
@@ -268,11 +266,10 @@ public class SystemUtilities {
 
     /**
      * Shim for detecting default screen scaling per issue #284
-     *
      * @return Logical dpi scale as dpi/96
      */
     private static double getDpiScale() {
-        return SystemUtilities.isMac()? 1:Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+        return SystemUtilities.isMac() ? 1 : Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
     }
 
     /**

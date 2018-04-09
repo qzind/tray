@@ -15,9 +15,6 @@ public class I18NLoader {
 
     private static final Logger log = LoggerFactory.getLogger(I18NLoader.class);
 
-    private static ResourceBundle msg;
-    private static PropertyHelper prefs;
-
     public static final List<Locale> SUPPORTED_LOCALES = Collections.unmodifiableList(Arrays.asList(
             Locale.forLanguageTag("de"),
             Locale.forLanguageTag("en"),
@@ -25,6 +22,12 @@ public class I18NLoader {
             Locale.forLanguageTag("zh-CN"),
             Locale.forLanguageTag("zh-TW")
     ));
+
+
+    private static I18NLoader instance;
+
+    private ResourceBundle msg;
+    private PropertyHelper prefs;
 
     /**
      * Get localized strings
@@ -35,7 +38,7 @@ public class I18NLoader {
 
     public static String gettext(String id) {
         try {
-            return msg.getString(id);
+            return getInstance().msg.getString(id);
         }
         catch(MissingResourceException e) {
             // fail-safe action, we'll just return original string
@@ -44,8 +47,15 @@ public class I18NLoader {
         }
     }
 
+    public static I18NLoader getInstance() {
+        if (instance == null) {
+            instance = new I18NLoader();
+        }
+        return instance;
+    }
+
     public static Locale getCurrentLocale() {
-        return Locale.forLanguageTag(prefs.getProperty(I18N_LOCALE_PROPERTY, DEFAULT_LOCALE));
+        return Locale.forLanguageTag(getInstance().prefs.getProperty(I18N_LOCALE_PROPERTY, DEFAULT_LOCALE));
     }
 
     /**
@@ -54,8 +64,8 @@ public class I18NLoader {
      * @param locale Locale to change to
      */
     public static void changeLocale(Locale locale) {
-        prefs.setProperty(I18N_LOCALE_PROPERTY, locale.toLanguageTag());
-        prefs.save();
+        getInstance().prefs.setProperty(I18N_LOCALE_PROPERTY, locale.toLanguageTag());
+        getInstance().prefs.save();
 
         restartApplication(() -> log.info("restart because of locale change"));
     }
@@ -66,8 +76,8 @@ public class I18NLoader {
      * @param propertyHelper PropertyHelper
      */
     public static void setup(PropertyHelper propertyHelper) {
-        prefs = propertyHelper;
-        msg = Utf8ResourceBundle.getBundle(I18N_LOCATION, getCurrentLocale());
+        getInstance().prefs = propertyHelper;
+        getInstance().msg = Utf8ResourceBundle.getBundle(I18N_LOCATION, getCurrentLocale());
     }
 }
 

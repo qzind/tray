@@ -1,7 +1,7 @@
 package qz.ui;
 
 import qz.auth.Certificate;
-import qz.common.Constants;
+import qz.common.ConstantLabels;
 import qz.utils.SystemUtilities;
 import static qz.common.I18NLoader.gettext;
 
@@ -121,7 +121,7 @@ public class GatewayDialog extends JDialog {
             // Require confirmation for permanent block
             if (!approved && persistentCheckBox.isSelected()) {
                 ConfirmDialog confirmDialog = new ConfirmDialog(null, gettext("Please Confirm"), iconCache);
-                String message = Constants.BLACK_LIST_PROMPT;
+                String message = ConstantLabels.BLACK_LIST_PROMPT;
                 message = String.format(message, cert == null? "":cert.getCommonName());
                 if (!confirmDialog.prompt(message)) {
                     return;
@@ -136,7 +136,7 @@ public class GatewayDialog extends JDialog {
             // TODO:  Add name, publisher
             descriptionLabel.setText("<html>" +
                                              String.format(description, "<p>" + cert.getCommonName()) +
-                                             "</p><strong>" + (cert.isTrusted()? Constants.TRUSTED_PUBLISHER:Constants.UNTRUSTED_PUBLISHER) + "</strong>" +
+                                             "</p><strong>" + (cert.isTrusted()? ConstantLabels.TRUSTED_PUBLISHER:ConstantLabels.UNTRUSTED_PUBLISHER) + "</strong>" +
                                              "</html>");
             certInfoLabel.setText(gettext("Certificate information"));
             verifiedLabel.setIcon(iconCache.getIcon(cert.isTrusted()? IconCache.Icon.VERIFIED_ICON:IconCache.Icon.UNVERIFIED_ICON));

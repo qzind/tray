@@ -2,7 +2,6 @@ package qz.common;
 
 import com.github.zafarkhaja.semver.Version;
 import qz.utils.SystemUtilities;
-import static qz.common.I18NLoader.gettext;
 
 import java.awt.*;
 
@@ -31,11 +30,8 @@ public class Constants {
     public static final int BORDER_PADDING = 10;
 
     public static final String ABOUT_TITLE = "QZ Tray";
-    public static final String ABOUT_URL = "https://qz.io";
     public static final String ABOUT_COMPANY = "QZ Industries, LLC";
-
-    public static final String TRUSTED_PUBLISHER = String.format(gettext("Verified by %s"), Constants.ABOUT_COMPANY);
-    public static final String UNTRUSTED_PUBLISHER = gettext("Untrusted website");
+    public static final String ABOUT_URL = "https://qz.io";
 
     public static final String PROBE_REQUEST = "getProgramName";
     public static final String PROBE_RESPONSE = ABOUT_TITLE;
@@ -43,26 +39,10 @@ public class Constants {
     public static final String PREFS_NOTIFICATIONS = "tray.notifications";
     public static final String PREFS_HEADLESS = "tray.headless";
 
-    public static final String WHITE_LIST = gettext("Permanently allowed \"%s\" to access local resources");
-    public static final String BLACK_LIST = gettext("Permanently blocked \"%s\" from accessing local resources");
-    public static final String BLACK_LIST_PROMPT = gettext("Permanently block \"%s\" from accessing local resources?");
-
-    public static final String WHITE_SITES = gettext("Sites permanently allowed access");
-    public static final String BLACK_SITES = gettext("Sites permanently blocked from access");
-
-    public static final String ALLOWED = gettext("Allowed");
-    public static final String BLOCKED = gettext("Blocked");
-
     public static final long VALID_SIGNING_PERIOD = 15 * 60 * 1000; //millis
     public static final int EXPIRY_WARN = 30;   // days
     public static final Color WARNING_COLOR = Color.RED;
     public static final Color TRUSTED_COLOR = Color.BLUE;
 
     public static final long MEMORY_PER_PRINT = 512; //MB
-
-    public static final String RAW_PRINT = String.format(gettext("%s Raw Print"), ABOUT_TITLE);
-    public static final String IMAGE_PRINT = String.format(gettext("%s Pixel Print"), ABOUT_TITLE);
-    public static final String PDF_PRINT = String.format(gettext("%s PDF Print"), ABOUT_TITLE);
-    public static final String HTML_PRINT = String.format(gettext("%s HTML Print"), ABOUT_TITLE);
-
 }

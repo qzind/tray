@@ -19,7 +19,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.common.Constants;
+import qz.common.ConstantLabels;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
@@ -141,7 +141,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             // apply option settings
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
             JobSettings settings = job.getJobSettings();
-            settings.setJobName(pxlOpts.getJobName(Constants.HTML_PRINT));
+            settings.setJobName(pxlOpts.getJobName(ConstantLabels.HTML_PRINT));
             settings.setPrintQuality(PrintQuality.HIGH);
 
             if (pxlOpts.getColorType() != null) {
@@ -246,7 +246,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
 
         //setup swing ui
-        JFrame legacyFrame = new JFrame(pxlOpts.getJobName(Constants.HTML_PRINT));
+        JFrame legacyFrame = new JFrame(pxlOpts.getJobName(ConstantLabels.HTML_PRINT));
         legacyFrame.setUndecorated(true);
         legacyFrame.setLayout(new FlowLayout());
         legacyFrame.setExtendedState(Frame.ICONIFIED);

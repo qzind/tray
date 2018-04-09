@@ -16,7 +16,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.common.Constants;
+import qz.common.ConstantLabels;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.ConnectionUtilities;
@@ -154,7 +154,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
             images = split;
         }
 
-        job.setJobName(pxlOpts.getJobName(Constants.IMAGE_PRINT));
+        job.setJobName(pxlOpts.getJobName(ConstantLabels.IMAGE_PRINT));
         job.setPrintable(this, job.validatePage(page));
 
         printCopies(output, pxlOpts, job, attributes);

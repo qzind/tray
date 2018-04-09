@@ -14,7 +14,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.common.Constants;
+import qz.common.ConstantLabels;
 import qz.printer.BookBundle;
 import qz.printer.PDFWrapper;
 import qz.printer.PrintOptions;
@@ -190,7 +190,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             bundle.append(new PDFWrapper(doc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation()), page, doc.getNumberOfPages());
         }
 
-        job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));
+        job.setJobName(pxlOpts.getJobName(ConstantLabels.PDF_PRINT));
         job.setPageable(bundle.wrapAndPresent());
 
         printCopies(output, pxlOpts, job, attributes);

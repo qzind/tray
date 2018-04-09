@@ -3,6 +3,7 @@ package qz.ui;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
+import qz.common.ConstantLabels;
 import qz.common.Constants;
 import qz.utils.FileUtilities;
 import static qz.common.I18NLoader.gettext;
@@ -64,20 +65,20 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         splitPane.setResizeWeight(0.5);
 
         tabbedPane = new JTabbedPane();
-        appendListTab(allowList.getList(), Constants.ALLOWED, IconCache.Icon.ALLOW_ICON, KeyEvent.VK_A);
-        appendListTab(blockList.getList(), Constants.BLOCKED, IconCache.Icon.BLOCK_ICON, KeyEvent.VK_B);
+        appendListTab(allowList.getList(), ConstantLabels.ALLOWED, IconCache.Icon.ALLOW_ICON, KeyEvent.VK_A);
+        appendListTab(blockList.getList(), ConstantLabels.BLOCKED, IconCache.Icon.BLOCK_ICON, KeyEvent.VK_B);
 
-        setHeader(tabbedPane.getSelectedIndex() == 0? Constants.WHITE_SITES:Constants.BLACK_SITES);
+        setHeader(tabbedPane.getSelectedIndex() == 0? ConstantLabels.WHITE_SITES:ConstantLabels.BLACK_SITES);
 
         tabbedPane.addChangeListener(e -> {
             clearSelection();
 
             switch(tabbedPane.getSelectedIndex()) {
-                case 1: setHeader(Constants.BLACK_SITES);
+                case 1: setHeader(ConstantLabels.BLACK_SITES);
                     blockList.getList().setSelectedIndex(0);
                     break;
                 default:
-                    setHeader(Constants.WHITE_SITES);
+                    setHeader(ConstantLabels.WHITE_SITES);
                     allowList.getList().setSelectedIndex(0);
             }
         });
@@ -96,7 +97,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             public void contentsChanged(ListDataEvent e) { refreshTabTitle(); }
 
             public void refreshTabTitle() {
-                String title = Constants.ALLOWED + (String.format(allowListModel.getSize() > 0? " (%s)":"", allowListModel.getSize()));
+                String title = ConstantLabels.ALLOWED + (String.format(allowListModel.getSize() > 0? " (%s)":"", allowListModel.getSize()));
                 tabbedPane.setTitleAt(0, title);
             }
         });
@@ -112,7 +113,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             public void contentsChanged(ListDataEvent e) { refreshTabTitle(); }
 
             public void refreshTabTitle() {
-                String title = Constants.BLOCKED + (String.format(blockListModel.getSize() > 0? " (%s)":"", blockListModel.getSize()));
+                String title = ConstantLabels.BLOCKED + (String.format(blockListModel.getSize() > 0? " (%s)":"", blockListModel.getSize()));
                 tabbedPane.setTitleAt(1, title);
             }
         });

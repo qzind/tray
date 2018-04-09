@@ -45,13 +45,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class TrayManager {
 
-    private static PropertyHelper prefs;
-
-    static {
-        prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
-        I18NLoader.setup(prefs);
-    }
-
     private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
 
     private boolean headless;
@@ -77,6 +70,8 @@ public class TrayManager {
     // The shortcut and startup helper
     private final DeployUtilities shortcutCreator;
 
+    private final PropertyHelper prefs;
+
     // Action to run when reload is triggered
     private Thread reloadThread;
 
@@ -89,6 +84,9 @@ public class TrayManager {
      */
     public TrayManager(boolean isHeadless) {
         name = Constants.ABOUT_TITLE + " " + Constants.VERSION;
+
+        prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
+
         headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || !SystemTray.isSupported();
         if (headless) {
             log.info("Running in headless mode");

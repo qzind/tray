@@ -56,10 +56,6 @@ public class PrintSocketServer {
 
     private static boolean headless;
 
-    static {
-        I18NLoader.setup(new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties"));
-    }
-
     public static void main(String[] args) {
         List<String> sArgs = Arrays.asList(args);
 

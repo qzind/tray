@@ -2,7 +2,9 @@ package qz.common;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.SystemUtilities;
 
+import java.io.File;
 import java.util.*;
 
 import static qz.utils.SystemUtilities.restartApplication;
@@ -26,16 +28,29 @@ public class I18NLoader {
             Locale.forLanguageTag("zh-TW")
     ));
 
+    private static PropertyHelper getPropertyHelper() {
+        if(prefs == null) {
+            prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
+        }
+        return prefs;
+    }
+
+    private static ResourceBundle getMsg() {
+        if(msg == null) {
+            msg = Utf8ResourceBundle.getBundle(I18N_LOCATION, getCurrentLocale());
+        }
+        return msg;
+    }
+
     /**
      * Get localized strings
      *
      * @param id String ID to look up
      * @return Localized version of the given string id
      */
-
     public static String gettext(String id) {
         try {
-            return msg.getString(id);
+            return getMsg().getString(id);
         }
         catch(MissingResourceException e) {
             // fail-safe action, we'll just return original string
@@ -45,7 +60,7 @@ public class I18NLoader {
     }
 
     public static Locale getCurrentLocale() {
-        return Locale.forLanguageTag(prefs.getProperty(I18N_LOCALE_PROPERTY, DEFAULT_LOCALE));
+        return Locale.forLanguageTag(getPropertyHelper().getProperty(I18N_LOCALE_PROPERTY, DEFAULT_LOCALE));
     }
 
     /**
@@ -54,20 +69,10 @@ public class I18NLoader {
      * @param locale Locale to change to
      */
     public static void changeLocale(Locale locale) {
-        prefs.setProperty(I18N_LOCALE_PROPERTY, locale.toLanguageTag());
-        prefs.save();
+        getPropertyHelper().setProperty(I18N_LOCALE_PROPERTY, locale.toLanguageTag());
+        getPropertyHelper().save();
 
         restartApplication(() -> log.info("restart because of locale change"));
-    }
-
-    /**
-     * set global user properties helper
-     *
-     * @param propertyHelper PropertyHelper
-     */
-    public static void setup(PropertyHelper propertyHelper) {
-        prefs = propertyHelper;
-        msg = Utf8ResourceBundle.getBundle(I18N_LOCATION, getCurrentLocale());
     }
 }
 

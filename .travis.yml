@@ -1,3 +1,5 @@
+language: java
+sudo: false
 matrix:
   include:
     - jdk: oraclejdk8
@@ -7,8 +9,11 @@ matrix:
     - os: osx
       osx_image: xcode8.2
       env: TARGET=pkgbuild
-language: java
+addons:
+    apt:
+        packages:
+            - makeself
+            - nsis
 before_script:
     - sw_vers -productVersion && brew update && brew install ant; ant -version
-    - test -e /etc/lsb-release && sudo apt-get update -qq && sudo apt-get install -y makeself nsis; echo;
-script: ant $TARGET
+script: _SILENT_JAVA_OPTIONS="${_JAVA_OPTIONS}"; unset _JAVA_OPTIONS; ant $TARGET

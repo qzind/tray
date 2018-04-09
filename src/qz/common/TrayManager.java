@@ -34,6 +34,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -64,7 +65,6 @@ public class TrayManager {
     private ConfirmDialog confirmDialog;
     private GatewayDialog gatewayDialog;
     private AboutDialog aboutDialog;
-    private LanguageSelectionDialog languageSelectionDialog;
     private LogDialog logDialog;
     private SiteManagerDialog sitesDialog;
 
@@ -168,6 +168,10 @@ public class TrayManager {
         advancedMenu.setMnemonic(KeyEvent.VK_A);
         advancedMenu.setIcon(iconCache.getIcon(IconCache.Icon.SETTINGS_ICON));
 
+        JMenu localeMenu = new JMenu(gettext("Change Language"));
+        localeMenu.setMnemonic(KeyEvent.VK_C);
+        localeMenu.setIcon(iconCache.getIcon(IconCache.Icon.LANGUAGE_ICON));
+
         JMenuItem sitesItem = new JMenuItem(gettext("Site Manager..."), iconCache.getIcon(IconCache.Icon.SAVED_ICON));
         sitesItem.setMnemonic(KeyEvent.VK_M);
         sitesItem.addActionListener(savedListener);
@@ -178,12 +182,6 @@ public class TrayManager {
         anonymousItem.setMnemonic(KeyEvent.VK_K);
         anonymousItem.setState(Certificate.UNKNOWN.isBlocked());
         anonymousItem.addActionListener(anonymousListener);
-
-        JMenuItem changeLanguageItem = new JMenuItem(gettext("Change Language..."), iconCache.getIcon(IconCache.Icon.LANGUAGE_ICON));
-        changeLanguageItem.setMnemonic(KeyEvent.VK_C);
-        changeLanguageItem.addActionListener(changeLocaleListener);
-
-        languageSelectionDialog = new LanguageSelectionDialog(changeLanguageItem, iconCache);
 
         JMenuItem logItem = new JMenuItem(gettext("View Logs..."), iconCache.getIcon(IconCache.Icon.LOG_ICON));
         logItem.setMnemonic(KeyEvent.VK_L);
@@ -205,7 +203,6 @@ public class TrayManager {
         desktopItem.addActionListener(desktopListener);
 
         advancedMenu.add(sitesItem);
-        advancedMenu.add(changeLanguageItem);
         advancedMenu.add(anonymousItem);
         advancedMenu.add(logItem);
         advancedMenu.add(notificationsItem);
@@ -213,6 +210,17 @@ public class TrayManager {
         advancedMenu.add(openItem);
         advancedMenu.add(desktopItem);
 
+        I18NLoader.SUPPORTED_LOCALES.forEach(
+            locale -> {
+                JCheckBoxMenuItem localeMenuItem = new JCheckBoxMenuItem(locale.getDisplayName(locale));
+                localeMenuItem.setState(Objects.equals(locale, I18NLoader.getCurrentLocale()));
+                localeMenuItem.addActionListener((actionEvent) -> {
+                    I18NLoader.changeLocale(locale);
+                });
+
+                localeMenu.add(localeMenuItem);
+            }
+        );
 
         JMenuItem reloadItem = new JMenuItem(gettext("Reload"), iconCache.getIcon(IconCache.Icon.RELOAD_ICON));
         reloadItem.setMnemonic(KeyEvent.VK_R);
@@ -242,6 +250,7 @@ public class TrayManager {
         exitItem.addActionListener(exitListener);
 
         popup.add(advancedMenu);
+        popup.add(localeMenu);
         popup.add(reloadItem);
         popup.add(aboutItem);
         popup.add(startupItem);
@@ -329,12 +338,6 @@ public class TrayManager {
     private final ActionListener aboutListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
             aboutDialog.setVisible(true);
-        }
-    };
-
-    private final ActionListener changeLocaleListener = new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-            languageSelectionDialog.setVisible(true);
         }
     };
 

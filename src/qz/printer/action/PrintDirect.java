@@ -6,7 +6,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.common.ConstantLabels;
+import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
@@ -53,7 +53,7 @@ public class PrintDirect extends PrintRaw {
     @Override
     public void print(PrintOutput output, PrintOptions options) throws PrintException {
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
-        attributes.add(new JobName(options.getRawOptions().getJobName(ConstantLabels.RAW_PRINT), Locale.getDefault()));
+        attributes.add(new JobName(options.getRawOptions().getJobName(Constants.RAW_PRINT), Locale.getDefault()));
 
         for(int i = 0; i < prints.size(); i++) {
             DocPrintJob printJob = output.getPrintService().createPrintJob();

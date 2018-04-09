@@ -2,7 +2,6 @@ package qz.ui;
 
 import org.joor.Reflect;
 import qz.auth.Certificate;
-import qz.common.ConstantLabels;
 import qz.common.Constants;
 import static qz.common.I18NLoader.gettext;
 
@@ -193,7 +192,7 @@ public class CertificateTable extends JTable {
             if (field == null) { return stylizeLabel(STATUS_NORMAL, label, isSelected); }
             switch(field) {
                 case TRUSTED:
-                    label.setText(cert.isTrusted()? ConstantLabels.TRUSTED_PUBLISHER:ConstantLabels.UNTRUSTED_PUBLISHER);
+                    label.setText(cert.isTrusted()? Constants.TRUSTED_PUBLISHER:Constants.UNTRUSTED_PUBLISHER);
                     return stylizeLabel(!cert.isTrusted()? STATUS_WARNING:STATUS_TRUSTED, label, isSelected);
                 case VALID_FROM:
                     boolean futureExpiration = cert.getValidFromDate().compareTo(now.getTime()) > 0;

@@ -20,7 +20,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.ByteArrayBuilder;
-import qz.common.ConstantLabels;
+import qz.common.Constants;
 import qz.exception.NullCommandException;
 import qz.exception.NullPrintServiceException;
 import qz.printer.ImageWrapper;
@@ -290,7 +290,7 @@ public class PrintRaw implements PrintProcessor {
         SimpleDoc doc = new SimpleDoc(cmds, DocFlavor.BYTE_ARRAY.AUTOSENSE, null);
 
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
-        attributes.add(new JobName(rawOpts.getJobName(ConstantLabels.RAW_PRINT), Locale.getDefault()));
+        attributes.add(new JobName(rawOpts.getJobName(Constants.RAW_PRINT), Locale.getDefault()));
 
         DocPrintJob printJob = service.createPrintJob();
 

@@ -18,12 +18,15 @@ import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
 import qz.utils.*;
 
+import javax.management.ListenerNotFoundException;
 import javax.print.PrintServiceLookup;
 import javax.security.cert.CertificateParsingException;
 import javax.usb.util.UsbUtil;
 import java.awt.*;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.file.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
@@ -71,6 +74,13 @@ public class PrintSocketClient {
         HID_OPEN_STREAM("hid.openStream", true, "use a USB device"),
         HID_CLOSE_STREAM("hid.closeStream", false, "use a USB device"),
         HID_RELEASE_DEVICE("hid.releaseDevice", false, "release a USB device"),
+
+        FILE_LIST("file.list", true, "view the filesystem"),
+        FILE_START_LISTENING("file.startListening", true, "listen for filesystem events"),
+        FILE_STOP_LISTENING("file.stopListening", false),
+        FILE_READ("file.read", true, "read the content of a file"),
+        FILE_WRITE("file.write", true, "write to a file"),
+        FILE_DELETE("file.delete", true, "delete a file"),
 
         NETWORKING_DEVICE("networking.device", true),
         NETWORKING_DEVICES("networking.devices", true),
@@ -216,6 +226,10 @@ public class PrintSocketClient {
             log.error("Bad JSON: {}", e.getMessage());
             sendError(session, UID, e);
         }
+        catch(InvalidPathException | FileSystemException e) {
+            log.error("FileIO exception occurred", e);
+            sendError(session, UID, String.format("FileIO exception occurred: %s: %s", e.getClass().getSimpleName(), e.getMessage()));
+        }
         catch(Exception e) {
             log.error("Problem processing message", e);
             sendError(session, UID, e);
@@ -235,7 +249,7 @@ public class PrintSocketClient {
      * @param session WebSocket session
      * @param json    JSON received from web API
      */
-    private void processMessage(Session session, JSONObject json, SocketConnection connection, Certificate shownCertificate) throws JSONException, SerialPortException, DeviceException {
+    private void processMessage(Session session, JSONObject json, SocketConnection connection, Certificate shownCertificate) throws JSONException, SerialPortException, DeviceException, IOException, ListenerNotFoundException {
         String UID = json.optString("uid");
         Method call = Method.findFromCall(json.optString("call"));
         JSONObject params = json.optJSONObject("params");
@@ -461,6 +475,69 @@ public class PrintSocketClient {
                 break;
             }
 
+            case FILE_START_LISTENING: {
+                FileParams fileParams = FileParams.fromJSON(params);
+                Path path = FileUtilities.unrelativizePath(fileParams, shownCertificate);
+                FileUtilities.assertIsWhiteListed(path, true, fileParams.sandbox, shownCertificate);
+                FileIO.startListening(new FileClientPair(fileParams.originalPath, path, connection), new FileListener(session, params));
+                sendResult(session, UID, null);
+                break;
+            }
+            case FILE_STOP_LISTENING: {
+                if (params.isNull("path")) {
+                    FileIO.closeListeners(connection);
+                    connection.stopFileListening();
+                } else {
+                    FileParams fileParams = FileParams.fromJSON(params);
+                    Path path = FileUtilities.unrelativizePath(fileParams, shownCertificate);
+                    FileIO.closeListener(new FileClientPair(fileParams.originalPath, path, connection));
+                    if (!FileIO.isListening(connection)) {
+                        connection.stopFileListening();
+                    }
+                    sendResult(session, UID, null);
+                    break;
+                }
+                sendResult(session, UID, null);
+                break;
+            }
+            case FILE_LIST: {
+                FileParams fileParams = FileParams.fromJSON(params);
+                Path path = FileUtilities.unrelativizePath(fileParams, shownCertificate);
+                FileUtilities.assertIsWhiteListed(path, true, fileParams.sandbox, shownCertificate);
+                ArrayList<String> files = new ArrayList<>();
+                Files.list(path).forEach(file -> files.add(file.getFileName().toString()));
+                sendResult(session, UID, new JSONArray(files));
+                break;
+            }
+            case FILE_READ: {
+                FileParams fileParams = FileParams.fromJSON(params);
+                Path path = FileUtilities.unrelativizePath(fileParams, shownCertificate);
+                FileUtilities.assertIsWhiteListed(path, false, fileParams.sandbox, shownCertificate);
+                FileUtilities.assertIsGoodExtension(path);
+                sendResult(session, UID, new String(Files.readAllBytes(path)));
+                break;
+            }
+            case FILE_WRITE:{
+                FileParams fileParams = FileParams.fromJSON(params);
+                Path path = FileUtilities.unrelativizePath(fileParams, shownCertificate);
+                FileUtilities.assertIsWhiteListed(path, false, fileParams.sandbox, shownCertificate);
+                FileUtilities.assertIsGoodExtension(path);
+                OpenOption operation = params.optBoolean("append") ? StandardOpenOption.APPEND : StandardOpenOption.TRUNCATE_EXISTING;
+                Files.createDirectories(path.getParent());
+                Files.write(path, params.getString("data").getBytes(), StandardOpenOption.CREATE, operation);
+                sendResult(session, UID, null);
+                break;
+            }
+            case FILE_DELETE: {
+                FileParams fileParams = FileParams.fromJSON(params);
+                Path path = FileUtilities.unrelativizePath(fileParams, shownCertificate);
+                FileUtilities.assertIsWhiteListed(path, false, fileParams.sandbox, shownCertificate);
+                if (!Files.isDirectory(path)) FileUtilities.assertIsGoodExtension(path);
+                Files.delete(path);
+                sendResult(session, UID, null);
+                break;
+            }
+
             case NETWORKING_DEVICE:
                 sendResult(session, UID, NetworkUtilities.getDeviceJSON(params.optString("hostname", "google.com"), params.optInt("port", 443)));
                 break;
@@ -541,7 +618,9 @@ public class PrintSocketClient {
      */
     public static void sendError(Session session, String messageUID, Exception ex) {
         String message = ex.getMessage();
-        if (message == null) { message = ex.getClass().getSimpleName(); }
+        if (message == null || message.equals("")) {
+            message = ex.getClass().getSimpleName();
+        }
 
         sendError(session, messageUID, message);
     }

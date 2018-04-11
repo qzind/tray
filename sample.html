@@ -112,6 +112,7 @@
                 <li id="serialTab" role="presentation"><a href="#serialContent" role="tab" data-toggle="tab">Serial</a></li>
                 <li id="usbTab" role="presentation"><a href="#usbContent" role="tab" data-toggle="tab">USB</a></li>
                 <li id="hidTab" role="presentation"><a href="#hidContent" role="tab" data-toggle="tab">HID</a></li>
+                <li id="fileTab" role="presentation"><a href="#fileContent" role="tab" data-toggle="tab">File IO</a></li>
             </ul>
         </div>
 
@@ -820,6 +821,164 @@
                                 <div class="row">
                                     <div class="col-md-12">
                                         <button type="button" class="btn btn-danger pull-right" onclick="resetHidOptions();">Reset</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="fileContent" class="tab-pane col-md-8">
+                <h3>File IO</h3>
+                <hr />
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="btn-toolbar">
+                            <button type="button" class="btn btn-info" onclick="listFiles();">List Files</button>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-info" onclick="readFile();">Read File</button>
+                                <button type="button" class="btn btn-success" onclick="writeFile();">Write File</button>
+                                <button type="button" class="btn btn-warning" onclick="deleteFile();">Delete File</button>
+                            </div>
+
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-default" onclick="startFileListen()">Listen for Events</button>
+                                <button type="button" class="btn btn-default" onclick="stopFileListen()">Stop Listening</button>
+                            </div>
+                            <button type="button" class="btn btn-default" onclick="stopAllFileListeners();">Stop All Listeners</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 1em;">
+                    <div class="col-md-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">Options</h4>
+                            </div>
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label class="tip" for="fileLocation" data-toggle="tooltip" title="Absolute or relative path to file in qz data
+                                            directory.  Must reside in user's data directory unless overridden via qz-tray.properties">
+                                                File Location
+                                            </label>
+                                            <input type="text" id="fileLocation" class="form-control" />
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group form-inline">
+                                                    <label class="tip" for="fileShared" data-toggle="tooltip" title="Relative paths only: This will set
+                                                    a relative file location's root to a location accessible to all users of the target system.">
+                                                        Shared
+                                                    </label>
+                                                    <input type="checkbox" id="fileShared" class="pull-right" />
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group form-inline">
+                                                    <label class="tip" for="fileSandbox" data-toggle="tooltip" title="Relative paths only: This will set
+                                                    a relative file location's root to a location unique to the certificate used to sign the request.">
+                                                        Sandbox
+                                                    </label>
+                                                    <input checked type="checkbox" id="fileSandbox" class="pull-right" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group form-inline">
+                                                    <label class="tip" for="fileAppend" data-toggle="tooltip" title="Default write behavior is to overwrite
+                                                    existing files.  This will change write behavior to append to a file if it already exists.">
+                                                        Append Data
+                                                    </label>
+                                                    <input type="checkbox" id="fileAppend" class="pull-right" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="fileData">Data To Write</label>
+                                            <textarea id="fileData" rows="5" style="resize:vertical" class="form-control"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" style="margin-top: 1em;">
+                    <div class="col-md-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">Advanced Options</h4>
+                            </div>
+                            <div class="panel-body">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group form-inline">
+                                                    <label class="tip" for="fileListenerData" data-toggle="tooltip" title="Default listener behavior is return
+                                                        fileChanged events with fileData. Unchecking this removes fileData from event callbacks. By default the
+                                                        data returned will be the last 10 lines of the file.">
+                                                        Listener Triggers Read
+                                                    </label>
+                                                    <input type="checkbox" id="fileListenerData" class="pull-right" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <hr />
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group form-inline">
+                                                    <label class="tip" for="fileReadDirection" data-toggle="tooltip" title="Determines which direction the file will be read. Line mode
+                                                        will always return left to right.  Byte mode will be purely directional.">
+                                                        Read direction
+                                                    </label>
+                                                    <input type="checkbox" id="fileReadDirection" onclick="fileDirectionToggle()" class="pull-right" />
+                                                    <div>
+                                                        <label>
+                                                            <input type="radio" name="readDirection" id="fileEndRadio" value="end" />
+                                                            End
+                                                        </label>
+                                                        <label>
+                                                            <input type="radio" name="readDirection" id="fileStartRadio" value="begin" />
+                                                            Start
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="tip" for="fileReadTruncate" data-toggle="tooltip" title="Truncate file reads by lines or bytes">
+                                                         Truncate
+                                                    </label>
+                                                    <input type="checkbox" id="fileReadTruncate" onclick="fileTruncateToggle()" class="pull-right" />
+                                                    <div>
+                                                        <label>
+                                                            <input type="radio" name="fileDataType" id="fileLinesRadio" value="lines" onclick="$('#fileLength').val('10');" />
+                                                            Lines
+                                                        </label>
+                                                        <label>
+                                                            <input type="radio" name="fileDataType" id="fileBytesRadio" value="bytes" onclick="$('#fileLength').val('4048');"/>
+                                                            Bytes
+                                                        </label>
+                                                        <input type="number" id="fileLength" class="form-control pull-right" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr />
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <button type="button" class="btn btn-danger pull-right" onclick="resetFileOptions();">Reset</button>
                                     </div>
                                 </div>
                             </div>
@@ -1774,6 +1933,138 @@
     }
 
 
+    /// File ///
+    function listFiles() {
+        var params = {
+            sandbox : $("#fileSandbox").prop("checked"),
+            shared : $("#fileShared").prop("checked"),
+            writable : true
+        };
+        qz.file.list($("#fileLocation").val(), params).then(function(data) {
+            var files = "";
+            for (var n = 0; n < data.length; n++) {
+                files += data[n] + "\n";
+            }
+            displayMessage("File listing <strong><code>" + $("#fileLocation").val() + "</code></strong><pre>" + files + "</pre>", null, 15000);
+        }).catch(displayError);
+    }
+
+    function readFile() {
+        var params = {
+            sandbox : $("#fileSandbox").prop("checked"),
+            shared : $("#fileShared").prop("checked"),
+            writable : true
+        };
+        qz.file.read($("#fileLocation").val(), params).then(function(data) {
+            displayMessage("Contents of <strong><code>" + $("#fileLocation").val() + "</code></strong>" + "<pre>" + data + "</pre>", null, 15000);
+        }).catch(displayError);
+    }
+
+    function writeFile() {
+        var params = {
+            sandbox : $("#fileSandbox").prop("checked"),
+            shared : $("#fileShared").prop("checked"),
+            append : $("#fileAppend").prop('checked'),
+            data : $("#fileData").val(),
+            writable : true
+        };
+        var append = $("#fileAppend").prop('checked');
+        qz.file.write($("#fileLocation").val(), params).then(function(data) {
+            displayMessage("File <strong><code>" + $("#fileLocation").val() + "</code></strong> written successfully");
+            $("#fileData").val("");
+        }).catch(displayError);
+    }
+
+    function deleteFile() {
+        var params = {
+            sandbox : $("#fileSandbox").prop("checked"),
+            shared : $("#fileShared").prop("checked"),
+            writable : true
+        };
+        qz.file.remove($("#fileLocation").val(), params).then(function(data) {
+            displayMessage("File <strong><code>" + $("#fileLocation").val() + "</code></strong> deleted");
+        }).catch(displayError);
+    }
+
+    function startFileListen() {
+        var options = false;
+        var params = {
+            sandbox : $("#fileSandbox").prop("checked"),
+            shared : $("#fileShared").prop("checked"),
+            writable : true
+        };
+        if ($("#fileListenerData").prop("checked")) {
+            options = {};
+
+            if ($("#fileReadDirection").prop("checked")) {
+                options.reversed = $("#fileEndRadio").prop("checked");
+            }
+
+            if ($("#fileReadTruncate").prop("checked")) {
+                if ($("#fileLinesRadio").prop("checked")) {
+                    options.lines = $("#fileLength").val();
+                } else {
+                    options.bytes = $("#fileLength").val();
+                }
+            }
+        }
+
+        qz.file.startListening($("#fileLocation").val(), params, options)
+        .then(function() {
+            displayMessage("Started listening for <strong><code>" + ($("#fileLocation").val() || "./") + "</code></strong> events");
+        }).catch(displayError);
+    }
+
+    function stopFileListen() {
+        var params = {
+            sandbox : $("#fileSandbox").prop("checked"),
+            shared : $("#fileShared").prop("checked"),
+            writable : true
+        };
+        qz.file.stopListening($("#fileLocation").val(), params).then(function() {
+            displayMessage("Stopped listening for <strong><code>" + ($("#fileLocation").val() || "./") + "</code></strong> events");
+        }).catch(displayError);
+    }
+
+    function stopAllFileListeners() {
+        qz.file.stopListening().then(function() {
+            displayMessage("Stopped listening for <strong>all</strong> file events");
+        }).catch(displayError);
+    }
+
+    function fileDirectionToggle() {
+        if ($("#fileReadDirection").prop("checked")) {
+            $("#fileEndRadio").prop("disabled", false);
+            $("#fileStartRadio").prop("disabled", false);
+            $("#fileEndRadio").removeClass("disabled");
+            $("#fileStartRadio").removeClass("disabled");
+        } else {
+            $("#fileEndRadio").prop("disabled", true);
+            $("#fileStartRadio").prop("disabled", true);
+            $("#fileStartRadio").addClass("disabled");
+            $("#fileEndRadio").addClass("disabled");
+        }
+    }
+
+    function fileTruncateToggle() {
+        if ($("#fileReadTruncate").prop("checked")) {
+            $("#fileLinesRadio").prop("disabled", false);
+            $("#fileBytesRadio").prop("disabled", false);
+            $("#fileLength").prop("disabled", false);
+            $("#fileLinesRadio").removeClass("disabled");
+            $("#fileBytesRadio").removeClass("disabled");
+            $("#fileLength").removeClass("disabled");
+        } else {
+            $("#fileLinesRadio").prop("disabled", true);
+            $("#fileBytesRadio").prop("disabled", true);
+            $("#fileLength").prop("disabled", true);
+            $("#fileLinesRadio").addClass("disabled");
+            $("#fileBytesRadio").addClass("disabled");
+            $("#fileLength").addClass("disabled");
+        }
+    }
+
+
     /// Resets ///
     function resetRawOptions() {
         //config
@@ -1891,6 +2182,18 @@
         $("#hidStream").val(100);
     }
 
+    function resetFileOptions() {
+        $("#fileListenerData").prop("checked", true);
+
+        $("#fileReadDirection").prop("checked", true);
+        $("#fileEndRadio").prop("checked", true);
+        fileDirectionToggle();
+
+        $("#fileReadTruncate").prop("checked", true);
+        $("#fileLinesRadio").click();
+        fileTruncateToggle();
+    }
+
 
     /// Page load ///
     $(document).ready(function() {
@@ -1901,6 +2204,7 @@
         resetSerialOptions();
         resetUsbOptions();
         resetHidOptions();
+        resetFileOptions();
 
         startConnection();
 
@@ -1908,6 +2212,12 @@
             if (e.which == 13 || e.keyCode == 13) {
                 findPrinter($('#printerSearch').val(), true);
                 return false;
+            }
+        });
+
+        $("#fileButton").on('change', function(e) {
+            if (this.files && this.files[0]) {
+                $("#fileLocation").val(this.files[0]['name']);
             }
         });
 
@@ -1993,6 +2303,20 @@
         } else { //ERROR type
             console.log(streamEvent.exception);
             $pin.html("<strong>Error:</strong> " + streamEvent.exception);
+        }
+    });
+
+    qz.file.setFileCallbacks(function(streamEvent) {
+        if (streamEvent.type !== 'ERROR') {
+            var file = streamEvent.file;
+            var event = streamEvent.eventType;
+            var text = "<h5>File IO Event</h5>" + "<strong>File:</strong> <code>" + file + "</code><br><strong>Event:</strong><code>" + event + "</code>";
+            if (streamEvent.fileData) {
+                text += "<strong>Data: </strong><code>" + streamEvent.fileData + "</code>";
+            }
+            displayMessage(text);
+        } else {
+            displayError("<strong>Error:</strong> " + streamEvent.message);
         }
     });
 

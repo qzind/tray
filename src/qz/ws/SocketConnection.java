@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.communication.*;
 
+import java.io.IOException;
 import java.util.HashMap;
 
 public class SocketConnection {
@@ -16,6 +17,7 @@ public class SocketConnection {
     private Certificate certificate;
 
     private DeviceListener deviceListener;
+    private FileListener fileListener;
 
     // serial port -> open SerialIO
     private final HashMap<String,SerialIO> openSerialPorts = new HashMap<>();
@@ -65,6 +67,25 @@ public class SocketConnection {
         deviceListener = null;
     }
 
+    public boolean isFileListening() {
+        return fileListener != null;
+    }
+
+    public FileListener getFileListener() {
+        return fileListener;
+    }
+
+    public void startFileListening(FileListener listener) {
+        fileListener = listener;
+    }
+
+    public void stopFileListening() {
+        if (fileListener != null) {
+            fileListener.close();
+        }
+        fileListener = null;
+    }
+
 
     public void addDevice(DeviceOptions dOpts, DeviceIO io) {
         openDevices.put(dOpts, io);
@@ -86,12 +107,14 @@ public class SocketConnection {
     /**
      * Explicitly closes all open serial and usb connections setup through this object
      */
-    public synchronized void disconnect() throws SerialPortException, DeviceException {
+    public synchronized void disconnect() throws SerialPortException, DeviceException, IOException {
         log.info("Closing all communication channels for {}", certificate.getCommonName());
 
         for(String p : openSerialPorts.keySet()) {
             openSerialPorts.get(p).close();
         }
+
+        if (isFileListening()) FileIO.closeListeners(this);
 
         for(DeviceIO dio : openDevices.values()) {
             dio.setStreaming(false);

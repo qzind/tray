@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.concurrent.Semaphore;
+import java.util.function.Supplier;
 
 
 @WebSocket
@@ -39,40 +40,40 @@ public class PrintSocketClient {
 
     //websocket port -> Connection
     private static final HashMap<Integer,SocketConnection> openConnections = new HashMap<>();
-    private static final String USE_USB_DEVICE_STRING = gettext("use a USB device");
+    private static final Supplier<String> USE_USB_DEVICE_STRING = () -> gettext("use a USB device");
 
     private enum Method {
-        PRINTERS_GET_DEFAULT("printers.getDefault", true, gettext("access connected printers")),
-        PRINTERS_FIND("printers.find", true, gettext("access connected printers")),
-        PRINTERS_DETAIL("printers.detail", true, gettext("access connected printers")),
-        PRINT("print", true, gettext("print to %s")),
+        PRINTERS_GET_DEFAULT("printers.getDefault", true, () -> gettext("access connected printers")),
+        PRINTERS_FIND("printers.find", true, () -> gettext("access connected printers")),
+        PRINTERS_DETAIL("printers.detail", true, () -> gettext("access connected printers")),
+        PRINT("print", true, () -> gettext("print to %s")),
 
-        SERIAL_FIND_PORTS("serial.findPorts", true, gettext("access serial ports")),
-        SERIAL_OPEN_PORT("serial.openPort", true, gettext("open a serial port")),
-        SERIAL_SEND_DATA("serial.sendData", true, gettext("send data over a serial port")),
-        SERIAL_CLOSE_PORT("serial.closePort", true, gettext("close a serial port")),
+        SERIAL_FIND_PORTS("serial.findPorts", true, () -> gettext("access serial ports")),
+        SERIAL_OPEN_PORT("serial.openPort", true, () -> gettext("open a serial port")),
+        SERIAL_SEND_DATA("serial.sendData", true, () -> gettext("send data over a serial port")),
+        SERIAL_CLOSE_PORT("serial.closePort", true, () -> gettext("close a serial port")),
 
-        USB_LIST_DEVICES("usb.listDevices", true, gettext("access USB devices")),
-        USB_LIST_INTERFACES("usb.listInterfaces", true, gettext("access USB devices")),
-        USB_LIST_ENDPOINTS("usb.listEndpoints", true, gettext("access USB devices")),
-        USB_CLAIM_DEVICE("usb.claimDevice", true, gettext("claim a USB device")),
-        USB_CLAIMED("usb.isClaimed", false, gettext("check USB claim status")),
+        USB_LIST_DEVICES("usb.listDevices", true, () -> gettext("access USB devices")),
+        USB_LIST_INTERFACES("usb.listInterfaces", true, () -> gettext("access USB devices")),
+        USB_LIST_ENDPOINTS("usb.listEndpoints", true, () -> gettext("access USB devices")),
+        USB_CLAIM_DEVICE("usb.claimDevice", true, () -> gettext("claim a USB device")),
+        USB_CLAIMED("usb.isClaimed", false, () -> gettext("check USB claim status")),
         USB_SEND_DATA("usb.sendData", true, USE_USB_DEVICE_STRING),
         USB_READ_DATA("usb.readData", true, USE_USB_DEVICE_STRING),
         USB_OPEN_STREAM("usb.openStream", true, USE_USB_DEVICE_STRING),
         USB_CLOSE_STREAM("usb.closeStream", false, USE_USB_DEVICE_STRING),
-        USB_RELEASE_DEVICE("usb.releaseDevice", false, gettext("release a USB device")),
+        USB_RELEASE_DEVICE("usb.releaseDevice", false, () -> gettext("release a USB device")),
 
-        HID_LIST_DEVICES("hid.listDevices", true, gettext("access USB devices")),
-        HID_START_LISTENING("hid.startListening", true, gettext("listen for USB devices")),
+        HID_LIST_DEVICES("hid.listDevices", true, () -> gettext("access USB devices")),
+        HID_START_LISTENING("hid.startListening", true, () -> gettext("listen for USB devices")),
         HID_STOP_LISTENING("hid.stopListening", false),
-        HID_CLAIM_DEVICE("hid.claimDevice", true, gettext("claim a USB device")),
-        HID_CLAIMED("hid.isClaimed", false, gettext("check USB claim status")),
+        HID_CLAIM_DEVICE("hid.claimDevice", true, () -> gettext("claim a USB device")),
+        HID_CLAIMED("hid.isClaimed", false, () -> gettext("check USB claim status")),
         HID_SEND_DATA("hid.sendData", true, USE_USB_DEVICE_STRING),
         HID_READ_DATA("hid.readData", true, USE_USB_DEVICE_STRING),
         HID_OPEN_STREAM("hid.openStream", true, USE_USB_DEVICE_STRING),
         HID_CLOSE_STREAM("hid.closeStream", false, USE_USB_DEVICE_STRING),
-        HID_RELEASE_DEVICE("hid.releaseDevice", false, gettext("release a USB device")),
+        HID_RELEASE_DEVICE("hid.releaseDevice", false, () -> gettext("release a USB device")),
 
         NETWORKING_DEVICE("networking.device", true),
         NETWORKING_DEVICES("networking.devices", true),
@@ -82,14 +83,14 @@ public class PrintSocketClient {
 
 
         private String callName;
-        private String dialogPrompt;
+        private Supplier<String> dialogPrompt;
         private boolean dialogShown;
 
         Method(String callName, boolean dialogShown) {
-            this(callName, dialogShown, gettext("access local resources"));
+            this(callName, dialogShown, () -> gettext("access local resources"));
         }
 
-        Method(String callName, boolean dialogShown, String dialogPrompt) {
+        Method(String callName, boolean dialogShown, Supplier<String> dialogPrompt) {
             this.callName = callName;
 
             this.dialogShown = dialogShown;
@@ -101,7 +102,7 @@ public class PrintSocketClient {
         }
 
         public String getDialogPrompt() {
-            return dialogPrompt;
+            return dialogPrompt.get();
         }
 
         public static Method findFromCall(String call) {

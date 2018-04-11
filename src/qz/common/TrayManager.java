@@ -26,8 +26,6 @@ import qz.ui.tray.ModernTrayIcon;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
-import static qz.common.Constants.USER_PREFS;
-import static qz.common.I18NLoader.gettext;
 
 import javax.swing.*;
 import java.awt.*;
@@ -37,6 +35,9 @@ import java.awt.event.KeyEvent;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static qz.common.Constants.USER_PREFS;
+import static qz.common.I18NLoader.gettext;
 
 /**
  * Manages the icons and actions associated with the TrayIcon
@@ -114,6 +115,10 @@ public class TrayManager {
                 log.error("Could not attach tray, forcing headless mode", awt);
                 headless = true;
             }
+
+            I18NLoader.addLocaleChangeListener(
+                    (locale) -> initComponents()
+            );
         }
 
         // Linux specific tasks
@@ -127,6 +132,11 @@ public class TrayManager {
             WindowsDeploy.configureIntranetZone();
             WindowsDeploy.configureEdgeLoopback();
         }
+
+        initComponents();
+    }
+
+    private void initComponents() {
 
         if (!headless) {
             // The allow/block dialog
@@ -206,9 +216,7 @@ public class TrayManager {
             locale -> {
                 JCheckBoxMenuItem localeMenuItem = new JCheckBoxMenuItem(locale.getDisplayName(locale));
                 localeMenuItem.setState(Objects.equals(locale, I18NLoader.getCurrentLocale()));
-                localeMenuItem.addActionListener((actionEvent) -> {
-                    I18NLoader.changeLocale(locale);
-                });
+                localeMenuItem.addActionListener((actionEvent) -> I18NLoader.changeLocale(locale));
 
                 localeMenu.add(localeMenuItem);
             }
@@ -435,7 +443,7 @@ public class TrayManager {
 
     private void whiteList(Certificate cert) {
         if (FileUtilities.printLineToFile(Constants.ALLOW_FILE, cert.data())) {
-            displayInfoMessage(String.format(Constants.WHITE_LIST, cert.getOrganization()));
+            displayInfoMessage(String.format(Constants.WHITE_LIST.get(), cert.getOrganization()));
         } else {
             displayErrorMessage(gettext("Failed to write to file (Insufficient user privileges)"));
         }
@@ -443,7 +451,7 @@ public class TrayManager {
 
     private void blackList(Certificate cert) {
         if (FileUtilities.printLineToFile(Constants.BLOCK_FILE, cert.data())) {
-            displayInfoMessage(String.format(Constants.BLACK_LIST, cert.getOrganization()));
+            displayInfoMessage(String.format(Constants.BLACK_LIST.get(), cert.getOrganization()));
         } else {
             displayErrorMessage(gettext("Failed to write to file (Insufficient user privileges)"));
         }

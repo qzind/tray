@@ -290,7 +290,7 @@ public class PrintRaw implements PrintProcessor {
         SimpleDoc doc = new SimpleDoc(cmds, DocFlavor.BYTE_ARRAY.AUTOSENSE, null);
 
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
-        attributes.add(new JobName(rawOpts.getJobName(Constants.RAW_PRINT), Locale.getDefault()));
+        attributes.add(new JobName(rawOpts.getJobName(Constants.RAW_PRINT.get()), Locale.getDefault()));
 
         DocPrintJob printJob = service.createPrintJob();
 

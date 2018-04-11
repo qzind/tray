@@ -4,8 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-
-import static qz.utils.SystemUtilities.restartApplication;
+import java.util.function.Consumer;
 
 
 public class I18NLoader {
@@ -17,6 +16,8 @@ public class I18NLoader {
 
     private static ResourceBundle msg;
     private static PropertyHelper prefs;
+
+    private static List<Consumer<Locale>> localeChangeListeners = new LinkedList<>();
 
     public static final List<Locale> SUPPORTED_LOCALES = Collections.unmodifiableList(Arrays.asList(
             Locale.forLanguageTag("de"),
@@ -57,7 +58,9 @@ public class I18NLoader {
         prefs.setProperty(I18N_LOCALE_PROPERTY, locale.toLanguageTag());
         prefs.save();
 
-        restartApplication(() -> log.info("restart because of locale change"));
+        msg = Utf8ResourceBundle.getBundle(I18N_LOCATION, getCurrentLocale());
+
+        localeChangeListeners.forEach(listener -> listener.accept(locale));
     }
 
     /**
@@ -68,6 +71,10 @@ public class I18NLoader {
     public static void setup(PropertyHelper propertyHelper) {
         prefs = propertyHelper;
         msg = Utf8ResourceBundle.getBundle(I18N_LOCATION, getCurrentLocale());
+    }
+
+    public static void addLocaleChangeListener(Consumer<Locale> listener) {
+        localeChangeListeners.add(listener);
     }
 }
 

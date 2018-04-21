@@ -140,6 +140,7 @@
                             <div class="btn-group">
                                 <button type="button" class="btn btn-default" onclick="printEPL();">EPL</button>
                                 <button type="button" class="btn btn-default" onclick="printZPL();">ZPL</button>
+                                <button type="button" class="btn btn-default" onclick="printEvolis();">Evolis</button>
                                 <button type="button" class="btn btn-default" onclick="printESCPOS();">ESC/POS</button>
                                 <button type="button" class="btn btn-default" onclick="printEPCL();">EPCL (Zebra Card Printer)</button>
                             </div>
@@ -968,6 +969,22 @@
             '^FO50,350^ADN,36,20^FDQZ-TRAY ^FS\n',
 	    '^FO50,400^ADN,36,20^FDVERSION ' + qzVersion + '^FS\n' + '\n',
 	    '^XZ\n'
+        ];
+
+        qz.print(config, printData).catch(displayError);
+    }
+
+    function printEvolis() {
+        var config = getUpdatedConfig();
+
+        var printData = [
+            '\x1BPps;0\x0D',   // Enable raw/disable driver printer parameter supervision
+            '\x1BPwr;0\x0D',   // Landscape (zero degree) orientation
+            '\x1BWcb;k;0\x0D', // Clear card memory
+
+            '\x1BSs\x0D',      // Start of sequence
+            { type: 'raw', format: 'image', data: 'assets/img/fade-test.png', options: { language: "EVOLIS", precision: 128 } },
+            '\x1BSe\x0D'       // End of sequence
         ];
 
         qz.print(config, printData).catch(displayError);

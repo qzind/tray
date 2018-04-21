@@ -9,6 +9,8 @@
  */
 package qz.printer;
 
+import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.ByteArrayBuilder;
@@ -17,8 +19,10 @@ import qz.utils.ByteUtilities;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 
 /**
  * Abstract wrapper for images to be printed with thermal printers.
@@ -303,7 +307,7 @@ public class ImageWrapper {
      * @return The commands to print the image as an array of bytes, ready to be
      * sent to the printer
      */
-    public byte[] getImageCommand() throws InvalidRawImageException, UnsupportedEncodingException {
+    public byte[] getImageCommand(JSONObject opt) throws InvalidRawImageException, UnsupportedEncodingException {
         getByteBuffer().clear();
 
         switch(languageType) {
@@ -343,6 +347,21 @@ public class ImageWrapper {
                         .append(cpclHexAsString);
 
                 getByteBuffer().append(cpcl, charset).append(new byte[] {13, 10});
+                break;
+            case EVOLIS:
+                try {
+                    ArrayList<float[]> cymkData = convertToCYMK();
+                    int precision = opt.optInt("precision", 128);
+
+                    generateRibbonData('c', precision, cymkData.get(0));
+                    generateRibbonData('y', precision, cymkData.get(1));
+                    generateRibbonData('m', precision, cymkData.get(2));
+                    generateRibbonData('k', 2, cymkData.get(3));
+                }
+                catch(IOException ioe) {
+                    throw new InvalidRawImageException(ioe.getMessage(), ioe);
+                }
+
                 break;
             default:
                 throw new InvalidRawImageException(charset.name() + " image conversion is not yet supported.");
@@ -535,6 +554,89 @@ public class ImageWrapper {
         // Restore the line spacing to the default of 30 dots.
         builder.append(new byte[] {0x1B, 0x33, 30});
 
+    }
+
+    private ArrayList<float[]> convertToCYMK() throws IOException {
+        int[] pixels = bufferedImage.getRGB(0, 0, getWidth(), getHeight(), null, 0, getWidth());
+
+        float[] cyan = new float[pixels.length];
+        float[] yellow = new float[pixels.length];
+        float[] magenta = new float[pixels.length];
+        float[] black = new float[pixels.length];
+
+        for(int i = 0; i < pixels.length; i++) {
+            float rgb[] = new Color(pixels[i]).getRGBColorComponents(null);
+            if (rgb[0] == 0.0f && rgb[1] == 0.0f && rgb[2] == 0.0f) {
+                black[i] = 1.0f;
+            } else {
+                cyan[i] = 1.0f - rgb[0];
+                magenta[i] = 1.0f - rgb[1];
+                yellow[i] = 1.0f - rgb[2];
+            }
+        }
+
+        ArrayList<float[]> colorData = new ArrayList<>();
+        colorData.add(cyan);
+        colorData.add(yellow);
+        colorData.add(magenta);
+        colorData.add(black);
+
+        return colorData;
+    }
+
+    private void generateRibbonData(char ribbon, int precision, float[] colorData) throws UnsupportedEncodingException {
+        getByteBuffer().append("\u001BDb;" + ribbon + ";" + precision + ";", charset);
+        getByteBuffer().append(compactBits(precision, colorData));
+        getByteBuffer().append(new byte[] {0x0D});
+    }
+
+    private ArrayList<Byte> compactBits(int precision, float[] colorData) {
+        ArrayList<Byte> bytes = new ArrayList<>();
+
+        int bits = precisionBits(precision);
+        int empty = 8 - bits;
+
+        for(int i = 0; i < colorData.length; i++) {
+            byte b = 0;
+            int captured = 0;
+
+            b |= byteValue(colorData[i], precision) << empty;
+            captured += 8 - empty;
+
+            while(captured < 8 && (i + 1) < colorData.length) {
+                int excess = bits - empty;
+
+                if (excess > 0) { //because negative shifts don't go backwards
+                    b |= byteValue(colorData[i + 1], precision) >> excess;
+                } else {
+                    b |= byteValue(colorData[i + 1], precision) << Math.abs(excess);
+                }
+                captured += bits - Math.max(0, excess);
+                if (captured < 8 && excess <= 0) { i++; } //if we've eaten an entire color point but haven't filled the byte, increase index looking at
+
+                empty = 8 - excess;
+                if (empty > 8) { empty -= 8; } //wrap around so we never shift over a byte length
+            }
+
+            bytes.add(b);
+        }
+
+        return bytes;
+    }
+
+    private int precisionBits(int precision) {
+        precision--;  // "128" is actually 0-127, subtract one
+        int ones = 0;
+        while(precision > 0) {
+            if (precision % 2 != 0) { ones++; }
+            precision /= 2;
+        }
+
+        return ones;
+    }
+
+    private byte byteValue(float value, int precision) {
+        return (byte)(value * (precision - 1));
     }
 
     /**

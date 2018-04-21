@@ -97,7 +97,7 @@ public class PrintRaw implements PrintProcessor {
                         commands.append(FileUtilities.readRawFile(cmd));
                         break;
                     case IMAGE:
-                        commands.append(getImageWrapper(cmd, opt).getImageCommand());
+                        commands.append(getImageWrapper(cmd, opt).getImageCommand(opt));
                         break;
                     case HEX:
                         commands.append(ByteUtilities.hexStringToByteArray(cmd));

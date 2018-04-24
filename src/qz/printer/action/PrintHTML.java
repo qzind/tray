@@ -62,13 +62,12 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
             for(int i = 0; i < printData.length(); i++) {
                 JSONObject data = printData.getJSONObject(i);
-                if (data.optBoolean("processed")) { continue; } //in cases of failed captures on multi-pages
                 String source = data.getString("data");
 
                 PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "FILE").toUpperCase(Locale.ENGLISH));
 
                 double pageZoom = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()) / 72.0;
-                if (pageZoom <= 1 || data.optBoolean("forceOriginal")) { pageZoom = 1; }
+                if (pageZoom <= 1) { pageZoom = 1; }
 
                 double pageWidth = 0;
                 double pageHeight = 0;
@@ -112,9 +111,9 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
                 try {
                     images.add(WebApp.capture(model));
                 }
-                catch(IOException e) {
+                catch(IllegalArgumentException | IOException e) {
                     //JavaFX image loader becomes null if webView is too large, throwing an IllegalArgumentException on screen capture attempt
-                    if (e.getCause() != null && e.getCause() instanceof IllegalArgumentException) {
+                    if (e instanceof IllegalArgumentException || (e.getCause() != null && e.getCause() instanceof IllegalArgumentException)) {
                         try {
                             log.warn("HTML capture failed due to size, attempting at default zoom");
                             model.setZoom(1.0);

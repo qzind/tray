@@ -9,7 +9,8 @@
  */
 package qz.printer;
 
-import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,10 +18,12 @@ import qz.common.ByteArrayBuilder;
 import qz.exception.InvalidRawImageException;
 import qz.utils.ByteUtilities;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 
@@ -249,14 +252,11 @@ public class ImageWrapper {
      * Sets ImageAsBooleanArray. boolean is used instead of int for memory
      * considerations.
      */
-    private void generateBlackPixels() {
+    private boolean[] generateBlackPixels(BufferedImage bi) {
         log.info("Converting image to monochrome");
-        BufferedImage bi = bufferedImage;
         int h = bi.getHeight();
         int w = bi.getWidth();
         int[] rgbPixels = bi.getRGB(0, 0, w, h, null, 0, w);
-        int i = 0;
-        boolean[] pixels = new boolean[rgbPixels.length];
 
        /*
         * It makes most sense to have black pixels as 1's and white pixels
@@ -265,11 +265,12 @@ public class ImageWrapper {
         * uses 0's for black pixels.
         * See also: https://support.zebra.com/cpws/docs/eltron/gw_command.htm
         */
-        for(int rgbpixel : rgbPixels) {
-            pixels[i++] = languageType.requiresImageOutputInverted()? !isBlack(rgbpixel):
-                    isBlack(rgbpixel);
+        boolean[] pixels = new boolean[rgbPixels.length];
+        for(int i = 0; i < rgbPixels.length; i++) {
+            pixels[i] = languageType.requiresImageOutputInverted() != isBlack(rgbPixels[i]);
         }
-        setImageAsBooleanArray(pixels);
+
+        return pixels;
     }
 
     /**
@@ -353,10 +354,20 @@ public class ImageWrapper {
                     ArrayList<float[]> cymkData = convertToCYMK();
                     int precision = opt.optInt("precision", 128);
 
-                    generateRibbonData('c', precision, cymkData.get(0));
+                    // Y,M,C,K,O ribbon
                     generateRibbonData('y', precision, cymkData.get(1));
                     generateRibbonData('m', precision, cymkData.get(2));
+                    generateRibbonData('c', precision, cymkData.get(0));
+
+                    //K(black) and O(overlay) are always precision 2
                     generateRibbonData('k', 2, cymkData.get(3));
+
+                    if (opt.has("overlay")) {
+                        try { generateRibbonData('o', 2, parseOverlay(opt.get("overlay"))); }
+                        catch(Exception e) {
+                            log.error("Failed to parse overlay data: {}", e.getMessage());
+                        }
+                    }
                 }
                 catch(IOException ioe) {
                     throw new InvalidRawImageException(ioe.getMessage(), ioe);
@@ -421,7 +432,7 @@ public class ImageWrapper {
      */
     private void init() {
         log.info("Initializing Image Fields");
-        generateBlackPixels();
+        setImageAsBooleanArray(generateBlackPixels(bufferedImage));
         generateIntArray();
     }
 
@@ -584,7 +595,44 @@ public class ImageWrapper {
         return colorData;
     }
 
+    private float[] parseOverlay(Object overlay) throws IOException, JSONException {
+        float[] overlayData = new float[getWidth() * getHeight()];
+
+        if (overlay instanceof JSONArray) {
+            //array of rectangles
+            JSONArray masterBlock = (JSONArray)overlay;
+            for(int i = 0; i < masterBlock.length(); i++) {
+                JSONArray block = masterBlock.getJSONArray(i);
+                if (block != null && block.length() == 4) {
+                    for(int y = block.getInt(1) - 1; y < block.getInt(3); y++) {
+                        int off = (y * getWidth());
+                        for(int x = block.getInt(0) - 1; x < block.getInt(2); x++) {
+                            if ((off + x) >= 0 && (off + x) < overlayData.length) {
+                                overlayData[off + x] = 1.0f;
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (overlay instanceof String) {
+            //image mask
+            boolean[] mask = generateBlackPixels(ImageIO.read(new URL((String)overlay)));
+            for(int i = 0; i < overlayData.length; i++) {
+                overlayData[i] = (mask[i]? 1.0f:0.0f);
+            }
+        } else if (overlay instanceof Boolean && (boolean)overlay) {
+            //boolean coat
+            for(int i = 0; i < overlayData.length; i++) {
+                overlayData[i] = 1.0f;
+            }
+        }
+
+        return overlayData;
+    }
+
     private void generateRibbonData(char ribbon, int precision, float[] colorData) throws UnsupportedEncodingException {
+        log.debug("Building ribbon 'Db;{};{};..'", ribbon, precision);
+
         getByteBuffer().append("\u001BDb;" + ribbon + ";" + precision + ";", charset);
         getByteBuffer().append(compactBits(precision, colorData));
         getByteBuffer().append(new byte[] {0x0D});

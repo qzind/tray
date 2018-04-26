@@ -36,11 +36,22 @@ jSSC Library (As-Is, No Modifications)
   LGPL-2.1 License (attached), with Copyright notice
   https://code.google.com/p/java-simple-serial-connector/
 
+
+HIDAPI (As-Is, No Modifications)
+  Copyright 2009, Alan Ott, Signal 11 Software
+  Original HIDAPI license (attached), with Copyright notice
+  https://github.com/signal11/hidapi
+
+
+jsemver (As-Is, No Modifications)
+  Copyright 2012-2014 Zafar Khaja <zafarkhaja@gmail.com>
+  MIT License (attached), with Copyright notice
+  https://github.com/zafarkhaja/jsemver
 ______________________________________________________________________
 
 
 LGPL 2.1
-Applies ONLY to: qz-print, qz-tray, pdf-renderer, jssc
+Applies ONLY to: qz-print, qz-tray, jssc
 
 
                   GNU LESSER GENERAL PUBLIC LICENSE
@@ -539,7 +550,7 @@ ______________________________________________________________________
 
 
 Apache 2.0
-Applies ONLY to: joor, jetty
+Applies ONLY to: joor, jetty, Apache PDFBox
 
 
 
@@ -562,4 +573,39 @@ END OF Apache 2.0
 
 ______________________________________________________________________
 
-END OF ATTRIBUTION, LICENSING AND SUMMARY OF QZ-PRINT COMPONENTS
+
+Applies ONLY to: HIDAPI
+
+HIDAPI - Multi-Platform library for
+communication with HID devices.
+
+Copyright 2009, Alan Ott, Signal 11 Software.
+All Rights Reserved.
+
+This software may be used by anyone for any reason so
+long as the copyright notice in the source files
+remains intact.
+
+END OF HIDAPI
+______________________________________________________________________
+
+MIT License
+Applies ONLY to: jsemver
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+END OF MIT License
+
+______________________________________________________________________
+
+END OF ATTRIBUTION, LICENSING AND SUMMARY OF QZ-TRAY COMPONENTS

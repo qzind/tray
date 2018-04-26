@@ -984,6 +984,7 @@
 
             '\x1BSs\x0D',      // Start of sequence
             { type: 'raw', format: 'image', data: 'assets/img/fade-test.png', options: { language: "EVOLIS", precision: 128 } },
+            '\x1BWt;50;60;0;30;Printed using QZ Tray ' + qzVersion + '\x0D', // 50,60 = coordinates; 0 = arial font
             '\x1BSe\x0D'       // End of sequence
         ];
 

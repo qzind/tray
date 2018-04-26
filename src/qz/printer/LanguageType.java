@@ -28,6 +28,7 @@ public enum LanguageType {
     ESCP(false, false, "ESC", "ESC/P"),
     ESCP2(false, false, "ESC/P2"),
     ESCPOS(false, false, "ESC/POS", "EPSON"),
+    EVOLIS(false, false),
     UNKNOWN(false, false);
 
 

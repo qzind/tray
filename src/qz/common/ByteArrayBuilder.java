@@ -113,6 +113,13 @@ public final class ByteArrayBuilder {
         return this;
     }
 
+    public final ByteArrayBuilder append(List<Byte> bytes) {
+        for(byte b : bytes) {
+            buffer.add(b);
+        }
+        return this;
+    }
+
     /**
      * Convenience method for append(byte[]) combined with a StringBuffer of specified
      * charset

@@ -25,6 +25,12 @@ jetty Web Server Library (As-Is, No Modifications)
   http://eclipse.org/jetty/
 
 
+Apache log4j (As-Is, No Modifications)
+  Copyright (C) 1999-2005 The Apache Software Foundation
+  Apache License, Version 2.0 (attached), with Copyright Notice
+  https://logging.apache.org/
+
+
 Apache PDFBox (As-Is, No Modifications)
   Copyright (C) 2009–2015 The Apache Software Foundation
   Apache License, Version 2.0 (attached), with Copyright Notice
@@ -32,15 +38,15 @@ Apache PDFBox (As-Is, No Modifications)
 
 
 jSSC Library (As-Is, No Modifications)
-  Copyright (c) 2010-2013 Alexey Sokolov (scream3r) 
+  Copyright (c) 2010-2013 Alexey Sokolov (scream3r)
   LGPL-2.1 License (attached), with Copyright notice
   https://code.google.com/p/java-simple-serial-connector/
 
 
-HIDAPI (As-Is, No Modifications)
-  Copyright 2009, Alan Ott, Signal 11 Software
-  Original HIDAPI license (attached), with Copyright notice
-  https://github.com/signal11/hidapi
+hid4java (As-Is, No Modifications)
+  Copyright (c) 2014 Gary Rowe
+  MIT License (attached), with Copyright notice
+  https://github.com/gary-rowe/hid4java
 
 
 jsemver (As-Is, No Modifications)
@@ -51,7 +57,7 @@ ______________________________________________________________________
 
 
 LGPL 2.1
-Applies ONLY to: qz-print, qz-tray, jssc
+Applies ONLY to: qz-tray, jssc
 
 
                   GNU LESSER GENERAL PUBLIC LICENSE
@@ -550,8 +556,7 @@ ______________________________________________________________________
 
 
 Apache 2.0
-Applies ONLY to: joor, jetty, Apache PDFBox
-
+Applies ONLY to: joor, jetty, Apache PDFBox, Apache log4j
 
 
                            APACHE LICENSE
@@ -574,23 +579,8 @@ END OF Apache 2.0
 ______________________________________________________________________
 
 
-Applies ONLY to: HIDAPI
-
-HIDAPI - Multi-Platform library for
-communication with HID devices.
-
-Copyright 2009, Alan Ott, Signal 11 Software.
-All Rights Reserved.
-
-This software may be used by anyone for any reason so
-long as the copyright notice in the source files
-remains intact.
-
-END OF HIDAPI
-______________________________________________________________________
-
 MIT License
-Applies ONLY to: jsemver
+Applies ONLY to: hid4java, jsemver
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

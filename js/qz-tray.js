@@ -971,19 +971,24 @@ var qz = (function() {
 
             /**
              * @param {string} port Name of port to open.
-             * @param {Object} bounds Boundaries of serial port output.
-             *  @param {string} [bounds.begin=0x0002] Character denoting start of serial response. Not used if <code>width</code is provided.
-             *  @param {string} [bounds.end=0x000D] Character denoting end of serial response. Not used if <code>width</code> is provided.
-             *  @param {number} [bounds.width] Used for fixed-width response serial communication.
+             * @param {Object} options Boundaries of serial port output.
+             *  @param {string} [options.begin=0x0002] Character denoting start of serial response. Not used if <code>width</code is provided.
+             *  @param {string} [options.end=0x000D] Character denoting end of serial response. Not used if <code>width</code> is provided.
+             *  @param {number} [options.width] Used for fixed-width response serial communication.
+             *  @param {string} [options.baudRate=9600]
+             *  @param {string} [options.dataBits=8]
+             *  @param {string} [options.stopBits=1]
+             *  @param {string} [options.parity='NONE'] Valid values <code>[NONE| EVEN | ODD | MARK | SPACE]</code>
+             *  @param {string} [options.flowControl='NONE'] Valid values <code>[NONE | XONXOFF | XONXOFF_OUT | XONXOFF_IN | RTSCTS | RTSCTS_OUT | RTSCTS_IN]</code>
              *
              * @returns {Promise<null|Error>}
              *
              * @memberof qz.serial
              */
-            openPort: function(port, bounds) {
+            openPort: function(port, options) {
                 var params = {
                     port: port,
-                    bounds: bounds
+                    options: options
                 };
                 return _qz.websocket.dataPromise('serial.openPort', params);
             },
@@ -994,7 +999,7 @@ var qz = (function() {
              *
              * @param {string} port An open port to send data over.
              * @param {string} data The data to send to the serial device.
-             * @param {Object} [properties] Properties of data being sent over the serial port.
+             * @param {Object} [properties] DEPRECATED: Properties of data being sent over the serial port.
              *  @param {string} [properties.baudRate=9600]
              *  @param {string} [properties.dataBits=8]
              *  @param {string} [properties.stopBits=1]
@@ -1008,6 +1013,10 @@ var qz = (function() {
              * @memberof qz.serial
              */
             sendData: function(port, data, properties) {
+                if (properties != null) {
+                    _qz.log.warn("Properties object is deprecated on sendData calls, use openPort instead.");
+                }
+
                 var params = {
                     port: port,
                     data: data,

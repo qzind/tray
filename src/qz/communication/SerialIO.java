@@ -8,8 +8,6 @@ import qz.common.ByteArrayBuilder;
 import qz.utils.ByteUtilities;
 import qz.utils.SerialUtilities;
 
-import java.util.Arrays;
-
 /**
  * @author Tres
  */
@@ -35,31 +33,23 @@ public class SerialIO {
 
 
     /**
-     * Controller for Serial communication.
-     *
-     * @param portName  Port name to open, such as "COM1" or "/dev/tty0/"
-     * @param dataBegin Starting character bytes of serial responses.
-     * @param dataEnd   Ending character bytes of serial response.
-     */
-    public SerialIO(String portName, byte[] dataBegin, byte[] dataEnd) {
-        this.portName = portName;
-
-        this.dataBegin = Arrays.copyOf(dataBegin, dataBegin.length);
-        this.dataEnd = Arrays.copyOf(dataEnd, dataEnd.length);
-    }
-
-    /**
-     * Controller for Serial communication.
+     * Controller for serial communications
      *
      * @param portName Port name to open, such as "COM1" or "/dev/tty0/"
-     * @param width    Length of fixed-width responses.
+     * @param props    Parsed serial properties
      */
-    public SerialIO(String portName, int width) {
+    public SerialIO(String portName, SerialProperties props) throws SerialPortException {
         this.portName = portName;
 
-        this.width = width;
-    }
+        if (props.getBoundWidth() == null) {
+            dataBegin = SerialUtilities.characterBytes(props.getBoundBegin());
+            dataEnd = SerialUtilities.characterBytes(props.getBoundEnd());
+        } else {
+            width = props.getBoundWidth();
+        }
 
+        setProperties(props);
+    }
 
     /**
      * Open the specified port name.
@@ -154,8 +144,9 @@ public class SerialIO {
     /**
      * Applies the port parameters and writes the buffered data to the serial port.
      */
-    public void sendData(SerialProperties props, String data) throws SerialPortException {
-        setProperties(props);
+    public void sendData(String data, SerialProperties props) throws SerialPortException {
+        if (props != null) { setProperties(props); }
+
         log.debug("Sending data over [{}]", portName);
         port.writeBytes(SerialUtilities.characterBytes(data));
     }

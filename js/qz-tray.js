@@ -203,6 +203,9 @@ var qz = (function() {
 
                         if (obj.timestamp == undefined) {
                             obj.timestamp = Date.now();
+                            if (typeof obj.timestamp !== 'number') {
+                                obj.timestamp = new Date().getTime();
+                            }
                         }
                         if (obj.promise != undefined) {
                             obj.uid = _qz.websocket.setup.newUID();

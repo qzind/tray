@@ -11,6 +11,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.communication.SerialIO;
+import qz.communication.SerialProperties;
 import qz.exception.SerialException;
 import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
@@ -295,18 +296,11 @@ public class SerialUtilities {
             return;
         }
 
-        final SerialIO serial;
-        JSONObject bounds = params.getJSONObject("bounds");
-        if (bounds.isNull("width")) {
-            serial = new SerialIO(portName,
-                                  SerialUtilities.characterBytes(bounds.optString("start", "0x0002")),
-                                  SerialUtilities.characterBytes(bounds.optString("end", "0x000D")));
-        } else {
-            serial = new SerialIO(portName, bounds.getInt("width"));
-        }
-
         try {
-            if (serial.open()) {
+            SerialProperties props = new SerialProperties(params.optJSONObject("options"));
+            final SerialIO serial = new SerialIO(portName);
+
+            if (serial.open(props)) {
                 connection.addSerialPort(portName, serial);
 
                 //apply listener here, so we can send all replies to the browser

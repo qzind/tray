@@ -1244,19 +1244,10 @@
         var widthVal = $("#serialWidth").val();
         if (!widthVal) { widthVal = null; }
 
-        var bounds = {
+        var properties = {
             start: $("#serialStart").val(),
             end: $("#serialEnd").val(),
-            width: widthVal
-        };
-
-        qz.serial.openPort($("#serialPort").val(), bounds).then(function() {
-            displayMessage("Serial port opened");
-        }).catch(displayError);
-    }
-
-    function sendSerialData() {
-        var properties = {
+            width: widthVal,
             baudRate: $("#serialBaud").val(),
             dataBits: $("#serialData").val(),
             stopBits: $("#serialStop").val(),
@@ -1264,7 +1255,13 @@
             flowControl: $("#serialFlow").val()
         };
 
-        qz.serial.sendData($("#serialPort").val(), $("#serialCmd").val(), properties).catch(displayError);
+        qz.serial.openPort($("#serialPort").val(), properties).then(function() {
+            displayMessage("Serial port opened");
+        }).catch(displayError);
+    }
+
+    function sendSerialData() {
+        qz.serial.sendData($("#serialPort").val(), $("#serialCmd").val()).catch(displayError);
     }
 
     function closeSerialPort() {

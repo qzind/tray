@@ -8,8 +8,6 @@ import qz.common.ByteArrayBuilder;
 import qz.utils.ByteUtilities;
 import qz.utils.SerialUtilities;
 
-import java.util.Arrays;
-
 /**
  * @author Tres
  */
@@ -35,39 +33,22 @@ public class SerialIO {
 
 
     /**
-     * Controller for Serial communication.
-     *
-     * @param portName  Port name to open, such as "COM1" or "/dev/tty0/"
-     * @param dataBegin Starting character bytes of serial responses.
-     * @param dataEnd   Ending character bytes of serial response.
-     */
-    public SerialIO(String portName, byte[] dataBegin, byte[] dataEnd) {
-        this.portName = portName;
-
-        this.dataBegin = Arrays.copyOf(dataBegin, dataBegin.length);
-        this.dataEnd = Arrays.copyOf(dataEnd, dataEnd.length);
-    }
-
-    /**
-     * Controller for Serial communication.
+     * Controller for serial communications
      *
      * @param portName Port name to open, such as "COM1" or "/dev/tty0/"
-     * @param width    Length of fixed-width responses.
      */
-    public SerialIO(String portName, int width) {
+    public SerialIO(String portName) throws SerialPortException {
         this.portName = portName;
-
-        this.width = width;
     }
-
 
     /**
      * Open the specified port name.
      *
+     * @param props Parsed serial properties
      * @return Boolean indicating success.
      * @throws SerialPortException If the port fails to open.
      */
-    public boolean open() throws SerialPortException {
+    public boolean open(SerialProperties props) throws SerialPortException {
         if (isOpen()) {
             log.warn("Serial port [{}] is already open", portName);
             return false;
@@ -75,6 +56,7 @@ public class SerialIO {
 
         port = new SerialPort(portName);
         port.openPort();
+        setProperties(props);
 
         return port.isOpened();
     }
@@ -137,6 +119,15 @@ public class SerialIO {
      * @throws SerialPortException If the properties fail to set
      */
     private void setProperties(SerialProperties props) throws SerialPortException {
+        if (props == null) { return; }
+
+        if (props.getBoundWidth() == null) {
+            dataBegin = SerialUtilities.characterBytes(props.getBoundBegin());
+            dataEnd = SerialUtilities.characterBytes(props.getBoundEnd());
+        } else {
+            width = props.getBoundWidth();
+        }
+
         boolean equals = this.props != null &&
                 this.props.getBaudRate() == props.getBaudRate() &&
                 this.props.getDataBits() == props.getDataBits() &&
@@ -154,8 +145,9 @@ public class SerialIO {
     /**
      * Applies the port parameters and writes the buffered data to the serial port.
      */
-    public void sendData(SerialProperties props, String data) throws SerialPortException {
-        setProperties(props);
+    public void sendData(String data, SerialProperties props) throws SerialPortException {
+        if (props != null) { setProperties(props); }
+
         log.debug("Sending data over [{}]", portName);
         port.writeBytes(SerialUtilities.characterBytes(data));
     }

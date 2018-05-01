@@ -18,7 +18,7 @@ public class SerialProperties {
     private int parity = SerialPort.PARITY_NONE;
     private int flowControl = SerialPort.FLOWCONTROL_NONE;
 
-    private String boundBegin = "0x002";
+    private String boundBegin = "0x0002";
     private String boundEnd = "0x000D";
     private Integer boundWidth = null;
 
@@ -54,9 +54,9 @@ public class SerialProperties {
             catch(JSONException e) { log.warn("Cannot read {} as a value for flow control, using default", serialProps.opt("flowControl")); }
         }
 
-        if (!serialProps.isNull("begin")) {
+        if (!serialProps.isNull("start")) {
             try { boundBegin = serialProps.getString("start"); }
-            catch(JSONException e) { log.warn("Cannot read {} as a value for bound begin, using default", serialProps.opt("begin")); }
+            catch(JSONException e) { log.warn("Cannot read {} as a value for bound begin, using default", serialProps.opt("start")); }
         }
 
         if (!serialProps.isNull("end")) {

@@ -36,28 +36,19 @@ public class SerialIO {
      * Controller for serial communications
      *
      * @param portName Port name to open, such as "COM1" or "/dev/tty0/"
-     * @param props    Parsed serial properties
      */
-    public SerialIO(String portName, SerialProperties props) throws SerialPortException {
+    public SerialIO(String portName) throws SerialPortException {
         this.portName = portName;
-
-        if (props.getBoundWidth() == null) {
-            dataBegin = SerialUtilities.characterBytes(props.getBoundBegin());
-            dataEnd = SerialUtilities.characterBytes(props.getBoundEnd());
-        } else {
-            width = props.getBoundWidth();
-        }
-
-        setProperties(props);
     }
 
     /**
      * Open the specified port name.
      *
+     * @param props Parsed serial properties
      * @return Boolean indicating success.
      * @throws SerialPortException If the port fails to open.
      */
-    public boolean open() throws SerialPortException {
+    public boolean open(SerialProperties props) throws SerialPortException {
         if (isOpen()) {
             log.warn("Serial port [{}] is already open", portName);
             return false;
@@ -65,6 +56,7 @@ public class SerialIO {
 
         port = new SerialPort(portName);
         port.openPort();
+        setProperties(props);
 
         return port.isOpened();
     }
@@ -128,6 +120,13 @@ public class SerialIO {
      */
     private void setProperties(SerialProperties props) throws SerialPortException {
         if (props == null) { return; }
+
+        if (props.getBoundWidth() == null) {
+            dataBegin = SerialUtilities.characterBytes(props.getBoundBegin());
+            dataEnd = SerialUtilities.characterBytes(props.getBoundEnd());
+        } else {
+            width = props.getBoundWidth();
+        }
 
         boolean equals = this.props != null &&
                 this.props.getBaudRate() == props.getBaudRate() &&

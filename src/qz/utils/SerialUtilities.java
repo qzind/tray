@@ -297,10 +297,10 @@ public class SerialUtilities {
         }
 
         try {
-            SerialProperties props = new SerialProperties(params.optJSONObject("properties"));
-            final SerialIO serial = new SerialIO(portName, props);
+            SerialProperties props = new SerialProperties(params.optJSONObject("options"));
+            final SerialIO serial = new SerialIO(portName);
 
-            if (serial.open()) {
+            if (serial.open(props)) {
                 connection.addSerialPort(portName, serial);
 
                 //apply listener here, so we can send all replies to the browser

@@ -296,7 +296,11 @@ public class PrintSocketClient {
                 SerialUtilities.setupSerialPort(session, UID, connection, params);
                 break;
             case SERIAL_SEND_DATA: {
-                SerialProperties props = new SerialProperties(params.optJSONObject("properties"));
+                SerialProperties props = null;
+                if (!params.isNull("properties")) {
+                    props = new SerialProperties(params.optJSONObject("properties"));
+                }
+
                 SerialIO serial = connection.getSerialPort(params.optString("port"));
                 if (serial != null) {
                     serial.sendData(params.optString("data"), props);

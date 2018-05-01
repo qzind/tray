@@ -127,6 +127,8 @@ public class SerialIO {
      * @throws SerialPortException If the properties fail to set
      */
     private void setProperties(SerialProperties props) throws SerialPortException {
+        if (props == null) { return; }
+
         boolean equals = this.props != null &&
                 this.props.getBaudRate() == props.getBaudRate() &&
                 this.props.getDataBits() == props.getDataBits() &&

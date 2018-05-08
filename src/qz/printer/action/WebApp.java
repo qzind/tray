@@ -39,7 +39,8 @@ public class WebApp extends Application {
 
     private static final Logger log = LoggerFactory.getLogger(WebApp.class);
 
-    private static final int PAUSES = 5; //number of pauses during capture before assuming failure
+    private static final int SLEEP = 250;
+    private static final int PAUSES = 6; //total paused seconds before failing
 
     private static WebApp instance = null;
 
@@ -49,6 +50,7 @@ public class WebApp extends Application {
     private static double pageHeight;
     private static double pageZoom;
 
+    private static final AtomicBoolean started = new AtomicBoolean(false);
     private static final AtomicBoolean complete = new AtomicBoolean(false);
     private static final AtomicReference<Throwable> thrown = new AtomicReference<>();
 
@@ -142,13 +144,11 @@ public class WebApp extends Application {
             }.start();
         }
 
-        for(int i = 0; i < PAUSES; i++) {
-            if (webView != null) {
-                break;
-            }
+        for(int i = 0; i < (PAUSES * 1000); i += SLEEP) {
+            if (started.get()) { break; }
 
             log.trace("Waiting for JavaFX..");
-            try { Thread.sleep(1000); } catch(Exception ignore) {}
+            try { Thread.sleep(SLEEP); } catch(Exception ignore) {}
         }
 
         if (webView == null) {
@@ -158,6 +158,7 @@ public class WebApp extends Application {
 
     @Override
     public void start(Stage st) throws Exception {
+        started.set(true);
         log.debug("Started JavaFX");
 
         webView = new WebView();

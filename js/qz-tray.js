@@ -929,7 +929,7 @@ var qz = (function() {
                             || data[i].format.toUpperCase() === 'XML'))) {
                         data[i].data = _qz.tools.absolute(data[i].data);
                     }
-                    if (typeof data[i].options.overlay === 'string') {
+                    if (data[i].options && typeof data[i].options.overlay === 'string') {
                         data[i].options.overlay = _qz.tools.absolute(data[i].options.overlay);
                     }
                 }

@@ -156,7 +156,7 @@ function sudo_env() {
     userid="$(logname 2>/dev/null || echo $SUDO_USER)"
     pid=$(ps aux |grep "^$userid" |grep "dbus-daemon" | grep "unix:" |awk '{print $2}')
     # Replace null delimiters with newline for grep
-    envt=$(cat "/proc/$pid/environ" |tr '\0' '\n')
+    envt=$(cat "/proc/$pid/environ" 2> /dev/null |tr '\0' '\n')
 
     # List of environmental variables to use; adjust as needed
     # UPSTART_SESSION must come before GNOME_DESKTOP_SESSION_ID
@@ -173,7 +173,7 @@ function sudo_env() {
 	    export $i > /dev/null 2>&1
 	fi
 
-        echo "$i=${!i}"
+        echo -e "        $i=${!i}"
     done
 }
 

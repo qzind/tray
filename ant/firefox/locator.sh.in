@@ -14,8 +14,8 @@
 #    $ ./${locator.name} "directoryName" [binName]                                 #
 #                                                                             #
 ###############################################################################
-# Array of possible pref tag conflicts
-secondarylocations=("/lib64" "/lib")
+# Array of secondary search locations
+secondarylocations=("/usr/lib64" "/usr/lib")
 
 
 #
@@ -62,9 +62,9 @@ function get_targetdir()
 	# Convert "Firefox" to "firefox", etc
 	lowerdir=$(echo "$with_dir" |tr '[:upper:]' '[:lower:]')
 	lowerbin=$(echo "$with_bin" |tr '[:upper:]' '[:lower:]')
-	location=$(readlink -f "$(which $lowerdir)")
+	location=$(readlink -f "$(which $lowerdir 2> /dev/null)")
 	targetdir=$(dirname "$location")
-	if [ -f "$targetdir/$lowerbin" ]; then
+	if [ -f "$targetdir/$lowerbin" ] && file -b "$targetdir/$lowerbin" |grep -q ELF; then
 		dir_out="$targetdir"
 		return 0
 	else

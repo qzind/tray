@@ -151,7 +151,7 @@ public class WebApp extends Application {
             try { Thread.sleep(SLEEP); } catch(Exception ignore) {}
         }
 
-        if (webView == null) {
+        if (!started.get()) {
             throw new IOException("JavaFX did not start");
         }
     }

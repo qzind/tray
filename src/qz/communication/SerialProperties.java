@@ -65,7 +65,7 @@ public class SerialProperties {
         }
 
         if (!serialProps.isNull("width")) {
-            try { boundWidth = serialProps.getInt("boundWidth"); }
+            try { boundWidth = serialProps.getInt("width"); }
             catch(JSONException e) { log.warn("Cannot read {} as a value for bound width, defaulting to begin/end values", serialProps.opt("width")); }
         }
     }

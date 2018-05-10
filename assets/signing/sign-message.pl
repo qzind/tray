@@ -46,6 +46,7 @@ my $private_key = do {
 my $rsa = Crypt::OpenSSL::RSA->new_private_key($private_key);
 
 # Create signature
+$rsa->use_sha1_hash();
 my $sig = encode_base64($rsa->sign($request));
 
 print $sig;

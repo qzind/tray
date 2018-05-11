@@ -40,7 +40,7 @@ public class WebApp extends Application {
     private static final Logger log = LoggerFactory.getLogger(WebApp.class);
 
     private static final int SLEEP = 250;
-    private static final int PAUSES = 6; //total paused seconds before failing
+    private static final int TIMEOUT = 60; //total paused seconds before failing
 
     private static WebApp instance = null;
 
@@ -55,17 +55,12 @@ public class WebApp extends Application {
     private static final AtomicReference<Throwable> thrown = new AtomicReference<>();
 
     private static PauseTransition snap;
-    private static int captureStall = 0;
 
     //listens for a Succeeded state to activate image capture
     private static ChangeListener<Worker.State> stateListener = new ChangeListener<Worker.State>() {
         @Override
         public void changed(ObservableValue<? extends Worker.State> ov, Worker.State oldState, Worker.State newState) {
             log.trace("New state: {} > {}", oldState, newState);
-
-            if (captureStall >= PAUSES) {
-                return; //we've already stopped listening for capture, don't do more work
-            }
 
             if (newState == Worker.State.SUCCEEDED) {
                 //ensure html tag doesn't use scrollbars, clipping page instead
@@ -123,7 +118,6 @@ public class WebApp extends Application {
     private static ChangeListener<Number> workDoneListener = new ChangeListener<Number>() {
         @Override
         public void changed(ObservableValue<? extends Number> ov, Number oldWork, Number newWork) {
-            captureStall = 0; //still working, keep capture from marked as failed
             log.trace("Done: {} > {}", oldWork, newWork);
         }
     };
@@ -144,7 +138,7 @@ public class WebApp extends Application {
             }.start();
         }
 
-        for(int i = 0; i < (PAUSES * 1000); i += SLEEP) {
+        for(int i = 0; i < (TIMEOUT * 1000); i += SLEEP) {
             if (started.get()) { break; }
 
             log.trace("Waiting for JavaFX..");
@@ -188,7 +182,7 @@ public class WebApp extends Application {
         thrown.set(null);
 
         //ensure JavaFX has started before we run
-        if (webView == null) {
+        if (!started.get()) {
             throw new IOException("JavaFX has not been started");
         }
 

@@ -56,7 +56,7 @@ public class AboutDialog extends BasicDialog {
 
         JScrollPane pane = new JScrollPane(gridPanel);
         pane.getVerticalScrollBar().setUnitIncrement(8);
-        pane.setPreferredSize(new Dimension(00, 100));
+        pane.setPreferredSize(new Dimension(0, 100));
         gridPanel.setLayout(new GridLayout(5, 2));
         gridPanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
 

@@ -53,6 +53,8 @@ public class PrintSocketServer {
     public static final List<Integer> SECURE_PORTS = Collections.unmodifiableList(Arrays.asList(8181, 8282, 8383, 8484));
     public static final List<Integer> INSECURE_PORTS = Collections.unmodifiableList(Arrays.asList(8182, 8283, 8384, 8485));
 
+    private static final AtomicInteger securePortIndex = new AtomicInteger(0);
+    private static final AtomicInteger insecurePortIndex = new AtomicInteger(0);
 
     private static TrayManager trayManager;
     private static Properties trayProperties;
@@ -125,13 +127,11 @@ public class PrintSocketServer {
 
     public static void runServer() {
         final AtomicBoolean running = new AtomicBoolean(false);
-        final AtomicInteger securePortIndex = new AtomicInteger(0);
-        final AtomicInteger insecurePortIndex = new AtomicInteger(0);
 
         trayProperties = getTrayProperties();
 
         while(!running.get() && securePortIndex.get() < SECURE_PORTS.size() && insecurePortIndex.get() < INSECURE_PORTS.size()) {
-            Server server = new Server(INSECURE_PORTS.get(insecurePortIndex.get()));
+            Server server = new Server(getInsecurePortInUse());
 
             if (trayProperties != null) {
                 // Bind the secure socket on the proper port number (i.e. 9341), add it as an additional connector
@@ -145,7 +145,7 @@ public class PrintSocketServer {
 
                 ServerConnector connector = new ServerConnector(server, sslConnection, httpConnection);
                 connector.setHost(trayProperties.getProperty("wss.host"));
-                connector.setPort(SECURE_PORTS.get(securePortIndex.get()));
+                connector.setPort(getSecurePortInUse());
                 server.addConnector(connector);
             } else {
                 log.warn("Could not start secure WebSocket");
@@ -170,7 +170,7 @@ public class PrintSocketServer {
                 context.addServlet(httpServlet, "/");
 
                 // Handle JSON data page
-                ServletHolder jsonServlet = new ServletHolder(new JsonAboutServlet(trayProperties, securePortIndex, insecurePortIndex));
+                ServletHolder jsonServlet = new ServletHolder(new JsonAboutServlet());
                 jsonServlet.setInitParameter("resourceBase","/json/");
                 context.addServlet(jsonServlet, "/json");
                 context.addServlet(jsonServlet, "/json/");
@@ -219,4 +219,13 @@ public class PrintSocketServer {
         }
         return trayProperties;
     }
+
+    public static int getSecurePortInUse() {
+        return SECURE_PORTS.get(securePortIndex.get());
+    }
+
+    public static int getInsecurePortInUse() {
+        return INSECURE_PORTS.get(insecurePortIndex.get());
+    }
+
 }

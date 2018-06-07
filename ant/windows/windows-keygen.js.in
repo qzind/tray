@@ -664,8 +664,12 @@ function getArg(index, defaultVal) {
 }
 
 /*
- * Mimic an alert dialog, used only for OK_ONLY + WARNING (0 + 48)
+ * Mimic an alert dialog, used only for OK_ONLY + WARNING (0 + 48), replaced with a console message if silent install
  */
 function alert(message, title) {
-    new ActiveXObject("WScript.Shell").Popup(message, 0, title == null ? "Warning" : title, 48);
+    if (shell.Environment("PROCESS").Item("${vendor.name}_silent")) {
+        console.warn(message);
+    } else {
+        shell.Popup(message, 0, title == null ? "Warning" : title, 48);
+    }
 }

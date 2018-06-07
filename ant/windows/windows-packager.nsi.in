@@ -37,6 +37,11 @@ Section
   ; Kills any running ${project.name} processes
   nsExec::ExecToLog "wmic.exe process where $\"Name like '%java%' and CommandLine like '%${project.filename}.jar%'$\" call terminate"
 
+  ; Set environmental variable for silent install to be picked up by cscript
+  ${If} ${Silent}
+    System::Call 'Kernel32::SetEnvironmentVariable(t, t)i ("${vendor.name}_silent", "1").r0'
+  ${EndIf}
+
   ; Cleanup for wmic on Windows XP
   SetShellVarContext current
   Delete "$DESKTOP\TempWmicBatchFile.bat"
@@ -143,6 +148,12 @@ Section "Uninstall"
 
   ; Kills any running ${project.name} processes
   nsExec::ExecToLog "wmic.exe process where $\"Name like '%java%' and CommandLine like '%${project.filename}.jar%'$\" call terminate"
+
+  ; Set environmental variable for silent install to be picked up by cscript
+  ${If} ${Silent}
+    System::Call 'Kernel32::SetEnvironmentVariable(t, t)i ("${vendor.name}_silent", "1").r0'
+  ${EndIf}
+
   ; Cleanup for wmic on Windows XP
   Delete "$DESKTOP\TempWmicBatchFile.bat"
 

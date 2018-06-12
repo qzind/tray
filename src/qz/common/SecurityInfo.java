@@ -6,44 +6,68 @@ import org.eclipse.jetty.util.Jetty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import purejavahidapi.PureJavaHidApi;
+
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.util.*;
 
 /**
  * Created by Kyle B. on 10/27/2017.
  */
 public class SecurityInfo {
+
     private static final Logger log = LoggerFactory.getLogger(SecurityInfo.class);
 
-    public static SortedMap<String, String> getLibVersions(){
-        SortedMap<String, String> libVersions = new TreeMap<>();
+    public static KeyStore getKeyStore(Properties props) {
+        if (props != null) {
+            String store = props.getProperty("wss.keystore", "");
+            char[] pass = props.getProperty("wss.storepass", "").toCharArray();
+
+            try {
+                KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+                keystore.load(new FileInputStream(store), pass);
+                return keystore;
+            }
+            catch(GeneralSecurityException | IOException e) {
+                log.warn("Unable to create keystore from properties file: {}", e.getMessage());
+            }
+        }
+
+        return null;
+    }
+
+    public static SortedMap<String,String> getLibVersions() {
+        SortedMap<String,String> libVersions = new TreeMap<>();
 
         // Use API-provided mechanism if available
-        libVersions.put("jna (native)",         Native.VERSION_NATIVE);
-        libVersions.put("jna",                  Native.VERSION);
-        libVersions.put("jssc",                 jssc.SerialNativeInterface.getLibraryVersion());
-        libVersions.put("jetty",                Jetty.VERSION);
-        libVersions.put("pdfbox",               org.apache.pdfbox.util.Version.getVersion());
-        libVersions.put("purejavahidapi",       PureJavaHidApi.getVersion());
-        libVersions.put("usb-api",              javax.usb.Version.getApiVersion());
-        libVersions.put("not-yet-commons-ssl",  org.apache.commons.ssl.Version.VERSION);
-        libVersions.put("mslinks",              mslinks.ShellLink.VERSION);
-        libVersions.put("simplersa",            null);
-        libVersions.put("bouncycastle",         "" + new BouncyCastleProvider().getVersion());
+        libVersions.put("jna (native)", Native.VERSION_NATIVE);
+        libVersions.put("jna", Native.VERSION);
+        libVersions.put("jssc", jssc.SerialNativeInterface.getLibraryVersion());
+        libVersions.put("jetty", Jetty.VERSION);
+        libVersions.put("pdfbox", org.apache.pdfbox.util.Version.getVersion());
+        libVersions.put("purejavahidapi", PureJavaHidApi.getVersion());
+        libVersions.put("usb-api", javax.usb.Version.getApiVersion());
+        libVersions.put("not-yet-commons-ssl", org.apache.commons.ssl.Version.VERSION);
+        libVersions.put("mslinks", mslinks.ShellLink.VERSION);
+        libVersions.put("simplersa", null);
+        libVersions.put("bouncycastle", "" + new BouncyCastleProvider().getVersion());
 
         // Fallback to maven manifest information
-        HashMap<String, String> mavenVersions = getMavenVersions();
+        HashMap<String,String> mavenVersions = getMavenVersions();
 
-        String[] mavenLibs = { "jetty-servlet", "apache-log4j-extras", "jetty-io", "websocket-common",
-                       "slf4j-log4j12", "usb4java-javax", "java-semver", "commons-pool2",
-                       "websocket-server", "jettison", "commons-codec", "log4j", "slf4j-api",
-                       "websocket-servlet", "jetty-http", "commons-lang3", "javax-websocket-server-impl",
-                       "javax.servlet-api", "usb4java", "websocket-api", "jetty-util", "websocket-client",
-                       "javax.websocket-api", "commons-io" };
+        String[] mavenLibs = {"jetty-servlet", "apache-log4j-extras", "jetty-io", "websocket-common",
+                              "slf4j-log4j12", "usb4java-javax", "java-semver", "commons-pool2",
+                              "websocket-server", "jettison", "commons-codec", "log4j", "slf4j-api",
+                              "websocket-servlet", "jetty-http", "commons-lang3", "javax-websocket-server-impl",
+                              "javax.servlet-api", "usb4java", "websocket-api", "jetty-util", "websocket-client",
+                              "javax.websocket-api", "commons-io", "jetty-security"};
 
-        for (String lib : mavenLibs) {
+        for(String lib : mavenLibs) {
             libVersions.put(lib, mavenVersions.get(lib));
         }
 
@@ -52,6 +76,7 @@ public class SecurityInfo {
 
     /**
      * Fetches embedded version information based on maven properties
+     *
      * @return HashMap of library name, version
      */
     private static HashMap<String,String> getMavenVersions() {
@@ -75,7 +100,8 @@ public class SecurityInfo {
                     return FileVisitResult.CONTINUE;
                 }
             });
-        } catch(Exception ignore) {
+        }
+        catch(Exception ignore) {
             log.warn("Could not open {} for version information.  Most libraries will list as (unknown)", jar);
         }
         return mavenVersions;

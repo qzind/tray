@@ -17,10 +17,15 @@ import org.apache.log4j.rolling.RollingFileAppender;
 import org.apache.log4j.rolling.SizeBasedTriggeringPolicy;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.server.WebSocketHandler;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -30,7 +35,7 @@ import qz.deploy.DeployUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
-import java.io.File;
+import java.io.*;
 import java.net.BindException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,6 +53,8 @@ public class PrintSocketServer {
     public static final List<Integer> SECURE_PORTS = Collections.unmodifiableList(Arrays.asList(8181, 8282, 8383, 8484));
     public static final List<Integer> INSECURE_PORTS = Collections.unmodifiableList(Arrays.asList(8182, 8283, 8384, 8485));
 
+    private static final AtomicInteger securePortIndex = new AtomicInteger(0);
+    private static final AtomicInteger insecurePortIndex = new AtomicInteger(0);
 
     private static TrayManager trayManager;
     private static Properties trayProperties;
@@ -120,13 +127,11 @@ public class PrintSocketServer {
 
     public static void runServer() {
         final AtomicBoolean running = new AtomicBoolean(false);
-        final AtomicInteger securePortIndex = new AtomicInteger(0);
-        final AtomicInteger insecurePortIndex = new AtomicInteger(0);
 
         trayProperties = getTrayProperties();
 
         while(!running.get() && securePortIndex.get() < SECURE_PORTS.size() && insecurePortIndex.get() < INSECURE_PORTS.size()) {
-            Server server = new Server(INSECURE_PORTS.get(insecurePortIndex.get()));
+            Server server = new Server(getInsecurePortInUse());
 
             if (trayProperties != null) {
                 // Bind the secure socket on the proper port number (i.e. 9341), add it as an additional connector
@@ -140,21 +145,37 @@ public class PrintSocketServer {
 
                 ServerConnector connector = new ServerConnector(server, sslConnection, httpConnection);
                 connector.setHost(trayProperties.getProperty("wss.host"));
-                connector.setPort(SECURE_PORTS.get(securePortIndex.get()));
+                connector.setPort(getSecurePortInUse());
                 server.addConnector(connector);
             } else {
                 log.warn("Could not start secure WebSocket");
             }
 
             try {
-                final WebSocketHandler wsHandler = new WebSocketHandler() {
+                ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+
+                // Handle WebSocket connections
+                WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
+                filter.addMapping(new ServletPathSpec("/"), new WebSocketCreator() {
                     @Override
-                    public void configure(WebSocketServletFactory factory) {
-                        factory.register(PrintSocketClient.class);
-                        factory.getPolicy().setMaxTextMessageSize(MAX_MESSAGE_SIZE);
+                    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp) {
+                        return new PrintSocketClient();
                     }
-                };
-                server.setHandler(wsHandler);
+                });
+                filter.getFactory().getPolicy().setMaxTextMessageSize(MAX_MESSAGE_SIZE);
+
+                // Handle HTTP landing page
+                ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet());
+                httpServlet.setInitParameter("resourceBase","/");
+                context.addServlet(httpServlet, "/");
+
+                // Handle JSON data page
+                ServletHolder jsonServlet = new ServletHolder(new JsonAboutServlet());
+                jsonServlet.setInitParameter("resourceBase","/json/");
+                context.addServlet(jsonServlet, "/json");
+                context.addServlet(jsonServlet, "/json/");
+
+                server.setHandler(context);
                 server.setStopAtShutdown(true);
                 server.start();
 
@@ -198,4 +219,13 @@ public class PrintSocketServer {
         }
         return trayProperties;
     }
+
+    public static int getSecurePortInUse() {
+        return SECURE_PORTS.get(securePortIndex.get());
+    }
+
+    public static int getInsecurePortInUse() {
+        return INSECURE_PORTS.get(insecurePortIndex.get());
+    }
+
 }

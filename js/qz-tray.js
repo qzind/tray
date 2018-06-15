@@ -1624,28 +1624,28 @@ var qz = (function() {
              * List of files available at the given directory.<br/>
              * Due to security reasons, paths are limited to the qz data directory unless overridden via properties file.
              *
-             * @param {string} directory Relative or absolute directory to be listed
-             * @param {Object} params Object containing file access parameters
-             *   @param {boolean} [params.sandbox] If true, relative path root is a location unique to the cert's CN
-             *   @param {boolean} [params.shared] If true, relative path root is a location accessible to all users of the machine
+             * @param {string} path Relative or absolute directory path. Must reside in qz data directory or a white-listed location.
+             * @param {Object} [params] Object containing file access parameters
+             *  @param {boolean} [params.sandbox=true] If relative location from root is only available to the certificate's connection, otherwise all connections
+             *  @param {boolean} [params.shared=true] If relative location from root is accessible to all users on the system, otherwise just the current user
              * @returns {Promise<Array<String>|Error>} Array of files at the given path
              *
              * @memberof qz.file
              */
-            list: function(directory, params) {
+            list: function(path, params) {
                 params = params || {};
-                params.path = directory;
+                params.path = path;
                 return _qz.websocket.dataPromise('file.list', params);
             },
 
             /**
-             * Reads contents of file at the given path<br/>
+             * Reads contents of file at the given path.<br/>
              * Due to security reasons, paths are limited to the qz data directory unless overridden via properties file.
              *
-             * @param {string} [path] Relative or absolute file path
-             * @param {Object} params Object containing file access parameters
-             *   @param {boolean} [params.sandbox] If true, relative path root is a location unique to the cert's CN
-             *   @param {boolean} [params.shared] If true, relative path root is a location accessible to all users of the machine
+             * @param {string} path Relative or absolute file path. Must reside in qz data directory or a white-listed location.
+             * @param {Object} [params] Object containing file access parameters
+             *  @param {boolean} [params.sandbox=true] If relative location from root is only available to the certificate's connection, otherwise all connections
+             *  @param {boolean} [params.shared=true] If relative location from root is accessible to all users on the system, otherwise just the current user
              * @returns {Promise<String|Error>} String containing the file contents
              *
              * @memberof qz.file
@@ -1657,33 +1657,32 @@ var qz = (function() {
             },
 
             /**
-             * Writes data to the file at the given path<br/>
+             * Writes data to the file at the given path.<br/>
              * Due to security reasons, paths are limited to the qz data directory unless overridden via properties file.
              *
-             * @param {string} [path] Relative or absolute file path
+             * @param {string} path Relative or absolute file path. Must reside in qz data directory or a white-listed location.
              * @param {Object} params Object containing file access parameters
-             *   @param {boolean} [params.sandbox] If true, relative path root is a location unique to the cert's CN
-             *   @param {boolean} [params.shared] If true, relative path root is a location accessible to all users of the machine
-             *   @param {string} params.data File data to be written
-             *   @param {boolean} [params.append] If true, appends data to the file if the file already exists
+             *  @param {string} params.data File data to be written
+             *  @param {boolean} [params.sandbox=true] If relative location from root is only available to the certificate's connection, otherwise all connections
+             *  @param {boolean} [params.shared=true] If relative location from root is accessible to all users on the system, otherwise just the current user
+             *  @param {boolean} [params.append=false] Appends to the end of the file if set, otherwise overwrites existing contents
              * @returns {Promise<null|Error>}
              *
              * @memberof qz.file
              */
             write: function(path, params) {
-                params = params || {};
                 params.path = path;
                 return _qz.websocket.dataPromise('file.write', params);
             },
 
             /**
-             * Deletes a file at given path<br/>
+             * Deletes a file at given path.<br/>
              * Due to security reasons, paths are limited to the qz data directory unless overridden via properties file.
              *
-             * @param {string} [path] Relative or absolute file path
-             * @param {Object} params Object containing file access parameters
-             *   @param {boolean} [params.sandbox] If true, relative path root is a location unique to the cert's CN
-             *   @param {boolean} [params.shared] If true, relative path root is a location accessible to all users of the machine
+             * @param {string} path Relative or absolute file path. Must reside in qz data directory or a white-listed location.
+             * @param {Object} [params] Object containing file access parameters
+             *  @param {boolean} [params.sandbox=true] If relative location from root is only available to the certificate's connection, otherwise all connections
+             *  @param {boolean} [params.shared=true] If relative location from root is accessible to all users on the system, otherwise just the current user
              * @returns {Promise<null|Error>}
              *
              * @memberof qz.file
@@ -1691,20 +1690,20 @@ var qz = (function() {
             remove: function(path, params) {
                 params = params || {};
                 params.path = path;
-                return _qz.websocket.dataPromise('file.delete', params);
+                return _qz.websocket.dataPromise('file.remove', params);
             },
 
             /**
-             * Provides a continuous stream of events (and optionally data) from a local file
+             * Provides a continuous stream of events (and optionally data) from a local file.
              *
-             * @param directory {string} Local directory to listen to.  Must reside in qz data directory or a white-listed location.
-             * @param {Object} params Object containing file access parameters
-             *   @param {boolean} [params.sandbox] If true, relative path root is a location unique to the cert's CN
-             *   @param {boolean} [params.shared] If true, relative path root is a location accessible to all users of the machine
-             * @param {Object} [options] If defined as any truthy value, file data will be returned on events
-             *   @param {number} [params.bytes=-1] Number of bytes to return or -1 for all
-             *   @param {number} [params.lines=-1] Number of lines to return or -1 for all
-             *   @param {boolean} [options.reverse=true|false] Controls whether data should be returned from the bottom of the file.  Default value is true for line mode and false for byte mode.
+             * @param {string} path Relative or absolute directory path. Must reside in qz data directory or a white-listed location.
+             * @param {Object} [params] Object containing file access parameters
+             *  @param {boolean} [params.sandbox=true] If relative location from root is only available to the certificate's connection, otherwise all connections
+             *  @param {boolean} [params.shared=true] If relative location from root is accessible to all users on the system, otherwise just the current user
+             *  @param {Object} [params.listener] If defined, file data will be returned on events
+             *   @param {number} [params.listener.bytes=-1] Number of bytes to return or -1 for all
+             *   @param {number} [params.listener.lines=-1] Number of lines to return or -1 for all
+             *   @param {boolean} [params.listener.reverse] Controls whether data should be returned from the bottom of the file.  Default value is true for line mode and false for byte mode.
              * @returns {Promise<null|Error>}
              * @since 2.1.0
              *
@@ -1712,28 +1711,26 @@ var qz = (function() {
              *
              * @memberof qz.file
              */
-            startListening: function(directory, params, options) {
+            startListening: function(path, params) {
                 params = params || {};
-                params.path = directory;
-                //converts all falsy values to false, and all truthy values will be unchanged
-                params.options = options || false;
+                params.path = path;
                 return _qz.websocket.dataPromise('file.startListening', params);
             },
 
             /**
-             * Closes listeners with the provided settings. Omitting the directory parameter will result in all listeners closing
+             * Closes listeners with the provided settings. Omitting the path parameter will result in all listeners closing.
              *
-             * @param {string} [path] Relative or absolute file path of file listener to close, omit to close all.
-             * @param {Object} params Object containing file access parameters
-             *   @param {boolean} [params.sandbox] If true, relative path root is a location unique to the cert's CN
-             *   @param {boolean} [params.shared] If true, relative path root is a location accessible to all users of the machine
+             * @param {string} [path] Previously opened directory path of listener to close, or omit to close all.
+             * @param {Object} [params] Object containing file access parameters
+             *  @param {boolean} [params.sandbox=true] If relative location from root is only available to the certificate's connection, otherwise all connections
+             *  @param {boolean} [params.shared=true] If relative location from root is accessible to all users on the system, otherwise just the current user
              * @returns {Promise<null|Error>}
              *
              * @memberof qz.file
              */
-            stopListening: function(directory, params) {
+            stopListening: function(path, params) {
                 params = params || {};
-                params.path = directory;
+                params.path = path;
                 return _qz.websocket.dataPromise('file.stopListening', params);
             },
 
@@ -1749,7 +1746,7 @@ var qz = (function() {
              */
             setFileCallbacks: function(calls) {
                 _qz.file.fileCallbacks = calls;
-            },
+            }
         },
 
         /**

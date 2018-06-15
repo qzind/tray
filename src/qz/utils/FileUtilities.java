@@ -13,6 +13,8 @@ import javafx.util.Pair;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DOMException;
@@ -22,6 +24,7 @@ import org.xml.sax.SAXException;
 import qz.auth.Certificate;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
+import qz.communication.FileIO;
 import qz.communication.FileParams;
 import qz.exception.NullCommandException;
 import qz.ws.PrintSocketServer;
@@ -29,7 +32,10 @@ import qz.ws.PrintSocketServer;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
-import java.nio.file.*;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
@@ -69,7 +75,7 @@ public class FileUtilities {
             "url" // Internet Shortcut
     };
 
-    private static final CharSequenceTranslator translator = new LookupTranslator(new String [][] {
+    private static final CharSequenceTranslator translator = new LookupTranslator(new String[][] {
             {"^", "^^"},
             {"\\", "^b"},
             {"/", "^f"},
@@ -86,7 +92,24 @@ public class FileUtilities {
     /* resource files */
     private static HashMap<String,File> localFileMap = new HashMap<>();
     private static HashMap<String,File> sharedFileMap = new HashMap<>();
-    public static ArrayList<Pair<Path, String>> whiteList;
+    private static ArrayList<Pair<Path,String>> whiteList;
+
+    public static Path getAbsolutePath(JSONObject params, Certificate cert, boolean allowRootDir) throws JSONException, AccessDeniedException {
+        FileParams fp = new FileParams(params);
+        Path path = createAbsolutePath(fp, cert);
+
+        if (!isWhiteListed(path, allowRootDir, fp.isSandbox(), cert)) {
+            throw new AccessDeniedException(path.toString());
+        }
+
+        if (!allowRootDir && !Files.isDirectory(path)) {
+            if (!isGoodExtension(path)) {
+                throw new AccessDeniedException(path.toString());
+            }
+        }
+
+        return path;
+    }
 
     /**
      * Returns a normalised and absolute path. If the input path was relative,
@@ -95,30 +118,24 @@ public class FileUtilities {
      * normalised and returned without any further changes.
      *
      * @param fileParams File or Directory to sandbox
-     * @param cert Certificate to be used to determine sandbox location
+     * @param cert       Certificate to be used to determine sandbox location
      * @return absolute path of input, with relative location's root being determined by the {@code sandbox} and {@code shared} flags.
      */
-    public static Path unrelativizePath(FileParams fileParams, Certificate cert) throws AccessDeniedException {
+    public static Path createAbsolutePath(FileParams fileParams, Certificate cert) throws AccessDeniedException {
         Path sanitizedPath;
-        if (fileParams.originalPath.isAbsolute()) {
-            sanitizedPath = fileParams.originalPath;
+        if (fileParams.getPath().isAbsolute()) {
+            sanitizedPath = fileParams.getPath();
         } else {
-            String parent = fileParams.shared ? SystemUtilities.getSharedDataDirectory() : SystemUtilities.getDataDirectory();
-            if (fileParams.sandbox) {
-                String commonName = cert.isTrusted() ? escapeFileName(cert.getCommonName()) : "UNTRUSTED";
-                sanitizedPath = Paths.get(parent, Constants.SANDBOX_DIR, commonName).resolve(fileParams.originalPath);
+            String parent = fileParams.isShared()? SystemUtilities.getSharedDataDirectory():SystemUtilities.getDataDirectory();
+            if (fileParams.isSandbox()) {
+                String commonName = cert.isTrusted()? escapeFileName(cert.getCommonName()):"UNTRUSTED";
+                sanitizedPath = Paths.get(parent, Constants.SANDBOX_DIR, commonName).resolve(fileParams.getPath());
             } else {
-                sanitizedPath = Paths.get(parent, Constants.NOT_SANDBOX_DIR).resolve(fileParams.originalPath);
+                sanitizedPath = Paths.get(parent, Constants.NOT_SANDBOX_DIR).resolve(fileParams.getPath());
             }
         }
-        return sanitizedPath.normalize();
-    }
 
-    /**
-     * Checks a path's extension against a list of forbidden extensions. If a match is found, an AccessDeniedException is thrown.
-     */
-    public static void assertIsGoodExtension(Path path) throws AccessDeniedException {
-        if (!isGoodExtension(path)) throw new AccessDeniedException(path.toString());
+        return sanitizedPath.normalize();
     }
 
     /**
@@ -129,12 +146,12 @@ public class FileUtilities {
 
         //"foo.exe." is valid on windows, but is immediately changed to "foo.exe" by the os
         //this is undocumented behavior, therefore, rather than trying to support it, we fail it.
-        if (SystemUtilities.isWindows() && fileName.endsWith(".")) return false;
+        if (SystemUtilities.isWindows() && fileName.endsWith(".")) { return false; }
 
-        String[] tokens = fileName.split("\\.(?=[^\\.]+$)");
+        String[] tokens = fileName.split("\\.(?=[^.]+$)");
         if (tokens.length == 2) {
             String extension = tokens[1];
-            for (String bad : FileUtilities.badExtensions) {
+            for(String bad : FileUtilities.badExtensions) {
                 if (bad.equalsIgnoreCase(extension)) {
                     return false;
                 }
@@ -143,25 +160,21 @@ public class FileUtilities {
         return true;
     }
 
-    public static void assertIsWhiteListed(Path path, boolean allowRootDir, boolean sandbox, Certificate cert) throws AccessDeniedException {
-        if (!isWhiteListed(path, allowRootDir, sandbox, cert)) throw new AccessDeniedException(path.toString());
-    }
-
     /**
      * Returns whether or not the given file or folder is white-listed for File IO
      * Currently hard-coded to the QZ data directory or anything provided by qz-tray.properties
      * e.g. %APPDATA%/qz/data or $HOME/.qz/data, etc
      */
     public static boolean isWhiteListed(Path path, boolean allowRootDir, boolean sandbox, Certificate cert) {
-        String commonName = cert.isTrusted() ? escapeFileName(cert.getCommonName()) : "UNTRUSTED";
+        String commonName = cert.isTrusted()? escapeFileName(cert.getCommonName()):"UNTRUSTED";
         if (whiteList == null) {
             populateWhiteList();
         }
 
         Path cleanPath = path.normalize().toAbsolutePath();
-        for (Pair<Path, String> allowed : whiteList) {
+        for(Pair<Path,String> allowed : whiteList) {
             if (cleanPath.startsWith(allowed.getKey())) {
-                if (allowed.getValue().equals("") || allowed.getValue().contains("|" + commonName + "|") && (allowRootDir || !cleanPath.equals(allowed.getKey()))) {
+                if ("".equals(allowed.getValue()) || allowed.getValue().contains("|" + commonName + "|") && (allowRootDir || !cleanPath.equals(allowed.getKey()))) {
                     return true;
                 } else if (allowed.getValue().contains("|sandbox|")) {
                     Path p;
@@ -192,7 +205,7 @@ public class FileUtilities {
             boolean resetPending = false, tokenPending = false;
             ArrayList<String> tokens = new ArrayList<>();
             //unescaper and tokenizer
-            for (int i = 0; i < propString.length(); i++) {
+            for(int i = 0; i < propString.length(); i++) {
                 char iteratingChar = propString.charAt(i);
                 //if the char before this was an escape char, we are no longer escaped and we skip delimiter detection
                 if (escaped) {
@@ -211,20 +224,19 @@ public class FileUtilities {
                 if (i == propString.length() - 1) {
                     tokenPending = true;
                     resetPending = true;
-                    if (!tokenPending) i++;
                 }
                 //if a delimiter is found, save string to token and delete it from propString
                 if (tokenPending) {
                     tokenPending = false;
                     tokens.add(propString.substring(0, i));
-                    propString.delete(0 , i + 1);
+                    propString.delete(0, i + 1);
                     i = -1;
                 }
                 //if a semicolon was found or we are on the last char of the string, dump the tokens into a pair and add it to whiteList
                 if (resetPending) {
                     resetPending = false;
-                    String commonNames = tokens.size() > 1 ? "|" : "";
-                    for (int n = 1; n < tokens.size(); n++) {
+                    String commonNames = tokens.size() > 1? "|":"";
+                    for(int n = 1; n < tokens.size(); n++) {
                         commonNames += escapeFileName(tokens.get(n)) + "|";
                     }
                     whiteList.add(new Pair<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));
@@ -260,8 +272,7 @@ public class FileUtilities {
      */
     public static String escapeFileName(String fileName) {
         StringBuilder returnStringBuilder = new StringBuilder(translator.translate(fileName));
-        for(int n = returnStringBuilder.length() - 1; n >= 0; n--)
-        {
+        for(int n = returnStringBuilder.length() - 1; n >= 0; n--) {
             char c = returnStringBuilder.charAt(n);
             if (c < 0x20) {
                 returnStringBuilder.replace(n, n + 1, "^" + String.format("%02d", (int)c));
@@ -311,6 +322,12 @@ public class FileUtilities {
         in.close();
 
         return cmds.getByteArray();
+    }
+
+
+    public static void setupListener(FileIO fileIO) throws IOException {
+        FileWatcher.startWatchThread();
+        FileWatcher.registerWatch(fileIO);
     }
 
 

@@ -112,7 +112,7 @@
                 <li id="serialTab" role="presentation"><a href="#serialContent" role="tab" data-toggle="tab">Serial</a></li>
                 <li id="usbTab" role="presentation"><a href="#usbContent" role="tab" data-toggle="tab">USB</a></li>
                 <li id="hidTab" role="presentation"><a href="#hidContent" role="tab" data-toggle="tab">HID</a></li>
-                <li id="fileTab" role="presentation"><a href="#fileContent" role="tab" data-toggle="tab">File IO</a></li>
+                <li id="fileTab" role="presentation"><a href="#fileContent" role="tab" data-toggle="tab">Files</a></li>
             </ul>
         </div>
 
@@ -701,7 +701,9 @@
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="usbStream" class="tip" data-toggle="tooltip" title="Streaming Only: In milliseconds">Stream Interval</label>
+                                            <label for="usbStream" class="tip" data-toggle="tooltip" title="Streaming Only: In milliseconds">
+                                                Stream Interval
+                                            </label>
                                             <input type="text" id="usbStream" class="form-control pull-right" />
                                         </div>
                                     </div>
@@ -786,12 +788,18 @@
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="hidUsagePage" class="tip" data-toggle="tooltip" title="Optional: For devices that expose multiple endpoints">Usage Page</label>
+                                            <label for="hidUsagePage" class="tip" data-toggle="tooltip"
+                                                   title="Optional: For devices that expose multiple endpoints">
+                                                Usage Page
+                                            </label>
                                             <input type="text" id="hidUsagePage" class="form-control pull-right" onblur="formatHexInput('hidUsagePage')" />
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="hidSerial" class="tip" data-toggle="tooltip" title="Optional: For distinguishing between identical devices">Serial Number</label>
+                                            <label for="hidSerial" class="tip" data-toggle="tooltip"
+                                                   title="Optional: For distinguishing between identical devices">
+                                                Serial Number
+                                            </label>
                                             <input type="text" id="hidSerial" class="form-control pull-right" />
                                         </div>
                                     </div>
@@ -812,7 +820,9 @@
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="hidStream" class="tip" data-toggle="tooltip" title="Streaming Only: In milliseconds">Stream Interval</label>
+                                            <label for="hidStream" class="tip" data-toggle="tooltip" title="Streaming Only: In milliseconds">
+                                                Stream Interval
+                                            </label>
                                             <input type="text" id="hidStream" class="form-control pull-right" />
                                         </div>
                                     </div>
@@ -830,7 +840,7 @@
             </div>
 
             <div id="fileContent" class="tab-pane col-md-8">
-                <h3>File IO</h3>
+                <h3>Files</h3>
                 <hr />
 
                 <div class="row">
@@ -860,121 +870,82 @@
                             </div>
                             <div class="panel-body">
                                 <div class="row">
-                                    <div class="col-md-12">
+                                    <div class="col-md-6">
                                         <div class="form-group">
-                                            <label class="tip" for="fileLocation" data-toggle="tooltip" title="Absolute or relative path to file in qz data
-                                            directory.  Must reside in user's data directory unless overridden via qz-tray.properties">
-                                                File Location
+                                            <label for="fileLocation">
+                                                File / Directory Path
                                             </label>
                                             <input type="text" id="fileLocation" class="form-control" />
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group form-inline">
-                                                    <label class="tip" for="fileShared" data-toggle="tooltip" title="Relative paths only: This will set
-                                                    a relative file location's root to a location accessible to all users of the target system.">
-                                                        Shared
-                                                    </label>
-                                                    <input type="checkbox" id="fileShared" class="pull-right" />
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group form-inline">
-                                                    <label class="tip" for="fileSandbox" data-toggle="tooltip" title="Relative paths only: This will set
-                                                    a relative file location's root to a location unique to the certificate used to sign the request.">
-                                                        Sandbox
-                                                    </label>
-                                                    <input checked type="checkbox" id="fileSandbox" class="pull-right" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group form-inline">
-                                                    <label class="tip" for="fileAppend" data-toggle="tooltip" title="Default write behavior is to overwrite
-                                                    existing files.  This will change write behavior to append to a file if it already exists.">
-                                                        Append Data
-                                                    </label>
-                                                    <input type="checkbox" id="fileAppend" class="pull-right" />
-                                                </div>
-                                            </div>
                                         </div>
                                         <div class="form-group">
                                             <label for="fileData">Data To Write</label>
                                             <textarea id="fileData" rows="5" style="resize:vertical" class="form-control"></textarea>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row" style="margin-top: 1em;">
-                    <div class="col-md-12">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <h4 class="panel-title">Advanced Options</h4>
-                            </div>
-                            <div class="panel-body">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group form-inline">
-                                                    <label class="tip" for="fileListenerData" data-toggle="tooltip" title="Default listener behavior is return
-                                                        fileChanged events with fileData. Unchecking this removes fileData from event callbacks. By default the
-                                                        data returned will be the last 10 lines of the file.">
-                                                        Listener Triggers Read
-                                                    </label>
-                                                    <input type="checkbox" id="fileListenerData" class="pull-right" />
-                                                </div>
-                                            </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group form-inline">
+                                            <label for="fileShared">
+                                                Shared
+                                            </label>
+                                            <input type="checkbox" id="fileShared" class="pull-right" />
                                         </div>
-                                        <hr />
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group form-inline">
-                                                    <label class="tip" for="fileReadDirection" data-toggle="tooltip" title="Determines which direction the file will be read. Line mode
-                                                        will always return left to right.  Byte mode will be purely directional.">
-                                                        Read direction
+                                        <div class="form-group form-inline">
+                                            <label for="fileSandbox" data-toggle="tooltip">
+                                                Sandbox
+                                            </label>
+                                            <input checked type="checkbox" id="fileSandbox" class="pull-right" />
+                                        </div>
+                                        <div class="form-group form-inline">
+                                            <label for="fileAppend">
+                                                Append Data
+                                            </label>
+                                            <input type="checkbox" id="fileAppend" class="pull-right" />
+                                        </div>
+
+                                        <div class="form-group form-inline">
+                                            <label for="fileListenerData">
+                                                Listener Data
+                                            </label>
+                                            <input type="checkbox" id="fileListenerData" class="pull-right" onclick="checkFileTriggersActive()" />
+                                        </div>
+                                        <div class="inline" id="fileTriggersGroup">
+                                            <div class="form-group form-inline">
+                                                <label>
+                                                    Read direction
+                                                </label>
+                                                <div>
+                                                    <label>
+                                                        <input type="radio" name="fileDir" id="fileDirEnd" value="end" />
+                                                        End
                                                     </label>
-                                                    <input type="checkbox" id="fileReadDirection" onclick="fileDirectionToggle()" class="pull-right" />
-                                                    <div>
-                                                        <label>
-                                                            <input type="radio" name="readDirection" id="fileEndRadio" value="end" />
-                                                            End
-                                                        </label>
-                                                        <label>
-                                                            <input type="radio" name="readDirection" id="fileStartRadio" value="begin" />
-                                                            Start
-                                                        </label>
-                                                    </div>
+                                                    <label>
+                                                        <input type="radio" name="fileDir" id="fileDirStart" value="begin" />
+                                                        Start
+                                                    </label>
                                                 </div>
                                             </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label class="tip" for="fileReadTruncate" data-toggle="tooltip" title="Truncate file reads by lines or bytes">
-                                                         Truncate
+                                            <div class="form-group form-inline">
+                                                <label>
+                                                    Truncate
+                                                </label>
+                                                <div>
+                                                    <label>
+                                                        <input type="radio" name="fileTruncate" id="fileTruncateLines" value="lines" />
+                                                        Lines
                                                     </label>
-                                                    <input type="checkbox" id="fileReadTruncate" onclick="fileTruncateToggle()" class="pull-right" />
-                                                    <div>
-                                                        <label>
-                                                            <input type="radio" name="fileDataType" id="fileLinesRadio" value="lines" onclick="$('#fileLength').val('10');" />
-                                                            Lines
-                                                        </label>
-                                                        <label>
-                                                            <input type="radio" name="fileDataType" id="fileBytesRadio" value="bytes" onclick="$('#fileLength').val('4048');"/>
-                                                            Bytes
-                                                        </label>
-                                                        <input type="number" id="fileLength" class="form-control pull-right" />
-                                                    </div>
+                                                    <label>
+                                                        <input type="radio" name="fileTruncate" id="fileTruncateBytes" value="bytes" />
+                                                        Bytes
+                                                    </label>
                                                 </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="fileLength">Truncate length</label>
+                                                <input type="number" id="fileLength" class="form-control pull-right" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
                                 <hr />
                                 <div class="row">
                                     <div class="col-md-12">
@@ -988,45 +959,46 @@
             </div>
         </div>
     </div>
+</div>
 
 
-    <div class="modal fade" id="askFileModal" role="dialog">
-        <div class="modal-dialog modal-sm" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="askFile">File:</label>
-                        <input type="text" id="askFile" class="form-control" value="C:\tmp\example-file.txt" />
-                    </div>
+<div class="modal fade" id="askFileModal" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="askFile">File:</label>
+                    <input type="text" id="askFile" class="form-control" value="C:\tmp\example-file.txt" />
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="setPrintFile();">Set</button>
-                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="setPrintFile();">Set</button>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="modal fade" id="askHostModal" role="dialog">
-        <div class="modal-dialog modal-sm" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="askHost">Host:</label>
-                        <input type="text" id="askHost" class="form-control" value="192.168.1.254" />
-                    </div>
-                    <div class="form-group">
-                        <label for="askPort">Port:</label>
-                        <input type="text" id="askPort" class="form-control" value="9100" />
-                    </div>
+<div class="modal fade" id="askHostModal" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="askHost">Host:</label>
+                    <input type="text" id="askHost" class="form-control" value="192.168.1.254" />
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="setPrintHost();">Set</button>
+                <div class="form-group">
+                    <label for="askPort">Port:</label>
+                    <input type="text" id="askPort" class="form-control" value="9100" />
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="setPrintHost();">Set</button>
             </div>
         </div>
     </div>
+</div>
 
 </div>
 </body>
@@ -1687,9 +1659,9 @@
                 if (device.hub) { list += "USB Hub"; }
 
                 list += "<p>" +
-                    "   VendorID: <code>0x" + device.vendorId + "</code>" +
-                    usbButton(["usbVendor", "usbProduct"], [device.vendorId, device.productId]) + "<br/>" +
-                    "   ProductID: <code>0x" + device.productId + "</code><br/>";
+                        "   VendorID: <code>0x" + device.vendorId + "</code>" +
+                        usbButton(["usbVendor", "usbProduct"], [device.vendorId, device.productId]) + "<br/>" +
+                        "   ProductID: <code>0x" + device.productId + "</code><br/>";
 
                 if (device.manufacturer) { list += "   Manufacturer: <code>" + device.manufacturer + "</code><br/>"; }
                 if (device.product) { list += "   Product: <code>" + device.product + "</code><br/>"; }
@@ -1818,15 +1790,15 @@
                 var device = data[i];
 
                 list += "<p>" +
-                    "   VendorID: <code>0x" + device.vendorId + "</code>" +
-                    usbButton(["hidVendor", "hidProduct", "hidUsagePage", "hidSerial"],
-                              [device.vendorId, device.productId, device.usagePage, device.serial]) + "<br/>" +
-                    "   ProductID: <code>0x" + device.productId + "</code><br/>" +
-                    (device.usagePage ? "   Usage Page: <code>0x" + device.usagePage + "</code><br/>" : "") +
-                    (device.serial ? "   Serial: <code>" + device.serial + "</code><br/>" : "") +
-                    (device.manufacturer ? "   Manufacturer: <code>" + device.manufacturer + "</code><br/>" : "") +
-                    (device.product ? "   Product: <code>" + device.product + "</code><br/>" : "") +
-                    "</p><hr/>";
+                        "   VendorID: <code>0x" + device.vendorId + "</code>" +
+                        usbButton(["hidVendor", "hidProduct", "hidUsagePage", "hidSerial"],
+                                  [device.vendorId, device.productId, device.usagePage, device.serial]) + "<br/>" +
+                        "   ProductID: <code>0x" + device.productId + "</code><br/>" +
+                        (device.usagePage ? "   Usage Page: <code>0x" + device.usagePage + "</code><br/>" : "") +
+                        (device.serial ? "   Serial: <code>" + device.serial + "</code><br/>" : "") +
+                        (device.manufacturer ? "   Manufacturer: <code>" + device.manufacturer + "</code><br/>" : "") +
+                        (device.product ? "   Product: <code>" + device.product + "</code><br/>" : "") +
+                        "</p><hr/>";
             }
 
             pinMessage("<strong>Available hid devices:</strong><br/>" + list);
@@ -1936,13 +1908,13 @@
     /// File ///
     function listFiles() {
         var params = {
-            sandbox : $("#fileSandbox").prop("checked"),
-            shared : $("#fileShared").prop("checked"),
-            writable : true
+            sandbox: $("#fileSandbox").prop("checked"),
+            shared: $("#fileShared").prop("checked")
         };
+
         qz.file.list($("#fileLocation").val(), params).then(function(data) {
             var files = "";
-            for (var n = 0; n < data.length; n++) {
+            for(var n = 0; n < data.length; n++) {
                 files += data[n] + "\n";
             }
             displayMessage("File listing <strong><code>" + $("#fileLocation").val() + "</code></strong><pre>" + files + "</pre>", null, 15000);
@@ -1951,76 +1923,68 @@
 
     function readFile() {
         var params = {
-            sandbox : $("#fileSandbox").prop("checked"),
-            shared : $("#fileShared").prop("checked"),
-            writable : true
+            sandbox: $("#fileSandbox").prop("checked"),
+            shared: $("#fileShared").prop("checked")
         };
+
         qz.file.read($("#fileLocation").val(), params).then(function(data) {
-            displayMessage("Contents of <strong><code>" + $("#fileLocation").val() + "</code></strong>" + "<pre>" + data + "</pre>", null, 15000);
+            displayMessage("Contents of <strong><code>" + $("#fileLocation").val() + "</code></strong><pre>" + data + "</pre>", null, 15000);
         }).catch(displayError);
     }
 
     function writeFile() {
         var params = {
-            sandbox : $("#fileSandbox").prop("checked"),
-            shared : $("#fileShared").prop("checked"),
-            append : $("#fileAppend").prop('checked'),
-            data : $("#fileData").val(),
-            writable : true
+            sandbox: $("#fileSandbox").prop("checked"),
+            shared: $("#fileShared").prop("checked"),
+            append: $("#fileAppend").prop('checked'),
+            data: $("#fileData").val()
         };
-        var append = $("#fileAppend").prop('checked');
-        qz.file.write($("#fileLocation").val(), params).then(function(data) {
+
+        qz.file.write($("#fileLocation").val(), params).then(function() {
             displayMessage("File <strong><code>" + $("#fileLocation").val() + "</code></strong> written successfully");
-            $("#fileData").val("");
         }).catch(displayError);
     }
 
     function deleteFile() {
         var params = {
-            sandbox : $("#fileSandbox").prop("checked"),
-            shared : $("#fileShared").prop("checked"),
-            writable : true
+            sandbox: $("#fileSandbox").prop("checked"),
+            shared: $("#fileShared").prop("checked")
         };
-        qz.file.remove($("#fileLocation").val(), params).then(function(data) {
+
+        qz.file.remove($("#fileLocation").val(), params).then(function() {
             displayMessage("File <strong><code>" + $("#fileLocation").val() + "</code></strong> deleted");
         }).catch(displayError);
     }
 
     function startFileListen() {
-        var options = false;
         var params = {
-            sandbox : $("#fileSandbox").prop("checked"),
-            shared : $("#fileShared").prop("checked"),
-            writable : true
+            sandbox: $("#fileSandbox").prop("checked"),
+            shared: $("#fileShared").prop("checked"),
+            listener: {}
         };
-        if ($("#fileListenerData").prop("checked")) {
-            options = {};
 
-            if ($("#fileReadDirection").prop("checked")) {
-                options.reversed = $("#fileEndRadio").prop("checked");
-            }
+        if (isChecked($("#fileListenerData"))) {
+            params.listener.reverse = !!$("#fileDirEnd").prop("checked"); //else fileStartRadio checked
 
-            if ($("#fileReadTruncate").prop("checked")) {
-                if ($("#fileLinesRadio").prop("checked")) {
-                    options.lines = $("#fileLength").val();
-                } else {
-                    options.bytes = $("#fileLength").val();
-                }
+            var len = $("#fileLength").val();
+            if (!!$("#fileTruncateLines").prop("checked")) { //else fileTruncateBytes checked
+                params.listener.lines = len;
+            } else {
+                params.listener.bytes = len;
             }
         }
 
-        qz.file.startListening($("#fileLocation").val(), params, options)
-        .then(function() {
+        qz.file.startListening($("#fileLocation").val(), params).then(function() {
             displayMessage("Started listening for <strong><code>" + ($("#fileLocation").val() || "./") + "</code></strong> events");
         }).catch(displayError);
     }
 
     function stopFileListen() {
         var params = {
-            sandbox : $("#fileSandbox").prop("checked"),
-            shared : $("#fileShared").prop("checked"),
-            writable : true
+            sandbox: $("#fileSandbox").prop("checked"),
+            shared: $("#fileShared").prop("checked")
         };
+
         qz.file.stopListening($("#fileLocation").val(), params).then(function() {
             displayMessage("Stopped listening for <strong><code>" + ($("#fileLocation").val() || "./") + "</code></strong> events");
         }).catch(displayError);
@@ -2030,38 +1994,6 @@
         qz.file.stopListening().then(function() {
             displayMessage("Stopped listening for <strong>all</strong> file events");
         }).catch(displayError);
-    }
-
-    function fileDirectionToggle() {
-        if ($("#fileReadDirection").prop("checked")) {
-            $("#fileEndRadio").prop("disabled", false);
-            $("#fileStartRadio").prop("disabled", false);
-            $("#fileEndRadio").removeClass("disabled");
-            $("#fileStartRadio").removeClass("disabled");
-        } else {
-            $("#fileEndRadio").prop("disabled", true);
-            $("#fileStartRadio").prop("disabled", true);
-            $("#fileStartRadio").addClass("disabled");
-            $("#fileEndRadio").addClass("disabled");
-        }
-    }
-
-    function fileTruncateToggle() {
-        if ($("#fileReadTruncate").prop("checked")) {
-            $("#fileLinesRadio").prop("disabled", false);
-            $("#fileBytesRadio").prop("disabled", false);
-            $("#fileLength").prop("disabled", false);
-            $("#fileLinesRadio").removeClass("disabled");
-            $("#fileBytesRadio").removeClass("disabled");
-            $("#fileLength").removeClass("disabled");
-        } else {
-            $("#fileLinesRadio").prop("disabled", true);
-            $("#fileBytesRadio").prop("disabled", true);
-            $("#fileLength").prop("disabled", true);
-            $("#fileLinesRadio").addClass("disabled");
-            $("#fileBytesRadio").addClass("disabled");
-            $("#fileLength").addClass("disabled");
-        }
     }
 
 
@@ -2139,6 +2071,14 @@
         }
     }
 
+    function checkFileTriggersActive() {
+        if (isChecked($("#fileListenerData"))) {
+            $("#fileTriggersGroup").css('display', '');
+        } else {
+            $("#fileTriggersGroup").css('display', 'none');
+        }
+    }
+
     function resetSerialOptions() {
         $("#serialPort").val('');
         $("#serialCmd").val('');
@@ -2183,15 +2123,16 @@
     }
 
     function resetFileOptions() {
-        $("#fileListenerData").prop("checked", true);
+        $("#fileLocation").val('');
+        $("#fileData").val('');
+        $("#fileShared").prop('checked', true);
+        $("#fileSandbox").prop('checked', true);
+        $("#fileAppend").prop('checked', false);
 
-        $("#fileReadDirection").prop("checked", true);
-        $("#fileEndRadio").prop("checked", true);
-        fileDirectionToggle();
-
-        $("#fileReadTruncate").prop("checked", true);
-        $("#fileLinesRadio").click();
-        fileTruncateToggle();
+        $("#fileListenerData").prop('checked', true);
+        $("#fileDirEnd").prop('checked', true);
+        $("#fileTruncateLines").prop('checked', true);
+        $("#fileLength").val('10');
     }
 
 
@@ -2257,7 +2198,6 @@
         } else {
             console.log(streamEvent.exception);
             displayMessage("Received an error from serial port [" + streamEvent.portName + "]: <em>" + streamEvent.exception + "</em>", 'alert-error');
-
         }
     });
 
@@ -2308,12 +2248,14 @@
 
     qz.file.setFileCallbacks(function(streamEvent) {
         if (streamEvent.type !== 'ERROR') {
-            var file = streamEvent.file;
-            var event = streamEvent.eventType;
-            var text = "<h5>File IO Event</h5>" + "<strong>File:</strong> <code>" + file + "</code><br><strong>Event:</strong><code>" + event + "</code>";
+            var text = "<h5>File IO Event</h5>" +
+                       "<strong>File:</strong> <code>" + streamEvent.file + "</code><br/>" +
+                       "<strong>Event:</strong><code>" + streamEvent.eventType + "</code><br/>";
+
             if (streamEvent.fileData) {
-                text += "<strong>Data: </strong><code>" + streamEvent.fileData + "</code>";
+                text += "<strong>Data:</strong><br/><pre>" + streamEvent.fileData.replace(/\r?\n/g, "<br/>") + "</pre>";
             }
+
             displayMessage(text);
         } else {
             displayError("<strong>Error:</strong> " + streamEvent.message);

@@ -80,7 +80,7 @@ public class PrintSocketClient {
         FILE_STOP_LISTENING("file.stopListening", false),
         FILE_READ("file.read", true, "read the content of a file"),
         FILE_WRITE("file.write", true, "write to a file"),
-        FILE_DELETE("file.delete", true, "delete a file"),
+        FILE_REMOVE("file.remove", true, "delete a file"),
 
         NETWORKING_DEVICE("networking.device", true),
         NETWORKING_DEVICES("networking.devices", true),
@@ -360,11 +360,11 @@ public class PrintSocketClient {
                 }
                 break;
             case HID_START_LISTENING:
-                if (!connection.isListening()) {
+                if (!connection.isDeviceListening()) {
                     if (SystemUtilities.isWindows()) {
-                        connection.startListening(new PJHA_HidListener(session));
+                        connection.startDeviceListening(new PJHA_HidListener(session));
                     } else {
-                        connection.startListening(new H4J_HidListener(session));
+                        connection.startDeviceListening(new H4J_HidListener(session));
                     }
                     sendResult(session, UID, null);
                 } else {
@@ -372,8 +372,8 @@ public class PrintSocketClient {
                 }
                 break;
             case HID_STOP_LISTENING:
-                if (connection.isListening()) {
-                    connection.stopListening();
+                if (connection.isDeviceListening()) {
+                    connection.stopDeviceListening();
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, "Not already listening HID device events");
@@ -476,65 +476,93 @@ public class PrintSocketClient {
             }
 
             case FILE_START_LISTENING: {
-                FileParams fileParams = FileParams.fromJSON(params);
-                Path path = FileUtilities.unrelativizePath(fileParams, shownCertificate);
-                FileUtilities.assertIsWhiteListed(path, true, fileParams.sandbox, shownCertificate);
-                FileIO.startListening(new FileClientPair(fileParams.originalPath, path, connection), new FileListener(session, params));
-                sendResult(session, UID, null);
+                FileParams fileParams = new FileParams(params);
+                Path absPath = FileUtilities.getAbsolutePath(params, shownCertificate, true);
+                FileIO fileIO = new FileIO(session, params, fileParams.getPath(), absPath);
+
+                if (connection.getFileListener(absPath) == null && !fileIO.isWatching()) {
+                    connection.addFileListener(absPath, fileIO);
+
+                    FileUtilities.setupListener(fileIO);
+                    sendResult(session, UID, null);
+                } else {
+                    sendError(session, UID, "Already listening to path events");
+                }
+
                 break;
             }
             case FILE_STOP_LISTENING: {
                 if (params.isNull("path")) {
-                    FileIO.closeListeners(connection);
-                    connection.stopFileListening();
-                } else {
-                    FileParams fileParams = FileParams.fromJSON(params);
-                    Path path = FileUtilities.unrelativizePath(fileParams, shownCertificate);
-                    FileIO.closeListener(new FileClientPair(fileParams.originalPath, path, connection));
-                    if (!FileIO.isListening(connection)) {
-                        connection.stopFileListening();
-                    }
+                    connection.removeAllFileListeners();
                     sendResult(session, UID, null);
-                    break;
+                } else {
+                    FileParams fileParams = new FileParams(params);
+                    Path absPath = FileUtilities.createAbsolutePath(fileParams, shownCertificate);
+                    FileIO fileIO = connection.getFileListener(absPath);
+
+                    if (fileIO != null) {
+                        fileIO.close();
+                        FileWatcher.deregisterWatch(fileIO);
+                        connection.removeFileListener(absPath);
+                        sendResult(session, UID, null);
+                    } else {
+                        sendError(session, UID, "Not already listening to path events");
+                    }
                 }
-                sendResult(session, UID, null);
+
                 break;
             }
             case FILE_LIST: {
-                FileParams fileParams = FileParams.fromJSON(params);
-                Path path = FileUtilities.unrelativizePath(fileParams, shownCertificate);
-                FileUtilities.assertIsWhiteListed(path, true, fileParams.sandbox, shownCertificate);
-                ArrayList<String> files = new ArrayList<>();
-                Files.list(path).forEach(file -> files.add(file.getFileName().toString()));
-                sendResult(session, UID, new JSONArray(files));
+                Path absPath = FileUtilities.getAbsolutePath(params, shownCertificate, true);
+
+                if (Files.exists(absPath)) {
+                    if (Files.isDirectory(absPath)) {
+                        ArrayList<String> files = new ArrayList<>();
+                        Files.list(absPath).forEach(file -> files.add(file.getFileName().toString()));
+                        sendResult(session, UID, new JSONArray(files));
+                    } else {
+                        sendError(session, UID, "Path is not a directory");
+                    }
+                } else {
+                    sendError(session, UID, "Path does not exist");
+                }
+
                 break;
             }
             case FILE_READ: {
-                FileParams fileParams = FileParams.fromJSON(params);
-                Path path = FileUtilities.unrelativizePath(fileParams, shownCertificate);
-                FileUtilities.assertIsWhiteListed(path, false, fileParams.sandbox, shownCertificate);
-                FileUtilities.assertIsGoodExtension(path);
-                sendResult(session, UID, new String(Files.readAllBytes(path)));
+                Path absPath = FileUtilities.getAbsolutePath(params, shownCertificate, false);
+                if (Files.exists(absPath)) {
+                    if (Files.isReadable(absPath)) {
+                        sendResult(session, UID, new String(Files.readAllBytes(absPath)));
+                    } else {
+                        sendError(session, UID, "Path is not readable");
+                    }
+                } else {
+                    sendError(session, UID, "Path does not exist");
+                }
+
                 break;
             }
-            case FILE_WRITE:{
-                FileParams fileParams = FileParams.fromJSON(params);
-                Path path = FileUtilities.unrelativizePath(fileParams, shownCertificate);
-                FileUtilities.assertIsWhiteListed(path, false, fileParams.sandbox, shownCertificate);
-                FileUtilities.assertIsGoodExtension(path);
-                OpenOption operation = params.optBoolean("append") ? StandardOpenOption.APPEND : StandardOpenOption.TRUNCATE_EXISTING;
-                Files.createDirectories(path.getParent());
-                Files.write(path, params.getString("data").getBytes(), StandardOpenOption.CREATE, operation);
+            case FILE_WRITE: {
+                FileParams fileParams = new FileParams(params);
+                Path absPath = FileUtilities.getAbsolutePath(params, shownCertificate, false);
+
+                Files.createDirectories(absPath.getParent());
+                Files.write(absPath, fileParams.getData(), StandardOpenOption.CREATE, fileParams.getAppendMode());
                 sendResult(session, UID, null);
+
                 break;
             }
-            case FILE_DELETE: {
-                FileParams fileParams = FileParams.fromJSON(params);
-                Path path = FileUtilities.unrelativizePath(fileParams, shownCertificate);
-                FileUtilities.assertIsWhiteListed(path, false, fileParams.sandbox, shownCertificate);
-                if (!Files.isDirectory(path)) FileUtilities.assertIsGoodExtension(path);
-                Files.delete(path);
-                sendResult(session, UID, null);
+            case FILE_REMOVE: {
+                Path absPath = FileUtilities.getAbsolutePath(params, shownCertificate, false);
+
+                if (Files.exists(absPath)) {
+                    Files.delete(absPath);
+                    sendResult(session, UID, null);
+                } else {
+                    sendError(session, UID, "Path does not exist");
+                }
+
                 break;
             }
 

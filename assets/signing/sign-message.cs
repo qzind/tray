@@ -36,5 +36,8 @@ public HttpResponseMessage SignMessage(String message)
 
 	byte[] hash = new SHA1Managed().ComputeHash(data);
 
-	var string response = Convert.ToBase64String(csp.SignHash(hash, CryptoConfig.MapNameToOID("SHA1")));
+	var string signature = Convert.ToBase64String(csp.SignHash(hash, CryptoConfig.MapNameToOID("SHA1")));
+	var response = new HttpResponseMessage(HttpStatusCode.OK);
+	response.Content = new StringContent(signature, System.Text.Encoding.UTF8, "text/plain");
+	return response;
 }

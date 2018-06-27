@@ -130,27 +130,29 @@ var qz = (function() {
 
                         //called on successful connection to qz, begins setup of websocket calls and resolves connect promise after certificate is sent
                         _qz.websocket.connection.onopen = function(evt) {
-                            _qz.log.trace(evt);
-                            _qz.log.info("Established connection with QZ Tray on " + address);
+                            if (!_qz.websocket.connection.established) {
+                                _qz.log.trace(evt);
+                                _qz.log.info("Established connection with QZ Tray on " + address);
 
-                            _qz.websocket.setup.openConnection({ resolve: resolve, reject: reject });
+                                _qz.websocket.setup.openConnection({ resolve: resolve, reject: reject });
 
-                            if (config.keepAlive > 0) {
-                                var interval = setInterval(function() {
-                                    if (!qz.websocket.isActive()) {
-                                        clearInterval(interval);
-                                        return;
-                                    }
+                                if (config.keepAlive > 0) {
+                                    var interval = setInterval(function() {
+                                        if (!qz.websocket.isActive()) {
+                                            clearInterval(interval);
+                                            return;
+                                        }
 
-                                    _qz.websocket.connection.send("ping");
-                                }, config.keepAlive * 1000);
+                                        _qz.websocket.connection.send("ping");
+                                    }, config.keepAlive * 1000);
+                                }
                             }
                         };
 
                         //called during websocket close during setup
                         _qz.websocket.connection.onclose = function() {
                             // Safari compatibility fix to raise error event
-                            if (typeof navigator !== 'undefined' && navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {
+                            if (_qz.websocket.connection && typeof navigator !== 'undefined' && navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {
                                 _qz.websocket.connection.onerror();
                             }
                         };
@@ -686,11 +688,16 @@ var qz = (function() {
                     }
 
                     var attempt = function(count) {
+                        var tried = false;
                         var nextAttempt = function() {
-                            if (options && count < options.retries) {
-                                attempt(count + 1);
-                            } else {
-                                reject.apply(null, arguments);
+                            if (!tried) {
+                                tried = true;
+
+                                if (options && count < options.retries) {
+                                    attempt(count + 1);
+                                } else {
+                                    reject.apply(null, arguments);
+                                }
                             }
                         };
 

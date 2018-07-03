@@ -23,6 +23,7 @@
 // #                                                       #
 // #########################################################
 %>
+
 <%@ page import="java.io.*" %>
 <%@ page import="java.util.*" %>
 <%@ page import="java.lang.*" %>
@@ -30,6 +31,7 @@
 <%@ page import="java.security.spec.*" %>
 <%@ page import="java.util.logging.*" %>
 <%@ page import="javax.xml.bind.DatatypeConverter" %>
+<%@ page trimDirectiveWhitespaces="true" %>
 <%@ page language="java" contentType="text/plain charset=UTF-8" pageEncoding="UTF-8"%>
 
 <%= getSignature(request.getParameter("request")) %>
@@ -40,9 +42,14 @@
  * Creates a signature using the provided private key and the provided (String) data inside Object o.
  */
 private String getSignature(Object o) {
-	String keyPath = "private-key.pem";
-	String req = (String)o;
-	
+	// Private key path if placed in CATALINA_HOME/private/ **AND** if JSP is
+	// placed in CATALINA_HOME/webapps/examples/.  Adjust as needed.
+	String keyPath = "../../private/private-key.pem";
+
+	// Prepend servet context path
+	keyPath = getServletContext().getRealPath("/") + keyPath;
+	String req = o == null ? "" : (String)o;
+
 	try {
 		byte[] keyData = cleanseKeyData(readData(keyPath));
 		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyData);
@@ -54,8 +61,10 @@ private String getSignature(Object o) {
 		String output = DatatypeConverter.printBase64Binary(sig.sign());
 		return output;
 	} catch (Throwable t) {
-		return "Something went wrong while signing the message.  Please see sign-message.jsp";
-	} 
+		t.printStackTrace();
+		return "Something went wrong while signing the message.\n" +
+			"Please check server console for sign-message.jsp";
+	}
 }
 %>
 
@@ -64,12 +73,11 @@ private String getSignature(Object o) {
  * Reads the raw byte[] data from a file resource
  * @param resourcePath
  * @return the raw byte data from a resource file
- * @throws IOException 
+ * @throws IOException
  */
 public byte[] readData(String resourcePath) throws IOException {
-	String file = getServletConfig().getServletContext().getRealPath("/") + "\\js\\assets\\" + resourcePath;
-	FileInputStream is = new FileInputStream(file);
-			
+	FileInputStream is = new FileInputStream(resourcePath);
+
 	//InputStream is = getServletContext().getResourceAsStream(resourcePath);
 	if (is == null) {
 		throw new IOException(String.format("Can't open resource \"%s\"",  resourcePath));
@@ -88,7 +96,7 @@ public byte[] readData(String resourcePath) throws IOException {
  * private key byte data
  * @param keyData PEM file contents, a X509 base64 encoded private key
  * @return Private key data
- * @throws IOException 
+ * @throws IOException
  */
 private byte[] cleanseKeyData(byte[] keyData) throws IOException {
 	StringBuilder sb = new StringBuilder();

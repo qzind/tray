@@ -46,7 +46,7 @@ private String getSignature(Object o) {
 	// placed in CATALINA_HOME/webapps/examples/.  Adjust as needed.
 	String keyPath = "../../private/private-key.pem";
 
-	// Prepend servet context path
+	// Prepend servlet context path
 	keyPath = getServletContext().getRealPath("/") + keyPath;
 	String req = o == null ? "" : (String)o;
 

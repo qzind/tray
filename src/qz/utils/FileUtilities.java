@@ -200,7 +200,7 @@ public class FileUtilities {
 
         Properties props = PrintSocketServer.getTrayProperties();
         if (props != null) {
-            StringBuilder propString = new StringBuilder(props.getProperty("file.whitelist"));
+            StringBuilder propString = new StringBuilder(props.getProperty("file.whitelist", ""));
             boolean escaped = false;
             boolean resetPending = false, tokenPending = false;
             ArrayList<String> tokens = new ArrayList<>();

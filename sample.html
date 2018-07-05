@@ -845,19 +845,24 @@
 
                 <div class="row">
                     <div class="col-md-12">
-                        <div class="btn-toolbar">
-                            <button type="button" class="btn btn-info" onclick="listFiles();">List Files</button>
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-info" onclick="readFile();">Read File</button>
-                                <button type="button" class="btn btn-success" onclick="writeFile();">Write File</button>
-                                <button type="button" class="btn btn-warning" onclick="deleteFile();">Delete File</button>
+                        <div class="form-group">
+                            <div class="btn-toolbar">
+                                <button type="button" class="btn btn-info" onclick="listFiles();">List Files</button>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-info" onclick="readFile();">Read File</button>
+                                    <button type="button" class="btn btn-success" onclick="writeFile();">Write File</button>
+                                    <button type="button" class="btn btn-warning" onclick="deleteFile();">Delete File</button>
+                                </div>
                             </div>
-
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-default" onclick="startFileListen()">Listen for Events</button>
-                                <button type="button" class="btn btn-default" onclick="stopFileListen()">Stop Listening</button>
+                        </div>
+                        <div class="form-group">
+                            <div class="btn-toolbar">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-default" onclick="startFileListen()">Listen for Folder Events</button>
+                                    <button type="button" class="btn btn-default" onclick="stopFileListen()">Stop Listening</button>
+                                </div>
+                                <button type="button" class="btn btn-default" onclick="stopAllFileListeners();">Stop All Listeners</button>
                             </div>
-                            <button type="button" class="btn btn-default" onclick="stopAllFileListeners();">Stop All Listeners</button>
                         </div>
                     </div>
                 </div>

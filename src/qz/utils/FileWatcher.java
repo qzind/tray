@@ -1,6 +1,7 @@
 package qz.utils;
 
 import org.apache.commons.io.input.ReversedLinesFileReader;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.communication.FileIO;
@@ -11,6 +12,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.Charset;
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 
 public class FileWatcher {
@@ -105,28 +108,30 @@ public class FileWatcher {
     }
 
     private synchronized static String getLines(Path path, FileIO listener) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        String buffer;
+        ArrayList<String> linesRead = new ArrayList<>();
 
+        String buffer;
         if (listener.isReversed()) {
             try(ReversedLinesFileReader reader = new ReversedLinesFileReader(path.toFile())) {
                 int count = 0;
                 while((buffer = reader.readLine()) != null && count++ != listener.getLines()) {
                     // Warning, this will strip "\r" from the data
-                    sb.append(buffer).append("\n");
+                    linesRead.add(buffer);
                 }
+
+                Collections.reverse(linesRead); //ensure last X lines are returned in natural order
             }
         } else {
             try(BufferedReader reader = new BufferedReader(new FileReader(path.toFile()))) {
                 int count = 0;
                 while((buffer = reader.readLine()) != null && count++ != listener.getLines()) {
                     // Warning, this will strip "\r" from the data
-                    sb.append(buffer).append("\n");
+                    linesRead.add(buffer);
                 }
             }
         }
 
-        return sb.toString();
+        return StringUtils.join(linesRead, "\n");
     }
 
 }

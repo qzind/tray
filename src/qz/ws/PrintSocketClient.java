@@ -521,9 +521,11 @@ public class PrintSocketClient {
                         Files.list(absPath).forEach(file -> files.add(file.getFileName().toString()));
                         sendResult(session, UID, new JSONArray(files));
                     } else {
+                        log.error("Failed to list '{}' (not a directory)", absPath);
                         sendError(session, UID, "Path is not a directory");
                     }
                 } else {
+                    log.error("Failed to list '{}' (does not exist)", absPath);
                     sendError(session, UID, "Path does not exist");
                 }
 
@@ -535,9 +537,11 @@ public class PrintSocketClient {
                     if (Files.isReadable(absPath)) {
                         sendResult(session, UID, new String(Files.readAllBytes(absPath)));
                     } else {
+                        log.error("Failed to read '{}' (not readable)", absPath);
                         sendError(session, UID, "Path is not readable");
                     }
                 } else {
+                    log.error("Failed to read '{}' (does not exist)", absPath);
                     sendError(session, UID, "Path does not exist");
                 }
 
@@ -547,9 +551,14 @@ public class PrintSocketClient {
                 FileParams fileParams = new FileParams(params);
                 Path absPath = FileUtilities.getAbsolutePath(params, shownCertificate, false);
 
-                Files.createDirectories(absPath.getParent());
-                Files.write(absPath, fileParams.getData(), StandardOpenOption.CREATE, fileParams.getAppendMode());
-                sendResult(session, UID, null);
+                if (Files.isWritable(absPath)) {
+                    Files.createDirectories(absPath.getParent());
+                    Files.write(absPath, fileParams.getData(), StandardOpenOption.CREATE, fileParams.getAppendMode());
+                    sendResult(session, UID, null);
+                } else {
+                    log.error("Failed to write '{}' (not writable)", absPath);
+                    sendError(session, UID, "Path is not writable");
+                }
 
                 break;
             }
@@ -560,6 +569,7 @@ public class PrintSocketClient {
                     Files.delete(absPath);
                     sendResult(session, UID, null);
                 } else {
+                    log.error("Failed to remove '{}' (does not exist)", absPath);
                     sendError(session, UID, "Path does not exist");
                 }
 

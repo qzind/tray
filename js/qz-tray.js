@@ -516,12 +516,12 @@ var qz = (function() {
 
                         if (data[i].flavor) {
                             //if flavor is known, we can directly check for absolute flavor types
-                            var flavor = data[i].flavor.toUpperCase();
-                            if (flavor === 'FILE' || flavor === 'IMAGE' || flavor === 'XML') {
+                            if (["FILE", "XML"].indexOf(data[i].flavor.toUpperCase()) > -1) {
                                 absolute = true;
                             }
-                        } else if (data[i].format && data[i].format.toUpperCase() !== 'COMMAND' && data[i].format.toUpperCase() !== 'DIRECT') {
+                        } else if (data[i].format && ["HTML", "IMAGE", "PDF", "FILE", "IMAGE", "XML"].indexOf(data[i].format.toUpperCase()) > -1) {
                             //if flavor is not known, all valid pixel formats default to file flavor
+                            //previous v2.0 data also used format as what is now flavor, so we check for those values here too
                             absolute = true;
                         } else if (data[i].type && data[i].type.toUpperCase() === 'PIXEL') {
                             //if all we know is pixel type, then it is image's file flavor

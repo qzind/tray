@@ -496,8 +496,7 @@ public class PrintSocketClient {
                     connection.removeAllFileListeners();
                     sendResult(session, UID, null);
                 } else {
-                    FileParams fileParams = new FileParams(params);
-                    Path absPath = FileUtilities.createAbsolutePath(fileParams, shownCertificate);
+                    Path absPath = FileUtilities.getAbsolutePath(params, shownCertificate, false);
                     FileIO fileIO = connection.getFileListener(absPath);
 
                     if (fileIO != null) {
@@ -586,7 +585,8 @@ public class PrintSocketClient {
                 sendResult(session, UID, Constants.VERSION);
                 break;
 
-            case INVALID: default:
+            case INVALID:
+            default:
                 sendError(session, UID, "Invalid function call: " + json.optString("call", "NONE"));
                 break;
         }

@@ -94,9 +94,12 @@ public class FileUtilities {
     private static HashMap<String,File> sharedFileMap = new HashMap<>();
     private static ArrayList<Pair<Path,String>> whiteList;
 
-    public static Path getAbsolutePath(JSONObject params, Certificate cert, boolean allowRootDir) throws JSONException, AccessDeniedException {
+    public static Path getAbsolutePath(JSONObject params, Certificate cert, boolean allowRootDir) throws JSONException, IOException {
         FileParams fp = new FileParams(params);
-        Path path = createAbsolutePath(fp, cert);
+        String commonName = cert.isTrusted()? escapeFileName(cert.getCommonName()):"UNTRUSTED";
+
+        Path path = createAbsolutePath(fp, commonName);
+        initializeRootFolder(fp, commonName);
 
         if (!isWhiteListed(path, allowRootDir, fp.isSandbox(), cert)) {
             throw new AccessDeniedException(path.toString());
@@ -111,6 +114,21 @@ public class FileUtilities {
         return path;
     }
 
+    private static void initializeRootFolder(FileParams fileParams, String commonName) throws IOException {
+        String parent = fileParams.isShared()? SystemUtilities.getSharedDataDirectory():SystemUtilities.getDataDirectory();
+
+        Path rootPath;
+        if (fileParams.isSandbox()) {
+            rootPath = Paths.get(parent, Constants.SANDBOX_DIR, commonName);
+        } else {
+            rootPath = Paths.get(parent, Constants.NOT_SANDBOX_DIR);
+        }
+
+        if (!Files.exists(rootPath)) {
+            Files.createDirectories(rootPath);
+        }
+    }
+
     /**
      * Returns a normalised and absolute path. If the input path was relative,
      * the root may reside in one of four locations, based on the sandbox and
@@ -118,17 +136,16 @@ public class FileUtilities {
      * normalised and returned without any further changes.
      *
      * @param fileParams File or Directory to sandbox
-     * @param cert       Certificate to be used to determine sandbox location
+     * @param commonName Common name of the associated certificate for use with sandbox location
      * @return absolute path of input, with relative location's root being determined by the {@code sandbox} and {@code shared} flags.
      */
-    public static Path createAbsolutePath(FileParams fileParams, Certificate cert) throws AccessDeniedException {
+    public static Path createAbsolutePath(FileParams fileParams, String commonName) {
         Path sanitizedPath;
         if (fileParams.getPath().isAbsolute()) {
             sanitizedPath = fileParams.getPath();
         } else {
             String parent = fileParams.isShared()? SystemUtilities.getSharedDataDirectory():SystemUtilities.getDataDirectory();
             if (fileParams.isSandbox()) {
-                String commonName = cert.isTrusted()? escapeFileName(cert.getCommonName()):"UNTRUSTED";
                 sanitizedPath = Paths.get(parent, Constants.SANDBOX_DIR, commonName).resolve(fileParams.getPath());
             } else {
                 sanitizedPath = Paths.get(parent, Constants.NOT_SANDBOX_DIR).resolve(fileParams.getPath());

@@ -496,7 +496,7 @@ public class PrintSocketClient {
                     connection.removeAllFileListeners();
                     sendResult(session, UID, null);
                 } else {
-                    Path absPath = FileUtilities.getAbsolutePath(params, shownCertificate, false);
+                    Path absPath = FileUtilities.getAbsolutePath(params, shownCertificate, true);
                     FileIO fileIO = connection.getFileListener(absPath);
 
                     if (fileIO != null) {

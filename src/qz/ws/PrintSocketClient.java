@@ -550,15 +550,9 @@ public class PrintSocketClient {
                 FileParams fileParams = new FileParams(params);
                 Path absPath = FileUtilities.getAbsolutePath(params, shownCertificate, false);
 
-                if (Files.isWritable(absPath)) {
-                    Files.createDirectories(absPath.getParent());
-                    Files.write(absPath, fileParams.getData(), StandardOpenOption.CREATE, fileParams.getAppendMode());
-                    sendResult(session, UID, null);
-                } else {
-                    log.error("Failed to write '{}' (not writable)", absPath);
-                    sendError(session, UID, "Path is not writable");
-                }
-
+                Files.createDirectories(absPath.getParent());
+                Files.write(absPath, fileParams.getData(), StandardOpenOption.CREATE, fileParams.getAppendMode());
+                sendResult(session, UID, null);
                 break;
             }
             case FILE_REMOVE: {

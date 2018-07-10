@@ -42,7 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import com.ibm.icu.text.ArabicShapingException;
 
 /**
  * Sends raw data to the printer, overriding your operating system's print
@@ -67,6 +67,23 @@ public class PrintRaw implements PrintProcessor {
     public PrintingUtilities.Type getType() {
         return PrintingUtilities.Type.RAW;
     }
+
+    private byte[] getBytes(String str, String encoding) throws ArabicShapingException, IOException {
+        String enc = encoding.toLowerCase();
+        switch (encoding.toLowerCase()) {
+            case "ibm864":
+            case "cp864":
+            case "csibm864":
+                return ArabicConversionUtilities.convertUTF8ToIBM864MixedWithESCP(str);
+            case "raw/ibm864":
+            case "raw/cp864":
+            case "raw/csibm864":
+                return ArabicConversionUtilities.convertUTF8OrESCPToIBM864(str);
+            default:
+                return str.getBytes(encoding);
+        }
+    }
+
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
@@ -107,7 +124,7 @@ public class PrintRaw implements PrintProcessor {
                         break;
                     case PLAIN:
                     default:
-                        commands.append(cmd.getBytes(encoding));
+                        commands.append(getBytes(cmd, encoding));
                         break;
                 }
             }

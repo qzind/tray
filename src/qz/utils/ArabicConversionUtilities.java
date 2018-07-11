@@ -5,8 +5,8 @@ import com.ibm.icu.charset.CharsetProviderICU;
 import com.ibm.icu.text.ArabicShaping;
 import com.ibm.icu.text.ArabicShapingException;
 import com.ibm.icu.text.Bidi;
-import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
@@ -410,7 +410,7 @@ public class ArabicConversionUtilities {
         String data = para.writeReordered(Bidi.DO_MIRRORING);
 
         //Split the String into separate blocks, based on code points < 256 and > 256
-        ByteOutputStream bos = new ByteOutputStream();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
         int i = 0;
         while (i < data.length()) {
             int ch = data.codePointAt(i);
@@ -443,12 +443,7 @@ public class ArabicConversionUtilities {
         }
         bos.flush();
 
-        //ByteOutputStream.toByteArray() is deprecated so we do arrayCopy manually
-        byte b [] =  bos.getBytes();
-        int count = bos.getCount();
-        byte res[] = new byte[count];
-        System.arraycopy(b, 0, res, 0, count);
-        return res;
+        return bos.toByteArray();
     }
 
     /**

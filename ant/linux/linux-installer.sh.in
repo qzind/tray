@@ -109,8 +109,13 @@ pkill -f "java ${launch.opts} -jar ${jarfile}" > /dev/null 2>&1
 progress_dialog 20 "Stopping any running versions..."
 rm -rf "${destdir}" > /dev/null 2>&1
 
-progress_dialog 25 "Creating directory..."
+progress_dialog 25 "Creating directories..."
 mkdir -p "${destdir}" > /dev/null 2>&1
+
+# Shared directory for FileIO operations
+mkdir -p "/srv/${vendor.name}" 2>&1
+chmod 666 "/srv/${vendor.name}"
+
 
 progress_dialog 30 "Installing new version..."
 cp -R ./ "${destdir}"

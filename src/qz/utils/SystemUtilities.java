@@ -101,6 +101,27 @@ public class SystemUtilities {
         return parent + File.separator + folder;
     }
 
+    /**
+     * Returns the OS shared data directory for FileIO operations. Must match
+     * that defined in desktop installer scripts, which create directories
+     * and grant read/write access to normal users.
+     * access.
+     * @return
+     */
+    public static String getSharedDataDirectory() {
+        String parent;
+
+        if (isWindows()) {
+            parent = System.getenv("PROGRAMDATA");
+        } else if (isMac()) {
+            parent = "/Library/Application Support/";
+        } else {
+            parent = "/srv/";
+        }
+
+        return parent + File.separator + Constants.DATA_DIR;
+    }
+
     public static String getSharedDirectory() {
         String parent = DeployUtilities.getSystemShortcutCreator().getParentDirectory();
         String folder = Constants.SHARED_DATA_DIR;

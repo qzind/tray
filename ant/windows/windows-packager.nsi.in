@@ -127,8 +127,13 @@ Section
   CreateShortCut "$SMPROGRAMS\${project.name}.lnk" "$INSTDIR\${project.filename}.exe" "" "$INSTDIR\${windows.icon}" 0
   CreateShortCut "$SMSTARTUP\${project.name}.lnk" "$INSTDIR\${project.filename}.exe" "" "$INSTDIR\${windows.icon}" 0
 
+  ; Shared directory for FileIO operations
+  ReadEnvStr $R0 "PROGRAMDATA"
+  CreateDirectory "$R0\${vendor.name}"
+
   ; Grant R+W to Authenticated Users (S-1-5-11)
   AccessControl::GrantOnFile "$SMSTARTUP\${project.name}.lnk" "(S-1-5-11)" "GenericRead + GenericWrite"
+  AccessControl::GrantOnFile "$R0\${vendor.name}" "(S-1-5-11)" "GenericRead + GenericWrite"
 
   ; Delete matching firewall rules
   DetailPrint "Removing ${project.name} firewall rules..."

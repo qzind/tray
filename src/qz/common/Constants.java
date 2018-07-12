@@ -66,4 +66,7 @@ public class Constants {
     public static final String PDF_PRINT = ABOUT_TITLE + " PDF Print";
     public static final String HTML_PRINT = ABOUT_TITLE + " HTML Print";
 
+    public static final String SANDBOX_DIR = "/sandbox";
+    public static final String NOT_SANDBOX_DIR = "/shared";
+    public static final int FILE_LISTENER_DEFAULT_LINES = 10;
 }

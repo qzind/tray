@@ -7,6 +7,7 @@ import qz.utils.FileUtilities;
 import javax.print.PrintService;
 import javax.print.attribute.standard.Media;
 import java.io.File;
+import java.nio.file.Paths;
 
 public class PrintOutput {
 
@@ -30,7 +31,7 @@ public class PrintOutput {
 
         if (configPrinter.has("file")) {
             String filename = configPrinter.getString("file");
-            if (FileUtilities.isBadExtension(filename)) {
+            if (!FileUtilities.isGoodExtension(Paths.get(filename))) {
                 throw new IllegalArgumentException("Writing to file \"" + filename + "\" is denied for security reasons. (Prohibited file extension)");
             } else if (FileUtilities.isBadPath(filename)) {
                 throw new IllegalArgumentException("Writing to file \"" + filename + "\" is denied for security reasons. (Prohibited directory name)");

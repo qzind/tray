@@ -79,7 +79,7 @@ function progress_dialog() {
 
 # Check minimum java version
 function check_java() {
-   curver=$(java -version 2>&1 | grep -i version | awk -F"\"" '{ print $2 }' | awk -F"." '{ print $1 "." $2 }') 
+   curver=$(java -version 2>&1 | grep -i version | awk -F"\"" '{ print $2 }' | awk -F"." '{ print $1 "." $2 }')
    minver="${javac.target}"
 
    if [ -z "$curver" ]; then
@@ -112,8 +112,13 @@ rm -rf "${destdir}" > /dev/null 2>&1
 # Remove 2.1 startup entry
 rm "/etc/xdg/autostart/${project.filename}.desktop"
 
-progress_dialog 25 "Creating directory..."
+progress_dialog 25 "Creating directories..."
 mkdir -p "${destdir}" > /dev/null 2>&1
+
+# Shared directory for FileIO operations
+mkdir -p "/srv/${vendor.name}" 2>&1
+chmod 666 "/srv/${vendor.name}"
+
 
 progress_dialog 30 "Installing new version..."
 cp -R ./ "${destdir}"
@@ -233,7 +238,7 @@ else
 fi
 
 progress_dialog 90 "Setting permissions..."
-chmod -R $mask "${destdir}" 
+chmod -R $mask "${destdir}"
 
 progress_dialog 92 "Installing usb/udev rules..."
 rm -f "/lib/udev/rules.d/${linux.udev.name}" > /dev/null 2>&1
@@ -247,7 +252,7 @@ for i in /home/* ; do
     if [ -n "${project.filename}" ]; then
     	rm "$i/.config/autostart/${project.filename}.desktop" > /dev/null 2>&1
     fi
-    if [ -n "${project.name}" ]; then 
+    if [ -n "${project.name}" ]; then
     	rm "$i/.config/autostart/${project.name}.desktop" > /dev/null 2>&1
     fi
 done

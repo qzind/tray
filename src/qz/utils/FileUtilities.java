@@ -9,23 +9,36 @@
  */
 package qz.utils;
 
+import javafx.util.Pair;
 import org.apache.commons.io.Charsets;
+import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
+import org.apache.commons.lang3.text.translate.LookupTranslator;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import qz.auth.Certificate;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
+import qz.communication.FileIO;
+import qz.communication.FileParams;
 import qz.exception.NullCommandException;
-import qz.utils.ConnectionUtilities;
+import qz.ws.PrintSocketServer;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
-
+import java.util.Properties;
 
 /**
  * Common static file i/o utilities
@@ -43,6 +56,7 @@ public class FileUtilities {
             "cpl", "scr", "ins", // Control Panel/Screen Saver/Internet Settings
             "hta", // HTML application, run as trusted application without sandboxing
             "msc", // Microsoft Management Console file
+            "dll", // Microsoft shared library
             "jar", "jnlp", // Java Executable
             "vb", "vbs", "vbe", "js", "jse", "ws", "wsf", "wsc", "wsh",// Windows Script
             "ps1", "ps1xml", "ps2", "ps2xml", "ps1", "ps1xml", "ps2", "ps2xml", "psc1", "psc2", // Windows PowerShell script
@@ -61,23 +75,192 @@ public class FileUtilities {
             "url" // Internet Shortcut
     };
 
+    private static final CharSequenceTranslator translator = new LookupTranslator(new String[][] {
+            {"^", "^^"},
+            {"\\", "^b"},
+            {"/", "^f"},
+            {":", "^c"},
+            {"*", "^a"},
+            {"?", "^m"},
+            {"\"", "^q"},
+            {"<", "^g"},
+            {">", "^l"},
+            {"|", "^p"},
+            {"" + (char)0x7f, "^d"}
+    });
+
     /* resource files */
     private static HashMap<String,File> localFileMap = new HashMap<>();
     private static HashMap<String,File> sharedFileMap = new HashMap<>();
+    private static ArrayList<Pair<Path,String>> whiteList;
 
+    public static Path getAbsolutePath(JSONObject params, Certificate cert, boolean allowRootDir) throws JSONException, IOException {
+        FileParams fp = new FileParams(params);
+        String commonName = cert.isTrusted()? escapeFileName(cert.getCommonName()):"UNTRUSTED";
 
-    public static boolean isBadExtension(String fileName) {
-        String[] tokens = fileName.split("\\.(?=[^\\.]+$)");
+        Path path = createAbsolutePath(fp, commonName);
+        initializeRootFolder(fp, commonName);
+
+        if (!isWhiteListed(path, allowRootDir, fp.isSandbox(), cert)) {
+            throw new AccessDeniedException(path.toString());
+        }
+
+        if (!allowRootDir && !Files.isDirectory(path)) {
+            if (!isGoodExtension(path)) {
+                throw new AccessDeniedException(path.toString());
+            }
+        }
+
+        return path;
+    }
+
+    private static void initializeRootFolder(FileParams fileParams, String commonName) throws IOException {
+        String parent = fileParams.isShared()? SystemUtilities.getSharedDataDirectory():SystemUtilities.getDataDirectory();
+
+        Path rootPath;
+        if (fileParams.isSandbox()) {
+            rootPath = Paths.get(parent, Constants.SANDBOX_DIR, commonName);
+        } else {
+            rootPath = Paths.get(parent, Constants.NOT_SANDBOX_DIR);
+        }
+
+        if (!Files.exists(rootPath)) {
+            Files.createDirectories(rootPath);
+        }
+    }
+
+    /**
+     * Returns a normalised and absolute path. If the input path was relative,
+     * the root may reside in one of four locations, based on the sandbox and
+     * shared flags. If the input path was absolute, the path will be
+     * normalised and returned without any further changes.
+     *
+     * @param fileParams File or Directory to sandbox
+     * @param commonName Common name of the associated certificate for use with sandbox location
+     * @return absolute path of input, with relative location's root being determined by the {@code sandbox} and {@code shared} flags.
+     */
+    public static Path createAbsolutePath(FileParams fileParams, String commonName) {
+        Path sanitizedPath;
+        if (fileParams.getPath().isAbsolute()) {
+            sanitizedPath = fileParams.getPath();
+        } else {
+            String parent = fileParams.isShared()? SystemUtilities.getSharedDataDirectory():SystemUtilities.getDataDirectory();
+            if (fileParams.isSandbox()) {
+                sanitizedPath = Paths.get(parent, Constants.SANDBOX_DIR, commonName).resolve(fileParams.getPath());
+            } else {
+                sanitizedPath = Paths.get(parent, Constants.NOT_SANDBOX_DIR).resolve(fileParams.getPath());
+            }
+        }
+
+        return sanitizedPath.normalize();
+    }
+
+    /**
+     * Checks a path's extension against a list of forbidden extensions. If a match is found, false is returned.
+     */
+    public static boolean isGoodExtension(Path path) {
+        String fileName = path.getFileName().toString();
+
+        //"foo.exe." is valid on windows, but is immediately changed to "foo.exe" by the os
+        //this is undocumented behavior, therefore, rather than trying to support it, we fail it.
+        if (SystemUtilities.isWindows() && fileName.endsWith(".")) { return false; }
+
+        String[] tokens = fileName.split("\\.(?=[^.]+$)");
         if (tokens.length == 2) {
             String extension = tokens[1];
             for(String bad : FileUtilities.badExtensions) {
                 if (bad.equalsIgnoreCase(extension)) {
-                    return true;
+                    return false;
                 }
             }
         }
+        return true;
+    }
 
+    /**
+     * Returns whether or not the given file or folder is white-listed for File IO
+     * Currently hard-coded to the QZ data directory or anything provided by qz-tray.properties
+     * e.g. %APPDATA%/qz/data or $HOME/.qz/data, etc
+     */
+    public static boolean isWhiteListed(Path path, boolean allowRootDir, boolean sandbox, Certificate cert) {
+        String commonName = cert.isTrusted()? escapeFileName(cert.getCommonName()):"UNTRUSTED";
+        if (whiteList == null) {
+            populateWhiteList();
+        }
+
+        Path cleanPath = path.normalize().toAbsolutePath();
+        for(Pair<Path,String> allowed : whiteList) {
+            if (cleanPath.startsWith(allowed.getKey())) {
+                if ("".equals(allowed.getValue()) || allowed.getValue().contains("|" + commonName + "|") && (allowRootDir || !cleanPath.equals(allowed.getKey()))) {
+                    return true;
+                } else if (allowed.getValue().contains("|sandbox|")) {
+                    Path p;
+                    if (sandbox) {
+                        p = Paths.get(allowed.getKey().toString(), Constants.SANDBOX_DIR, commonName);
+                    } else {
+                        p = Paths.get(allowed.getKey().toString(), Constants.NOT_SANDBOX_DIR);
+                    }
+                    if (cleanPath.startsWith(p) && (allowRootDir || !cleanPath.equals(p))) {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
+    }
+
+    private static void populateWhiteList() {
+        whiteList = new ArrayList<>();
+        //default sandbox locations. More can be added through the properties file
+        whiteList.add(new Pair<>(Paths.get(SystemUtilities.getDataDirectory()), "|sandbox|"));
+        whiteList.add(new Pair<>(Paths.get(SystemUtilities.getSharedDataDirectory()), "|sandbox|"));
+
+        Properties props = PrintSocketServer.getTrayProperties();
+        if (props != null) {
+            StringBuilder propString = new StringBuilder(props.getProperty("file.whitelist", ""));
+            boolean escaped = false;
+            boolean resetPending = false, tokenPending = false;
+            ArrayList<String> tokens = new ArrayList<>();
+            //unescaper and tokenizer
+            for(int i = 0; i < propString.length(); i++) {
+                char iteratingChar = propString.charAt(i);
+                //if the char before this was an escape char, we are no longer escaped and we skip delimiter detection
+                if (escaped) {
+                    escaped = false;
+                } else {
+                    if (iteratingChar == '^') {
+                        escaped = true;
+                        propString.deleteCharAt(i);
+                        i--;
+                    } else {
+                        tokenPending = iteratingChar == '|' || iteratingChar == ';';
+                        resetPending = iteratingChar == ';';
+                    }
+                }
+                //If the last char isn't a ; or |
+                if (i == propString.length() - 1) {
+                    tokenPending = true;
+                    resetPending = true;
+                }
+                //if a delimiter is found, save string to token and delete it from propString
+                if (tokenPending) {
+                    tokenPending = false;
+                    tokens.add(propString.substring(0, i));
+                    propString.delete(0, i + 1);
+                    i = -1;
+                }
+                //if a semicolon was found or we are on the last char of the string, dump the tokens into a pair and add it to whiteList
+                if (resetPending) {
+                    resetPending = false;
+                    String commonNames = tokens.size() > 1? "|":"";
+                    for(int n = 1; n < tokens.size(); n++) {
+                        commonNames += escapeFileName(tokens.get(n)) + "|";
+                    }
+                    whiteList.add(new Pair<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));
+                    tokens.clear();
+                }
+            }
+        }
     }
 
     /**
@@ -94,6 +277,25 @@ public class FileUtilities {
         }
 
         return path.contains(SystemUtilities.getDataDirectory());
+    }
+
+    /**
+     * Escapes invalid chars from filenames. This does not cause collisions. Escape char is "^"
+     * Characters escaped, ^ \ / : * ? " < > |</>
+     * Warning: Restricted filenames such as lpt1, com1, aux... are not escaped by this function
+     *
+     * @param fileName file name to escape
+     * @return escaped string
+     */
+    public static String escapeFileName(String fileName) {
+        StringBuilder returnStringBuilder = new StringBuilder(translator.translate(fileName));
+        for(int n = returnStringBuilder.length() - 1; n >= 0; n--) {
+            char c = returnStringBuilder.charAt(n);
+            if (c < 0x20) {
+                returnStringBuilder.replace(n, n + 1, "^" + String.format("%02d", (int)c));
+            }
+        }
+        return returnStringBuilder.toString();
     }
 
     public static boolean isSymlink(String filePath) {
@@ -137,6 +339,12 @@ public class FileUtilities {
         in.close();
 
         return cmds.getByteArray();
+    }
+
+
+    public static void setupListener(FileIO fileIO) throws IOException {
+        FileWatcher.startWatchThread();
+        FileWatcher.registerWatch(fileIO);
     }
 
 

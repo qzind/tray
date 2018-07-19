@@ -332,6 +332,11 @@ public class TrayManager {
 
     public void exit(int returnCode) {
         prefs.save();
+        try {
+            PrintSocketServer.stopServer();
+        } catch (Exception e) {
+            log.error("Error while stopping server", e);
+        }
         System.exit(returnCode);
     }
 
@@ -437,11 +442,9 @@ public class TrayManager {
      * Sets the WebSocket Server instance for displaying port information and restarting the server
      *
      * @param server            The Server instance contain to bind the reload action to
-     * @param running           Object used to notify PrintSocket to reiterate its main while loop
-     * @param securePortIndex   Object used to notify PrintSocket to reset its port array counter
      * @param insecurePortIndex Object used to notify PrintSocket to reset its port array counter
      */
-    public void setServer(final Server server, final AtomicBoolean running, final AtomicInteger securePortIndex, final AtomicInteger insecurePortIndex) {
+    public void setServer(final Server server, final AtomicInteger insecurePortIndex) {
         if (server != null && server.getConnectors().length > 0) {
             singleInstanceCheck(PrintSocketServer.INSECURE_PORTS, insecurePortIndex.get());
 
@@ -454,11 +457,7 @@ public class TrayManager {
                 public void run() {
                     try {
                         setDangerIcon();
-                        running.set(false);
-                        securePortIndex.set(0);
-                        insecurePortIndex.set(0);
-
-                        server.stop();
+                        PrintSocketServer.reloadServer();
                     }
                     catch(Exception e) {
                         displayErrorMessage("Error stopping print socket: " + e.getLocalizedMessage());

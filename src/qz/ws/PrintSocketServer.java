@@ -17,6 +17,7 @@ import org.apache.log4j.rolling.RollingFileAppender;
 import org.apache.log4j.rolling.SizeBasedTriggeringPolicy;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.MultiException;
@@ -53,11 +54,13 @@ public class PrintSocketServer {
     public static final List<Integer> SECURE_PORTS = Collections.unmodifiableList(Arrays.asList(8181, 8282, 8383, 8484));
     public static final List<Integer> INSECURE_PORTS = Collections.unmodifiableList(Arrays.asList(8182, 8283, 8384, 8485));
 
+    private static final AtomicBoolean running = new AtomicBoolean(true);
     private static final AtomicInteger securePortIndex = new AtomicInteger(0);
     private static final AtomicInteger insecurePortIndex = new AtomicInteger(0);
 
-    private static TrayManager trayManager;
-    private static Properties trayProperties;
+    private static TrayManager trayManager = null;
+    private static Properties trayProperties = null;
+    private static Server server = null;
 
 
     public static void main(String[] args) {
@@ -125,13 +128,20 @@ public class PrintSocketServer {
         org.apache.log4j.Logger.getRootLogger().addAppender(fileAppender);
     }
 
+    public static void reloadServer() throws Exception {
+        // Force reload of tray properties
+        trayProperties = null;
+
+        securePortIndex.set(0);
+        insecurePortIndex.set(0);
+
+        server.stop();
+    }
+
     public static void runServer() {
-        final AtomicBoolean running = new AtomicBoolean(false);
-
-        trayProperties = getTrayProperties();
-
-        while(!running.get() && securePortIndex.get() < SECURE_PORTS.size() && insecurePortIndex.get() < INSECURE_PORTS.size()) {
-            Server server = new Server(getInsecurePortInUse());
+        while(running.get() && securePortIndex.get() < SECURE_PORTS.size() && insecurePortIndex.get() < INSECURE_PORTS.size()) {
+            trayProperties = getTrayProperties();
+            server = new Server(getInsecurePortInUse());
 
             if (trayProperties != null) {
                 // Bind the secure socket on the proper port number (i.e. 9341), add it as an additional connector
@@ -175,15 +185,22 @@ public class PrintSocketServer {
                 context.addServlet(jsonServlet, "/json");
                 context.addServlet(jsonServlet, "/json/");
 
-                server.setHandler(context);
+                StatisticsHandler statsHandler = new StatisticsHandler();
+                statsHandler.setHandler(context);
+                server.setHandler(statsHandler);
+                server.setStopTimeout(1000);
                 server.setStopAtShutdown(true);
                 server.start();
 
-                running.set(true);
-                trayManager.setServer(server, running, securePortIndex, insecurePortIndex);
+                trayManager.setServer(server, insecurePortIndex);
                 log.info("Server started on port(s) " + TrayManager.getPorts(server));
 
+
                 server.join();
+                while (!server.isStopped()) {
+                    Thread.sleep(100);
+                }
+                server.destroy();
             }
             catch(BindException | MultiException e) {
                 //order of getConnectors is the order we added them -> insecure first
@@ -202,6 +219,11 @@ public class PrintSocketServer {
                 trayManager.displayErrorMessage(e.getLocalizedMessage());
             }
         }
+    }
+
+    public static void stopServer() throws Exception {
+        running.set(false);
+        server.stop();
     }
 
     /**

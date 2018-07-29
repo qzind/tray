@@ -73,6 +73,8 @@ public class PrintRaw implements PrintProcessor {
             case "ibm864":
             case "cp864":
             case "csibm864":
+            case "864":
+            case "ibm-864":
                 return ArabicConversionUtilities.convertToIBM864(str);
             default:
                 return str.getBytes(encoding);

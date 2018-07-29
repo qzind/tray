@@ -170,9 +170,9 @@
         </copy>
     </target>
 
-    <target name="distill-icu">
-        <exec dir="ant/lib" executable="python">
-            <arg line="slim-icu.py"/>
+    <target name="distill-icu" depends="init">
+        <exec executable="python">
+            <arg line="ant/lib/slim-icu.py ${lib.dir}/charsets/"/>
         </exec>
     </target>
 

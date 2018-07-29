@@ -4,9 +4,11 @@
 # Currently this script will only keep Arabic and English data
 
 # slim ICU
+import sys
 import zipfile
 from zipfile import ZipFile
 
+directory = sys.argv[1]
 mode = zipfile.ZIP_DEFLATED
 
 
@@ -28,8 +30,8 @@ def keep_file(filename):
     return False
 
 
-zin = ZipFile('icu4j.jar', 'r')
-zout = ZipFile('icu4j-slim.jar', 'w', mode)
+zin = ZipFile(directory + 'icu4j.jar', 'r')
+zout = ZipFile(directory + 'icu4j-slim.jar', 'w', mode)
 
 for item in zin.infolist():
     buff = zin.read(item.filename)
@@ -70,8 +72,8 @@ def keep_charset_file(filename):
     return True
 
 
-zin = ZipFile('icu4j-charset.jar', 'r')
-zout = ZipFile('icu4j-charset-slim.jar', 'w', mode)
+zin = ZipFile(directory + 'icu4j-charset.jar', 'r')
+zout = ZipFile(directory + 'icu4j-charset-slim.jar', 'w', mode)
 
 for item in zin.infolist():
     buff = zin.read(item.filename)

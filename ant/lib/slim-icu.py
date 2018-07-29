@@ -5,10 +5,15 @@
 
 # slim ICU
 import sys
+import os
+from pathlib import Path
 import zipfile
 from zipfile import ZipFile
 
-directory = sys.argv[1]
+directory = str(Path(__file__).resolve().parent)
+if len(sys.argv) > 1:
+    directory = sys.argv[1]
+
 mode = zipfile.ZIP_DEFLATED
 
 
@@ -30,8 +35,8 @@ def keep_file(filename):
     return False
 
 
-zin = ZipFile(directory + 'icu4j.jar', 'r')
-zout = ZipFile(directory + 'icu4j-slim.jar', 'w', mode)
+zin = ZipFile(os.path.join(directory, 'icu4j.jar'), 'r')
+zout = ZipFile(os.path.join(directory, 'icu4j-slim.jar'), 'w', mode)
 
 for item in zin.infolist():
     buff = zin.read(item.filename)
@@ -72,8 +77,8 @@ def keep_charset_file(filename):
     return True
 
 
-zin = ZipFile(directory + 'icu4j-charset.jar', 'r')
-zout = ZipFile(directory + 'icu4j-charset-slim.jar', 'w', mode)
+zin = ZipFile(os.path.join(directory, 'icu4j-charset.jar'), 'r')
+zout = ZipFile(os.path.join(directory, 'icu4j-charset-slim.jar'), 'w', mode)
 
 for item in zin.infolist():
     buff = zin.read(item.filename)

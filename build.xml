@@ -172,7 +172,7 @@
 
     <target name="distill-icu" depends="init">
         <exec executable="python">
-            <arg line="ant/lib/slim-icu.py ${lib.dir}/charsets/"/>
+            <arg line="ant/lib/slim-icu.py ${lib.dir}/charsets"/>
         </exec>
     </target>
 

@@ -113,7 +113,7 @@
         <java jar="${dist.jar}" fork="true" outputproperty="build.version">
             <arg value="--version"/>
         </java>
-		
+
         <!-- Fallback to a bogus version number if the above command failed -->
         <property name="build.version" value="0.0.0" />
         <echo>Version ${build.version}</echo>
@@ -168,6 +168,12 @@
         <copy todir="${dist.dir}/${demo.dir}">
             <fileset file="sample.html"/>
         </copy>
+    </target>
+
+    <target name="distill-icu">
+        <exec dir="ant/lib" executable="python">
+            <arg line="slim-icu.py"/>
+        </exec>
     </target>
 
     <!--

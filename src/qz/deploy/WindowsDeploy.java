@@ -13,20 +13,15 @@ package qz.deploy;
 
 import mslinks.ShellLink;
 import qz.utils.ShellUtilities;
+import qz.utils.SystemUtilities;
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
+import java.nio.file.*;
 
 /**
  * @author Tres Finocchiaro
  */
 public class WindowsDeploy extends DeployUtilities {
-    private static String DELETED_ICON = System.getenv("windir") + "\\system32\\SHELL32.dll";
-
-    @Override
-    public boolean createStartupShortcut() {
-        return createShortcut(getStartupDirectory());
-    }
 
     @Override
     public String getParentDirectory() {
@@ -39,50 +34,23 @@ public class WindowsDeploy extends DeployUtilities {
     }
 
     @Override
-    public boolean removeStartupShortcut() {
+    public boolean setAutostart(boolean autostart) {
         try {
-            // Dummy shortcut
-            ShellLink link = ShellLink.createLink("%SystemRoot%\\system32\\rundll32.exe", getStartupDirectory() + getShortcutName() + ".lnk");
-            link.setIconLocation(DELETED_ICON);
-            link.getHeader().setIconIndex(131);
-            link.saveTo(getStartupDirectory() + getShortcutName() + ".lnk");
-            return true;
+            return writeStartupFile(autostart ? "1": "0");
         }
-        catch(Exception ex) {
-            log.warn("Error removing startup shortcut", ex);
+        catch(IOException e) {
             return false;
         }
     }
 
     @Override
-    public boolean removeDesktopShortcut() {
-        return deleteFile(System.getenv("userprofile") + "\\Desktop\\" + getShortcutName() + ".lnk");
-    }
-
-
-    @Override
-    public boolean hasStartupShortcut() {
+    public boolean isAutostart() {
         try {
-            ShellLink link = new ShellLink(getStartupDirectory() + getShortcutName() + ".lnk");
-            return link.getIconLocation() == null || !link.getIconLocation().equals(DELETED_ICON);
+            return readStartupFile().equals("1");
         }
-        catch(NegativeArraySizeException ignore) {
-            // Per mslinks issues #4
-            return true;
+        catch(IOException e) {
+            return false;
         }
-        catch(NoSuchFileException ignore) {
-            log.warn("Startup shortcut does not exist");
-        }
-        catch(Exception ex) {
-            log.error("Error detecting startup shortcut", ex);
-        }
-
-        return false;
-    }
-
-    @Override
-    public boolean hasDesktopShortcut() {
-        return fileExists(System.getenv("userprofile") + "\\Desktop\\" + getShortcutName() + ".lnk");
     }
 
     /**
@@ -116,6 +84,17 @@ public class WindowsDeploy extends DeployUtilities {
         return data != -1 && ((data & value) == value || ShellUtilities.setRegistryDWORD(path, name, data | value));
     }
 
+    private static boolean writeStartupFile(String mode) throws IOException {
+        Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() , "autostart");
+        Files.write(autostartFile, mode.getBytes(), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        return mode.equals("1");
+    }
+
+    private static String readStartupFile() throws IOException {
+        Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() ,"autostart");
+        return Files.readAllLines(autostartFile).get(0);
+    }
+
     /**
      * Creates a Windows ".lnk" shortcut
      *
@@ -138,13 +117,5 @@ public class WindowsDeploy extends DeployUtilities {
      */
     private String getAppPath() {
         return fixWhitespaces(getJarPath()).replaceAll(".jar$", ".exe");
-    }
-
-    private static String getStartupDirectory() {
-        if (System.getenv("programdata") == null) {
-            // XP
-            return System.getenv("allusersprofile") + "\\Start Menu\\Programs\\Startup\\";
-        }
-        return System.getenv("programdata") + "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\";
     }
 }

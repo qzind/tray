@@ -30,26 +30,31 @@ class MacDeploy extends DeployUtilities {
     private String autostartToggle = getAppPath() + "/.autostart";
     private String desktopShortcut = System.getProperty("user.home") + "/Desktop/" + getShortcutName();
 
+    //@Override
+    //public boolean hasStartupShortcut() {
+    //    removeLegacyStartup();
+    //    try {
+    //        return FileUtilities.readLocalFile(autostartToggle).contains("1");
+    //    } catch (Exception err) {
+    //        log.warn("Could not read .autostart file", err);
+    //    }
+    //    return false;
+    //}
+
     @Override
-    public boolean hasStartupShortcut() {
-        removeLegacyStartup();
-        try {
-            return FileUtilities.readLocalFile(autostartToggle).contains("1");
-        } catch (Exception err) {
-            log.warn("Could not read .autostart file", err);
-        }
+    public boolean setAutostart(boolean autostart) {
         return false;
     }
 
     @Override
-    public boolean hasDesktopShortcut() {
-        return FileUtilities.isSymlink(desktopShortcut);
+    public boolean isAutostart() {
+        return false;
     }
 
-    @Override
-    public boolean createStartupShortcut() {
-        return writeAutostart(1);
-    }
+    //@Override
+    //public boolean createStartupShortcut() {
+    //    return writeAutostart(1);
+    //}
 
     @Override
     public String getJarPath() {
@@ -73,15 +78,10 @@ class MacDeploy extends DeployUtilities {
         return ShellUtilities.execute(new String[] {"ln", "-sf", getAppPath(), desktopShortcut});
     }
 
-    @Override
-    public boolean removeStartupShortcut() {
-        return writeAutostart(0);
-    }
-
-    @Override
-    public boolean removeDesktopShortcut() {
-        return ShellUtilities.execute(new String[] {"unlink", desktopShortcut});
-    }
+    //@Override
+    //public boolean removeStartupShortcut() {
+    //    return writeAutostart(0);
+    //}
 
     private boolean removeLegacyStartup() {
         return ShellUtilities.executeAppleScript(

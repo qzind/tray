@@ -39,30 +39,8 @@ public abstract class DeployUtilities {
     private String jarPath;
     private String shortcutName;
 
-    /**
-     * Creates a startup item for the current OS. Automatically detects the OS
-     * and places the startup item in the user's startup area respectively; to
-     * be auto-launched when the user first logs in to the desktop.
-     *
-     * @return Returns <code>true</code> if the startup item was created
-     */
-    public abstract boolean createStartupShortcut();
-
-    /**
-     * Test whether or not a startup shortcut for the specified shortcutName
-     * exists on this system
-     *
-     * @return true if a startup shortcut exists on this system, false otherwise
-     */
-    public abstract boolean hasStartupShortcut();
-
-    /**
-     * Test whether or not a desktop shortcut for the specified shortcutName
-     * exists on this system
-     *
-     * @return true if a desktop shortcut exists on this system, false otherwise
-     */
-    public abstract boolean hasDesktopShortcut();
+    public abstract boolean setAutostart(boolean autostart);
+    public abstract boolean isAutostart();
 
     /**
      * Creates a startup for the current OS. Automatically detects the OS and
@@ -71,85 +49,6 @@ public abstract class DeployUtilities {
      * @return Returns <code>true</code> if the startup item was created
      */
     public abstract boolean createDesktopShortcut();
-
-    /**
-     * Removes a startup item for the current OS. Automatically detects the OS
-     * and removes the startup item from the user's startup area respectively.
-     *
-     * @return Returns <code>true</code> if the startup item was removed
-     */
-    public abstract boolean removeStartupShortcut();
-
-    /**
-     * Removes a desktop shortcut for the current OS. Automatically detects the
-     * OS and removes the shortcut from the current user's Desktop.
-     *
-     * @return Returns <code>true</code> if the Desktop shortcut item was
-     * removed
-     */
-    public abstract boolean removeDesktopShortcut();
-
-    /**
-     * Single function to be used to dynamically create various shortcut types
-     *
-     * @param toggleType ToggleType.STARTUP or ToggleType.DESKTOP
-     * @return Whether or not the shortcut creation was successful
-     */
-    public boolean createShortcut(ToggleType toggleType) {
-        switch(toggleType) {
-            case STARTUP:
-                return hasShortcut(ToggleType.STARTUP) || createStartupShortcut();
-            case DESKTOP:
-                return hasShortcut(ToggleType.DESKTOP) || createDesktopShortcut();
-            default:
-                log.warn("Sorry, creating {} shortcuts are not yet supported", toggleType);
-                return false;
-        }
-    }
-
-    /**
-     * Single function to be used to dynamically check if a shortcut already exists
-     *
-     * @param toggleType Shortcut type, i.e. <code>ToggleType.STARTUP</code> or <code>ToggleType.DESKTOP</code>
-     * @return Whether or not the shortcut already exists
-     */
-    private boolean hasShortcut(ToggleType toggleType) {
-        boolean hasShortcut = false;
-        switch(toggleType) {
-            case STARTUP:
-                hasShortcut = hasStartupShortcut();
-                break;
-            case DESKTOP:
-                hasShortcut = hasDesktopShortcut();
-                break;
-            default:
-                log.warn("Sorry, checking for {} shortcuts are not yet supported", toggleType);
-        }
-
-        if (hasShortcut) {
-            log.info("The {} shortcut for {} ({}) exists", toggleType, getShortcutName(), getJarPath());
-        }
-
-        return hasShortcut;
-    }
-
-    /**
-     * Single function to be used to dynamically remove various shortcut types
-     *
-     * @param toggleType ToggleType.STARTUP or ToggleType.DESKTOP
-     * @return Whether or not the shortcut removal was successful
-     */
-    public boolean removeShortcut(ToggleType toggleType) {
-        switch(toggleType) {
-            case STARTUP:
-                return !hasShortcut(ToggleType.STARTUP) || removeStartupShortcut();
-            case DESKTOP:
-                return !hasShortcut(ToggleType.DESKTOP) || removeDesktopShortcut();
-            default:
-                log.warn("Sorry, removing {} shortcuts are not yet supported", toggleType);
-                return false;
-        }
-    }
 
     /**
      * Parses the parent directory from an absolute file URL. This will not work
@@ -174,7 +73,6 @@ public abstract class DeployUtilities {
     public String getParentDirectory() {
         return getParentDirectory(getJarPath());
     }
-
 
     public void setShortcutName(String shortcutName) {
         if (shortcutName != null) {

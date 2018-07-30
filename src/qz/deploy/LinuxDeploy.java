@@ -30,55 +30,48 @@ class LinuxDeploy extends DeployUtilities {
 
     private String appLauncher = "/usr/share/applications/" + getShortcutName();
 
-    @Override
-    public boolean createStartupShortcut() {
-        return copyShortcut(appLauncher, STARTUP);
-    }
+    //@Override
+    //public boolean createStartupShortcut() {
+    //    return copyShortcut(appLauncher, STARTUP);
+    //}
 
     @Override
     public boolean createDesktopShortcut() {
         return copyShortcut(appLauncher, DESKTOP);
     }
 
-    @Override
-    public boolean removeStartupShortcut() {
-        return writeArrayToFile(STARTUP + getShortcutName(), new String[]{
-                "[Desktop Entry]",
-                "Type=Application",
-                "Name=" + Constants.ABOUT_TITLE + " (Disabled)",
-                "Exec=/bin/true",
-                "Icon=" + DELETED_ICON,
-                "Terminal=false",
-        });
-    }
-
-    @Override
-    public boolean removeDesktopShortcut() {
-        return deleteFile(DESKTOP + getShortcutName());
-    }
+    //@Override
+    //public boolean removeStartupShortcut() {
+    //    return writeArrayToFile(STARTUP + getShortcutName(), new String[]{
+    //            "[Desktop Entry]",
+    //            "Type=Application",
+    //            "Name=" + Constants.ABOUT_TITLE + " (Disabled)",
+    //            "Exec=/bin/true",
+    //            "Icon=" + DELETED_ICON,
+    //            "Terminal=false",
+    //    });
+    //}
 
 
+    //@Override
+    //public boolean hasStartupShortcut() {
+    //    try {
+    //        String contents = FileUtilities.readLocalFile(STARTUP + getShortcutName());
+    //        return !contents.contains("Icon=" + DELETED_ICON);
+    //    } catch (Exception ex) {
+    //        log.warn("Unable to read startup shortcut {}", STARTUP + getShortcutName(), ex);
+    //    }
+    //    return false;
+    //}
+
     @Override
-    public boolean hasStartupShortcut() {
-        try {
-            String contents = FileUtilities.readLocalFile(STARTUP + getShortcutName());
-            return !contents.contains("Icon=" + DELETED_ICON);
-        } catch (Exception ex) {
-            log.warn("Unable to read startup shortcut {}", STARTUP + getShortcutName(), ex);
-        }
+    public boolean setAutostart(boolean autostart) {
         return false;
     }
 
     @Override
-    public boolean hasDesktopShortcut() {
-        // Upgrade legacy "QZ Tray.desktop" shortcuts
-        String shortcut = DESKTOP + Constants.ABOUT_TITLE + ".desktop";
-        if (fileExists(shortcut)) {
-            if (ShellUtilities.execute(new String[] { "rm", shortcut })) {
-                copyShortcut(appLauncher, DESKTOP);
-            }
-        }
-        return fileExists(DESKTOP + getShortcutName());
+    public boolean isAutostart() {
+        return false;
     }
 
     private static boolean copyShortcut(String source, String target) {

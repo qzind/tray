@@ -49,7 +49,7 @@ chmod 777 "${apple.installdir}/.autostart"
 
 # Shared directory for FileIO operations
 mkdir -p "/Library/Application Support/${vendor.name}" 2>&1
-chmod 666 "/Library/Application Support/${vendor.name}"
+chmod 777 "/Library/Application Support/${vendor.name}"
 
 # Cleanup resources from previous versions
 rm -rf "${apple.installdir}/demo/js/3rdparty"

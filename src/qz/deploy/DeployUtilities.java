@@ -16,6 +16,10 @@ import qz.common.Constants;
 import qz.utils.SystemUtilities;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Properties;
 
@@ -39,8 +43,23 @@ public abstract class DeployUtilities {
     private String jarPath;
     private String shortcutName;
 
-    public abstract boolean setAutostart(boolean autostart);
-    public abstract boolean isAutostart();
+    public boolean setAutostart(boolean autostart) {
+        try {
+            return writeStartupFile(autostart ? "1": "0");
+        }
+        catch(IOException e) {
+            return false;
+        }
+    }
+
+    public boolean isAutostart() {
+        try {
+            return readStartupFile().equals("1");
+        }
+        catch(IOException e) {
+            return false;
+        }
+    }
 
     /**
      * Creates a startup for the current OS. Automatically detects the OS and
@@ -131,6 +150,18 @@ public abstract class DeployUtilities {
         }
         return false;
     }
+
+    private static boolean writeStartupFile(String mode) throws IOException {
+        Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() , "autostart");
+        Files.write(autostartFile, mode.getBytes(), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        return mode.equals("1");
+    }
+
+    private static String readStartupFile() throws IOException {
+        Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() ,"autostart");
+        return Files.readAllLines(autostartFile).get(0);
+    }
+
 
     /**
      * Writes the contents of <code>String[] array</code> to the specified

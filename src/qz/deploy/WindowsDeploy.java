@@ -33,26 +33,6 @@ public class WindowsDeploy extends DeployUtilities {
         return createShortcut(System.getenv("userprofile") + "\\Desktop\\");
     }
 
-    @Override
-    public boolean setAutostart(boolean autostart) {
-        try {
-            return writeStartupFile(autostart ? "1": "0");
-        }
-        catch(IOException e) {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean isAutostart() {
-        try {
-            return readStartupFile().equals("1");
-        }
-        catch(IOException e) {
-            return false;
-        }
-    }
-
     /**
      * Remove flag "Include all local (intranet) sites not listed in other zones". Requires CheckNetIsolation
      * to be effective; Has no effect on domain networks with "Automatically detect intranet network" checked.
@@ -82,17 +62,6 @@ public class WindowsDeploy extends DeployUtilities {
         // If the above value does not exist, add it using bitwise OR, thus enabling this setting
         int data = ShellUtilities.getRegistryDWORD(path, name);
         return data != -1 && ((data & value) == value || ShellUtilities.setRegistryDWORD(path, name, data | value));
-    }
-
-    private static boolean writeStartupFile(String mode) throws IOException {
-        Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() , "autostart");
-        Files.write(autostartFile, mode.getBytes(), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-        return mode.equals("1");
-    }
-
-    private static String readStartupFile() throws IOException {
-        Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() ,"autostart");
-        return Files.readAllLines(autostartFile).get(0);
     }
 
     /**

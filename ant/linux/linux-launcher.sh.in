@@ -14,6 +14,7 @@
 #                                                                                        #
 ##########################################################################################
 
+destdir="${linux.installdir}"
 jarfile="${destdir}/${project.filename}.jar"
 
 if [ "$1" = "-A" ]
@@ -21,9 +22,9 @@ then
    line=$(head -n 1 "$HOME/${linux.datadir}/autostart")
    if [ "$line" = "1" ]
    then
-       eval "java ${launch.opts} -jar \"${jarfile}\"
+       eval java ${launch.opts} -jar \"${jarfile}\"
    fi
 else
-   eval "java ${launch.opts} -jar \"${jarfile}\"
+   eval java ${launch.opts} -jar \"${jarfile}\"
 fi
 exit 0

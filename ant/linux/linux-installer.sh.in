@@ -38,7 +38,7 @@ mask=755
 destdir="${linux.installdir}"
 shortcut="/usr/share/applications/${project.filename}.desktop"
 jarfile="${destdir}/${project.filename}.jar"
-launcher="${destdir}/launcher"
+launcher="${destdir}/${linux.launcher.name}"
 
 # Confirmation dialog
 height=8; width=41

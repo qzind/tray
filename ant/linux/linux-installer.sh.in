@@ -38,6 +38,7 @@ mask=755
 destdir="${linux.installdir}"
 shortcut="/usr/share/applications/${project.filename}.desktop"
 jarfile="${destdir}/${project.filename}.jar"
+launcher="${destdir}/launcher"
 
 # Confirmation dialog
 height=8; width=41
@@ -79,7 +80,7 @@ function progress_dialog() {
 
 # Check minimum java version
 function check_java() {
-   curver=$(java -version 2>&1 | grep -i version | awk -F"\"" '{ print $2 }' | awk -F"." '{ print $1 "." $2 }') 
+   curver=$(java -version 2>&1 | grep -i version | awk -F"\"" '{ print $2 }' | awk -F"." '{ print $1 "." $2 }')
    minver="${javac.target}"
 
    if [ -z "$curver" ]; then
@@ -116,7 +117,6 @@ mkdir -p "${destdir}" > /dev/null 2>&1
 mkdir -p "/srv/${vendor.name}" 2>&1
 chmod 666 "/srv/${vendor.name}"
 
-
 progress_dialog 30 "Installing new version..."
 cp -R ./ "${destdir}"
 rm "${destdir}/`basename $0`"
@@ -125,7 +125,7 @@ progress_dialog 40 "Creating desktop shortcut..."
 echo "[Desktop Entry]
 Type=Application
 Name=${project.name}
-Exec=java ${launch.opts} -jar \"${jarfile}\"
+Exec="${launcher}"
 Path=${destdir}
 Icon=${destdir}/${linux.icon}
 MimeType=application/x-qz;x-scheme-handler/qz;
@@ -219,7 +219,7 @@ else
 fi
 
 progress_dialog 90 "Setting permissions..."
-chmod -R $mask "${destdir}" 
+chmod -R $mask "${destdir}"
 
 progress_dialog 92 "Installing usb/udev rules..."
 rm -f "/lib/udev/rules.d/${linux.udev.name}" > /dev/null 2>&1
@@ -233,13 +233,21 @@ for i in /home/* ; do
     if [ -n "${project.filename}" ]; then
     	rm "$i/.config/autostart/${project.filename}.desktop" > /dev/null 2>&1
     fi
-    if [ -n "${project.name}" ]; then 
+    if [ -n "${project.name}" ]; then
     	rm "$i/.config/autostart/${project.name}.desktop" > /dev/null 2>&1
     fi
 done
 
 progress_dialog 94 "Adding startup entry..."
-cp "${shortcut}" "/etc/xdg/autostart/${project.filename}.desktop"
+echo "[Desktop Entry]
+Type=Application
+Name=${project.name}
+Exec="${launcher} -A"
+Path=${destdir}
+Icon=${destdir}/${linux.icon}
+MimeType=application/x-qz;x-scheme-handler/qz;
+Terminal=false
+Comment=${project.name}" > "/etc/xdg/autostart/${project.filename}.desktop"
 
 # Allow oridinary users to write
 chmod 777 "/etc/xdg/autostart/${project.filename}.desktop"

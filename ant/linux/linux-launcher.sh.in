@@ -1,0 +1,29 @@
+#!/bin/bash
+##########################################################################################
+#                            ${project.name} Linux Launcher                                      #
+##########################################################################################
+#  Description:                                                                          #
+#    1. Determines if program should autostart (if applicable)                           #
+#    2. Launch application                                                               #                                                                         #
+#                                                                                        #
+#  Usage:                                                                                #
+#    $ ./launcher                                                                        #
+#                                                                                        #
+#  Options:                                                                              #
+#    -A    Check autostart file to determine if ${project.name} should launch            #
+#                                                                                        #
+##########################################################################################
+
+jarfile="${destdir}/${project.filename}.jar"
+
+if [ "$1" = "-A" ]
+then
+   line=$(head -n 1 "$HOME/${linux.datadir}/autostart")
+   if [ "$line" = "1" ]
+   then
+       eval "java ${launch.opts} -jar \"${jarfile}\"
+   fi
+else
+   eval "java ${launch.opts} -jar \"${jarfile}\"
+fi
+exit 0

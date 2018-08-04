@@ -114,7 +114,7 @@ mkdir -p "${destdir}" > /dev/null 2>&1
 
 # Shared directory for FileIO operations
 mkdir -p "/srv/${vendor.name}" 2>&1
-chmod 666 "/srv/${vendor.name}"
+chmod 777 "/srv/${vendor.name}"
 
 
 progress_dialog 30 "Installing new version..."

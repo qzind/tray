@@ -9,6 +9,7 @@
  */
 package qz.printer.action;
 
+import com.ibm.icu.text.ArabicShapingException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
@@ -43,7 +44,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
 /**
  * Sends raw data to the printer, overriding your operating system's print
  * driver. Most useful for printers such as zebra card or barcode printers.
@@ -56,7 +56,7 @@ public class PrintRaw implements PrintProcessor {
 
     private ByteArrayBuilder commands;
 
-    String encoding = null;
+    private String encoding = null;
 
 
     public PrintRaw() {
@@ -67,6 +67,20 @@ public class PrintRaw implements PrintProcessor {
     public PrintingUtilities.Type getType() {
         return PrintingUtilities.Type.RAW;
     }
+
+    private byte[] getBytes(String str, String encoding) throws ArabicShapingException, IOException {
+        switch(encoding.toLowerCase()) {
+            case "ibm864":
+            case "cp864":
+            case "csibm864":
+            case "864":
+            case "ibm-864":
+                return ArabicConversionUtilities.convertToIBM864(str);
+            default:
+                return str.getBytes(encoding);
+        }
+    }
+
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
@@ -107,7 +121,7 @@ public class PrintRaw implements PrintProcessor {
                         break;
                     case PLAIN:
                     default:
-                        commands.append(cmd.getBytes(encoding));
+                        commands.append(getBytes(cmd, encoding));
                         break;
                 }
             }

@@ -301,20 +301,14 @@ public class TrayManager {
     private ActionListener startupListener() {
         return e -> {
             JCheckBoxMenuItem source = (JCheckBoxMenuItem)e.getSource();
-            if (!source.getState()) {
-                if (confirmDialog.prompt("Remove " + name + " from startup?")) {
-                    if (!shortcutCreator.setAutostart(false)) {
-                        displayInfoMessage("Successfully disabled autostart");
-                    } else {
-                        displayErrorMessage("Error disabling autostart");
-                    }
-                }
+            if (!source.getState() && !confirmDialog.prompt("Remove " + name + " from startup?")) {
+                source.setState(true);
+                return;
+            }
+            if (shortcutCreator.setAutostart(source.getState())) {
+                displayInfoMessage("Successfully " + (source.getState() ? "enabled" : "disabled") + " autostart");
             } else {
-                if (shortcutCreator.setAutostart(true)) {
-                    displayInfoMessage("Successfully enabled autostart");
-                } else {
-                    displayErrorMessage("Error enabling autostart");
-                }
+                displayErrorMessage("Error " + (source.getState() ? "enabling" : "disabling") + " autostart");
             }
             source.setState(shortcutCreator.isAutostart());
         };

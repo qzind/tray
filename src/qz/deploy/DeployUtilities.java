@@ -154,7 +154,7 @@ public abstract class DeployUtilities {
     private static boolean writeStartupFile(String mode) throws IOException {
         Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() , "autostart");
         Files.write(autostartFile, mode.getBytes(), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-        return mode.equals("1");
+        return readStartupFile().equals(mode);
     }
 
     private static String readStartupFile() throws IOException {

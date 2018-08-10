@@ -533,7 +533,11 @@ var qz = (function() {
                     if (data[i].constructor === Object) {
                         var absolute = false;
 
-                        if (data[i].flavor) {
+                        if (data[i].data.indexOf("data:image/png;base64,") === 0) {
+                            //upgrade from old base64 behavior
+                            data[i].flavor = "base64";
+                            data[i].data = data[i].data.substring(22, data[i].data.length);
+                        } else if (data[i].flavor) {
                             //if flavor is known, we can directly check for absolute flavor types
                             if (["FILE", "XML"].indexOf(data[i].flavor.toUpperCase()) > -1) {
                                 absolute = true;

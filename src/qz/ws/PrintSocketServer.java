@@ -168,6 +168,7 @@ public class PrintSocketServer {
                 ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet());
                 httpServlet.setInitParameter("resourceBase","/");
                 context.addServlet(httpServlet, "/");
+                context.addServlet(httpServlet, "/json");
 
                 server.setHandler(context);
                 server.setStopAtShutdown(true);

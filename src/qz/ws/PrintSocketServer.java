@@ -168,12 +168,7 @@ public class PrintSocketServer {
                 ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet());
                 httpServlet.setInitParameter("resourceBase","/");
                 context.addServlet(httpServlet, "/");
-
-                // Handle JSON data page
-                ServletHolder jsonServlet = new ServletHolder(new JsonAboutServlet());
-                jsonServlet.setInitParameter("resourceBase","/json/");
-                context.addServlet(jsonServlet, "/json");
-                context.addServlet(jsonServlet, "/json/");
+                context.addServlet(httpServlet, "/json");
 
                 server.setHandler(context);
                 server.setStopAtShutdown(true);

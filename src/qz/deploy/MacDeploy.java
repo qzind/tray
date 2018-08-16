@@ -27,24 +27,7 @@ class MacDeploy extends DeployUtilities {
 
     private static final Logger log = LoggerFactory.getLogger(MacDeploy.class);
 
-    private String autostartToggle = getAppPath() + "/.autostart";
     private String desktopShortcut = System.getProperty("user.home") + "/Desktop/" + getShortcutName();
-
-    @Override
-    public boolean setAutostart(boolean autostart) {
-        return writeAutostart(autostart ? "0" : "1");
-    }
-
-    @Override
-    public boolean isAutostart() {
-        removeLegacyStartup();
-        try {
-            return FileUtilities.readLocalFile(autostartToggle).contains("1");
-        } catch (Exception err) {
-            log.warn("Could not read .autostart file", err);
-        }
-        return false;
-    }
 
     @Override
     public String getJarPath() {
@@ -64,6 +47,13 @@ class MacDeploy extends DeployUtilities {
     }
 
     @Override
+    public boolean hasStartupShortcut() {
+        removeLegacyStartup();
+        //todo check for startup flag in LaunchAgents
+        return true;
+    }
+
+    @Override
     public boolean createDesktopShortcut() {
         return ShellUtilities.execute(new String[] {"ln", "-sf", getAppPath(), desktopShortcut});
     }
@@ -74,16 +64,6 @@ class MacDeploy extends DeployUtilities {
                         + "every login item where name is \"" + getShortcutName() + "\" or "
                         + "name is \"" + getJarName() + "\""
         );
-    }
-
-    private boolean writeAutostart(String mode) {
-        try(BufferedWriter w = new BufferedWriter(new FileWriter(autostartToggle))) {
-            w.write(mode);
-            return true;
-        } catch(Exception err) {
-            log.warn("Could not write to .autostart", err);
-        }
-        return false;
     }
 
     /**

@@ -98,30 +98,32 @@ FunctionEnd
 Function DetermineAutostart
   ClearErrors
   ${GetParameters} $0
-  ${GetOptions} "$0" "/A" $3
-  IfErrors 0 +3
+  ${GetOptions} "$0" "-A" $3
+  IfErrors 0 LocalAutostart
   StrCpy $AUTOSTART "1"
   Return
+
+  LocalAutostart:
   ClearErrors
   ReadEnvStr $R0 "APPDATA"
-  FileOpen $1 "$R0\${vendor.name}\autostart" r
+  FileOpen $1 "$R0\${project.datadir}\autostart" r
   FileSeek $1 0
   FileRead $1 $AUTOSTART
   FileClose $1
 
   IfErrors SharedAutostart 0
-
-  ${If} $AUTOSTART != "2"
-    Return
-  ${EndIf}
+  Return
 
   SharedAutostart:
   ClearErrors
   ReadEnvStr $R0 "PROGRAMDATA"
-  FileOpen $2 "$R0\${vendor.name}\autostart" r
+  FileOpen $2 "$R0\${project.datadir}\autostart" r
   FileSeek $2 0
   FileRead $2 $AUTOSTART
-  FileClose $2  
+  FileClose $2
+
+  IfErrors 0 +2
+  StrCpy $AUTOSTART "1"
 
 FunctionEnd
 

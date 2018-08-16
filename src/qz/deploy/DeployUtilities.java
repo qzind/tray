@@ -37,9 +37,6 @@ public abstract class DeployUtilities {
     // Default shortcut name to create
     static private final String DEFAULT_SHORTCUT_NAME = "Java Shortcut";
 
-    // Newline character, which changes between Unix and Windows
-    static private final String NEWLINE = SystemUtilities.isWindows()? "\r\n":"\n";
-
     private String jarPath;
     private String shortcutName;
 
@@ -60,6 +57,8 @@ public abstract class DeployUtilities {
             return false;
         }
     }
+
+    public abstract boolean hasStartupShortcut();
 
     /**
      * Creates a startup for the current OS. Automatically detects the OS and
@@ -118,39 +117,6 @@ public abstract class DeployUtilities {
         }
     }
 
-    /**
-     * Returns whether or not a file exists
-     *
-     * @param filePath The full path to a file
-     * @return True if the specified filePath exists.  False otherwise.
-     */
-    static boolean fileExists(String filePath) {
-        try {
-            return new File(filePath).exists();
-        }
-        catch(SecurityException e) {
-            log.error("SecurityException while checking for file {}", filePath, e);
-            return false;
-        }
-    }
-
-    /**
-     * Deletes the specified file
-     *
-     * @param filePath The full file path to be deleted
-     * @return Whether or not the file deletion was successful
-     */
-    static boolean deleteFile(String filePath) {
-        File f = new File(filePath);
-        try {
-            return f.delete();
-        }
-        catch(SecurityException e) {
-            log.error("Error while deleting: {}", filePath, e);
-        }
-        return false;
-    }
-
     private static boolean writeStartupFile(String mode) throws IOException {
         Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() , "autostart");
         Files.write(autostartFile, mode.getBytes(), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
@@ -159,43 +125,12 @@ public abstract class DeployUtilities {
 
     private static String readStartupFile() throws IOException {
         Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() ,"autostart");
+        if (!Files.exists(autostartFile)) {
+            autostartFile = Paths.get(SystemUtilities.getSharedDataDirectory() ,"autostart");
+            //If no autostart files are found, the program will autostart anyway as per requested business logic
+            if (!Files.exists(autostartFile)) return "1";
+        }
         return Files.readAllLines(autostartFile).get(0);
-    }
-
-
-    /**
-     * Writes the contents of <code>String[] array</code> to the specified
-     * <code>filePath</code> used for creating launcher shortcuts for both
-     * Windows and Linux taking OS-specific newlines into account
-     *
-     * @param filePath Absolute file path to be written to
-     * @param array    Array of lines to be written
-     * @return Whether or not the write was successful
-     */
-    static boolean writeArrayToFile(String filePath, String[] array) {
-        log.info("Writing array contents to file: {}: \n{}", filePath, Arrays.toString(array));
-        BufferedWriter writer = null;
-        boolean returnVal = false;
-        try {
-            writer = new BufferedWriter(new FileWriter(new File(filePath)));
-            for(String line : array) {
-                writer.write(line + NEWLINE);
-            }
-            returnVal = true;
-        }
-        catch(IOException e) {
-            log.error("Could not write file: {}", filePath, e);
-        }
-        finally {
-            try {
-                if (writer != null) {
-                    writer.close();
-                }
-                setExecutable(filePath);
-            }
-            catch(IOException ignore) { }
-        }
-        return returnVal;
     }
 
     /**

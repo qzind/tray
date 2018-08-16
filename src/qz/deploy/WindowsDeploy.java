@@ -33,6 +33,11 @@ public class WindowsDeploy extends DeployUtilities {
         return createShortcut(System.getenv("userprofile") + "\\Desktop\\");
     }
 
+    @Override
+    public boolean hasStartupShortcut() {
+        return Files.exists(Paths.get(getStartupDirectory(), getShortcutName() + ".lnk"));
+    }
+
     /**
      * Remove flag "Include all local (intranet) sites not listed in other zones". Requires CheckNetIsolation
      * to be effective; Has no effect on domain networks with "Automatically detect intranet network" checked.
@@ -86,5 +91,14 @@ public class WindowsDeploy extends DeployUtilities {
      */
     private String getAppPath() {
         return fixWhitespaces(getJarPath()).replaceAll(".jar$", ".exe");
+    }
+
+
+    private static String getStartupDirectory() {
+        if (System.getenv("programdata") == null) {
+            // XP
+            return System.getenv("allusersprofile") + "\\Start Menu\\Programs\\Startup\\";
+        }
+        return System.getenv("programdata") + "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\";
     }
 }

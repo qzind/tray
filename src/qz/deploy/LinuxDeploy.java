@@ -30,9 +30,15 @@ class LinuxDeploy extends DeployUtilities {
 
     private static final Logger log = LoggerFactory.getLogger(LinuxDeploy.class);
 
+    private static String STARTUP = "/etc/xdg/autostart/";
     private static String DESKTOP = System.getProperty("user.home") + "/Desktop/";
 
     private String appLauncher = "/usr/share/applications/" + getShortcutName();
+
+    @Override
+    public boolean hasStartupShortcut() {
+        return Files.exists(Paths.get(STARTUP, getShortcutName()));
+    }
 
     @Override
     public boolean createDesktopShortcut() {

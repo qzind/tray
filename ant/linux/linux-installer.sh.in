@@ -114,8 +114,8 @@ progress_dialog 25 "Creating directories..."
 mkdir -p "${destdir}" > /dev/null 2>&1
 
 # Shared directory for FileIO operations
-mkdir -p "/srv/${vendor.name}" 2>&1
-chmod 666 "/srv/${vendor.name}"
+mkdir -p "${linux.datadir.shared}" 2>&1
+chmod 777 "${linux.datadir.shared}"
 
 progress_dialog 30 "Installing new version..."
 cp -R ./ "${destdir}"

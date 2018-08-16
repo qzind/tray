@@ -226,6 +226,11 @@ public class TrayManager {
         startupItem.setMnemonic(KeyEvent.VK_S);
         startupItem.setState(shortcutCreator.isAutostart());
         startupItem.addActionListener(startupListener());
+        if (!shortcutCreator.hasStartupShortcut()) {
+            startupItem.setEnabled(false);
+            startupItem.setState(false);
+            startupItem.setToolTipText("Autostart has been disabled by the administrator");
+        }
 
         JMenuItem exitItem = new JMenuItem("Exit", iconCache.getIcon(IconCache.Icon.EXIT_ICON));
         exitItem.addActionListener(exitListener);

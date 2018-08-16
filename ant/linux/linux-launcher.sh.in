@@ -16,15 +16,28 @@
 
 destdir="${linux.installdir}"
 jarfile="${destdir}/${project.filename}.jar"
+localautostart="${linux.datadir.local}/autostart"
+globalautostart="${linux.datadir.shared}/autostart"
 
 if [ "$1" = "-A" ]
 then
-   line=$(head -n 1 "$HOME/${linux.datadir}/autostart")
-   if [ "$line" = "1" ]
-   then
-       eval java ${launch.opts} -jar \"${jarfile}\"
-   fi
-else
-   eval java ${launch.opts} -jar \"${jarfile}\"
+    if [ -f "$localautostart" ];
+    then
+        if [ "$(head -n 1 $localautostart)" = "0" ]
+        then
+           echo "Skipping autostart"
+           exit 0
+        fi
+    else
+        if [ -f "$globalautostart" ];
+        then
+            if [ "$(head -n 1 $globalautostart)" = "0" ]
+            then
+                echo "Skipping autostart"
+                exit 0
+            fi
+        fi
+    fi
 fi
+eval java ${launch.opts} -jar \"${jarfile}\"
 exit 0

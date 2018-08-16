@@ -125,7 +125,7 @@ Section
   ${EndIf}
 
   CreateShortCut "$SMPROGRAMS\${project.name}.lnk" "$INSTDIR\${project.filename}.exe" "" "$INSTDIR\${windows.icon}" 0
-  CreateShortCut "$SMSTARTUP\${project.name}.lnk" "$INSTDIR\${project.filename}.exe" "/A" "$INSTDIR\${windows.icon}" 0
+  CreateShortCut "$SMSTARTUP\${project.name}.lnk" "$INSTDIR\${project.filename}.exe" "-A" "$INSTDIR\${windows.icon}" 0
 
   ; Shared directory
   ReadEnvStr $R0 "PROGRAMDATA"

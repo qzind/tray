@@ -11,14 +11,21 @@ package qz.deploy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.utils.FileUtilities;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import qz.common.Constants;
 import qz.utils.ShellUtilities;
 
-import java.io.BufferedWriter;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * @author Tres Finocchiaro
@@ -49,7 +56,38 @@ class MacDeploy extends DeployUtilities {
     @Override
     public boolean hasStartupShortcut() {
         removeLegacyStartup();
-        //todo check for startup flag in LaunchAgents
+
+        String parent = "/Library/LaunchAgents";
+        String[] parts = Constants.ABOUT_URL.split("/");
+        parts = parts[parts.length - 1].split("\\.");
+        String pListName = parts[1] + "." + parts[0] + "." + Constants.PROPS_FILE + ".plist";
+
+        Path p = Paths.get(parent, pListName);
+
+        if (!Files.exists(p)) {
+            log.warn("No plist file found");
+            return false;
+        }
+        try {
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(p.toFile());
+            doc.getDocumentElement().normalize();
+
+            NodeList nList = doc.getElementsByTagName("dict");
+            nList = nList.item(0).getChildNodes();
+
+            for (int n = 0; n < nList.getLength(); n++) {
+                Node nNode = nList.item(n);
+                if (nNode.getTextContent().equals("RunAtLoad") && nNode.getNodeName().equals("key")) {
+                    //If we get an index out of bounds here, who cares, it will fall into the catch.
+                    return nList.item(n+1).getNodeName().equals("true");
+                }
+            }
+        } catch(Exception e) {
+            log.error("Error reading plist file");
+            return false;
+        }
         return true;
     }
 

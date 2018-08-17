@@ -340,7 +340,7 @@ public class ImageWrapper {
                 getByteBuffer().append(cpcl, charset).append(new byte[] {13, 10});
                 break;
             default:
-                throw new InvalidRawImageException(charset.name() + " image conversion is not yet supported.");
+                throw new InvalidRawImageException(languageType + " image conversion is not yet supported.");
         }
 
         return getByteBuffer().getByteArray();

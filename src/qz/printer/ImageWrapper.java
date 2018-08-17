@@ -371,7 +371,7 @@ public class ImageWrapper {
 
                 break;
             default:
-                throw new InvalidRawImageException(charset.name() + " image conversion is not yet supported.");
+                throw new InvalidRawImageException(languageType + " image conversion is not yet supported.");
         }
 
         return getByteBuffer().getByteArray();

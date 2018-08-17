@@ -294,9 +294,11 @@ public class Certificate {
         try(BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
             while((line = br.readLine()) != null) {
-                String print = line.substring(0, line.indexOf("\t"));
-                if (print.equals(getFingerprint())) {
-                    return true;
+                if (!line.isEmpty()) {
+                    String print = line.substring(0, line.indexOf("\t"));
+                    if (print.equals(getFingerprint())) {
+                        return true;
+                    }
                 }
             }
         }

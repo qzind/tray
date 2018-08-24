@@ -33,7 +33,7 @@ class LinuxDeploy extends DeployUtilities {
     private String appLauncher = "/usr/share/applications/" + getShortcutName();
 
     @Override
-    public boolean hasStartupShortcut() {
+    public boolean canAutoStart() {
         return Files.exists(Paths.get(STARTUP, getShortcutName()));
     }
 

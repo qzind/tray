@@ -226,7 +226,7 @@ public class TrayManager {
         startupItem.setMnemonic(KeyEvent.VK_S);
         startupItem.setState(shortcutCreator.isAutostart());
         startupItem.addActionListener(startupListener());
-        if (!shortcutCreator.hasStartupShortcut()) {
+        if (!shortcutCreator.canAutoStart()) {
             startupItem.setEnabled(false);
             startupItem.setState(false);
             startupItem.setToolTipText("Autostart has been disabled by the administrator");

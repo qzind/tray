@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -41,7 +42,7 @@ public abstract class DeployUtilities {
 
     public boolean setAutostart(boolean autostart) {
         try {
-            return writeStartupFile(autostart ? "1": "0");
+            return writeAutoStartFile(autostart ? "1": "0");
         }
         catch(IOException e) {
             return false;
@@ -50,14 +51,14 @@ public abstract class DeployUtilities {
 
     public boolean isAutostart() {
         try {
-            return readStartupFile().equals("1");
+            return readAutoStartFile().equals("1");
         }
         catch(IOException e) {
             return false;
         }
     }
 
-    public abstract boolean hasStartupShortcut();
+    public abstract boolean canAutoStart();
 
     /**
      * Creates a startup for the current OS. Automatically detects the OS and
@@ -116,20 +117,42 @@ public abstract class DeployUtilities {
         }
     }
 
-    private static boolean writeStartupFile(String mode) throws IOException {
-        Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() , "autostart");
+    private static boolean writeAutoStartFile(String mode) throws IOException {
+        Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() , Constants.AUTOSTART_FILE);
         Files.write(autostartFile, mode.getBytes(), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-        return readStartupFile().equals(mode);
+        return readAutoStartFile().equals(mode);
     }
 
-    private static String readStartupFile() throws IOException {
-        Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() ,"autostart");
-        if (!Files.exists(autostartFile)) {
-            autostartFile = Paths.get(SystemUtilities.getSharedDataDirectory() ,"autostart");
-            //If no autostart files are found, the program will autostart anyway as per requested business logic
-            if (!Files.exists(autostartFile)) return "1";
+    /**
+     *
+     * @return First line of ".autostart" file in user or shared space or "0" if blank.  If neither are found, returns "1".
+     * @throws IOException
+     */
+    private static String readAutoStartFile() throws IOException {
+        log.debug("Checking for {} file in user directory {}...", Constants.AUTOSTART_FILE, SystemUtilities.getDataDirectory());
+        Path userAutoStart = Paths.get(SystemUtilities.getDataDirectory() ,Constants.AUTOSTART_FILE);
+        List<String> lines = null;
+        if (Files.exists(userAutoStart)) {
+            lines = Files.readAllLines(userAutoStart);
+        } else {
+            log.debug("Checking for {} file in shared directory {}...", Constants.AUTOSTART_FILE, SystemUtilities.getDataDirectory());
+            Path sharedAutoStart = Paths.get(SystemUtilities.getSharedDataDirectory(), Constants.AUTOSTART_FILE);
+            if (Files.exists(sharedAutoStart)) {
+                lines = Files.readAllLines(sharedAutoStart);
+            }
         }
-        return Files.readAllLines(autostartFile).get(0);
+        if (lines == null) {
+            log.info("File {} was not found in user or shared directory", Constants.AUTOSTART_FILE);
+            // Default behavior is to autostart if no preference has been set
+            return "1";
+        } else if (lines.isEmpty()) {
+            log.warn("File {} is empty, this shouldn't happen.", Constants.AUTOSTART_FILE);
+            return "0";
+        } else {
+            String val = lines.get(0).trim();
+            log.debug("File {} contains {}", Constants.AUTOSTART_FILE, val);
+            return val;
+        }
     }
 
     /**

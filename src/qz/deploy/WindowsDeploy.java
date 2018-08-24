@@ -33,7 +33,7 @@ public class WindowsDeploy extends DeployUtilities {
     }
 
     @Override
-    public boolean hasStartupShortcut() {
+    public boolean canAutoStart() {
         return Files.exists(Paths.get(getStartupDirectory(), getShortcutName() + ".lnk"));
     }
 

@@ -17,8 +17,8 @@
 installpath=$(echo "$0" | rev | cut -d/ -f4- | rev)
 jarpath=$installpath/${project.filename}.jar
 iconpath=$installpath/${apple.resources}/${apple.icon}
-localautostart="${apple.datadir.local}/autostart"
-globalautostart="${apple.datadir.shared}/autostart"
+localautostart="${apple.datadir.local}/${autostart.name}"
+globalautostart="${apple.datadir.shared}/${autostart.name}"
 ${apple.jvmver} > /dev/null 2>&1
 fallback=$?
 

@@ -16,8 +16,8 @@
 
 destdir="${linux.installdir}"
 jarfile="${destdir}/${project.filename}.jar"
-localautostart="${linux.datadir.local}/autostart"
-globalautostart="${linux.datadir.shared}/autostart"
+localautostart="${linux.datadir.local}/${autostart.name}"
+globalautostart="${linux.datadir.shared}/${autostart.name}"
 
 if [ "$1" = "-A" ]
 then

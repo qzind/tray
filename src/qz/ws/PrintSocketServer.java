@@ -49,8 +49,8 @@ public class PrintSocketServer {
     private static final Logger log = LoggerFactory.getLogger(PrintSocketServer.class);
 
     private static final int MAX_MESSAGE_SIZE = Integer.MAX_VALUE;
-    public static final List<Integer> SECURE_PORTS = Collections.unmodifiableList(Arrays.asList(8181, 8282, 8383, 8484));
-    public static final List<Integer> INSECURE_PORTS = Collections.unmodifiableList(Arrays.asList(8182, 8283, 8384, 8485));
+    public static final List<Integer> SECURE_PORTS = Collections.unmodifiableList(Arrays.asList(Constants.WSS_PORTS));
+    public static final List<Integer> INSECURE_PORTS = Collections.unmodifiableList(Arrays.asList(Constants.WS_PORTS));
 
 
     private static TrayManager trayManager;

@@ -112,6 +112,7 @@
                 <li id="serialTab" role="presentation"><a href="#serialContent" role="tab" data-toggle="tab">Serial</a></li>
                 <li id="usbTab" role="presentation"><a href="#usbContent" role="tab" data-toggle="tab">USB</a></li>
                 <li id="hidTab" role="presentation"><a href="#hidContent" role="tab" data-toggle="tab">HID</a></li>
+                <li id="statusTab" role="presentation"><a href="#statusContent" role="tab" data-toggle="tab">Status</a></li>
                 <li id="fileTab" role="presentation"><a href="#fileContent" role="tab" data-toggle="tab">Files</a></li>
             </ul>
         </div>
@@ -841,29 +842,22 @@
                 </div>
             </div>
 
-            <div id="fileContent" class="tab-pane col-md-8">
-                <h3>Files</h3>
+            <div id="statusContent" class="tab-pane col-md-8">
+                <h3>Printer Status</h3>
                 <hr />
 
                 <div class="row">
                     <div class="col-md-12">
                         <div class="form-group">
                             <div class="btn-toolbar">
-                                <button type="button" class="btn btn-info" onclick="listFiles();">List Files</button>
                                 <div class="btn-group">
-                                    <button type="button" class="btn btn-info" onclick="readFile();">Read File</button>
-                                    <button type="button" class="btn btn-success" onclick="writeFile();">Write File</button>
-                                    <button type="button" class="btn btn-warning" onclick="deleteFile();">Delete File</button>
+                                    <button type="button" class="btn btn-default" onclick="startPrintersListen()">Listen to All Printers</button>
+                                    <button type="button" class="btn btn-default" onclick="startPrintersListen($('#configPrinter').html())">Listen to Current Printer</button>
+                                    <button type="button" class="btn btn-default" onclick="getPrintersStatus()">Request current status</button>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="btn-toolbar">
                                 <div class="btn-group">
-                                    <button type="button" class="btn btn-default" onclick="startFileListen()">Listen for Folder Events</button>
-                                    <button type="button" class="btn btn-default" onclick="stopFileListen()">Stop Listening</button>
+                                    <button type="button" class="btn btn-default" onclick="stopPrintersListen()">Stop Listening</button>
                                 </div>
-                                <button type="button" class="btn btn-default" onclick="stopAllFileListeners();">Stop All Listeners</button>
                             </div>
                         </div>
                     </div>
@@ -873,91 +867,141 @@
                     <div class="col-md-12">
                         <div class="panel panel-default">
                             <div class="panel-heading">
-                                <h4 class="panel-title">Options</h4>
+                                <h4 class="panel-title">Event Log</h4>
                             </div>
+
                             <div class="panel-body">
                                 <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="fileLocation">
-                                                File / Directory Path
-                                            </label>
-                                            <input type="text" id="fileLocation" class="form-control" />
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="fileData">Data To Write</label>
-                                            <textarea id="fileData" rows="5" style="resize:vertical" class="form-control"></textarea>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group form-inline">
-                                            <label for="fileShared">
-                                                Shared
-                                            </label>
-                                            <input type="checkbox" id="fileShared" class="pull-right" />
-                                        </div>
-                                        <div class="form-group form-inline">
-                                            <label for="fileSandbox" data-toggle="tooltip">
-                                                Sandbox
-                                            </label>
-                                            <input checked type="checkbox" id="fileSandbox" class="pull-right" />
-                                        </div>
-                                        <div class="form-group form-inline">
-                                            <label for="fileAppend">
-                                                Append Data
-                                            </label>
-                                            <input type="checkbox" id="fileAppend" class="pull-right" />
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <label for="fileListenerData">
-                                                Listener Data
-                                            </label>
-                                            <input type="checkbox" id="fileListenerData" class="pull-right" onclick="checkFileTriggersActive()" />
-                                        </div>
-                                        <div class="inline" id="fileTriggersGroup">
-                                            <div class="form-group form-inline">
-                                                <label>
-                                                    Read direction
-                                                </label>
-                                                <div>
-                                                    <label>
-                                                        <input type="radio" name="fileDir" id="fileDirEnd" value="end" />
-                                                        End
-                                                    </label>
-                                                    <label>
-                                                        <input type="radio" name="fileDir" id="fileDirStart" value="begin" />
-                                                        Start
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="form-group form-inline">
-                                                <label>
-                                                    Truncate
-                                                </label>
-                                                <div>
-                                                    <label>
-                                                        <input type="radio" name="fileTruncate" id="fileTruncateLines" value="lines" />
-                                                        Lines
-                                                    </label>
-                                                    <label>
-                                                        <input type="radio" name="fileTruncate" id="fileTruncateBytes" value="bytes" />
-                                                        Bytes
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="fileLength">Truncate length</label>
-                                                <input type="number" id="fileLength" class="form-control pull-right" />
-                                            </div>
-                                        </div>
+                                    <div class="col-md-12">
+                                        <div id="printersLog">No logs</div>
                                     </div>
                                 </div>
                                 <hr />
                                 <div class="row">
                                     <div class="col-md-12">
-                                        <button type="button" class="btn btn-danger pull-right" onclick="resetFileOptions();">Reset</button>
+                                        <button type="button" class="btn btn-danger pull-right" onclick="clearPrintersLog();">Clear</button>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><div id="fileContent" class="tab-pane col-md-8">
+            <h3>Files</h3>
+            <hr />
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <div class="btn-toolbar">
+                            <button type="button" class="btn btn-info" onclick="listFiles();">List Files</button>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-info" onclick="readFile();">Read File</button>
+                                <button type="button" class="btn btn-success" onclick="writeFile();">Write File</button>
+                                <button type="button" class="btn btn-warning" onclick="deleteFile();">Delete File</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="btn-toolbar">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-default" onclick="startFileListen()">Listen for Folder Events</button>
+                                <button type="button" class="btn btn-default" onclick="stopFileListen()">Stop Listening</button>
+                            </div>
+                            <button type="button" class="btn btn-default" onclick="stopAllFileListeners();">Stop All Listeners</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" style="margin-top: 1em;">
+                <div class="col-md-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">Options</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="fileLocation">
+                                            File / Directory Path
+                                        </label>
+                                        <input type="text" id="fileLocation" class="form-control" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="fileData">Data To Write</label>
+                                        <textarea id="fileData" rows="5" style="resize:vertical" class="form-control"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group form-inline">
+                                        <label for="fileShared">
+                                            Shared
+                                        </label>
+                                        <input type="checkbox" id="fileShared" class="pull-right" />
+                                    </div>
+                                    <div class="form-group form-inline">
+                                        <label for="fileSandbox" data-toggle="tooltip">
+                                            Sandbox
+                                        </label>
+                                        <input checked type="checkbox" id="fileSandbox" class="pull-right" />
+                                    </div>
+                                    <div class="form-group form-inline">
+                                        <label for="fileAppend">
+                                            Append Data
+                                        </label>
+                                        <input type="checkbox" id="fileAppend" class="pull-right" />
+                                    </div>
+
+                                    <div class="form-group form-inline">
+                                        <label for="fileListenerData">
+                                            Listener Data
+                                        </label>
+                                        <input type="checkbox" id="fileListenerData" class="pull-right" onclick="checkFileTriggersActive()" />
+                                    </div>
+                                    <div class="inline" id="fileTriggersGroup">
+                                        <div class="form-group form-inline">
+                                            <label>
+                                                Read direction
+                                            </label>
+                                            <div>
+                                                <label>
+                                                    <input type="radio" name="fileDir" id="fileDirEnd" value="end" />
+                                                    End
+                                                </label>
+                                                <label>
+                                                    <input type="radio" name="fileDir" id="fileDirStart" value="begin" />
+                                                    Start
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="form-group form-inline">
+                                            <label>
+                                                Truncate
+                                            </label>
+                                            <div>
+                                                <label>
+                                                    <input type="radio" name="fileTruncate" id="fileTruncateLines" value="lines" />
+                                                    Lines
+                                                </label>
+                                                <label>
+                                                    <input type="radio" name="fileTruncate" id="fileTruncateBytes" value="bytes" />
+                                                    Bytes
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="fileLength">Truncate length</label>
+                                            <input type="number" id="fileLength" class="form-control pull-right" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr />
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <button type="button" class="btn btn-danger pull-right" onclick="resetFileOptions();">Reset</button>
                                 </div>
                             </div>
                         </div>
@@ -1916,6 +1960,26 @@
     }
 
 
+    /// Status ///
+    function startPrintersListen(printerName) {
+        qz.printers.startListening(printerName).then(function() {
+            displayMessage("Started listening for printer events");
+        }).catch(displayError);
+    }
+
+    function getPrintersStatus() {
+        qz.printers.getStatus().then(function() {
+            displayMessage("Requesting all printer statuses for listened printers");
+        }).catch(displayError);
+    }
+
+    function stopPrintersListen() {
+        qz.printers.stopListening().then(function() {
+            displayMessage("Stopped listening for printer events");
+        }).catch(displayError);
+    }
+
+
     /// File ///
     function listFiles() {
         var params = {
@@ -2133,6 +2197,10 @@
         $("#hidStream").val(100);
     }
 
+    function clearPrintersLog() {
+        $("#printersLog").html("No logs");
+    }
+
     function resetFileOptions() {
         $("#fileLocation").val('');
         $("#fileData").val('');
@@ -2257,6 +2325,23 @@
         }
     });
 
+    qz.printers.setPrinterCallbacks(function(streamEvent) {
+        var printerName = streamEvent.printerName;
+        var color;
+        switch(streamEvent.severity) {
+            case 'INFO':
+                //This should get its color from css, but this code is temperary
+                color = 'black';
+                break;
+            case 'WARN':
+                color = 'brown';
+                break;
+            case 'FATAL':
+                color = 'red';
+        }
+        addPrintersLog(streamEvent.message, color);
+    });
+
     qz.file.setFileCallbacks(function(streamEvent) {
         if (streamEvent.type !== 'ERROR') {
             var text = "<h5>File IO Event</h5>" +
@@ -2326,6 +2411,20 @@
         alert.html("<button type='button' class='close' data-dismiss='alert'>&times;</button>" + msg);
 
         $("#qz-alert").append(alert);
+    }
+
+    function addPrintersLog(msg, color, time) {
+        if (color == undefined) { color = "#000000"; }
+        msg = '<span style="color: ' + color + '">' + new Date($.now()).toString() + ": " + msg + "</span>";
+        var currentText = $("#printersLog").html();
+
+        if (currentText != "No logs") {
+            msg = msg + "<br>" + currentText;
+        }
+
+        msg.substring(0, Math.min(length, 4000));
+
+        $("#printersLog").html(msg);
     }
 
     function pinMessage(msg, id, css) {
@@ -2512,7 +2611,6 @@
                             duplex: isChecked($("#pxlDuplex"), cleanConditions['pxlDuplex']),
                             interpolation: $("#pxlInterpolation").val(),
                             jobName: jobName,
-                            legacy: $("#pxlLegacy").prop('checked'),
                             margins: pxlMargins,
                             orientation: $("#pxlOrientation").val(),
                             paperThickness: $("#pxlPaperThickness").val(),

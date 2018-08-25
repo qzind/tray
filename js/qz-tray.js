@@ -527,11 +527,10 @@ var qz = (function() {
                     if (data[i].constructor === Object) {
                         var absolute = false;
 
-                        if (data[i].data.indexOf("data:image/png;base64,") === 0 || data[i].data.indexOf("data:image/bmp;base64,") === 0 ||
-                                data[i].data.indexOf("data:image/jpg;base64,") === 0 || data[i].data.indexOf("data:image/gif;base64,") === 0) {
+                        if (data[i].data.search(/data:image\/\w+;base64,/) === 0) {
                             //upgrade from old base64 behavior
                             data[i].flavor = "base64";
-                            data[i].data = data[i].data.substring(22, data[i].data.length);
+                            data[i].data = data[i].data.replace(/^data:image\/\w+;base64,/, "");
                         } else if (data[i].flavor) {
                             //if flavor is known, we can directly check for absolute flavor types
                             if (["FILE", "XML"].indexOf(data[i].flavor.toUpperCase()) > -1) {
@@ -606,7 +605,11 @@ var qz = (function() {
                     _qz.log.trace("Converting print data to v2.0 for " + _qz.websocket.connection.version);
                     for(var i = 0; i < printData.length; i++) {
                         if (printData[i].constructor === Object) {
-                            if (printData[i].type.toUpperCase() === "RAW" && printData[i].format === "IMAGE") {
+                            if (printData[i].type.toUpperCase() === "RAW" && printData[i].format.toUpperCase() === "IMAGE") {
+                                if (printData[i].flavor.toUpperCase() === "BASE64") {
+                                    //special case for raw base64 images
+                                    printData[i].data = "data:image/compat;base64," + printData[i].data;
+                                }
                                 printData[i].flavor = "IMAGE"; //forces 'image' format when shifting for conversion
                             }
                             if (printData[i].type.toUpperCase() === "RAW" || printData[i].format.toUpperCase() === "COMMAND") {

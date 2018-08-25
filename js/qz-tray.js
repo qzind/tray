@@ -527,7 +527,8 @@ var qz = (function() {
                     if (data[i].constructor === Object) {
                         var absolute = false;
 
-                        if (data[i].data.indexOf("data:image/png;base64,") === 0) {
+                        if (data[i].data.indexOf("data:image/png;base64,") === 0 || data[i].data.indexOf("data:image/bmp;base64,") === 0 ||
+                                data[i].data.indexOf("data:image/jpg;base64,") === 0 || data[i].data.indexOf("data:image/gif;base64,") === 0) {
                             //upgrade from old base64 behavior
                             data[i].flavor = "base64";
                             data[i].data = data[i].data.substring(22, data[i].data.length);

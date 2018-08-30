@@ -316,6 +316,11 @@ var qz = (function() {
                     }
 
                     _qz.security.callCert().then(sendCert).catch(sendCert);
+
+                    //websocket setup, query what version is connected
+                    qz.api.getVersion().then(function(version) {
+                        _qz.websocket.connection.version = version;
+                    });
                 },
 
                 /** Generate unique ID used to map a response to a call. */
@@ -522,10 +527,10 @@ var qz = (function() {
                     if (data[i].constructor === Object) {
                         var absolute = false;
 
-                        if (data[i].data.indexOf("data:image/png;base64,") === 0) {
+                        if (data[i].data.search(/data:image\/\w+;base64,/) === 0) {
                             //upgrade from old base64 behavior
                             data[i].flavor = "base64";
-                            data[i].data = data[i].data.substring(22, data[i].data.length);
+                            data[i].data = data[i].data.replace(/^data:image\/\w+;base64,/, "");
                         } else if (data[i].flavor) {
                             //if flavor is known, we can directly check for absolute flavor types
                             if (["FILE", "XML"].indexOf(data[i].flavor.toUpperCase()) > -1) {
@@ -582,6 +587,41 @@ var qz = (function() {
                 }
 
                 return target;
+            },
+
+            /** Converts message format to a previous version's */
+            compatible: function(printData) {
+                var semver = _qz.websocket.connection.version.split(/[.-]/g);
+                if (semver[0] === "2" && semver[1] === "0") {
+                    /*
+                    2.0.x conversion
+                    -----
+                    type=pixel -> use format as 2.0 type (unless 'command' format, which forces 2.0 'raw' type)
+                    type=raw -> 2.0 type has to be 'raw'
+                                if format is 'image' -> force 2.0 'image' format, ignore everything else (unsupported in 2.0)
+
+                     flavor translates straight to 2.0 format (unless forced to 'raw'/'image')
+                     */
+                    _qz.log.trace("Converting print data to v2.0 for " + _qz.websocket.connection.version);
+                    for(var i = 0; i < printData.length; i++) {
+                        if (printData[i].constructor === Object) {
+                            if (printData[i].type.toUpperCase() === "RAW" && printData[i].format.toUpperCase() === "IMAGE") {
+                                if (printData[i].flavor.toUpperCase() === "BASE64") {
+                                    //special case for raw base64 images
+                                    printData[i].data = "data:image/compat;base64," + printData[i].data;
+                                }
+                                printData[i].flavor = "IMAGE"; //forces 'image' format when shifting for conversion
+                            }
+                            if (printData[i].type.toUpperCase() === "RAW" || printData[i].format.toUpperCase() === "COMMAND") {
+                                printData[i].format = "RAW"; //forces 'raw' type when shifting for conversion
+                            }
+
+                            printData[i].type = printData[i].format;
+                            printData[i].format = printData[i].flavor;
+                            delete printData[i].flavor;
+                        }
+                    }
+                }
             }
         }
     };
@@ -1014,6 +1054,7 @@ var qz = (function() {
             //clean up data formatting
             for(var d = 0; d < data.length; d++) {
                 _qz.tools.relative(data[d]);
+                _qz.tools.compatible(data[d]);
             }
 
             var sendToPrint = function(mapping) {

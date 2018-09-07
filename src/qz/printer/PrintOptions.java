@@ -176,8 +176,7 @@ public class PrintOptions {
             catch(JSONException e) { warn("double", "paperThickness", configOpts.opt("paperThickness")); }
         }
         if (!configOpts.isNull("printerTray")) {
-            try { psOptions.printerTray = "Tray " + configOpts.getInt("printerTray"); }
-            catch(JSONException e) { psOptions.printerTray = configOpts.optString("printerTray", null); }
+            psOptions.printerTray = configOpts.optString("printerTray", null);
         }
         if (!configOpts.isNull("rasterize")) {
             try { psOptions.rasterize = configOpts.getBoolean("rasterize"); }

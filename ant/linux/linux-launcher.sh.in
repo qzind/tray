@@ -19,25 +19,19 @@ jarfile="${destdir}/${project.filename}.jar"
 localautostart="${linux.datadir.local}/${autostart.name}"
 globalautostart="${linux.datadir.shared}/${autostart.name}"
 
-if [ "$1" = "-A" ]
-then
-    if [ -f "$localautostart" ];
-    then
-        if [ "$(head -n 1 $localautostart)" = "0" ]
-        then
-           echo "Skipping autostart"
-           exit 0
-        fi
+# If launched at startup, check override first
+if [ "$1" = "-A" ]; then
+    echo "Autostart switch '-A' was provided"
+    if [ -f "$localautostart" ] && [ "$(head -n 1 "$localautostart")" = "0" ]; then
+        echo "Skipping autostart per '$localautostart'"
+        exit 0
+    elif [ -f "$globalautostart" ] && [ "$(head -n 1 "$globalautostart")" = "0" ]; then
+        echo "Skipping autostart per '$globalautostart'"
+        exit 0
     else
-        if [ -f "$globalautostart" ];
-        then
-            if [ "$(head -n 1 $globalautostart)" = "0" ]
-            then
-                echo "Skipping autostart"
-                exit 0
-            fi
-        fi
+        echo "No autostart conflicts found in '$localautostart' or '$globalautostart'.  Starting."
     fi
 fi
+
 eval java ${launch.opts} -jar \"${jarfile}\"
 exit 0

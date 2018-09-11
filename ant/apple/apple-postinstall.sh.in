@@ -38,18 +38,15 @@ cat > /Library/LaunchAgents/$package.plist << EOT
     <key>ProgramArguments</key>
     <array>
         <string>${apple.installdir}/${apple.macos}/${project.name}</string>
-        <string>--autostart</string>
+        <string>-A</string>
     </array>
 </dict>
 </plist>
 EOT
 
-printf 1 > "${apple.installdir}/.autostart"
-chmod 777 "${apple.installdir}/.autostart"
-
 # Shared directory for FileIO operations
-mkdir -p "/Library/Application Support/${vendor.name}" 2>&1
-chmod 777 "/Library/Application Support/${vendor.name}"
+mkdir -p "${apple.datadir.shared}" 2>&1
+chmod 777 "${apple.datadir.shared}"
 
 # Cleanup resources from previous versions
 rm -rf "${apple.installdir}/demo/js/3rdparty"

@@ -7,6 +7,7 @@
 !include LogicLib.nsh
 !addincludedir "${windows.nsis.addons}/Include"
 !include StdUtils.nsh
+!include FileFunc.nsh
 
 ; Run this exe as non-admin
 RequestExecutionLevel user
@@ -24,7 +25,16 @@ ShowInstDetails nevershow
 ; Full path to jar
 !define JAR "$EXEDIR\${project.filename}.jar"
 
+; Autostart variable
+Var AUTOSTART
+
 Section ""  
+  Call DetermineAutostart
+  ${If} $AUTOSTART != "1"
+    Abort
+  ${EndIf}
+
+
   ${If} ${RunningX64}
   ${DisableX64FSRedirection}
   ${EndIf}
@@ -83,6 +93,38 @@ Function FindJRE
  JreFound:
   Pop $R1
   Exch $R0
+FunctionEnd
+
+Function DetermineAutostart
+  ClearErrors
+  ${GetParameters} $0
+  ${GetOptions} "$0" "-A" $3
+  IfErrors 0 LocalAutostart
+  StrCpy $AUTOSTART "1"
+  Return
+
+  LocalAutostart:
+  ClearErrors
+  ReadEnvStr $R0 "APPDATA"
+  FileOpen $1 "$R0\${project.datadir}\${autostart.name}" r
+  FileSeek $1 0
+  FileRead $1 $AUTOSTART
+  FileClose $1
+
+  IfErrors SharedAutostart 0
+  Return
+
+  SharedAutostart:
+  ClearErrors
+  ReadEnvStr $R0 "PROGRAMDATA"
+  FileOpen $2 "$R0\${project.datadir}\${autostart.name}" r
+  FileSeek $2 0
+  FileRead $2 $AUTOSTART
+  FileClose $2
+
+  IfErrors 0 +2
+  StrCpy $AUTOSTART "1"
+
 FunctionEnd
 
 Function .onInit

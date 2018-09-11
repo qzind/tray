@@ -198,7 +198,7 @@ public class TrayManager {
 
         JMenuItem desktopItem = new JMenuItem("Create Desktop shortcut", iconCache.getIcon(IconCache.Icon.DESKTOP_ICON));
         desktopItem.setMnemonic(KeyEvent.VK_D);
-        desktopItem.addActionListener(desktopListener);
+        desktopItem.addActionListener(desktopListener());
 
         advancedMenu.add(sitesItem);
         advancedMenu.add(anonymousItem);
@@ -230,8 +230,13 @@ public class TrayManager {
 
         JCheckBoxMenuItem startupItem = new JCheckBoxMenuItem("Automatically start");
         startupItem.setMnemonic(KeyEvent.VK_S);
-        startupItem.setState(shortcutCreator.hasStartupShortcut());
-        startupItem.addActionListener(startupListener);
+        startupItem.setState(shortcutCreator.isAutostart());
+        startupItem.addActionListener(startupListener());
+        if (!shortcutCreator.canAutoStart()) {
+            startupItem.setEnabled(false);
+            startupItem.setState(false);
+            startupItem.setToolTipText("Autostart has been disabled by the administrator");
+        }
 
         JMenuItem exitItem = new JMenuItem("Exit", iconCache.getIcon(IconCache.Icon.EXIT_ICON));
         exitItem.addActionListener(exitListener);
@@ -270,7 +275,11 @@ public class TrayManager {
         }
     };
 
-    private final ActionListener desktopListener = e -> shortcutToggle(e, DeployUtilities.ToggleType.DESKTOP);
+    private final ActionListener desktopListener() {
+        return e -> {
+            shortcutCreator.createDesktopShortcut();
+        };
+    }
 
     private final ActionListener savedListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
@@ -289,7 +298,7 @@ public class TrayManager {
         if (checkBoxState) {
             blackList(Certificate.UNKNOWN);
         } else {
-            FileUtilities.deleteFromFile(Constants.BLOCK_FILE, Certificate.UNKNOWN.data(), true);
+            FileUtilities.deleteFromFile(Constants.BLOCK_FILE, Certificate.UNKNOWN.data());
         }
     };
 
@@ -300,7 +309,21 @@ public class TrayManager {
         }
     };
 
-    private final ActionListener startupListener = e -> shortcutToggle(e, DeployUtilities.ToggleType.STARTUP);
+    private ActionListener startupListener() {
+        return e -> {
+            JCheckBoxMenuItem source = (JCheckBoxMenuItem)e.getSource();
+            if (!source.getState() && !confirmDialog.prompt("Remove " + name + " from startup?")) {
+                source.setState(true);
+                return;
+            }
+            if (shortcutCreator.setAutostart(source.getState())) {
+                displayInfoMessage("Successfully " + (source.getState() ? "enabled" : "disabled") + " autostart");
+            } else {
+                displayErrorMessage("Error " + (source.getState() ? "enabling" : "disabling") + " autostart");
+            }
+            source.setState(shortcutCreator.isAutostart());
+        };
+    }
 
     /**
      * Sets the default reload action (in this case, <code>Thread.start()</code>) to be fired
@@ -337,52 +360,6 @@ public class TrayManager {
     public void exit(int returnCode) {
         prefs.save();
         System.exit(returnCode);
-    }
-
-    /**
-     * Process toggle/checkbox events as they relate to creating shortcuts
-     *
-     * @param e          The ActionEvent passed in from an ActionListener
-     * @param toggleType Either ShortcutUtilities.TOGGLE_TYPE_STARTUP or
-     *                   ShortcutUtilities.TOGGLE_TYPE_DESKTOP
-     */
-    private void shortcutToggle(ActionEvent e, DeployUtilities.ToggleType toggleType) {
-        // Assume true in case its a regular JMenuItem
-        boolean checkBoxState = true;
-        if (e.getSource() instanceof JCheckBoxMenuItem) {
-            checkBoxState = ((JCheckBoxMenuItem)e.getSource()).getState();
-        }
-
-        if (shortcutCreator.getJarPath() == null) {
-            showErrorDialog("Unable to determine jar path; " + toggleType + " entry cannot succeed.");
-            return;
-        }
-
-        if (!checkBoxState) {
-            // Remove shortcut entry
-            if (confirmDialog.prompt("Remove " + name + " from " + toggleType + "?")) {
-                if (!shortcutCreator.removeShortcut(toggleType)) {
-                    displayErrorMessage("Error removing " + toggleType + " entry");
-                    checkBoxState = true;   // Set our checkbox back to true
-                } else {
-                    displayInfoMessage("Successfully removed " + toggleType + " entry");
-                }
-            } else {
-                checkBoxState = true;   // Set our checkbox back to true
-            }
-        } else {
-            // Add shortcut entry
-            if (!shortcutCreator.createShortcut(toggleType)) {
-                displayErrorMessage("Error creating " + toggleType + " entry");
-                checkBoxState = false;   // Set our checkbox back to false
-            } else {
-                displayInfoMessage("Successfully added " + toggleType + " entry");
-            }
-        }
-
-        if (e.getSource() instanceof JCheckBoxMenuItem) {
-            ((JCheckBoxMenuItem)e.getSource()).setState(checkBoxState);
-        }
     }
 
     /**
@@ -427,7 +404,7 @@ public class TrayManager {
     }
 
     private void whiteList(Certificate cert) {
-        if (FileUtilities.printLineToFile(Constants.ALLOW_FILE, cert.data(), true)) {
+        if (FileUtilities.printLineToFile(Constants.ALLOW_FILE, cert.data())) {
             displayInfoMessage(String.format(Constants.WHITE_LIST, cert.getOrganization()));
         } else {
             displayErrorMessage("Failed to write to file (Insufficient user privileges)");
@@ -435,7 +412,7 @@ public class TrayManager {
     }
 
     private void blackList(Certificate cert) {
-        if (FileUtilities.printLineToFile(Constants.BLOCK_FILE, cert.data(), true)) {
+        if (FileUtilities.printLineToFile(Constants.BLOCK_FILE, cert.data())) {
             displayInfoMessage(String.format(Constants.BLACK_LIST, cert.getOrganization()));
         } else {
             displayErrorMessage("Failed to write to file (Insufficient user privileges)");

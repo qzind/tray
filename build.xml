@@ -550,6 +550,10 @@
             <filterchain><expandproperties/></filterchain>
         </copy>
 
+        <copy file="${linux.launcher.in}" tofile="${linux.launcher.out}" >
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
         <copy file="${linux.keygen.in}" tofile="${linux.keygen.out}" >
             <filterchain><expandproperties/></filterchain>
         </copy>

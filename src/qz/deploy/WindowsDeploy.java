@@ -15,18 +15,12 @@ import mslinks.ShellLink;
 import qz.utils.ShellUtilities;
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
+import java.nio.file.*;
 
 /**
  * @author Tres Finocchiaro
  */
 public class WindowsDeploy extends DeployUtilities {
-    private static String DELETED_ICON = System.getenv("windir") + "\\system32\\SHELL32.dll";
-
-    @Override
-    public boolean createStartupShortcut() {
-        return createShortcut(getStartupDirectory());
-    }
 
     @Override
     public boolean createDesktopShortcut() {
@@ -34,50 +28,8 @@ public class WindowsDeploy extends DeployUtilities {
     }
 
     @Override
-    public boolean removeStartupShortcut() {
-        try {
-            // Dummy shortcut
-            ShellLink link = ShellLink.createLink("%SystemRoot%\\system32\\rundll32.exe", getStartupDirectory() + getShortcutName() + ".lnk");
-            link.setIconLocation(DELETED_ICON);
-            link.getHeader().setIconIndex(131);
-            link.saveTo(getStartupDirectory() + getShortcutName() + ".lnk");
-            return true;
-        }
-        catch(Exception ex) {
-            log.warn("Error removing startup shortcut", ex);
-            return false;
-        }
-    }
-
-    @Override
-    public boolean removeDesktopShortcut() {
-        return deleteFile(System.getenv("userprofile") + "\\Desktop\\" + getShortcutName() + ".lnk");
-    }
-
-
-    @Override
-    public boolean hasStartupShortcut() {
-        try {
-            ShellLink link = new ShellLink(getStartupDirectory() + getShortcutName() + ".lnk");
-            return link.getIconLocation() == null || !link.getIconLocation().equals(DELETED_ICON);
-        }
-        catch(NegativeArraySizeException ignore) {
-            // Per mslinks issues #4
-            return true;
-        }
-        catch(NoSuchFileException ignore) {
-            log.warn("Startup shortcut does not exist");
-        }
-        catch(Exception ex) {
-            log.error("Error detecting startup shortcut", ex);
-        }
-
-        return false;
-    }
-
-    @Override
-    public boolean hasDesktopShortcut() {
-        return fileExists(System.getenv("userprofile") + "\\Desktop\\" + getShortcutName() + ".lnk");
+    public boolean canAutoStart() {
+        return Files.exists(Paths.get(getStartupDirectory(), getShortcutName() + ".lnk"));
     }
 
     /**
@@ -134,6 +86,7 @@ public class WindowsDeploy extends DeployUtilities {
     private String getAppPath() {
         return getJarPath().replaceAll(".jar$", ".exe");
     }
+
 
     private static String getStartupDirectory() {
         if (System.getenv("programdata") == null) {

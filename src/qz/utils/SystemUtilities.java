@@ -76,9 +76,9 @@ public class SystemUtilities {
 
     /**
      * Retrieve OS-specific Application Data directory such as:
-     * {@code C:\Users\John\AppData\Roaming\.qz} on Windows
+     * {@code C:\Users\John\AppData\Roaming\qz} on Windows
      * -- or --
-     * {@code /Users/John/Library/Application Support/.qz} on Mac
+     * {@code /Users/John/Library/Application Support/qz} on Mac
      * -- or --
      * {@code /home/John/.qz} on Linux
      *

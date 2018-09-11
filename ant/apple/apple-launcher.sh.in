@@ -17,13 +17,23 @@
 installpath=$(echo "$0" | rev | cut -d/ -f4- | rev)
 jarpath=$installpath/${project.filename}.jar
 iconpath=$installpath/${apple.resources}/${apple.icon}
+localautostart="${apple.datadir.local}/${autostart.name}"
+globalautostart="${apple.datadir.shared}/${autostart.name}"
 ${apple.jvmver} > /dev/null 2>&1
 fallback=$?
 
 # If launched at startup, check override first
-if [[ "$1" == "--autostart" ]] && [[ "$(cat "$installpath/.autostart")" == "0" ]]; then
-    echo "Skipping autostart"
-    exit 0
+if [ "$1" = "-A" ]; then
+    echo "Autostart switch '-A' was provided"
+    if [ -f "$localautostart" ] && [ "$(head -n 1 "$localautostart")" = "0" ]; then
+        echo "Skipping autostart per '$localautostart'"
+        exit 0
+    elif [ -f "$globalautostart" ] && [ "$(head -n 1 "$globalautostart")" = "0" ]; then
+        echo "Skipping autostart per '$globalautostart'"
+        exit 0
+    else
+        echo "No autostart conflicts found in '$localautostart' or '$globalautostart'.  Starting."
+    fi
 fi
 
 # Fallback on Internet Plug-Ins version if needed

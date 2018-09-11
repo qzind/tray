@@ -1,0 +1,37 @@
+#!/bin/bash
+##########################################################################################
+#                            ${project.name} Linux Launcher                                      #
+##########################################################################################
+#  Description:                                                                          #
+#    1. Determines if program should autostart (if applicable)                           #
+#    2. Launch application                                                               #                                                                         #
+#                                                                                        #
+#  Usage:                                                                                #
+#    $ ./launcher                                                                        #
+#                                                                                        #
+#  Options:                                                                              #
+#    -A    Check autostart file to determine if ${project.name} should launch            #
+#                                                                                        #
+##########################################################################################
+
+destdir="${linux.installdir}"
+jarfile="${destdir}/${project.filename}.jar"
+localautostart="${linux.datadir.local}/${autostart.name}"
+globalautostart="${linux.datadir.shared}/${autostart.name}"
+
+# If launched at startup, check override first
+if [ "$1" = "-A" ]; then
+    echo "Autostart switch '-A' was provided"
+    if [ -f "$localautostart" ] && [ "$(head -n 1 "$localautostart")" = "0" ]; then
+        echo "Skipping autostart per '$localautostart'"
+        exit 0
+    elif [ -f "$globalautostart" ] && [ "$(head -n 1 "$globalautostart")" = "0" ]; then
+        echo "Skipping autostart per '$globalautostart'"
+        exit 0
+    else
+        echo "No autostart conflicts found in '$localautostart' or '$globalautostart'.  Starting."
+    fi
+fi
+
+eval java ${launch.opts} -jar \"${jarfile}\"
+exit 0

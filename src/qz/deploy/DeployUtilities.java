@@ -17,7 +17,11 @@ import qz.utils.SystemUtilities;
 
 import java.io.*;
 import java.net.URLDecoder;
-import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -34,36 +38,28 @@ public abstract class DeployUtilities {
     // Default shortcut name to create
     static private final String DEFAULT_SHORTCUT_NAME = "Java Shortcut";
 
-    // Newline character, which changes between Unix and Windows
-    static private final String NEWLINE = SystemUtilities.isWindows()? "\r\n":"\n";
-
     private String jarPath;
     private String shortcutName;
 
-    /**
-     * Creates a startup item for the current OS. Automatically detects the OS
-     * and places the startup item in the user's startup area respectively; to
-     * be auto-launched when the user first logs in to the desktop.
-     *
-     * @return Returns <code>true</code> if the startup item was created
-     */
-    public abstract boolean createStartupShortcut();
+    public boolean setAutostart(boolean autostart) {
+        try {
+            return writeAutoStartFile(autostart ? "1": "0");
+        }
+        catch(IOException e) {
+            return false;
+        }
+    }
 
-    /**
-     * Test whether or not a startup shortcut for the specified shortcutName
-     * exists on this system
-     *
-     * @return true if a startup shortcut exists on this system, false otherwise
-     */
-    public abstract boolean hasStartupShortcut();
+    public boolean isAutostart() {
+        try {
+            return "1".equals(readAutoStartFile());
+        }
+        catch(IOException e) {
+            return false;
+        }
+    }
 
-    /**
-     * Test whether or not a desktop shortcut for the specified shortcutName
-     * exists on this system
-     *
-     * @return true if a desktop shortcut exists on this system, false otherwise
-     */
-    public abstract boolean hasDesktopShortcut();
+    public abstract boolean canAutoStart();
 
     /**
      * Creates a startup for the current OS. Automatically detects the OS and
@@ -72,85 +68,6 @@ public abstract class DeployUtilities {
      * @return Returns <code>true</code> if the startup item was created
      */
     public abstract boolean createDesktopShortcut();
-
-    /**
-     * Removes a startup item for the current OS. Automatically detects the OS
-     * and removes the startup item from the user's startup area respectively.
-     *
-     * @return Returns <code>true</code> if the startup item was removed
-     */
-    public abstract boolean removeStartupShortcut();
-
-    /**
-     * Removes a desktop shortcut for the current OS. Automatically detects the
-     * OS and removes the shortcut from the current user's Desktop.
-     *
-     * @return Returns <code>true</code> if the Desktop shortcut item was
-     * removed
-     */
-    public abstract boolean removeDesktopShortcut();
-
-    /**
-     * Single function to be used to dynamically create various shortcut types
-     *
-     * @param toggleType ToggleType.STARTUP or ToggleType.DESKTOP
-     * @return Whether or not the shortcut creation was successful
-     */
-    public boolean createShortcut(ToggleType toggleType) {
-        switch(toggleType) {
-            case STARTUP:
-                return hasShortcut(ToggleType.STARTUP) || createStartupShortcut();
-            case DESKTOP:
-                return hasShortcut(ToggleType.DESKTOP) || createDesktopShortcut();
-            default:
-                log.warn("Sorry, creating {} shortcuts are not yet supported", toggleType);
-                return false;
-        }
-    }
-
-    /**
-     * Single function to be used to dynamically check if a shortcut already exists
-     *
-     * @param toggleType Shortcut type, i.e. <code>ToggleType.STARTUP</code> or <code>ToggleType.DESKTOP</code>
-     * @return Whether or not the shortcut already exists
-     */
-    private boolean hasShortcut(ToggleType toggleType) {
-        boolean hasShortcut = false;
-        switch(toggleType) {
-            case STARTUP:
-                hasShortcut = hasStartupShortcut();
-                break;
-            case DESKTOP:
-                hasShortcut = hasDesktopShortcut();
-                break;
-            default:
-                log.warn("Sorry, checking for {} shortcuts are not yet supported", toggleType);
-        }
-
-        if (hasShortcut) {
-            log.info("The {} shortcut for {} ({}) exists", toggleType, getShortcutName(), getJarPath());
-        }
-
-        return hasShortcut;
-    }
-
-    /**
-     * Single function to be used to dynamically remove various shortcut types
-     *
-     * @param toggleType ToggleType.STARTUP or ToggleType.DESKTOP
-     * @return Whether or not the shortcut removal was successful
-     */
-    public boolean removeShortcut(ToggleType toggleType) {
-        switch(toggleType) {
-            case STARTUP:
-                return !hasShortcut(ToggleType.STARTUP) || removeStartupShortcut();
-            case DESKTOP:
-                return !hasShortcut(ToggleType.DESKTOP) || removeDesktopShortcut();
-            default:
-                log.warn("Sorry, removing {} shortcuts are not yet supported", toggleType);
-                return false;
-        }
-    }
 
     /**
      * Parses the parent directory from an absolute file URL. This will not work
@@ -175,7 +92,6 @@ public abstract class DeployUtilities {
     public String getParentDirectory() {
         return getParentDirectory(getJarPath());
     }
-
 
     public void setShortcutName(String shortcutName) {
         if (shortcutName != null) {
@@ -202,72 +118,42 @@ public abstract class DeployUtilities {
         }
     }
 
-    /**
-     * Returns whether or not a file exists
-     *
-     * @param filePath The full path to a file
-     * @return True if the specified filePath exists.  False otherwise.
-     */
-    static boolean fileExists(String filePath) {
-        try {
-            return new File(filePath).exists();
-        }
-        catch(SecurityException e) {
-            log.error("SecurityException while checking for file {}", filePath, e);
-            return false;
-        }
+    private static boolean writeAutoStartFile(String mode) throws IOException {
+        Path autostartFile = Paths.get(SystemUtilities.getDataDirectory() , Constants.AUTOSTART_FILE);
+        Files.write(autostartFile, mode.getBytes(), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        return readAutoStartFile().equals(mode);
     }
 
     /**
-     * Deletes the specified file
      *
-     * @param filePath The full file path to be deleted
-     * @return Whether or not the file deletion was successful
+     * @return First line of ".autostart" file in user or shared space or "0" if blank.  If neither are found, returns "1".
+     * @throws IOException
      */
-    static boolean deleteFile(String filePath) {
-        File f = new File(filePath);
-        try {
-            return f.delete();
-        }
-        catch(SecurityException e) {
-            log.error("Error while deleting: {}", filePath, e);
-        }
-        return false;
-    }
-
-    /**
-     * Writes the contents of <code>String[] array</code> to the specified
-     * <code>filePath</code> used for creating launcher shortcuts for both
-     * Windows and Linux taking OS-specific newlines into account
-     *
-     * @param filePath Absolute file path to be written to
-     * @param array    Array of lines to be written
-     * @return Whether or not the write was successful
-     */
-    static boolean writeArrayToFile(String filePath, String[] array) {
-        log.info("Writing array contents to file: {}: \n{}", filePath, Arrays.toString(array));
-        BufferedWriter writer = null;
-        boolean returnVal = false;
-        try {
-            writer = new BufferedWriter(new FileWriter(new File(filePath)));
-            for(String line : array) {
-                writer.write(line + NEWLINE);
+    private static String readAutoStartFile() throws IOException {
+        log.debug("Checking for {} file in user directory {}...", Constants.AUTOSTART_FILE, SystemUtilities.getDataDirectory());
+        Path userAutoStart = Paths.get(SystemUtilities.getDataDirectory() ,Constants.AUTOSTART_FILE);
+        List<String> lines = null;
+        if (Files.exists(userAutoStart)) {
+            lines = Files.readAllLines(userAutoStart);
+        } else {
+            log.debug("Checking for {} file in shared directory {}...", Constants.AUTOSTART_FILE, SystemUtilities.getDataDirectory());
+            Path sharedAutoStart = Paths.get(SystemUtilities.getSharedDataDirectory(), Constants.AUTOSTART_FILE);
+            if (Files.exists(sharedAutoStart)) {
+                lines = Files.readAllLines(sharedAutoStart);
             }
-            returnVal = true;
         }
-        catch(IOException e) {
-            log.error("Could not write file: {}", filePath, e);
+        if (lines == null) {
+            log.info("File {} was not found in user or shared directory", Constants.AUTOSTART_FILE);
+            // Default behavior is to autostart if no preference has been set
+            return "1";
+        } else if (lines.isEmpty()) {
+            log.warn("File {} is empty, this shouldn't happen.", Constants.AUTOSTART_FILE);
+            return "0";
+        } else {
+            String val = lines.get(0).trim();
+            log.debug("File {} contains {}", Constants.AUTOSTART_FILE, val);
+            return val;
         }
-        finally {
-            try {
-                if (writer != null) {
-                    writer.close();
-                }
-                setExecutable(filePath);
-            }
-            catch(IOException ignore) { }
-        }
-        return returnVal;
     }
 
     /**
@@ -336,7 +222,7 @@ public abstract class DeployUtilities {
      * @return A String value representing the absolute path to the currently running
      * jar
      */
-    private static String detectJarPath() {
+    public static String detectJarPath() {
         try {
             String jarPath = new File(DeployUtilities.class.getProtectionDomain()
                                     .getCodeSource().getLocation().getPath()).getCanonicalPath();

@@ -148,6 +148,7 @@ public class SocketConnection {
 
         removeAllFileListeners();
         stopDeviceListening();
+        stopStatusListener();
     }
 
 }

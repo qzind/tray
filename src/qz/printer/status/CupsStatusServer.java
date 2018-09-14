@@ -48,8 +48,7 @@ public class CupsStatusServer {
     }
 
     public static synchronized boolean isRunning() {
-        if (server == null) return false;
-        return server.isRunning();
+        return server != null && server.isRunning();
     }
 
     public static synchronized void stopServer() {

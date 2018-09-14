@@ -1,16 +1,14 @@
 package qz.printer.status;
 
 import org.apache.log4j.Level;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
-* Created by kyle on 5/18/17.
-*/
+ * Created by kyle on 5/18/17.
+ */
 public enum PrinterStatusType {
 
     OK("OK", Level.INFO, 0x00000000),
@@ -41,8 +39,6 @@ public enum PrinterStatusType {
     POWER_SAVE("POWER_SAVE", Level.INFO, 0x01000000),
     UNKNOWN_STATUS("UNKNOWN_STATUS", Level.FATAL, 0x02000000);
 
-    private static final Logger log = LoggerFactory.getLogger(PrinterStatusType.class);
-
     public static final SortedMap<Integer,PrinterStatusType> codeLookupTable = Collections.unmodifiableSortedMap(initCodeMap());
     public static final SortedMap<String,PrinterStatusType> cupsLookupTable = Collections.unmodifiableSortedMap(initCupsMap());
 
@@ -59,16 +55,18 @@ public enum PrinterStatusType {
     public String getName() {
         return statusName;
     }
+
     public Level getSeverity() {
         return severity;
     }
+
     public int getCode() {
         return code;
     }
 
     private static SortedMap<Integer,PrinterStatusType> initCodeMap() {
         SortedMap<Integer,PrinterStatusType> tempMap = new TreeMap<>();
-        for (PrinterStatusType s : PrinterStatusType.values()) {
+        for(PrinterStatusType s : PrinterStatusType.values()) {
             tempMap.put(s.code, s);
         }
         return tempMap;
@@ -94,8 +92,7 @@ public enum PrinterStatusType {
         tempMap.put("interlock-open", DOOR_OPEN);
         tempMap.put("door-open", DOOR_OPEN);
         tempMap.put("input-tray-missing", PAPER_PROBLEM);
-        //not a great match
-        tempMap.put("media-low", TONER_LOW);
+        tempMap.put("media-low", PAPER_PROBLEM);
         tempMap.put("media-empty", PAPER_OUT);
         tempMap.put("output-tray-missing", PAPER_PROBLEM);
         //not a great match

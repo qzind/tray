@@ -3,8 +3,6 @@ package qz.printer.status;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -23,7 +21,6 @@ import java.io.IOException;
  */
 public class CupsStatusHandler extends AbstractHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(CupsStatusHandler.class);
     private static String lastGuid;
 
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
@@ -31,8 +28,7 @@ public class CupsStatusHandler extends AbstractHandler {
         if (request.getReader().readLine() != null) {
             try {
                 XMLInputFactory factory = XMLInputFactory.newInstance();
-                XMLEventReader eventReader =
-                        factory.createXMLEventReader(request.getReader());
+                XMLEventReader eventReader = factory.createXMLEventReader(request.getReader());
                 parseXML(eventReader);
             }
             catch(Exception e) {
@@ -52,10 +48,10 @@ public class CupsStatusHandler extends AbstractHandler {
                 case XMLStreamConstants.START_ELEMENT:
                     StartElement startElement = event.asStartElement();
                     String qName = startElement.getName().getLocalPart();
-                    if (qName.equalsIgnoreCase("description")) {
+                    if ("description".equalsIgnoreCase(qName)) {
                         isDescription = true;
                     }
-                    if (qName.equalsIgnoreCase("guid")) {
+                    if ("guid".equalsIgnoreCase(qName)) {
                         isGuid = true;
                     }
                     break;
@@ -75,7 +71,7 @@ public class CupsStatusHandler extends AbstractHandler {
                             running = false;
                             break;
                         } else {
-                            String printerName =  StringUtils.substringBeforeLast(description, "\"");
+                            String printerName = StringUtils.substringBeforeLast(description, "\"");
                             printerName = StringUtils.substringAfter(printerName, "\"");
                             if (!printerName.isEmpty() && StatusMonitor.isListeningTo(printerName)) {
                                 StatusMonitor.statusChanged(CupsUtils.getStatuses(printerName));
@@ -86,6 +82,7 @@ public class CupsStatusHandler extends AbstractHandler {
                     break;
             }
         }
+
         lastGuid = firstGuid;
     }
 }

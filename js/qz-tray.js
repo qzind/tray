@@ -462,7 +462,7 @@ var qz = (function() {
             printerCallbacks: [],
             /** Calls all functions registered to listen for printer events. */
             callPrinter: function(streamEvent) {
-                if (Array.isArray(_qz.printers.sprinterCallbacks)) {
+                if (Array.isArray(_qz.printers.printerCallbacks)) {
                     for(var i = 0; i < _qz.printers.printerCallbacks.length; i++) {
                         _qz.printers.printerCallbacks[i](streamEvent);
                     }
@@ -942,9 +942,9 @@ var qz = (function() {
              * @memberof qz.printers
              */
             startListening: function(printers) {
-                if (!Array.isArray(printers)) printers = [printers];
+                if (!Array.isArray(printers)) { printers = [printers]; }
                 var params = {
-                    printerNames : printers
+                    printerNames: printers
                 };
                 return _qz.websocket.dataPromise('printers.startListening', params);
             },
@@ -964,7 +964,7 @@ var qz = (function() {
             },
 
             /**
-             * Causes all listened printers to send a status to this client, as though they had a status change.
+             * Retrieve current printer status from any active listeners.
              *
              * @returns {Promise<null|Error>}
              * @since 2.1.0

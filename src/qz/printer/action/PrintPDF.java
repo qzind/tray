@@ -107,8 +107,8 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, job.getPageFormat(null));
 
         // Disable attributes per https://github.com/qzind/tray/issues/174
-        if (SystemUtilities.isMac()) { // && Constants.JAVA_VERSION.compareWithBuildsTo(Version.valueOf("1.8.0+162")) < 0) {
-            log.warn("MacOS and Java cannot use attributes with PDF prints, disabling");
+        if (SystemUtilities.isMac() && Constants.JAVA_VERSION.compareWithBuildsTo(Version.valueOf("1.8.0+202")) < 0) {
+            log.warn("MacOS and Java < 1.8.0u202 cannot use attributes with PDF prints, disabling");
             attributes.clear();
         }
 

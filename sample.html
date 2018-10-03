@@ -1981,7 +1981,7 @@
         var cf = getUpdatedConfig();
         cf.setPrinter(printer);
 
-        if (typeof printer === 'object' && printer.name == undefined) {
+        if (printer && typeof printer === 'object' && printer.name == undefined) {
             var shown;
             if (printer.file != undefined) {
                 shown = "<em>FILE:</em> " + printer.file;
@@ -1992,7 +1992,7 @@
 
             $("#configPrinter").html(shown);
         } else {
-            if (printer.name != undefined) {
+            if (printer && printer.name != undefined) {
                 printer = printer.name;
             }
 

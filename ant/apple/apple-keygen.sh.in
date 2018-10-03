@@ -196,6 +196,9 @@ run_step "Issuing SSL certificate from CA" "${ssl.crtcmd}" "${ssl.crt}" || exit 
 run_step "Importing CA certificate into SSL keypair" "${ssl.importca}" "" || exit 1
 run_step "Importing chained SSL certificate into SSL keypair" "${ssl.importssl}" "" || exit 1
 
+# Kill any running versions
+kill -9 $(ps -e |grep "${project.filename}.jar" |sed "/grep/d"|awk '{print $1}') > /dev/null 2>&1
+
 echo -e "\nWriting properties file..."
 write_properties "${ssl.properties}" || exit 1
 

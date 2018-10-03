@@ -307,6 +307,10 @@ function createJavaKeystore() {
 function writePropertiesFile() {
     console.log("Writing ${ssl.properties}...");
 
+    // Kills any running ${project.name} instances
+    verifyExec("wmic.exe process where \"Name like '%java%' and CommandLine like '%${project.filename}.jar%'\" call terminate",
+        "Shutting down any ${project.name} instances");
+
     // Handle "community" mode, custom signing auth cert
     var authCert = "${build.type}" ? fixPath("${authcert.install}").replace(/\\/g, "\\\\") : "";
 

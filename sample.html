@@ -1567,17 +1567,21 @@
                 type: 'pixel',
                 format: 'html',
                 flavor: 'plain',
-                data: '<html style="font-family: monospace; border: 1px solid #000;">' +
-                      '    <div style="float: left; margin-left: .5em;">' +
+                data: '<html>' +
+                      '<body>' +
+                      '  <table style="font-family: monospace; width: 100%">' +
+                      '    <tr>' +
+                      '      <td>' +
                       '        <h2>* QZ Tray HTML Sample Print *</h2>' +
-                      '        <p>' +
-                      '            <span style="color: #D00;">Version:</span> ' + qzVersion + '<br/>' +
-                      '            <span style="color: #D00;">Source:</span> https://qz.io/' +
-                      '        </p>' +
-                      '    </div>' +
-                      '    <div style="float: right">' +
+                      '        <span style="color: #D00;">Version:</span> ' + qzVersion + '<br/>' +
+                      '        <span style="color: #D00;">Source:</span> https://qz.io/' +
+                      '      </td>' +
+                      '      <td align="right">' +
                       '        <img src="' + getPath() + '/assets/img/image_sample.png" />' +
-                      '    </div>' +
+                      '      </td>' +
+                      '    </tr>' +
+                      '  </table>' +
+                      '</body>' +
                       '</html>',
                 options: opts
             }

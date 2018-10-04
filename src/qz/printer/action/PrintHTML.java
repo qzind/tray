@@ -72,8 +72,10 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
         try {
-            WebApp.initialize();
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
+            if (!pxlOpts.isLegacy()) {
+                WebApp.initialize();
+            }
 
             for(int i = 0; i < printData.length(); i++) {
                 JSONObject data = printData.getJSONObject(i);

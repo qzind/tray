@@ -84,6 +84,7 @@ public class PrintSocketClient {
 
         NETWORKING_DEVICE("networking.device", true),
         NETWORKING_DEVICES("networking.devices", true),
+        NETWORKING_DEVICE_LEGACY("websocket.getNetworkInfo", true),
         GET_VERSION("getVersion", false),
 
         INVALID("", false);
@@ -568,7 +569,13 @@ public class PrintSocketClient {
 
                 break;
             }
-
+            case NETWORKING_DEVICE_LEGACY:
+                JSONObject networkDevice = NetworkUtilities.getDeviceJSON(params.optString("hostname", "google.com"), params.optInt("port", 443));
+                JSONObject legacyDevice = new JSONObject();
+                legacyDevice.put("ipAddress", networkDevice.optString("ip", null));
+                legacyDevice.put("macAddress", networkDevice.optString("mac", null));
+                sendResult(session, UID, legacyDevice);
+                break;
             case NETWORKING_DEVICE:
                 sendResult(session, UID, NetworkUtilities.getDeviceJSON(params.optString("hostname", "google.com"), params.optInt("port", 443)));
                 break;

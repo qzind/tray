@@ -41,6 +41,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -89,11 +90,21 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                 double pageWidth = 0;
                 double pageHeight = 0;
 
+                boolean renderFromWidth = Arrays.asList(PrintOptions.Orientation.PORTRAIT,
+                                                        PrintOptions.Orientation.REVERSE_PORTRAIT).contains(pxlOpts.getOrientation());
+
                 if (pxlOpts.getSize() != null) {
-                    pageWidth = pxlOpts.getSize().getWidth() * (72.0 / pxlOpts.getUnits().as1Inch());
+                    if (renderFromWidth) {
+                        pageWidth = pxlOpts.getSize().getWidth() * (72.0 / pxlOpts.getUnits().as1Inch());
+                    } else {
+                        pageWidth = pxlOpts.getSize().getHeight() * (72.0 / pxlOpts.getUnits().as1Inch());
+                    }
                 } else if (options.getDefaultOptions().getPageSize() != null) {
-                    pageWidth = options.getDefaultOptions().getPageSize().getWidth();
-                    //pageHeight = options.getDefaultOptions().getPageSize().getHeight();
+                    if (renderFromWidth) {
+                        pageWidth = options.getDefaultOptions().getPageSize().getWidth();
+                    } else {
+                        pageWidth = options.getDefaultOptions().getPageSize().getHeight();
+                    }
                 }
 
                 if (!data.isNull("options")) {

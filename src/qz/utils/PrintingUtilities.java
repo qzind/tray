@@ -44,7 +44,7 @@ public class PrintingUtilities {
     }
 
 
-    public synchronized static PrintProcessor getPrintProcessor(JSONArray printData) throws JSONException {
+    public static Type getPrintType(JSONArray printData) {
         JSONObject data = printData.optJSONObject(0);
 
         Type type;
@@ -54,6 +54,10 @@ public class PrintingUtilities {
             type = Type.valueOf(data.optString("type", "RAW").toUpperCase(Locale.ENGLISH));
         }
 
+        return type;
+    }
+
+    public synchronized static PrintProcessor getPrintProcessor(Type type) {
         try {
             if (processorPool == null) {
                 processorPool = new GenericKeyedObjectPool<>(new ProcessorFactory());
@@ -148,12 +152,13 @@ public class PrintingUtilities {
      * @param params  Params of call from web API
      */
     public static void processPrintRequest(Session session, String UID, JSONObject params) throws JSONException {
-        PrintProcessor processor = PrintingUtilities.getPrintProcessor(params.getJSONArray("data"));
+        Type type = getPrintType(params.getJSONArray("data"));
+        PrintProcessor processor = PrintingUtilities.getPrintProcessor(type);
         log.debug("Using {} to print", processor.getClass().getName());
 
         try {
             PrintOutput output = new PrintOutput(params.optJSONObject("printer"));
-            PrintOptions options = new PrintOptions(params.optJSONObject("options"), output);
+            PrintOptions options = new PrintOptions(params.optJSONObject("options"), output, type);
 
             processor.parseData(params.getJSONArray("data"), options);
             processor.print(output, options);

@@ -32,7 +32,7 @@ public class PrintOptions {
     /**
      * Parses the provided JSON Object into relevant Pixel and Raw options
      */
-    public PrintOptions(JSONObject configOpts, PrintOutput output) {
+    public PrintOptions(JSONObject configOpts, PrintOutput output, PrintingUtilities.Type type) {
         if (configOpts == null) { return; }
 
         //check for raw options
@@ -231,7 +231,7 @@ public class PrintOptions {
                 defOptions.density = 60000d / psOptions.getUnits().getDPIUnits();
             }
         }
-        if (psOptions.isRasterize() && psOptions.getDensity() == 0) {
+        if ((psOptions.isRasterize() || type == PrintingUtilities.Type.IMAGE) && psOptions.getDensity() == 0) {
             psOptions.density = defOptions.density;
         }
 

@@ -557,8 +557,22 @@
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="serialCmd">Command</label>
+                                            <label for="serialCmd">Data</label>
                                             <input type="text" id="serialCmd" class="form-control pull-right" />
+                                        </div>
+
+                                        <div class="form-group form-inline">
+                                            <label>Data Type</label>
+                                            <div class="pull-right">
+                                                <label>
+                                                    <input type="radio" name="serialType" id="serialRawRadio"/>
+                                                    Raw
+                                                </label>
+                                                <label>
+                                                    <input type="radio" name="serialType" id="serialURLRadio"/>
+                                                    URL
+                                                </label>
+                                            </div>
                                         </div>
 
                                         <div class="form-group form-inline">
@@ -1641,6 +1655,7 @@
     function sendSerialData() {
         var properties = {
             baudRate: $("#serialBaud").val(),
+            type: $("#serialRawRadio").prop("checked") ? "RAW" : "URL",
             dataBits: $("#serialData").val(),
             stopBits: $("#serialStop").val(),
             parity: $("#serialParity").val(),
@@ -2089,6 +2104,7 @@
     function resetSerialOptions() {
         $("#serialPort").val('');
         $("#serialCmd").val('');
+        $("#serialRawRadio").prop('checked', 'true');
         $("#serialStart").val("0x0002"); //String.fromCharCode(2)
         $("#serialEnd").val("0x000D"); //String.fromCharCode(13)
 

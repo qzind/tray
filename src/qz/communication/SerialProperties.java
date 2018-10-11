@@ -17,6 +17,11 @@ public class SerialProperties {
     private int stopBits = SerialPort.STOPBITS_1;
     private int parity = SerialPort.PARITY_NONE;
     private int flowControl = SerialPort.FLOWCONTROL_NONE;
+    private SerialDataType type = SerialDataType.RAW;
+
+    private enum SerialDataType {
+        RAW, URL
+    }
 
 
     /**
@@ -49,6 +54,11 @@ public class SerialProperties {
             try { flowControl = SerialUtilities.parseFlowControl(serialProps.getString("flowControl")); }
             catch(JSONException e) { log.warn("Cannot read {} as a value for flow control, using default", serialProps.opt("flowControl")); }
         }
+
+        if (!serialProps.isNull("type")) {
+            try { type = SerialDataType.valueOf(serialProps.getString("type")); }
+            catch(JSONException e) { log.warn("Cannot read {} as a value for data type, using default", serialProps.opt("type")); }
+        }
     }
 
 
@@ -70,6 +80,10 @@ public class SerialProperties {
 
     public int getFlowControl() {
         return flowControl;
+    }
+
+    public boolean isURL() {
+        return type == SerialDataType.URL;
     }
 
 }

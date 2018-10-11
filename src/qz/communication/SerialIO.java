@@ -2,12 +2,15 @@ package qz.communication;
 
 import jssc.*;
 import org.apache.commons.codec.binary.StringUtils;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.ByteArrayBuilder;
 import qz.utils.ByteUtilities;
 import qz.utils.SerialUtilities;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.Arrays;
 
 /**
@@ -154,10 +157,14 @@ public class SerialIO {
     /**
      * Applies the port parameters and writes the buffered data to the serial port.
      */
-    public void sendData(SerialProperties props, String data) throws SerialPortException {
+    public void sendData(SerialProperties props, String data) throws IOException, SerialPortException {
         setProperties(props);
         log.debug("Sending data over [{}]", portName);
-        port.writeBytes(SerialUtilities.characterBytes(data));
+        if (props.isURL()) {
+            port.writeBytes(IOUtils.toByteArray(new URL(data)));
+        } else {
+            port.writeBytes(SerialUtilities.characterBytes(data));
+        }
     }
 
     /**

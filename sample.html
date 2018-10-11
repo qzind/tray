@@ -565,12 +565,12 @@
                                             <label>Data Type</label>
                                             <div class="pull-right">
                                                 <label>
-                                                    <input type="radio" name="serialType" id="serialRawRadio"/>
-                                                    Raw
+                                                    <input type="radio" name="serialType" id="serialPlainRadio"/>
+                                                    Plain
                                                 </label>
                                                 <label>
-                                                    <input type="radio" name="serialType" id="serialURLRadio"/>
-                                                    URL
+                                                    <input type="radio" name="serialType" id="serialFileRadio"/>
+                                                    File
                                                 </label>
                                             </div>
                                         </div>
@@ -1655,7 +1655,7 @@
     function sendSerialData() {
         var properties = {
             baudRate: $("#serialBaud").val(),
-            type: $("#serialRawRadio").prop("checked") ? "RAW" : "URL",
+            type: $("#serialPlainRadio").prop("checked") ? "PLAIN" : "FILE",
             dataBits: $("#serialData").val(),
             stopBits: $("#serialStop").val(),
             parity: $("#serialParity").val(),
@@ -2104,7 +2104,7 @@
     function resetSerialOptions() {
         $("#serialPort").val('');
         $("#serialCmd").val('');
-        $("#serialRawRadio").prop('checked', 'true');
+        $("#serialPlainRadio").prop('checked', 'true');
         $("#serialStart").val("0x0002"); //String.fromCharCode(2)
         $("#serialEnd").val("0x000D"); //String.fromCharCode(13)
 

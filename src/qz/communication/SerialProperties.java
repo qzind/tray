@@ -17,10 +17,10 @@ public class SerialProperties {
     private int stopBits = SerialPort.STOPBITS_1;
     private int parity = SerialPort.PARITY_NONE;
     private int flowControl = SerialPort.FLOWCONTROL_NONE;
-    private SerialDataType type = SerialDataType.RAW;
+    private SerialDataType type = SerialDataType.PLAIN;
 
     private enum SerialDataType {
-        RAW, URL
+        PLAIN, FILE
     }
 
 
@@ -82,8 +82,8 @@ public class SerialProperties {
         return flowControl;
     }
 
-    public boolean isURL() {
-        return type == SerialDataType.URL;
+    public boolean isFile() {
+        return type == SerialDataType.FILE;
     }
 
 }

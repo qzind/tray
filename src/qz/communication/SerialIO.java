@@ -160,7 +160,7 @@ public class SerialIO {
     public void sendData(SerialProperties props, String data) throws IOException, SerialPortException {
         setProperties(props);
         log.debug("Sending data over [{}]", portName);
-        if (props.isURL()) {
+        if (props.isFile()) {
             port.writeBytes(IOUtils.toByteArray(new URL(data)));
         } else {
             port.writeBytes(SerialUtilities.characterBytes(data));

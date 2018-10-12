@@ -201,7 +201,12 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
                     //margins defined as pnt (1/72nds)
                     double asPnt = pxlOpts.getUnits().toInches() * 72;
-                    layout = plCon.newInstance(paper, orient, m.left() * asPnt, m.right() * asPnt, m.top() * asPnt, m.bottom() * asPnt);
+                    if (orient == PageOrientation.PORTRAIT || orient == PageOrientation.REVERSE_PORTRAIT) {
+                        layout = plCon.newInstance(paper, orient, m.left() * asPnt, m.right() * asPnt, m.top() * asPnt, m.bottom() * asPnt);
+                    } else {
+                        //rotate margins to match raster prints
+                        layout = plCon.newInstance(paper, orient, m.top() * asPnt, m.bottom() * asPnt, m.right() * asPnt, m.left() * asPnt);
+                    }
                 } else {
                     //if margins are not provided, use default paper margins
                     PageLayout valid = fxPrinter.getDefaultPageLayout();

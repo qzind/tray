@@ -38,11 +38,6 @@ public class WindowsDeploy extends DeployUtilities {
     }
 
     @Override
-    public String getParentDirectory() {
-        return fixWhitespaces(super.getParentDirectory());
-    }
-
-    @Override
     public boolean createDesktopShortcut() {
         return createShortcut(System.getenv("userprofile") + "\\Desktop\\");
     }
@@ -153,6 +148,6 @@ public class WindowsDeploy extends DeployUtilities {
      * Returns path to executable jar or windows executable
      */
     private String getAppPath() {
-        return fixWhitespaces(getJarPath()).replaceAll(".jar$", ".exe");
+        return getJarPath().replaceAll(".jar$", ".exe");
     }
 }

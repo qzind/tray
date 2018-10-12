@@ -16,6 +16,7 @@ import qz.common.Constants;
 import qz.utils.SystemUtilities;
 
 import java.io.*;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.Properties;
 
@@ -324,10 +325,7 @@ public abstract class DeployUtilities {
 
         String jarPath = detectJarPath();
         String propFile = Constants.PROPS_FILE + ".properties";
-
-        // Use relative path based on qz-tray.jar, fix %20
-        // TODO:  Find a better way to fix the unicode chars?
-        return fixWhitespaces(getParentDirectory(jarPath) + File.separator + propFile);
+        return getParentDirectory(jarPath) + File.separator + propFile;
     }
 
     /**
@@ -358,8 +356,10 @@ public abstract class DeployUtilities {
      */
     public static String detectJarPath() {
         try {
-            return new File(DeployUtilities.class.getProtectionDomain()
+            String jarPath = new File(DeployUtilities.class.getProtectionDomain()
                                     .getCodeSource().getLocation().getPath()).getCanonicalPath();
+            // Fix characters that get URL encoded when calling getPath()
+            return URLDecoder.decode(jarPath, "UTF-8");
         }
         catch(IOException ex) {
             log.error("Unable to determine Jar path", ex);
@@ -413,17 +413,4 @@ public abstract class DeployUtilities {
             return this.name() == null? null:this.name().toLowerCase();
         }
     }
-
-    /**
-     * Attempts to correct URL path conversions that occur on old JREs and older
-     * Windows versions.  For now, just addresses %20 spaces, but
-     * there could be other URLs which will need special consideration.
-     *
-     * @param filePath The absolute file path to convert
-     * @return The converted path
-     */
-    public static String fixWhitespaces(String filePath) {
-        return filePath.replace("%20", " ");
-    }
-
 }

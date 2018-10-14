@@ -91,17 +91,17 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                 double pageHeight = 0;
                 double convertFactor = (72.0 / pxlOpts.getUnits().as1Inch());
 
-                boolean renderFromWidth = Arrays.asList(PrintOptions.Orientation.PORTRAIT,
-                                                        PrintOptions.Orientation.REVERSE_PORTRAIT).contains(pxlOpts.getOrientation());
+                boolean renderFromHeight = Arrays.asList(PrintOptions.Orientation.LANDSCAPE,
+                                                        PrintOptions.Orientation.REVERSE_LANDSCAPE).contains(pxlOpts.getOrientation());
 
                 if (pxlOpts.getSize() != null) {
-                    if (renderFromWidth) {
+                    if (!renderFromHeight) {
                         pageWidth = pxlOpts.getSize().getWidth() * convertFactor;
                     } else {
                         pageWidth = pxlOpts.getSize().getHeight() * convertFactor;
                     }
                 } else if (options.getDefaultOptions().getPageSize() != null) {
-                    if (renderFromWidth) {
+                    if (!renderFromHeight) {
                         pageWidth = options.getDefaultOptions().getPageSize().getWidth();
                     } else {
                         pageWidth = options.getDefaultOptions().getPageSize().getHeight();
@@ -110,7 +110,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
                 if (pxlOpts.getMargins() != null) {
                     PrintOptions.Margins margins = pxlOpts.getMargins();
-                    if (renderFromWidth || pxlOpts.isRasterize()) {
+                    if (!renderFromHeight || pxlOpts.isRasterize()) {
                         pageWidth -= (margins.left() + margins.right()) * convertFactor;
                     } else {
                         pageWidth -= (margins.top() + margins.bottom()) * convertFactor; //due to vector margin matching

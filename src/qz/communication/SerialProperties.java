@@ -19,7 +19,7 @@ public class SerialProperties {
     private int flowControl = SerialPort.FLOWCONTROL_NONE;
     private SerialDataType type = SerialDataType.PLAIN;
 
-    private enum SerialDataType {
+    public enum SerialDataType {
         PLAIN, FILE
     }
 
@@ -82,8 +82,8 @@ public class SerialProperties {
         return flowControl;
     }
 
-    public boolean isFile() {
-        return type == SerialDataType.FILE;
+    public SerialDataType getType() {
+        return type;
     }
 
 }

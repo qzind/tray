@@ -565,11 +565,11 @@
                                             <label>Data Type</label>
                                             <div class="pull-right">
                                                 <label>
-                                                    <input type="radio" name="serialType" id="serialPlainRadio"/>
+                                                    <input type="radio" name="serialType" id="serialPlainRadio" value="PLAIN"/>
                                                     Plain
                                                 </label>
                                                 <label>
-                                                    <input type="radio" name="serialType" id="serialFileRadio"/>
+                                                    <input type="radio" name="serialType" id="serialFileRadio" value="FILE"/>
                                                     File
                                                 </label>
                                             </div>
@@ -1655,13 +1655,12 @@
     function sendSerialData() {
         var properties = {
             baudRate: $("#serialBaud").val(),
-            type: $("#serialPlainRadio").prop("checked") ? "PLAIN" : "FILE",
+            type: $("input[name='serialType']:checked").val(),
             dataBits: $("#serialData").val(),
             stopBits: $("#serialStop").val(),
             parity: $("#serialParity").val(),
             flowControl: $("#serialFlow").val()
         };
-
         qz.serial.sendData($("#serialPort").val(), $("#serialCmd").val(), properties).catch(displayError);
     }
 

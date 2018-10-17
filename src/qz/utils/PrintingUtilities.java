@@ -46,9 +46,11 @@ public class PrintingUtilities {
 
 
     public synchronized static PrintProcessor getPrintProcessor(JSONArray printData) throws JSONException {
+        convertVersion(printData);
+
+        //grab first data object to determine type for entire set
         JSONObject data = printData.optJSONObject(0);
         if (data == null) { data = new JSONObject(); }
-        convertVersion(data);
 
         Type type = Type.valueOf(data.optString("type", "RAW").toUpperCase(Locale.ENGLISH));
 
@@ -92,24 +94,29 @@ public class PrintingUtilities {
      * <p>
      * This method will take the data object, and if it uses any old terminology it will update the value to the new set.
      *
-     * @param data JSONObject of printData, will update any values by reference
+     * @param dataArr JSONArray of printData, will update any data values by reference
      */
-    private static void convertVersion(JSONObject data) throws JSONException {
-        if (!data.isNull("flavor")) { return; } //flavor exists only in new version, no need to convert
+    private static void convertVersion(JSONArray dataArr) throws JSONException {
+        for(int i = 0; i < dataArr.length(); i++) {
+            JSONObject data = dataArr.optJSONObject(i);
+            if (data == null) { data = new JSONObject(); }
 
-        if (!data.isNull("format")) {
-            String format = data.getString("format").toUpperCase();
-            if (Arrays.asList("BASE64", "FILE", "HEX", "PLAIN", "XML").contains(format)) {
-                data.put("flavor", format);
-                data.remove("format");
+            if (!data.isNull("flavor")) { return; } //flavor exists only in new version, no need to convert any data
+
+            if (!data.isNull("format")) {
+                String format = data.getString("format").toUpperCase();
+                if (Arrays.asList("BASE64", "FILE", "HEX", "PLAIN", "XML").contains(format)) {
+                    data.put("flavor", format);
+                    data.remove("format");
+                }
             }
-        }
 
-        if (!data.isNull("type")) {
-            String type = data.getString("type").toUpperCase();
-            if (Arrays.asList("HTML", "IMAGE", "PDF").contains(type)) {
-                data.put("type", "PIXEL");
-                data.put("format", type);
+            if (!data.isNull("type")) {
+                String type = data.getString("type").toUpperCase();
+                if (Arrays.asList("HTML", "IMAGE", "PDF").contains(type)) {
+                    data.put("type", "PIXEL");
+                    data.put("format", type);
+                }
             }
         }
     }

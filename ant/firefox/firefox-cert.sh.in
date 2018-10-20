@@ -57,8 +57,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	if [ "$version" -ge "63" ]; then
 		policy='{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
 		policypath="$ffdir/Contents/Resources/distribution/policies.json"
-	else
-		policy=""
 	fi
 
 	bindir="$ffdir/Contents/Resources/"
@@ -76,8 +74,6 @@ else
 	if [ "$version" -ge "64" ]; then
 		policy='' # TODO
 		policypath="$ffdir/distribution/policies.json"
-	else
-		policy=""
 	fi
 
 	bindir="$ffdir"

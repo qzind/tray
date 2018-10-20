@@ -52,6 +52,15 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	locationdir=$(cd "$(dirname "$0")"; pwd)
 	get_ffdir
 
+	# Use policies.json deployment (Firefox 63+)
+	version=$($ffdir/Contents/MacOS/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+	if [ "$version" -ge "63" ]; then
+		policy='{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
+		policypath="$ffdir/Contents/Resources/distribution/policies.json"
+	else
+		policy=""
+	fi
+
 	bindir="$ffdir/Contents/Resources/"
 	prefdir="$ffdir/Contents/Resources/defaults/pref"
 	installdir="${apple.installdir}"
@@ -61,6 +70,15 @@ else
 	location=$(readlink -f "$0")
 	locationdir=$(dirname "$location")
 	get_ffdir
+
+	# Use policies.json deployment (Firefox 64+)
+	version=$($ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+	if [ "$version" -ge "64" ]; then
+		policy='' # TODO
+		policypath="$ffdir/distribution/policies.json"
+	else
+		policy=""
+	fi
 
 	bindir="$ffdir"
 	prefdir="$ffdir/defaults/pref"
@@ -74,6 +92,13 @@ if [ -z "$ffdir" ] || [ "$ffdir" = "/" ]; then
 	exit 0
 else
     echo -e "${bash.success} $ffdir"
+fi
+
+# Use policy file
+if [ -z "$policy" ]; then
+	json_writer.py "$policypath" "$policy""
+	echo -e "\n[Finished ${firefoxcert.name}]\n"
+	exit 0
 fi
 
 # Handle CN=${ssl.cn} override

@@ -85,7 +85,7 @@ public class TrayManager {
 
         prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
 
-        headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || !SystemTray.isSupported();
+        headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || GraphicsEnvironment.isHeadless();
         if (headless) {
             log.info("Running in headless mode");
         }
@@ -97,7 +97,7 @@ public class TrayManager {
         SystemUtilities.setSystemLookAndFeel();
         iconCache = new IconCache();
 
-        if (!headless) {
+        if (!headless && SystemTray.isSupported()) {
             Image blank = new ImageIcon(new byte[1]).getImage();
             if (SystemUtilities.isWindows()) {
                 tray = new JXTrayIcon(blank);

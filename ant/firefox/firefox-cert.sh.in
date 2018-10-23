@@ -53,11 +53,13 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	get_ffdir
 
 	# Use policies.json deployment (Firefox 63+)
-	version=$($ffdir/Contents/MacOS/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
-	if [ "$version" -ge "63" ]; then
-		policy='{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
-		policypath="$ffdir/Contents/Resources/distribution/policies.json"
-	fi
+	if [ -n "$ffdir" ]; then
+        version=$(HOME=/tmp "$ffdir/Contents/MacOS/firefox" --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+        if [ "$version" -ge "63" ]; then
+            policy='{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
+            policypath="$ffdir/Contents/Resources/distribution/policies.json"
+        fi
+    fi
 
 	bindir="$ffdir/Contents/Resources/"
 	prefdir="$ffdir/Contents/Resources/defaults/pref"
@@ -70,11 +72,13 @@ else
 	get_ffdir
 
 	# Use policies.json deployment (Firefox 64+)
-	version=$($ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
-	if [ "$version" -ge "64" ]; then
-		policy='' # TODO
-		policypath="$ffdir/distribution/policies.json"
-	fi
+	if [ -n "$ffdir" ]; then
+        version=$(HOME=/tmp $ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+        if [ "$version" -ge "64" ]; then
+            policy='' # TODO
+            policypath="$ffdir/distribution/policies.json"
+        fi
+    fi
 
 	bindir="$ffdir"
 	prefdir="$ffdir/defaults/pref"
@@ -87,12 +91,12 @@ if [ -z "$ffdir" ] || [ "$ffdir" = "/" ]; then
 	echo -e "${bash.skipped} Firefox not found"
 	exit 0
 else
-    echo -e "${bash.success} $ffdir"
+    echo -e "${bash.success} Firefox $version found at $ffdir"
 fi
 
 # Use policy file
-if [ -z "$policy" ]; then
-	${jsonwriter.name} "$policypath" "$policy""
+if [ -n "$policy" ]; then
+	"$locationdir/${jsonwriter.name}" "$policypath" "$policy"
 	echo -e "\n[Finished ${firefoxcert.name}]\n"
 	exit 0
 fi

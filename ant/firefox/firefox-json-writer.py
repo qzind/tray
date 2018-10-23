@@ -40,13 +40,18 @@ def load_json(path):
 def merge_json(base, append):
     """ Writes values from append to base, deep copying if necessary """
     for key, val in append.items():
-        if base.get(key) is None:
+        base_val = base.get(key)
+
+        if base_val is None:
             base[key] = val
-        elif type(base.get(key)) is dict and type(val) is dict:
-            merge_json(base.get(key), val)
+        elif type(base_val) is dict and type(val) is dict:
+            merge_json(base_val, val)
         elif overwrite:
             # only forces overwrite if no deeper objects exist first
             base[key] = val
+        elif type(base_val) is list:
+            # merge list if not overwritten
+            base[key] = base_val + val
 
 
 policy = load_json(path)

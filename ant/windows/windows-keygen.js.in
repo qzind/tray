@@ -403,13 +403,17 @@ function hasFirefoxConflict() {
 
      // Use policy files for versions >= 62
      try {
-        if (parseInt(firefoxVer.split('.')[0]) >= 62) {
+        var version = firefoxVer.split('.')[0];
+        console.log(" - [success] Parsed Firefox major version: " + version);
+        if (parseInt(version) >= 62) {
             installFirefoxPolicy();
+            // Toggle-off cert install, favor policy instead
+            firefoxInstall = false;
             return;
         }
      } catch(err) {
-        console.warn("Unable to parse Firefox major version from \" + firefoxVer
-            + "\". Falling back to AutConfig mode. "+);
+        console.warn("Unable to parse Firefox major version from \"" + version
+            + "\". Falling back to AutConfig mode.");
      }
 
     console.log("Searching for Firefox AutoConfig conflicts...");
@@ -523,7 +527,7 @@ function installFirefoxCertificate() {
 function installFirefoxPolicy() {
     include('${windows.jsonparser.name}');
 
-    var policyPath = firefoxInstall + "\\..\\distributions\\policies.json";
+    var policyPath = firefoxInstall + "\\..\\distribution\\policies.json";
     var policyJSON = read(policyPath);
     var policy = JSON.parse(policyJSON || "{}");
 
@@ -538,11 +542,11 @@ function installFirefoxPolicy() {
     }
     if (policy.policies.Certificates.ImportEnterpriseRoots === undefined) {
     	policy.policies.Certificates.ImportEnterpriseRoots = true;
-    	console.log("ImportEnterpriseRoots is missing, adding.");
+    	console.log("- [success] ImportEnterpriseRoots is missing, adding.");
     	after = JSON.stringify(policy, null, 2);
     	write(policyPath, after);
     } else {
-    	console.warn("ImportEnterpriseRoots exists, skipping.");
+    	console.warn("- [skipped] ImportEnterpriseRoots exists, skipping.");
     }
 
     console.log("\r\nDEBUG BEFORE:\r\n" + before);
@@ -773,5 +777,7 @@ function mkdirs(path, fso) {
  * Imports a JavaScript library by calling eval on the source content
  */
 function include(path) {
+	var fso = new ActiveXObject("Scripting.FileSystemObject");
+	path = fso.GetParentFolderName(WScript.ScriptFullName) + "\\" + path;
 	eval(read(path));
 }

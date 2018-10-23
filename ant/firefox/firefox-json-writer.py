@@ -6,12 +6,12 @@ import json
 import errno
 
 DEFAULT_PATH = '/Applications/Firefox.app/Contents/Resources/distribution/policies.json'
-DEFAULT_DATA = '{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
-DEFAULT_OVERWRITE = False
+# DEFAULT_DATA = '{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
+# DEFAULT_OVERWRITE = False
 
 path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PATH
-merge = json.loads(sys.argv[2]) if len(sys.argv) > 2 else DEFAULT_DATA
-overwrite = sys.argv[3].lower() == 'true' if len(sys.argv) > 3 else DEFAULT_OVERWRITE
+# merge = json.loads(sys.argv[2]) if len(sys.argv) > 2 else json.loads(DEFAULT_DATA)
+# overwrite = sys.argv[3].lower() == 'true' if len(sys.argv) > 3 else DEFAULT_OVERWRITE
 
 def mkdir_p(path):
     try:
@@ -45,7 +45,9 @@ policy = load_json(path)
 #  }
 #}
 
-# TODO: loop over merge object instead
+# FIXME: Replace this with a deep merge function
+# print(json.dumps(merge, sort_keys=True, indent=2))
+
 if policy.get('policies') == None:
     policy['policies'] = {}
 

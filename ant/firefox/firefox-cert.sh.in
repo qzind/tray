@@ -92,7 +92,7 @@ fi
 
 # Use policy file
 if [ -z "$policy" ]; then
-	json_writer.py "$policypath" "$policy""
+	${jsonwriter.name} "$policypath" "$policy""
 	echo -e "\n[Finished ${firefoxcert.name}]\n"
 	exit 0
 fi

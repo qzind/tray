@@ -51,6 +51,7 @@ var cnOverride = getArg(2, null);
 var firefoxPortable = getArg(3, null);
 var trusted = { cert: getArg(4, null), key: getArg(5, null) };
 
+var firefoxVer;
 var firefoxInstall;
 
 /**
@@ -372,7 +373,7 @@ function getFirefoxInstall() {
 
     //  Determine if Firefox is installed
     var firefoxKey = "HKLM\\Software\\Mozilla\\Mozilla Firefox";
-    var firefoxVer = getRegValue(firefoxKey + "\\");
+    firefoxVer = getRegValue(firefoxKey + "\\");
     if (!firefoxVer) {
         // Look for Extended Support Release
         firefoxVer = getRegValue(firefoxKey + " ESR\\");
@@ -399,6 +400,17 @@ function getFirefoxInstall() {
  */
 function hasFirefoxConflict() {
     if (!getFirefoxInstall()) { return false; }
+
+     // Use policy files for versions >= 62
+     try {
+        if (parseInt(firefoxVer.split('.')[0]) >= 62) {
+            installFirefoxPolicy();
+            return;
+        }
+     } catch(err) {
+        console.warn("Unable to parse Firefox major version from \" + firefoxVer
+            + "\". Falling back to AutConfig mode. "+);
+     }
 
     console.log("Searching for Firefox AutoConfig conflicts...");
     // AutoConfig rule conflicts to search for
@@ -503,6 +515,38 @@ function installFirefoxCertificate() {
     // Install the preference file tells Firefox to launches ${firefoxconfig.name} each time it starts
     var firefoxPrefs = firefoxInstall + "\\..\\defaults\\pref\\${firefoxprefs.name}";
     fso.CopyFile(fixPath("${firefoxprefs.install}"), firefoxPrefs);
+}
+
+/*
+ * Install a Firefox policy to import the system certificates
+ */
+function installFirefoxPolicy() {
+    include('${windows.jsonparser.name}');
+
+    var policyPath = firefoxInstall + "\\..\\distributions\\policies.json";
+    var policyJSON = read(policyPath);
+    var policy = JSON.parse(policyJSON || "{}");
+
+    var before = JSON.stringify(policy, null, 2);
+    var after = before;
+
+    if (policy.policies === undefined) {
+    	policy.policies = {};
+    }
+    if (policy.policies.Certificates === undefined) {
+    	policy.policies.Certificates = {};
+    }
+    if (policy.policies.Certificates.ImportEnterpriseRoots === undefined) {
+    	policy.policies.Certificates.ImportEnterpriseRoots = true;
+    	console.log("ImportEnterpriseRoots is missing, adding.");
+    	after = JSON.stringify(policy, null, 2);
+    	write(policyPath, after);
+    } else {
+    	console.warn("ImportEnterpriseRoots exists, skipping.");
+    }
+
+    console.log("\r\nDEBUG BEFORE:\r\n" + before);
+    console.log("\r\nDEBUG AFTER:\r\n" + after);
 }
 
 /*
@@ -676,4 +720,58 @@ function alert(message, title) {
     } else {
         shell.Popup(message, 0, title == null ? "Warning" : title, 48);
     }
+}
+
+/*
+ * Write a text file at path containing the specified data creating
+ * parent directories as needed
+ */
+function write(path, data) {
+	var ForWriting = 2;
+	var fso = new ActiveXObject("Scripting.FileSystemObject");
+	if (!fso.FileExists(path)) {
+		mkdirs(fso.GetParentFolderName(path), fso);
+		fso.CreateTextFile(path);
+	}
+	var file = fso.GetFile(path);
+	var stream = file.OpenAsTextStream(ForWriting);
+	var data = stream.Write(data);
+	stream.Close();
+}
+
+/*
+ * Reads a text file at path and returns contents as a string
+ */
+function read(path) {
+	var data;
+	var ForReading = 1;
+	var fso = new ActiveXObject("Scripting.FileSystemObject");
+	if (fso.FileExists(path)) {
+		var file = fso.GetFile(path);
+		if (file.Size > 0) {
+			var stream = file.OpenAsTextStream(ForReading);
+			data = stream.readAll();
+			stream.Close();
+		}
+	}
+	return data;
+}
+
+/*
+ * Creates a directory and all parents using the provided FileSystemObject handle
+ */
+function mkdirs(path, fso) {
+	if(!fso.FolderExists(path) && path !== "") {
+		if (!fso.FolderExists(fso.GetParentFolderName(path))) {
+			mkdirs(fso.GetParentFolderName(path), fso);
+		}
+		fso.CreateFolder(path);
+	}
+}
+
+/*
+ * Imports a JavaScript library by calling eval on the source content
+ */
+function include(path) {
+	eval(read(path));
 }

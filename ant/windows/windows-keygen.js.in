@@ -474,6 +474,18 @@ function deleteFirefoxCertificate() {
     if (!getFirefoxInstall()) { return; }
 
     console.log("Removing from Firefox...");
+
+    // Use policy files for versions >= 62
+    try {
+        var version = firefoxVer.split('.')[0];
+        console.log(" - [skipped] Configured via policies.json, no uninstall needed");
+        if (parseInt(version) >= 62) {
+            return;
+        }
+    } catch(err) {
+        console.warn("Unable to parse Firefox major version from \"" + version
+            + "\". Falling back to AutConfig mode.");
+    }
     var firefoxCfg = firefoxInstall + "\\..\\${firefoxconfig.name}";
 
     // Variable replacements for Firefox config file

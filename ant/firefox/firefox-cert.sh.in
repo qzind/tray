@@ -94,13 +94,6 @@ else
     echo -e "${bash.success} Firefox $version found at $ffdir"
 fi
 
-# Use policy file
-if [ -n "$policy" ]; then
-	"$locationdir/${jsonwriter.name}" "$policypath" "$policy"
-	echo -e "\n[Finished ${firefoxcert.name}]\n"
-	exit 0
-fi
-
 # Handle CN=${ssl.cn} override
 cname="${ssl.cn}"
 if [ -n "$2" ]; then
@@ -116,6 +109,12 @@ configpath=$(echo "${firefoxconfig.install}" | sed -e "s|\!install|$installdir|g
 # Uninstall mode
 #
 if [ "$1" == "uninstall" ]; then
+    # Newer Firefox versions don't use AutoConfig
+    if [ -n "$policy" ]; then
+        echo -e "${bash.skipped} Configured via policies.json, no uninstall needed"
+        exit 0
+    fi
+
     echo -e "\nSearching for ${project.name} AutoConfig..."
     if [ -f "$bindir/${firefoxconfig.name}" ]; then
         echo -e "${bash.success} Check Firefox config exists"
@@ -148,6 +147,14 @@ fi
 #
 # Install mode (default)
 #
+
+# Use policy file
+if [ -n "$policy" ]; then
+	"$locationdir/${jsonwriter.name}" "$policypath" "$policy"
+	echo -e "${bash.success} Installed $policypath"
+	exit 0
+fi
+
 echo -e "\nSearching for Firefox AutoConfig conflicts..."
 
 # Iterate over each preference file looking for conflicts

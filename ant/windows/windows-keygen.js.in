@@ -558,8 +558,8 @@ function installFirefoxPolicy() {
 
     write(policyPath, after);
 
-    console.log("\r\nDEBUG BEFORE:\r\n" + before);
-    console.log("\r\nDEBUG AFTER:\r\n" + after);
+    console.log("\r\npolicy.json (before):\r\n" + before);
+    console.log("\r\npolicy.json (after):\r\n" + after);
 }
 
 /*

@@ -73,7 +73,7 @@ else
 
 	# Use policies.json deployment (Firefox 64+)
 	if [ -n "$ffdir" ]; then
-        version=$(HOME=/tmp $ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+        version=$(HOME=/tmp XAUTHORITY=/tmp $ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
         if [ "$version" -ge "64" ]; then
             policy='' # TODO
             policypath="$ffdir/distribution/policies.json"

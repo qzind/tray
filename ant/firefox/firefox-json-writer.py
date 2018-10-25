@@ -49,7 +49,7 @@ def merge_json(base, append):
         elif overwrite:
             # only forces overwrite if no deeper objects exist first
             base[key] = val
-        elif type(base_val) is list:
+        elif type(base_val) is list and type(val) is list:
             # merge list if not overwritten
             base[key] = base_val + val
 

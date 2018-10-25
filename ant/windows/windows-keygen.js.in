@@ -63,7 +63,7 @@ String.prototype.replaceAll = function(search, replacement) {
 };
 
 Array.isArray = function(obj) {
-    return obj.constructor.toString().indexOf('Array') !== -1;
+    return Object.prototype.toString.call(obj) === '[object Array]';
 };
 
 if (typeof console === 'undefined') {
@@ -567,22 +567,32 @@ function installFirefoxPolicy() {
  * See also firefox-json-writer.py: merge_json
  */
 function mergeJSON(base, append, overwrite) {
-    for (var key in append) {
-        var val = append[key];
-        var base_val = base[key];
-        if (base_val === undefined) {
-            base[key] = val;
-        } else if (typeof base_val == 'object' && typeof val == 'object') {
-            mergeJSON(base_val, val, overwrite);
-        } else if(overwrite) {
-            // only forces overwrite if no deeper objects exist first
-            base[key] = val;
-        } else if(Array.isArray(base_val)) {
-            // merge list if not overwritten
-            base[key].push(val);
-			key++;
+    if (!append) { return; }
+
+    for(var key in append) {
+        if (append.hasOwnProperty(key)) {
+            var val = append[key];
+            var baseVal = base[key];
+
+            if (baseVal === undefined) {
+                base[key] = val;
+            } else if ((val && typeof val == 'object') && (baseVal && typeof baseVal == 'object')) {
+                if (Array.isArray(baseVal) && Array.isArray(val)) {
+                    if (overwrite) {
+                        base[key] = val;
+                    } else {
+                        base[key] = base[key].concat(val);
+                    }
+                } else {
+                    mergeJSON(baseVal, val, overwrite);
+                }
+            } else if (overwrite) {
+                base[key] = val;
+            }
         }
     }
+
+    return base;
 }
 
 /*

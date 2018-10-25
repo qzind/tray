@@ -52,6 +52,15 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	locationdir=$(cd "$(dirname "$0")"; pwd)
 	get_ffdir
 
+	# Use policies.json deployment (Firefox 63+)
+	if [ -n "$ffdir" ]; then
+        version=$(HOME=/tmp "$ffdir/Contents/MacOS/firefox" --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+        if [ "$version" -ge "63" ]; then
+            policy='{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
+            policypath="$ffdir/Contents/Resources/distribution/policies.json"
+        fi
+    fi
+
 	bindir="$ffdir/Contents/Resources/"
 	prefdir="$ffdir/Contents/Resources/defaults/pref"
 	installdir="${apple.installdir}"
@@ -61,6 +70,15 @@ else
 	location=$(readlink -f "$0")
 	locationdir=$(dirname "$location")
 	get_ffdir
+
+	# Use policies.json deployment (Firefox 64+)
+	if [ -n "$ffdir" ]; then
+        version=$(HOME=/tmp XAUTHORITY=/tmp $ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+        if [ "$version" -ge "64" ]; then
+            policy='' # TODO
+            policypath="$ffdir/distribution/policies.json"
+        fi
+    fi
 
 	bindir="$ffdir"
 	prefdir="$ffdir/defaults/pref"
@@ -73,7 +91,7 @@ if [ -z "$ffdir" ] || [ "$ffdir" = "/" ]; then
 	echo -e "${bash.skipped} Firefox not found"
 	exit 0
 else
-    echo -e "${bash.success} $ffdir"
+    echo -e "${bash.success} Firefox $version found at $ffdir"
 fi
 
 # Handle CN=${ssl.cn} override
@@ -91,6 +109,12 @@ configpath=$(echo "${firefoxconfig.install}" | sed -e "s|\!install|$installdir|g
 # Uninstall mode
 #
 if [ "$1" == "uninstall" ]; then
+    # Newer Firefox versions don't use AutoConfig
+    if [ -n "$policy" ]; then
+        echo -e "${bash.skipped} Configured via policies.json, no uninstall needed"
+        exit 0
+    fi
+
     echo -e "\nSearching for ${project.name} AutoConfig..."
     if [ -f "$bindir/${firefoxconfig.name}" ]; then
         echo -e "${bash.success} Check Firefox config exists"
@@ -123,6 +147,14 @@ fi
 #
 # Install mode (default)
 #
+
+# Use policy file
+if [ -n "$policy" ]; then
+	"$locationdir/${jsonwriter.name}" "$policypath" "$policy"
+	echo -e "${bash.success} Installed $policypath"
+	exit 0
+fi
+
 echo -e "\nSearching for Firefox AutoConfig conflicts..."
 
 # Iterate over each preference file looking for conflicts

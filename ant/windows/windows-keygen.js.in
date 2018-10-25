@@ -62,6 +62,10 @@ String.prototype.replaceAll = function(search, replacement) {
     return target.replace(new RegExp(search, 'g'), replacement);
 };
 
+Array.isArray = function(obj) {
+    return obj.constructor.toString().indexOf('Array') !== -1;
+};
+
 if (typeof console === 'undefined') {
     var console = {
         log: function(msg) { WScript.Echo(msg); },
@@ -541,28 +545,44 @@ function installFirefoxPolicy() {
 
     var policyPath = firefoxInstall + "\\..\\distribution\\policies.json";
     var policyJSON = read(policyPath);
-    var policy = JSON.parse(policyJSON || "{}");
+    try {
+        policy = JSON.parse(policyJSON || "{}");
+    } catch(err) {
+        policy = JSON.parse("{}");
+    }
+    var merge = JSON.parse('{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }');
 
     var before = JSON.stringify(policy, null, 2);
-    var after = before;
+    mergeJSON(policy, merge, false);
+    var after = JSON.stringify(policy, null, 2);
 
-    if (policy.policies === undefined) {
-    	policy.policies = {};
-    }
-    if (policy.policies.Certificates === undefined) {
-    	policy.policies.Certificates = {};
-    }
-    if (policy.policies.Certificates.ImportEnterpriseRoots === undefined) {
-    	policy.policies.Certificates.ImportEnterpriseRoots = true;
-    	console.log("- [success] ImportEnterpriseRoots is missing, adding.");
-    	after = JSON.stringify(policy, null, 2);
-    	write(policyPath, after);
-    } else {
-    	console.warn("- [skipped] ImportEnterpriseRoots exists, skipping.");
-    }
+    write(policyPath, after);
 
     console.log("\r\nDEBUG BEFORE:\r\n" + before);
     console.log("\r\nDEBUG AFTER:\r\n" + after);
+}
+
+/*
+ * Writes values from append to base, deep copying if necessary
+ * See also firefox-json-writer.py: merge_json
+ */
+function mergeJSON(base, append, overwrite) {
+    for (var key in append) {
+        var val = append[key];
+        var base_val = base[key];
+        if (base_val === undefined) {
+            base[key] = val;
+        } else if (typeof base_val == 'object' && typeof val == 'object') {
+            mergeJSON(base_val, val, overwrite);
+        } else if(overwrite) {
+            // only forces overwrite if no deeper objects exist first
+            base[key] = val;
+        } else if(Array.isArray(base_val)) {
+            // merge list if not overwritten
+            base[key].push(val);
+			key++;
+        }
+    }
 }
 
 /*

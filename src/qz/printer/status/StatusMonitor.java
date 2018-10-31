@@ -6,6 +6,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.eclipse.jetty.util.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
 
 import java.util.*;
@@ -68,6 +69,8 @@ public class StatusMonitor {
     }
 
     public synchronized static boolean startListening(SocketConnection connection, JSONArray printerNames) {
+        if (SystemUtilities.isMac()) CupsUtils.convertPrinterNames(printerNames);
+
         try {
             for(int i = 0; i < printerNames.length(); i++) {
                 clientPrinterConnections.add(printerNames.getString(i), connection);

@@ -196,8 +196,8 @@ public class ShellUtilities {
                             String[] desc = prop.split(lookFor);
                             if (desc.length > 0) {
                                 // cache the description so we can map it to the actual printer name
-                                descMap.put(entry.getKey(), desc[desc.length - 1].trim());
-                                log.info(entry.getKey() + ": " + desc[desc.length - 1].trim());
+                                descMap.put(desc[desc.length - 1].trim(), entry.getKey());
+                                log.info(desc[desc.length - 1].trim() + ": " + entry.getKey());
                             }
                         }
                     }

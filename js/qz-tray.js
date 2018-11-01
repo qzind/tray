@@ -1159,14 +1159,15 @@ var qz = (function() {
              * Any responses from the device will be sent to serial callback functions.
              *
              * @param {string} port An open port to send data over.
-             * @param {string} data The data to send to the serial device.
+             * @param {Object} data The object containing data and metadata to send to the serial device.
+             *  @param {string} [data.type='PLAIN'] Valid values <code>[PLAIN | FILE]</code>
+             *  @param {string} data.data The data to send to the serial device.
              * @param {Object} [properties] Properties of data being sent over the serial port.
              *  @param {string} [properties.baudRate=9600]
              *  @param {string} [properties.dataBits=8]
              *  @param {string} [properties.stopBits=1]
              *  @param {string} [properties.parity='NONE'] Valid values <code>[NONE| EVEN | ODD | MARK | SPACE]</code>
              *  @param {string} [properties.flowControl='NONE'] Valid values <code>[NONE | XONXOFF_OUT | XONXOFF_IN | RTSCTS_OUT | RTSCTS_IN]</code>
-             *  @param {string} [properties.type='PLAIN'] Valid values <code>[PLAIN | FILE]</code>
              *
              * @returns {Promise<null|Error>}
              *

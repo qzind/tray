@@ -1655,13 +1655,16 @@
     function sendSerialData() {
         var properties = {
             baudRate: $("#serialBaud").val(),
-            type: $("input[name='serialType']:checked").val(),
             dataBits: $("#serialData").val(),
             stopBits: $("#serialStop").val(),
             parity: $("#serialParity").val(),
             flowControl: $("#serialFlow").val()
         };
-        qz.serial.sendData($("#serialPort").val(), $("#serialCmd").val(), properties).catch(displayError);
+        var serialData = {
+            type: $("input[name='serialType']:checked").val(),
+            data: $("#serialCmd").val()
+        };
+        qz.serial.sendData($("#serialPort").val(), serialData, properties).catch(displayError);
     }
 
     function closeSerialPort() {

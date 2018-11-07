@@ -22,9 +22,9 @@ fallback=$?
 
 # Fallback on Internet Plug-Ins version if needed
 if [ $fallback -eq 0 ]; then
-	${apple.jvmcmd} java ${launch.opts} -Xdock:name="${project.name}" -Xdock:icon="$iconpath" -jar "$jarpath"
+	${apple.jvmcmd} java ${launch.opts} -Xdock:name="${project.name}" -Xdock:icon="$iconpath" -jar -Dapple.awt.UIElement="true" "$jarpath"
 else
-	"${apple.jvmfallback}/java" ${launch.opts} -Xdock:name="${project.name}" -Xdock:icon="$iconpath" -jar "$jarpath"
+	"${apple.jvmfallback}/java" ${launch.opts} -Xdock:name="${project.name}" -Xdock:icon="$iconpath" -jar -Dapple.awt.UIElement="true" "$jarpath"
 fi
 
 exit $?

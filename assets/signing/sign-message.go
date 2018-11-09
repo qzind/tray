@@ -26,16 +26,16 @@
 package main
 
 import (
-    "fmt"
-    "crypto/rsa"
-    "crypto/sha1"
-    "crypto/rand"
-    "crypto/x509"
-    "crypto"
-    "encoding/base64"
-    "encoding/pem"
-    "io/ioutil"
-    "net/http"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha1"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 )
 
 var privateKey = "C:\\path\\to\\private-key-updated.pem"
@@ -43,57 +43,57 @@ var password = "S3cur3P@ssw0rd"
 var listenPort = ":8080"
 
 func main() {
-    http.HandleFunc("/", handler)
-    http.ListenAndServe(listenPort, nil)
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(listenPort, nil)
 }
 
-func handler(w http.ResponseWriter, r * http.Request) {
-    w.Header().Set("Access-Control-Allow-Origin", "*")
-    w.Header().Add("Content-Type", "text/plain")
+func handler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Content-Type", "text/plain")
 
-    rsaPrivateKey, err: = decodeKey(privateKey)
+	rsaPrivateKey, err := decodeKey(privateKey)
 
-    if err != nil {
-        displayError(w, "Error reading key", err);
-        return
-    }
+	if err != nil {
+		displayError(w, "Error reading key", err)
+		return
+	}
 
-    data: = r.URL.Query().Get("request")
+	data := r.URL.Query().Get("request")
 
-    if len(data) < 1 {
-        displayError(w, "Request cannot be blank", err);
-        return
-    }
+	if len(data) < 1 {
+		displayError(w, "Request cannot be blank", err)
+		return
+	}
 
-    hash: = sha1.Sum([] byte(data))
-    rng: = rand.Reader
-    signature, err: = rsa.SignPKCS1v15(rng, rsaPrivateKey, crypto.SHA1, hash[: ])
-    if err != nil {
-        displayError(w, "Error from signing: %s\n", err);
-        return
-    }
-    fmt.Fprintf(w, base64.StdEncoding.EncodeToString(signature))
+	hash := sha1.Sum([]byte(data))
+	rng := rand.Reader
+	signature, err := rsa.SignPKCS1v15(rng, rsaPrivateKey, crypto.SHA1, hash[:])
+	if err != nil {
+		displayError(w, "Error from signing: %s\n", err)
+		return
+	}
+	fmt.Fprintf(w, base64.StdEncoding.EncodeToString(signature))
 }
 
 func displayError(w http.ResponseWriter, msg string, err error) {
-    w.WriteHeader(http.StatusInternalServerError)
-    fmt.Fprintf(w, "500 - Internal Server Error\n\n" + msg + "\n\nDetails:\n", err)
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprintf(w, "500 - Internal Server Error\n\n"+msg+"\n\nDetails:\n", err)
 }
 
-func decodeKey(path string)( * rsa.PrivateKey, error) {
-    b, err: = ioutil.ReadFile(path)
-    if err != nil {
-        return nil, err
-    }
+func decodeKey(path string) (*rsa.PrivateKey, error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
 
-    block, _: = pem.Decode(b)
-    if x509.IsEncryptedPEMBlock(block) {
-        der, err: = x509.DecryptPEMBlock(block, [] byte(password))
-        if err != nil {
-            return nil, err
-        }
-        return x509.ParsePKCS1PrivateKey(der)
-    }
+	block, _ := pem.Decode(b)
+	if x509.IsEncryptedPEMBlock(block) {
+		der, err := x509.DecryptPEMBlock(block, []byte(password))
+		if err != nil {
+			return nil, err
+		}
+		return x509.ParsePKCS1PrivateKey(der)
+	}
 
-    return x509.ParsePKCS1PrivateKey(block.Bytes)
+	return x509.ParsePKCS1PrivateKey(block.Bytes)
 }

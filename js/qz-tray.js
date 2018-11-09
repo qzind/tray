@@ -1680,9 +1680,8 @@ var qz = (function() {
              * @memberof qz.file
              */
             list: function(path, params) {
-                params = params || {};
-                params.path = path;
-                return _qz.websocket.dataPromise('file.list', params);
+                var param = _qz.tools.extend({ path: path }, params);
+                return _qz.websocket.dataPromise('file.list', param);
             },
 
             /**
@@ -1698,9 +1697,8 @@ var qz = (function() {
              * @memberof qz.file
              */
             read: function(path, params) {
-                params = params || {};
-                params.path = path;
-                return _qz.websocket.dataPromise('file.read', params);
+                var param = _qz.tools.extend({ path: path }, params);
+                return _qz.websocket.dataPromise('file.read', param);
             },
 
             /**
@@ -1718,8 +1716,8 @@ var qz = (function() {
              * @memberof qz.file
              */
             write: function(path, params) {
-                params.path = path;
-                return _qz.websocket.dataPromise('file.write', params);
+                var param = _qz.tools.extend({ path: path }, params);
+                return _qz.websocket.dataPromise('file.write', param);
             },
 
             /**
@@ -1735,9 +1733,8 @@ var qz = (function() {
              * @memberof qz.file
              */
             remove: function(path, params) {
-                params = params || {};
-                params.path = path;
-                return _qz.websocket.dataPromise('file.remove', params);
+                var param = _qz.tools.extend({ path: path }, params);
+                return _qz.websocket.dataPromise('file.remove', param);
             },
 
             /**
@@ -1759,9 +1756,8 @@ var qz = (function() {
              * @memberof qz.file
              */
             startListening: function(path, params) {
-                params = params || {};
-                params.path = path;
-                return _qz.websocket.dataPromise('file.startListening', params);
+                var param = _qz.tools.extend({ path: path }, params);
+                return _qz.websocket.dataPromise('file.startListening', param);
             },
 
             /**
@@ -1776,9 +1772,8 @@ var qz = (function() {
              * @memberof qz.file
              */
             stopListening: function(path, params) {
-                params = params || {};
-                params.path = path;
-                return _qz.websocket.dataPromise('file.stopListening', params);
+                var param = _qz.tools.extend({ path: path }, params);
+                return _qz.websocket.dataPromise('file.stopListening', param);
             },
 
             /**

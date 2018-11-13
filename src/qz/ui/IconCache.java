@@ -12,6 +12,7 @@ package qz.ui;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.ColorUtilities;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -226,6 +227,19 @@ public class IconCache {
             ImageIcon imageIcon = new ImageIcon(toOpaqueImage(getIcon(id), bgColor));
             images.put(id, toBufferedImage(imageIcon.getImage(), TRANSPARENT));
             imageIcons.put(id, imageIcon);
+        }
+    }
+
+    /**
+     * Inverts the colors for a particular icon
+     * For integration with dark or light desktop themes
+     *
+     * @param i       the IconCache.Icon
+     */
+    public void invertColors(Icon i) {
+        for (String id : i.getIds()) {
+            images.put(id, ColorUtilities.white(getImage(i)));
+            imageIcons.put(id, new ImageIcon(getImage(i)));
         }
     }
 

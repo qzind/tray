@@ -120,6 +120,8 @@ public class TrayManager {
             // Configure IE intranet zone via registry to allow websockets
             WindowsDeploy.configureIntranetZone();
             WindowsDeploy.configureEdgeLoopback();
+        } else if (SystemUtilities.isMac()) {
+            MacUtilities.fixTrayIcons(iconCache);
         }
 
         // The allow/block dialog

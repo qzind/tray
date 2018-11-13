@@ -12,6 +12,7 @@ package qz.utils;
 
 import com.apple.OSXAdapter;
 import qz.common.TrayManager;
+import qz.ui.IconCache;
 
 import java.awt.*;
 
@@ -58,6 +59,30 @@ public class MacUtilities {
         }
         catch(Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * @return true if <code>defaults read -g AppleInterfaceStyle</code> has an exit status of <code>0</code> (i.e. _not_ returning "key not found").
+     */
+    public static boolean isDarkMode() {
+        return ShellUtilities.execute(new String[] { "defaults", "read", "-g", "AppleInterfaceStyle" });
+    }
+
+    /**
+     * Replaces the cached tray icons with white versions if necessary
+     * to accommodate macOS 10.14+ dark mode support
+     *
+     * @param iconCache The icons which have been cached
+     */
+    public static void fixTrayIcons(IconCache iconCache) {
+        // Execute some shell commands to determine specific Linux OS
+        if (SystemUtilities.isMac()) {
+            for(IconCache.Icon i : IconCache.getTypes()) {
+                if (i.isTrayIcon() && ColorUtilities.isBlack(iconCache.getImage(i)) && isDarkMode() ) {
+                    iconCache.invertColors(i);
+                }
+            }
         }
     }
 

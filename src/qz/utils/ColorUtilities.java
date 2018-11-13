@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 
 /**
  * Utilities for working with colors.
@@ -62,5 +63,41 @@ public class ColorUtilities {
         }
 
         return new Color(red, green, blue);
+    }
+
+    /**
+     * Determines if the provided buffered image is black
+     * @param bi BufferedImage to check for all black pixels
+     * @return true if all black, false otherwise
+     */
+    public static boolean isBlack(BufferedImage bi) {
+        for (int y = 0; y < bi.getHeight(); y++) {
+            for (int x = 0; x < bi.getWidth(); x++) {
+                if ((bi.getRGB(x, y) & 0x00FFFFFF) != 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Creates all pixels in an image to white
+     * @param bi Source BufferedImage
+     * @return New BufferedImage which only contains white pixels
+     */
+    public static BufferedImage white(BufferedImage bi) {
+        BufferedImage white = new BufferedImage(bi.getWidth(), bi.getWidth(), BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < bi.getHeight(); y++) {
+            for (int x = 0; x < bi.getWidth(); x++) {
+                int pixel = bi.getRGB(x, y);
+                int a = (pixel>>24)&0xFF;
+                int r = (pixel>>16)|0xFF;
+                int g = (pixel>>8)|0xFF;
+                int b = (pixel>>0)|0xFF;
+                white.setRGB(x, y,  a << 24 | r  << 16 | g << 8 | b << 0);
+            }
+        }
+        return white;
     }
 }

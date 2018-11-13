@@ -76,10 +76,10 @@ public class MacUtilities {
      * @param iconCache The icons which have been cached
      */
     public static void fixTrayIcons(IconCache iconCache) {
-        // Execute some shell commands to determine specific Linux OS
+        boolean darkMode = isDarkMode();
         if (SystemUtilities.isMac()) {
             for(IconCache.Icon i : IconCache.getTypes()) {
-                if (i.isTrayIcon() && ColorUtilities.isBlack(iconCache.getImage(i)) && isDarkMode() ) {
+                if (i.isTrayIcon() && darkMode && ColorUtilities.isBlack(iconCache.getImage(i))) {
                     iconCache.invertColors(i);
                 }
             }

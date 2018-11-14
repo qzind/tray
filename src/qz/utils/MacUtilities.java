@@ -63,7 +63,7 @@ public class MacUtilities {
     }
 
     /**
-     * @return true if <code>defaults read -g AppleInterfaceStyle</code> has an exit status of <code>0</code> (i.e. _not_ returning "key not found").
+     * @return Runs a shell command to determine if "Dark" desktop theme is enabled
      */
     public static boolean isDarkMode() {
         return !ShellUtilities.execute(new String[] { "defaults", "read", "-g", "AppleInterfaceStyle" }, new String[] { "Dark" }).isEmpty();

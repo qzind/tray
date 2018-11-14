@@ -88,18 +88,17 @@ public class ColorUtilities {
      * @return New inverted BufferedImage
      */
     public static BufferedImage invert(BufferedImage bi) {
-        BufferedImage white = new BufferedImage(bi.getWidth(), bi.getWidth(), BufferedImage.TYPE_INT_ARGB);
+        BufferedImage inverted = new BufferedImage(bi.getWidth(), bi.getWidth(), BufferedImage.TYPE_INT_ARGB);
         for (int y = 0; y < bi.getHeight(); y++) {
             for (int x = 0; x < bi.getWidth(); x++) {
-                //invert.setRGB(x, y, 0xFFFFFF - invert.getRGB(x, y));
                 int pixel = bi.getRGB(x, y);
                 int a = (pixel>>24)&0xFF;
                 int r = 0xFF ^ ((pixel>>16)&0xFF);
                 int g = 0xFF ^ ((pixel>>8)&0xFF);
                 int b = 0xFF ^ ((pixel>>0)&0xFF);
-                white.setRGB(x, y,  a << 24 | r  << 16 | g << 8 | b << 0);
+                inverted.setRGB(x, y,  a << 24 | r  << 16 | g << 8 | b << 0);
             }
         }
-        return white;
+        return inverted;
     }
 }

@@ -21,7 +21,6 @@ package org.jdesktop.swinghelper.tray;
 
 import qz.utils.MacUtilities;
 import qz.utils.SystemUtilities;
-import sun.awt.CGraphicsDevice;
 
 import javax.swing.*;
 import javax.swing.event.PopupMenuListener;

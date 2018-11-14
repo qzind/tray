@@ -19,6 +19,9 @@
 
 package org.jdesktop.swinghelper.tray;
 
+import qz.utils.SystemUtilities;
+import sun.awt.CGraphicsDevice;
+
 import javax.swing.*;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.event.PopupMenuEvent;
@@ -137,4 +140,18 @@ public class JXTrayIcon extends TrayIcon {
         m.add(exitItem);
         return m;
     }
-} 
+
+    @Override
+    public Dimension getSize() {
+        Dimension original = super.getSize();
+        // Handle edge-case for retina display
+        if (SystemUtilities.isMac()) {
+            GraphicsDevice defaultScreenDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+            if (defaultScreenDevice instanceof CGraphicsDevice) {
+                CGraphicsDevice device = (CGraphicsDevice)defaultScreenDevice;
+                return new Dimension(original.width * device.getScaleFactor(), original.height * device.getScaleFactor());
+            }
+        }
+        return original;
+    }
+}

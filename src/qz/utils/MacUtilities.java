@@ -63,7 +63,8 @@ public class MacUtilities {
     }
 
     /**
-     * @return Runs a shell command to determine if "Dark" desktop theme is enabled
+     * Runs a shell command to determine if "Dark" desktop theme is enabled
+     * @return true if enabled, false if not
      */
     public static boolean isDarkMode() {
         return !ShellUtilities.execute(new String[] { "defaults", "read", "-g", "AppleInterfaceStyle" }, new String[] { "Dark" }).isEmpty();

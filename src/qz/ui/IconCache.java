@@ -234,7 +234,7 @@ public class IconCache {
      * Inverts the colors for a particular icon
      * For integration with dark or light desktop themes
      *
-     * @param i       the IconCache.Icon
+     * @param i the IconCache.Icon
      */
     public void invertColors(Icon i) {
         for (String id : i.getIds()) {

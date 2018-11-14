@@ -19,6 +19,9 @@
 
 package org.jdesktop.swinghelper.tray;
 
+import qz.utils.MacUtilities;
+import qz.utils.SystemUtilities;
+
 import javax.swing.*;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.event.PopupMenuEvent;
@@ -137,4 +140,15 @@ public class JXTrayIcon extends TrayIcon {
         m.add(exitItem);
         return m;
     }
-} 
+
+    @Override
+    public Dimension getSize() {
+        Dimension original = super.getSize();
+        // Handle edge-case for retina display
+        if (SystemUtilities.isMac()) {
+            int scale = MacUtilities.getScaleFactor();
+            return new Dimension(original.width * scale, original.height * scale);
+        }
+        return original;
+    }
+}

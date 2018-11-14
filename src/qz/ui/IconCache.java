@@ -12,6 +12,7 @@ package qz.ui;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.ColorUtilities;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -36,9 +37,9 @@ public class IconCache {
      */
     public enum Icon {
         // Tray icons
-        DEFAULT_ICON("qz-default.png", "qz-default-20.png", "qz-default-24.png", "qz-default-32.png"),
-        WARNING_ICON("qz-warning.png", "qz-warning-20.png", "qz-warning-24.png", "qz-warning-32.png"),
-        DANGER_ICON("qz-danger.png", "qz-danger-20.png", "qz-danger-24.png", "qz-danger-32.png"),
+        DEFAULT_ICON("qz-default.png", "qz-default-20.png", "qz-default-24.png", "qz-default-32.png", "qz-default-40.png"),
+        WARNING_ICON("qz-warning.png", "qz-warning-20.png", "qz-warning-24.png", "qz-warning-32.png", "qz-warning-40.png"),
+        DANGER_ICON("qz-danger.png", "qz-danger-20.png", "qz-danger-24.png", "qz-danger-32.png", "qz-danger-40.png"),
 
         // Menu Item icons
         EXIT_ICON("qz-exit.png"),
@@ -226,6 +227,19 @@ public class IconCache {
             ImageIcon imageIcon = new ImageIcon(toOpaqueImage(getIcon(id), bgColor));
             images.put(id, toBufferedImage(imageIcon.getImage(), TRANSPARENT));
             imageIcons.put(id, imageIcon);
+        }
+    }
+
+    /**
+     * Inverts the colors for a particular icon
+     * For integration with dark or light desktop themes
+     *
+     * @param i the IconCache.Icon
+     */
+    public void invertColors(Icon i) {
+        for (String id : i.getIds()) {
+            images.put(id, ColorUtilities.invert(images.get(id)));
+            imageIcons.put(id, new ImageIcon(images.get(id)));
         }
     }
 

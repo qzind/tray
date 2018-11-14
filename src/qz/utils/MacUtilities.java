@@ -11,9 +11,13 @@
 package qz.utils;
 
 import com.apple.OSXAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import qz.common.TrayManager;
+import qz.ui.IconCache;
 
 import java.awt.*;
+import java.lang.reflect.Method;
 
 /**
  * Utility class for MacOS specific functions.
@@ -22,6 +26,7 @@ import java.awt.*;
  */
 public class MacUtilities {
 
+    private static final Logger log = LoggerFactory.getLogger(IconCache.class);
     private static Dialog aboutDialog;
     private static TrayManager trayManager;
 
@@ -59,6 +64,46 @@ public class MacUtilities {
         catch(Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Runs a shell command to determine if "Dark" desktop theme is enabled
+     * @return true if enabled, false if not
+     */
+    public static boolean isDarkMode() {
+        return !ShellUtilities.execute(new String[] { "defaults", "read", "-g", "AppleInterfaceStyle" }, new String[] { "Dark" }).isEmpty();
+    }
+
+    /**
+     * Replaces the cached tray icons with inverted versions if necessary
+     * to accommodate macOS 10.14+ dark mode support
+     *
+     * @param iconCache The icons which have been cached
+     */
+    public static void fixTrayIcons(IconCache iconCache) {
+        boolean darkMode = isDarkMode();
+        if (SystemUtilities.isMac()) {
+            for(IconCache.Icon i : IconCache.getTypes()) {
+                if (i.isTrayIcon() && darkMode && ColorUtilities.isBlack(iconCache.getImage(i))) {
+                    iconCache.invertColors(i);
+                }
+            }
+        }
+    }
+
+    public static int getScaleFactor() {
+        try {
+            // Use reflection to avoid compile errors on non-macOS environments
+            Object screen = Class.forName("sun.awt.CGraphicsDevice").cast(GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice());
+            Method getScaleFactor = screen.getClass().getDeclaredMethod("getScaleFactor", null);
+            Object obj = getScaleFactor.invoke(screen, null);
+            if (obj instanceof Integer) {
+                return ((Integer)obj).intValue();
+            }
+        } catch (Exception e) {
+            log.warn("Unable to determine screen scale factor.  Defaulting to 1.", e);
+        }
+        return 1;
     }
 
 }

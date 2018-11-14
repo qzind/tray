@@ -238,8 +238,8 @@ public class IconCache {
      */
     public void invertColors(Icon i) {
         for (String id : i.getIds()) {
-            images.put(id, ColorUtilities.white(getImage(i)));
-            imageIcons.put(id, new ImageIcon(getImage(i)));
+            images.put(id, ColorUtilities.invert(images.get(id)));
+            imageIcons.put(id, new ImageIcon(images.get(id)));
         }
     }
 

@@ -66,11 +66,11 @@ public class MacUtilities {
      * @return true if <code>defaults read -g AppleInterfaceStyle</code> has an exit status of <code>0</code> (i.e. _not_ returning "key not found").
      */
     public static boolean isDarkMode() {
-        return ShellUtilities.execute(new String[] { "defaults", "read", "-g", "AppleInterfaceStyle" });
+        return !ShellUtilities.execute(new String[] { "defaults", "read", "-g", "AppleInterfaceStyle" }, new String[] { "Dark" }).isEmpty();
     }
 
     /**
-     * Replaces the cached tray icons with white versions if necessary
+     * Replaces the cached tray icons with inverted versions if necessary
      * to accommodate macOS 10.14+ dark mode support
      *
      * @param iconCache The icons which have been cached

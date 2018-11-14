@@ -73,7 +73,8 @@ public class ColorUtilities {
     public static boolean isBlack(BufferedImage bi) {
         for (int y = 0; y < bi.getHeight(); y++) {
             for (int x = 0; x < bi.getWidth(); x++) {
-                if ((bi.getRGB(x, y) & 0x00FFFFFF) != 0) {
+                int pixel = bi.getRGB(x, y);
+                if (pixel>>24 != 0x00 && (pixel & 0x00FFFFFF) != 0) {
                     return false;
                 }
             }
@@ -82,19 +83,20 @@ public class ColorUtilities {
     }
 
     /**
-     * Creates all pixels in an image to white
+     * Inverts the color of all pixels in an image
      * @param bi Source BufferedImage
-     * @return New BufferedImage which only contains white pixels
+     * @return New inverted BufferedImage
      */
-    public static BufferedImage white(BufferedImage bi) {
+    public static BufferedImage invert(BufferedImage bi) {
         BufferedImage white = new BufferedImage(bi.getWidth(), bi.getWidth(), BufferedImage.TYPE_INT_ARGB);
         for (int y = 0; y < bi.getHeight(); y++) {
             for (int x = 0; x < bi.getWidth(); x++) {
+                //invert.setRGB(x, y, 0xFFFFFF - invert.getRGB(x, y));
                 int pixel = bi.getRGB(x, y);
                 int a = (pixel>>24)&0xFF;
-                int r = (pixel>>16)|0xFF;
-                int g = (pixel>>8)|0xFF;
-                int b = (pixel>>0)|0xFF;
+                int r = 0xFF ^ ((pixel>>16)&0xFF);
+                int g = 0xFF ^ ((pixel>>8)&0xFF);
+                int b = 0xFF ^ ((pixel>>0)&0xFF);
                 white.setRGB(x, y,  a << 24 | r  << 16 | g << 8 | b << 0);
             }
         }

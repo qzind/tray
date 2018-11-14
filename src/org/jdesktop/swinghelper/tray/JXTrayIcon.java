@@ -19,6 +19,7 @@
 
 package org.jdesktop.swinghelper.tray;
 
+import qz.utils.MacUtilities;
 import qz.utils.SystemUtilities;
 import sun.awt.CGraphicsDevice;
 
@@ -146,11 +147,8 @@ public class JXTrayIcon extends TrayIcon {
         Dimension original = super.getSize();
         // Handle edge-case for retina display
         if (SystemUtilities.isMac()) {
-            GraphicsDevice defaultScreenDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-            if (defaultScreenDevice instanceof CGraphicsDevice) {
-                CGraphicsDevice device = (CGraphicsDevice)defaultScreenDevice;
-                return new Dimension(original.width * device.getScaleFactor(), original.height * device.getScaleFactor());
-            }
+            int scale = MacUtilities.getScaleFactor();
+            return new Dimension(original.width * scale, original.height * scale);
         }
         return original;
     }

@@ -13,6 +13,7 @@ package qz.utils;
 import com.apple.OSXAdapter;
 import qz.common.TrayManager;
 import qz.ui.IconCache;
+import sun.awt.CGraphicsDevice;
 
 import java.awt.*;
 
@@ -85,6 +86,14 @@ public class MacUtilities {
                 }
             }
         }
+    }
+
+    public static int getScaleFactor() {
+        GraphicsDevice defaultScreenDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        if (defaultScreenDevice instanceof CGraphicsDevice) {
+            return ((CGraphicsDevice)defaultScreenDevice).getScaleFactor();
+        }
+        return 1;
     }
 
 }

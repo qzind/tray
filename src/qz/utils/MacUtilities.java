@@ -11,11 +11,13 @@
 package qz.utils;
 
 import com.apple.OSXAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import qz.common.TrayManager;
 import qz.ui.IconCache;
-import sun.awt.CGraphicsDevice;
 
 import java.awt.*;
+import java.lang.reflect.Method;
 
 /**
  * Utility class for MacOS specific functions.
@@ -24,6 +26,7 @@ import java.awt.*;
  */
 public class MacUtilities {
 
+    private static final Logger log = LoggerFactory.getLogger(IconCache.class);
     private static Dialog aboutDialog;
     private static TrayManager trayManager;
 
@@ -89,9 +92,16 @@ public class MacUtilities {
     }
 
     public static int getScaleFactor() {
-        GraphicsDevice defaultScreenDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        if (defaultScreenDevice instanceof CGraphicsDevice) {
-            return ((CGraphicsDevice)defaultScreenDevice).getScaleFactor();
+        try {
+            // Use reflection to avoid compile errors on non-macOS environments
+            Object screen = Class.forName("sun.awt.CGraphicsDevice").cast(GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice());
+            Method getScaleFactor = screen.getClass().getDeclaredMethod("getScaleFactor", null);
+            Object obj = getScaleFactor.invoke(screen, null);
+            if (obj instanceof Integer) {
+                return ((Integer)obj).intValue();
+            }
+        } catch (Exception e) {
+            log.warn("Unable to determine screen scale factor.  Defaulting to 1.", e);
         }
         return 1;
     }

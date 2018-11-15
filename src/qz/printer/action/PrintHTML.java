@@ -168,7 +168,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             settings.setPrintQuality(PrintQuality.HIGH);
 
             if (pxlOpts.getColorType() != null) {
-                settings.setPrintColor(pxlOpts.getColorType().getAsPrintColor());
+                settings.setPrintColor(getColor(pxlOpts));
             }
             if (pxlOpts.isDuplex()) {
                 settings.setPrintSides(PrintSides.DUPLEX);
@@ -185,7 +185,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             Paper paper;
             if (pxlOpts.getSize() != null) {
                 double convert = 1;
-                Units units = pxlOpts.getUnits().getAsUnits();
+                Units units = getUnits(pxlOpts);
                 if (units == null) {
                     convert = 10; //need to adjust from cm to mm only for DPCM sizes
                     units = Units.MM;
@@ -198,7 +198,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
             PageOrientation orient = fxPrinter.getPrinterAttributes().getDefaultPageOrientation();
             if (pxlOpts.getOrientation() != null) {
-                orient = pxlOpts.getOrientation().getAsPageOrient();
+                orient = getOrientation(pxlOpts);
             }
 
             try {
@@ -345,5 +345,38 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
         models.clear();
         legacyLabel = null;
+    }
+
+    public static Units getUnits(PrintOptions.Pixel opts) {
+        switch (opts.getUnits()) {
+            case INCH:
+                return Units.INCH;
+            case MM:
+                return Units.MM;
+            default:
+                return null;
+        }
+    }
+
+    public static PageOrientation getOrientation(PrintOptions.Pixel opts) {
+        switch (opts.getOrientation()) {
+            case LANDSCAPE:
+                return PageOrientation.PORTRAIT;
+            case REVERSE_LANDSCAPE:
+                return PageOrientation.REVERSE_LANDSCAPE;
+            case REVERSE_PORTRAIT:
+                return PageOrientation.REVERSE_PORTRAIT;
+            default:
+                return PageOrientation.PORTRAIT;
+        }
+    }
+
+    public static PrintColor getColor(PrintOptions.Pixel opts) {
+        switch (opts.getColorType()) {
+            case COLOR:
+                return PrintColor.COLOR;
+            default:
+                return PrintColor.MONOCHROME;
+        }
     }
 }

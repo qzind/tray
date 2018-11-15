@@ -361,7 +361,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
     public static PageOrientation getOrientation(PrintOptions.Pixel opts) {
         switch (opts.getOrientation()) {
             case LANDSCAPE:
-                return PageOrientation.PORTRAIT;
+                return PageOrientation.LANDSCAPE;
             case REVERSE_LANDSCAPE:
                 return PageOrientation.REVERSE_LANDSCAPE;
             case REVERSE_PORTRAIT:

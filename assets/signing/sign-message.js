@@ -31,10 +31,12 @@
  *     1. Include jsrsasign 8.0.4 into your web page
  *        <script src="https://cdn.rawgit.com/kjur/jsrsasign/c057d3447b194fa0a3fdcea110579454898e093d/jsrsasign-all-min.js"></script>
  *
- *     2. Include this script into your web page
+ *     2. Update the privateKey below with contents from private-key.pem
+ *
+ *     3. Include this script into your web page
  *        <script src="path/to/sign-message.js"></script>
  *
- *     3. Remove any other references to setSignaturePromise
+ *     4. Remove or comment out any other references to "setSignaturePromise"
  */
 var privateKey = "-----BEGIN RSA PRIVATE KEY-----\n" +
     "MIIEpQIBAAKCAQEAxePDxH2+BbHsiQNEpx67TYtnpBKpFXDeSX7LxTBQ1E9XNex7\n" +

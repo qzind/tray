@@ -67,6 +67,7 @@
         <echo>Building Jar for Socket use</echo>
         <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.jar}" duplicate="preserve">
             <fileset dir="${build.project.dir}"/>
+            <zipgroupfileset dir="${sign.lib.dir}" includes="**/*.jar"/>
             <zipgroupfileset dir="${lib.dir}" includes="**/*.jar" excludes="**/jfxrt.jar"/>
             <manifest>
                 <attribute name="Application-Name" value="${manifest.application.name}"/>
@@ -285,7 +286,7 @@
     #                     Apple Installer                          #
     ################################################################
     -->
-    <target name="pkgbuild" depends="distribute,prepackage">
+    <target name="pkgbuild" depends="distribute,prepackage,presign">
         <echo>Creating installer using pkgbuild</echo>
 
         <property file="ant/apple/apple.properties"/>
@@ -357,6 +358,65 @@
         <delete dir="${dist.dir}/${apple.resources}" />
         <delete dir="${dist.dir}/${apple.macos}" />
         <delete file="${dist.dir}/${apple.plist.out}" />
+    </target>
+
+    <target name="presign" depends="init">
+        <property file="ant/apple/apple.properties"/>
+
+        <antcall target="presign-libs">
+            <param name="signing.jarname" value="communication/jna-*.jar"/>
+            <param name="signing.excluded" value="communication/jna-platform-*.jar"/>
+            <param name="signing.filetype" value="*.jnilib"/>
+        </antcall>
+        <antcall target="presign-libs">
+            <param name="signing.jarname" value="communication/jssc-*.jar"/>
+            <param name="signing.filetype" value="*.jnilib"/>
+        </antcall>
+        <antcall target="presign-libs">
+            <param name="signing.jarname" value="communication/hid4java-*.jar"/>
+            <param name="signing.filetype" value="*.dylib"/>
+        </antcall>
+        <antcall target="presign-libs">
+            <param name="signing.jarname" value="communication/libusb4java-*-osx-x86.jar"/>
+            <param name="signing.filetype" value="*.dylib"/>
+        </antcall>
+        <antcall target="presign-libs">
+            <param name="signing.jarname" value="communication/libusb4java-*-osx-x86_64.jar"/>
+            <param name="signing.filetype" value="*.dylib"/>
+        </antcall>
+    </target>
+
+    <target name="presign-libs">
+        <path id="find.jar">
+            <fileset dir="${lib.dir}">
+                <include name="**/${signing.jarname}"/>
+                <exclude name="**/${signing.excluded}"/>
+            </fileset>
+        </path>
+
+        <unzip src="${toString:find.jar}" dest="${out.dir}/jar-signing"/>
+        <path id="find.file">
+            <fileset dir="${out.dir}/jar-signing">
+                <include name="**/${signing.filetype}"/>
+            </fileset>
+        </path>
+
+        <echo message="Signing ${toString:find.jar} using ${apple.packager.signid}"/>
+        <exec executable="codesign" failonerror="true">
+            <arg value="-s"/>
+            <arg value="${apple.packager.signid}"/>
+            <arg value="-v"/>
+            <arg value="${toString:find.file}"/>
+        </exec>
+
+        <pathconvert property="find.jar.rel">
+            <path refid="find.jar"/>
+            <globmapper from="${basedir}/*" to="*" handledirsep="true" />
+        </pathconvert>
+        <zip destfile="${sign.lib.dir}/${find.jar.rel}" basedir="${out.dir}/jar-signing" excludes="dont*.*"/>
+
+        <!--cleanup temp folder-->
+        <delete dir="${out.dir}/jar-signing"/>
     </target>
 
     <!--

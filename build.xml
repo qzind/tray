@@ -361,7 +361,7 @@
         <delete file="${dist.dir}/${apple.plist.out}" />
     </target>
 
-    <target name="presign" depends="init">
+    <target name="presign" depends="init" if="signing.tsaurl">
         <property file="ant/apple/apple.properties"/>
 
         <antcall target="presign-libs">

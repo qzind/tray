@@ -22,6 +22,7 @@ chmod +x "${apple.keygen.out}"
 
 # Add signing certificate
 security add-certificates "${apple.packager.cert}"
+security add-certificates "${apple.codesign.cert}"
 security add-certificates "${apple.intermediate.cert}"
 
 # Checks if we have an Apple code signing cert

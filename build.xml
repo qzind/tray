@@ -65,6 +65,7 @@
 
     <target name="build-jar" depends="compile-socket">
         <echo>Building Jar for Socket use</echo>
+        <mkdir dir="${sign.lib.dir}"/>
         <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.jar}" duplicate="preserve">
             <fileset dir="${build.project.dir}"/>
             <zipgroupfileset dir="${sign.lib.dir}" includes="**/*.jar"/>
@@ -401,12 +402,11 @@
             </fileset>
         </path>
 
+        <!--use xargs to loop over and codesign all files-->
         <echo message="Signing ${toString:find.jar} using ${apple.packager.signid}"/>
-        <exec executable="codesign" failonerror="true">
-            <arg value="-s"/>
-            <arg value="${apple.packager.signid}"/>
-            <arg value="-v"/>
-            <arg value="${toString:find.file}"/>
+        <exec executable="bash" failonerror="true">
+            <arg value="-c"/>
+            <arg value="echo &quot;${toString:find.file}&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>
         </exec>
 
         <pathconvert property="find.jar.rel">

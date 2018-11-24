@@ -18,6 +18,16 @@
         <!-- Please leave this value the netbeans default as a fallback. -->
         <property file="ant/private/private.properties"/>
 
+        <condition property="os.windows" value="true">
+            <os family="windows"/>
+        </condition>
+        <condition property="os.linux" value="true">
+            <os family="unix"/>
+        </condition>
+        <condition property="os.mac" value="true">
+            <os family="mac"/>
+        </condition>
+
         <echo message="Building ${project.filename} using JDK ${ant.java.version}" />
     </target>
 
@@ -68,7 +78,7 @@
         <mkdir dir="${sign.lib.dir}"/>
         <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.jar}" duplicate="preserve">
             <fileset dir="${build.project.dir}"/>
-            <zipgroupfileset dir="${sign.lib.dir}" includes="**/*.jar"/>
+            <zipgroupfileset dir="${sign.lib.dir}" includes="**/*.jar" erroronmissingdir="false"/>
             <zipgroupfileset dir="${lib.dir}" includes="**/*.jar" excludes="**/jfxrt.jar"/>
             <manifest>
                 <attribute name="Application-Name" value="${manifest.application.name}"/>
@@ -79,7 +89,7 @@
     </target>
 
 
-    <target name="sign-jar" depends="build-jar,sign-jar-self,sign-jar-tsa">
+    <target name="sign-jar" depends="codesign,build-jar,sign-jar-self,sign-jar-tsa">
         <path>
             <fileset dir="${dist.dir}" includes="**/*.jar" />
         </path>
@@ -287,7 +297,7 @@
     #                     Apple Installer                          #
     ################################################################
     -->
-    <target name="pkgbuild" depends="distribute,prepackage,presign">
+    <target name="pkgbuild" depends="distribute,prepackage">
         <echo>Creating installer using pkgbuild</echo>
 
         <property file="ant/apple/apple.properties"/>
@@ -361,33 +371,33 @@
         <delete file="${dist.dir}/${apple.plist.out}" />
     </target>
 
-    <target name="presign" depends="init" if="signing.tsaurl">
+    <target name="codesign" depends="init" if="os.mac">
         <property file="ant/apple/apple.properties"/>
 
-        <antcall target="presign-libs">
+        <antcall target="codesign-libs">
             <param name="signing.jarname" value="communication/jna-*.jar"/>
             <param name="signing.excluded" value="communication/jna-platform-*.jar"/>
             <param name="signing.filetype" value="*.jnilib"/>
         </antcall>
-        <antcall target="presign-libs">
+        <antcall target="codesign-libs">
             <param name="signing.jarname" value="communication/jssc-*.jar"/>
             <param name="signing.filetype" value="*.jnilib"/>
         </antcall>
-        <antcall target="presign-libs">
+        <antcall target="codesign-libs">
             <param name="signing.jarname" value="communication/hid4java-*.jar"/>
             <param name="signing.filetype" value="*.dylib"/>
         </antcall>
-        <antcall target="presign-libs">
+        <antcall target="codesign-libs">
             <param name="signing.jarname" value="communication/libusb4java-*-osx-x86.jar"/>
             <param name="signing.filetype" value="*.dylib"/>
         </antcall>
-        <antcall target="presign-libs">
+        <antcall target="codesign-libs">
             <param name="signing.jarname" value="communication/libusb4java-*-osx-x86_64.jar"/>
             <param name="signing.filetype" value="*.dylib"/>
         </antcall>
     </target>
 
-    <target name="presign-libs">
+    <target name="codesign-libs">
         <path id="find.jar">
             <fileset dir="${lib.dir}">
                 <include name="**/${signing.jarname}"/>

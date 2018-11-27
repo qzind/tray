@@ -79,7 +79,11 @@
         <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.jar}" duplicate="preserve">
             <fileset dir="${build.project.dir}"/>
             <zipgroupfileset dir="${sign.lib.dir}" includes="**/*.jar" erroronmissingdir="false"/>
-            <zipgroupfileset dir="${lib.dir}" includes="**/*.jar" excludes="**/jfxrt.jar"/>
+            <zipgroupfileset dir="${lib.dir}">
+                <include name="**/*.jar"/>
+                <exclude name="**/jfxrt.jar"/>
+                <exclude name="**/jssc-*.jar" if="signing.tsaurl"/>
+            </zipgroupfileset>
             <manifest>
                 <attribute name="Application-Name" value="${manifest.application.name}"/>
                 <attribute name="Main-Class" value="${manifest.main.class}"/>
@@ -382,6 +386,8 @@
         <antcall target="codesign-libs">
             <param name="signing.jarname" value="communication/jssc-*.jar"/>
             <param name="signing.filetype" value="*.jnilib"/>
+            <!-- for signing.delete to be effective, the unsigned lib(s) must be added to jar exclusion -->
+            <param name="signing.delete" value="*_ppc*.jnilib"/>
         </antcall>
         <antcall target="codesign-libs">
             <param name="signing.jarname" value="communication/hid4java-*.jar"/>
@@ -401,7 +407,7 @@
         <path id="find.jar">
             <fileset dir="${lib.dir}">
                 <include name="**/${signing.jarname}"/>
-                <exclude name="**/${signing.excluded}"/>
+                <exclude name="**/${signing.excluded}" if="signing.excluded"/>
             </fileset>
         </path>
 
@@ -411,6 +417,12 @@
                 <include name="**/${signing.filetype}"/>
             </fileset>
         </path>
+
+        <delete verbose="true">
+            <fileset dir="${out.dir}/jar-signing">
+                <include name="**/${signing.delete}" if="signing.delete"/>
+            </fileset>
+        </delete>
 
         <!--use xargs to loop over and codesign all files-->
         <echo message="Signing ${toString:find.jar} using ${apple.packager.signid}"/>

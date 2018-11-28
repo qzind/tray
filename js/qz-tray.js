@@ -501,10 +501,8 @@ var qz = (function() {
             ws: typeof WebSocket !== 'undefined' ? WebSocket : null,
 
             absolute: function(loc) {
-                if (typeof window !== 'undefined' && typeof document.createElement === 'function') {
-                    var a = document.createElement("a");
-                    a.href = loc;
-                    return a.href;
+                if (typeof window !== 'undefined' && typeof URL !== 'undefined') {
+                    return new URL(loc, window.location).href;
                 }
                 return loc;
             },

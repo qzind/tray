@@ -18,14 +18,23 @@
         <!-- Please leave this value the netbeans default as a fallback. -->
         <property file="ant/private/private.properties"/>
 
-        <condition property="os.windows" value="true">
-            <os family="windows"/>
+        <condition property="codesign.windows" value="true">
+            <and>
+                <os family="windows"/>
+                <isset property="signing.tsaurl"/>
+            </and>
         </condition>
-        <condition property="os.linux" value="true">
-            <os family="unix"/>
+        <condition property="codesign.linux" value="true">
+            <and>
+                <os family="unix"/>
+                <isset property="signing.tsaurl"/>
+            </and>
         </condition>
-        <condition property="os.mac" value="true">
-            <os family="mac"/>
+        <condition property="codesign.mac" value="true">
+            <and>
+                <os family="mac"/>
+                <isset property="signing.tsaurl"/>
+            </and>
         </condition>
 
         <echo message="Building ${project.filename} using JDK ${ant.java.version}" />
@@ -82,7 +91,7 @@
             <zipgroupfileset dir="${lib.dir}">
                 <include name="**/*.jar"/>
                 <exclude name="**/jfxrt.jar"/>
-                <exclude name="**/jssc-*.jar" if="signing.tsaurl"/>
+                <exclude name="**/jssc-*.jar" if="codesign.mac"/>
             </zipgroupfileset>
             <manifest>
                 <attribute name="Application-Name" value="${manifest.application.name}"/>
@@ -375,7 +384,7 @@
         <delete file="${dist.dir}/${apple.plist.out}" />
     </target>
 
-    <target name="codesign" depends="init,prepackage" if="os.mac">
+    <target name="codesign" depends="init,prepackage" if="codesign.mac">
         <property file="ant/apple/apple.properties"/>
         <exec executable="security">
             <arg value="add-certificates"/>
@@ -408,7 +417,7 @@
         </antcall>
     </target>
 
-    <target name="codesign-libs" if="signing.tsaurl">
+    <target name="codesign-libs">
         <path id="find.jar">
             <fileset dir="${lib.dir}">
                 <include name="**/${signing.jarname}"/>

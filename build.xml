@@ -375,7 +375,7 @@
         <delete file="${dist.dir}/${apple.plist.out}" />
     </target>
 
-    <target name="codesign" depends="init" if="os.mac">
+    <target name="codesign" depends="init,prepackage" if="os.mac">
         <property file="ant/apple/apple.properties"/>
         <exec executable="security">
             <arg value="add-certificates"/>

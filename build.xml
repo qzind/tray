@@ -18,6 +18,25 @@
         <!-- Please leave this value the netbeans default as a fallback. -->
         <property file="ant/private/private.properties"/>
 
+        <condition property="codesign.windows" value="true">
+            <and>
+                <os family="windows"/>
+                <isset property="signing.tsaurl"/>
+            </and>
+        </condition>
+        <condition property="codesign.linux" value="true">
+            <and>
+                <os family="unix"/>
+                <isset property="signing.tsaurl"/>
+            </and>
+        </condition>
+        <condition property="codesign.mac" value="true">
+            <and>
+                <os family="mac"/>
+                <isset property="signing.tsaurl"/>
+            </and>
+        </condition>
+
         <echo message="Building ${project.filename} using JDK ${ant.java.version}" />
     </target>
 
@@ -65,9 +84,15 @@
 
     <target name="build-jar" depends="compile-socket">
         <echo>Building Jar for Socket use</echo>
+        <mkdir dir="${sign.lib.dir}"/>
         <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.jar}" duplicate="preserve">
             <fileset dir="${build.project.dir}"/>
-            <zipgroupfileset dir="${lib.dir}" includes="**/*.jar" excludes="**/jfxrt.jar"/>
+            <zipgroupfileset dir="${sign.lib.dir}" includes="**/*.jar" erroronmissingdir="false"/>
+            <zipgroupfileset dir="${lib.dir}">
+                <include name="**/*.jar"/>
+                <exclude name="**/jfxrt.jar"/>
+                <exclude name="**/jssc-*.jar" if="codesign.mac"/>
+            </zipgroupfileset>
             <manifest>
                 <attribute name="Application-Name" value="${manifest.application.name}"/>
                 <attribute name="Main-Class" value="${manifest.main.class}"/>
@@ -77,7 +102,7 @@
     </target>
 
 
-    <target name="sign-jar" depends="build-jar,sign-jar-self,sign-jar-tsa">
+    <target name="sign-jar" depends="codesign,build-jar,sign-jar-self,sign-jar-tsa">
         <path>
             <fileset dir="${dist.dir}" includes="**/*.jar" />
         </path>
@@ -357,6 +382,77 @@
         <delete dir="${dist.dir}/${apple.resources}" />
         <delete dir="${dist.dir}/${apple.macos}" />
         <delete file="${dist.dir}/${apple.plist.out}" />
+    </target>
+
+    <target name="codesign" depends="init,prepackage" if="codesign.mac">
+        <property file="ant/apple/apple.properties"/>
+        <exec executable="security">
+            <arg value="add-certificates"/>
+            <arg value="${apple.packager.cert}"/>
+            <arg value="${apple.intermediate.cert}"/>
+            <arg value="${apple.codesign.cert}"/>
+        </exec>
+        <antcall target="codesign-libs">
+            <param name="signing.jarname" value="communication/jna-*.jar"/>
+            <param name="signing.excluded" value="communication/jna-platform-*.jar"/>
+            <param name="signing.filetype" value="*.jnilib"/>
+        </antcall>
+        <antcall target="codesign-libs">
+            <param name="signing.jarname" value="communication/jssc-*.jar"/>
+            <param name="signing.filetype" value="*.jnilib"/>
+            <!-- for signing.delete to be effective, the unsigned lib must be added to jar zipgroupfileset exclusion -->
+            <param name="signing.delete" value="*_ppc*.jnilib"/>
+        </antcall>
+        <antcall target="codesign-libs">
+            <param name="signing.jarname" value="communication/hid4java-*.jar"/>
+            <param name="signing.filetype" value="*.dylib"/>
+        </antcall>
+        <antcall target="codesign-libs">
+            <param name="signing.jarname" value="communication/libusb4java-*-osx-x86.jar"/>
+            <param name="signing.filetype" value="*.dylib"/>
+        </antcall>
+        <antcall target="codesign-libs">
+            <param name="signing.jarname" value="communication/libusb4java-*-osx-x86_64.jar"/>
+            <param name="signing.filetype" value="*.dylib"/>
+        </antcall>
+    </target>
+
+    <target name="codesign-libs">
+        <path id="find.jar">
+            <fileset dir="${lib.dir}">
+                <include name="**/${signing.jarname}"/>
+                <exclude name="**/${signing.excluded}" if="signing.excluded"/>
+            </fileset>
+        </path>
+
+        <unzip src="${toString:find.jar}" dest="${out.dir}/jar-signing"/>
+        <path id="find.file">
+            <fileset dir="${out.dir}/jar-signing">
+                <include name="**/${signing.filetype}"/>
+            </fileset>
+        </path>
+
+        <delete verbose="true">
+            <fileset dir="${out.dir}/jar-signing">
+                <include name="**/${signing.delete}" if="signing.delete"/>
+            </fileset>
+        </delete>
+
+        <!--use xargs to loop over and codesign all files-->
+        <echo message="Signing ${toString:find.jar} using ${apple.packager.signid}"/>
+        <exec executable="bash" failonerror="true">
+            <arg value="-c"/>
+            <arg value="echo &quot;${toString:find.file}&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>
+        </exec>
+
+        <pathconvert property="find.jar.rel">
+            <path refid="find.jar"/>
+            <globmapper from="${basedir}/*" to="*" handledirsep="true" />
+        </pathconvert>
+        <zip destfile="${sign.lib.dir}/${find.jar.rel}" basedir="${out.dir}/jar-signing" excludes="dont*.*"/>
+
+        <!--cleanup temp folder-->
+        <delete dir="${out.dir}/jar-signing"/>
     </target>
 
     <!--

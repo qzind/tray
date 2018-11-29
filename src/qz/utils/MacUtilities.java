@@ -95,8 +95,8 @@ public class MacUtilities {
         try {
             // Use reflection to avoid compile errors on non-macOS environments
             Object screen = Class.forName("sun.awt.CGraphicsDevice").cast(GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice());
-            Method getScaleFactor = screen.getClass().getDeclaredMethod("getScaleFactor", null);
-            Object obj = getScaleFactor.invoke(screen, null);
+            Method getScaleFactor = screen.getClass().getDeclaredMethod("getScaleFactor");
+            Object obj = getScaleFactor.invoke(screen);
             if (obj instanceof Integer) {
                 return ((Integer)obj).intValue();
             }

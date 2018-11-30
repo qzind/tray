@@ -9,7 +9,6 @@
  */
 package qz.utils;
 
-import javafx.util.Pair;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
@@ -36,9 +35,7 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Common static file i/o utilities
@@ -92,7 +89,7 @@ public class FileUtilities {
     /* resource files */
     private static HashMap<String,File> localFileMap = new HashMap<>();
     private static HashMap<String,File> sharedFileMap = new HashMap<>();
-    private static ArrayList<Pair<Path,String>> whiteList;
+    private static ArrayList<Map.Entry<Path,String>> whiteList;
 
     public static Path getAbsolutePath(JSONObject params, Certificate cert, boolean allowRootDir) throws JSONException, IOException {
         FileParams fp = new FileParams(params);
@@ -189,7 +186,7 @@ public class FileUtilities {
         }
 
         Path cleanPath = path.normalize().toAbsolutePath();
-        for(Pair<Path,String> allowed : whiteList) {
+        for(Map.Entry<Path,String> allowed : whiteList) {
             if (cleanPath.startsWith(allowed.getKey())) {
                 if ("".equals(allowed.getValue()) || allowed.getValue().contains("|" + commonName + "|") && (allowRootDir || !cleanPath.equals(allowed.getKey()))) {
                     return true;
@@ -212,8 +209,8 @@ public class FileUtilities {
     private static void populateWhiteList() {
         whiteList = new ArrayList<>();
         //default sandbox locations. More can be added through the properties file
-        whiteList.add(new Pair<>(Paths.get(SystemUtilities.getDataDirectory()), "|sandbox|"));
-        whiteList.add(new Pair<>(Paths.get(SystemUtilities.getSharedDataDirectory()), "|sandbox|"));
+        whiteList.add(new AbstractMap.SimpleEntry<>(Paths.get(SystemUtilities.getDataDirectory()), "|sandbox|"));
+        whiteList.add(new AbstractMap.SimpleEntry<>(Paths.get(SystemUtilities.getSharedDataDirectory()), "|sandbox|"));
 
         Properties props = PrintSocketServer.getTrayProperties();
         if (props != null) {
@@ -256,7 +253,7 @@ public class FileUtilities {
                     for(int n = 1; n < tokens.size(); n++) {
                         commonNames += escapeFileName(tokens.get(n)) + "|";
                     }
-                    whiteList.add(new Pair<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));
+                    whiteList.add(new AbstractMap.SimpleEntry<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));
                     tokens.clear();
                 }
             }

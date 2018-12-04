@@ -147,18 +147,16 @@ public class Certificate {
 
             //Strip beginning and end
             String[] split = in.split("--START INTERMEDIATE CERT--");
-            byte[] serverCertificate = Base64.decode(split[0].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
 
             X509Certificate theIntermediateCertificate;
             if (split.length == 2) {
-                byte[] intermediateCertificate = Base64.decode(split[1].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
-                theIntermediateCertificate = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(intermediateCertificate));
+                theIntermediateCertificate = (X509Certificate)cf.generateCertificate(new StringBufferInputStream(split[1]));
             } else {
                 theIntermediateCertificate = null; //Self-signed
             }
 
             //Generate cert
-            theCertificate = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(serverCertificate));
+            theCertificate = (X509Certificate)cf.generateCertificate(new StringBufferInputStream(split[0]));
             commonName = String.valueOf(PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(X509Name.CN).get(0));
             fingerprint = makeThumbPrint(theCertificate);
             organization = String.valueOf(PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(X509Name.O).get(0));

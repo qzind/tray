@@ -65,17 +65,21 @@ public class ByteUtilities {
         return bytesToHex(bytes, true);
     }
 
+    public static String bytesToHex(byte[] bytes, boolean upperCase) {
+        return bytesToHex(bytes, upperCase, 0,  bytes.length);
+    }
+
     /**
      * Converts an array of bytes to its hexadecimal form.
      *
      * @param bytes     Bytes to be converted.
      * @param upperCase Whether the hex string should be UPPER or lower case.
      */
-    public static String bytesToHex(byte[] bytes, boolean upperCase) {
-        char[] hexChars = new char[bytes.length * 2];
+    public static String bytesToHex(byte[] bytes, boolean upperCase, int offset, int length) {
+        char[] hexChars = new char[length * 2];
         int v;
-        for(int j = 0; j < bytes.length; j++) {
-            v = bytes[j] & 0xFF;
+        for(int j = 0; j < length; j++) {
+            v = bytes[offset + j] & 0xFF;
             hexChars[j * 2] = Constants.HEXES_ARRAY[v >>> 4];
             hexChars[j * 2 + 1] = Constants.HEXES_ARRAY[v & 0x0F];
         }

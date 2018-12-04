@@ -21,15 +21,13 @@ import javax.security.cert.CertificateParsingException;
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.Signature;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Created by Steven on 1/27/2015. Package: qz.auth Project: qz-print
@@ -195,7 +193,17 @@ public class Certificate {
                     log.warn("Failed to retrieve QZ CRL, skipping CRL check");
                 }
             }
+
+            split = split[split.length-1].split(X509Constants.RENEWAL_INFO);
+            if (split.length == 2 && theIntermediateCertificate != null) {
+                try {
+                    readRenewalInfo(split[1], theIntermediateCertificate);
+                } catch (Exception e) {
+                    log.error("Error reading certificate renewal info", e);
+                }
+            }
         }
+
         catch(Exception e) {
             CertificateParsingException certificateParsingException = new CertificateParsingException();
             certificateParsingException.initCause(e);
@@ -205,6 +213,63 @@ public class Certificate {
 
     private Certificate() {}
 
+    private void readRenewalInfo(String encoded, X509Certificate intermediate) throws CertificateParsingException {
+        String[] renewalInfo = encoded.split(X509Constants.RENEWAL_SIGNATURE);
+        if (renewalInfo.length != 2) {
+            throw new CertificateParsingException("Invalid renewal signature section");
+        }
+
+        // Decode Base64-encoded message and signature
+        byte[] message, signature;
+        try {
+            message = Base64.decode(renewalInfo[0]);
+            signature = Base64.decode(renewalInfo[1]);
+        }
+        catch(IOException e) {
+            throw new CertificateParsingException("Error decoding Base64 renewal info");
+        }
+
+        if (message.length != 40) {
+            throw new CertificateParsingException("Renewal info has invalid length");
+        }
+
+        // Verify signature
+        Signature verifier = null;
+        try {
+            verifier = Signature.getInstance("SHA1withRSA");
+            verifier.initVerify(intermediate.getPublicKey());
+            verifier.update(message);
+            if (! verifier.verify(signature)) {
+                log.error("Renewal info's signature could not be verified");
+                return;
+            }
+        }
+        catch(Exception e) {
+            CertificateParsingException certificateParsingException = new CertificateParsingException();
+            certificateParsingException.initCause(e);
+            throw certificateParsingException;
+        }
+
+        // Check fingerprints
+        String thisFingerprint = ByteUtilities.bytesToHex(message, false, 0, 20);
+        String previousFingerprint = ByteUtilities.bytesToHex(message, false, 20, 20);
+
+        if (!thisFingerprint.equals(this.fingerprint)) {
+            log.error("Renewal info is not about this certificate");
+            return;
+        }
+
+        // Add this certificate to the whitelist if the previous certificate was whitelisted
+        File allowed = FileUtilities.getFile(Constants.ALLOW_FILE);
+        if (existsInFile(previousFingerprint, allowed)) {
+            FileUtilities.printLineToFile(Constants.ALLOW_FILE, data());
+        }
+        // Add this certificate to the backlist if the previous certificate was blacklisted
+        File blocked = FileUtilities.getFile(Constants.BLOCK_FILE);
+        if (existsInFile(previousFingerprint, blocked)) {
+            FileUtilities.printLineToFile(Constants.BLOCK_FILE, data());
+        }
+    }
 
     /**
      * Used to rebuild a certificate for the 'Saved Sites' screen without having to decrypt the certificates again
@@ -279,22 +344,22 @@ public class Certificate {
     /** Checks if the certificate has been added to the local trusted store */
     public boolean isSaved() {
         File allowed = FileUtilities.getFile(Constants.ALLOW_FILE);
-        return existsInFile(allowed);
+        return existsInFile(getFingerprint(), allowed);
     }
 
     /** Checks if the certificate has been added to the local blocked store */
     public boolean isBlocked() {
         File blocks = FileUtilities.getFile(Constants.BLOCK_FILE);
-        return existsInFile(blocks);
+        return existsInFile(getFingerprint(), blocks);
     }
 
-    private boolean existsInFile(File file) {
+    private static boolean existsInFile(String fingerprint, File file) {
         try(BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
             while((line = br.readLine()) != null) {
                 if (line.contains("\t")) {
                     String print = line.substring(0, line.indexOf("\t"));
-                    if (print.equals(getFingerprint())) {
+                    if (print.equals(fingerprint)) {
                         return true;
                     }
                 }

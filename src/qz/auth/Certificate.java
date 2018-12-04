@@ -264,11 +264,6 @@ public class Certificate {
         if (existsInFile(previousFingerprint, allowed)) {
             FileUtilities.printLineToFile(Constants.ALLOW_FILE, data());
         }
-        // Add this certificate to the backlist if the previous certificate was blacklisted
-        File blocked = FileUtilities.getFile(Constants.BLOCK_FILE);
-        if (existsInFile(previousFingerprint, blocked)) {
-            FileUtilities.printLineToFile(Constants.BLOCK_FILE, data());
-        }
     }
 
     /**

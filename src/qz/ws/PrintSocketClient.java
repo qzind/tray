@@ -324,8 +324,15 @@ public class PrintSocketClient {
                 SerialProperties props = new SerialProperties(params.optJSONObject("properties"));
                 SerialIO serial = connection.getSerialPort(params.optString("port"));
                 if (serial != null) {
+                    String serialData;
                     JSONObject data = params.optJSONObject("data");
-                    serial.sendData(props, SerialUtilities.getDataTypeJSON(data), data.optString("data"));
+                    if (data != null) {
+                        serialData = data.getString("data");
+                    } else {
+                        serialData = params.optString("data");
+                    }
+
+                    serial.sendData(props, SerialUtilities.getDataTypeJSON(data), serialData);
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, String.format("Serial port [%s] must be opened first.", params.optString("port")));

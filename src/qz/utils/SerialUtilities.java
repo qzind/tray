@@ -1,6 +1,8 @@
 package qz.utils;
 
-import jssc.*;
+import jssc.SerialPort;
+import jssc.SerialPortException;
+import jssc.SerialPortList;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -62,13 +64,15 @@ public class SerialUtilities {
     }
 
     public static SerialDataType getDataTypeJSON(JSONObject data) {
-        if (!data.isNull("type")) {
+        if (data != null && !data.isNull("type")) {
             try {
                 return SerialDataType.valueOf(data.getString("type"));
-            } catch(JSONException e) {
+            }
+            catch(JSONException e) {
                 log.warn("Cannot read {} as a value for data type, using default", data.opt("type"));
             }
         }
+
         return SerialDataType.PLAIN;
     }
 

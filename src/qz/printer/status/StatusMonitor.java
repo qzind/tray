@@ -70,10 +70,14 @@ public class StatusMonitor {
 
     public synchronized static boolean startListening(SocketConnection connection, JSONArray printerNames) {
         if (SystemUtilities.isMac()) CupsUtils.convertPrinterNames(printerNames);
-
+        
         try {
             for(int i = 0; i < printerNames.length(); i++) {
-                clientPrinterConnections.add(printerNames.getString(i), connection);
+                if (!clientPrinterConnections.containsKey(printerNames.getString(i))) {
+                    clientPrinterConnections.add(printerNames.getString(i), connection);
+                } else if (!clientPrinterConnections.getValues(printerNames.getString(i)).contains(connection)) {
+                    clientPrinterConnections.add(printerNames.getString(i), connection);
+                }
             }
         }
         catch(Exception e) {

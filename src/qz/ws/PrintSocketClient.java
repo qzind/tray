@@ -316,14 +316,11 @@ public class PrintSocketClient {
                 sendResult(session, UID, PrintServiceMatcher.getPrintersJSON());
                 break;
             case PRINTERS_START_LISTENING:
-                if (connection.hasStatusListener()) {
-                    sendError(session, UID, "Already listening to printers.");
-                } else {
+                if (!connection.hasStatusListener()) {
                     connection.startStatusListener(new StatusSession(session));
-
-                    StatusMonitor.startListening(connection, params.getJSONArray("printerNames"));
-                    sendResult(session, UID, null);
                 }
+                StatusMonitor.startListening(connection, params.getJSONArray("printerNames"));
+                sendResult(session, UID, null);
                 break;
             case PRINTERS_GET_STATUS:
                 if (connection.hasStatusListener()) {

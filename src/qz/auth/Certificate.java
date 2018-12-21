@@ -7,6 +7,7 @@ import com.estontorise.simplersa.interfaces.RSATool;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.ssl.X509CertificateChainBuilder;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.jce.PrincipalUtil;
 import org.slf4j.Logger;
@@ -26,10 +27,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Created by Steven on 1/27/2015. Package: qz.auth Project: qz-print
@@ -184,6 +182,12 @@ public class Certificate {
                 }
             }
 
+            try {
+                readRenewalInfo();
+            } catch (Exception e) {
+                log.error("Error reading certificate renewal info", e);
+            }
+
             // Only do CRL checks on QZ-issued certificates
             if (trustedRootCert != null && !overrideTrustedRootCert) {
                 CRL qzCrl = CRL.getInstance();
@@ -202,6 +206,30 @@ public class Certificate {
             CertificateParsingException certificateParsingException = new CertificateParsingException();
             certificateParsingException.initCause(e);
             throw certificateParsingException;
+        }
+    }
+
+    private void readRenewalInfo() throws Exception {
+        // "id-at-description" = "2.5.4.13"
+        Vector values = PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(new ASN1ObjectIdentifier("2.5.4.13"));
+        if (values.isEmpty()) {
+            return;
+        }
+        String renewalInfo = String.valueOf(values.get(0));
+
+        String renewalPrefix = "renewal-of-";
+        if (!renewalInfo.startsWith(renewalPrefix)) {
+            throw new CertificateParsingException("Malformed renewal info");
+        }
+        String previousFingerprint = renewalInfo.substring(renewalPrefix.length());
+        if (previousFingerprint.length() != 40) {
+            throw new CertificateParsingException("Malformed renewal fingerprint");
+        }
+
+        // Add this certificate to the whitelist if the previous certificate was whitelisted
+        File allowed = FileUtilities.getFile(Constants.ALLOW_FILE);
+        if (existsInFile(previousFingerprint, allowed)) {
+            FileUtilities.printLineToFile(Constants.ALLOW_FILE, data());
         }
     }
 
@@ -281,22 +309,22 @@ public class Certificate {
     /** Checks if the certificate has been added to the local trusted store */
     public boolean isSaved() {
         File allowed = FileUtilities.getFile(Constants.ALLOW_FILE);
-        return existsInFile(allowed);
+        return existsInFile(getFingerprint(), allowed);
     }
 
     /** Checks if the certificate has been added to the local blocked store */
     public boolean isBlocked() {
         File blocks = FileUtilities.getFile(Constants.BLOCK_FILE);
-        return existsInFile(blocks);
+        return existsInFile(getFingerprint(), blocks);
     }
 
-    private boolean existsInFile(File file) {
+    private static boolean existsInFile(String fingerprint, File file) {
         try(BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
             while((line = br.readLine()) != null) {
                 if (line.contains("\t")) {
                     String print = line.substring(0, line.indexOf("\t"));
-                    if (print.equals(getFingerprint())) {
+                    if (print.equals(fingerprint)) {
                         return true;
                     }
                 }

@@ -145,16 +145,18 @@ public class Certificate {
 
             //Strip beginning and end
             String[] split = in.split("--START INTERMEDIATE CERT--");
+            byte[] serverCertificate = Base64.decode(split[0].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
 
             X509Certificate theIntermediateCertificate;
             if (split.length == 2) {
-                theIntermediateCertificate = (X509Certificate)cf.generateCertificate(new StringBufferInputStream(split[1]));
+                byte[] intermediateCertificate = Base64.decode(split[1].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
+                theIntermediateCertificate = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(intermediateCertificate));
             } else {
                 theIntermediateCertificate = null; //Self-signed
             }
 
             //Generate cert
-            theCertificate = (X509Certificate)cf.generateCertificate(new StringBufferInputStream(split[0]));
+            theCertificate = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(serverCertificate));
             commonName = String.valueOf(PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(X509Name.CN).get(0));
             fingerprint = makeThumbPrint(theCertificate);
             organization = String.valueOf(PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(X509Name.O).get(0));
@@ -208,6 +210,7 @@ public class Certificate {
     }
 
     private void readRenewalInfo() throws Exception {
+        // "id-at-description" = "2.5.4.13"
         Vector values = PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(new ASN1ObjectIdentifier("2.5.4.13"));
         if (values.isEmpty()) {
             return;
@@ -215,12 +218,12 @@ public class Certificate {
         String renewalInfo = String.valueOf(values.get(0));
 
         String renewalPrefix = "renewal-of-";
-        if (! renewalInfo.startsWith(renewalPrefix)) {
-            throw new CertificateParsingException("Illformed renewal info");
+        if (!renewalInfo.startsWith(renewalPrefix)) {
+            throw new CertificateParsingException("Malformed renewal info");
         }
         String previousFingerprint = renewalInfo.substring(renewalPrefix.length());
         if (previousFingerprint.length() != 40) {
-            throw new CertificateParsingException("Illformed renewal fingerprint");
+            throw new CertificateParsingException("Malformed renewal fingerprint");
         }
 
         // Add this certificate to the whitelist if the previous certificate was whitelisted

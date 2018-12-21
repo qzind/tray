@@ -1966,9 +1966,12 @@
 
     /// Status ///
     function startPrintersListen(printerName) {
-        qz.printers.startListening(printerName).then(function() {
-            displayMessage("Started listening for printer events");
-        }).catch(displayError);
+        //It is not necessary to stop listening when starting a new listener. It is done here for interface reasons.
+        qz.printers.stopListening().then(
+            qz.printers.startListening(printerName).then(function() {
+                displayMessage("Started listening for printer events");
+            }).catch(displayError)
+        ).catch(displayError);
     }
 
     function getPrintersStatus() {

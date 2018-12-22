@@ -112,7 +112,7 @@
                 <li id="serialTab" role="presentation"><a href="#serialContent" role="tab" data-toggle="tab">Serial</a></li>
                 <li id="usbTab" role="presentation"><a href="#usbContent" role="tab" data-toggle="tab">USB</a></li>
                 <li id="hidTab" role="presentation"><a href="#hidContent" role="tab" data-toggle="tab">HID</a></li>
-                <li id="statusTab" role="presentation"><a href="#statusContent" role="tab" data-toggle="tab">Status</a></li>
+                <li id="statusTab" role="presentation"><a href="#statusContent" role="tab" data-toggle="tab">Printer Status</a></li>
                 <li id="fileTab" role="presentation"><a href="#fileContent" role="tab" data-toggle="tab">Files</a></li>
             </ul>
         </div>
@@ -851,14 +851,14 @@
                         <div class="form-group">
                             <div class="btn-toolbar">
                                 <div class="btn-group">
-                                    <button type="button" class="btn btn-default" onclick="startPrintersListen()">Listen to All Printers</button>
-                                    <button type="button" class="btn btn-default" onclick="startPrintersListen($('#configPrinter').html())">
-                                        Listen to Current Printer
+                                    <button type="button" class="btn btn-info" onclick="startPrintersListen()">All Printers</button>
+                                    <button type="button" class="btn btn-success" onclick="startPrintersListen($('#configPrinter').html())">
+                                        Current Printer
                                     </button>
                                     <button type="button" class="btn btn-default" onclick="getPrintersStatus()">Request current status</button>
                                 </div>
                                 <div class="btn-group">
-                                    <button type="button" class="btn btn-default" onclick="stopPrintersListen()">Stop Listening</button>
+                                    <button type="button" class="btn btn-warning" onclick="stopPrintersListen()">Stop Listening</button>
                                 </div>
                             </div>
                         </div>
@@ -1966,15 +1966,15 @@
 
     /// Status ///
     function startPrintersListen(printerName) {
-        //It is not necessary to stop listening when starting a new listener. It is done here for interface reasons.
-        qz.printers.stopListening()
-        .then(function() {
+        if (printerName === "NONE") {
+            return displayMessage("Please search for a valid printer first", "alert-warning");
+        }
+        qz.printers.stopListening().then(function() {
+            clearPrintersLog();
             return qz.printers.startListening(printerName);
-        })
-        .then(function() {
-            displayMessage("Started listening for printer events");
-        })
-        .catch(displayError);
+        }).then(function() {
+            displayMessage("Started listening for " + (printerName ? printerName : "all") + " printer events");
+        }).catch(displayError);
     }
 
     function getPrintersStatus() {
@@ -1986,6 +1986,7 @@
     function stopPrintersListen() {
         qz.printers.stopListening().then(function() {
             displayMessage("Stopped listening for printer events");
+            clearPrintersLog();
         }).catch(displayError);
     }
 

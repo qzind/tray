@@ -90,8 +90,11 @@ public class CupsUtils {
     }
 
     public static void convertPrinterNames(JSONArray printerNames) {
-        HashMap<String, String> lookup = ShellUtilities.getCupsPrinters();
         try {
+            if ((printerNames.length() == 1) && (printerNames.getString(0).equals(""))) return;
+
+            HashMap<String, String> lookup = ShellUtilities.getCupsPrinters();
+
             for(int i = 0; i < printerNames.length(); i++) {
                 String oldPrinterName = printerNames.getString(i);
                 if (lookup.containsKey(oldPrinterName)) {

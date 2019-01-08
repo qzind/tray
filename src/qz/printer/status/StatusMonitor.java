@@ -106,7 +106,7 @@ public class StatusMonitor {
             printers = CupsUtils.getAllStatuses();
         }
 
-        List<SocketConnection> connections = clientPrinterConnections.get("null");
+        List<SocketConnection> connections = clientPrinterConnections.get("");
         if (connections != null) {
             sendForAllPrinters = connections.contains(connection);
         }
@@ -145,7 +145,7 @@ public class StatusMonitor {
     }
 
     public synchronized static boolean isListeningTo(String PrinterName) {
-        return clientPrinterConnections.containsKey(PrinterName) || clientPrinterConnections.containsKey("null");
+        return clientPrinterConnections.containsKey(PrinterName) || clientPrinterConnections.containsKey("");
     }
 
     public synchronized static void statusChanged(PrinterStatus[] statuses) {
@@ -154,8 +154,8 @@ public class StatusMonitor {
             if (clientPrinterConnections.containsKey(ps.issuingPrinterName)) {
                 connections.addAll(clientPrinterConnections.get(ps.issuingPrinterName));
             }
-            if (clientPrinterConnections.containsKey("null")) {
-                connections.addAll(clientPrinterConnections.get("null"));
+            if (clientPrinterConnections.containsKey("")) {
+                connections.addAll(clientPrinterConnections.get(""));
             }
             for(SocketConnection sc : connections) {
                 sc.getStatusListener().statusChanged(ps);

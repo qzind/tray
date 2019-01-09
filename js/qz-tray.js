@@ -937,16 +937,12 @@ var qz = (function() {
              *
              * @see qz.printers.setPrinterCallbacks
              *
-             * @param {string|Array<string>} printers Printer or list of printers to listen to, an empty string listens to all.
+             * @param {null|string|Array<string>} printers Printer or list of printers to listen to, null listens to all.
              *
              * @memberof qz.printers
              */
             startListening: function(printers) {
-                if (!Array.isArray(printers)) {
-                    // All falsy values (null, undefined, 0 etc) will be converted to ""
-                    if (!printers) {printers = ""}
-                    printers = [printers];
-                }
+                if (!Array.isArray(printers)) printers = [printers];
                 var params = {
                     printerNames: printers
                 };

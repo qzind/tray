@@ -3,6 +3,7 @@ package qz.printer.status;
 import com.sun.jna.platform.win32.Winspool;
 import com.sun.jna.platform.win32.WinspoolUtil;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.eclipse.jetty.util.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,20 +69,25 @@ public class StatusMonitor {
         }
     }
 
-    public synchronized static boolean startListening(SocketConnection connection, JSONArray printerNames) {
-        if (SystemUtilities.isMac()) CupsUtils.convertPrinterNames(printerNames);
-        
-        try {
+    public synchronized static boolean startListening(SocketConnection connection, JSONArray printerNames) throws JSONException {
+        if (printerNames.isNull(0)) {  //listen to all printers
+            if (!clientPrinterConnections.containsKey("")) {
+                clientPrinterConnections.add("", connection);
+            } else if (!clientPrinterConnections.getValues("").contains(connection)) {
+                clientPrinterConnections.add("", connection);
+            }
+        } else {  //listen to specific printer(s)
+            if (SystemUtilities.isMac()) CupsUtils.convertPrinterNames(printerNames);
+
             for(int i = 0; i < printerNames.length(); i++) {
+                if (printerNames.getString(i).equals("")) throw new IllegalArgumentException();
+
                 if (!clientPrinterConnections.containsKey(printerNames.getString(i))) {
                     clientPrinterConnections.add(printerNames.getString(i), connection);
                 } else if (!clientPrinterConnections.getValues(printerNames.getString(i)).contains(connection)) {
                     clientPrinterConnections.add(printerNames.getString(i), connection);
                 }
             }
-        }
-        catch(Exception e) {
-            log.warn("Invalid printer names format for subscription");
         }
 
         if (isWindows()) {

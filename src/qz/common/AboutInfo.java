@@ -77,15 +77,17 @@ public class AboutInfo {
     private static JSONArray ssl(KeyStore keystore) throws JSONException, KeyStoreException {
         JSONArray ssl = new JSONArray();
 
-        Enumeration<String> aliases = keystore.aliases();
-        while(aliases.hasMoreElements()) {
-            String alias = aliases.nextElement();
-            if ("X.509".equals(keystore.getCertificate(alias).getType())) {
-                JSONObject cert = new JSONObject();
-                X509Certificate x509 = (X509Certificate)keystore.getCertificate(alias);
-                cert.put("subject", x509.getSubjectX500Principal().getName());
-                cert.put("expires", toISO(x509.getNotAfter()));
-                ssl.put(cert);
+        if (keystore != null) {
+            Enumeration<String> aliases = keystore.aliases();
+            while(aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+                if ("X.509".equals(keystore.getCertificate(alias).getType())) {
+                    JSONObject cert = new JSONObject();
+                    X509Certificate x509 = (X509Certificate)keystore.getCertificate(alias);
+                    cert.put("subject", x509.getSubjectX500Principal().getName());
+                    cert.put("expires", toISO(x509.getNotAfter()));
+                    ssl.put(cert);
+                }
             }
         }
 

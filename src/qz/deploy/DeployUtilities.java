@@ -348,6 +348,10 @@ public abstract class DeployUtilities {
         }
     }
 
+    public static String detectCertPath() {
+        return fixWhitespaces(getParentDirectory(detectJarPath()) + File.separator + Constants.AUTH_FILE);
+    }
+
     /**
      * Determines the currently running Jar's absolute path on the local filesystem
      *

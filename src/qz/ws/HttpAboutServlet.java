@@ -7,6 +7,8 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.AboutInfo;
+import qz.deploy.DeployUtilities;
+import qz.utils.FileUtilities;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -27,6 +29,8 @@ public class HttpAboutServlet extends DefaultServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) {
         if ("application/json".equals(request.getHeader("Accept")) || "/json".equals(request.getServletPath())) {
             generateJsonResponse(request, response);
+        } else if ("application/x-x509-ca-cert".equals(request.getHeader("Accept")) || "/cert".equals(request.getServletPath())) {
+            generateCertResponse(request, response);
         } else {
             generateHtmlResponse(request, response);
         }
@@ -48,6 +52,8 @@ public class HttpAboutServlet extends DefaultServlet {
             display.append("<tr><td>Failed to write information</td></tr>");
         }
         display.append("</table>");
+
+        display.append("<p><a href='/cert'>Download Cert</a></p>");
 
         display.append("</body></html>");
 
@@ -73,6 +79,20 @@ public class HttpAboutServlet extends DefaultServlet {
         catch(Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             log.warn("Exception occurred writing JSONObject {}", aboutData);
+        }
+    }
+
+    private void generateCertResponse(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            String cert = FileUtilities.readLocalFile(DeployUtilities.detectCertPath());
+
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType("application/x-x509-ca-cert");
+            response.getOutputStream().print(cert);
+        }
+        catch(Exception e) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            log.warn("Exception occurred loading certificate: {}", e.getMessage());
         }
     }
 

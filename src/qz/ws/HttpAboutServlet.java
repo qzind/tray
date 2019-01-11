@@ -1,5 +1,6 @@
 package qz.ws;
 
+import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -8,12 +9,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.AboutInfo;
 import qz.deploy.DeployUtilities;
-import qz.utils.FileUtilities;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
 import java.util.Iterator;
+import java.util.Properties;
 
 /**
  * HTTP JSON endpoint for serving QZ Tray information
@@ -43,8 +50,9 @@ public class HttpAboutServlet extends DefaultServlet {
                 .append("<h1>About</h1>");
 
         display.append(newTable());
+
+        JSONObject aboutData = AboutInfo.gatherAbout(request.getServerName());
         try {
-            JSONObject aboutData = AboutInfo.gatherAbout(request.getServerName());
             display.append(generateFromKeys(aboutData, true));
         }
         catch(JSONException e) {
@@ -53,7 +61,9 @@ public class HttpAboutServlet extends DefaultServlet {
         }
         display.append("</table>");
 
-        display.append("<p><a href='/cert'>Download Cert</a></p>");
+        if (!aboutData.isNull("ssl") && aboutData.optJSONArray("ssl").length() > 0) {
+            display.append("<p><a href='/cert'>Download Cert</a></p>");
+        }
 
         display.append("</body></html>");
 
@@ -72,6 +82,16 @@ public class HttpAboutServlet extends DefaultServlet {
         JSONObject aboutData = AboutInfo.gatherAbout(request.getServerName());
 
         try {
+            String certData = loadCertificate();
+            if (certData != null) {
+                aboutData.put("certificate", certData);
+            }
+        }
+        catch(Exception e) {
+            log.warn("Failed to load certificate data: {}", e.getMessage());
+        }
+
+        try {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("application/json");
             response.getOutputStream().write(aboutData.toString(JSON_INDENT).getBytes(StandardCharsets.UTF_8));
@@ -84,15 +104,37 @@ public class HttpAboutServlet extends DefaultServlet {
 
     private void generateCertResponse(HttpServletRequest request, HttpServletResponse response) {
         try {
-            String cert = FileUtilities.readLocalFile(DeployUtilities.detectCertPath());
+            String certData = loadCertificate();
 
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType("application/x-x509-ca-cert");
-            response.getOutputStream().print(cert);
+            if (certData != null) {
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.setContentType("application/x-x509-ca-cert");
+
+                response.getOutputStream().print(certData);
+            } else {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            }
         }
         catch(Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             log.warn("Exception occurred loading certificate: {}", e.getMessage());
+        }
+    }
+
+    private String loadCertificate() throws GeneralSecurityException, IOException {
+        Properties sslProps = DeployUtilities.loadTrayProperties();
+
+        if (sslProps != null) {
+            KeyStore jks = KeyStore.getInstance("jks");
+            jks.load(new FileInputStream(new File(sslProps.getProperty("wss.keystore"))), sslProps.getProperty("wss.storepass").toCharArray());
+
+            Certificate cert = jks.getCertificate("root-ca");
+
+            return "-----BEGIN CERTIFICATE-----\n" +
+                    new String(Base64.encodeBase64(cert.getEncoded()), StandardCharsets.UTF_8) +
+                    "\n-----END CERTIFICATE-----";
+        } else {
+            return null;
         }
     }
 

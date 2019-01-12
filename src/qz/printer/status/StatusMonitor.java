@@ -21,6 +21,8 @@ import static qz.utils.SystemUtilities.isWindows;
 public class StatusMonitor {
     private static final Logger log = LoggerFactory.getLogger(StatusMonitor.class);
 
+    private static final String ALL_PRINTERS = "";
+
     private static Thread printerConnectionsThread;
     private static final HashMap<String,Thread> notificationThreadCollection = new HashMap<>();
     private static final MultiMap<SocketConnection> clientPrinterConnections = new MultiMap<>();
@@ -71,10 +73,10 @@ public class StatusMonitor {
 
     public synchronized static boolean startListening(SocketConnection connection, JSONArray printerNames) throws JSONException {
         if (printerNames.isNull(0)) {  //listen to all printers
-            if (!clientPrinterConnections.containsKey("")) {
-                clientPrinterConnections.add("", connection);
-            } else if (!clientPrinterConnections.getValues("").contains(connection)) {
-                clientPrinterConnections.add("", connection);
+            if (!clientPrinterConnections.containsKey(ALL_PRINTERS)) {
+                clientPrinterConnections.add(ALL_PRINTERS, connection);
+            } else if (!clientPrinterConnections.getValues(ALL_PRINTERS).contains(connection)) {
+                clientPrinterConnections.add(ALL_PRINTERS, connection);
             }
         } else {  //listen to specific printer(s)
             if (SystemUtilities.isMac()) CupsUtils.convertPrinterNames(printerNames);

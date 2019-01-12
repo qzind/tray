@@ -2,6 +2,7 @@ package qz.printer.status;
 
 import com.sun.jna.Pointer;
 import org.codehaus.jettison.json.JSONArray;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.ShellUtilities;
@@ -41,7 +42,7 @@ public class CupsUtils {
                                    Cups.INSTANCE.ippTagValue("uri"),
                                    "printer-uri",
                                    "",
-                                   "ipp://localhost:" + cupsPort + "/printers/");
+                                   URIUtil.encodePath("ipp://localhost:" + cupsPort + "/printers/"));
         Cups.INSTANCE.ippAddString(request,
                                    Cups.INSTANCE.ippTagValue("Operation"),
                                    Cups.INSTANCE.ippTagValue("Name"),
@@ -60,8 +61,7 @@ public class CupsUtils {
                                    Cups.INSTANCE.ippTagValue("uri"),
                                    "printer-uri",
                                    "",
-                                   //todo does this need to be sanitized?
-                                   "ipp://localhost:" + cupsPort + "/printers/" + printerName);
+                                   URIUtil.encodePath("ipp://localhost:" + cupsPort + "/printers/" + printerName));
         Cups.INSTANCE.ippAddString(request,
                                    Cups.INSTANCE.ippTagValue("Operation"),
                                    Cups.INSTANCE.ippTagValue("Name"),
@@ -91,8 +91,6 @@ public class CupsUtils {
 
     public static void convertPrinterNames(JSONArray printerNames) {
         try {
-            if ((printerNames.length() == 1) && (printerNames.getString(0).equals(""))) return;
-
             HashMap<String, String> lookup = ShellUtilities.getCupsPrinters();
 
             for(int i = 0; i < printerNames.length(); i++) {
@@ -181,7 +179,7 @@ public class CupsUtils {
                                    Cups.INSTANCE.ippTagValue("uri"),
                                    "printer-uri",
                                    "",
-                                   "ipp://localhost:" + cupsPort + "/printers");
+                                   URIUtil.encodePath("ipp://localhost:" + cupsPort + "/printers"));
         Cups.INSTANCE.ippAddString(request,
                                    Cups.INSTANCE.ippTagValue("Operation"),
                                    Cups.INSTANCE.ippTagValue("Name"),
@@ -193,7 +191,7 @@ public class CupsUtils {
                                    Cups.INSTANCE.ippTagValue("uri"),
                                    "notify-recipient-uri",
                                    "",
-                                   "rss://localhost:" + rssPort);
+                                   URIUtil.encodePath("rss://localhost:" + rssPort));
         Cups.INSTANCE.ippAddString(request,
                                    Cups.INSTANCE.ippTagValue("Subscription"),
                                    Cups.INSTANCE.ippTagValue("Keyword"),
@@ -221,7 +219,7 @@ public class CupsUtils {
                                    Cups.INSTANCE.ippTagValue("uri"),
                                    "printer-uri",
                                    "",
-                                   "ipp://localhost:" + cupsPort);
+                                   URIUtil.encodePath("ipp://localhost:" + cupsPort));
         Cups.INSTANCE.ippAddInteger(request,
                                     Cups.INSTANCE.ippTagValue("Operation"),
                                     Cups.INSTANCE.ippTagValue("Integer"),

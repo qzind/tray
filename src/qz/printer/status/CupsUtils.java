@@ -5,6 +5,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.printer.status.Cups.IPP;
 import qz.utils.ShellUtilities;
 
 import java.net.URI;
@@ -17,66 +18,48 @@ import java.util.HashMap;
 public class CupsUtils {
     private static final Logger log = LoggerFactory.getLogger(CupsUtils.class);
 
+    public static String USER = System.getProperty("user.name");
+    public static String CHARSET = "";
+
+    private static Cups cups = Cups.INSTANCE;
+
     private static boolean httpInitialised = false;
     private static Pointer http;
-    private static int cupsPort;
     private static int subscriptionID = -1;
 
 
-    synchronized static void initCupsStuff() {
+    synchronized static void initCupsHttp() {
         if (!httpInitialised) {
             httpInitialised = true;
-            cupsPort = Cups.INSTANCE.ippPort();
-            http = Cups.INSTANCE.httpConnectEncrypt(
-                    Cups.INSTANCE.cupsServer(),
-                    Cups.INSTANCE.ippPort(),
-                    Cups.INSTANCE.cupsEncryption());
+            http = cups.httpConnectEncrypt(cups.cupsServer(), IPP.PORT, cups.cupsEncryption());
         }
     }
 
     static Pointer listSubscriptions() {
-        Pointer request = Cups.INSTANCE.ippNewRequest(Cups.INSTANCE.ippOpValue("Get-Subscriptions"));
+        Pointer request = cups.ippNewRequest(IPP.GET_SUBSCRIPTIONS);
 
-        Cups.INSTANCE.ippAddString(request,
-                                   Cups.INSTANCE.ippTagValue("Operation"),
-                                   Cups.INSTANCE.ippTagValue("uri"),
-                                   "printer-uri",
-                                   "",
-                                   URIUtil.encodePath("ipp://localhost:" + cupsPort + "/printers/"));
-        Cups.INSTANCE.ippAddString(request,
-                                   Cups.INSTANCE.ippTagValue("Operation"),
-                                   Cups.INSTANCE.ippTagValue("Name"),
-                                   "requesting-user-name",
-                                   "",
-                                   System.getProperty("user.name"));
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
+                                   URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/"));
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
 
-        return Cups.INSTANCE.cupsDoRequest(http, request, "/");
+        return cups.cupsDoRequest(http, request, "/");
     }
 
     public static PrinterStatus[] getStatuses(String printerName) {
-        Pointer request = Cups.INSTANCE.ippNewRequest(Cups.INSTANCE.ippOpValue("Get-Printer-Attributes"));
+        Pointer request = cups.ippNewRequest(IPP.GET_PRINTER_ATTRIBUTES);
 
-        Cups.INSTANCE.ippAddString(request,
-                                   Cups.INSTANCE.ippTagValue("Operation"),
-                                   Cups.INSTANCE.ippTagValue("uri"),
-                                   "printer-uri",
-                                   "",
-                                   URIUtil.encodePath("ipp://localhost:" + cupsPort + "/printers/" + printerName));
-        Cups.INSTANCE.ippAddString(request,
-                                   Cups.INSTANCE.ippTagValue("Operation"),
-                                   Cups.INSTANCE.ippTagValue("Name"),
-                                   "requesting-user-name",
-                                   "",
-                                   System.getProperty("user.name"));
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
+                                   URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/" + printerName));
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
 
-        Pointer response = Cups.INSTANCE.cupsDoRequest(http, request, "/");
-        Pointer attr = Cups.INSTANCE.ippFindAttribute(response, "printer-state-reasons", Cups.INSTANCE.ippTagValue("keyword"));
+        Pointer response = cups.cupsDoRequest(http, request, "/");
+        Pointer attr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
         ArrayList<PrinterStatus> statuses = new ArrayList<>();
 
         if (attr != Pointer.NULL) {
-            int attrCount = Cups.INSTANCE.ippGetCount(attr);
+            int attrCount = cups.ippGetCount(attr);
             for(int i = 0; i < attrCount; i++) {
-                String data = Cups.INSTANCE.ippGetString(attr, i, "");
+                String data = cups.ippGetString(attr, i, "");
                 PrinterStatus status = PrinterStatus.getFromCupsString(data, printerName);
                 if (status != null) { statuses.add(status); }
             }
@@ -84,7 +67,7 @@ public class CupsUtils {
             statuses.add(new PrinterStatus(PrinterStatusType.NOT_AVAILABLE, printerName, ""));
         }
 
-        Cups.INSTANCE.ippDelete(response);
+        cups.ippDelete(response);
 
         return statuses.toArray(new PrinterStatus[statuses.size()]);
     }
@@ -107,132 +90,99 @@ public class CupsUtils {
 
     public static ArrayList<PrinterStatus> getAllStatuses() {
         ArrayList<PrinterStatus> statuses = new ArrayList<>();
-        Pointer request = Cups.INSTANCE.ippNewRequest(Cups.INSTANCE.ippOpValue("CUPS-Get-Printers"));
+        Pointer request = cups.ippNewRequest(IPP.GET_PRINTERS);
 
-        Cups.INSTANCE.ippAddString(request,
-                                   Cups.INSTANCE.ippTagValue("Operation"),
-                                   Cups.INSTANCE.ippTagValue("Name"),
-                                   "requesting-user-name",
-                                   "",
-                                   System.getProperty("user.name"));
-        Pointer response = Cups.INSTANCE.cupsDoRequest(http, request, "/");
-        Pointer attr = Cups.INSTANCE.ippFindAttribute(response, "printer-state-reasons", Cups.INSTANCE.ippTagValue("keyword"));
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
+        Pointer response = cups.cupsDoRequest(http, request, "/");
+        Pointer attr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
 
         while(attr != Pointer.NULL) {
             //save reasons until we have name, we need to go through the attrs in order
-            String[] reasons = new String[Cups.INSTANCE.ippGetCount(attr)];
+            String[] reasons = new String[cups.ippGetCount(attr)];
             for(int i = 0; i < reasons.length; i++) {
-                reasons[i] = Cups.INSTANCE.ippGetString(attr, i, "");
+                reasons[i] = cups.ippGetString(attr, i, "");
             }
 
-            attr = Cups.INSTANCE.ippFindNextAttribute(response, "printer-name", Cups.INSTANCE.ippTagValue("Name"));
-            String name = Cups.INSTANCE.ippGetString(attr, 0, "");
+            attr = cups.ippFindNextAttribute(response, "printer-name", IPP.TAG_NAME);
+            String name = cups.ippGetString(attr, 0, "");
 
             for(String reason : reasons) {
                 statuses.add(PrinterStatus.getFromCupsString(reason, name));
             }
 
             //for next loop iteration
-            attr = Cups.INSTANCE.ippFindNextAttribute(response, "printer-state-reasons", Cups.INSTANCE.ippTagValue("keyword"));
+            attr = cups.ippFindNextAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
         }
 
-        Cups.INSTANCE.ippDelete(response);
+        cups.ippDelete(response);
         return statuses;
     }
 
     public static boolean clearSubscriptions() {
         Pointer response = listSubscriptions();
-        Pointer attr = Cups.INSTANCE.ippFindAttribute(response, "notify-recipient-uri", Cups.INSTANCE.ippTagValue("uri"));
+        Pointer attr = cups.ippFindAttribute(response, "notify-recipient-uri", IPP.TAG_URI);
 
         while(true) {
             if (attr == Pointer.NULL) {
                 break;
             }
             try {
-                String data = Cups.INSTANCE.ippGetString(attr, 0, "");
+                String data = cups.ippGetString(attr, 0, "");
 
                 int port = new URI(data).getPort();
                 if (CupsStatusServer.CUPS_RSS_PORTS.contains(port)) {
-                    Pointer idAttr = Cups.INSTANCE.ippFindNextAttribute(response, "notify-subscription-id", Cups.INSTANCE.ippTagValue("Integer"));
+                    Pointer idAttr = cups.ippFindNextAttribute(response, "notify-subscription-id", IPP.TAG_INTEGER);
 
-                    int id = Cups.INSTANCE.ippGetInteger(idAttr, 0);
+                    int id = cups.ippGetInteger(idAttr, 0);
                     log.warn("Ending CUPS subscription #{}", id);
                     endSubscription(id);
                 }
             }
             catch(Exception ignore) { }
 
-            attr = Cups.INSTANCE.ippFindNextAttribute(response, "notify-recipient-uri", Cups.INSTANCE.ippTagValue("uri"));
+            attr = cups.ippFindNextAttribute(response, "notify-recipient-uri", IPP.TAG_URI);
         }
 
-        Cups.INSTANCE.ippDelete(response);
+        cups.ippDelete(response);
         return false;
     }
 
     static void startSubscription(int rssPort) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> endSubscription(subscriptionID)));
 
-        Pointer request = Cups.INSTANCE.ippNewRequest(Cups.INSTANCE.ippOpValue("Create-Printer-Subscription"));
+        Pointer request = cups.ippNewRequest(IPP.CREATE_PRINTER_SUBSCRIPTION);
 
-        Cups.INSTANCE.ippAddString(request,
-                                   Cups.INSTANCE.ippTagValue("Operation"),
-                                   Cups.INSTANCE.ippTagValue("uri"),
-                                   "printer-uri",
-                                   "",
-                                   URIUtil.encodePath("ipp://localhost:" + cupsPort + "/printers"));
-        Cups.INSTANCE.ippAddString(request,
-                                   Cups.INSTANCE.ippTagValue("Operation"),
-                                   Cups.INSTANCE.ippTagValue("Name"),
-                                   "requesting-user-name",
-                                   "",
-                                   System.getProperty("user.name"));
-        Cups.INSTANCE.ippAddString(request,
-                                   Cups.INSTANCE.ippTagValue("Subscription"),
-                                   Cups.INSTANCE.ippTagValue("uri"),
-                                   "notify-recipient-uri",
-                                   "",
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
+                                   URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers"));
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
+        cups.ippAddString(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_URI, "notify-recipient-uri", CHARSET,
                                    URIUtil.encodePath("rss://localhost:" + rssPort));
-        Cups.INSTANCE.ippAddString(request,
-                                   Cups.INSTANCE.ippTagValue("Subscription"),
-                                   Cups.INSTANCE.ippTagValue("Keyword"),
-                                   "notify-events",
-                                   "",
-                                   "printer-state-changed");
-        Cups.INSTANCE.ippAddInteger(request,
-                                    Cups.INSTANCE.ippTagValue("Subscription"),
-                                    Cups.INSTANCE.ippTagValue("Integer"),
-                                    "notify-lease-duration",
-                                    0);
-        Pointer response = Cups.INSTANCE.cupsDoRequest(http, request, "/");
+        cups.ippAddString(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_KEYWORD, "notify-events", CHARSET, "printer-state-changed");
+        cups.ippAddInteger(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_INTEGER, "notify-lease-duration", 0);
 
-        Pointer attr = Cups.INSTANCE.ippFindAttribute(response, "notify-subscription-id", Cups.INSTANCE.ippTagValue("integer"));
-        if (attr != Pointer.NULL) { subscriptionID = Cups.INSTANCE.ippGetInteger(attr, 0); }
+        Pointer response = cups.cupsDoRequest(http, request, "/");
 
-        Cups.INSTANCE.ippDelete(response);
+        Pointer attr = cups.ippFindAttribute(response, "notify-subscription-id", IPP.TAG_INTEGER);
+        if (attr != Pointer.NULL) { subscriptionID = cups.ippGetInteger(attr, 0); }
+
+        cups.ippDelete(response);
     }
 
     static void endSubscription(int id) {
-        Pointer request = Cups.INSTANCE.ippNewRequest(Cups.INSTANCE.ippOpValue("Cancel-Subscription"));
+        Pointer request = cups.ippNewRequest(IPP.CANCEL_SUBSCRIPTION);
 
-        Cups.INSTANCE.ippAddString(request,
-                                   Cups.INSTANCE.ippTagValue("Operation"),
-                                   Cups.INSTANCE.ippTagValue("uri"),
-                                   "printer-uri",
-                                   "",
-                                   URIUtil.encodePath("ipp://localhost:" + cupsPort));
-        Cups.INSTANCE.ippAddInteger(request,
-                                    Cups.INSTANCE.ippTagValue("Operation"),
-                                    Cups.INSTANCE.ippTagValue("Integer"),
-                                    "notify-subscription-id",
-                                    id);
-        Pointer response = Cups.INSTANCE.cupsDoRequest(http, request, "/");
-        Cups.INSTANCE.ippDelete(response);
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
+                                   URIUtil.encodePath("ipp://localhost:" + IPP.PORT));
+        cups.ippAddInteger(request, IPP.TAG_OPERATION, IPP.TAG_INTEGER, "notify-subscription-id", id);
+
+        Pointer response = cups.cupsDoRequest(http, request, "/");
+        cups.ippDelete(response);
     }
 
     public synchronized static void freeIppObjs() {
         if (httpInitialised) {
             httpInitialised = false;
-            Cups.INSTANCE.httpClose(http);
+            cups.httpClose(http);
         }
     }
 }

@@ -9,7 +9,26 @@ import com.sun.jna.Pointer;
  * Created by kyle on 3/14/17.
  */
 public interface Cups extends Library {
-    Cups INSTANCE = (Cups) Native.loadLibrary("cups", Cups.class);
+
+    Cups INSTANCE = Native.loadLibrary("cups", Cups.class);
+
+    /**
+     * Static class to facilitate readability of values
+     */
+    class IPP {
+        public static int PORT = INSTANCE.ippPort();
+        public static int TAG_OPERATION = INSTANCE.ippTagValue("Operation");
+        public static int TAG_URI = INSTANCE.ippTagValue("uri");
+        public static int TAG_NAME = INSTANCE.ippTagValue("Name");
+        public static int TAG_INTEGER = INSTANCE.ippTagValue("Integer");
+        public static int TAG_KEYWORD = INSTANCE.ippTagValue("keyword");
+        public static int TAG_SUBSCRIPTION = INSTANCE.ippTagValue("Subscription");
+        public static int GET_PRINTERS = INSTANCE.ippOpValue("CUPS-Get-Printers");
+        public static int GET_PRINTER_ATTRIBUTES = INSTANCE.ippOpValue("Get-Printer-Attributes");
+        public static int GET_SUBSCRIPTIONS = INSTANCE.ippOpValue("Get-Subscriptions");
+        public static int CREATE_PRINTER_SUBSCRIPTION = INSTANCE.ippOpValue("Create-Printer-Subscription");
+        public static int CANCEL_SUBSCRIPTION = INSTANCE.ippOpValue("Cancel-Subscription");
+    }
 
     //See https://www.cups.org/doc/api-cups.html and https://www.cups.org/doc/api-httpipp.html for usage
 

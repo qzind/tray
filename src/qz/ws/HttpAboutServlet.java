@@ -130,9 +130,9 @@ public class HttpAboutServlet extends DefaultServlet {
 
             Certificate cert = jks.getCertificate("root-ca");
 
-            return "-----BEGIN CERTIFICATE-----\n" +
-                    new String(Base64.encodeBase64(cert.getEncoded()), StandardCharsets.UTF_8) +
-                    "\n-----END CERTIFICATE-----";
+            return "-----BEGIN CERTIFICATE-----" + System.lineSeparator() +
+                    new String(Base64.encodeBase64(cert.getEncoded(), true), StandardCharsets.UTF_8) +
+                    "-----END CERTIFICATE-----";
         } else {
             return null;
         }

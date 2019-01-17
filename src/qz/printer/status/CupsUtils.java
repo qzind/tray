@@ -148,7 +148,7 @@ public class CupsUtils {
     }
 
     static void startSubscription(int rssPort) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> endSubscription(subscriptionID)));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> freeIppObjs()));
 
         Pointer request = cups.ippNewRequest(IPP.CREATE_PRINTER_SUBSCRIPTION);
 
@@ -182,6 +182,7 @@ public class CupsUtils {
     public synchronized static void freeIppObjs() {
         if (httpInitialised) {
             httpInitialised = false;
+            clearSubscriptions();
             cups.httpClose(http);
         }
     }

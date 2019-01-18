@@ -169,6 +169,7 @@ public class CupsUtils {
     }
 
     static void endSubscription(int id) {
+        if (id < 0) return;
         Pointer request = cups.ippNewRequest(IPP.CANCEL_SUBSCRIPTION);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
@@ -182,7 +183,8 @@ public class CupsUtils {
     public synchronized static void freeIppObjs() {
         if (httpInitialised) {
             httpInitialised = false;
-            clearSubscriptions();
+            endSubscription(subscriptionID);
+            subscriptionID = -1;
             cups.httpClose(http);
         }
     }

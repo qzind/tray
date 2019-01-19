@@ -28,6 +28,8 @@ public interface Cups extends Library {
         public static int GET_SUBSCRIPTIONS = INSTANCE.ippOpValue("Get-Subscriptions");
         public static int CREATE_PRINTER_SUBSCRIPTION = INSTANCE.ippOpValue("Create-Printer-Subscription");
         public static int CANCEL_SUBSCRIPTION = INSTANCE.ippOpValue("Cancel-Subscription");
+        public static final int INT_ERROR = 0;
+        public static final int INT_UNDEFINED = -1;
     }
 
     //See https://www.cups.org/doc/api-cups.html and https://www.cups.org/doc/api-httpipp.html for usage

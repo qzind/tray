@@ -25,7 +25,7 @@ public class CupsUtils {
 
     private static boolean httpInitialised = false;
     private static Pointer http;
-    private static int subscriptionID = -1;
+    private static int subscriptionID = IPP.INT_UNDEFINED;
 
 
     synchronized static void initCupsHttp() {
@@ -169,7 +169,11 @@ public class CupsUtils {
     }
 
     static void endSubscription(int id) {
-        if (id < 0) return;
+        switch (id) {
+            case IPP.INT_ERROR:
+            case IPP.INT_UNDEFINED:
+                return; // no subscription to end
+        }
         Pointer request = cups.ippNewRequest(IPP.CANCEL_SUBSCRIPTION);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
@@ -184,7 +188,7 @@ public class CupsUtils {
         if (httpInitialised) {
             httpInitialised = false;
             endSubscription(subscriptionID);
-            subscriptionID = -1;
+            subscriptionID = IPP.INT_UNDEFINED;
             cups.httpClose(http);
         }
     }

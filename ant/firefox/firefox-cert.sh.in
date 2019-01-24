@@ -59,7 +59,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
 	# Use policies.json deployment (Firefox 63+)
 	if [ -n "$ffdir" ]; then
-        version=$(HOME=/tmp "$ffdir/Contents/MacOS/firefox" --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+		version=$(HOME=/tmp "$ffdir/Contents/MacOS/firefox" --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
 		if [ "$version" -ge "63" ]; then
 			policy='{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
 			policypath="$ffdir/Contents/Resources/distribution/policies.json"
@@ -79,7 +79,7 @@ else
 
 	# Use policies.json deployment (Firefox 64+)
 	if [ -n "$ffdir" ]; then
-        version=$(HOME=/tmp XAUTHORITY=/tmp $ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+		version=$(HOME=/tmp XAUTHORITY=/tmp $ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
 		if [ "$version" -ge "64" ]; then
 			policy='{ "policies": { "Certificates": { "Install": ["'$dercertpath'"] } } }'
 			policypath="$ffdir/distribution/policies.json"

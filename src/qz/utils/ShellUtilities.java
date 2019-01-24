@@ -178,30 +178,28 @@ public class ShellUtilities {
         HashMap<String, String> descMap = new HashMap<>();
         String devices = ShellUtilities.executeRaw(new String[] {"lpstat", "-a"});
 
-        // Descriptions default to printer names
         for (String line : devices.split("\\r?\\n")) {
             String device = line.split(" ")[0];
-            descMap.put(device, device);
-        }
 
-        // Mac uses description as printer name, fetch it using lpstat
-        if (SystemUtilities.isMac()) {
-            String lookFor = "Description:";
-
-            for (Map.Entry<String, String> entry : descMap.entrySet()) {
-                String props = ShellUtilities.execute(new String[] {"lpstat", "-l", "-p", entry.getKey()}, new String[] {lookFor});
+            // Mac uses description as printer name, fetch it using lpstat
+            if (SystemUtilities.isMac()) {
+                String lookFor = "Description:";
+                String props = ShellUtilities.execute(new String[] {"lpstat", "-l", "-p", device}, new String[] {lookFor});
                 if (!props.isEmpty()) {
                     for(String prop : props.split("\\r?\\n")) {
                         if (prop.startsWith(lookFor)) {
                             String[] desc = prop.split(lookFor);
                             if (desc.length > 0) {
                                 // cache the description so we can map it to the actual printer name
-                                descMap.put(entry.getKey(), desc[desc.length - 1].trim());
-                                log.info(entry.getKey() + ": " + desc[desc.length - 1].trim());
+                                descMap.put(desc[desc.length - 1].trim(), device);
+                                log.info(desc[desc.length - 1].trim() + ": " + device);
                             }
                         }
                     }
                 }
+            } else {
+                // Descriptions default to printer names if not mac
+                descMap.put(device, device);
             }
         }
 

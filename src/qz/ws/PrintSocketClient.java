@@ -16,6 +16,8 @@ import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
+import qz.printer.status.StatusMonitor;
+import qz.printer.status.StatusSession;
 import qz.utils.*;
 
 import javax.management.ListenerNotFoundException;
@@ -46,6 +48,9 @@ public class PrintSocketClient {
         PRINTERS_GET_DEFAULT("printers.getDefault", true, "access connected printers"),
         PRINTERS_FIND("printers.find", true, "access connected printers"),
         PRINTERS_DETAIL("printers.detail", true, "access connected printers"),
+        PRINTERS_START_LISTENING("printers.startListening", true, "listen for printer status"),
+        PRINTERS_GET_STATUS("printers.getStatus", false),
+        PRINTERS_STOP_LISTENING("printers.stopListening", false),
         PRINT("print", true, "print to %s"),
 
         SERIAL_FIND_PORTS("serial.findPorts", true, "access serial ports"),
@@ -311,7 +316,27 @@ public class PrintSocketClient {
             case PRINTERS_DETAIL:
                 sendResult(session, UID, PrintServiceMatcher.getPrintersJSON());
                 break;
-
+            case PRINTERS_START_LISTENING:
+                if (!connection.hasStatusListener()) {
+                    connection.startStatusListener(new StatusSession(session));
+                }
+                StatusMonitor.startListening(connection, params.getJSONArray("printerNames"));
+                sendResult(session, UID, null);
+                break;
+            case PRINTERS_GET_STATUS:
+                if (connection.hasStatusListener()) {
+                    StatusMonitor.sendStatuses(connection);
+                } else {
+                    sendError(session, UID, "No printer listeners started for this client.");
+                }
+                sendResult(session, UID, null);
+                break;
+            case PRINTERS_STOP_LISTENING:
+                if (connection.hasStatusListener()) {
+                    connection.stopStatusListener();
+                }
+                sendResult(session, UID, null);
+                break;
             case PRINT:
                 PrintingUtilities.processPrintRequest(session, UID, params);
                 break;

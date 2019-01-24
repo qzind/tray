@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 public class StreamEvent {
 
     public enum Stream {
-        SERIAL, USB, HID, FILE
+        SERIAL, USB, HID, PRINTER, FILE
     }
 
     public enum Type {

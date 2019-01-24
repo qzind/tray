@@ -52,38 +52,39 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	locationdir=$(cd "$(dirname "$0")"; pwd)
 	get_ffdir
 
-	# Use policies.json deployment (Firefox 63+)
-	if [ -n "$ffdir" ]; then
-        version=$(HOME=/tmp "$ffdir/Contents/MacOS/firefox" --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
-        if [ "$version" -ge "63" ]; then
-            policy='{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
-            policypath="$ffdir/Contents/Resources/distribution/policies.json"
-        fi
-    fi
-
 	bindir="$ffdir/Contents/Resources/"
 	prefdir="$ffdir/Contents/Resources/defaults/pref"
 	installdir="${apple.installdir}"
 	trayapp="$installdir"  # use .app package
+
+	# Use policies.json deployment (Firefox 63+)
+	if [ -n "$ffdir" ]; then
+        version=$(HOME=/tmp "$ffdir/Contents/MacOS/firefox" --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+		if [ "$version" -ge "63" ]; then
+			policy='{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
+			policypath="$ffdir/Contents/Resources/distribution/policies.json"
+		fi
+	fi
 else
 	# Linux, etc
 	location=$(readlink -f "$0")
 	locationdir=$(dirname "$location")
 	get_ffdir
 
-	# Use policies.json deployment (Firefox 64+)
-	if [ -n "$ffdir" ]; then
-        version=$(HOME=/tmp XAUTHORITY=/tmp $ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
-        if [ "$version" -ge "64" ]; then
-            policy='' # TODO
-            policypath="$ffdir/distribution/policies.json"
-        fi
-    fi
-
 	bindir="$ffdir"
 	prefdir="$ffdir/defaults/pref"
 	installdir="${linux.installdir}"
+	dercertpath=$(echo "${ca.crt}" | sed -e "s|\!install|$installdir|g")
 	trayapp=""  # skip
+
+	# Use policies.json deployment (Firefox 64+)
+	if [ -n "$ffdir" ]; then
+        version=$(HOME=/tmp XAUTHORITY=/tmp $ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+		if [ "$version" -ge "64" ]; then
+			policy='{ "policies": { "Certificates": { "Install": ["'$dercertpath'"] } } }'
+			policypath="$ffdir/distribution/policies.json"
+		fi
+	fi
 fi
 
 # Firefox was not found, skip Firefox certificate installation
@@ -151,6 +152,7 @@ fi
 # Use policy file
 if [ -n "$policy" ]; then
 	"$locationdir/${jsonwriter.name}" "$policypath" "$policy"
+	chmod 644 "$policypath"
 	echo -e "${bash.success} Installed $policypath"
 	exit 0
 fi

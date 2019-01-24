@@ -36,7 +36,7 @@ public class HttpAboutServlet extends DefaultServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) {
         if ("application/json".equals(request.getHeader("Accept")) || "/json".equals(request.getServletPath())) {
             generateJsonResponse(request, response);
-        } else if ("application/x-x509-ca-cert".equals(request.getHeader("Accept")) || "/cert".equals(request.getServletPath())) {
+        } else if ("application/x-x509-ca-cert".equals(request.getHeader("Accept")) || request.getServletPath().startsWith("/cert/")) {
             generateCertResponse(request, response);
         } else {
             generateHtmlResponse(request, response);
@@ -61,10 +61,6 @@ public class HttpAboutServlet extends DefaultServlet {
         }
         display.append("</table>");
 
-        if (!aboutData.isNull("ssl") && aboutData.optJSONArray("ssl").length() > 0) {
-            display.append("<p><a href='/cert'>Download Cert</a></p>");
-        }
-
         display.append("</body></html>");
 
         try {
@@ -82,16 +78,6 @@ public class HttpAboutServlet extends DefaultServlet {
         JSONObject aboutData = AboutInfo.gatherAbout(request.getServerName());
 
         try {
-            String certData = loadCertificate();
-            if (certData != null) {
-                aboutData.put("certificate", certData);
-            }
-        }
-        catch(Exception e) {
-            log.warn("Failed to load certificate data: {}", e.getMessage());
-        }
-
-        try {
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("application/json");
             response.getOutputStream().write(aboutData.toString(JSON_INDENT).getBytes(StandardCharsets.UTF_8));
@@ -104,7 +90,8 @@ public class HttpAboutServlet extends DefaultServlet {
 
     private void generateCertResponse(HttpServletRequest request, HttpServletResponse response) {
         try {
-            String certData = loadCertificate();
+            String alias = request.getServletPath().split("/")[2];
+            String certData = loadCertificate(alias);
 
             if (certData != null) {
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -113,6 +100,7 @@ public class HttpAboutServlet extends DefaultServlet {
                 response.getOutputStream().print(certData);
             } else {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                response.getOutputStream().print("Could not find certificate with alias \"" + alias + "\" to download.");
             }
         }
         catch(Exception e) {
@@ -121,18 +109,22 @@ public class HttpAboutServlet extends DefaultServlet {
         }
     }
 
-    private String loadCertificate() throws GeneralSecurityException, IOException {
+    private String loadCertificate(String alias) throws GeneralSecurityException, IOException {
         Properties sslProps = DeployUtilities.loadTrayProperties();
 
         if (sslProps != null) {
             KeyStore jks = KeyStore.getInstance("jks");
             jks.load(new FileInputStream(new File(sslProps.getProperty("wss.keystore"))), sslProps.getProperty("wss.storepass").toCharArray());
 
-            Certificate cert = jks.getCertificate("root-ca");
+            if (jks.isCertificateEntry(alias)) {
+                Certificate cert = jks.getCertificate(alias);
 
-            return "-----BEGIN CERTIFICATE-----" + System.lineSeparator() +
-                    new String(Base64.encodeBase64(cert.getEncoded(), true), StandardCharsets.UTF_8) +
-                    "-----END CERTIFICATE-----";
+                return "-----BEGIN CERTIFICATE-----" + System.lineSeparator() +
+                        new String(Base64.encodeBase64(cert.getEncoded(), true), StandardCharsets.UTF_8) +
+                        "-----END CERTIFICATE-----";
+            } else {
+                return null;
+            }
         } else {
             return null;
         }
@@ -152,6 +144,9 @@ public class HttpAboutServlet extends DefaultServlet {
             if (obj.optJSONObject(key) != null) {
                 rows.append(generateFromKeys(obj.getJSONObject(key), false));
             } else {
+                if ("encoding".equals(key)) { //special case - replace with a "Download" button
+                    obj.put(key, "<a href='/cert/" + obj.optString("alias") + "'>Download certificate</a>");
+                }
                 rows.append(contentRow(key, obj.get(key)));
             }
         }

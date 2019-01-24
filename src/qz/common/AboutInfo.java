@@ -1,5 +1,6 @@
 package qz.common;
 
+import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -8,8 +9,11 @@ import org.slf4j.LoggerFactory;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -32,7 +36,7 @@ public class AboutInfo {
             about.put("ssl", ssl(keyStore));
             about.put("libraries", libraries());
         }
-        catch(JSONException | KeyStoreException e) {
+        catch(JSONException | GeneralSecurityException e) {
             log.error("Failed to write JSON data", e);
         }
 
@@ -74,9 +78,10 @@ public class AboutInfo {
         return environment;
     }
 
-    private static JSONArray ssl(KeyStore keystore) throws JSONException, KeyStoreException {
-        JSONArray ssl = new JSONArray();
+    private static JSONObject ssl(KeyStore keystore) throws JSONException, KeyStoreException, CertificateEncodingException {
+        JSONObject ssl = new JSONObject();
 
+        JSONArray certs = new JSONArray();
         if (keystore != null) {
             Enumeration<String> aliases = keystore.aliases();
             while(aliases.hasMoreElements()) {
@@ -84,14 +89,23 @@ public class AboutInfo {
                 if ("X.509".equals(keystore.getCertificate(alias).getType())) {
                     JSONObject cert = new JSONObject();
                     X509Certificate x509 = (X509Certificate)keystore.getCertificate(alias);
+                    cert.put("alias", alias);
                     cert.put("subject", x509.getSubjectX500Principal().getName());
                     cert.put("expires", toISO(x509.getNotAfter()));
-                    ssl.put(cert);
+                    cert.put("encoding", formatCert(x509.getEncoded()));
+                    certs.put(cert);
                 }
             }
         }
+        ssl.put("certificates", certs);
 
         return ssl;
+    }
+
+    private static String formatCert(byte[] encoding) {
+        return "-----BEGIN CERTIFICATE-----\r\n" +
+                new String(Base64.encodeBase64(encoding, true), StandardCharsets.UTF_8) +
+                "-----END CERTIFICATE-----\r\n";
     }
 
     private static JSONObject libraries() throws JSONException {

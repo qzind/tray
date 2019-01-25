@@ -1,7 +1,10 @@
 package qz.common;
 
 import org.apache.commons.ssl.Base64;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.x509.extension.X509ExtensionUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -10,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -91,7 +95,13 @@ public class AboutInfo {
                     JSONObject cert = new JSONObject();
                     X509Certificate x509 = (X509Certificate)keystore.getCertificate(alias);
                     cert.put("alias", alias);
-                    cert.put("rootca", BasicConstraints.getInstance(x509).isCA());
+                    try {
+                        ASN1Primitive ext = X509ExtensionUtil.fromExtensionValue(x509.getExtensionValue(Extension.basicConstraints.getId()));
+                        cert.put("rootca", BasicConstraints.getInstance(ext).isCA());
+                    }
+                    catch(IOException ioe) {
+                        cert.put("rootca", false);
+                    }
                     cert.put("subject", x509.getSubjectX500Principal().getName());
                     cert.put("expires", toISO(x509.getNotAfter()));
                     cert.put("data", formatCert(x509.getEncoded()));

@@ -8,7 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
+import sun.security.x509.X509CertImpl;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -90,9 +92,11 @@ public class AboutInfo {
                     JSONObject cert = new JSONObject();
                     X509Certificate x509 = (X509Certificate)keystore.getCertificate(alias);
                     cert.put("alias", alias);
+                    try { cert.put("rootca", ((X509CertImpl)x509).getBasicConstraintsExtension().get("is_ca"));}
+                    catch(IOException e) { cert.put("rootca", false);}
                     cert.put("subject", x509.getSubjectX500Principal().getName());
                     cert.put("expires", toISO(x509.getNotAfter()));
-                    cert.put("encoding", formatCert(x509.getEncoded()));
+                    cert.put("data", formatCert(x509.getEncoded()));
                     certs.put(cert);
                 }
             }

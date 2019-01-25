@@ -114,7 +114,7 @@ public class HttpAboutServlet extends DefaultServlet {
             KeyStore jks = KeyStore.getInstance("jks");
             jks.load(new FileInputStream(new File(sslProps.getProperty("wss.keystore"))), sslProps.getProperty("wss.storepass").toCharArray());
 
-            if (jks.isCertificateEntry(alias)) {
+            if (jks.containsAlias(alias)) {
                 return AboutInfo.formatCert(jks.getCertificate(alias).getEncoded());
             } else {
                 return null;
@@ -138,7 +138,7 @@ public class HttpAboutServlet extends DefaultServlet {
             if (obj.optJSONObject(key) != null) {
                 rows.append(generateFromKeys(obj.getJSONObject(key), false));
             } else {
-                if ("encoding".equals(key)) { //special case - replace with a "Download" button
+                if ("data".equals(key)) { //special case - replace with a "Download" button
                     obj.put(key, "<a href='/cert/" + obj.optString("alias") + "'>Download certificate</a>");
                 }
                 rows.append(contentRow(key, obj.get(key)));

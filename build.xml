@@ -248,6 +248,11 @@
         </copy>
         <copy file="${windows.jsonparser.in}" tofile="${windows.jsonparser.out}" ></copy>
 
+		<!-- Copy JavaFX native libs -->
+		<copy todir="${dist.dir}/libs">
+			<fileset dir="lib/javafx/bin" includes ="*.dll"/>
+		</copy>
+
         <exec executable="${nsisbin}" failonerror="true" >
             <arg value="${windows.launcher.out}"/>
         </exec>

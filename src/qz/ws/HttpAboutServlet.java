@@ -1,6 +1,5 @@
 package qz.ws;
 
-import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -18,7 +17,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.security.cert.Certificate;
 import java.util.Iterator;
 import java.util.Properties;
 
@@ -117,11 +115,7 @@ public class HttpAboutServlet extends DefaultServlet {
             jks.load(new FileInputStream(new File(sslProps.getProperty("wss.keystore"))), sslProps.getProperty("wss.storepass").toCharArray());
 
             if (jks.isCertificateEntry(alias)) {
-                Certificate cert = jks.getCertificate(alias);
-
-                return "-----BEGIN CERTIFICATE-----" + System.lineSeparator() +
-                        new String(Base64.encodeBase64(cert.getEncoded(), true), StandardCharsets.UTF_8) +
-                        "-----END CERTIFICATE-----";
+                return AboutInfo.formatCert(jks.getCertificate(alias).getEncoded());
             } else {
                 return null;
             }

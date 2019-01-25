@@ -102,7 +102,7 @@ public class AboutInfo {
         return ssl;
     }
 
-    private static String formatCert(byte[] encoding) {
+    public static String formatCert(byte[] encoding) {
         return "-----BEGIN CERTIFICATE-----\r\n" +
                 new String(Base64.encodeBase64(encoding, true), StandardCharsets.UTF_8) +
                 "-----END CERTIFICATE-----\r\n";

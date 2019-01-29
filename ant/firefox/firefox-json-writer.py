@@ -51,7 +51,9 @@ def merge_json(base, append):
             base[key] = val
         elif type(base_val) is list and type(val) is list:
             # merge list if not overwritten
-            base[key] = base_val + val
+            for v in val:
+                if v not in base_val:
+                    base_val.append(v)
 
 
 policy = load_json(path)

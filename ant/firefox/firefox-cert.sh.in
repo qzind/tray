@@ -4,12 +4,14 @@
 ###############################################################################
 #  Description:                                                               #
 #   INSTALL:                                                                  #
-#     1. Searches for Firefox installation path                               #
-#     2. Parses defaults/pref for potential Firefox AutoConfig conflicts      #
-#     3. Imports certificate into Firefox web browser using AutoConfig file   #
+#     * Searches for Firefox installation path                                #
+#     * Automatically installs (or toggles on) the use of a custom SSL        #
+#       certificate based on Firefox version and OS using a combination of    #
+#       legacy AutoConfig or polcies.json                                     #
 #                                                                             #
 #   UNINSTALL:                                                                #
-#     1. Deletes certificate from Firefox web browser using AutoConfig file   #
+#     * If necessary, automatically deletes the custom SSL certificate using  #
+#       a combination of legacy AutoConfig or policies.json                   #
 #                                                                             #
 #  Depends:                                                                   #
 #    - lsregister (Apple-only, provided by launch services)                   #
@@ -48,7 +50,7 @@ echo "Searching for Firefox..."
 
 ffdir=""
 if [[ "$OSTYPE" == "darwin"* ]]; then
-	# Mac OSX
+	# macOS
 	locationdir=$(cd "$(dirname "$0")"; pwd)
 	get_ffdir
 
@@ -112,10 +114,24 @@ configpath=$(echo "${firefoxconfig.install}" | sed -e "s|\!install|$installdir|g
 if [ "$1" == "uninstall" ]; then
     # Newer Firefox versions don't use AutoConfig
     if [ -n "$policy" ]; then
-        echo -e "${bash.skipped} Configured via policies.json, no uninstall needed"
-        exit 0
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            echo -e "${bash.skipped} Configured via policies.json, no uninstall needed"
+            exit 0
+        else
+            # Linux, etc
+            echo -e "\nSearching for $policypath..."
+            if [ -f "$policypath" ]; then
+                # Delete cert entry
+                "$locationdir/${jsonwriter.name}" "$policypath" "$policy" "true"
+                echo -e "${bash.success} Deleted cert entry"
+                exit 0
+            else
+                echo -e "${bash.skipped} $policypath not found"
+                exit 0
+            fi
+        fi
     fi
-
     echo -e "\nSearching for ${project.name} AutoConfig..."
     if [ -f "$bindir/${firefoxconfig.name}" ]; then
         echo -e "${bash.success} Check Firefox config exists"

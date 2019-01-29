@@ -123,7 +123,7 @@ if [ "$1" == "uninstall" ]; then
             echo -e "\nSearching for $policypath..."
             if [ -f "$policypath" ]; then
                 # Delete cert entry
-                "$locationdir/${jsonwriter.name}" "$policypath" "$policy" "true"
+                "$locationdir/${jsonwriter.name}" "$policypath" "$policy" "" "true"
                 echo -e "${bash.success} Deleted cert entry"
                 exit 0
             else

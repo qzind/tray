@@ -8,10 +8,12 @@ import sys
 DEFAULT_PATH = '/Applications/Firefox.app/Contents/Resources/distribution/policies.json'
 DEFAULT_DATA = '{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
 DEFAULT_OVERWRITE = False
+DEFAULT_DELETE = False
 
 path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PATH
 merge = json.loads(sys.argv[2]) if len(sys.argv) > 2 else json.loads(DEFAULT_DATA)
 overwrite = sys.argv[3].lower() == 'true' if len(sys.argv) > 3 else DEFAULT_OVERWRITE
+deletion = sys.argv[4].lower() == 'true' if len(sys.argv) > 4 else DEFAULT_DELETE
 
 
 def mkdir_p(path):
@@ -56,8 +58,26 @@ def merge_json(base, append):
                     base_val.append(v)
 
 
+def delete_json(base, append):
+    """ Removes values in append from base """
+    for key, val in append.items():
+        base_val = base.get(key)
+
+        if type(base_val) is dict and type(val) is dict:
+            delete_json(base_val, val)
+        elif type(base_val) is list and type(val) is list:
+            for v in val:
+                if v in base_val:
+                    base_val.remove(v)
+        elif base_val is not None:
+            base.pop(key)
+
+
 policy = load_json(path)
-merge_json(policy, merge)
+if deletion:
+    delete_json(policy, merge)
+else:
+    merge_json(policy, merge)
 
 mkdir_p(os.path.dirname(path))
 stream = open(path, "w+")

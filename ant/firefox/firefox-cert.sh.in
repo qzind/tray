@@ -168,7 +168,7 @@ fi
 # Use policy file
 if [ -n "$policy" ]; then
 	"$locationdir/${jsonwriter.name}" "$policypath" "$policy"
-	chmod 644 "$policypath"
+	chmod go+r "$policypath"
 	chmod go+rx "$(dirname "$policypath")"
 	echo -e "${bash.success} Installed $policypath"
 	exit 0

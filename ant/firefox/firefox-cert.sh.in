@@ -79,10 +79,10 @@ else
 	dercertpath=$(echo "${ca.crt}" | sed -e "s|\!install|$installdir|g")
 	trayapp=""  # skip
 
-	# Use policies.json deployment (Firefox 64+)
+	# Use policies.json deployment (Firefox 65+)
 	if [ -n "$ffdir" ]; then
 		version=$(HOME=/tmp XAUTHORITY=/tmp $ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
-		if [ "$version" -ge "64" ]; then
+		if [ "$version" -ge "65" ]; then
 			policy='{ "policies": { "Certificates": { "Install": ["'$dercertpath'"] } } }'
 			policypath="$ffdir/distribution/policies.json"
 		fi
@@ -169,6 +169,7 @@ fi
 if [ -n "$policy" ]; then
 	"$locationdir/${jsonwriter.name}" "$policypath" "$policy"
 	chmod 644 "$policypath"
+	chmod go+rx "$(dirname "$policypath")"
 	echo -e "${bash.success} Installed $policypath"
 	exit 0
 fi

@@ -2,7 +2,7 @@
 
 <project name="qz" default="distribute" basedir=".">
 
-    <target name="distribute" depends="init,clean,sign-jar,override-authcert,include-assets">
+    <target name="distribute" depends="init,clean,sign-jar,copy-native,override-authcert,include-assets">
         <echo message="Process complete" />
     </target>
 
@@ -154,6 +154,22 @@
         <echo>Size: ${build.size} KB</echo>
     </target>
 
+    <target name="copy-native">
+        <condition property="native.extension" value="*.dll">
+            <os family="windows"/>
+        </condition>
+        <condition property="native.extension" value="*.dylib">
+            <os family="mac"/>
+        </condition>
+        <condition property="native.extension" value="*.so">
+            <os family="unix"/>
+        </condition>
+        <!-- Copy JavaFX native libs -->
+        <copy todir="${dist.dir}/libs" flatten="true">
+            <fileset dir="lib/" includes ="javafx*/**/${native.extension}"/>
+        </copy>
+    </target>
+
     <target name="internal-authcert" unless="authcert.use">
         <echo>Using internal cert for signing auth</echo>
         <property name="build.type" value=""/>
@@ -247,11 +263,6 @@
             <filterchain><expandproperties/></filterchain>
         </copy>
         <copy file="${windows.jsonparser.in}" tofile="${windows.jsonparser.out}" ></copy>
-
-		<!-- Copy JavaFX native libs -->
-		<copy todir="${dist.dir}/libs">
-			<fileset dir="lib/javafx/bin" includes ="*.dll"/>
-		</copy>
 
         <exec executable="${nsisbin}" failonerror="true" >
             <arg value="${windows.launcher.out}"/>
@@ -389,7 +400,7 @@
         <delete file="${dist.dir}/${apple.plist.out}" />
     </target>
 
-    <target name="codesign" depends="init,prepackage" if="codesign.mac">
+    <target name="codesign" depends="init,copy-native,prepackage" if="codesign.mac">
         <property file="ant/apple/apple.properties"/>
         <exec executable="security">
             <arg value="add-certificates"/>
@@ -420,6 +431,14 @@
             <param name="signing.jarname" value="communication/libusb4java-*-osx-x86_64.jar"/>
             <param name="signing.filetype" value="*.dylib"/>
         </antcall>
+        <!-- Manually sign standalone libs -->
+        <!--use xargs to loop over and codesign all files-->
+        <echo message="Signing ${dist.dir}/libs/*.dylib using ${apple.packager.signid}"/>
+        <exec executable="bash" failonerror="true">
+            <arg value="-c"/>
+            <arg value="echo &quot;$(find ${dist.dir}/libs/*.dylib)&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>
+        </exec>
+
     </target>
 
     <target name="codesign-libs">

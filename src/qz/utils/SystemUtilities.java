@@ -33,6 +33,7 @@ public class SystemUtilities {
 
     private static String uname;
     private static String linuxRelease;
+    private static String classProtocol;
 
 
     /**
@@ -246,5 +247,16 @@ public class SystemUtilities {
      */
     private static double getDpiScale() {
         return SystemUtilities.isMac() ? 1 : Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+    }
+
+    /**
+     * Detects if running from IDE or jar
+     * @return true if running from a jar, false if running from IDE
+     */
+    public static boolean isJar() {
+        if (classProtocol == null) {
+            classProtocol = SystemUtilities.class.getResource("").getProtocol();
+        }
+        return "jar".equals(classProtocol);
     }
 }

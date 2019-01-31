@@ -1,5 +1,6 @@
 /out/
 /js/node_modules
+/lib/javafx*
 /.idea/workspace.xml
 /.idea/uiDesigner.xml
 /.idea/compiler.xml

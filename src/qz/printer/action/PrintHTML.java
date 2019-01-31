@@ -10,6 +10,7 @@
 
 package qz.printer.action;
 
+import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -17,9 +18,11 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
+import qz.deploy.DeployUtilities;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
+import qz.utils.SystemUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.swing.*;
@@ -28,6 +31,7 @@ import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -46,6 +50,11 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
     public PrintHTML() {
         super();
+        //JavaFX native libs
+        if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
+            System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
+        }
+
         models = new ArrayList<>();
     }
 

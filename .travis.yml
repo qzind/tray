@@ -6,6 +6,13 @@ matrix:
       env: TARGET=makeself
     - os: osx
       env: TARGET=pkgbuild
+    - jdk: oraclejdk11
+      env: TARGET=nsis
+    - jdk: oraclejdk11
+      env: TARGET=makeself
+    - os: osx
+      jdk: oraclejdk11
+      env: TARGET=pkgbuild
 language: java
 before_script: 
     - sw_vers -productVersion && brew update && brew install ant; ant -version

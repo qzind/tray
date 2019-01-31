@@ -154,7 +154,44 @@
         <echo>Size: ${build.size} KB</echo>
     </target>
 
-    <target name="copy-native">
+    <!-- Download JavaFX if not already downloaded -->
+    <target name="check-javafx">
+        <first id="found">
+            <fileset dir="lib/" includes="**/*fx*" />
+        </first>
+        <condition property="javafx.needed" value="${toString:found}">
+            <equals arg1="${toString:found}" arg2=""/>
+        </condition>
+    </target>
+
+    <target name="download-javafx" depends="check-javafx" if="javafx.needed">
+        <property name="javafx.version" value="11.0.2" />
+        <loadresource property="javafx.version-url">
+            <propertyresource name="javafx.version"/>
+            <filterchain>
+                <tokenfilter>
+                    <filetokenizer/>
+                    <replacestring from="." to="-"/>
+                </tokenfilter>
+            </filterchain>
+        </loadresource>
+
+        <condition property="javafx.platform" value="windows">
+            <os family="windows"/>
+        </condition>
+        <condition property="javafx.platform" value="mac">
+            <os family="mac"/>
+        </condition>
+        <condition property="javafx.platform" value="linux">
+            <os family="unix"/>
+        </condition>
+        <get src="http://gluonhq.com/download/javafx-${javafx.version-url}-sdk-${javafx.platform}/" dest="fx.zip"/>
+
+        <unzip src="fx.zip" dest="lib/" overwrite="true"/>
+        <delete file="fx.zip" />
+    </target>
+
+    <target name="copy-native" depends="download-javafx">
         <condition property="native.extension" value="*.dll">
             <os family="windows"/>
         </condition>

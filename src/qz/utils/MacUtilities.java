@@ -11,8 +11,10 @@
 package qz.utils;
 
 import com.apple.OSXAdapter;
+import com.github.zafarkhaja.semver.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.ui.IconCache;
 
@@ -92,6 +94,13 @@ public class MacUtilities {
     }
 
     public static int getScaleFactor() {
+        // Java 9+ per JDK-8172962
+        if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("9.0.0"))) {
+            GraphicsDevice graphicsDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+            GraphicsConfiguration graphicsConfig = graphicsDevice.getDefaultConfiguration();
+            return (int)graphicsConfig.getDefaultTransform().getScaleX();
+        }
+        // Java 7, 8
         try {
             // Use reflection to avoid compile errors on non-macOS environments
             Object screen = Class.forName("sun.awt.CGraphicsDevice").cast(GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice());

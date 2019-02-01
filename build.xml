@@ -154,18 +154,8 @@
         <echo>Size: ${build.size} KB</echo>
     </target>
 
-    <!-- Download JavaFX if not already downloaded -->
+    <!-- Download JavaFX if needed -->
     <target name="check-javafx">
-        <first id="found">
-            <fileset dir="lib/" includes="**/*fx*" />
-        </first>
-        <condition property="javafx.needed" value="${toString:found}">
-            <equals arg1="${toString:found}" arg2=""/>
-        </condition>
-    </target>
-
-    <target name="download-javafx" depends="check-javafx" if="javafx.needed">
-        <property name="javafx.version" value="11.0.2" />
         <loadresource property="javafx.version-url">
             <propertyresource name="javafx.version"/>
             <filterchain>
@@ -176,6 +166,32 @@
             </filterchain>
         </loadresource>
 
+        <first id="found">
+            <dirset dir="lib/">
+                <include name="javafx*${javafx.version}"/>
+                <include name="javafx*${javafx.version-url}"/>
+            </dirset>
+        </first>
+        <condition property="javafx.needed" value="${toString:found}">
+            <equals arg1="${toString:found}" arg2=""/>
+        </condition>
+        <property name="javafx.found" value="${toString:found}"/>
+    </target>
+
+    <target name="skip-javafx" depends="check-javafx" unless="javafx.needed">
+        <echo>JavaFX ${javafx.version} found at ${javafx.found}.  Skipping.</echo>
+    </target>
+
+    <target name="download-javafx" depends="check-javafx,skip-javafx" if="javafx.needed">
+        <echo>JavaFX ${javafx.version} was not found, downloading...</echo>
+
+        <echo>Removing any old versions</echo>
+        <delete failonerror="false" includeemptydirs="true" verbose="true">
+            <fileset dir="lib/">
+                <include name="**/*javafx*sdk*/**"/>
+            </fileset>
+        </delete>
+
         <condition property="javafx.platform" value="windows">
             <os family="windows"/>
         </condition>
@@ -185,7 +201,7 @@
         <condition property="javafx.platform" value="linux">
             <os family="unix"/>
         </condition>
-        <get src="http://gluonhq.com/download/javafx-${javafx.version-url}-sdk-${javafx.platform}/" dest="fx.zip"/>
+        <get src="${javafx.mirror}/javafx-${javafx.version-url}-sdk-${javafx.platform}/" verbose="true" dest="fx.zip"/>
 
         <unzip src="fx.zip" dest="lib/" overwrite="true"/>
         <delete file="fx.zip" />

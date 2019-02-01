@@ -1,5 +1,10 @@
 package qz.common;
 
+import org.apache.commons.ssl.Base64;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.x509.extension.X509ExtensionUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -8,8 +13,12 @@ import org.slf4j.LoggerFactory;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -32,7 +41,7 @@ public class AboutInfo {
             about.put("ssl", ssl(keyStore));
             about.put("libraries", libraries());
         }
-        catch(JSONException | KeyStoreException e) {
+        catch(JSONException | GeneralSecurityException e) {
             log.error("Failed to write JSON data", e);
         }
 
@@ -74,22 +83,41 @@ public class AboutInfo {
         return environment;
     }
 
-    private static JSONArray ssl(KeyStore keystore) throws JSONException, KeyStoreException {
-        JSONArray ssl = new JSONArray();
+    private static JSONObject ssl(KeyStore keystore) throws JSONException, KeyStoreException, CertificateEncodingException {
+        JSONObject ssl = new JSONObject();
 
-        Enumeration<String> aliases = keystore.aliases();
-        while(aliases.hasMoreElements()) {
-            String alias = aliases.nextElement();
-            if ("X.509".equals(keystore.getCertificate(alias).getType())) {
-                JSONObject cert = new JSONObject();
-                X509Certificate x509 = (X509Certificate)keystore.getCertificate(alias);
-                cert.put("subject", x509.getSubjectX500Principal().getName());
-                cert.put("expires", toISO(x509.getNotAfter()));
-                ssl.put(cert);
+        JSONArray certs = new JSONArray();
+        if (keystore != null) {
+            Enumeration<String> aliases = keystore.aliases();
+            while(aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+                if ("X.509".equals(keystore.getCertificate(alias).getType())) {
+                    JSONObject cert = new JSONObject();
+                    X509Certificate x509 = (X509Certificate)keystore.getCertificate(alias);
+                    cert.put("alias", alias);
+                    try {
+                        ASN1Primitive ext = X509ExtensionUtil.fromExtensionValue(x509.getExtensionValue(Extension.basicConstraints.getId()));
+                        cert.put("rootca", BasicConstraints.getInstance(ext).isCA());
+                    }
+                    catch(IOException ioe) {
+                        cert.put("rootca", false);
+                    }
+                    cert.put("subject", x509.getSubjectX500Principal().getName());
+                    cert.put("expires", toISO(x509.getNotAfter()));
+                    cert.put("data", formatCert(x509.getEncoded()));
+                    certs.put(cert);
+                }
             }
         }
+        ssl.put("certificates", certs);
 
         return ssl;
+    }
+
+    public static String formatCert(byte[] encoding) {
+        return "-----BEGIN CERTIFICATE-----\r\n" +
+                new String(Base64.encodeBase64(encoding, true), StandardCharsets.UTF_8) +
+                "-----END CERTIFICATE-----\r\n";
     }
 
     private static JSONObject libraries() throws JSONException {

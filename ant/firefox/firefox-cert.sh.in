@@ -4,12 +4,14 @@
 ###############################################################################
 #  Description:                                                               #
 #   INSTALL:                                                                  #
-#     1. Searches for Firefox installation path                               #
-#     2. Parses defaults/pref for potential Firefox AutoConfig conflicts      #
-#     3. Imports certificate into Firefox web browser using AutoConfig file   #
+#     * Searches for Firefox installation path                                #
+#     * Automatically installs (or toggles on) the use of a custom SSL        #
+#       certificate based on Firefox version and OS using a combination of    #
+#       legacy AutoConfig or polcies.json                                     #
 #                                                                             #
 #   UNINSTALL:                                                                #
-#     1. Deletes certificate from Firefox web browser using AutoConfig file   #
+#     * If necessary, automatically deletes the custom SSL certificate using  #
+#       a combination of legacy AutoConfig or policies.json                   #
 #                                                                             #
 #  Depends:                                                                   #
 #    - lsregister (Apple-only, provided by launch services)                   #
@@ -48,42 +50,43 @@ echo "Searching for Firefox..."
 
 ffdir=""
 if [[ "$OSTYPE" == "darwin"* ]]; then
-	# Mac OSX
+	# macOS
 	locationdir=$(cd "$(dirname "$0")"; pwd)
 	get_ffdir
-
-	# Use policies.json deployment (Firefox 63+)
-	if [ -n "$ffdir" ]; then
-        version=$(HOME=/tmp "$ffdir/Contents/MacOS/firefox" --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
-        if [ "$version" -ge "63" ]; then
-            policy='{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
-            policypath="$ffdir/Contents/Resources/distribution/policies.json"
-        fi
-    fi
 
 	bindir="$ffdir/Contents/Resources/"
 	prefdir="$ffdir/Contents/Resources/defaults/pref"
 	installdir="${apple.installdir}"
 	trayapp="$installdir"  # use .app package
+
+	# Use policies.json deployment (Firefox 63+)
+	if [ -n "$ffdir" ]; then
+		version=$(HOME=/tmp "$ffdir/Contents/MacOS/firefox" --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+		if [ "$version" -ge "63" ]; then
+			policy='{ "policies": { "Certificates": { "ImportEnterpriseRoots": true } } }'
+			policypath="$ffdir/Contents/Resources/distribution/policies.json"
+		fi
+	fi
 else
 	# Linux, etc
 	location=$(readlink -f "$0")
 	locationdir=$(dirname "$location")
 	get_ffdir
 
-	# Use policies.json deployment (Firefox 64+)
-	if [ -n "$ffdir" ]; then
-        version=$(HOME=/tmp XAUTHORITY=/tmp $ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
-        if [ "$version" -ge "64" ]; then
-            policy='' # TODO
-            policypath="$ffdir/distribution/policies.json"
-        fi
-    fi
-
 	bindir="$ffdir"
 	prefdir="$ffdir/defaults/pref"
 	installdir="${linux.installdir}"
+	dercertpath=$(echo "${ca.crt}" | sed -e "s|\!install|$installdir|g")
 	trayapp=""  # skip
+
+	# Use policies.json deployment (Firefox 65+)
+	if [ -n "$ffdir" ]; then
+		version=$(HOME=/tmp XAUTHORITY=/tmp $ffdir/firefox --version|rev|cut -d' ' -f1|rev|cut -d. -f1)
+		if [ "$version" -ge "65" ]; then
+			policy='{ "policies": { "Certificates": { "Install": ["'$dercertpath'"] } } }'
+			policypath="$ffdir/distribution/policies.json"
+		fi
+	fi
 fi
 
 # Firefox was not found, skip Firefox certificate installation
@@ -111,10 +114,24 @@ configpath=$(echo "${firefoxconfig.install}" | sed -e "s|\!install|$installdir|g
 if [ "$1" == "uninstall" ]; then
     # Newer Firefox versions don't use AutoConfig
     if [ -n "$policy" ]; then
-        echo -e "${bash.skipped} Configured via policies.json, no uninstall needed"
-        exit 0
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            echo -e "${bash.skipped} Configured via policies.json, no uninstall needed"
+            exit 0
+        else
+            # Linux, etc
+            echo -e "\nSearching for $policypath..."
+            if [ -f "$policypath" ]; then
+                # Delete cert entry
+                "$locationdir/${jsonwriter.name}" "$policypath" "$policy" "" "true"
+                echo -e "${bash.success} Deleted cert entry"
+                exit 0
+            else
+                echo -e "${bash.skipped} $policypath not found"
+                exit 0
+            fi
+        fi
     fi
-
     echo -e "\nSearching for ${project.name} AutoConfig..."
     if [ -f "$bindir/${firefoxconfig.name}" ]; then
         echo -e "${bash.success} Check Firefox config exists"
@@ -151,6 +168,8 @@ fi
 # Use policy file
 if [ -n "$policy" ]; then
 	"$locationdir/${jsonwriter.name}" "$policypath" "$policy"
+	chmod go+r "$policypath"
+	chmod go+rx "$(dirname "$policypath")"
 	echo -e "${bash.success} Installed $policypath"
 	exit 0
 fi

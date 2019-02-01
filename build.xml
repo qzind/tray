@@ -580,6 +580,9 @@
         </copy>
         <chmod perm="u+x" file="${locator.out}"/>
 
+        <copy file="${jsonwriter.in}" tofile="${jsonwriter.out}" ></copy>
+        <chmod perm="u+x" file="${jsonwriter.out}"/>
+
         <exec executable="${linux.packager.out}" failonerror="true" />
 
         <!-- Cleanup lingering icon (for other OS installers) -->

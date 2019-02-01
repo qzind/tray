@@ -12,6 +12,8 @@ package qz.utils;
 
 import com.apple.OSXAdapter;
 import com.github.zafarkhaja.semver.Version;
+import com.sun.jna.Library;
+import com.sun.jna.Native;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -113,6 +115,15 @@ public class MacUtilities {
             log.warn("Unable to determine screen scale factor.  Defaulting to 1.", e);
         }
         return 1;
+    }
+
+    public static int getProcessID() {
+        return CLibrary.INSTANCE.getpid();
+    }
+
+    private interface CLibrary extends Library {
+        CLibrary INSTANCE = (CLibrary) Native.loadLibrary("c", CLibrary.class);
+        int getpid ();
     }
 
 }

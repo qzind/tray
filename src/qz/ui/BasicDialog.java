@@ -1,6 +1,7 @@
 package qz.ui;
 
 import qz.common.Constants;
+import qz.utils.MacUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
@@ -159,7 +160,9 @@ public class BasicDialog extends JDialog {
     public void setVisible(boolean b) {
         // fix window focus on macOS
         if (SystemUtilities.isMac() && !GraphicsEnvironment.isHeadless()) {
-            ShellUtilities.executeAppleScript("tell application \"" + Constants.ABOUT_TITLE + "\" to activate");
+            ShellUtilities.executeAppleScript("tell application \"System Events\" " +
+                                                      "set frontmost of every process whose unix id is " + MacUtilities.getProcessID() + " to true " +
+                                                      "end tell");
         }
         super.setVisible(b);
     }

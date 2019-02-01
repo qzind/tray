@@ -10,7 +10,7 @@
 
 package qz.utils;
 
-import com.apple.OSXAdapter;
+import com.apple.OSXAdapterWrapper;
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
@@ -49,7 +49,7 @@ public class MacUtilities {
         MacUtilities.aboutDialog = aboutDialog;
 
         try {
-            OSXAdapter.setAboutHandler(MacUtilities.class, MacUtilities.class.getDeclaredMethod("showAboutDialog"));
+            OSXAdapterWrapper.setAboutHandler(MacUtilities.class, MacUtilities.class.getDeclaredMethod("showAboutDialog"));
         }
         catch(Exception e) {
             e.printStackTrace();
@@ -63,7 +63,7 @@ public class MacUtilities {
         MacUtilities.trayManager = trayManager;
 
         try {
-            OSXAdapter.setQuitHandler(MacUtilities.class, MacUtilities.class.getDeclaredMethod("showExitPrompt"));
+            OSXAdapterWrapper.setQuitHandler(MacUtilities.class, MacUtilities.class.getDeclaredMethod("showExitPrompt"));
         }
         catch(Exception e) {
             e.printStackTrace();

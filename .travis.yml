@@ -4,9 +4,14 @@ matrix:
       env: TARGET=nsis
     - jdk: oraclejdk8
       env: TARGET=makeself
-    - jdk: openjdk7
+    - os: osx
+      env: TARGET=pkgbuild
+    - jdk: oraclejdk11
+      env: TARGET=nsis
+    - jdk: oraclejdk11
       env: TARGET=makeself
     - os: osx
+      jdk: oraclejdk11
       env: TARGET=pkgbuild
 language: java
 before_script: 

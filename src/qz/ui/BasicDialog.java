@@ -160,8 +160,8 @@ public class BasicDialog extends JDialog {
     public void setVisible(boolean b) {
         // fix window focus on macOS
         if (SystemUtilities.isMac() && !GraphicsEnvironment.isHeadless()) {
-            ShellUtilities.executeAppleScript("tell application \"System Events\" " +
-                                                      "set frontmost of every process whose unix id is " + MacUtilities.getProcessID() + " to true " +
+            ShellUtilities.executeAppleScript("tell application \"System Events\" \n" +
+                                                      "set frontmost of every process whose unix id is " + MacUtilities.getProcessID() + " to true \n" +
                                                       "end tell");
         }
         super.setVisible(b);

@@ -156,6 +156,7 @@
 
     <!-- Download JavaFX if needed -->
     <target name="check-javafx">
+        <property file="ant/project.properties"/>
         <loadresource property="javafx.version-url">
             <propertyresource name="javafx.version"/>
             <filterchain>
@@ -179,13 +180,13 @@
     </target>
 
     <target name="skip-javafx" depends="check-javafx" unless="javafx.needed">
-        <echo>JavaFX ${javafx.version} found at ${javafx.found}.  Skipping.</echo>
+        <echo level="info">JavaFX ${javafx.version} found at ${javafx.found}.  Skipping.</echo>
     </target>
 
     <target name="download-javafx" depends="check-javafx,skip-javafx" if="javafx.needed">
-        <echo>JavaFX ${javafx.version} was not found, downloading...</echo>
+        <echo level="info">JavaFX ${javafx.version} was not found, downloading...</echo>
 
-        <echo>Removing any old versions</echo>
+        <echo level="info">Removing any old versions</echo>
         <delete failonerror="false" includeemptydirs="true" verbose="true">
             <fileset dir="lib/">
                 <include name="**/*javafx*sdk*/**"/>

@@ -154,7 +154,7 @@ function restart_it() {
 # Provide user environmental variables to the sudo environment
 function sudo_env() {
     userid="$(logname 2>/dev/null || echo $SUDO_USER)"
-    pid=$(ps aux |grep "^$userid" |grep "dbus-daemon" | grep "unix:" |awk '{print $2}')
+    pid=$(ps aux |grep "^$userid" |grep "dbus-daemon" | grep -- "--config-file=" |awk '{print $2}')
     # Replace null delimiters with newline for grep
     envt=$(cat "/proc/$pid/environ" 2> /dev/null |tr '\0' '\n')
 
@@ -167,14 +167,23 @@ function sudo_env() {
         # Careful, this technique won't yet work with spaces
         if echo "$envt" | grep "^$i=" > /dev/null 2>&1; then
             eval "$(echo "$envt" | grep "^$i=")" > /dev/null 2>&1
-	    export $i > /dev/null 2>&1
-	elif initctl --user get-env $i > /dev/null 2>&1; then
+            export $i > /dev/null 2>&1
+        elif initctl --user get-env $i > /dev/null 2>&1; then
             eval "$i=$(initctl --user get-env $i)" > /dev/null 2>&1
-	    export $i > /dev/null 2>&1
-	fi
+            export $i > /dev/null 2>&1
+	    fi
 
         echo -e "        $i=${!i}"
     done
+
+    # Handle Ubuntu Gnome
+    if [ -z "$GNOME_DESKTOP_SESSION_ID" ]; then
+        if [[ "$XDG_CURRENT_DESKTOP" == *"GNOME" ]]; then
+            export GNOME_DESKTOP_SESSION_ID="this-is-deprecated"
+            echo -e "        GNOME_DESKTOP_SESSION_ID=$GNOME_DESKTOP_SESSION_ID (fixed)"
+        fi
+    fi
+
 }
 
 # Check for Ubuntu to fix System Tray

@@ -46,6 +46,14 @@ function get_ffdir()
 	return 1
 }
 
+echo "Looking for python..."
+pythonpath="$(which python || which python3)"
+if [ -z "$pythonpath" ]; then
+	echo -e "${bash.failure} python was not found"
+else
+	echo -e "${bash.success} python found $pythonpath"
+fi
+
 echo "Searching for Firefox..."
 
 ffdir=""
@@ -123,7 +131,7 @@ if [ "$1" == "uninstall" ]; then
             echo -e "\nSearching for $policypath..."
             if [ -f "$policypath" ]; then
                 # Delete cert entry
-                "$locationdir/${jsonwriter.name}" "$policypath" "$policy" "" "true"
+                "$pythonpath" "$locationdir/${jsonwriter.name}" "$policypath" "$policy" "" "true"
                 echo -e "${bash.success} Deleted cert entry"
                 exit 0
             else
@@ -167,7 +175,7 @@ fi
 
 # Use policy file
 if [ -n "$policy" ]; then
-	"$locationdir/${jsonwriter.name}" "$policypath" "$policy"
+	"$pythonpath" "$locationdir/${jsonwriter.name}" "$policypath" "$policy"
 	chmod go+r "$policypath"
 	chmod go+rx "$(dirname "$policypath")"
 	echo -e "${bash.success} Installed $policypath"

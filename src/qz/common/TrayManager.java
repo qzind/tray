@@ -13,7 +13,6 @@ package qz.common;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.jdesktop.swinghelper.tray.JXTrayIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
@@ -21,8 +20,7 @@ import qz.deploy.DeployUtilities;
 import qz.deploy.LinuxCertificate;
 import qz.deploy.WindowsDeploy;
 import qz.ui.*;
-import qz.ui.tray.ClassicTrayIcon;
-import qz.ui.tray.ModernTrayIcon;
+import qz.ui.tray.TrayType;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
@@ -49,7 +47,7 @@ public class TrayManager {
     private final IconCache iconCache;
 
     // Custom swing pop-up menu
-    private JXTrayIcon tray;
+    private TrayType tray;
 
     private ConfirmDialog confirmDialog;
     private GatewayDialog gatewayDialog;
@@ -87,13 +85,12 @@ public class TrayManager {
         SystemUtilities.setSystemLookAndFeel();
 
         if (SystemTray.isSupported()) {
-            Image blank = new ImageIcon(new byte[1]).getImage();
             if (SystemUtilities.isWindows()) {
-                tray = new JXTrayIcon(blank);
+                tray = TrayType.JX.init();
             } else if (SystemUtilities.isMac()) {
-                tray = new ClassicTrayIcon(blank);
+                tray = TrayType.CLASSIC.init();
             } else {
-                tray = new ModernTrayIcon(blank);
+                tray = TrayType.MODERN.init();
             }
 
             // Iterates over all images denoted by IconCache.getTypes() and caches them
@@ -102,10 +99,16 @@ public class TrayManager {
             tray.setToolTip(name);
 
             try {
-                SystemTray.getSystemTray().add(tray);
+                SystemTray.getSystemTray().add(tray.tray());
             } catch (AWTException awt) {
                 log.error("Could not attach tray", awt);
             }
+        } else if (!GraphicsEnvironment.isHeadless()) {
+            iconCache = new IconCache();
+            tray = TrayType.DIALOG.init();
+            tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
+            tray.setToolTip(name);
+            tray.createDialog();
         } else {
             iconCache = new IconCache();
         }

@@ -90,8 +90,14 @@ public class TaskbarTrayIcon extends JFrame implements WindowListener {
     public void windowDeiconified(WindowEvent e) {
         Point p = MouseInfo.getPointerInfo().getLocation();
         setLocation(p);
+        // call show against parent to prevent un-clickable state
         popup.show(this, 0,0);
-        popup.setLocation(p);
+
+        // move to mouse cursor; adjusting for screen boundaries
+        Point before = popup.getLocationOnScreen();
+        Point after = new Point();
+        after.setLocation(before.x < p.x ? p.x - popup.getWidth() : p.x, before.y < p.y ? p.y - popup.getHeight() : p.y);
+        popup.setLocation(after);
     }
 
     @Override

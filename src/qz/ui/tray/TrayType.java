@@ -6,8 +6,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 
-class Const {  public static final Image BLANK = new ImageIcon(new byte[1]).getImage(); }
-
+/**
+ * Wrapper class to allow popup menu on a tray-less OS
+ * @author Tres Finocchiaro
+ */
 public enum TrayType {
     JX,
     CLASSIC,
@@ -27,15 +29,19 @@ public enum TrayType {
     public TrayType init(ActionListener exitListener) {
         switch (this) {
             case JX:
-                tray = new JXTrayIcon(Const.BLANK);
+                tray = new JXTrayIcon(blankImage());
             case CLASSIC:
-                tray = new ClassicTrayIcon(Const.BLANK);
+                tray = new ClassicTrayIcon(blankImage());
             case MODERN:
-                tray = new ModernTrayIcon(Const.BLANK);
+                tray = new ModernTrayIcon(blankImage());
             default:
-                dialog = new DialogTrayIcon(Const.BLANK, exitListener);
+                dialog = new DialogTrayIcon(blankImage(), exitListener);
         }
         return this;
+    }
+
+    private static Image blankImage() {
+        return new ImageIcon(new byte[1]).getImage();
     }
 
     public boolean isTray() { return tray != null; }
@@ -78,17 +84,10 @@ public enum TrayType {
         }
     }
 
-    public void createDialog() {
+    public void showDialog() {
         if (isDialog()) {
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    dialog.setResizable(false);
-                    dialog.setVisible(true);
-                    dialog.setState(Frame.ICONIFIED);
-                }
-            });
+            dialog.setVisible(true);
+            dialog.setState(Frame.ICONIFIED);
         }
     }
-
 }

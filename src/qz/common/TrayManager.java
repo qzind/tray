@@ -108,7 +108,7 @@ public class TrayManager {
             tray = TrayType.DIALOG.init(exitListener);
             tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
             tray.setToolTip(name);
-            tray.createDialog();
+            tray.showDialog();
         } else {
             iconCache = new IconCache();
         }

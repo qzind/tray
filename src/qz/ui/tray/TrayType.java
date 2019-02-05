@@ -14,13 +14,12 @@ public enum TrayType {
     JX,
     CLASSIC,
     MODERN,
-    DIALOG;
+    TASKBAR;
 
     private JXTrayIcon tray = null;
-    private DialogTrayIcon dialog = null;
+    private TaskbarTrayIcon taskbar = null;
 
     public JXTrayIcon tray() { return tray; }
-    public DialogTrayIcon dialog() { return dialog; }
 
     public TrayType init() {
         return init(null);
@@ -35,7 +34,7 @@ public enum TrayType {
             case MODERN:
                 tray = new ModernTrayIcon(blankImage());
             default:
-                dialog = new DialogTrayIcon(blankImage(), exitListener);
+                taskbar = new TaskbarTrayIcon(blankImage(), exitListener);
         }
         return this;
     }
@@ -46,25 +45,23 @@ public enum TrayType {
 
     public boolean isTray() { return tray != null; }
 
-    public boolean isDialog() { return dialog != null; }
+    public boolean getTaskbar() { return taskbar != null; }
 
     public void setImage(Image image) {
         if (isTray()) {
             tray.setImage(image);
         } else {
-            dialog.setImage(image);
+            taskbar.setIconImage(image);
         }
     }
 
     public Dimension getSize() {
-        return isTray() ? tray.getSize() : dialog.getSize();
+        return isTray() ? tray.getSize() : taskbar.getSize();
     }
 
     public void setToolTip(String tooltip) {
         if (isTray()) {
             tray.setToolTip(tooltip);
-        } else {
-            dialog.setToolTip(tooltip);
         }
     }
 
@@ -72,7 +69,7 @@ public enum TrayType {
         if (isTray()) {
             tray.setJPopupMenu(popup);
         } else {
-            dialog.setJPopupMenu(popup);
+            taskbar.setJPopupMenu(popup);
         }
     }
 
@@ -80,14 +77,14 @@ public enum TrayType {
         if (isTray()) {
             tray.displayMessage(caption, text, level);
         } else {
-            dialog.displayMessage(caption, text, level);
+            taskbar.displayMessage(caption, text, level);
         }
     }
 
-    public void showDialog() {
-        if (isDialog()) {
-            dialog.setVisible(true);
-            dialog.setState(Frame.ICONIFIED);
+    public void showTaskbar() {
+        if (getTaskbar()) {
+            taskbar.setVisible(true);
+            taskbar.setState(Frame.ICONIFIED);
         }
     }
 }

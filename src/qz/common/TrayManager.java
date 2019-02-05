@@ -105,10 +105,10 @@ public class TrayManager {
             }
         } else if (!GraphicsEnvironment.isHeadless()) {
             iconCache = new IconCache();
-            tray = TrayType.DIALOG.init(exitListener);
+            tray = TrayType.TASKBAR.init(exitListener);
             tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
             tray.setToolTip(name);
-            tray.showDialog();
+            tray.showTaskbar();
         } else {
             iconCache = new IconCache();
         }

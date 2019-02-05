@@ -105,7 +105,7 @@ public class TrayManager {
             }
         } else if (!GraphicsEnvironment.isHeadless()) {
             iconCache = new IconCache();
-            tray = TrayType.DIALOG.init();
+            tray = TrayType.DIALOG.init(exitListener);
             tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
             tray.setToolTip(name);
             tray.createDialog();
@@ -116,7 +116,9 @@ public class TrayManager {
         // Linux specific tasks
         if (SystemUtilities.isLinux()) {
             // Fix the tray icon to look proper on Ubuntu
-            UbuntuUtilities.fixTrayIcons(iconCache);
+            if (SystemTray.isSupported()) {
+                UbuntuUtilities.fixTrayIcons(iconCache);
+            }
             // Install cert into user's nssdb for Chrome, etc
             LinuxCertificate.installCertificate();
         } else if (SystemUtilities.isWindows()) {

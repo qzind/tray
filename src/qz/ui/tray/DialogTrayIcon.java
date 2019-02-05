@@ -7,26 +7,44 @@ import qz.utils.UbuntuUtilities;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.lang.reflect.Field;
 
 public class DialogTrayIcon extends JFrame {
     private Dimension iconSize;
     private JLabel popupLabel;
+    private Point dragPoint;
 
-    public DialogTrayIcon(Image trayImage) {
+    public DialogTrayIcon(Image trayImage, final ActionListener exitListener) {
         super(Constants.ABOUT_TITLE);
         iconSize = new Dimension(40, 40);
         popupLabel = new JLabel();
         setImage(trayImage);
-        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        setUndecorated(true);
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
-                setExtendedState(JFrame.ICONIFIED);
+                exitListener.actionPerformed(new ActionEvent(e.getComponent(), e.getID(), "Exit"));
             }
         });
+        setTitle();
+    }
+
+    /**
+     * Fix Linux taskbar title per http://hg.netbeans.org/core-main/rev/5832261b8434
+     */
+    public void setTitle() {
+        Class<?> toolkit = Toolkit.getDefaultToolkit().getClass();
+        if (toolkit.getName().equals("sun.awt.X11.XToolkit")) {
+            try {
+                final Field awtAppClassName = toolkit.getDeclaredField("awtAppClassName");
+                awtAppClassName.setAccessible(true);
+                awtAppClassName.set(null, getTitle());
+            } catch (Exception e) {}
+        }
     }
 
     public void setImage(Image trayImage) {
         popupLabel.setIcon(new ImageIcon(trayImage));
+        setIconImage(trayImage);
     }
 
     public void setToolTip(String tooltip) {
@@ -42,6 +60,18 @@ public class DialogTrayIcon extends JFrame {
     }
 
     public void setJPopupMenu(final JPopupMenu popup) {
+        // Add an option to hide it
+        final JMenuItem hideMenuItem = new JMenuItem("Hide");
+        hideMenuItem.setMnemonic(KeyEvent.VK_H);
+        hideMenuItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                setState(JFrame.ICONIFIED);
+            }
+        });
+        popup.add(hideMenuItem, 0);
+        popup.add(new JSeparator());
+
         JPanel panel = new JPanel();
         panel.setLayout(new FlowLayout());
         if (SystemUtilities.isUbuntu()) {
@@ -49,18 +79,30 @@ public class DialogTrayIcon extends JFrame {
         }
         popupLabel.addMouseListener(new MouseListener() {
             @Override
-            public void mousePressed(MouseEvent mouseEvent) {
+            public void mouseClicked(MouseEvent mouseEvent)  {
                 popup.show(popupLabel, mouseEvent.getX(), mouseEvent.getY());
             }
             @Override
-            public void mouseReleased(MouseEvent mouseEvent) {}
+            public void mousePressed(MouseEvent e) {
+                dragPoint = e.getPoint();
+            }
             @Override
-            public void mouseEntered(MouseEvent mouseEvent) {}
+            public void mouseReleased(MouseEvent e) {}
             @Override
-            public void mouseExited(MouseEvent mouseEvent) {}
+            public void mouseEntered(MouseEvent e) {}
             @Override
-            public void mouseClicked(MouseEvent mouseEvent) {}
+            public void mouseExited(MouseEvent e) {}
 
+        });
+        popupLabel.addMouseMotionListener(new MouseMotionListener() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                Point p = getLocation();
+                setLocation(p.x + (e.getX() - dragPoint.x), p.y + (e.getY() - dragPoint.y));
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent e) {}
         });
         panel.add(popupLabel);
         setContentPane(panel);

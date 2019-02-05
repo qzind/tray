@@ -4,6 +4,7 @@ import org.jdesktop.swinghelper.tray.JXTrayIcon;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
 
 class Const {  public static final Image BLANK = new ImageIcon(new byte[1]).getImage(); }
 
@@ -20,6 +21,10 @@ public enum TrayType {
     public DialogTrayIcon dialog() { return dialog; }
 
     public TrayType init() {
+        return init(null);
+    }
+
+    public TrayType init(ActionListener exitListener) {
         switch (this) {
             case JX:
                 tray = new JXTrayIcon(Const.BLANK);
@@ -28,7 +33,7 @@ public enum TrayType {
             case MODERN:
                 tray = new ModernTrayIcon(Const.BLANK);
             default:
-                dialog = new DialogTrayIcon(Const.BLANK);
+                dialog = new DialogTrayIcon(Const.BLANK, exitListener);
         }
         return this;
     }
@@ -79,9 +84,8 @@ public enum TrayType {
                 @Override
                 public void run() {
                     dialog.setResizable(false);
-                    dialog.setLocationRelativeTo(null);
-                    dialog.setState(Frame.ICONIFIED);
                     dialog.setVisible(true);
+                    dialog.setState(Frame.ICONIFIED);
                 }
             });
         }

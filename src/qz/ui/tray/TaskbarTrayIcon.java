@@ -48,12 +48,9 @@ public class TaskbarTrayIcon extends JFrame implements WindowListener {
         try {
             Class<?> toolkit = Toolkit.getDefaultToolkit().getClass();
             if (toolkit.getName().equals("sun.awt.X11.XToolkit")) {
-                try {
-                    final Field awtAppClassName = toolkit.getDeclaredField("awtAppClassName");
-                    awtAppClassName.setAccessible(true);
-                    awtAppClassName.set(null, title);
-                }
-                catch(Exception e) {}
+                final Field awtAppClassName = toolkit.getDeclaredField("awtAppClassName");
+                awtAppClassName.setAccessible(true);
+                awtAppClassName.set(null, title);
             }
         } catch(Exception ignore) {}
     }

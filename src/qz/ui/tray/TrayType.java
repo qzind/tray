@@ -62,6 +62,8 @@ public enum TrayType {
     public void setToolTip(String tooltip) {
         if (isTray()) {
             tray.setToolTip(tooltip);
+        } else {
+            taskbar.setToolTip(tooltip);
         }
     }
 

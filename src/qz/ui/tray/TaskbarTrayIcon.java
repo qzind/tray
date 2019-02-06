@@ -23,7 +23,7 @@ public class TaskbarTrayIcon extends JFrame implements WindowListener {
     private void initializeComponents(Image trayImage, final ActionListener exitListener) {
         // must come first
         setUndecorated(true);
-        setTaskBarTitle();
+        setToolTip(getTitle());
         setSize(0,0);
         getContentPane().setBackground(Color.BLACK);
         if (SystemUtilities.isUbuntu()) {
@@ -44,14 +44,14 @@ public class TaskbarTrayIcon extends JFrame implements WindowListener {
     }
 
     // fixes Linux taskbar title per http://hg.netbeans.org/core-main/rev/5832261b8434
-    public void setTaskBarTitle() {
+    public void setToolTip(String tooltip) {
         try {
             Class<?> toolkit = Toolkit.getDefaultToolkit().getClass();
             if (toolkit.getName().equals("sun.awt.X11.XToolkit")) {
                 try {
                     final Field awtAppClassName = toolkit.getDeclaredField("awtAppClassName");
                     awtAppClassName.setAccessible(true);
-                    awtAppClassName.set(null, getTitle());
+                    awtAppClassName.set(null, tooltip);
                 }
                 catch(Exception e) {}
             }

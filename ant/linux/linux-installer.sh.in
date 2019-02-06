@@ -155,7 +155,14 @@ function restart_it() {
 # Provide user environmental variables to the sudo environment
 function sudo_env() {
     userid="$(logname 2>/dev/null || echo $SUDO_USER)"
-    pid=$(ps aux |grep "^$userid" |grep "dbus-daemon" | grep -- "--config-file=" |awk '{print $2}')
+    if [ -z "$1" ]; then
+        daemon="dbus-daemon"
+        lookfor="--config-file="
+    else
+        daemon="$1"
+        lookfor="$2"
+    fi
+    pid=$(ps aux |grep "^$userid" |grep "$daemon" | grep -- "$lookfor" |awk '{print $2}')
     # Replace null delimiters with newline for grep
     envt=$(cat "/proc/$pid/environ" 2> /dev/null |tr '\0' '\n')
 
@@ -172,9 +179,8 @@ function sudo_env() {
         elif initctl --user get-env $i > /dev/null 2>&1; then
             eval "$i=$(initctl --user get-env $i)" > /dev/null 2>&1
             export $i > /dev/null 2>&1
-	    fi
-
-        echo -e "        $i=${!i}"
+        fi
+        # echo -e "        $i=${!i}"
     done
 
     # Handle Ubuntu Gnome
@@ -239,6 +245,7 @@ if [ $? -ne 0 ]; then
 else
     # Start ${project.name} as the user that's logged in
     sudo_env
+    sudo_env "ibus-daemon" "--panel"
     userid="$(logname 2>/dev/null || echo $SUDO_USER)"
     sudo -E -u $userid nohup "java" ${launch.opts} -jar "${jarfile}" > /dev/null 2>&1 &
     progress_dialog 100 "Finished.  ${project.name} should start automatically."

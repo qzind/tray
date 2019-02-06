@@ -79,6 +79,20 @@ public class TaskbarTrayIcon extends JFrame implements WindowListener {
                 setState(JFrame.ICONIFIED);
             }
         });
+        this.popup.addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent keyEvent) {}
+
+            @Override
+            public void keyPressed(KeyEvent keyEvent) {
+                if (keyEvent.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    TaskbarTrayIcon.this.popup.setVisible(false);
+                }
+            }
+
+            @Override
+            public void keyReleased(KeyEvent keyEvent) {}
+        });
     }
 
     public void displayMessage(String caption, String text, TrayIcon.MessageType level) { /* noop */ }
@@ -114,6 +128,7 @@ public class TaskbarTrayIcon extends JFrame implements WindowListener {
 
     @Override
     public void windowDeactivated(WindowEvent windowEvent) {
+        popup.setVisible(false);
         setState(JFrame.ICONIFIED);
     }
 }

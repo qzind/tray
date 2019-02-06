@@ -121,6 +121,7 @@ echo "[Desktop Entry]
 Type=Application
 Name=${project.name}
 Exec=java ${launch.opts} -jar \"${jarfile}\"
+StartupWMClass=${project.name}
 Path=${destdir}
 Icon=${destdir}/${linux.icon}
 MimeType=application/x-qz;x-scheme-handler/qz;

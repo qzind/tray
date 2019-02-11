@@ -119,6 +119,11 @@ function java() {
     if (!javaEnv) {
         var regKey = "HKLM\\Software\\JavaSoft\\Java Runtime Environment\\";
         var jreHome = getRegValue(regKey + getRegValue(regKey + "CurrentVersion") + "\\JavaHome");
+        // Look again, but for JDK
+        if (!jreHome) {
+            regKey = "HKLM\\Software\\JavaSoft\\JDK\\";
+            jreHome = getRegValue(regKey + getRegValue(regKey + "CurrentVersion") + "\\JavaHome");
+        }
         var keyTool = jreHome + "\\bin\\keytool.exe";
         javaEnv = {
             regKey: regKey,

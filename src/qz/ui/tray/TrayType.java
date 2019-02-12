@@ -28,11 +28,11 @@ public enum TrayType {
     public TrayType init(ActionListener exitListener) {
         switch (this) {
             case JX:
-                tray = new JXTrayIcon(blankImage());
+                tray = new JXTrayIcon(blankImage()); break;
             case CLASSIC:
-                tray = new ClassicTrayIcon(blankImage());
+                tray = new ClassicTrayIcon(blankImage()); break;
             case MODERN:
-                tray = new ModernTrayIcon(blankImage());
+                tray = new ModernTrayIcon(blankImage()); break;
             default:
                 taskbar = new TaskbarTrayIcon(blankImage(), exitListener);
         }

@@ -45,23 +45,23 @@ public class PrintingUtilities {
     }
 
 
-    public static Type getPrintType(JSONArray printData) throws JSONException {
+    public static Format getPrintFormat(JSONArray printData) throws JSONException {
         convertVersion(printData);
 
         //grab first data object to determine type for entire set
         JSONObject data = printData.optJSONObject(0);
 
-        Type type;
+        Format format;
         if (data == null) {
-            type = Type.RAW;
+            format = Format.COMMAND;
         } else {
-            type = Type.valueOf(data.optString("type", "RAW").toUpperCase(Locale.ENGLISH));
+            format = Format.valueOf(data.optString("format", "COMMAND").toUpperCase(Locale.ENGLISH));
         }
 
-        return type;
+        return format;
     }
 
-    public synchronized static PrintProcessor getPrintProcessor(Type type) {
+    public synchronized static PrintProcessor getPrintProcessor(Format format) {
         try {
             if (processorPool == null) {
                 processorPool = new GenericKeyedObjectPool<>(new ProcessorFactory());
@@ -79,10 +79,10 @@ public class PrintingUtilities {
             }
 
             log.trace("Waiting for processor, {}/{} already in use", processorPool.getNumActive(), processorPool.getMaxTotal());
-            return processorPool.borrowObject(type);
+            return processorPool.borrowObject(format);
         }
         catch(Exception e) {
-            throw new IllegalArgumentException(String.format("Unable to find processor for %s type", type.name()));
+            throw new IllegalArgumentException(String.format("Unable to find processor for %s type", format.name()));
         }
     }
 
@@ -227,13 +227,13 @@ public class PrintingUtilities {
      * @param params  Params of call from web API
      */
     public static void processPrintRequest(Session session, String UID, JSONObject params) throws JSONException {
-        Type type = getPrintType(params.getJSONArray("data"));
-        PrintProcessor processor = PrintingUtilities.getPrintProcessor(type);
+        Format format = getPrintFormat(params.getJSONArray("data"));
+        PrintProcessor processor = PrintingUtilities.getPrintProcessor(format);
         log.debug("Using {} to print", processor.getClass().getName());
 
         try {
             PrintOutput output = new PrintOutput(params.optJSONObject("printer"));
-            PrintOptions options = new PrintOptions(params.optJSONObject("options"), output, type);
+            PrintOptions options = new PrintOptions(params.optJSONObject("options"), output, format);
 
             processor.parseData(params.getJSONArray("data"), options);
             processor.print(output, options);

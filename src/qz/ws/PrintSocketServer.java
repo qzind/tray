@@ -122,7 +122,7 @@ public class PrintSocketServer {
             FileReader fr = new FileReader(certFile);
             Certificate cert = new Certificate(IOUtils.toString(fr));
 
-            if (FileUtilities.printLineToFile(list, cert.data(), true)) {
+            if (FileUtilities.printLineToFile(list, cert.data())) {
                 log.info("Successfully added {} to {} list", cert.getOrganization(), list);
             } else {
                 log.warn("Failed to add certificate to {} list (Insufficient user privileges)", list);

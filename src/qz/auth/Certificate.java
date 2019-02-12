@@ -229,7 +229,7 @@ public class Certificate {
         // Add this certificate to the whitelist if the previous certificate was whitelisted
         File allowed = FileUtilities.getFile(Constants.ALLOW_FILE, true);
         if (existsInAnyFile(previousFingerprint, allowed)) {
-            FileUtilities.printLineToFile(Constants.ALLOW_FILE, data(), true);
+            FileUtilities.printLineToFile(Constants.ALLOW_FILE, data());
         }
     }
 

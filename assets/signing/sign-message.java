@@ -70,6 +70,8 @@ public class MessageSigner {
      */
     public MessageSigner(String keyPath) throws Exception {
         byte[] keyData = cleanseKeyData(readData(keyPath));
+        // Warning: PKCS#8 required.  If PKCS#1 (RSA) key is provided convert using:
+        // $ openssl pkcs8 -topk8 -inform PEM -outform PEM -in private-key.pem -out private-key-pkcs8.pem -nocrypt
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyData);
         KeyFactory kf = KeyFactory.getInstance("RSA");
         PrivateKey key = kf.generatePrivate(keySpec);

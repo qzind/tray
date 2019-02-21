@@ -38,33 +38,34 @@
  *
  *     4. Remove or comment out any other references to "setSignaturePromise"
  */
-var privateKey = "-----BEGIN RSA PRIVATE KEY-----\n" +
-    "MIIEpQIBAAKCAQEAxePDxH2+BbHsiQNEpx67TYtnpBKpFXDeSX7LxTBQ1E9XNex7\n" +
-    "w7+G+O1eOlePm9KM4jBeZxbatXDUiOPNsfCZos4xbYw7pMShOWErdn8WTFFBVv9q\n" +
-    "YjkBF8a2TdsksvRG/0uhoGdTfksyPGaWen4MHINFqF7xJpiyYTawzt4rt/viibPm\n" +
-    "ceYv115rf/E7IKiWi/A53I5vfJGpcestURWxjpyK4LKI7O9QOQCKklry0DtxtoCf\n" +
-    "gtEfF6joox3YiBaYm3rLG+kzcLRU/G2rwahnGySXO7mhpFDToV3npPMfwj9mUm5A\n" +
-    "94EyOp3yS2zrjfmBU3qG31nNYV5NFPk0YOPqdwIDAQABAoIBAArNAK1j05BKAsgD\n" +
-    "pqacdcqotjJtVk82RtuqEQMlPPQplG/8BVFMzdgeVItIpizyFABwdWaZB7zpeKA0\n" +
-    "FtEEec46BNae1c6LcOVJ2W5xR01JDhDqherwg4/Bp8eeE2W1EX7zqNGxcgwtnINR\n" +
-    "chsjcBPKUm37KJxbrzjBHGteEvLKsx790L5YH1uquh3vwV/1AMPHmZ5Gsc5/CHZT\n" +
-    "XNuEL5ftcaR5VEcoEzauCjaSc+uCq5jTilb9256Vwe0rHm0tSvxD8g+BOl0i3YCz\n" +
-    "1bu31gbwy3vhuhXvlcSVIN0HB3owL2T4ueu/agsJTnMRAxQUYdMHQ7Q/q99oYZot\n" +
-    "dlgbEvkCgYEA6gkXDNLiX2cDe8HeC3KQHpKUWCWqEl1yGNtecme+bpqv23tdHE0i\n" +
-    "B+IRKQLhUfTC1ZkS/1dGtGx4tRDJO2T4Sn8i7cdcMUFfx9w/vY8V9lN1Vi12oTzx\n" +
-    "UU9ZRNtL0MCjFpq5GbbOUs5YUryZqAn9eg/8zMls7OyKtd7gymdmBJ0CgYEA2HY9\n" +
-    "ZZjw8QR+4RhU726osuPvEb7io+OXA+47xfERMDGdIcSX24U5ifw9ZfQyGKpVP1Oq\n" +
-    "zgHfrrLRsdLPdEAfpz6zcuA7SXDe2OA+pXHMNuWvOUckuwGysVQsLmgKwKQqnoDO\n" +
-    "WmPi6PsY7gqtUnd/pkJW9Lwm1qVU6fnUh6KBnSMCgYEAyOkWzZ54UVg46FQsz30A\n" +
-    "9g31pZpn3y4zVd10vhgLph3LXEsSSsp4rXXIL4HWdqn9XKr1YRjGjPsVwLLxXbi3\n" +
-    "YhS0opXjsjEiDYwpeAzO2NEayOlsjsyniZrp0q/D7SiCmVQoFUgW5YVY02YvLs+s\n" +
-    "t83jwtYkWVxTVABKz9dmAA0CgYEAiInU4pAdczotuli5wqnfma+zLlNk7JHzwRP1\n" +
-    "+j68Y9T308QJMfwQNly4ceYd73cJ/L8O35FJAg5jvTJHj4GfNcSUNuMAIqwitVSF\n" +
-    "z6A/e2VYKN4aaieBCuAYWlFgbvFevMps35FgISu6JvTvLTSZfUsdRJSmPwDc1hWz\n" +
-    "nLbB4VcCgYEAuEGj/Gt+fHhfDvTHeF66PodBq7W018dS1uaRoxfY4/IqecXzWBiN\n" +
-    "NVO2W66GImiUDlQFVrNt31mR0N49VHaj5fEE8TJAG/0TLme+1nyImUuSjmExOIvC\n" +
-    "vk1wRPEVo0IBqvEfCqXSD7cKq5UiLt3jfmhRiTOem+NhRNiA4Rv1WX4=\n" +
-    "-----END RSA PRIVATE KEY-----\n";
+var privateKey = "-----BEGIN PRIVATE KEY-----\n" +
+   "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC0z9FeMynsC8+u\n" +
+   "dvX+LciZxnh5uRj4C9S6tNeeAlIGCfQYk0zUcNFCoCkTknNQd/YEiawDLNbxBqut\n" +
+   "bMDZ1aarys1a0lYmUeVLCIqvzBkPJTSQsCopQQ9V8WuT252zzNzs68dVGNdCJd5J\n" +
+   "NRQykpwexmnjPPv0mvj7i8XgG379TyW6P+WWV5okeUkXJ9eJS2ouDYdR2SM9BoVW\n" +
+   "+FgxDu6BmXhozW5EfsnajFp7HL8kQClI0QOc79yuKl3492rH6bzFsFn2lfwWy9ic\n" +
+   "7cP8EpCTeFp1tFaD+vxBhPZkeTQ1HKx6hQ5zeHIB5ySJJZ7af2W8r4eTGYzbdRW2\n" +
+   "4DDHCPhZAgMBAAECggEATvofR3gtrY8TLe+ET3wMDS8l3HU/NMlmKA9pxvjYfw7F\n" +
+   "8h4VBw4oOWPfzU7A07syWJUR72kckbcKMfw42G18GbnBrRQG0UIgV3/ppBQQNg9Y\n" +
+   "QILSR6bFXhLPnIvm/GxVa58pOEBbdec4it2Gbvie/MpJ4hn3K8atTqKk0djwxQ+b\n" +
+   "QNBWtVgTkyIqMpUTFDi5ECiVXaGWZ5AOVK2TzlLRNQ5Y7US8lmGxVWzt0GONjXSE\n" +
+   "iO/eBk8A7wI3zknMx5o1uZa/hFCPQH33uKeuqU5rmphi3zS0BY7iGY9EoKu/o+BO\n" +
+   "HPwLQJ3wCDA3O9APZ3gmmbHFPMFPr/mVGeAeGP/BAQKBgQDaPELRriUaanWrZpgT\n" +
+   "VnKKrRSqPED3anAVgmDfzTQwuR/3oD506F3AMBzloAo3y9BXmDfe8qLn6kgdZQKy\n" +
+   "SFNLz888at96oi+2mEKPpvssqiwE6F3OtEM6yv4DP9KJHaHmXaWv+/sjwjzpFNjs\n" +
+   "wGThBxFvrTWRJqBYsM1XNJJ2EQKBgQDUGbTSwHKqRCYWhQ1GPCZKE98l5UtMKvUb\n" +
+   "hyWWOXoyoeYbJEMfG1ynX4JeXIkl6YtBjYCqszv9PjHa1rowTZaAPJ0V70zyhTcF\n" +
+   "t581ii9LpiejIGrELHvJnW87QmjjStkjwGIqgKLp7Qe6CDjHI9HP1NM0uav/IQLW\n" +
+   "pB6wyEz1yQKBgQCuxPut+Ax2rzM05KB9PAnWzO1zt3U/rtm8IAF8uVVGf7r+EDJ0\n" +
+   "ZXJO6zj5G8WTEYHz5E86GI4ltBW0lKQoKouqdu27sMrv5trXG/CSImOcTVubQot9\n" +
+   "chc1CkOKTp5IeJajafO6j817wZ4N+0gNsbYYEBUCnm/7ojdfT5ficpOoQQKBgQDB\n" +
+   "PgKPmaNfGeQR1Ht5qEfCakR/RF/ML79Nq15FdmytQPBjfjBhYQ6Tt+MRkgGqtxOX\n" +
+   "UBMQc2iOnGHT3puYcrhScec1GufidhjhbqDxqMrag7HNYDWmMlk+IeA7/4+Mtp8L\n" +
+   "gbZuvvCvbLQDfIYueaYpUuBzQ08/jZYGdVU4/+WOcQKBgAGUN0kIB6EM1K/iZ0TN\n" +
+   "jlt8P5UEV3ZCyATWFiGZRhhE2WAh8gv1jx4J26pcUs1n8sd2a1h6ZuBSqsyIlNSp\n" +
+   "xtKsm3bqQFDHRrPcsBX4nanrw9DzkpH1k/I3WMSdGqkDAR3DtL7yXTJXJo2Sbrp5\n" +
+   "EjzSn7DcDE1tL2En/tSVXeUY\n" +
+   "-----END PRIVATE KEY-----";
 
 qz.security.setSignaturePromise(function(toSign) {
     return function(resolve, reject) {

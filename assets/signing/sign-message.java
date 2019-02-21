@@ -1,3 +1,5 @@
+// package foo.bar;
+
 /*
  * Java signing example
  * Echoes the signed message and exits
@@ -25,6 +27,7 @@
 import java.io.*;
 import java.security.*;
 import java.security.spec.*;
+import java.util.Base64;
 import java.util.logging.*;
 
 /**
@@ -33,74 +36,78 @@ import java.util.logging.*;
 public class MessageSigner {
     private static Logger logger = Logger.getLogger(MessageSigner.class.getName());
     private Signature sig;
-    
+
     /**
      * Standard Java usage example, safe to remove
      */
     public static void main(String args[]) throws Exception {
-        String data = args[0];
-        MessageSigner ms = new MessageSigner("private-key.pem");
-        String signature = ms.sign(data);
-        
-        logger.log(Level.INFO, "Request: {0}", data);
+        if (args.length < 2) {
+            logger.severe("Usage:\nMessageSigner.class [path to private key] [data to sign]\n");
+            System.exit(1);
+        }
+        byte[] key = MessageSigner.readFile(args[0]);
+        String toSign = args[1];
+        MessageSigner ms = new MessageSigner(key);
+        String signature = ms.sign(toSign);
+
+        logger.log(Level.INFO, "Request: {0}", toSign);
         logger.log(Level.INFO, "Response: {0}", signature);
     }
-    
+
     /**
      * Servlet usage example, safe to remove
-     */
+     *
     protected void doProcessRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // Get request from URL
         String data = request.getParameter("request");
 
         String signature = new MessageSigner("private-key.pem").sign(data);
-        
+
         // Send signed message back
         response.setContentType("text/plain");
         PrintWriter out = response.getWriter();
-        out.write(signature);		
+        out.write(signature);
         out.flush();
         out.close();
     }
-    
+
     /**
      * Constructs an RSA SHA1 signature object for signing
-     * @param keyPath
-     * @throws Exception 
+     * @param keyData
+     * @throws Exception
      */
-    public MessageSigner(String keyPath) throws Exception {
-        byte[] keyData = cleanseKeyData(readData(keyPath));
+    public MessageSigner(byte[] keyData) throws Exception {
         // Warning: PKCS#8 required.  If PKCS#1 (RSA) key is provided convert using:
         // $ openssl pkcs8 -topk8 -inform PEM -outform PEM -in private-key.pem -out private-key-pkcs8.pem -nocrypt
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyData);
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(parseKeyData(keyData));
         KeyFactory kf = KeyFactory.getInstance("RSA");
         PrivateKey key = kf.generatePrivate(keySpec);
         sig = Signature.getInstance("SHA1withRSA");
         sig.initSign(key);
     }
-    
+
     /**
      * Signs the specified data with the provided private key, returning the
      * RSA SHA1 signature
-     * @param data
-     * @return
-     * @throws Exception 
+     * @param data Message to sign
+     * @return Base64 encoded signature
+     * @throws Exception
      */
-    private String sign(String data) throws Exception {
+    public String sign(String data) throws Exception {
         sig.update(data.getBytes());
-        return Base64.encodeBytes(sig.sign());
+        return Base64.getEncoder().encodeToString(sig.sign());
     }
 
     /**
      * Reads the raw byte[] data from a file resource
-     * @param resourcePath
-     * @return the raw byte data from a resource file
-     * @throws IOException 
+     * @param path File path to read
+     * @return the raw byte data from file
+     * @throws IOException
      */
-    public static byte[] readData(String resourcePath) throws IOException {
-        InputStream is = MessageSigner.class.getResourceAsStream(resourcePath);
+    public static byte[] readFile(String path) throws IOException {
+        InputStream is = MessageSigner.class.getResourceAsStream(path);
         if (is == null) {
-            throw new IOException(String.format("Can't open resource \"%s\"",  resourcePath));
+            throw new IOException(String.format("Can't open resource \"%s\"",  path));
         }
         DataInputStream dis = new DataInputStream(is);
         byte[] data = new byte[dis.available()];
@@ -110,15 +117,14 @@ public class MessageSigner {
     }
 
     /**
-     * Parses an X509 PEM formatted base64 encoded private key, returns the decoded
-     * private key byte data
-     * @param keyData PEM file contents, a X509 base64 encoded private key
-     * @return Private key data
-     * @throws IOException 
+     * Parses a base64 encoded private key by stripping the header and footer lines
+     * @param keyData PEM file contents
+     * @return Raw key byes
+     * @throws IOException
      */
-    private static byte[] cleanseKeyData(byte[] keyData) throws IOException {
+    private static byte[] parseKeyData(byte[] keyData) throws IOException {
         StringBuilder sb = new StringBuilder();
-        String[] lines = new String(keyData).split("\n");
+        String[] lines = new String(keyData).split("[\r?\n]+");
         String[] skips = new String[]{"-----BEGIN", "-----END", ": "};
         for (String line : lines) {
             boolean skipLine = false;
@@ -131,7 +137,7 @@ public class MessageSigner {
                 sb.append(line.trim());
             }
         }
-        return Base64.decode(sb.toString());
+        return Base64.getDecoder().decode(sb.toString());
     }
 
 }

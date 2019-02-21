@@ -206,7 +206,8 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
             }
             log.trace("Requested page {} for printing", pageIndex);
 
-            Graphics2D graphics2D = super.withRenderHints((Graphics2D)graphics, dithering, interpolation);
+            Graphics2D graphics2D = (Graphics2D)graphics;
+            graphics2D.setRenderingHints(buildRenderingHints(dithering, interpolation));
             graphics2D.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
             graphics2D.scale(pageFormat.getImageableWidth() / pageFormat.getWidth(), pageFormat.getImageableHeight() / pageFormat.getHeight());
             legacyLabel.paint(graphics2D);

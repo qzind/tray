@@ -172,7 +172,8 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
             log.debug("Scaling image up by x{}", upScale);
 
             BufferedImage scaled = new BufferedImage((int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2d = withRenderHints(scaled.createGraphics(), dithering, interpolation);
+            Graphics2D g2d = scaled.createGraphics();
+            g2d.setRenderingHints(buildRenderingHints(dithering, interpolation));
             g2d.drawImage(imgToPrint, 0, 0, (int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), null);
             g2d.dispose();
 
@@ -195,7 +196,8 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         log.trace("Image size: {},{}", imgW, imgH);
 
         // Now we perform our rendering
-        Graphics2D graphics2D = withRenderHints((Graphics2D)graphics, dithering, interpolation);
+        Graphics2D graphics2D = (Graphics2D)graphics;
+        graphics2D.setRenderingHints(buildRenderingHints(dithering, interpolation));
         log.trace("{}", graphics2D.getRenderingHints());
 
         log.debug("Memory: {}m/{}m", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576, Runtime.getRuntime().maxMemory() / 1048576);
@@ -229,7 +231,8 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[0].getDefaultConfiguration();
         BufferedImage result = gc.createCompatibleImage(eWidth, eHeight, Transparency.TRANSLUCENT);
 
-        Graphics2D g2d = withRenderHints(result.createGraphics(), dithering, interpolation);
+        Graphics2D g2d = result.createGraphics();
+        g2d.setRenderingHints(buildRenderingHints(dithering, interpolation));
         g2d.translate((eWidth - sWidth) / 2, (eHeight - sHeight) / 2);
         g2d.rotate(rads, sWidth / 2, sHeight / 2);
 
@@ -243,18 +246,6 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         g2d.dispose();
 
         return result;
-    }
-
-    protected Graphics2D withRenderHints(Graphics2D g2d, Object dithering, Object interpolation) {
-        g2d.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
-        g2d.setRenderingHint(RenderingHints.KEY_DITHERING, dithering);
-        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, interpolation);
-        g2d.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
-        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-
-        return g2d;
     }
 
     @Override

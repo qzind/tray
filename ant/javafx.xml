@@ -1,0 +1,220 @@
+<project name="javafx" default="download-javafx" basedir="..">
+    <target name="download-javafx" depends="get-current-platform,download-javafx-windows,download-javafx-mac,download-javafx-linux,copy-native-current,copy-native-target,show-javafx-debug">
+    </target>
+
+    <!-- Show detailed javafx download details, comment-out to disable -->
+    <property name="show.javafx.debug" value="true"/>
+
+    <target name="show-javafx-debug" if="show.javafx.debug">
+        <echo>Windows:</echo>
+        <echo> current.platform.windows=${current.platform.windows}</echo>
+        <echo> target.platform.windows=${target.platform.windows}</echo>
+        <echo> javafx.windows.needed=${javafx.windows.needed}</echo>
+        <echo> javafx.windows.found=${javafx.windows.found} (before download)</echo>
+        <echo/>
+        <echo>Mac:</echo>
+        <echo> current.platform.mac=${current.platform.mac}</echo>
+        <echo> target.platform.mac=${target.platform.mac}</echo>
+        <echo> javafx.mac.needed=${javafx.mac.needed}</echo>
+        <echo> javafx.mac.found=${javafx.mac.found} (before download)</echo>
+        <echo/>
+        <echo>Linux:</echo>
+        <echo> current.platform.linux=${current.platform.linux}</echo>
+        <echo> target.platform.linux=${target.platform.linux}</echo>
+        <echo> javafx.linux.needed=${javafx.linux.needed}</echo>
+        <echo> javafx.linux.found=${javafx.linux.found} (before download)</echo>
+        <echo/>
+    </target>
+
+    <target name="get-current-platform">
+        <condition property="current.platform.windows" value="true">
+                <os family="windows"/>
+        </condition>
+        <condition property="current.platform.mac" value="true">
+                <os family="mac"/>
+        </condition>
+        <condition property="current.platform.linux" value="true">
+                <and>
+                    <os family="unix"/>
+                    <not>
+                        <os family="mac"/>
+                    </not>
+                </and>
+        </condition>
+    </target>
+
+    <!-- Gets the javafx version and version url -->
+    <target name="get-javafx-version">
+        <!-- required properties -->
+        <!--
+        <property file="ant/project.properties"/>
+        <property name="javafx.version" value="11.0.2"/>
+        <property name="javafx.mirror" value="https://gluonhq.com/download"/>
+        <property name="lib.dir" value="lib"/>
+        <property name="dist.dir" value="out/dist"/>
+        -->
+        <!-- end required properties -->
+
+        <loadresource property="javafx.version-url">
+            <propertyresource name="javafx.version"/>
+            <filterchain>
+                <tokenfilter>
+                    <filetokenizer/>
+                    <replacestring from="." to="-"/>
+                </tokenfilter>
+            </filterchain>
+        </loadresource>
+    </target>
+
+    <!-- Flags if javafx is needed for a particular platform-->
+    <target name="check-javafx-needed" depends="get-javafx-version">
+        <condition property="javafx.windows.needed" value="true">
+            <or>
+                <isset property="current.platform.windows"/>
+                <isset property="target.platform.windows"/>
+            </or>
+        </condition>
+        <condition property="javafx.mac.needed" value="true">
+            <or>
+                <isset property="current.platform.mac"/>
+                <isset property="target.platform.mac"/>
+            </or>
+        </condition>
+        <condition property="javafx.linux.needed" value="true">
+            <or>
+                <isset property="current.platform.linux"/>
+                <isset property="target.platform.linux"/>
+            </or>
+        </condition>
+    </target>
+
+    <!-- Downloads and extracts javafx for Windows -->
+    <target name="download-javafx-windows" if="javafx.windows.needed" unless="javafx.windows.found" depends="check-javafx-needed,check-javafx-found">
+        <antcall target="download-javafx-platform">
+            <param name="javafx.platform" value="windows"/>
+        </antcall>
+    </target>
+
+    <!-- Downloads and extracts javafx for macOS -->
+    <target name="download-javafx-mac" if="javafx.mac.needed" unless="javafx.mac.found" depends="check-javafx-needed,check-javafx-found">
+        <antcall target="download-javafx-platform">
+            <param name="javafx.platform" value="mac"/>
+        </antcall>
+    </target>
+
+    <!-- Downloads and extracts javafx for linux -->
+    <target name="download-javafx-linux" if="javafx.linux.needed" unless="javafx.linux.found" depends="check-javafx-needed,check-javafx-found">
+        <antcall target="download-javafx-platform">
+            <param name="javafx.platform" value="linux"/>
+        </antcall>
+    </target>
+
+    <!-- Downloads and extracts javafx for the specified platform -->
+    <target name="download-javafx-platform">
+        <get src="${javafx.mirror}/javafx-${javafx.version-url}-sdk-${javafx.platform}/" verbose="true" dest="javafx-${javafx.platform}.zip"/>
+        <unzip src="javafx-${javafx.platform}.zip" dest="${lib.dir}" overwrite="true"/>
+        <delete file="javafx-${javafx.platform}.zip"/>
+    </target>
+
+    <!-- Removes old javafx versions -->
+    <target name="cleanup-old-javafx" depends="get-javafx-version">
+        <delete>
+            <fileset dir="${lib.dir}">
+                <include name="**/javafx*/**"/>
+                <exclude name="**/javafx*${javafx.version}*/**"/>
+            </fileset>
+        </delete>
+    </target>
+
+    <!-- Copies native libraries for current platform -->
+    <target name="copy-native-current" depends="check-javafx-needed">
+        <condition property="javafx.current.extension" value="dll">
+            <isset property="current.platform.windows"/>
+        </condition>
+        <condition property="javafx.current.extension" value="dylib">
+            <isset property="current.platform.mac"/>
+        </condition>
+        <condition property="javafx.current.extension" value="so">
+            <isset property="current.platform.linux"/>
+        </condition>
+        <echo>javafx.current.extension=${javafx.current.extension}</echo>
+
+        <antcall target="copy-native-platform">
+            <param name="dest.dir" value="${dist.dir}"/>
+            <param name="prefix.pattern" value="javafx*/"/>
+            <param name="native.extension" value="${javafx.current.extension}"/>
+        </antcall>
+    </target>
+
+    <!-- Copies native libraries for target platform -->
+    <target name="copy-native-target">
+        <condition property="javafx.target.extension" value="dll">
+            <isset property="target.platform.windows"/>
+        </condition>
+        <condition property="javafx.target.extension" value="dylib">
+            <isset property="target.platform.mac"/>
+        </condition>
+        <condition property="javafx.target.extension" value="so">
+            <isset property="target.platform.linux"/>
+        </condition>
+        <echo>javafx.target.extension=${javafx.target.extension}</echo>
+
+        <antcall target="copy-native-platform">
+            <param name="dest.dir" value="${dist.dir}"/>
+            <param name="prefix.pattern" value="javafx*/"/>
+            <param name="native.extension" value="${javafx.target.extension}"/>
+        </antcall>
+    </target>
+
+    <!-- Cleanup dist directory for packaging -->
+    <target name="cleanup-javafx-dist" if="javafx.target.extension" >
+        <delete>
+            <fileset dir="${dist.dir}/libs">
+                <include name="**"/>
+                <exclude name="**/*.${javafx.target.extension}"/>
+            </fileset>
+        </delete>
+    </target>
+
+    <!-- Copies native libraries for specified platform -->
+    <target name="copy-native-platform">
+        <copy todir="${dest.dir}/libs" flatten="true">
+            <fileset dir="${lib.dir}">
+                <include name="${prefix.pattern}**/*.${native.extension}"/>
+            </fileset>
+        </copy>
+    </target>
+
+    <!-- Flags if javafx is already downloaded for a particular platform -->
+    <target name="check-javafx-found" depends="cleanup-old-javafx">
+        <first id="windows-found">
+            <fileset dir="${lib.dir}">
+                <include name="**/glass.dll"/>
+            </fileset>
+        </first>
+        <condition property="javafx.windows.found" value="${toString:windows-found}">
+            <not><equals arg1="${toString:windows-found}" arg2=""/></not>
+        </condition>
+        <property name="javafx.windows.files" value="${toString:windows-found}"/>
+
+        <first id="mac-found">
+            <fileset dir="${lib.dir}">
+                <include name="**/libglass.dylib"/>
+            </fileset>
+        </first>
+        <condition property="javafx.mac.found" value="${toString:mac-found}">
+            <not><equals arg1="${toString:mac-found}" arg2=""/></not>
+        </condition>
+        <property name="javafx.mac.files" value="${toString:mac-found}"/>
+
+        <first id="linux-found">
+            <fileset dir="${lib.dir}">
+                <include name="**/libglass.so"/>
+            </fileset>
+        </first>
+        <condition property="javafx.linux.found" value="${toString:linux-found}">
+            <not><equals arg1="${toString:linux-found}" arg2=""/></not>
+        </condition>
+        <property name="javafx.linux.files" value="${toString:linux-found}"/>
+    </target>
+</project>

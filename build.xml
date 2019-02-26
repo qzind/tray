@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project name="qz" default="distribute" basedir=".">
+    <property file="ant/project.properties"/>
+    <import file="ant/javafx.xml"/>
 
-    <target name="distribute" depends="init,clean,sign-jar,copy-native,override-authcert,include-assets">
+    <target name="distribute" depends="init,clean,sign-jar,download-javafx,override-authcert,include-assets">
         <echo message="Process complete" />
     </target>
 
     <target name="init">
         <property environment="env"/>
-        <property file="ant/project.properties"/>
 
         <!-- Your custom code signing properties here. Feel free to change. -->
         <!-- The project will default to qz.ks if it doesn't exist -->
@@ -20,19 +21,19 @@
 
         <condition property="codesign.windows" value="true">
             <and>
-                <os family="windows"/>
+                <isset property="target.platform.windows"/>
                 <isset property="signing.tsaurl"/>
             </and>
         </condition>
         <condition property="codesign.linux" value="true">
             <and>
-                <os family="unix"/>
+                <isset property="target.platform.linux"/>
                 <isset property="signing.tsaurl"/>
             </and>
         </condition>
         <condition property="codesign.mac" value="true">
             <and>
-                <os family="mac"/>
+                <isset property="target.platform.mac"/>
                 <isset property="signing.tsaurl"/>
             </and>
         </condition>
@@ -154,76 +155,6 @@
         <echo>Size: ${build.size} KB</echo>
     </target>
 
-    <!-- Download JavaFX if needed -->
-    <target name="check-javafx">
-        <property file="ant/project.properties"/>
-        <loadresource property="javafx.version-url">
-            <propertyresource name="javafx.version"/>
-            <filterchain>
-                <tokenfilter>
-                    <filetokenizer/>
-                    <replacestring from="." to="-"/>
-                </tokenfilter>
-            </filterchain>
-        </loadresource>
-
-        <first id="found">
-            <dirset dir="lib/">
-                <include name="javafx*${javafx.version}"/>
-                <include name="javafx*${javafx.version-url}"/>
-            </dirset>
-        </first>
-        <condition property="javafx.needed" value="${toString:found}">
-            <equals arg1="${toString:found}" arg2=""/>
-        </condition>
-        <property name="javafx.found" value="${toString:found}"/>
-    </target>
-
-    <target name="skip-javafx" depends="check-javafx" unless="javafx.needed">
-        <echo level="info">JavaFX ${javafx.version} found at ${javafx.found}.  Skipping.</echo>
-    </target>
-
-    <target name="download-javafx" depends="check-javafx,skip-javafx" if="javafx.needed">
-        <echo level="info">JavaFX ${javafx.version} was not found, downloading...</echo>
-
-        <echo level="info">Removing any old versions</echo>
-        <delete failonerror="false" includeemptydirs="true" verbose="true">
-            <fileset dir="lib/">
-                <include name="**/*javafx*sdk*/**"/>
-            </fileset>
-        </delete>
-
-        <condition property="javafx.platform" value="windows">
-            <os family="windows"/>
-        </condition>
-        <condition property="javafx.platform" value="mac">
-            <os family="mac"/>
-        </condition>
-        <condition property="javafx.platform" value="linux">
-            <os family="unix"/>
-        </condition>
-        <get src="${javafx.mirror}/javafx-${javafx.version-url}-sdk-${javafx.platform}/" verbose="true" dest="fx.zip"/>
-
-        <unzip src="fx.zip" dest="lib/" overwrite="true"/>
-        <delete file="fx.zip" />
-    </target>
-
-    <target name="copy-native" depends="download-javafx">
-        <condition property="native.extension" value="*.dll">
-            <os family="windows"/>
-        </condition>
-        <condition property="native.extension" value="*.dylib">
-            <os family="mac"/>
-        </condition>
-        <condition property="native.extension" value="*.so">
-            <os family="unix"/>
-        </condition>
-        <!-- Copy JavaFX native libs -->
-        <copy todir="${dist.dir}/libs" flatten="true">
-            <fileset dir="lib/" includes ="javafx*/**/${native.extension}"/>
-        </copy>
-    </target>
-
     <target name="internal-authcert" unless="authcert.use">
         <echo>Using internal cert for signing auth</echo>
         <property name="build.type" value=""/>
@@ -276,7 +207,7 @@
     #               Prepackage Steps - All Platforms               #
     ################################################################
     -->
-    <target name="prepackage">
+    <target name="prepackage" depends="cleanup-javafx-dist">
         <echo>Processing self-signing variables</echo>
         <property file="ant/ssl.properties"/>
 
@@ -295,9 +226,13 @@
     #                    Windows Installer                         #
     ################################################################
     -->
-    <target name="nsis" depends="build-exe,sign-exe-self,sign-exe-tsa"/>
+    <!-- Inform javafx.xml  -->
+    <target name="nsis-preflight">
+        <property name="target.platform.windows" value="true"/>
+    </target>
+    <target name="nsis" depends="nsis-preflight,build-exe,sign-exe-self,sign-exe-tsa"/>
 
-    <target name="build-exe" depends="distribute,prepackage,nsisbin-1,nsisbin-2,nsisbin-3">
+    <target name="build-exe" depends="distribute,prepackage,cleanup-javafx-dist,nsisbin-1,nsisbin-2,nsisbin-3">
         <echo>Creating installer using ${nsisbin}</echo>
 
         <property file="ant/windows/windows.properties"/>
@@ -316,7 +251,7 @@
         <copy file="${windows.keygen.in}" tofile="${windows.keygen.out}" >
             <filterchain><expandproperties/></filterchain>
         </copy>
-        <copy file="${windows.jsonparser.in}" tofile="${windows.jsonparser.out}" ></copy>
+        <copy file="${windows.jsonparser.in}" tofile="${windows.jsonparser.out}" />
 
         <exec executable="${nsisbin}" failonerror="true" >
             <arg value="${windows.launcher.out}"/>
@@ -380,7 +315,11 @@
     #                     Apple Installer                          #
     ################################################################
     -->
-    <target name="pkgbuild" depends="distribute,prepackage">
+    <!-- Inform javafx.xml  -->
+    <target name="pkgbuild-preflight">
+        <property name="target.platform.mac" value="true"/>
+    </target>
+    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,prepackage">
         <echo>Creating installer using pkgbuild</echo>
 
         <property file="ant/apple/apple.properties"/>
@@ -443,7 +382,7 @@
         </copy>
         <chmod perm="u+x" file="${locator.out}"/>
 
-        <copy file="${jsonwriter.in}" tofile="${jsonwriter.out}" ></copy>
+        <copy file="${jsonwriter.in}" tofile="${jsonwriter.out}" />
         <chmod perm="u+x" file="${jsonwriter.out}"/>
 
         <exec executable="${apple.packager.out}" failonerror="true" />
@@ -454,7 +393,7 @@
         <delete file="${dist.dir}/${apple.plist.out}" />
     </target>
 
-    <target name="codesign" depends="init,copy-native,prepackage" if="codesign.mac">
+    <target name="codesign" depends="init,download-javafx,prepackage" if="codesign.mac">
         <property file="ant/apple/apple.properties"/>
         <exec executable="security">
             <arg value="add-certificates"/>
@@ -538,7 +477,11 @@
     #                     Linux Installer                          #
     ################################################################
     -->
-    <target name="makeself" depends="distribute,prepackage">
+    <!-- Inform javafx.xml  -->
+    <target name="makeself-preflight">
+        <property name="target.platform.linux" value="true"/>
+    </target>
+    <target name="makeself" depends="makeself-preflight,distribute,prepackage">
         <echo>Creating installer using makeself</echo>
 
         <property file="ant/linux/linux.properties"/>
@@ -581,7 +524,7 @@
         </copy>
         <chmod perm="u+x" file="${locator.out}"/>
 
-        <copy file="${jsonwriter.in}" tofile="${jsonwriter.out}" ></copy>
+        <copy file="${jsonwriter.in}" tofile="${jsonwriter.out}" />
         <chmod perm="u+x" file="${jsonwriter.out}"/>
 
         <exec executable="${linux.packager.out}" failonerror="true" />

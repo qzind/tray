@@ -1,9 +1,9 @@
 <project name="javafx" default="download-javafx" basedir="..">
-    <target name="download-javafx" depends="get-current-platform,download-javafx-windows,download-javafx-mac,download-javafx-linux,copy-native-current,copy-native-target">
-        <property name="javafx.debug" value="true"/>
+    <target name="download-javafx" depends="get-current-platform,download-javafx-windows,download-javafx-mac,download-javafx-linux,copy-native-current,copy-native-target,show-javafx-debug">
     </target>
-
-    <target name="show-debug" if="javafx.debug">
+    <!-- Show detailed javafx download details, comment out to disable -->
+    <property name="show.javafx.debug" value="true"/>
+    <target name="show-javafx-debug" if="show.javafx.debug">
         <echo>Windows:</echo>
         <echo> current.platform.windows=${current.platform.windows}</echo>
         <echo> target.platform.windows=${target.platform.windows}</echo>
@@ -32,7 +32,12 @@
                 <os family="mac"/>
         </condition>
         <condition property="current.platform.linux" value="true">
-                <os family="unix"/>
+                <and>
+                    <os family="unix"/>
+                    <not>
+                        <os family="mac"/>
+                    </not>
+                </and>
         </condition>
     </target>
 

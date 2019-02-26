@@ -1,26 +1,28 @@
 <project name="javafx" default="download-javafx" basedir="..">
     <target name="download-javafx" depends="get-current-platform,download-javafx-windows,download-javafx-mac,download-javafx-linux,copy-native-current,copy-native-target,show-javafx-debug">
     </target>
-    <!-- Show detailed javafx download details, comment out to disable -->
+
+    <!-- Show detailed javafx download details, comment-out to disable -->
     <property name="show.javafx.debug" value="true"/>
+
     <target name="show-javafx-debug" if="show.javafx.debug">
         <echo>Windows:</echo>
         <echo> current.platform.windows=${current.platform.windows}</echo>
         <echo> target.platform.windows=${target.platform.windows}</echo>
         <echo> javafx.windows.needed=${javafx.windows.needed}</echo>
-        <echo> javafx.windows.found=${javafx.windows.found}</echo>
+        <echo> javafx.windows.found=${javafx.windows.found} (before download)</echo>
         <echo/>
         <echo>Mac:</echo>
         <echo> current.platform.mac=${current.platform.mac}</echo>
         <echo> target.platform.mac=${target.platform.mac}</echo>
         <echo> javafx.mac.needed=${javafx.mac.needed}</echo>
-        <echo> javafx.mac.found=${javafx.mac.found}</echo>
+        <echo> javafx.mac.found=${javafx.mac.found} (before download)</echo>
         <echo/>
         <echo>Linux:</echo>
         <echo> current.platform.linux=${current.platform.linux}</echo>
         <echo> target.platform.linux=${target.platform.linux}</echo>
         <echo> javafx.linux.needed=${javafx.linux.needed}</echo>
-        <echo> javafx.linux.found=${javafx.linux.found}</echo>
+        <echo> javafx.linux.found=${javafx.linux.found} (before download)</echo>
         <echo/>
     </target>
 

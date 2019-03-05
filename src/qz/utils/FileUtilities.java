@@ -411,7 +411,9 @@ public class FileUtilities {
             }
             catch(IOException e) {
                 //failure is possible due to user permissions on shared files
-                log.error("Cannot setup file {} ({})", name, local? "Local":"Shared", e);
+                if (local || (!name.equals(Constants.ALLOW_FILE) && !name.equals(Constants.BLOCK_FILE))) {
+                    log.warn("Cannot setup file {} ({})", fileLoc, local? "Local":"Shared", e);
+                }
             }
 
             if (file.exists()) {

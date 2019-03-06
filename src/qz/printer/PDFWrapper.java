@@ -24,7 +24,7 @@ public class PDFWrapper implements Printable {
 
     private PDFPrintable printable;
 
-    public PDFWrapper(PDDocument document, Scaling scaling, boolean showPageBorder, float dpi, boolean center, PrintOptions.Orientation orientation) {
+    public PDFWrapper(PDDocument document, Scaling scaling, boolean showPageBorder, float dpi, boolean center, PrintOptions.Orientation orientation, RenderingHints hints) {
         this.document = document;
         this.scaling = scaling;
         if (orientation != null) {
@@ -32,6 +32,7 @@ public class PDFWrapper implements Printable {
         }
 
         printable = new PDFPrintable(document, scaling, showPageBorder, dpi, center);
+        printable.setRenderingHints(hints);
     }
 
 

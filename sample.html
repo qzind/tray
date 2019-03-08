@@ -285,11 +285,6 @@
                                         </div>
 
                                         <div class="form-group form-inline">
-                                            <label for="pxlDither">Dithering</label>
-                                            <input type="checkbox" id="pxlDither" class="pull-right" />
-                                        </div>
-
-                                        <div class="form-group form-inline">
                                             <label for="pxlDuplex"> Duplex</label>
                                             <input type="checkbox" id="pxlDuplex" class="pull-right" />
                                         </div>
@@ -1544,7 +1539,6 @@
         $("#pxlColorType").val("color");
         $("#pxlCopies").val(1);
         $("#pxlDensity").val('');
-        $("#pxlDither").prop('checked', false);
         $("#pxlDuplex").prop('checked', false);
         $("#pxlInterpolation").val("");
         $("#pxlJobName").val("");
@@ -1956,8 +1950,6 @@
 
                             colorType: $("#pxlColorType").val(),
                             copies: copies,
-                            density: $("#pxlDensity").val(),
-                            dithering: $("#pxlDither").prop('checked'),
                             duplex: $("#pxlDuplex").prop('checked'),
                             interpolation: $("#pxlInterpolation").val(),
                             jobName: jobName,

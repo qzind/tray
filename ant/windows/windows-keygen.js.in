@@ -129,8 +129,8 @@ function java() {
             try {
                 // AdoptOpenJDK adds java.exe to PATH
                 shell.Exec('java.exe'); // throws exception if not found
-                jreHome = "NOT_NEEDED, ON PATH";
-                regkey = "NOT_NEEDED, ON PATH";
+                jreHome = "NOT_NEEDED";
+                regkey = "NOT_NEEDED";
                 keyTool = "keytool.exe";
             } catch(ignore) {}
         }

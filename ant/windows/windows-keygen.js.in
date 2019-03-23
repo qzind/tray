@@ -125,6 +125,15 @@ function java() {
             jreHome = getRegValue(regKey + getRegValue(regKey + "CurrentVersion") + "\\JavaHome");
         }
         var keyTool = jreHome + "\\bin\\keytool.exe";
+        if (!jreHome) {
+            try {
+                // AdoptOpenJDK adds java.exe to PATH
+                shell.Exec('java.exe'); // throws exception if not found
+                jreHome = "NOT_NEEDED";
+                regkey = "NOT_NEEDED";
+                keyTool = "keytool.exe";
+            } catch(ignore) {}
+        }
         javaEnv = {
             regKey: regKey,
             jreHome: jreHome,

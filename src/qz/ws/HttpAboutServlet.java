@@ -32,6 +32,7 @@ public class HttpAboutServlet extends DefaultServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+        response.setHeader("Access-Control-Allow-Origin", "*");
         if ("application/json".equals(request.getHeader("Accept")) || "/json".equals(request.getServletPath())) {
             generateJsonResponse(request, response);
         } else if ("application/x-x509-ca-cert".equals(request.getHeader("Accept")) || request.getServletPath().startsWith("/cert/")) {

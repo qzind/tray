@@ -5,6 +5,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.LoggerUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 
@@ -44,7 +45,7 @@ public class PrintOptions {
                     rawOptions.altPrinting = false;
                 }
             }
-            catch(JSONException e) { warn("boolean", "altPrinting", configOpts.opt("altPrinting")); }
+            catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "altPrinting", configOpts.opt("altPrinting")); }
         }
         if (!configOpts.isNull("encoding")) {
             rawOptions.encoding = configOpts.optString("encoding", null);
@@ -57,11 +58,11 @@ public class PrintOptions {
         }
         if (!configOpts.isNull("perSpool")) {
             try { rawOptions.perSpool = configOpts.getInt("perSpool"); }
-            catch(JSONException e) { warn("integer", "perSpool", configOpts.opt("perSpool")); }
+            catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "perSpool", configOpts.opt("perSpool")); }
         }
         if (!configOpts.isNull("copies")) {
             try { rawOptions.copies = configOpts.getInt("copies"); }
-            catch(JSONException e) { warn("integer", "copies", configOpts.opt("copies")); }
+            catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "copies", configOpts.opt("copies")); }
         }
         if (!configOpts.isNull("jobName")) {
             rawOptions.jobName = configOpts.optString("jobName", null);
@@ -73,12 +74,12 @@ public class PrintOptions {
                 psOptions.colorType = ColorType.valueOf(configOpts.optString("colorType").toUpperCase(Locale.ENGLISH));
             }
             catch(IllegalArgumentException e) {
-                warn("valid value", "colorType", configOpts.opt("colorType"));
+                LoggerUtilities.optionWarn(log, "valid value", "colorType", configOpts.opt("colorType"));
             }
         }
         if (!configOpts.isNull("copies")) {
             try { psOptions.copies = configOpts.getInt("copies"); }
-            catch(JSONException e) { warn("integer", "copies", configOpts.opt("copies")); }
+            catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "copies", configOpts.opt("copies")); }
             if (psOptions.copies < 1) {
                 log.warn("Cannot have less than one copy");
                 psOptions.copies = 1;
@@ -107,7 +108,7 @@ public class PrintOptions {
                 psOptions.density = usableDpi;
             } else {
                 try { psOptions.density = configOpts.getDouble("density"); }
-                catch(JSONException e) { warn("double", "density", configOpts.opt("density")); }
+                catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "density", configOpts.opt("density")); }
             }
         }
         if (!configOpts.isNull("dithering")) {
@@ -118,11 +119,11 @@ public class PrintOptions {
                     psOptions.dithering = RenderingHints.VALUE_DITHER_DISABLE;
                 }
             }
-            catch(JSONException e) { warn("boolean", "dithering", configOpts.opt("dithering")); }
+            catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "dithering", configOpts.opt("dithering")); }
         }
         if (!configOpts.isNull("duplex")) {
             try { psOptions.duplex = configOpts.getBoolean("duplex"); }
-            catch(JSONException e) { warn("boolean", "duplex", configOpts.opt("duplex")); }
+            catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "duplex", configOpts.opt("duplex")); }
         }
         if (!configOpts.isNull("interpolation")) {
             switch(configOpts.optString("interpolation")) {
@@ -130,10 +131,11 @@ public class PrintOptions {
                     psOptions.interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC; break;
                 case "bilinear":
                     psOptions.interpolation = RenderingHints.VALUE_INTERPOLATION_BILINEAR; break;
-                case "nearest-neighbor": case "nearest":
+                case "nearest-neighbor":
+                case "nearest":
                     psOptions.interpolation = RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR; break;
                 default:
-                    warn("valid value", "interpolation", configOpts.opt("interpolation")); break;
+                    LoggerUtilities.optionWarn(log, "valid value", "interpolation", configOpts.opt("interpolation")); break;
             }
         }
         if (!configOpts.isNull("jobName")) {
@@ -149,23 +151,23 @@ public class PrintOptions {
                 //each individually
                 if (!subMargins.isNull("top")) {
                     try { m.top = subMargins.getDouble("top"); }
-                    catch(JSONException e) { warn("double", "margins.top", subMargins.opt("top")); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "margins.top", subMargins.opt("top")); }
                 }
                 if (!subMargins.isNull("right")) {
                     try { m.right = subMargins.getDouble("right"); }
-                    catch(JSONException e) { warn("double", "margins.right", subMargins.opt("right")); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "margins.right", subMargins.opt("right")); }
                 }
                 if (!subMargins.isNull("bottom")) {
                     try { m.bottom = subMargins.getDouble("bottom"); }
-                    catch(JSONException e) { warn("double", "margins.bottom", subMargins.opt("bottom")); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "margins.bottom", subMargins.opt("bottom")); }
                 }
                 if (!subMargins.isNull("left")) {
                     try { m.left = subMargins.getDouble("left"); }
-                    catch(JSONException e) { warn("double", "margins.left", subMargins.opt("left")); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "margins.left", subMargins.opt("left")); }
                 }
             } else {
                 try { m.setAll(configOpts.getDouble("margins")); }
-                catch(JSONException e) { warn("double", "margins", configOpts.opt("margins")); }
+                catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "margins", configOpts.opt("margins")); }
             }
 
             psOptions.margins = m;
@@ -175,27 +177,27 @@ public class PrintOptions {
                 psOptions.orientation = Orientation.valueOf(configOpts.optString("orientation").replaceAll("-", "_").toUpperCase(Locale.ENGLISH));
             }
             catch(IllegalArgumentException e) {
-                warn("valid value", "orientation", configOpts.opt("orientation"));
+                LoggerUtilities.optionWarn(log, "valid value", "orientation", configOpts.opt("orientation"));
             }
         }
         if (!configOpts.isNull("paperThickness")) {
             try { psOptions.paperThickness = configOpts.getDouble("paperThickness"); }
-            catch(JSONException e) { warn("double", "paperThickness", configOpts.opt("paperThickness")); }
+            catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "paperThickness", configOpts.opt("paperThickness")); }
         }
         if (!configOpts.isNull("printerTray")) {
             psOptions.printerTray = configOpts.optString("printerTray", null);
         }
         if (!configOpts.isNull("rasterize")) {
             try { psOptions.rasterize = configOpts.getBoolean("rasterize"); }
-            catch(JSONException e) { warn("boolean", "rasterize", configOpts.opt("rasterize")); }
+            catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "rasterize", configOpts.opt("rasterize")); }
         }
         if (!configOpts.isNull("rotation")) {
             try { psOptions.rotation = configOpts.getDouble("rotation"); }
-            catch(JSONException e) { warn("double", "rotation", configOpts.opt("rotation")); }
+            catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "rotation", configOpts.opt("rotation")); }
         }
         if (!configOpts.isNull("scaleContent")) {
             try { psOptions.scaleContent = configOpts.getBoolean("scaleContent"); }
-            catch(JSONException e) { warn("boolean", "scaleContent", configOpts.opt("scaleContent")); }
+            catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "scaleContent", configOpts.opt("scaleContent")); }
         }
         if (!configOpts.isNull("size")) {
             Size s = new Size();
@@ -203,16 +205,16 @@ public class PrintOptions {
             if (subSize != null) {
                 if (!subSize.isNull("width")) {
                     try { s.width = subSize.getDouble("width"); }
-                    catch(JSONException e) { warn("double", "size.width", subSize.opt("width")); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "size.width", subSize.opt("width")); }
                 }
                 if (!subSize.isNull("height")) {
                     try { s.height = subSize.getDouble("height"); }
-                    catch(JSONException e) { warn("double", "size.height", subSize.opt("height")); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "size.height", subSize.opt("height")); }
                 }
 
                 psOptions.size = s;
             } else {
-                warn("JSONObject", "size", configOpts.opt("size"));
+                LoggerUtilities.optionWarn(log, "JSONObject", "size", configOpts.opt("size"));
             }
         }
         if (!configOpts.isNull("units")) {
@@ -224,7 +226,7 @@ public class PrintOptions {
                 case "in":
                     psOptions.units = Unit.INCH; break;
                 default:
-                    warn("valid value", "units", configOpts.opt("units")); break;
+                    LoggerUtilities.optionWarn(log, "valid value", "units", configOpts.opt("units")); break;
             }
         }
 
@@ -236,7 +238,7 @@ public class PrintOptions {
         } else {
             try { defOptions.density = configOpts.getDouble("fallbackDensity"); }
             catch(JSONException e) {
-                warn("double", "fallbackDensity", configOpts.opt("fallbackDensity"));
+                LoggerUtilities.optionWarn(log, "double", "fallbackDensity", configOpts.opt("fallbackDensity"));
                 //manually convert default dphi to a density value based on units
                 defOptions.density = 60000d / psOptions.getUnits().getDPIUnits();
             }
@@ -256,18 +258,6 @@ public class PrintOptions {
                 log.warn("Unable to find the default paper size");
             }
         }
-    }
-
-    /**
-     * Helper method for parse warnings
-     *
-     * @param expectedType Expected entry type
-     * @param name         Option name
-     * @param actualValue  Invalid value passed
-     */
-    private static void warn(String expectedType, String name, Object actualValue) {
-        if (actualValue == null || String.valueOf(actualValue).isEmpty()) { return; } //no need to report an unsupplied value
-        log.warn("Cannot read {} as a {} for {}, using default", actualValue, expectedType, name);
     }
 
 

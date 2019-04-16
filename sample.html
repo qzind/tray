@@ -548,80 +548,148 @@
                 <div class="row" style="margin-top: 1em;">
                     <div class="col-md-12">
                         <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <h4 class="panel-title">Options</h4>
-                            </div>
-
                             <div class="panel-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group form-inline">
-                                            <label for="serialPort">Port</label>
-                                            <input type="text" id="serialPort" class="form-control pull-right" />
-                                        </div>
 
-                                        <div class="form-group form-inline">
-                                            <label for="serialCmd">Data</label>
-                                            <input type="text" id="serialCmd" class="form-control pull-right" />
-                                        </div>
+                                <fieldset>
+                                    <legend>Options</legend>
 
-                                        <div class="form-group form-inline">
-                                            <label>Data Type</label>
-                                            <div class="pull-right">
-                                                <label>
-                                                    <input type="radio" name="serialType" id="serialPlainRadio" value="PLAIN"/>
-                                                    Plain
-                                                </label>
-                                                <label>
-                                                    <input type="radio" name="serialType" id="serialFileRadio" value="FILE"/>
-                                                    File
-                                                </label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group form-inline">
+                                                <label for="serialPort">Port</label>
+                                                <input type="text" id="serialPort" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="serialBaud">Baud Rate</label>
+                                                <input type="number" id="serialBaud" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="serialData">Data Bits</label>
+                                                <input type="number" id="serialData" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="serialStop">Stop Bits</label>
+                                                <input type="number" id="serialStop" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="serialParity">Parity</label>
+                                                <input type="text" id="serialParity" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="serialFlow">Flow Control</label>
+                                                <input type="text" id="serialFlow" class="form-control pull-right" />
                                             </div>
                                         </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group form-inline">
+                                                <label for="serialCmd">Data</label>
+                                                <input type="text" id="serialCmd" class="form-control pull-right" />
+                                            </div>
 
-                                        <div class="form-group form-inline">
-                                            <label for="serialStart">Response Start</label>
-                                            <input type="text" id="serialStart" class="form-control pull-right" />
-                                        </div>
+                                            <div class="form-group form-inline">
+                                                <label>Data Type</label>
+                                                <div class="pull-right">
+                                                    <label>
+                                                        <input type="radio" name="serialType" id="serialPlainRadio" value="PLAIN"/>
+                                                        Plain
+                                                    </label>
+                                                    <label>
+                                                        <input type="radio" name="serialType" id="serialFileRadio" value="FILE"/>
+                                                        File
+                                                    </label>
+                                                </div>
+                                            </div>
 
-                                        <div class="form-group form-inline">
-                                            <label for="serialEnd">Response End</label>
-                                            <input type="text" id="serialEnd" class="form-control pull-right" />
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <!-- Overrides response Start/End fields -->
-                                            <label for="serialWidth">Response Length</label>
-                                            <input type="number" id="serialWidth" class="form-control pull-right" />
+                                            <div class="form-group form-inline">
+                                                <label for="serialWidth">Encoding</label>
+                                                <input type="text" id="serialEncoding" class="form-control pull-right" />
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group form-inline">
-                                            <label for="serialBaud">Baud Rate</label>
-                                            <input type="number" id="serialBaud" class="form-control pull-right" />
-                                        </div>
+                                </fieldset>
 
-                                        <div class="form-group form-inline">
-                                            <label for="serialData">Data Bits</label>
-                                            <input type="number" id="serialData" class="form-control pull-right" />
-                                        </div>
+                                <hr/>
 
-                                        <div class="form-group form-inline">
-                                            <label for="serialStop">Stop Bits</label>
-                                            <input type="number" id="serialStop" class="form-control pull-right" />
-                                        </div>
+                                <fieldset>
+                                    <legend>Response Options</legend>
 
-                                        <div class="form-group form-inline">
-                                            <label for="serialParity">Parity</label>
-                                            <input type="text" id="serialParity" class="form-control pull-right" />
-                                        </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group form-inline">
+                                                <label for="serialStart">Start Bytes</label>
+                                                <input type="text" id="serialStart" class="form-control pull-right" />
+                                            </div>
 
-                                        <div class="form-group form-inline">
-                                            <label for="serialFlow">Flow Control</label>
-                                            <input type="text" id="serialFlow" class="form-control pull-right" />
+                                            <div class="form-group form-inline">
+                                                <label for="serialEnd">End Byte</label>
+                                                <input type="text" id="serialEnd" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="serialWidth">Width</label>
+                                                <input type="number" id="serialWidth" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="serialHeader">Include Header</label>
+                                                <input type="checkbox" id="serialHeader" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="serialRespEncoding">Encoding</label>
+                                                <input type="text" id="serialRespEncoding" class="form-control pull-right" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="inline">Length Bytes</label>
+                                            </div>
+                                            <div class="inline">
+                                                <div class="form-group form-inline">
+                                                    <label for="serialLenIndex">&nbsp; Index:</label>
+                                                    <input type="number" id="serialLenIndex" class="form-control pull-right" />
+                                                </div>
+                                                <div class="form-group form-inline">
+                                                    <label for="serialLenLength">&nbsp; Length:</label>
+                                                    <input type="number" id="serialLenLength" class="form-control pull-right" />
+                                                </div>
+                                                <div class="form-group form-inline">
+                                                    <label>&nbsp; Endian:</label>
+                                                    <div class="pull-right">
+                                                        <label>
+                                                            <input type="radio" name="serialLenEndian" id="serialLenEndianBig" value="BIG" />
+                                                            Big
+                                                        </label>
+                                                        <label>
+                                                            <input type="radio" name="serialLenEndian" id="serialLenEndianLittle" value="LITTLE" />
+                                                            Little
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label class="inline">CRC Bytes</label>
+                                            </div>
+                                            <div class="inline">
+                                                <div class="form-group form-inline">
+                                                    <label for="serialCrcIndex">&nbsp; Index:</label>
+                                                    <input type="number" id="serialCrcIndex" class="form-control pull-right" />
+                                                </div>
+                                                <div class="form-group form-inline">
+                                                    <label for="serialCrcLength">&nbsp; Length:</label>
+                                                    <input type="number" id="serialCrcLength" class="form-control pull-right" />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                </fieldset>
+
                                 <hr />
                                 <div class="row">
                                     <div class="col-md-12">
@@ -1705,38 +1773,69 @@
     }
 
     function openSerialPort() {
-        var widthVal = $("#serialWidth").val();
-        if (!widthVal) { widthVal = null; }
-
-        var properties = {
-            start: $("#serialStart").val(),
-            end: $("#serialEnd").val(),
-            width: widthVal,
+        var options = {
             baudRate: $("#serialBaud").val(),
             dataBits: $("#serialData").val(),
             stopBits: $("#serialStop").val(),
             parity: $("#serialParity").val(),
-            flowControl: $("#serialFlow").val()
+            flowControl: $("#serialFlow").val(),
+            encoding: $("#serialEncoding").val(),
+            rx: {
+                start: $("#serialStart").val(),
+                end: $("#serialEnd").val() || null,
+                width: $("#serialWidth").val() || null,
+                lengthBytes: {
+                    index: $("#serialLenIndex").val(),
+                    length: $("#serialLenLength").val(),
+                    endian: $("#serialLenEndian").val()
+                },
+                crcBytes: {
+                    index: $("#serialCrcIndex").val(),
+                    length: $("#serialCrcLength").val()
+                },
+                includeHead: $("#serialHeader").prop('checked', false),
+                encoding: $("#serialRespEncoding").val()
+            }
         };
 
-        qz.serial.openPort($("#serialPort").val(), properties).then(function() {
+        qz.serial.openPort($("#serialPort").val(), options).then(function() {
             displayMessage("Serial port opened");
         }).catch(displayError);
     }
 
     function sendSerialData() {
-        var properties = {
+        var options = {
             baudRate: $("#serialBaud").val(),
             dataBits: $("#serialData").val(),
             stopBits: $("#serialStop").val(),
             parity: $("#serialParity").val(),
-            flowControl: $("#serialFlow").val()
+            flowControl: $("#serialFlow").val(),
+            encoding: $("#serialEncoding").val(),
+            rx: {
+                start: $("#serialStart").val(),
+                end: $("#serialEnd").val() || null,
+                width: $("#serialWidth").val() || null,
+                lengthBytes: {
+                    index: $("#serialLenIndex").val(),
+                    length: $("#serialLenLength").val(),
+                    endian: $("#serialLenEndian").val()
+                },
+                crcBytes: {
+                    index: $("#serialCrcIndex").val(),
+                    length: $("#serialCrcLength").val()
+                },
+                includeHead: $("#serialHeader").prop('checked', false),
+                encoding: $("#serialRespEncoding").val()
+            }
         };
         var serialData = {
             type: $("input[name='serialType']:checked").val(),
             data: $("#serialCmd").val()
         };
-        qz.serial.sendData($("#serialPort").val(), serialData), properties.catch(displayError);
+        //allow some escape characters
+        serialData.data = serialData.data.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t");
+
+        qz.serial.sendData($("#serialPort").val(), serialData, options).catch(displayError);
     }
 
     function closeSerialPort() {
@@ -2205,15 +2304,25 @@
     function resetSerialOptions() {
         $("#serialPort").val('');
         $("#serialCmd").val('');
-        $("#serialPlainRadio").prop('checked', 'true');
-        $("#serialStart").val("0x0002"); //String.fromCharCode(2)
-        $("#serialEnd").val("0x000D"); //String.fromCharCode(13)
+        $("#serialPlainRadio").prop('checked', true);
 
         $("#serialBaud").val(9600);
         $("#serialData").val(8);
         $("#serialStop").val(1);
         $("#serialParity").val('NONE');
         $("#serialFlow").val('NONE');
+        $("#serialEncoding").val("UTF-8");
+
+        $("#serialStart").val('');
+        $("#serialEnd").val('');
+        $("#serialWidth").val('');
+        $("#serialLenIndex").val('0');
+        $("#serialLenLength").val('1');
+        $("#serialLenEndianBig").prop('checked', true);
+        $("#serialCrcIndex").val('0');
+        $("#serialCrcLength").val('1');
+        $("#serialHeader").prop('checked', false);
+        $("#serialRespEncoding").val('');
 
         // M/T PS60 - 9600, 7, 1, EVEN, NONE
     }

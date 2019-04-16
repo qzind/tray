@@ -26,6 +26,10 @@ import java.util.List;
  */
 public class ByteUtilities {
 
+    public enum Endian {
+        BIG, LITTLE
+    }
+
     /**
      * Converts a hexadecimal string to a byte array.
      * <p/>
@@ -118,6 +122,15 @@ public class ByteUtilities {
         return indexes.toArray(new Integer[indexes.size()]);
     }
 
+    public static Integer firstMatchingIndex(byte[] target, byte[] match) {
+        Integer[] indices = indicesOfMatches(target, match);
+        if (indices.length > 0) {
+            return indices[0];
+        } else {
+            return null;
+        }
+    }
+
     /**
      * Splits the {@code src} byte array after every {@code count}-th instance of the supplied {@code pattern} byte array.
      * <p/>
@@ -163,7 +176,7 @@ public class ByteUtilities {
         }
 
         //include any builder matches below 'count'
-        if (!byteArrayList.contains(builder) && builder.getLength() > 0 ) {
+        if (!byteArrayList.contains(builder) && builder.getLength() > 0) {
             byteArrayList.add(builder);
         }
 
@@ -185,6 +198,27 @@ public class ByteUtilities {
         }
 
         return hex.toString();
+    }
+
+    public static int parseBytes(byte[] bytes, int startIndex, int length, Endian endian) {
+        int parsed = 0;
+
+        byte[] lenBytes = new byte[length];
+        System.arraycopy(bytes, startIndex, lenBytes, 0, length);
+
+        if (endian == Endian.BIG) {
+            for(int b = 0; b < length; b++) {
+                parsed <<= 8;
+                parsed += (int)lenBytes[b];
+            }
+        } else { //LITTLE endian
+            for(int b = length - 1; b >= 0; b--) {
+                parsed <<= 8;
+                parsed += (int)lenBytes[b];
+            }
+        }
+
+        return parsed;
     }
 
 }

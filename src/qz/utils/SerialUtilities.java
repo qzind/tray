@@ -4,7 +4,6 @@ import jssc.SerialPort;
 import jssc.SerialPortException;
 import jssc.SerialPortList;
 import org.apache.commons.codec.binary.StringUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -13,13 +12,11 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.communication.SerialIO;
-import qz.communication.SerialProperties;
-import qz.exception.SerialException;
+import qz.communication.SerialOptions;
 import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
 import qz.ws.StreamEvent;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -96,63 +93,6 @@ public class SerialUtilities {
         return StringEscapeUtils.unescapeJava(convert).getBytes();
     }
 
-    /**
-     * Get system supplied settings for {@code portName} if available.
-     *
-     * @param portName Name of port to retrieve settings
-     * @return Array of {@code SerialPort} constants ordered as {@code [BAUDRATE, DATABITS, STOPBITS, PARITY, FLOWCONTROL]}
-     */
-    public static int[] getSystemAttributes(String portName) throws IOException, SerialException {
-        if (SystemUtilities.isWindows()) {
-            return getWindowsAttributes(portName);
-        } else {
-            log.warn("Parsing serial port attributes for this OS has not been implemented yet.");
-            return null;
-        }
-    }
-
-    /**
-     * Calls REG.EXE to obtain the port settings.
-     * These should be returned in the format "COM10:    REG_SZ    9600,n,8,1"
-     *
-     * @param portName Name of windows port
-     * @return Array of {@code SerialPort} constants ordered as {@code [BAUDRATE, DATABITS, STOPBITS, PARITY, FLOWCONTROL]}
-     */
-    public static int[] getWindowsAttributes(String portName) throws IOException, SerialException {
-        String winCmd = "%windir%\\System32\\reg.exe query \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports\" |find \"?\"";
-        String[] command = {"cmd.exe", "/c", winCmd.replace("?", portName)};
-
-        Process p = Runtime.getRuntime().exec(command);
-        String output = IOUtils.toString(p.getInputStream());
-        log.info("Found windows registry settings: {}", output);
-
-        String[] raw = output.split("\\s+");
-        if (raw.length > 0) {
-            String[] settings = raw[raw.length - 1].split(",");
-
-            int[] attr = {
-                    settings.length > 0? parseBaudRate(settings[0]):SerialPort.BAUDRATE_9600,
-                    settings.length > 2? parseDataBits(settings[2]):SerialPort.DATABITS_8,
-                    settings.length > 3? parseStopBits(settings[3]):SerialPort.STOPBITS_1,
-                    settings.length > 1? parseParity(settings[1]):SerialPort.PARITY_NONE,
-                    settings.length > 4? parseFlowControl(settings[4]):SerialPort.FLOWCONTROL_NONE
-            };
-
-            boolean valid = true;
-            for(int i : attr) {
-                if (i == -1) {
-                    valid = false;
-                }
-            }
-
-            if (valid) {
-                return attr;
-            }
-        }
-
-        throw new SerialException("Cannot parse system provided serial attributes: " + output);
-    }
-
 
     /**
      * Parses the SerialPort's {@code DATABITS_x} value that corresponds with the provided {@code data}.
@@ -164,6 +104,9 @@ public class SerialUtilities {
         data = data.trim();
 
         switch(data) {
+            case "0":
+                log.trace("Parsed serial setting: 0 (Auto)");
+                return 0;
             case "5":
                 log.trace("Parsed serial setting: DATABITS_5");
                 return SerialPort.DATABITS_5;
@@ -192,6 +135,9 @@ public class SerialUtilities {
         stop = stop.trim();
 
         switch(stop) {
+            case "0":
+                log.trace("Parsed serial setting: 0 (Auto)");
+                return 0;
             case "":
             case "1":
                 log.trace("Parsed serial setting: STOPBITS_1");
@@ -219,6 +165,9 @@ public class SerialUtilities {
         control = control.trim().toLowerCase();
 
         switch(control) {
+            case "auto":
+                log.trace("Parsed serial setting: Auto");
+                return 0;
             case "":
             case "n":
             case "none":
@@ -260,6 +209,9 @@ public class SerialUtilities {
         parity = parity.trim().toLowerCase();
 
         switch(parity) {
+            case "auto":
+                log.trace("Parsed serial setting: Auto");
+                return 0;
             case "":
             case "n":
             case "none":
@@ -297,7 +249,9 @@ public class SerialUtilities {
         int baud = -1;
         try { baud = Integer.decode(rate.trim()); } catch(NumberFormatException ignore) {}
 
-        if (VALID_BAUD.contains(baud)) {
+        if (baud == 0) {
+            log.trace("Parsed serial setting: 0 (Auto)");
+        } else if (VALID_BAUD.contains(baud)) {
             log.trace("Parsed serial setting: BAUDRATE_{}", baud);
         } else {
             log.error("Baud rate of {} not supported", rate);
@@ -316,7 +270,7 @@ public class SerialUtilities {
         }
 
         try {
-            SerialProperties props = new SerialProperties(params.optJSONObject("options"));
+            SerialOptions props = new SerialOptions(params.optJSONObject("options"));
             final SerialIO serial = new SerialIO(portName);
 
             if (serial.open(props)) {

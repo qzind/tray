@@ -1239,7 +1239,7 @@ var qz = (function() {
              *  For RECEIVE types, <code>{string} output</code>.
              *  For ERROR types, <code>{string} exception</code>.
              *
-             * @param {Function|Array<Function>} calls Single or array of <code>Function({string} portName, {string} output)</code> calls.
+             * @param {Function|Array<Function>} calls Single or array of <code>Function({object} streamEvent)</code> calls.
              *
              * @memberof qz.serial
              */

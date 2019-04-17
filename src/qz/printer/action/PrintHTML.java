@@ -192,7 +192,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             }
 
             Paper paper;
-            if (pxlOpts.getSize() != null) {
+            if (pxlOpts.getSize() != null && pxlOpts.getSize().getWidth() > 0 && pxlOpts.getSize().getHeight() > 0) {
                 double convert = 1;
                 Units units = getUnits(pxlOpts);
                 if (units == null) {

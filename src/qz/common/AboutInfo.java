@@ -99,7 +99,7 @@ public class AboutInfo {
                         ASN1Primitive ext = X509ExtensionUtil.fromExtensionValue(x509.getExtensionValue(Extension.basicConstraints.getId()));
                         cert.put("rootca", BasicConstraints.getInstance(ext).isCA());
                     }
-                    catch(IOException ioe) {
+                    catch(IOException | NullPointerException e) {
                         cert.put("rootca", false);
                     }
                     cert.put("subject", x509.getSubjectX500Principal().getName());

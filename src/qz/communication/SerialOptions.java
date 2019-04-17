@@ -91,11 +91,13 @@ public class SerialOptions {
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "includeHeader", respOpts.opt("includeHeader")); }
                 }
 
-                //TODO - some of these could probably warn if set without "start" being set
-
                 if (!respOpts.isNull("end")) {
                     try { responseFormat.boundEnd = SerialUtilities.characterBytes(respOpts.getString("end")); }
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "end", respOpts.opt("end")); }
+
+                    if (responseFormat.boundStart == null || responseFormat.boundStart.length == 0) {
+                        log.warn("End bound set without start bound defined");
+                    }
                 }
 
                 if (!respOpts.isNull("width")) {
@@ -128,6 +130,10 @@ public class SerialOptions {
                         }
                     }
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "lengthBytes", respOpts.opt("lengthBytes")); }
+
+                    if (responseFormat.boundStart == null || responseFormat.boundStart.length == 0) {
+                        log.warn("Length byte(s) defined without start bound defined");
+                    }
                 }
 
                 if (!respOpts.isNull("crcBytes")) {
@@ -150,6 +156,10 @@ public class SerialOptions {
                         }
                     }
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "crcBytes", respOpts.opt("crcBytes")); }
+
+                    if (responseFormat.boundStart == null || responseFormat.boundStart.length == 0) {
+                        log.warn("CRC byte(s) defined without start bound defined");
+                    }
                 }
 
                 if (!respOpts.isNull("encoding")) {

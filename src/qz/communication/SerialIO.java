@@ -53,7 +53,9 @@ public class SerialIO {
 
         port = new SerialPort(portName);
         port.openPort();
-        serialOpts = opts;
+
+        serialOpts = new SerialOptions();
+        setOptions(opts);
 
         return port.isOpened();
     }
@@ -199,7 +201,8 @@ public class SerialIO {
         if (opts == null) { return; }
 
         SerialOptions.PortSettings ps = opts.getPortSettings();
-        if (ps != null && !serialOpts.getPortSettings().equals(ps)) {
+        if (ps != null && !ps.equals(serialOpts.getPortSettings())) {
+            log.debug("Applying new port settings");
             port.setParams(ps.getBaudRate(), ps.getDataBits(), ps.getStopBits(), ps.getParity());
             port.setFlowControlMode(ps.getFlowControl());
             serialOpts.setPortSettings(ps);
@@ -207,6 +210,7 @@ public class SerialIO {
 
         SerialOptions.ResponseFormat rf = opts.getResponseFormat();
         if (rf != null) {
+            log.debug("Applying new response formatting");
             serialOpts.setResponseFormat(rf);
         }
     }

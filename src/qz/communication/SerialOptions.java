@@ -21,61 +21,53 @@ public class SerialOptions {
     private static final String DEFAULT_BEGIN = "0x0002";
     private static final String DEFAULT_END = "0x000D";
 
-    private PortSettings portSettings = new PortSettings();
-    private ResponseFormat responseFormat = new ResponseFormat();
+    private PortSettings portSettings = null;
+    private ResponseFormat responseFormat = null;
 
+    /**
+     * Creates an empty/default options object
+     */
+    public SerialOptions() {}
 
     /**
      * Parses the provided JSON object into relevant SerialPort constants
      */
-    public SerialOptions(JSONObject serialOpts) {
+    public SerialOptions(JSONObject serialOpts, boolean isOpening) {
         if (serialOpts == null) { return; }
 
-        if (!serialOpts.isNull("baudRate")) {
-            try { portSettings.baudRate = SerialUtilities.parseBaudRate(serialOpts.getString("baudRate")); }
-            catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "baudRate", serialOpts.opt("baudRate")); }
-        }
+        //only apply port settings if opening or explicitly set in a send data call
+        if (isOpening || serialOpts.has("baudRate") || serialOpts.has("dataBits") || serialOpts.has("stopBits") || serialOpts.has("parity") || serialOpts.has("flowControl")) {
+            portSettings = new PortSettings();
 
-        if (!serialOpts.isNull("dataBits")) {
-            try { portSettings.dataBits = SerialUtilities.parseDataBits(serialOpts.getString("dataBits")); }
-            catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "dataBits", serialOpts.opt("dataBits")); }
-        }
-
-        if (!serialOpts.isNull("stopBits")) {
-            try { portSettings.stopBits = SerialUtilities.parseStopBits(serialOpts.getString("stopBits")); }
-            catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "stopBits", serialOpts.opt("stopBits")); }
-        }
-
-        if (!serialOpts.isNull("parity")) {
-            try { portSettings.parity = SerialUtilities.parseParity(serialOpts.getString("parity")); }
-            catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "parity", serialOpts.opt("parity")); }
-        }
-
-        if (!serialOpts.isNull("flowControl")) {
-            try { portSettings.flowControl = SerialUtilities.parseFlowControl(serialOpts.getString("flowControl")); }
-            catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "flowControl", serialOpts.opt("flowControl")); }
-        }
-
-        // legacy support
-        if (serialOpts.isNull("rx")) {
-            // legacy start only supports string, not an array
-            if (!serialOpts.isNull("start")) {
-                responseFormat.boundStart = SerialUtilities.characterBytes(serialOpts.optString("start", DEFAULT_BEGIN));
-            } else {
-                responseFormat.boundStart = SerialUtilities.characterBytes(DEFAULT_BEGIN);
+            if (!serialOpts.isNull("baudRate")) {
+                try { portSettings.baudRate = SerialUtilities.parseBaudRate(serialOpts.getString("baudRate")); }
+                catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "baudRate", serialOpts.opt("baudRate")); }
             }
 
-            if (!serialOpts.isNull("end")) {
-                responseFormat.boundEnd = SerialUtilities.characterBytes(serialOpts.optString("end", DEFAULT_END));
-            } else {
-                responseFormat.boundEnd = SerialUtilities.characterBytes(DEFAULT_END);
+            if (!serialOpts.isNull("dataBits")) {
+                try { portSettings.dataBits = SerialUtilities.parseDataBits(serialOpts.getString("dataBits")); }
+                catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "dataBits", serialOpts.opt("dataBits")); }
             }
 
-            if (!serialOpts.isNull("width")) {
-                try { responseFormat.fixedWidth = serialOpts.getInt("width"); }
-                catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "width", serialOpts.opt("width")); }
+            if (!serialOpts.isNull("stopBits")) {
+                try { portSettings.stopBits = SerialUtilities.parseStopBits(serialOpts.getString("stopBits")); }
+                catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "stopBits", serialOpts.opt("stopBits")); }
             }
-        } else {
+
+            if (!serialOpts.isNull("parity")) {
+                try { portSettings.parity = SerialUtilities.parseParity(serialOpts.getString("parity")); }
+                catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "parity", serialOpts.opt("parity")); }
+            }
+
+            if (!serialOpts.isNull("flowControl")) {
+                try { portSettings.flowControl = SerialUtilities.parseFlowControl(serialOpts.getString("flowControl")); }
+                catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "flowControl", serialOpts.opt("flowControl")); }
+            }
+        }
+
+        if (!serialOpts.isNull("rx")) {
+            responseFormat = new ResponseFormat();
+
             JSONObject respOpts = serialOpts.optJSONObject("rx");
             if (respOpts != null) {
                 if (!respOpts.isNull("start")) {
@@ -154,7 +146,7 @@ public class SerialOptions {
                                 catch(JSONException se) { LoggerUtilities.optionWarn(log, "integer", "crcBytes.length", crcOpts.opt("length")); }
                             }
                         } else {
-                            responseFormat.crc.index = respOpts.getInt("crcBytes");
+                            responseFormat.crc.length = respOpts.getInt("crcBytes");
                         }
                     }
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "crcBytes", respOpts.opt("crcBytes")); }
@@ -166,6 +158,27 @@ public class SerialOptions {
                 }
             } else {
                 LoggerUtilities.optionWarn(log, "JSONObject", "rx", serialOpts.opt("rx"));
+            }
+        } else if (isOpening) {
+            // legacy support - only applies on port open
+            responseFormat = new ResponseFormat();
+
+            // legacy start only supports string, not an array
+            if (!serialOpts.isNull("start")) {
+                responseFormat.boundStart = SerialUtilities.characterBytes(serialOpts.optString("start", DEFAULT_BEGIN));
+            } else {
+                responseFormat.boundStart = SerialUtilities.characterBytes(DEFAULT_BEGIN);
+            }
+
+            if (!serialOpts.isNull("end")) {
+                responseFormat.boundEnd = SerialUtilities.characterBytes(serialOpts.optString("end", DEFAULT_END));
+            } else {
+                responseFormat.boundEnd = SerialUtilities.characterBytes(DEFAULT_END);
+            }
+
+            if (!serialOpts.isNull("width")) {
+                try { responseFormat.fixedWidth = serialOpts.getInt("width"); }
+                catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "width", serialOpts.opt("width")); }
             }
         }
     }

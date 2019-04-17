@@ -351,10 +351,10 @@ public class PrintSocketClient {
                 SerialOptions opts = null;
                 //properties param is deprecated legacy here and will be overridden by options if provided
                 if (!params.isNull("properties")) {
-                    opts = new SerialOptions(params.optJSONObject("properties"));
+                    opts = new SerialOptions(params.optJSONObject("properties"), false);
                 }
                 if (!params.isNull("options")) {
-                    opts = new SerialOptions(params.optJSONObject("options"));
+                    opts = new SerialOptions(params.optJSONObject("options"), false);
                 }
 
                 SerialIO serial = connection.getSerialPort(params.optString("port"));

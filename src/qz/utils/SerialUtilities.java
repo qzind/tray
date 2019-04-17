@@ -270,7 +270,7 @@ public class SerialUtilities {
         }
 
         try {
-            SerialOptions props = new SerialOptions(params.optJSONObject("options"));
+            SerialOptions props = new SerialOptions(params.optJSONObject("options"), true);
             final SerialIO serial = new SerialIO(portName);
 
             if (serial.open(props)) {

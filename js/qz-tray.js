@@ -1265,11 +1265,11 @@ var qz = (function() {
              *   @param {string|Array<string>} [options.rx.start] Character(s) denoting start of response bytes. Used in conjunction with `end`, `width`, or `lengthbit` property.
              *   @param {string} [options.rx.end] Character denoting end of response bytes. Used in conjunction with `start` property.
              *   @param {number} [options.rx.width] Fixed width size of response bytes (not including header if `start` is set). Used alone or in conjunction with `start` property.
-             *   @param {number|Object} [options.rx.lengthBytes] If a number is passed it is treated as the length index.
+             *   @param {number|Object} [options.rx.lengthBytes] If a number is passed it is treated as the length index. Other values are left as their defaults.
              *    @param {number} [options.rx.lengthBytes.index=0] Position of the response byte (not including response `start` bytes) used to denote the length of the remaining response data.
              *    @param {number} [options.rx.lengthBytes.length=1] Length of response length bytes after response header.
              *    @param {string} [options.rx.lengthBytes.endian='BIG'] Byte endian for multi-byte length values. Valid values <code>[BIG | LITTLE]</code>
-             *   @param {number|Object} [options.rx.crcBytes] If a number is passed it is treated as the crc length.
+             *   @param {number|Object} [options.rx.crcBytes] If a number is passed it is treated as the crc length. Other values are left as their defaults.
              *    @param {number} [options.rx.crcBytes.index=0] Position after the response data (not including length or data bytes) used to denote the crc.
              *    @param {number} [options.rx.crcBytes.length=1] Length of response crc bytes after the response data length.
              *   @param {boolean} [options.rx.includeHeader=false] Whether any of the header bytes (`start` bytes and any length bytes) should be included in the processed response.
@@ -1296,6 +1296,7 @@ var qz = (function() {
              *  @param {string} [data.type='PLAIN'] Valid values <code>[FILE | PLAIN | HEX?? | BASE64??]</code>
              *  @param {string|Array<string>} data.data Data to be sent to the serial device.
              * @param {Object} options Serial port configuration updates. See <code>qz.serial.openPort</code> `options` docs for available values.
+             *     For best performance, it is recommended to only set these values on the port open call.
              *
              * @returns {Promise<null|Error>}
              *

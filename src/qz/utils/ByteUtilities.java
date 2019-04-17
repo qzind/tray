@@ -122,13 +122,34 @@ public class ByteUtilities {
         return indexes.toArray(new Integer[indexes.size()]);
     }
 
+    /**
+     * Gets the first index in {@code target} of matching bytes from {@code match}
+     *
+     * @param target Byte array to search for matches
+     * @param match Byte match searched
+     * @return First matching index from {@code target} array or {@code null} if no matches
+     */
     public static Integer firstMatchingIndex(byte[] target, byte[] match) {
+        return firstMatchingIndex(target, match, 0);
+    }
+
+    /**
+     * Gets the first index in {@code target} of matching bytes from {@code match} where the index is equal or greater than {@code fromIndex}
+     *
+     * @param target Byte array to search for matches
+     * @param match Byte match searched
+     * @param fromIndex Offset index in {@code target} array (inclusive)
+     * @return First matching index after {@code fromIndex} from {@code target} array or {@code null} if no matches
+     */
+    public static Integer firstMatchingIndex(byte[] target, byte[] match, int fromIndex) {
         Integer[] indices = indicesOfMatches(target, match);
-        if (indices.length > 0) {
-            return indices[0];
-        } else {
-            return null;
+        for(Integer idx : indices) {
+            if (idx >= fromIndex) {
+                return idx;
+            }
         }
+
+        return null;
     }
 
     /**

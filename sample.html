@@ -442,7 +442,7 @@
                                                 <label for="pxlMargins" class="tip" data-toggle="tooltip" title="In relation to units specified">Margins</label>
                                                 (
                                                 <label for="pxlMarginsActive" class="inline">Individual:</label>
-                                                <input type="checkbox" id="pxlMarginsActive" onclick="checkMarginsActive();">
+                                                <input type="checkbox" id="pxlMarginsActive" onclick="checkGroupActive('pxlMarginsActive', 'pxlMarginsGroup', 'pxlMargins');">
                                                 )
                                                 <input type="number" step="any" id="pxlMargins" class="form-control" />
                                             </div>
@@ -469,7 +469,7 @@
                                                 <label class="inline">Size</label>
                                                 (
                                                 <label for="pxlSizeActive" class="inline">Enable:</label>
-                                                <input type="checkbox" id="pxlSizeActive" onclick="checkSizeActive();" />
+                                                <input type="checkbox" id="pxlSizeActive" onclick="checkGroupActive('pxlSizeActive', 'pxlSizeGroup');" />
                                                 )
                                             </div>
                                             <div class="inline" id="pxlSizeGroup">
@@ -648,8 +648,12 @@
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label class="inline">Length Bytes</label>
+                                                (
+                                                <label for="serialLengthActive" class="inline">Enable:</label>
+                                                <input type="checkbox" id="serialLengthActive" onclick="checkGroupActive('serialLengthActive', 'serialLengthGroup');" />
+                                                )
                                             </div>
-                                            <div class="inline">
+                                            <div class="inline" id="serialLengthGroup">
                                                 <div class="form-group form-inline">
                                                     <label for="serialLenIndex">&nbsp; Index:</label>
                                                     <input type="number" id="serialLenIndex" class="form-control pull-right" />
@@ -675,8 +679,12 @@
 
                                             <div class="form-group">
                                                 <label class="inline">CRC Bytes</label>
+                                                (
+                                                <label for="serialCrcActive" class="inline">Enable:</label>
+                                                <input type="checkbox" id="serialCrcActive" onclick="checkGroupActive('serialCrcActive', 'serialCrcGroup');" />
+                                                )
                                             </div>
-                                            <div class="inline">
+                                            <div class="inline" id="serialCrcGroup">
                                                 <div class="form-group form-inline">
                                                     <label for="serialCrcIndex">&nbsp; Index:</label>
                                                     <input type="number" id="serialCrcIndex" class="form-control pull-right" />
@@ -1047,7 +1055,7 @@
                                             <label for="fileListenerData">
                                                 Listener Data
                                             </label>
-                                            <input type="checkbox" id="fileListenerData" class="pull-right" onclick="checkFileTriggersActive()" />
+                                            <input type="checkbox" id="fileListenerData" class="pull-right" onclick="checkGroupActive('fileListenerData', 'fileTriggersGroup')" />
                                         </div>
                                         <div class="inline" id="fileTriggersGroup">
                                             <div class="form-group form-inline">
@@ -1773,30 +1781,7 @@
     }
 
     function openSerialPort() {
-        var options = {
-            baudRate: $("#serialBaud").val(),
-            dataBits: $("#serialData").val(),
-            stopBits: $("#serialStop").val(),
-            parity: $("#serialParity").val(),
-            flowControl: $("#serialFlow").val(),
-            encoding: $("#serialEncoding").val(),
-            rx: {
-                start: $("#serialStart").val(),
-                end: $("#serialEnd").val() || null,
-                width: $("#serialWidth").val() || null,
-                lengthBytes: {
-                    index: $("#serialLenIndex").val(),
-                    length: $("#serialLenLength").val(),
-                    endian: $("#serialLenEndian").val()
-                },
-                crcBytes: {
-                    index: $("#serialCrcIndex").val(),
-                    length: $("#serialCrcLength").val()
-                },
-                includeHead: $("#serialHeader").prop('checked', false),
-                encoding: $("#serialRespEncoding").val()
-            }
-        };
+        var options = getSerialOptions();
 
         qz.serial.openPort($("#serialPort").val(), options).then(function() {
             displayMessage("Serial port opened");
@@ -1804,30 +1789,8 @@
     }
 
     function sendSerialData() {
-        var options = {
-            baudRate: $("#serialBaud").val(),
-            dataBits: $("#serialData").val(),
-            stopBits: $("#serialStop").val(),
-            parity: $("#serialParity").val(),
-            flowControl: $("#serialFlow").val(),
-            encoding: $("#serialEncoding").val(),
-            rx: {
-                start: $("#serialStart").val(),
-                end: $("#serialEnd").val() || null,
-                width: $("#serialWidth").val() || null,
-                lengthBytes: {
-                    index: $("#serialLenIndex").val(),
-                    length: $("#serialLenLength").val(),
-                    endian: $("#serialLenEndian").val()
-                },
-                crcBytes: {
-                    index: $("#serialCrcIndex").val(),
-                    length: $("#serialCrcLength").val()
-                },
-                includeHead: $("#serialHeader").prop('checked', false),
-                encoding: $("#serialRespEncoding").val()
-            }
-        };
+        var options = getSerialOptions();
+
         var serialData = {
             type: $("input[name='serialType']:checked").val(),
             data: $("#serialCmd").val()
@@ -2275,54 +2238,30 @@
         $("#pxlContent").find(".dirty").removeClass("dirty");
     }
 
-    function checkSizeActive() {
-        if (isChecked($("#pxlSizeActive"))) {
-            $("#pxlSizeGroup").css('display', '');
-        } else {
-            $("#pxlSizeGroup").css('display', 'none');
-        }
-    }
-
-    function checkMarginsActive() {
-        if (isChecked($("#pxlMarginsActive"))) {
-            $("#pxlMarginsGroup").css('display', '');
-            $("#pxlMargins").css('display', 'none');
-        } else {
-            $("#pxlMarginsGroup").css('display', 'none');
-            $("#pxlMargins").css('display', '');
-        }
-    }
-
-    function checkFileTriggersActive() {
-        if (isChecked($("#fileListenerData"))) {
-            $("#fileTriggersGroup").css('display', '');
-        } else {
-            $("#fileTriggersGroup").css('display', 'none');
-        }
-    }
-
     function resetSerialOptions() {
         $("#serialPort").val('');
-        $("#serialCmd").val('');
-        $("#serialPlainRadio").prop('checked', true);
-
         $("#serialBaud").val(9600);
         $("#serialData").val(8);
         $("#serialStop").val(1);
         $("#serialParity").val('NONE');
         $("#serialFlow").val('NONE');
+
+        $("#serialCmd").val('');
+        $("#serialPlainRadio").prop('checked', true);
         $("#serialEncoding").val("UTF-8");
 
         $("#serialStart").val('');
         $("#serialEnd").val('');
         $("#serialWidth").val('');
+        $("#serialHeader").prop('checked', false);
+        $("#serialRespEncoding").val('');
         $("#serialLenIndex").val('0');
         $("#serialLenLength").val('1');
         $("#serialLenEndianBig").prop('checked', true);
+        $("#serialLengthGroup").css('display', 'none');
         $("#serialCrcIndex").val('0');
         $("#serialCrcLength").val('1');
-        $("#serialHeader").prop('checked', false);
-        $("#serialRespEncoding").val('');
+        $("#serialCrcGroup").css('display', 'none');
 
         // M/T PS60 - 9600, 7, 1, EVEN, NONE
     }
@@ -2558,6 +2497,17 @@
         $("#qz-alert").append(alert);
     }
 
+    //checkId = toggle checkbox, groupId = group/element to show, toggleId = group/element to hide
+    function checkGroupActive(checkId, groupId, toggleId) {
+        if (isChecked($("#"+ checkId))) {
+            $("#"+ groupId).css('display', '');
+            if (toggleId) { $("#"+ toggleId).css('display', 'none'); }
+        } else {
+            $("#"+ groupId).css('display', 'none');
+            if (toggleId) { $("#"+ toggleId).css('display', ''); }
+        }
+    }
+
     function addPrintersLog(msg, color) {
         if (color == undefined) { color = ""; }
 
@@ -2780,6 +2730,41 @@
                 pageHeight: $("#pRawHeight").val()
             };
         }
+    }
+
+    function getSerialOptions() {
+        var options = {
+            baudRate: $("#serialBaud").val(),
+            dataBits: $("#serialData").val(),
+            stopBits: $("#serialStop").val(),
+            parity: $("#serialParity").val(),
+            flowControl: $("#serialFlow").val(),
+            encoding: $("#serialEncoding").val(),
+            rx: {
+                start: $("#serialStart").val(),
+                end: $("#serialEnd").val() || null,
+                width: $("#serialWidth").val() || null,
+                lengthBytes: null,
+                crcBytes: null,
+                includeHeader: $("#serialHeader").prop('checked'),
+                encoding: $("#serialRespEncoding").val()
+            }
+        };
+        if (isChecked($("#serialLengthActive"))) {
+            options.rx.lengthBytes = {
+                index: $("#serialLenIndex").val(),
+                length: $("#serialLenLength").val(),
+                endian: $("input[name='serialLenEndian']:checked").val()
+            };
+        }
+        if (isChecked($("#serialCrcActive"))) {
+            options.rx.crcBytes = {
+                index: $("#serialCrcIndex").val(),
+                length: $("#serialCrcLength").val()
+            };
+        }
+
+        return options;
     }
 
     function setPrintFile() {

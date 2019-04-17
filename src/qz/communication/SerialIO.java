@@ -90,13 +90,17 @@ public class SerialIO {
 
                         if (format.getBoundEnd() != null && format.getBoundEnd().length > 0) {
                             //process as bounded response
-                            log.trace("Reading bounded response");
-
-                            Integer boundEnd = ByteUtilities.firstMatchingIndex(data.getByteArray(), format.getBoundEnd());
+                            Integer boundEnd = ByteUtilities.firstMatchingIndex(data.getByteArray(), format.getBoundEnd(), startIdx);
 
                             if (boundEnd != null) {
+                                log.trace("Reading bounded response");
+
                                 copyLength = boundEnd - startOffset;
                                 endIdx = boundEnd + 1;
+                                if (format.isIncludeStart()) {
+                                    //also include the ending bytes
+                                    copyLength += format.getBoundEnd().length;
+                                }
                             }
                         } else if (format.getFixedWidth() > 0) {
                             //process as fixed length prefixed response
@@ -106,22 +110,32 @@ public class SerialIO {
                             endIdx = startOffset + format.getFixedWidth();
                         } else if (format.getLength() != null) {
                             //process as dynamic formatted response
-                            log.trace("Reading dynamic formatted response");
-
                             SerialOptions.ByteParam lengthParam = format.getLength();
-                            SerialOptions.ByteParam crcParam = format.getCrc();
 
-                            if (data.getLength() > startOffset + lengthParam.getIndex() + lengthParam.getLength()) { //ensure there's a length byte to read
+                            if (data.getLength() > startOffset + lengthParam.getIndex() + lengthParam.getLength()) { //ensure there's length bytes to read
+                                log.trace("Reading dynamic formatted response");
+
                                 int expectedLength = ByteUtilities.parseBytes(data.getByteArray(), startOffset + lengthParam.getIndex(), lengthParam.getLength(), lengthParam.getEndian());
-                                log.trace("Found length byte, expected data length: {}", expectedLength);
+                                log.trace("Found length byte, expecting {} bytes", expectedLength);
 
-                                startOffset++; // don't include the length byte itself in the response
-                                copyLength = expectedLength + crcParam.getIndex() + crcParam.getLength(); // data of length + crc
-                                endIdx = startOffset + copyLength + 1;
+                                startOffset += lengthParam.getIndex() + lengthParam.getLength(); // don't include the length byte(s) in the response
+                                copyLength = expectedLength;
+                                endIdx = startOffset + copyLength;
+
+                                if (format.getCrc() != null) {
+                                    SerialOptions.ByteParam crcParam = format.getCrc();
+
+                                    log.trace("Expecting {} crc bytes", crcParam.getLength());
+                                    int expand = crcParam.getIndex() + crcParam.getLength();
+
+                                    //include crc in copy
+                                    copyLength += expand;
+                                    endIdx += expand;
+                                }
                             }
                         } else {
-                            //process as header formatted raw response
-                            log.trace("Reading header formatted raw response");
+                            //process as header formatted raw response - high risk of lost data, likely unintended settings
+                            log.warn("Reading header formatted raw response, are you missing an rx option?");
 
                             copyLength = data.getLength() - startOffset;
                             endIdx = data.getLength();
@@ -181,16 +195,20 @@ public class SerialIO {
      *
      * @throws SerialPortException If the properties fail to set
      */
-    private void setOptions(SerialOptions props) throws SerialPortException {
-        if (props == null) { return; }
+    private void setOptions(SerialOptions opts) throws SerialPortException {
+        if (opts == null) { return; }
 
-        SerialOptions.PortSettings ps = props.getPortSettings();
+        SerialOptions.PortSettings ps = opts.getPortSettings();
         if (ps != null && !serialOpts.getPortSettings().equals(ps)) {
             port.setParams(ps.getBaudRate(), ps.getDataBits(), ps.getStopBits(), ps.getParity());
             port.setFlowControlMode(ps.getFlowControl());
+            serialOpts.setPortSettings(ps);
         }
 
-        //TODO - check for updated rx options
+        SerialOptions.ResponseFormat rf = opts.getResponseFormat();
+        if (rf != null) {
+            serialOpts.setResponseFormat(rf);
+        }
     }
 
     /**

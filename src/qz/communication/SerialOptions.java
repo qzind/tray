@@ -94,9 +94,9 @@ public class SerialOptions {
                     }
                 }
 
-                if (!respOpts.isNull("includeStart")) {
-                    try { responseFormat.includeStart = respOpts.getBoolean("includeStart"); }
-                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "includeStart", respOpts.opt("includeStart")); }
+                if (!respOpts.isNull("includeHeader")) {
+                    try { responseFormat.includeStart = respOpts.getBoolean("includeHeader"); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "includeHeader", respOpts.opt("includeHeader")); }
                 }
 
                 //TODO - some of these could probably warn if set without "start" being set
@@ -111,53 +111,53 @@ public class SerialOptions {
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "width", respOpts.opt("width")); }
                 }
 
-                if (!respOpts.isNull("length")) {
+                if (!respOpts.isNull("lengthBytes")) {
                     try {
-                        JSONObject lengthOpts = respOpts.optJSONObject("length");
+                        JSONObject lengthOpts = respOpts.optJSONObject("lengthBytes");
                         responseFormat.length = new ByteParam();
 
                         if (lengthOpts != null) {
                             if (!lengthOpts.isNull("index")) {
                                 try { responseFormat.length.index = lengthOpts.getInt("index"); }
-                                catch(JSONException se) { LoggerUtilities.optionWarn(log, "integer", "length.index", lengthOpts.opt("index")); }
+                                catch(JSONException se) { LoggerUtilities.optionWarn(log, "integer", "lengthBytes.index", lengthOpts.opt("index")); }
                             }
 
                             if (!lengthOpts.isNull("length")) {
                                 try { responseFormat.length.length = lengthOpts.getInt("length"); }
-                                catch(JSONException se) { LoggerUtilities.optionWarn(log, "integer", "length.length", lengthOpts.opt("length")); }
+                                catch(JSONException se) { LoggerUtilities.optionWarn(log, "integer", "lengthBytes.length", lengthOpts.opt("length")); }
                             }
 
                             if (!lengthOpts.isNull("endian")) {
-                                try { responseFormat.length.endian = ByteUtilities.Endian.valueOf(lengthOpts.getString("endian")); }
-                                catch(JSONException se) { LoggerUtilities.optionWarn(log, "string", "length.endian", lengthOpts.opt("endian")); }
+                                try { responseFormat.length.endian = ByteUtilities.Endian.valueOf(lengthOpts.getString("endian").toUpperCase()); }
+                                catch(JSONException se) { LoggerUtilities.optionWarn(log, "string", "lengthBytes.endian", lengthOpts.opt("endian")); }
                             }
                         } else {
-                            responseFormat.length.index = respOpts.getInt("length");
+                            responseFormat.length.index = respOpts.getInt("lengthBytes");
                         }
                     }
-                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "length", respOpts.opt("length")); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "lengthBytes", respOpts.opt("lengthBytes")); }
                 }
 
-                if (!respOpts.isNull("crc")) {
+                if (!respOpts.isNull("crcBytes")) {
                     try {
-                        JSONObject crcOpts = respOpts.optJSONObject("crc");
+                        JSONObject crcOpts = respOpts.optJSONObject("crcBytes");
                         responseFormat.crc = new ByteParam();
 
                         if (crcOpts != null) {
                             if (!crcOpts.isNull("index")) {
                                 try { responseFormat.crc.index = crcOpts.getInt("index"); }
-                                catch(JSONException se) { LoggerUtilities.optionWarn(log, "integer", "crc.index", crcOpts.opt("index")); }
+                                catch(JSONException se) { LoggerUtilities.optionWarn(log, "integer", "crcBytes.index", crcOpts.opt("index")); }
                             }
 
                             if (!crcOpts.isNull("length")) {
                                 try { responseFormat.crc.length = crcOpts.getInt("length"); }
-                                catch(JSONException se) { LoggerUtilities.optionWarn(log, "integer", "crc.length", crcOpts.opt("length")); }
+                                catch(JSONException se) { LoggerUtilities.optionWarn(log, "integer", "crcBytes.length", crcOpts.opt("length")); }
                             }
                         } else {
-                            responseFormat.crc.index = respOpts.getInt("crc");
+                            responseFormat.crc.index = respOpts.getInt("crcBytes");
                         }
                     }
-                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "crc", respOpts.opt("crc")); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "crcBytes", respOpts.opt("crcBytes")); }
                 }
 
                 if (!respOpts.isNull("encoding")) {
@@ -178,6 +178,13 @@ public class SerialOptions {
         return responseFormat;
     }
 
+    public void setPortSettings(PortSettings portSettings) {
+        this.portSettings = portSettings;
+    }
+
+    public void setResponseFormat(ResponseFormat responseFormat) {
+        this.responseFormat = responseFormat;
+    }
 
     public class PortSettings {
 

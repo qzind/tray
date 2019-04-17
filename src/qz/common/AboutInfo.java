@@ -1,5 +1,6 @@
 package qz.common;
 
+import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.ssl.Base64;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.x509.BasicConstraints;
@@ -14,6 +15,7 @@ import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -76,9 +78,13 @@ public class AboutInfo {
     private static JSONObject environment() throws JSONException {
         JSONObject environment = new JSONObject();
 
+        long uptime = ManagementFactory.getRuntimeMXBean().getUptime();
+
         environment
                 .put("os", SystemUtilities.getOS())
-                .put("java", Constants.JAVA_VERSION);
+                .put("java", Constants.JAVA_VERSION)
+                .put("uptime", DurationFormatUtils.formatDurationWords(uptime, true, false))
+                .put("uptimeMillis", uptime);
 
         return environment;
     }

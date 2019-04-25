@@ -240,6 +240,10 @@ public class ShellUtilities {
                     }
                 }
             }
+            if (!densityMap.containsKey(entry.getKey())) {
+                densityMap.put(entry.getKey(), null);
+                log.warn("Error parsing default density from CUPS, either no response or invalid response {}: {}", entry.getKey(), out);
+            }
         }
         return densityMap;
     }

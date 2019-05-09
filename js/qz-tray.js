@@ -761,16 +761,18 @@ var qz = (function() {
             /**
              * @param {string} [hostname] Hostname to try to connect to when determining network interfaces, defaults to "google.com"
              * @param {number} [port] Port to use with custom hostname, defaults to 443
+             * @param {boolean} [signature] Pre-signed signature of hashed JSON string containing <code>call='websocket.getNetworkInfo'</code>, <code>params</code> object, and <code>timestamp</code>.
+             * @param {number} [signingTimestamp] Required with <code>signature</code>. Timestamp used with pre-signed content.
              *
              * @returns {Promise<Object<{ipAddress: String, macAddress: String}>|Error>} Connected system's network information.
              *
              * @memberof qz.websocket
              */
-            getNetworkInfo: function(hostname, port) {
+            getNetworkInfo: function(hostname, port, signature, signingTimestamp) {
                 return _qz.websocket.dataPromise('websocket.getNetworkInfo', {
                     hostname: hostname,
                     port: port
-                });
+                }, signature, signingTimestamp);
             },
 
             /**
@@ -796,24 +798,29 @@ var qz = (function() {
          */
         printers: {
             /**
+             * @param {boolean} [signature] Pre-signed signature of hashed JSON string containing <code>call='printers.getDefault</code>, <code>params</code>, and <code>timestamp</code>.
+             * @param {number} [signingTimestamp] Required with <code>signature</code>. Timestamp used with pre-signed content.
+             *
              * @returns {Promise<string|Error>} Name of the connected system's default printer.
              *
              * @memberof qz.printers
              */
-            getDefault: function() {
-                return _qz.websocket.dataPromise('printers.getDefault');
+            getDefault: function(signature, signingTimestamp) {
+                return _qz.websocket.dataPromise('printers.getDefault', null, signature, signingTimestamp);
             },
 
             /**
              * @param {string} [query] Search for a specific printer. All printers are returned if not provided.
+             * @param {boolean} [signature] Pre-signed signature of hashed JSON string containing <code>call='printers.find'</code>, <code>params</code>, and <code>timestamp</code>.
+             * @param {number} [signingTimestamp] Required with <code>signature</code>. Timestamp used with pre-signed content.
              *
              * @returns {Promise<Array<string>|string|Error>} The matched printer name if <code>query</code> is provided.
              *                                                Otherwise an array of printer names found on the connected system.
              *
              * @memberof qz.printers
              */
-            find: function(query) {
-                return _qz.websocket.dataPromise('printers.find', { query: query });
+            find: function(query, signature, signingTimestamp) {
+                return _qz.websocket.dataPromise('printers.find', { query: query }, signature, signingTimestamp);
             }
         },
 
@@ -917,7 +924,7 @@ var qz = (function() {
          *   @param {string} [data.options.xmlTag] Required with <code>[xml]</code> format. Tag name containing base64 formatted data.
          *   @param {number} [data.options.pageWidth] Optional with <code>[html]</code> type printing. Width of the web page to render. Defaults to paper width.
          *   @param {number} [data.options.pageHeight] Optional with <code>[html]</code> type printing. Height of the web page to render. Defaults to adjusted web page height.
-         * @param {boolean} [signature] Pre-signed signature of JSON string containing <code>call</code>, <code>params</code>, and <code>timestamp</code>.
+         * @param {boolean} [signature] Pre-signed signature of hashed JSON string containing <code>call='print'</code>, <code>params</code>, and <code>timestamp</code>.
          * @param {number} [signingTimestamp] Required with <code>signature</code>. Timestamp used with pre-signed content.
          *
          * @returns {Promise<null|Error>}

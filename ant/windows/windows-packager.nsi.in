@@ -118,7 +118,7 @@ Section
     ${If} "$0" == "${windows.err.java}"
       MessageBox MB_YESNO "Java is required for installation.  Download now?" IDYES true IDNO false
         true:
-          ExecShell "open" "https://java.com/download/"
+          ExecShell "open" "${java.download}"
           MessageBox MB_OK "Click OK after Java is installed to resume installation"
           Goto keygen
         false:

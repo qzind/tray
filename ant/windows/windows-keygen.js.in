@@ -29,7 +29,7 @@
  *    2. Deletes certificate from Firefox web browser (if installed)                          *
  *                                                                                            *
  *  Depends:                                                                                  *
- *    keytool.exe (distributed with jre: http://java.com)                                     *
+ *    keytool.exe (distributed with jre: ${java.download})         *
  *                                                                                            *
  *  Usage:                                                                                    *
  *    cscript //NoLogo ${windows.keygen.name}                                                      *

@@ -233,10 +233,7 @@ public class ShellUtilities {
                             densityMap.put(entry.getKey(), new PrinterResolution(density, density, type));
                             log.debug("Parsed default density from CUPS {}: {}{}", entry.getKey(), density,
                                       type == PrinterResolution.DPI? "dpi":"dpcm");
-                        } catch(NumberFormatException e) {
-                            densityMap.put(entry.getKey(), null);
-                            log.warn("Error parsing default density from CUPS {}: {}", entry.getKey(), part);
-                        }
+                        } catch(NumberFormatException ignore) {}
                     }
                 }
             }

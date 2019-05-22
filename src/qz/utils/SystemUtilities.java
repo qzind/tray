@@ -31,6 +31,7 @@ public class SystemUtilities {
     private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
     private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
 
+    private static Boolean darkMode;
     private static String uname;
     private static String linuxRelease;
     private static String classProtocol;
@@ -206,10 +207,33 @@ public class SystemUtilities {
         return uname;
     }
 
+    public static boolean isDarkMode() {
+        return isDarkMode(false);
+    }
+
+    public static boolean isDarkMode(boolean recheck) {
+        if (darkMode == null || recheck) {
+            // Check for Dark Mode on MacOS
+            if (isMac() && MacUtilities.isDarkMode()) {
+                darkMode = true;
+            } else if (isWindows() && WindowsUtilities.isDarkMode()) {
+                darkMode = true;
+            } else {
+                darkMode = false;
+            }
+        }
+        return darkMode.booleanValue();
+    }
+
     public static boolean setSystemLookAndFeel() {
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            if(isDarkMode()) {
+                // Java doesn't yet support a dark theme for Swing, use Darkula instead
+                UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
+            } else {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            }
             return true;
         } catch (Exception e) {
             LoggerFactory.getLogger(SystemUtilities.class).warn("Error getting the default look and feel");

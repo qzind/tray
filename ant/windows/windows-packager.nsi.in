@@ -171,7 +171,7 @@ Section "Uninstall"
   ${If} ${RunningX64}
   ${DisableX64FSRedirection}
   ${EndIf}
-
+  
   ; Remove ${vendor.company} certificates
   nsExec::ExecToLog "cscript.exe //NoLogo //E:jscript $\"$INSTDIR\auth\${windows.keygen.name}$\" $\"$INSTDIR$\" uninstall"
 
@@ -181,7 +181,7 @@ Section "Uninstall"
 
   ; Remove startup entries
   nsExec::ExecToLog "cscript.exe //NoLogo //E:jscript $\"$INSTDIR\utils\${windows.cleanup.name}$\" $\"${project.name}$\""
-
+  
   ; Delete matching firewall rules
   DetailPrint "Removing ${project.name} firewall rules..."
   nsExec::ExecToLog "netsh.exe advfirewall firewall delete rule name= $\"${project.name}$\""

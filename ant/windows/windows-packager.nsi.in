@@ -174,11 +174,11 @@ Section "Uninstall"
 
   ; Remove 2.1 startup entries
   ReadEnvStr $R0 "APPDATA"
-  IfFileExists "$R0\${project.datadir}\${autostart.name}" 0 +2
-  Delete "$R0\${project.datadir}\${autostart.name}"
+  IfFileExists "$R0\${vendor.name}\.autostart" 0 +2
+  Delete "$R0\${vendor.name}\.autostart"
 
   ReadEnvStr $R0 "PROGRAMDATA"
-  IfFileExists "$R0\${project.datadir}\${autostart.name}" 0 +2
+  IfFileExists "$R0\${vendor.name}\.autostart" 0 +2
   Delete "$R0\${project.datadir}\${autostart.name}"
 
   ; Delete matching firewall rules

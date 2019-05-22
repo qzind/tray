@@ -51,12 +51,8 @@ public class Constants {
     public static final int EXPIRY_WARN = 30;   // days
     public static Color WARNING_COLOR = Color.RED;
     public static Color TRUSTED_COLOR = Color.BLUE;
-    static {
-        if (SystemUtilities.isDarkMode()) {
-            WARNING_COLOR = Color.decode("#EB6261");
-            TRUSTED_COLOR = Color.decode("#589DF6");
-        }
-    }
+    public static Color WARNING_COLOR_LIGHTER = Color.decode("#EB6261");
+    public static Color TRUSTED_COLOR_LIGHTER = Color.decode("#589DF6");
 
     public static final long MEMORY_PER_PRINT = 512; //MB
 

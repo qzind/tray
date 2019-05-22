@@ -231,6 +231,8 @@ public class SystemUtilities {
             if(isDarkMode()) {
                 // Java doesn't yet support a dark theme for Swing, use Darkula instead
                 UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
+                Constants.WARNING_COLOR = Constants.WARNING_COLOR_LIGHTER;
+                Constants.TRUSTED_COLOR = Constants.TRUSTED_COLOR_LIGHTER;
             } else {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             }

@@ -24,6 +24,11 @@ fi
 rm -rf "${apple.installdir}/demo/js/3rdparty"
 rm "${apple.installdir}/demo/js/qz-websocket.js"
 
+# Remove 2.1 startup entry
+site=$(echo "${vendor.website}"|rev|cut -d/ -f1|rev)
+package=$(echo "$site" |rev |cut -d. -f1|rev).$(echo "$site" |rev |cut -d. -f2|rev).${project.filename}
+rm "/Library/LaunchAgents/$package.plist"
+
 # Start ${project.name}
 echo -e "\nStarting ${project.name} as $USER..."
 su $USER -c "open \"${apple.installdir}\""

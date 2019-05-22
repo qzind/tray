@@ -203,6 +203,9 @@ Section "Uninstall"
   Delete "$DESKTOP\${project.name}.url"
   Delete "$DESKTOP\${project.name}.lnk"
   Delete "$SMPROGRAMS\${project.name}.lnk"
+
+  SetShellVarContext all
+  Delete "$SMSTARTUP\${project.name}.lnk"
 SectionEnd
 
 ;-------------------------------

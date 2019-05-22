@@ -53,6 +53,7 @@ Section
   DetailPrint "Cleaning up resources from previous versions..."
   RMDir /r "$INSTDIR\demo\js\3rdparty"
   Delete "$INSTDIR\demo\js\qz-websocket.js"
+  Delete "$SMSTARTUP\${project.name}.lnk"
 
   File /r "${dist.dir}\*"
 

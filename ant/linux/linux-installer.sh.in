@@ -109,7 +109,7 @@ pkill -f "java ${launch.opts} -jar ${jarfile}" > /dev/null 2>&1
 progress_dialog 20 "Deleting old files..."
 rm -rf "${destdir}" > /dev/null 2>&1
 
-# 2.1 autostart file
+# Remove 2.1 startup entry
 rm "/etc/xdg/autostart/${project.filename}.desktop"
 
 progress_dialog 25 "Creating directory..."

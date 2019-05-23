@@ -59,6 +59,9 @@ public class SecurityInfo {
         libVersions.put("simplersa", null);
         libVersions.put("bouncycastle", "" + new BouncyCastleProvider().getVersion());
 
+        libVersions.put("jre", System.getProperty("java.version"));
+        libVersions.put("jre (vendor)", System.getProperty("java.vendor"));
+
         //JFX info, if it exists
         try {
             Class VersionInfo = Class.forName("com.sun.javafx.runtime.VersionInfo");
@@ -67,13 +70,13 @@ public class SecurityInfo {
             Object version = method.invoke(null, null);
             libVersions.put("javafx", (String)version);
             if (fxPath.contains(DeployUtilities.detectJarPath())) {
-                libVersions.put("javafx location", "Bundled with " + Constants.ABOUT_TITLE);
+                libVersions.put("javafx (location)", "Bundled with " + Constants.ABOUT_TITLE);
             } else {
-                libVersions.put("javafx location", "Provided by " + fxPath);
+                libVersions.put("javafx (location)", "Provided by " + fxPath);
             }
         } catch(Exception e) {
             libVersions.put("javafx", "Failed");
-            libVersions.put("javafx location", "Failed");
+            libVersions.put("javafx (location)", "Failed");
         }
 
         // Fallback to maven manifest information

@@ -54,6 +54,9 @@ Section
   RMDir /r "$INSTDIR\demo\js\3rdparty"
   Delete "$INSTDIR\demo\js\qz-websocket.js"
 
+  ; Remove 2.1 startup entry
+  Delete "$SMSTARTUP\${project.name}.lnk"
+
   File /r "${dist.dir}\*"
 
   WriteRegStr HKLM "Software\${project.name}" \

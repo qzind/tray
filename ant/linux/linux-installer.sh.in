@@ -106,8 +106,11 @@ pkill -f "java -jar ${jarfile}" > /dev/null 2>&1
 pkill -f "java -jar ${launch.opts} ${jarfile}" > /dev/null 2>&1
 pkill -f "java ${launch.opts} -jar ${jarfile}" > /dev/null 2>&1
 
-progress_dialog 20 "Stopping any running versions..."
+progress_dialog 20 "Deleting old files..."
 rm -rf "${destdir}" > /dev/null 2>&1
+
+# Remove 2.1 startup entry
+rm "/etc/xdg/autostart/${project.filename}.desktop"
 
 progress_dialog 25 "Creating directory..."
 mkdir -p "${destdir}" > /dev/null 2>&1

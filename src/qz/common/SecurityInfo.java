@@ -6,9 +6,11 @@ import org.eclipse.jetty.util.Jetty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import purejavahidapi.PureJavaHidApi;
+import qz.deploy.DeployUtilities;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -56,6 +58,23 @@ public class SecurityInfo {
         libVersions.put("mslinks", mslinks.ShellLink.VERSION);
         libVersions.put("simplersa", null);
         libVersions.put("bouncycastle", "" + new BouncyCastleProvider().getVersion());
+
+        //JFX info, if it exists
+        try {
+            Class VersionInfo = Class.forName("com.sun.javafx.runtime.VersionInfo");
+            String fxPath = VersionInfo.getProtectionDomain().getCodeSource().getLocation().toString();
+            Method method = VersionInfo.getMethod("getVersion", null);
+            Object version = method.invoke(null, null);
+            libVersions.put("javafx", (String)version);
+            if (fxPath.contains(DeployUtilities.detectJarPath())) {
+                libVersions.put("javafx location", "Bundled with " + Constants.ABOUT_TITLE);
+            } else {
+                libVersions.put("javafx location", "Provided by " + fxPath);
+            }
+        } catch(Exception e) {
+            libVersions.put("javafx", "Failed");
+            libVersions.put("javafx location", "Failed");
+        }
 
         // Fallback to maven manifest information
         HashMap<String,String> mavenVersions = getMavenVersions();

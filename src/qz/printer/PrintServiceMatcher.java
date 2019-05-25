@@ -15,6 +15,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.SystemUtilities;
+import sun.awt.AppContext;
 
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
@@ -25,6 +26,9 @@ public class PrintServiceMatcher {
     private static final Logger log = LoggerFactory.getLogger(PrintServiceMatcher.class);
 
     public static PrintService[] getPrintServices() {
+        //Update printer list in CUPS immediately
+        AppContext.getAppContext().put(PrintServiceLookup.class.getDeclaredClasses()[0], null);
+
         PrintService[] printers = PrintServiceLookup.lookupPrintServices(null, null);
         log.debug("Found {} printers", printers.length);
 

@@ -408,9 +408,7 @@
         </antcall>
         <antcall target="codesign-libs">
             <param name="signing.jarname" value="communication/jssc-*.jar"/>
-            <param name="signing.filetype" value="*.jnilib"/>
-            <!-- for signing.delete to be effective, the unsigned lib must be added to jar zipgroupfileset exclusion -->
-            <param name="signing.delete" value="*_ppc*.jnilib"/>
+            <param name="signing.filetype" value="*.dylib"/>
         </antcall>
         <antcall target="codesign-libs">
             <param name="signing.jarname" value="communication/hid4java-*.jar"/>

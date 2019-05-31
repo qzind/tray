@@ -66,15 +66,15 @@ public class SecurityInfo {
         try {
             Class VersionInfo = Class.forName("com.sun.javafx.runtime.VersionInfo");
             String fxPath = VersionInfo.getProtectionDomain().getCodeSource().getLocation().toString();
-            Method method = VersionInfo.getMethod("getVersion", null);
-            Object version = method.invoke(null, null);
+            Method method = VersionInfo.getMethod("getVersion", (Class[])null);
+            Object version = method.invoke(null, (Object[])null);
             libVersions.put("javafx", (String)version);
             if (fxPath.contains(DeployUtilities.detectJarPath())) {
                 libVersions.put("javafx (location)", "Bundled with " + Constants.ABOUT_TITLE);
             } else {
                 libVersions.put("javafx (location)", "Provided by " + fxPath);
             }
-        } catch(Exception e) {
+        } catch(Throwable e) {
             libVersions.put("javafx", "Failed");
             libVersions.put("javafx (location)", "Failed");
         }

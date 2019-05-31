@@ -64,10 +64,10 @@ public class SecurityInfo {
 
         //JFX info, if it exists
         try {
-            Class VersionInfo = Class.forName("com.sun.javafx.runtime.VersionInfo");
+            Class<?> VersionInfo = Class.forName("com.sun.javafx.runtime.VersionInfo");
             String fxPath = VersionInfo.getProtectionDomain().getCodeSource().getLocation().toString();
-            Method method = VersionInfo.getMethod("getVersion", (Class[])null);
-            Object version = method.invoke(null, (Object[])null);
+            Method method = VersionInfo.getMethod("getVersion");
+            Object version = method.invoke(null);
             libVersions.put("javafx", (String)version);
             if (fxPath.contains(DeployUtilities.detectJarPath())) {
                 libVersions.put("javafx (location)", "Bundled with " + Constants.ABOUT_TITLE);

@@ -59,7 +59,7 @@ public class SecurityInfo {
         libVersions.put("simplersa", null);
         libVersions.put("bouncycastle", "" + new BouncyCastleProvider().getVersion());
 
-        libVersions.put("jre", System.getProperty("java.version"));
+        libVersions.put("jre", Constants.JAVA_VERSION.toString());
         libVersions.put("jre (vendor)", System.getProperty("java.vendor"));
 
         //JFX info, if it exists

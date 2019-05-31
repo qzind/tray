@@ -86,6 +86,7 @@ public class PrintSocketServer {
         log.info(Constants.ABOUT_TITLE + " version: {}", Constants.VERSION);
         log.info(Constants.ABOUT_TITLE + " vendor: {}", Constants.ABOUT_COMPANY);
         log.info("Java version: {}", Constants.JAVA_VERSION.toString());
+        log.info("Java vendor: {}", System.getProperty("java.vendor"));
         setupFileLogging();
 
         try {

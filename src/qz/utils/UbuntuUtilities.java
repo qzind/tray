@@ -10,6 +10,8 @@
 
 package qz.utils;
 
+import com.github.zafarkhaja.semver.Version;
+import qz.common.Constants;
 import qz.ui.IconCache;
 
 import java.awt.*;
@@ -101,6 +103,13 @@ public class UbuntuUtilities {
                 }
             }
         }
+    }
+
+    public static double getScaleFactor() {
+        if (Constants.JAVA_VERSION.lessThan(Version.valueOf("11.0.0"))) {
+            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+        }
+        return 0; // TODO: Implement Gdk JNA code for JDK11
     }
 
 }

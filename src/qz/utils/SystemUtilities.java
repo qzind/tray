@@ -228,7 +228,13 @@ public class SystemUtilities {
     public static boolean setSystemLookAndFeel() {
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
-            if(isDarkMode()) {
+            boolean darkThemeSupported = true;
+            // Disable dark mode on Windows HiDPI due to bug
+            if(isDarkMode() && isWindows() && isHiDPI()) {
+                darkThemeSupported = false;
+                log.info("Dark mode detected but disabled per https://github.com/bobbylight/Darcula/issues/5");
+            }
+            if(isDarkMode() && darkThemeSupported) {
                 // Java doesn't yet support a dark theme for Swing, use Darkula instead
                 UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
                 Constants.WARNING_COLOR = Constants.WARNING_COLOR_LIGHTER;
@@ -255,10 +261,16 @@ public class SystemUtilities {
             log.debug("Invalid dialog position provided: {}, we'll center on first monitor instead", position);
             dialog.setLocationRelativeTo(null);
             return;
-        };
+        }
 
         //adjust for dpi scaling
-        double dpiScale = getDpiScale();
+        double dpiScale = getWindowScaleFactor();
+        if (dpiScale == 0) {
+            log.debug("Invalid window scale value: {}, we'll center on first monitor instead", dpiScale);
+            dialog.setLocationRelativeTo(null);
+            return;
+        }
+
         Point p = new Point((int)(position.getX() * dpiScale), (int)(position.getY() * dpiScale));
 
         //account for own size when centering
@@ -268,11 +280,44 @@ public class SystemUtilities {
     }
 
     /**
-     * Shim for detecting default screen scaling per issue #284
+     * Shim for detecting window screen-placement scaling
+     * See issues #284, #448
      * @return Logical dpi scale as dpi/96
      */
-    private static double getDpiScale() {
-        return SystemUtilities.isMac() ? 1 : Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+    private static double getWindowScaleFactor() {
+        // MacOS is always 1
+        if (isMac()) {
+            return 1;
+        }
+        // Windows/Linux on JDK8 honors scaling
+        if (Constants.JAVA_VERSION.lessThan(Version.valueOf("11.0.0"))) {
+            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+        }
+        // Windows on JDK11 is always 1
+        if(isWindows()) {
+            return 1;
+        }
+        // Linux on JDK11 requires JNA calls to Gdk
+        return UbuntuUtilities.getScaleFactor();
+    }
+
+    /**
+     * Detects if HiDPI is enabled
+     * Warning: Due to behavioral differences between OSs, JDKs and poor
+     * detection techniques this function should only be used to fix rare
+     * edge-case bugs.
+     *
+     * See also SystemUtilities.getWindowScaleFactor()
+     * @return true if HiDPI is detected
+     */
+    public static boolean isHiDPI() {
+        if(isMac()) {
+            return MacUtilities.getScaleFactor() > 1;
+        } else if(isWindows()) {
+            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0 > 1;
+        }
+        // Fallback to a JNA Gdk technique
+        return UbuntuUtilities.getScaleFactor() > 1;
     }
 
     /**

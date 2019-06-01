@@ -109,7 +109,7 @@ public class UbuntuUtilities {
         if (Constants.JAVA_VERSION.lessThan(Version.valueOf("11.0.0"))) {
             return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
         }
-        return 0; // TODO: Implement Gdk JNA code for JDK11
+        return DPI.getDPI(); // TODO: Implement Gdk JNA code for JDK11
     }
 
 }

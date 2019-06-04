@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.TrayManager;
+import qz.ui.LinkLabel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -219,29 +220,38 @@ public class SystemUtilities {
             } else if (isWindows() && WindowsUtilities.isDarkMode()) {
                 darkMode = true;
             } else {
-                darkMode = false;
+                darkMode = UbuntuUtilities.isDarkMode();
             }
         }
         return darkMode.booleanValue();
     }
 
+    public static void adjustThemeColors() {
+        if (isDarkMode()) {
+            Constants.WARNING_COLOR = Constants.WARNING_COLOR_LIGHTER;
+            Constants.TRUSTED_COLOR = Constants.TRUSTED_COLOR_LIGHTER;
+            LinkLabel.DEFAULT_COLOR = Constants.TRUSTED_COLOR_LIGHTER;
+        }
+    }
+
     public static boolean setSystemLookAndFeel() {
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
-            boolean darkThemeSupported = true;
+            boolean darkulaThemeNeeded = true;
+            if(isUnix() && UbuntuUtilities.isDarkMode()) {
+                darkulaThemeNeeded = false;
+            }
             // Disable dark mode on Windows HiDPI due to bug
             if(isDarkMode() && isWindows() && isHiDPI()) {
-                darkThemeSupported = false;
+                darkulaThemeNeeded = false;
                 log.info("Dark mode detected but disabled per https://github.com/bobbylight/Darcula/issues/5");
             }
-            if(isDarkMode() && darkThemeSupported) {
-                // Java doesn't yet support a dark theme for Swing, use Darkula instead
+            if(isDarkMode() && darkulaThemeNeeded) {
                 UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
-                Constants.WARNING_COLOR = Constants.WARNING_COLOR_LIGHTER;
-                Constants.TRUSTED_COLOR = Constants.TRUSTED_COLOR_LIGHTER;
             } else {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             }
+            adjustThemeColors();
             return true;
         } catch (Exception e) {
             LoggerFactory.getLogger(SystemUtilities.class).warn("Error getting the default look and feel");

@@ -2,6 +2,7 @@ package qz.ui;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.common.Constants;
 import qz.utils.ShellUtilities;
 
 import javax.swing.*;
@@ -27,9 +28,6 @@ public class LinkLabel extends JLabel {
     private static final Logger log = LoggerFactory.getLogger(LinkLabel.class);
 
     private ArrayList<ActionListener> actionListeners;
-
-    public static Color DEFAULT_COLOR = Color.BLUE;
-
 
     public LinkLabel() {
         super();
@@ -92,7 +90,7 @@ public class LinkLabel extends JLabel {
     }
 
     private void initialize() {
-        setForeground(DEFAULT_COLOR);
+        setForeground(Constants.TRUSTED_COLOR);
         Map<TextAttribute, Object> attributes = new HashMap<>(getFont().getAttributes());
         attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
         setFont(getFont().deriveFont(attributes));

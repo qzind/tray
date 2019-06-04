@@ -3,6 +3,7 @@ package qz.ui;
 import org.eclipse.jetty.server.*;
 import qz.common.Constants;
 import qz.common.SecurityInfo;
+import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -56,7 +57,7 @@ public class AboutDialog extends BasicDialog {
 
         JScrollPane pane = new JScrollPane(gridPanel);
         pane.getVerticalScrollBar().setUnitIncrement(8);
-        pane.setPreferredSize(new Dimension(0, 100));
+        pane.setPreferredSize(new Dimension(0, (int)(100 * SystemUtilities.getWindowScaleFactor())));
         gridPanel.setLayout(new GridLayout(5, 2));
         gridPanel.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
 

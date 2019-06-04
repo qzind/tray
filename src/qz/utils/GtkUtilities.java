@@ -58,14 +58,14 @@ public class GtkUtilities {
             log.debug("Found Gtk{}", version);
             return version;
         } catch(Throwable t) {
-            log.warn("Could obtain GtkVersion information from UNIXToolkit: {}", t.getMessage());
+            log.warn("Could not obtain GtkVersion information from UNIXToolkit: {}", t.getMessage());
         }
         return 0;
     }
 
     private static double getGtk2ScaleFactor(GTK2 gtk2) {
         Pointer display = gtk2.gdk_display_get_default();
-        log.debug("Gtk 3.22+ detected, calling \"gdk_screen_get_resolution\"");
+        log.debug("Gtk 2.10+ detected, calling \"gdk_screen_get_resolution\"");
         Pointer screen = gtk2.gdk_display_get_default_screen(display);
         return gtk2.gdk_screen_get_resolution(screen) / 96.0d;
     }

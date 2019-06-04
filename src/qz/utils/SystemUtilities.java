@@ -230,7 +230,6 @@ public class SystemUtilities {
         if (isDarkMode()) {
             Constants.WARNING_COLOR = Constants.WARNING_COLOR_LIGHTER;
             Constants.TRUSTED_COLOR = Constants.TRUSTED_COLOR_LIGHTER;
-            LinkLabel.DEFAULT_COLOR = Constants.TRUSTED_COLOR_LIGHTER;
         }
     }
 
@@ -294,7 +293,7 @@ public class SystemUtilities {
      * See issues #284, #448
      * @return Logical dpi scale as dpi/96
      */
-    private static double getWindowScaleFactor() {
+    public static double getWindowScaleFactor() {
         // MacOS is always 1
         if (isMac()) {
             return 1;

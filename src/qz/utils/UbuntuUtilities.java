@@ -10,6 +10,8 @@
 
 package qz.utils;
 
+import com.github.zafarkhaja.semver.Version;
+import qz.common.Constants;
 import qz.ui.IconCache;
 
 import java.awt.*;
@@ -101,6 +103,21 @@ public class UbuntuUtilities {
                 }
             }
         }
+    }
+
+    /**
+     * Runs a shell command to determine if "Dark" desktop theme is enabled
+     * @return true if enabled, false if not
+     */
+    public static boolean isDarkMode() {
+        return !ShellUtilities.execute(new String[] { "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" }, new String[] { "dark" }).isEmpty();
+    }
+
+    public static double getScaleFactor() {
+        if (Constants.JAVA_VERSION.lessThan(Version.valueOf("11.0.0"))) {
+            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+        }
+        return GtkUtilities.getScaleFactor();
     }
 
 }

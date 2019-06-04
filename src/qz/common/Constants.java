@@ -49,8 +49,10 @@ public class Constants {
 
     public static final long VALID_SIGNING_PERIOD = 15 * 60 * 1000; //millis
     public static final int EXPIRY_WARN = 30;   // days
-    public static final Color WARNING_COLOR = Color.RED;
-    public static final Color TRUSTED_COLOR = Color.BLUE;
+    public static Color WARNING_COLOR = Color.RED;
+    public static Color TRUSTED_COLOR = Color.BLUE;
+    public static Color WARNING_COLOR_LIGHTER = Color.decode("#EB6261");
+    public static Color TRUSTED_COLOR_LIGHTER = Color.decode("#589DF6");
 
     public static final long MEMORY_PER_PRINT = 512; //MB
 

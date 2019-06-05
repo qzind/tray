@@ -244,13 +244,14 @@ public class SystemUtilities {
             if(isDarkMode() && isWindows() && isHiDPI()) {
                 darkulaThemeNeeded = false;
                 log.info("Dark mode detected but disabled per https://github.com/bobbylight/Darcula/issues/5");
+            } else {
+                adjustThemeColors();
             }
             if(isDarkMode() && darkulaThemeNeeded) {
                 UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
             } else {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             }
-            adjustThemeColors();
             return true;
         } catch (Exception e) {
             LoggerFactory.getLogger(SystemUtilities.class).warn("Error getting the default look and feel");

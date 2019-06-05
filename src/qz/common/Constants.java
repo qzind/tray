@@ -14,6 +14,7 @@ public class Constants {
     public static final int BYTE_BUFFER_SIZE = 8192;
     public static final Version VERSION = Version.valueOf("2.0.9");
     public static final Version JAVA_VERSION = SystemUtilities.getJavaVersion();
+    public static final String JAVA_VENDOR = System.getProperty("java.vendor");
 
     /* QZ-Tray Constants */
     public static final String BLOCK_FILE = "blocked";

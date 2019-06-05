@@ -60,7 +60,7 @@ public class SecurityInfo {
         libVersions.put("bouncycastle", "" + new BouncyCastleProvider().getVersion());
 
         libVersions.put("jre", Constants.JAVA_VERSION.toString());
-        libVersions.put("jre (vendor)", System.getProperty("java.vendor"));
+        libVersions.put("jre (vendor)", Constants.JAVA_VENDOR);
 
         //JFX info, if it exists
         try {
@@ -69,10 +69,10 @@ public class SecurityInfo {
             Method method = VersionInfo.getMethod("getVersion");
             Object version = method.invoke(null);
             libVersions.put("javafx", (String)version);
-            if (fxPath.contains(DeployUtilities.detectJarPath())) {
-                libVersions.put("javafx (location)", "Bundled with " + Constants.ABOUT_TITLE);
+            if (fxPath.contains(DeployUtilities.detectJarPath()) || fxPath.contains("/tray/")) {
+                libVersions.put("javafx (location)", "Bundled/" + Constants.ABOUT_TITLE);
             } else {
-                libVersions.put("javafx (location)", "Provided by " + fxPath);
+                libVersions.put("javafx (location)", "System/" + Constants.JAVA_VENDOR);
             }
         } catch(Throwable e) {
             libVersions.put("javafx", "Failed");

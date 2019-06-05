@@ -215,10 +215,10 @@ public class SystemUtilities {
     public static boolean isDarkMode(boolean recheck) {
         if (darkMode == null || recheck) {
             // Check for Dark Mode on MacOS
-            if (isMac() && MacUtilities.isDarkMode()) {
-                darkMode = true;
-            } else if (isWindows() && WindowsUtilities.isDarkMode()) {
-                darkMode = true;
+            if (isMac()) {
+                darkMode = MacUtilities.isDarkMode();
+            } else if (isWindows()) {
+                darkMode = WindowsUtilities.isDarkMode();
             } else {
                 darkMode = UbuntuUtilities.isDarkMode();
             }
@@ -240,18 +240,12 @@ public class SystemUtilities {
             if(isUnix() && UbuntuUtilities.isDarkMode()) {
                 darkulaThemeNeeded = false;
             }
-            // Disable dark mode on Windows HiDPI due to bug
-            if(isDarkMode() && isWindows() && isHiDPI()) {
-                darkulaThemeNeeded = false;
-                log.info("Dark mode detected but disabled per https://github.com/bobbylight/Darcula/issues/5");
-            } else {
-                adjustThemeColors();
-            }
             if(isDarkMode() && darkulaThemeNeeded) {
                 UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
             } else {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             }
+            adjustThemeColors();
             return true;
         } catch (Exception e) {
             LoggerFactory.getLogger(SystemUtilities.class).warn("Error getting the default look and feel");

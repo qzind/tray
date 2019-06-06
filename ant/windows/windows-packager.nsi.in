@@ -102,16 +102,12 @@ Section
 
   ; Remove ${vendor.company} certificates
   nsExec::ExecToLog "cscript.exe //NoLogo //E:jscript $\"$INSTDIR\auth\${windows.keygen.name}$\" $\"$INSTDIR$\" uninstall"
-  
+
   keygen:
   ; Exports a self-signed certificate and properties file
   DetailPrint "Generating a unique certificate for HTTPS support..."
   nsExec::ExecToLog "cscript.exe //NoLogo //E:jscript $\"$INSTDIR\auth\${windows.keygen.name}$\" $\"$INSTDIR$\" install"
   Pop $0
-  
-  ${If} ${RunningX64}
-  ${EnableX64FSRedirection}
-  ${EndIf}
   
   ; Secure websockets is required, handle errors
   ${If} "$0" != "0"
@@ -127,6 +123,10 @@ Section
     ${Else}
         Abort "Installation failed.  Please check log for details."
     ${EndIf}
+  ${EndIf}
+
+  ${If} ${RunningX64}
+  ${EnableX64FSRedirection}
   ${EndIf}
 
   CreateShortCut "$SMPROGRAMS\${project.name}.lnk" "$INSTDIR\${project.filename}.exe" "" "$INSTDIR\${windows.icon}" 0

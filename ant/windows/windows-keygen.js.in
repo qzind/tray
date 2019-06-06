@@ -128,6 +128,12 @@ function java() {
         if (!jreHome) {
             try {
                 // AdoptOpenJDK adds java.exe to PATH
+
+                // Re-read PATH vars in case they've changed
+                var newPath = (shell.Environment("USER")("PATH") + ";" + shell.Environment("SYSTEM")("PATH")).replace(/;;/g, ";");
+                // Expand any %STRINGS% inside path and set for the next running process
+                shell.Environment("PROCESS")("PATH") = shell.ExpandEnvironmentStrings(newPath);
+
                 shell.Exec('java.exe'); // throws exception if not found
                 jreHome = "NOT_NEEDED";
                 regkey = "NOT_NEEDED";

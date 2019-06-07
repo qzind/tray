@@ -92,7 +92,12 @@ public class AboutDialog extends BasicDialog {
             if (i % 4 == 0 || i % 4 == 1) {
                 if (gridPanel.getComponent(i) instanceof JComponent) {
                     ((JComponent)gridPanel.getComponent(i)).setOpaque(true);
-                    gridPanel.getComponent(i).setBackground(gridPanel.getComponent(i).getBackground().brighter());
+                    if(SystemUtilities.isDarkMode()) {
+                        gridPanel.getComponent(i).setBackground(gridPanel.getComponent(i).getBackground().darker());
+                    }
+                    else {
+                        gridPanel.getComponent(i).setBackground(gridPanel.getComponent(i).getBackground().brighter());
+                    }
                 }
             }
             ((JComponent)gridPanel.getComponent(i)).setBorder(new EmptyBorder(0, Constants.BORDER_PADDING, 0, Constants.BORDER_PADDING));

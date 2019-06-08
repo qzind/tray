@@ -112,7 +112,7 @@
     <!-- Downloads and extracts javafx for the specified platform -->
     <target name="download-javafx-platform">
         <get src="${javafx.mirror}/javafx-${javafx.version-url}-sdk-${javafx.platform}/" verbose="true" dest="javafx-${javafx.platform}.zip"/>
-        <unzip src="javafx-${javafx.platform}.zip" dest="${lib.dir}" overwrite="true"/>
+        <unzip src="javafx-${javafx.platform}.zip" dest="${lib.dir}/javafx/${javafx.platform}" overwrite="true"/>
         <delete file="javafx-${javafx.platform}.zip"/>
     </target>
 

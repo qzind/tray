@@ -570,7 +570,7 @@ var qz = (function() {
                             //if flavor is not known, all valid pixel formats default to file flavor
                             //previous v2.0 data also used format as what is now flavor, so we check for those values here too
                             absolute = true;
-                        } else if ((data[i].type && (["PIXEL", "IMAGE", "PDF"].indexOf(data[i].type.toUpperCase()) > -1 && !data[i].format)
+                        } else if (data[i].type && ((["PIXEL", "IMAGE", "PDF"].indexOf(data[i].type.toUpperCase()) > -1 && !data[i].format)
                             || (["HTML", "PDF"].indexOf(data[i].type.toUpperCase()) > -1 && (!data[i].format || data[i].format.toUpperCase() === "FILE")))) {
                             //if all we know is pixel type, then it is image's file flavor
                             //previous v2.0 data also used type as what is now format, so we check for those value here too

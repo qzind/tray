@@ -99,6 +99,11 @@ public class WebApp extends Application {
     //listens for load progress
     private static ChangeListener<Number> workDoneListener = (ov, oldWork, newWork) -> log.trace("Done: {} > {}", oldWork, newWork);
 
+    //listens for failures
+    private static ChangeListener<Throwable> exceptListener = (obs, oldExc, newExc) -> {
+        if (newExc != null) { thrown.set(newExc); }
+    };
+
 
     /** Called by JavaFX thread */
     public WebApp() {
@@ -136,6 +141,7 @@ public class WebApp extends Application {
         Worker<Void> worker = webView.getEngine().getLoadWorker();
         worker.stateProperty().addListener(stateListener);
         worker.workDoneProperty().addListener(workDoneListener);
+        worker.exceptionProperty().addListener(exceptListener);
 
         //prevents JavaFX from shutting down when hiding window
         Platform.setImplicitExit(false);
@@ -149,12 +155,6 @@ public class WebApp extends Application {
      * @throws Throwable JavaFx will throw a generic {@code Throwable} class for any issues
      */
     public static synchronized void print(final PrinterJob job, final WebAppModel model) throws Throwable {
-        //NOTE: stop-gap for #231, breaks headless support
-        Platform.runLater(() -> {
-            stage.show();
-            stage.toBack();
-        });
-
         load(model, (event) -> {
             try {
                 PageLayout layout = job.getJobSettings().getPageLayout();
@@ -261,10 +261,6 @@ public class WebApp extends Application {
         thrown.set(null);
 
         Platform.runLater(() -> {
-            webView.getEngine().getLoadWorker().exceptionProperty().addListener((obs, oldExc, newExc) -> {
-                if (newExc != null) { thrown.set(newExc); }
-            });
-
             log.trace("Setting starting size {}:{}", model.getWebWidth(), model.getWebHeight());
             webView.setMinSize(model.getWebWidth(), model.getWebHeight());
             webView.setPrefSize(model.getWebWidth(), model.getWebHeight());

@@ -26,6 +26,10 @@ import java.util.List;
  */
 public class ByteUtilities {
 
+    public enum Endian {
+        BIG, LITTLE
+    }
+
     /**
      * Converts a hexadecimal string to a byte array.
      * <p/>
@@ -119,6 +123,36 @@ public class ByteUtilities {
     }
 
     /**
+     * Gets the first index in {@code target} of matching bytes from {@code match}
+     *
+     * @param target Byte array to search for matches
+     * @param match Byte match searched
+     * @return First matching index from {@code target} array or {@code null} if no matches
+     */
+    public static Integer firstMatchingIndex(byte[] target, byte[] match) {
+        return firstMatchingIndex(target, match, 0);
+    }
+
+    /**
+     * Gets the first index in {@code target} of matching bytes from {@code match} where the index is equal or greater than {@code fromIndex}
+     *
+     * @param target Byte array to search for matches
+     * @param match Byte match searched
+     * @param fromIndex Offset index in {@code target} array (inclusive)
+     * @return First matching index after {@code fromIndex} from {@code target} array or {@code null} if no matches
+     */
+    public static Integer firstMatchingIndex(byte[] target, byte[] match, int fromIndex) {
+        Integer[] indices = indicesOfMatches(target, match);
+        for(Integer idx : indices) {
+            if (idx >= fromIndex) {
+                return idx;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Splits the {@code src} byte array after every {@code count}-th instance of the supplied {@code pattern} byte array.
      * <p/>
      * This is useful for large print batches that need to be split up,
@@ -163,7 +197,7 @@ public class ByteUtilities {
         }
 
         //include any builder matches below 'count'
-        if (!byteArrayList.contains(builder) && builder.getLength() > 0 ) {
+        if (!byteArrayList.contains(builder) && builder.getLength() > 0) {
             byteArrayList.add(builder);
         }
 
@@ -185,6 +219,27 @@ public class ByteUtilities {
         }
 
         return hex.toString();
+    }
+
+    public static int parseBytes(byte[] bytes, int startIndex, int length, Endian endian) {
+        int parsed = 0;
+
+        byte[] lenBytes = new byte[length];
+        System.arraycopy(bytes, startIndex, lenBytes, 0, length);
+
+        if (endian == Endian.BIG) {
+            for(int b = 0; b < length; b++) {
+                parsed <<= 8;
+                parsed += (int)lenBytes[b];
+            }
+        } else { //LITTLE endian
+            for(int b = length - 1; b >= 0; b--) {
+                parsed <<= 8;
+                parsed += (int)lenBytes[b];
+            }
+        }
+
+        return parsed;
     }
 
 }

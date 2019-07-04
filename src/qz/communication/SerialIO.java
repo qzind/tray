@@ -24,16 +24,9 @@ public class SerialIO {
 
     private String portName;
     private SerialPort port;
-    private SerialProperties props;
+    private SerialOptions serialOpts;
 
     private ByteArrayBuilder data = new ByteArrayBuilder();
-
-    // bytes denoting boundaries for messages received from serial port
-    private byte[] dataBegin;
-    private byte[] dataEnd;
-
-    //length of fixed-width responses
-    private Integer width;
 
 
     /**
@@ -41,18 +34,18 @@ public class SerialIO {
      *
      * @param portName Port name to open, such as "COM1" or "/dev/tty0/"
      */
-    public SerialIO(String portName) throws SerialPortException {
+    public SerialIO(String portName) {
         this.portName = portName;
     }
 
     /**
      * Open the specified port name.
      *
-     * @param props Parsed serial properties
+     * @param opts Parsed serial options
      * @return Boolean indicating success.
      * @throws SerialPortException If the port fails to open.
      */
-    public boolean open(SerialProperties props) throws SerialPortException {
+    public boolean open(SerialOptions opts) throws SerialPortException {
         if (isOpen()) {
             log.warn("Serial port [{}] is already open", portName);
             return false;
@@ -60,7 +53,9 @@ public class SerialIO {
 
         port = new SerialPort(portName);
         port.openPort();
-        setProperties(props);
+
+        serialOpts = new SerialOptions();
+        setOptions(opts);
 
         return port.isOpened();
     }
@@ -77,34 +72,114 @@ public class SerialIO {
     }
 
     public String processSerialEvent(SerialPortEvent event) {
+        SerialOptions.ResponseFormat format = serialOpts.getResponseFormat();
+
         try {
             // Receive data
             if (event.isRXCHAR()) {
                 data.append(port.readBytes(event.getEventValue(), TIMEOUT));
 
-                if (width == null) {
-                    //delimited response
-                    Integer[] beginPos = ByteUtilities.indicesOfMatches(data.getByteArray(), dataBegin);
-                    Integer[] endPos = ByteUtilities.indicesOfMatches(data.getByteArray(), dataEnd);
+                String response = null;
+                if (format.getBoundStart() != null && format.getBoundStart().length > 0) {
+                    //process as formatted response
+                    Integer startIdx = ByteUtilities.firstMatchingIndex(data.getByteArray(), format.getBoundStart());
 
-                    if (beginPos.length > 0 && endPos.length > 0) {
-                        int begin = beginPos[0] + 1;
-                        int end = endPos[0];
+                    if (startIdx != null) {
+                        int startOffset = startIdx + format.getBoundStart().length;
 
-                        byte[] output = new byte[end - begin];
-                        System.arraycopy(data.getByteArray(), begin, output, 0, end - begin);
+                        int copyLength = 0;
+                        int endIdx = 0;
 
-                        data.clearRange(begin - 1, end + 1); //begin/end indexes don't include delimiters
-                        return StringUtils.newStringUtf8(output);
+                        if (format.getBoundEnd() != null && format.getBoundEnd().length > 0) {
+                            //process as bounded response
+                            Integer boundEnd = ByteUtilities.firstMatchingIndex(data.getByteArray(), format.getBoundEnd(), startIdx);
+
+                            if (boundEnd != null) {
+                                log.trace("Reading bounded response");
+
+                                copyLength = boundEnd - startOffset;
+                                endIdx = boundEnd + 1;
+                                if (format.isIncludeStart()) {
+                                    //also include the ending bytes
+                                    copyLength += format.getBoundEnd().length;
+                                }
+                            }
+                        } else if (format.getFixedWidth() > 0) {
+                            //process as fixed length prefixed response
+                            log.trace("Reading fixed length prefixed response");
+
+                            copyLength = format.getFixedWidth();
+                            endIdx = startOffset + format.getFixedWidth();
+                        } else if (format.getLength() != null) {
+                            //process as dynamic formatted response
+                            SerialOptions.ByteParam lengthParam = format.getLength();
+
+                            if (data.getLength() > startOffset + lengthParam.getIndex() + lengthParam.getLength()) { //ensure there's length bytes to read
+                                log.trace("Reading dynamic formatted response");
+
+                                int expectedLength = ByteUtilities.parseBytes(data.getByteArray(), startOffset + lengthParam.getIndex(), lengthParam.getLength(), lengthParam.getEndian());
+                                log.trace("Found length byte, expecting {} bytes", expectedLength);
+
+                                startOffset += lengthParam.getIndex() + lengthParam.getLength(); // don't include the length byte(s) in the response
+                                copyLength = expectedLength;
+                                endIdx = startOffset + copyLength;
+
+                                if (format.getCrc() != null) {
+                                    SerialOptions.ByteParam crcParam = format.getCrc();
+
+                                    log.trace("Expecting {} crc bytes", crcParam.getLength());
+                                    int expand = crcParam.getIndex() + crcParam.getLength();
+
+                                    //include crc in copy
+                                    copyLength += expand;
+                                    endIdx += expand;
+                                }
+                            }
+                        } else {
+                            //process as header formatted raw response - high risk of lost data, likely unintended settings
+                            log.warn("Reading header formatted raw response, are you missing an rx option?");
+
+                            copyLength = data.getLength() - startOffset;
+                            endIdx = data.getLength();
+                        }
+
+
+                        if (copyLength > 0 && data.getLength() >= endIdx) {
+                            log.debug("Response format readable, starting copy");
+
+                            if (format.isIncludeStart()) {
+                                //increase length to account for header bytes and bump offset back to include in copy
+                                copyLength += (startOffset - startIdx);
+                                startOffset = startIdx;
+                            }
+
+                            byte[] responseData = new byte[copyLength];
+                            System.arraycopy(data.getByteArray(), startOffset, responseData, 0, copyLength);
+
+                            response = new String(responseData, format.getEncoding());
+                            data.clearRange(startIdx, endIdx);
+                        }
                     }
-                } else if (data.getLength() >= width) {
-                    //fixed width response
-                    byte[] output = new byte[width];
-                    System.arraycopy(data.getByteArray(), 0, output, 0, width);
+                } else if (format.getFixedWidth() > 0) {
+                    if (data.getLength() >= format.getFixedWidth()) {
+                        //process as fixed width response
+                        log.trace("Reading fixed length response");
 
-                    data.clearRange(0, width);
-                    return StringUtils.newStringUtf8(output);
+                        byte[] output = new byte[format.getFixedWidth()];
+                        System.arraycopy(data.getByteArray(), 0, output, 0, format.getFixedWidth());
+
+                        response = StringUtils.newStringUtf8(output);
+                        data.clearRange(0, format.getFixedWidth());
+                    }
+                } else {
+                    //no processing, return raw
+                    log.trace("Reading raw response");
+
+                    response = new String(data.getByteArray(), format.getEncoding());
+                    data.clear();
                 }
+
+                return response;
             }
         }
         catch(SerialPortException e) {
@@ -122,35 +197,31 @@ public class SerialIO {
      *
      * @throws SerialPortException If the properties fail to set
      */
-    private void setProperties(SerialProperties props) throws SerialPortException {
-        if (props == null) { return; }
+    private void setOptions(SerialOptions opts) throws SerialPortException {
+        if (opts == null) { return; }
 
-        if (props.getBoundWidth() == null) {
-            dataBegin = SerialUtilities.characterBytes(props.getBoundBegin());
-            dataEnd = SerialUtilities.characterBytes(props.getBoundEnd());
-        } else {
-            width = props.getBoundWidth();
+        SerialOptions.PortSettings ps = opts.getPortSettings();
+        if (ps != null && !ps.equals(serialOpts.getPortSettings())) {
+            log.debug("Applying new port settings");
+            port.setParams(ps.getBaudRate(), ps.getDataBits(), ps.getStopBits(), ps.getParity());
+            port.setFlowControlMode(ps.getFlowControl());
+            serialOpts.setPortSettings(ps);
         }
 
-        boolean equals = this.props != null &&
-                this.props.getBaudRate() == props.getBaudRate() &&
-                this.props.getDataBits() == props.getDataBits() &&
-                this.props.getFlowControl() == props.getFlowControl() &&
-                this.props.getParity() == props.getParity() &&
-                this.props.getStopBits() == props.getStopBits();
-
-        if (!equals) {
-            port.setParams(props.getBaudRate(), props.getDataBits(), props.getStopBits(), props.getParity());
-            port.setFlowControlMode(props.getFlowControl());
-            this.props = props;
+        SerialOptions.ResponseFormat rf = opts.getResponseFormat();
+        if (rf != null) {
+            log.debug("Applying new response formatting");
+            serialOpts.setResponseFormat(rf);
         }
     }
 
     /**
      * Applies the port parameters and writes the buffered data to the serial port.
      */
-    public void sendData(String data, SerialProperties props, SerialUtilities.SerialDataType type) throws IOException, SerialPortException {
-        if (props != null) { setProperties(props); }
+    public void sendData(String data, SerialOptions opts, SerialUtilities.SerialDataType type) throws IOException, SerialPortException {
+        if (opts != null) {
+            setOptions(opts);
+        }
 
         log.debug("Sending data over [{}]", portName);
         if (type == SerialUtilities.SerialDataType.FILE) {

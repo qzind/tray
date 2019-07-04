@@ -292,7 +292,7 @@ public class PrintSocketClient {
         //call appropriate methods
         switch(call) {
             case PRINTERS_GET_DEFAULT:
-                sendResult(session, UID, PrintServiceLookup.lookupDefaultPrintService() == null ? null :
+                sendResult(session, UID, PrintServiceLookup.lookupDefaultPrintService() == null? null:
                         PrintServiceLookup.lookupDefaultPrintService().getName());
                 break;
             case PRINTERS_FIND:
@@ -348,9 +348,13 @@ public class PrintSocketClient {
                 SerialUtilities.setupSerialPort(session, UID, connection, params);
                 break;
             case SERIAL_SEND_DATA: {
-                SerialProperties props = null;
+                SerialOptions opts = null;
+                //properties param is deprecated legacy here and will be overridden by options if provided
                 if (!params.isNull("properties")) {
-                    props = new SerialProperties(params.optJSONObject("properties"));
+                    opts = new SerialOptions(params.optJSONObject("properties"), false);
+                }
+                if (!params.isNull("options")) {
+                    opts = new SerialOptions(params.optJSONObject("options"), false);
                 }
 
                 SerialIO serial = connection.getSerialPort(params.optString("port"));
@@ -363,7 +367,7 @@ public class PrintSocketClient {
                         serialData = params.optString("data");
                     }
 
-                    serial.sendData(serialData, props, SerialUtilities.getDataTypeJSON(data));
+                    serial.sendData(serialData, opts, SerialUtilities.getDataTypeJSON(data));
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, String.format("Serial port [%s] must be opened first.", params.optString("port")));

@@ -246,6 +246,13 @@ public class ShellUtilities {
     }
 
     /**
+     * Gets the computer's "hostname" from command line
+     */
+    public static String getHostName() {
+        return execute(new String[] {"hostname"}, new String[]{""});
+    }
+
+    /**
      * Checks that the currently running OS is Apple and executes a native
      * AppleScript macro against the OS. Returns true if the
      * {@code Process.exitValue()} is {@code 0}.

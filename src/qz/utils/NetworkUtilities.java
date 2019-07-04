@@ -28,6 +28,7 @@ public class NetworkUtilities {
     private static final Logger log = LoggerFactory.getLogger(NetworkUtilities.class);
 
     private static NetworkUtilities instance;
+    private static String systemName = ShellUtilities.getHostName();
 
     private ArrayList<Device> devices;
     private Device primaryDevice;
@@ -182,6 +183,7 @@ public class NetworkUtilities {
                     .put("ip6", toJSONArray(ip6))
                     .put("primary", primary)
                     .put("up", up)
+                    .put("hostname", systemName)
                     .put("id", id);
         }
     }

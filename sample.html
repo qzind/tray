@@ -1289,16 +1289,18 @@
 
         qz.networking.devices().then(function(data) {
             var list = '';
+            var hostname = '';
             for(var i = 0; i < data.length; i++) {
                 var info = data[i];
 
+                if (i == 0) hostname = info.hostname;
                 list += "<li>" +
                         "   <strong>" + (info.name || "UNKNOWN") + (info.id ? " (" + info.id + ")" : "") + "</strong>" +
                         "   <ul>" + listItems(info) + "</ul>" +
                         "</li>";
             }
 
-            pinMessage("<strong>Network details:</strong><br/><ul>" + list + "</ul>");
+            pinMessage("<strong>Network details:</strong> (" + hostname + ")<br/><ul>" + list + "</ul>");
         }).catch(displayError);
     }
 

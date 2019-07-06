@@ -21,6 +21,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import qz.auth.Certificate;
+import qz.auth.RequestState;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
 import qz.communication.FileIO;
@@ -91,14 +92,14 @@ public class FileUtilities {
     private static HashMap<String,File> sharedFileMap = new HashMap<>();
     private static ArrayList<Map.Entry<Path,String>> whiteList;
 
-    public static Path getAbsolutePath(JSONObject params, Certificate cert, boolean allowRootDir) throws JSONException, IOException {
+    public static Path getAbsolutePath(JSONObject params, RequestState request, boolean allowRootDir) throws JSONException, IOException {
         FileParams fp = new FileParams(params);
-        String commonName = cert.isTrusted()? escapeFileName(cert.getCommonName()):"UNTRUSTED";
+        String commonName = request.isTrusted()? escapeFileName(request.getCertName()):"UNTRUSTED";
 
         Path path = createAbsolutePath(fp, commonName);
         initializeRootFolder(fp, commonName);
 
-        if (!isWhiteListed(path, allowRootDir, fp.isSandbox(), cert)) {
+        if (!isWhiteListed(path, allowRootDir, fp.isSandbox(), request.getCertUsed())) {
             throw new AccessDeniedException(path.toString());
         }
 

@@ -53,10 +53,8 @@ public class Certificate {
     private boolean valid = false; //used by review sites UI only
 
 
-    //Pre-set certificates for various situations that could arise with bad security requests
+    //Pre-set certificate for use when missing
     public static final Certificate UNKNOWN;
-    public static final Certificate EXPIRED;
-    public static final Certificate UNSIGNED;
 
     static {
         HashMap<String,String> map = new HashMap<>();
@@ -67,14 +65,6 @@ public class Certificate {
         map.put("validTo", "0000-00-00 00:00:00");
         map.put("valid", "false");
         UNKNOWN = Certificate.loadCertificate(map);
-
-        map.put("fingerprint", "EXPIRED REQUEST");
-        map.put("commonName", ""); //filled in per request
-        map.put("organization", ""); //filled in per request
-        EXPIRED = Certificate.loadCertificate(map);
-
-        map.put("fingerprint", "UNSIGNED REQUEST");
-        UNSIGNED = Certificate.loadCertificate(map);
     }
 
     static {
@@ -260,24 +250,6 @@ public class Certificate {
         cert.valid = Boolean.parseBoolean(data.get("valid"));
 
         return cert;
-    }
-
-    /**
-     * Copies the company information from a valid certificate to show on an invalid signature certificate.
-     *
-     * @param copyFrom The valid certificate that failed a signature check
-     */
-    public void adjustStaticCertificate(Certificate copyFrom) {
-        if (this != UNSIGNED && this != EXPIRED) {
-            throw new UnsupportedOperationException("Cannot adjust a non-static certificate's values");
-        }
-
-        commonName = copyFrom.commonName;
-        organization = copyFrom.organization;
-
-        validFrom = copyFrom.validFrom;
-        validTo = copyFrom.validTo;
-        valid = false; //this is bad request, so never trusted
     }
 
     /**

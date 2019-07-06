@@ -77,11 +77,10 @@ public class CertificateTable extends JTable implements Themeable {
 
     private IconCache iconCache;
 
-    public CertificateTable(Certificate cert, IconCache iconCache) {
+    public CertificateTable(IconCache iconCache) {
         super();
         initComponents();
         setIconCache(iconCache);
-        setCertificate(cert);
     }
 
     private void initComponents() {
@@ -194,7 +193,7 @@ public class CertificateTable extends JTable implements Themeable {
             if (field == null) { return stylizeLabel(STATUS_NORMAL, label, isSelected); }
             switch(field) {
                 case TRUSTED:
-                    label.setText(cert.isTrusted()? Constants.TRUSTED_PUBLISHER:Constants.UNTRUSTED_PUBLISHER);
+                    label.setText(cert.isTrusted()? Constants.TRUSTED_CERT:Constants.UNTRUSTED_CERT);
                     return stylizeLabel(!cert.isTrusted()? STATUS_WARNING:STATUS_TRUSTED, label, isSelected);
                 case VALID_FROM:
                     boolean futureExpiration = cert.getValidFromDate().compareTo(now.getTime()) > 0;

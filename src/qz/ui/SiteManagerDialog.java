@@ -48,7 +48,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
     public SiteManagerDialog(JMenuItem caller, IconCache iconCache) {
         super(caller, iconCache);
-        certTable = new CertificateTable(null, iconCache);
+        certTable = new CertificateTable(iconCache);
         initComponents();
     }
 

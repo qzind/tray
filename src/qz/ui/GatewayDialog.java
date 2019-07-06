@@ -1,6 +1,6 @@
 package qz.ui;
 
-import qz.auth.Certificate;
+import qz.auth.RequestState;
 import qz.common.Constants;
 import qz.utils.SystemUtilities;
 
@@ -16,6 +16,7 @@ import java.awt.event.KeyEvent;
  * A basic allow/block dialog with support for displaying Certificate information
  */
 public class GatewayDialog extends JDialog implements Themeable {
+
     private JLabel verifiedLabel;
     private JLabel descriptionLabel;
     private LinkLabel certInfoLabel;
@@ -35,7 +36,7 @@ public class GatewayDialog extends JDialog implements Themeable {
     private final IconCache iconCache;
 
     private String description;
-    private Certificate cert;
+    private RequestState request;
     private boolean approved;
 
     public GatewayDialog(Frame owner, String title, IconCache iconCache) {
@@ -67,10 +68,10 @@ public class GatewayDialog extends JDialog implements Themeable {
         blockButton.addActionListener(buttonAction);
 
         certInfoLabel = new LinkLabel();
-        certTable = new CertificateTable(cert, iconCache);
+        certTable = new CertificateTable(iconCache);
         certScrollPane = new JScrollPane(certTable);
         certInfoLabel.addActionListener(e -> {
-            certTable.setCertificate(cert);
+            certTable.setCertificate(request.getCertUsed());
             certTable.autoSize();
             JOptionPane.showMessageDialog(
                     GatewayDialog.this,
@@ -83,7 +84,7 @@ public class GatewayDialog extends JDialog implements Themeable {
         bottomPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
         persistentCheckBox = new JCheckBox("Remember this decision", false);
         persistentCheckBox.setMnemonic(KeyEvent.VK_R);
-        persistentCheckBox.addActionListener(e -> allowButton.setEnabled(!persistentCheckBox.isSelected() || cert.isTrusted()));
+        persistentCheckBox.addActionListener(e -> allowButton.setEnabled(!persistentCheckBox.isSelected() || request.isTrusted()));
         persistentCheckBox.setAlignmentX(RIGHT_ALIGNMENT);
 
         bottomPanel.add(certInfoLabel);
@@ -125,7 +126,7 @@ public class GatewayDialog extends JDialog implements Themeable {
             if (!approved && persistentCheckBox.isSelected()) {
                 ConfirmDialog confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
                 String message = Constants.BLACK_LIST.replace(" blocked ", " block ") + "?";
-                message = String.format(message, cert == null? "":cert.getCommonName());
+                message = String.format(message, request.hasCertificate()? request.getCertName():"");
                 if (!confirmDialog.prompt(message)) {
                     return;
                 }
@@ -135,14 +136,14 @@ public class GatewayDialog extends JDialog implements Themeable {
     };
 
     public final void refreshComponents() {
-        if (cert != null) {
+        if (request != null) {
             // TODO:  Add name, publisher
             descriptionLabel.setText("<html>" +
-                                             String.format(description, "<p>" + cert.getCommonName()) +
-                                             "</p><strong>" + (cert.isTrusted()? Constants.TRUSTED_PUBLISHER:Constants.UNTRUSTED_PUBLISHER) + "</strong>" +
+                                             String.format(description, "<p>" + request.getCertName()) +
+                                             "</p><strong>" + request.getValidityInfo() + "</strong>" +
                                              "</html>");
             certInfoLabel.setText("Certificate information");
-            verifiedLabel.setIcon(iconCache.getIcon(cert.isTrusted()? IconCache.Icon.VERIFIED_ICON:IconCache.Icon.UNVERIFIED_ICON));
+            verifiedLabel.setIcon(iconCache.getIcon(request.isTrusted()? IconCache.Icon.VERIFIED_ICON:IconCache.Icon.UNVERIFIED_ICON));
         } else {
             descriptionLabel.setText(description);
             verifiedLabel.setIcon(null);
@@ -162,12 +163,12 @@ public class GatewayDialog extends JDialog implements Themeable {
         return persistentCheckBox.isSelected();
     }
 
-    public void setCertificate(Certificate cert) {
-        this.cert = cert;
+    public void setRequest(RequestState req) {
+        request = req;
     }
 
-    public Certificate getCertificate() {
-        return cert;
+    public RequestState getRequest() {
+        return request;
     }
 
     public String getDescription() {
@@ -178,22 +179,22 @@ public class GatewayDialog extends JDialog implements Themeable {
         this.description = description;
     }
 
-    public boolean prompt(String description, Certificate cert, Point position) {
+    public boolean prompt(String description, RequestState request, Point position) {
         //reset dialog state on new prompt
         approved = false;
         persistentCheckBox.setSelected(false);
 
-        if (cert == null || cert.isBlocked()) {
+        if (request == null || request.hasBlockedCert()) {
             approved = false;
             return false;
         }
-        if (cert.isTrusted() && cert.isSaved()) {
+        if (request.hasSavedCert()) {
             approved = true;
             return true;
         }
 
         setDescription(description);
-        setCertificate(cert);
+        setRequest(request);
         refreshComponents();
         SystemUtilities.centerDialog(this, position);
         setVisible(true);

@@ -2,14 +2,16 @@ package qz.common;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.ui.LanguageBundle;
 
 import java.util.*;
 import java.util.function.Consumer;
 
 
 public class I18NLoader {
-    private final static String I18N_LOCATION = "qz.common.resources.messages";
+    private final static String I18N_LOCATION = "qz/common/resources/messages";
     private final static String I18N_LOCALE_PROPERTY = "locale";
+    //todo: move to constants?
     private final static String DEFAULT_LOCALE = "en";
 
     private static final Logger log = LoggerFactory.getLogger(I18NLoader.class);
@@ -58,7 +60,7 @@ public class I18NLoader {
         prefs.setProperty(I18N_LOCALE_PROPERTY, locale.toLanguageTag());
         prefs.save();
 
-        msg = Utf8ResourceBundle.getBundle(I18N_LOCATION, getCurrentLocale());
+        msg = new LanguageBundle(I18N_LOCATION, locale);
 
         localeChangeListeners.forEach(listener -> listener.accept(locale));
     }

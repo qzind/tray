@@ -53,7 +53,7 @@ public class PrintDirect extends PrintRaw {
     @Override
     public void print(PrintOutput output, PrintOptions options) throws PrintException {
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
-        attributes.add(new JobName(options.getRawOptions().getJobName(Constants.RAW_PRINT.get()), Locale.getDefault()));
+        attributes.add(new JobName(options.getRawOptions().getJobName(Constants.RAW_PRINT), Locale.getDefault()));
 
         for(int i = 0; i < prints.size(); i++) {
             DocPrintJob printJob = output.getPrintService().createPrintJob();

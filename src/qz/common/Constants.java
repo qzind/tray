@@ -43,8 +43,8 @@ public class Constants {
     public static final String ABOUT_URL = "https://qz.io";
     public static final String ABOUT_COMPANY = "QZ Industries, LLC";
 
-    public static final Supplier<String> TRUSTED_PUBLISHER = () -> String.format(gettext("Verified by %s"), Constants.ABOUT_COMPANY);
-    public static final Supplier<String> UNTRUSTED_PUBLISHER = () -> gettext("Untrusted website");
+    public static final String TRUSTED_PUBLISHER = String.format(gettext("Verified by %s"), Constants.ABOUT_COMPANY);
+    public static final String UNTRUSTED_PUBLISHER = gettext("Untrusted website");
 
     public static final String PROBE_REQUEST = "getProgramName";
     public static final String PROBE_RESPONSE = ABOUT_TITLE;
@@ -52,15 +52,15 @@ public class Constants {
     public static final String PREFS_NOTIFICATIONS = "tray.notifications";
     public static final String PREFS_HEADLESS = "tray.headless";
 
-    public static final Supplier<String> WHITE_LIST = () -> gettext("Permanently allowed \"%s\" to access local resources");
-    public static final Supplier<String> BLACK_LIST = () -> gettext("Permanently blocked \"%s\" from accessing local resources");
-    public static final Supplier<String> BLACK_LIST_PROMPT = () -> gettext("Permanently block \"%s\" from accessing local resources?");
+    public static String WHITE_LIST = gettext("Permanently allowed \"%s\" to access local resources");
+    public static String BLACK_LIST = gettext("Permanently blocked \"%s\" from accessing local resources");
+    public static String BLACK_LIST_PROMPT = gettext("Permanently block \"%s\" from accessing local resources?");
 
-    public static final Supplier<String> WHITE_SITES = () -> gettext("Sites permanently allowed access");
-    public static final Supplier<String> BLACK_SITES = () -> gettext("Sites permanently blocked from access");
+    public static String WHITE_SITES = gettext("Sites permanently allowed access");
+    public static String BLACK_SITES = gettext("Sites permanently blocked from access");
 
-    public static final Supplier<String> ALLOWED = () -> gettext("Allowed");
-    public static final Supplier<String> BLOCKED = () -> gettext("Blocked");
+    public static String ALLOWED = gettext("Allowed");
+    public static String BLOCKED = gettext("Blocked");
 
     public static final long VALID_SIGNING_PERIOD = 15 * 60 * 1000; //millis
     public static final int EXPIRY_WARN = 30;   // days
@@ -71,10 +71,10 @@ public class Constants {
 
     public static final long MEMORY_PER_PRINT = 512; //MB
 
-    public static final Supplier<String> RAW_PRINT = () -> String.format(gettext("%s Raw Print"), ABOUT_TITLE);
-    public static final Supplier<String> IMAGE_PRINT = () -> String.format(gettext("%s Pixel Print"), ABOUT_TITLE);
-    public static final Supplier<String> PDF_PRINT = () -> String.format(gettext("%s PDF Print"), ABOUT_TITLE);
-    public static final Supplier<String> HTML_PRINT = () -> String.format(gettext("%s HTML Print"), ABOUT_TITLE);
+    public static String RAW_PRINT = String.format(gettext("%s Raw Print"), ABOUT_TITLE);
+    public static String IMAGE_PRINT = String.format(gettext("%s Pixel Print"), ABOUT_TITLE);
+    public static String PDF_PRINT = String.format(gettext("%s PDF Print"), ABOUT_TITLE);
+    public static String HTML_PRINT = String.format(gettext("%s HTML Print"), ABOUT_TITLE);
 
     public static final Integer[] WSS_PORTS = {8181, 8282, 8383, 8484};
     public static final Integer[] WS_PORTS = {8182, 8283, 8384, 8485};

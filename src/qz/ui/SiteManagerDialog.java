@@ -64,20 +64,20 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         splitPane.setResizeWeight(0.5);
 
         tabbedPane = new JTabbedPane();
-        appendListTab(allowList.getList(), Constants.ALLOWED.get(), IconCache.Icon.ALLOW_ICON, KeyEvent.VK_A);
-        appendListTab(blockList.getList(), Constants.BLOCKED.get(), IconCache.Icon.BLOCK_ICON, KeyEvent.VK_B);
+        appendListTab(allowList.getList(), Constants.ALLOWED, IconCache.Icon.ALLOW_ICON, KeyEvent.VK_A);
+        appendListTab(blockList.getList(), Constants.BLOCKED, IconCache.Icon.BLOCK_ICON, KeyEvent.VK_B);
 
-        setHeader(tabbedPane.getSelectedIndex() == 0? Constants.WHITE_SITES.get():Constants.BLACK_SITES.get());
+        setHeader(tabbedPane.getSelectedIndex() == 0? Constants.WHITE_SITES:Constants.BLACK_SITES);
 
         tabbedPane.addChangeListener(e -> {
             clearSelection();
 
             switch(tabbedPane.getSelectedIndex()) {
-                case 1: setHeader(Constants.BLACK_SITES.get());
+                case 1: setHeader(Constants.BLACK_SITES);
                     blockList.getList().setSelectedIndex(0);
                     break;
                 default:
-                    setHeader(Constants.WHITE_SITES.get());
+                    setHeader(Constants.WHITE_SITES);
                     allowList.getList().setSelectedIndex(0);
             }
         });

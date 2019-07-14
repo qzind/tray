@@ -12,26 +12,26 @@
 
 .btn-success {
     color: #FFF;
-    background-color: #2A6831;
-    border-color: #235628;
+    background-color: #33658A;
+    border-color: #2C5777;
 }
 
 .btn-warning {
     color: #FFF;
-    background-color: #9F7435;
-    border-color: #8C662F;
+    background-color: #F6AE2D;
+    border-color: #F5A515;
 }
 
 .btn-danger {
     color: #FFF;
-    background-color: #9F3535;
-    border-color: #8C2F2F;
+    background-color: #F26419;
+    border-color: #E5570D;
 }
 
 .btn-info {
     color: #FFF;
-    background-color: #246D6D;
-    border-color: #1E5A5A;
+    background-color: #3680A8;
+    border-color: #307195;
 }
 
 .btn-default:hover {
@@ -45,23 +45,53 @@
 }
 
 .btn-success:hover {
-    background-color: #1B4420;
-    border-color: #143217;
+    background-color: #254A65;
+    border-color: #1E3C52;
 }
 
 .btn-warning:hover {
-    background-color: #795828;
-    border-color: #664A22;
+    background-color: #E6970A;
+    border-color: #CE8709;
 }
 
 .btn-danger:hover {
-    background-color: #792828;
-    border-color: #662222;
+    background-color: #CC4E0C;
+    border-color: #B4450A;
 }
 
 .btn-info:hover {
-    background-color: #174747;
-    border-color: #113333;
+    background-color: #2A6382;
+    border-color: #24546E;
+}
+
+.btn-default:focus {
+    background-color: #F2F2F2;
+    border-color: #BFBFBF;
+}
+
+.btn-primary:focus {
+    background-color: #3D994A;
+    border-color: #358741;
+}
+
+.btn-success:focus {
+    background-color: #2C5777;
+    border-color: #254A65;
+}
+
+.btn-warning:focus {
+    background-color: #F5A515;
+    border-color: #E6970A;
+}
+
+.btn-danger:focus {
+    background-color: #E5570D;
+    border-color: #CC4E0C;
+}
+
+.btn-info:focus {
+    background-color: #307195;
+    border-color: #2A6382;
 }
 
 .btn-default:active {
@@ -75,23 +105,23 @@
 }
 
 .btn-success:active {
-    background-color: #1B4420;
-    border-color: #143217;
+    background-color: #254A65;
+    border-color: #1E3C52;
 }
 
 .btn-warning:active {
-    background-color: #795828;
-    border-color: #664A22;
+    background-color: #E6970A;
+    border-color: #CE8709;
 }
 
 .btn-danger:active {
-    background-color: #792828;
-    border-color: #662222;
+    background-color: #CC4E0C;
+    border-color: #B4450A;
 }
 
 .btn-info:active {
-    background-color: #174747;
-    border-color: #113333;
+    background-color: #2A6382;
+    border-color: #24546E;
 }
 
 .btn-default.disabled {
@@ -105,32 +135,32 @@
 }
 
 .btn-success.disabled {
-    background-color: #2B6C33;
-    border-color: #24592A;
+    background-color: #34688E;
+    border-color: #2D5A7B;
 }
 
 .btn-warning.disabled {
-    background-color: #A37736;
-    border-color: #906930;
+    background-color: #F6B032;
+    border-color: #F5A619;
 }
 
 .btn-danger.disabled {
-    background-color: #A33636;
-    border-color: #903030;
+    background-color: #F2671E;
+    border-color: #E9590D;
 }
 
 .btn-info.disabled {
-    background-color: #257171;
-    border-color: #1F5E5E;
+    background-color: #3783AC;
+    border-color: #317499;
 }
 
 a {
-    color: #44AB53;
+    color: #3680A8;
 }
 
 a:hover,
 a:focus {
-    color: #2E7438;
+    color: #24546E;
 }
 
 .text-primary {
@@ -138,7 +168,7 @@ a:focus {
 }
 
 .text-danger {
-    color: #9F3535;
+    color: #F26419;
 }
 
 .form-control .has-error {
@@ -175,7 +205,7 @@ a:focus {
 
 .navbar-default .navbar-toggle:focus > .icon-bar {
     background-color: #555;
-    color: #2E7438;
+    color: #24546E;
 }
 
 .navbar-default .navbar-toggle:hover > .icon-bar {
@@ -200,7 +230,7 @@ a:focus {
 }
 
 .alert.alert-danger a {
-    color: #662222;
+    color: #B4450A;
 }
 
 html {

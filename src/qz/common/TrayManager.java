@@ -104,6 +104,11 @@ public class TrayManager {
                 tray = TrayType.MODERN.init();
             }
 
+            // OS-specific tray icon handling
+            if (SystemTray.isSupported()) {
+                iconCache.fixTrayIcons(SystemUtilities.isDarkMode());
+            }
+
             // Iterates over all images denoted by IconCache.getTypes() and caches them
             tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
             tray.setToolTip(name);
@@ -124,18 +129,12 @@ public class TrayManager {
 
         // Linux specific tasks
         if (SystemUtilities.isLinux()) {
-            // Fix the tray icon to look proper on Ubuntu
-            if (SystemTray.isSupported()) {
-                UbuntuUtilities.fixTrayIcons(iconCache);
-            }
             // Install cert into user's nssdb for Chrome, etc
             LinuxCertificate.installCertificate();
         } else if (SystemUtilities.isWindows()) {
             // Configure IE intranet zone via registry to allow websockets
             WindowsDeploy.configureIntranetZone();
             WindowsDeploy.configureEdgeLoopback();
-        } else if (SystemUtilities.isMac()) {
-            MacUtilities.fixTrayIcons(iconCache);
         }
 
         if (!headless) {
@@ -144,6 +143,28 @@ public class TrayManager {
 
             // The ok/cancel dialog
             confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
+
+            // Detect theme changes
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000);
+                } catch(Throwable ignore) {}
+                boolean darkMode = SystemUtilities.isDarkMode();
+                while(true) {
+
+                    if (darkMode != SystemUtilities.isDarkMode(true)) {
+                        darkMode = SystemUtilities.isDarkMode();
+                        iconCache.fixTrayIcons(darkMode);
+                        // FIXME: how to know which icon to set?
+                        setDefaultIcon();
+                        //SystemUtilities.setSystemLookAndFeel();
+                        //aboutDialog.revalidate();
+                        //gatewayDialog.revalidate();
+                    }
+                }
+            }).start();
+            /* */
+
         }
 
         if (tray != null) {

@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.deploy.DeployUtilities;
-import qz.ui.LinkLabel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -268,6 +267,11 @@ public class SystemUtilities {
             Constants.WARNING_COLOR = Constants.WARNING_COLOR_LIGHTER;
             Constants.TRUSTED_COLOR = Constants.TRUSTED_COLOR_LIGHTER;
         }
+    }
+
+    public static boolean prefersMaskTrayIcon() {
+        // TODO: Test on Windows
+        return SystemUtilities.isMac();
     }
 
     public static boolean setSystemLookAndFeel() {

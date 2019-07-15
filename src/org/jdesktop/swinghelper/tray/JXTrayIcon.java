@@ -144,9 +144,16 @@ public class JXTrayIcon extends TrayIcon {
     @Override
     public Dimension getSize() {
         Dimension original = super.getSize();
-        // Handle edge-case for retina display
+        // macOS edge-cases
         if (SystemUtilities.isMac()) {
+            // Handle retina display
             int scale = MacUtilities.getScaleFactor();
+
+            // Handle undocumented icon border (e.g. 20px has 16px icon)
+            // See also IconCache.fixTrayIcons()
+            original.width -= original.width / 5;
+            original.height -= original.height / 5;
+
             return new Dimension(original.width * scale, original.height * scale);
         }
         return original;

@@ -68,6 +68,7 @@ public class IconCache {
         // Banner
         BANNER_ICON("qz-banner.png");
 
+        private boolean padded = false;
         final String[] fileNames;
 
         /**
@@ -256,18 +257,19 @@ public class IconCache {
                 if (darkMode) {
                     dest = ColorUtilities.invert(dest);
                 }
-                System.out.println("replacing " + id + " with " + id.replaceAll("mask", "default"));
                 images.put(id.replaceAll("mask", "default"), dest);
-                imageIcons.put(id.replaceAll("make", "default"), new ImageIcon(dest));
+                imageIcons.put(id.replaceAll("mask", "default"), new ImageIcon(dest));
             }
         }
 
         // Handle undocumented macOS tray icon padding
-        // FIXME: This should only run once on red/yellow tray icons
         for(IconCache.Icon i : IconCache.getTypes()) {
             // See also JXTrayIcon.getSize()
             if (i.isTrayIcon() && SystemUtilities.isMac()) {
-                padIcon(i, 25);
+                // Prevent padding from happening twice on WARNING_ICON, DANGER_ICON
+                if (!i.padded || i == Icon.DEFAULT_ICON) {
+                    padIcon(i, 25);
+                }
             }
         }
     }
@@ -302,6 +304,7 @@ public class IconCache {
 
             images.put(id, padded);
             imageIcons.put(id, new ImageIcon(padded));
+            i.padded = true;
         }
     }
 

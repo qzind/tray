@@ -18,7 +18,7 @@ import java.util.SortedMap;
  * Created by Tres on 2/26/2015.
  * Displays a basic about dialog
  */
-public class AboutDialog extends BasicDialog {
+public class AboutDialog extends BasicDialog implements Themeable {
     JPanel gridPanel;
     JLabel wssLabel;
     JLabel wsLabel;
@@ -63,7 +63,6 @@ public class AboutDialog extends BasicDialog {
 
         wsLabel = new JLabel("None");
         wssLabel = new JLabel("None.  No https support.");
-        wssLabel.setForeground(Constants.WARNING_COLOR);
         wssLabel.setFont(wsLabel.getFont().deriveFont(Font.BOLD));
 
         gridPanel.add(createLabel("Software:", true));
@@ -82,22 +81,24 @@ public class AboutDialog extends BasicDialog {
         catch(MalformedURLException ex) {
             gridPanel.add(new LinkLabel(Constants.ABOUT_URL));
         }
-
-        shadeComponents();
+        refresh();
         setContent(pane, true);
     }
 
+    @Override
+    public void refresh() {
+        wssLabel.setForeground(wssLabel.getText().startsWith("wss:") ? Constants.TRUSTED_COLOR : Constants.WARNING_COLOR);
+        shadeComponents();
+        super.refresh();
+    }
+
     public void shadeComponents() {
+        Color bg = UIManager.getColor("Panel.background");
         for(int i = 0; i < gridPanel.getComponents().length; i++) {
             if (i % 4 == 0 || i % 4 == 1) {
                 if (gridPanel.getComponent(i) instanceof JComponent) {
                     ((JComponent)gridPanel.getComponent(i)).setOpaque(true);
-                    if(SystemUtilities.isDarkMode()) {
-                        gridPanel.getComponent(i).setBackground(gridPanel.getComponent(i).getBackground().darker());
-                    }
-                    else {
-                        gridPanel.getComponent(i).setBackground(gridPanel.getComponent(i).getBackground().brighter());
-                    }
+                    gridPanel.getComponent(i).setBackground(SystemUtilities.isDarkMode() ? bg.darker() : bg.brighter());
                 }
             }
             ((JComponent)gridPanel.getComponent(i)).setBorder(new EmptyBorder(0, Constants.BORDER_PADDING, 0, Constants.BORDER_PADDING));

@@ -31,6 +31,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -56,6 +58,9 @@ public class TrayManager {
     private AboutDialog aboutDialog;
     private LogDialog logDialog;
     private SiteManagerDialog sitesDialog;
+    private ArrayList<Component> componentList;
+
+    private IconCache.Icon shownIcon;
 
     // Need a class reference to this so we can set it from the request dialog window
     private JCheckBoxMenuItem anonymousItem;
@@ -138,33 +143,44 @@ public class TrayManager {
         }
 
         if (!headless) {
+            componentList = new ArrayList<>();
+
             // The allow/block dialog
             gatewayDialog = new GatewayDialog(null, "Action Required", iconCache);
+            componentList.add(gatewayDialog);
 
             // The ok/cancel dialog
             confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
+            componentList.add(confirmDialog);
 
             // Detect theme changes
             new Thread(() -> {
-                try {
-                    Thread.sleep(1000);
-                } catch(Throwable ignore) {}
                 boolean darkMode = SystemUtilities.isDarkMode();
                 while(true) {
-
-                    if (darkMode != SystemUtilities.isDarkMode(true)) {
-                        darkMode = SystemUtilities.isDarkMode();
-                        iconCache.fixTrayIcons(darkMode);
-                        // FIXME: how to know which icon to set?
-                        setDefaultIcon();
-                        //SystemUtilities.setSystemLookAndFeel();
-                        //aboutDialog.revalidate();
-                        //gatewayDialog.revalidate();
-                    }
+                    try {
+                        Thread.sleep(1000);
+                        if (darkMode != SystemUtilities.isDarkMode(true)) {
+                            darkMode = SystemUtilities.isDarkMode();
+                            iconCache.fixTrayIcons(darkMode);
+                            refreshIcon();
+                            SwingUtilities.invokeAndWait(() -> {
+                                SystemUtilities.setSystemLookAndFeel();
+                                for(Component c : componentList) {
+                                    SwingUtilities.updateComponentTreeUI(c);
+                                    if (c instanceof Themeable) {
+                                        ((Themeable)c).refresh();
+                                    }
+                                    if (c instanceof JDialog) {
+                                        ((JDialog)c).pack();
+                                    } else if (c instanceof JPopupMenu) {
+                                        ((JPopupMenu)c).pack();
+                                    }
+                                }
+                            });
+                        }
+                    } catch(InterruptedException | InvocationTargetException ignore) {}
                 }
             }).start();
-            /* */
-
         }
 
         if (tray != null) {
@@ -186,6 +202,7 @@ public class TrayManager {
      */
     private void addMenuItems() {
         JPopupMenu popup = new JPopupMenu();
+        componentList.add(popup);
 
         JMenu advancedMenu = new JMenu("Advanced");
         advancedMenu.setMnemonic(KeyEvent.VK_A);
@@ -195,6 +212,7 @@ public class TrayManager {
         sitesItem.setMnemonic(KeyEvent.VK_M);
         sitesItem.addActionListener(savedListener);
         sitesDialog = new SiteManagerDialog(sitesItem, iconCache);
+        componentList.add(sitesDialog);
 
         anonymousItem = new JCheckBoxMenuItem("Block Anonymous Requests");
         anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
@@ -206,6 +224,7 @@ public class TrayManager {
         logItem.setMnemonic(KeyEvent.VK_L);
         logItem.addActionListener(logListener);
         logDialog = new LogDialog(logItem, iconCache);
+        componentList.add(logDialog);
 
         JCheckBoxMenuItem notificationsItem = new JCheckBoxMenuItem("Show all notifications");
         notificationsItem.setToolTipText("Shows all connect/disconnect messages, useful for debugging purposes");
@@ -241,6 +260,7 @@ public class TrayManager {
         aboutDialog.addPanelButton(sitesItem);
         aboutDialog.addPanelButton(logItem);
         aboutDialog.addPanelButton(openItem);
+        componentList.add(aboutDialog);
 
         if (SystemUtilities.isMac()) {
             MacUtilities.registerAboutDialog(aboutDialog);
@@ -530,9 +550,14 @@ public class TrayManager {
 
     /** Thread safe method for setting the specified icon */
     private void setIcon(final IconCache.Icon i) {
-        if (tray != null) {
-            SwingUtilities.invokeLater(() -> tray.setImage(iconCache.getImage(i, tray.getSize())));
+        if (tray != null && i != shownIcon) {
+            shownIcon = i;
+            refreshIcon();
         }
+    }
+
+    public void refreshIcon() {
+        SwingUtilities.invokeLater(() -> tray.setImage(iconCache.getImage(shownIcon, tray.getSize())));
     }
 
     /**

@@ -263,10 +263,8 @@ public class SystemUtilities {
     }
 
     public static void adjustThemeColors() {
-        if (isDarkMode()) {
-            Constants.WARNING_COLOR = Constants.WARNING_COLOR_LIGHTER;
-            Constants.TRUSTED_COLOR = Constants.TRUSTED_COLOR_LIGHTER;
-        }
+        Constants.WARNING_COLOR = isDarkMode() ? Constants.WARNING_COLOR_DARK : Constants.WARNING_COLOR_LITE;
+        Constants.TRUSTED_COLOR = isDarkMode() ? Constants.TRUSTED_COLOR_DARK : Constants.TRUSTED_COLOR_LITE;
     }
 
     public static boolean prefersMaskTrayIcon() {

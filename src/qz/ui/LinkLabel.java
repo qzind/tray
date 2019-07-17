@@ -23,7 +23,7 @@ import java.util.Map;
 /**
  * Created by Tres on 2/19/2015.
  */
-public class LinkLabel extends JLabel {
+public class LinkLabel extends JLabel implements Themeable {
 
     private static final Logger log = LoggerFactory.getLogger(LinkLabel.class);
 
@@ -90,7 +90,6 @@ public class LinkLabel extends JLabel {
     }
 
     private void initialize() {
-        setForeground(Constants.TRUSTED_COLOR);
         Map<TextAttribute, Object> attributes = new HashMap<>(getFont().getAttributes());
         attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
         setFont(getFont().deriveFont(attributes));
@@ -121,6 +120,13 @@ public class LinkLabel extends JLabel {
                 setCursor(Cursor.getDefaultCursor());
             }
         });
+
+        refresh();
+    }
+
+    @Override
+    public void refresh() {
+        setForeground(Constants.TRUSTED_COLOR);
     }
 
     public void addActionListener(ActionListener action) {

@@ -287,11 +287,9 @@ public class IconCache {
         for (String id : i.getIds()) {
             // Calculate padding percentage
             int w = images.get(id).getWidth();
-            int w1 = w;
             int wPad = (int)((percent/100.0) * w);
             w += wPad;
             int h = images.get(id).getHeight();
-            int h1 = h;
             int hPad = (int)((percent/100.0) * h);
             h += hPad;
 

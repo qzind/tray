@@ -31,7 +31,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -163,7 +162,7 @@ public class TrayManager {
                             darkMode = SystemUtilities.isDarkMode();
                             iconCache.fixTrayIcons(darkMode);
                             refreshIcon();
-                            SwingUtilities.invokeAndWait(() -> {
+                            SwingUtilities.invokeLater(() -> {
                                 SystemUtilities.setSystemLookAndFeel();
                                 for(Component c : componentList) {
                                     SwingUtilities.updateComponentTreeUI(c);
@@ -178,7 +177,7 @@ public class TrayManager {
                                 }
                             });
                         }
-                    } catch(InterruptedException | InvocationTargetException ignore) {}
+                    } catch(InterruptedException ignore) {}
                 }
             }).start();
         }

@@ -2,6 +2,7 @@ package qz;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
+import org.codehaus.jettison.json.JSONException;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -64,6 +65,9 @@ public class ExtractGettext extends Task {
             catch(IOException e) {
                 handleError("Failed to write translation resource file " + translation.getPath(), e);
             }
+            catch(JSONException e) {
+                handleError("Malformed JSON during write " + translation.getPath(), e);
+            }
         });
     }
 
@@ -106,7 +110,7 @@ public class ExtractGettext extends Task {
 
     private List<Translation> loadTranslations(Path translationsDirectory) {
         List<Translation> translations = new ArrayList<>();
-        PathMatcher translationsMatcher = FileSystems.getDefault().getPathMatcher("glob:**.properties");
+        PathMatcher translationsMatcher = FileSystems.getDefault().getPathMatcher("glob:**.json");
         try {
             Files.find(translationsDirectory, 1, (path, basicFileAttributes) -> translationsMatcher.matches(path))
                     .forEach((path) -> {
@@ -117,6 +121,9 @@ public class ExtractGettext extends Task {
                         }
                         catch(IOException e) {
                             handleError("Failed to load translation resource file " + path, e);
+                        }
+                        catch(JSONException e) {
+                            handleError("Malformed JSON in translation resource file " + path, e);
                         }
                     });
         }

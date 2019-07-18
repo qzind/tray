@@ -5,9 +5,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.ListResourceBundle;
 import java.util.Locale;
 
@@ -31,10 +29,8 @@ public class LanguageBundle extends ListResourceBundle {
             }
         }
         catch(Exception e) {
-            e.printStackTrace();
+            log.warn("Failed to load translation file " + fileLocation.toString());
         }
-        //Todo Remove this debugging log
-        log.warn(locale.toString());
     }
     @Override
     protected Object[][] getContents() {

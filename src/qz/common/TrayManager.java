@@ -426,7 +426,7 @@ public class TrayManager {
 
     private void whiteList(Certificate cert) {
         if (FileUtilities.printLineToFile(Constants.ALLOW_FILE, cert.data())) {
-            displayInfoMessage(String.format(Constants.WHITE_LIST.get(), cert.getOrganization()));
+            displayInfoMessage(String.format(Constants.WHITE_LIST, cert.getOrganization()));
         } else {
             displayErrorMessage(gettext("Failed to write to file (Insufficient user privileges)"));
         }
@@ -434,7 +434,7 @@ public class TrayManager {
 
     private void blackList(Certificate cert) {
         if (FileUtilities.printLineToFile(Constants.BLOCK_FILE, cert.data())) {
-            displayInfoMessage(String.format(Constants.BLACK_LIST.get(), cert.getOrganization()));
+            displayInfoMessage(String.format(Constants.BLACK_LIST, cert.getOrganization()));
         } else {
             displayErrorMessage(gettext("Failed to write to file (Insufficient user privileges)"));
         }

@@ -178,12 +178,21 @@
 
     <target name="build-extract-gettext-task" description="Build and JARs the Extract gettext Ant Task" depends="init">
         <mkdir dir="${task.classes.dir}"/>
-        <javac srcdir="${task.src.dir}" destdir="${task.classes.dir}"/>
+        <javac srcdir="${task.src.dir}" destdir="${task.classes.dir}" includeantruntime="true">
+            <classpath>
+                <fileset dir="${lib.dir}" includes="websocket/jettison-*.jar"/>
+            </classpath>
+        </javac>
         <jar destfile="${task.jar}" basedir="${task.classes.dir}"/>
     </target>
 
     <target name="extract-gettext" depends="build-extract-gettext-task">
-        <taskdef name="extractGettext" classname="qz.ExtractGettext" classpath="${task.jar}"/>
+        <taskdef name="extractGettext" classname="qz.ExtractGettext">
+            <classpath>
+                <pathelement location="${task.jar}"/>
+                <fileset dir="${lib.dir}" includes="websocket/jettison-*.jar"/>
+            </classpath>
+        </taskdef>
         <extractGettext
                 src="${src.dir}"
                 translations="${src.dir}/qz/common/resources"

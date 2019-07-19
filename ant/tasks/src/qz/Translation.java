@@ -1,14 +1,12 @@
 package qz;
 
-import org.apache.commons.io.IOUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.HashMap;
@@ -18,6 +16,7 @@ public class Translation {
     private HashMap<String, String> oldTranslationMap;
     private HashMap<String, String> newTranslationMap;
     private Path path;
+    private boolean hasNewElement = false;
 
     public Translation(Path path) throws IOException, JSONException {
         this.path = path;
@@ -25,14 +24,24 @@ public class Translation {
         oldTranslationMap = readJSON();
     }
 
-    public void setProperty(String key, String value) { newTranslationMap.put(key, value);}
+    public void put(String key) {
+        String value = oldTranslationMap.get(key);
 
-    public boolean containsKey(String key) {return newTranslationMap.containsKey(key);}
-
-    public void store() throws IOException, JSONException {
-        if (!newTranslationMap.equals(oldTranslationMap)) {
-            writeJSON(createJSONObject(newTranslationMap));
+        //If the translation does not exist, make a new one and set the value to english
+        if (value == null) {
+            hasNewElement = true;
+            newTranslationMap.put(key, key);
+        } else {
+            newTranslationMap.put(key, value);
         }
+    }
+
+    public boolean store() throws IOException, JSONException {
+        if (hasNewElement || (newTranslationMap.size() != oldTranslationMap.size())) {
+            writeJSON(createJSONObject(newTranslationMap));
+            return true;
+        }
+        return false;
     }
 
     public Path getPath() {
@@ -40,9 +49,8 @@ public class Translation {
     }
 
     private HashMap<String,String> readJSON() throws JSONException, IOException {
-        URL fileLocation = ClassLoader.getSystemResource(path.toString());
-
-        JSONObject root = new JSONObject(IOUtils.toString(fileLocation));
+        String rawJSON = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+        JSONObject root = new JSONObject(rawJSON);
         JSONArray translations = root.getJSONArray("translations");
         HashMap<String,String> returnMap = new HashMap<>();
 
@@ -55,8 +63,7 @@ public class Translation {
     }
 
     private void writeJSON(JSONObject jsonOut) throws IOException, JSONException {
-        BufferedWriter bw = new BufferedWriter(new FileWriter(path.toFile()));
-        jsonOut.write(bw);
+        Files.write(path, jsonOut.toString(4).getBytes(StandardCharsets.UTF_8));
     }
     private JSONObject createJSONObject(HashMap<String,String> map) throws JSONException {
         JSONObject obj = new JSONObject();

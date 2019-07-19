@@ -59,8 +59,11 @@ public class ExtractGettext extends Task {
     private void writeUpdatedTranslations(List<Translation> translations) {
         translations.forEach((translation) -> {
             try {
-                translation.store();
-                log("translation resource file updated " + translation.getPath());
+                if (translation.store()) {
+                    log("translation resource file updated " + translation.getPath());
+                } else {
+                    log("translation resource does not need updating " + translation.getPath());
+                }
             }
             catch(IOException e) {
                 handleError("Failed to write translation resource file " + translation.getPath(), e);
@@ -76,7 +79,6 @@ public class ExtractGettext extends Task {
             PathMatcher javaPathMatcher = FileSystems.getDefault().getPathMatcher("glob:**.java");
             Files.find(sourceDirectory, Integer.MAX_VALUE, (path, basicFileAttributes) -> javaPathMatcher.matches(path))
                     .forEach((javaFile) -> {
-                        log("analyse " + javaFile);
                         try {
                             Scanner scanner = new Scanner(javaFile, StandardCharsets.UTF_8.toString());
                             while(scanner.hasNextLine()) {
@@ -85,13 +87,8 @@ public class ExtractGettext extends Task {
                                 while(matcher.find()) {
                                     String key = matcher.group(1).replaceAll("\\\\\"", "\"");
 
-                                    log("extracted translation key: " + key);
-
                                     translations.forEach((translation) -> {
-                                        if (!translation.containsKey(key)) {
-                                            log("translation misses key " + key);
-                                            translation.setProperty(key, key);
-                                        }
+                                        translation.put(key);
                                     });
                                 }
                             }

@@ -3,6 +3,8 @@ package qz.ui;
 import org.apache.log4j.Level;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.WriterAppender;
+import qz.ui.component.IconCache;
+import qz.ui.component.LinkLabel;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;

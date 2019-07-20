@@ -1,5 +1,6 @@
 package qz.auth;
 
+import org.codehaus.jettison.json.JSONObject;
 import qz.common.Constants;
 
 public class RequestState {
@@ -12,10 +13,14 @@ public class RequestState {
     }
 
     Certificate certUsed;
+    JSONObject requestData;
+
+    boolean initialConnect;
     Validity status;
 
-    public RequestState(Certificate cert) {
+    public RequestState(Certificate cert, JSONObject data) {
         certUsed = cert;
+        requestData = data;
         status = Validity.UNKNOWN;
     }
 
@@ -23,8 +28,17 @@ public class RequestState {
         return certUsed;
     }
 
-    public void setCertUsed(Certificate cert) {
+    public JSONObject getRequestData() {
+        return requestData;
+    }
+
+    public boolean isInitialConnect() {
+        return initialConnect;
+    }
+
+    public void markNewConnection(Certificate cert) {
         certUsed = cert;
+        initialConnect = true;
     }
 
     public Validity getStatus() {
@@ -60,7 +74,7 @@ public class RequestState {
             case TRUSTED:
                 return Constants.TRUSTED_CERT;
             case EXPIRED:
-                return Constants.EXPIRED_CERT;
+                return Constants.EXPIRED_REQUEST;
             case UNSIGNED:
                 return Constants.UNSIGNED_REQUEST;
             default:

@@ -8,7 +8,7 @@
  * this software. http://www.gnu.org/licenses/lgpl-2.1.html
  */
 
-package qz.ui;
+package qz.ui.component;
 
 import com.github.zafarkhaja.semver.Version;
 import org.slf4j.Logger;
@@ -60,8 +60,9 @@ public class IconCache {
         ALLOW_ICON("qz-allow.png"),
         BLOCK_ICON("qz-block.png"),
         CANCEL_ICON("qz-cancel.png"),
-        VERIFIED_ICON("qz-trusted.png"),
-        UNVERIFIED_ICON("qz-untrusted.png"),
+        TRUST_VERIFIED_ICON("qz-trust-verified.png"),
+        TRUST_ISSUE_ICON("qz-trust-issue.png"),
+        TRUST_MISSING_ICON("qz-trust-missing.png"),
         FIELD_ICON("qz-field.png"),
         DELETE_ICON("qz-delete.png"),
         QUESTION_ICON("qz-question.png"),

@@ -37,7 +37,7 @@ public class Constants {
 
     public static final String TRUSTED_CERT = String.format("Verified by %s", Constants.ABOUT_COMPANY);
     public static final String UNTRUSTED_CERT = "Untrusted website";
-    public static final String EXPIRED_CERT = "Cannot verify trust - Expired Certificate";
+    public static final String EXPIRED_REQUEST = "Cannot verify trust - Expired Signature";
     public static final String UNSIGNED_REQUEST = "Cannot verify trust - Invalid Signature";
 
     public static final String PROBE_REQUEST = "getProgramName";

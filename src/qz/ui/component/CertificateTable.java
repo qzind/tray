@@ -1,12 +1,10 @@
-package qz.ui;
+package qz.ui.component;
 
 import org.joor.Reflect;
 import qz.auth.Certificate;
 import qz.common.Constants;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.Calendar;
 
@@ -14,7 +12,8 @@ import java.util.Calendar;
  * Created by Tres on 2/22/2015.
  * Displays Certificate information in a JTable
  */
-public class CertificateTable extends JTable implements Themeable {
+public class CertificateTable extends DisplayTable implements Themeable {
+
     /**
      * Certificate fields to be displayed (and the corresponding function to Reflect upon)
      */
@@ -67,70 +66,13 @@ public class CertificateTable extends JTable implements Themeable {
     }
 
     private Certificate cert;
-    private DefaultTableModel model;
 
     private Calendar warn;
     private Calendar now;
 
-    private Color defaultForeground;
-    private Color defaultSelectedForeground;
-
-    private IconCache iconCache;
-
     public CertificateTable(IconCache iconCache) {
-        super();
-        initComponents();
-        setIconCache(iconCache);
-    }
-
-    private void initComponents() {
-        model = new DefaultTableModel() {
-            @Override
-            public boolean isCellEditable(int x, int y) { return false; }
-        };
-        model.addColumn("Field");
-        model.addColumn("Value");
-
-        getTableHeader().setReorderingAllowed(false);
-        setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        setRowSelectionAllowed(true);
-
-        setModel(model);
-    }
-
-    public void refreshComponents() {
-        removeRows();
-
-        if (cert == null) {
-            return;
-        }
-
-        now = Calendar.getInstance();
-        warn = Calendar.getInstance();
-        warn.add(Calendar.DAY_OF_MONTH, -1 * Constants.EXPIRY_WARN);
-
-        // First Column
-        for(CertificateField field : CertificateField.values()) {
-            model.addRow(new Object[] {field, ""});
-        }
-
-        // Second Column
-        for(int col = 0; col < model.getColumnCount(); col++) {
-            for(int row = 0; row < model.getRowCount(); row++) {
-                Object cell = (model.getValueAt(row, col));
-                if (cell instanceof CertificateField) {
-                    model.setValueAt(((CertificateField)cell).getValue(cert), row, col + 1);
-                }
-            }
-        }
-        defaultForeground = UIManager.getDefaults().getColor("Table.foreground");
-        defaultSelectedForeground = UIManager.getDefaults().getColor("Table.selectionForeground");
+        super(iconCache);
         setDefaultRenderer(Object.class, new CertificateTableCellRenderer());
-        repaint();
-    }
-
-    public void setIconCache(IconCache iconCache) {
-        this.iconCache = iconCache;
     }
 
     public void setCertificate(Certificate cert) {
@@ -139,39 +81,37 @@ public class CertificateTable extends JTable implements Themeable {
     }
 
     @Override
+    public void refreshComponents() {
+        if (cert == null) {
+            return;
+        }
+
+        now = Calendar.getInstance();
+        warn = Calendar.getInstance();
+        warn.add(Calendar.DAY_OF_MONTH, -1 * Constants.EXPIRY_WARN);
+
+        removeRows();
+
+        // First Column
+        for(CertificateField field : CertificateField.values()) {
+            model.addRow(new Object[] {field, field.getValue(cert)});
+        }
+
+        repaint();
+    }
+
+    @Override
     public void refresh() {
         refreshComponents();
     }
 
-    public void removeRows() {
-        for(int row = model.getRowCount() - 1; row >= 0; row--) {
-            model.removeRow(row);
-        }
-    }
-
-    /**
-     * Sets preferred <code>ScrollPane</code> preferred viewable height to match the natural table height
-     * Leaves the <code>ScrollPane</code> preferred viewable width as default
-     */
     public void autoSize() {
-        removeRows();
-        for(int row = 0; row < CertificateField.size(); row++) {
-            model.addRow(new Object[2]);
-        }
-        int normalWidth = (int)getPreferredScrollableViewportSize().getWidth();
-        int autoHeight = (int)getPreferredSize().getHeight();
-        setPreferredScrollableViewportSize(new Dimension(normalWidth, autoHeight));
-        setFillsViewportHeight(true);
-        refreshComponents();
+        super.autoSize(CertificateField.size(), 2);
     }
 
-    /**
-     * Custom cell renderer for JTable to allow colors and styles not directly available in a JTable
-     */
-    private class CertificateTableCellRenderer extends DefaultTableCellRenderer {
-        final int STATUS_NORMAL = 0;
-        final int STATUS_WARNING = 1;
-        final int STATUS_TRUSTED = 2;
+
+    /** Custom cell renderer for JTable to allow colors and styles not directly available in a JTable */
+    private class CertificateTableCellRenderer extends StyledTableCellRenderer {
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
@@ -179,7 +119,7 @@ public class CertificateTable extends JTable implements Themeable {
 
             // First Column
             if (value instanceof CertificateField) {
-                label = stylizeLabel(STATUS_NORMAL, label, isSelected);
+                stylizeLabel(STATUS_NORMAL, label, isSelected);
                 if (iconCache != null) {
                     label.setIcon(iconCache.getIcon(IconCache.Icon.FIELD_ICON));
                 }
@@ -208,38 +148,6 @@ public class CertificateTable extends JTable implements Themeable {
             }
         }
 
-        private JLabel stylizeLabel(int statusCode, JLabel label, boolean isSelected) {
-            return stylizeLabel(statusCode, label, isSelected, null);
-        }
-
-        private JLabel stylizeLabel(int statusCode, JLabel label, boolean isSelected, String reason) {
-            label.setIcon(null);
-
-            int fontWeight;
-            Color foreground;
-
-            switch(statusCode) {
-
-                case STATUS_WARNING:
-                    foreground = Constants.WARNING_COLOR;
-                    fontWeight = Font.BOLD;
-                    break;
-                case STATUS_TRUSTED:
-                    foreground = Constants.TRUSTED_COLOR;
-                    fontWeight = Font.PLAIN;
-                    break;
-                case STATUS_NORMAL:
-                default:
-                    foreground = defaultForeground;
-                    fontWeight = Font.PLAIN;
-            }
-
-            label.setFont(label.getFont().deriveFont(fontWeight));
-            label.setForeground(isSelected? defaultSelectedForeground:foreground);
-            if (statusCode == STATUS_WARNING && reason != null) {
-                label.setText(label.getText() + " (" + reason + ")");
-            }
-            return label;
-        }
     }
+
 }

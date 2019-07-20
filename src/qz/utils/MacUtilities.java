@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.TrayManager;
-import qz.ui.IconCache;
+import qz.ui.component.IconCache;
 
 import java.awt.*;
 import java.lang.reflect.Method;

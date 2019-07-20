@@ -21,6 +21,7 @@ import qz.deploy.DeployUtilities;
 import qz.deploy.LinuxCertificate;
 import qz.deploy.WindowsDeploy;
 import qz.ui.*;
+import qz.ui.component.IconCache;
 import qz.ui.tray.TrayType;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;

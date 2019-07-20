@@ -2,6 +2,8 @@ package qz.ui;
 
 import qz.auth.RequestState;
 import qz.common.Constants;
+import qz.ui.component.IconCache;
+import qz.ui.component.LinkLabel;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
@@ -20,9 +22,9 @@ public class GatewayDialog extends JDialog implements Themeable {
     private JLabel verifiedLabel;
     private JLabel descriptionLabel;
     private LinkLabel certInfoLabel;
-    private JScrollPane certScrollPane;
-    private CertificateTable certTable;
     private JPanel descriptionPanel;
+
+    private DetailsDialog detailsDialog;
 
     private JButton allowButton;
     private JButton blockButton;
@@ -67,21 +69,20 @@ public class GatewayDialog extends JDialog implements Themeable {
         allowButton.addActionListener(buttonAction);
         blockButton.addActionListener(buttonAction);
 
+        detailsDialog = new DetailsDialog(iconCache);
         certInfoLabel = new LinkLabel();
-        certTable = new CertificateTable(iconCache);
-        certScrollPane = new JScrollPane(certTable);
+        certInfoLabel.setAlignmentX(LEFT_ALIGNMENT);
         certInfoLabel.addActionListener(e -> {
-            certTable.setCertificate(request.getCertUsed());
-            certTable.autoSize();
+            detailsDialog.updateDisplay(request);
             JOptionPane.showMessageDialog(
                     GatewayDialog.this,
-                    certScrollPane,
-                    "Certificate",
+                    detailsDialog,
+                    "Details",
                     JOptionPane.PLAIN_MESSAGE);
         });
 
         bottomPanel = new JPanel();
-        bottomPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
+        bottomPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 5));
         persistentCheckBox = new JCheckBox("Remember this decision", false);
         persistentCheckBox.setMnemonic(KeyEvent.VK_R);
         persistentCheckBox.addActionListener(e -> allowButton.setEnabled(!persistentCheckBox.isSelected() || request.isTrusted()));
@@ -142,8 +143,21 @@ public class GatewayDialog extends JDialog implements Themeable {
                                              String.format(description, "<p>" + request.getCertName()) +
                                              "</p><strong>" + request.getValidityInfo() + "</strong>" +
                                              "</html>");
-            certInfoLabel.setText("Certificate information");
-            verifiedLabel.setIcon(iconCache.getIcon(request.isTrusted()? IconCache.Icon.VERIFIED_ICON:IconCache.Icon.UNVERIFIED_ICON));
+            certInfoLabel.setText("View request details");
+
+            IconCache.Icon trustIcon;
+            if (request.isTrusted()) {
+                //cert and signature are good
+                trustIcon = IconCache.Icon.TRUST_VERIFIED_ICON;
+            } else if (request.getCertUsed().isTrusted()) {
+                //cert is good, but there is an issue with the signature
+                trustIcon = IconCache.Icon.TRUST_ISSUE_ICON;
+            } else {
+                //nothing is good
+                trustIcon = IconCache.Icon.TRUST_MISSING_ICON;
+            }
+
+            verifiedLabel.setIcon(iconCache.getIcon(trustIcon));
         } else {
             descriptionLabel.setText(description);
             verifiedLabel.setIcon(null);

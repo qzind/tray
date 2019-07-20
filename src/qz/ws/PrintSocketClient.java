@@ -186,7 +186,7 @@ public class PrintSocketClient {
 
             Integer connectionPort = session.getRemoteAddress().getPort();
             SocketConnection connection = openConnections.get(connectionPort);
-            RequestState request = new RequestState(connection.getCertificate());
+            RequestState request = new RequestState(connection.getCertificate(), json);
 
             //if sent a certificate use that instead for this connection
             if (json.has("certificate")) {
@@ -194,7 +194,7 @@ public class PrintSocketClient {
                     Certificate certificate = new Certificate(json.optString("certificate"));
                     connection.setCertificate(certificate);
 
-                    request.setCertUsed(certificate);
+                    request.markNewConnection(certificate);
                     request.setStatus(certificate.isTrusted()? RequestState.Validity.TRUSTED:RequestState.Validity.UNKNOWN);
 
                     log.debug("Received new certificate from connection through {}", connectionPort);

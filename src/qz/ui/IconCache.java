@@ -252,13 +252,12 @@ public class IconCache {
         if (SystemUtilities.prefersMaskTrayIcon()) {
             // Clone the mask icon
             for (String id : Icon.MASK_ICON.getIds()) {
-                BufferedImage src = images.get(id);
-                BufferedImage dest = clone(src);
+                BufferedImage clone = clone(images.get(id));
                 if (darkMode) {
-                    dest = ColorUtilities.invert(dest);
+                    clone = ColorUtilities.invert(clone);
                 }
-                images.put(id.replaceAll("mask", "default"), dest);
-                imageIcons.put(id.replaceAll("mask", "default"), new ImageIcon(dest));
+                images.put(id.replaceAll("mask", "default"), clone);
+                imageIcons.put(id.replaceAll("mask", "default"), new ImageIcon(clone));
             }
         }
 
@@ -283,17 +282,15 @@ public class IconCache {
         return dest;
     }
 
-    public void padIcon(Icon i, int percent) {
-        for (String id : i.getIds()) {
+    public void padIcon(Icon icon, int percent) {
+        for (String id : icon.getIds()) {
             // Calculate padding percentage
             int w = images.get(id).getWidth();
-            int wPad = (int)((percent/100.0) * w);
-            w += wPad;
             int h = images.get(id).getHeight();
+            int wPad = (int)((percent/100.0) * w);
             int hPad = (int)((percent/100.0) * h);
-            h += hPad;
 
-            BufferedImage padded = new BufferedImage(w, h, images.get(id).getType());
+            BufferedImage padded = new BufferedImage(w + wPad, h + hPad, images.get(id).getType());
             Graphics g = padded.getGraphics();
 
             // Pad all sides (by half)
@@ -302,7 +299,7 @@ public class IconCache {
 
             images.put(id, padded);
             imageIcons.put(id, new ImageIcon(padded));
-            i.padded = true;
+            icon.padded = true;
         }
     }
 

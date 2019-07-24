@@ -12,7 +12,8 @@ public class RequestTable extends DisplayTable {
         CALL("Call", "call"),
         PARAMS("Parameters", "params"),
         SIGNATURE("Signature", "signature"),
-        TIMESTAMP("Timestamp", "timestamp");
+        TIMESTAMP("Timestamp", "timestamp"),
+        VALIDITY("Validity", null);
 
         String description;
         String fieldName;
@@ -23,16 +24,12 @@ public class RequestTable extends DisplayTable {
         }
 
         public String getValue(RequestState request) {
-            if (request == null) {
-                return "";
+            if (request != null && !request.getRequestData().isNull(fieldName)) {
+                try { return request.getRequestData().getString(fieldName); }
+                catch(JSONException ignore) {}
             }
 
-            try {
-                return request.getRequestData().getString(fieldName);
-            }
-            catch(JSONException e) {
-                return "";
-            }
+            return "";
         }
 
         @Override
@@ -65,7 +62,11 @@ public class RequestTable extends DisplayTable {
         removeRows();
 
         for(RequestField field : RequestField.values()) {
-            model.addRow(new Object[] {field, field.getValue(request)});
+            if (field == RequestField.VALIDITY) {
+                model.addRow(new Object[] {field, request.getStatus().getFormatted()});
+            } else {
+                model.addRow(new Object[] {field, field.getValue(request)});
+            }
         }
 
         repaint();
@@ -109,27 +110,27 @@ public class RequestTable extends DisplayTable {
                     }
                     break;
                 case SIGNATURE:
-                    style = request.isTrusted()? STATUS_TRUSTED:STATUS_WARNING;
+                    if (request.isTrusted()) {
+                        style = STATUS_TRUSTED;
+                    } else if (request.getStatus() != RequestState.Validity.EXPIRED) {
+                        style = STATUS_WARNING;
+                    }
 
-                    System.out.println(request.getStatus());
                     if (label.getText().isEmpty()) {
                         if (request.isInitialConnect()) {
                             label.setText("Not Required");
                         } else {
                             label.setText("Missing");
                         }
-                    } else if (!request.isTrusted()) {
-                        String issue;
-                        switch(request.getStatus()) {
-                            case EXPIRED:
-                                issue = "Expired";
-                                break;
-                            case UNSIGNED: default:
-                                issue = "Invalid";
-                                break;
-                        }
-                        label.setText("(" + issue + ") " + label.getText());
                     }
+                    break;
+                case TIMESTAMP:
+                    if (request.getStatus() == RequestState.Validity.EXPIRED) {
+                        style = STATUS_WARNING;
+                    }
+                    break;
+                case VALIDITY:
+                    style = request.isTrusted()? STATUS_TRUSTED:STATUS_WARNING;
                     break;
             }
 

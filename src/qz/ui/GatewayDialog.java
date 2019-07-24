@@ -146,18 +146,22 @@ public class GatewayDialog extends JDialog implements Themeable {
             certInfoLabel.setText("View request details");
 
             IconCache.Icon trustIcon;
+            Color detailColor = Constants.TRUSTED_COLOR;
             if (request.isTrusted()) {
                 //cert and signature are good
                 trustIcon = IconCache.Icon.TRUST_VERIFIED_ICON;
             } else if (request.getCertUsed().isTrusted()) {
                 //cert is good, but there is an issue with the signature
                 trustIcon = IconCache.Icon.TRUST_ISSUE_ICON;
+                detailColor = Constants.WARNING_COLOR;
             } else {
                 //nothing is good
                 trustIcon = IconCache.Icon.TRUST_MISSING_ICON;
+                detailColor = Constants.WARNING_COLOR;
             }
 
             verifiedLabel.setIcon(iconCache.getIcon(trustIcon));
+            certInfoLabel.setForeground(detailColor);
         } else {
             descriptionLabel.setText(description);
             verifiedLabel.setIcon(null);

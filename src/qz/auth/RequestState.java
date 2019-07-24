@@ -6,10 +6,20 @@ import qz.common.Constants;
 public class RequestState {
 
     public enum Validity {
-        TRUSTED,
-        EXPIRED,
-        UNSIGNED,
-        UNKNOWN
+        TRUSTED("Valid"),
+        EXPIRED("Expired Request"),
+        UNSIGNED("Unsigned Request"),
+        UNKNOWN("Invalid");
+
+        private String formatted;
+
+        Validity(String formatted) {
+            this.formatted = formatted;
+        }
+
+        public String getFormatted() {
+            return formatted;
+        }
     }
 
     Certificate certUsed;

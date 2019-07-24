@@ -7,8 +7,8 @@ public class RequestState {
 
     public enum Validity {
         TRUSTED("Valid"),
-        EXPIRED("Expired Request"),
-        UNSIGNED("Unsigned Request"),
+        EXPIRED("Expired Signature"),
+        UNSIGNED("Invalid Signature"),
         UNKNOWN("Invalid");
 
         private String formatted;

@@ -199,7 +199,9 @@ public class PrintSocketClient {
 
                     log.debug("Received new certificate from connection through {}", connectionPort);
                 }
-                catch(CertificateParsingException ignore) {}
+                catch(CertificateParsingException ignore) {
+                    request.markNewConnection(Certificate.UNKNOWN);
+                }
 
                 if (allowedFromDialog(request, "connect to " + Constants.ABOUT_TITLE,
                                       findDialogPosition(session, json.optJSONObject("position")))) {

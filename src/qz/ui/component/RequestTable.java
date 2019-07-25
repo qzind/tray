@@ -96,6 +96,8 @@ public class RequestTable extends DisplayTable {
             if (request == null || col < 1) { return stylizeLabel(STATUS_NORMAL, label, isSelected); }
 
             RequestField field = (RequestField)table.getValueAt(row, col - 1);
+            if (field == null) { return stylizeLabel(STATUS_NORMAL, label, isSelected); }
+
             int style = STATUS_NORMAL;
             switch(field) {
                 case CALL:

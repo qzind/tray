@@ -254,7 +254,7 @@ public class IconCache {
             // Clone the mask icon
             for (String id : Icon.MASK_ICON.getIds()) {
                 BufferedImage clone = clone(images.get(id));
-                // Even on lite mode desktops, tray icons were the norm until Windows 10 update 1903
+                // Even on lite mode desktops, white tray icons were the norm until Windows 10 update 1903
                 if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().lessThan(Version.valueOf("10.0.1903"))) {
                     darkMode = true;
                 }

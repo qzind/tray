@@ -10,6 +10,7 @@
 
 package qz.ui;
 
+import com.github.zafarkhaja.semver.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.ColorUtilities;
@@ -253,6 +254,10 @@ public class IconCache {
             // Clone the mask icon
             for (String id : Icon.MASK_ICON.getIds()) {
                 BufferedImage clone = clone(images.get(id));
+                // Even on lite mode desktops, tray icons were the norm until Windows 10 update 1903
+                if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().lessThan(Version.valueOf("10.0.1903"))) {
+                    darkMode = true;
+                }
                 if (darkMode) {
                     clone = ColorUtilities.invert(clone);
                 }

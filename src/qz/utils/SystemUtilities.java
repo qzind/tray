@@ -36,6 +36,7 @@ public class SystemUtilities {
     private static String uname;
     private static String linuxRelease;
     private static String classProtocol;
+    private static Version osVersion;
 
 
     /**
@@ -44,6 +45,24 @@ public class SystemUtilities {
      */
     public static String getOS() {
         return OS_NAME;
+    }
+
+    public static Version getOSVersion() {
+        if (osVersion == null) {
+            String version = System.getProperty("os.version");
+            // Windows is missing patch release, read it from registry
+            if (isWindows()) {
+                String patch = ShellUtilities.getRegistryString("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId");
+                if (patch != null) {
+                    version += "." + patch.trim();
+                }
+            }
+            while (version.split("\\.").length < 3) {
+                version += ".0";
+            }
+            osVersion = Version.valueOf(version);
+        }
+        return osVersion;
     }
 
 
@@ -268,8 +287,12 @@ public class SystemUtilities {
     }
 
     public static boolean prefersMaskTrayIcon() {
-        // TODO: Test on Windows
-        return SystemUtilities.isMac();
+        if (SystemUtilities.isMac()) {
+            return true;
+        } else if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().getMajorVersion() >= 10) {
+            return true;
+        }
+        return false;
     }
 
     public static boolean setSystemLookAndFeel() {

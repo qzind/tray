@@ -21,6 +21,7 @@ package org.jdesktop.swinghelper.tray;
 
 import qz.utils.MacUtilities;
 import qz.utils.SystemUtilities;
+import qz.utils.WindowsUtilities;
 
 import javax.swing.*;
 import javax.swing.event.PopupMenuListener;
@@ -155,6 +156,13 @@ public class JXTrayIcon extends TrayIcon {
             original.height -= original.height / 5;
 
             return new Dimension(original.width * scale, original.height * scale);
+        } else if(SystemUtilities.isWindows()) {
+            int scale = (int)(Toolkit.getDefaultToolkit().getScreenResolution() / 96.0);
+
+            // Handle undocumented HiDPI icon support
+            // Requires TrayIcon.setImageAutoSize(true);
+            original.width *= scale;
+            original.height *= scale;
         }
         return original;
     }

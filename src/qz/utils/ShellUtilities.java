@@ -311,7 +311,35 @@ public class ShellUtilities {
         );
     }
 
+    public static String getRegistryString(String keyPath, String name) {
+        String match = "REG_SZ";
+        if (!SystemUtilities.isWindows()) {
+            log.error("Reg commands can only be invoked from Windows");
+            return null;
+        }
+
+        String reg = System.getenv("windir") + "\\system32\\reg.exe";
+        String stdout = execute(
+                new String[] {
+                        reg, "query", keyPath, "/v", name
+                },
+                new String[] {match}
+        );
+
+        if (!stdout.isEmpty()) {
+            // Return the last element
+            String[] parts = stdout.split("\\s+");
+            return parts[parts.length - 1];
+        }
+
+        return null;
+    }
+
     public static int getRegistryDWORD(String keyPath, String name) {
+        return getRegistryDWORD(keyPath, name, false);
+    }
+
+    public static int getRegistryDWORD(String keyPath, String name, boolean silent) {
         String match = "0x";
         if (!SystemUtilities.isWindows()) {
             log.error("Reg commands can only be invoked from Windows");
@@ -323,7 +351,9 @@ public class ShellUtilities {
                 new String[] {
                         reg, "query", keyPath, "/v", name
                 },
-                new String[] {match}
+                new String[] {match},
+                true,
+                silent
         );
 
         // Parse stdout looking for hex (i.e. "0x1B")

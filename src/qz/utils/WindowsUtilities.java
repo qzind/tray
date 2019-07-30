@@ -5,6 +5,6 @@ public class WindowsUtilities {
         String path = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
         String name = "AppsUseLightTheme";
         // 0 = Dark Theme.  -1/1 = Light Theme
-        return ShellUtilities.getRegistryDWORD(path, name) == 0;
+        return ShellUtilities.getRegistryDWORD(path, name, true) == 0;
     }
 }

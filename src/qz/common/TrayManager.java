@@ -102,6 +102,8 @@ public class TrayManager {
         if (!headless && SystemTray.isSupported()) {
             if (SystemUtilities.isWindows()) {
                 tray = TrayType.JX.init();
+                // Undocumented HiDPI behavior
+                tray.setImageAutoSize(true);
             } else if (SystemUtilities.isMac()) {
                 tray = TrayType.CLASSIC.init();
             } else {

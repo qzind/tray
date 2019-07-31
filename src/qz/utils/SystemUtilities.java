@@ -380,7 +380,7 @@ public class SystemUtilities {
         if(isMac()) {
             return MacUtilities.getScaleFactor() > 1;
         } else if(isWindows()) {
-            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0 > 1;
+            return WindowsUtilities.getScaleFactor() > 1;
         }
         // Fallback to a JNA Gdk technique
         return UbuntuUtilities.getScaleFactor() > 1;

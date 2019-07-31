@@ -19,6 +19,8 @@
 
 package org.jdesktop.swinghelper.tray;
 
+import com.github.zafarkhaja.semver.Version;
+import qz.common.Constants;
 import qz.utils.MacUtilities;
 import qz.utils.SystemUtilities;
 import qz.utils.WindowsUtilities;
@@ -144,7 +146,7 @@ public class JXTrayIcon extends TrayIcon {
 
     @Override
     public Dimension getSize() {
-        Dimension original = super.getSize();
+        Dimension iconSize = new Dimension(super.getSize());
         // macOS edge-cases
         if (SystemUtilities.isMac()) {
             // Handle retina display
@@ -152,18 +154,19 @@ public class JXTrayIcon extends TrayIcon {
 
             // Handle undocumented icon border (e.g. 20px has 16px icon)
             // See also IconCache.fixTrayIcons()
-            original.width -= original.width / 5;
-            original.height -= original.height / 5;
+            iconSize.width -= iconSize.width / 5;
+            iconSize.height -= iconSize.height / 5;
 
-            return new Dimension(original.width * scale, original.height * scale);
-        } else if(SystemUtilities.isWindows()) {
-            int scale = (int)(Toolkit.getDefaultToolkit().getScreenResolution() / 96.0);
+            return new Dimension(iconSize.width * scale, iconSize.height * scale);
+        } else if(SystemUtilities.isWindows() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("9.0.0"))) {
+            // JDK9+ required for HiDPI tray icons on Windows
+            int scale = WindowsUtilities.getScaleFactor();
 
             // Handle undocumented HiDPI icon support
             // Requires TrayIcon.setImageAutoSize(true);
-            original.width *= scale;
-            original.height *= scale;
+            iconSize.width *= scale;
+            iconSize.height *= scale;
         }
-        return original;
+        return iconSize;
     }
 }

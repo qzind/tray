@@ -58,7 +58,6 @@ public class TrayManager {
     private LogDialog logDialog;
     private SiteManagerDialog sitesDialog;
     private ArrayList<Component> componentList;
-
     private IconCache.Icon shownIcon;
 
     // Need a class reference to this so we can set it from the request dialog window

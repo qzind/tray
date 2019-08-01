@@ -80,7 +80,8 @@ public class TrayManager {
      */
     public TrayManager(boolean isHeadless) {
         name = Constants.ABOUT_TITLE + " " + Constants.VERSION;
-        headless = isHeadless || USER_PREFS.getBoolean(Constants.PREFS_HEADLESS, false) || !SystemTray.isSupported();
+
+        headless = isHeadless || USER_PREFS.getBoolean(Constants.PREFS_HEADLESS, false) || GraphicsEnvironment.isHeadless();
         if (headless) {
             log.info("Running in headless mode");
         }
@@ -112,7 +113,6 @@ public class TrayManager {
                 log.error("Could not attach tray, forcing headless mode", awt);
                 headless = true;
             }
-
             I18NLoader.addLocaleChangeListener(
                     (locale) -> initComponents()
             );
@@ -121,6 +121,9 @@ public class TrayManager {
             tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
             tray.setToolTip(name);
             tray.showTaskbar();
+            I18NLoader.addLocaleChangeListener(
+                    (locale) -> initComponents()
+            );
         }
 
         // Linux specific tasks
@@ -143,7 +146,6 @@ public class TrayManager {
     }
 
     private void initComponents() {
-
         if (!headless) {
             // The allow/block dialog
             gatewayDialog = new GatewayDialog(null, gettext("Action Required"), iconCache);

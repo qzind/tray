@@ -1,5 +1,5 @@
 {
-    "_lastUpdated": "Fri Jul 19 00:04:55 EDT 2019",
+    "_lastUpdated": "Wed Jul 31 21:48:28 EDT 2019",
     "translations": [
         [
             "Delete",
@@ -172,10 +172,6 @@
         [
             "Sites permanently blocked from access",
             "已永久阻止的网站"
-        ],
-        [
-            "Advanced",
-            "高级"
         ],
         [
             "Organization",

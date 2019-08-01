@@ -2,38 +2,35 @@ package qz.ui;
 
 import org.apache.commons.io.IOUtils;
 import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URL;
-import java.util.ListResourceBundle;
-import java.util.Locale;
+import java.util.*;
 
-public class LanguageBundle extends ListResourceBundle {
+public class LanguageBundle{
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(LanguageBundle.class);
-    private Object[][] translationArray;
+    private final Map<String, String> translationMap;
 
-    public LanguageBundle(String bundleDirectory, Locale locale) {
-        super();
+    public LanguageBundle(String bundleDirectory, Locale locale) throws IOException, JSONException {
         URL fileLocation = ClassLoader.getSystemResource(bundleDirectory + "_" + locale.toString() + ".json");
 
-        try {
-            JSONObject root = new JSONObject(IOUtils.toString(fileLocation));
-            JSONArray translations = root.getJSONArray("translations");
-            translationArray = new Object[translations.length()][2];
+        JSONObject root = new JSONObject(IOUtils.toString(fileLocation));
+        JSONArray translations = root.getJSONArray("translations");
 
-            for (int i = 0; i < translations.length(); i++) {
-                JSONArray pair = translations.getJSONArray(i);
-                translationArray[i][0] = pair.getString(0);
-                translationArray[i][1] = pair.getString(1);
-            }
+        SortedMap<String, String> tempMap = new TreeMap<>();
+
+        for (int i = 0; i < translations.length(); i++) {
+            JSONArray pair = translations.getJSONArray(i);
+            tempMap.put(pair.getString(0), pair.getString(1));
         }
-        catch(Exception e) {
-            log.warn("Failed to load translation file " + fileLocation.toString());
-        }
+        translationMap = Collections.unmodifiableSortedMap(tempMap);
     }
-    @Override
-    protected Object[][] getContents() {
-        return translationArray;
+
+    public String getString(String id) {
+        return translationMap.get(id);
     }
 }
+

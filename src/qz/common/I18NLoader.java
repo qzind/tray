@@ -12,11 +12,12 @@ public class I18NLoader {
     private final static String I18N_LOCATION = "qz/common/resources/messages";
     private final static String I18N_LOCALE_PROPERTY = "locale";
     //todo: move to constants?
+    private final static Locale BUILT_IN_LOCALE = Locale.ENGLISH;
     private final static String DEFAULT_LOCALE = "en";
 
     private static final Logger log = LoggerFactory.getLogger(I18NLoader.class);
 
-    private static ResourceBundle msg;
+    private static LanguageBundle msg;
     private static PropertyHelper prefs;
 
     private static List<Consumer<Locale>> localeChangeListeners = new LinkedList<>();
@@ -37,6 +38,7 @@ public class I18NLoader {
      */
 
     public static String gettext(String id) {
+        if (msg == null) return id;
         try {
             return msg.getString(id);
         }
@@ -60,7 +62,7 @@ public class I18NLoader {
         prefs.setProperty(I18N_LOCALE_PROPERTY, locale.toLanguageTag());
         prefs.save();
 
-        msg = new LanguageBundle(I18N_LOCATION, locale);
+        setBundle(I18N_LOCATION, locale);
 
         localeChangeListeners.forEach(listener -> listener.accept(locale));
     }
@@ -72,11 +74,23 @@ public class I18NLoader {
      */
     public static void setup(PropertyHelper propertyHelper) {
         prefs = propertyHelper;
-        msg = Utf8ResourceBundle.getBundle(I18N_LOCATION, getCurrentLocale());
+
+        setBundle(I18N_LOCATION, getCurrentLocale());
     }
 
     public static void addLocaleChangeListener(Consumer<Locale> listener) {
         localeChangeListeners.add(listener);
+    }
+
+    private static void setBundle(String bundleDirectory, Locale locale) {
+        try {
+            msg = (locale == BUILT_IN_LOCALE) ? null : new LanguageBundle(bundleDirectory, locale);
+        }
+        catch(Exception e) {
+            msg = null;
+            //Todo Remove this debugging log
+            log.error("Error loading language pack '{}' from {}", getCurrentLocale(), I18N_LOCATION);
+        }
     }
 }
 

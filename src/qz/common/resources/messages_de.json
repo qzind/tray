@@ -1,5 +1,5 @@
 {
-    "_lastUpdated": "Thu Jul 18 23:14:31 EDT 2019",
+    "_lastUpdated": "Wed Jul 31 21:48:28 EDT 2019",
     "translations": [
         [
             "Delete",
@@ -172,10 +172,6 @@
         [
             "Sites permanently blocked from access",
             "Permanent blockierte Seiten"
-        ],
-        [
-            "Advanced",
-            "Erweiterte Optionen"
         ],
         [
             "Organization",

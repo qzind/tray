@@ -55,6 +55,12 @@ public enum TrayType {
         }
     }
 
+    public void setImageAutoSize(boolean autoSize) {
+        if (isTray()) {
+            tray.setImageAutoSize(autoSize);
+        }
+    }
+
     public Dimension getSize() {
         return isTray() ? tray.getSize() : taskbar.getSize();
     }

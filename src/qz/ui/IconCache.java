@@ -10,9 +10,12 @@
 
 package qz.ui;
 
+import com.github.zafarkhaja.semver.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.ColorUtilities;
+import qz.utils.SystemUtilities;
+import qz.utils.UbuntuUtilities;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -37,9 +40,11 @@ public class IconCache {
      */
     public enum Icon {
         // Tray icons
-        DEFAULT_ICON("qz-default.png", "qz-default-20.png", "qz-default-24.png", "qz-default-32.png", "qz-default-40.png"),
-        WARNING_ICON("qz-warning.png", "qz-warning-20.png", "qz-warning-24.png", "qz-warning-32.png", "qz-warning-40.png"),
-        DANGER_ICON("qz-danger.png", "qz-danger-20.png", "qz-danger-24.png", "qz-danger-32.png", "qz-danger-40.png"),
+        DEFAULT_ICON("qz-default.png", "qz-default-20.png", "qz-default-24.png", "qz-default-32.png", "qz-default-40.png", "qz-default-48.png"),
+        WARNING_ICON("qz-warning.png", "qz-warning-20.png", "qz-warning-24.png", "qz-warning-32.png", "qz-warning-40.png", "qz-warning-48.png"),
+        DANGER_ICON("qz-danger.png", "qz-danger-20.png", "qz-danger-24.png", "qz-danger-32.png", "qz-danger-40.png", "qz-danger-48.png"),
+        MASK_ICON("qz-mask.png", "qz-mask-20.png", "qz-mask-24.png", "qz-mask-32.png", "qz-mask-40.png", "qz-mask-48.png"),
+
 
         // Menu Item icons
         EXIT_ICON("qz-exit.png"),
@@ -64,6 +69,7 @@ public class IconCache {
         // Banner
         BANNER_ICON("qz-banner.png");
 
+        private boolean padded = false;
         final String[] fileNames;
 
         /**
@@ -231,15 +237,74 @@ public class IconCache {
     }
 
     /**
-     * Inverts the colors for a particular icon
-     * For integration with dark or light desktop themes
-     *
-     * @param i the IconCache.Icon
+     * Replaces the cached tray icons with corrected versions if necessary
+     * e.g.
+     *  - Ubuntu transparency
+     *  - macOS masked icons
+     *  - macOS 10.14+ dark mode support
      */
-    public void invertColors(Icon i) {
-        for (String id : i.getIds()) {
-            images.put(id, ColorUtilities.invert(images.get(id)));
-            imageIcons.put(id, new ImageIcon(images.get(id)));
+    public void fixTrayIcons(boolean darkMode) {
+        // Fix the tray icon to look proper on Ubuntu
+        if (SystemUtilities.isUbuntu()) {
+            UbuntuUtilities.fixTrayIcons(this);
+        }
+
+        // Handle mask-style tray icons
+        if (SystemUtilities.prefersMaskTrayIcon()) {
+            // Clone the mask icon
+            for (String id : Icon.MASK_ICON.getIds()) {
+                BufferedImage clone = clone(images.get(id));
+                // Even on lite mode desktops, white tray icons were the norm until Windows 10 update 1903
+                if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().lessThan(Version.valueOf("10.0.1903"))) {
+                    darkMode = true;
+                }
+                if (darkMode) {
+                    clone = ColorUtilities.invert(clone);
+                }
+                images.put(id.replaceAll("mask", "default"), clone);
+                imageIcons.put(id.replaceAll("mask", "default"), new ImageIcon(clone));
+            }
+        }
+
+        // Handle undocumented macOS tray icon padding
+        for(IconCache.Icon i : IconCache.getTypes()) {
+            // See also JXTrayIcon.getSize()
+            if (i.isTrayIcon() && SystemUtilities.isMac()) {
+                // Prevent padding from happening twice on WARNING_ICON, DANGER_ICON
+                if (!i.padded || i == Icon.DEFAULT_ICON) {
+                    padIcon(i, 25);
+                }
+            }
+        }
+    }
+
+    public static BufferedImage clone(BufferedImage src) {
+        Image tmp = src.getScaledInstance(src.getWidth(), src.getHeight(), src.getType());
+        BufferedImage dest = new BufferedImage(tmp.getWidth(null), tmp.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+        Graphics g = dest.createGraphics();
+        g.drawImage(tmp, 0, 0, null);
+        g.dispose();
+        return dest;
+    }
+
+    public void padIcon(Icon icon, int percent) {
+        for (String id : icon.getIds()) {
+            // Calculate padding percentage
+            int w = images.get(id).getWidth();
+            int h = images.get(id).getHeight();
+            int wPad = (int)((percent/100.0) * w);
+            int hPad = (int)((percent/100.0) * h);
+
+            BufferedImage padded = new BufferedImage(w + wPad, h + hPad, images.get(id).getType());
+            Graphics g = padded.getGraphics();
+
+            // Pad all sides (by half)
+            g.drawImage(images.get(id), wPad/2, hPad/2, null);
+            g.dispose();
+
+            images.put(id, padded);
+            imageIcons.put(id, new ImageIcon(padded));
+            icon.padded = true;
         }
     }
 

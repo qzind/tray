@@ -14,7 +14,7 @@ import java.util.Calendar;
  * Created by Tres on 2/22/2015.
  * Displays Certificate information in a JTable
  */
-public class CertificateTable extends JTable {
+public class CertificateTable extends JTable implements Themeable {
     /**
      * Certificate fields to be displayed (and the corresponding function to Reflect upon)
      */
@@ -96,11 +96,7 @@ public class CertificateTable extends JTable {
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         setRowSelectionAllowed(true);
 
-        setDefaultRenderer(Object.class, new CertificateTableCellRenderer());
         setModel(model);
-
-        defaultForeground = UIManager.getDefaults().getColor("Table.foreground");
-        defaultSelectedForeground = UIManager.getDefaults().getColor("Table.selectionForeground");
     }
 
     public void refreshComponents() {
@@ -128,7 +124,9 @@ public class CertificateTable extends JTable {
                 }
             }
         }
-
+        defaultForeground = UIManager.getDefaults().getColor("Table.foreground");
+        defaultSelectedForeground = UIManager.getDefaults().getColor("Table.selectionForeground");
+        setDefaultRenderer(Object.class, new CertificateTableCellRenderer());
         repaint();
     }
 
@@ -138,6 +136,11 @@ public class CertificateTable extends JTable {
 
     public void setCertificate(Certificate cert) {
         this.cert = cert;
+        refreshComponents();
+    }
+
+    @Override
+    public void refresh() {
         refreshComponents();
     }
 

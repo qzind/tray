@@ -57,14 +57,20 @@ public class ShellUtilities {
         }
     }
 
+    public static boolean execute(String[] commandArray) {
+        return execute(commandArray, false);
+    }
+
     /**
      * Executes a synchronous shell command and returns true if the {@code Process.exitValue()} is {@code 0}.
      *
      * @param commandArray array of command pieces to supply to the shell environment to e executed as a single command
      * @return {@code true} if {@code Process.exitValue()} is {@code 0}, otherwise {@code false}.
      */
-    public static boolean execute(String[] commandArray) {
-        log.debug("Executing: {}", Arrays.toString(commandArray));
+    public static boolean execute(String[] commandArray, boolean silent) {
+        if (!silent) {
+            log.debug("Executing: {}", Arrays.toString(commandArray));
+        }
         try {
             // Create and execute our new process
             Process p = Runtime.getRuntime().exec(commandArray, envp);
@@ -89,7 +95,7 @@ public class ShellUtilities {
      * @return The first matching string value
      */
     public static String execute(String[] commandArray, String[] searchFor) {
-        return execute(commandArray, searchFor, true);
+        return execute(commandArray, searchFor, true, false);
     }
 
     /**
@@ -102,8 +108,10 @@ public class ShellUtilities {
      * @return The first matching an element of {@code searchFor}, unless
      * {@code searchFor} is null ,then the first line of standard output
      */
-    public static String execute(String[] commandArray, String[] searchFor, boolean caseSensitive) {
-        log.debug("Executing: {}", Arrays.toString(commandArray));
+    public static String execute(String[] commandArray, String[] searchFor, boolean caseSensitive, boolean silent) {
+        if(!silent) {
+            log.debug("Executing: {}", Arrays.toString(commandArray));
+        }
         BufferedReader stdInput = null;
         try {
             // Create and execute our new process
@@ -303,7 +311,35 @@ public class ShellUtilities {
         );
     }
 
+    public static String getRegistryString(String keyPath, String name) {
+        String match = "REG_SZ";
+        if (!SystemUtilities.isWindows()) {
+            log.error("Reg commands can only be invoked from Windows");
+            return null;
+        }
+
+        String reg = System.getenv("windir") + "\\system32\\reg.exe";
+        String stdout = execute(
+                new String[] {
+                        reg, "query", keyPath, "/v", name
+                },
+                new String[] {match}
+        );
+
+        if (!stdout.isEmpty()) {
+            // Return the last element
+            String[] parts = stdout.split("\\s+");
+            return parts[parts.length - 1];
+        }
+
+        return null;
+    }
+
     public static int getRegistryDWORD(String keyPath, String name) {
+        return getRegistryDWORD(keyPath, name, false);
+    }
+
+    public static int getRegistryDWORD(String keyPath, String name, boolean silent) {
         String match = "0x";
         if (!SystemUtilities.isWindows()) {
             log.error("Reg commands can only be invoked from Windows");
@@ -315,7 +351,9 @@ public class ShellUtilities {
                 new String[] {
                         reg, "query", keyPath, "/v", name
                 },
-                new String[] {match}
+                new String[] {match},
+                true,
+                silent
         );
 
         // Parse stdout looking for hex (i.e. "0x1B")

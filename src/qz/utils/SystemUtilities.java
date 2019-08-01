@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.deploy.DeployUtilities;
-import qz.ui.LinkLabel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -37,6 +36,7 @@ public class SystemUtilities {
     private static String uname;
     private static String linuxRelease;
     private static String classProtocol;
+    private static Version osVersion;
 
 
     /**
@@ -45,6 +45,24 @@ public class SystemUtilities {
      */
     public static String getOS() {
         return OS_NAME;
+    }
+
+    public static Version getOSVersion() {
+        if (osVersion == null) {
+            String version = System.getProperty("os.version");
+            // Windows is missing patch release, read it from registry
+            if (isWindows()) {
+                String patch = ShellUtilities.getRegistryString("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId");
+                if (patch != null) {
+                    version += "." + patch.trim();
+                }
+            }
+            while (version.split("\\.").length < 3) {
+                version += ".0";
+            }
+            osVersion = Version.valueOf(version);
+        }
+        return osVersion;
     }
 
 
@@ -264,10 +282,17 @@ public class SystemUtilities {
     }
 
     public static void adjustThemeColors() {
-        if (isDarkMode()) {
-            Constants.WARNING_COLOR = Constants.WARNING_COLOR_LIGHTER;
-            Constants.TRUSTED_COLOR = Constants.TRUSTED_COLOR_LIGHTER;
+        Constants.WARNING_COLOR = isDarkMode() ? Constants.WARNING_COLOR_DARK : Constants.WARNING_COLOR_LITE;
+        Constants.TRUSTED_COLOR = isDarkMode() ? Constants.TRUSTED_COLOR_DARK : Constants.TRUSTED_COLOR_LITE;
+    }
+
+    public static boolean prefersMaskTrayIcon() {
+        if (SystemUtilities.isMac()) {
+            return true;
+        } else if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().getMajorVersion() >= 10) {
+            return true;
         }
+        return false;
     }
 
     public static boolean setSystemLookAndFeel() {
@@ -355,7 +380,7 @@ public class SystemUtilities {
         if(isMac()) {
             return MacUtilities.getScaleFactor() > 1;
         } else if(isWindows()) {
-            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0 > 1;
+            return WindowsUtilities.getScaleFactor() > 1;
         }
         // Fallback to a JNA Gdk technique
         return UbuntuUtilities.getScaleFactor() > 1;

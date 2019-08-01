@@ -15,7 +15,7 @@ import java.awt.event.KeyEvent;
  * Created by Tres on 2/19/2015.
  * A basic allow/block dialog with support for displaying Certificate information
  */
-public class GatewayDialog extends JDialog {
+public class GatewayDialog extends JDialog implements Themeable {
     private JLabel verifiedLabel;
     private JLabel descriptionLabel;
     private LinkLabel certInfoLabel;
@@ -110,6 +110,10 @@ public class GatewayDialog extends JDialog {
 
         setAlwaysOnTop(true);
         setLocationRelativeTo(null);    // center on main display
+    }
+
+    public void refresh() {
+        ThemeUtilities.refreshAll(this, certTable);
     }
 
     private final transient ActionListener buttonAction = new ActionListener() {

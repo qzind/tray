@@ -75,24 +75,7 @@ public class MacUtilities {
      * @return true if enabled, false if not
      */
     public static boolean isDarkMode() {
-        return !ShellUtilities.execute(new String[] { "defaults", "read", "-g", "AppleInterfaceStyle" }, new String[] { "Dark" }).isEmpty();
-    }
-
-    /**
-     * Replaces the cached tray icons with inverted versions if necessary
-     * to accommodate macOS 10.14+ dark mode support
-     *
-     * @param iconCache The icons which have been cached
-     */
-    public static void fixTrayIcons(IconCache iconCache) {
-        boolean darkMode = isDarkMode();
-        if (SystemUtilities.isMac()) {
-            for(IconCache.Icon i : IconCache.getTypes()) {
-                if (i.isTrayIcon() && darkMode && ColorUtilities.isBlack(iconCache.getImage(i))) {
-                    iconCache.invertColors(i);
-                }
-            }
-        }
+        return !ShellUtilities.execute(new String[] { "defaults", "read", "-g", "AppleInterfaceStyle" }, new String[] { "Dark" }, true, true).isEmpty();
     }
 
     public static int getScaleFactor() {

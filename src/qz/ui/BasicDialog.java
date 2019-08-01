@@ -16,7 +16,7 @@ import java.awt.image.BufferedImage;
 /**
  * Created by Tres on 2/23/2015.
  */
-public class BasicDialog extends JDialog {
+public class BasicDialog extends JDialog implements Themeable {
     private JPanel mainPanel;
     private JComponent headerComponent;
     private JComponent contentComponent;
@@ -74,6 +74,11 @@ public class BasicDialog extends JDialog {
         pack();
 
         setLocationRelativeTo(null);    // center on main display
+    }
+
+    @Override
+    public void refresh() {
+        ThemeUtilities.refreshAll(this);
     }
 
     public JLabel setHeader(String header) {

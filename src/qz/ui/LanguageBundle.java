@@ -12,9 +12,11 @@ import java.util.*;
 
 public class LanguageBundle{
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(LanguageBundle.class);
+    private final Locale locale;
     private final Map<String, String> translationMap;
 
     public LanguageBundle(String bundleDirectory, Locale locale) throws IOException, JSONException {
+        this.locale = locale;
         URL fileLocation = ClassLoader.getSystemResource(bundleDirectory + "_" + locale.toString() + ".json");
 
         JSONObject root = new JSONObject(IOUtils.toString(fileLocation));
@@ -29,7 +31,10 @@ public class LanguageBundle{
         translationMap = Collections.unmodifiableSortedMap(tempMap);
     }
 
-    public String getString(String id) {
+    public String getString(String id) throws MissingResourceException {
+        if (!translationMap.containsKey(id)) {
+            throw new MissingResourceException("Cound not find  a '" + locale.toLanguageTag() + "' transation for '" + id + "'", this.getClass().getName(), id);
+        }
         return translationMap.get(id);
     }
 }

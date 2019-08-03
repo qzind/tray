@@ -3,19 +3,19 @@
     "translations": [
         [
             "Delete",
-            "Löschen"
+            "Delete"
         ],
         [
             "Failed to write to file (Insufficient user privileges)",
-            "Datei konnte nicht gespeichert werden (Fehlende Berechtigungen)"
+            "Failed to write to file (Insufficient user privileges)"
         ],
         [
             "Common Name",
-            "Gemeingültiger Name"
+            "Common Name"
         ],
         [
             "Shows all connect\/disconnect messages, useful for debugging purposes",
-            "Alle Verbindungsnachrichten, welche nützliche Debug Informationen beinhalten, anzeigen."
+            "Shows all connect\/disconnect messages, useful for debugging purposes"
         ],
         [
             "Fallback Socket:",
@@ -23,7 +23,7 @@
         ],
         [
             "Permanently blocked \"%s\" from accessing local resources",
-            "Zugriff auf lokale Ressourcen wurde für \"%s\" blockiert"
+            "Permanently blocked \"%s\" from accessing local resources"
         ],
         [
             "Autostart has been disabled by the administrator",
@@ -39,23 +39,23 @@
         ],
         [
             "close a serial port",
-            "Seriellen Port schließen"
+            "close a serial port"
         ],
         [
             "listen for USB devices",
-            "Warte auf USB Geräte"
+            "listen for USB devices"
         ],
         [
             "Exit %s?",
-            "Beenden %s?"
+            "Exit %s?"
         ],
         [
             "access local resources",
-            "Zugriff auf lokale Ressourcen"
+            "access local resources"
         ],
         [
             "Reload",
-            "Neu laden"
+            "Reload"
         ],
         [
             "listen for filesystem events",
@@ -63,15 +63,15 @@
         ],
         [
             "print to %s",
-            "drucken über %s"
+            "print to %s"
         ],
         [
             "None.  No https support.",
-            "Keine. Keine https Unterstützung."
+            "None.  No https support."
         ],
         [
             "open a serial port",
-            "Seriellen Port öffnen"
+            "open a serial port"
         ],
         [
             "Sorry, unable to open the file browser: %s",
@@ -87,19 +87,19 @@
         ],
         [
             "Valid From",
-            "Gültig von"
+            "Valid From"
         ],
         [
             "Exit",
-            "Beenden"
+            "Exit"
         ],
         [
             "Action Required",
-            "Aktion notwendig"
+            "Action Required"
         ],
         [
             "Fingerprint",
-            "Fingerabdruck"
+            "Fingerprint"
         ],
         [
             "delete a file",
@@ -107,19 +107,19 @@
         ],
         [
             "Certificate information",
-            "Information über das Zertifikat"
+            "Certificate information"
         ],
         [
             "access serial ports",
-            "Zugriff auf Seriellen Port"
+            "access serial ports"
         ],
         [
             "Site Manager...",
-            "Site egwihioherwiohgiohreoih..."
+            "Site Manager..."
         ],
         [
             "Permanently block \"%s\" from accessing local resources?",
-            "Zugriff auf lokale Ressourcen für \"%s\" permanent blockieren?"
+            "Permanently block \"%s\" from accessing local resources?"
         ],
         [
             "Library Name:",
@@ -127,7 +127,7 @@
         ],
         [
             "Value",
-            "Wert"
+            "Value"
         ],
         [
             "Block",
@@ -135,87 +135,87 @@
         ],
         [
             "Create Desktop shortcut",
-            "Desktopverknüpfung erstellen"
+            "Create Desktop shortcut"
         ],
         [
             "Close",
-            "Schließen"
+            "Close"
         ],
         [
             "Blocked",
-            "Blockiert"
+            "Blocked"
         ],
         [
             "About...",
-            "Über..."
+            "About..."
         ],
         [
             "Sorry, Reload has not yet been implemented.",
-            "Die Aktion \"Neu laden\" wurde noch nicht implementiert."
+            "Sorry, Reload has not yet been implemented."
         ],
         [
             "Are you sure?",
-            "Sind sie sich sicher?"
+            "Are you sure?"
         ],
         [
             "Certificate",
-            "Zertifikat"
+            "Certificate"
         ],
         [
             "access connected printers",
-            "Zugriff auf verbundene Drucker"
+            "access connected printers"
         ],
         [
             "access USB devices",
-            "Zugriff auf USB Geräte"
+            "access USB devices"
         ],
         [
             "Permanently allowed \"%s\" to access local resources",
-            "Zugriff auf lokale Ressourcen für \"%s\" erlauben"
+            "Permanently allowed \"%s\" to access local resources"
         ],
         [
             "Sites permanently blocked from access",
-            "Permanent blockierte Seiten"
+            "Sites permanently blocked from access"
         ],
         [
             "Advanced",
-            "Erweiterte Optionen"
+            "Advanced"
         ],
         [
             "Organization",
-            "Organisation"
+            "Organization"
         ],
         [
             "Show all notifications",
-            "Alle Benachrichtigungen anzeigen"
+            "Show all notifications"
         ],
         [
             "Cancel",
-            "Abbrechen"
+            "Cancel"
         ],
         [
             "Invalid server",
-            "Ungültiger Server"
+            "Invalid server"
         ],
         [
             "Clear",
-            "Löschen"
+            "Clear"
         ],
         [
             "Server started on port(s) %s",
-            "Server wurde auf Port(s) %s gestartet"
+            "Server started on port(s) %s"
         ],
         [
             "%s Raw Print",
-            "%s Raw Ausdruck"
+            "%s Raw Print"
         ],
         [
             "Field",
-            "Feld"
+            "Field"
         ],
         [
             "expired",
-            "ausgelaufen"
+            "expired"
         ],
         [
             "write to a file",
@@ -223,11 +223,11 @@
         ],
         [
             "%s Pixel Print",
-            "%s Pixel Ausdruck"
+            "%s Pixel Print"
         ],
         [
             "Blocks all requests that do no contain a valid certificate\/signature",
-            "Alle Zugriffe ohne validem Zertifikat\/Signatur werden blockiert"
+            "Blocks all requests that do no contain a valid certificate\/signature"
         ],
         [
             "OK",
@@ -239,7 +239,7 @@
         ],
         [
             "check USB claim status",
-            "USB Verbindungsstatus überprüfen"
+            "check USB claim status"
         ],
         [
             "view the filesystem",
@@ -247,23 +247,23 @@
         ],
         [
             "connect to %s",
-            "Verbindung zu %s aufbauen"
+            "connect to %s"
         ],
         [
             "Remember this decision",
-            "Diese Einstellungen merken"
+            "Remember this decision"
         ],
         [
             "Open Log Location",
-            "Öffne Log Verzeichnis"
+            "Open Log Location"
         ],
         [
             "release a USB device",
-            "USB Gerät freigeben"
+            "release a USB device"
         ],
         [
             "Open file location",
-            "Öffne Datei"
+            "Open file location"
         ],
         [
             "Error stopping print socket: %s",
@@ -271,7 +271,7 @@
         ],
         [
             "View Logs...",
-            "Logs anzeigen..."
+            "View Logs..."
         ],
         [
             "Software:",
@@ -279,83 +279,83 @@
         ],
         [
             "expires soon",
-            "läuft bald aus"
+            "expires soon"
         ],
         [
             "Please Confirm",
-            "Bitte bestätigen"
+            "Please Confirm"
         ],
         [
             "%%s wants to %s",
-            "%%s möchte %s"
+            "%%s wants to %s"
         ],
         [
             "Trusted",
-            "Vertrauenswürdig"
+            "Trusted"
         ],
         [
             "Allowed",
-            "Gestattet"
+            "Allowed"
         ],
         [
             "Invalid certificate",
-            "Ungültiges Zertifikat"
+            "Invalid certificate"
         ],
         [
             "Allow",
-            "Gestatten"
+            "Allow"
         ],
         [
             "Verified by %s",
-            "Verifiziert von %s"
+            "Verified by %s"
         ],
         [
             "Untrusted website",
-            "Nicht vertrauenswürdige Webseiten"
+            "Untrusted website"
         ],
         [
             "%s HTML Print",
-            "%s HTML Ausdruck"
+            "%s HTML Print"
         ],
         [
             "Change Language",
-            "Sprache ändern"
+            "Change Language"
         ],
         [
             "claim a USB device",
-            "Verbindung zu USB Gerät aufbauen"
+            "claim a USB device"
         ],
         [
             "Automatically start",
-            "Autostart aktivieren"
+            "Automatically start"
         ],
         [
             "%s PDF Print",
-            "%s PDF Ausdruck"
+            "%s PDF Print"
         ],
         [
             "send data over a serial port",
-            "Sende Daten über Seriellen Port"
+            "send data over a serial port"
         ],
         [
             "Sites permanently allowed access",
-            "Permanent freigegebene Seiten"
+            "Sites permanently allowed access"
         ],
         [
             "None",
-            "Keine"
+            "None"
         ],
         [
             "Valid To",
-            "Gültig bis"
+            "Valid To"
         ],
         [
             "Block Anonymous Requests",
-            "Anonymen Zugriff blockieren"
+            "Block Anonymous Requests"
         ],
         [
             "use a USB device",
-            "USB Gerät verwenden"
+            "use a USB device"
         ]
     ]
 }

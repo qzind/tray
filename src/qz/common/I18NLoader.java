@@ -44,7 +44,7 @@ public class I18NLoader {
         }
         catch(MissingResourceException e) {
             // fail-safe action, we'll just return original string
-            log.error(String.format("Cannot find translation for `%s`", id));
+            log.error(e.toString());
             return id;
         }
     }

@@ -1,5 +1,5 @@
 {
-    "_lastUpdated": "Wed Jul 31 21:48:28 EDT 2019",
+    "_lastUpdated": "Sat Aug 03 09:14:54 EDT 2019",
     "translations": [
         [
             "Delete",
@@ -24,6 +24,10 @@
         [
             "Permanently blocked \"%s\" from accessing local resources",
             "已永久阻止 \"%s\" 访问本地资源"
+        ],
+        [
+            "Autostart has been disabled by the administrator",
+            "Autostart has been disabled by the administrator"
         ],
         [
             "Version:",
@@ -172,6 +176,10 @@
         [
             "Sites permanently blocked from access",
             "已永久阻止的网站"
+        ],
+        [
+            "Advanced",
+            "高级"
         ],
         [
             "Organization",

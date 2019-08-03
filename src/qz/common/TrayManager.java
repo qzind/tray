@@ -49,6 +49,7 @@ public class TrayManager {
 
     // The cached icons
     private final IconCache iconCache;
+    private Server server;
 
     // Custom swing pop-up menu
     private TrayType tray;
@@ -146,16 +147,20 @@ public class TrayManager {
     }
 
     private void initComponents() {
+        if (tray != null) {
+            addMenuItems();
+        }
+
         if (!headless) {
+            if (server != null) {
+                aboutDialog.setServer(server);
+                setDefaultIcon();
+            }
             // The allow/block dialog
             gatewayDialog = new GatewayDialog(null, gettext("Action Required"), iconCache);
 
             // The ok/cancel dialog
             confirmDialog = new ConfirmDialog(null, gettext("Please Confirm"), iconCache);
-        }
-
-        if (tray != null) {
-            addMenuItems();
         }
     }
 
@@ -256,7 +261,7 @@ public class TrayManager {
         if (!shortcutCreator.canAutoStart()) {
             startupItem.setEnabled(false);
             startupItem.setState(false);
-            startupItem.setToolTipText("Autostart has been disabled by the administrator");
+            startupItem.setToolTipText(gettext("Autostart has been disabled by the administrator"));
         }
 
         JMenuItem exitItem = new JMenuItem(gettext("Exit"), iconCache.getIcon(IconCache.Icon.EXIT_ICON));
@@ -451,6 +456,8 @@ public class TrayManager {
      * @param insecurePortIndex Object used to notify PrintSocket to reset its port array counter
      */
     public void setServer(final Server server, final AtomicBoolean running, final AtomicInteger securePortIndex, final AtomicInteger insecurePortIndex) {
+        this.server = server;
+
         if (server != null && server.getConnectors().length > 0) {
             singleInstanceCheck(PrintSocketServer.INSECURE_PORTS, insecurePortIndex.get());
 
@@ -566,5 +573,4 @@ public class TrayManager {
             }
         }
     }
-
 }

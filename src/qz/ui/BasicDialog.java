@@ -1,5 +1,7 @@
 package qz.ui;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.utils.MacUtilities;
 import qz.utils.ShellUtilities;
@@ -18,6 +20,9 @@ import java.awt.image.BufferedImage;
  * Created by Tres on 2/23/2015.
  */
 public class BasicDialog extends JDialog {
+
+    private static final Logger log = LoggerFactory.getLogger(BasicDialog.class);
+
     private JPanel mainPanel;
     private JComponent headerComponent;
     private JComponent contentComponent;

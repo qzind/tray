@@ -64,6 +64,7 @@ public class I18NLoader {
 
         setBundle(I18N_LOCATION, locale);
 
+        Constants.updateLocalizedConstants();
         localeChangeListeners.forEach(listener -> listener.accept(locale));
     }
 

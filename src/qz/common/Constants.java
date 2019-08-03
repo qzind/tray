@@ -83,4 +83,21 @@ public class Constants {
     public static final String SANDBOX_DIR = "/sandbox";
     public static final String NOT_SANDBOX_DIR = "/shared";
     public static final int FILE_LISTENER_DEFAULT_LINES = 10;
+
+    public static synchronized void updateLocalizedConstants() {
+        WHITE_LIST = gettext("Permanently allowed \"%s\" to access local resources");
+        BLACK_LIST = gettext("Permanently blocked \"%s\" from accessing local resources");
+        BLACK_LIST_PROMPT = gettext("Permanently block \"%s\" from accessing local resources?");
+
+        WHITE_SITES = gettext("Sites permanently allowed access");
+        BLACK_SITES = gettext("Sites permanently blocked from access");
+
+        ALLOWED = gettext("Allowed");
+        BLOCKED = gettext("Blocked");
+
+        RAW_PRINT = String.format(gettext("%s Raw Print"), ABOUT_TITLE);
+        IMAGE_PRINT = String.format(gettext("%s Pixel Print"), ABOUT_TITLE);
+        PDF_PRINT = String.format(gettext("%s PDF Print"), ABOUT_TITLE);
+        HTML_PRINT = String.format(gettext("%s HTML Print"), ABOUT_TITLE);
+    }
 }

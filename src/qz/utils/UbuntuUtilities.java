@@ -110,7 +110,7 @@ public class UbuntuUtilities {
      * @return true if enabled, false if not
      */
     public static boolean isDarkMode() {
-        return !ShellUtilities.execute(new String[] { "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" }, new String[] { "dark" }).isEmpty();
+        return !ShellUtilities.execute(new String[] { "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" }, new String[] { "dark" }, true, true).isEmpty();
     }
 
     public static double getScaleFactor() {

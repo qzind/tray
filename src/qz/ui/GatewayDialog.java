@@ -150,7 +150,7 @@ public class GatewayDialog extends JDialog implements Themeable {
             if (request.isTrusted()) {
                 //cert and signature are good
                 trustIcon = IconCache.Icon.TRUST_VERIFIED_ICON;
-            } else if (request.getCertUsed().isTrusted()) {
+            } else if (request.getCertUsed().isValid()) {
                 //cert is good, but there is an issue with the signature
                 trustIcon = IconCache.Icon.TRUST_ISSUE_ICON;
                 detailColor = Constants.WARNING_COLOR;

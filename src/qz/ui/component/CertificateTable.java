@@ -6,7 +6,8 @@ import qz.common.Constants;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Calendar;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Created by Tres on 2/22/2015.
@@ -67,8 +68,8 @@ public class CertificateTable extends DisplayTable implements Themeable {
 
     private Certificate cert;
 
-    private Calendar warn;
-    private Calendar now;
+    private Instant warn;
+    private Instant now;
 
     public CertificateTable(IconCache iconCache) {
         super(iconCache);
@@ -86,9 +87,8 @@ public class CertificateTable extends DisplayTable implements Themeable {
             return;
         }
 
-        now = Calendar.getInstance();
-        warn = Calendar.getInstance();
-        warn.add(Calendar.DAY_OF_MONTH, -1 * Constants.EXPIRY_WARN);
+        now = Instant.now();
+        warn = now.plus(Constants.EXPIRY_WARN, ChronoUnit.DAYS);
 
         removeRows();
 
@@ -133,15 +133,15 @@ public class CertificateTable extends DisplayTable implements Themeable {
             if (field == null) { return stylizeLabel(STATUS_NORMAL, label, isSelected); }
             switch(field) {
                 case TRUSTED:
-                    label.setText(cert.isTrusted()? Constants.TRUSTED_CERT:Constants.UNTRUSTED_CERT);
-                    return stylizeLabel(!cert.isTrusted()? STATUS_WARNING:STATUS_TRUSTED, label, isSelected);
+                    label.setText(cert.isValid()? Constants.TRUSTED_CERT:Constants.UNTRUSTED_CERT);
+                    return stylizeLabel(!cert.isValid()? STATUS_WARNING:STATUS_TRUSTED, label, isSelected);
                 case VALID_FROM:
-                    boolean futureExpiration = cert.getValidFromDate().compareTo(now.getTime()) > 0;
+                    boolean futureExpiration = cert.getValidFromDate().isAfter(now);
                     return stylizeLabel(futureExpiration? STATUS_WARNING:STATUS_NORMAL, label, isSelected, "future inception");
                 case VALID_TO:
-                    boolean expiresSoon = cert.getValidToDate().compareTo(warn.getTime()) < 0;
-                    boolean expired = cert.getValidToDate().compareTo(now.getTime()) < 0;
-                    String reason = expiresSoon? "expired":"expires soon";
+                    boolean expiresSoon = cert.getValidToDate().isBefore(warn);
+                    boolean expired = cert.getValidToDate().isBefore(now);
+                    String reason = expired? "expired":(expiresSoon? "expires soon":null);
                     return stylizeLabel(expiresSoon || expired? STATUS_WARNING:STATUS_NORMAL, label, isSelected, reason);
                 default:
                     return stylizeLabel(STATUS_NORMAL, label, isSelected);

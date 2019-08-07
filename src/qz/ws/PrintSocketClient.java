@@ -195,7 +195,6 @@ public class PrintSocketClient {
                     connection.setCertificate(certificate);
 
                     request.markNewConnection(certificate);
-                    request.setStatus(certificate.isTrusted()? RequestState.Validity.TRUSTED:RequestState.Validity.UNKNOWN);
 
                     log.debug("Received new certificate from connection through {}", connectionPort);
                 }

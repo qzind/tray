@@ -121,6 +121,7 @@ public class RequestTable extends DisplayTable {
                     if (label.getText().isEmpty()) {
                         if (request.isInitialConnect()) {
                             label.setText("Not Required");
+                            style = STATUS_NORMAL;
                         } else {
                             label.setText("Missing");
                         }

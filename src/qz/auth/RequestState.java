@@ -4,6 +4,7 @@ import org.codehaus.jettison.json.JSONObject;
 import qz.common.Constants;
 
 import java.time.Instant;
+import java.util.Arrays;
 
 public class RequestState {
 
@@ -101,20 +102,12 @@ public class RequestState {
     }
 
     public String getValidityInfo() {
-        switch(status) {
-            case TRUSTED:
-                return Constants.TRUSTED_CERT;
-            case EXPIRED:
-                return Constants.EXPIRED_REQUEST;
-            case EXPIRED_CERT:
-                return Constants.EXPIRED_CERT;
-            case FUTURE_CERT:
-                return Constants.FUTURE_CERT;
-            case UNSIGNED:
-                return Constants.UNSIGNED_REQUEST;
-            case INVALID_CERT:
-            default:
-                return Constants.UNTRUSTED_CERT;
+        if (status == Validity.TRUSTED) {
+            return Constants.TRUSTED_CERT;
+        } else if (Arrays.asList(Validity.UNSIGNED, Validity.EXPIRED, Validity.EXPIRED_CERT, Validity.FUTURE_CERT).contains(status)) {
+            return Constants.NO_TRUST + " - " + status.getFormatted();
+        } else {
+            return Constants.UNTRUSTED_CERT;
         }
     }
 

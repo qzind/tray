@@ -3,6 +3,7 @@ package qz.ui.component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
+import qz.ui.Themeable;
 import qz.utils.ShellUtilities;
 
 import javax.swing.*;

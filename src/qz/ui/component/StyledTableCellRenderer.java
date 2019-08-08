@@ -16,6 +16,10 @@ public class StyledTableCellRenderer extends DefaultTableCellRenderer {
     final int STATUS_TRUSTED = 2;
 
     public StyledTableCellRenderer() {
+        refresh();
+    }
+
+    public void refresh() {
         defaultForeground = UIManager.getDefaults().getColor("Table.foreground");
         defaultSelectedForeground = UIManager.getDefaults().getColor("Table.selectionForeground");
     }

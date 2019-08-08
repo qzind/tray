@@ -114,8 +114,9 @@ public class GatewayDialog extends JDialog implements Themeable {
         setLocationRelativeTo(null);    // center on main display
     }
 
+    @Override
     public void refresh() {
-        ThemeUtilities.refreshAll(this, certTable);
+        ThemeUtilities.refreshAll(this, detailsDialog);
     }
 
     private final transient ActionListener buttonAction = new ActionListener() {

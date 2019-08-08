@@ -2,11 +2,12 @@ package qz.ui.component;
 
 import org.codehaus.jettison.json.JSONException;
 import qz.auth.RequestState;
+import qz.ui.Themeable;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class RequestTable extends DisplayTable {
+public class RequestTable extends DisplayTable implements Themeable {
 
     enum RequestField {
         CALL("Call", "call"),
@@ -70,6 +71,12 @@ public class RequestTable extends DisplayTable {
         }
 
         repaint();
+    }
+
+    @Override
+    public void refresh() {
+        refreshComponents();
+        ((StyledTableCellRenderer)getDefaultRenderer(Object.class)).refresh();
     }
 
     public void autoSize() {

@@ -3,6 +3,7 @@ package qz.ui.component;
 import org.joor.Reflect;
 import qz.auth.Certificate;
 import qz.common.Constants;
+import qz.ui.Themeable;
 
 import javax.swing.*;
 import java.awt.*;
@@ -103,6 +104,7 @@ public class CertificateTable extends DisplayTable implements Themeable {
     @Override
     public void refresh() {
         refreshComponents();
+        ((StyledTableCellRenderer)getDefaultRenderer(Object.class)).refresh();
     }
 
     public void autoSize() {

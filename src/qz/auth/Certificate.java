@@ -43,6 +43,10 @@ public class Certificate {
     public static Certificate trustedRootCert = null;
     public static final String[] saveFields = new String[] {"fingerprint", "commonName", "organization", "validFrom", "validTo", "valid"};
 
+    // Valid date range allows UI to only show "Expired" text for valid certificates
+    private static final Instant UNKNOWN_MIN = OffsetDateTime.MIN.toInstant();
+    private static final Instant UNKNOWN_MAX = OffsetDateTime.MAX.toInstant();
+
     private static boolean overrideTrustedRootCert = false;
     private DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -66,8 +70,8 @@ public class Certificate {
         map.put("fingerprint", "UNKNOWN REQUEST");
         map.put("commonName", "An anonymous request");
         map.put("organization", "Unknown");
-        map.put("validFrom", OffsetDateTime.MIN.toString());
-        map.put("validTo", OffsetDateTime.MAX.toString());
+        map.put("validFrom", UNKNOWN_MIN.toString());
+        map.put("validTo", UNKNOWN_MAX.toString());
         map.put("valid", "false");
         UNKNOWN = Certificate.loadCertificate(map);
     }
@@ -249,8 +253,8 @@ public class Certificate {
             cert.validTo = Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(data.get("validTo")));
         }
         catch(DateTimeException e) {
-            cert.validFrom = OffsetDateTime.MIN.toInstant();
-            cert.validTo = OffsetDateTime.MAX.toInstant();
+            cert.validFrom = UNKNOWN_MIN;
+            cert.validTo = UNKNOWN_MAX;
 
             log.error("Unable to parse certificate date", e);
         }
@@ -337,7 +341,7 @@ public class Certificate {
     }
 
     public String getValidFrom() {
-        if (validFrom.isAfter(OffsetDateTime.MIN.toInstant())) {
+        if (validFrom.isAfter(UNKNOWN_MIN)) {
             return dateFormat.format(validFrom.atZone(ZoneId.systemDefault()));
         } else {
             return "Not Provided";
@@ -345,7 +349,7 @@ public class Certificate {
     }
 
     public String getValidTo() {
-        if (validTo.isBefore(OffsetDateTime.MAX.toInstant())) {
+        if (validTo.isBefore(UNKNOWN_MAX)) {
             return dateFormat.format(validTo.atZone(ZoneId.systemDefault()));
         } else {
             return "Not Provided";

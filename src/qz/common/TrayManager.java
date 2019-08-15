@@ -132,7 +132,11 @@ public class TrayManager {
             tray.showTaskbar();
         }
 
-        // Linux specific tasks
+        // TODO: Remove when fixed upstream.  See issue #393
+        if (SystemUtilities.isUnix() && !isHeadless) {
+            // Update printer list in CUPS immediately (normally 2min)
+            System.setProperty("sun.java2d.print.polling", "false");
+        }
         if (SystemUtilities.isLinux()) {
             // Install cert into user's nssdb for Chrome, etc
             LinuxCertificate.installCertificate();

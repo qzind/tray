@@ -113,7 +113,11 @@ public class TrayManager {
             iconCache = new IconCache();
         }
 
-        // Linux specific tasks
+        // TODO: Remove when fixed upstream.  See issue #393
+        if (SystemUtilities.isUnix() && !GraphicsEnvironment.isHeadless()) {
+            // Update printer list in CUPS immediately (normally 2min)
+            System.setProperty("sun.java2d.print.polling", "false");
+        }
         if (SystemUtilities.isLinux()) {
             // Fix the tray icon to look proper on Ubuntu
             if (SystemTray.isSupported()) {

@@ -117,6 +117,7 @@ public class GatewayDialog extends JDialog implements Themeable {
     @Override
     public void refresh() {
         ThemeUtilities.refreshAll(this, detailsDialog);
+        refreshComponents();
     }
 
     private final transient ActionListener buttonAction = new ActionListener() {

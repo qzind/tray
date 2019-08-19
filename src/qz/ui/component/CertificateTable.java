@@ -121,7 +121,7 @@ public class CertificateTable extends DisplayTable implements Themeable {
 
             // First Column
             if (value instanceof CertificateField) {
-                stylizeLabel(STATUS_NORMAL, label, isSelected);
+                label = stylizeLabel(STATUS_NORMAL, label, isSelected);
                 if (iconCache != null) {
                     label.setIcon(iconCache.getIcon(IconCache.Icon.FIELD_ICON));
                 }

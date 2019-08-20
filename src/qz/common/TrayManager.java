@@ -16,10 +16,12 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
+import qz.auth.RequestState;
 import qz.deploy.DeployUtilities;
 import qz.deploy.LinuxCertificate;
 import qz.deploy.WindowsDeploy;
 import qz.ui.*;
+import qz.ui.component.IconCache;
 import qz.ui.tray.TrayType;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
@@ -414,37 +416,32 @@ public class TrayManager {
         JOptionPane.showMessageDialog(null, message, name, JOptionPane.ERROR_MESSAGE);
     }
 
-    public boolean showGatewayDialog(final Certificate cert, final String prompt, final Point position) {
-        if (cert == null) {
-            displayErrorMessage("Invalid certificate");
-            return false;
-        } else {
-            if (!headless) {
-                try {
-                    SwingUtilities.invokeAndWait(() -> gatewayDialog.prompt("%s wants to " + prompt, cert, position));
-                }
-                catch(Exception ignore) {}
-
-                if (gatewayDialog.isApproved()) {
-                    log.info("Allowed {} to {}", cert.getCommonName(), prompt);
-                    if (gatewayDialog.isPersistent()) {
-                        whiteList(cert);
-                    }
-                } else {
-                    log.info("Denied {} to {}", cert.getCommonName(), prompt);
-                    if (gatewayDialog.isPersistent()) {
-                        if (Certificate.UNKNOWN.equals(cert)) {
-                            anonymousItem.doClick(); // if always block anonymous requests -> flag menu item
-                        } else {
-                            blackList(cert);
-                        }
-                    }
-                }
-
-                return gatewayDialog.isApproved();
-            } else {
-                return cert.isTrusted() && cert.isSaved();
+    public boolean showGatewayDialog(final RequestState request, final String prompt, final Point position) {
+        if (!headless) {
+            try {
+                SwingUtilities.invokeAndWait(() -> gatewayDialog.prompt("%s wants to " + prompt, request, position));
             }
+            catch(Exception ignore) {}
+
+            if (gatewayDialog.isApproved()) {
+                log.info("Allowed {} to {}", request.getCertName(), prompt);
+                if (gatewayDialog.isPersistent()) {
+                    whiteList(request.getCertUsed());
+                }
+            } else {
+                log.info("Denied {} to {}", request.getCertName(), prompt);
+                if (gatewayDialog.isPersistent()) {
+                    if (!request.hasCertificate()) {
+                        anonymousItem.doClick(); // if always block anonymous requests -> flag menu item
+                    } else {
+                        blackList(request.getCertUsed());
+                    }
+                }
+            }
+
+            return gatewayDialog.isApproved();
+        } else {
+            return request.hasSavedCert();
         }
     }
 

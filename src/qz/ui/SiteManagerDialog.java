@@ -4,6 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.common.Constants;
+import qz.ui.component.CertificateDisplay;
+import qz.ui.component.CertificateTable;
+import qz.ui.component.ContainerList;
+import qz.ui.component.IconCache;
 import qz.utils.FileUtilities;
 
 import javax.swing.*;
@@ -48,7 +52,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
     public SiteManagerDialog(JMenuItem caller, IconCache iconCache) {
         super(caller, iconCache);
-        certTable = new CertificateTable(null, iconCache);
+        certTable = new CertificateTable(iconCache);
         initComponents();
     }
 

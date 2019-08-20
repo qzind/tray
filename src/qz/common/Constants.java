@@ -35,8 +35,9 @@ public class Constants {
     public static final String ABOUT_URL = "https://qz.io";
     public static final String ABOUT_COMPANY = "QZ Industries, LLC";
 
-    public static final String TRUSTED_PUBLISHER = String.format("Verified by %s", Constants.ABOUT_COMPANY);
-    public static final String UNTRUSTED_PUBLISHER = "Untrusted website";
+    public static final String TRUSTED_CERT = String.format("Verified by %s", Constants.ABOUT_COMPANY);
+    public static final String UNTRUSTED_CERT = "Untrusted website";
+    public static final String NO_TRUST = "Cannot verify trust";
 
     public static final String PROBE_REQUEST = "getProgramName";
     public static final String PROBE_RESPONSE = ABOUT_TITLE;

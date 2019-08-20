@@ -1,6 +1,7 @@
 package qz.ui;
 
 import qz.common.Constants;
+import qz.ui.component.IconCache;
 import qz.utils.MacUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;

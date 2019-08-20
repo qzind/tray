@@ -1,4 +1,4 @@
-package qz.ui;
+package qz.ui.component;
 
 import javax.swing.*;
 import java.util.ArrayList;

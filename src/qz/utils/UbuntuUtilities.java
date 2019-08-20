@@ -12,7 +12,7 @@ package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
 import qz.common.Constants;
-import qz.ui.IconCache;
+import qz.ui.component.IconCache;
 
 import java.awt.*;
 

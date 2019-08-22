@@ -1,4 +1,4 @@
-package qz.ui;
+package qz.common;
 
 import org.apache.commons.io.IOUtils;
 import org.codehaus.jettison.json.JSONArray;

@@ -5,7 +5,10 @@ import qz.utils.SystemUtilities;
 
 import java.awt.*;
 import java.io.File;
-import java.util.function.Supplier;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 
 import static qz.common.I18NLoader.gettext;
 
@@ -83,6 +86,18 @@ public class Constants {
     public static final String SANDBOX_DIR = "/sandbox";
     public static final String NOT_SANDBOX_DIR = "/shared";
     public static final int FILE_LISTENER_DEFAULT_LINES = 10;
+
+    public final static String I18N_LOCATION = "qz/common/resources/messages";
+    public final static String I18N_LOCALE_PROPERTY = "locale";
+    public final static Locale BUILT_IN_LOCALE = Locale.ENGLISH; // Language used in source code, the untranslated language
+    public final static String DEFAULT_LOCALE = "en"; // The language the program should use when first ran (overridden by prefs)
+    public static final List<Locale> SUPPORTED_LOCALES = Collections.unmodifiableList(Arrays.asList(
+            Locale.forLanguageTag("de"),
+            Locale.forLanguageTag("en"),
+            Locale.forLanguageTag("fr"),
+            Locale.forLanguageTag("zh-CN"),
+            Locale.forLanguageTag("zh-TW")
+    ));
 
     public static synchronized void updateLocalizedConstants() {
 

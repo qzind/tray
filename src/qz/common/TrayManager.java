@@ -225,7 +225,7 @@ public class TrayManager {
         advancedMenu.add(openItem);
         advancedMenu.add(desktopItem);
 
-        I18NLoader.SUPPORTED_LOCALES.forEach(
+        Constants.SUPPORTED_LOCALES.forEach(
             locale -> {
                 JCheckBoxMenuItem localeMenuItem = new JCheckBoxMenuItem(locale.getDisplayName(locale));
                 localeMenuItem.setState(Objects.equals(locale, I18NLoader.getCurrentLocale()));

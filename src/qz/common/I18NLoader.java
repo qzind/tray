@@ -2,19 +2,11 @@ package qz.common;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.ui.LanguageBundle;
 
 import java.util.*;
 import java.util.function.Consumer;
 
-
 public class I18NLoader {
-    private final static String I18N_LOCATION = "qz/common/resources/messages";
-    private final static String I18N_LOCALE_PROPERTY = "locale";
-    //todo: move to constants?
-    private final static Locale BUILT_IN_LOCALE = Locale.ENGLISH;
-    private final static String DEFAULT_LOCALE = "en";
-
     private static final Logger log = LoggerFactory.getLogger(I18NLoader.class);
 
     private static LanguageBundle msg;
@@ -22,21 +14,12 @@ public class I18NLoader {
 
     private static List<Consumer<Locale>> localeChangeListeners = new LinkedList<>();
 
-    public static final List<Locale> SUPPORTED_LOCALES = Collections.unmodifiableList(Arrays.asList(
-            Locale.forLanguageTag("de"),
-            Locale.forLanguageTag("en"),
-            Locale.forLanguageTag("fr"),
-            Locale.forLanguageTag("zh-CN"),
-            Locale.forLanguageTag("zh-TW")
-    ));
-
     /**
      * Get localized strings
      *
      * @param id String ID to look up
      * @return Localized version of the given string id
      */
-
     public static String gettext(String id) {
         if (msg == null) return id;
         try {
@@ -50,7 +33,7 @@ public class I18NLoader {
     }
 
     public static Locale getCurrentLocale() {
-        return Locale.forLanguageTag(prefs.getProperty(I18N_LOCALE_PROPERTY, DEFAULT_LOCALE));
+        return Locale.forLanguageTag(prefs.getProperty(Constants.I18N_LOCALE_PROPERTY, Constants.DEFAULT_LOCALE));
     }
 
     /**
@@ -59,10 +42,10 @@ public class I18NLoader {
      * @param locale Locale to change to
      */
     public static void changeLocale(Locale locale) {
-        prefs.setProperty(I18N_LOCALE_PROPERTY, locale.toLanguageTag());
+        prefs.setProperty(Constants.I18N_LOCALE_PROPERTY, locale.toLanguageTag());
         prefs.save();
 
-        setBundle(I18N_LOCATION, locale);
+        setBundle(Constants.I18N_LOCATION, locale);
 
         Constants.updateLocalizedConstants();
         localeChangeListeners.forEach(listener -> listener.accept(locale));
@@ -76,7 +59,7 @@ public class I18NLoader {
     public static void setup(PropertyHelper propertyHelper) {
         prefs = propertyHelper;
 
-        setBundle(I18N_LOCATION, getCurrentLocale());
+        setBundle(Constants.I18N_LOCATION, getCurrentLocale());
     }
 
     public static void addLocaleChangeListener(Consumer<Locale> listener) {
@@ -85,12 +68,11 @@ public class I18NLoader {
 
     private static void setBundle(String bundleDirectory, Locale locale) {
         try {
-            msg = (locale == BUILT_IN_LOCALE) ? null : new LanguageBundle(bundleDirectory, locale);
+            msg = (locale == Constants.BUILT_IN_LOCALE) ? null : new LanguageBundle(bundleDirectory, locale);
         }
         catch(Exception e) {
             msg = null;
-            //Todo Remove this debugging log
-            log.error("Error loading language pack '{}' from {}", getCurrentLocale(), I18N_LOCATION);
+            log.error("Error loading language pack '{}' from {}", getCurrentLocale(), Constants.I18N_LOCATION);
         }
     }
 }

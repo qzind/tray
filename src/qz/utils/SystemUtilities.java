@@ -19,6 +19,7 @@ import qz.deploy.DeployUtilities;
 import qz.ui.LinkLabel;
 
 import javax.swing.*;
+import javax.swing.plaf.FontUIResource;
 import java.awt.*;
 import java.io.File;
 
@@ -284,6 +285,7 @@ public class SystemUtilities {
             }
             if(isDarkMode() && darkulaThemeNeeded) {
                 UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
+                setUIFont("Dialog");
             } else {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             }
@@ -375,5 +377,22 @@ public class SystemUtilities {
             classProtocol = SystemUtilities.class.getResource("").getProtocol();
         }
         return "jar".equals(classProtocol);
+    }
+
+
+    /**
+     * Overrides all default swing fonts
+     * @param fontName Font name, including logical fonts such as "Dialog" and "Monospaced"
+     */
+    public static void setUIFont (String fontName){
+        java.util.Enumeration keys = UIManager.getDefaults().keys();
+        while (keys.hasMoreElements()) {
+            Object key = keys.nextElement();
+            Object value = UIManager.get(key);
+            if (value instanceof javax.swing.plaf.FontUIResource) {
+                FontUIResource oldFont = (FontUIResource)(value);
+                UIManager.put(key, new Font(fontName, oldFont.getStyle(), oldFont.getSize()));
+            }
+        }
     }
 }

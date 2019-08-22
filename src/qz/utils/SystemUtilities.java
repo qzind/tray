@@ -287,10 +287,12 @@ public class SystemUtilities {
     }
 
     public static boolean prefersMaskTrayIcon() {
-        if (SystemUtilities.isMac()) {
-            return true;
-        } else if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().getMajorVersion() >= 10) {
-            return true;
+        if (Constants.MASK_TRAY_SUPPORTED) {
+            if (SystemUtilities.isMac()) {
+                return true;
+            } else if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().getMajorVersion() >= 10) {
+                return true;
+            }
         }
         return false;
     }

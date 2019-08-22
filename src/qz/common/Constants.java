@@ -63,6 +63,8 @@ public class Constants {
     public static Color WARNING_COLOR = WARNING_COLOR_LITE;
     public static Color TRUSTED_COLOR = TRUSTED_COLOR_LITE;
 
+    public static boolean MASK_TRAY_SUPPORTED = true;
+
     public static final long MEMORY_PER_PRINT = 512; //MB
 
     public static final String RAW_PRINT = ABOUT_TITLE + " Raw Print";

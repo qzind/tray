@@ -43,8 +43,8 @@ public class Constants {
     public static final String ABOUT_URL = "https://qz.io";
     public static final String ABOUT_COMPANY = "QZ Industries, LLC";
 
-    public static final String TRUSTED_PUBLISHER = String.format(gettext("Verified by %s"), Constants.ABOUT_COMPANY);
-    public static final String UNTRUSTED_PUBLISHER = gettext("Untrusted website");
+    public static String TRUSTED_PUBLISHER = String.format(gettext("Verified by %s"), Constants.ABOUT_COMPANY);
+    public static String UNTRUSTED_PUBLISHER = gettext("Untrusted website");
 
     public static final String PROBE_REQUEST = "getProgramName";
     public static final String PROBE_RESPONSE = ABOUT_TITLE;
@@ -85,6 +85,10 @@ public class Constants {
     public static final int FILE_LISTENER_DEFAULT_LINES = 10;
 
     public static synchronized void updateLocalizedConstants() {
+
+        TRUSTED_PUBLISHER = String.format(gettext("Verified by %s"), Constants.ABOUT_COMPANY);
+        UNTRUSTED_PUBLISHER = gettext("Untrusted website");
+
         WHITE_LIST = gettext("Permanently allowed \"%s\" to access local resources");
         BLACK_LIST = gettext("Permanently blocked \"%s\" from accessing local resources");
         BLACK_LIST_PROMPT = gettext("Permanently block \"%s\" from accessing local resources?");

@@ -6,6 +6,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.printer.status.Cups.IPP;
+import qz.utils.PrintingUtilities;
 import qz.utils.ShellUtilities;
 
 import java.net.URI;
@@ -74,7 +75,7 @@ public class CupsUtils {
 
     public static void convertPrinterNames(JSONArray printerNames) {
         try {
-            HashMap<String, String> lookup = ShellUtilities.getCupsPrinters();
+            HashMap<String, String> lookup = PrintingUtilities.getCupsPrinters();
 
             for(int i = 0; i < printerNames.length(); i++) {
                 String oldPrinterName = printerNames.getString(i);

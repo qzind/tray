@@ -24,8 +24,10 @@ public class PrintingUtilities {
 
     private static final Logger log = LoggerFactory.getLogger(PrintingUtilities.class);
 
-    private static HashMap<String,String> CUPS_DESC; //name -> description
-    private static HashMap<String,PrinterResolution> CUPS_DPI; //description -> default dpi
+    private static HashMap<String,String> CUPS_DESC; //cups name -> service.getName()
+    private static HashMap<String,String> CUPS_PPD; //cups name -> PPD file path
+    private static HashMap<String,PrinterResolution> CUPS_DPI; //cups name -> default dpi
+
 
     private static GenericKeyedObjectPool<Format,PrintProcessor> processorPool;
 
@@ -133,18 +135,121 @@ public class PrintingUtilities {
      *
      * @return Id of the printer for use with CUPS commands
      */
-    public static String getPrinterId(String printerName) {
-        if (CUPS_DESC == null || !CUPS_DESC.containsKey(printerName)) {
-            CUPS_DESC = ShellUtilities.getCupsPrinters();
+    public static String getCupsPrinterId(PrintService service) {
+        if (CUPS_DESC == null || !CUPS_DESC.containsValue(service.getName())) {
+            cacheCupsInfo();
         }
 
+        // On Mac, service.getName() is the Description field
         if (SystemUtilities.isMac()) {
-            if (CUPS_DESC.containsKey(printerName)) {
-                return CUPS_DESC.get(printerName);
+            for(Map.Entry<String,String> entry : CUPS_DESC.entrySet()) {
+                if (entry.getValue().equals(service.getName())) {
+                    return entry.getKey();
+                }
             }
-            log.warn("Could not locate printerId matching {}", printerName);
+            log.warn("Could not locate printerId matching {}", service.getName());
         }
-        return printerName;
+        // On Linux, service.getName() is the CUPS ID instead of the description
+        return service.getName();
+    }
+
+
+    /**
+     * Returns a <code>HashMap</code> of name value pairs of printer name and printer description
+     * On Linux, the description field is intentionally mapped to the printer name to match the Linux Desktop/<code>.ppd</code> behavior
+     * On Mac, the description field is fetched separately to match the Mac Desktop/<code>.ppd</code> behavior
+     * @return <code>HashMap</code> of name value pairs of printer name and printer description
+     */
+    public static void cacheCupsInfo() {
+        CUPS_DESC = new HashMap<>();
+        CUPS_PPD = new HashMap<>();
+        String devices = ShellUtilities.executeRaw(new String[] {"lpstat", "-a"});
+
+        for (String line : devices.split("\\r?\\n")) {
+            String device = line.split(" ")[0];
+
+            // Fetch CUPS printer Description and Interface values
+            String props = ShellUtilities.executeRaw(new String[] {"lpstat", "-l", "-p", device});
+            if (!props.isEmpty()) {
+                for(String prop : props.split("\\r?\\n")) {
+                    if (prop.trim().startsWith("Description:")) {
+                        String[] split = prop.split("Description:");
+                        if (split.length > 0) {
+                            // cache the description so we can map it to the actual printer name
+                            CUPS_DESC.put(device, split[split.length - 1].trim());
+                            log.info(split[split.length - 1].trim() + ": " + device);
+                        }
+                    }
+                    if (prop.trim().startsWith("Interface:")) {
+                        String[] split = prop.split("Interface:");
+                        if (split.length > 0) {
+                            // cache the interface so we can use it for detecting DPI later
+                            CUPS_PPD.put(device, split[split.length - 1].trim());
+                            log.info(split[split.length - 1].trim() + ": " + device);
+                        }
+                    }
+                }
+            }
+            // Fallback to using the CUPS id
+            if (!CUPS_DESC.containsKey(device)) {
+                CUPS_DESC.put(device, device);
+            }
+        }
+    }
+
+    /**
+     * Fetches a <code>HashMap</code> of name value pairs of printer name and default density for CUPS enabled systems
+     * @return <code>HashMap</code> of name value pairs of printer name and default density
+     */
+    public static void cacheCupsDensities() {
+        HashMap<String, PrinterResolution> densityMap = new HashMap<>();
+        for (Map.Entry<String, String> entry : CUPS_DESC.entrySet()) {
+            String out = ShellUtilities.execute(
+                    new String[]{"lpoptions", "-p", entry.getKey(), "-l"},
+                    new String[] {
+                            "Resolution/",
+                            "Printer Resolution:",
+                            "Output Resolution:"
+                    }
+            );
+            // Check against the PPD file
+            if (out.isEmpty()) {
+                String ppd = CUPS_PPD.get(entry.getKey());
+                if (ppd != null && !ppd.isEmpty()) {
+                    out = ShellUtilities.execute(new String[] {"grep", "*DefaultResolution:", ppd}, new String[] {"*DefaultResolution:"});
+                    if (!out.isEmpty()) {
+                        // Mimic lpoptions format
+                        String[] parts = out.split("\\*DefaultResolution:");
+                        out = "*" + parts[parts.length - 1].trim();
+                    }
+                }
+            }
+            if (!out.isEmpty()) {
+                String[] parts = out.split("\\s+");
+                for (String part : parts) {
+                    // parse default, i.e. [200dpi *300x300dpi 600dpi]
+                    if (part.startsWith("*")) {
+                        int type = part.toLowerCase().contains("dpi")? PrinterResolution.DPI:PrinterResolution.DPCM;
+
+                        try {
+                            int density = Integer.parseInt(part.split("x")[0].replaceAll("\\D+", ""));
+                            densityMap.put(entry.getKey(), new PrinterResolution(density, density, type));
+                            log.debug("Parsed default density from CUPS {}: {}{}", entry.getKey(), density,
+                                      type == PrinterResolution.DPI? "dpi":"dpcm");
+                        } catch(NumberFormatException ignore) {}
+                    }
+                }
+            }
+            if (!densityMap.containsKey(entry.getKey())) {
+                densityMap.put(entry.getKey(), null);
+                log.warn("Error parsing default density from CUPS, either no response or invalid response {}: {}", entry.getKey(), out);
+            }
+        }
+        CUPS_DPI = densityMap;
+    }
+
+    public static HashMap<String, String> getCupsPrinters() {
+        return CUPS_DESC;
     }
 
     public static PrinterResolution getNativeDensity(PrintService service) {
@@ -153,10 +258,10 @@ public class PrintingUtilities {
         PrinterResolution pRes = (PrinterResolution)service.getDefaultAttributeValue(PrinterResolution.class);
 
         if (pRes == null && !SystemUtilities.isWindows()) {
-            String printerId = getPrinterId(service.getName());
+            String printerId = getCupsPrinterId(service);
 
             if (CUPS_DPI == null || !CUPS_DPI.containsKey(printerId)) {
-                CUPS_DPI = ShellUtilities.getCupsDensities(CUPS_DESC);
+                cacheCupsDensities();
             }
 
             return CUPS_DPI.get(printerId);
@@ -205,9 +310,13 @@ public class PrintingUtilities {
                 }
             }
         } else {
-            driver = ShellUtilities.execute(new String[] {"lpstat", "-l", "-p", getPrinterId(service.getName())}, new String[] {"Interface:"});
-            if (!driver.isEmpty()) {
-                driver = ShellUtilities.execute(new String[] {"grep", "*PCFileName:", driver.substring(10).trim()}, new String[] {"*PCFileName:"});
+            if (CUPS_PPD == null) {
+                cacheCupsInfo();
+            }
+            driver = CUPS_PPD.get(getCupsPrinterId(service));
+            // ShellUtilities.execute(new String[] {"lpstat", "-l", "-p", getCupsPrinterId(service)}, new String[] {"Interface:"});
+            if (driver != null && !driver.isEmpty()) {
+                driver = ShellUtilities.execute(new String[] {"grep", "*PCFileName:", driver}, new String[] {"*PCFileName:"});
                 if (!driver.isEmpty()) {
                     return driver.substring(12).replace("\"", "").trim();
                 }

@@ -88,6 +88,7 @@ public class TrayManager {
 
         prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
 
+        //headless if turned on by user or unsupported by environment
         headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || GraphicsEnvironment.isHeadless();
         if (headless) {
             log.info("Running in headless mode");
@@ -100,7 +101,7 @@ public class TrayManager {
         SystemUtilities.setSystemLookAndFeel();
         iconCache = new IconCache();
 
-        if (!headless && SystemTray.isSupported()) {
+        if (!headless && SystemTray.isSupported()) { // UI mode with tray
             if (SystemUtilities.isWindows()) {
                 tray = TrayType.JX.init();
                 // Undocumented HiDPI behavior
@@ -127,7 +128,7 @@ public class TrayManager {
                 log.error("Could not attach tray, forcing headless mode", awt);
                 headless = true;
             }
-        } else if (!GraphicsEnvironment.isHeadless()) {
+        } else if (!headless) { // UI mode without tray
             tray = TrayType.TASKBAR.init(exitListener);
             tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
             tray.setToolTip(name);

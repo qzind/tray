@@ -25,8 +25,6 @@ public class NativePrinterList extends HashMap<String, NativePrinter> {
             NativePrinter info = entry.getValue();
             if (info.getPrintService().equals(service)) {
                 return entry.getKey();
-            } else {
-                return getPrinterId(service);
             }
         }
         log.warn("Could not find printerId for " + service.getName());

@@ -11,6 +11,7 @@ public class PrinterStatus {
     public String issuingPrinterName;
     public String cupsString;
 
+
     public PrinterStatus(PrinterStatusType type, String issuingPrinterName) {
         this(type, issuingPrinterName, "");
     }

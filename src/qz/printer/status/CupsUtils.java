@@ -75,7 +75,7 @@ public class CupsUtils {
 
     public static void convertPrinterNames(JSONArray printerNames) {
         try {
-            HashMap<String, String> lookup = PrintingUtilities.getCupsPrinters();
+            HashMap<String, String> lookup = new HashMap<>(); /* FIXME PrintingUtilities.getCupsPrinters()*/;
 
             for(int i = 0; i < printerNames.length(); i++) {
                 String oldPrinterName = printerNames.getString(i);

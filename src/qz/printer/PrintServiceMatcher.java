@@ -125,14 +125,14 @@ public class PrintServiceMatcher {
         for(PrintService ps : printers) {
             JSONObject jsonService = new JSONObject();
             jsonService.put("name", ps.getName());
-            jsonService.put("driver", PrintingUtilities.getDriver(ps));
+            jsonService.put("driver", "" /* FIXME PrintingUtilities.getDriver(ps) */);
             jsonService.put("default", ps == defaultService);
 
             for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
                 if (m.toString().contains("Tray")) { jsonService.accumulate("trays", m.toString()); }
             }
 
-            PrinterResolution res = PrintingUtilities.getNativeDensity(ps);
+            PrinterResolution res = null /* FIXME PrintingUtilities.getNativeDensity(ps) */;
             int density = -1; if (res != null) { density = res.getFeedResolution(ResolutionSyntax.DPI); }
             jsonService.put("density", density);
 

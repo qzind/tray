@@ -367,7 +367,7 @@ public class PrintRaw implements PrintProcessor {
         try {
             printToFile(tmp, cmds);
             String[] lpCmd = new String[] {
-                    "lp", "-d", PrintingUtilities.getCupsPrinterId(service), "-o", "raw", tmp.getAbsolutePath()
+                    "lp", "-d", "" /* FIXME PrintingUtilities.getCupsPrinterId(service)*/, "-o", "raw", tmp.getAbsolutePath()
             };
             boolean success = ShellUtilities.execute(lpCmd);
 

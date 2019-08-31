@@ -32,10 +32,8 @@ public class NativePrinterList extends HashMap<String, NativePrinter> {
     }
 
     public boolean contains(PrintService service) {
-        NativePrinter[] printers = this.values().toArray(new NativePrinter[this.size()]);
-
-        for (int i = 0; i < this.size(); i++) {
-            if (printers[i].getPrintService().equals(service)) {
+        for (NativePrinter printer : values()) {
+            if (printer.getPrintService().equals(service)) {
                 return true;
             }
         }

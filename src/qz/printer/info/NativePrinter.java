@@ -132,9 +132,7 @@ class NativePrinter {
     public synchronized static void getDriverAttributes(NativePrinter printer) {
         printer.driver.init();
         printer.resolution.init();
-        for (int i = 0; i < 1000; i++) {
-            Wrapper.getInstance().fillAttributes(printer);
-        }
+        Wrapper.getInstance().fillAttributes(printer);
     }
 
 }

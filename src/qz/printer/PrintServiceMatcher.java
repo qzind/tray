@@ -61,10 +61,10 @@ public class PrintServiceMatcher {
 
         // Search services for matches
         for(NativePrinter printer : getNativePrinterList().values()) {
-            String printerName = printer.getName();
-            if (printerName == null) {
-                break;
+            if (printer.getName() == null) {
+                continue;
             }
+            String printerName = printer.getName().toLowerCase();
             if (printerName.equals(printerSearch)) {
                 exact = printer;
                 break;

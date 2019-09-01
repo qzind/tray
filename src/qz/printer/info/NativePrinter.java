@@ -1,12 +1,13 @@
 package qz.printer.info;
 
-import qz.utils.SystemUtilities;
-
 import javax.print.PrintService;
+import javax.print.attribute.ResolutionSyntax;
+import javax.print.attribute.standard.PrinterName;
 import javax.print.attribute.standard.PrinterResolution;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 
-class NativePrinter {
+public class NativePrinter {
     /**
      * Simple object wrapper allowing lazy fetching of values
      * @param <T>
@@ -59,6 +60,7 @@ class NativePrinter {
     }
 
     private final String printerId;
+    private boolean outdated;
     private PrinterProperty<String> description;
     private PrinterProperty<PrintService> printService;
     private PrinterProperty<String> driver;
@@ -72,6 +74,7 @@ class NativePrinter {
         this.driverFile = new PrinterProperty<>();
         this.driver = new PrinterProperty<>();
         this.resolution = new PrinterProperty<>();
+        this.outdated = false;
     }
 
     public PrinterProperty<String> getDescription() {
@@ -95,6 +98,21 @@ class NativePrinter {
             getDriverAttributes(this);
         }
         return driver;
+    }
+
+    public String getName() {
+        if (printService != null && printService.get() != null) {
+            return printService.get().getName();
+        }
+        return null;
+    }
+
+    public PrinterName getLegacyName() {
+        if (printService != null && printService.get() != null) {
+            return printService.get().getAttribute(PrinterName.class);
+        }
+        return null;
+
     }
 
     public void setDriver(String driver) {
@@ -129,10 +147,35 @@ class NativePrinter {
         return resolution;
     }
 
+    public List<Integer> getResolutions() {
+        // TODO: Test/Implement supported resolutions for CUPS
+        List<Integer> densities = new ArrayList<>();
+
+        PrintService ps = getPrintService().get();
+        PrinterResolution[] resSupport = (PrinterResolution[])ps.getSupportedAttributeValues(PrinterResolution.class, ps.getSupportedDocFlavors()[0], null);
+        if (resSupport == null || resSupport.length == 0) {
+            resSupport = new PrinterResolution[]{ getResolution().get() };
+            }
+        if (resSupport != null) {
+            for(PrinterResolution res : resSupport) {
+                densities.add(res.getFeedResolution(ResolutionSyntax.DPI));
+            }
+        }
+
+        return densities;
+    }
+
     public synchronized static void getDriverAttributes(NativePrinter printer) {
         printer.driver.init();
         printer.resolution.init();
-        Wrapper.getInstance().fillAttributes(printer);
+        NativePrinterList.getInstance().fillAttributes(printer);
     }
 
+    public boolean isOutdated() {
+        return outdated;
+    }
+
+    public void setOutdated(boolean outdated) {
+        this.outdated = outdated;
+    }
 }

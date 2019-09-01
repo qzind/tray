@@ -73,22 +73,6 @@ public class CupsUtils {
         return statuses.toArray(new PrinterStatus[statuses.size()]);
     }
 
-    public static void convertPrinterNames(JSONArray printerNames) {
-        try {
-            HashMap<String, String> lookup = new HashMap<>(); /* FIXME PrintingUtilities.getCupsPrinters()*/;
-
-            for(int i = 0; i < printerNames.length(); i++) {
-                String oldPrinterName = printerNames.getString(i);
-                if (lookup.containsKey(oldPrinterName)) {
-                    printerNames.put(i, lookup.get(oldPrinterName));
-                }
-            }
-        }
-        catch(Exception e) {
-            log.warn("Invalid JSON");
-        }
-    }
-
     public static ArrayList<PrinterStatus> getAllStatuses() {
         ArrayList<PrinterStatus> statuses = new ArrayList<>();
         Pointer request = cups.ippNewRequest(IPP.GET_PRINTERS);

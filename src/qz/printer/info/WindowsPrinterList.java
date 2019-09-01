@@ -6,21 +6,21 @@ import javax.print.PrintService;
 
 import static com.sun.jna.platform.win32.WinReg.*;
 
-public class WinWrapper extends Wrapper {
-    public NativePrinterList wrapServices(PrintService[] services, NativePrinterList existing) {
-        NativePrinterList printers = existing != null ? existing : new NativePrinterList();
-        // TODO: Find way to NOT may system calls when a printer's already been added
-        for (PrintService service : services) {
+public class WindowsPrinterList extends NativePrinterList {
+    public NativePrinterList putAll(PrintService[] services) {
+        PrintService[] missing = findMissing(services);
+        if (missing.length == 0) return this;
+        for (PrintService service : missing) {
             String name = service.getName();
             NativePrinter printer = new NativePrinter(name);
             printer.setDescription(name);
             printer.setPrintService(service);
-            printers.put(printer.getPrinterId(), printer);
+            put(printer.getPrinterId(), printer);
         }
-        return printers;
+        return this;
     }
 
-    public void fillAttributes(NativePrinter printer) {
+    void fillAttributes(NativePrinter printer) {
         String keyName = printer.getPrinterId().replaceAll("\\\\", ",");
         String key = "SYSTEM\\CurrentControlSet\\Control\\Print\\Printers\\" + keyName;
         String driver = getRegString(HKEY_LOCAL_MACHINE, key, "Printer Driver");

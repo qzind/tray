@@ -13,20 +13,20 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
-public class CupsWrapper extends Wrapper {
+public class CupsPrinterList extends NativePrinterList {
     private static final String DEFAULT_CUPS_DRIVER = "TEXTONLY.ppd";
-    private static final Logger log = LoggerFactory.getLogger(CupsWrapper.class);
+    private static final Logger log = LoggerFactory.getLogger(CupsPrinterList.class);
 
-    public NativePrinterList wrapServices(PrintService[] services, NativePrinterList existing) {
+    public NativePrinterList putAll(PrintService[] services) {
+        PrintService[] missing = findMissing(services);
+        if (missing.length == 0) return this;
+
         // Iterating PrintServices is slow in CUPS; ArrayList allows us to pop items as they're found
-        ArrayList<PrintService> serviceList = new ArrayList<>(Arrays.asList(services));
-
-        NativePrinterList printers = existing != null ? existing : new NativePrinterList();
+        ArrayList<PrintService> serviceList = new ArrayList<>(Arrays.asList(missing));
 
         String output = "\n" + ShellUtilities.executeRaw(new String[] {"lpstat", "-l", "-p"});
         String[] devices = output.split("[\\r\\n]printer ");
 
-        // TODO: Find way to NOT may system calls when a printer's already been added
         for (String device : devices) {
             if (device.trim().isEmpty()) {
                 continue;
@@ -70,13 +70,13 @@ public class CupsWrapper extends Wrapper {
             if (printer.getPrintService().isInit()) {
                 printer.getDescription().init();
                 printer.getDriverFile().init();
-                printers.put(printer.getPrinterId(), printer);
+                put(printer.getPrinterId(), printer);
             }
         }
-        return printers;
+        return this;
     }
 
-    public void fillAttributes(NativePrinter printer) {
+    void fillAttributes(NativePrinter printer) {
         if (!printer.getDriverFile().isNull()) {
             File ppdFile = new File(printer.getDriverFile().get());
             try {

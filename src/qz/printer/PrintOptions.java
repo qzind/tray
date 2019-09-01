@@ -18,7 +18,6 @@ import java.awt.*;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 

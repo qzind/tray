@@ -21,8 +21,7 @@ public class CupsPrinterList extends NativePrinterList {
         PrintService[] missing = findMissing(services);
         if (missing.length == 0) return this;
 
-        // Iterating PrintServices is slow in CUPS; ArrayList allows us to pop items as they're found
-        ArrayList<PrintService> serviceList = new ArrayList<>(Arrays.asList(missing));
+        ArrayList<PrintService> shrinkingList = new ArrayList<>(Arrays.asList(missing));  // shrinking list drastically improves performance
 
         String output = "\n" + ShellUtilities.executeRaw(new String[] {"lpstat", "-l", "-p"});
         String[] devices = output.split("[\\r\\n]printer ");
@@ -51,17 +50,17 @@ public class CupsPrinterList extends NativePrinterList {
                     }
                 }
             }
-            for (PrintService service : serviceList) {
+            for (PrintService service : shrinkingList) {
                 if (SystemUtilities.isMac()) {
                     if (printer.getDescription().equals(service.getName())) {
                         printer.setPrintService(service);
-                        serviceList.remove(service);
+                        shrinkingList.remove(service);
                         break;
                     }
                 } else {
                     if (printer.getPrinterId().equals(service.getName())) {
                         printer.setPrintService(service);
-                        serviceList.remove(service);
+                        shrinkingList.remove(service);
                         break;
                     }
                 }

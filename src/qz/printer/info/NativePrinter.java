@@ -112,7 +112,6 @@ public class NativePrinter {
             return printService.get().getAttribute(PrinterName.class);
         }
         return null;
-
     }
 
     public void setDriver(String driver) {

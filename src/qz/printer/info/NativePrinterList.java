@@ -72,7 +72,6 @@ public abstract class NativePrinterList extends ConcurrentHashMap<String, Native
                 toAdd.add(service);
             }
         }
-
         // Remove outdated
         for (Map.Entry<String, NativePrinter> entry : entrySet()) {
             if(entry.getValue().isOutdated()) {

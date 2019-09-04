@@ -231,7 +231,7 @@ public class PrintOptions {
         }
 
         //grab any useful service defaults
-        PrinterResolution defaultRes = output.getNativePrinter().getResolution().get();
+        PrinterResolution defaultRes = output.getNativePrinter().getResolution().value();
         if (defaultRes != null) {
             //convert dphi to unit-dependant density ourselves (to keep as double type)
             defOptions.density = (double)defaultRes.getFeedResolution(1) / psOptions.getUnits().getDPIUnits();

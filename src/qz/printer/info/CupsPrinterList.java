@@ -17,7 +17,7 @@ public class CupsPrinterList extends NativePrinterList {
     private static final String DEFAULT_CUPS_DRIVER = "TEXTONLY.ppd";
     private static final Logger log = LoggerFactory.getLogger(CupsPrinterList.class);
 
-    public NativePrinterList putAll(PrintService[] services) {
+    public synchronized NativePrinterList putAll(PrintService[] services) {
         PrintService[] missing = findMissing(services);
         if (missing.length == 0) return this;
 
@@ -36,20 +36,23 @@ public class CupsPrinterList extends NativePrinterList {
                 line = line.trim();
                 if (printer == null) {
                     printer = new NativePrinter(line.split("\\s+")[0]);
+                    printer.getDescription().set();
+                    printer.getDriverFile().set();
                 } else {
                     String match = "Description:";
-                    if (!printer.getDescription().isInit() && line.startsWith(match)) {
+                    if (printer.getDescription().isNull() && line.startsWith(match)) {
                         printer.setDescription(line.substring(line.indexOf(match) + match.length()).trim());
                     }
                     match = "Interface:";
-                    if (!printer.getDriverFile().isInit() && line.startsWith(match)) {
+                    if (printer.getDriverFile().isNull() && line.startsWith(match)) {
                         printer.setDriverFile(line.substring(line.indexOf(match) + match.length()).trim());
                     }
-                    if (printer.getDescription().isInit() && printer.getDriverFile().isInit()) {
+                    if (!printer.getDescription().isNull() && !printer.getDriverFile().isNull()) {
                         break;
                     }
                 }
             }
+
             for (PrintService service : shrinkingList) {
                 if (SystemUtilities.isMac()) {
                     if (printer.getDescription().equals(service.getName())) {
@@ -66,18 +69,16 @@ public class CupsPrinterList extends NativePrinterList {
                 }
             }
 
-            if (printer.getPrintService().isInit()) {
-                printer.getDescription().init();
-                printer.getDriverFile().init();
+            if (!printer.getPrintService().isNull()) {
                 put(printer.getPrinterId(), printer);
             }
         }
         return this;
     }
 
-    void fillAttributes(NativePrinter printer) {
+    synchronized void fillAttributes(NativePrinter printer) {
         if (!printer.getDriverFile().isNull()) {
-            File ppdFile = new File(printer.getDriverFile().get());
+            File ppdFile = new File(printer.getDriverFile().value());
             try {
                 BufferedReader buffer = new BufferedReader(new FileReader(ppdFile));
                 String line;

@@ -113,7 +113,7 @@ public abstract class PrintPixel {
 
         PrinterResolution rUsing = (PrinterResolution)attributes.get(PrinterResolution.class);
         if (rUsing != null) {
-            List<Integer> rSupport = new ArrayList<>(); /* FIXME PrintingUtilities.getSupportedDensities(output.getPrintService()) */;
+            List<Integer> rSupport = output.getNativePrinter().getResolutions();
             if (!rSupport.isEmpty()) {
                 if (!rSupport.contains(rUsing.getFeedResolution(ResolutionSyntax.DPI))) {
                     log.warn("Not using a supported DPI for printing");

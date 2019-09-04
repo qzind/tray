@@ -54,11 +54,11 @@ public class PrintOutput {
 
 
     public boolean isSetService() {
-        return printer != null;
+        return printer != null && printer.getPrintService() != null && !printer.getPrintService().isNull();
     }
 
     public PrintService getPrintService() {
-        return printer.getPrintService().get();
+        return printer.getPrintService().value();
     }
 
     public NativePrinter getNativePrinter() {

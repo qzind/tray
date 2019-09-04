@@ -13,47 +13,47 @@ public class NativePrinter {
      * @param <T>
      */
     public class PrinterProperty<T> {
-        T content;
-        boolean initialized;
+        T value;
+        boolean set;
 
         public PrinterProperty() {
-            this.initialized = false;
+            this.set = false;
         }
 
         @Override
         public String toString() {
-            if (content == null) {
+            if (value == null) {
                 return null;
-            } else if (content instanceof String) {
-                return (String)content;
-            } return content.toString();
+            } else if (value instanceof String) {
+                return (String)value;
+            } return value.toString();
+        }
+
+        public void set() {
+            this.set = true;
         }
 
         public void set(T content) {
-            this.content = content;
-            this.initialized = true;
+            this.value = content;
+            this.set = true;
         }
 
-        public T get() {
-            return content;
+        public T value() {
+            return value;
+        }
+
+        public boolean isSet() {
+            return set;
         }
 
         public boolean isNull() {
-            return content == null;
-        }
-
-        public void init() {
-            this.initialized = true;
-        }
-
-        public boolean isInit() {
-            return initialized;
+            return value == null;
         }
 
         @Override
         public boolean equals(Object o) {
-            if (content != null) {
-                return content.equals(o);
+            if (value != null) {
+                return value.equals(o);
             }
             return false;
         }
@@ -94,22 +94,22 @@ public class NativePrinter {
     }
 
     public PrinterProperty<String> getDriver() {
-        if (!driver.isInit()) {
+        if (!driver.isSet()) {
             getDriverAttributes(this);
         }
         return driver;
     }
 
     public String getName() {
-        if (printService != null && printService.get() != null) {
-            return printService.get().getName();
+        if (printService != null && printService.value() != null) {
+            return printService.value().getName();
         }
         return null;
     }
 
     public PrinterName getLegacyName() {
-        if (printService != null && printService.get() != null) {
-            return printService.get().getAttribute(PrinterName.class);
+        if (printService != null && printService.value() != null) {
+            return printService.value().getAttribute(PrinterName.class);
         }
         return null;
     }
@@ -140,7 +140,7 @@ public class NativePrinter {
     }
 
     public PrinterProperty<PrinterResolution> getResolution() {
-        if (!resolution.isInit()) {
+        if (!resolution.isSet()) {
             getDriverAttributes(this);
         }
         return resolution;
@@ -150,10 +150,10 @@ public class NativePrinter {
         // TODO: Test/Implement supported resolutions for CUPS
         List<Integer> densities = new ArrayList<>();
 
-        PrintService ps = getPrintService().get();
+        PrintService ps = getPrintService().value();
         PrinterResolution[] resSupport = (PrinterResolution[])ps.getSupportedAttributeValues(PrinterResolution.class, ps.getSupportedDocFlavors()[0], null);
         if (resSupport == null || resSupport.length == 0) {
-            resSupport = new PrinterResolution[]{ getResolution().get() };
+            resSupport = new PrinterResolution[]{ getResolution().value() };
             }
         if (resSupport != null) {
             for(PrinterResolution res : resSupport) {
@@ -164,9 +164,9 @@ public class NativePrinter {
         return densities;
     }
 
-    public synchronized static void getDriverAttributes(NativePrinter printer) {
-        printer.driver.init();
-        printer.resolution.init();
+    public static void getDriverAttributes(NativePrinter printer) {
+        printer.driver.set();
+        printer.resolution.set();
         NativePrinterList.getInstance().fillAttributes(printer);
     }
 

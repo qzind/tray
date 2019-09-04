@@ -7,7 +7,7 @@ import javax.print.PrintService;
 import static com.sun.jna.platform.win32.WinReg.*;
 
 public class WindowsPrinterList extends NativePrinterList {
-    public NativePrinterList putAll(PrintService[] services) {
+    public synchronized NativePrinterList putAll(PrintService[] services) {
         PrintService[] missing = findMissing(services);
         if (missing.length == 0) return this;
         for (PrintService service : missing) {
@@ -20,7 +20,7 @@ public class WindowsPrinterList extends NativePrinterList {
         return this;
     }
 
-    void fillAttributes(NativePrinter printer) {
+    synchronized void fillAttributes(NativePrinter printer) {
         String keyName = printer.getPrinterId().replaceAll("\\\\", ",");
         String key = "SYSTEM\\CurrentControlSet\\Control\\Print\\Printers\\" + keyName;
         String driver = getRegString(HKEY_LOCAL_MACHINE, key, "Printer Driver");

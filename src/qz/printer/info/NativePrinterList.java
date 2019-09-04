@@ -7,7 +7,6 @@ import qz.utils.SystemUtilities;
 import javax.print.PrintService;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,16 +27,6 @@ public abstract class NativePrinterList extends ConcurrentHashMap<String, Native
         return instance;
     }
     private static final Logger log = LoggerFactory.getLogger(NativePrinterList.class);
-
-    public PrintService[] getPrintServices() {
-        PrintService[] services = new PrintService[this.size()];
-        NativePrinter[] printers = this.values().toArray(new NativePrinter[this.size()]);
-
-        for (int i = 0; i < this.size(); i++) {
-            services[i] = printers[i].getPrintService().get();
-        }
-        return services;
-    }
 
     public String getPrinterId(String description) {
         for(Map.Entry<String,NativePrinter> entry : entrySet()) {

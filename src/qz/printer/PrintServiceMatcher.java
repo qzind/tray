@@ -40,7 +40,7 @@ public class PrintServiceMatcher {
         NativePrinter printer = PrintServiceMatcher.matchPrinter(query);
 
         if (printer != null) {
-            return printer.getPrintService().get().getName();
+            return printer.getPrintService().value().getName();
         } else {
             return null;
         }
@@ -108,7 +108,7 @@ public class PrintServiceMatcher {
         }
 
         if (use != null) {
-            log.debug("Found match: {}", use.getPrintService().get().getName());
+            log.debug("Found match: {}", use.getPrintService().value().getName());
         } else {
             log.warn("Printer not found: {}", printerSearch);
         }
@@ -123,17 +123,17 @@ public class PrintServiceMatcher {
         PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
 
         for(NativePrinter printer : getNativePrinterList().values()) {
-            PrintService ps = printer.getPrintService().get();
+            PrintService ps = printer.getPrintService().value();
             JSONObject jsonService = new JSONObject();
             jsonService.put("name", ps.getName());
-            jsonService.put("driver", printer.getDriver().get());
+            jsonService.put("driver", printer.getDriver().value());
             jsonService.put("default", ps == defaultService);
 
             for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
                 if (m.toString().contains("Tray")) { jsonService.accumulate("trays", m.toString()); }
             }
 
-            PrinterResolution res = printer.getResolution().get();
+            PrinterResolution res = printer.getResolution().value();
             int density = -1; if (res != null) { density = res.getFeedResolution(ResolutionSyntax.DPI); }
             jsonService.put("density", density);
 

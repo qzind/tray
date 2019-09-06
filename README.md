@@ -1,6 +1,8 @@
 QZ Tray
 ========
 
+ [![Build Status](https://travis-ci.org/qzind/tray.svg)](https://travis-ci.org/qzind/tray) [![Downloads](https://img.shields.io/github/downloads/qzind/tray/latest/total.svg)](../../releases) [![Issues](https://img.shields.io/github/issues/qzind/tray.svg)](../../issues) [![Commits](https://img.shields.io/github/commit-activity/m/qzind/tray.svg)](../../commits)
+
 Browser plugin for sending documents and raw commands to a printer or attached device
 
 ## Getting Started

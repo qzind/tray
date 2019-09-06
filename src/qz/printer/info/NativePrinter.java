@@ -160,11 +160,9 @@ public class NativePrinter {
         PrinterResolution[] resSupport = (PrinterResolution[])ps.getSupportedAttributeValues(PrinterResolution.class, ps.getSupportedDocFlavors()[0], null);
         if (resSupport == null || resSupport.length == 0) {
             resSupport = new PrinterResolution[]{ getResolution().value() };
-            }
-        if (resSupport != null) {
-            for(PrinterResolution res : resSupport) {
-                densities.add(res.getFeedResolution(ResolutionSyntax.DPI));
-            }
+        }
+        for(PrinterResolution res : resSupport) {
+            densities.add(res.getFeedResolution(ResolutionSyntax.DPI));
         }
 
         return densities;

@@ -137,7 +137,7 @@ public class SystemUtilities {
      * @return {@code true} if Unix, {@code false} otherwise
      */
     public static boolean isUnix() {
-        return (OS_NAME.contains("nix") || OS_NAME.contains("nux") || OS_NAME.indexOf("aix") > 0 || OS_NAME.contains("sunos"));
+        return (OS_NAME.contains("mac") || OS_NAME.contains("nix") || OS_NAME.contains("nux") || OS_NAME.indexOf("aix") > 0 || OS_NAME.contains("sunos"));
     }
 
     /**
@@ -237,7 +237,7 @@ public class SystemUtilities {
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
             boolean darkulaThemeNeeded = true;
-            if(isUnix() && UbuntuUtilities.isDarkMode()) {
+            if(!isMac() && (isUnix() && UbuntuUtilities.isDarkMode())) {
                 darkulaThemeNeeded = false;
             }
             if(isDarkMode() && darkulaThemeNeeded) {

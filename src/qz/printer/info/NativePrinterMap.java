@@ -6,27 +6,28 @@ import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class NativePrinterList extends ConcurrentHashMap<String, NativePrinter> {
-    private static NativePrinterList instance;
+public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativePrinter> {
+    private static final Logger log = LoggerFactory.getLogger(NativePrinterMap.class);
 
-    public abstract NativePrinterList putAll(PrintService[] services);
+    private static NativePrinterMap instance;
+
+    public abstract NativePrinterMap putAll(PrintService[] services);
     abstract void fillAttributes(NativePrinter printer);
 
-    public static NativePrinterList getInstance() {
+    public static NativePrinterMap getInstance() {
         if (instance == null) {
             if (SystemUtilities.isWindows()) {
-                instance = new WindowsPrinterList();
+                instance = new WindowsPrinterMap();
             } else {
-                instance = new CupsPrinterList();
+                instance = new CupsPrinterMap();
             }
         }
         return instance;
     }
-    private static final Logger log = LoggerFactory.getLogger(NativePrinterList.class);
 
     public String getPrinterId(String description) {
         for(Map.Entry<String,NativePrinter> entry : entrySet()) {
@@ -40,34 +41,23 @@ public abstract class NativePrinterList extends ConcurrentHashMap<String, Native
     }
 
     public PrintService[] findMissing(PrintService[] services) {
-        ArrayList<PrintService> toAdd = new ArrayList<>();
-        // Flag outdated
-        for (NativePrinter printer : values()) {
-            printer.setOutdated(true);
-        }
-        // Unflag
-        Collection<NativePrinter> shrinkingList = new ArrayList<>(values()); // shrinking list drastically improves performance
-        boolean found = false;
-        for (PrintService service : services) {
-            for (NativePrinter printer : shrinkingList) {
-                if (printer.getPrintService().equals(service)) {
-                    printer.setOutdated(false);
-                    found = true;
-                    shrinkingList.remove(printer);
-                    break;
-                }
-            }
-            if (!found) {
-                toAdd.add(service);
+        ArrayList<PrintService> serviceList = new ArrayList<>(Arrays.asList(services)); // shrinking list drastically improves performance
+        for(NativePrinter printer : values()) {
+            if (serviceList.contains(printer.getPrintService())) {
+                serviceList.remove(printer.getPrintService()); // existing match
+            } else {
+                printer.setOutdated(true); // no matches, mark to be removed
             }
         }
-        // Remove outdated
+
+        // remove outdated
         for (Map.Entry<String, NativePrinter> entry : entrySet()) {
             if(entry.getValue().isOutdated()) {
                 remove(entry.getKey());
             }
         }
-        return toAdd.toArray(new PrintService[toAdd.size()]);
+        // any remaining services are new/missing
+        return serviceList.toArray(new PrintService[serviceList.size()]);
     }
 
     public boolean contains(PrintService service) {

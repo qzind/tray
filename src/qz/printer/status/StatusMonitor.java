@@ -7,7 +7,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.eclipse.jetty.util.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.printer.info.NativePrinterList;
+import qz.printer.info.NativePrinterMap;
 import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
 
@@ -84,7 +84,7 @@ public class StatusMonitor {
                 String printerName = printerNames.getString(i);
                 if (SystemUtilities.isMac()) {
                     // Since 2.0: Mac printers use Description; Find by CUPS ID
-                    printerName = NativePrinterList.getInstance().getPrinterId(printerName);
+                    printerName = NativePrinterMap.getInstance().getPrinterId(printerName);
                 }
                 if (printerName == null || "".equals(printerName)) {
                     throw new IllegalArgumentException();

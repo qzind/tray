@@ -6,8 +6,8 @@ import javax.print.PrintService;
 
 import static com.sun.jna.platform.win32.WinReg.*;
 
-public class WindowsPrinterList extends NativePrinterList {
-    public synchronized NativePrinterList putAll(PrintService[] services) {
+public class WindowsPrinterMap extends NativePrinterMap {
+    public synchronized NativePrinterMap putAll(PrintService[] services) {
         PrintService[] missing = findMissing(services);
         if (missing.length == 0) return this;
         for (PrintService service : missing) {

@@ -13,15 +13,15 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
-public class CupsPrinterList extends NativePrinterList {
+public class CupsPrinterMap extends NativePrinterMap {
     private static final String DEFAULT_CUPS_DRIVER = "TEXTONLY.ppd";
-    private static final Logger log = LoggerFactory.getLogger(CupsPrinterList.class);
+    private static final Logger log = LoggerFactory.getLogger(CupsPrinterMap.class);
 
-    public synchronized NativePrinterList putAll(PrintService[] services) {
+    public synchronized NativePrinterMap putAll(PrintService[] services) {
         PrintService[] missing = findMissing(services);
         if (missing.length == 0) return this;
 
-        ArrayList<PrintService> shrinkingList = new ArrayList<>(Arrays.asList(missing));  // shrinking list drastically improves performance
+        ArrayList<PrintService> serviceList = new ArrayList<>(Arrays.asList(missing));
 
         String output = "\n" + ShellUtilities.executeRaw(new String[] {"lpstat", "-l", "-p"});
         String[] devices = output.split("[\\r\\n]printer ");
@@ -53,19 +53,12 @@ public class CupsPrinterList extends NativePrinterList {
                 }
             }
 
-            for (PrintService service : shrinkingList) {
-                if (SystemUtilities.isMac()) {
-                    if (printer.getDescription().equals(service.getName())) {
-                        printer.setPrintService(service);
-                        shrinkingList.remove(service);
-                        break;
-                    }
-                } else {
-                    if (printer.getPrinterId().equals(service.getName())) {
-                        printer.setPrintService(service);
-                        shrinkingList.remove(service);
-                        break;
-                    }
+            for (PrintService service : serviceList) {
+                if ((SystemUtilities.isMac() && printer.getDescription().equals(service.getName()))
+                        || (SystemUtilities.isLinux() && printer.getPrinterId().equals(service.getName()))) {
+                    printer.setPrintService(service);
+                    serviceList.remove(service);
+                    break;
                 }
             }
 

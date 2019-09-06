@@ -1,5 +1,7 @@
 package qz.printer.info;
 
+import qz.utils.SystemUtilities;
+
 import javax.print.PrintService;
 import javax.print.attribute.ResolutionSyntax;
 import javax.print.attribute.standard.PrinterName;
@@ -52,6 +54,10 @@ public class NativePrinter {
 
         @Override
         public boolean equals(Object o) {
+            // PrintService.equals(...) is very slow in CUPS; use the pointer
+            if (SystemUtilities.isUnix() && value instanceof PrintService) {
+                return o == value;
+            }
             if (value != null) {
                 return value.equals(o);
             }
@@ -167,7 +173,7 @@ public class NativePrinter {
     public static void getDriverAttributes(NativePrinter printer) {
         printer.driver.set();
         printer.resolution.set();
-        NativePrinterList.getInstance().fillAttributes(printer);
+        NativePrinterMap.getInstance().fillAttributes(printer);
     }
 
     public boolean isOutdated() {

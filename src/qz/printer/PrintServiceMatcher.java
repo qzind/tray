@@ -16,7 +16,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.printer.info.NativePrinter;
-import qz.printer.info.NativePrinterList;
+import qz.printer.info.NativePrinterMap;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
@@ -29,8 +29,8 @@ import javax.print.attribute.standard.PrinterResolution;
 public class PrintServiceMatcher {
     private static final Logger log = LoggerFactory.getLogger(PrintServiceMatcher.class);
 
-    public static NativePrinterList getNativePrinterList() {
-        NativePrinterList printers = NativePrinterList.getInstance();
+    public static NativePrinterMap getNativePrinterList() {
+        NativePrinterMap printers = NativePrinterMap.getInstance();
         printers.putAll(PrintServiceLookup.lookupPrintServices(null, null));
         log.debug("Found {} printers", printers.size());
         return printers;

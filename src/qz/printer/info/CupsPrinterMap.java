@@ -18,10 +18,8 @@ public class CupsPrinterMap extends NativePrinterMap {
     private static final Logger log = LoggerFactory.getLogger(CupsPrinterMap.class);
 
     public synchronized NativePrinterMap putAll(PrintService[] services) {
-        PrintService[] missing = findMissing(services);
-        if (missing.length == 0) return this;
-
-        ArrayList<PrintService> serviceList = new ArrayList<>(Arrays.asList(missing));
+        ArrayList<PrintService> missing = findMissing(services);
+        if (missing.isEmpty()) return this;
 
         String output = "\n" + ShellUtilities.executeRaw(new String[] {"lpstat", "-l", "-p"});
         String[] devices = output.split("[\\r\\n]printer ");
@@ -53,11 +51,11 @@ public class CupsPrinterMap extends NativePrinterMap {
                 }
             }
 
-            for (PrintService service : serviceList) {
+            for (PrintService service : missing) {
                 if ((SystemUtilities.isMac() && printer.getDescription().equals(service.getName()))
                         || (SystemUtilities.isLinux() && printer.getPrinterId().equals(service.getName()))) {
                     printer.setPrintService(service);
-                    serviceList.remove(service);
+                    missing.remove(service);
                     break;
                 }
             }

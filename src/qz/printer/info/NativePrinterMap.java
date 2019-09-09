@@ -40,7 +40,7 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
         return description;
     }
 
-    public PrintService[] findMissing(PrintService[] services) {
+    public ArrayList<PrintService> findMissing(PrintService[] services) {
         ArrayList<PrintService> serviceList = new ArrayList<>(Arrays.asList(services)); // shrinking list drastically improves performance
         for(NativePrinter printer : values()) {
             if (serviceList.contains(printer.getPrintService())) {
@@ -57,7 +57,7 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
             }
         }
         // any remaining services are new/missing
-        return serviceList.toArray(new PrintService[serviceList.size()]);
+        return serviceList;
     }
 
     public boolean contains(PrintService service) {

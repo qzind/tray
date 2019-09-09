@@ -8,9 +8,7 @@ import static com.sun.jna.platform.win32.WinReg.*;
 
 public class WindowsPrinterMap extends NativePrinterMap {
     public synchronized NativePrinterMap putAll(PrintService[] services) {
-        PrintService[] missing = findMissing(services);
-        if (missing.length == 0) return this;
-        for (PrintService service : missing) {
+        for (PrintService service : findMissing(services)) {
             String name = service.getName();
             NativePrinter printer = new NativePrinter(name);
             printer.setDescription(name);

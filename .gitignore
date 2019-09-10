@@ -2,6 +2,7 @@
 /js/node_modules
 /lib/javafx*
 /.idea/workspace.xml
+/.idea/misc.xml
 /.idea/uiDesigner.xml
 /.idea/compiler.xml
 /fx.zip

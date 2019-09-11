@@ -90,7 +90,7 @@ public class PrintOptions {
             if (possibleDPIs != null && possibleDPIs.length() > 0) {
                 int usableDpi = -1;
 
-                List<Integer> rSupport = PrintingUtilities.getSupportedDensities(output.getPrintService());
+                List<Integer> rSupport = output.getNativePrinter().getResolutions();
                 if (!rSupport.isEmpty()) {
                     for(int i = 0; i < possibleDPIs.length(); i++) {
                         if (rSupport.contains(possibleDPIs.optInt(i))) {
@@ -231,7 +231,7 @@ public class PrintOptions {
         }
 
         //grab any useful service defaults
-        PrinterResolution defaultRes = PrintingUtilities.getNativeDensity(output.getPrintService());
+        PrinterResolution defaultRes = output.getNativePrinter().getResolution().value();
         if (defaultRes != null) {
             //convert dphi to unit-dependant density ourselves (to keep as double type)
             defOptions.density = (double)defaultRes.getFeedResolution(1) / psOptions.getUnits().getDPIUnits();

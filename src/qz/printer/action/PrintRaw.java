@@ -28,6 +28,7 @@ import qz.printer.ImageWrapper;
 import qz.printer.LanguageType;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.printer.info.NativePrinter;
 import qz.utils.*;
 
 import javax.imageio.ImageIO;
@@ -249,7 +250,7 @@ public class PrintRaw implements PrintProcessor {
                         printToFile(output.getFile(), bab.getByteArray());
                     } else {
                         if (rawOpts.isAltPrinting()) {
-                            printToAlternate(output.getPrintService(), bab.getByteArray());
+                            printToAlternate(output.getNativePrinter(), bab.getByteArray());
                         } else {
                             printToPrinter(output.getPrintService(), bab.getByteArray(), rawOpts);
                         }
@@ -362,12 +363,12 @@ public class PrintRaw implements PrintProcessor {
      * Alternate printing mode for CUPS capable OSs, issues lp via command line
      * on Linux, BSD, Solaris, OSX, etc. This will never work on Windows.
      */
-    public void printToAlternate(PrintService service, byte[] cmds) throws IOException, PrintException {
+    public void printToAlternate(NativePrinter printer, byte[] cmds) throws IOException, PrintException {
         File tmp = File.createTempFile("qz_raw_", null);
         try {
             printToFile(tmp, cmds);
             String[] lpCmd = new String[] {
-                    "lp", "-d", PrintingUtilities.getPrinterId(service.getName()), "-o", "raw", tmp.getAbsolutePath()
+                    "lp", "-d", printer.getPrinterId(), "-o", "raw", tmp.getAbsolutePath()
             };
             boolean success = ShellUtilities.execute(lpCmd);
 

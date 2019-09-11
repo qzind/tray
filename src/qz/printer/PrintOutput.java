@@ -2,6 +2,7 @@ package qz.printer;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import qz.printer.info.NativePrinter;
 import qz.utils.FileUtilities;
 
 import javax.print.PrintService;
@@ -11,7 +12,7 @@ import java.nio.file.Paths;
 
 public class PrintOutput {
 
-    private PrintService service = null;
+    private NativePrinter printer = null;
 
     private File file = null;
 
@@ -23,8 +24,8 @@ public class PrintOutput {
         if (configPrinter == null) { return; }
 
         if (configPrinter.has("name")) {
-            service = PrintServiceMatcher.matchService(configPrinter.getString("name"));
-            if (service == null) {
+            printer = PrintServiceMatcher.matchPrinter(configPrinter.getString("name"));
+            if (printer == null) {
                 throw new IllegalArgumentException("Cannot find printer with name \"" + configPrinter.getString("name") + "\"");
             }
         }
@@ -53,11 +54,15 @@ public class PrintOutput {
 
 
     public boolean isSetService() {
-        return service != null;
+        return printer != null && printer.getPrintService() != null && !printer.getPrintService().isNull();
     }
 
     public PrintService getPrintService() {
-        return service;
+        return printer.getPrintService().value();
+    }
+
+    public NativePrinter getNativePrinter() {
+        return printer;
     }
 
     public boolean isSetFile() {
@@ -81,7 +86,7 @@ public class PrintOutput {
     }
 
     public Media[] getSupportedMedia() {
-        return (Media[])service.getSupportedAttributeValues(Media.class, null, null);
+        return (Media[])getPrintService().getSupportedAttributeValues(Media.class, null, null);
     }
 
 }

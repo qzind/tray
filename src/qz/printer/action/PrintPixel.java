@@ -20,10 +20,8 @@ import java.awt.print.PageFormat;
 import java.awt.print.Paper;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public abstract class PrintPixel {
 
@@ -115,7 +113,7 @@ public abstract class PrintPixel {
 
         PrinterResolution rUsing = (PrinterResolution)attributes.get(PrinterResolution.class);
         if (rUsing != null) {
-            List<Integer> rSupport = PrintingUtilities.getSupportedDensities(output.getPrintService());
+            List<Integer> rSupport = output.getNativePrinter().getResolutions();
             if (!rSupport.isEmpty()) {
                 if (!rSupport.contains(rUsing.getFeedResolution(ResolutionSyntax.DPI))) {
                     log.warn("Not using a supported DPI for printing");

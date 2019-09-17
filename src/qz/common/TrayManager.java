@@ -263,10 +263,7 @@ public class TrayManager {
         JMenuItem aboutItem = new JMenuItem("About...", iconCache.getIcon(IconCache.Icon.ABOUT_ICON));
         aboutItem.setMnemonic(KeyEvent.VK_B);
         aboutItem.addActionListener(aboutListener);
-        aboutDialog = new AboutDialog(aboutItem, iconCache, name);
-        aboutDialog.addPanelButton(sitesItem);
-        aboutDialog.addPanelButton(logItem);
-        aboutDialog.addPanelButton(openItem);
+        aboutDialog = new AboutDialog(aboutItem, iconCache);
         componentList.add(aboutDialog);
 
         if (SystemUtilities.isMac()) {
@@ -477,7 +474,7 @@ public class TrayManager {
             displayInfoMessage("Server started on port(s) " + TrayManager.getPorts(server));
 
             if (!headless) {
-                aboutDialog.setServer(server);
+                aboutDialog.usePort(PrintSocketServer.SECURE_PORTS.get(securePortIndex.get()));
                 setDefaultIcon();
             }
 

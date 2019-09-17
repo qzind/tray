@@ -35,21 +35,23 @@ public class LinkLabel extends JLabel implements Themeable {
         initialize();
     }
 
-    public LinkLabel(final String text) {
+    public LinkLabel(final String text, final String action) {
         super(text);
         initialize();
+
         addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
                     // Sense the action based on the content of the text
-                    if (text.contains("@")) {
-                        Desktop.getDesktop().mail(new URI(text));
+                    if (action.contains("@")) {
+                        Desktop.getDesktop().mail(new URI(action));
+                    } else if (action.contains(File.separator)) {
+                        File filePath = new File(action);
+                        ShellUtilities.browseDirectory(filePath.isDirectory() ? action : filePath.getParent());
                     } else {
-                        File filePath = new File(text);
-                        ShellUtilities.browseDirectory(filePath.isDirectory() ? text : filePath.getParent());
+                        Desktop.getDesktop().browse(new URL(action).toURI());
                     }
-
                 }
                 catch(Exception ex) {
                     log.error("", ex);
@@ -58,37 +60,6 @@ public class LinkLabel extends JLabel implements Themeable {
         });
     }
 
-    public LinkLabel(final URL url) {
-        super(url.toString());
-        initialize();
-        addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    Desktop.getDesktop().browse(url.toURI());
-                }
-                catch(Exception ex) {
-                    log.error("", ex);
-                }
-            }
-        });
-    }
-
-    public LinkLabel(final File filePath) {
-        super(filePath.getPath());
-        initialize();
-        addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent());
-                }
-                catch(IOException ex) {
-                    log.error("", ex);
-                }
-            }
-        });
-    }
 
     private void initialize() {
         Map<TextAttribute, Object> attributes = new HashMap<>(getFont().getAttributes());

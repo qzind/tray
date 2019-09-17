@@ -68,6 +68,7 @@ public class IconCache {
         QUESTION_ICON("qz-question.png"),
 
         // Banner
+        LOGO_ICON("qz-logo.png"),
         BANNER_ICON("qz-banner.png");
 
         private boolean padded = false;

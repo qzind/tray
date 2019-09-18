@@ -474,7 +474,7 @@ public class TrayManager {
             displayInfoMessage("Server started on port(s) " + TrayManager.getPorts(server));
 
             if (!headless) {
-                aboutDialog.usePort(PrintSocketServer.SECURE_PORTS.get(securePortIndex.get()));
+                aboutDialog.setServer(server);
                 setDefaultIcon();
             }
 

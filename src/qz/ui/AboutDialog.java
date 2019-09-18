@@ -2,6 +2,7 @@ package qz.ui;
 
 import com.github.zafarkhaja.semver.Version;
 import org.codehaus.jettison.json.JSONArray;
+import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -9,10 +10,6 @@ import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
 
 import javax.swing.*;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
-import javax.swing.text.html.HTMLEditorKit;
-import javax.swing.text.html.StyleSheet;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -31,11 +28,8 @@ public class AboutDialog extends BasicDialog implements Themeable {
 
     private static final Logger log = LoggerFactory.getLogger(AboutDialog.class);
 
-    private int connectionPort;
+    private Server server;
     private Version latestVersion;
-
-    JEditorPane versionInfoBlock;
-    JEditorPane productInfoBlock;
 
 
     public AboutDialog(JMenuItem menuItem, IconCache iconCache) {
@@ -61,8 +55,8 @@ public class AboutDialog extends BasicDialog implements Themeable {
         }
     }
 
-    public void usePort(int port) {
-        connectionPort = port;
+    public void setServer(Server server) {
+        this.server = server;
 
         initComponents();
     }
@@ -70,29 +64,15 @@ public class AboutDialog extends BasicDialog implements Themeable {
     public void initComponents() {
         setIconImage(getImage(IconCache.Icon.ABOUT_ICON));
 
-        //language=HTML
-        String styleBlock = "<style> " +
-                "  body { font-family: 'sans-serif'; font-size: 10px; } " +
-                "  h1 { font-size: 36px; font-weight: normal; } " +
-                "  div { margin: 5px 0; width: 100%; } " +
-                "</style>";
+        JLabel lblAbout = new JLabel(Constants.ABOUT_TITLE);
+        lblAbout.setFont(new Font(null, Font.PLAIN, 36));
 
-        //language=HTML
-        String infoText = "<h1>%title%</h1>" +
-                "<div>%version% (Java) <a href='%version_url%'>What's New?</a></div>" +
-                "<div>%update_action%</div>" +
-                "#split#" + //Split text to accommodate swing buttons
-                "<div>%title% is written and supported by %company%.</div>" +
-                "<div>If using %title% commercially, please first reach out to the website publisher for support issues.</div>" +
-                "<div><a href='%library_url%'>Detailed library information \uD83D\uDDD7</a></div>";
+        LinkLabel linkNew = new LinkLabel("What's New?");
+        linkNew.setLinkLocation(Constants.ABOUT_VERSION_URL);
+        LinkLabel linkLibrary = new LinkLabel("Detailed library information");
+        linkLibrary.setLinkLocation(server.getURI().toString());
 
-        infoText = infoText.replaceAll("%title%", Constants.ABOUT_TITLE)
-                .replaceAll("%company%", Constants.ABOUT_COMPANY)
-                .replaceAll("%version%", Constants.VERSION.toString())
-                .replaceAll("%library_url%", "https://localhost:" + connectionPort)
-                .replaceAll("%version_url%", "https://github.com/qzind/tray/releases");
-
-
+        JLabel lblUpdate = new JLabel();
         JButton updateButton = new JButton();
         updateButton.setVisible(false);
         updateButton.addActionListener(new ActionListener() {
@@ -104,55 +84,41 @@ public class AboutDialog extends BasicDialog implements Themeable {
         });
 
         if (latestVersion.greaterThan(Constants.VERSION)) {
-            infoText = infoText.replaceAll("%update_action%", "An update is available");
+            lblUpdate.setText("An update is available:");
 
             updateButton.setText("Download " + latestVersion.toString());
             updateButton.setVisible(true);
         } else {
-            infoText = infoText.replaceAll("%update_action%", "You have the latest version.");
+            lblUpdate.setText("You have the latest version.");
         }
 
-        HyperlinkListener linkListener = new HyperlinkListener() {
-            @Override
-            public void hyperlinkUpdate(HyperlinkEvent evt) {
-                if (HyperlinkEvent.EventType.ACTIVATED.equals(evt.getEventType())) {
-                    try { Desktop.getDesktop().browse(evt.getURL().toURI()); }
-                    catch(Exception e) { log.error("", e); }
-                }
-            }
-        };
+        //JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        infoPanel.setPreferredSize(new Dimension(320, 260));
 
+        infoPanel.add(lblAbout);
+        infoPanel.add(Box.createVerticalGlue());
+        Box versionBox = Box.createHorizontalBox();
+        versionBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        versionBox.add(new JLabel(String.format("%s (Java)", Constants.VERSION.toString())));
+        versionBox.add(Box.createHorizontalStrut(12));
+        versionBox.add(linkNew);
+        infoPanel.add(versionBox);
+        infoPanel.add(Box.createVerticalGlue());
+        infoPanel.add(lblUpdate);
+        infoPanel.add(updateButton);
+        infoPanel.add(Box.createVerticalGlue());
+        infoPanel.add(new JLabel(String.format("<html>%s is written and supported by %s.</html>", Constants.ABOUT_TITLE, Constants.ABOUT_COMPANY)));
+        infoPanel.add(Box.createVerticalGlue());
+        infoPanel.add(new JLabel(String.format("<html>If using %s commercially, please first reach out to the website publisher for support issues.</html>", Constants.ABOUT_TITLE)));
+        infoPanel.add(Box.createVerticalGlue());
+        infoPanel.add(linkLibrary);
 
-        String[] infoBlocks = infoText.split("#split#");
-
-        versionInfoBlock = new JEditorPane("text/html", "<html>" + styleBlock + infoBlocks[0] + "</html>");
-        versionInfoBlock.setMaximumSize(new Dimension(320, 200));
-        versionInfoBlock.setEditable(false);
-        versionInfoBlock.setOpaque(false);
-        versionInfoBlock.addHyperlinkListener(linkListener);
-        versionInfoBlock.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, true);
-
-        productInfoBlock = new JEditorPane("text/html", "<html>" + styleBlock + infoBlocks[1] + "</html>");
-        productInfoBlock.setMaximumSize(new Dimension(320, 200));
-        productInfoBlock.setEditable(false);
-        productInfoBlock.setOpaque(false);
-        productInfoBlock.addHyperlinkListener(linkListener);
-        productInfoBlock.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, true);
-        ((HTMLEditorKit)productInfoBlock.getEditorKit()).setStyleSheet(((HTMLEditorKit)versionInfoBlock.getEditorKit()).getStyleSheet());
-
-        JPanel infoBlock = new JPanel();
-        infoBlock.setPreferredSize(new Dimension(320, 300));
-        infoBlock.setLayout(new BoxLayout(infoBlock, BoxLayout.Y_AXIS));
-        infoBlock.add(versionInfoBlock);
-        Box btnBox = Box.createHorizontalBox();
-        btnBox.add(updateButton);
-        btnBox.add(Box.createHorizontalGlue());
-        infoBlock.add(btnBox);
-        infoBlock.add(productInfoBlock);
 
         JPanel aboutPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         aboutPanel.add(new JLabel(getIcon(IconCache.Icon.LOGO_ICON)));
-        aboutPanel.add(infoBlock);
+        aboutPanel.add(infoPanel);
 
 
         //override font to remove underline for these links
@@ -161,11 +127,16 @@ public class AboutDialog extends BasicDialog implements Themeable {
         attributes.remove(TextAttribute.UNDERLINE);
         lblFont = lblFont.deriveFont(attributes);
 
-        LinkLabel lblLicensing = new LinkLabel("Licensing Information", Constants.ABOUT_URL + "/licensing ");
+        LinkLabel lblLicensing = new LinkLabel("Licensing Information");
+        lblLicensing.setLinkLocation(Constants.ABOUT_URL + "/licensing");
         lblLicensing.setFont(lblFont);
-        LinkLabel lblSupport = new LinkLabel("Support Information", Constants.ABOUT_URL + "/support");
+
+        LinkLabel lblSupport = new LinkLabel("Support Information");
+        lblSupport.setLinkLocation(Constants.ABOUT_URL + "/support");
         lblSupport.setFont(lblFont);
-        LinkLabel lblPrivacy = new LinkLabel("Privacy Policy", Constants.ABOUT_URL + "/privacy");
+
+        LinkLabel lblPrivacy = new LinkLabel("Privacy Policy");
+        lblPrivacy.setLinkLocation(Constants.ABOUT_URL + "/privacy");
         lblPrivacy.setFont(lblFont);
 
         JPanel supportPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 80, 10));
@@ -182,19 +153,6 @@ public class AboutDialog extends BasicDialog implements Themeable {
 
 
         setContent(panel, true);
-    }
-
-    @Override
-    public void refresh() {
-        super.refresh();
-
-        //ensure jeditorpane link colors are updated..
-        HTMLEditorKit kit = (HTMLEditorKit)versionInfoBlock.getEditorKit();
-        StyleSheet ss = kit.getStyleSheet();
-
-        //FIXME - broken changing lite -> dark
-        String hexFormat = String.format("%02x%02x%02x", Constants.TRUSTED_COLOR.getRed(), Constants.TRUSTED_COLOR.getGreen(), Constants.TRUSTED_COLOR.getBlue());
-        ss.addRule("a { color: #" + hexFormat + "; text-decoration: underline;}");
     }
 
 }

@@ -39,7 +39,8 @@ public class LogDialog extends BasicDialog {
     public void initComponents() {
         setIconImage(getImage(IconCache.Icon.LOG_ICON));
 
-        LinkLabel logDirLabel = new LinkLabel("Open Log Location", SystemUtilities.getDataDirectory() + File.separator);
+        LinkLabel logDirLabel = new LinkLabel("Open Log Location");
+        logDirLabel.setLinkLocation(new File(SystemUtilities.getDataDirectory() + File.separator));
         setHeader(logDirLabel);
 
         logArea = new JTextArea(ROWS, COLS);

@@ -15,7 +15,7 @@ import java.awt.event.MouseListener;
 import java.awt.font.TextAttribute;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,26 +35,43 @@ public class LinkLabel extends JLabel implements Themeable {
         initialize();
     }
 
-    public LinkLabel(final String text, final String action) {
+    public LinkLabel(String text) {
         super(text);
         initialize();
+    }
 
+    public void setLinkLocation(final String url) {
+        try {
+            setLinkLocation(new URL(url));
+        }
+        catch(MalformedURLException mue) {
+            log.error("", mue);
+        }
+    }
+
+    public void setLinkLocation(final URL location) {
         addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent ae) {
                 try {
-                    // Sense the action based on the content of the text
-                    if (action.contains("@")) {
-                        Desktop.getDesktop().mail(new URI(action));
-                    } else if (action.contains(File.separator)) {
-                        File filePath = new File(action);
-                        ShellUtilities.browseDirectory(filePath.isDirectory() ? action : filePath.getParent());
-                    } else {
-                        Desktop.getDesktop().browse(new URL(action).toURI());
-                    }
+                    Desktop.getDesktop().browse(location.toURI());
                 }
-                catch(Exception ex) {
-                    log.error("", ex);
+                catch(Exception e) {
+                    log.error("", e);
+                }
+            }
+        });
+    }
+
+    public void setLinkLocation(final File filePath) {
+        addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                try {
+                    ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getPath():filePath.getParent());
+                }
+                catch(IOException ioe) {
+                    log.error("", ioe);
                 }
             }
         });
@@ -62,7 +79,7 @@ public class LinkLabel extends JLabel implements Themeable {
 
 
     private void initialize() {
-        Map<TextAttribute, Object> attributes = new HashMap<>(getFont().getAttributes());
+        Map<TextAttribute,Object> attributes = new HashMap<>(getFont().getAttributes());
         attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
         setFont(getFont().deriveFont(attributes));
 

@@ -44,7 +44,7 @@ public class TaskbarTrayIcon extends JFrame implements WindowListener {
         addWindowListener(this);
     }
 
-    // fixes Linux taskbar title per http://hg.netbeans.org/core-main/rev/5832261b8434
+    // fixes Linux taskbar title per http://hg.netbeans.org/core-main/rev/5832261b8434, JDK-6528430
     public static void setTaskBarTitle(String title) {
         try {
             Class<?> toolkit = Toolkit.getDefaultToolkit().getClass();

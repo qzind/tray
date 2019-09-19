@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Halt on first error
+set -e
+
+if [ "$(id -u)" != "0" ]; then
+   echo "This script must be run with root (sudo) privileges" 1>&2
+   exit 1
+fi
+
+# Get working directory
+DIR=$(cd "$(dirname "$0")" && pwd)
+pushd "$DIR"
+
+echo "Running uninstall tasks..."
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    "$DIR/Contents/MacOS/${project.name}" uninstall
+else
+    "$DIR/${project.filename}" uninstall
+fi
+
+echo "Deleting files..."
+rm -rf "$DIR"
+echo -e "\nUninstall of ${project.name} complete.\n"
+
+popd &>/dev/null

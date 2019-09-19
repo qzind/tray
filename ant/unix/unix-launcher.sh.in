@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Shared launcher for MacOS and Linux
+# Parameters -- if any -- are passed on to the app
+
+# Halt on first error
+set -e
+
+# Configured by ant at build time
+JAVA_MIN="${javac.target}"
+LAUNCH_OPTS="${launch.opts}"
+ABOUT_TITLE="${project.name}"
+PROPS_FILE="${project.filename}"
+
+# Get working directory
+DIR=$(cd "$(dirname "$0")" && pwd)
+pushd "$DIR" &> /dev/null
+
+# Console colors
+RED="\\x1B[1;31m";GREEN="\\x1B[1;32m";YELLOW="\\x1B[1;33m";PLAIN="\\x1B[0m"
+
+# Statuses
+SUCCESS="   [${GREEN}success${PLAIN}]"
+FAILURE="   [${RED}failure${PLAIN}]"
+WARNING="   [${YELLOW}warning${PLAIN}]"
+
+echo "Looking for Java..."
+
+# Honor JAVA_HOME
+if [ -n "$JAVA_HOME" ]; then
+    echo -e "$WARNING JAVA_HOME was detected, using $JAVA_HOME..."
+    PATH="$JAVA_HOME/bin:$PATH"
+fi
+
+# Check for bundled JRE
+if [ -d ./jre ]; then
+    echo -e "$SUCCESS A bundled runtime was found.  Using..."
+    PATH="$(pwd)/jre/bin:$PATH"
+    export PATH
+fi
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    ICON_PATH="$DIR/Contents/Resources/apple-icon.icns"
+    MAC_PRIMARY="/usr/libexec/java_home"
+    MAC_FALLACK="/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin"
+    echo "Trying $MAC_PRIMARY..."
+    if "$MAC_PRIMARY" -v $JAVA_MIN+ &>/dev/null; then
+        echo -e "$SUCCESS Using \"$MAC_PRIMARY -v $JAVA_MIN+ --exec\" to launch $ABOUT_TITLE"
+        java() {
+            "$MAC_PRIMARY" -v $JAVA_MIN+ --exec java "$@"
+        }
+    elif [ -d "/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin" ]; then
+        echo -e "$WARNING No luck using $MAC_PRIMARY"
+        echo "Trying $MAC_FALLACK..."
+        java() {
+            "$MAC_FALLACK/java" "$@"
+        }
+    fi
+else
+    export PATH="$PATH:/usr/java/latest/bin/"
+fi
+
+# Make sure Java version is sufficient
+echo "Verifying the Java version is $JAVA_MIN+..."
+curver=$(java -version 2>&1 | grep -i version | awk -F"\"" '{ print $2 }' | awk -F"." '{ print $1 "." $2 }')
+minver="$JAVA_MIN"
+if [ -z "$curver" ]; then
+    curver="0.0"
+fi
+desired=$(echo -e "$minver\n$curver")
+actual=$(echo "$desired" |sort -t '.' -k 1,1 -k 2,2 -n)
+if [ "$desired" != "$actual" ]; then
+    echo -e "$FAILURE Please install Java $JAVA_MIN or higher to continue"
+    exit 1
+else
+    echo -e "$SUCCESS Java $curver was detected"
+fi
+
+
+if command -v java &>/dev/null; then
+    echo -e "$ABOUT_TITLE is starting..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        if [ -f "$PROPS_FILE.jar" ]; then
+            prefix="" # aside launcher, e.g. preinstall
+        else
+            prefix="../../" # back two directories, e.g. postinstall
+        fi
+        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$ICON_PATH" -jar -Dapple.awt.UIElement="true" "${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
+    else
+        java $LAUNCH_OPTS -jar "$PROPS_FILE.jar" "$@"
+    fi
+else
+    echo -e "$FAILURE Java $JAVA_MIN+ was not found"
+fi
+
+popd &>/dev/null

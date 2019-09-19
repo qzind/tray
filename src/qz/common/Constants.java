@@ -12,7 +12,7 @@ public class Constants {
     public static final String HEXES = "0123456789ABCDEF";
     public static final char[] HEXES_ARRAY = HEXES.toCharArray();
     public static final int BYTE_BUFFER_SIZE = 8192;
-    public static final Version VERSION = Version.valueOf("2.1.0-RC7");
+    public static final Version VERSION = Version.valueOf("2.1.0-RC8");
     public static final Version JAVA_VERSION = SystemUtilities.getJavaVersion();
     public static final String JAVA_VENDOR = System.getProperty("java.vendor");
 
@@ -25,18 +25,27 @@ public class Constants {
     public static final String PREFS_FILE = "prefs"; // .properties extension is assumed
     public static final String AUTOSTART_FILE = ".autostart";
     public static final String DATA_DIR = "qz";
-    public static final String SHARED_DATA_DIR = "shared";
     public static final int LOG_SIZE = 524288;
     public static final int LOG_ROTATIONS = 5;
 
     public static final int BORDER_PADDING = 10;
 
     public static final String ABOUT_TITLE = "QZ Tray";
+    public static final String ABOUT_EMAIL = "support@qz.io";
     public static final String ABOUT_URL = "https://qz.io";
     public static final String ABOUT_COMPANY = "QZ Industries, LLC";
+    public static final String ABOUT_CITY = "Canastota";
+    public static final String ABOUT_STATE = "NY";
+    public static final String ABOUT_COUNTRY = "US";
+
+    public static final String ABOUT_LICENSING_URL = Constants.ABOUT_URL + "/licensing";
+    public static final String ABOUT_SUPPORT_URL = Constants.ABOUT_URL + "/support";
+    public static final String ABOUT_PRIVACY_URL = Constants.ABOUT_URL + "/privacy";
+    public static final String ABOUT_DOWNLOAD_URL = Constants.ABOUT_URL + "/download";
 
     public static final String VERSION_CHECK_URL = "https://api.github.com/repos/qzind/tray/releases";
     public static final String VERSION_DOWNLOAD_URL = "https://github.com/qzind/tray/releases";
+    public static final boolean ENABLE_DIAGNOSTICS = true; // Diagnostics menu (logs, etc)
 
     public static final String TRUSTED_CERT = String.format("Verified by %s", Constants.ABOUT_COMPANY);
     public static final String UNTRUSTED_CERT = "Untrusted website";
@@ -56,6 +65,8 @@ public class Constants {
 
     public static final String ALLOWED = "Allowed";
     public static final String BLOCKED = "Blocked";
+
+    public static final String OVERRIDE_CERT = "override.crt";
 
     public static final long VALID_SIGNING_PERIOD = 15 * 60 * 1000; //millis
     public static final int EXPIRY_WARN = 30;   // days
@@ -78,8 +89,4 @@ public class Constants {
     public static final Integer[] WSS_PORTS = {8181, 8282, 8383, 8484};
     public static final Integer[] WS_PORTS = {8182, 8283, 8384, 8485};
     public static final Integer[] CUPS_RSS_PORTS = {8586, 8687, 8788, 8889};
-
-    public static final String SANDBOX_DIR = "/sandbox";
-    public static final String NOT_SANDBOX_DIR = "/shared";
-    public static final int FILE_LISTENER_DEFAULT_LINES = 10;
 }

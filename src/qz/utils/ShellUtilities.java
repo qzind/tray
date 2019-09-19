@@ -14,16 +14,15 @@ import org.apache.commons.io.Charsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.print.attribute.standard.PrinterResolution;
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Utility class for managing all {@code Runtime.exec(...)} functions.
@@ -41,7 +40,7 @@ public class ShellUtilities {
     static {
         if (!SystemUtilities.isWindows()) {
             // Cache existing; permit named overrides w/o full clobber
-            Map<String, String> env = new HashMap<>(System.getenv());
+            Map<String,String> env = new HashMap<>(System.getenv());
             if (SystemUtilities.isMac()) {
                 // Enable LANG overrides
                 env.put("SOFTWARE", "");
@@ -50,14 +49,14 @@ public class ShellUtilities {
             env.put("LANG", "C");
             String[] envp = new String[env.size()];
             int i = 0;
-            for (Map.Entry<String, String> o : env.entrySet())
+            for(Map.Entry<String,String> o : env.entrySet())
                 envp[i++] = o.getKey() + "=" + o.getValue();
 
             ShellUtilities.envp = envp;
         }
     }
 
-    public static boolean execute(String[] commandArray) {
+    public static boolean execute(String... commandArray) {
         return execute(commandArray, false);
     }
 
@@ -109,7 +108,7 @@ public class ShellUtilities {
      * {@code searchFor} is null ,then the first line of standard output
      */
     public static String execute(String[] commandArray, String[] searchFor, boolean caseSensitive, boolean silent) {
-        if(!silent) {
+        if (!silent) {
             log.debug("Executing: {}", Arrays.toString(commandArray));
         }
         BufferedReader stdInput = null;
@@ -150,10 +149,10 @@ public class ShellUtilities {
     /**
      * Executes a synchronous shell command and return the raw character result.
      *
-     * @param commandArray  array of shell commands to execute
+     * @param commandArray array of shell commands to execute
      * @return The entire raw standard output of command
      */
-    public static String executeRaw(String[] commandArray) {
+    public static String executeRaw(String... commandArray) {
         log.debug("Executing: {}", Arrays.toString(commandArray));
         InputStreamReader in = null;
         try {
@@ -161,13 +160,15 @@ public class ShellUtilities {
             in = new InputStreamReader(p.getInputStream(), Charsets.UTF_8);
             StringBuilder out = new StringBuilder();
             int c;
-            while((c=in.read()) != -1)
+            while((c = in.read()) != -1)
                 out.append((char)c);
 
             return out.toString();
-        } catch(IOException ex) {
+        }
+        catch(IOException ex) {
             log.error("IOException executing: {} envp: {}", Arrays.toString(commandArray), Arrays.toString(envp), ex);
-        } finally {
+        }
+        finally {
             if (in != null) {
                 try { in.close(); } catch(Exception ignore) {}
             }
@@ -180,7 +181,7 @@ public class ShellUtilities {
      * Gets the computer's "hostname" from command line
      */
     public static String getHostName() {
-        return execute(new String[] {"hostname"}, new String[]{""});
+        return execute(new String[] {"hostname"}, new String[] {""});
     }
 
     /**
@@ -197,184 +198,38 @@ public class ShellUtilities {
             return false;
         }
 
-        return execute(new String[] {"osascript", "-e", scriptBody});
+        return execute("osascript", "-e", scriptBody);
     }
 
-    /**
-     * Checks that the currently running OS is Apple and executes a native
-     * AppleScript macro against the OS. Returns true if the
-     * supplied searchValues are found within the standard output.
-     *
-     * @param scriptBody   AppleScript text to execute
-     * @param searchValues List of stdout strings to search for
-     * @return true if the supplied searchValues are found within the standard output.
-     */
-    public static boolean executeAppleScript(String scriptBody, String ... searchValues) {
-        if (!SystemUtilities.isMac()) {
-            log.error("AppleScript can only be invoked from Apple OS");
-            return false;
-        }
-
-        // Empty string returned by execute(...) means the values weren't found
-        return !execute(new String[] {"osascript", "-e", scriptBody},
-                        searchValues).isEmpty();
+    public static void browseAppDirectory() {
+        browseDirectory(FileUtilities.getParentDirectory(SystemUtilities.getJarPath()));
     }
 
-    public static boolean setRegistryDWORD(String keyPath, String name, int data) {
-        if (!SystemUtilities.isWindows()) {
-            log.error("Reg commands can only be invoked from Windows");
-            return false;
-        }
-
-        String reg = System.getenv("windir") + "\\system32\\reg.exe";
-        return execute(
-                new String[] {
-                        reg, "add", keyPath, "/f", "/v", name, "/t", "REG_DWORD", "/d", "" + data
-                }
-        );
+    public static void browseDirectory(String directory) {
+        browseDirectory(new File(directory));
     }
 
-    public static String getRegistryString(String keyPath, String name) {
-        String match = "REG_SZ";
-        if (!SystemUtilities.isWindows()) {
-            log.error("Reg commands can only be invoked from Windows");
-            return null;
-        }
-
-        String reg = System.getenv("windir") + "\\system32\\reg.exe";
-        String stdout = execute(
-                new String[] {
-                        reg, "query", keyPath, "/v", name
-                },
-                new String[] {match}
-        );
-
-        if (!stdout.isEmpty()) {
-            // Return the last element
-            String[] parts = stdout.split("\\s+");
-            return parts[parts.length - 1];
-        }
-
-        return null;
+    public static void browseDirectory(Path path) {
+        browseDirectory(path.toFile());
     }
 
-    public static int getRegistryDWORD(String keyPath, String name) {
-        return getRegistryDWORD(keyPath, name, false);
-    }
-
-    public static int getRegistryDWORD(String keyPath, String name, boolean silent) {
-        String match = "0x";
-        if (!SystemUtilities.isWindows()) {
-            log.error("Reg commands can only be invoked from Windows");
-            return -1;
-        }
-
-        String reg = System.getenv("windir") + "\\system32\\reg.exe";
-        String stdout = execute(
-                new String[] {
-                        reg, "query", keyPath, "/v", name
-                },
-                new String[] {match},
-                true,
-                silent
-        );
-
-        // Parse stdout looking for hex (i.e. "0x1B")
-        if (!Objects.equals(stdout, "")) {
-            for(String part : stdout.split(" ")) {
-                if (part.startsWith(match)) {
-                    try {
-                        return Integer.parseInt(part.trim().split(match)[1], 16);
-                    }
-                    catch(NumberFormatException ignore) {}
+    public static void browseDirectory(File directory) {
+        try {
+            if (!SystemUtilities.isMac()) {
+                Desktop.getDesktop().open(directory);
+            } else {
+                // Mac tries to open the .app rather than browsing it.  Instead, pass a child with -R to select it in finder
+                File[] files = directory.listFiles();
+                if (files != null && files.length > 0) {
+                    ShellUtilities.execute("open", "-R", files[0].getCanonicalPath());
                 }
             }
         }
-
-        return -1;
-    }
-
-    /**
-     * Opens the specified path in the system-default file browser.  Works around several OS limitations:
-     *  - Apple tries to launch <code>.app</code> bundle directories as applications rather than browsing contents
-     *  - Linux has mixed support for <code>Desktop.getDesktop()</code>.  Adds <code>xdg-open</code> fallback.
-     * @param path The directory to browse
-     * @throws IOException
-     */
-    public static void browseDirectory(String path) throws IOException {
-        File directory = new File(path);
-        if (SystemUtilities.isMac()) {
-            // Mac tries to open the .app rather than browsing it.  Instead, pass a child with -R to select it in finder
-            File[] files = directory.listFiles();
-            if (files != null && files.length > 0) {
-                // Get first child
-                File child = files[0];
-                if (ShellUtilities.execute(new String[] {"open", "-R", child.getCanonicalPath()})) {
-                    return;
-                }
+        catch(IOException io) {
+            if (SystemUtilities.isLinux()) {
+                // Fallback on xdg-open for Linux
+                ShellUtilities.execute("xdg-open", directory.getPath());
             }
-        } else {
-            try {
-                // The default, java recommended usage
-                Desktop d = Desktop.getDesktop();
-                d.open(directory);
-                return;
-            } catch (IOException io) {
-                if (SystemUtilities.isLinux()) {
-                    // Fallback on xdg-open for Linux
-                    if (ShellUtilities.execute(new String[] {"xdg-open", path})) {
-                        return;
-                    }
-                }
-                throw io;
-            }
-        }
-        throw new IOException("Unable to open " + path);
-    }
-
-    /**
-     * Executes a native Registry delete/query command against the OS
-     *
-     * @param keyPath  The path to the containing registry key
-     * @param function "delete", or "query"
-     * @param name     the registry name to add, delete or query
-     * @return true if the return code is zero
-     */
-    public static boolean executeRegScript(String keyPath, String function, String name) {
-        return executeRegScript(keyPath, function, name, null);
-    }
-
-    /**
-     * Executes a native Registry add/delete/query command against the OS
-     *
-     * @param keyPath  The path to the containing registry key
-     * @param function "add", "delete", or "query"
-     * @param name     the registry name to add, delete or query
-     * @param data     the registry data to add when using the "add" function
-     * @return true if the return code is zero
-     */
-    public static boolean executeRegScript(String keyPath, String function, String name, String data) {
-        if (!SystemUtilities.isWindows()) {
-            log.error("Reg commands can only be invoked from Windows");
-            return false;
-        }
-
-        String reg = System.getenv("windir") + "\\system32\\reg.exe";
-        if ("delete".equals(function)) {
-            return execute(new String[] {
-                    reg, function, keyPath, "/v", name, "/f"
-            });
-        } else if ("add".equals(function)) {
-            return execute(new String[] {
-                    reg, function, keyPath, "/v", name, "/d", data, "/f"
-            });
-        } else if ("query".equals(function)) {
-            return execute(new String[] {
-                    reg, function, keyPath, "/v", name
-            });
-        } else {
-            log.error("Reg operation {} not supported.", function);
-            return false;
         }
     }
 }

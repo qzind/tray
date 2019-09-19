@@ -17,9 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
-import qz.deploy.DeployUtilities;
-import qz.deploy.LinuxCertificate;
-import qz.deploy.WindowsDeploy;
+import qz.installer.WindowsInstaller;
+import qz.installer.shortcut.ShortcutCreator;
 import qz.ui.*;
 import qz.ui.component.IconCache;
 import qz.ui.tray.TrayType;
@@ -69,7 +68,7 @@ public class TrayManager {
     private final String name;
 
     // The shortcut and startup helper
-    private final DeployUtilities shortcutCreator;
+    private final ShortcutCreator shortcutCreator;
 
     private final PropertyHelper prefs;
 
@@ -86,7 +85,7 @@ public class TrayManager {
     public TrayManager(boolean isHeadless) {
         name = Constants.ABOUT_TITLE + " " + Constants.VERSION;
 
-        prefs = new PropertyHelper(SystemUtilities.getDataDirectory() + File.separator + Constants.PREFS_FILE + ".properties");
+        prefs = new PropertyHelper(FileUtilities.USER_DIR + File.separator + Constants.PREFS_FILE + ".properties");
 
         //headless if turned on by user or unsupported by environment
         headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || GraphicsEnvironment.isHeadless();
@@ -95,8 +94,7 @@ public class TrayManager {
         }
 
         // Setup the shortcut name so that the UI components can use it
-        shortcutCreator = DeployUtilities.getSystemShortcutCreator();
-        shortcutCreator.setShortcutName(Constants.ABOUT_TITLE);
+        shortcutCreator = ShortcutCreator.getInstance();
 
         SystemUtilities.setSystemLookAndFeel();
         iconCache = new IconCache();
@@ -139,14 +137,6 @@ public class TrayManager {
         if (SystemUtilities.isUnix() && !isHeadless) {
             // Update printer list in CUPS immediately (normally 2min)
             System.setProperty("sun.java2d.print.polling", "false");
-        }
-        if (SystemUtilities.isLinux()) {
-            // Install cert into user's nssdb for Chrome, etc
-            LinuxCertificate.installCertificate();
-        } else if (SystemUtilities.isWindows()) {
-            // Configure IE intranet zone via registry to allow websockets
-            WindowsDeploy.configureIntranetZone();
-            WindowsDeploy.configureEdgeLoopback();
         }
 
         if (!headless) {
@@ -221,40 +211,68 @@ public class TrayManager {
         sitesDialog = new SiteManagerDialog(sitesItem, iconCache);
         componentList.add(sitesDialog);
 
-        anonymousItem = new JCheckBoxMenuItem("Block Anonymous Requests");
-        anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
-        anonymousItem.setMnemonic(KeyEvent.VK_K);
-        anonymousItem.setState(Certificate.UNKNOWN.isBlocked());
-        anonymousItem.addActionListener(anonymousListener);
+        JMenuItem diagnosticMenu = new JMenu("Diagnostic");
 
-        JMenuItem logItem = new JMenuItem("View Logs...", iconCache.getIcon(IconCache.Icon.LOG_ICON));
-        logItem.setMnemonic(KeyEvent.VK_L);
-        logItem.addActionListener(logListener);
-        logDialog = new LogDialog(logItem, iconCache);
-        componentList.add(logDialog);
+        JMenuItem browseApp = new JMenuItem("Browse App folder...", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
+        browseApp.setToolTipText(FileUtilities.getParentDirectory(SystemUtilities.getJarPath()));
+        browseApp.setMnemonic(KeyEvent.VK_O);
+        browseApp.addActionListener(e -> ShellUtilities.browseAppDirectory());
+        diagnosticMenu.add(browseApp);
+
+        JMenuItem browseUser = new JMenuItem("Browse User folder...", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
+        browseUser.setToolTipText(FileUtilities.USER_DIR.toString());
+        browseUser.setMnemonic(KeyEvent.VK_U);
+        browseUser.addActionListener(e -> ShellUtilities.browseDirectory(FileUtilities.USER_DIR));
+        diagnosticMenu.add(browseUser);
+
+        JMenuItem browseShared = new JMenuItem("Browse Shared folder...", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
+        browseShared.setToolTipText(FileUtilities.SHARED_DIR.toString());
+        browseShared.setMnemonic(KeyEvent.VK_S);
+        browseShared.addActionListener(e -> ShellUtilities.browseDirectory(FileUtilities.SHARED_DIR));
+        diagnosticMenu.add(browseShared);
+
+        diagnosticMenu.add(new JSeparator());
 
         JCheckBoxMenuItem notificationsItem = new JCheckBoxMenuItem("Show all notifications");
         notificationsItem.setToolTipText("Shows all connect/disconnect messages, useful for debugging purposes");
         notificationsItem.setMnemonic(KeyEvent.VK_S);
         notificationsItem.setState(prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false));
         notificationsItem.addActionListener(notificationsListener);
+        diagnosticMenu.add(notificationsItem);
 
-        JMenuItem openItem = new JMenuItem("Open file location", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
-        openItem.setMnemonic(KeyEvent.VK_O);
-        openItem.addActionListener(openListener);
+        diagnosticMenu.add(new JSeparator());
+
+        JMenuItem logItem = new JMenuItem("View logs (live feed)...", iconCache.getIcon(IconCache.Icon.LOG_ICON));
+        logItem.setMnemonic(KeyEvent.VK_L);
+        logItem.addActionListener(logListener);
+        diagnosticMenu.add(logItem);
+        logDialog = new LogDialog(logItem, iconCache);
+        componentList.add(logDialog);
+
+        JMenuItem zipLogs = new JMenuItem("Zip logs (to Desktop)");
+        zipLogs.setToolTipText("Zip diagnostic logs, place on Desktop");
+        zipLogs.setMnemonic(KeyEvent.VK_Z);
+        zipLogs.addActionListener(e -> FileUtilities.zipLogs());
+        diagnosticMenu.add(zipLogs);
 
         JMenuItem desktopItem = new JMenuItem("Create Desktop shortcut", iconCache.getIcon(IconCache.Icon.DESKTOP_ICON));
         desktopItem.setMnemonic(KeyEvent.VK_D);
         desktopItem.addActionListener(desktopListener());
 
-        advancedMenu.add(sitesItem);
-        advancedMenu.add(anonymousItem);
-        advancedMenu.add(logItem);
-        advancedMenu.add(notificationsItem);
-        advancedMenu.add(new JSeparator());
-        advancedMenu.add(openItem);
-        advancedMenu.add(desktopItem);
+        anonymousItem = new JCheckBoxMenuItem("Block anonymous requests");
+        anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
+        anonymousItem.setMnemonic(KeyEvent.VK_K);
+        anonymousItem.setState(Certificate.UNKNOWN.isBlocked());
+        anonymousItem.addActionListener(anonymousListener);
 
+        if(Constants.ENABLE_DIAGNOSTICS) {
+            advancedMenu.add(diagnosticMenu);
+            advancedMenu.add(new JSeparator());
+        }
+        advancedMenu.add(sitesItem);
+        advancedMenu.add(desktopItem);
+        advancedMenu.add(new JSeparator());
+        advancedMenu.add(anonymousItem);
 
         JMenuItem reloadItem = new JMenuItem("Reload", iconCache.getIcon(IconCache.Icon.RELOAD_ICON));
         reloadItem.setMnemonic(KeyEvent.VK_R);
@@ -275,7 +293,7 @@ public class TrayManager {
 
         JCheckBoxMenuItem startupItem = new JCheckBoxMenuItem("Automatically start");
         startupItem.setMnemonic(KeyEvent.VK_S);
-        startupItem.setState(shortcutCreator.isAutostart());
+        startupItem.setState(FileUtilities.isAutostart());
         startupItem.addActionListener(startupListener());
         if (!shortcutCreator.canAutoStart()) {
             startupItem.setEnabled(false);
@@ -302,21 +320,7 @@ public class TrayManager {
     private final ActionListener notificationsListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
-            prefs.setProperty(Constants.PREFS_NOTIFICATIONS, j.getState());
-        }
-    };
-
-    private final ActionListener openListener = new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-            try {
-                ShellUtilities.browseDirectory(shortcutCreator.getParentDirectory());
-            }
-            catch(Exception ex) {
-                if (!SystemUtilities.isLinux() || !ShellUtilities.execute(new String[] {"xdg-open", shortcutCreator.getParentDirectory()})) {
-                    showErrorDialog("Sorry, unable to open the file browser: " + ex.getLocalizedMessage());
-                }
-            }
+            prefs.setProperty(Constants.PREFS_NOTIFICATIONS, ((JCheckBoxMenuItem)e.getSource()).getState());
         }
     };
 
@@ -361,12 +365,12 @@ public class TrayManager {
                 source.setState(true);
                 return;
             }
-            if (shortcutCreator.setAutostart(source.getState())) {
+            if (FileUtilities.setAutostart(source.getState())) {
                 displayInfoMessage("Successfully " + (source.getState() ? "enabled" : "disabled") + " autostart");
             } else {
                 displayErrorMessage("Error " + (source.getState() ? "enabling" : "disabling") + " autostart");
             }
-            source.setState(shortcutCreator.isAutostart());
+            source.setState(FileUtilities.isAutostart());
         };
     }
 

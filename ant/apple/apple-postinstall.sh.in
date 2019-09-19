@@ -1,62 +1,17 @@
 #!/bin/bash
-##########################################################################################
-#                                 ${project.name} MacOS Postinstall                              #
-##########################################################################################
-#  Description:                                                                          #
-#    1. Generates and installs certificate for secure websockets                         #
-#    2. Installs certificate into Firefox (if installed)                                 #
-#    3. Performs any cleanup operations                                                  #
-#    4. Launches app as user (not root)                                                  #
-#                                                                                        #
-#  Usage:                                                                                #
-#    $ ./postinstall                                                                     #
-##########################################################################################
 
-# Install ${project.name} certificate
-"${apple.installdir}/auth/${apple.keygen.name}" "install"
+# Halt on first error
+set -e
 
-if [ $? -eq 0 ]; then
-    # Install Firefox certificate
-    "${apple.installdir}/auth/firefox/${firefoxcert.name}" "install"
+# Use install target from pkgbuild, an undocumented feature; fallback on sane location
+if [ -n "$2" ]; then
+    pushd "$2/Contents/MacOS/"
+else
+    pushd "/Applications/${project.name}.app/Contents/MacOS/"
 fi
 
-# Install startup
-site=$(echo "${vendor.website}"|rev|cut -d/ -f1|rev)
-package=$(echo "$site" |rev |cut -d. -f1|rev).$(echo "$site" |rev |cut -d. -f2|rev).${project.filename}
-cat > /Library/LaunchAgents/$package.plist << EOT
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key><string>$package</string>
-    <key>KeepAlive</key>
-    <dict>
-        <key>SuccessfulExit</key><false/>
-        <key>AfterInitialDemand</key><false/>
-    </dict>
-    <key>RunAtLoad</key><true/>
-    <key>ProgramArguments</key>
-    <array>
-        <string>${apple.installdir}/${apple.macos}/${project.name}</string>
-        <string>-A</string>
-    </array>
-</dict>
-</plist>
-EOT
+./"${project.name}" install
+./"${project.name}" certgen
 
-# Shared directory for FileIO operations
-mkdir -p "${apple.datadir.shared}" 2>&1
-chmod 777 "${apple.datadir.shared}"
-
-# Cleanup resources from previous versions
-rm -rf "${apple.installdir}/demo/js/3rdparty"
-rm "${apple.installdir}/demo/js/qz-websocket.js"
-
-# Remove 2.1 startup entry
-site=$(echo "${vendor.website}"|rev|cut -d/ -f1|rev)
-package=$(echo "$site" |rev |cut -d. -f1|rev).$(echo "$site" |rev |cut -d. -f2|rev).${project.filename}
-rm "/Library/LaunchAgents/$package.plist"
-
-# Start ${project.name}
-echo -e "\nStarting ${project.name} as $USER..."
-su $USER -c "open \"${apple.installdir}\""
+# Start qz by calling open on the .app as an ordinary user
+su "$USER" -c "open ../../"

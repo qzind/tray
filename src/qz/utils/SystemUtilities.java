@@ -11,15 +11,21 @@
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
+import com.sun.jna.platform.win32.Advapi32Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.TrayManager;
-import qz.deploy.DeployUtilities;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static com.sun.jna.platform.win32.WinReg.*;
 
 /**
  * Utility class for OS detection functions.
@@ -37,6 +43,7 @@ public class SystemUtilities {
     private static String linuxRelease;
     private static String classProtocol;
     private static Version osVersion;
+    private static String jarPath;
 
 
     /**
@@ -52,7 +59,7 @@ public class SystemUtilities {
             String version = System.getProperty("os.version");
             // Windows is missing patch release, read it from registry
             if (isWindows()) {
-                String patch = ShellUtilities.getRegistryString("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId");
+                String patch = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId");
                 if (patch != null) {
                     version += "." + patch.trim();
                 }
@@ -63,6 +70,14 @@ public class SystemUtilities {
             osVersion = Version.valueOf(version);
         }
         return osVersion;
+    }
+
+    public static boolean isAdmin() {
+        if (SystemUtilities.isWindows()) {
+            return ShellUtilities.execute("net", "session");
+        } else {
+            return ShellUtilities.executeRaw("whoami").trim().equals("root");
+        }
     }
 
 
@@ -93,61 +108,49 @@ public class SystemUtilities {
         }
     }
 
-
     /**
-     * Retrieve OS-specific Application Data directory such as:
-     * {@code C:\Users\John\AppData\Roaming\qz} on Windows
-     * -- or --
-     * {@code /Users/John/Library/Application Support/qz} on Mac
-     * -- or --
-     * {@code /home/John/.qz} on Linux
+     * Determines the currently running Jar's absolute path on the local filesystem
      *
-     * @return Full path to the Application Data directory
+     * @return A String value representing the absolute path to the currently running
+     * jar
      */
-    public static String getDataDirectory() {
-        String parent;
-        String folder = Constants.DATA_DIR;
-
-        if (isWindows()) {
-            parent = System.getenv("APPDATA");
-        } else if (isMac()) {
-            parent = System.getProperty("user.home") + File.separator + "Library" + File.separator + "Application Support";
-        } else if (isUnix()) {
-            parent = System.getProperty("user.home");
-            folder = "." + folder;
-        } else {
-            parent = System.getProperty("user.dir");
+    public static String detectJarPath() {
+        try {
+            String jarPath = new File(SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getCanonicalPath();
+            // Fix characters that get URL encoded when calling getPath()
+            return URLDecoder.decode(jarPath, "UTF-8");
+        } catch(IOException ex) {
+            log.error("Unable to determine Jar path", ex);
         }
-
-        return parent + File.separator + folder;
+        return null;
     }
 
     /**
-     * Returns the OS shared data directory for FileIO operations. Must match
-     * that defined in desktop installer scripts, which create directories
-     * and grant read/write access to normal users.
-     * access.
+     * Returns the jar which we will create a shortcut for
+     *
+     * @return The path to the jar path which has been set
+     */
+    public static String getJarPath() {
+        if (jarPath == null) {
+            jarPath = detectJarPath();
+        }
+        return jarPath;
+    }
+
+    /**
+     * Returns the app's path, based on the jar location
+     * or null if no .jar is found (such as running from IDE)
      * @return
      */
-    public static String getSharedDataDirectory() {
-        String parent;
-
-        if (isWindows()) {
-            parent = System.getenv("PROGRAMDATA");
-        } else if (isMac()) {
-            parent = "/Library/Application Support/";
-        } else {
-            parent = "/srv/";
+    public static Path detectAppPath() {
+        String jarPath = detectJarPath();
+        if (jarPath != null) {
+            File jar = new File(jarPath);
+            if (jar.getPath().endsWith(".jar") && jar.exists()) {
+                return Paths.get(jar.getParent());
+            }
         }
-
-        return parent + File.separator + Constants.DATA_DIR;
-    }
-
-    public static String getSharedDirectory() {
-        String parent = DeployUtilities.getSystemShortcutCreator().getParentDirectory();
-        String folder = Constants.SHARED_DATA_DIR;
-
-        return parent + File.separator + folder;
+        return null;
     }
 
     /**
@@ -167,6 +170,8 @@ public class SystemUtilities {
     public static boolean isWindows() {
         return (OS_NAME.contains("win"));
     }
+
+    public static boolean isWindowsXP() { return OS_NAME.contains("win") && OS_NAME.contains("xp"); }
 
     /**
      * Determine if the current Operating System is Mac OS

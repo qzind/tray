@@ -10,6 +10,7 @@
 package qz.utils;
 
 import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
 import org.codehaus.jettison.json.JSONException;
@@ -26,17 +27,26 @@ import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
 import qz.communication.FileIO;
 import qz.communication.FileParams;
+import qz.installer.WindowsSpecialFolders;
 import qz.exception.NullCommandException;
 import qz.ws.PrintSocketServer;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import static qz.common.Constants.ALLOW_FILE;
 
 /**
  * Common static file i/o utilities
@@ -46,6 +56,101 @@ import java.util.*;
 public class FileUtilities {
 
     private static final Logger log = LoggerFactory.getLogger(FileUtilities.class);
+    public static final Path USER_DIR = getUserDirectory();
+    public static final Path SHARED_DIR = getSharedDirectory();
+    public static final Path TEMP_DIR = getTempDirectory();
+
+    /**
+     * Zips up the USER_DIR, places on desktop with timestamp
+     */
+    public static boolean zipLogs() {
+        String date = new SimpleDateFormat("yyyy-MM-dd_HHmm").format(new Date());
+        String filename = Constants.DATA_DIR + "-" + date + ".zip";
+        Path destination = Paths.get(System.getProperty("user.home"), "Desktop", filename);
+
+        try {
+            zipDirectory(USER_DIR, destination);
+            log.info("Zipped the contents of {} and placed the resulting files in {}", USER_DIR, destination);
+            return true;
+        } catch(IOException e) {
+            log.warn("Could not create zip file: {}", destination, e);
+        }
+        return false;
+    }
+
+    protected static void zipDirectory(Path sourceDir, Path outputFile) throws IOException {
+        final ZipOutputStream outputStream = new ZipOutputStream(new FileOutputStream(outputFile.toFile()));
+        Files.walkFileTree(sourceDir, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
+                try {
+                    Path targetFile = sourceDir.relativize(file);
+                    outputStream.putNextEntry(new ZipEntry(targetFile.toString()));
+                    byte[] bytes = Files.readAllBytes(file);
+                    outputStream.write(bytes, 0, bytes.length);
+                    outputStream.closeEntry();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        outputStream.close();
+    }
+
+    /**
+     * Location where preferences and logs are kept
+     */
+    private static Path getUserDirectory() {
+        if(SystemUtilities.isWindows()) {
+            return Paths.get(WindowsSpecialFolders.ROAMING_APPDATA.getPath(), Constants.DATA_DIR);
+        } else if(SystemUtilities.isMac()) {
+            return Paths.get(System.getProperty("user.home"), "/Library/Application Support/", Constants.DATA_DIR);
+        } else {
+            return Paths.get(System.getProperty("user.home"), "." + Constants.DATA_DIR);
+        }
+    }
+
+    /**
+     * Location where shared preferences are kept, such as .autostart
+     */
+    private static Path getSharedDirectory() {
+        if(SystemUtilities.isWindows()) {
+            return Paths.get(WindowsSpecialFolders.PROGRAM_DATA.getPath(), Constants.DATA_DIR);
+        } else if(SystemUtilities.isMac()) {
+            return Paths.get("/Library/Application Support/", Constants.DATA_DIR);
+        } else {
+            return Paths.get("/srv/", Constants.DATA_DIR);
+        }
+    }
+
+    public static boolean childOf(File childFile, Path parentPath) {
+        Path child = childFile.toPath().toAbsolutePath();
+        Path parent = parentPath.toAbsolutePath();
+        if(SystemUtilities.isWindows()) {
+            return child.toString().toLowerCase().startsWith(parent.toString().toLowerCase());
+        }
+        return child.toString().startsWith(parent.toString());
+    }
+
+    public static Path inheritPermissions(Path filePath) {
+        if(SystemUtilities.isWindows()) {
+            // assume permissions are inherited
+        } else {
+            // assume permissions are not inherited
+            try {
+                FileAttribute attribute = PosixFilePermissions.asFileAttribute(Files.getPosixFilePermissions(filePath.getParent()));
+                Files.createDirectories(filePath.getParent(), attribute);
+                if (!Files.exists(filePath)) {
+                    Files.createFile(filePath, attribute);
+                }
+            } catch(IOException e) {
+                log.warn("Unable to inherit file permissions {}", filePath, e);
+            }
+        }
+        return filePath;
+
+    }
 
     private static final String[] badExtensions = new String[] {
             "exe", "pif", "paf", "application", "msi", "com", "cmd", "bat", "lnk", // Windows Executable program or script
@@ -113,17 +218,20 @@ public class FileUtilities {
     }
 
     private static void initializeRootFolder(FileParams fileParams, String commonName) throws IOException {
-        String parent = fileParams.isShared()? SystemUtilities.getSharedDataDirectory():SystemUtilities.getDataDirectory();
+        Path parent = fileParams.isShared()? SHARED_DIR:USER_DIR;
 
         Path rootPath;
         if (fileParams.isSandbox()) {
-            rootPath = Paths.get(parent, Constants.SANDBOX_DIR, commonName);
+            rootPath = Paths.get(parent.toString(), FileIO.SANDBOX_DATA_SUFFIX, commonName);
         } else {
-            rootPath = Paths.get(parent, Constants.NOT_SANDBOX_DIR);
+            rootPath = Paths.get(parent.toString(), FileIO.GLOBAL_DATA_SUFFIX);
         }
 
         if (!Files.exists(rootPath)) {
             Files.createDirectories(rootPath);
+            if(fileParams.isShared()) {
+                rootPath.toFile().setWritable(true, false);
+            }
         }
     }
 
@@ -142,11 +250,11 @@ public class FileUtilities {
         if (fileParams.getPath().isAbsolute()) {
             sanitizedPath = fileParams.getPath();
         } else {
-            String parent = fileParams.isShared()? SystemUtilities.getSharedDataDirectory():SystemUtilities.getDataDirectory();
+            Path parent = fileParams.isShared()? SHARED_DIR:USER_DIR;
             if (fileParams.isSandbox()) {
-                sanitizedPath = Paths.get(parent, Constants.SANDBOX_DIR, commonName).resolve(fileParams.getPath());
+                sanitizedPath = Paths.get(parent.toString(), FileIO.SANDBOX_DATA_SUFFIX, commonName).resolve(fileParams.getPath());
             } else {
-                sanitizedPath = Paths.get(parent, Constants.NOT_SANDBOX_DIR).resolve(fileParams.getPath());
+                sanitizedPath = Paths.get(parent.toString(), FileIO.GLOBAL_DATA_SUFFIX).resolve(fileParams.getPath());
             }
         }
 
@@ -166,7 +274,7 @@ public class FileUtilities {
         String[] tokens = fileName.split("\\.(?=[^.]+$)");
         if (tokens.length == 2) {
             String extension = tokens[1];
-            for(String bad : FileUtilities.badExtensions) {
+            for(String bad : badExtensions) {
                 if (bad.equalsIgnoreCase(extension)) {
                     return false;
                 }
@@ -194,9 +302,9 @@ public class FileUtilities {
                 } else if (allowed.getValue().contains("|sandbox|")) {
                     Path p;
                     if (sandbox) {
-                        p = Paths.get(allowed.getKey().toString(), Constants.SANDBOX_DIR, commonName);
+                        p = Paths.get(allowed.getKey().toString(), FileIO.SANDBOX_DATA_SUFFIX, commonName);
                     } else {
-                        p = Paths.get(allowed.getKey().toString(), Constants.NOT_SANDBOX_DIR);
+                        p = Paths.get(allowed.getKey().toString(), FileIO.GLOBAL_DATA_SUFFIX);
                     }
                     if (cleanPath.startsWith(p) && (allowRootDir || !cleanPath.equals(p))) {
                         return true;
@@ -207,11 +315,17 @@ public class FileUtilities {
         return false;
     }
 
+    public static String getParentDirectory(String filePath) {
+        // Working path should always default to the JARs parent folder
+        int lastSlash = filePath.lastIndexOf(File.separator);
+        return lastSlash < 0? "":filePath.substring(0, lastSlash);
+    }
+
     private static void populateWhiteList() {
         whiteList = new ArrayList<>();
         //default sandbox locations. More can be added through the properties file
-        whiteList.add(new AbstractMap.SimpleEntry<>(Paths.get(SystemUtilities.getDataDirectory()), "|sandbox|"));
-        whiteList.add(new AbstractMap.SimpleEntry<>(Paths.get(SystemUtilities.getSharedDataDirectory()), "|sandbox|"));
+        whiteList.add(new AbstractMap.SimpleEntry<>(USER_DIR, "|sandbox|"));
+        whiteList.add(new AbstractMap.SimpleEntry<>(SHARED_DIR, "|sandbox|"));
 
         Properties props = PrintSocketServer.getTrayProperties();
         if (props != null) {
@@ -269,12 +383,7 @@ public class FileUtilities {
      * @return {@code true} if restricted, {@code false} otherwise
      */
     public static boolean isBadPath(String path) {
-        if (SystemUtilities.isWindows()) {
-            // Case insensitive
-            return path.toLowerCase().contains(SystemUtilities.getDataDirectory().toLowerCase());
-        }
-
-        return path.contains(SystemUtilities.getDataDirectory());
+        return childOf(new File(path), USER_DIR);
     }
 
     /**
@@ -294,26 +403,6 @@ public class FileUtilities {
             }
         }
         return returnStringBuilder.toString();
-    }
-
-    public static boolean isSymlink(String filePath) {
-        log.info("Verifying symbolic link: {}", filePath);
-        boolean returnVal = false;
-        if (filePath != null) {
-            File f = new File(filePath);
-            if (f.exists()) {
-                try {
-                    File canonicalFile = (f.getParent() == null? f:f.getParentFile().getCanonicalFile());
-                    returnVal = !canonicalFile.getCanonicalFile().equals(canonicalFile.getAbsoluteFile());
-                }
-                catch(IOException ex) {
-                    log.error("IOException checking for symlink", ex);
-                }
-            }
-        }
-
-        log.info("Symbolic link result: {}", returnVal);
-        return returnVal;
     }
 
     public static String readLocalFile(String file) throws IOException {
@@ -396,29 +485,25 @@ public class FileUtilities {
         }
 
         if (!fileMap.containsKey(name) || fileMap.get(name) == null) {
-            String fileLoc;
-            if (local) {
-                fileLoc = SystemUtilities.getDataDirectory();
-            } else {
-                fileLoc = SystemUtilities.getSharedDirectory();
-            }
-
-            File locDir = new File(fileLoc);
-            File file = new File(fileLoc + File.separator + name + ".dat");
+            File path = local ? USER_DIR.toFile() : SHARED_DIR.toFile();
+            File dat = Paths.get(path.toString(),  name + ".dat").toFile();
 
             try {
-                locDir.mkdirs();
-                file.createNewFile();
+                path.mkdirs();
+                dat.createNewFile();
+                if(!local) {
+                    dat.setWritable(true, false);
+                }
             }
             catch(IOException e) {
                 //failure is possible due to user permissions on shared files
                 if (local || (!name.equals(Constants.ALLOW_FILE) && !name.equals(Constants.BLOCK_FILE))) {
-                    log.warn("Cannot setup file {} ({})", fileLoc, local? "Local":"Shared", e);
+                    log.warn("Cannot setup file {} ({})", dat, local? "Local":"Shared", e);
                 }
             }
 
-            if (file.exists()) {
-                fileMap.put(name, file);
+            if (dat.exists()) {
+                fileMap.put(name, dat);
             }
         }
 
@@ -434,6 +519,17 @@ public class FileUtilities {
         }
 
         localFileMap.put(name, null);
+    }
+
+    public static CommandParser.ExitStatus addToCertList(String list, File certFile) throws Exception {
+        FileReader fr = new FileReader(certFile);
+        Certificate cert = new Certificate(IOUtils.toString(fr));
+        if(FileUtilities.printLineToFile(list, cert.data())) {
+            log.info("Successfully added {} to {} list", cert.getOrganization(), ALLOW_FILE);
+            return CommandParser.ExitStatus.SUCCESS;
+        }
+        log.error("Failed to add {} to {} list", cert.getOrganization(), ALLOW_FILE);
+        return CommandParser.ExitStatus.GENERAL_ERROR;
     }
 
     public static boolean deleteFromFile(String fileName, String deleteLine) {
@@ -461,4 +557,126 @@ public class FileUtilities {
         }
     }
 
+    /**
+     *
+     * @return First line of ".autostart" file in user or shared space or "0" if blank.  If neither are found, returns "1".
+     * @throws IOException
+     */
+    private static String readAutoStartFile() throws IOException {
+        log.debug("Checking for {} preference in user directory {}...", Constants.AUTOSTART_FILE, USER_DIR);
+        Path userAutoStart = Paths.get(USER_DIR.toString(), Constants.AUTOSTART_FILE);
+        List<String> lines = null;
+        if (Files.exists(userAutoStart)) {
+            lines = Files.readAllLines(userAutoStart);
+        } else {
+            log.debug("Checking for {} preference in shared directory {}...", Constants.AUTOSTART_FILE, SHARED_DIR);
+            Path sharedAutoStart = Paths.get(SHARED_DIR.toString(), Constants.AUTOSTART_FILE);
+            if (Files.exists(sharedAutoStart)) {
+                lines = Files.readAllLines(sharedAutoStart);
+            }
+        }
+        if (lines == null) {
+            return "1";
+        } else if (lines.isEmpty()) {
+            log.warn("File {} is empty, this shouldn't happen.", Constants.AUTOSTART_FILE);
+            return "0";
+        } else {
+            String val = lines.get(0).trim();
+            log.debug("Autostart preference {} contains {}", Constants.AUTOSTART_FILE, val);
+            return val;
+        }
+    }
+
+    private static boolean writeAutoStartFile(String mode) throws IOException {
+        Path autostartFile = Paths.get(USER_DIR.toString(), Constants.AUTOSTART_FILE);
+        Files.write(autostartFile, mode.getBytes(), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        return readAutoStartFile().equals(mode);
+    }
+
+    public static boolean setAutostart(boolean autostart) {
+        try {
+            return writeAutoStartFile(autostart ? "1": "0");
+        }
+        catch(IOException e) {
+            return false;
+        }
+    }
+
+    public static boolean isAutostart() {
+        try {
+            return "1".equals(readAutoStartFile());
+        }
+        catch(IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Configures the given embedded resource file using qz.common.Constants combined with the provided
+     * HashMap and writes to the specified location
+     *
+     * Will look for resource relative to relativeClass package location.
+     */
+    public static void configureAssetFile(String relativeAsset, File dest, HashMap<String, String> additionalMappings, Class relativeClass) throws IOException {
+        // Static fields, parsed from qz.common.Constants
+        List<Field> fields = new ArrayList<>();
+        HashMap<String, String> allMappings = (HashMap<String, String>)additionalMappings.clone();
+        fields.addAll(Arrays.asList(Constants.class.getFields())); // public only
+        for(Field field : fields) {
+            if (Modifier.isStatic(field.getModifiers())) { // static only
+                try {
+                    String key = "%" + field.getName() + "%";
+                    Object value = field.get(null);
+                    if (value != null) {
+                        if (value instanceof String) {
+                            allMappings.putIfAbsent(key, (String)value);
+                        } else if(value instanceof Boolean) {
+                            allMappings.putIfAbsent(key, "" + field.getBoolean(null));
+                        }
+                    }
+                }
+                catch(IllegalAccessException e) {
+                    // This should never happen; we are only using public fields
+                    log.warn("{} occurred fetching a value for {}", e.getClass().getName(), field.getName(), e);
+                }
+            }
+        }
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(relativeClass.getResourceAsStream(relativeAsset)));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(dest));
+
+        String line;
+        while((line = reader.readLine()) != null) {
+            for(Map.Entry<String, String> mapping : allMappings.entrySet()) {
+                if (line.contains(mapping.getKey())) {
+                    line = line.replaceAll(mapping.getKey(), mapping.getValue());
+                }
+            }
+            writer.write(line + "\n");
+        }
+        reader.close();
+        writer.close();
+    }
+
+
+    public static Path getTempDirectory() {
+        try {
+            return Files.createTempDirectory(Constants.DATA_DIR);
+        } catch(IOException e) {
+            log.warn("We couldn't get a temp directory for writing.  This could cause some items to break");
+        }
+        return null;
+    }
+
+    public static void setPermissionsRecursively(Path toRecurse, boolean worldWrite) {
+        try (Stream<Path> paths = Files.walk(toRecurse)) {
+            paths.forEach((path)->{
+                path.toFile().setExecutable(true, false);
+                path.toFile().setReadable(true, false);
+                path.toFile().setWritable(true, !worldWrite);
+            });
+        } catch (IOException e) {
+            log.warn("An error occurred setting permissions: {}", toRecurse);
+        }
+    }
 }

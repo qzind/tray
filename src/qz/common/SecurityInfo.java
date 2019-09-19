@@ -6,7 +6,7 @@ import org.eclipse.jetty.util.Jetty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import purejavahidapi.PureJavaHidApi;
-import qz.deploy.DeployUtilities;
+import qz.utils.SystemUtilities;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -69,7 +69,7 @@ public class SecurityInfo {
             Method method = VersionInfo.getMethod("getVersion");
             Object version = method.invoke(null);
             libVersions.put("javafx", (String)version);
-            if (fxPath.contains(DeployUtilities.detectJarPath()) || fxPath.contains("/tray/")) {
+            if (fxPath.contains(SystemUtilities.detectJarPath()) || fxPath.contains("/tray/")) {
                 libVersions.put("javafx (location)", "Bundled/" + Constants.ABOUT_TITLE);
             } else {
                 libVersions.put("javafx (location)", "System/" + Constants.JAVA_VENDOR);
@@ -94,6 +94,19 @@ public class SecurityInfo {
         }
 
         return libVersions;
+    }
+
+    public static void printLibInfo() {
+        String format = "%-40s%s%n";
+        System.out.printf(format, "LIBRARY NAME:", "VERSION:");
+        SortedMap<String,String> libVersions = SecurityInfo.getLibVersions();
+        for(Map.Entry<String,String> entry : libVersions.entrySet()) {
+            if (entry.getValue() == null) {
+                System.out.printf(format, entry.getKey(), "(unknown)");
+            } else {
+                System.out.printf(format, entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     /**

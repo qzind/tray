@@ -12,6 +12,8 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.installer.certificate.KeyPairWrapper;
+import qz.installer.certificate.PropertiesLoader;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -22,8 +24,6 @@ import java.lang.management.ManagementFactory;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.text.DateFormat;
@@ -36,16 +36,14 @@ public class AboutInfo {
 
     private static String preferredHostname = "localhost";
 
-    public static JSONObject gatherAbout(String domain) {
+    public static JSONObject gatherAbout(String domain, PropertiesLoader propertiesLoader) {
         JSONObject about = new JSONObject();
-
-        KeyStore keyStore = SecurityInfo.getKeyStore(PrintSocketServer.getTrayProperties());
 
         try {
             about.put("product", product());
-            about.put("socket", socket(keyStore, domain));
+            about.put("socket", socket(propertiesLoader, domain));
             about.put("environment", environment());
-            about.put("ssl", ssl(keyStore));
+            about.put("ssl", ssl(propertiesLoader));
             about.put("libraries", libraries());
         }
         catch(JSONException | GeneralSecurityException e) {
@@ -67,13 +65,13 @@ public class AboutInfo {
         return product;
     }
 
-    private static JSONObject socket(KeyStore keystore, String domain) throws JSONException {
+    private static JSONObject socket(PropertiesLoader propertiesLoader, String domain) throws JSONException {
         JSONObject socket = new JSONObject();
 
         socket
                 .put("domain", domain)
                 .put("secureProtocol", "wss")
-                .put("securePort", keystore == null? "none":PrintSocketServer.getSecurePortInUse())
+                .put("securePort", propertiesLoader.isSslActive() ? "none":PrintSocketServer.getSecurePortInUse())
                 .put("insecureProtocol", "ws")
                 .put("insecurePort", PrintSocketServer.getInsecurePortInUse());
 
@@ -94,34 +92,27 @@ public class AboutInfo {
         return environment;
     }
 
-    private static JSONObject ssl(KeyStore keystore) throws JSONException, KeyStoreException, CertificateEncodingException {
+    private static JSONObject ssl(PropertiesLoader propertiesLoader) throws JSONException, CertificateEncodingException {
         JSONObject ssl = new JSONObject();
 
         JSONArray certs = new JSONArray();
-        if (keystore != null) {
-            Enumeration<String> aliases = keystore.aliases();
-            while(aliases.hasMoreElements()) {
-                String alias = aliases.nextElement();
-                if ("X.509".equals(keystore.getCertificate(alias).getType())) {
-                    JSONObject cert = new JSONObject();
-                    X509Certificate x509 = (X509Certificate)keystore.getCertificate(alias);
-                    cert.put("alias", alias);
-                    try {
-                        ASN1Primitive ext = X509ExtensionUtil.fromExtensionValue(x509.getExtensionValue(Extension.basicConstraints.getId()));
-                        cert.put("rootca", BasicConstraints.getInstance(ext).isCA());
-                    }
-                    catch(IOException | NullPointerException e) {
-                        cert.put("rootca", false);
-                    }
-                    String cn = x509.getSubjectX500Principal().getName();
-                    if (!cert.getBoolean("rootca")) {
-                        preferredHostname = cn;
-                    }
-                    cert.put("subject", cn);
-                    cert.put("expires", toISO(x509.getNotAfter()));
-                    cert.put("data", formatCert(x509.getEncoded()));
-                    certs.put(cert);
+
+        for (KeyPairWrapper keyPair : new KeyPairWrapper[]{ propertiesLoader.getCaKeyPair(), propertiesLoader.getSslKeyPair() }) {
+            X509Certificate x509 = keyPair.getCert();
+            if (x509 != null) {
+                JSONObject cert = new JSONObject();
+                cert.put("alias", keyPair.getAlias());
+                try {
+                    ASN1Primitive ext = X509ExtensionUtil.fromExtensionValue(x509.getExtensionValue(Extension.basicConstraints.getId()));
+                    cert.put("rootca", BasicConstraints.getInstance(ext).isCA());
                 }
+                catch(IOException | NullPointerException e) {
+                    cert.put("rootca", false);
+                }
+                cert.put("subject", x509.getSubjectX500Principal().getName());
+                cert.put("expires", toISO(x509.getNotAfter()));
+                cert.put("data", formatCert(x509.getEncoded()));
+                certs.put(cert);
             }
         }
         ssl.put("certificates", certs);

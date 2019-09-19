@@ -15,6 +15,14 @@ import qz.common.Constants;
 import qz.ui.component.IconCache;
 
 import java.awt.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Utility class for Ubuntu OS specific functions.
@@ -119,5 +127,4 @@ public class UbuntuUtilities {
         }
         return GtkUtilities.getScaleFactor();
     }
-
 }

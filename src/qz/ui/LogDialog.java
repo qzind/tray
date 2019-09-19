@@ -5,6 +5,7 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.WriterAppender;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
+import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
@@ -39,8 +40,8 @@ public class LogDialog extends BasicDialog {
     public void initComponents() {
         setIconImage(getImage(IconCache.Icon.LOG_ICON));
 
-        LinkLabel logDirLabel = new LinkLabel("Open Log Location");
-        logDirLabel.setLinkLocation(new File(SystemUtilities.getDataDirectory() + File.separator));
+        LinkLabel logDirLabel = new LinkLabel(FileUtilities.USER_DIR + File.separator);
+        logDirLabel.setLinkLocation(new File(FileUtilities.USER_DIR + File.separator));
         setHeader(logDirLabel);
 
         logArea = new JTextArea(ROWS, COLS);

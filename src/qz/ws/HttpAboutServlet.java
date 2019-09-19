@@ -7,18 +7,12 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.AboutInfo;
-import qz.deploy.DeployUtilities;
+import qz.installer.certificate.PropertiesLoader;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
 import java.util.Iterator;
-import java.util.Properties;
 
 /**
  * HTTP JSON endpoint for serving QZ Tray information
@@ -28,6 +22,11 @@ public class HttpAboutServlet extends DefaultServlet {
     private static final Logger log = LoggerFactory.getLogger(PrintSocketServer.class);
 
     private static final int JSON_INDENT = 2;
+    private PropertiesLoader propertiesLoader;
+
+    public HttpAboutServlet(PropertiesLoader propertiesLoader) {
+        this.propertiesLoader = propertiesLoader;
+    }
 
 
     @Override
@@ -50,7 +49,7 @@ public class HttpAboutServlet extends DefaultServlet {
 
         display.append(newTable());
 
-        JSONObject aboutData = AboutInfo.gatherAbout(request.getServerName());
+        JSONObject aboutData = AboutInfo.gatherAbout(request.getServerName(), propertiesLoader);
         try {
             display.append(generateFromKeys(aboutData, true));
         }
@@ -74,7 +73,7 @@ public class HttpAboutServlet extends DefaultServlet {
     }
 
     private void generateJsonResponse(HttpServletRequest request, HttpServletResponse response) {
-        JSONObject aboutData = AboutInfo.gatherAbout(request.getServerName());
+        JSONObject aboutData = AboutInfo.gatherAbout(request.getServerName(), propertiesLoader);
 
         try {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -90,7 +89,7 @@ public class HttpAboutServlet extends DefaultServlet {
     private void generateCertResponse(HttpServletRequest request, HttpServletResponse response) {
         try {
             String alias = request.getServletPath().split("/")[2];
-            String certData = loadCertificate(alias);
+            String certData = AboutInfo.formatCert(propertiesLoader.getSslKeyPair().getCert().getEncoded());
 
             if (certData != null) {
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -105,23 +104,6 @@ public class HttpAboutServlet extends DefaultServlet {
         catch(Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             log.warn("Exception occurred loading certificate: {}", e.getMessage());
-        }
-    }
-
-    private String loadCertificate(String alias) throws GeneralSecurityException, IOException {
-        Properties sslProps = DeployUtilities.loadTrayProperties();
-
-        if (sslProps != null) {
-            KeyStore jks = KeyStore.getInstance("jks");
-            jks.load(new FileInputStream(new File(sslProps.getProperty("wss.keystore"))), sslProps.getProperty("wss.storepass").toCharArray());
-
-            if (jks.containsAlias(alias)) {
-                return AboutInfo.formatCert(jks.getCertificate(alias).getEncoded());
-            } else {
-                return null;
-            }
-        } else {
-            return null;
         }
     }
 

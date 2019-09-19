@@ -1,0 +1,108 @@
+/**
+ * @author Tres Finocchiaro
+ *
+ * Copyright (C) 2019 Tres Finocchiaro, QZ Industries, LLC
+ *
+ * LGPL 2.1 This is free software.  This software and source code are released under
+ * the "LGPL 2.1 License".  A copy of this license should be distributed with
+ * this software. http://www.gnu.org/licenses/lgpl-2.1.html
+ */
+
+package qz.installer.certificate;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import qz.common.Constants;
+import qz.installer.Installer;
+import qz.utils.ShellUtilities;
+import qz.utils.SystemUtilities;
+
+import javax.swing.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author Tres Finocchiaro
+ */
+public class LinuxCertificateInstaller extends NativeCertificateInstaller {
+    private static final Logger log = LoggerFactory.getLogger(LinuxCertificateInstaller.class);
+
+    private static String NSSDB = "sql:" + System.getenv("HOME") + "/.pki/nssdb";
+
+    public LinuxCertificateInstaller(Installer.PrivilegeLevel certType) {
+        setInstallType(certType);
+        findCertutil();
+    }
+
+    public Installer.PrivilegeLevel getInstallType() {
+        return Installer.PrivilegeLevel.USER;
+    }
+
+    public void setInstallType(Installer.PrivilegeLevel certType) {
+        if (certType == Installer.PrivilegeLevel.SYSTEM) {
+            log.warn("System-wide certificates are only supported for Firefox.  Defaulting to user-certificate store instead.");
+        }
+    }
+
+    public boolean remove(List<String> idList) {
+        boolean success = true;
+        for (String nickname : idList) {
+            success = success && ShellUtilities.execute("certutil", "-d", NSSDB, "-D", "-n", nickname);
+        }
+        return success;
+    }
+
+    public List<String> find() {
+        ArrayList<String> nicknames = new ArrayList<>();
+        try {
+            Process p = Runtime.getRuntime().exec(new String[] {"certutil", "-d", NSSDB, "-L"});
+            BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line;
+            while ((line = in.readLine()) != null) {
+                if (line.startsWith(Constants.ABOUT_COMPANY + " ")) {
+                    nicknames.add(Constants.ABOUT_COMPANY);
+                    break; // Stop reading input; nicknames can't appear more than once
+                }
+            }
+            in.close();
+        } catch(IOException e) {
+            log.warn("Could not get certificate nicknames", e);
+        }
+        return nicknames;
+    }
+
+    public boolean add(File certFile) {
+        // Remove protocol, check if file exists
+        String[] parts = NSSDB.split(":", 2);
+        File dbFile = new File(parts[parts.length -1]);
+        if (dbFile.exists()) {
+            return ShellUtilities.execute("certutil", "-d", NSSDB, "-A", "-t", "TC", "-n", Constants.ABOUT_COMPANY, "-i", certFile.getPath());
+        }
+        log.warn("{} not found; normally created when browser is first opened", dbFile.getPath());
+        return false;
+    }
+
+    private boolean findCertutil() {
+        if (!ShellUtilities.execute("which", "certutil")) {
+            if (SystemUtilities.isUbuntu() && promptCertutil()) {
+                return ShellUtilities.execute("apt-get", "install", "-y", "libnss3-tools");
+            } else {
+                log.warn("A critical component, \"certutil\" wasn't found and cannot be installed automatically. HTTPS will fail on browsers which depend on it.");
+            }
+        }
+        return false;
+    }
+
+    private boolean promptCertutil() {
+        // Assume silent installs want certutil
+        if(Installer.IS_SILENT) {
+            return true;
+        }
+        SystemUtilities.setSystemLookAndFeel();
+        return JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(null, "A critical component, \"certutil\" wasn't found.  Attempt to fetch it now?");
+    }
+}

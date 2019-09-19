@@ -3,14 +3,18 @@ package qz.communication;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
-import qz.common.Constants;
+import qz.utils.FileUtilities;
 import qz.ws.PrintSocketClient;
 import qz.ws.StreamEvent;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
 
 public class FileIO {
+    public static final String SANDBOX_DATA_SUFFIX = "sandbox";
+    public static final String GLOBAL_DATA_SUFFIX = "shared";
+    public static final int FILE_LISTENER_DEFAULT_LINES = 10;
 
     public enum ReadType {
         BYTES, LINES
@@ -43,7 +47,7 @@ public class FileIO {
                 readType = ReadType.LINES;
             }
 
-            lines = options.optInt("lines", readType == ReadType.LINES? Constants.FILE_LISTENER_DEFAULT_LINES:-1);
+            lines = options.optInt("lines", readType == ReadType.LINES? FILE_LISTENER_DEFAULT_LINES:-1);
             reversed = options.optBoolean("reverse", readType == ReadType.LINES);
         }
     }

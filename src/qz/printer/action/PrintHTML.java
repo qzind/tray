@@ -21,7 +21,6 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
-import qz.deploy.DeployUtilities;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
@@ -59,7 +58,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
         //JavaFX native libs
         if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-            System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
+            System.setProperty("java.library.path", new File(SystemUtilities.detectJarPath()).getParent() + "/libs/");
         }
 
         models = new ArrayList<>();

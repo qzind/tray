@@ -86,7 +86,7 @@ public class RequestState {
     }
 
     public boolean hasSavedCert() {
-        return certUsed.isTrusted() && certUsed.isSaved();
+        return isVerified() && certUsed.isSaved();
     }
 
     public boolean hasBlockedCert() {
@@ -97,7 +97,7 @@ public class RequestState {
         return certUsed.getCommonName();
     }
 
-    public boolean isTrusted() {
+    public boolean isVerified() {
         return certUsed.isTrusted() && status == Validity.TRUSTED;
     }
 

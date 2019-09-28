@@ -119,7 +119,7 @@ public class RequestTable extends DisplayTable implements Themeable {
                     }
                     break;
                 case SIGNATURE:
-                    if (request.isTrusted()) {
+                    if (request.isVerified()) {
                         style = STATUS_TRUSTED;
                     } else if (request.getStatus() != RequestState.Validity.EXPIRED) {
                         style = STATUS_WARNING;
@@ -140,7 +140,7 @@ public class RequestTable extends DisplayTable implements Themeable {
                     }
                     break;
                 case VALIDITY:
-                    style = request.isTrusted()? STATUS_TRUSTED:STATUS_WARNING;
+                    style = request.isVerified()? STATUS_TRUSTED:STATUS_WARNING;
                     break;
             }
 

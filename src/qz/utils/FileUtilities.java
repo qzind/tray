@@ -94,7 +94,7 @@ public class FileUtilities {
 
     public static Path getAbsolutePath(JSONObject params, RequestState request, boolean allowRootDir) throws JSONException, IOException {
         FileParams fp = new FileParams(params);
-        String commonName = request.isTrusted()? escapeFileName(request.getCertName()):"UNTRUSTED";
+        String commonName = request.isVerified()? escapeFileName(request.getCertName()):"UNTRUSTED";
 
         Path path = createAbsolutePath(fp, commonName);
         initializeRootFolder(fp, commonName);

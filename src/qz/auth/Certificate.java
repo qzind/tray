@@ -9,7 +9,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.ssl.Base64;
 import org.apache.commons.ssl.X509CertificateChainBuilder;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.x509.*;
+import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.PrincipalUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.time.*;
+import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,11 +47,13 @@ public class Certificate {
     public static final String[] saveFields = new String[] {"fingerprint", "commonName", "organization", "validFrom", "validTo", "valid"};
 
     // Valid date range allows UI to only show "Expired" text for valid certificates
-    private static final Instant UNKNOWN_MIN = OffsetDateTime.MIN.toInstant();
-    private static final Instant UNKNOWN_MAX = OffsetDateTime.MAX.toInstant();
+    private static final Instant UNKNOWN_MIN = LocalDateTime.MIN.toInstant(ZoneOffset.UTC);
+    private static final Instant UNKNOWN_MAX = LocalDateTime.MAX.toInstant(ZoneOffset.UTC);
 
     private static boolean overrideTrustedRootCert = false;
-    private DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private static DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static DateTimeFormatter dateParse = DateTimeFormatter.ofPattern("uuuu-MM-dd['T'][ ]HH:mm:ss[.n]['Z']"); //allow parsing of both ISO and custom formatted dates
 
     private X509Certificate theCertificate;
     private String fingerprint;
@@ -186,7 +191,8 @@ public class Certificate {
 
             try {
                 readRenewalInfo();
-            } catch (Exception e) {
+            }
+            catch(Exception e) {
                 log.error("Error reading certificate renewal info", e);
             }
 
@@ -249,8 +255,8 @@ public class Certificate {
         cert.organization = data.get("organization");
 
         try {
-            cert.validFrom = Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(data.get("validFrom")));
-            cert.validTo = Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(data.get("validTo")));
+            cert.validFrom = Instant.from(LocalDateTime.from(dateParse.parse(data.get("validFrom"))).atZone(ZoneOffset.UTC));
+            cert.validTo = Instant.from(LocalDateTime.from(dateParse.parse(data.get("validTo"))).atZone(ZoneOffset.UTC));
         }
         catch(DateTimeException e) {
             cert.validFrom = UNKNOWN_MIN;
@@ -342,7 +348,7 @@ public class Certificate {
 
     public String getValidFrom() {
         if (validFrom.isAfter(UNKNOWN_MIN)) {
-            return dateFormat.format(validFrom.atZone(ZoneId.systemDefault()));
+            return dateFormat.format(validFrom.atZone(ZoneOffset.UTC));
         } else {
             return "Not Provided";
         }
@@ -350,7 +356,7 @@ public class Certificate {
 
     public String getValidTo() {
         if (validTo.isBefore(UNKNOWN_MAX)) {
-            return dateFormat.format(validTo.atZone(ZoneId.systemDefault()));
+            return dateFormat.format(validTo.atZone(ZoneOffset.UTC));
         } else {
             return "Not Provided";
         }

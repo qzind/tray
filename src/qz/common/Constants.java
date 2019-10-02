@@ -34,7 +34,9 @@ public class Constants {
     public static final String ABOUT_TITLE = "QZ Tray";
     public static final String ABOUT_URL = "https://qz.io";
     public static final String ABOUT_COMPANY = "QZ Industries, LLC";
-    public static final String ABOUT_VERSION_URL = "https://github.com/qzind/tray/releases";
+
+    public static final String VERSION_CHECK_URL = "https://api.github.com/repos/qzind/tray/releases";
+    public static final String VERSION_DOWNLOAD_URL = "https://github.com/qzind/tray/releases";
 
     public static final String TRUSTED_CERT = String.format("Verified by %s", Constants.ABOUT_COMPANY);
     public static final String UNTRUSTED_CERT = "Untrusted website";

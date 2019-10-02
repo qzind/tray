@@ -1,10 +1,10 @@
 package qz.ui;
 
 import com.github.zafarkhaja.semver.Version;
-import org.codehaus.jettison.json.JSONArray;
 import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.common.AboutInfo;
 import qz.common.Constants;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
@@ -14,8 +14,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.font.TextAttribute;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,30 +27,12 @@ public class AboutDialog extends BasicDialog implements Themeable {
     private static final Logger log = LoggerFactory.getLogger(AboutDialog.class);
 
     private Server server;
-    private Version latestVersion;
 
+    private JLabel lblUpdate;
+    private JButton updateButton;
 
     public AboutDialog(JMenuItem menuItem, IconCache iconCache) {
         super(menuItem, iconCache);
-
-        try {
-            URL api = new URL("https://api.github.com/repos/qzind/tray/releases");
-            BufferedReader br = new BufferedReader(new InputStreamReader(api.openStream()));
-
-            StringBuilder rawJson = new StringBuilder();
-            String line;
-            while((line = br.readLine()) != null) {
-                rawJson.append(line);
-            }
-
-            JSONArray json = new JSONArray(rawJson.toString());
-            latestVersion = Version.valueOf(json.getJSONObject(0).getString("name"));
-
-            log.trace("Found latest version: {}", latestVersion);
-        }
-        catch(Exception e) {
-            log.error("Failed to get latest version info", e);
-        }
     }
 
     public void setServer(Server server) {
@@ -68,12 +48,12 @@ public class AboutDialog extends BasicDialog implements Themeable {
         lblAbout.setFont(new Font(null, Font.PLAIN, 36));
 
         LinkLabel linkNew = new LinkLabel("What's New?");
-        linkNew.setLinkLocation(Constants.ABOUT_VERSION_URL);
+        linkNew.setLinkLocation(Constants.VERSION_DOWNLOAD_URL);
         LinkLabel linkLibrary = new LinkLabel("Detailed library information");
-        linkLibrary.setLinkLocation(server.getURI().toString());
+        linkLibrary.setLinkLocation(String.format("%s://%s:%s", server.getURI().getScheme(), AboutInfo.getPreferredHostname(), server.getURI().getPort()));
 
-        JLabel lblUpdate = new JLabel();
-        JButton updateButton = new JButton();
+        lblUpdate = new JLabel();
+        updateButton = new JButton();
         updateButton.setVisible(false);
         updateButton.addActionListener(new ActionListener() {
             @Override
@@ -82,17 +62,8 @@ public class AboutDialog extends BasicDialog implements Themeable {
                 catch(Exception e) { log.error("", e); }
             }
         });
+        checkForUpdate();
 
-        if (latestVersion.greaterThan(Constants.VERSION)) {
-            lblUpdate.setText("An update is available:");
-
-            updateButton.setText("Download " + latestVersion.toString());
-            updateButton.setVisible(true);
-        } else {
-            lblUpdate.setText("You have the latest version.");
-        }
-
-        //JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEADING));
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
         infoPanel.setPreferredSize(new Dimension(320, 260));
@@ -154,5 +125,35 @@ public class AboutDialog extends BasicDialog implements Themeable {
 
         setContent(panel, true);
     }
+
+    private void checkForUpdate() {
+        Version latestVersion = AboutInfo.findLatestVersion();
+        if (latestVersion.greaterThan(Constants.VERSION)) {
+            lblUpdate.setText("An update is available:");
+
+            updateButton.setText("Download " + latestVersion.toString());
+            updateButton.setVisible(true);
+        } else if (latestVersion.lessThan(Constants.VERSION)) {
+            lblUpdate.setText("You are on a beta release.");
+
+            updateButton.setText("Revert to stable " + latestVersion.toString());
+            updateButton.setVisible(true);
+        } else {
+            lblUpdate.setText("You have the latest version.");
+
+            updateButton.setVisible(false);
+        }
+    }
+
+
+    @Override
+    public void setVisible(boolean visible) {
+        if (visible) {
+            checkForUpdate();
+        }
+
+        super.setVisible(visible);
+    }
+
 
 }

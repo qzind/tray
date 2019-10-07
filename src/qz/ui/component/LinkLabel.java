@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * Created by Tres on 2/19/2015.
  */
-public class LinkLabel extends JLabel implements Themeable {
+public class LinkLabel extends EmLabel implements Themeable {
 
     private static final Logger log = LoggerFactory.getLogger(LinkLabel.class);
 
@@ -37,6 +37,11 @@ public class LinkLabel extends JLabel implements Themeable {
 
     public LinkLabel(String text) {
         super(text);
+        initialize();
+    }
+
+    public LinkLabel(String text, float multiplier, boolean underline) {
+        super(text, multiplier, underline);
         initialize();
     }
 

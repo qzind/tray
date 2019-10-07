@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.AboutInfo;
 import qz.common.Constants;
+import qz.ui.component.EmLabel;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
 
@@ -57,8 +58,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
     public void initComponents() {
         setIconImage(getImage(IconCache.Icon.ABOUT_ICON));
 
-        JLabel lblAbout = new JLabel(Constants.ABOUT_TITLE);
-        lblAbout.setFont(new Font(null, Font.PLAIN, 36));
+        JLabel lblAbout = new EmLabel(Constants.ABOUT_TITLE, 3);
 
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
@@ -130,23 +130,14 @@ public class AboutDialog extends BasicDialog implements Themeable {
         panel.add(new JToolBar.Separator());
 
         if (!limitedDisplay) {
-            //override font to remove underline for these links
-            Font lblFont = new Font(null, Font.PLAIN, 12);
-            Map<TextAttribute,Object> attributes = new HashMap<>(lblFont.getAttributes());
-            attributes.remove(TextAttribute.UNDERLINE);
-            lblFont = lblFont.deriveFont(attributes);
-
-            LinkLabel lblLicensing = new LinkLabel("Licensing Information");
+            LinkLabel lblLicensing = new LinkLabel("Licensing Information", 0.9f, false);
             lblLicensing.setLinkLocation(Constants.ABOUT_URL + "/licensing");
-            lblLicensing.setFont(lblFont);
 
-            LinkLabel lblSupport = new LinkLabel("Support Information");
+            LinkLabel lblSupport = new LinkLabel("Support Information", 0.9f, false);
             lblSupport.setLinkLocation(Constants.ABOUT_URL + "/support");
-            lblSupport.setFont(lblFont);
 
-            LinkLabel lblPrivacy = new LinkLabel("Privacy Policy");
+            LinkLabel lblPrivacy = new LinkLabel("Privacy Policy", 0.9f, false);
             lblPrivacy.setLinkLocation(Constants.ABOUT_URL + "/privacy");
-            lblPrivacy.setFont(lblFont);
 
             JPanel supportPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 80, 10));
             supportPanel.add(lblLicensing);

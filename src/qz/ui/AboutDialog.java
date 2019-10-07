@@ -10,6 +10,7 @@ import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -33,6 +34,13 @@ public class AboutDialog extends BasicDialog implements Themeable {
     private JLabel lblUpdate;
     private JButton updateButton;
 
+    // Use <html> allows word wrapping on a standard JLabel
+    class TextWrapLabel extends JLabel {
+        TextWrapLabel(String text) {
+            super("<html>" + text + "</html>");
+        }
+    }
+
     public AboutDialog(JMenuItem menuItem, IconCache iconCache) {
         super(menuItem, iconCache);
 
@@ -54,7 +62,6 @@ public class AboutDialog extends BasicDialog implements Themeable {
 
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-        infoPanel.setPreferredSize(new Dimension(320, 260));
 
         LinkLabel linkLibrary = new LinkLabel("Detailed library information");
         linkLibrary.setLinkLocation(String.format("%s://%s:%s", server.getURI().getScheme(), AboutInfo.getPreferredHostname(), server.getURI().getPort()));
@@ -62,6 +69,12 @@ public class AboutDialog extends BasicDialog implements Themeable {
         Box versionBox = Box.createHorizontalBox();
         versionBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         versionBox.add(new JLabel(String.format("%s (Java)", Constants.VERSION.toString())));
+
+
+        JPanel aboutPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JLabel logo = new JLabel(getIcon(IconCache.Icon.LOGO_ICON));
+        logo.setBorder(new EmptyBorder(0, 0, 0, limitedDisplay ? 0 : 20));
+        aboutPanel.add(logo);
 
         if (!limitedDisplay) {
             LinkLabel linkNew = new LinkLabel("What's New?");
@@ -88,11 +101,12 @@ public class AboutDialog extends BasicDialog implements Themeable {
             infoPanel.add(lblUpdate);
             infoPanel.add(updateButton);
             infoPanel.add(Box.createVerticalGlue());
-            infoPanel.add(new JLabel(String.format("<html>%s is written and supported by %s.</html>", Constants.ABOUT_TITLE, Constants.ABOUT_COMPANY)));
+            infoPanel.add(new TextWrapLabel(String.format("%s is written and supported by %s.", Constants.ABOUT_TITLE, Constants.ABOUT_COMPANY)));
             infoPanel.add(Box.createVerticalGlue());
-            infoPanel.add(new JLabel(String.format("<html>If using %s commercially, please first reach out to the website publisher for support issues.</html>", Constants.ABOUT_TITLE)));
+            infoPanel.add(new TextWrapLabel(String.format("If using %s commercially, please first reach out to the website publisher for support issues.", Constants.ABOUT_TITLE)));
             infoPanel.add(Box.createVerticalGlue());
             infoPanel.add(linkLibrary);
+            infoPanel.setPreferredSize(logo.getPreferredSize());
         } else {
             LinkLabel linkLabel = new LinkLabel(Constants.ABOUT_URL);
             linkLabel.setLinkLocation(Constants.ABOUT_URL);
@@ -108,9 +122,6 @@ public class AboutDialog extends BasicDialog implements Themeable {
             infoPanel.add(Box.createHorizontalStrut(16));
         }
 
-
-        JPanel aboutPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        aboutPanel.add(new JLabel(getIcon(IconCache.Icon.LOGO_ICON)));
         aboutPanel.add(infoPanel);
 
         JPanel panel = new JPanel();

@@ -59,6 +59,10 @@ public class AboutDialog extends BasicDialog implements Themeable {
         LinkLabel linkLibrary = new LinkLabel("Detailed library information");
         linkLibrary.setLinkLocation(String.format("%s://%s:%s", server.getURI().getScheme(), AboutInfo.getPreferredHostname(), server.getURI().getPort()));
 
+        Box versionBox = Box.createHorizontalBox();
+        versionBox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        versionBox.add(new JLabel(String.format("%s (Java)", Constants.VERSION.toString())));
+
         if (!limitedDisplay) {
             LinkLabel linkNew = new LinkLabel("What's New?");
             linkNew.setLinkLocation(Constants.VERSION_DOWNLOAD_URL);
@@ -74,10 +78,6 @@ public class AboutDialog extends BasicDialog implements Themeable {
                 }
             });
             checkForUpdate();
-
-            Box versionBox = Box.createHorizontalBox();
-            versionBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-            versionBox.add(new JLabel(String.format("%s (Java)", Constants.VERSION.toString())));
             versionBox.add(Box.createHorizontalStrut(12));
             versionBox.add(linkNew);
 
@@ -99,6 +99,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
 
             infoPanel.add(Box.createVerticalGlue());
             infoPanel.add(lblAbout);
+            infoPanel.add(versionBox);
             infoPanel.add(Box.createVerticalStrut(16));
             infoPanel.add(linkLabel);
             infoPanel.add(Box.createVerticalStrut(8));

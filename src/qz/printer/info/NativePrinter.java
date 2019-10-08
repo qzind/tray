@@ -162,7 +162,9 @@ public class NativePrinter {
             resSupport = new PrinterResolution[]{ getResolution().value() };
         }
         for(PrinterResolution res : resSupport) {
-            densities.add(res.getFeedResolution(ResolutionSyntax.DPI));
+            if (res != null) {
+                densities.add(res.getFeedResolution(ResolutionSyntax.DPI));
+            }
         }
 
         return densities;

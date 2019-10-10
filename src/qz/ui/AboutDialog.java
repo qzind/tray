@@ -127,7 +127,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
         panel.add(aboutPanel);
-        panel.add(new JToolBar.Separator());
+        panel.add(new JSeparator());
 
         if (!limitedDisplay) {
             LinkLabel lblLicensing = new LinkLabel("Licensing Information", 0.9f, false);

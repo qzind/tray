@@ -15,7 +15,7 @@ import java.awt.event.MouseListener;
 import java.awt.font.TextAttribute;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * Created by Tres on 2/19/2015.
  */
-public class LinkLabel extends JLabel implements Themeable {
+public class LinkLabel extends EmLabel implements Themeable {
 
     private static final Logger log = LoggerFactory.getLogger(LinkLabel.class);
 
@@ -35,63 +35,56 @@ public class LinkLabel extends JLabel implements Themeable {
         initialize();
     }
 
-    public LinkLabel(final String text) {
+    public LinkLabel(String text) {
         super(text);
         initialize();
-        addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    // Sense the action based on the content of the text
-                    if (text.contains("@")) {
-                        Desktop.getDesktop().mail(new URI(text));
-                    } else {
-                        File filePath = new File(text);
-                        ShellUtilities.browseDirectory(filePath.isDirectory() ? text : filePath.getParent());
-                    }
-
-                }
-                catch(Exception ex) {
-                    log.error("", ex);
-                }
-            }
-        });
     }
 
-    public LinkLabel(final URL url) {
-        super(url.toString());
+    public LinkLabel(String text, float multiplier, boolean underline) {
+        super(text, multiplier, underline);
         initialize();
+    }
+
+    public void setLinkLocation(final String url) {
+        try {
+            setLinkLocation(new URL(url));
+        }
+        catch(MalformedURLException mue) {
+            log.error("", mue);
+        }
+    }
+
+    public void setLinkLocation(final URL location) {
         addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent ae) {
                 try {
-                    Desktop.getDesktop().browse(url.toURI());
+                    Desktop.getDesktop().browse(location.toURI());
                 }
-                catch(Exception ex) {
-                    log.error("", ex);
+                catch(Exception e) {
+                    log.error("", e);
                 }
             }
         });
     }
 
-    public LinkLabel(final File filePath) {
-        super(filePath.getPath());
-        initialize();
+    public void setLinkLocation(final File filePath) {
         addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent ae) {
                 try {
-                    ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getCanonicalPath() : filePath.getParent());
+                    ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getPath():filePath.getParent());
                 }
-                catch(IOException ex) {
-                    log.error("", ex);
+                catch(IOException ioe) {
+                    log.error("", ioe);
                 }
             }
         });
     }
+
 
     private void initialize() {
-        Map<TextAttribute, Object> attributes = new HashMap<>(getFont().getAttributes());
+        Map<TextAttribute,Object> attributes = new HashMap<>(getFont().getAttributes());
         attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
         setFont(getFont().deriveFont(attributes));
 

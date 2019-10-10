@@ -1,5 +1,6 @@
 package qz.common;
 
+import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.ssl.Base64;
 import org.bouncycastle.asn1.ASN1Primitive;
@@ -14,8 +15,11 @@ import org.slf4j.LoggerFactory;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -30,6 +34,7 @@ public class AboutInfo {
 
     private static final Logger log = LoggerFactory.getLogger(AboutInfo.class);
 
+    private static String preferredHostname = "localhost";
 
     public static JSONObject gatherAbout(String domain) {
         JSONObject about = new JSONObject();
@@ -108,7 +113,11 @@ public class AboutInfo {
                     catch(IOException | NullPointerException e) {
                         cert.put("rootca", false);
                     }
-                    cert.put("subject", x509.getSubjectX500Principal().getName());
+                    String cn = x509.getSubjectX500Principal().getName();
+                    if (!cert.getBoolean("rootca")) {
+                        preferredHostname = cn;
+                    }
+                    cert.put("subject", cn);
                     cert.put("expires", toISO(x509.getNotAfter()));
                     cert.put("data", formatCert(x509.getEncoded()));
                     certs.put(cert);
@@ -140,12 +149,40 @@ public class AboutInfo {
         return libraries;
     }
 
+    public static String getPreferredHostname() {
+        return preferredHostname;
+    }
 
     private static String toISO(Date d) {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
         TimeZone tz = TimeZone.getTimeZone("UTC");
         df.setTimeZone(tz);
         return df.format(d);
+    }
+
+    public static Version findLatestVersion() {
+        Version latestVersion = Constants.VERSION;
+
+        try {
+            URL api = new URL(Constants.VERSION_CHECK_URL);
+            BufferedReader br = new BufferedReader(new InputStreamReader(api.openStream()));
+
+            StringBuilder rawJson = new StringBuilder();
+            String line;
+            while((line = br.readLine()) != null) {
+                rawJson.append(line);
+            }
+
+            JSONArray json = new JSONArray(rawJson.toString());
+            latestVersion = Version.valueOf(json.getJSONObject(0).getString("name"));
+
+            log.trace("Found latest version: {}", latestVersion);
+        }
+        catch(Exception e) {
+            log.error("Failed to get latest version info", e);
+        }
+
+        return latestVersion;
     }
 
 }

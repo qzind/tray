@@ -21,8 +21,8 @@ RequestExecutionLevel admin
 ; Branding for qz only
 !if "${project.filename}" == "qz-tray"
     !define MUI_UNICON "${basedir}/ant/windows/nsis/uninstall.ico"
-    !define MUI_WELCOMEFINISHPAGE_BITMAP "${basedir}/ant/windows/nsis/welcome.bmp"
-    !define MUI_UNWELCOMEFINISHPAGE_BITMAP "${basedir}/ant/windows/nsis/welcome.bmp"
+    !define MUI_WELCOMEFINISHPAGE_BITMAP "${basedir}\ant\windows\nsis\welcome.bmp"
+    !define MUI_UNWELCOMEFINISHPAGE_BITMAP "${basedir}\ant\windows\nsis\welcome.bmp"
 !endif
 
 !insertmacro MUI_PAGE_WELCOME

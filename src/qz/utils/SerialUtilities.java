@@ -17,6 +17,7 @@ import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
 import qz.ws.StreamEvent;
 
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 
@@ -79,7 +80,7 @@ public class SerialUtilities {
      * Turn a string into a character byte array.
      * First attempting to take the entire string as a character literal (for non-printable unicode).
      */
-    public static byte[] characterBytes(String convert) {
+    public static byte[] characterBytes(String convert, Charset charset) {
         if (convert.length() > 2) {
             try {
                 //try to interpret entire string as single char representation (such as "\u0000" or "0xFFFF")
@@ -90,7 +91,7 @@ public class SerialUtilities {
         }
 
         //try escaping string using Apache (to get strings like "\r" as characters)
-        return StringEscapeUtils.unescapeJava(convert).getBytes();
+        return StringEscapeUtils.unescapeJava(convert).getBytes(charset);
     }
 
 

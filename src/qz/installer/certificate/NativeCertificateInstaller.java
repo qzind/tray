@@ -53,7 +53,7 @@ public abstract class NativeCertificateInstaller {
      */
     public boolean install(X509Certificate cert) {
         try {
-            File certFile = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA), PropertiesLoader.DEFAULT_CERTIFICATE_EXTENSION);
+            File certFile = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", PropertiesLoader.DEFAULT_CERTIFICATE_EXTENSION);
             JcaMiscPEMGenerator generator = new JcaMiscPEMGenerator(cert);
             JcaPEMWriter writer = new JcaPEMWriter(new OutputStreamWriter(Files.newOutputStream(certFile.toPath(), StandardOpenOption.CREATE)));
             writer.writeObject(generator.generate());
@@ -93,6 +93,7 @@ public abstract class NativeCertificateInstaller {
     public abstract boolean add(File certFile);
     public abstract boolean remove(List<String> idList);
     public abstract List<String> find();
+    public abstract boolean verify(File certFile);
     public abstract void setInstallType(Installer.PrivilegeLevel certType);
     public abstract Installer.PrivilegeLevel getInstallType();
 }

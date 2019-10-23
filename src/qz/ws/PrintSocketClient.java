@@ -670,7 +670,8 @@ public class PrintSocketClient {
 
     private Point findDialogPosition(Session session, JSONObject positionData) {
         Point pos = new Point(0, 0);
-        if (session.getRemoteAddress().getAddress().isLoopbackAddress() && positionData != null) {
+        if (session.getRemoteAddress().getAddress().isLoopbackAddress() && positionData != null
+                && !positionData.isNull("x") && !positionData.isNull("y")) {
             pos.move(positionData.optInt("x"), positionData.optInt("y"));
         }
 

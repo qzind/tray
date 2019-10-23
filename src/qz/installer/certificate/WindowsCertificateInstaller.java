@@ -95,6 +95,25 @@ public class WindowsCertificateInstaller extends NativeCertificateInstaller {
         return serialList;
     }
 
+    public boolean verify(File certFile) {
+        // -user also will check the root store
+        String dwErrorStatus = ShellUtilities.execute( new String[] {"certutil", "-user", "-verify",  certFile.getPath() }, new String[] { "dwErrorStatus=" }, false, false);
+        if(!dwErrorStatus.isEmpty()) {
+            String[] parts = dwErrorStatus.split("[\r\n\\s]+");
+            for(String part : parts) {
+                if(part.startsWith("dwErrorStatus=")) {
+                    log.info("Certificate validity says {}", part);
+                    String[] status = part.split("=", 2);
+                    if (status.length == 2) {
+                        return status[1].trim().equals("0");
+                    }
+                }
+            }
+        }
+        log.warn("Unable to determine certificate validity, you'll be prompted on startup");
+        return false;
+    }
+
     public void setInstallType(Installer.PrivilegeLevel type) {
         this.type = type;
     }

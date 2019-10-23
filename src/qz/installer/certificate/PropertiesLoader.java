@@ -82,14 +82,14 @@ public class PropertiesLoader {
             sslKeyPair = cb.createSslCert(caKeyPair);
 
             // Create CA
-            properties = createKeyStore(caKeyPair)
-                    .writeCert(caKeyPair)
-                    .writeKeystore(null, caKeyPair);
+            properties = createKeyStore(CA)
+                    .writeCert(CA)
+                    .writeKeystore(null, CA);
 
             // Create SSL
-            properties = createKeyStore(sslKeyPair)
-                    .writeCert(sslKeyPair)
-                    .writeKeystore(properties, sslKeyPair);
+            properties = createKeyStore(SSL)
+                    .writeCert(SSL)
+                    .writeKeystore(properties, SSL);
 
             // Save properties
             saveProperties();
@@ -106,7 +106,7 @@ public class PropertiesLoader {
 
         // Assumes ssl/privkey.pem, ssl/fullchain.pem
         properties = createTrustedKeystore(trustedPemKey, trustedPemCert)
-                .writeKeystore(properties, sslKeyPair);
+                .writeKeystore(properties, SSL);
 
         // Save properties
         saveProperties();
@@ -125,7 +125,7 @@ public class PropertiesLoader {
         sslKeyPair.init(pkcs12File, password);
 
         // Save it back, but to a location we can find
-        properties = writeKeystore(null, sslKeyPair);
+        properties = writeKeystore(null, SSL);
 
         // Save properties
         saveProperties();
@@ -134,7 +134,7 @@ public class PropertiesLoader {
     public void renewCertChain(String ... hostNames) throws Exception {
         CertificateChainBuilder cb = new CertificateChainBuilder(hostNames);
         sslKeyPair = cb.createSslCert(caKeyPair);
-        createKeyStore(sslKeyPair).writeKeystore(properties, sslKeyPair);
+        createKeyStore(SSL).writeKeystore(properties, SSL);
         reloadSslContextFactory();
     }
 
@@ -203,7 +203,8 @@ public class PropertiesLoader {
         return needsInstall;
     }
 
-    public PropertiesLoader createKeyStore(KeyPairWrapper keyPair) throws IOException, GeneralSecurityException {
+    public PropertiesLoader createKeyStore(KeyPairWrapper.Type type) throws IOException, GeneralSecurityException {
+        KeyPairWrapper keyPair = type == CA ? caKeyPair : sslKeyPair;
         KeyStore keyStore = KeyStore.getInstance(DEFAULT_KEYSTORE_FORMAT);
         keyStore.load(null, password);
 
@@ -268,11 +269,21 @@ public class PropertiesLoader {
         return this;
     }
 
-    public PropertiesLoader writeCert(KeyPairWrapper keyPair) throws IOException {
-        File sslDir = getWritableLocation("ssl");
+    public PropertiesLoader writeCert(KeyPairWrapper.Type type) throws  IOException {
+        return writeCert(type, null);
+    }
+
+    public PropertiesLoader writeCert(KeyPairWrapper.Type type, File dest) throws IOException {
+        KeyPairWrapper keyPair = type == CA ? caKeyPair : sslKeyPair;
+        File certFile;
+        if(dest == null) {
+            certFile = new File(getWritableLocation("ssl"), keyPair.getAlias() + DEFAULT_CERTIFICATE_EXTENSION);
+        } else {
+            certFile = dest;
+        }
 
         JcaMiscPEMGenerator cert = new JcaMiscPEMGenerator(keyPair.getCert());
-        File certFile = new File(sslDir, keyPair.getAlias() + DEFAULT_CERTIFICATE_EXTENSION);
+
         JcaPEMWriter writer = new JcaPEMWriter(new OutputStreamWriter(Files.newOutputStream(certFile.toPath(), StandardOpenOption.CREATE)));
         writer.writeObject(cert.generate());
         writer.close();
@@ -285,17 +296,17 @@ public class PropertiesLoader {
         return this;
     }
 
-    public Properties writeKeystore(Properties props, KeyPairWrapper keyPair) throws GeneralSecurityException, IOException {
+    public Properties writeKeystore(Properties props, KeyPairWrapper.Type type) throws GeneralSecurityException, IOException {
         File sslDir = getWritableLocation("ssl");
+        KeyPairWrapper keyPair = type == CA ? caKeyPair : sslKeyPair;
 
         File keyFile = new File(sslDir, keyPair.getAlias() + DEFAULT_KEYSTORE_EXTENSION);
         keyPair.getKeyStore().store(Files.newOutputStream(keyFile.toPath(), StandardOpenOption.CREATE), getPassword());
         log.info("Wrote {} Key: \"{}\"", DEFAULT_KEYSTORE_FORMAT, keyFile);
         FileUtilities.inheritPermissions(keyFile.toPath());
 
-        // Write out the properties (forcing order)
         if (props == null) {
-            props = createOrderedProperties();
+            props = new Properties();
         }
         props.putIfAbsent(String.format("%s.keystore", keyPair.propsPrefix()), keyFile.toString());
         props.putIfAbsent(String.format("%s.storepass", keyPair.propsPrefix()), new String(getPassword()));
@@ -379,7 +390,7 @@ public class PropertiesLoader {
     public static Properties loadKeyPair(KeyPairWrapper keyPair, Path parent, Properties existing) throws Exception {
         Properties props;
         if (existing == null) {
-            props = createOrderedProperties();
+            props = new Properties();
             props.load(new FileInputStream(new File(parent.toFile(), Constants.PROPS_FILE + ".properties")));
         } else {
             props = existing;
@@ -402,23 +413,6 @@ public class PropertiesLoader {
             return props;
         }
         return null;
-    }
-
-    public static Properties createOrderedProperties() {
-        return new Properties() {
-            private final LinkedHashSet<Object> keyOrder = new LinkedHashSet<>();
-
-            @Override
-            public synchronized Enumeration<Object> keys() {
-                return Collections.enumeration(keyOrder);
-            }
-
-            @Override
-            public synchronized Object put(Object key, Object value) {
-                keyOrder.add(key);
-                return super.put(key, value);
-            }
-        };
     }
 
     private void saveProperties() throws IOException {

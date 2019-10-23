@@ -69,6 +69,10 @@ public class MacCertificateInstaller extends NativeCertificateInstaller {
         return hashList;
     }
 
+    public boolean verify(File certFile) {
+        return ShellUtilities.execute( "security", "verify-cert", "-c", certFile.getPath());
+    }
+
     public void setInstallType(Installer.PrivilegeLevel type) {
         if (type == Installer.PrivilegeLevel.USER) {
             certStore = USER_STORE;

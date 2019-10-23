@@ -75,14 +75,16 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
         return nicknames;
     }
 
+    public boolean verify(File ignore) { return true; } // no easy way to validate a cert, assume it's installed
+
     public boolean add(File certFile) {
-        // Remove protocol, check if file exists
+        // Create directories as needed
         String[] parts = NSSDB.split(":", 2);
-        File dbFile = new File(parts[parts.length -1]);
-        if (dbFile.exists()) {
+        if(parts.length > 1) {
+            new File(parts[1]).mkdirs();
             return ShellUtilities.execute("certutil", "-d", NSSDB, "-A", "-t", "TC", "-n", Constants.ABOUT_COMPANY, "-i", certFile.getPath());
         }
-        log.warn("{} not found; normally created when browser is first opened", dbFile.getPath());
+        log.warn("Something went wrong creating {}. HTTPS will fail on browsers which depend on it.", NSSDB);
         return false;
     }
 

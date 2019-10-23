@@ -194,15 +194,21 @@ public abstract class Installer {
             X509Certificate caCert = propertiesLoader.getKeyPair(CA).getCert();
             NativeCertificateInstaller installer = NativeCertificateInstaller.getInstance();
 
-            List<String> matchingCerts = installer.find();
             if (forceNew || needsInstall) {
                 // Remove installed certs per request (usually the desktop installer, or failure to write properties)
+                List<String> matchingCerts = installer.find();
                 installer.remove(matchingCerts);
                 matchingCerts.clear();
-            }
-            if (matchingCerts.isEmpty()) {
                 installer.install(caCert);
                 FirefoxCertificateInstaller.install(caCert, hostNames);
+            } else {
+                // Make sure the certificate is recognized by the system
+                File tempCert = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", PropertiesLoader.DEFAULT_CERTIFICATE_EXTENSION);
+                propertiesLoader.writeCert(CA, tempCert); // temp cert
+                if(!installer.verify(tempCert)) {
+                    installer.install(caCert);
+                    FirefoxCertificateInstaller.install(caCert, hostNames);
+                }
             }
         }
         catch(Exception e) {

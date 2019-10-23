@@ -15,7 +15,8 @@ import qz.printer.action.ProcessorFactory;
 import qz.ws.PrintSocketClient;
 
 import java.awt.print.PrinterAbortException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Locale;
 
 public class PrintingUtilities {
 
@@ -45,8 +46,16 @@ public class PrintingUtilities {
         //grab first data object to determine type for entire set
         JSONObject data = printData.optJSONObject(0);
 
-        Format format;
+        //Check for RAW type to coerce COMMAND format handling
+        Type type;
         if (data == null) {
+            type = Type.RAW;
+        } else {
+            type = Type.valueOf(data.optString("type", "RAW").toUpperCase(Locale.ENGLISH));
+        }
+
+        Format format;
+        if (type == Type.RAW) {
             format = Format.COMMAND;
         } else {
             format = Format.valueOf(data.optString("format", "COMMAND").toUpperCase(Locale.ENGLISH));

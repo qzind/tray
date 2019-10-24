@@ -63,10 +63,17 @@ public class SerialOptions {
                 try { portSettings.flowControl = SerialUtilities.parseFlowControl(serialOpts.getString("flowControl")); }
                 catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "flowControl", serialOpts.opt("flowControl")); }
             }
+
+            if (!serialOpts.isNull("encoding")) {
+                try { portSettings.encoding =Charset.forName(serialOpts.getString("encoding")); }
+                catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "encoding", serialOpts.opt("encoding")); }
+            }
         }
 
         if (!serialOpts.isNull("rx")) {
             responseFormat = new ResponseFormat();
+            //Make the response encoding default to the port encoding. If this is removed it will default to UTF-8
+            responseFormat.encoding = portSettings.encoding;
 
             JSONObject respOpts = serialOpts.optJSONObject("rx");
             if (respOpts != null) {

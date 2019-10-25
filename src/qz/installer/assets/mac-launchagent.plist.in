@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
     <dict>
-        <key>Label</key><string>%PACKAGE%</string>
+        <key>Label</key><string>%PACKAGE_NAME%</string>
         <key>KeepAlive</key>
         <dict>
             <key>SuccessfulExit</key><false/>
@@ -11,7 +11,7 @@
         <key>RunAtLoad</key><true/>
         <key>ProgramArguments</key>
         <array>
-            <string>%DESTINATION%/%ABOUT_TITLE%</string>
+            <string>%COMMAND%</string>
             <string>%PARAM%</string>
         </array>
     </dict>

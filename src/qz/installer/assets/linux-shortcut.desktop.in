@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=%ABOUT_TITLE%
-Exec="%DESTINATION%/%PROPS_FILE%"%PARAM%
+Exec="%COMMAND%" %PARAM%
 Path=%DESTINATION%
 Icon=%DESTINATION%/%LINUX_ICON%
 MimeType=application/x-qz;x-scheme-handler/qz;

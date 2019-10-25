@@ -26,7 +26,7 @@ import static qz.common.Constants.*;
 public class MacInstaller extends Installer {
     protected static final Logger log = LoggerFactory.getLogger(MacInstaller.class);
     private static final String PACKAGE_NAME = getPackageName();
-    private String destination = "/Applications/" + ABOUT_TITLE + ".app/";
+    private String destination = "/Applications/" + ABOUT_TITLE + ".app";
 
     public Installer addAppLauncher() {
         // not needed; registered when "QZ Tray.app" is copied
@@ -37,9 +37,9 @@ public class MacInstaller extends Installer {
         File dest = new File(String.format("/Library/LaunchAgents/%s.plist", PACKAGE_NAME));
         HashMap<String, String> fieldMap = new HashMap<>();
         // Dynamic fields
-        fieldMap.put("%DESTINATION%", destination);
         fieldMap.put("%PACKAGE_NAME%", PACKAGE_NAME);
-        fieldMap.put("%PARAM%", "-A");
+        fieldMap.put("%COMMAND%", String.format("%s/Contents/MacOS/%s", destination, ABOUT_TITLE));
+        fieldMap.put("%PARAM%", "--honorautostart");
 
         try {
             FileUtilities.configureAssetFile("assets/mac-launchagent.plist.in", dest, fieldMap, MacInstaller.class);
@@ -61,7 +61,12 @@ public class MacInstaller extends Installer {
     public Installer addUserSettings() { return this; }
 
     public Installer addSystemSettings() { return this; }
-    public Installer removeSystemSettings() { return this; }
+    public Installer removeSystemSettings() {
+        // Remove startup entry
+        File dest = new File(String.format("/Library/LaunchAgents/%s.plist", PACKAGE_NAME));
+        dest.delete();
+        return this;
+    }
 
     /**
      * Removes legacy (<= 2.0) startup entries

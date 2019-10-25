@@ -273,7 +273,7 @@ public class PropertiesLoader {
         writer.writeObject(cert.generate());
         writer.close();
         log.info("Wrote Cert: \"{}\"", dest);
-        FileUtilities.inheritPermissions(dest.toPath());
+        FileUtilities.createFileInheritPermissions(dest.toPath());
     }
 
     public PropertiesLoader writeCert(KeyPairWrapper.Type type) throws IOException {
@@ -294,7 +294,7 @@ public class PropertiesLoader {
         File keyFile = new File(sslDir, keyPair.getAlias() + DEFAULT_KEYSTORE_EXTENSION);
         keyPair.getKeyStore().store(Files.newOutputStream(keyFile.toPath(), StandardOpenOption.CREATE), getPassword());
         log.info("Wrote {} Key: \"{}\"", DEFAULT_KEYSTORE_FORMAT, keyFile);
-        FileUtilities.inheritPermissions(keyFile.toPath());
+        FileUtilities.createFileInheritPermissions(keyFile.toPath());
 
         if (props == null) {
             props = new Properties();
@@ -408,7 +408,7 @@ public class PropertiesLoader {
 
     private void saveProperties() throws IOException {
         File propsFile = new File(getWritableLocation(), Constants.PROPS_FILE + ".properties");
-        FileUtilities.inheritPermissions(propsFile.toPath());
+        FileUtilities.createFileInheritPermissions(propsFile.toPath());
         properties.store(new FileOutputStream(propsFile), null);
         log.info("Successfully created SSL properties file: {}", propsFile);
     }

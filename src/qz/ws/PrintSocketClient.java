@@ -29,12 +29,8 @@ import java.awt.*;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.*;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Set;
 import java.util.concurrent.Semaphore;
 
 
@@ -601,7 +597,7 @@ public class PrintSocketClient {
                 FileParams fileParams = new FileParams(params);
                 Path absPath = FileUtilities.getAbsolutePath(params, request, false);
 
-                Files.write(FileUtilities.inheritPermissions(absPath), fileParams.getData(), StandardOpenOption.CREATE, fileParams.getAppendMode());
+                Files.write(FileUtilities.createFileInheritPermissions(absPath), fileParams.getData(), StandardOpenOption.CREATE, fileParams.getAppendMode());
                 sendResult(session, UID, null);
                 break;
             }

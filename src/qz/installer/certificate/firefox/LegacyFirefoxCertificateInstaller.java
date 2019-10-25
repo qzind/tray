@@ -106,7 +106,8 @@ public class LegacyFirefoxCertificateInstaller {
         }
 
         // write out the new prefs file
-        BufferedWriter writer = new BufferedWriter(new FileWriter(new File(prefsDir + File.separator + PREFS_FILE)));
+        File prefsFile = new File(prefsDir,  PREFS_FILE);
+        BufferedWriter writer = new BufferedWriter(new FileWriter(prefsFile));
         String[] data = {
                 String.format("pref('%s', '%s');", pref, CFG_FILE),
                 "pref('general.config.obscure_value', 0);"
@@ -115,6 +116,7 @@ public class LegacyFirefoxCertificateInstaller {
             writer.write(line + "\n");
         }
         writer.close();
+        prefsFile.setReadable(true, false);
     }
 
     private static void writeParsedConfig(AppLocator app, String certData, boolean uninstall, String ... hostNames) throws IOException, CertificateEncodingException{
@@ -122,7 +124,7 @@ public class LegacyFirefoxCertificateInstaller {
 
         File cfgDir = tryWrite(app, false);
         deleteFile(cfgDir, "firefox-config.cfg"); // cleanup old version
-        File dest = new File(cfgDir.getPath() + File.separator + CFG_FILE);
+        File dest = new File(cfgDir.getPath(), CFG_FILE);
 
         HashMap<String, String> fieldMap = new HashMap<>();
         // Dynamic fields
@@ -133,6 +135,7 @@ public class LegacyFirefoxCertificateInstaller {
         fieldMap.put("%UNINSTALL%", "" + uninstall);
 
         FileUtilities.configureAssetFile(CFG_TEMPLATE, dest, fieldMap, LegacyFirefoxCertificateInstaller.class);
+        dest.setReadable(true, false);
     }
 
 

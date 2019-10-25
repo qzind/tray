@@ -18,7 +18,6 @@ import qz.common.Constants;
 import qz.installer.certificate.PropertiesLoader;
 import qz.installer.certificate.firefox.locator.AppAlias;
 import qz.installer.certificate.firefox.locator.AppLocator;
-import qz.utils.FileUtilities;
 import qz.utils.JsonWriter;
 import qz.utils.SystemUtilities;
 
@@ -48,6 +47,8 @@ public class FirefoxCertificateInstaller {
 
     private static String ENTERPRISE_ROOT_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
     private static String INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + PropertiesLoader.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
+    private static String REMOVE_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"/opt/" + Constants.PROPS_FILE +  "/auth/root-ca.crt\"] } } }";
+
     public static final String POLICY_LOCATION = "distribution/policies.json";
     public static final String MAC_POLICY_LOCATION = "Contents/Resources/" + POLICY_LOCATION;
 
@@ -73,7 +74,19 @@ public class FirefoxCertificateInstaller {
         ArrayList<AppLocator> appList = AppLocator.locate(AppAlias.FIREFOX);
         for(AppLocator app : appList) {
             if(honorsPolicy(app)) {
-                log.info("Skipping uninstall of Firefox enterprise root certificate policy {}", app.getPath());
+                if(SystemUtilities.isWindows() || SystemUtilities.isMac()) {
+                    log.info("Skipping uninstall of Firefox enterprise root certificate policy {}", app.getPath());
+                } else {
+                    try {
+                        File policy = Paths.get(app.getPath(), POLICY_LOCATION).toFile();
+                        if(policy.exists()) {
+                            JsonWriter.write(Paths.get(app.getPath(), POLICY_LOCATION).toString(), INSTALL_CERT_POLICY, false, true);
+                        }
+                    } catch(IOException | JSONException e) {
+                        log.warn("Unable to remove Firefox ({}) policy {}", app.getName(), e);
+                    }
+                }
+
             } else {
                 log.info("Uninstalling Firefox auto-config script {}", app.getPath());
                 LegacyFirefoxCertificateInstaller.uninstallAutoConfigScript(app);
@@ -98,7 +111,6 @@ public class FirefoxCertificateInstaller {
     public static void installPolicy(AppLocator app, X509Certificate cert) {
         Path jsonPath = Paths.get(app.getPath(), SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION);
         String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? ENTERPRISE_ROOT_POLICY : INSTALL_CERT_POLICY;
-        FileUtilities.inheritPermissions(jsonPath); // also creates parent directories
         try {
             if(jsonPolicy.equals(INSTALL_CERT_POLICY)) {
                 // Linux lacks the concept of "enterprise roots", we'll write it to a known location instead
@@ -125,6 +137,12 @@ public class FirefoxCertificateInstaller {
             distribution.mkdirs();
             distribution.setReadable(true, false);
             distribution.setExecutable(true, false);
+
+            if(jsonPolicy.equals(INSTALL_CERT_POLICY)) {
+                // Delete previous policy
+                JsonWriter.write(jsonPath.toString(), REMOVE_CERT_POLICY, false, true);
+            }
+
             JsonWriter.write(jsonPath.toString(), jsonPolicy, false, false);
 
             // Make sure ew can read

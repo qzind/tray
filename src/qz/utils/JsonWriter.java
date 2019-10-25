@@ -31,9 +31,8 @@ public class JsonWriter {
 
     public static boolean write(String path, String data, boolean overwrite, boolean delete) throws IOException, JSONException {
         File f = new File(path);
-        f.getParentFile().mkdirs();
         if(!f.getParentFile().exists()) {
-            log.warn("Warning, the parent folder of {} could not be created, skipping.", path);
+            log.warn("Warning, the parent folder of {} does not exist, skipping.", path);
             return false;
         }
 

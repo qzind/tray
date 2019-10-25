@@ -224,8 +224,6 @@ public class PropertiesLoader {
     public PropertiesLoader createTrustedKeystore(File p12Store, String password) throws Exception {
         sslKeyPair = new KeyPairWrapper(SSL);
         sslKeyPair.init(p12Store, password.toCharArray());
-
-
         return this;
     }
 
@@ -269,27 +267,20 @@ public class PropertiesLoader {
         return this;
     }
 
-    public PropertiesLoader writeCert(KeyPairWrapper.Type type) throws  IOException {
-        return writeCert(type, null);
-    }
-
-    public PropertiesLoader writeCert(KeyPairWrapper.Type type, File dest) throws IOException {
-        KeyPairWrapper keyPair = type == CA ? caKeyPair : sslKeyPair;
-        File certFile;
-        if(dest == null) {
-            certFile = new File(getWritableLocation("ssl"), keyPair.getAlias() + DEFAULT_CERTIFICATE_EXTENSION);
-        } else {
-            certFile = dest;
-        }
-
-        JcaMiscPEMGenerator cert = new JcaMiscPEMGenerator(keyPair.getCert());
-
-        JcaPEMWriter writer = new JcaPEMWriter(new OutputStreamWriter(Files.newOutputStream(certFile.toPath(), StandardOpenOption.CREATE)));
+    public static void writeCert(X509Certificate data, File dest) throws IOException {
+        JcaMiscPEMGenerator cert = new JcaMiscPEMGenerator(data);
+        JcaPEMWriter writer = new JcaPEMWriter(new OutputStreamWriter(Files.newOutputStream(dest.toPath(), StandardOpenOption.CREATE)));
         writer.writeObject(cert.generate());
         writer.close();
-        log.info("Wrote {} Cert: \"{}\"", keyPair.getAlias(), certFile);
-        FileUtilities.inheritPermissions(certFile.toPath());
+        log.info("Wrote Cert: \"{}\"", dest);
+        FileUtilities.inheritPermissions(dest.toPath());
+    }
 
+    public PropertiesLoader writeCert(KeyPairWrapper.Type type) throws IOException {
+        KeyPairWrapper keyPair = type == CA ? caKeyPair : sslKeyPair;
+        File certFile = new File(getWritableLocation("ssl"), keyPair.getAlias() + DEFAULT_CERTIFICATE_EXTENSION);
+
+        writeCert(keyPair.getCert(), certFile);
         if(keyPair.getType() == CA) {
             needsInstall = true;
         }

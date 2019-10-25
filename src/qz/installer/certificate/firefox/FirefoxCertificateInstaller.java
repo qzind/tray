@@ -14,11 +14,15 @@ import com.github.zafarkhaja.semver.Version;
 import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.common.Constants;
+import qz.installer.certificate.PropertiesLoader;
 import qz.installer.certificate.firefox.locator.AppAlias;
 import qz.installer.certificate.firefox.locator.AppLocator;
+import qz.utils.FileUtilities;
 import qz.utils.JsonWriter;
 import qz.utils.SystemUtilities;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,18 +46,19 @@ public class FirefoxCertificateInstaller {
     private static final Version MAC_POLICY_VERSION = Version.valueOf("63.0.0");
     private static final Version LINUX_POLICY_VERSION = Version.valueOf("65.0.0");
 
-    private static String ENTERPRISE_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
+    private static String ENTERPRISE_ROOT_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
+    private static String INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + PropertiesLoader.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
     public static final String POLICY_LOCATION = "distribution/policies.json";
     public static final String MAC_POLICY_LOCATION = "Contents/Resources/" + POLICY_LOCATION;
 
     public static void install(X509Certificate cert, String ... hostNames) {
         ArrayList<AppLocator> appList = AppLocator.locate(AppAlias.FIREFOX);
         for(AppLocator app : appList) {
-            if(honorsEnterprisePolicy(app)) {
-                log.info("Installing Firefox enterprise root certificate policy {}", app.getPath());
-                installEnterprisePolicy(app);
+            if(honorsPolicy(app)) {
+                log.info("Installing Firefox ({}) enterprise root certificate policy {}", app.getName(), app.getPath());
+                installPolicy(app, cert);
             } else {
-                log.info("Installing Firefox auto-config script {}", app.getPath());
+                log.info("Installing Firefox ({}) auto-config script {}", app.getName(), app.getPath());
                 try {
                     String certData = Base64.getEncoder().encodeToString(cert.getEncoded());
                     LegacyFirefoxCertificateInstaller.installAutoConfigScript(app, certData, hostNames);
@@ -67,7 +72,7 @@ public class FirefoxCertificateInstaller {
     public static void uninstall() {
         ArrayList<AppLocator> appList = AppLocator.locate(AppAlias.FIREFOX);
         for(AppLocator app : appList) {
-            if(honorsEnterprisePolicy(app)) {
+            if(honorsPolicy(app)) {
                 log.info("Skipping uninstall of Firefox enterprise root certificate policy {}", app.getPath());
             } else {
                 log.info("Uninstalling Firefox auto-config script {}", app.getPath());
@@ -76,7 +81,7 @@ public class FirefoxCertificateInstaller {
         }
     }
 
-    public static boolean honorsEnterprisePolicy(AppLocator app) {
+    public static boolean honorsPolicy(AppLocator app) {
         if (app.getVersion() == null) {
             log.warn("Firefox-compatible browser was found {}, but no version information is available", app.getPath());
             return false;
@@ -90,12 +95,42 @@ public class FirefoxCertificateInstaller {
         }
     }
 
-    public static void installEnterprisePolicy(AppLocator app) {
+    public static void installPolicy(AppLocator app, X509Certificate cert) {
         Path jsonPath = Paths.get(app.getPath(), SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION);
+        String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? ENTERPRISE_ROOT_POLICY : INSTALL_CERT_POLICY;
+        FileUtilities.inheritPermissions(jsonPath); // also creates parent directories
         try {
-            JsonWriter.write(jsonPath.toString(), ENTERPRISE_POLICY, false, false);
+            if(jsonPolicy.equals(INSTALL_CERT_POLICY)) {
+                // Linux lacks the concept of "enterprise roots", we'll write it to a known location instead
+                File certFile = new File("/usr/lib/mozilla/certificates", Constants.PROPS_FILE + PropertiesLoader.DEFAULT_CERTIFICATE_EXTENSION);
+
+                // Make sure we can traverse and read
+                File certs = new File("/usr/lib/mozilla/certificates");
+                certs.mkdirs();
+                certs.setReadable(true, false);
+                certs.setExecutable(true, false);
+                File mozilla = certs.getParentFile();
+                mozilla.setReadable(true, false);
+                mozilla.setExecutable(true, false);
+
+                // Make sure we can read
+                PropertiesLoader.writeCert(cert, certFile);
+                certFile.setReadable(true, false);
+            }
+
+            File jsonFile = jsonPath.toFile();
+
+            // Make sure we can traverse and read
+            File distribution = jsonFile.getParentFile();
+            distribution.mkdirs();
+            distribution.setReadable(true, false);
+            distribution.setExecutable(true, false);
+            JsonWriter.write(jsonPath.toString(), jsonPolicy, false, false);
+
+            // Make sure ew can read
+            jsonFile.setReadable(true, false);
         } catch(JSONException | IOException e) {
-            log.warn("Could not install enterprise policy {} to {}", ENTERPRISE_POLICY, jsonPath.toString(), e);
+            log.warn("Could not install enterprise policy {} to {}", jsonPolicy, jsonPath.toString(), e);
         }
     }
 

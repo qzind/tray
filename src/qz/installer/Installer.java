@@ -204,7 +204,7 @@ public abstract class Installer {
             } else {
                 // Make sure the certificate is recognized by the system
                 File tempCert = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", PropertiesLoader.DEFAULT_CERTIFICATE_EXTENSION);
-                propertiesLoader.writeCert(CA, tempCert); // temp cert
+                PropertiesLoader.writeCert(caCert, tempCert); // temp cert
                 if(!installer.verify(tempCert)) {
                     installer.install(caCert);
                     FirefoxCertificateInstaller.install(caCert, hostNames);

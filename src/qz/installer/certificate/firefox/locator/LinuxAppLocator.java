@@ -30,6 +30,7 @@ public class LinuxAppLocator extends AppLocator {
                 File file = new File(dirname, alias.posix);
                 if (file.isFile() && file.canExecute()) {
                     try {
+                        file = file.getCanonicalFile(); // fix symlinks
                         AppLocator info = new LinuxAppLocator(alias.name, file.getParentFile().getCanonicalPath());
                         appList.add(info);
 

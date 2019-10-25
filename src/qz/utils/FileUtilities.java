@@ -134,14 +134,18 @@ public class FileUtilities {
     }
 
     public static Path inheritPermissions(Path filePath) {
+        return inheritPermissions(filePath, true);
+    }
+
+    public static Path inheritPermissions(Path filePath, boolean isFile) {
         if(SystemUtilities.isWindows()) {
             // assume permissions are inherited
         } else {
             // assume permissions are not inherited
             try {
                 FileAttribute attribute = PosixFilePermissions.asFileAttribute(Files.getPosixFilePermissions(filePath.getParent()));
-                Files.createDirectories(filePath.getParent(), attribute);
-                if (!Files.exists(filePath)) {
+                Files.createDirectories(isFile ? filePath : filePath.getParent(), attribute);
+                if (isFile && !Files.exists(filePath)) {
                     Files.createFile(filePath, attribute);
                 }
             } catch(IOException e) {

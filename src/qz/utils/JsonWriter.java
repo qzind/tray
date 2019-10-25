@@ -31,8 +31,9 @@ public class JsonWriter {
 
     public static boolean write(String path, String data, boolean overwrite, boolean delete) throws IOException, JSONException {
         File f = new File(path);
-        if (!f.getParentFile().exists()) {
-            log.warn("Warning, the parent folder of {} does not exist, skipping.", path);
+        f.getParentFile().mkdirs();
+        if(!f.getParentFile().exists()) {
+            log.warn("Warning, the parent folder of {} could not be created, skipping.", path);
             return false;
         }
 
@@ -41,7 +42,7 @@ public class JsonWriter {
             return true;
         }
 
-        JSONObject config = new JSONObject(FileUtils.readFileToString(f, Charsets.UTF_8));
+        JSONObject config = f.exists() ? new JSONObject(FileUtils.readFileToString(f, Charsets.UTF_8)) : new JSONObject();
         JSONObject append = new JSONObject(data);
 
         if (!delete) {

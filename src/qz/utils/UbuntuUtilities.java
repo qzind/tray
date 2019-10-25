@@ -84,14 +84,17 @@ public class UbuntuUtilities {
      * @return the current running theme, or an empty String if it could not be determined.
      */
     public static String getThemeName(String defaultTheme) {
-        String themeName = ShellUtilities.execute(
-                new String[] {
-                        "gconftool-2",
-                        "--get",
-                        "/desktop/gnome/shell/windows/theme"
-                },
-                null
-        );
+        String themeName = "";
+        if(ShellUtilities.execute("which", "gconftool-2")) {
+            themeName = ShellUtilities.execute(
+                    new String[] {
+                            "gconftool-2",
+                            "--get",
+                            "/desktop/gnome/shell/windows/theme"
+                    },
+                    null
+            );
+        }
 
         return themeName.isEmpty()? defaultTheme:themeName;
     }

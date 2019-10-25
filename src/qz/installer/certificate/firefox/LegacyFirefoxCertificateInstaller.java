@@ -47,7 +47,7 @@ public class LegacyFirefoxCertificateInstaller {
 
     public static void uninstallAutoConfigScript(AppLocator app) {
         try {
-            writeParsedConfig(app, "", false);
+            writeParsedConfig(app, "", true);
         } catch(Exception e) {
             log.warn("Error uninstalling auto-config support for {}", app.getName(), e);
         }
@@ -128,11 +128,11 @@ public class LegacyFirefoxCertificateInstaller {
         // Dynamic fields
         fieldMap.put("%CERT_DATA%", certData);
         fieldMap.put("%COMMON_NAME%", hostNames[0]);
-        fieldMap.put("%TIMESTAMP%", "" + new Date().getTime());
+        fieldMap.put("%TIMESTAMP%", uninstall ? "-1" : "" + new Date().getTime());
         fieldMap.put("%APP_PATH%", SystemUtilities.isMac() ? SystemUtilities.detectAppPath() != null ? SystemUtilities.detectAppPath().toString() : "" : "");
         fieldMap.put("%UNINSTALL%", "" + uninstall);
 
-        FileUtilities.configureAssetFile("assets/firefox-autoconfig.js.in", dest, fieldMap, LegacyFirefoxCertificateInstaller.class);
+        FileUtilities.configureAssetFile(CFG_TEMPLATE, dest, fieldMap, LegacyFirefoxCertificateInstaller.class);
     }
 
 

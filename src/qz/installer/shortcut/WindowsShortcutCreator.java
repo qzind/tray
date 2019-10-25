@@ -13,10 +13,10 @@ package qz.installer.shortcut;
 
 import mslinks.ShellLink;
 import qz.common.Constants;
-import qz.installer.WindowsInstaller;
 import qz.installer.WindowsSpecialFolders;
 import qz.utils.SystemUtilities;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 
@@ -24,7 +24,7 @@ import java.nio.file.*;
  * @author Tres Finocchiaro
  */
 public class WindowsShortcutCreator extends ShortcutCreator {
-    private static String SHORTCUT_NAME = Constants.PROPS_FILE + ".lnk";
+    private static String SHORTCUT_NAME = Constants.ABOUT_TITLE + ".lnk";
 
     public void createDesktopShortcut() {
         createShortcut(WindowsSpecialFolders.DESKTOP.toString());
@@ -36,7 +36,7 @@ public class WindowsShortcutCreator extends ShortcutCreator {
 
     private void createShortcut(String folderPath) {
         try {
-            ShellLink.createLink(getAppPath(), folderPath + SHORTCUT_NAME);
+            ShellLink.createLink(getAppPath(), folderPath + File.separator + SHORTCUT_NAME);
         }
         catch(IOException ex) {
             log.warn("Error creating desktop shortcut", ex);

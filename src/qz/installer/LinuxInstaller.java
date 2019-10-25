@@ -55,8 +55,11 @@ public class LinuxInstaller extends Installer {
         fieldMap.put("%LINUX_ICON%", "linux-icon.svg");
         fieldMap.put("%PARAM%", isStartup ? " -A" : "");
 
+        File launcher = new File(location);
         try {
-            FileUtilities.configureAssetFile("assets/linux-shortcut.desktop.in", new File(location), fieldMap, LinuxInstaller.class);
+            FileUtilities.configureAssetFile("assets/linux-shortcut.desktop.in", launcher, fieldMap, LinuxInstaller.class);
+            launcher.setReadable(true, false);
+            launcher.setExecutable(true, false);
         } catch(IOException e) {
             log.warn("Unable to write {} file: {}", isStartup ? "startup":"launcher", location, e);
         }
@@ -192,7 +195,7 @@ public class LinuxInstaller extends Installer {
         }
 
         // Determine if this environment likes sudo
-        String[] sudoCmd = { "sudo", "-u", whoami, "nohup" };
+        String[] sudoCmd = { "sudo", "-E", "-u", whoami, "nohup" };
         String[] suCmd = { "su", whoami, "-c", "nohup" };
         String[] asUser = ShellUtilities.execute("which", "sudo") ? sudoCmd : suCmd;
 

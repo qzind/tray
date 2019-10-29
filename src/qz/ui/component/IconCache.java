@@ -297,7 +297,7 @@ public class IconCache {
             int wPad = (int)((percent/100.0) * w);
             int hPad = (int)((percent/100.0) * h);
 
-            BufferedImage padded = new BufferedImage(w + wPad, h + hPad, images.get(id).getType());
+            BufferedImage padded = new BufferedImage(w + wPad, h + hPad, BufferedImage.TYPE_INT_ARGB);
             Graphics g = padded.getGraphics();
 
             // Pad all sides (by half)

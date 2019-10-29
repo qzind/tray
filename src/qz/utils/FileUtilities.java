@@ -670,7 +670,10 @@ public class FileUtilities {
     public static void setPermissionsRecursively(Path toRecurse, boolean worldWrite) {
         try (Stream<Path> paths = Files.walk(toRecurse)) {
             paths.forEach((path)->{
-                path.toFile().setExecutable(true, false);
+                if (path.toFile().isDirectory()) {
+                    // Executable bit in Unix allows listing files
+                    path.toFile().setExecutable(true, false);
+                }
                 path.toFile().setReadable(true, false);
                 path.toFile().setWritable(true, !worldWrite);
             });

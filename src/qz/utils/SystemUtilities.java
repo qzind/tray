@@ -65,31 +65,45 @@ public class SystemUtilities {
         return osVersion;
     }
 
-
     /**
-     * Provides a JDK9-friendly wrapper around the inconsistent and poorly standardized Java internal versioning.
-     * This may eventually be superseded by <code>java.lang.Runtime.Version</code>, but the codebase will first need to be switched to JDK9 level.
-     * @return Semantically formatted Java Runtime version
+     * Handle Java versioning nuances
+     * To eventually be replaced with <code>java.lang.Runtime.Version</code> (JDK9+)
      */
     public static Version getJavaVersion() {
         String version = System.getProperty("java.version");
         String[] parts = version.split("\\D+");
-        switch (parts.length) {
-            case 0:
-                return Version.forIntegers(1, 0, 0);
-            case 1:
-                // Assume JDK9 format
-                return Version.forIntegers(1, Integer.parseInt(parts[0]), 0);
-            case 2:
-                // Unknown format
-                return Version.forIntegers(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), 0);
-            case 3:
-                // Assume JDK8 and lower; missing build metadata
-                return Version.forIntegers(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
-            case 4:
-            default:
-                // Assume JDK8 and lower format
-                return Version.forIntegers(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2])).setBuildMetadata(parts[3]);
+
+        int major = 1;
+        int minor = 0;
+        int patch = 0;
+        String meta = "";
+
+        try {
+            switch(parts.length) {
+                default:
+                case 4:
+                    meta = parts[3];
+                case 3:
+                    patch = Integer.parseInt(parts[2]);
+                case 2:
+                    minor = Integer.parseInt(parts[1]);
+                    major = Integer.parseInt(parts[0]);
+                    break;
+                case 1:
+                    major = Integer.parseInt(parts[0]);
+                    if (major <= 8) {
+                        // Force old 1.x style formatting
+                        minor = major;
+                        major = 1;
+                    }
+            }
+        } catch(NumberFormatException e) {
+            log.warn("Could not parse Java version \"{}\"", e);
+        }
+        if(meta.trim().isEmpty()) {
+            return Version.forIntegers(major, minor, patch);
+        } else {
+            return Version.forIntegers(major, minor, patch).setBuildMetadata(meta);
         }
     }
 

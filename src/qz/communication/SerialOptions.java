@@ -63,10 +63,17 @@ public class SerialOptions {
                 try { portSettings.flowControl = SerialUtilities.parseFlowControl(serialOpts.getString("flowControl")); }
                 catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "flowControl", serialOpts.opt("flowControl")); }
             }
+
+            if (!serialOpts.isNull("encoding")) {
+                try { portSettings.encoding =Charset.forName(serialOpts.getString("encoding")); }
+                catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "encoding", serialOpts.opt("encoding")); }
+            }
         }
 
         if (!serialOpts.isNull("rx")) {
             responseFormat = new ResponseFormat();
+            //Make the response encoding default to the port encoding. If this is removed it will default to UTF-8
+            responseFormat.encoding = portSettings.encoding;
 
             JSONObject respOpts = serialOpts.optJSONObject("rx");
             if (respOpts != null) {
@@ -75,13 +82,13 @@ public class SerialOptions {
                         JSONArray startBits = respOpts.getJSONArray("start");
                         ArrayList<Byte> bytes = new ArrayList<>();
                         for(int i = 0; i < startBits.length(); i++) {
-                            byte[] charByte = SerialUtilities.characterBytes(startBits.getString(i));
+                            byte[] charByte = SerialUtilities.characterBytes(startBits.getString(i), responseFormat.encoding);
                             for(byte b : charByte) { bytes.add(b); }
                         }
                         responseFormat.boundStart = ArrayUtils.toPrimitive(bytes.toArray(new Byte[0]));
                     }
                     catch(JSONException e) {
-                        try { responseFormat.boundStart = SerialUtilities.characterBytes(respOpts.getString("start")); }
+                        try { responseFormat.boundStart = SerialUtilities.characterBytes(respOpts.getString("start"), responseFormat.encoding); }
                         catch(JSONException e2) { LoggerUtilities.optionWarn(log, "string", "start", respOpts.opt("start")); }
                     }
                 }
@@ -92,7 +99,7 @@ public class SerialOptions {
                 }
 
                 if (!respOpts.isNull("end")) {
-                    try { responseFormat.boundEnd = SerialUtilities.characterBytes(respOpts.getString("end")); }
+                    try { responseFormat.boundEnd = SerialUtilities.characterBytes(respOpts.getString("end"), responseFormat.encoding); }
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "end", respOpts.opt("end")); }
 
                     if (responseFormat.boundStart == null || responseFormat.boundStart.length == 0) {
@@ -175,15 +182,15 @@ public class SerialOptions {
 
             // legacy start only supports string, not an array
             if (!serialOpts.isNull("start")) {
-                responseFormat.boundStart = SerialUtilities.characterBytes(serialOpts.optString("start", DEFAULT_BEGIN));
+                responseFormat.boundStart = SerialUtilities.characterBytes(serialOpts.optString("start", DEFAULT_BEGIN), responseFormat.encoding);
             } else {
-                responseFormat.boundStart = SerialUtilities.characterBytes(DEFAULT_BEGIN);
+                responseFormat.boundStart = SerialUtilities.characterBytes(DEFAULT_BEGIN, responseFormat.encoding);
             }
 
             if (!serialOpts.isNull("end")) {
-                responseFormat.boundEnd = SerialUtilities.characterBytes(serialOpts.optString("end", DEFAULT_END));
+                responseFormat.boundEnd = SerialUtilities.characterBytes(serialOpts.optString("end", DEFAULT_END), responseFormat.encoding);
             } else {
-                responseFormat.boundEnd = SerialUtilities.characterBytes(DEFAULT_END);
+                responseFormat.boundEnd = SerialUtilities.characterBytes(DEFAULT_END, responseFormat.encoding);
             }
 
             if (!serialOpts.isNull("width")) {

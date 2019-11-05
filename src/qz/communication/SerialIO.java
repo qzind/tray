@@ -227,7 +227,7 @@ public class SerialIO {
         if (type == SerialUtilities.SerialDataType.FILE) {
             port.writeBytes(IOUtils.toByteArray(new URL(data)));
         } else {
-            port.writeBytes(SerialUtilities.characterBytes(data));
+            port.writeBytes(SerialUtilities.characterBytes(data, serialOpts.getPortSettings().getEncoding()));
         }
     }
 

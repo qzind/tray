@@ -28,7 +28,7 @@ import java.security.cert.X509Certificate;
 import java.util.*;
 
 public class ExpiryTask extends TimerTask {
-    private static final Logger log = LoggerFactory.getLogger(PropertiesLoader.class);
+    private static final Logger log = LoggerFactory.getLogger(CertificateManager.class);
     public static final int DEFAULT_CHECK_FREQUENCY = 3600 * 1000; // 1 hour
     private static final int DEFAULT_GRACE_PERIOD_DAYS = 5;
     private enum ExpiryState {VALID, EXPIRING, EXPIRED, MANAGED}
@@ -45,13 +45,13 @@ public class ExpiryTask extends TimerTask {
     }
 
     private Timer timer;
-    private PropertiesLoader loader;
+    private CertificateManager certificateManager;
     private String[] hostNames;
     private CertProvider certProvider;
 
-    public ExpiryTask(PropertiesLoader loader) {
+    public ExpiryTask(CertificateManager certificateManager) {
         super();
-        this.loader = loader;
+        this.certificateManager = certificateManager;
         this.hostNames = parseHostNames();
         this.certProvider = findCertProvider();
     }
@@ -59,7 +59,7 @@ public class ExpiryTask extends TimerTask {
     @Override
     public void run() {
         // Check for expiration
-        ExpiryState state = getExpiry(loader.getSslKeyPair().getCert());
+        ExpiryState state = getExpiry(certificateManager.getSslKeyPair().getCert());
         switch(state) {
             case EXPIRING:
             case EXPIRED:
@@ -87,10 +87,10 @@ public class ExpiryTask extends TimerTask {
 
     public boolean renewInternalCert() {
         try {
-            log.info("Requesting a new SSL certificate from {} ...", loader.getCaKeyPair().getAlias());
-            loader.renewCertChain(hostNames);
+            log.info("Requesting a new SSL certificate from {} ...", certificateManager.getCaKeyPair().getAlias());
+            certificateManager.renewCertChain(hostNames);
             log.info("New SSL certificate created.  Reloading SslContextFactory...");
-            loader.reloadSslContextFactory();
+            certificateManager.reloadSslContextFactory();
             log.info("Reloaded SSL successfully.");
             return true;
         }
@@ -101,7 +101,7 @@ public class ExpiryTask extends TimerTask {
     }
 
     public ExpiryState getExpiry() {
-        return getExpiry(loader.getSslKeyPair().getCert());
+        return getExpiry(certificateManager.getSslKeyPair().getCert());
     }
 
     /**
@@ -167,11 +167,11 @@ public class ExpiryTask extends TimerTask {
     }
 
     public String[] parseHostNames() {
-        return parseHostNames(loader.getSslKeyPair().getCert());
+        return parseHostNames(certificateManager.getSslKeyPair().getCert());
     }
 
     public CertProvider findCertProvider() {
-        return findCertProvider(loader.getSslKeyPair().getCert());
+        return findCertProvider(certificateManager.getSslKeyPair().getCert());
     }
 
     public static CertProvider findCertProvider(X509Certificate cert) {
@@ -256,7 +256,7 @@ public class ExpiryTask extends TimerTask {
 
     private boolean renewLetsEncryptCert() {
         try {
-            File storagePath = PropertiesLoader.getWritableLocation("ssl");
+            File storagePath = CertificateManager.getWritableLocation("ssl");
 
             // cerbot is much simpler than acme, let's use it
             List<String> cmds = Arrays.asList("certbot", "certonly", "--webroot", "-w", storagePath.toString());
@@ -270,9 +270,9 @@ public class ExpiryTask extends TimerTask {
             if (ShellUtilities.execute(cmds.toArray(new String[cmds.size()]))) {
                 File keyFile = new File(storagePath, "privkey.pem");
                 File certFile = new File(storagePath, "fullchain.pem"); // fullchain required
-                loader.createTrustedKeystore(keyFile, certFile);
+                certificateManager.createTrustedKeystore(keyFile, certFile);
                 log.info("Files imported, converted and saved.  Reloading SslContextFactory...");
-                loader.reloadSslContextFactory();
+                certificateManager.reloadSslContextFactory();
                 log.info("Reloaded SSL successfully.");
                 return true;
             }

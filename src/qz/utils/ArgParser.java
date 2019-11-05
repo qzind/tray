@@ -14,18 +14,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.SecurityInfo;
-import qz.exception.NullCommandException;
+import qz.exception.MissingArgException;
 import qz.installer.Installer;
 import qz.installer.TaskKiller;
-import qz.installer.certificate.PropertiesLoader;
+import qz.installer.certificate.CertificateManager;
 
 import java.io.File;
 import java.util.*;
 
 import static qz.common.Constants.*;
-import static qz.utils.CommandParser.ExitStatus.*;
+import static qz.utils.ArgParser.ExitStatus.*;
 
-public class CommandParser {
+public class ArgParser {
     public enum ExitStatus {
         SUCCESS(0),
         GENERAL_ERROR(1),
@@ -40,11 +40,11 @@ public class CommandParser {
         }
     }
 
-    protected static final Logger log = LoggerFactory.getLogger(CommandParser.class);
+    protected static final Logger log = LoggerFactory.getLogger(ArgParser.class);
     private List<String> args;
     private ExitStatus exitStatus;
 
-    public CommandParser(String[] args) {
+    public ArgParser(String[] args) {
         this.exitStatus = SUCCESS;
         this.args = new ArrayList<>(Arrays.asList(args));
     }
@@ -63,7 +63,7 @@ public class CommandParser {
     /**
      * Gets the requested flag status
      */
-    public boolean argFlag(String ... matches) {
+    public boolean hasFlag(String ... matches) {
         for(String match : matches) {
             if (args.contains(match)) {
                 return true;
@@ -74,9 +74,9 @@ public class CommandParser {
 
     /**
      * Gets the argument value immediately following a command
-     * @throws NullCommandException
+     * @throws MissingArgException
      */
-    public String argValue(String ... matches) throws NullCommandException {
+    public String valueOf(String ... matches) throws MissingArgException {
         for(String match : matches) {
             if (args.contains(match)) {
                 int index = args.indexOf(match) + 1;
@@ -86,7 +86,7 @@ public class CommandParser {
                         return val;
                     }
                 }
-                throw new NullCommandException();
+                throw new MissingArgException();
             }
         }
         return null;
@@ -99,41 +99,41 @@ public class CommandParser {
                     return Installer.preinstall() ? SUCCESS : SUCCESS; // don't abort on preinstall
                 case INSTALL:
                     // Handle destination
-                    String dest = argValue("-d", "--dest");
+                    String dest = valueOf("-d", "--dest");
                     // Handle silent installs
-                    boolean silent = argFlag("-s", "--silent");
+                    boolean silent = hasFlag("-s", "--silent");
                     Installer.install(dest, silent); // exception will set error
                     return SUCCESS;
                 case CERTGEN:
                     TaskKiller.killAll();
 
                     // Handle trusted SSL certificate
-                    String trustedKey = argValue("-k", "--key");
-                    String trustedCert = argValue("-c", "--cert");
-                    String trustedPfx = argValue("--pfx", "--pkcs12");
-                    String trustedPass = argValue("-p", "--pass");
+                    String trustedKey = valueOf("-k", "--key");
+                    String trustedCert = valueOf("-c", "--cert");
+                    String trustedPfx = valueOf("--pfx", "--pkcs12");
+                    String trustedPass = valueOf("-p", "--pass");
                     if (trustedKey != null && trustedCert != null) {
                         File key = new File(trustedKey);
                         File cert = new File(trustedCert);
                         if(key.exists() && cert.exists()) {
-                            new PropertiesLoader(key, cert); // exception will set error
+                            new CertificateManager(key, cert); // exception will set error
                             return SUCCESS;
                         }
                         log.error("One or more trusted files was not found.");
-                        throw new NullCommandException();
+                        throw new MissingArgException();
                     } else if((trustedKey != null || trustedCert != null || trustedPfx != null) && trustedPass != null) {
                         String pfxPath = trustedPfx == null ? (trustedKey == null ? trustedCert : trustedKey) : trustedPfx;
                         File pfx = new File(pfxPath);
 
                         if(pfx.exists()) {
-                            new PropertiesLoader(pfx, trustedPass.toCharArray()); // exception will set error
+                            new CertificateManager(pfx, trustedPass.toCharArray()); // exception will set error
                             return SUCCESS;
                         }
                         log.error("The provided pfx/pkcs12 file was not found: {}", pfxPath);
-                        throw new NullCommandException();
+                        throw new MissingArgException();
                     } else {
                         // Handle localhost override
-                        String hosts = argValue("--host", "--hosts");
+                        String hosts = valueOf("--host", "--hosts");
                         if (hosts != null) {
                             Installer.getInstance().certGen(true, hosts.split(";"));
                             return SUCCESS;
@@ -151,7 +151,7 @@ public class CommandParser {
                 default:
                     throw new UnsupportedOperationException("Installation type " + type + " is not yet supported");
             }
-        } catch(NullCommandException e) {
+        } catch(MissingArgException e) {
             log.error("Valid usage:\n   java -jar {}.jar {}", PROPS_FILE, type.usage);
             return USAGE_ERROR;
         } catch(Exception e) {
@@ -174,7 +174,7 @@ public class CommandParser {
         }
         try {
             // Handle graceful autostart disabling
-            if (argFlag("-A", "--honorautostart")) {
+            if (hasFlag("-A", "--honorautostart")) {
                 exitStatus = SUCCESS;
                 if(!FileUtilities.isAutostart()) {
                     exitStatus = NO_AUTOSTART;
@@ -186,29 +186,29 @@ public class CommandParser {
             }
 
             // Handle version request
-            if (argFlag("-v", "--version")) {
+            if (hasFlag("-v", "--version")) {
                 System.out.println(Constants.VERSION);
                 exitStatus = SUCCESS;
                 return true;
             }
             // Handle cert installation
             String certFile;
-            if ((certFile = argValue("-a", "--whitelist")) != null) {
+            if ((certFile = valueOf("-a", "--whitelist")) != null) {
                 exitStatus = FileUtilities.addToCertList(ALLOW_FILE, new File(certFile));
                 return true;
             }
-            if ((certFile = argValue("-b", "--blacklist")) != null) {
+            if ((certFile = valueOf("-b", "--blacklist")) != null) {
                 exitStatus = FileUtilities.addToCertList(BLOCK_FILE, new File(certFile));
                 return true;
             }
 
             // Print library list
-            if (argFlag( "-l", "--libinfo")) {
+            if (hasFlag("-l", "--libinfo")) {
                 SecurityInfo.printLibInfo();
                 exitStatus = SUCCESS;
                 return true;
             }
-        } catch(NullCommandException e) {
+        } catch(MissingArgException e) {
             log.error("Invalid usage");
             exitStatus = USAGE_ERROR;
         } catch(Exception e) {

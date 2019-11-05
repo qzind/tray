@@ -43,8 +43,8 @@ import static qz.installer.certificate.KeyPairWrapper.Type.*;
 /**
  * Stores and maintains reading and writing of certificate related files
  */
-public class PropertiesLoader {
-    private static final Logger log = LoggerFactory.getLogger(PropertiesLoader.class);
+public class CertificateManager {
+    private static final Logger log = LoggerFactory.getLogger(CertificateManager.class);
 
     public static String DEFAULT_KEYSTORE_FORMAT = "PKCS12";
     public static String DEFAULT_KEYSTORE_EXTENSION = ".p12";
@@ -65,7 +65,7 @@ public class PropertiesLoader {
     /**
      * For internal certs
      */
-    public PropertiesLoader(boolean forceNew, String ... hostNames) throws IOException, GeneralSecurityException, OperatorException {
+    public CertificateManager(boolean forceNew, String ... hostNames) throws IOException, GeneralSecurityException, OperatorException {
         sslKeyPair = new KeyPairWrapper(SSL);
         caKeyPair = new KeyPairWrapper(CA);
 
@@ -99,7 +99,7 @@ public class PropertiesLoader {
     /**
      * For trusted PEM-formatted certs
      */
-    public PropertiesLoader(File trustedPemKey, File trustedPemCert) throws Exception {
+    public CertificateManager(File trustedPemKey, File trustedPemCert) throws Exception {
         Security.addProvider(new BouncyCastleProvider());
         needsInstall = false;
         sslKeyPair = new KeyPairWrapper(SSL);
@@ -115,7 +115,7 @@ public class PropertiesLoader {
     /**
      * For trusted PKCS12-formatted certs
      */
-    public PropertiesLoader(File pkcs12File, char[] password) throws Exception {
+    public CertificateManager(File pkcs12File, char[] password) throws Exception {
         Security.addProvider(new BouncyCastleProvider());
         needsInstall = false;
         sslKeyPair = new KeyPairWrapper(SSL);
@@ -178,8 +178,8 @@ public class PropertiesLoader {
     public SslContextFactory configureSslContextFactory() {
         sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStore(sslKeyPair.getKeyStore());
-        sslContextFactory.setKeyStorePassword(sslKeyPair.getPass());
-        sslContextFactory.setKeyManagerPassword(sslKeyPair.getPass());
+        sslContextFactory.setKeyStorePassword(sslKeyPair.getPasswordString());
+        sslContextFactory.setKeyManagerPassword(sslKeyPair.getPasswordString());
         return sslContextFactory;
     }
 
@@ -187,8 +187,8 @@ public class PropertiesLoader {
         if(isSslActive()) {
             sslContextFactory.reload(sslContextFactory -> {
                 sslContextFactory.setKeyStore(sslKeyPair.getKeyStore());
-                sslContextFactory.setKeyStorePassword(sslKeyPair.getPass());
-                sslContextFactory.setKeyManagerPassword(sslKeyPair.getPass());
+                sslContextFactory.setKeyStorePassword(sslKeyPair.getPasswordString());
+                sslContextFactory.setKeyManagerPassword(sslKeyPair.getPasswordString());
             });
         } else {
             log.warn("SSL isn't active, can't reload");
@@ -203,7 +203,7 @@ public class PropertiesLoader {
         return needsInstall;
     }
 
-    public PropertiesLoader createKeyStore(KeyPairWrapper.Type type) throws IOException, GeneralSecurityException {
+    public CertificateManager createKeyStore(KeyPairWrapper.Type type) throws IOException, GeneralSecurityException {
         KeyPairWrapper keyPair = type == CA ? caKeyPair : sslKeyPair;
         KeyStore keyStore = KeyStore.getInstance(DEFAULT_KEYSTORE_FORMAT);
         keyStore.load(null, password);
@@ -221,13 +221,13 @@ public class PropertiesLoader {
         return this;
     }
 
-    public PropertiesLoader createTrustedKeystore(File p12Store, String password) throws Exception {
+    public CertificateManager createTrustedKeystore(File p12Store, String password) throws Exception {
         sslKeyPair = new KeyPairWrapper(SSL);
         sslKeyPair.init(p12Store, password.toCharArray());
         return this;
     }
 
-    public PropertiesLoader createTrustedKeystore(File pemKey, File pemCert) throws Exception {
+    public CertificateManager createTrustedKeystore(File pemKey, File pemCert) throws Exception {
         sslKeyPair = new KeyPairWrapper(SSL);
 
         // Private Key
@@ -276,7 +276,7 @@ public class PropertiesLoader {
         FileUtilities.createFileInheritPermissions(dest.toPath());
     }
 
-    public PropertiesLoader writeCert(KeyPairWrapper.Type type) throws IOException {
+    public CertificateManager writeCert(KeyPairWrapper.Type type) throws IOException {
         KeyPairWrapper keyPair = type == CA ? caKeyPair : sslKeyPair;
         File certFile = new File(getWritableLocation("ssl"), keyPair.getAlias() + DEFAULT_CERTIFICATE_EXTENSION);
 

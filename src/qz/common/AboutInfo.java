@@ -13,7 +13,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.installer.certificate.KeyPairWrapper;
-import qz.installer.certificate.PropertiesLoader;
+import qz.installer.certificate.CertificateManager;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -36,14 +36,14 @@ public class AboutInfo {
 
     private static String preferredHostname = "localhost";
 
-    public static JSONObject gatherAbout(String domain, PropertiesLoader propertiesLoader) {
+    public static JSONObject gatherAbout(String domain, CertificateManager certificateManager) {
         JSONObject about = new JSONObject();
 
         try {
             about.put("product", product());
-            about.put("socket", socket(propertiesLoader, domain));
+            about.put("socket", socket(certificateManager, domain));
             about.put("environment", environment());
-            about.put("ssl", ssl(propertiesLoader));
+            about.put("ssl", ssl(certificateManager));
             about.put("libraries", libraries());
         }
         catch(JSONException | GeneralSecurityException e) {
@@ -65,13 +65,13 @@ public class AboutInfo {
         return product;
     }
 
-    private static JSONObject socket(PropertiesLoader propertiesLoader, String domain) throws JSONException {
+    private static JSONObject socket(CertificateManager certificateManager, String domain) throws JSONException {
         JSONObject socket = new JSONObject();
 
         socket
                 .put("domain", domain)
                 .put("secureProtocol", "wss")
-                .put("securePort", propertiesLoader.isSslActive() ? "none":PrintSocketServer.getSecurePortInUse())
+                .put("securePort", certificateManager.isSslActive() ? PrintSocketServer.getSecurePortInUse() : "none")
                 .put("insecureProtocol", "ws")
                 .put("insecurePort", PrintSocketServer.getInsecurePortInUse());
 
@@ -92,12 +92,12 @@ public class AboutInfo {
         return environment;
     }
 
-    private static JSONObject ssl(PropertiesLoader propertiesLoader) throws JSONException, CertificateEncodingException {
+    private static JSONObject ssl(CertificateManager certificateManager) throws JSONException, CertificateEncodingException {
         JSONObject ssl = new JSONObject();
 
         JSONArray certs = new JSONArray();
 
-        for (KeyPairWrapper keyPair : new KeyPairWrapper[]{ propertiesLoader.getCaKeyPair(), propertiesLoader.getSslKeyPair() }) {
+        for (KeyPairWrapper keyPair : new KeyPairWrapper[]{certificateManager.getCaKeyPair(), certificateManager.getSslKeyPair() }) {
             X509Certificate x509 = keyPair.getCert();
             if (x509 != null) {
                 JSONObject cert = new JSONObject();

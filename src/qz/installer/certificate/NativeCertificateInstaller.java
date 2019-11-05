@@ -15,7 +15,6 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.installer.Installer;
-import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.utils.SystemUtilities;
 
 import java.io.File;
@@ -25,8 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.security.cert.X509Certificate;
 import java.util.List;
-
-import static qz.installer.certificate.KeyPairWrapper.Type.CA;
 
 public abstract class NativeCertificateInstaller {
     private static final Logger log = LoggerFactory.getLogger(NativeCertificateInstaller.class);
@@ -53,7 +50,7 @@ public abstract class NativeCertificateInstaller {
      */
     public boolean install(X509Certificate cert) {
         try {
-            File certFile = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", PropertiesLoader.DEFAULT_CERTIFICATE_EXTENSION);
+            File certFile = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
             JcaMiscPEMGenerator generator = new JcaMiscPEMGenerator(cert);
             JcaPEMWriter writer = new JcaPEMWriter(new OutputStreamWriter(Files.newOutputStream(certFile.toPath(), StandardOpenOption.CREATE)));
             writer.writeObject(generator.generate());

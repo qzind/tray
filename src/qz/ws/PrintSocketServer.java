@@ -31,8 +31,8 @@ import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.installer.Installer;
 import qz.installer.certificate.ExpiryTask;
-import qz.installer.certificate.PropertiesLoader;
-import qz.utils.CommandParser;
+import qz.installer.certificate.CertificateManager;
+import qz.utils.ArgParser;
 import qz.utils.FileUtilities;
 
 import javax.swing.*;
@@ -58,17 +58,17 @@ public class PrintSocketServer {
     private static final AtomicInteger insecurePortIndex = new AtomicInteger(0);
 
     private static TrayManager trayManager;
-    private static PropertiesLoader propertiesLoader;
+    private static CertificateManager certificateManager;
 
     private static boolean headless;
 
 
     public static void main(String[] args) {
-        CommandParser parser = new CommandParser(args);
+        ArgParser parser = new ArgParser(args);
         if(parser.intercept()) {
             System.exit(parser.getExitCode());
         }
-        headless = parser.argFlag("-h", "--headless");
+        headless = parser.hasFlag("-h", "--headless");
         log.info(Constants.ABOUT_TITLE + " version: {}", Constants.VERSION);
         log.info(Constants.ABOUT_TITLE + " vendor: {}", Constants.ABOUT_COMPANY);
         log.info("Java version: {}", Constants.JAVA_VERSION.toString());
@@ -77,9 +77,9 @@ public class PrintSocketServer {
 
         try {
             // Gets and sets the SSL info, properties file
-            propertiesLoader = Installer.getInstance().certGen(false);
+            certificateManager = Installer.getInstance().certGen(false);
             // Reoccurring (e.g. hourly) cert expiration check
-            new ExpiryTask(propertiesLoader).schedule();
+            new ExpiryTask(certificateManager).schedule();
         } catch(Exception e) {
             log.error("Something went critically wrong loading HTTPS", e);
         }
@@ -122,13 +122,13 @@ public class PrintSocketServer {
         final AtomicBoolean running = new AtomicBoolean(false);
         while(!running.get() && securePortIndex.get() < SECURE_PORTS.size() && insecurePortIndex.get() < INSECURE_PORTS.size()) {
             Server server = new Server(getInsecurePortInUse());
-            if (propertiesLoader != null) {
+            if (certificateManager != null) {
                 // Bind the secure socket on the proper port number (i.e. 9341), add it as an additional connector
-                SslConnectionFactory sslConnection = new SslConnectionFactory(propertiesLoader.configureSslContextFactory(), HttpVersion.HTTP_1_1.asString());
+                SslConnectionFactory sslConnection = new SslConnectionFactory(certificateManager.configureSslContextFactory(), HttpVersion.HTTP_1_1.asString());
                 HttpConnectionFactory httpConnection = new HttpConnectionFactory(new HttpConfiguration());
 
                 ServerConnector connector = new ServerConnector(server, sslConnection, httpConnection);
-                connector.setHost(propertiesLoader.getProperties().getProperty("wss.host"));
+                connector.setHost(certificateManager.getProperties().getProperty("wss.host"));
                 connector.setPort(getSecurePortInUse());
                 server.addConnector(connector);
             } else {
@@ -149,7 +149,7 @@ public class PrintSocketServer {
                 filter.getFactory().getPolicy().setMaxTextMessageSize(MAX_MESSAGE_SIZE);
 
                 // Handle HTTP landing page
-                ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet(propertiesLoader));
+                ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet(certificateManager));
                 httpServlet.setInitParameter("resourceBase","/");
                 context.addServlet(httpServlet, "/");
                 context.addServlet(httpServlet, "/json");
@@ -201,7 +201,7 @@ public class PrintSocketServer {
     }
 
     public static Properties getTrayProperties() {
-        return propertiesLoader.getProperties();
+        return certificateManager.getProperties();
     }
 
 }

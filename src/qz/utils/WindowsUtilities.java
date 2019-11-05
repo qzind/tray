@@ -1,17 +1,22 @@
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
-import com.sun.jna.platform.win32.Advapi32Util;
-import com.sun.jna.platform.win32.GDI32;
-import com.sun.jna.platform.win32.WinDef;
-import com.sun.jna.platform.win32.WinReg;
+import com.sun.jna.platform.win32.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 
 import java.awt.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.*;
+import java.util.List;
 
 import static com.sun.jna.platform.win32.WinReg.*;
+
+import static java.nio.file.attribute.AclEntryPermission.*;
+import static java.nio.file.attribute.AclEntryFlag.*;
 
 public class WindowsUtilities {
     protected static final Logger log = LoggerFactory.getLogger(WindowsUtilities.class);
@@ -108,5 +113,38 @@ public class WindowsUtilities {
             log.error("Could not write registry value {}\\{}\\{}", root, key, value, e);
         }
         return false;
+    }
+
+    public static void setWritable(Path path) {
+        try {
+            UserPrincipal authenticatedUsers = path.getFileSystem().getUserPrincipalLookupService()
+                    .lookupPrincipalByName("Authenticated Users");
+            AclFileAttributeView view = Files.getFileAttributeView(path, AclFileAttributeView.class);
+
+            // Create ACL to give "Authenticated Users" "modify" access
+            AclEntry entry = AclEntry.newBuilder()
+                    .setType(AclEntryType.ALLOW)
+                    .setPrincipal(authenticatedUsers)
+                    .setFlags(DIRECTORY_INHERIT,
+                              FILE_INHERIT)
+                    .setPermissions(WRITE_NAMED_ATTRS,
+                                    WRITE_ATTRIBUTES,
+                                    DELETE,
+                                    WRITE_DATA,
+                                    READ_ACL,
+                                    APPEND_DATA,
+                                    READ_ATTRIBUTES,
+                                    READ_DATA,
+                                    EXECUTE,
+                                    SYNCHRONIZE,
+                                    READ_NAMED_ATTRS)
+                    .build();
+
+            List<AclEntry> acl = view.getAcl();
+            acl.add(0, entry); // insert before any DENY entries
+            view.setAcl(acl);
+        } catch(IOException e) {
+            log.warn("Could not set writable: {}", path, e);
+        }
     }
 }

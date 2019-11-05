@@ -122,7 +122,7 @@ public class WindowsCertificateInstaller extends NativeCertificateInstaller {
         return type;
     }
 
-    public static String parseNextLine(BufferedReader reader) throws IOException {
+    private static String parseNextLine(BufferedReader reader) throws IOException {
         String data = reader.readLine();
         if (data != null) {
             String[] split = data.split(":", 2);

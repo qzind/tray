@@ -37,9 +37,7 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Stream;
@@ -520,15 +518,15 @@ public class FileUtilities {
         localFileMap.put(name, null);
     }
 
-    public static CommandParser.ExitStatus addToCertList(String list, File certFile) throws Exception {
+    public static ArgParser.ExitStatus addToCertList(String list, File certFile) throws Exception {
         FileReader fr = new FileReader(certFile);
         Certificate cert = new Certificate(IOUtils.toString(fr));
         if(FileUtilities.printLineToFile(list, cert.data())) {
             log.info("Successfully added {} to {} list", cert.getOrganization(), ALLOW_FILE);
-            return CommandParser.ExitStatus.SUCCESS;
+            return ArgParser.ExitStatus.SUCCESS;
         }
         log.error("Failed to add {} to {} list", cert.getOrganization(), ALLOW_FILE);
-        return CommandParser.ExitStatus.GENERAL_ERROR;
+        return ArgParser.ExitStatus.GENERAL_ERROR;
     }
 
     public static boolean deleteFromFile(String fileName, String deleteLine) {
@@ -670,6 +668,11 @@ public class FileUtilities {
     public static void setPermissionsRecursively(Path toRecurse, boolean worldWrite) {
         try (Stream<Path> paths = Files.walk(toRecurse)) {
             paths.forEach((path)->{
+                if(SystemUtilities.isWindows() && worldWrite) {
+                    // By default, NSIS sets owner to "Administrator", preventing non-admins from writing
+                    // Add "Authenticated Users" write permission using
+                    WindowsUtilities.setWritable(path);
+                }
                 if (path.toFile().isDirectory()) {
                     // Executable bit in Unix allows listing files
                     path.toFile().setExecutable(true, false);

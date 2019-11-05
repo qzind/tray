@@ -4,7 +4,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMReader;
 import qz.installer.certificate.CertificateChainBuilder;
 import qz.installer.certificate.ExpiryTask;
-import qz.installer.certificate.PropertiesLoader;
+import qz.installer.certificate.CertificateManager;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -23,8 +23,8 @@ public class InstallerTests {
         CertificateChainBuilder.SSL_CERT_AGE = 1;
         Installer installer = Installer.getInstance();
         // installer.install();
-        PropertiesLoader propertiesLoader = installer.certGen(true);
-        new ExpiryTask(propertiesLoader).schedule(1000);
+        CertificateManager certificateManager = installer.certGen(true);
+        new ExpiryTask(certificateManager).schedule(1000);
         Thread.sleep(5000);
         installer.removeCerts();
     }

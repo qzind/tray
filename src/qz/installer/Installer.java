@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.security.cert.X509Certificate;
 import java.util.List;
 
@@ -77,6 +75,21 @@ public abstract class Installer {
     public abstract void setDestination(String destination);
     public abstract String getDestination();
 
+    private static Installer instance;
+
+    public static Installer getInstance() {
+        if(instance == null) {
+            if(SystemUtilities.isWindows()) {
+                instance = new WindowsInstaller();
+            } else if(SystemUtilities.isMac()) {
+                instance = new MacInstaller();
+            } else {
+                instance = new LinuxInstaller();
+            }
+        }
+        return instance;
+    }
+
     public static void install(String destination, boolean silent) throws Exception {
         IS_SILENT = silent;
         getInstance();
@@ -111,20 +124,6 @@ public abstract class Installer {
         instance.removeSharedDirectory()
                 .removeSystemSettings()
                 .removeCerts();
-    }
-
-    private static Installer instance;
-    public static Installer getInstance() {
-        if(instance == null) {
-            if(SystemUtilities.isWindows()) {
-                instance = new WindowsInstaller();
-            } else if(SystemUtilities.isMac()) {
-                instance = new MacInstaller();
-            } else {
-                instance = new LinuxInstaller();
-            }
-        }
-        return instance;
     }
 
     public Installer deployApp() throws IOException {
@@ -186,12 +185,12 @@ public abstract class Installer {
     /**
      * Checks, and if needed generates an SSL for the system
      */
-    public PropertiesLoader certGen(boolean forceNew, String... hostNames) throws Exception {
-        PropertiesLoader propertiesLoader = new PropertiesLoader(forceNew, hostNames);
-        boolean needsInstall = propertiesLoader.needsInstall();
+    public CertificateManager certGen(boolean forceNew, String... hostNames) throws Exception {
+        CertificateManager certificateManager = new CertificateManager(forceNew, hostNames);
+        boolean needsInstall = certificateManager.needsInstall();
         try {
             // Check that the CA cert is installed
-            X509Certificate caCert = propertiesLoader.getKeyPair(CA).getCert();
+            X509Certificate caCert = certificateManager.getKeyPair(CA).getCert();
             NativeCertificateInstaller installer = NativeCertificateInstaller.getInstance();
 
             if (forceNew || needsInstall) {
@@ -203,8 +202,8 @@ public abstract class Installer {
                 FirefoxCertificateInstaller.install(caCert, hostNames);
             } else {
                 // Make sure the certificate is recognized by the system
-                File tempCert = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", PropertiesLoader.DEFAULT_CERTIFICATE_EXTENSION);
-                PropertiesLoader.writeCert(caCert, tempCert); // temp cert
+                File tempCert = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
+                CertificateManager.writeCert(caCert, tempCert); // temp cert
                 if(!installer.verify(tempCert)) {
                     installer.install(caCert);
                     FirefoxCertificateInstaller.install(caCert, hostNames);
@@ -215,7 +214,7 @@ public abstract class Installer {
             log.error("Something went wrong obtaining the certificate.  HTTPS will fail.", e);
         }
 
-        return propertiesLoader;
+        return certificateManager;
     }
 
     /**

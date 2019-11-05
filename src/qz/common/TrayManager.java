@@ -260,7 +260,7 @@ public class TrayManager {
         desktopItem.addActionListener(desktopListener());
 
         anonymousItem = new JCheckBoxMenuItem("Block anonymous requests");
-        anonymousItem.setToolTipText("Blocks all requests that do no contain a valid certificate/signature");
+        anonymousItem.setToolTipText("Blocks all requests that do not contain a valid certificate/signature");
         anonymousItem.setMnemonic(KeyEvent.VK_K);
         anonymousItem.setState(Certificate.UNKNOWN.isBlocked());
         anonymousItem.addActionListener(anonymousListener);

@@ -15,7 +15,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
-import qz.installer.certificate.PropertiesLoader;
+import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.firefox.locator.AppAlias;
 import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.utils.JsonWriter;
@@ -46,7 +46,7 @@ public class FirefoxCertificateInstaller {
     private static final Version LINUX_POLICY_VERSION = Version.valueOf("65.0.0");
 
     private static String ENTERPRISE_ROOT_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
-    private static String INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + PropertiesLoader.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
+    private static String INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
     private static String REMOVE_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"/opt/" + Constants.PROPS_FILE +  "/auth/root-ca.crt\"] } } }";
 
     public static final String POLICY_LOCATION = "distribution/policies.json";
@@ -100,9 +100,9 @@ public class FirefoxCertificateInstaller {
             return false;
         }
         if(SystemUtilities.isWindows()) {
-            return app.getVersion().greaterThanOrEqualTo(MAC_POLICY_VERSION);
-        } else if (SystemUtilities.isMac()) {
             return app.getVersion().greaterThanOrEqualTo(WINDOWS_POLICY_VERSION);
+        } else if (SystemUtilities.isMac()) {
+            return app.getVersion().greaterThanOrEqualTo(MAC_POLICY_VERSION);
         } else {
             return app.getVersion().greaterThanOrEqualTo(LINUX_POLICY_VERSION);
         }
@@ -114,7 +114,7 @@ public class FirefoxCertificateInstaller {
         try {
             if(jsonPolicy.equals(INSTALL_CERT_POLICY)) {
                 // Linux lacks the concept of "enterprise roots", we'll write it to a known location instead
-                File certFile = new File("/usr/lib/mozilla/certificates", Constants.PROPS_FILE + PropertiesLoader.DEFAULT_CERTIFICATE_EXTENSION);
+                File certFile = new File("/usr/lib/mozilla/certificates", Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
 
                 // Make sure we can traverse and read
                 File certs = new File("/usr/lib/mozilla/certificates");
@@ -126,7 +126,7 @@ public class FirefoxCertificateInstaller {
                 mozilla.setExecutable(true, false);
 
                 // Make sure we can read
-                PropertiesLoader.writeCert(cert, certFile);
+                CertificateManager.writeCert(cert, certFile);
                 certFile.setReadable(true, false);
             }
 

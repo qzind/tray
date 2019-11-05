@@ -88,7 +88,7 @@ public class KeyPairWrapper {
         return key;
     }
 
-    public String getPass() {
+    public String getPasswordString() {
         return new String(password);
     }
 

@@ -7,7 +7,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.AboutInfo;
-import qz.installer.certificate.PropertiesLoader;
+import qz.installer.certificate.CertificateManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -22,10 +22,10 @@ public class HttpAboutServlet extends DefaultServlet {
     private static final Logger log = LoggerFactory.getLogger(PrintSocketServer.class);
 
     private static final int JSON_INDENT = 2;
-    private PropertiesLoader propertiesLoader;
+    private CertificateManager certificateManager;
 
-    public HttpAboutServlet(PropertiesLoader propertiesLoader) {
-        this.propertiesLoader = propertiesLoader;
+    public HttpAboutServlet(CertificateManager certificateManager) {
+        this.certificateManager = certificateManager;
     }
 
 
@@ -49,7 +49,7 @@ public class HttpAboutServlet extends DefaultServlet {
 
         display.append(newTable());
 
-        JSONObject aboutData = AboutInfo.gatherAbout(request.getServerName(), propertiesLoader);
+        JSONObject aboutData = AboutInfo.gatherAbout(request.getServerName(), certificateManager);
         try {
             display.append(generateFromKeys(aboutData, true));
         }
@@ -73,7 +73,7 @@ public class HttpAboutServlet extends DefaultServlet {
     }
 
     private void generateJsonResponse(HttpServletRequest request, HttpServletResponse response) {
-        JSONObject aboutData = AboutInfo.gatherAbout(request.getServerName(), propertiesLoader);
+        JSONObject aboutData = AboutInfo.gatherAbout(request.getServerName(), certificateManager);
 
         try {
             response.setStatus(HttpServletResponse.SC_OK);
@@ -89,7 +89,7 @@ public class HttpAboutServlet extends DefaultServlet {
     private void generateCertResponse(HttpServletRequest request, HttpServletResponse response) {
         try {
             String alias = request.getServletPath().split("/")[2];
-            String certData = AboutInfo.formatCert(propertiesLoader.getSslKeyPair().getCert().getEncoded());
+            String certData = AboutInfo.formatCert(certificateManager.getSslKeyPair().getCert().getEncoded());
 
             if (certData != null) {
                 response.setStatus(HttpServletResponse.SC_OK);

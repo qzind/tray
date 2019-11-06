@@ -80,9 +80,23 @@ public class JsonWriter {
                 //force new key val if existing and allowed
                 base.put(key, mergeVal);
             } else if (baseVal instanceof JSONArray && mergeVal instanceof JSONArray) {
+                JSONArray baseArr = (JSONArray)baseVal;
+                JSONArray mergeArr = (JSONArray)mergeVal;
+
                 //lists only merged if not overriding values
-                for(int i = 0; i < ((JSONArray)mergeVal).length(); i++) {
-                    ((JSONArray)baseVal).put(((JSONArray)mergeVal).get(i));
+                for(int i = 0; i < mergeArr.length(); i++) {
+                    //check if value is already in the base array
+                    boolean exists = false;
+                    for(int j = 0; j < baseArr.length(); j++) {
+                        if (baseArr.get(j).equals(mergeArr.get(i))) {
+                            exists = true;
+                            break;
+                        }
+                    }
+
+                    if (!exists) {
+                        baseArr.put(mergeArr.get(i));
+                    }
                 }
             }
         }

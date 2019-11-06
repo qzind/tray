@@ -3,11 +3,9 @@ package qz.communication;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
-import qz.utils.FileUtilities;
 import qz.ws.PrintSocketClient;
 import qz.ws.StreamEvent;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
 

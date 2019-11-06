@@ -64,13 +64,15 @@ public class TaskKiller {
             }
         }
 
-        // Try to kill class processes too, such as through the IDE
-        String[] procs = ShellUtilities.executeRaw("jcmd", "-l").split("\\r?\\n");
-        for(String proc : procs) {
-            String[] parts = proc.split(" ", 1);
-            if (parts.length >= 2 && parts[1].contains(PrintSocketServer.class.getCanonicalName())) {
-                killCmd[killCmd.length -1] = parts[0].trim();
-                success = success && ShellUtilities.execute(killCmd);
+        // Use jcmd to kill class processes too, such as through the IDE
+        if(SystemUtilities.isJDK()) {
+            String[] procs = ShellUtilities.executeRaw("jcmd", "-l").split("\\r?\\n");
+            for(String proc : procs) {
+                String[] parts = proc.split(" ", 1);
+                if (parts.length >= 2 && parts[1].contains(PrintSocketServer.class.getCanonicalName())) {
+                    killCmd[killCmd.length - 1] = parts[0].trim();
+                    success = success && ShellUtilities.execute(killCmd);
+                }
             }
         }
 

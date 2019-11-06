@@ -417,4 +417,23 @@ public class SystemUtilities {
         }
         return "jar".equals(classProtocol);
     }
+
+    public static boolean isJDK() {
+        String path = System.getProperty("sun.boot.library.path");
+        if(path != null) {
+            String javacPath = "";
+            if(path.endsWith(File.separator + "bin")) {
+                javacPath = path;
+            } else {
+                int libIndex = path.lastIndexOf(File.separator + "lib");
+                if(libIndex > 0) {
+                    javacPath = path.substring(0, libIndex) + File.separator + "bin";
+                }
+            }
+            if(!javacPath.isEmpty()) {
+                return new File(javacPath, "javac").exists() || new File(javacPath, "javac.exe").exists();
+            }
+        }
+        return false;
+    }
 }

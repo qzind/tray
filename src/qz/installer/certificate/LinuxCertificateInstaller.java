@@ -25,6 +25,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import static qz.installer.Installer.PrivilegeLevel.*;
+
 /**
  * @author Tres Finocchiaro
  */
@@ -33,24 +35,28 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
 
     private static String NSSDB = "sql:" + System.getenv("HOME") + "/.pki/nssdb";
 
+    private Installer.PrivilegeLevel certType;
+
     public LinuxCertificateInstaller(Installer.PrivilegeLevel certType) {
         setInstallType(certType);
         findCertutil();
     }
 
     public Installer.PrivilegeLevel getInstallType() {
-        return Installer.PrivilegeLevel.USER;
+        return certType;
     }
 
     public void setInstallType(Installer.PrivilegeLevel certType) {
-        if (certType == Installer.PrivilegeLevel.SYSTEM) {
-            log.warn("System-wide certificates are only supported for Firefox.  Defaulting to user-certificate store instead.");
+        this.certType = certType;
+        if (this.certType == SYSTEM) {
+            log.warn("Command \"certutil\" needs to run as USER.  We'll try again on launch. Ignore warnings about SYSTEM store.");
         }
     }
 
     public boolean remove(List<String> idList) {
         boolean success = true;
-        for (String nickname : idList) {
+        if(certType == SYSTEM) return false;
+        for(String nickname : idList) {
             success = success && ShellUtilities.execute("certutil", "-d", NSSDB, "-D", "-n", nickname);
         }
         return success;
@@ -58,6 +64,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
 
     public List<String> find() {
         ArrayList<String> nicknames = new ArrayList<>();
+        if(certType == SYSTEM) return nicknames;
         try {
             Process p = Runtime.getRuntime().exec(new String[] {"certutil", "-d", NSSDB, "-L"});
             BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -78,6 +85,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     public boolean verify(File ignore) { return true; } // no easy way to validate a cert, assume it's installed
 
     public boolean add(File certFile) {
+        if(certType == SYSTEM) return false;
         // Create directories as needed
         String[] parts = NSSDB.split(":", 2);
         if(parts.length > 1) {
@@ -90,7 +98,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
 
     private boolean findCertutil() {
         if (!ShellUtilities.execute("which", "certutil")) {
-            if (SystemUtilities.isUbuntu() && promptCertutil()) {
+            if (SystemUtilities.isUbuntu() && certType == SYSTEM && promptCertutil()) {
                 return ShellUtilities.execute("apt-get", "install", "-y", "libnss3-tools");
             } else {
                 log.warn("A critical component, \"certutil\" wasn't found and cannot be installed automatically. HTTPS will fail on browsers which depend on it.");

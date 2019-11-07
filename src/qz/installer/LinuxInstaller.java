@@ -28,7 +28,7 @@ public class LinuxInstaller extends Installer {
     public static final String APP_LAUNCHER = APP_DIR + SHORTCUT_NAME;
     public static final String UDEV_RULES = "/lib/udev/rules.d/99-udev-override.rules";
 
-    private String destination = "/opt/qz-tray";
+    private String destination = "/opt/" + PROPS_FILE;
 
     public void setDestination(String destination) {
         this.destination = destination;
@@ -52,7 +52,7 @@ public class LinuxInstaller extends Installer {
         HashMap<String, String> fieldMap = new HashMap<>();
         // Dynamic fields
         fieldMap.put("%DESTINATION%", destination);
-        fieldMap.put("%LINUX_ICON%", "linux-icon.svg");
+        fieldMap.put("%LINUX_ICON%", String.format("%s.svg", PROPS_FILE));
         fieldMap.put("%COMMAND%", String.format("%s/%s", destination, PROPS_FILE));
         fieldMap.put("%PARAM%", isStartup ? "--honorautostart" : "");
 
@@ -117,7 +117,7 @@ public class LinuxInstaller extends Installer {
 
         // Cleanup
         log.info("Cleaning up any remaining files...");
-        new File(destination + File.separator + "linux-installer.sh").delete();
+        new File(destination + File.separator + "install").delete();
         return this;
     }
 
@@ -130,7 +130,7 @@ public class LinuxInstaller extends Installer {
     }
 
     // Environmental variables for spawning a task using sudo. Order is important.
-    static String[] SUDO_EXPORTS = {"USER", "UPSTART_SESSION", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "XDG_CURRENT_DESKTOP", "GNOME_DESKTOP_SESSION_ID" };
+    static String[] SUDO_EXPORTS = {"USER", "HOME", "UPSTART_SESSION", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "XDG_CURRENT_DESKTOP", "GNOME_DESKTOP_SESSION_ID" };
 
     /**
      * Spawns the process as the underlying regular user account, preserving the environment
@@ -187,12 +187,12 @@ public class LinuxInstaller extends Installer {
         // Prepare the environment
         String[] envp = new String[env.size() + ShellUtilities.envp.length];
         int i = 0;
-        for(String key :env.keySet()) {
-            envp[i++] = String.format("%s=%s", key, env.get(key));
-        }
         // Keep existing env
         for(String keep : ShellUtilities.envp) {
             envp[i++] = keep;
+        }
+        for(String key :env.keySet()) {
+            envp[i++] = String.format("%s=%s", key, env.get(key));
         }
 
         // Determine if this environment likes sudo

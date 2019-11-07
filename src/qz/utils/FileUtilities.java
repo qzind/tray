@@ -137,9 +137,11 @@ public class FileUtilities {
         } else {
             // assume permissions are not inherited
             try {
-                FileAttribute attribute = PosixFilePermissions.asFileAttribute(Files.getPosixFilePermissions(filePath.getParent()));
+                FileAttribute<Set<PosixFilePermission>> attributes = PosixFilePermissions.asFileAttribute(Files.getPosixFilePermissions(filePath.getParent()));
                 if(!Files.exists(filePath)) {
-                    Files.createFile(filePath, attribute);
+                    Files.createFile(filePath, attributes);
+                    // Remove execute flag
+                    filePath.toFile().setExecutable(false, false);
                 }
             } catch(IOException e) {
                 log.warn("Unable to inherit file permissions {}", filePath, e);

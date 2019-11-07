@@ -485,7 +485,7 @@
     <target name="makeself" depends="makeself-preflight,distribute,prepackage">
         <echo>Creating installer using makeself</echo>
 
-        <copy file="${basedir}/assets/branding/linux-icon.svg" tofile="${dist.dir}/linux-icon.svg" />
+        <copy file="${basedir}/assets/branding/linux-icon.svg" tofile="${dist.dir}/${project.filename}.svg" />
 
         <mkdir dir="${build.dir}/scripts"/>
         <copy file="${basedir}/ant/linux/linux-installer.sh.in" tofile="${dist.dir}/install" >
@@ -516,6 +516,6 @@
         </exec>
 
         <!-- Cleanup lingering icon (for other OS installers) -->
-        <delete file="${dist.dir}/linux-icon.svg" />
+        <delete file="${dist.dir}//${project.filename}.svg" />
     </target>
 </project>

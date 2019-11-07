@@ -47,6 +47,8 @@ run_task install --dest "/opt/${project.filename}"
 
 # We should be installed now, generate the certificate
 pushd "/opt/${project.filename}" &> /dev/null
+chmod a+x "${project.filename}"
+chmod a+x "uninstall"
 run_task certgen
 
 # Tell the desktop to look for new mimetypes in the background

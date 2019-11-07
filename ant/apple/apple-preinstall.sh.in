@@ -5,6 +5,6 @@ set -e
 
 # Get working directory
 DIR=$(cd "$(dirname "$0")" && pwd)
-pushd "$DIR"
+pushd "$DIR/payload/Contents/MacOS/"
 
-./"${project.filename}" preinstall
+./"${project.name}" preinstall

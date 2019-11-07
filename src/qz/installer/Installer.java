@@ -127,13 +127,6 @@ public abstract class Installer {
     }
 
     public Installer deployApp() throws IOException {
-        if (SystemUtilities.isMac()) {
-            if (System.getenv("INSTALLER_TEMP") != null && !System.getenv("INSTALLER_TEMP").isEmpty()) {
-                log.info("We're running from pkgbuild, skipping the deployApp() step");
-                return this;
-            }
-        }
-
         Path src = SystemUtilities.detectAppPath();
         Path dest = Paths.get(getDestination());
 
@@ -143,7 +136,20 @@ public abstract class Installer {
 
         FileUtils.copyDirectory(src.toFile(), dest.toFile());
         FileUtilities.setPermissionsRecursively(dest, false);
+        if(SystemUtilities.isWindows()) {
+            // skip
+        } else if(SystemUtilities.isMac()) {
+            setExecutable("uninstall");
+            setExecutable("Contents/MacOS/" + ABOUT_TITLE);
+        } else {
+            setExecutable("uninstall");
+            setExecutable(PROPS_FILE);
+        }
         return this;
+    }
+
+    private void setExecutable(String relativePath) {
+        new File(getDestination(), relativePath).setExecutable(true, false);
     }
 
 

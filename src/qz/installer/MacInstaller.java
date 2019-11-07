@@ -84,7 +84,9 @@ public class MacInstaller extends Installer {
 
         // Run on background thread in case System Events is hung or slow to respond
         final String finalScript = script;
-        SwingUtilities.invokeLater(() -> ShellUtilities.executeAppleScript(finalScript));
+        new Thread(() -> {
+            ShellUtilities.executeAppleScript(finalScript);
+        }).run();
         return this;
     }
 

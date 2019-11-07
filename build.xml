@@ -323,7 +323,11 @@
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <mkdir dir="${build.dir}/scripts"/>
+        <copy file="${basedir}/ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <mkdir dir="${build.dir}/scripts/payload"/>
 
         <copy file="${basedir}/ant/apple/apple-preinstall.sh.in" tofile="${build.dir}/scripts/preinstall">
             <filterchain><expandproperties/></filterchain>
@@ -334,20 +338,16 @@
         </copy>
 
         <!-- Copy of the jar is needed for preinstall tasks -->
-        <copy file="${dist.dir}/${project.filename}.jar" tofile="${build.dir}/scripts/${project.filename}.jar"/>
-        <copy file="${basedir}/ant/unix/unix-launcher.sh.in" tofile="${build.dir}/scripts/${project.filename}">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <copy file="${basedir}/ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
-            <filterchain><expandproperties/></filterchain>
+        <copy todir="${build.dir}/scripts/payload">
+            <fileset dir="${dist.dir}"/>
         </copy>
 
         <chmod perm="a+x" type="file">
             <fileset dir="${build.dir}/scripts">
-                <include name="**/*"/>
+                <include name="preinstall"/>
+                <include name="postinstall"/>
             </fileset>
-            <fileset dir="${dist.dir}">
+            <fileset dir="${build.dir}/scripts/payload">
                 <include name="**/${project.name}"/>
                 <include name="**/uninstall"/>
             </fileset>
@@ -373,8 +373,7 @@
             <arg value="--identifier"/>
             <arg value="${project.filename}"/>
 
-            <arg value="--root"/>
-            <arg value="${dist.dir}"/>
+            <arg value="--nopayload"/>
 
             <arg value="--install-location"/>
             <arg value="/Applications/${project.name}.app"/>

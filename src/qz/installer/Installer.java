@@ -203,7 +203,6 @@ public abstract class Installer {
                 // Remove installed certs per request (usually the desktop installer, or failure to write properties)
                 List<String> matchingCerts = installer.find();
                 installer.remove(matchingCerts);
-                matchingCerts.clear();
                 installer.install(caCert);
                 FirefoxCertificateInstaller.install(caCert, hostNames);
             } else {

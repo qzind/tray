@@ -15,10 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -157,6 +154,10 @@ public class ShellUtilities {
         InputStreamReader in = null;
         try {
             Process p = Runtime.getRuntime().exec(commandArray, envp);
+            if(SystemUtilities.isWindows() && commandArray.length > 0 && commandArray[0].startsWith("wmic")) {
+                // Fix deadlock on old Windows versions https://stackoverflow.com/a/13367685/3196753
+                p.getOutputStream().close();
+            }
             in = new InputStreamReader(p.getInputStream(), Charsets.UTF_8);
             StringBuilder out = new StringBuilder();
             int c;

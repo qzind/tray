@@ -79,10 +79,6 @@ public abstract class NativeCertificateInstaller {
             return true;
         } else {
             log.warn("Could not install certificate to {} store using {}", store, helper);
-            if(this instanceof WindowsCertificateInstaller && !Installer.IS_SILENT) {
-                log.warn("Windows detected, prompting instructions...");
-                ((WindowsCertificateInstaller)this ).addPrompt(certFile);
-            }
         }
         return false;
     }

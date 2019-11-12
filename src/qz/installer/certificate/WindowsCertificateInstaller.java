@@ -125,26 +125,26 @@ public class WindowsCertificateInstaller extends NativeCertificateInstaller {
         boolean success = true;
 
         WinCrypt.CERT_CONTEXT hCertContext;
+        WinCrypt.CERT_CONTEXT pPrevCertContext = null;
         while(true) {
-            hCertContext = Crypt32.INSTANCE.CertFindCertificateInStore(
+                hCertContext = Crypt32.INSTANCE.CertFindCertificateInStore(
                     openStore(),
                     WinCrypt.X509_ASN_ENCODING,
                     0,
                     Crypt32.CERT_FIND_SUBJECT_STR,
                     Constants.ABOUT_EMAIL,
-                    null);
-
+                    pPrevCertContext);
 
             if(hCertContext == null) {
                 break;
             }
+
+            pPrevCertContext = Crypt32.INSTANCE.CertDuplicateCertificateContext(hCertContext);
+
             if(success = (success && Crypt32.INSTANCE.CertDeleteCertificateFromStore(hCertContext))) {
                 log.info("Successfully deleted certificate matching {}", Constants.ABOUT_EMAIL);
             } else {
-                log.info(Kernel32Util.formatMessage(Native.getLastError()));
-            }
-            if(!Crypt32.INSTANCE.CertFreeCertificateContext(hCertContext)) {
-                log.warn(Kernel32Util.formatMessage(Native.getLastError()));
+                log.info("Could not delete certificate: {}", Kernel32Util.formatMessage(Native.getLastError()));
             }
         }
 
@@ -204,6 +204,7 @@ public class WindowsCertificateInstaller extends NativeCertificateInstaller {
         WinCrypt.CERT_CONTEXT CertFindCertificateInStore (WinCrypt.HCERTSTORE hCertStore, int dwCertEncodingType, int dwFindFlags, int dwFindType, Structure pvFindPara, WinCrypt.CERT_CONTEXT pPrevCertContext);
         boolean CertDeleteCertificateFromStore(WinCrypt.CERT_CONTEXT pCertContext);
         boolean CertFreeCertificateContext(WinCrypt.CERT_CONTEXT pCertContext);
+        WinCrypt.CERT_CONTEXT CertDuplicateCertificateContext(WinCrypt.CERT_CONTEXT pCertContext);
     }
 
     // Polyfill from JNA5+

@@ -13,6 +13,7 @@ package qz.installer.certificate;
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
+import com.sun.jna.Structure;
 import com.sun.jna.platform.win32.Kernel32Util;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.win32.StdCallLibrary;
@@ -25,12 +26,14 @@ import qz.common.Constants;
 import qz.installer.Installer;
 
 import java.io.*;
-import java.util.ArrayList;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 public class WindowsCertificateInstaller extends NativeCertificateInstaller {
     private static final Logger log = LoggerFactory.getLogger(WindowsCertificateInstaller.class);
     private WinCrypt.HCERTSTORE store;
+    private byte[] certBytes;
     private Installer.PrivilegeLevel certType;
 
     public WindowsCertificateInstaller(Installer.PrivilegeLevel certType) {
@@ -40,9 +43,8 @@ public class WindowsCertificateInstaller extends NativeCertificateInstaller {
     public boolean add(File certFile) {
         log.info("Writing certificate {} to {} store using Crypt32...", certFile, certType);
         try {
-            PEMParser pem = new PEMParser(new FileReader(certFile));
-            X509CertificateHolder certHolder = (X509CertificateHolder)pem.readObject();
-            byte[] bytes = certHolder.getEncoded();
+
+            byte[] bytes = getCertBytes(certFile);
             Pointer pointer = new Memory(bytes.length);
             pointer.write(0, bytes, 0, bytes.length);
 
@@ -54,15 +56,28 @@ public class WindowsCertificateInstaller extends NativeCertificateInstaller {
                     Crypt32.CERT_STORE_ADD_REPLACE_EXISTING,
                     null
             );
-            log.info(Kernel32Util.formatMessage(Native.getLastError()));
+            if(!success) {
+                log.warn(Kernel32Util.formatMessage(Native.getLastError()));
+            }
 
             closeStore();
 
             return success;
         } catch(IOException e) {
             log.warn("An error occurred installing the certificate", e);
+        } finally {
+            certBytes = null;
         }
         return false;
+    }
+
+    private byte[] getCertBytes(File certFile) throws IOException {
+        if(certBytes == null) {
+            PEMParser pem = new PEMParser(new FileReader(certFile));
+            X509CertificateHolder certHolder = (X509CertificateHolder)pem.readObject();
+            certBytes = certHolder.getEncoded();
+        }
+        return certBytes;
     }
 
     private WinCrypt.HCERTSTORE openStore() {
@@ -109,8 +124,6 @@ public class WindowsCertificateInstaller extends NativeCertificateInstaller {
     public boolean remove(List<String> ignore) {
         boolean success = true;
 
-        List<WinCrypt.CERT_CONTEXT> hCertContextList = new ArrayList<>();
-
         WinCrypt.CERT_CONTEXT hCertContext;
         while(true) {
             hCertContext = Crypt32.INSTANCE.CertFindCertificateInStore(
@@ -151,9 +164,24 @@ public class WindowsCertificateInstaller extends NativeCertificateInstaller {
         return certType;
     }
 
-    // TODO: Switch to JNA
     public boolean verify(File certFile) {
-        return WindowsCertificateInstallerCli.verifyCert(certFile);
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
+            md.update(getCertBytes(certFile));
+            WinCrypt.DATA_BLOB thumbPrint = new WinCrypt.DATA_BLOB(md.digest());
+            WinNT.HANDLE cert = Crypt32.INSTANCE.CertFindCertificateInStore(
+                    openStore(),
+                    WinCrypt.X509_ASN_ENCODING,
+                    0,
+                    Crypt32.CERT_FIND_SHA1_HASH,
+                    thumbPrint,
+                    null);
+
+            return cert != null;
+        } catch(IOException | NoSuchAlgorithmException e) {
+            log.warn("An error occurred verifying the cert is installed: {}", certFile, e);
+        }
+        return false;
     }
 
     /**
@@ -165,6 +193,7 @@ public class WindowsCertificateInstaller extends NativeCertificateInstaller {
         int CERT_STORE_PROV_SYSTEM = 10;
         int CERT_STORE_ADD_REPLACE_EXISTING = 3;
         int CERT_FIND_SUBJECT_STR = 524295;
+        int CERT_FIND_SHA1_HASH = 65536;
 
         Crypt32 INSTANCE = Native.loadLibrary("Crypt32", Crypt32.class, W32APIOptions.DEFAULT_OPTIONS);
 
@@ -172,6 +201,7 @@ public class WindowsCertificateInstaller extends NativeCertificateInstaller {
         boolean CertCloseStore(WinCrypt.HCERTSTORE hCertStore, int dwFlags);
         boolean CertAddEncodedCertificateToStore(WinCrypt.HCERTSTORE hCertStore, int dwCertEncodingType, Pointer pbCertEncoded, int cbCertEncoded, int dwAddDisposition, Pointer ppCertContext);
         WinCrypt.CERT_CONTEXT CertFindCertificateInStore (WinCrypt.HCERTSTORE hCertStore, int dwCertEncodingType, int dwFindFlags, int dwFindType, String pvFindPara, WinCrypt.CERT_CONTEXT pPrevCertContext);
+        WinCrypt.CERT_CONTEXT CertFindCertificateInStore (WinCrypt.HCERTSTORE hCertStore, int dwCertEncodingType, int dwFindFlags, int dwFindType, Structure pvFindPara, WinCrypt.CERT_CONTEXT pPrevCertContext);
         boolean CertDeleteCertificateFromStore(WinCrypt.CERT_CONTEXT pCertContext);
         boolean CertFreeCertificateContext(WinCrypt.CERT_CONTEXT pCertContext);
     }
@@ -190,6 +220,15 @@ public class WindowsCertificateInstaller extends NativeCertificateInstaller {
             public CERT_CONTEXT() {}
             public CERT_CONTEXT(Pointer p) {
                 super(p);
+            }
+        }
+        public static class DATA_BLOB extends com.sun.jna.platform.win32.WinCrypt.DATA_BLOB {
+            // Wrap the constructor for code readability
+            public DATA_BLOB() {
+                super();
+            }
+            public DATA_BLOB(byte[] data) {
+                super(data);
             }
         }
     }

@@ -300,9 +300,7 @@ public class WebApp extends Application {
             for(Method m : webView.getClass().getDeclaredMethods()) {
                 for(String method : methods) {
                     if (m.getName().equals(method)) {
-                        if (!m.isAccessible()) {
-                            m.setAccessible(true);
-                        }
+                        m.setAccessible(true);
                         m.invoke(webView);
                         return;
                     }

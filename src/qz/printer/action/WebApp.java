@@ -295,9 +295,9 @@ public class WebApp extends Application {
 
         // Update peer; fixes blank pages
         String[] methods = {"impl_updatePeer" /*jfx8*/, "doUpdatePeer" /*jfx11*/};
-        for(String method : methods) {
-            try {
-                for(Method m : webView.getClass().getDeclaredMethods()) {
+        try {
+            for(Method m : webView.getClass().getDeclaredMethods()) {
+                for(String method : methods) {
                     if (m.getName().equals(method)) {
                         if (!m.isAccessible()) {
                             m.setAccessible(true);
@@ -306,9 +306,9 @@ public class WebApp extends Application {
                         break;
                     }
                 }
-            } catch(SecurityException | IllegalAccessException | InvocationTargetException e) {
-                log.warn("Unable to update peer; Blank pages may occur.", e);
             }
+        } catch(SecurityException | ReflectiveOperationException e) {
+            log.warn("Unable to update peer; Blank pages may occur.", e);
         }
     }
 

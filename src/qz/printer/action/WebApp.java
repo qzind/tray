@@ -287,13 +287,14 @@ public class WebApp extends Application {
     }
 
     /**
-     * Force JavaFX to update peer, fixes blank pages
-     * See: https://github.com/qzind/tray/issues/513
+     * Fix blank page after autosize is called
      */
     public static void autosize(WebView webView) {
         webView.autosize();
 
-        // Update peer; fixes blank pages
+        // Call updatePeer; fixes a bug with webView resizing
+        // Can be avoided by calling stage.show() but breaks headless environments
+        // See: https://github.com/qzind/tray/issues/513
         String[] methods = {"impl_updatePeer" /*jfx8*/, "doUpdatePeer" /*jfx11*/};
         try {
             for(Method m : webView.getClass().getDeclaredMethods()) {

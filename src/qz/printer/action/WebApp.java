@@ -29,6 +29,8 @@ import org.w3c.dom.NodeList;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -86,7 +88,7 @@ public class WebApp extends Application {
                 webView.setMinHeight(pageHeight);
                 webView.setPrefHeight(pageHeight);
                 webView.setMaxHeight(pageHeight);
-                webView.autosize();
+                autosize(webView);
             }
 
             //scale web dimensions down to print dpi
@@ -265,7 +267,7 @@ public class WebApp extends Application {
             webView.setMinSize(model.getWebWidth(), model.getWebHeight());
             webView.setPrefSize(model.getWebWidth(), model.getWebHeight());
             webView.setMaxSize(model.getWebWidth(), model.getWebHeight());
-            webView.autosize();
+            autosize(webView);
 
             pageHeight = model.getWebHeight();
 
@@ -282,6 +284,34 @@ public class WebApp extends Application {
                 webView.getEngine().load(model.getSource());
             }
         });
+    }
+
+    /**
+     * Force JavaFX to update peer, fixes blank pages
+     * See: https://github.com/qzind/tray/issues/513
+     * @param webView
+     */
+    public static void autosize(WebView webView) {
+        webView.autosize();
+
+        // Update peer; fixes blank pages
+        String[] methods = {"impl_updatePeer" /*jfx8*/, "doUpdatePeer" /*jfx11*/};
+        for(String method : methods) {
+            for(Method m : webView.getClass().getDeclaredMethods()) {
+                if (m.getName().equals(method)) {
+                    if (!m.isAccessible()) {
+                        m.setAccessible(true);
+                    }
+                    try {
+                        m.invoke(webView);
+                    }
+                    catch(IllegalAccessException | InvocationTargetException e) {
+                        log.warn("Unable to call {}; Blank pages may occur.", m.getName(), e);
+                    }
+                    break;
+                }
+            }
+        }
     }
 
 }

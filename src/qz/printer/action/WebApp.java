@@ -303,7 +303,7 @@ public class WebApp extends Application {
                             m.setAccessible(true);
                         }
                         m.invoke(webView);
-                        break;
+                        return;
                     }
                 }
             }

@@ -289,7 +289,6 @@ public class WebApp extends Application {
     /**
      * Force JavaFX to update peer, fixes blank pages
      * See: https://github.com/qzind/tray/issues/513
-     * @param webView
      */
     public static void autosize(WebView webView) {
         webView.autosize();
@@ -297,19 +296,18 @@ public class WebApp extends Application {
         // Update peer; fixes blank pages
         String[] methods = {"impl_updatePeer" /*jfx8*/, "doUpdatePeer" /*jfx11*/};
         for(String method : methods) {
-            for(Method m : webView.getClass().getDeclaredMethods()) {
-                if (m.getName().equals(method)) {
-                    if (!m.isAccessible()) {
-                        m.setAccessible(true);
-                    }
-                    try {
+            try {
+                for(Method m : webView.getClass().getDeclaredMethods()) {
+                    if (m.getName().equals(method)) {
+                        if (!m.isAccessible()) {
+                            m.setAccessible(true);
+                        }
                         m.invoke(webView);
+                        break;
                     }
-                    catch(IllegalAccessException | InvocationTargetException e) {
-                        log.warn("Unable to call {}; Blank pages may occur.", m.getName(), e);
-                    }
-                    break;
                 }
+            } catch(SecurityException | IllegalAccessException | InvocationTargetException e) {
+                log.warn("Unable to update peer; Blank pages may occur.", e);
             }
         }
     }

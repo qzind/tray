@@ -26,6 +26,7 @@ import javax.print.PrintServiceLookup;
 import javax.security.cert.CertificateParsingException;
 import javax.usb.util.UsbUtil;
 import java.awt.*;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.*;
@@ -159,6 +160,7 @@ public class PrintSocketClient {
 
     @OnWebSocketError
     public void onError(Session session, Throwable error) {
+        if (error instanceof EOFException) return;
         log.error("Connection error", error);
         trayManager.displayErrorMessage(error.getMessage());
     }

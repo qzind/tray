@@ -6,7 +6,6 @@ import org.apache.commons.io.IOUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.*;
@@ -162,7 +161,6 @@ public class PrintSocketClient {
     @OnWebSocketError
     public void onError(Session session, Throwable error) {
         if (error instanceof EOFException) return;
-        if (error instanceof EofException) return;
         log.error("Connection error", error);
         trayManager.displayErrorMessage(error.getMessage());
     }

@@ -131,18 +131,16 @@ public class FileUtilities {
         return child.toString().startsWith(parent.toString());
     }
 
-    public static Path createFileInheritPermissions(Path filePath) {
+    public static Path inheritParentPermissions(Path filePath) {
         if(SystemUtilities.isWindows()) {
             // assume permissions are inherited
         } else {
             // assume permissions are not inherited
             try {
                 FileAttribute<Set<PosixFilePermission>> attributes = PosixFilePermissions.asFileAttribute(Files.getPosixFilePermissions(filePath.getParent()));
-                if(!Files.exists(filePath)) {
-                    Files.createFile(filePath, attributes);
-                    // Remove execute flag
-                    filePath.toFile().setExecutable(false, false);
-                }
+                Files.setPosixFilePermissions(filePath, attributes.value());
+                // Remove execute flag
+                filePath.toFile().setExecutable(false, false);
             } catch(IOException e) {
                 log.warn("Unable to inherit file permissions {}", filePath, e);
             }
@@ -491,6 +489,7 @@ public class FileUtilities {
                 path.mkdirs();
                 dat.createNewFile();
                 if(!local) {
+                    dat.setReadable(true, false);
                     dat.setWritable(true, false);
                 }
             }

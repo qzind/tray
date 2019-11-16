@@ -171,6 +171,10 @@ public abstract class Installer {
         try {
             Files.createDirectories(SHARED_DIR);
             FileUtilities.setPermissionsRecursively(SHARED_DIR, true);
+            Path ssl = Paths.get(SHARED_DIR.toString(), "ssl");
+            Files.createDirectories(ssl);
+            FileUtilities.setPermissionsRecursively(ssl, true);
+
             log.info("Created shared directory: {}", SHARED_DIR);
         } catch(IOException e) {
             log.warn("Could not create shared directory: {}", SHARED_DIR);

@@ -599,7 +599,8 @@ public class PrintSocketClient {
                 FileParams fileParams = new FileParams(params);
                 Path absPath = FileUtilities.getAbsolutePath(params, request, false);
 
-                Files.write(FileUtilities.createFileInheritPermissions(absPath), fileParams.getData(), StandardOpenOption.CREATE, fileParams.getAppendMode());
+                Files.write(absPath, fileParams.getData(), StandardOpenOption.CREATE, fileParams.getAppendMode());
+                FileUtilities.inheritParentPermissions(absPath);
                 sendResult(session, UID, null);
                 break;
             }

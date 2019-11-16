@@ -206,16 +206,6 @@
 
     <!--
     ################################################################
-    #               Prepackage Steps - All Platforms               #
-    ################################################################
-    -->
-    <target name="prepackage" depends="cleanup-javafx-dist">
-        <echo>Processing self-signing variables</echo>
-        <property file="ant/ssl.properties"/>
-    </target>
-
-    <!--
-    ################################################################
     #                    Windows Installer                         #
     ################################################################
     -->
@@ -225,7 +215,7 @@
     </target>
     <target name="nsis" depends="nsis-preflight,build-exe,sign-exe-self,sign-exe-tsa"/>
 
-    <target name="build-exe" depends="distribute,prepackage,cleanup-javafx-dist,nsisbin-1,nsisbin-2,nsisbin-3">
+    <target name="build-exe" depends="distribute,cleanup-javafx-dist,nsisbin-1,nsisbin-2,nsisbin-3">
         <echo>Creating installer using ${nsisbin}</echo>
 
         <copy file="${basedir}/ant/windows/windows-installer.nsi.in" tofile="${build.dir}/windows-installer.nsi" overwrite="true">
@@ -300,7 +290,7 @@
     <target name="pkgbuild-preflight">
         <property name="target.platform.mac" value="true"/>
     </target>
-    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,prepackage">
+    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,cleanup-javafx-dist">
         <echo>Creating installer using pkgbuild</echo>
 
         <property file="ant/apple/apple.properties"/>
@@ -395,7 +385,7 @@
         <delete dir="${dist.dir}/Contents/MacOS" />
     </target>
 
-    <target name="codesign" depends="init,download-javafx,prepackage" if="codesign.mac">
+    <target name="codesign" depends="init,download-javafx,cleanup-javafx-dist" if="codesign.mac">
         <property file="ant/apple/apple.properties"/>
         <exec executable="security">
             <arg value="add-certificates"/>
@@ -481,7 +471,7 @@
     <target name="makeself-preflight">
         <property name="target.platform.linux" value="true"/>
     </target>
-    <target name="makeself" depends="makeself-preflight,distribute,prepackage">
+    <target name="makeself" depends="makeself-preflight,distribute,cleanup-javafx-dist">
         <echo>Creating installer using makeself</echo>
 
         <copy file="${basedir}/assets/branding/linux-icon.svg" tofile="${dist.dir}/${project.filename}.svg" />

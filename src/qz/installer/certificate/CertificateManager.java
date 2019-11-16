@@ -272,8 +272,8 @@ public class CertificateManager {
         JcaPEMWriter writer = new JcaPEMWriter(new OutputStreamWriter(Files.newOutputStream(dest.toPath(), StandardOpenOption.CREATE)));
         writer.writeObject(cert.generate());
         writer.close();
+        FileUtilities.inheritParentPermissions(dest.toPath());
         log.info("Wrote Cert: \"{}\"", dest);
-        FileUtilities.createFileInheritPermissions(dest.toPath());
     }
 
     public CertificateManager writeCert(KeyPairWrapper.Type type) throws IOException {
@@ -281,6 +281,7 @@ public class CertificateManager {
         File certFile = new File(getWritableLocation("ssl"), keyPair.getAlias() + DEFAULT_CERTIFICATE_EXTENSION);
 
         writeCert(keyPair.getCert(), certFile);
+        FileUtilities.inheritParentPermissions(certFile.toPath());
         if(keyPair.getType() == CA) {
             needsInstall = true;
         }
@@ -293,8 +294,8 @@ public class CertificateManager {
 
         File keyFile = new File(sslDir, keyPair.getAlias() + DEFAULT_KEYSTORE_EXTENSION);
         keyPair.getKeyStore().store(Files.newOutputStream(keyFile.toPath(), StandardOpenOption.CREATE), getPassword());
+        FileUtilities.inheritParentPermissions(keyFile.toPath());
         log.info("Wrote {} Key: \"{}\"", DEFAULT_KEYSTORE_FORMAT, keyFile);
-        FileUtilities.createFileInheritPermissions(keyFile.toPath());
 
         if (props == null) {
             props = new Properties();
@@ -408,8 +409,8 @@ public class CertificateManager {
 
     private void saveProperties() throws IOException {
         File propsFile = new File(getWritableLocation(), Constants.PROPS_FILE + ".properties");
-        FileUtilities.createFileInheritPermissions(propsFile.toPath());
         properties.store(new FileOutputStream(propsFile), null);
+        FileUtilities.inheritParentPermissions(propsFile.toPath());
         log.info("Successfully created SSL properties file: {}", propsFile);
     }
 }

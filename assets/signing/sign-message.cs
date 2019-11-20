@@ -1,43 +1,56 @@
-/**
- * Echoes the signed message and exits
- */
-[HttpGet]
-public HttpResponseMessage SignMessage(String message)
+// #########################################################
+// #             WARNING   WARNING   WARNING               #
+// #########################################################
+// #                                                       #
+// # This file is intended for demonstration purposes      #
+// # only.                                                 #
+// #                                                       #
+// # It is the SOLE responsibility of YOU, the programmer  #
+// # to prevent against unauthorized access to any signing #
+// # functions.                                            #
+// #                                                       #
+// # Organizations that do not protect against un-         #
+// # authorized signing will be black-listed to prevent    #
+// # software piracy.                                      #
+// #                                                       #
+// # -QZ Industries, LLC                                   #
+// #                                                       #
+// #########################################################
+	
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Web.Services;
+
+// To convert a .PEM PrivateKey:
+// openssl pkcs12 -export -inkey private-key.pem -in digital-certificate.txt -out private-key.pfx
+private static X509KeyStorageFlags STORAGE_FLAGS = X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable;
+
+[WebMethod]
+public static string SignMessage(string request)
 {
-     // #########################################################
-     // #             WARNING   WARNING   WARNING               #
-     // #########################################################
-     // #                                                       #
-     // # This file is intended for demonstration purposes      #
-     // # only.                                                 #
-     // #                                                       #
-     // # It is the SOLE responsibility of YOU, the programmer  #
-     // # to prevent against unauthorized access to any signing #
-     // # functions.                                            #
-     // #                                                       #
-     // # Organizations that do not protect against un-         #
-     // # authorized signing will be black-listed to prevent    #
-     // # software piracy.                                      #
-     // #                                                       #
-     // # -QZ Industries, LLC                                   #
-     // #                                                       #
-     // #########################################################
+    //var WEBROOT_PATH = HttpContext.Current.Server.MapPath("/");
+    //var CURRENT_PATH = HttpContext.Current.Server.MapPath("~");
+    //var PARENT_PATH = System.IO.Directory.GetParent(WEBROOT).Parent.FullName;
+    var KEY = "/path/to/private-key.pfx";
+    var PASS = "";
 
-    // Sample key.  Replace with one used for CSR generation
-    // How to associate a private key with the X509Certificate2 class in .net
-    // openssl pkcs12 -export -inkey private-key.pem -in digital-certificate.txt -out private-key.pfx
-	var KEY = HttpContext.Current.Server.MapPath("~/private-key.pfx");
-	var PASS = "";
-
-	var cert = new X509Certificate2( KEY, PASS, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable );
-	RSACryptoServiceProvider csp = (RSACryptoServiceProvider)cert.PrivateKey;
-
-	byte[] data = new ASCIIEncoding().GetBytes(message);
-
-	byte[] hash = new SHA1Managed().ComputeHash(data);
-
-	var string signature = Convert.ToBase64String(csp.SignHash(hash, CryptoConfig.MapNameToOID("SHA1")));
-	var response = new HttpResponseMessage(HttpStatusCode.OK);
-	response.Content = new StringContent(signature, System.Text.Encoding.UTF8, "text/plain");
-	return response;
+    try
+    {
+        var cert = new X509Certificate2(KEY, PASS, STORAGE_FLAGS);
+        RSACryptoServiceProvider csp = (RSACryptoServiceProvider)cert.PrivateKey;
+        byte[] data = new ASCIIEncoding().GetBytes(request);
+        byte[] hash = new SHA1CryptoServiceProvider().ComputeHash(data);
+        return Convert.ToBase64String(csp.SignHash(hash, CryptoConfig.MapNameToOID("SHA1")));
+    }
+    catch(Exception ex)
+    {
+        if((STORAGE_FLAGS & X509KeyStorageFlags.MachineKeySet) == X509KeyStorageFlags.MachineKeySet)
+        {
+            // IISExpress may fail with "Invalid provider type specified"; remove MachineKeySet flag, try again
+            STORAGE_FLAGS = STORAGE_FLAGS & ~X509KeyStorageFlags.MachineKeySet;
+            return SignMessage(request);
+        }
+        throw ex;
+    }
 }

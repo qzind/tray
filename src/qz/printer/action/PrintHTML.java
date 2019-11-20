@@ -56,12 +56,6 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
     public PrintHTML() {
         super();
-
-        //JavaFX native libs
-        if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-            System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
-        }
-
         models = new ArrayList<>();
     }
 

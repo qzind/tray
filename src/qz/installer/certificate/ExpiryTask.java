@@ -23,12 +23,17 @@ import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.*;
 
+import static qz.utils.FileUtilities.*;
+
 public class ExpiryTask extends TimerTask {
     private static final Logger log = LoggerFactory.getLogger(CertificateManager.class);
+    public static final int DEFAULT_INITIAL_DELAY = 60 * 1000; // 1 minute
     public static final int DEFAULT_CHECK_FREQUENCY = 3600 * 1000; // 1 hour
     private static final int DEFAULT_GRACE_PERIOD_DAYS = 5;
     private enum ExpiryState {VALID, EXPIRING, EXPIRED, MANAGED}
@@ -75,6 +80,7 @@ public class ExpiryTask extends TimerTask {
                         if(renewExternalCert(certProvider)) {
                             getExpiry();
                         }
+                        break;
                     case UNKNOWN:
                     default:
                         log.warn("Certificate can't be renewed/reloaded; ExpiryState: {}, CertProvider: {}", state, certProvider);
@@ -154,16 +160,16 @@ public class ExpiryTask extends TimerTask {
     }
 
     public void schedule() {
-        schedule(ExpiryTask.DEFAULT_CHECK_FREQUENCY);
+        schedule(DEFAULT_INITIAL_DELAY, DEFAULT_CHECK_FREQUENCY);
     }
 
-    public void schedule(int millis) {
+    public void schedule(int delayMillis, int freqMillis) {
         if(timer != null) {
             timer.cancel();
             timer.purge();
         }
         timer = new Timer();
-        timer.scheduleAtFixedRate(this, millis, millis);
+        timer.scheduleAtFixedRate(this, delayMillis, freqMillis);
     }
 
     public String[] parseHostNames() {
@@ -245,7 +251,7 @@ public class ExpiryTask extends TimerTask {
     public boolean renewExternalCert(CertProvider externalProvider) {
         switch(externalProvider) {
             case LETS_ENCRYPT:
-                return renewLetsEncryptCert();
+                return renewLetsEncryptCert(externalProvider);
             case CA_CERT_ORG:
             default:
                 log.error("Cert renewal for {} is not implemented", externalProvider);
@@ -254,12 +260,26 @@ public class ExpiryTask extends TimerTask {
         return false;
     }
 
-    private boolean renewLetsEncryptCert() {
+    private boolean renewLetsEncryptCert(CertProvider externalProvider) {
         try {
             File storagePath = CertificateManager.getWritableLocation("ssl");
 
             // cerbot is much simpler than acme, let's use it
-            List<String> cmds = Arrays.asList("certbot", "certonly", "--webroot", "-w", storagePath.toString());
+            Path root = Paths.get(SHARED_DIR.toString(), "letsencrypt", "config");
+            log.info("Attempting to renew {}.  Assuming certs are installed in {}...", externalProvider, root);
+            List<String> cmds = new ArrayList(Arrays.asList("certbot", "--force-renewal", "certonly"));
+
+            cmds.add("--standalone");
+
+            cmds.add("--config-dir");
+            String config = Paths.get(SHARED_DIR.toString(), "ssl", "letsencrypt", "config").toString();
+            cmds.add(config);
+
+            cmds.add("--logs-dir");
+            cmds.add(Paths.get(SHARED_DIR.toString(), "ssl", "letsencrypt", "logs").toString());
+
+            cmds.add("--work-dir");
+            cmds.add(Paths.get(SHARED_DIR.toString(), "ssl", "letsencrypt").toString());
 
             // append dns names
             for(String hostName : hostNames) {
@@ -268,13 +288,16 @@ public class ExpiryTask extends TimerTask {
             }
 
             if (ShellUtilities.execute(cmds.toArray(new String[cmds.size()]))) {
-                File keyFile = new File(storagePath, "privkey.pem");
-                File certFile = new File(storagePath, "fullchain.pem"); // fullchain required
-                certificateManager.createTrustedKeystore(keyFile, certFile);
+                // Assume the cert is stored in a folder called "letsencrypt/config/live/<domain>"
+                Path keyPath = Paths.get(config, "live", hostNames[0], "privkey.pem");
+                Path certPath = Paths.get(config, "live", hostNames[0], "fullchain.pem"); // fullchain required
+                certificateManager.createTrustedKeystore(keyPath.toFile(), certPath.toFile());
                 log.info("Files imported, converted and saved.  Reloading SslContextFactory...");
                 certificateManager.reloadSslContextFactory();
                 log.info("Reloaded SSL successfully.");
                 return true;
+            } else {
+                log.warn("Something went wrong renewing the LetsEncrypt certificate.  Please run the certbot command manually to learn more.");
             }
         } catch(Exception e) {
             log.error("Error renewing/reloading LetsEncrypt cert", e);

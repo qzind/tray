@@ -66,6 +66,7 @@ public class CertificateManager {
      * For internal certs
      */
     public CertificateManager(boolean forceNew, String ... hostNames) throws IOException, GeneralSecurityException, OperatorException {
+        Security.addProvider(new BouncyCastleProvider());
         sslKeyPair = new KeyPairWrapper(SSL);
         caKeyPair = new KeyPairWrapper(CA);
 

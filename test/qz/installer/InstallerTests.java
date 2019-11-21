@@ -24,7 +24,7 @@ public class InstallerTests {
         Installer installer = Installer.getInstance();
         // installer.install();
         CertificateManager certificateManager = installer.certGen(true);
-        new ExpiryTask(certificateManager).schedule(1000);
+        new ExpiryTask(certificateManager).schedule(1000, 1000);
         Thread.sleep(5000);
         installer.removeCerts();
     }

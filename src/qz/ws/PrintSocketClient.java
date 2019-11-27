@@ -249,8 +249,9 @@ public class PrintSocketClient {
     private boolean validSignature(Certificate certificate, JSONObject message) throws JSONException {
         JSONObject copy = new JSONObject(message, new String[] {"call", "params", "timestamp"});
         String signature = message.optString("signature");
+        String algorithm = message.optString("signAlgorithm", "SHA1").toUpperCase();
 
-        return certificate.isSignatureValid(signature, copy.toString().replaceAll("\\\\/", "/"));
+        return certificate.isSignatureValid(Certificate.Algorithm.valueOf(algorithm), signature, copy.toString().replaceAll("\\\\/", "/"));
     }
 
     /**

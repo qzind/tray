@@ -47,7 +47,7 @@ def index(request):
     )
 
     # Create the signature
-    signature = key.sign(message.encode('utf-8'), padding.PKCS1v15(), hashes.SHA1())
+    signature = key.sign(message.encode('utf-8'), padding.PKCS1v15(), hashes.SHA512()) # Use hashes.SHA1 for QZ Tray 2.0 and older
 
     # Echo the signature
     return HttpResponse(base64.b64encode(signature), content_type="text/plain")

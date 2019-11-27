@@ -35,13 +35,14 @@ qz.security.setCertificatePromise((resolve, reject) => {
 /*
  * Client-side using jsrsasign
  */
+qz.security.setSignatureAlgorithm("SHA512"); // Since 2.1
 qz.security.setSignaturePromise(hash => {
  return (resolve, reject) => {
   fetch("assets/private-key.pem", {cache: 'no-store', headers: {'Content-Type': 'text/plain'}})
    .then(wrapped => wrapped.text())
    .then(data => {
      var pk = KEYUTIL.getKey(data);
-     var sig = new KJUR.crypto.Signature({"alg": "SHA1withRSA"});
+     var sig = new KJUR.crypto.Signature({"alg": "SHA512withRSA"}); // Use "SHA1withRSA" for QZ Tray 2.0 and older
      sig.init(pk);
      sig.updateString(hash);
      var hex = sig.sign();

@@ -67,7 +67,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 	hash := sha1.Sum([]byte(data))
 	rng := rand.Reader
-	signature, err := rsa.SignPKCS1v15(rng, rsaPrivateKey, crypto.SHA1, hash[:])
+	signature, err := rsa.SignPKCS1v15(rng, rsaPrivateKey, crypto.SHA512, hash[:]) // Use crypto.SHA1 for QZ Tray 2.0 and older
 	if err != nil {
 		displayError(w, "Error from signing: %s\n", err)
 		return

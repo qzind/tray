@@ -32,9 +32,9 @@ Public Sub SignMessage(message As String)
 	Dim csp As RSACryptoServiceProvider = CType(cert.PrivateKey,RSACryptoServiceProvider)
 	
 	Dim data As Byte() = New ASCIIEncoding().GetBytes(message)
-	Dim hash As Byte() = New SHA1Managed().ComputeHash(data)
+	Dim hash As Byte() = New SHA512Managed().ComputeHash(data) ' Use SHA1Managed() for QZ Tray 2.0 and older
 	
 	Response.ContentType = "text/plain"
-	Response.Write(Convert.ToBase64String(csp.SignHash(hash, CryptoConfig.MapNameToOID("SHA1"))))
+	Response.Write(Convert.ToBase64String(csp.SignHash(hash, CryptoConfig.MapNameToOID("SHA512")))) ' Use "SHA1" for QZ Tray 2.0 and older
 	Environment.[Exit](0)
 End Sub

@@ -33,6 +33,6 @@ message <- enc2utf8(commandArgs(trailingOnly = TRUE))
 key <- read_key(file = mykey, password = mypass)
 
 # Create the signature
-sig <- signature_create(serialize(message, NULL), key = key)
+sig <- signature_create(serialize(message, NULL), hash = sha512, key = key) # Use hash = sha1 for QZ Tray 2.0 and older
 
 print(sig)

@@ -36,7 +36,7 @@ let request = "test data"
 // openssl pkcs12 -export -in private-key.pem -inkey digital-certificate.txt -out private-key.pfx
 let cert = new X509Certificate2("private-key.pfx")
 
-let sha1 = new SHA1CryptoServiceProvider()
+let sha1 = new SHA512CryptoServiceProvider() // Use "SHA1CryptoServiceProvider" for QZ Tray 2.0 and older
 
 let csp = cert.PrivateKey :?> RSACryptoServiceProvider
 let encoder = new ASCIIEncoding()

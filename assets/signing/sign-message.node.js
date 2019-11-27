@@ -32,7 +32,7 @@ app.get('/sign', function(req, res) {
     var toSign = req.query.requestToSign;
 
     fs.readFile(path.join(__dirname, '\\' + key), 'utf-8', function(err, privateKey) {
-        var sign = crypto.createSign('SHA1');
+        var sign = crypto.createSign('SHA512'); // Use "SHA1" for QZ Tray 2.0 and older
 
         sign.update(toSign);
         var signature = sign.sign({ key: privateKey/*, passphrase: pass */ }, 'base64');

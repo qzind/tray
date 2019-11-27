@@ -46,7 +46,7 @@ my $private_key = do {
 my $rsa = Crypt::OpenSSL::RSA->new_private_key($private_key);
 
 # Create signature
-$rsa->use_sha1_hash();
+$rsa->use_sha512_hash(); # use_sha1_hash for QZ Tray 2.0 and older
 my $sig = encode_base64($rsa->sign($request));
 
 print $sig;

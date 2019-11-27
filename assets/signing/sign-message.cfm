@@ -34,7 +34,8 @@
 * @encoding I am the encoding used when returning the signature (base64 by default).
 * @output false
 */
-public any function sign(required string keyPath, required string message, string algorithm = "SHA1withRSA", string encoding = "base64") {
+public any function sign(required string keyPath, required string message, string algorithm = "SHA512withRSA", string encoding = "base64") {
+	// Note: change algorithm to "SHA1withRSA" for QZ Tray 2.0 and older
 	createObject("java", "java.security.Security")
 		.addProvider(createObject("java", "org.bouncycastle.jce.provider.BouncyCastleProvider").init());
 	privateKey = createPrivateKey(fileRead(expandPath(keyPath)));

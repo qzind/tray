@@ -30,12 +30,13 @@ $req = $_GET['request'];
 $privateKey = openssl_get_privatekey(file_get_contents($KEY) /*, $PASS */);
 
 $signature = null;
-openssl_sign($req, $signature, $privateKey);
+openssl_sign($req, $signature, $privateKey, "sha512"); // Use "sha1" for QZ Tray 2.0 and older
 
 /*
 // Or alternately, via phpseclib
 include('Crypt/RSA.php');
 $rsa = new Crypt_RSA();
+$rsa.setHash('sha512'); // Use 'sha1' for QZ Tray 2.0 and older
 $rsa->loadKey(file_get_contents($KEY));
 $rsa->setSignatureMode(CRYPT_RSA_SIGNATURE_PKCS1);
 $signature = $rsa->sign($req);

@@ -1224,6 +1224,7 @@
                 "-----END CERTIFICATE-----\n");
     });
 
+    qz.security.setSignatureAlgorithm("SHA512"); // Since 2.1
     qz.security.setSignaturePromise(function(toSign) {
         return function(resolve, reject) {
             //Preferred method - from server

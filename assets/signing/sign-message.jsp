@@ -57,7 +57,7 @@ private String getSignature(Object o) {
 		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyData);
 		KeyFactory kf = KeyFactory.getInstance("RSA");
 		PrivateKey key = kf.generatePrivate(keySpec);
-		Signature sig = Signature.getInstance("SHA1withRSA");
+		Signature sig = Signature.getInstance("SHA512withRSA"); // Use "SHA1withRSA" for QZ Tray 2.0 and older
 		sig.initSign(key);
 		sig.update(req.getBytes());
 		String output = DatatypeConverter.printBase64Binary(sig.sign());

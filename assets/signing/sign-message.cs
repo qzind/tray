@@ -40,8 +40,8 @@ public static string SignMessage(string request)
         var cert = new X509Certificate2(KEY, PASS, STORAGE_FLAGS);
         RSACryptoServiceProvider csp = (RSACryptoServiceProvider)cert.PrivateKey;
         byte[] data = new ASCIIEncoding().GetBytes(request);
-        byte[] hash = new SHA1CryptoServiceProvider().ComputeHash(data);
-        return Convert.ToBase64String(csp.SignHash(hash, CryptoConfig.MapNameToOID("SHA1")));
+        byte[] hash = new SHA512CryptoServiceProvider().ComputeHash(data);  // Use SHA1CryptoServiceProvider for QZ Tray 2.0 and older
+        return Convert.ToBase64String(csp.SignHash(hash, CryptoConfig.MapNameToOID("SHA512"))); // Use "SHA1" for QZ Tray 2.0 and older
     }
     catch(Exception ex)
     {

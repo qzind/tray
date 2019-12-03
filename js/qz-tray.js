@@ -1055,7 +1055,7 @@ var qz = (function() {
              *
              *  @param {string} [options.colorType='color'] Valid values <code>[color | grayscale | blackwhite]</code>
              *  @param {number} [options.copies=1] Number of copies to be printed.
-             *  @param {number|Array<number>} [options.density=72] Pixel density (DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
+             *  @param {number|Array<number>} [options.density=0] Pixel density (DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *      If provided as an array, uses the first supported density found (or the first entry if none found).
              *  @param {boolean} [options.duplex=false] Double sided printing
              *  @param {number} [options.fallbackDensity=null] Value used when default density value cannot be read, or in cases where reported as "Normal" by the driver, (in DPI, DPMM, or DPCM depending on <code>[options.units]</code>).

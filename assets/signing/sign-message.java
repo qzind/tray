@@ -82,7 +82,7 @@ public class MessageSigner {
         PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(parseKeyData(keyData));
         KeyFactory kf = KeyFactory.getInstance("RSA");
         PrivateKey key = kf.generatePrivate(keySpec);
-        sig = Signature.getInstance("SHA1withRSA");
+        sig = Signature.getInstance("SHA512withRSA"); // Use "SHA1withRSA" for QZ Tray 2.0 and older
         sig.initSign(key);
     }
 

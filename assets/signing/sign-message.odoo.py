@@ -38,6 +38,6 @@ class SignMessage(http.Controller):
         key_file.close()
         password = None
         pkey = crypto.load_privatekey(crypto.FILETYPE_PEM, key, password)
-        sign = crypto.sign(pkey, kwargs.get('request', ''), 'sha1')
+        sign = crypto.sign(pkey, kwargs.get('request', ''), 'sha512') # Use 'sha1' for QZ Tray 2.0 and older
         data_base64 = base64.b64encode(sign)
         return request.make_response(data_base64, [('Content-Type', 'text/plain')])

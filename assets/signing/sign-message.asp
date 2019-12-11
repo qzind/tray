@@ -38,7 +38,7 @@ pk.LoadPemFile("private-key.pem")
 key = pk.GetXml()
 rsa.ImportPrivateKey(key)
 rsa.EncodingMode = "base64"
-sig = rsa.SignStringENC(data,"sha-1")
+sig = rsa.SignStringENC(data,"SHA-512") ' Use "SHA-1" for QZ Tray 2.0 and older
 
 Response.ContentType = "text/plain"
 Response.Write Server.HTMLEncode(sig)

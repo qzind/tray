@@ -67,11 +67,12 @@ var privateKey = "-----BEGIN PRIVATE KEY-----\n" +
    "EjzSn7DcDE1tL2En/tSVXeUY\n" +
    "-----END PRIVATE KEY-----";
 
+qz.security.setSignatureAlgorithm("SHA512"); // Since 2.1
 qz.security.setSignaturePromise(function(toSign) {
     return function(resolve, reject) {
         try {
             var pk = KEYUTIL.getKey(privateKey);
-            var sig = new KJUR.crypto.Signature({"alg": "SHA1withRSA"});
+            var sig = new KJUR.crypto.Signature({"alg": "SHA512withRSA"});  // Use "SHA1withRSA" for QZ Tray 2.0 and older
             sig.init(pk); 
             sig.updateString(toSign);
             var hex = sig.sign();

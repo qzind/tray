@@ -1,9 +1,5 @@
 package qz.auth;
 
-import com.estontorise.simplersa.RSAKeyImpl;
-import com.estontorise.simplersa.RSAToolFactory;
-import com.estontorise.simplersa.interfaces.RSAKey;
-import com.estontorise.simplersa.interfaces.RSATool;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.ssl.Base64;
@@ -11,6 +7,7 @@ import org.apache.commons.ssl.X509CertificateChainBuilder;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.PrincipalUtil;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -21,8 +18,7 @@ import qz.ws.PrintSocketServer;
 
 import javax.security.cert.CertificateParsingException;
 import java.io.*;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -43,6 +39,18 @@ import java.util.Vector;
 public class Certificate {
 
     private static final Logger log = LoggerFactory.getLogger(Certificate.class);
+
+    public enum Algorithm {
+        SHA1("SHA1withRSA"),
+        SHA256("SHA256withRSA"),
+        SHA512("SHA512withRSA");
+
+        String name;
+
+        Algorithm(String name) {
+            this.name = name;
+        }
+    }
 
     public static Certificate trustedRootCert = null;
     public static final String[] saveFields = new String[] {"fingerprint", "commonName", "organization", "validFrom", "validTo", "valid"};
@@ -84,7 +92,9 @@ public class Certificate {
 
     static {
         try {
+            Security.addProvider(new BouncyCastleProvider());
             checkOverrideCertPath();
+
             if (trustedRootCert == null) {
                 trustedRootCert = new Certificate("-----BEGIN CERTIFICATE-----\n" +
                                                           "MIIELzCCAxegAwIBAgIJALm151zCHDxiMA0GCSqGSIb3DQEBCwUAMIGsMQswCQYD\n" +
@@ -309,17 +319,17 @@ public class Certificate {
      * @param data      the data to check
      * @return true if signature valid, false if not
      */
-    public boolean isSignatureValid(String signature, String data) {
+    public boolean isSignatureValid(Algorithm algorithm, String signature, String data) {
         if (!signature.isEmpty()) {
-            RSATool tool = RSAToolFactory.getRSATool();
-            RSAKey thePublicKey = new RSAKeyImpl(theCertificate.getPublicKey());
-
             //On errors, assume failure.
             try {
-                String hash = DigestUtils.sha256Hex(data);
-                return tool.verifyWithKey(StringUtils.getBytesUtf8(hash), Base64.decodeBase64(signature), thePublicKey);
+                Signature verifier = Signature.getInstance(algorithm.name);
+                verifier.initVerify(theCertificate.getPublicKey());
+                verifier.update(StringUtils.getBytesUtf8(DigestUtils.sha256Hex(data)));
+
+                return verifier.verify(Base64.decodeBase64(signature));
             }
-            catch(Exception e) {
+            catch(GeneralSecurityException e) {
                 log.error("Unable to verify signature", e);
             }
         }

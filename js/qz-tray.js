@@ -214,6 +214,9 @@ var qz = (function() {
                             _qz.websocket.pendingCalls[obj.uid] = obj.promise;
                         }
 
+                        //ensure we know how this was signed
+                        obj.signAlgorithm = _qz.security.signAlgorithm;
+
                         // track requesting monitor
                         obj.position = {
                             x: screen ? ((screen.availWidth || screen.width) / 2) + (screen.left || screen.availLeft) : 0,
@@ -241,6 +244,7 @@ var qz = (function() {
                                 }).then(function(signature) {
                                     _qz.log.trace("Signature for call", signature);
                                     obj.signature = signature;
+
                                     _qz.signContent = undefined;
                                     _qz.websocket.connection.send(_qz.tools.stringify(obj));
                                 });
@@ -334,6 +338,9 @@ var qz = (function() {
                     //websocket setup, query what version is connected
                     qz.api.getVersion().then(function(version) {
                         _qz.websocket.connection.version = version;
+
+                        //algorithm can be declared before a connection, check for incompatibilities now that we have one
+                        _qz.security.isAlgorithmCompatible();
                     });
                 },
 
@@ -513,6 +520,22 @@ var qz = (function() {
             /** Called to create new promise (using {@link _qz.security.signaturePromise}) for signed calls. */
             callSign: function(toSign) {
                 return _qz.tools.promise(_qz.security.signaturePromise(toSign));
+            },
+
+            /** Signing algorithm used on signatures */
+            signAlgorithm: "SHA1",
+            /** Check if QZ version supports chosen algorithm */
+            isAlgorithmCompatible: function() {
+                //if not connected yet we will assume compatibility exists for the time being
+                if (_qz.websocket.connection) {
+                    var semver = _qz.websocket.connection.version.split(/[.-]/g);
+                    if (semver[0] === "2" && semver[1] === "0") {
+                        _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
+                        return false;
+                    }
+                }
+
+                return true;
             }
         },
 
@@ -1032,7 +1055,7 @@ var qz = (function() {
              *
              *  @param {string} [options.colorType='color'] Valid values <code>[color | grayscale | blackwhite]</code>
              *  @param {number} [options.copies=1] Number of copies to be printed.
-             *  @param {number|Array<number>} [options.density=72] Pixel density (DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
+             *  @param {number|Array<number>} [options.density=0] Pixel density (DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *      If provided as an array, uses the first supported density found (or the first entry if none found).
              *  @param {boolean} [options.duplex=false] Double sided printing
              *  @param {number} [options.fallbackDensity=null] Value used when default density value cannot be read, or in cases where reported as "Normal" by the driver, (in DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
@@ -1988,10 +2011,44 @@ var qz = (function() {
              *
              * @param {Function} promiseGen <code>Function({function} toSign)</code> Should return a function, <code>Function({function} resolve)</code>, that
              *     will sign the content and resolve the created promise.
+             *
              * @memberof qz.security
              */
             setSignaturePromise: function(promiseGen) {
                 _qz.security.signaturePromise = promiseGen;
+            },
+
+            /**
+            * Set which signing algorithm QZ will check signatures against.
+            *
+            * @param {string} algorithm The algorithm used in signing. Valid values: <code>[SHA1 | SHA256 | SHA512]</code>
+            * @since 2.1.0
+            *
+            * @memberof qz.security
+            */
+            setSignatureAlgorithm: function(algorithm) {
+                //warn for incompatibilities if known
+                if (!_qz.security.isAlgorithmCompatible()) {
+                    return;
+                }
+
+                if (["SHA1", "SHA256", "SHA512"].indexOf(algorithm.toUpperCase()) < 0) {
+                    _qz.log.error("Signing algorithm '" + algorithm + "' is not supported.");
+                } else {
+                    _qz.security.signAlgorithm = algorithm;
+                }
+            },
+
+            /**
+            * Get the signing algorithm QZ will be checking signatures against.
+            *
+            * @returns {string} The algorithm used in signing.
+            * @since 2.1.0
+            *
+            * @memberof qz.security
+            */
+            getSignatureAlgorithm: function() {
+                return _qz.security.signAlgorithm;
             }
         },
 

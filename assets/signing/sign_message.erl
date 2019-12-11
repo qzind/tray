@@ -45,6 +45,6 @@ sign(Message, KeyPath) ->
   {ok, Data} = file:read_file(KeyPath),
   [KeyEntry] =  public_key:pem_decode(Data),
   PrivateKey = public_key:pem_entry_decode(KeyEntry),
-  Signature = public_key:sign(list_to_binary(Message), sha, PrivateKey),
+  Signature = public_key:sign(list_to_binary(Message), sha512, PrivateKey), % Use sha1 for QZ Tray 2.0 and older
   Base64 = base64:encode(Signature),
   io:fwrite(Base64).

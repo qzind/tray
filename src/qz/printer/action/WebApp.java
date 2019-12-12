@@ -28,7 +28,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import qz.common.Constants;
-import qz.deploy.DeployUtilities;
 import qz.utils.SystemUtilities;
 
 import java.awt.image.BufferedImage;
@@ -120,7 +119,7 @@ public class WebApp extends Application {
     public static synchronized void initialize() throws IOException {
         //JavaFX native libs
         if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-            System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
+            System.setProperty("java.library.path", new File(SystemUtilities.detectJarPath()).getParent() + "/libs/");
         }
 
         if (instance == null) {

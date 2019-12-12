@@ -1,13 +1,16 @@
-;------------------
-; ${project.name} Launcher
-;------------------
-; Creates a ${project.filename}.exe launcher which performs automatic JRE detection
-
 !include x64.nsh
 !include LogicLib.nsh
-!addincludedir "${windows.nsis.addons}/Include"
+
+!ifdef NSIS_UNICODE
+	!addplugindir "${basedir}/ant/windows/nsis/Plugins/Release_Unicode"
+!else
+	!addplugindir "${basedir}/ant/windows/nsis/Plugins/Release_ANSI"
+!endif
+!addincludedir "${basedir}/ant/windows/nsis/Include"
 !include StdUtils.nsh
-!include FileFunc.nsh
+!include FindJava.nsh
+
+!insertmacro GetParameters
 
 ; Run this exe as non-admin
 RequestExecutionLevel user
@@ -15,137 +18,38 @@ RequestExecutionLevel user
 ; Application information
 Name "${project.name}"
 Caption "${project.name}"
-Icon "${basedir}\${branding.dir}\${windows.icon}"
-OutFile "${dist.dir}\${project.filename}.exe"
+Icon "${basedir}/assets/branding/windows-icon.ico"
+OutFile "${dist.dir}/${project.filename}.exe"
  
 SilentInstall silent
 AutoCloseWindow true
 ShowInstDetails nevershow
 
 ; Full path to jar
-!define JAR "$EXEDIR\${project.filename}.jar"
+!define JAR "$EXEDIR/${project.filename}.jar"
 
-; Autostart variable
-Var AUTOSTART
+Section
+    ${If} ${RunningX64}
+        ${DisableX64FSRedirection}
+    ${EndIf}
+    SetOutPath $EXEDIR
 
-Section ""  
-  Call DetermineAutostart
-  ${If} $AUTOSTART != "1"
-    Abort
-  ${EndIf}
+    ; Get params to pass to jar
+    Var /GLOBAL params
+    ${GetParameters} $params
 
+    ; Sets the $java variable
+    Call FindJava
 
-  ${If} ${RunningX64}
-  ${DisableX64FSRedirection}
-  ${EndIf}
-  Call FindJRE
-  Pop $R0
- 
-  ; change for your purpose (-jar etc.)
-  StrCpy $0 '"$R0" ${launch.opts} -jar "${JAR}"'
- 
-  SetOutPath $EXEDIR
-
-  Exec $0
-  ${If} ${RunningX64}
-  ${EnableX64FSRedirection}
-  ${EndIf} 
+    Exec '"$javaw" ${launch.opts} -jar "${JAR}" $params'
+    ${If} ${RunningX64}
+        ${EnableX64FSRedirection}
+    ${EndIf}
 SectionEnd
-
-;  FindJRE (find "javaw.exe")
-;  1 - Search in .\jre directory (e.g. JRE Installed with application)
-;  2 - Search in JAVA_HOME environment variable
-;  3 - Search in the native registry
-;  4 - Search in the 32-bit registry
-;  5 - Fall-back to "javaw.exe" (such as in current dir or PATH) 
-Function FindJRE
-  Push $R0
-  Push $R1
-
-  ClearErrors
-  StrCpy $R0 "$EXEDIR\jre\bin\javaw.exe"
-  IfFileExists $R0 JreFound
-  StrCpy $R0 ""
-
-  ClearErrors
-  ReadEnvStr $R0 "JAVA_HOME"
-  StrCpy $R0 "$R0\bin\javaw.exe"
-  IfErrors 0 JreFound
- 
-  ClearErrors
-  ReadRegStr $R1 HKLM "Software\JavaSoft\Java Runtime Environment" "CurrentVersion"
-  ReadRegStr $R0 HKLM "Software\JavaSoft\Java Runtime Environment\$R1" "JavaHome"
-  StrCpy $R0 "$R0\bin\javaw.exe"
-  IfErrors 0 JreFound
-  
-  ; Fall-back to 32-bit registry
-  ${If} ${RunningX64}
-  ClearErrors
-  ReadRegStr $R1 HKLM "Software\Wow6432Node\JavaSoft\Java Runtime Environment" "CurrentVersion"
-  ReadRegStr $R0 HKLM "Software\Wow6432Node\JavaSoft\Java Runtime Environment\$R1" "JavaHome"
-  StrCpy $R0 "$R0\bin\javaw.exe"
-  IfErrors 0 JreFound
-  ${EndIf}
-
-  ; Look again, but for JDK
-  ClearErrors
-  ReadRegStr $R1 HKLM "Software\JavaSoft\JDK" "CurrentVersion"
-  ReadRegStr $R0 HKLM "Software\JavaSoft\JDK\$R1" "JavaHome"
-  StrCpy $R0 "$R0\bin\javaw.exe"
-  IfErrors 0 JreFound
-
-  ; Fall-back to 32-bit registry
-  ${If} ${RunningX64}
-  ClearErrors
-  ReadRegStr $R1 HKLM "Software\Wow6432Node\JavaSoft\JDK" "CurrentVersion"
-  ReadRegStr $R0 HKLM "Software\Wow6432Node\JavaSoft\JDK\$R1" "JavaHome"
-  StrCpy $R0 "$R0\bin\javaw.exe"
-  IfErrors 0 JreFound
-  ${EndIf}
-  
-  ; Give up.  Use javaw.exe and hope it works
-  StrCpy $R0 "javaw.exe"
- 
- JreFound:
-  Pop $R1
-  Exch $R0
-FunctionEnd
-
-Function DetermineAutostart
-  ClearErrors
-  ${GetParameters} $0
-  ${GetOptions} "$0" "-A" $3
-  IfErrors 0 LocalAutostart
-  StrCpy $AUTOSTART "1"
-  Return
-
-  LocalAutostart:
-  ClearErrors
-  ReadEnvStr $R0 "APPDATA"
-  FileOpen $1 "$R0\${project.datadir}\${autostart.name}" r
-  FileSeek $1 0
-  FileRead $1 $AUTOSTART
-  FileClose $1
-
-  IfErrors SharedAutostart 0
-  Return
-
-  SharedAutostart:
-  ClearErrors
-  ReadEnvStr $R0 "PROGRAMDATA"
-  FileOpen $2 "$R0\${project.datadir}\${autostart.name}" r
-  FileSeek $2 0
-  FileRead $2 $AUTOSTART
-  FileClose $2
-
-  IfErrors 0 +2
-  StrCpy $AUTOSTART "1"
-
-FunctionEnd
 
 Function .onInit
     ${If} ${RunningX64}
-		;  Force 64-bit registry view by default
         SetRegView 64
+        ${DisableX64FSRedirection}
     ${EndIf}
 FunctionEnd

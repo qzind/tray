@@ -1,3 +1,0 @@
-pref('general.config.filename', '${firefoxconfig.name}');
-pref('general.config.sandbox_enabled', false);
-pref('general.config.obscure_value', 0);

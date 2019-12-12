@@ -1,0 +1,121 @@
+!include MUI2.nsh
+!include x64.nsh
+!include LogicLib.nsh
+
+!ifdef NSIS_UNICODE
+	!addplugindir "${basedir}/ant/windows/nsis/Plugins/Release_Unicode"
+!else
+	!addplugindir "${basedir}/ant/windows/nsis/Plugins/Release_ANSI"
+!endif
+!addincludedir "${basedir}/ant/windows/nsis/Include"
+!include FindJava.nsh
+!include StdUtils.nsh
+
+
+Name "${project.name}"
+OutFile "${out.dir}/${project.filename}${build.type}-${build.version}.exe"
+RequestExecutionLevel admin
+
+!define MUI_ICON "${basedir}/assets/branding/windows-icon.ico"
+
+; Branding for qz only
+!if "${project.filename}" == "qz-tray"
+    !define MUI_UNICON "${basedir}/ant/windows/nsis/uninstall.ico"
+    !define MUI_WELCOMEFINISHPAGE_BITMAP "${basedir}\ant\windows\nsis\welcome.bmp"
+    !define MUI_UNWELCOMEFINISHPAGE_BITMAP "${basedir}\ant\windows\nsis\welcome.bmp"
+!endif
+
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+!insertmacro MUI_LANGUAGE "English"
+
+!macro QzInstaller step option value
+    SetDetailsPrint textonly
+    DetailPrint "Running ${step}..."
+    SetDetailsPrint listonly
+    DetailPrint 'Running ${step}: $java -jar "$OUTDIR\${project.filename}.jar" "${step}" "${option}" "${value}"'
+    SetDetailsPrint both
+    ClearErrors
+    nsExec::ExecToLog '$java -jar "$OUTDIR\${project.filename}.jar" "${step}" "${option}" "${value}"'
+    Pop $0
+    ${If} "$0" != "0"
+        Abort "Installation failed during ${step} step.  Please check log for details."
+    ${EndIf}
+!macroend
+
+Section
+    ; Set environmental variable for silent install to be picked up by Java
+    ${If} ${Silent}
+      System::Call 'Kernel32::SetEnvironmentVariable(t, t)i ("${vendor.name}_silent", "1").r0'
+    ${EndIf}
+
+    ; Set the $java variable
+    Call FindJava
+
+    ; Create the uninstaller
+    SetOutPath $INSTDIR
+    WriteUninstaller "$INSTDIR\uninstall.exe" ; Backslash required
+
+    ; Run preinstall tasks
+    SetOutPath "$PluginsDir\tmp"
+    DetailPrint "Extracting..."
+    SetDetailsPrint none ; Temporarily suppress details
+    File /r "${dist.dir}\*"
+    SetDetailsPrint both
+    !insertmacro QzInstaller "preinstall" "" ""
+
+    ; Run install tasks
+    !insertmacro QzInstaller "install" "--dest" $INSTDIR
+
+    ; Run certgen tasks
+    SetOutPath $INSTDIR
+    !insertmacro QzInstaller "certgen" "" ""
+
+    ; Launch a non-elevated instance of ${project.name}
+    ${StdUtils.ExecShellAsUser} $0 "$INSTDIR\${project.filename}.exe" "open" ""
+SectionEnd
+
+Section "Uninstall"
+    DetailPrint "Uninstalling..."
+
+    ; Set the $java variable
+    Call un.FindJava
+
+    ; Run uninstall tasks
+    SetOutPath $INSTDIR
+    !insertmacro QzInstaller "uninstall" "" ""
+
+    ; Remove all files
+    DetailPrint "Removing all files..."
+    SetDetailsPrint none ; Temporarily suppress details
+    SetOutPath $TEMP
+    RMDir /r "$INSTDIR"
+    SetDetailsPrint both
+SectionEnd
+
+!macro Init
+    ${If} ${RunningX64}
+        SetRegView 64
+        ${DisableX64FSRedirection}
+    ${EndIf}
+    ${If} $INSTDIR == ""
+        ${If} ${RunningX64}
+            StrCpy $INSTDIR "$PROGRAMFILES64\${project.name}"
+        ${Else}
+            StrCpy $INSTDIR "$PROGRAMFILES\${project.name}"
+        ${EndIf}
+    ${EndIf}
+!macroend
+
+; Runs for installs
+Function .onInit
+    !insertmacro Init
+FunctionEnd
+
+; Runs for uninstall
+Function un.onInit
+    !insertmacro Init
+FunctionEnd

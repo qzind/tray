@@ -10,7 +10,6 @@
 
 package qz.ws;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.rolling.FixedWindowRollingPolicy;
@@ -21,7 +20,6 @@ import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
@@ -29,13 +27,13 @@ import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.auth.Certificate;
 import qz.common.Constants;
-import qz.common.SecurityInfo;
 import qz.common.TrayManager;
-import qz.deploy.DeployUtilities;
+import qz.installer.Installer;
+import qz.installer.certificate.ExpiryTask;
+import qz.installer.certificate.CertificateManager;
+import qz.utils.ArgParser;
 import qz.utils.FileUtilities;
-import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 import java.io.*;
@@ -60,51 +58,32 @@ public class PrintSocketServer {
     private static final AtomicInteger insecurePortIndex = new AtomicInteger(0);
 
     private static TrayManager trayManager;
-    private static Properties trayProperties;
+    private static CertificateManager certificateManager;
 
     private static boolean headless;
 
 
     public static void main(String[] args) {
-        List<String> sArgs = Arrays.asList(args);
-
-        if (sArgs.contains("-a") || sArgs.contains("--whitelist")) {
-            int fileIndex = Math.max(sArgs.indexOf("-a"), sArgs.indexOf("--whitelist")) + 1;
-            addToList(Constants.ALLOW_FILE, new File(sArgs.get(fileIndex)));
-            System.exit(0);
+        ArgParser parser = new ArgParser(args);
+        if(parser.intercept()) {
+            System.exit(parser.getExitCode());
         }
-        if (sArgs.contains("-b") || sArgs.contains("--blacklist")) {
-            int fileIndex = Math.max(sArgs.indexOf("-b"), sArgs.indexOf("--blacklist")) + 1;
-            addToList(Constants.BLOCK_FILE, new File(sArgs.get(fileIndex)));
-            System.exit(0);
-        }
-        // Print library list and exits
-        if (sArgs.contains("-l") || sArgs.contains("--libinfo")) {
-            String format = "%-40s%s%n";
-            System.out.printf(format, "LIBRARY NAME:", "VERSION:");
-            SortedMap<String, String> libVersions = SecurityInfo.getLibVersions();
-            for (Map.Entry<String, String> entry: libVersions.entrySet()) {
-                if (entry.getValue() == null) {
-                    System.out.printf(format, entry.getKey(), "(unknown)");
-                } else {
-                    System.out.printf(format, entry.getKey(), entry.getValue());
-                }
-            }
-            System.exit(0);
-        }
-        if (sArgs.contains("-h") || sArgs.contains("--headless")) {
-            headless = true;
-        }
-        if (sArgs.contains("-v") || sArgs.contains("--version")) {
-            System.out.println(Constants.VERSION);
-            System.exit(0);
-        }
-
+        headless = parser.hasFlag("-h", "--headless");
         log.info(Constants.ABOUT_TITLE + " version: {}", Constants.VERSION);
         log.info(Constants.ABOUT_TITLE + " vendor: {}", Constants.ABOUT_COMPANY);
         log.info("Java version: {}", Constants.JAVA_VERSION.toString());
         log.info("Java vendor: {}", Constants.JAVA_VENDOR);
         setupFileLogging();
+
+        try {
+            // Gets and sets the SSL info, properties file
+            certificateManager = Installer.getInstance().certGen(false);
+            // Reoccurring (e.g. hourly) cert expiration check
+            new ExpiryTask(certificateManager).schedule();
+        } catch(Exception e) {
+            log.error("Something went critically wrong loading HTTPS", e);
+        }
+        Installer.getInstance().addUserSettings();
 
         try {
             log.info("Starting {} {}", Constants.ABOUT_TITLE, Constants.VERSION);
@@ -118,25 +97,9 @@ public class PrintSocketServer {
         log.warn("The web socket server is no longer running");
     }
 
-    private static void addToList(String list, File certFile) {
-        try {
-            FileReader fr = new FileReader(certFile);
-            Certificate cert = new Certificate(IOUtils.toString(fr));
-
-            if (FileUtilities.printLineToFile(list, cert.data())) {
-                log.info("Successfully added {} to {} list", cert.getOrganization(), list);
-            } else {
-                log.warn("Failed to add certificate to {} list (Insufficient user privileges)", list);
-            }
-        }
-        catch(Exception e) {
-            log.error("Failed to add certificate:", e);
-        }
-    }
-
     private static void setupFileLogging() {
         FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
-        rollingPolicy.setFileNamePattern(SystemUtilities.getDataDirectory() + File.separator + Constants.LOG_FILE + ".log.%i");
+        rollingPolicy.setFileNamePattern(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log.%i");
         rollingPolicy.setMaxIndex(Constants.LOG_ROTATIONS);
 
         SizeBasedTriggeringPolicy triggeringPolicy = new SizeBasedTriggeringPolicy(Constants.LOG_SIZE);
@@ -144,7 +107,7 @@ public class PrintSocketServer {
         RollingFileAppender fileAppender = new RollingFileAppender();
         fileAppender.setLayout(new PatternLayout("%d{ISO8601} [%p] %m%n"));
         fileAppender.setThreshold(Level.DEBUG);
-        fileAppender.setFile(SystemUtilities.getDataDirectory() + File.separator + Constants.LOG_FILE + ".log");
+        fileAppender.setFile(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log");
         fileAppender.setRollingPolicy(rollingPolicy);
         fileAppender.setTriggeringPolicy(triggeringPolicy);
         fileAppender.setEncoding("UTF-8");
@@ -157,24 +120,15 @@ public class PrintSocketServer {
 
     public static void runServer() {
         final AtomicBoolean running = new AtomicBoolean(false);
-
-        trayProperties = getTrayProperties();
-
         while(!running.get() && securePortIndex.get() < SECURE_PORTS.size() && insecurePortIndex.get() < INSECURE_PORTS.size()) {
             Server server = new Server(getInsecurePortInUse());
-
-            if (trayProperties != null) {
+            if (certificateManager != null) {
                 // Bind the secure socket on the proper port number (i.e. 9341), add it as an additional connector
-                SslContextFactory sslContextFactory = new SslContextFactory();
-                sslContextFactory.setKeyStorePath(trayProperties.getProperty("wss.keystore"));
-                sslContextFactory.setKeyStorePassword(trayProperties.getProperty("wss.storepass"));
-                sslContextFactory.setKeyManagerPassword(trayProperties.getProperty("wss.keypass"));
-
-                SslConnectionFactory sslConnection = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
+                SslConnectionFactory sslConnection = new SslConnectionFactory(certificateManager.configureSslContextFactory(), HttpVersion.HTTP_1_1.asString());
                 HttpConnectionFactory httpConnection = new HttpConnectionFactory(new HttpConfiguration());
 
                 ServerConnector connector = new ServerConnector(server, sslConnection, httpConnection);
-                connector.setHost(trayProperties.getProperty("wss.host"));
+                connector.setHost(certificateManager.getProperties().getProperty("wss.host"));
                 connector.setPort(getSecurePortInUse());
                 server.addConnector(connector);
             } else {
@@ -195,7 +149,7 @@ public class PrintSocketServer {
                 filter.getFactory().getPolicy().setMaxTextMessageSize(MAX_MESSAGE_SIZE);
 
                 // Handle HTTP landing page
-                ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet());
+                ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet(certificateManager));
                 httpServlet.setInitParameter("resourceBase","/");
                 context.addServlet(httpServlet, "/");
                 context.addServlet(httpServlet, "/json");
@@ -238,19 +192,16 @@ public class PrintSocketServer {
         return trayManager;
     }
 
-    public static Properties getTrayProperties() {
-        if (trayProperties == null) {
-            trayProperties = DeployUtilities.loadTrayProperties();
-        }
-        return trayProperties;
-    }
-
     public static int getSecurePortInUse() {
         return SECURE_PORTS.get(securePortIndex.get());
     }
 
     public static int getInsecurePortInUse() {
         return INSECURE_PORTS.get(insecurePortIndex.get());
+    }
+
+    public static Properties getTrayProperties() {
+        return certificateManager.getProperties();
     }
 
 }

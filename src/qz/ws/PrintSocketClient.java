@@ -26,6 +26,7 @@ import javax.print.PrintServiceLookup;
 import javax.security.cert.CertificateParsingException;
 import javax.usb.util.UsbUtil;
 import java.awt.*;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.*;
@@ -159,6 +160,7 @@ public class PrintSocketClient {
 
     @OnWebSocketError
     public void onError(Session session, Throwable error) {
+        if (error instanceof EOFException) return;
         log.error("Connection error", error);
         trayManager.displayErrorMessage(error.getMessage());
     }
@@ -598,8 +600,8 @@ public class PrintSocketClient {
                 FileParams fileParams = new FileParams(params);
                 Path absPath = FileUtilities.getAbsolutePath(params, request, false);
 
-                Files.createDirectories(absPath.getParent());
                 Files.write(absPath, fileParams.getData(), StandardOpenOption.CREATE, fileParams.getAppendMode());
+                FileUtilities.inheritParentPermissions(absPath);
                 sendResult(session, UID, null);
                 break;
             }
@@ -668,7 +670,8 @@ public class PrintSocketClient {
 
     private Point findDialogPosition(Session session, JSONObject positionData) {
         Point pos = new Point(0, 0);
-        if (session.getRemoteAddress().getAddress().isLoopbackAddress() && positionData != null) {
+        if (session.getRemoteAddress().getAddress().isLoopbackAddress() && positionData != null
+                && !positionData.isNull("x") && !positionData.isNull("y")) {
             pos.move(positionData.optInt("x"), positionData.optInt("y"));
         }
 

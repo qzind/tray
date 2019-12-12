@@ -69,17 +69,7 @@ public class LinkLabel extends EmLabel implements Themeable {
     }
 
     public void setLinkLocation(final File filePath) {
-        addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent ae) {
-                try {
-                    ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getPath():filePath.getParent());
-                }
-                catch(IOException ioe) {
-                    log.error("", ioe);
-                }
-            }
-        });
+        addActionListener(ae -> ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getPath():filePath.getParent()));
     }
 
 

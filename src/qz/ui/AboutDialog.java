@@ -83,12 +83,9 @@ public class AboutDialog extends BasicDialog implements Themeable {
             lblUpdate = new JLabel();
             updateButton = new JButton();
             updateButton.setVisible(false);
-            updateButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent evt) {
-                    try { Desktop.getDesktop().browse(new URL(Constants.ABOUT_URL + "/download").toURI()); }
-                    catch(Exception e) { log.error("", e); }
-                }
+            updateButton.addActionListener(evt -> {
+                try { Desktop.getDesktop().browse(new URL(Constants.ABOUT_DOWNLOAD_URL).toURI()); }
+                catch(Exception e) { log.error("", e); }
             });
             checkForUpdate();
             versionBox.add(Box.createHorizontalStrut(12));
@@ -131,13 +128,13 @@ public class AboutDialog extends BasicDialog implements Themeable {
 
         if (!limitedDisplay) {
             LinkLabel lblLicensing = new LinkLabel("Licensing Information", 0.9f, false);
-            lblLicensing.setLinkLocation(Constants.ABOUT_URL + "/licensing");
+            lblLicensing.setLinkLocation(Constants.ABOUT_LICENSING_URL);
 
             LinkLabel lblSupport = new LinkLabel("Support Information", 0.9f, false);
-            lblSupport.setLinkLocation(Constants.ABOUT_URL + "/support");
+            lblSupport.setLinkLocation(Constants.ABOUT_SUPPORT_URL);
 
             LinkLabel lblPrivacy = new LinkLabel("Privacy Policy", 0.9f, false);
-            lblPrivacy.setLinkLocation(Constants.ABOUT_URL + "/privacy");
+            lblPrivacy.setLinkLocation(Constants.ABOUT_PRIVACY_URL);
 
             JPanel supportPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 80, 10));
             supportPanel.add(lblLicensing);

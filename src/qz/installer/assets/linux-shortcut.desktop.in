@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=%ABOUT_TITLE%
+Exec="%COMMAND%" %PARAM%
+Path=%DESTINATION%
+Icon=%DESTINATION%/%LINUX_ICON%
+MimeType=application/x-qz;x-scheme-handler/qz;
+Terminal=false

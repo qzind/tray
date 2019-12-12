@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.utils.ByteUtilities;
 import qz.utils.FileUtilities;
+import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
 import javax.security.cert.CertificateParsingException;
@@ -92,23 +93,7 @@ public class Certificate {
     static {
         try {
             Security.addProvider(new BouncyCastleProvider());
-
-            String overridePath;
-            Properties trayProperties = PrintSocketServer.getTrayProperties();
-            if (trayProperties != null && trayProperties.containsKey("authcert.override")) {
-                overridePath = trayProperties.getProperty("authcert.override");
-            } else {
-                overridePath = System.getProperty("trustedRootCert");
-            }
-            if (overridePath != null) {
-                try {
-                    trustedRootCert = new Certificate(FileUtilities.readLocalFile(overridePath));
-                    overrideTrustedRootCert = true;
-                }
-                catch(IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            checkOverrideCertPath();
 
             if (trustedRootCert == null) {
                 trustedRootCert = new Certificate("-----BEGIN CERTIFICATE-----\n" +
@@ -149,6 +134,52 @@ public class Certificate {
         }
     }
 
+
+    private static void checkOverrideCertPath() {
+        // Priority: Check environmental variable
+        String override = System.getProperty("trustedRootCert");
+        String helpText = "System property \"trustedRootCert\"";
+        if(setOverrideCert(override,  helpText, false)) {
+            return;
+        }
+
+        // Preferred: Look for file called "override.crt" in installation directory
+        override = FileUtilities.getParentDirectory(SystemUtilities.getJarPath()) + File.separator + Constants.OVERRIDE_CERT;
+        helpText = String.format("Override cert \"%s\"", Constants.OVERRIDE_CERT);
+        if(setOverrideCert(override, helpText, true)) {
+            return;
+        }
+
+        // Fallback (deprecated): Parse "authcert.override" from qz-tray.properties
+        // Entry was created by 2.0 build system, removed in newer versions in favor of the hard-coded filename
+        Properties props = PrintSocketServer.getTrayProperties();
+        helpText = "Properties file entry \"authcert.override\"";
+        if(props != null && setOverrideCert(props.getProperty("authcert.override"), helpText, false)) {
+            log.warn("Deprecation warning: \"authcert.override\" is no longer supported.\n" +
+                             "{} will look for the system property \"trustedRootCert\", or look for" +
+                             "a file called {} in the working path.", Constants.ABOUT_TITLE, Constants.OVERRIDE_CERT);
+            return;
+        }
+    }
+
+    private static boolean setOverrideCert(String path, String helpText, boolean quiet) {
+        if(path != null && !path.trim().isEmpty()) {
+            if (new File(path).exists()) {
+                try {
+                    log.error("Using override cert: {}", path);
+                    trustedRootCert = new Certificate(FileUtilities.readLocalFile(path));
+                    overrideTrustedRootCert = true;
+                    return true;
+                }
+                catch(Exception e) {
+                    log.error("Error loading override cert: {}", path, e);
+                }
+            } else if(!quiet) {
+                log.warn("{} \"{}\" was provided, but could not be found, skipping.", helpText, path);
+            }
+        }
+        return false;
+    }
 
     /** Decodes a certificate and intermediate certificate from the given string */
     @SuppressWarnings("deprecation")

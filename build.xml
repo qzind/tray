@@ -230,10 +230,12 @@
     <target name="nsis-preflight">
         <property name="target.platform.windows" value="true"/>
     </target>
-    <target name="nsis" depends="nsis-preflight,build-exe,sign-exe-self,sign-exe-tsa"/>
+    <target name="nsis" depends="nsis-preflight,build-exe,sign-installer-self,sign-installer-tsa"/>
 
     <target name="build-exe" depends="distribute,prepackage,cleanup-javafx-dist,nsisbin-1,nsisbin-2,nsisbin-3">
         <echo>Creating installer using ${nsisbin}</echo>
+
+        <taskdef name="jsign" classname="net.jsign.JsignTask" classpath="${basedir}/ant/lib/jsign-3.0-SNAPSHOT.jar"/>
 
         <property file="ant/windows/windows.properties"/>
         <copy file="${branding.dir}/${windows.icon}" tofile="${dist.dir}/${windows.icon}" />
@@ -256,7 +258,90 @@
         <exec executable="${nsisbin}" failonerror="true" >
             <arg value="${windows.launcher.out}"/>
         </exec>
+    </target>
 
+    <!-- As seen with signing jars, tsaurl attribute cannot be empty, so separate methods are needed to sign both exes -->
+    <target name="sign-exe-self" depends="build-exe" unless="signing.tsaurl">
+        <echo>Signing Windows Scripts: No tsaurl was provided so this exe was not timestamped. Users will not be able to validate this exe after the signer certificate's expiration date or after any future revocation date.</echo>
+        <jsign file="${windows.keygen.out}"
+               name="${project.name}"
+               url="${vendor.website}"
+               keystore="${signing.keystore}"
+               alias="${signing.alias}"
+               storepass="${signing.storepass}"
+               keypass="${signing.keypass}"
+        />
+        <jsign file="${windows.cleanup.out}"
+               name="${project.name}"
+               url="${vendor.website}"
+               keystore="${signing.keystore}"
+               alias="${signing.alias}"
+               storepass="${signing.storepass}"
+               keypass="${signing.keypass}"
+        />
+        <jsign file="${windows.jsonparser.out}"
+               name="${project.name}"
+               url="${vendor.website}"
+               keystore="${signing.keystore}"
+               alias="${signing.alias}"
+               storepass="${signing.storepass}"
+               keypass="${signing.keypass}"
+        />
+
+        <echo>Signing Windows Executable: No tsaurl was provided so this exe was not timestamped. Users will not be able to validate this exe after the signer certificate's expiration date or after any future revocation date.</echo>
+        <jsign file="${dist.dir}/${project.filename}.exe"
+                 name="${project.name}"
+                 url="${vendor.website}"
+                 keystore="${signing.keystore}"
+                 alias="${signing.alias}"
+                 storepass="${signing.storepass}"
+                 keypass="${signing.keypass}"
+        />
+    </target>
+
+    <target name="sign-exe-tsa" depends="build-exe" if="signing.tsaurl">
+        <echo>Signing Windows Scripts:</echo>
+        <jsign file="${windows.keygen.out}"
+               name="${project.name}"
+               url="${vendor.website}"
+               keystore="${signing.keystore}"
+               alias="${signing.alias}"
+               storepass="${signing.storepass}"
+               keypass="${signing.keypass}"
+               tsaurl="${signing.tsaurl}"
+        />
+        <jsign file="${windows.cleanup.out}"
+               name="${project.name}"
+               url="${vendor.website}"
+               keystore="${signing.keystore}"
+               alias="${signing.alias}"
+               storepass="${signing.storepass}"
+               keypass="${signing.keypass}"
+               tsaurl="${signing.tsaurl}"
+        />
+        <jsign file="${windows.jsonparser.out}"
+               name="${project.name}"
+               url="${vendor.website}"
+               keystore="${signing.keystore}"
+               alias="${signing.alias}"
+               storepass="${signing.storepass}"
+               keypass="${signing.keypass}"
+               tsaurl="${signing.tsaurl}"
+        />
+
+        <echo>Signing Windows Executable:</echo>
+        <jsign file="${dist.dir}/${project.filename}.exe"
+                 name="${project.name}"
+                 url="${vendor.website}"
+                 keystore="${signing.keystore}"
+                 alias="${signing.alias}"
+                 storepass="${signing.storepass}"
+                 keypass="${signing.keypass}"
+                 tsaurl="${signing.tsaurl}"
+        />
+    </target>
+
+    <target name="build-installer"  depends="distribute,prepackage,cleanup-javafx-dist,nsisbin-1,nsisbin-2,nsisbin-3,build-exe,sign-exe-self,sign-exe-tsa">
         <exec executable="${nsisbin}" failonerror="true" >
             <arg value="${windows.packager.out}"/>
         </exec>
@@ -281,11 +366,9 @@
     </target>
 
     <!-- As seen with signing jars, tsaurl attribute cannot be empty, so separate methods are needed to sign both exes -->
-    <target name="sign-exe-self" depends="build-exe" unless="signing.tsaurl">
-        <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
-
-        <echo>Signing Windows Executable: No tsaurl was provided so this exe was not timestamped. Users will not be able to validate this exe after the signer certificate's expiration date or after any future revocation date.</echo>
-        <signexe file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"
+    <target name="sign-installer-self" depends="build-installer" unless="signing.tsaurl">
+        <echo>Signing Windows Installer: No tsaurl was provided so this exe was not timestamped. Users will not be able to validate this exe after the signer certificate's expiration date or after any future revocation date.</echo>
+        <jsign file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"
             name="${project.name}"
             url="${vendor.website}"
             keystore="${signing.keystore}"
@@ -295,11 +378,9 @@
             />
     </target>
 
-    <target name="sign-exe-tsa" depends="build-exe" if="signing.tsaurl">
-        <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
-
-        <echo>Signing Windows Executable:</echo>
-        <signexe file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"
+    <target name="sign-installer-tsa" depends="build-installer" if="signing.tsaurl">
+        <echo>Signing Windows Installer:</echo>
+        <jsign file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"
             name="${project.name}"
             url="${vendor.website}"
             keystore="${signing.keystore}"

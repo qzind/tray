@@ -70,6 +70,8 @@ public class ShellUtilities {
         try {
             // Create and execute our new process
             Process p = Runtime.getRuntime().exec(commandArray, envp);
+            // Consume output to prevent deadlock
+            while (p.getInputStream().read() != -1) {}
             p.waitFor();
             return p.exitValue() == 0;
         }

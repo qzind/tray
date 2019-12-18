@@ -20,6 +20,8 @@ import static java.nio.file.attribute.AclEntryFlag.*;
 
 public class WindowsUtilities {
     protected static final Logger log = LoggerFactory.getLogger(WindowsUtilities.class);
+    private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
+
     public static boolean isDarkMode() {
         String key = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
 
@@ -118,7 +120,7 @@ public class WindowsUtilities {
     public static void setWritable(Path path) {
         try {
             UserPrincipal authenticatedUsers = path.getFileSystem().getUserPrincipalLookupService()
-                    .lookupPrincipalByName("Authenticated Users");
+                    .lookupPrincipalByGroupName(Advapi32Util.getAccountBySid(AUTHENTICATED_USERS_SID).name);
             AclFileAttributeView view = Files.getFileAttributeView(path, AclFileAttributeView.class);
 
             // Create ACL to give "Authenticated Users" "modify" access

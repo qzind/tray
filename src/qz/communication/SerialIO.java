@@ -2,15 +2,15 @@ package qz.communication;
 
 import jssc.*;
 import org.apache.commons.codec.binary.StringUtils;
-import org.apache.commons.io.IOUtils;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.ByteArrayBuilder;
 import qz.utils.ByteUtilities;
-import qz.utils.SerialUtilities;
+import qz.utils.DeviceUtilities;
 
 import java.io.IOException;
-import java.net.URL;
 
 /**
  * @author Tres
@@ -218,17 +218,13 @@ public class SerialIO {
     /**
      * Applies the port parameters and writes the buffered data to the serial port.
      */
-    public void sendData(String data, SerialOptions opts, SerialUtilities.SerialDataType type) throws IOException, SerialPortException {
+    public void sendData(JSONObject params, SerialOptions opts) throws JSONException, IOException, SerialPortException {
         if (opts != null) {
             setOptions(opts);
         }
 
         log.debug("Sending data over [{}]", portName);
-        if (type == SerialUtilities.SerialDataType.FILE) {
-            port.writeBytes(IOUtils.toByteArray(new URL(data)));
-        } else {
-            port.writeBytes(SerialUtilities.characterBytes(data, serialOpts.getPortSettings().getEncoding()));
-        }
+        port.writeBytes(DeviceUtilities.getDataBytes(params, serialOpts.getPortSettings().getEncoding()));
     }
 
     /**

@@ -1,7 +1,6 @@
 package qz.ws;
 
 import jssc.SerialPortException;
-import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -160,7 +159,7 @@ public class PrintSocketClient {
 
     @OnWebSocketError
     public void onError(Session session, Throwable error) {
-        if (error instanceof EOFException) return;
+        if (error instanceof EOFException) { return; }
         log.error("Connection error", error);
         trayManager.displayErrorMessage(error.getMessage());
     }
@@ -366,15 +365,7 @@ public class PrintSocketClient {
 
                 SerialIO serial = connection.getSerialPort(params.optString("port"));
                 if (serial != null) {
-                    String serialData;
-                    JSONObject data = params.optJSONObject("data");
-                    if (data != null) {
-                        serialData = data.getString("data");
-                    } else {
-                        serialData = params.optString("data");
-                    }
-
-                    serial.sendData(serialData, opts, SerialUtilities.getDataTypeJSON(data));
+                    serial.sendData(params, opts);
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, String.format("Serial port [%s] must be opened first.", params.optString("port")));
@@ -468,7 +459,7 @@ public class PrintSocketClient {
             case HID_SEND_DATA: {
                 DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
-                    usb.sendData(StringUtils.getBytesUtf8(params.optString("data")), dOpts.getEndpoint());
+                    usb.sendData(DeviceUtilities.getDataBytes(params, null), dOpts.getEndpoint());
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, String.format("USB Device [v:%s p:%s] must be claimed first.", params.opt("vendorId"), params.opt("productId")));

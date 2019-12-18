@@ -1,7 +1,7 @@
 package qz.installer;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.openssl.PEMParser;
 import qz.installer.certificate.CertificateChainBuilder;
 import qz.installer.certificate.ExpiryTask;
 import qz.installer.certificate.CertificateManager;
@@ -47,7 +47,7 @@ public class InstallerTests {
     }
 
     public static X509Certificate loadCert(String cert) throws IOException {
-        PEMReader reader = new PEMReader(new StringReader(cert));
+        PEMParser reader = new PEMParser(new StringReader(cert));
         return (X509Certificate)reader.readObject();
     }
 

@@ -528,8 +528,7 @@ var qz = (function() {
             isAlgorithmCompatible: function() {
                 //if not connected yet we will assume compatibility exists for the time being
                 if (_qz.websocket.connection) {
-                    var semver = _qz.websocket.connection.version.split(/[.-]/g);
-                    if (semver[0] === "2" && semver[1] === "0") {
+                    if (_qz.tools.version_2_0()) {
                         _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
                         return false;
                     }
@@ -645,10 +644,14 @@ var qz = (function() {
                 return target;
             },
 
+            version_2_0: function() {
+                var semver = _qz.websocket.connection.version.split(/[.-]/g);
+                return semver[0] === "2" && semver[1] === "0";
+            },
+
             /** Converts message format to a previous version's */
             compatible: function(printData) {
-                var semver = _qz.websocket.connection.version.split(/[.-]/g);
-                if (semver[0] === "2" && semver[1] === "0") {
+                if (_qz.tools.version_2_0()) {
                     /*
                     2.0.x conversion
                     -----
@@ -909,6 +912,14 @@ var qz = (function() {
              * @memberof qz.websocket
              */
             getNetworkInfo: function(hostname, port, signature, signingTimestamp) {
+                // Use 2.0
+                if (_qz.tools.version_2_0()) {
+                    return _qz.websocket.dataPromise('websocket.getNetworkInfo', {
+                       hostname: hostname,
+                       port: port
+                    }, signature, signingTimestamp);
+                }
+                // Wrap 2.1
                 return _qz.tools.promise(function(resolve, reject) {
                     _qz.websocket.dataPromise('networking.device', {
                         hostname: hostname,
@@ -1966,6 +1977,18 @@ var qz = (function() {
              * @since 2.1.0
              */
             device: function(hostname, port) {
+                // Wrap 2.0
+                if(_qz.tools.version_2_0()) {
+                    return _qz.tools.promise(function(resolve, reject) {
+                        _qz.websocket.dataPromise('websocket.getNetworkInfo', {
+                            hostname: hostname,
+                            port: port
+                        }).then(function(data) {
+                            resolve({ hostname: null, name: null, ip: data.ipAddress, mac: data.macAddress });
+                        }, reject);
+                    });
+                }
+                // Use 2.1
                 return _qz.websocket.dataPromise('networking.device', {
                     hostname: hostname,
                     port: port
@@ -1981,6 +2004,18 @@ var qz = (function() {
              * @since 2.1.0
              */
             devices: function(hostname, port) {
+                // Wrap 2.0
+                if(_qz.tools.version_2_0()) {
+                    return _qz.tools.promise(function(resolve, reject) {
+                        _qz.websocket.dataPromise('websocket.getNetworkInfo', {
+                            hostname: hostname,
+                            port: port
+                        }).then(function(data) {
+                            resolve([{ip: data.ipAddress, mac: data.macAddress }]);
+                        }, reject);
+                    });
+                }
+                // Use 2.1
                 return _qz.websocket.dataPromise('networking.devices', {
                     hostname: hostname,
                     port: port

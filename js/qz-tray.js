@@ -528,7 +528,7 @@ var qz = (function() {
             isAlgorithmCompatible: function() {
                 //if not connected yet we will assume compatibility exists for the time being
                 if (_qz.websocket.connection) {
-                    if (_qz.tools.version_2_0()) {
+                    if (_qz.tools.isVersion(2, 0)) {
                         _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
                         return false;
                     }
@@ -644,14 +644,48 @@ var qz = (function() {
                 return target;
             },
 
-            version_2_0: function() {
+            isVersion: function(major, minor, patch) {
                 var semver = _qz.websocket.connection.version.split(/[.-]/g);
-                return semver[0] === "2" && semver[1] === "0";
+                if(patch != undefined) {
+                    return patch == semver[2] && minor == semver[1] && major == semver[0];
+                }
+                if(minor != undefined) {
+                    return minor == semver[1] && major == semver[0];
+                }
+                return major == semver[0];
+            },
+
+            /** Compat wrapper with previous version **/
+            compatibleNetworking: function(hostname, port, signature, signingTimestamp, mappingCallback) {
+                // Use 2.0
+                if (_qz.tools.isVersion(2, 0)) {
+                    return _qz.tools.promise(function(resolve, reject) {
+                        _qz.websocket.dataPromise('websocket.getNetworkInfo', {
+                            hostname: hostname,
+                            port: port
+                        }, signature, signingTimestamp).then(function(data) {
+                            if (typeof mappingCallback !== 'undefined') {
+                                resolve(mappingCallback(data));
+                            } else {
+                                resolve(data);
+                            }
+                        }, reject);
+                    });
+                }
+                // Wrap 2.1
+                return _qz.tools.promise(function(resolve, reject) {
+                    _qz.websocket.dataPromise('networking.device', {
+                        hostname: hostname,
+                        port: port
+                    }, signature, signingTimestamp).then(function(data) {
+                        resolve({ ipAddress: data.ip, macAddress: data.mac });
+                    }, reject);
+                });
             },
 
             /** Converts message format to a previous version's */
             compatible: function(printData) {
-                if (_qz.tools.version_2_0()) {
+                if (_qz.tools.isVersion(2, 0)) {
                     /*
                     2.0.x conversion
                     -----
@@ -911,24 +945,7 @@ var qz = (function() {
              *
              * @memberof qz.websocket
              */
-            getNetworkInfo: function(hostname, port, signature, signingTimestamp) {
-                // Use 2.0
-                if (_qz.tools.version_2_0()) {
-                    return _qz.websocket.dataPromise('websocket.getNetworkInfo', {
-                       hostname: hostname,
-                       port: port
-                    }, signature, signingTimestamp);
-                }
-                // Wrap 2.1
-                return _qz.tools.promise(function(resolve, reject) {
-                    _qz.websocket.dataPromise('networking.device', {
-                        hostname: hostname,
-                        port: port
-                    }, signature, signingTimestamp).then(function(data) {
-                        resolve({ ipAddress: data.ip, macAddress: data.mac });
-                    }, reject);
-                });
-            },
+            getNetworkInfo: _qz.tools.compatibleNetworking,
 
             /**
              * @returns {Object<{socket: String, host: String, port: Number}>} Details of active websocket connection
@@ -1978,14 +1995,9 @@ var qz = (function() {
              */
             device: function(hostname, port) {
                 // Wrap 2.0
-                if(_qz.tools.version_2_0()) {
-                    return _qz.tools.promise(function(resolve, reject) {
-                        _qz.websocket.dataPromise('websocket.getNetworkInfo', {
-                            hostname: hostname,
-                            port: port
-                        }).then(function(data) {
-                            resolve({ hostname: null, name: null, ip: data.ipAddress, mac: data.macAddress });
-                        }, reject);
+                if(_qz.tools.isVersion(2, 0)) {
+                    return _qz.tools.compatibleNetworking(hostname, port, null, null, function(data) {
+                        return { ip: data.ipAddress, mac: data.macAddress };
                     });
                 }
                 // Use 2.1
@@ -2005,14 +2017,9 @@ var qz = (function() {
              */
             devices: function(hostname, port) {
                 // Wrap 2.0
-                if(_qz.tools.version_2_0()) {
-                    return _qz.tools.promise(function(resolve, reject) {
-                        _qz.websocket.dataPromise('websocket.getNetworkInfo', {
-                            hostname: hostname,
-                            port: port
-                        }).then(function(data) {
-                            resolve([{ip: data.ipAddress, mac: data.macAddress }]);
-                        }, reject);
+                if(_qz.tools.isVersion(2, 0)) {
+                    return _qz.tools.compatibleNetworking(hostname, port, null, null, function(data) {
+                        return [{ ip: data.ipAddress, mac: data.macAddress }];
                     });
                 }
                 // Use 2.1
@@ -2113,6 +2120,17 @@ var qz = (function() {
             getVersion: function() {
                 return _qz.websocket.dataPromise('getVersion');
             },
+
+            /**
+             * Checks for the specified version of connected QZ Tray application.
+             *
+             * @param {string|number} [major] Major version to check
+             * @param {string|number} [minor] Minor version to check
+             * @param {string|number} [patch] Patch version to check
+             *
+             * @memberof qz.api
+             */
+            isVersion: _qz.tools.isVersion,
 
             /**
              * Change the promise library used by QZ API.

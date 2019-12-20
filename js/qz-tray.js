@@ -560,6 +560,9 @@ var qz = (function() {
                     var a = document.createElement("a");
                     a.href = loc;
                     return a.href;
+                } else if(typeof exports === 'object') {
+                    //node.js
+                    require('path').resolve(loc);
                 }
                 return loc;
             },

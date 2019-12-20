@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.1.0
+ * @version 2.1.0-1
  * @overview QZ Tray Connector
  * <p/>
  * Connects a web client to the QZ Tray software.
@@ -28,7 +28,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
-        VERSION: "2.1.0",                              //must match @version above
+        VERSION: "2.1.0-1",                              //must match @version above
         DEBUG: false,
 
         log: {
@@ -36,8 +36,10 @@ var qz = (function() {
             trace: function() { if (_qz.DEBUG) { console.log.apply(console, arguments); } },
             /** General messages */
             info: function() { console.info.apply(console, arguments); },
+            /** General warnings */
+            warn: function() { console.warn.apply(console, arguments); },
             /** Debugging errors */
-            warn: function() { if (_qz.DEBUG) { console.warn.apply(console, arguments); } },
+            allay: function() { if (_qz.DEBUG) { console.warn.apply(console, arguments); } },
             /** General errors */
             error: function() { console.error.apply(console, arguments); }
         },
@@ -301,7 +303,7 @@ var qz = (function() {
                                         _qz.file.callFile(JSON.parse(returned.event));
                                         break;
                                     default:
-                                        _qz.log.warn("Cannot determine stream type for callback", returned);
+                                        _qz.log.allay("Cannot determine stream type for callback", returned);
                                         break;
                                 }
                             }
@@ -313,7 +315,7 @@ var qz = (function() {
 
                         var promise = _qz.websocket.pendingCalls[returned.uid];
                         if (promise == undefined) {
-                            _qz.log.warn('No promise found for returned response');
+                            _qz.log.allay('No promise found for returned response');
                         } else {
                             if (returned.error != undefined) {
                                 promise.reject(new Error(returned.error));
@@ -340,7 +342,7 @@ var qz = (function() {
                         _qz.websocket.connection.version = version;
 
                         //algorithm can be declared before a connection, check for incompatibilities now that we have one
-                        _qz.security.isAlgorithmCompatible();
+                        _qz.compatible.algorithm(true);
                     });
                 },
 
@@ -523,20 +525,7 @@ var qz = (function() {
             },
 
             /** Signing algorithm used on signatures */
-            signAlgorithm: "SHA1",
-            /** Check if QZ version supports chosen algorithm */
-            isAlgorithmCompatible: function() {
-                //if not connected yet we will assume compatibility exists for the time being
-                if (_qz.websocket.connection) {
-                    var semver = _qz.websocket.connection.version.split(/[.-]/g);
-                    if (semver[0] === "2" && semver[1] === "0") {
-                        _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
-                        return false;
-                    }
-                }
-
-                return true;
-            }
+            signAlgorithm: "SHA1"
         },
 
 
@@ -645,10 +634,22 @@ var qz = (function() {
                 return target;
             },
 
-            /** Converts message format to a previous version's */
-            compatible: function(printData) {
+            isVersion: function(major, minor, patch) {
                 var semver = _qz.websocket.connection.version.split(/[.-]/g);
-                if (semver[0] === "2" && semver[1] === "0") {
+                if(patch != undefined) {
+                    return patch == semver[2] && minor == semver[1] && major == semver[0];
+                }
+                if(minor != undefined) {
+                    return minor == semver[1] && major == semver[0];
+                }
+                return major == semver[0];
+            }
+        },
+
+        compatible: {
+            /** Converts message format to a previous version's */
+            data: function(printData) {
+                if (_qz.tools.isVersion(2, 0)) {
                     /*
                     2.0.x conversion
                     -----
@@ -678,6 +679,49 @@ var qz = (function() {
                         }
                     }
                 }
+            },
+
+            /** Compat wrapper with previous version **/
+            networking: function(hostname, port, signature, signingTimestamp, mappingCallback) {
+                // Use 2.0
+                if (_qz.tools.isVersion(2, 0)) {
+                    return _qz.tools.promise(function(resolve, reject) {
+                        _qz.websocket.dataPromise('websocket.getNetworkInfo', {
+                            hostname: hostname,
+                            port: port
+                        }, signature, signingTimestamp).then(function(data) {
+                            if (typeof mappingCallback !== 'undefined') {
+                                resolve(mappingCallback(data));
+                            } else {
+                                resolve(data);
+                            }
+                        }, reject);
+                    });
+                }
+                // Wrap 2.1
+                return _qz.tools.promise(function(resolve, reject) {
+                    _qz.websocket.dataPromise('networking.device', {
+                        hostname: hostname,
+                        port: port
+                    }, signature, signingTimestamp).then(function(data) {
+                        resolve({ ipAddress: data.ip, macAddress: data.mac });
+                    }, reject);
+                });
+            },
+
+            /** Check if QZ version supports chosen algorithm */
+            algorithm: function(quiet) {
+                //if not connected yet we will assume compatibility exists for the time being
+                if (_qz.websocket.connection) {
+                    if (_qz.tools.isVersion(2, 0)) {
+                        if(!quiet) {
+                            _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
+                        }
+                        return false;
+                    }
+                }
+
+                return true;
             }
         }
     };
@@ -908,16 +952,7 @@ var qz = (function() {
              *
              * @memberof qz.websocket
              */
-            getNetworkInfo: function(hostname, port, signature, signingTimestamp) {
-                return _qz.tools.promise(function(resolve, reject) {
-                    _qz.websocket.dataPromise('networking.device', {
-                        hostname: hostname,
-                        port: port
-                    }, signature, signingTimestamp).then(function(data) {
-                        resolve({ ipAddress: data.ip, macAddress: data.mac });
-                    }, reject);
-                });
-            },
+            getNetworkInfo: _qz.compatible.networking,
 
             /**
              * @returns {Object<{socket: String, host: String, port: Number}>} Details of active websocket connection
@@ -1189,7 +1224,7 @@ var qz = (function() {
             //clean up data formatting
             for(var d = 0; d < data.length; d++) {
                 _qz.tools.relative(data[d]);
-                _qz.tools.compatible(data[d]);
+                _qz.compatible.data(data[d]);
             }
 
             var sendToPrint = function(mapping) {
@@ -1966,6 +2001,13 @@ var qz = (function() {
              * @since 2.1.0
              */
             device: function(hostname, port) {
+                // Wrap 2.0
+                if(_qz.tools.isVersion(2, 0)) {
+                    return _qz.compatible.networking(hostname, port, null, null, function(data) {
+                        return { ip: data.ipAddress, mac: data.macAddress };
+                    });
+                }
+                // Use 2.1
                 return _qz.websocket.dataPromise('networking.device', {
                     hostname: hostname,
                     port: port
@@ -1981,6 +2023,13 @@ var qz = (function() {
              * @since 2.1.0
              */
             devices: function(hostname, port) {
+                // Wrap 2.0
+                if(_qz.tools.isVersion(2, 0)) {
+                    return _qz.compatible.networking(hostname, port, null, null, function(data) {
+                        return [{ ip: data.ipAddress, mac: data.macAddress }];
+                    });
+                }
+                // Use 2.1
                 return _qz.websocket.dataPromise('networking.devices', {
                     hostname: hostname,
                     port: port
@@ -2028,7 +2077,7 @@ var qz = (function() {
             */
             setSignatureAlgorithm: function(algorithm) {
                 //warn for incompatibilities if known
-                if (!_qz.security.isAlgorithmCompatible()) {
+                if (!_qz.compatible.algorithm()) {
                     return;
                 }
 
@@ -2078,6 +2127,17 @@ var qz = (function() {
             getVersion: function() {
                 return _qz.websocket.dataPromise('getVersion');
             },
+
+            /**
+             * Checks for the specified version of connected QZ Tray application.
+             *
+             * @param {string|number} [major] Major version to check
+             * @param {string|number} [minor] Minor version to check
+             * @param {string|number} [patch] Patch version to check
+             *
+             * @memberof qz.api
+             */
+            isVersion: _qz.tools.isVersion,
 
             /**
              * Change the promise library used by QZ API.

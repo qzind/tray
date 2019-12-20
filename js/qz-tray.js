@@ -221,8 +221,8 @@ var qz = (function() {
 
                         // track requesting monitor
                         obj.position = {
-                            x: screen ? ((screen.availWidth || screen.width) / 2) + (screen.left || screen.availLeft) : 0,
-                            y: screen ? ((screen.availHeight || screen.height) / 2) + (screen.top || screen.availTop) : 0
+                            x: typeof screen !== 'undefined' ? ((screen.availWidth || screen.width) / 2) + (screen.left || screen.availLeft) : 0,
+                            y: typeof screen !== 'undefined' ? ((screen.availHeight || screen.height) / 2) + (screen.top || screen.availTop) : 0
                         };
 
                         try {

@@ -1282,7 +1282,7 @@
                 if (key === 'mac') { value = obj[key].match(/.{1,2}/g).join(':'); }
                 if (typeof obj[key] === 'object') { value = value.join(', '); }
 
-                html += '<li><strong>' + labels[key] + ':</strong> ' + value + '</li>';
+                html += '<li><strong>' + labels[key] + ':</strong> <code>' + value + '</code></li>';
             });
 
             return html;
@@ -1291,17 +1291,25 @@
         qz.networking.devices().then(function(data) {
             var list = '';
             var hostname = '';
+            var username = '';
             for(var i = 0; i < data.length; i++) {
                 var info = data[i];
 
-                if (i == 0) hostname = info.hostname;
+                if (i == 0) {
+                   list += "<li>" +
+                        "   <strong>Hostname:</strong> <code>" + info.hostname + "</code>" +
+                        "</li>" +
+                        "<li>" +
+                        "   <strong>Username:</strong> <code>" + info.username + "</code>"
+                        "</li>";
+                }
                 list += "<li>" +
-                        "   <strong>" + (info.name || "UNKNOWN") + (info.id ? " (" + info.id + ")" : "") + "</strong>" +
+                        "   <strong>Interface:</strong> <code>" + (info.name || "UNKNOWN") + (info.id ? "</code> (<code>" + info.id + "</code>)" : "</code>") +
                         "   <ul>" + listItems(info) + "</ul>" +
                         "</li>";
             }
 
-            pinMessage("<strong>Network details:</strong> (" + hostname + ")<br/><ul>" + list + "</ul>");
+            pinMessage("<strong>Network details:</strong><ul>" + list + "</ul>");
         }).catch(displayError);
     }
 

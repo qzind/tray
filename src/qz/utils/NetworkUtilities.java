@@ -29,6 +29,7 @@ public class NetworkUtilities {
 
     private static NetworkUtilities instance;
     private static String systemName = ShellUtilities.getHostName();
+    private static String userName = System.getProperty("user.name");
 
     private ArrayList<Device> devices;
     private Device primaryDevice;
@@ -184,6 +185,7 @@ public class NetworkUtilities {
                     .put("primary", primary)
                     .put("up", up)
                     .put("hostname", systemName)
+                    .put("username", userName)
                     .put("id", id);
         }
     }

@@ -799,7 +799,7 @@ var qz = (function() {
 ///// PUBLIC METHODS /////
 
     /** @namespace qz */
-    return {
+    var qz = {
 
         /**
          * Calls related specifically to the web socket connection.
@@ -2189,6 +2189,7 @@ var qz = (function() {
         version: _qz.VERSION
     };
 
+    return qz;
 })();
 
 

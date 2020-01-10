@@ -138,7 +138,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             if (pxlOpts.getDensity() > 0) {
                 //rasterization is automatically performed upon supplying a density, warn user if they aren't expecting this
                 log.warn("Supplying a print density for PDF printing rasterizes the document.");
-            } else if (SystemUtilities.isMac()) {
+            } else if (SystemUtilities.isMac() && Constants.JAVA_VERSION.compareWithBuildsTo(Version.valueOf("1.8.0+121")) < 0) {
                 log.warn("OSX systems cannot print vector PDF's, forcing raster to prevent crash.");
                 useDensity = options.getDefaultOptions().getDensity();
             }

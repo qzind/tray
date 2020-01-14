@@ -9,6 +9,7 @@ import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Dimension2D;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.image.WritableImage;
@@ -50,6 +51,9 @@ public class WebApp extends Application {
     private static double pageHeight;
     private static double pageZoom;
 
+    private static Dimension2D lastSize = new Dimension2D(0, 0);
+    private static boolean changed = false;
+
     private static final AtomicBoolean started = new AtomicBoolean(false);
     private static final AtomicBoolean complete = new AtomicBoolean(false);
     private static final AtomicReference<Throwable> thrown = new AtomicReference<>();
@@ -85,40 +89,61 @@ public class WebApp extends Application {
                     pageZoom = 1; //only zoom affects webView scaling
                 }
 
-                log.trace("Setting HTML page width to {}", (pageWidth * pageZoom));
-                webView.setMinWidth(pageWidth * pageZoom);
-                webView.setPrefWidth(pageWidth * pageZoom);
-                webView.autosize();
-
-                //we have to resize the width first, for responsive html, then calculate the best fit height
-                final PauseTransition resize = new PauseTransition(Duration.millis(100));
-                resize.setOnFinished(new EventHandler<ActionEvent>() {
-                    @Override
-                    public void handle(ActionEvent actionEvent) {
-                        if (pageHeight <= 0) {
-                            String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
-                            pageHeight = Double.parseDouble(heightText);
-                        }
-
-                        log.trace("Setting HTML page height to {}", (pageHeight * pageZoom));
-                        webView.setMinHeight(pageHeight * pageZoom);
-                        webView.setPrefHeight(pageHeight * pageZoom);
-                        webView.autosize();
-
-                        snap.playFromStart();
-                    }
-                });
-
-                resize.playFromStart();
+                adjustHeight();
             }
         }
     };
+
+    private static void adjustHeight() {
+        log.trace("Setting HTML page width to {}", (pageWidth * pageZoom));
+        webView.setMinWidth(pageWidth * pageZoom);
+        webView.setPrefWidth(pageWidth * pageZoom);
+        webView.autosize();
+
+        //we have to resize the width first, for responsive html, then calculate the best fit height
+        final PauseTransition resize = new PauseTransition(Duration.millis(100));
+        resize.setOnFinished(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent actionEvent) {
+                if (pageHeight <= 0) {
+                    String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
+                    pageHeight = Double.parseDouble(heightText);
+                }
+
+                log.trace("Setting HTML page height to {}", (pageHeight * pageZoom));
+                webView.setMinHeight(pageHeight * pageZoom);
+                webView.setPrefHeight(pageHeight * pageZoom);
+                webView.autosize();
+
+                if (lastSize.getWidth() != pageWidth || lastSize.getHeight() != pageHeight) {
+                    log.debug("Stage dimensions have changed [{},{}] -> [{},{}]", lastSize.getWidth(), lastSize.getHeight(), pageWidth, pageHeight);
+                    lastSize = new Dimension2D(pageWidth, pageHeight);
+                    changed = true;
+                } else {
+                    log.debug("Stage dimensions have stabilized");
+                    changed = false;
+                }
+
+                snap.playFromStart();
+            }
+        });
+
+        resize.playFromStart();
+    }
 
     //listens for load progress
     private static ChangeListener<Number> workDoneListener = new ChangeListener<Number>() {
         @Override
         public void changed(ObservableValue<? extends Number> ov, Number oldWork, Number newWork) {
             log.trace("Done: {} > {}", oldWork, newWork);
+        }
+    };
+
+    //listens for failures
+    private static ChangeListener<Throwable> exceptListener = new ChangeListener<Throwable>() {
+        @Override
+        public void changed(ObservableValue<? extends Throwable> obs, Throwable oldExc, Throwable newExc) {
+            if (newExc != null) { thrown.set(newExc); }
         }
     };
 
@@ -164,6 +189,7 @@ public class WebApp extends Application {
         Worker<Void> worker = webView.getEngine().getLoadWorker();
         worker.stateProperty().addListener(stateListener);
         worker.workDoneProperty().addListener(workDoneListener);
+        worker.exceptionProperty().addListener(exceptListener);
 
         //prevents JavaFX from shutting down when hiding window
         Platform.setImplicitExit(false);
@@ -206,6 +232,12 @@ public class WebApp extends Application {
                     snap.setOnFinished(new EventHandler<ActionEvent>() {
                         @Override
                         public void handle(ActionEvent actionEvent) {
+                            if (changed) {
+                                log.debug("Waiting for stage dimensions to stabilize");
+                                adjustHeight();
+                                return;
+                            }
+
                             try {
                                 log.debug("Attempting image capture");
 
@@ -239,7 +271,7 @@ public class WebApp extends Application {
         Throwable t = null;
         while(!complete.get() && (t = thrown.get()) == null) {
             log.trace("Waiting on capture..");
-            try { Thread.sleep(1000); } catch(Exception ignore) {}
+            try { Thread.sleep(100); } catch(Exception ignore) {}
         }
 
         if (t != null) { throw t; }

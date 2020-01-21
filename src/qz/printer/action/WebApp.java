@@ -51,6 +51,7 @@ public class WebApp extends Application {
     private static double pageHeight;
     private static double pageZoom;
 
+    private static Dimension2D startSize;
     private static Dimension2D lastSize = new Dimension2D(0, 0);
     private static boolean changed = false;
 
@@ -89,46 +90,53 @@ public class WebApp extends Application {
                     pageZoom = 1; //only zoom affects webView scaling
                 }
 
-                adjustHeight();
+                log.trace("Setting HTML page width to {}", (pageWidth * pageZoom));
+                webView.setMinWidth(pageWidth * pageZoom);
+                webView.setPrefWidth(pageWidth * pageZoom);
+                webView.autosize();
+
+                //we have to resize the width first, for responsive html, then calculate the best fit height
+                final PauseTransition resize = new PauseTransition(Duration.millis(100));
+                resize.setOnFinished(new EventHandler<ActionEvent>() {
+                    @Override
+                    public void handle(ActionEvent actionEvent) {
+                        // record starting dimensions (but only if they aren't already the target dimensions) to ensure resizing has occurred
+                        double sw = 0, sh = 0;
+                        if (webView.getWidth() != pageWidth * pageZoom) { sw = webView.getWidth();}
+                        if (webView.getHeight() != pageHeight * pageZoom) { sh = webView.getHeight();}
+                        startSize = new Dimension2D(sw, sh);
+
+                        adjustHeight();
+                    }
+                });
+
+                resize.playFromStart();
             }
         }
     };
 
     private static void adjustHeight() {
-        log.trace("Setting HTML page width to {}", (pageWidth * pageZoom));
-        webView.setMinWidth(pageWidth * pageZoom);
-        webView.setPrefWidth(pageWidth * pageZoom);
+        if (pageHeight <= 0) {
+            String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
+            pageHeight = Double.parseDouble(heightText);
+        }
+
+        log.trace("Setting HTML page height to {}", (pageHeight * pageZoom));
+        webView.setMinHeight(pageHeight * pageZoom);
+        webView.setPrefHeight(pageHeight * pageZoom);
         webView.autosize();
 
-        //we have to resize the width first, for responsive html, then calculate the best fit height
-        final PauseTransition resize = new PauseTransition(Duration.millis(100));
-        resize.setOnFinished(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent actionEvent) {
-                if (pageHeight <= 0) {
-                    String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
-                    pageHeight = Double.parseDouble(heightText);
-                }
+        if (lastSize.getWidth() != webView.getWidth() || lastSize.getHeight() != webView.getHeight()
+                || startSize.getWidth() == webView.getWidth() || startSize.getHeight() == webView.getHeight()) {
+            log.debug("Stage dimensions have changed [{},{}] -> [{},{}]", lastSize.getWidth(), lastSize.getHeight(), pageWidth, pageHeight);
+            lastSize = new Dimension2D(webView.getWidth(), webView.getHeight());
+            changed = true;
+        } else {
+            log.debug("Stage dimensions have stabilized");
+            changed = false;
+        }
 
-                log.trace("Setting HTML page height to {}", (pageHeight * pageZoom));
-                webView.setMinHeight(pageHeight * pageZoom);
-                webView.setPrefHeight(pageHeight * pageZoom);
-                webView.autosize();
-
-                if (lastSize.getWidth() != pageWidth || lastSize.getHeight() != pageHeight) {
-                    log.debug("Stage dimensions have changed [{},{}] -> [{},{}]", lastSize.getWidth(), lastSize.getHeight(), pageWidth, pageHeight);
-                    lastSize = new Dimension2D(pageWidth, pageHeight);
-                    changed = true;
-                } else {
-                    log.debug("Stage dimensions have stabilized");
-                    changed = false;
-                }
-
-                snap.playFromStart();
-            }
-        });
-
-        resize.playFromStart();
+        snap.playFromStart();
     }
 
     //listens for load progress
@@ -207,6 +215,8 @@ public class WebApp extends Application {
         complete.set(false);
         thrown.set(null);
 
+        lastSize = new Dimension2D(0, 0);
+
         //ensure JavaFX has started before we run
         if (!started.get()) {
             throw new IOException("JavaFX has not been started");
@@ -220,8 +230,8 @@ public class WebApp extends Application {
                     pageHeight = model.getWebHeight();
                     pageZoom = model.getZoom();
 
-                    webView.setMinSize(100, 100);
-                    webView.setPrefSize(100, 100);
+                    webView.setMinSize(pageWidth, pageHeight);
+                    webView.setPrefSize(pageWidth, pageHeight);
                     webView.autosize();
 
                     stage.show(); //FIXME - will not capture without showing stage

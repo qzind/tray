@@ -32,7 +32,7 @@ public class ConfirmDialog extends JDialog {
         super(owner, title, true);
         this.iconCache = iconCache;
         this.approved = false;
-        this.setIconImage(iconCache.getImage(IconCache.Icon.DEFAULT_ICON));
+        this.setIconImages(iconCache.getImages(IconCache.Icon.TASK_BAR_ICON));
         initComponents();
     }
 

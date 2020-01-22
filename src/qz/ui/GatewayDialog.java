@@ -46,7 +46,7 @@ public class GatewayDialog extends JDialog implements Themeable {
         this.iconCache = iconCache;
         this.description = "";
         this.approved = false;
-        this.setIconImage(iconCache.getImage(IconCache.Icon.DEFAULT_ICON));
+        this.setIconImages(iconCache.getImages(IconCache.Icon.TASK_BAR_ICON));
         initComponents();
         refreshComponents();
     }

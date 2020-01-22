@@ -38,8 +38,6 @@ public class LogDialog extends BasicDialog {
     }
 
     public void initComponents() {
-        setIconImage(getImage(IconCache.Icon.LOG_ICON));
-
         LinkLabel logDirLabel = new LinkLabel(FileUtilities.USER_DIR + File.separator);
         logDirLabel.setLinkLocation(new File(FileUtilities.USER_DIR + File.separator));
         setHeader(logDirLabel);

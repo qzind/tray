@@ -42,7 +42,7 @@ public class BasicDialog extends JDialog implements Themeable {
     }
 
     public void initBasicComponents() {
-        setIconImage(iconCache.getImage(IconCache.Icon.DEFAULT_ICON));
+        setIconImages(iconCache.getImages(IconCache.Icon.TASK_BAR_ICON));
         mainPanel = new JPanel();
         mainPanel.setBorder(new EmptyBorder(Constants.BORDER_PADDING, Constants.BORDER_PADDING, Constants.BORDER_PADDING, Constants.BORDER_PADDING));
 

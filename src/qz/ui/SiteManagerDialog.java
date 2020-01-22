@@ -62,7 +62,6 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         blockList = new ContainerList<>();
         blockList.setTag(Constants.BLOCK_FILE);
 
-        setIconImage(getImage(IconCache.Icon.SAVED_ICON));
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitPane.setResizeWeight(0.5);
 

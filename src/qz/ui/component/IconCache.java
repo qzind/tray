@@ -23,7 +23,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
+import java.util.*;
+import java.util.List;
 
 /**
  * Created by Tres Finocchiaro on 12/12/2014.
@@ -45,6 +46,8 @@ public class IconCache {
         DANGER_ICON("qz-danger.png", "qz-danger-20.png", "qz-danger-24.png", "qz-danger-32.png", "qz-danger-40.png", "qz-danger-48.png"),
         MASK_ICON("qz-mask.png", "qz-mask-20.png", "qz-mask-24.png", "qz-mask-32.png", "qz-mask-40.png", "qz-mask-48.png"),
 
+        // Task bar icons - Appending "#" allows hashing under unique id
+        TASK_BAR_ICON("qz-default.png#", "qz-default-20.png#", "qz-default-24.png#", "qz-default-32.png#", "qz-default-40.png#", "qz-default-48.png#"),
 
         // Menu Item icons
         EXIT_ICON("qz-exit.png"),
@@ -188,6 +191,14 @@ public class IconCache {
         return images.get(i.getId());
     }
 
+    public List<BufferedImage> getImages(Icon i) {
+        ArrayList<BufferedImage> icons = new ArrayList<>();
+        for(String id : i.getIds()) {
+            icons.add(images.get(id));
+        }
+        return icons;
+    }
+
     public BufferedImage getImage(Icon i, Dimension size) {
         return images.get(i.getId(size));
     }
@@ -211,7 +222,7 @@ public class IconCache {
      */
     private static BufferedImage getImageResource(String imagePath) {
         try {
-            InputStream is = IconCache.class.getResourceAsStream(imagePath);
+            InputStream is = IconCache.class.getResourceAsStream(imagePath.replaceAll("#", ""));
             if (is != null) {
                 return ImageIO.read(is);
             } else {

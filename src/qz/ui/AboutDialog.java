@@ -56,8 +56,6 @@ public class AboutDialog extends BasicDialog implements Themeable {
     }
 
     public void initComponents() {
-        setIconImage(getImage(IconCache.Icon.ABOUT_ICON));
-
         JLabel lblAbout = new EmLabel(Constants.ABOUT_TITLE, 3);
 
         JPanel infoPanel = new JPanel();

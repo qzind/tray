@@ -3,8 +3,6 @@ package qz.utils;
 import jssc.SerialPort;
 import jssc.SerialPortException;
 import jssc.SerialPortList;
-import org.apache.commons.codec.binary.StringUtils;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -17,7 +15,6 @@ import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
 import qz.ws.StreamEvent;
 
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,10 +32,6 @@ public class SerialUtilities {
                                                                   SerialPort.BAUDRATE_38400, SerialPort.BAUDRATE_57600,
                                                                   SerialPort.BAUDRATE_115200, SerialPort.BAUDRATE_128000,
                                                                   SerialPort.BAUDRATE_256000);
-
-    public enum SerialDataType {
-        PLAIN, FILE
-    }
 
 
     /**
@@ -60,38 +53,6 @@ public class SerialUtilities {
         }
 
         return portJSON;
-    }
-
-    public static SerialDataType getDataTypeJSON(JSONObject data) {
-        if (data != null && !data.isNull("type")) {
-            try {
-                return SerialDataType.valueOf(data.getString("type"));
-            }
-            catch(JSONException e) {
-                log.warn("Cannot read {} as a value for data type, using default", data.opt("type"));
-            }
-        }
-
-        return SerialDataType.PLAIN;
-    }
-
-
-    /**
-     * Turn a string into a character byte array.
-     * First attempting to take the entire string as a character literal (for non-printable unicode).
-     */
-    public static byte[] characterBytes(String convert, Charset charset) {
-        if (convert.length() > 2) {
-            try {
-                //try to interpret entire string as single char representation (such as "\u0000" or "0xFFFF")
-                char literal = (char)Integer.parseInt(convert.substring(2), 16);
-                return StringUtils.getBytesUtf8(String.valueOf(literal));
-            }
-            catch(NumberFormatException ignore) {}
-        }
-
-        //try escaping string using Apache (to get strings like "\r" as characters)
-        return StringEscapeUtils.unescapeJava(convert).getBytes(charset);
     }
 
 

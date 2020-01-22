@@ -1354,7 +1354,7 @@ var qz = (function() {
              *
              * @param {string} port An open serial port to send data.
              * @param {string|Array<string>|Object} data Data to be sent to the serial device.
-             *  @param {string} [data.type='PLAIN'] Valid values <code>[FILE | PLAIN | HEX?? | BASE64??]</code>
+             *  @param {string} [data.type='PLAIN'] Valid values <code>[FILE | PLAIN | HEX | BASE64]</code>
              *  @param {string|Array<string>} data.data Data to be sent to the serial device.
              * @param {Object} options Serial port configuration updates. See <code>qz.serial.openPort</code> `options` docs for available values.
              *     For best performance, it is recommended to only set these values on the port open call.
@@ -1372,6 +1372,11 @@ var qz = (function() {
                         type: "PLAIN"
                     }
                 }
+
+                if (data.type && data.type.toUpperCase() == "FILE") {
+                    data.data = _qz.tools.absolute(data.data);
+                }
+
                 var params = {
                     port: port,
                     data: data,
@@ -1510,6 +1515,7 @@ var qz = (function() {
              *  @param deviceInfo.productId Hex string of USB device's product ID.
              *  @param deviceInfo.endpoint Hex string of endpoint on the claimed interface for the USB device.
              *  @param deviceInfo.data Bytes to send over specified endpoint.
+             *  @param {string} [deviceInfo.type='PLAIN'] Valid values <code>[FILE | PLAIN | HEX | BASE64]</code>
              * @returns {Promise<null|Error>}
              *
              * @memberof qz.usb
@@ -1523,6 +1529,16 @@ var qz = (function() {
                         endpoint: arguments[2],
                         data: arguments[3]
                     };
+                }
+                if (typeof deviceInfo.data !== 'object') {
+                    deviceInfo.data = {
+                        data: deviceInfo.data,
+                        type: "PLAIN"
+                    }
+                }
+
+                if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
+                    deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
                 }
 
                 return _qz.websocket.dataPromise('usb.sendData', deviceInfo);
@@ -1742,6 +1758,7 @@ var qz = (function() {
              *  @param deviceInfo.endpoint=0x00 First byte of the data packet signifying the HID report ID.
              *                             Must be 0x00 for devices only supporting a single report.
              *  @param deviceInfo.reportId=0x00 Alias for <code>deviceInfo.endpoint</code>. Not used if endpoint is provided.
+             *  @param {string} [deviceInfo.type='PLAIN'] Valid values <code>[FILE | PLAIN | HEX | BASE64]</code>
              * @returns {Promise<null|Error>}
              * @since 2.0.1
              *
@@ -1756,6 +1773,16 @@ var qz = (function() {
                         data: arguments[2],
                         endpoint: arguments[3]
                     };
+                }
+                if (typeof deviceInfo.data !== 'object') {
+                    deviceInfo.data = {
+                        data: deviceInfo.data,
+                        type: "PLAIN"
+                    }
+                }
+
+                if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
+                    deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
                 }
 
                 return _qz.websocket.dataPromise('hid.sendData', deviceInfo);

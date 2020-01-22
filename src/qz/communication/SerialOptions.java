@@ -8,6 +8,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.ByteUtilities;
+import qz.utils.DeviceUtilities;
 import qz.utils.LoggerUtilities;
 import qz.utils.SerialUtilities;
 
@@ -82,13 +83,13 @@ public class SerialOptions {
                         JSONArray startBits = respOpts.getJSONArray("start");
                         ArrayList<Byte> bytes = new ArrayList<>();
                         for(int i = 0; i < startBits.length(); i++) {
-                            byte[] charByte = SerialUtilities.characterBytes(startBits.getString(i), responseFormat.encoding);
+                            byte[] charByte = DeviceUtilities.characterBytes(startBits.getString(i), responseFormat.encoding);
                             for(byte b : charByte) { bytes.add(b); }
                         }
                         responseFormat.boundStart = ArrayUtils.toPrimitive(bytes.toArray(new Byte[0]));
                     }
                     catch(JSONException e) {
-                        try { responseFormat.boundStart = SerialUtilities.characterBytes(respOpts.getString("start"), responseFormat.encoding); }
+                        try { responseFormat.boundStart = DeviceUtilities.characterBytes(respOpts.getString("start"), responseFormat.encoding); }
                         catch(JSONException e2) { LoggerUtilities.optionWarn(log, "string", "start", respOpts.opt("start")); }
                     }
                 }
@@ -99,7 +100,7 @@ public class SerialOptions {
                 }
 
                 if (!respOpts.isNull("end")) {
-                    try { responseFormat.boundEnd = SerialUtilities.characterBytes(respOpts.getString("end"), responseFormat.encoding); }
+                    try { responseFormat.boundEnd = DeviceUtilities.characterBytes(respOpts.getString("end"), responseFormat.encoding); }
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "end", respOpts.opt("end")); }
 
                     if (responseFormat.boundStart == null || responseFormat.boundStart.length == 0) {
@@ -182,15 +183,15 @@ public class SerialOptions {
 
             // legacy start only supports string, not an array
             if (!serialOpts.isNull("start")) {
-                responseFormat.boundStart = SerialUtilities.characterBytes(serialOpts.optString("start", DEFAULT_BEGIN), responseFormat.encoding);
+                responseFormat.boundStart = DeviceUtilities.characterBytes(serialOpts.optString("start", DEFAULT_BEGIN), responseFormat.encoding);
             } else {
-                responseFormat.boundStart = SerialUtilities.characterBytes(DEFAULT_BEGIN, responseFormat.encoding);
+                responseFormat.boundStart = DeviceUtilities.characterBytes(DEFAULT_BEGIN, responseFormat.encoding);
             }
 
             if (!serialOpts.isNull("end")) {
-                responseFormat.boundEnd = SerialUtilities.characterBytes(serialOpts.optString("end", DEFAULT_END), responseFormat.encoding);
+                responseFormat.boundEnd = DeviceUtilities.characterBytes(serialOpts.optString("end", DEFAULT_END), responseFormat.encoding);
             } else {
-                responseFormat.boundEnd = SerialUtilities.characterBytes(DEFAULT_END, responseFormat.encoding);
+                responseFormat.boundEnd = DeviceUtilities.characterBytes(DEFAULT_END, responseFormat.encoding);
             }
 
             if (!serialOpts.isNull("width")) {

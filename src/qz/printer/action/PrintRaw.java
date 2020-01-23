@@ -72,7 +72,7 @@ public class PrintRaw implements PrintProcessor {
     }
 
     private byte[] getBytes(String str, String encoding) throws ArabicShapingException, IOException {
-        switch(encoding.toLowerCase()) {
+        switch(encoding.toLowerCase(Locale.ENGLISH)) {
             case "ibm864":
             case "cp864":
             case "csibm864":
@@ -206,7 +206,7 @@ public class PrintRaw implements PrintProcessor {
         if (density == -1) {
             String dStr = opt.optString("dotDensity", null);
             if (dStr != null && !dStr.isEmpty()) {
-                switch(dStr.toLowerCase()) {
+                switch(dStr.toLowerCase(Locale.ENGLISH)) {
                     case "single": density = 32; break;
                     case "double": density = 33; break;
                     case "triple": density = 39; break;

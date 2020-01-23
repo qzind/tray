@@ -79,7 +79,7 @@ public class CupsPrinterMap extends NativePrinterMap {
                         // Parse printer resolution
                         try {
                             int density = Integer.parseInt(line.split("x")[0].replaceAll("\\D+", ""));
-                            int type = line.toLowerCase().contains("dpi")? PrinterResolution.DPI:PrinterResolution.DPCM;
+                            int type = line.toLowerCase(Locale.ENGLISH).contains("dpi")? PrinterResolution.DPI:PrinterResolution.DPCM;
                             printer.setResolution(new PrinterResolution(density, density, type));
                         } catch(NumberFormatException e) {
                             log.warn("Could not parse density from \"{}\"", line);

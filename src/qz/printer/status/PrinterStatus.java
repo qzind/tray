@@ -1,5 +1,7 @@
 package qz.printer.status;
 
+import java.util.Locale;
+
 import static qz.printer.status.PrinterStatusType.*;
 
 /**
@@ -43,7 +45,7 @@ public class PrinterStatus {
     public static PrinterStatus getFromCupsString(String reason, String issuingPrinterName) {
         if (reason == null) { return null; }
 
-        reason = reason.toLowerCase().replaceAll("-(error|warning|report)", "");
+        reason = reason.toLowerCase(Locale.ENGLISH).replaceAll("-(error|warning|report)", "");
 
         PrinterStatusType statusType = cupsLookupTable.get(reason);
         if (statusType == null) { statusType = UNKNOWN_STATUS; }

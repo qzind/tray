@@ -21,6 +21,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -211,7 +212,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         if (certificate != null && FileUtilities.deleteFromFile(certList.getTag().toString(), certificate.getCert().data())) {
             certList.remove(certificate);
         } else {
-            log.warn("Error removing {} from the list of {} sites", certificate, getSelectedTabName().toLowerCase());
+            log.warn("Error removing {} from the list of {} sites", certificate, getSelectedTabName().toLowerCase(Locale.ENGLISH));
         }
 
         return this;

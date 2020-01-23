@@ -31,6 +31,7 @@ import java.io.Reader;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.concurrent.Semaphore;
 
 
@@ -250,7 +251,7 @@ public class PrintSocketClient {
     private boolean validSignature(Certificate certificate, JSONObject message) throws JSONException {
         JSONObject copy = new JSONObject(message, new String[] {"call", "params", "timestamp"});
         String signature = message.optString("signature");
-        String algorithm = message.optString("signAlgorithm", "SHA1").toUpperCase();
+        String algorithm = message.optString("signAlgorithm", "SHA1").toUpperCase(Locale.ENGLISH);
 
         return certificate.isSignatureValid(Certificate.Algorithm.valueOf(algorithm), signature, copy.toString().replaceAll("\\\\/", "/"));
     }

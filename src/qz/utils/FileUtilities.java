@@ -126,7 +126,7 @@ public class FileUtilities {
         Path child = childFile.toPath().toAbsolutePath();
         Path parent = parentPath.toAbsolutePath();
         if(SystemUtilities.isWindows()) {
-            return child.toString().toLowerCase().startsWith(parent.toString().toLowerCase());
+            return child.toString().toLowerCase(Locale.ENGLISH).startsWith(parent.toString().toLowerCase(Locale.ENGLISH));
         }
         return child.toString().startsWith(parent.toString());
     }

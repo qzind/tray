@@ -15,6 +15,7 @@ import qz.common.Constants;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Place for all raw static byte conversion functions.
@@ -87,7 +88,7 @@ public class ByteUtilities {
         if (upperCase) {
             return new String(hexChars);
         }
-        return new String(hexChars).toLowerCase();
+        return new String(hexChars).toLowerCase(Locale.ENGLISH);
     }
 
     /**

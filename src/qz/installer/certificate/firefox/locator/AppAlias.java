@@ -1,5 +1,7 @@
 package qz.installer.certificate.firefox.locator;
 
+import java.util.Locale;
+
 public enum AppAlias {
     // Tor Browser intentionally excluded; Tor's proxy blocks localhost connections
     FIREFOX(
@@ -23,7 +25,7 @@ public enum AppAlias {
     public boolean matches(AppLocator info) {
         if (info.getName() != null && !info.isBlacklisted()) {
             for (Alias alias : aliases) {
-                if (info.getName().toLowerCase().matches(alias.name.toLowerCase())) {
+                if (info.getName().toLowerCase(Locale.ENGLISH).matches(alias.name.toLowerCase(Locale.ENGLISH))) {
                     return true;
                 }
             }
@@ -37,7 +39,7 @@ public enum AppAlias {
         public String posix;
         public Alias(String name) {
             this.name = name;
-            this.posix = name.replaceAll(" ", "").toLowerCase();
+            this.posix = name.replaceAll(" ", "").toLowerCase(Locale.ENGLISH);
         }
         public Alias(String vendor, String name) {
             this(name);

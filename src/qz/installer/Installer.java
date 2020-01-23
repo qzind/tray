@@ -13,6 +13,7 @@ package qz.installer;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.auth.Certificate;
 import qz.installer.certificate.*;
 import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.utils.FileUtilities;
@@ -70,8 +71,6 @@ public abstract class Installer {
     public abstract Installer addSystemSettings();
     public abstract Installer removeSystemSettings();
     public abstract void spawn(List<String> args) throws Exception;
-
-    public abstract Installer addUserSettings();
 
     public abstract void setDestination(String destination);
     public abstract String getDestination();
@@ -236,5 +235,27 @@ public abstract class Installer {
         instance.remove(instance.find());
         // Firefox certs
         FirefoxCertificateInstaller.uninstall();
+    }
+
+    /**
+     * Add user-specific settings
+     * Note: See override usage for platform-specific tasks
+     */
+    public Installer addUserSettings() {
+        // Check for whitelisted certificates in <install>/whitelist/
+        Path whiteList = Paths.get(FileUtilities.getParentDirectory(SystemUtilities.getJarPath()), WHITELIST_CERT_DIR);
+        if(whiteList.toFile().exists() && whiteList.toFile().isDirectory()) {
+            for(File file : whiteList.toFile().listFiles()) {
+                try {
+                    Certificate cert = new Certificate(FileUtilities.readLocalFile(file.getPath()));
+                    if (!cert.isSaved()) {
+                        FileUtilities.addToCertList(ALLOW_FILE, file);
+                    }
+                } catch(Exception e) {
+                    log.warn("Could not add {} to {}", file, ALLOW_FILE, e);
+                }
+            }
+        }
+        return instance;
     }
 }

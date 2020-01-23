@@ -142,6 +142,7 @@ public class WindowsInstaller extends Installer {
         return this;
     }
 
+    @Override
     public Installer addUserSettings() {
         // Whitelist loopback for IE/Edge
         if(ShellUtilities.execute("CheckNetIsolation.exe", "LoopbackExempt", "-a", "-n=Microsoft.MicrosoftEdge_8wekyb3d8bbwe")) {
@@ -169,7 +170,7 @@ public class WindowsInstaller extends Installer {
         } catch(Exception e) {
             log.warn("An error occurred configuring the \"Local Intranet Zone\"; connections to \"localhost\" may fail", e);
         }
-        return this;
+        return super.addUserSettings();
     }
 
     public static String getDefaultDestination() {

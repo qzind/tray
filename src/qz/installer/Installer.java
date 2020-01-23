@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.Locale;
 
 import static qz.common.Constants.*;
 import static qz.installer.certificate.KeyPairWrapper.Type.CA;
@@ -54,7 +55,7 @@ public abstract class Installer {
         }
         @Override
         public String toString() {
-            return name().toLowerCase();
+            return name().toLowerCase(Locale.ENGLISH);
         }
     }
 

@@ -25,6 +25,7 @@ import javax.print.attribute.ResolutionSyntax;
 import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.PrinterName;
 import javax.print.attribute.standard.PrinterResolution;
+import java.util.Locale;
 
 public class PrintServiceMatcher {
     private static final Logger log = LoggerFactory.getLogger(PrintServiceMatcher.class);
@@ -57,14 +58,14 @@ public class PrintServiceMatcher {
         NativePrinter partial = null;
 
         log.debug("Searching for PrintService matching {}", printerSearch);
-        printerSearch = printerSearch.toLowerCase();
+        printerSearch = printerSearch.toLowerCase(Locale.ENGLISH);
 
         // Search services for matches
         for(NativePrinter printer : getNativePrinterList().values()) {
             if (printer.getName() == null) {
                 continue;
             }
-            String printerName = printer.getName().toLowerCase();
+            String printerName = printer.getName().toLowerCase(Locale.ENGLISH);
             if (printerName.equals(printerSearch)) {
                 exact = printer;
                 break;
@@ -82,7 +83,7 @@ public class PrintServiceMatcher {
                 // 1.9 compat: fallback for old style names
                 PrinterName name = printer.getLegacyName();
                 if (name == null || name.getValue() == null) { continue; }
-                printerName = name.getValue().toLowerCase();
+                printerName = name.getValue().toLowerCase(Locale.ENGLISH);
                 if (printerName.equals(printerSearch)) {
                     exact = printer;
                     continue;

@@ -19,6 +19,7 @@ import java.io.*;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -126,7 +127,7 @@ public class ShellUtilities {
                             return s.trim();
                         }
                     } else {
-                        if (s.toLowerCase().contains(search.toLowerCase().trim())) {
+                        if (s.toLowerCase(Locale.ENGLISH).contains(search.toLowerCase(Locale.ENGLISH).trim())) {
                             return s.trim();
                         }
                     }

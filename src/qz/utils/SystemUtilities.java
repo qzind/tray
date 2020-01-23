@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 
 import static com.sun.jna.platform.win32.WinReg.*;
 
@@ -35,7 +36,7 @@ import static com.sun.jna.platform.win32.WinReg.*;
 public class SystemUtilities {
 
     // Name of the os, i.e. "Windows XP", "Mac OS X"
-    private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
+    private static final String OS_NAME = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
     private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
 
     private static Boolean darkMode;

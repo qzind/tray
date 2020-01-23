@@ -17,6 +17,7 @@ import qz.ws.StreamEvent;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * @author Tres
@@ -124,7 +125,7 @@ public class SerialUtilities {
      * @return The passed flow control value as a {@code SerialPort} constant value if valid, or -1 if invalid;
      */
     public static int parseFlowControl(String control) {
-        control = control.trim().toLowerCase();
+        control = control.trim().toLowerCase(Locale.ENGLISH);
 
         switch(control) {
             case "auto":
@@ -168,7 +169,7 @@ public class SerialUtilities {
      * @return The passed parity value as a {@code SerialPort} constant value if valid, or -1 if invalid.
      */
     public static int parseParity(String parity) {
-        parity = parity.trim().toLowerCase();
+        parity = parity.trim().toLowerCase(Locale.ENGLISH);
 
         switch(parity) {
             case "auto":

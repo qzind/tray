@@ -106,7 +106,7 @@ public class PrintingUtilities {
             if (!data.isNull("flavor")) { return; } //flavor exists only in new version, no need to convert any data
 
             if (!data.isNull("format")) {
-                String format = data.getString("format").toUpperCase();
+                String format = data.getString("format").toUpperCase(Locale.ENGLISH);
                 if (Arrays.asList("BASE64", "FILE", "HEX", "PLAIN", "XML").contains(format)) {
                     data.put("flavor", format);
                     data.remove("format");
@@ -114,7 +114,7 @@ public class PrintingUtilities {
             }
 
             if (!data.isNull("type")) {
-                String type = data.getString("type").toUpperCase();
+                String type = data.getString("type").toUpperCase(Locale.ENGLISH);
                 if (Arrays.asList("HTML", "IMAGE", "PDF").contains(type)) {
                     data.put("type", "PIXEL");
                     data.put("format", type);

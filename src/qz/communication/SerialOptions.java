@@ -14,6 +14,7 @@ import qz.utils.SerialUtilities;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class SerialOptions {
 
@@ -130,7 +131,7 @@ public class SerialOptions {
                             }
 
                             if (!lengthOpts.isNull("endian")) {
-                                try { responseFormat.length.endian = ByteUtilities.Endian.valueOf(lengthOpts.getString("endian").toUpperCase()); }
+                                try { responseFormat.length.endian = ByteUtilities.Endian.valueOf(lengthOpts.getString("endian").toUpperCase(Locale.ENGLISH)); }
                                 catch(JSONException se) { LoggerUtilities.optionWarn(log, "string", "lengthBytes.endian", lengthOpts.opt("endian")); }
                             }
                         } else {

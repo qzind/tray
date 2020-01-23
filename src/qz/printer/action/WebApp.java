@@ -1,21 +1,18 @@
 package qz.printer.action;
 
-import javafx.animation.PauseTransition;
+import com.sun.javafx.tk.TKPulseListener;
+import com.sun.javafx.tk.Toolkit;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.geometry.Dimension2D;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.image.WritableImage;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 import org.joor.Reflect;
 import org.joor.ReflectException;
 import org.slf4j.Logger;
@@ -27,7 +24,8 @@ import org.w3c.dom.NodeList;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -40,9 +38,6 @@ public class WebApp extends Application {
 
     private static final Logger log = LoggerFactory.getLogger(WebApp.class);
 
-    private static final int SLEEP = 250;
-    private static final int TIMEOUT = 60; //total paused seconds before failing
-
     private static WebApp instance = null;
 
     private static Stage stage;
@@ -51,15 +46,12 @@ public class WebApp extends Application {
     private static double pageHeight;
     private static double pageZoom;
 
-    private static Dimension2D startSize;
-    private static Dimension2D lastSize = new Dimension2D(0, 0);
-    private static boolean changed = false;
+    private static CountDownLatch startupLatch;
+    private static CountDownLatch captureLatch;
 
-    private static final AtomicBoolean started = new AtomicBoolean(false);
-    private static final AtomicBoolean complete = new AtomicBoolean(false);
+    private static final AtomicReference<BufferedImage> capture = new AtomicReference<>();
     private static final AtomicReference<Throwable> thrown = new AtomicReference<>();
 
-    private static PauseTransition snap;
 
     //listens for a Succeeded state to activate image capture
     private static ChangeListener<Worker.State> stateListener = new ChangeListener<Worker.State>() {
@@ -81,63 +73,52 @@ public class WebApp extends Application {
                     base.getAttributes().setNamedItem(applied);
                 }
 
-                try {
-                    Reflect.on(webView).call("setZoom", pageZoom);
-                    log.trace("Zooming in by x{} for increased quality", pageZoom);
-                }
-                catch(ReflectException e) {
-                    log.warn("Unable zoom, using default quality");
-                    pageZoom = 1; //only zoom affects webView scaling
-                }
-
                 log.trace("Setting HTML page width to {}", (pageWidth * pageZoom));
                 webView.setMinWidth(pageWidth * pageZoom);
                 webView.setPrefWidth(pageWidth * pageZoom);
                 webView.autosize();
 
-                //we have to resize the width first, for responsive html, then calculate the best fit height
-                final PauseTransition resize = new PauseTransition(Duration.millis(100));
-                resize.setOnFinished(new EventHandler<ActionEvent>() {
-                    @Override
-                    public void handle(ActionEvent actionEvent) {
-                        // record starting dimensions (but only if they aren't already the target dimensions) to ensure resizing has occurred
-                        double sw = 0, sh = 0;
-                        if (webView.getWidth() != pageWidth * pageZoom) { sw = webView.getWidth();}
-                        if (webView.getHeight() != pageHeight * pageZoom) { sh = webView.getHeight();}
-                        startSize = new Dimension2D(sw, sh);
+                //width was resized earlier (for responsive html), then calculate the best fit height
+                if (pageHeight <= 0) {
+                    String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
+                    pageHeight = Double.parseDouble(heightText);
+                }
 
-                        adjustHeight();
+                log.trace("Setting HTML page height to {}", (pageHeight * pageZoom));
+                webView.setMinHeight(pageHeight * pageZoom);
+                webView.setPrefHeight(pageHeight * pageZoom);
+                webView.autosize();
+
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toolkit.getToolkit().addPostSceneTkPulseListener(new TKPulseListener() {
+                            @Override
+                            public void pulse() {
+                                try {
+                                    log.debug("Attempting image capture");
+
+                                    WritableImage snapshot = webView.snapshot(new SnapshotParameters(), null);
+                                    capture.set(SwingFXUtils.fromFXImage(snapshot, null));
+
+                                    captureLatch.countDown();
+                                }
+                                catch(Throwable t) {
+                                    thrown.set(t);
+                                    captureLatch.countDown();
+                                }
+                                finally {
+                                    stage.hide(); //hide stage so users won't have to manually close it
+                                }
+
+                                Toolkit.getToolkit().removePostSceneTkPulseListener(this);
+                            }
+                        });
                     }
                 });
-
-                resize.playFromStart();
             }
         }
     };
-
-    private static void adjustHeight() {
-        if (pageHeight <= 0) {
-            String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
-            pageHeight = Double.parseDouble(heightText);
-        }
-
-        log.trace("Setting HTML page height to {}", (pageHeight * pageZoom));
-        webView.setMinHeight(pageHeight * pageZoom);
-        webView.setPrefHeight(pageHeight * pageZoom);
-        webView.autosize();
-
-        if (lastSize.getWidth() != webView.getWidth() || lastSize.getHeight() != webView.getHeight()
-                || startSize.getWidth() == webView.getWidth() || startSize.getHeight() == webView.getHeight()) {
-            log.debug("Stage dimensions have changed [{},{}] -> [{},{}]", lastSize.getWidth(), lastSize.getHeight(), pageWidth, pageHeight);
-            lastSize = new Dimension2D(webView.getWidth(), webView.getHeight());
-            changed = true;
-        } else {
-            log.debug("Stage dimensions have stabilized");
-            changed = false;
-        }
-
-        snap.playFromStart();
-    }
 
     //listens for load progress
     private static ChangeListener<Number> workDoneListener = new ChangeListener<Number>() {
@@ -151,7 +132,10 @@ public class WebApp extends Application {
     private static ChangeListener<Throwable> exceptListener = new ChangeListener<Throwable>() {
         @Override
         public void changed(ObservableValue<? extends Throwable> obs, Throwable oldExc, Throwable newExc) {
-            if (newExc != null) { thrown.set(newExc); }
+            if (newExc != null) {
+                thrown.set(newExc);
+                captureLatch.countDown();
+            }
         }
     };
 
@@ -164,6 +148,8 @@ public class WebApp extends Application {
     /** Starts JavaFX thread if not already running */
     public static synchronized void initialize() throws IOException {
         if (instance == null) {
+            startupLatch = new CountDownLatch(1);
+
             new Thread() {
                 public void run() {
                     Application.launch(WebApp.class);
@@ -171,21 +157,21 @@ public class WebApp extends Application {
             }.start();
         }
 
-        for(int i = 0; i < (TIMEOUT * 1000); i += SLEEP) {
-            if (started.get()) { break; }
+        if (startupLatch.getCount() > 0) {
+            try {
+                log.trace("Waiting for JavaFX..");
 
-            log.trace("Waiting for JavaFX..");
-            try { Thread.sleep(SLEEP); } catch(Exception ignore) {}
-        }
-
-        if (!started.get()) {
-            throw new IOException("JavaFX did not start");
+                if (!startupLatch.await(1000, TimeUnit.MILLISECONDS)) {
+                    throw new IOException("JavaFX did not start");
+                }
+            }
+            catch(InterruptedException ignore) {}
         }
     }
 
     @Override
     public void start(Stage st) throws Exception {
-        started.set(true);
+        startupLatch.countDown();
         log.debug("Started JavaFX");
 
         webView = new WebView();
@@ -211,14 +197,13 @@ public class WebApp extends Application {
      * @return BufferedImage of the rendered html
      */
     public static synchronized BufferedImage capture(final WebAppModel model) throws Throwable {
-        final AtomicReference<BufferedImage> capture = new AtomicReference<>();
-        complete.set(false);
+        captureLatch = new CountDownLatch(1);
+
+        capture.set(null);
         thrown.set(null);
 
-        lastSize = new Dimension2D(0, 0);
-
         //ensure JavaFX has started before we run
-        if (!started.get()) {
+        if (startupLatch.getCount() > 0) {
             throw new IOException("JavaFX has not been started");
         }
 
@@ -230,40 +215,21 @@ public class WebApp extends Application {
                     pageHeight = model.getWebHeight();
                     pageZoom = model.getZoom();
 
-                    webView.setMinSize(pageWidth, pageHeight);
-                    webView.setPrefSize(pageWidth, pageHeight);
+                    webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
+                    webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
                     webView.autosize();
+
+                    try {
+                        Reflect.on(webView).call("setZoom", pageZoom);
+                        log.trace("Zooming in by x{} for increased quality", pageZoom);
+                    }
+                    catch(ReflectException e) {
+                        log.warn("Unable zoom, using default quality");
+                        pageZoom = 1; //only zoom affects webView scaling
+                    }
 
                     stage.show(); //FIXME - will not capture without showing stage
                     stage.toBack();
-
-                    //ran when engine reaches SUCCEEDED state, takes snapshot of loaded html
-                    snap = new PauseTransition(Duration.millis(100));
-                    snap.setOnFinished(new EventHandler<ActionEvent>() {
-                        @Override
-                        public void handle(ActionEvent actionEvent) {
-                            if (changed) {
-                                log.debug("Waiting for stage dimensions to stabilize");
-                                adjustHeight();
-                                return;
-                            }
-
-                            try {
-                                log.debug("Attempting image capture");
-
-                                WritableImage snapshot = webView.snapshot(new SnapshotParameters(), null);
-                                capture.set(SwingFXUtils.fromFXImage(snapshot, null));
-
-                                complete.set(true);
-                            }
-                            catch(Throwable t) {
-                                thrown.set(t);
-                            }
-                            finally {
-                                stage.hide(); //hide stage so users won't have to manually close it
-                            }
-                        }
-                    });
 
                     //actually begin loading the html
                     if (model.isPlainText()) {
@@ -274,17 +240,15 @@ public class WebApp extends Application {
                 }
                 catch(Throwable t) {
                     thrown.set(t);
+                    captureLatch.countDown();
                 }
             }
         });
 
-        Throwable t = null;
-        while(!complete.get() && (t = thrown.get()) == null) {
-            log.trace("Waiting on capture..");
-            try { Thread.sleep(100); } catch(Exception ignore) {}
-        }
+        log.trace("Waiting on capture..");
+        captureLatch.await(); //should be released when either the capture or thrown variables are set
 
-        if (t != null) { throw t; }
+        if (thrown.get() != null) { throw thrown.get(); }
 
         return capture.get();
     }

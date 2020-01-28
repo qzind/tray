@@ -66,10 +66,6 @@ public class LinuxInstaller extends Installer {
         }
     }
 
-    public Installer addUserSettings() {
-        return this;
-    }
-
     public Installer removeLegacyStartup() {
         log.info("Removing legacy autostart entries for all users matching {} or {}", ABOUT_TITLE, PROPS_FILE);
         // assume users are in /home

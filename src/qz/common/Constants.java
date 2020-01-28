@@ -67,6 +67,7 @@ public class Constants {
     public static final String BLOCKED = "Blocked";
 
     public static final String OVERRIDE_CERT = "override.crt";
+    public static final String WHITELIST_CERT_DIR = "whitelist";
 
     public static final long VALID_SIGNING_PERIOD = 15 * 60 * 1000; //millis
     public static final int EXPIRY_WARN = 30;   // days

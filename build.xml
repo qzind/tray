@@ -4,7 +4,7 @@
     <property file="ant/project.properties"/>
     <import file="ant/javafx.xml"/>
 
-    <target name="distribute" depends="init,clean,sign-jar,download-javafx,override-authcert,include-assets">
+    <target name="distribute" depends="init,clean,sign-jar,download-javafx,override-authcert,include-assets,whitelist-certs">
         <echo message="Process complete" />
     </target>
 
@@ -166,6 +166,15 @@
         <!-- See also: Constants.OVERRIDE_CERT -->
         <copy file="${authcert.use}" tofile="${dist.dir}/override.crt" overwrite="true"></copy>
         <property name="build.type" value="-community"/>
+    </target>
+
+    <!-- install certs to "whitelist" directory for whitelabel builds -->
+    <target name="whitelist-certs" depends="include-assets" if="whitelist.use">
+        <echo>Copying certificate(s) to dist/whitelist: ${whitelist.use}</echo>
+        <!-- See also: Constants.WHITELIST_CERT_DIR -->
+
+        <mkdir dir="${dist.dir}/whitelist"/>
+        <copy file="${whitelist.use}" todir="${dist.dir}/whitelist" overwrite="true"/>
     </target>
 
     <target name="include-assets" depends="init,get-version" unless="dist.minimal">

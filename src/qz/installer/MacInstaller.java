@@ -58,8 +58,6 @@ public class MacInstaller extends Installer {
         return destination;
     }
 
-    public Installer addUserSettings() { return this; }
-
     public Installer addSystemSettings() { return this; }
     public Installer removeSystemSettings() {
         // Remove startup entry

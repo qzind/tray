@@ -1,5 +1,8 @@
 package qz.communication;
 
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOCase;
+import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
@@ -8,6 +11,7 @@ import qz.ws.StreamEvent;
 
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
+import java.util.ArrayList;
 
 public class FileIO {
     public static final String SANDBOX_DATA_SUFFIX = "sandbox";
@@ -30,10 +34,33 @@ public class FileIO {
     private long bytes;
     private int lines;
 
+    private IOCase caseSensitivity;
+
+    private ArrayList<String> inclusions;
+    private ArrayList<String> exclusions;
+
     public FileIO(Session session, JSONObject params, Path originalPath, Path absolutePath) throws JSONException {
         this.session = session;
         this.originalPath = originalPath;
         this.absolutePath = absolutePath;
+
+        inclusions = new ArrayList<>();
+        exclusions = new ArrayList<>();
+
+        JSONArray inc = params.optJSONArray("include");
+        JSONArray exc = params.optJSONArray("exclude");
+        caseSensitivity = params.optBoolean("ignoreCase", true) ? IOCase.INSENSITIVE : IOCase.SENSITIVE;
+
+        if (inc != null) {
+            for (int i = 0; i < inc.length(); i++) {
+                inclusions.add(inc.getString(i));
+            }
+        }
+        if (exc != null) {
+            for(int i = 0; i < exc.length(); i++) {
+                exclusions.add(exc.getString(i));
+            }
+        }
 
         JSONObject options = params.optJSONObject("listener");
         if (options != null) {
@@ -48,6 +75,22 @@ public class FileIO {
             lines = options.optInt("lines", readType == ReadType.LINES? FILE_LISTENER_DEFAULT_LINES:-1);
             reversed = options.optBoolean("reverse", readType == ReadType.LINES);
         }
+    }
+
+    private boolean isMatch(String fileName) {
+        boolean match = false;
+        if (inclusions.size() == 0) match = true;
+        for (int i = 0; i < inclusions.size(); i++) {
+            if (match) break;
+            match = FilenameUtils.wildcardMatch(fileName, inclusions.get(i), caseSensitivity);
+        }
+
+        for (int i = 0; i < exclusions.size(); i++) {
+            if (!match) break;
+            match = !FilenameUtils.wildcardMatch(fileName, exclusions.get(i), caseSensitivity);
+        }
+
+        return match;
     }
 
     public boolean returnsContents() {
@@ -87,6 +130,8 @@ public class FileIO {
     }
 
     public void fileChanged(String fileName, String type, String fileData) {
+        if (!isMatch(fileName)) return;
+
         StreamEvent evt = new StreamEvent(StreamEvent.Stream.FILE, StreamEvent.Type.ACTION)
                 .withData("file", getOriginalPath().resolve(fileName))
                 .withData("eventType", type);

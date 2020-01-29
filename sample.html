@@ -1014,87 +1014,110 @@
                 <div class="row" style="margin-top: 1em;">
                     <div class="col-md-12">
                         <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <h4 class="panel-title">Options</h4>
-                            </div>
                             <div class="panel-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label for="fileLocation">
-                                                File / Directory Path
-                                            </label>
-                                            <input type="text" id="fileLocation" class="form-control" />
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="fileData">Data To Write</label>
-                                            <textarea id="fileData" rows="5" style="resize:vertical" class="form-control"></textarea>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group form-inline">
-                                            <label for="fileShared">
-                                                Shared
-                                            </label>
-                                            <input type="checkbox" id="fileShared" class="pull-right" />
-                                        </div>
-                                        <div class="form-group form-inline">
-                                            <label for="fileSandbox" data-toggle="tooltip">
-                                                Sandbox
-                                            </label>
-                                            <input checked type="checkbox" id="fileSandbox" class="pull-right" />
-                                        </div>
-                                        <div class="form-group form-inline">
-                                            <label for="fileAppend">
-                                                Append Data
-                                            </label>
-                                            <input type="checkbox" id="fileAppend" class="pull-right" />
-                                        </div>
-
-                                        <div class="form-group form-inline">
-                                            <label for="fileListenerData">
-                                                Listener Data
-                                            </label>
-                                            <input type="checkbox" id="fileListenerData" class="pull-right" onclick="checkGroupActive('fileListenerData', 'fileTriggersGroup')" />
-                                        </div>
-                                        <div class="inline" id="fileTriggersGroup">
-                                            <div class="form-group form-inline">
-                                                <label>
-                                                    Read direction
+                                <fieldset> 
+                                    <legend>Options</legend>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="fileLocation">
+                                                    File / Directory Path
                                                 </label>
-                                                <div>
-                                                    <label>
-                                                        <input type="radio" name="fileDir" id="fileDirEnd" value="end" />
-                                                        End
-                                                    </label>
-                                                    <label>
-                                                        <input type="radio" name="fileDir" id="fileDirStart" value="begin" />
-                                                        Start
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="form-group form-inline">
-                                                <label>
-                                                    Truncate
-                                                </label>
-                                                <div>
-                                                    <label>
-                                                        <input type="radio" name="fileTruncate" id="fileTruncateLines" value="lines" />
-                                                        Lines
-                                                    </label>
-                                                    <label>
-                                                        <input type="radio" name="fileTruncate" id="fileTruncateBytes" value="bytes" />
-                                                        Bytes
-                                                    </label>
-                                                </div>
+                                                <input type="text" id="fileLocation" class="form-control" />
                                             </div>
                                             <div class="form-group">
-                                                <label for="fileLength">Truncate length</label>
-                                                <input type="number" id="fileLength" class="form-control pull-right" />
+                                                <label for="fileData">Data To Write</label>
+                                                <textarea id="fileData" rows="11" style="resize:vertical" class="form-control"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group form-inline">
+                                                <label for="fileShared">
+                                                    Shared
+                                                </label>
+                                                <input type="checkbox" id="fileShared" class="pull-right" />
+                                            </div>
+                                            <div class="form-group form-inline">
+                                                <label for="fileSandbox" data-toggle="tooltip">
+                                                    Sandbox
+                                                </label>
+                                                <input checked type="checkbox" id="fileSandbox" class="pull-right" />
+                                            </div>
+                                            <div class="form-group form-inline">
+                                                <label for="fileAppend">
+                                                    Append Data
+                                                </label>
+                                                <input type="checkbox" id="fileAppend" class="pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="fileListenerData">
+                                                    Listener Data
+                                                </label>
+                                                <input type="checkbox" id="fileListenerData" class="pull-right" onclick="checkGroupActive('fileListenerData', 'fileTriggersGroup')" />
+                                            </div>
+                                            <div class="inline" id="fileTriggersGroup">
+                                                <div class="form-group form-inline">
+                                                    <label>
+                                                        Read direction
+                                                    </label>
+                                                    <div>
+                                                        <label>
+                                                            <input type="radio" name="fileDir" id="fileDirEnd" value="end" />
+                                                            End
+                                                        </label>
+                                                        <label>
+                                                            <input type="radio" name="fileDir" id="fileDirStart" value="begin" />
+                                                            Start
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group form-inline">
+                                                    <label>
+                                                        Truncate
+                                                    </label>
+                                                    <div>
+                                                        <label>
+                                                            <input type="radio" name="fileTruncate" id="fileTruncateLines" value="lines" />
+                                                            Lines
+                                                        </label>
+                                                        <label>
+                                                            <input type="radio" name="fileTruncate" id="fileTruncateBytes" value="bytes" />
+                                                            Bytes
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="fileLength">Truncate length</label>
+                                                    <input type="number" id="fileLength" class="form-control pull-right" />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </fieldset> 
+                                <hr/>
+                                
+                                <fieldset>    
+                                    <legend>Filter Rules</legend>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group" id="inclusionsList">
+                                                <label for="fileLength">Inlude</label>
+                                                <input type="text" class="form-control pull-right" />
+                                                <input type="text" class="form-control pull-right" />
+                                                <input type="text" class="form-control pull-right" />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group" id="exclusionsList">
+                                                <label for="fileLength">Exclude</label>
+                                                <input type="text" class="form-control pull-right" />
+                                                <input type="text" class="form-control pull-right" />
+                                                <input type="text" class="form-control pull-right" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </fieldset>
                                 <hr />
                                 <div class="row">
                                     <div class="col-md-12">
@@ -2156,6 +2179,9 @@
         var params = {
             sandbox: $("#fileSandbox").prop("checked"),
             shared: $("#fileShared").prop("checked"),
+            include: [],
+            exclude: [],
+            ignoreCase: true,
             listener: {}
         };
 
@@ -2168,6 +2194,14 @@
             } else {
                 params.listener.bytes = len;
             }
+        }
+
+
+        for (var i = 1; i < 4; i++) {
+            var inc = $("#inclusionsList").children().eq(i).val();
+            var enc = $("#exclusionsList").children().eq(i).val();
+            if (inc && inc.trim()) params.include.push(inc);
+            if (enc && enc.trim()) params.exclude.push(enc);
         }
 
         qz.file.startListening($("#fileLocation").val(), params).then(function() {

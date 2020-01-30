@@ -1031,13 +1031,15 @@
                                             <textarea id="fileData" rows="5" style="resize:vertical" class="form-control"></textarea>
                                         </div>
                                         <div class="form-group">
-                                            <label for="includePattern" class="tip" data-toggle="tooltip" title="Wildcards supported, see documentation">
+                                            <label for="includePattern" class="tip" data-toggle="tooltip" title="File pattern to match when listening for file events (e.g. *.txt)">
                                                 Include File Pattern
                                             </label>
                                             <input type="text" id="includePattern" class="form-control pull-right" />
                                         </div>
                                         <div class="form-group">
-                                            <label for="excludePattern">Exclude File Pattern</label>
+                                            <label for="excludePattern" class="tip" data-toggle="tooltip" title="File pattern to ignore when listening for file events (e.g. *.tmp) ">
+                                                Exclude File Pattern
+                                            </label>
                                             <input type="text" id="excludePattern" class="form-control pull-right" />
                                         </div>
                                     </div>
@@ -2166,8 +2168,8 @@
         var params = {
             sandbox: $("#fileSandbox").prop("checked"),
             shared: $("#fileShared").prop("checked"),
-            include: [],
-            exclude: [],
+            include: $("#includePattern").val() == "" ? [] : $("#includePattern").val(),
+            exclude: $("#excludePattern").val() == "" ? [] : $("#excludePattern").val(),
             ignoreCase: true,
             listener: {}
         };
@@ -2182,11 +2184,6 @@
                 params.listener.bytes = len;
             }
         }
-
-        var inc = $("#includePattern").val();
-        var enc = $("#excludePattern").val();
-        if (inc && inc.trim()) params.include.push(inc);
-        if (enc && enc.trim()) params.exclude.push(enc);
 
         qz.file.startListening($("#fileLocation").val(), params).then(function() {
             displayMessage("Started listening for <strong><code>" + ($("#fileLocation").val() || "./") + "</code></strong> events");

@@ -78,18 +78,22 @@ public class FileIO {
     }
 
     private boolean isMatch(String fileName) {
-        boolean match = false;
-        if (inclusions.size() == 0) match = true;
-        for (int i = 0; i < inclusions.size(); i++) {
-            if (match) break;
-            match = FilenameUtils.wildcardMatch(fileName, inclusions.get(i), caseSensitivity);
+        boolean match = inclusions.isEmpty();
+        for (String inclusion : inclusions) {
+            if(FilenameUtils.wildcardMatch(fileName, inclusion, caseSensitivity)) {
+                match = true;
+                break;
+            }
         }
 
-        for (int i = 0; i < exclusions.size(); i++) {
-            if (!match) break;
-            match = !FilenameUtils.wildcardMatch(fileName, exclusions.get(i), caseSensitivity);
+        if(match) {
+            for(String exclusion : exclusions) {
+                if (FilenameUtils.wildcardMatch(fileName, exclusion, caseSensitivity)) {
+                    match = false;
+                    break;
+                }
+            }
         }
-
         return match;
     }
 

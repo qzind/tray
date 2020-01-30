@@ -1973,6 +1973,9 @@ var qz = (function() {
              *   @param {number} [params.listener.bytes=-1] Number of bytes to return or -1 for all
              *   @param {number} [params.listener.lines=-1] Number of lines to return or -1 for all
              *   @param {boolean} [params.listener.reverse] Controls whether data should be returned from the bottom of the file.  Default value is true for line mode and false for byte mode.
+             *   @param {string|Array<string>} [params.include] File patterns to match.  Blank values will be ignored.
+             *   @param {string|Array<string>} [params.exclude] File patterns to exclude.  Blank values will be ignored.  Takes priority over <code>params.include</code>.
+             *   @param {boolean) [params.ignoreCase=true] Whether <code>params.include</code> or <code>params.exclude</code> are case-sensitive.
              * @returns {Promise<null|Error>}
              * @since 2.1.0
              *
@@ -1981,6 +1984,12 @@ var qz = (function() {
              * @memberof qz.file
              */
             startListening: function(path, params) {
+                if (params && typeof params.include !== 'undefined' && !Array.isArray(params.include)) {
+                     params.include = [params.include];
+                }
+                if (params && typeof params.exclude !== 'undefined' && !Array.isArray(params.exclude)) {
+                    params.exclude = [params.exclude];
+                }
                 var param = _qz.tools.extend({ path: path }, params);
                 return _qz.websocket.dataPromise('file.startListening', param);
             },

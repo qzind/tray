@@ -486,6 +486,40 @@
                                                     <input type="number" step="any" id="pxlSizeHeight" class="form-control pull-right" />
                                                 </div>
                                             </div>
+
+                                            <div class="form-group">
+                                                <label class="inline">Bounds</label>
+                                                (
+                                                <label for="pxlBoundsActive" class="inline">Enable:</label>
+                                                <input type="checkbox" id="pxlBoundsActive" onclick="checkGroupActive('pxlBoundsActive', 'pxlBoundsGroup');" />
+                                                )
+                                            </div>
+                                            <div class="inline" id="pxlBoundsGroup">
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlBoundX" class="tip" data-toggle="tooltip" title="In relation to units specified">
+                                                        &nbsp; X:
+                                                    </label>
+                                                    <input type="number" step="any" id="pxlBoundX" class="form-control pull-right" />
+                                                </div>
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlBoundY" class="tip" data-toggle="tooltip" title="In relation to units specified">
+                                                        &nbsp; Y:
+                                                    </label>
+                                                    <input type="number" step="any" id="pxlBoundY" class="form-control pull-right" />
+                                                </div>
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlBoundWidth" class="tip" data-toggle="tooltip" title="In relation to units specified">
+                                                        &nbsp; Width:
+                                                    </label>
+                                                    <input type="number" step="any" id="pxlBoundWidth" class="form-control pull-right" />
+                                                </div>
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlBoundHeight" class="tip" data-toggle="tooltip" title="In relation to units specified">
+                                                        &nbsp; Height:
+                                                    </label>
+                                                    <input type="number" step="any" id="pxlBoundHeight" class="form-control pull-right" />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </fieldset>
@@ -2242,6 +2276,13 @@
         $("#pxlSizeActive").prop('checked', false);
         $("#pxlSizeGroup").css('display', 'none');
 
+        $("#pxlBoundX").val('');
+        $("#pxlBoundY").val('');
+        $("#pxlBoundWidth").val('');
+        $("#pxlBoundHeight").val('');
+        $("#pxlBoundsActive").prop('checked', false);
+        $("#pxlBoundsGroup").css('display', 'none');
+
         //printer
         $("#pPxlWidth").val('');
         $("#pPxlHeight").val('');
@@ -2680,6 +2721,16 @@
             };
         }
 
+        var pxlBounds = null;
+        if (isChecked($("#pxlBoundsActive"), cleanConditions['pxlBoundsActive'])) {
+            pxlBounds = {
+                x: $("#pxlBoundX").val(),
+                y: $("#pxlBoundY").val(),
+                width: $("#pxlBoundWidth").val(),
+                height: $("#pxlBoundHeight").val()
+            };
+        }
+
         var pxlMargins = $("#pxlMargins").val();
         if (isChecked($("#pxlMarginsActive"), cleanConditions['pxlMarginsActive'])) {
             pxlMargins = {
@@ -2706,6 +2757,7 @@
                             endOfDoc: $("#rawEndOfDoc").val(),
                             perSpool: $("#rawPerSpool").val(),
 
+                            bounds: pxlBounds,
                             colorType: $("#pxlColorType").val(),
                             copies: copies,
                             density: $("#pxlDensity").val(),

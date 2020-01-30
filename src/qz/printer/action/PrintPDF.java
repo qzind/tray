@@ -25,9 +25,9 @@ import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
-import java.awt.*;
 import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.MediaPrintableArea;
+import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.print.PageFormat;
 import java.awt.print.Paper;
@@ -62,6 +62,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
+        PrintOptions.Pixel pxlOpts = options.getPixelOptions();
+        double convert = 72.0 / pxlOpts.getUnits().as1Inch();
+
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
 
@@ -69,10 +72,10 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 JSONObject dataOpt = data.getJSONObject("options");
 
                 if (!dataOpt.isNull("pageWidth") && dataOpt.optDouble("pageWidth") > 0) {
-                    docWidth = dataOpt.optDouble("pageWidth") * (72.0 / options.getPixelOptions().getUnits().as1Inch());
+                    docWidth = dataOpt.optDouble("pageWidth") * convert;
                 }
                 if (!dataOpt.isNull("pageHeight") && dataOpt.optDouble("pageHeight") > 0) {
-                    docHeight = dataOpt.optDouble("pageHeight") * (72.0 / options.getPixelOptions().getUnits().as1Inch());
+                    docHeight = dataOpt.optDouble("pageHeight") * convert;
                 }
             }
 
@@ -84,6 +87,19 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data.getString("data"))));
                 } else {
                     doc = PDDocument.load(ConnectionUtilities.getInputStream(data.getString("data")));
+                }
+
+                if (pxlOpts.getBounds() != null) {
+                    PrintOptions.Bounds bnd = pxlOpts.getBounds();
+
+                    for(PDPage page : doc.getPages()) {
+                        PDRectangle box = new PDRectangle(
+                                (float)(bnd.getX() * convert),
+                                page.getMediaBox().getUpperRightY() - (float)((bnd.getHeight() + bnd.getY()) * convert),
+                                (float)(bnd.getWidth() * convert),
+                                (float)(bnd.getHeight() * convert));
+                        page.setMediaBox(box);
+                    }
                 }
 
                 originals.add(doc);

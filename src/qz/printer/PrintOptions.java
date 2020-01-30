@@ -69,6 +69,15 @@ public class PrintOptions {
         }
 
         //check for pixel options
+        if (!configOpts.isNull("bounds")) {
+            try {
+                JSONObject bounds = configOpts.getJSONObject("bounds");
+                psOptions.bounds = new Bounds(bounds.optDouble("x"), bounds.optDouble("y"), bounds.optDouble("width"), bounds.optDouble("height"));
+            }
+            catch(JSONException e) {
+                LoggerUtilities.optionWarn(log, "JSONObject", "bounds", configOpts.opt("bounds"));
+            }
+        }
         if (!configOpts.isNull("colorType")) {
             try {
                 psOptions.colorType = ColorType.valueOf(configOpts.optString("colorType").toUpperCase(Locale.ENGLISH));
@@ -319,6 +328,7 @@ public class PrintOptions {
 
     /** Pixel printing options */
     public class Pixel {
+        private Bounds bounds = null;                                               //Bounding box rectangle
         private ColorType colorType = ColorType.COLOR;                              //Color / black&white
         private int copies = 1;                                                     //Job copies
         private double density = 0;                                                 //Pixel density (DPI or DPMM)
@@ -337,6 +347,10 @@ public class PrintOptions {
         private Size size = null;                                                   //Paper size
         private Unit units = Unit.INCH;                                             //Units for density, margins, size
 
+
+        public Bounds getBounds() {
+            return bounds;
+        }
 
         public ColorType getColorType() {
             return colorType;
@@ -475,6 +489,37 @@ public class PrintOptions {
 
         public double left() {
             return left;
+        }
+    }
+
+    /* Bounding box generic rectangle */
+    public class Bounds {
+        private double x;
+        private double y;
+        private double width;
+        private double height;
+
+        public Bounds(double x, double y, double width, double height) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        }
+
+        public double getX() {
+            return x;
+        }
+
+        public double getY() {
+            return y;
+        }
+
+        public double getWidth() {
+            return width;
+        }
+
+        public double getHeight() {
+            return height;
         }
     }
 

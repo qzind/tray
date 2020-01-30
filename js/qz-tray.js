@@ -1985,7 +1985,7 @@ var qz = (function() {
              */
             startListening: function(path, params) {
                 if (params && typeof params.include !== 'undefined' && !Array.isArray(params.include)) {
-                     params.include = [params.include];
+                    params.include = [params.include];
                 }
                 if (params && typeof params.exclude !== 'undefined' && !Array.isArray(params.exclude)) {
                     params.exclude = [params.exclude];

@@ -1975,7 +1975,7 @@ var qz = (function() {
              *   @param {boolean} [params.listener.reverse] Controls whether data should be returned from the bottom of the file.  Default value is true for line mode and false for byte mode.
              *   @param {string|Array<string>} [params.include] File patterns to match.  Blank values will be ignored.
              *   @param {string|Array<string>} [params.exclude] File patterns to exclude.  Blank values will be ignored.  Takes priority over <code>params.include</code>.
-             *   @param {boolean) [params.ignoreCase=true] Whether <code>params.include</code> or <code>params.exclude</code> are case-sensitive.
+             *   @param {boolean} [params.ignoreCase=true] Whether <code>params.include</code> or <code>params.exclude</code> are case-sensitive.
              * @returns {Promise<null|Error>}
              * @since 2.1.0
              *

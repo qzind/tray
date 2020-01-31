@@ -72,7 +72,7 @@ public class PrintOptions {
         if (!configOpts.isNull("bounds")) {
             try {
                 JSONObject bounds = configOpts.getJSONObject("bounds");
-                psOptions.bounds = new Bounds(bounds.optDouble("x"), bounds.optDouble("y"), bounds.optDouble("width"), bounds.optDouble("height"));
+                psOptions.bounds = new Bounds(bounds.optDouble("x", 0), bounds.optDouble("y", 0), bounds.optDouble("width", 0), bounds.optDouble("height", 0));
             }
             catch(JSONException e) {
                 LoggerUtilities.optionWarn(log, "JSONObject", "bounds", configOpts.opt("bounds"));

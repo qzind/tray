@@ -1030,6 +1030,18 @@
                                             <label for="fileData">Data To Write</label>
                                             <textarea id="fileData" rows="5" style="resize:vertical" class="form-control"></textarea>
                                         </div>
+                                        <div class="form-group">
+                                            <label for="includePattern" class="tip" data-toggle="tooltip" title="File pattern to match when listening for file events (e.g. *.txt)">
+                                                Include File Pattern
+                                            </label>
+                                            <input type="text" id="includePattern" class="form-control pull-right" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="excludePattern" class="tip" data-toggle="tooltip" title="File pattern to ignore when listening for file events (e.g. *.tmp) ">
+                                                Exclude File Pattern
+                                            </label>
+                                            <input type="text" id="excludePattern" class="form-control pull-right" />
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group form-inline">
@@ -2156,6 +2168,9 @@
         var params = {
             sandbox: $("#fileSandbox").prop("checked"),
             shared: $("#fileShared").prop("checked"),
+            include: $("#includePattern").val() == "" ? [] : $("#includePattern").val(),
+            exclude: $("#excludePattern").val() == "" ? [] : $("#excludePattern").val(),
+            ignoreCase: true,
             listener: {}
         };
 

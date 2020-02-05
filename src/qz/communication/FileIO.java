@@ -77,7 +77,7 @@ public class FileIO {
         }
     }
 
-    private boolean isMatch(String fileName) {
+    public boolean isMatch(String fileName) {
         boolean match = inclusions.isEmpty();
         for (String inclusion : inclusions) {
             if(FilenameUtils.wildcardMatch(fileName, inclusion, caseSensitivity)) {
@@ -134,8 +134,6 @@ public class FileIO {
     }
 
     public void fileChanged(String fileName, String type, String fileData) {
-        if (!isMatch(fileName)) return;
-
         StreamEvent evt = new StreamEvent(StreamEvent.Stream.FILE, StreamEvent.Type.ACTION)
                 .withData("file", getOriginalPath().resolve(fileName))
                 .withData("eventType", type);

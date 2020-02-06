@@ -30,10 +30,10 @@ import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.installer.Installer;
-import qz.installer.certificate.ExpiryTask;
-import qz.installer.certificate.CertificateManager;
+import qz.installer.certificate.*;
 import qz.utils.ArgParser;
 import qz.utils.FileUtilities;
+import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 import java.io.*;
@@ -84,6 +84,11 @@ public class PrintSocketServer {
             log.error("Something went critically wrong loading HTTPS", e);
         }
         Installer.getInstance().addUserSettings();
+
+        // Linux needs the cert installed in user-space on every launch for Chrome SSL to work
+        if(!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {
+            NativeCertificateInstaller.getInstance().install(certificateManager.getKeyPair(KeyPairWrapper.Type.CA).getCert());
+        }
 
         try {
             log.info("Starting {} {}", Constants.ABOUT_TITLE, Constants.VERSION);

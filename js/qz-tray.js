@@ -666,14 +666,14 @@ var qz = (function() {
                     _qz.log.trace("Converting print data to v2.0 for " + _qz.websocket.connection.version);
                     for(var i = 0; i < printData.length; i++) {
                         if (printData[i].constructor === Object) {
-                            if (printData[i].type.toUpperCase() === "RAW" && printData[i].format.toUpperCase() === "IMAGE") {
-                                if (printData[i].flavor.toUpperCase() === "BASE64") {
+                            if (printData[i].type && printData[i].type.toUpperCase() === "RAW" && printData[i].format && printData[i].format.toUpperCase() === "IMAGE") {
+                                if (printData[i].flavor && printData[i].flavor.toUpperCase() === "BASE64") {
                                     //special case for raw base64 images
                                     printData[i].data = "data:image/compat;base64," + printData[i].data;
                                 }
                                 printData[i].flavor = "IMAGE"; //forces 'image' format when shifting for conversion
                             }
-                            if (printData[i].type.toUpperCase() === "RAW" || printData[i].format.toUpperCase() === "COMMAND") {
+                            if ((printData[i].type && printData[i].type.toUpperCase() === "RAW") || (printData[i].format && printData[i].format.toUpperCase() === "COMMAND")) {
                                 printData[i].format = "RAW"; //forces 'raw' type when shifting for conversion
                             }
 

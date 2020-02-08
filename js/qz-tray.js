@@ -511,17 +511,29 @@ var qz = (function() {
 
         security: {
             /** Function used to resolve promise when acquiring site's public certificate. */
-            certPromise: function(resolve, reject) { reject(); },
-            /** Called to create new promise (using {@link _qz.security.certPromise}) for certificate retrieval. */
+            certHandler: function(resolve, reject) { reject(); },
+            /** Called to create new promise (using {@link _qz.security.certHandler}) for certificate retrieval. */
             callCert: function() {
-                return _qz.tools.promise(_qz.security.certPromise);
+                if (typeof _qz.security.certHandler.then === 'function' || _qz.security.certHandler.constructor.name === "AsyncFunction") {
+                    //already a promise
+                    return _qz.security.certHandler();
+                } else {
+                    //turn into a promise
+                    return _qz.tools.promise(_qz.security.certHandler);
+                }
             },
 
             /** Function used to create promise resolver when requiring signed calls. */
-            signaturePromise: function() { return function(resolve) { resolve(); } },
-            /** Called to create new promise (using {@link _qz.security.signaturePromise}) for signed calls. */
+            signatureFactory: function() { return function(resolve) { resolve(); } },
+            /** Called to create new promise (using {@link _qz.security.signatureFactory}) for signed calls. */
             callSign: function(toSign) {
-                return _qz.tools.promise(_qz.security.signaturePromise(toSign));
+                if (typeof _qz.security.signatureFactory.then === 'function' || _qz.security.signatureFactory.constructor.name === "AsyncFunction") {
+                    //already a promise
+                    return _qz.security.signatureFactory(toSign);
+                } else {
+                    //turn into a promise
+                    return _qz.tools.promise(_qz.security.signatureFactory(toSign));
+                }
             },
 
             /** Signing algorithm used on signatures */
@@ -2049,25 +2061,50 @@ var qz = (function() {
             /**
              * Set promise resolver for calls to acquire the site's certificate.
              *
-             * @param {Function} promiseCall <code>Function({function} resolve)</code> called as promise for getting the public certificate.
-             *     Should call <code>resolve</code> parameter with the result.
+             * @param {Function|Promise<string>} handler Either a function that will be used as a promise resolver (of format <code>Function({function} resolve, {function}reject)</code>),
+             *     or the entire promise, either of which should return the public certificate via their respective <code>resolve</code> call.
              *
              * @memberof qz.security
              */
-            setCertificatePromise: function(promiseCall) {
-                _qz.security.certPromise = promiseCall;
+            setCertificateHandler: function(handler) {
+                _qz.security.certHandler = handler;
             },
 
             /**
-             * Set promise creator for calls to sign API calls.
+             * @deprecated Use <code>setCertificateHandler</code> instead.
+             * @memberof qz.security
+             */
+            setCertificatePromise: function(promiseCall) {
+                qz.security.setCertificateHandler(promiseCall);
+            },
+
+            /**
+             * Set promise factory for calls to sign API calls.
              *
-             * @param {Function} promiseGen <code>Function({function} toSign)</code> Should return a function, <code>Function({function} resolve)</code>, that
-             *     will sign the content and resolve the created promise.
+             * @param {Function|Promise<string>} factory Either a function that accepts a string parameter of the data to be signed
+             *     and returns a function to be used as a promise resolver (of format <code>Function({function} resolve, {function}reject)</code>),
+             *     or a promise that can take a string parameter of the data to be signed, either of which should return the signed contents of
+             *     the passed string parameter via their respective <code>resolve</code> call.
+             *
+             * @example
+             *  qz.security.setSignatureHandlerFactory(function(dataToSign) {
+             *    return function(resolve, reject) {
+             *      $.ajax("/signing-url?data=" + dataToSign).then(resolve, reject);
+             *    }
+             *  })
              *
              * @memberof qz.security
              */
+             setSignatureHandlerFactory: function(factory) {
+                _qz.security.signatureFactory = factory;
+             },
+
+            /**
+             * @deprecated Use <code>setSignatureResolverFactory</code> instead.
+             * @memberof qz.security
+             */
             setSignaturePromise: function(promiseGen) {
-                _qz.security.signaturePromise = promiseGen;
+                qz.security.setSignatureHandlerFactory(promiseGen);
             },
 
             /**

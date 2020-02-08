@@ -1154,7 +1154,7 @@
 
 <script>
     /// Authentication setup ///
-    qz.security.setCertificatePromise(function(resolve, reject) {
+    qz.security.setCertificateHandler(function(resolve, reject) {
         //Preferred method - from server
 //        $.ajax({ url: "assets/signing/digital-certificate.txt", cache: false, dataType: "text" }).then(resolve, reject);
 
@@ -1225,7 +1225,7 @@
     });
 
     qz.security.setSignatureAlgorithm("SHA512"); // Since 2.1
-    qz.security.setSignaturePromise(function(toSign) {
+    qz.security.setSignatureHandlerFactory(function(toSign) {
         return function(resolve, reject) {
             //Preferred method - from server
 //            $.ajax("/secure/url/for/sign-message?request=" + toSign).then(resolve, reject);

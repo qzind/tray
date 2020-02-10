@@ -23,6 +23,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
+import qz.installer.Installer;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
@@ -410,6 +411,7 @@ public class CertificateManager {
 
     private void saveProperties() throws IOException {
         File propsFile = new File(getWritableLocation(), Constants.PROPS_FILE + ".properties");
+        Installer.persistProperties(propsFile, properties); // checks for props from previous install
         properties.store(new FileOutputStream(propsFile), null);
         FileUtilities.inheritParentPermissions(propsFile.toPath());
         log.info("Successfully created SSL properties file: {}", propsFile);

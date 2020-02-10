@@ -20,13 +20,16 @@ import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 
 import static qz.common.Constants.*;
 import static qz.installer.certificate.KeyPairWrapper.Type.CA;
@@ -257,5 +260,24 @@ public abstract class Installer {
             }
         }
         return instance;
+    }
+
+    public static Properties persistProperties(File oldFile, Properties newProps) {
+        if(oldFile.exists()) {
+            Properties oldProps = new Properties();
+            try(Reader reader = new FileReader(oldFile)) {
+                oldProps.load(reader);
+                for(String key : PERSIST_PROPS) {
+                    if (oldProps.containsKey(key)) {
+                        String value = oldProps.getProperty(key);
+                        log.info("Preserving {}={} for install", key, value);
+                        newProps.put(key, value);
+                    }
+                }
+            } catch(IOException e) {
+                log.warn("Warning, an error occurred reading the old properties file {}", oldFile, e);
+            }
+        }
+        return newProps;
     }
 }

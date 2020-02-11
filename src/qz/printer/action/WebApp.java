@@ -102,8 +102,8 @@ public class WebApp extends Application {
                             public Void call(SnapshotResult snapshotResult) {
                                 WritableImage snapshot = snapshotResult.getImage();
                                 capture.set(SwingFXUtils.fromFXImage(snapshot, null));
-                                captureLatch.countDown();
 
+                                unlatch();
                                 return null;
                             }
                         }, sparams, null);
@@ -127,7 +127,7 @@ public class WebApp extends Application {
         public void changed(ObservableValue<? extends Throwable> obs, Throwable oldExc, Throwable newExc) {
             if (newExc != null) {
                 thrown.set(newExc);
-                captureLatch.countDown();
+                unlatch();
             }
         }
     };
@@ -224,7 +224,7 @@ public class WebApp extends Application {
                 }
                 catch(Throwable t) {
                     thrown.set(t);
-                    captureLatch.countDown();
+                    unlatch();
                 }
             }
         });
@@ -235,6 +235,11 @@ public class WebApp extends Application {
         if (thrown.get() != null) { throw thrown.get(); }
 
         return capture.get();
+    }
+
+    private static void unlatch() {
+        captureLatch.countDown();
+        stage.hide(); //hide stage so users won't have to manually close it
     }
 
 }

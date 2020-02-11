@@ -11,10 +11,9 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.image.WritableImage;
+import javafx.scene.transform.Scale;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
-import org.joor.Reflect;
-import org.joor.ReflectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -73,9 +72,9 @@ public class WebApp extends Application {
                     base.getAttributes().setNamedItem(applied);
                 }
 
-                log.trace("Setting HTML page width to {}", (pageWidth * pageZoom));
-                webView.setMinWidth(pageWidth * pageZoom);
-                webView.setPrefWidth(pageWidth * pageZoom);
+                log.trace("Setting HTML page width to {}", pageWidth);
+                webView.setMinWidth(pageWidth);
+                webView.setPrefWidth(pageWidth);
                 webView.autosize();
 
                 //width was resized earlier (for responsive html), then calculate the best fit height
@@ -84,9 +83,9 @@ public class WebApp extends Application {
                     pageHeight = Double.parseDouble(heightText);
                 }
 
-                log.trace("Setting HTML page height to {}", (pageHeight * pageZoom));
-                webView.setMinHeight(pageHeight * pageZoom);
-                webView.setPrefHeight(pageHeight * pageZoom);
+                log.trace("Setting HTML page height to {}", pageHeight);
+                webView.setMinHeight(pageHeight);
+                webView.setPrefHeight(pageHeight);
                 webView.autosize();
 
                 Platform.runLater(new Runnable() {
@@ -98,7 +97,10 @@ public class WebApp extends Application {
                                 try {
                                     log.debug("Attempting image capture");
 
-                                    WritableImage snapshot = webView.snapshot(new SnapshotParameters(), null);
+                                    SnapshotParameters sparams = new SnapshotParameters();
+                                    sparams.setTransform(new Scale(pageZoom, pageZoom));
+
+                                    WritableImage snapshot = webView.snapshot(sparams, null);
                                     capture.set(SwingFXUtils.fromFXImage(snapshot, null));
 
                                     captureLatch.countDown();
@@ -215,18 +217,9 @@ public class WebApp extends Application {
                     pageHeight = model.getWebHeight();
                     pageZoom = model.getZoom();
 
-                    webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
-                    webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
+                    webView.setMinSize(pageWidth, pageHeight);
+                    webView.setPrefSize(pageWidth, pageHeight);
                     webView.autosize();
-
-                    try {
-                        Reflect.on(webView).call("setZoom", pageZoom);
-                        log.trace("Zooming in by x{} for increased quality", pageZoom);
-                    }
-                    catch(ReflectException e) {
-                        log.warn("Unable zoom, using default quality");
-                        pageZoom = 1; //only zoom affects webView scaling
-                    }
 
                     stage.show(); //FIXME - will not capture without showing stage
                     stage.toBack();

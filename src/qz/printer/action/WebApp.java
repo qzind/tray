@@ -1,7 +1,5 @@
 package qz.printer.action;
 
-import com.sun.javafx.tk.TKPulseListener;
-import com.sun.javafx.tk.Toolkit;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -10,10 +8,12 @@ import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
+import javafx.scene.SnapshotResult;
 import javafx.scene.image.WritableImage;
 import javafx.scene.transform.Scale;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -88,34 +88,25 @@ public class WebApp extends Application {
                 webView.setPrefHeight(pageHeight);
                 webView.autosize();
 
+                //without this runlater, the first capture is missed and all following captures are offset
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
-                        Toolkit.getToolkit().addPostSceneTkPulseListener(new TKPulseListener() {
+                        log.debug("Attempting image capture");
+
+                        SnapshotParameters sparams = new SnapshotParameters();
+                        sparams.setTransform(new Scale(pageZoom, pageZoom));
+
+                        webView.snapshot(new Callback<SnapshotResult,Void>() {
                             @Override
-                            public void pulse() {
-                                try {
-                                    log.debug("Attempting image capture");
+                            public Void call(SnapshotResult snapshotResult) {
+                                WritableImage snapshot = snapshotResult.getImage();
+                                capture.set(SwingFXUtils.fromFXImage(snapshot, null));
+                                captureLatch.countDown();
 
-                                    SnapshotParameters sparams = new SnapshotParameters();
-                                    sparams.setTransform(new Scale(pageZoom, pageZoom));
-
-                                    WritableImage snapshot = webView.snapshot(sparams, null);
-                                    capture.set(SwingFXUtils.fromFXImage(snapshot, null));
-
-                                    captureLatch.countDown();
-                                }
-                                catch(Throwable t) {
-                                    thrown.set(t);
-                                    captureLatch.countDown();
-                                }
-                                finally {
-                                    stage.hide(); //hide stage so users won't have to manually close it
-                                }
-
-                                Toolkit.getToolkit().removePostSceneTkPulseListener(this);
+                                return null;
                             }
-                        });
+                        }, sparams, null);
                     }
                 });
             }

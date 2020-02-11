@@ -2415,6 +2415,13 @@
             }
         });
 
+        if (location.hash) {
+            $(".nav-tabs a[href='"+ location.hash +"']").tab('show');
+        }
+        $(".nav-tabs a").on("click", function(e) {
+            location.hash = this.hash;
+        });
+
         $("#usbRawRadio").click(function() { window.readingWeight = false; });
         $("#usbWeightRadio").click(function() { window.readingWeight = true; });
         $("#hidRawRadio").click(function() { window.readingWeight = false; });

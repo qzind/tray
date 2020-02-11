@@ -2061,33 +2061,25 @@ var qz = (function() {
             /**
              * Set promise resolver for calls to acquire the site's certificate.
              *
-             * @param {Function|Promise<string>} handler Either a function that will be used as a promise resolver (of format <code>Function({function} resolve, {function}reject)</code>),
+             * @param {Function|Promise<string>} promiseHandler Either a function that will be used as a promise resolver (of format <code>Function({function} resolve, {function}reject)</code>),
              *     or the entire promise, either of which should return the public certificate via their respective <code>resolve</code> call.
              *
              * @memberof qz.security
              */
-            setCertificateHandler: function(handler) {
-                _qz.security.certHandler = handler;
-            },
-
-            /**
-             * @deprecated Use <code>setCertificateHandler</code> instead.
-             * @memberof qz.security
-             */
-            setCertificatePromise: function(promiseCall) {
-                qz.security.setCertificateHandler(promiseCall);
+            setCertificatePromise: function(promiseHandler) {
+                _qz.security.certHandler = promiseHandler;
             },
 
             /**
              * Set promise factory for calls to sign API calls.
              *
-             * @param {Function|Promise<string>} factory Either a function that accepts a string parameter of the data to be signed
+             * @param {Function|Promise<string>} promiseFactory Either a function that accepts a string parameter of the data to be signed
              *     and returns a function to be used as a promise resolver (of format <code>Function({function} resolve, {function}reject)</code>),
              *     or a promise that can take a string parameter of the data to be signed, either of which should return the signed contents of
              *     the passed string parameter via their respective <code>resolve</code> call.
              *
              * @example
-             *  qz.security.setSignatureHandlerFactory(function(dataToSign) {
+             *  qz.security.setSignaturePromise(function(dataToSign) {
              *    return function(resolve, reject) {
              *      $.ajax("/signing-url?data=" + dataToSign).then(resolve, reject);
              *    }
@@ -2095,16 +2087,8 @@ var qz = (function() {
              *
              * @memberof qz.security
              */
-             setSignatureHandlerFactory: function(factory) {
-                _qz.security.signatureFactory = factory;
-             },
-
-            /**
-             * @deprecated Use <code>setSignatureResolverFactory</code> instead.
-             * @memberof qz.security
-             */
-            setSignaturePromise: function(promiseGen) {
-                qz.security.setSignatureHandlerFactory(promiseGen);
+            setSignaturePromise: function(promiseFactory) {
+                _qz.security.signatureFactory = promiseFactory;
             },
 
             /**

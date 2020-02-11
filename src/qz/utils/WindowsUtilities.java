@@ -8,10 +8,12 @@ import qz.common.Constants;
 
 import java.awt.*;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.*;
 import java.util.List;
+import java.util.Map;
 
 import static com.sun.jna.platform.win32.WinReg.*;
 
@@ -59,7 +61,7 @@ public class WindowsUtilities {
                 return Advapi32Util.registryGetIntValue(root, key, value);
             }
         } catch(Exception e) {
-            log.warn("Couldn't get registry value {}\\{}\\{}", root, key, value);
+            log.warn("Couldn't get registry value {}\\\\{}\\\\{}", getHkeyName(root), key, value);
         }
         return null;
     }
@@ -71,25 +73,69 @@ public class WindowsUtilities {
                 return Advapi32Util.registryGetStringValue(root, key, value);
             }
         } catch(Exception e) {
-            log.warn("Couldn't get registry value {}\\{}\\{}", root, key, value);
+            log.warn("Couldn't get registry value {}\\\\{}\\\\{}", getHkeyName(root), key, value);
         }
         return null;
     }
 
     // gracefully swallow InvocationTargetException
-    public static boolean deleteRegKey(WinReg.HKEY root, String key) {
+    public static boolean deleteRegKey(HKEY root, String key) {
         try {
             if (Advapi32Util.registryKeyExists(root, key)) {
                 Advapi32Util.registryDeleteKey(root, key);
                 return true;
             }
         } catch(Exception e) {
-            log.warn("Couldn't delete value {}\\{}\\{}", root, key);
+            log.warn("Couldn't delete value {}\\\\{}\\\\{}", getHkeyName(root), key);
         }
         return false;
     }
 
-    public static boolean addRegValue(WinReg.HKEY root, String key, String value, Object data) {
+    /**
+     * Adds a registry entry at <code>key</code>/<code>0</code>, incrementing as needed
+     */
+    public static boolean addNumberedRegValue(HKEY root, String key, Object data) {
+        try {
+            // Recursively create keys as needed
+            String partialKey = "";
+            for(String section : key.split("\\\\")) {
+                if (partialKey.isEmpty()) {
+                    partialKey += section;
+                } else {
+                    partialKey += "\\" + section;
+                }
+                if(!Advapi32Util.registryKeyExists(root, partialKey)) {
+                    Advapi32Util.registryCreateKey(root, partialKey);
+                }
+            }
+            // Make sure it doesn't already exist
+            for(Map.Entry<String, Object> entry : Advapi32Util.registryGetValues(root, key).entrySet())  {
+                if(entry.getValue().equals(data)) {
+                    log.info("Registry data {}\\\\{}\\\\{} already has {}, skipping.", getHkeyName(root), key, entry.getKey(), data);
+                    return true;
+                }
+            }
+            // Find the next available number and iterate
+            int counter=0;
+            while(Advapi32Util.registryValueExists(root, key, counter + "")) {
+                counter++;
+            }
+            String value = String.valueOf(counter);
+            if (data instanceof String) {
+                Advapi32Util.registrySetStringValue(root, key, value, (String)data);
+            } else if (data instanceof Integer) {
+                Advapi32Util.registrySetIntValue(root, key, value, (Integer)data);
+            } else {
+                throw new Exception("Registry values of type "  + data.getClass() + " aren't supported");
+            }
+            return true;
+        } catch(Exception e) {
+            log.error("Could not write numbered registry value at {}\\\\{}", getHkeyName(root), key, e);
+        }
+        return false;
+    }
+
+    public static boolean addRegValue(HKEY root, String key, String value, Object data) {
         try {
             // Recursively create keys as needed
             String partialKey = "";
@@ -112,9 +158,27 @@ public class WindowsUtilities {
             }
             return true;
         } catch(Exception e) {
-            log.error("Could not write registry value {}\\{}\\{}", root, key, value, e);
+            log.error("Could not write registry value {}\\\\{}\\\\{}", getHkeyName(root), key, value, e);
         }
         return false;
+    }
+
+    /**
+     * Use reflection to get readable <code>HKEY</code> name, useful for debugging errors
+     */
+    private static String getHkeyName(HKEY hkey) {
+        for(Field f : WinReg.class.getFields()) {
+            if (f.getName().startsWith("HKEY_")) {
+                try {
+                    if (f.get(HKEY.class).equals(hkey)) {
+                        return f.getName();
+                    }
+                } catch(IllegalAccessException e) {
+                    log.warn("Can't get name of HKEY", e);
+                }
+            }
+        }
+        return "UNKNOWN";
     }
 
     public static void setWritable(Path path) {

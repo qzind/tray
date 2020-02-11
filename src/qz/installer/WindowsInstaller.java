@@ -36,11 +36,11 @@ import java.util.List;
 public class WindowsInstaller extends Installer {
     protected static final Logger log = LoggerFactory.getLogger(WindowsInstaller.class);
     private String destination = getDefaultDestination();
-    private String destinationExe;
+    private String destinationExe = getDefaultDestination() + File.separator + PROPS_FILE + ".exe";
 
     public void setDestination(String destination) {
         this.destination = destination;
-        this.destinationExe = destination + File.separator + PROPS_FILE+ ".exe";
+        this.destinationExe = destination + File.separator + PROPS_FILE + ".exe";
     }
 
     /**
@@ -133,6 +133,9 @@ public class WindowsInstaller extends Installer {
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "URLInfoAbout", ABOUT_SUPPORT_URL);
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "DisplayVersion", VERSION.toString());
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "EstimatedSize", FileUtils.sizeOfDirectoryAsBigInteger(new File(destination)).intValue() / 1024);
+
+        // Chrome Protocol Handler
+        WindowsUtilities.addNumberedRegValue(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLWhitelist", String.format("%s://*", DATA_DIR));
 
         // Firewall rules
         String ports = StringUtils.join(PrintSocketServer.SECURE_PORTS, ",") + "," + StringUtils.join(PrintSocketServer.INSECURE_PORTS, ",");

@@ -58,7 +58,14 @@ public class MacInstaller extends Installer {
         return destination;
     }
 
-    public Installer addSystemSettings() { return this; }
+    public Installer addSystemSettings() {
+        // Chrome protocol handler
+        String plist = "/Library/Preferences/com.google.Chrome.plist";
+        if(ShellUtilities.execute(new String[] { "/usr/bin/defaults", "write", plist }, new String[] { "qz://*" }).isEmpty()) {
+            ShellUtilities.execute("/usr/bin/defaults", "write", plist, "URLWhitelist", "-array-add", "qz://*");
+        }
+        return this;
+    }
     public Installer removeSystemSettings() {
         // Remove startup entry
         File dest = new File(String.format("/Library/LaunchAgents/%s.plist", PACKAGE_NAME));

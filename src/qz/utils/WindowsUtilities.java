@@ -78,6 +78,26 @@ public class WindowsUtilities {
         return null;
     }
 
+    /**
+     * Deletes all matching data values directly beneath the specified key
+     */
+    public static boolean deleteRegData(HKEY root, String key, String data) {
+        boolean success = true;
+        if (Advapi32Util.registryKeyExists(root, key)) {
+            for(Map.Entry<String, Object> entry : Advapi32Util.registryGetValues(root, key).entrySet()) {
+                if(entry.getValue().equals(data)) {
+                    try {
+                        Advapi32Util.registryDeleteValue(root, key, entry.getKey());
+                    } catch(Exception e) {
+                        log.warn("Couldn't delete value {}\\\\{}\\\\{}", getHkeyName(root), key, entry.getKey());
+                        success = false;
+                    }
+                }
+            }
+        }
+        return success;
+    }
+
     // gracefully swallow InvocationTargetException
     public static boolean deleteRegKey(HKEY root, String key) {
         try {
@@ -86,7 +106,7 @@ public class WindowsUtilities {
                 return true;
             }
         } catch(Exception e) {
-            log.warn("Couldn't delete value {}\\\\{}\\\\{}", getHkeyName(root), key);
+            log.warn("Couldn't delete value {}\\\\{}", getHkeyName(root), key);
         }
         return false;
     }

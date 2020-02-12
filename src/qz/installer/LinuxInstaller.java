@@ -6,10 +6,11 @@ import qz.utils.FileUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,6 +28,8 @@ public class LinuxInstaller extends Installer {
     public static final String APP_DIR = "/usr/share/applications/";
     public static final String APP_LAUNCHER = APP_DIR + SHORTCUT_NAME;
     public static final String UDEV_RULES = "/lib/udev/rules.d/99-udev-override.rules";
+    public static final String[] CHROME_POLICY_DIRS = {"/etc/chromium/policies/managed", "/etc/opt/chrome/policies/managed" };
+    public static final String CHROME_POLICY = "{ \"URLWhitelist\": [\"" + DATA_DIR + "://*\"] }";
 
     private String destination = "/opt/" + PROPS_FILE;
 
@@ -100,6 +103,30 @@ public class LinuxInstaller extends Installer {
             }
         }
 
+        // Chrome protocol handler
+        for (String policyDir : CHROME_POLICY_DIRS) {
+            log.info("Installing chrome protocol handler {}/{}...", policyDir, PROPS_FILE + ".json");
+            Path parent = Paths.get(policyDir);
+            if(!parent.toFile().exists()) {
+                try {
+                    Files.createDirectories(parent, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxr-xr-x")));
+                } catch(IOException e) {
+                    log.warn("Unable to create Chrome policy directory: {} ({}:launch will fail)", policyDir, DATA_DIR);
+                    continue;
+                }
+            }
+            Path policy = Paths.get(policyDir, PROPS_FILE + ".json");
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(policy.toFile()))){
+                writer.write(CHROME_POLICY);
+                policy.toFile().setReadable(true, false);
+            }
+            catch(IOException e) {
+                log.warn("Unable to write chrome policy: {} ({}:launch will fail)", policy, DATA_DIR);
+            }
+
+        }
+
+        // USB permissions
         try {
             File udev = new File(UDEV_RULES);
             if (udev.exists()) {
@@ -118,6 +145,14 @@ public class LinuxInstaller extends Installer {
     }
 
     public Installer removeSystemSettings() {
+        // Chrome protocol handler
+        for (String policyDir : CHROME_POLICY_DIRS) {
+            log.info("Removing chrome protocol handler {}/{}...", policyDir, PROPS_FILE + ".json");
+            Path policy = Paths.get(policyDir, PROPS_FILE + ".json");
+            policy.toFile().delete();
+        }
+
+        // USB permissions
         File udev = new File(UDEV_RULES);
         if (udev.exists()) {
             udev.delete();

@@ -72,6 +72,8 @@ public class FileWatcher {
     private synchronized static void fileChanged(Path path, String fileName, String type) {
         Path filePath = path.resolve(fileName);
         for(FileIO fio : fileIOs) {
+            if (!fio.isMatch(fileName)) continue;
+
             String fileData = null;
             if (fio.getAbsolutePath().equals(path.normalize().toAbsolutePath())) {
                 if (!type.equals("ENTRY_DELETE") && fio.returnsContents() && !Files.isDirectory(filePath)) {

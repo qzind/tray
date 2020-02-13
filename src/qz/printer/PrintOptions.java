@@ -141,13 +141,9 @@ public class PrintOptions {
                 //not a boolean, try as a string
                 try {
                     String duplex = configOpts.getString("duplex").toLowerCase();
-                    if (duplex.matches("^(two.sided.)?long(.edge)?$")) {
-                        psOptions.duplex = Sides.TWO_SIDED_LONG_EDGE;
-                    } else if (duplex.matches("^(two.sided.)?short(.edge)?$")) {
-                        psOptions.duplex = Sides.TWO_SIDED_SHORT_EDGE;
-                    } else if (duplex.matches("^(two.sided|duplex)$")) {
+                    if (duplex.matches("^(duplex|(two.sided.)?long(.edge)?)$")) {
                         psOptions.duplex = Sides.DUPLEX;
-                    } else if (duplex.matches("^tumble$")) {
+                    } else if (duplex.matches("^(tumble|(two.sided.)?short(.edge)?)$")) {
                         psOptions.duplex = Sides.TUMBLE;
                     }
                     //else - one sided (default)

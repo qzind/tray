@@ -170,10 +170,10 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             if (pxlOpts.getColorType() != null) {
                 settings.setPrintColor(getColor(pxlOpts));
             }
-            if (pxlOpts.getDuplex() == Sides.DUPLEX || pxlOpts.getDuplex() == Sides.TWO_SIDED_LONG_EDGE || pxlOpts.getDuplex() == Sides.TWO_SIDED_SHORT_EDGE) {
+            if (pxlOpts.getDuplex() == Sides.DUPLEX || pxlOpts.getDuplex() == Sides.TWO_SIDED_LONG_EDGE) {
                 settings.setPrintSides(PrintSides.DUPLEX);
             }
-            if (pxlOpts.getDuplex() == Sides.TUMBLE) {
+            if (pxlOpts.getDuplex() == Sides.TUMBLE || pxlOpts.getDuplex() == Sides.TWO_SIDED_SHORT_EDGE) {
                 settings.setPrintSides(PrintSides.TUMBLE);
             }
             if (pxlOpts.getPrinterTray() != null) {

@@ -14,6 +14,7 @@ import javax.print.attribute.Size2DSyntax;
 import javax.print.attribute.standard.Chromaticity;
 import javax.print.attribute.standard.OrientationRequested;
 import javax.print.attribute.standard.PrinterResolution;
+import javax.print.attribute.standard.Sides;
 import java.awt.*;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
@@ -131,8 +132,28 @@ public class PrintOptions {
             catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "dithering", configOpts.opt("dithering")); }
         }
         if (!configOpts.isNull("duplex")) {
-            try { psOptions.duplex = configOpts.getBoolean("duplex"); }
-            catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "duplex", configOpts.opt("duplex")); }
+            try {
+                if (configOpts.getBoolean("duplex")) {
+                    psOptions.duplex = Sides.DUPLEX;
+                }
+            }
+            catch(JSONException e) {
+                //not a boolean, try as a string
+                try {
+                    String duplex = configOpts.getString("duplex").toLowerCase();
+                    if (duplex.matches("^(two.sided.)?long(.edge)?$")) {
+                        psOptions.duplex = Sides.TWO_SIDED_LONG_EDGE;
+                    } else if (duplex.matches("^(two.sided.)?short(.edge)?$")) {
+                        psOptions.duplex = Sides.TWO_SIDED_SHORT_EDGE;
+                    } else if (duplex.matches("^(two.sided|duplex)$")) {
+                        psOptions.duplex = Sides.DUPLEX;
+                    } else if (duplex.matches("^tumble$")) {
+                        psOptions.duplex = Sides.TUMBLE;
+                    }
+                    //else - one sided (default)
+                }
+                catch(JSONException e2) { LoggerUtilities.optionWarn(log, "valid value", "duplex", configOpts.opt("duplex")); }
+            }
         }
         if (!configOpts.isNull("interpolation")) {
             switch(configOpts.optString("interpolation")) {
@@ -333,7 +354,7 @@ public class PrintOptions {
         private int copies = 1;                                                     //Job copies
         private double density = 0;                                                 //Pixel density (DPI or DPMM)
         private Object dithering = RenderingHints.VALUE_DITHER_DEFAULT;             //Image dithering
-        private boolean duplex = false;                                             //Double/single sided
+        private Sides duplex = Sides.ONE_SIDED;                                     //Multi-siding
         private Object interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC;  //Image interpolation
         private String jobName = null;                                              //Job name
         private boolean legacy = false;                                             //Legacy printing
@@ -368,7 +389,7 @@ public class PrintOptions {
             return dithering;
         }
 
-        public boolean isDuplex() {
+        public Sides getDuplex() {
             return duplex;
         }
 

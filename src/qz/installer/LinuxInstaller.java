@@ -5,16 +5,11 @@ import org.slf4j.LoggerFactory;
 import qz.utils.FileUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static qz.common.Constants.*;
@@ -106,15 +101,12 @@ public class LinuxInstaller extends Installer {
         // Chrome protocol handler
         for (String policyDir : CHROME_POLICY_DIRS) {
             log.info("Installing chrome protocol handler {}/{}...", policyDir, PROPS_FILE + ".json");
-            Path parent = Paths.get(policyDir);
-            if(!parent.toFile().exists()) {
-                try {
-                    Files.createDirectories(parent, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxr-xr-x")));
-                } catch(IOException e) {
-                    log.warn("Unable to create Chrome policy directory: {} ({}:launch will fail)", policyDir, DATA_DIR);
-                    continue;
-                }
+            try {
+                FileUtilities.setPermissionsParentally(Files.createDirectories(Paths.get(policyDir)), false);
+            } catch(IOException e) {
+                log.warn("An error occurred creating {}", policyDir);
             }
+
             Path policy = Paths.get(policyDir, PROPS_FILE + ".json");
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(policy.toFile()))){
                 writer.write(CHROME_POLICY);

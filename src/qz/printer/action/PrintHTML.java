@@ -50,9 +50,19 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
     public PrintHTML() {
         super();
-        //JavaFX native libs
-        if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-            System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
+        if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
+            // Monocle FX engine
+            System.setProperty("javafx.platform", "monocle"); // Standard JDKs
+            System.setProperty("glass.platform", "Monocle"); // Headless JDKs
+            System.setProperty("headless.geometry", "15360x15360-32");
+            System.setProperty("prism.order", "sw");
+            System.setProperty("monocle.platform", "Headless");
+            System.setProperty("testfx.robot", "glass");
+
+            // JavaFX native libs
+            if (SystemUtilities.isJar()) {
+                System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
+            }
         }
 
         models = new ArrayList<>();

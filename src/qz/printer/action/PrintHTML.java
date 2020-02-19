@@ -10,7 +10,6 @@
 
 package qz.printer.action;
 
-import com.github.zafarkhaja.semver.Version;
 import com.sun.javafx.print.PrintHelper;
 import com.sun.javafx.print.Units;
 import javafx.print.*;
@@ -24,16 +23,15 @@ import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
-import qz.utils.SystemUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.Copies;
 import javax.print.attribute.standard.CopiesSupported;
+import javax.print.attribute.standard.Sides;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -85,7 +83,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                 double convertFactor = (72.0 / pxlOpts.getUnits().as1Inch());
 
                 boolean renderFromHeight = Arrays.asList(PrintOptions.Orientation.LANDSCAPE,
-                                                        PrintOptions.Orientation.REVERSE_LANDSCAPE).contains(pxlOpts.getOrientation());
+                                                         PrintOptions.Orientation.REVERSE_LANDSCAPE).contains(pxlOpts.getOrientation());
 
                 if (pxlOpts.getSize() != null) {
                     if (!renderFromHeight) {
@@ -172,8 +170,11 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             if (pxlOpts.getColorType() != null) {
                 settings.setPrintColor(getColor(pxlOpts));
             }
-            if (pxlOpts.isDuplex()) {
+            if (pxlOpts.getDuplex() == Sides.DUPLEX || pxlOpts.getDuplex() == Sides.TWO_SIDED_LONG_EDGE) {
                 settings.setPrintSides(PrintSides.DUPLEX);
+            }
+            if (pxlOpts.getDuplex() == Sides.TUMBLE || pxlOpts.getDuplex() == Sides.TWO_SIDED_SHORT_EDGE) {
+                settings.setPrintSides(PrintSides.TUMBLE);
             }
             if (pxlOpts.getPrinterTray() != null) {
                 fxPrinter.getPrinterAttributes().getSupportedPaperSources().stream()
@@ -351,7 +352,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
     }
 
     public static Units getUnits(PrintOptions.Pixel opts) {
-        switch (opts.getUnits()) {
+        switch(opts.getUnits()) {
             case INCH:
                 return Units.INCH;
             case MM:
@@ -362,7 +363,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
     }
 
     public static PageOrientation getOrientation(PrintOptions.Pixel opts) {
-        switch (opts.getOrientation()) {
+        switch(opts.getOrientation()) {
             case LANDSCAPE:
                 return PageOrientation.LANDSCAPE;
             case REVERSE_LANDSCAPE:
@@ -375,7 +376,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
     }
 
     public static PrintColor getColor(PrintOptions.Pixel opts) {
-        switch (opts.getColorType()) {
+        switch(opts.getColorType()) {
             case COLOR:
                 return PrintColor.COLOR;
             default:

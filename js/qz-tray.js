@@ -1101,7 +1101,7 @@ var qz = (function() {
              *  @param {number} [options.copies=1] Number of copies to be printed.
              *  @param {number|Array<number>} [options.density=0] Pixel density (DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *      If provided as an array, uses the first supported density found (or the first entry if none found).
-             *  @param {boolean} [options.duplex=false] Double sided printing
+             *  @param {boolean|string} [options.duplex=false] Double sided printing, Can specify duplex style by passing a string value: <code>[one-sided | duplex | long-edge | tumble | short-edge]</code>
              *  @param {number} [options.fallbackDensity=null] Value used when default density value cannot be read, or in cases where reported as "Normal" by the driver, (in DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *  @param {string} [options.interpolation='bicubic'] Valid values <code>[bicubic | bilinear | nearest-neighbor]</code>. Controls how images are handled when resized.
              *  @param {string} [options.jobName=null] Name to display in print queue.

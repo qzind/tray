@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
-import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.print.attribute.HashPrintRequestAttributeSet;
@@ -20,8 +19,10 @@ import java.awt.print.PageFormat;
 import java.awt.print.Paper;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class PrintPixel {
 
@@ -39,9 +40,7 @@ public abstract class PrintPixel {
         if (pxlOpts.getColorType() != null) {
             attributes.add(pxlOpts.getColorType().getAsChromaticity());
         }
-        if (pxlOpts.isDuplex()) {
-            attributes.add(Sides.DUPLEX);
-        }
+        attributes.add(pxlOpts.getDuplex());
         if (pxlOpts.getOrientation() != null) {
             attributes.add(pxlOpts.getOrientation().getAsOrientRequested());
         }
@@ -163,8 +162,8 @@ public abstract class PrintPixel {
         return imgToPrint;
     }
 
-    protected Map<RenderingHints.Key, Object> buildRenderingHints(Object dithering, Object interpolation) {
-        Map<RenderingHints.Key, Object> rhMap = new HashMap<>();
+    protected Map<RenderingHints.Key,Object> buildRenderingHints(Object dithering, Object interpolation) {
+        Map<RenderingHints.Key,Object> rhMap = new HashMap<>();
         rhMap.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
         rhMap.put(RenderingHints.KEY_DITHERING, dithering);
         rhMap.put(RenderingHints.KEY_INTERPOLATION, interpolation);

@@ -139,14 +139,29 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
+                            <label>Language</label>
                             <div>
-                                <label>Print Data</label>
-                            </div>
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-default" onclick="printCommand();">Commands</button>
-                                <button type="button" class="btn btn-default" onclick="printBase64();">Base64</button>
-                                <button type="button" class="btn btn-default" onclick="printXML();">XML</button>
-                                <button type="button" class="btn btn-default" onclick="printHex();">Hex</button>
+                                <label>
+                                    <input type="radio" name="pLanguage" id="pLangEPL" value="EPL" />
+                                    EPL2
+                                </label>
+                                <label>
+                                    <input type="radio" name="pLanguage" id="pLangZPL" value="ZPL" />
+                                    ZPLII
+                                </label>
+                                <br />
+                                <label>
+                                    <input type="radio" name="pLanguage" id="pLangESCP" value="ESCP" />
+                                    ESC/POS
+                                </label>
+                                <label>
+                                    <input type="radio" name="pLanguage" id="pLangEPCL" value="EPCL" />
+                                    EPCL
+                                </label>
+                                <label>
+                                    <input type="radio" name="pLanguage" id="pLangEVOLIS" value="EVOLIS" />
+                                    Evolis
+                                </label>
                             </div>
                         </div>
                         <div class="form-group">
@@ -162,6 +177,17 @@
                     </div>
 
                     <div class="col-md-6">
+                        <div class="form-group">
+                            <div>
+                                <label>Print Data</label>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-default" onclick="printCommand();">Commands</button>
+                                <button type="button" class="btn btn-default" onclick="printBase64();">Base64</button>
+                                <button type="button" class="btn btn-default" onclick="printXML();">XML</button>
+                                <button type="button" class="btn btn-default" onclick="printHex();">Hex</button>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <div>
                                 <label>Raster Print</label>
@@ -230,32 +256,6 @@
 
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label>Language</label>
-                                                <div>
-                                                    <label>
-                                                        <input type="radio" name="pLanguage" id="pLangEPL" value="EPL" />
-                                                        EPL2
-                                                    </label>
-                                                    <label>
-                                                        <input type="radio" name="pLanguage" id="pLangZPL" value="ZPL" />
-                                                        ZPLII
-                                                    </label>
-                                                    <br />
-                                                    <label>
-                                                        <input type="radio" name="pLanguage" id="pLangESCP" value="ESCP" />
-                                                        ESC/POS
-                                                    </label>
-                                                    <label>
-                                                        <input type="radio" name="pLanguage" id="pLangEPCL" value="EPCL" />
-                                                        EPCL
-                                                    </label>
-                                                    <label>
-                                                        <input type="radio" name="pLanguage" id="pLangEVOLIS" value="EVOLIS" />
-                                                        Evolis
-                                                    </label>
-                                                </div>
-                                            </div>
                                             <div class="form-group form-inline">
                                                 <label for="pX">Image X</label>
                                                 <input type="number" id="pX" class="form-control pull-right" />

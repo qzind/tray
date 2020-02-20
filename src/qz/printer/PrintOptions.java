@@ -70,6 +70,18 @@ public class PrintOptions {
         }
 
         //check for pixel options
+        if (!configOpts.isNull("units")) {
+            switch(configOpts.optString("units")) {
+                case "mm":
+                    psOptions.units = Unit.MM; break;
+                case "cm":
+                    psOptions.units = Unit.CM; break;
+                case "in":
+                    psOptions.units = Unit.INCH; break;
+                default:
+                    LoggerUtilities.optionWarn(log, "valid value", "units", configOpts.opt("units")); break;
+            }
+        }
         if (!configOpts.isNull("bounds")) {
             try {
                 JSONObject bounds = configOpts.getJSONObject("bounds");
@@ -96,29 +108,50 @@ public class PrintOptions {
             }
         }
         if (!configOpts.isNull("density")) {
-            JSONArray possibleDPIs = configOpts.optJSONArray("density");
-            if (possibleDPIs != null && possibleDPIs.length() > 0) {
-                int usableDpi = -1;
+            JSONObject asymmDPI = configOpts.optJSONObject("density");
+            if (asymmDPI != null) {
+                psOptions.density = asymmDPI.optInt("feed");
+                psOptions.crossDensity = asymmDPI.optInt("cross");
+            } else {
+                JSONArray possibleDPIs = configOpts.optJSONArray("density");
+                if (possibleDPIs != null && possibleDPIs.length() > 0) {
+                    PrinterResolution usableRes = null;
 
-                List<Integer> rSupport = output.getNativePrinter().getResolutions();
-                if (!rSupport.isEmpty()) {
-                    for(int i = 0; i < possibleDPIs.length(); i++) {
-                        if (rSupport.contains(possibleDPIs.optInt(i))) {
-                            usableDpi = possibleDPIs.optInt(i);
-                            break;
+                    List<PrinterResolution> rSupport = output.getNativePrinter().getResolutions();
+                    if (!rSupport.isEmpty()) {
+                        for(int i = 0; i < possibleDPIs.length(); i++) {
+                            PrinterResolution compareRes;
+                            asymmDPI = possibleDPIs.optJSONObject(i);
+                            if (asymmDPI != null) {
+                                compareRes = new PrinterResolution(asymmDPI.optInt("cross"), asymmDPI.optInt("feed"), psOptions.units.resSyntax);
+                            } else {
+                                compareRes = new PrinterResolution(possibleDPIs.optInt(i), possibleDPIs.optInt(i), psOptions.units.resSyntax);
+                            }
+
+                            if (rSupport.contains(compareRes)) {
+                                usableRes = compareRes;
+                                break;
+                            }
                         }
                     }
-                }
 
-                if (usableDpi == -1) {
-                    log.warn("Supported printer densities not found, using first value provided");
-                    usableDpi = possibleDPIs.optInt(0);
+                    if (usableRes == null) {
+                        log.warn("Supported printer densities not found, using first value provided");
+                        asymmDPI = possibleDPIs.optJSONObject(0);
+                        if (asymmDPI != null) {
+                            psOptions.density = asymmDPI.optInt("feed");
+                            psOptions.crossDensity = asymmDPI.optInt("cross");
+                        } else {
+                            psOptions.density = possibleDPIs.optInt(0);
+                        }
+                    } else {
+                        psOptions.density = usableRes.getFeedResolution(psOptions.units.resSyntax);
+                        psOptions.crossDensity = usableRes.getCrossFeedResolution(psOptions.units.resSyntax);
+                    }
+                } else {
+                    try { psOptions.density = configOpts.getDouble("density"); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "density", configOpts.opt("density")); }
                 }
-
-                psOptions.density = usableDpi;
-            } else {
-                try { psOptions.density = configOpts.getDouble("density"); }
-                catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "density", configOpts.opt("density")); }
             }
         }
         if (!configOpts.isNull("dithering")) {
@@ -243,18 +276,6 @@ public class PrintOptions {
                 LoggerUtilities.optionWarn(log, "JSONObject", "size", configOpts.opt("size"));
             }
         }
-        if (!configOpts.isNull("units")) {
-            switch(configOpts.optString("units")) {
-                case "mm":
-                    psOptions.units = Unit.MM; break;
-                case "cm":
-                    psOptions.units = Unit.CM; break;
-                case "in":
-                    psOptions.units = Unit.INCH; break;
-                default:
-                    LoggerUtilities.optionWarn(log, "valid value", "units", configOpts.opt("units")); break;
-            }
-        }
 
         //grab any useful service defaults
         PrinterResolution defaultRes = null;
@@ -348,7 +369,8 @@ public class PrintOptions {
         private Bounds bounds = null;                                               //Bounding box rectangle
         private ColorType colorType = ColorType.COLOR;                              //Color / black&white
         private int copies = 1;                                                     //Job copies
-        private double density = 0;                                                 //Pixel density (DPI or DPMM)
+        private double crossDensity = 0;                                            //Cross feed density
+        private double density = 0;                                                 //Pixel density (DPI or DPMM), feed density if crossDensity is defined
         private Object dithering = RenderingHints.VALUE_DITHER_DEFAULT;             //Image dithering
         private Sides duplex = Sides.ONE_SIDED;                                     //Multi-siding
         private Object interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC;  //Image interpolation
@@ -375,6 +397,10 @@ public class PrintOptions {
 
         public int getCopies() {
             return copies;
+        }
+
+        public double getCrossDensity() {
+            return crossDensity;
         }
 
         public double getDensity() {

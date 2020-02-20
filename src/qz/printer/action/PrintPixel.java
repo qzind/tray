@@ -59,12 +59,14 @@ public abstract class PrintPixel {
 
 
         // Java prints using inches at 72dpi
-        final float DENSITY = (float)pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch();
         final float CONVERT = pxlOpts.getUnits().toInches() * 72f;
 
-        log.trace("DPI: {}\tCNV: {}", DENSITY, CONVERT);
-        if (DENSITY > 0) {
-            attributes.add(new PrinterResolution((int)DENSITY, (int)DENSITY, ResolutionSyntax.DPI));
+        log.trace("DPI: [{}x{}]\tCNV: {}", pxlOpts.getDensity(), pxlOpts.getCrossDensity(), CONVERT);
+        if (pxlOpts.getDensity() > 0) {
+            double cross = pxlOpts.getCrossDensity();
+            if (cross == 0) { cross = pxlOpts.getDensity(); }
+
+            attributes.add(new PrinterResolution((int)cross, (int)pxlOpts.getDensity(), pxlOpts.getUnits().getDPIUnits()));
         }
 
         //apply sizing and margins
@@ -112,9 +114,9 @@ public abstract class PrintPixel {
 
         PrinterResolution rUsing = (PrinterResolution)attributes.get(PrinterResolution.class);
         if (rUsing != null) {
-            List<Integer> rSupport = output.getNativePrinter().getResolutions();
+            List<PrinterResolution> rSupport = output.getNativePrinter().getResolutions();
             if (!rSupport.isEmpty()) {
-                if (!rSupport.contains(rUsing.getFeedResolution(ResolutionSyntax.DPI))) {
+                if (!rSupport.contains(rUsing)) {
                     log.warn("Not using a supported DPI for printing");
                     log.debug("Available DPI: {}", ArrayUtils.toString(rSupport));
                 }

@@ -70,6 +70,7 @@ public class NativePrinter {
     private PrinterProperty<String> description;
     private PrinterProperty<PrintService> printService;
     private PrinterProperty<String> driver;
+    private PrinterProperty<String> connection;
     private PrinterProperty<PrinterResolution> resolution;
     private PrinterProperty<String> driverFile;
 
@@ -79,6 +80,7 @@ public class NativePrinter {
         this.printService = new PrinterProperty<>();
         this.driverFile = new PrinterProperty<>();
         this.driver = new PrinterProperty<>();
+        this.connection = new PrinterProperty<>();
         this.resolution = new PrinterProperty<>();
         this.outdated = false;
     }
@@ -122,6 +124,17 @@ public class NativePrinter {
 
     public void setDriver(String driver) {
         this.driver.set(driver);
+    }
+
+    public void setConnection(String connection) {
+        this.connection.set(connection);
+    }
+
+    public String getConnection() {
+        if (!connection.isSet()) {
+            getDriverAttributes(this);
+        }
+        return connection.value();
     }
 
     public PrinterProperty<PrintService> getPrintService() {
@@ -173,6 +186,7 @@ public class NativePrinter {
     public static void getDriverAttributes(NativePrinter printer) {
         printer.driver.set();
         printer.resolution.set();
+        printer.connection.set();
         NativePrinterMap.getInstance().fillAttributes(printer);
     }
 

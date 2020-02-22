@@ -1,6 +1,5 @@
 package qz.printer.info;
 
-import com.sun.jna.platform.win32.Advapi32Util;
 import qz.utils.WindowsUtilities;
 
 import javax.print.PrintService;
@@ -23,6 +22,7 @@ public class WindowsPrinterMap extends NativePrinterMap {
         String keyName = printer.getPrinterId().replaceAll("\\\\", ",");
         String key = "SYSTEM\\CurrentControlSet\\Control\\Print\\Printers\\" + keyName;
         String driver = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "Printer Driver");
+        String port = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "Port");
         if (driver == null) {
             key = "Printers\\Connections\\" + keyName;
             String guid = WindowsUtilities.getRegString(HKEY_CURRENT_USER, key, "GuidPrinter");
@@ -30,8 +30,10 @@ public class WindowsPrinterMap extends NativePrinterMap {
                 String serverName = keyName.replaceAll(",,(.+),.+", "$1");
                 key = "Software\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Providers\\Client Side Rendering Print Provider\\Servers\\" + serverName + "\\Printers\\" + guid;
                 driver = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "Printer Driver");
+                port = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "Port");
             }
         }
         printer.setDriver(driver);
+        printer.setConnection(port);
     }
 }

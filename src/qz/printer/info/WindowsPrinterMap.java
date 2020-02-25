@@ -1,5 +1,6 @@
 package qz.printer.info;
 
+import org.apache.commons.lang3.StringUtils;
 import qz.utils.WindowsUtilities;
 
 import javax.print.PrintService;
@@ -32,7 +33,7 @@ public class WindowsPrinterMap extends NativePrinterMap {
                 driver = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "Printer Driver");
                 String clsid = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "Port");
                 if(clsid != null) {
-                    port = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key + "\\" + clsid + "\\DsSpooler", "portName");
+                    port = StringUtils.join(WindowsUtilities.getRegMultiString(HKEY_LOCAL_MACHINE, key + "\\" + clsid + "\\DsSpooler", "portName"));
                 }
             }
         }

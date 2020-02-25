@@ -139,20 +139,17 @@
         <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="build.version">
             <arg value="--version"/>
         </java>
-
         <!-- Fallback to a bogus version number if the above command failed -->
         <property name="build.version" value="0.0.0" />
-        <echo>Version ${build.version}</echo>
-        <!-- Calculate installation size -->
-        <length property="build.bytes" mode="all">
-            <fileset dir="${dist.dir}" includes="**/*"/>
-        </length>
-        <script language="javascript">
-            <![CDATA[
-            project.setNewProperty("build.size", Math.round(project.getProperty("build.bytes") / 1024));
-            ]]>
-        </script>
-        <echo>Size: ${build.size} KB</echo>
+
+        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="apple.bundleid">
+            <arg value="--bundleid"/>
+        </java>
+        <!-- Fallback to a safe bundle id if the above command failed -->
+        <property name="apple.bundleid" value="io.qz.fallback.${project.filename}" />
+
+        <echo>Version   : ${build.version}</echo>
+        <echo>Bundle Id : ${apple.bundleid}</echo>
     </target>
 
     <target name="internal-authcert" unless="authcert.use">

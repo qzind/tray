@@ -17,6 +17,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import qz.common.Constants;
 import qz.installer.MacInstaller;
+import qz.utils.MacUtilities;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -40,11 +41,7 @@ class MacShortcutCreator extends ShortcutCreator {
     @Override
     public boolean canAutoStart() {
         // plist is stored as io.qz.plist
-        String parent = "/Library/LaunchAgents";
-        String[] parts = Constants.ABOUT_URL.split("/");
-        parts = parts[parts.length - 1].split("\\.");
-        String plist = parts[1] + "." + parts[0] + "." + Constants.PROPS_FILE + ".plist";
-        Path plistPath = Paths.get(parent, plist);
+        Path plistPath = Paths.get("/Library/LaunchAgents", MacUtilities.getBundleId() +  ".plist");
 
         if (Files.exists(plistPath)) {
             try {

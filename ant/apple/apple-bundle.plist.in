@@ -3,6 +3,7 @@
 <plist version="1.0"><dict>
     <key>CFBundleDevelopmentRegion</key><string>English</string>
     <key>CFBundleIconFile</key><string>${project.filename}</string>
+    <key>CFBundleIdentifier</key><string>${apple.bundleid}</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleGetInfoString</key><string>${project.name} ${build.version}</string>
     <key>CFBundleSignature</key><string>${project.name}</string>

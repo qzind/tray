@@ -31,10 +31,8 @@ public class WindowsPrinterMap extends NativePrinterMap {
                 String serverName = keyName.replaceAll(",,(.+),.+", "$1");
                 key = "Software\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Providers\\Client Side Rendering Print Provider\\Servers\\" + serverName + "\\Printers\\" + guid;
                 driver = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "Printer Driver");
-                String clsid = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "Port");
-                if(clsid != null) {
-                    port = StringUtils.join(WindowsUtilities.getRegMultiString(HKEY_LOCAL_MACHINE, key + "\\" + clsid + "\\DsSpooler", "portName"));
-                }
+                // In testing, "Port" simply pointed back to the guid; assume "DsSpooler\portName" instead
+                port = StringUtils.join(WindowsUtilities.getRegMultiString(HKEY_LOCAL_MACHINE, key + "\\DsSpooler", "portName"));
             }
         }
         printer.setDriver(driver);

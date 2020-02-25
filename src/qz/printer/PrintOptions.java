@@ -113,11 +113,12 @@ public class PrintOptions {
                 psOptions.density = asymmDPI.optInt("feed");
                 psOptions.crossDensity = asymmDPI.optInt("cross");
             } else {
+                List<PrinterResolution> rSupport = output.getNativePrinter().getResolutions();
+
                 JSONArray possibleDPIs = configOpts.optJSONArray("density");
                 if (possibleDPIs != null && possibleDPIs.length() > 0) {
                     PrinterResolution usableRes = null;
 
-                    List<PrinterResolution> rSupport = output.getNativePrinter().getResolutions();
                     if (!rSupport.isEmpty()) {
                         for(int i = 0; i < possibleDPIs.length(); i++) {
                             PrinterResolution compareRes;
@@ -149,8 +150,33 @@ public class PrintOptions {
                         psOptions.crossDensity = usableRes.getCrossFeedResolution(psOptions.units.resSyntax);
                     }
                 } else {
-                    try { psOptions.density = configOpts.getDouble("density"); }
-                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "density", configOpts.opt("density")); }
+                    String relDPI = configOpts.optString("density", "").toLowerCase();
+                    if ("best".equals(relDPI)) {
+                        PrinterResolution bestRes = rSupport.get(0);
+
+                        for(PrinterResolution pr : rSupport) {
+                            if (!pr.lessThanOrEquals(bestRes)) {
+                                bestRes = pr;
+                            }
+                        }
+
+                        psOptions.density = bestRes.getFeedResolution(psOptions.units.resSyntax);
+                        psOptions.crossDensity = bestRes.getCrossFeedResolution(psOptions.units.resSyntax);
+                    } else if ("draft".equals(relDPI)) {
+                        PrinterResolution lowestRes = rSupport.get(0);
+
+                        for(PrinterResolution pr : rSupport) {
+                            if (pr.lessThanOrEquals(lowestRes)) {
+                                lowestRes = pr;
+                            }
+                        }
+
+                        psOptions.density = lowestRes.getFeedResolution(psOptions.units.resSyntax);
+                        psOptions.crossDensity = lowestRes.getCrossFeedResolution(psOptions.units.resSyntax);
+                    } else {
+                        try { psOptions.density = configOpts.getDouble("density"); }
+                        catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "density", configOpts.opt("density")); }
+                    }
                 }
             }
         }
@@ -293,8 +319,9 @@ public class PrintOptions {
                 defOptions.density = 60000d / psOptions.getUnits().getDPIUnits();
             }
         }
-        if ((psOptions.isRasterize() || format == PrintingUtilities.Format.IMAGE) && psOptions.getDensity() == 0) {
+        if ((psOptions.isRasterize() || format == PrintingUtilities.Format.IMAGE) && psOptions.getDensity() <= 1) {
             psOptions.density = defOptions.density;
+            psOptions.crossDensity = defOptions.density;
         }
 
         if (output.isSetService()) {

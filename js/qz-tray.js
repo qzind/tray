@@ -685,6 +685,17 @@ var qz = (function() {
                 }
             },
 
+            /* Converts config defaults to match previous version */
+            config: function(config, dirty) {
+                if (_qz.tools.isVersion(2, 0)) {
+                    if (!dirty.rasterize) {
+                        config.rasterize = true;
+                    }
+                }
+
+                return config;
+            },
+
             /** Compat wrapper with previous version **/
             networking: function(hostname, port, signature, signingTimestamp, mappingCallback) {
                 // Use 2.0
@@ -735,6 +746,10 @@ var qz = (function() {
 
     /** Object to handle configured printer options. */
     function Config(printer, opts) {
+
+        this.config = _qz.tools.extend({}, _qz.printing.defaultConfig); //create a copy of the default options
+        this._dirtyOpts = {}; //track which config options have changed from the defaults
+
         /**
          * Set the printer assigned to this config.
          * @param {string|Object} newPrinter Name of printer. Use object type to specify printing to file or host.
@@ -765,6 +780,12 @@ var qz = (function() {
          * @see qz.configs.setDefaults
          */
         this.reconfigure = function(newOpts) {
+            for(var key in newOpts) {
+                if (newOpts[key] !== undefined) {
+                    this._dirtyOpts[key] = true;
+                }
+            }
+
             _qz.tools.extend(this.config, newOpts);
         };
 
@@ -772,12 +793,12 @@ var qz = (function() {
          * @returns {Object} The currently applied options on this config.
          */
         this.getOptions = function() {
-            return this.config;
+            return _qz.compatible.config(this.config, this._dirtyOpts);
         };
 
         // init calls for new config object
         this.setPrinter(printer);
-        this.config = opts;
+        this.reconfigure(opts);
     }
 
     /**
@@ -1151,8 +1172,7 @@ var qz = (function() {
              * @memberof qz.configs
              */
             create: function(printer, options) {
-                var myOpts = _qz.tools.extend({}, _qz.printing.defaultConfig, options);
-                return new Config(printer, myOpts);
+                return new Config(printer, options);
             }
         },
 

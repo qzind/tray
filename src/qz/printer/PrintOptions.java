@@ -241,7 +241,7 @@ public class PrintOptions {
                 defOptions.density = 60000d / psOptions.getUnits().getDPIUnits();
             }
         }
-        if ((psOptions.isRasterize() || type == PrintingUtilities.Type.IMAGE) && psOptions.getDensity() == 0) {
+        if ((psOptions.isRasterize() || type == PrintingUtilities.Type.IMAGE || type == PrintingUtilities.Type.HTML) && psOptions.getDensity() == 0) {
             psOptions.density = defOptions.density;
         }
 

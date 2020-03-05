@@ -72,12 +72,12 @@ function replace_vars {
     cmd=$(echo "$cmd" | sed -e "s|\!sslcert|$trustedcertpath|g")
     cmd=$(echo "$cmd" | sed -e "s|\!sslkey|$trustedkeypath|g")
 
-    # Shorten cert life for macOS 10.15+ to 825 days per #491
+    # Shorten cert life for macOS 10.15+ to 398 days per #587
     curver=($(sw_vers -productVersion |tr '.' ' '))
     curver="${curver[0]}.${curver[1]}"
     compare="$(echo "$curver>10.14" | bc -l)"
     if [ $compare -gt 0 ]; then
-        cmd=$(echo "$cmd" | sed -e "s|-validity ${ssl.validity}|-validity 825|g")
+        cmd=$(echo "$cmd" | sed -e "s|-validity ${ssl.validity}|-validity 398|g")
     fi
 
     echo "$cmd"

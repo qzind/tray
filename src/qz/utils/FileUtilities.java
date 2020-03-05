@@ -666,6 +666,21 @@ public class FileUtilities {
         return null;
     }
 
+    public static void setPermissionsParentally(Path toTraverse, boolean worldWrite) {
+        Path stepper = toTraverse.toAbsolutePath();
+        // Assume we shouldn't go higher than 2nd-level (e.g. "/etc", "C:\Program Files\", etc)
+        while(stepper.getParent() != null && !stepper.getRoot().equals(stepper.getParent())) {
+            File file = stepper.toFile();
+            file.setReadable(true, false);
+            file.setExecutable(true, false);
+            file.setWritable(true, !worldWrite);
+            if (SystemUtilities.isWindows() && worldWrite) {
+                WindowsUtilities.setWritable(stepper);
+            }
+            stepper = stepper.getParent();
+        }
+    }
+
     public static void setPermissionsRecursively(Path toRecurse, boolean worldWrite) {
         try (Stream<Path> paths = Files.walk(toRecurse)) {
             paths.forEach((path)->{

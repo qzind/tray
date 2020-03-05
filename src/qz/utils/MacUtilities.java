@@ -33,6 +33,7 @@ public class MacUtilities {
     private static final Logger log = LoggerFactory.getLogger(IconCache.class);
     private static Dialog aboutDialog;
     private static TrayManager trayManager;
+    private static String bundleId;
 
     public static void showAboutDialog() {
         if (aboutDialog != null) { aboutDialog.setVisible(true); }
@@ -54,6 +55,24 @@ public class MacUtilities {
         catch(Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Calculates CFBundleIdentifier for macOS
+     * @return
+     */
+    public static String getBundleId() {
+        if(bundleId == null) {
+            String[] parts = Constants.ABOUT_URL.split("/");
+            if(Constants.ABOUT_URL.endsWith("/")) {
+                // Handle trailing backslash
+                parts = parts[parts.length - 2].split("\\.");
+            } else {
+                parts = parts[parts.length - 1].split("\\.");
+            }
+            bundleId = parts[1] + "." + parts[0] + "." + Constants.PROPS_FILE;
+        }
+        return bundleId;
     }
 
     /**

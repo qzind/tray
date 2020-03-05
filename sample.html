@@ -139,14 +139,29 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
+                            <label>Language</label>
                             <div>
-                                <label>Print Data</label>
-                            </div>
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-default" onclick="printCommand();">Commands</button>
-                                <button type="button" class="btn btn-default" onclick="printBase64();">Base64</button>
-                                <button type="button" class="btn btn-default" onclick="printXML();">XML</button>
-                                <button type="button" class="btn btn-default" onclick="printHex();">Hex</button>
+                                <label>
+                                    <input type="radio" name="pLanguage" id="pLangEPL" value="EPL" />
+                                    EPL2
+                                </label>
+                                <label>
+                                    <input type="radio" name="pLanguage" id="pLangZPL" value="ZPL" />
+                                    ZPLII
+                                </label>
+                                <br />
+                                <label>
+                                    <input type="radio" name="pLanguage" id="pLangESCP" value="ESCP" />
+                                    ESC/POS
+                                </label>
+                                <label>
+                                    <input type="radio" name="pLanguage" id="pLangEPCL" value="EPCL" />
+                                    EPCL
+                                </label>
+                                <label>
+                                    <input type="radio" name="pLanguage" id="pLangEVOLIS" value="EVOLIS" />
+                                    Evolis
+                                </label>
                             </div>
                         </div>
                         <div class="form-group">
@@ -162,6 +177,17 @@
                     </div>
 
                     <div class="col-md-6">
+                        <div class="form-group">
+                            <div>
+                                <label>Print Data</label>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-default" onclick="printCommand();">Commands</button>
+                                <button type="button" class="btn btn-default" onclick="printBase64();">Base64</button>
+                                <button type="button" class="btn btn-default" onclick="printXML();">XML</button>
+                                <button type="button" class="btn btn-default" onclick="printHex();">Hex</button>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <div>
                                 <label>Raster Print</label>
@@ -230,32 +256,6 @@
 
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label>Language</label>
-                                                <div>
-                                                    <label>
-                                                        <input type="radio" name="pLanguage" id="pLangEPL" value="EPL" />
-                                                        EPL2
-                                                    </label>
-                                                    <label>
-                                                        <input type="radio" name="pLanguage" id="pLangZPL" value="ZPL" />
-                                                        ZPLII
-                                                    </label>
-                                                    <br />
-                                                    <label>
-                                                        <input type="radio" name="pLanguage" id="pLangESCP" value="ESCP" />
-                                                        ESC/POS
-                                                    </label>
-                                                    <label>
-                                                        <input type="radio" name="pLanguage" id="pLangEPCL" value="EPCL" />
-                                                        EPCL
-                                                    </label>
-                                                    <label>
-                                                        <input type="radio" name="pLanguage" id="pLangEVOLIS" value="EVOLIS" />
-                                                        Evolis
-                                                    </label>
-                                                </div>
-                                            </div>
                                             <div class="form-group form-inline">
                                                 <label for="pX">Image X</label>
                                                 <input type="number" id="pX" class="form-control pull-right" />
@@ -359,7 +359,13 @@
 
                                             <div class="form-group form-inline">
                                                 <label for="pxlDuplex"> Duplex</label>
-                                                <input type="checkbox" id="pxlDuplex" class="pull-right" />
+                                                <select id="pxlDuplex" class="form-control pull-right">
+                                                    <option value="">Single Sided</option>
+                                                    <option value="duplex">Double Sided</option>
+                                                    <option value="long-edge">Two Sided (Long Edge)</option>
+                                                    <option value="short-edge">Two Sided (Short Edge)</option>
+                                                    <option value="tumble">Tumble</option>
+                                                </select>
                                             </div>
 
                                             <div class="form-group form-inline">
@@ -2267,7 +2273,7 @@
         $("#pxlColorType").val("color");
         $("#pxlCopies").val(1);
         $("#pxlDensity").val('');
-        $("#pxlDuplex").prop('checked', false);
+        $("#pxlDuplex").val("");
         $("#pxlInterpolation").val("");
         $("#pxlJobName").val("");
         $("#pxlLegacy").prop('checked', false);
@@ -2416,6 +2422,13 @@
             }
         });
 
+        if (location.hash) {
+            $(".nav-tabs a[href='"+ location.hash +"']").tab('show');
+        }
+        $(".nav-tabs a").on("click", function(e) {
+            location.hash = this.hash;
+        });
+
         $("#usbRawRadio").click(function() { window.readingWeight = false; });
         $("#usbWeightRadio").click(function() { window.readingWeight = true; });
         $("#hidRawRadio").click(function() { window.readingWeight = false; });
@@ -2526,7 +2539,7 @@
     });
 
     //make dirty when changed
-    $("input[type=checkbox]").on('click', function() {
+    $("input").on('change', function() {
         $(this).addClass("dirty");
     });
 
@@ -2617,14 +2630,26 @@
     }
 
     function isChecked(checkElm, ifClean) {
-        if (ifClean !== undefined && !checkElm.hasClass("dirty")) {
-            var lbl = checkElm.siblings("label").text();
-            displayMessage("Forced " + lbl + " " + ifClean + ".", 'alert-warning');
+        if (!checkElm.hasClass("dirty")) {
+            if (ifClean !== undefined) {
+                var lbl = checkElm.siblings("label").text();
+                displayMessage("Forced " + lbl + " " + ifClean + ".", 'alert-warning');
+            }
 
             return ifClean;
         }
 
         return checkElm.prop("checked");
+    }
+
+    function includedValue(element, value) {
+        if (value != null) {
+            return value;
+        } else if (element.hasClass("dirty")) {
+            return element.val();
+        } else {
+            return undefined;
+        }
     }
 
     function usbButton(ids, data) {
@@ -2729,7 +2754,7 @@
     }
 
     function updateConfig(cleanConditions) {
-        var pxlSize = null;
+        var pxlSize = undefined;
         if (isChecked($("#pxlSizeActive"), cleanConditions['pxlSizeActive'])) {
             pxlSize = {
                 width: $("#pxlSizeWidth").val(),
@@ -2737,7 +2762,7 @@
             };
         }
 
-        var pxlBounds = null;
+        var pxlBounds = undefined;
         if (isChecked($("#pxlBoundsActive"), cleanConditions['pxlBoundsActive'])) {
             pxlBounds = {
                 x: $("#pxlBoundX").val(),
@@ -2747,7 +2772,7 @@
             };
         }
 
-        var pxlMargins = $("#pxlMargins").val();
+        var pxlMargins = includedValue($("#pxlMargins"));
         if (isChecked($("#pxlMarginsActive"), cleanConditions['pxlMarginsActive'])) {
             pxlMargins = {
                 top: $("#pxlMarginsTop").val(),
@@ -2760,35 +2785,35 @@
         var copies = 1;
         var jobName = null;
         if ($("#rawTab").hasClass("active")) {
-            copies = $("#rawCopies").val();
-            jobName = $("#rawJobName").val();
+            copies = includedValue($("#rawCopies"));
+            jobName = includedValue($("#rawJobName"));
         } else {
-            copies = $("#pxlCopies").val();
-            jobName = $("#pxlJobName").val();
+            copies = includedValue($("#pxlCopies"));
+            jobName = includedValue($("#pxlJobName"));
         }
 
         cfg.reconfigure({
-                            altPrinting: isChecked($("#rawAltPrinting"), cleanConditions['rawAltPrinting']),
-                            encoding: $("#rawEncoding").val(),
-                            endOfDoc: $("#rawEndOfDoc").val(),
-                            perSpool: $("#rawPerSpool").val(),
+                            altPrinting: includedValue($("#rawAltPrinting"), isChecked($("#rawAltPrinting"), cleanConditions['rawAltPrinting'])),
+                            encoding: includedValue($("#rawEncoding")),
+                            endOfDoc: includedValue($("#rawEndOfDoc")),
+                            perSpool: includedValue($("#rawPerSpool")),
 
                             bounds: pxlBounds,
-                            colorType: $("#pxlColorType").val(),
+                            colorType: includedValue($("#pxlColorType")),
                             copies: copies,
-                            density: $("#pxlDensity").val(),
-                            duplex: isChecked($("#pxlDuplex"), cleanConditions['pxlDuplex']),
-                            interpolation: $("#pxlInterpolation").val(),
+                            density: includedValue($("#pxlDensity")),
+                            duplex: includedValue($("#pxlDuplex")),
+                            interpolation: includedValue($("#pxlInterpolation")),
                             jobName: jobName,
                             margins: pxlMargins,
-                            orientation: $("#pxlOrientation").val(),
-                            paperThickness: $("#pxlPaperThickness").val(),
-                            printerTray: $("#pxlPrinterTray").val(),
-                            rasterize: isChecked($("#pxlRasterize"), cleanConditions['pxlRasterize']),
-                            rotation: $("#pxlRotation").val(),
-                            scaleContent: isChecked($("#pxlScale"), cleanConditions['pxlScale']),
+                            orientation: includedValue($("#pxlOrientation")),
+                            paperThickness: includedValue($("#pxlPaperThickness")),
+                            printerTray: includedValue($("#pxlPrinterTray")),
+                            rasterize: includedValue($("#pxlRasterize"), isChecked($("#pxlRasterize"), cleanConditions['pxlRasterize'])),
+                            rotation: includedValue($("#pxlRotation")),
+                            scaleContent: includedValue($("#pxlScale"), isChecked($("#pxlScale"), cleanConditions['pxlScale'])),
                             size: pxlSize,
-                            units: $("input[name='pxlUnits']:checked").val()
+                            units: includedValue($("input[name='pxlUnits']:checked"))
                         });
     }
 

@@ -36,11 +36,11 @@ import java.util.List;
 public class WindowsInstaller extends Installer {
     protected static final Logger log = LoggerFactory.getLogger(WindowsInstaller.class);
     private String destination = getDefaultDestination();
-    private String destinationExe;
+    private String destinationExe = getDefaultDestination() + File.separator + PROPS_FILE + ".exe";
 
     public void setDestination(String destination) {
         this.destination = destination;
-        this.destinationExe = destination + File.separator + PROPS_FILE+ ".exe";
+        this.destinationExe = destination + File.separator + PROPS_FILE + ".exe";
     }
 
     /**
@@ -89,6 +89,8 @@ public class WindowsInstaller extends Installer {
         WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + ABOUT_TITLE);
         WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, "Software\\" + ABOUT_TITLE);
         WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, DATA_DIR);
+        // Chrome protocol handler
+        WindowsUtilities.deleteRegData(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLWhitelist", String.format("%s://*", DATA_DIR));
 
         // Cleanup launchers
         for(WindowsSpecialFolders folder : new WindowsSpecialFolders[] { START_MENU, COMMON_START_MENU, DESKTOP, PUBLIC_DESKTOP }) {
@@ -133,6 +135,9 @@ public class WindowsInstaller extends Installer {
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "URLInfoAbout", ABOUT_SUPPORT_URL);
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "DisplayVersion", VERSION.toString());
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "EstimatedSize", FileUtils.sizeOfDirectoryAsBigInteger(new File(destination)).intValue() / 1024);
+
+        // Chrome protocol handler
+        WindowsUtilities.addNumberedRegValue(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLWhitelist", String.format("%s://*", DATA_DIR));
 
         // Firewall rules
         String ports = StringUtils.join(PrintSocketServer.SECURE_PORTS, ",") + "," + StringUtils.join(PrintSocketServer.INSECURE_PORTS, ",");

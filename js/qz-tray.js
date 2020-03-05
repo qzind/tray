@@ -512,17 +512,29 @@ var qz = (function() {
 
         security: {
             /** Function used to resolve promise when acquiring site's public certificate. */
-            certPromise: function(resolve, reject) { reject(); },
-            /** Called to create new promise (using {@link _qz.security.certPromise}) for certificate retrieval. */
+            certHandler: function(resolve, reject) { reject(); },
+            /** Called to create new promise (using {@link _qz.security.certHandler}) for certificate retrieval. */
             callCert: function() {
-                return _qz.tools.promise(_qz.security.certPromise);
+                if (typeof _qz.security.certHandler.then === 'function' || _qz.security.certHandler.constructor.name === "AsyncFunction") {
+                    //already a promise
+                    return _qz.security.certHandler();
+                } else {
+                    //turn into a promise
+                    return _qz.tools.promise(_qz.security.certHandler);
+                }
             },
 
             /** Function used to create promise resolver when requiring signed calls. */
-            signaturePromise: function() { return function(resolve) { resolve(); } },
-            /** Called to create new promise (using {@link _qz.security.signaturePromise}) for signed calls. */
+            signatureFactory: function() { return function(resolve) { resolve(); } },
+            /** Called to create new promise (using {@link _qz.security.signatureFactory}) for signed calls. */
             callSign: function(toSign) {
-                return _qz.tools.promise(_qz.security.signaturePromise(toSign));
+                if (typeof _qz.security.signatureFactory.then === 'function' || _qz.security.signatureFactory.constructor.name === "AsyncFunction") {
+                    //already a promise
+                    return _qz.security.signatureFactory(toSign);
+                } else {
+                    //turn into a promise
+                    return _qz.tools.promise(_qz.security.signatureFactory(toSign));
+                }
             },
 
             /** Signing algorithm used on signatures */
@@ -685,6 +697,17 @@ var qz = (function() {
                 }
             },
 
+            /* Converts config defaults to match previous version */
+            config: function(config, dirty) {
+                if (_qz.tools.isVersion(2, 0)) {
+                    if (!dirty.rasterize) {
+                        config.rasterize = true;
+                    }
+                }
+
+                return config;
+            },
+
             /** Compat wrapper with previous version **/
             networking: function(hostname, port, signature, signingTimestamp, mappingCallback) {
                 // Use 2.0
@@ -735,6 +758,10 @@ var qz = (function() {
 
     /** Object to handle configured printer options. */
     function Config(printer, opts) {
+
+        this.config = _qz.tools.extend({}, _qz.printing.defaultConfig); //create a copy of the default options
+        this._dirtyOpts = {}; //track which config options have changed from the defaults
+
         /**
          * Set the printer assigned to this config.
          * @param {string|Object} newPrinter Name of printer. Use object type to specify printing to file or host.
@@ -765,6 +792,12 @@ var qz = (function() {
          * @see qz.configs.setDefaults
          */
         this.reconfigure = function(newOpts) {
+            for(var key in newOpts) {
+                if (newOpts[key] !== undefined) {
+                    this._dirtyOpts[key] = true;
+                }
+            }
+
             _qz.tools.extend(this.config, newOpts);
         };
 
@@ -772,12 +805,12 @@ var qz = (function() {
          * @returns {Object} The currently applied options on this config.
          */
         this.getOptions = function() {
-            return this.config;
+            return _qz.compatible.config(this.config, this._dirtyOpts);
         };
 
         // init calls for new config object
         this.setPrinter(printer);
-        this.config = opts;
+        this.reconfigure(opts);
     }
 
     /**
@@ -1101,7 +1134,7 @@ var qz = (function() {
              *  @param {number} [options.copies=1] Number of copies to be printed.
              *  @param {number|Array<number>} [options.density=0] Pixel density (DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *      If provided as an array, uses the first supported density found (or the first entry if none found).
-             *  @param {boolean} [options.duplex=false] Double sided printing
+             *  @param {boolean|string} [options.duplex=false] Double sided printing, Can specify duplex style by passing a string value: <code>[one-sided | duplex | long-edge | tumble | short-edge]</code>
              *  @param {number} [options.fallbackDensity=null] Value used when default density value cannot be read, or in cases where reported as "Normal" by the driver, (in DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *  @param {string} [options.interpolation='bicubic'] Valid values <code>[bicubic | bilinear | nearest-neighbor]</code>. Controls how images are handled when resized.
              *  @param {string} [options.jobName=null] Name to display in print queue.
@@ -1151,8 +1184,7 @@ var qz = (function() {
              * @memberof qz.configs
              */
             create: function(printer, options) {
-                var myOpts = _qz.tools.extend({}, _qz.printing.defaultConfig, options);
-                return new Config(printer, myOpts);
+                return new Config(printer, options);
             }
         },
 
@@ -2091,25 +2123,34 @@ var qz = (function() {
             /**
              * Set promise resolver for calls to acquire the site's certificate.
              *
-             * @param {Function} promiseCall <code>Function({function} resolve)</code> called as promise for getting the public certificate.
-             *     Should call <code>resolve</code> parameter with the result.
+             * @param {Function|Promise<string>} promiseHandler Either a function that will be used as a promise resolver (of format <code>Function({function} resolve, {function}reject)</code>),
+             *     or the entire promise, either of which should return the public certificate via their respective <code>resolve</code> call.
              *
              * @memberof qz.security
              */
-            setCertificatePromise: function(promiseCall) {
-                _qz.security.certPromise = promiseCall;
+            setCertificatePromise: function(promiseHandler) {
+                _qz.security.certHandler = promiseHandler;
             },
 
             /**
-             * Set promise creator for calls to sign API calls.
+             * Set promise factory for calls to sign API calls.
              *
-             * @param {Function} promiseGen <code>Function({function} toSign)</code> Should return a function, <code>Function({function} resolve)</code>, that
-             *     will sign the content and resolve the created promise.
+             * @param {Function|Promise<string>} promiseFactory Either a function that accepts a string parameter of the data to be signed
+             *     and returns a function to be used as a promise resolver (of format <code>Function({function} resolve, {function}reject)</code>),
+             *     or a promise that can take a string parameter of the data to be signed, either of which should return the signed contents of
+             *     the passed string parameter via their respective <code>resolve</code> call.
+             *
+             * @example
+             *  qz.security.setSignaturePromise(function(dataToSign) {
+             *    return function(resolve, reject) {
+             *      $.ajax("/signing-url?data=" + dataToSign).then(resolve, reject);
+             *    }
+             *  })
              *
              * @memberof qz.security
              */
-            setSignaturePromise: function(promiseGen) {
-                _qz.security.signaturePromise = promiseGen;
+            setSignaturePromise: function(promiseFactory) {
+                _qz.security.signatureFactory = promiseFactory;
             },
 
             /**

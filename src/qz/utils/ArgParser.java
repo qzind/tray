@@ -191,6 +191,12 @@ public class ArgParser {
                 exitStatus = SUCCESS;
                 return true;
             }
+            // Handle macOS CFBundleIdentifier request
+            if (hasFlag("-i", "--bundleid")) {
+                System.out.println(MacUtilities.getBundleId());
+                exitStatus = SUCCESS;
+                return true;
+            }
             // Handle cert installation
             String certFile;
             if ((certFile = valueOf("-a", "--whitelist")) != null) {

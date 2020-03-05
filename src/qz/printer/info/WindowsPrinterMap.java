@@ -1,6 +1,5 @@
 package qz.printer.info;
 
-import com.sun.jna.platform.win32.Advapi32Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.WindowsUtilities;
@@ -13,7 +12,7 @@ public class WindowsPrinterMap extends NativePrinterMap {
     private static final Logger log = LoggerFactory.getLogger(WindowsPrinterMap.class);
 
     public synchronized NativePrinterMap putAll(PrintService[] services) {
-        printers: for (PrintService service : findMissing(services)) {
+        for (PrintService service : findMissing(services)) {
             String name = service.getName();
             if(name.equals("PageManager PDF Writer")) {
                 log.warn("Printer \"{}\" is blacklisted, removing", name); // Per https://github.com/qzind/tray/issues/599

@@ -16,6 +16,7 @@ import java.util.*;
 public class CupsPrinterMap extends NativePrinterMap {
     private static final String DEFAULT_CUPS_DRIVER = "TEXTONLY.ppd";
     private static final Logger log = LoggerFactory.getLogger(CupsPrinterMap.class);
+    private Map<NativePrinter, List<PrinterResolution>> resolutionMap = new HashMap<>();
 
     public synchronized NativePrinterMap putAll(PrintService[] services) {
         ArrayList<PrintService> missing = findMissing(services);
@@ -67,6 +68,66 @@ public class CupsPrinterMap extends NativePrinterMap {
         return this;
     }
 
+    synchronized void addResolution(NativePrinter printer, PrinterResolution resolution) {
+        List<PrinterResolution> resolutions = resolutionMap.get(printer);
+        if(resolutions == null) {
+            resolutions = new ArrayList<>();
+            resolutionMap.put(printer, resolutions);
+        }
+        if(!resolutions.contains(resolution)) {
+            resolutions.add(resolution);
+        }
+    }
+
+    synchronized List<PrinterResolution> getResolutions(NativePrinter printer) {
+        List<PrinterResolution> resolutions = resolutionMap.get(printer);
+        return resolutions != null ? resolutions : new ArrayList<>();
+    }
+
+    @Override
+    public boolean remove(Object key, Object value) {
+        if(value instanceof NativePrinter) {
+            resolutionMap.remove(value);
+        }
+        return super.remove(key, value);
+    }
+
+    /**
+     * Parse "*DefaultResolution" line from CUPS .ppd file
+     * @param line
+     * @return
+     */
+    public static PrinterResolution parseDefaultResolution(String line) {
+        try {
+            String[] parts = line.split("x");
+            int cross = Integer.parseInt(parts[0].replaceAll("\\D+", ""));
+            int feed = parts.length > 1? Integer.parseInt(parts[1].replaceAll("\\D+", "")):cross;
+            int type = line.toLowerCase(Locale.ENGLISH).contains("dpi")? PrinterResolution.DPI:PrinterResolution.DPCM;
+            return new PrinterResolution(cross, feed, type);
+        } catch(NumberFormatException nfe) {
+            log.warn("Could not parse density from \"{}\"", line);
+        }
+        return null;
+    }
+
+    /**
+     * Parse "/HWResolution[" line from CUPS .ppd file
+     * @param line
+     * @return
+     */
+    public static PrinterResolution parseAdditionalResolution(String line) {
+        try {
+            String[] parts = line.split("/HWResolution\\[")[1].split("\\D"); // split on non-digits
+            int cross = Integer.parseInt(parts[0]);
+            int feed = parts.length > 1? Integer.parseInt(parts[1]) : cross;
+            int type = line.toLowerCase(Locale.ENGLISH).contains("dpi:")? PrinterResolution.DPI:PrinterResolution.DPCM;
+            return new PrinterResolution(cross, feed, type);
+        } catch(NumberFormatException nfe) {
+            log.warn("Could not parse density from \"{}\"", line, nfe);
+        }
+        return null;
+    }
+
     synchronized void fillAttributes(NativePrinter printer) {
         if (!printer.getDriverFile().isNull()) {
             File ppdFile = new File(printer.getDriverFile().value());
@@ -76,13 +137,16 @@ public class CupsPrinterMap extends NativePrinterMap {
 
                 while((line = buffer.readLine()) != null) {
                     if (line.contains("*DefaultResolution:")) {
-                        // Parse printer resolution
-                        try {
-                            int density = Integer.parseInt(line.split("x")[0].replaceAll("\\D+", ""));
-                            int type = line.toLowerCase(Locale.ENGLISH).contains("dpi")? PrinterResolution.DPI:PrinterResolution.DPCM;
-                            printer.setResolution(new PrinterResolution(density, density, type));
-                        } catch(NumberFormatException e) {
-                            log.warn("Could not parse density from \"{}\"", line);
+                        // Parse default printer resolution
+                        PrinterResolution defaultRes = parseDefaultResolution(line);
+                        if(defaultRes != null) {
+                            printer.setResolution(defaultRes);
+                            addResolution(printer, defaultRes);
+                        }
+                    } else if(line.contains("/HWResolution[")) {
+                        PrinterResolution additionalRes = parseAdditionalResolution(line);
+                        if(additionalRes != null) {
+                            addResolution(printer, additionalRes);
                         }
                     } else if(line.contains("*PCFileName:")) {
                         // Parse driver name

@@ -152,11 +152,14 @@ public class NativePrinter {
     }
 
     public List<PrinterResolution> getResolutions() {
-        // TODO: Test/Implement supported resolutions for CUPS
-
         PrintService ps = getPrintService().value();
         PrinterResolution[] resSupport = (PrinterResolution[])ps.getSupportedAttributeValues(PrinterResolution.class, ps.getSupportedDocFlavors()[0], null);
         if (resSupport == null || resSupport.length == 0) {
+            NativePrinterMap printerMap = NativePrinterMap.getInstance();
+            // CUPS doesn't report resolutions properly, instead return the values scraped from console
+            if(printerMap instanceof CupsPrinterMap) {
+                return ((CupsPrinterMap)printerMap).getResolutions(this);
+            }
             resSupport = new PrinterResolution[]{ getResolution().value() };
         }
 

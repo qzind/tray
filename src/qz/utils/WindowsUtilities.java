@@ -99,6 +99,18 @@ public class WindowsUtilities {
     }
 
     // gracefully swallow InvocationTargetException
+    public static String[] getRegMultiString(HKEY root, String key, String value) {
+        try {
+            if (Advapi32Util.registryKeyExists(root, key) && Advapi32Util.registryValueExists(root, key, value)) {
+                return Advapi32Util.registryGetStringArray(root, key, value);
+            }
+        } catch(Exception e) {
+            log.warn("Couldn't get registry value {}\\{}\\{}", root, key, value);
+        }
+        return null;
+    }
+
+    // gracefully swallow InvocationTargetException
     public static boolean deleteRegKey(HKEY root, String key) {
         try {
             if (Advapi32Util.registryKeyExists(root, key)) {

@@ -68,6 +68,21 @@ public class CupsPrinterMap extends NativePrinterMap {
     }
 
     synchronized void fillAttributes(NativePrinter printer) {
+        String options = ShellUtilities.executeRaw("lpoptions", "-p", printer.getPrinterId());
+        String connection = null;
+        int start;
+        int end;
+        String section;
+        if((start = options.indexOf("device-uri=")) != -1) {
+            section = options.substring(start);
+            if((end = section.indexOf(' ')) > 0) {
+                connection = section.substring(section.indexOf("=") + 1, end);
+            } else {
+                connection = section.substring(section.indexOf("=") + 1);
+            }
+        }
+        printer.setConnection(connection);
+
         if (!printer.getDriverFile().isNull()) {
             File ppdFile = new File(printer.getDriverFile().value());
             try {

@@ -1,5 +1,6 @@
 package qz.printer.info;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.WindowsUtilities;
@@ -30,6 +31,7 @@ public class WindowsPrinterMap extends NativePrinterMap {
         String keyName = printer.getPrinterId().replaceAll("\\\\", ",");
         String key = "SYSTEM\\CurrentControlSet\\Control\\Print\\Printers\\" + keyName;
         String driver = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "Printer Driver");
+        String port = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "Port");
         if (driver == null) {
             key = "Printers\\Connections\\" + keyName;
             String guid = WindowsUtilities.getRegString(HKEY_CURRENT_USER, key, "GuidPrinter");
@@ -37,8 +39,11 @@ public class WindowsPrinterMap extends NativePrinterMap {
                 String serverName = keyName.replaceAll(",,(.+),.+", "$1");
                 key = "Software\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Providers\\Client Side Rendering Print Provider\\Servers\\" + serverName + "\\Printers\\" + guid;
                 driver = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "Printer Driver");
+                // In testing, "Port" simply pointed back to the guid; assume "DsSpooler\portName" instead
+                port = StringUtils.join(WindowsUtilities.getRegMultiString(HKEY_LOCAL_MACHINE, key + "\\DsSpooler", "portName"));
             }
         }
         printer.setDriver(driver);
+        printer.setConnection(port);
     }
 }

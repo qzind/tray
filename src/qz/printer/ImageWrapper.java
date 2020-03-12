@@ -489,7 +489,9 @@ public class ImageWrapper {
         // draw the bitmap in multiple passes, then we'll end up with some
         // whitespace between slices of the image since the default line
         // height--how much the printer moves on a newline--is 30 dots.
-        builder.append(new byte[] {0x1B, 0x33, 24});
+        int stripeWidth = dotDensity <=1 ? 1 : 3;
+        int stripeHeight = dotDensity <= 1 ? 16 : 24;
+        builder.append(new byte[] {0x1B, 0x33, (byte)stripeHeight });
 
         // OK. So, starting from x = 0, read 24 bits down and send that data
         // to the printer. The offset variable keeps track of our global 'y'
@@ -517,7 +519,7 @@ public class ImageWrapper {
                 // Remember, 24 dots = 24 bits = 3 bytes.
                 // The 'k' variable keeps track of which of those
                 // three bytes that we're currently scribbling into.
-                for(int k = 0; k < 3; ++k) {
+                for(int k = 0; k < stripeWidth; ++k) {
                     byte slice = 0;
 
                     // A byte is 8 bits. The 'b' variable keeps track
@@ -558,7 +560,7 @@ public class ImageWrapper {
             // We're done with this 24-dot high pass. Render a newline
             // to bump the print head down to the next line
             // and keep on trucking.
-            offset += 24;
+            offset += 8 * stripeWidth;
             builder.append(new byte[] {10});
         }
 

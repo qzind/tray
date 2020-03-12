@@ -1,5 +1,6 @@
 package qz.printer.action;
 
+import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -9,7 +10,6 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.SnapshotResult;
-import javafx.scene.image.WritableImage;
 import javafx.scene.transform.Scale;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
@@ -72,11 +72,6 @@ public class WebApp extends Application {
                     base.getAttributes().setNamedItem(applied);
                 }
 
-                log.trace("Setting HTML page width to {}", pageWidth);
-                webView.setMinWidth(pageWidth);
-                webView.setPrefWidth(pageWidth);
-                webView.autosize();
-
                 //width was resized earlier (for responsive html), then calculate the best fit height
                 if (pageHeight <= 0) {
                     String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
@@ -92,21 +87,32 @@ public class WebApp extends Application {
                 Platform.runLater(new Runnable() {
                     @Override
                     public void run() {
-                        log.debug("Attempting image capture");
+                        new AnimationTimer() {
+                            int frames = 0;
 
-                        SnapshotParameters sparams = new SnapshotParameters();
-                        sparams.setTransform(new Scale(pageZoom, pageZoom));
-
-                        webView.snapshot(new Callback<SnapshotResult,Void>() {
                             @Override
-                            public Void call(SnapshotResult snapshotResult) {
-                                WritableImage snapshot = snapshotResult.getImage();
-                                capture.set(SwingFXUtils.fromFXImage(snapshot, null));
+                            public void handle(long l) {
+                                if (++frames == 2) {
+                                    log.debug("Attempting image capture");
 
-                                unlatch();
-                                return null;
+                                    SnapshotParameters sparams = new SnapshotParameters();
+                                    sparams.setTransform(new Scale(pageZoom, pageZoom));
+
+                                    webView.snapshot(new Callback<SnapshotResult,Void>() {
+                                        @Override
+                                        public Void call(SnapshotResult snapshotResult) {
+                                            capture.set(SwingFXUtils.fromFXImage(snapshotResult.getImage(), null));
+                                            unlatch();
+
+                                            return null;
+                                        }
+                                    }, sparams, null);
+
+                                    //stop timer after snapshot
+                                    stop();
+                                }
                             }
-                        }, sparams, null);
+                        }.start();
                     }
                 });
             }
@@ -210,6 +216,11 @@ public class WebApp extends Application {
 
                     webView.setMinSize(pageWidth, pageHeight);
                     webView.setPrefSize(pageWidth, pageHeight);
+                    if (pageHeight == 0) {
+                        //jfx8 uses a default of 600 if height is exactly 0, set it to 1 here to avoid that behavior
+                        webView.setMinHeight(1);
+                        webView.setPrefHeight(1);
+                    }
                     webView.autosize();
 
                     stage.show(); //FIXME - will not capture without showing stage

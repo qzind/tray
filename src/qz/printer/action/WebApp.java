@@ -8,12 +8,12 @@ import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Scene;
-import javafx.scene.SnapshotParameters;
 import javafx.scene.SnapshotResult;
-import javafx.scene.transform.Scale;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import javafx.util.Callback;
+import org.joor.Reflect;
+import org.joor.ReflectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -78,9 +78,9 @@ public class WebApp extends Application {
                     pageHeight = Double.parseDouble(heightText);
                 }
 
-                log.trace("Setting HTML page height to {}", pageHeight);
-                webView.setMinHeight(pageHeight);
-                webView.setPrefHeight(pageHeight);
+                log.trace("Setting HTML page height to {}", pageHeight * pageZoom);
+                webView.setMinHeight(pageHeight * pageZoom);
+                webView.setPrefHeight(pageHeight * pageZoom);
                 webView.autosize();
 
                 //without this runlater, the first capture is missed and all following captures are offset
@@ -95,8 +95,7 @@ public class WebApp extends Application {
                                 if (++frames == 2) {
                                     log.debug("Attempting image capture");
 
-                                    SnapshotParameters sparams = new SnapshotParameters();
-                                    sparams.setTransform(new Scale(pageZoom, pageZoom));
+
 
                                     webView.snapshot(new Callback<SnapshotResult,Void>() {
                                         @Override
@@ -106,7 +105,7 @@ public class WebApp extends Application {
 
                                             return null;
                                         }
-                                    }, sparams, null);
+                                    }, null, null);
 
                                     //stop timer after snapshot
                                     stop();
@@ -214,8 +213,17 @@ public class WebApp extends Application {
                     pageHeight = model.getWebHeight();
                     pageZoom = model.getZoom();
 
-                    webView.setMinSize(pageWidth, pageHeight);
-                    webView.setPrefSize(pageWidth, pageHeight);
+                    try {
+                        Reflect.on(webView).call("setZoom", pageZoom);
+                        log.trace("Zooming in by x{} for increased quality", pageZoom);
+                    }
+                    catch(ReflectException e) {
+                        log.warn("Unable zoom, using default quality");
+                        pageZoom = 1; //only zoom affects webView scaling
+                    }
+
+                    webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
+                    webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
                     if (pageHeight == 0) {
                         //jfx8 uses a default of 600 if height is exactly 0, set it to 1 here to avoid that behavior
                         webView.setMinHeight(1);

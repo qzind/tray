@@ -38,7 +38,7 @@ public class CertificateChainBuilder {
 
     private static int KEY_SIZE = 2048;
     public static int CA_CERT_AGE = 7305; // 20 years
-    public static int SSL_CERT_AGE = 398; // Per https://support.apple.com/HT211025
+    public static int SSL_CERT_AGE = 825; // Per https://support.apple.com/HT210176
 
     private String[] hostNames;
 

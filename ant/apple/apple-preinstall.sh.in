@@ -7,4 +7,11 @@ set -e
 DIR=$(cd "$(dirname "$0")" && pwd)
 pushd "$DIR/payload/Contents/MacOS/"
 
+# Offer to download Java if missing
+if ! ./"${project.name}" --version; then
+    osascript -e "tell app \"Installer\" to display dialog \"Java is required.  Please install Java and try again.\""
+    open "${java.download}"
+    exit 1
+fi
+
 ./"${project.name}" preinstall

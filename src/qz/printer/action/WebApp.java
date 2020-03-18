@@ -159,7 +159,7 @@ public class WebApp extends Application {
             try {
                 log.trace("Waiting for JavaFX..");
 
-                if (!startupLatch.await(1000, TimeUnit.MILLISECONDS)) {
+                if (!startupLatch.await(60, TimeUnit.SECONDS)) {
                     throw new IOException("JavaFX did not start");
                 }
             }

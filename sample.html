@@ -271,10 +271,6 @@
                                                 <input type="text" id="pDotDensity" class="form-control pull-right" />
                                             </div>
                                             <div class="form-group form-inline">
-                                                <label class="tip" for="pStripe" data-toggle="tooltip" title="For ESCPOS only">Striping</label>
-                                                <input type="checkbox" id="pStripe" class="form-control pull-right" />
-                                            </div>
-                                            <div class="form-group form-inline">
                                                 <label for="pXml">XML Tag</label>
                                                 <input type="text" id="pXml" class="form-control pull-right" />
                                             </div>
@@ -2267,7 +2263,6 @@
         $("#pX").val('0');
         $("#pY").val('0');
         $("#pDotDensity").val('single');
-        $("#pStripe").prop('checked', false);
         $("#pXml").val('v7:Image');
         $("#pRawWidth").val('480');
         $("#pRawHeight").val('');
@@ -2834,7 +2829,6 @@
                 x: $("#pX").val(),
                 y: $("#pY").val(),
                 dotDensity: $("#pDotDensity").val(),
-                stripe: $("#pStripe").prop('checked'),
                 xmlTag: $("#pXml").val(),
                 pageWidth: $("#pRawWidth").val(),
                 pageHeight: $("#pRawHeight").val()

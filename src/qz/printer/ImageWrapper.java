@@ -313,7 +313,7 @@ public class ImageWrapper {
 
         switch(languageType) {
             case ESCP:
-                appendEpsonSlices(getByteBuffer(), opt.optBoolean("stripe"));
+                appendEpsonSlices(getByteBuffer());
                 break;
             case ZPL:
                 String zplHexAsString = ByteUtilities.getHexString(getImageAsIntArray());
@@ -470,9 +470,11 @@ public class ImageWrapper {
      *
      * @param builder the ByteArrayBuilder to use
      */
-    private void appendEpsonSlices(ByteArrayBuilder builder, boolean stripe) {
+    private void appendEpsonSlices(ByteArrayBuilder builder) {
         // set line height to the size of each chunk we will be sending
-        int segmentHeight = (dotDensity <= 1 || stripe)? 16:24; // height will be handled explicitly below if striping
+        int segmentHeight = dotDensity > 1 ? 24 : (dotDensity == 1 ? 8 : 16); // height will be handled explicitly below if striping
+        // Impact printers (U220, etc) benefit from double-pass striping (odd/even) for higher quality (dotDensity = 1)
+        boolean stripe = dotDensity == 1;
         int bytesNeeded = (dotDensity <= 1 || stripe)? 1:3;
 
         int offset = 0; // keep track of chunk offset currently being written

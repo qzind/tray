@@ -46,6 +46,29 @@ RequestExecutionLevel admin
     ${EndIf}
 !macroend
 
+!macro VerifyJava jumpto
+    ; Test java executable
+    nsExec::ExecToLog '"$java" -version"'
+    Pop $0
+    ${If} "$0" == "0"
+        Goto Resume
+    ${EndIf}
+
+    ; Offer to download Java if missing and non-silent install
+    ${IfNot} ${Silent}
+        MessageBox MB_YESNO "Java is required.  Download now?" IDYES Website IDNO Resume
+
+        ; Visit Java website
+        Website:
+        ExecShell "open" "${java.download}"
+        MessageBox MB_OK "Click OK after Java is installed"
+
+        ; Check again for Java
+        Goto ${jumpto}
+    ${EndIf}
+    Resume:
+!macroend
+
 Section
     ; Set environmental variable for silent install to be picked up by Java
     ${If} ${Silent}
@@ -53,7 +76,9 @@ Section
     ${EndIf}
 
     ; Set the $java variable
+    TryAgain:
     Call FindJava
+    !insertmacro VerifyJava "TryAgain"
 
     ; Create the uninstaller
     SetOutPath $INSTDIR
@@ -82,7 +107,9 @@ Section "Uninstall"
     DetailPrint "Uninstalling..."
 
     ; Set the $java variable
+    TryAgain:
     Call un.FindJava
+    !insertmacro VerifyJava "TryAgain"
 
     ; Run uninstall tasks
     SetOutPath $INSTDIR

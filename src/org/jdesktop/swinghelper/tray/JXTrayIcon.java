@@ -71,7 +71,6 @@ public class JXTrayIcon extends TrayIcon {
     protected void showJPopupMenu(MouseEvent mouseEvent) {
         if (menu != null) {
             Point location = mouseEvent.getLocationOnScreen();
-            System.out.println(location);
             // Handle HiDPI factor discrepancy between mouse position and window position
             if(SystemUtilities.isWindows() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("9.0.0"))) {
                 location.setLocation(location.getX() / WindowsUtilities.getScaleFactor(), location.getY() / WindowsUtilities.getScaleFactor());

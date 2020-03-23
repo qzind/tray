@@ -68,17 +68,37 @@ public class JXTrayIcon extends TrayIcon {
         });
     }
 
-    protected void showJPopupMenu(MouseEvent e) {
+    protected void showJPopupMenu(MouseEvent mouseEvent) {
         if (menu != null) {
-            Dimension size = menu.getPreferredSize();
-            showJPopupMenu(e.getX(), e.getY() - size.height);
+            Point location = mouseEvent.getLocationOnScreen();
+            System.out.println(location);
+            // Handle HiDPI factor discrepancy between mouse position and window position
+            if(SystemUtilities.isWindows() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("9.0.0"))) {
+                location.setLocation(location.getX() / WindowsUtilities.getScaleFactor(), location.getY() / WindowsUtilities.getScaleFactor());
+            }
+            showJPopupMenu((int)location.getX(), (int)location.getY());
         }
     }
 
     protected void showJPopupMenu(int x, int y) {
         dialog.setLocation(x, y);
         dialog.setVisible(true);
+
+        // Show the menu centered on the invisible dialog
         menu.show(dialog.getContentPane(), 0, 0);
+
+        // Compensate position variance due to off-screen placement
+        Dimension menuSize = menu.getPreferredSize();
+        Point menuLocation = menu.getLocationOnScreen();
+        int x2 = x; int y2 = y;
+        if (menuLocation.getY() > y) y2 = y + menuSize.height;
+        if (menuLocation.getY() < y) y2 = y - menuSize.height;
+        if (menuLocation.getX() > x) x2 = x + menuSize.width;
+        if (menuLocation.getX() < x) x2 = x - menuSize.width;
+        if(x2 != x || y2 != y) {
+            menu.setLocation(x2, y2);
+        }
+
         // popup works only for focused windows
         dialog.toFront();
     }

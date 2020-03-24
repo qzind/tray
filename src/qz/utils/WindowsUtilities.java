@@ -1,10 +1,5 @@
 package qz.utils;
 
-import com.github.zafarkhaja.semver.Version;
-import com.sun.jna.platform.win32.GDI32;
-import com.sun.jna.platform.win32.WinDef;
-import qz.common.Constants;
-
 import java.awt.*;
 
 public class WindowsUtilities {
@@ -16,17 +11,7 @@ public class WindowsUtilities {
     }
 
     public static int getScaleFactor() {
-        if (Constants.JAVA_VERSION.lessThan(Version.valueOf("9.0.0"))) {
-            WinDef.HDC hdc = GDI32.INSTANCE.CreateCompatibleDC(null);
-            if (hdc != null) {
-                int actual = GDI32.INSTANCE.GetDeviceCaps(hdc, 10 /* VERTRES */);
-                int logical = GDI32.INSTANCE.GetDeviceCaps(hdc, 117 /* DESKTOPVERTRES */);
-                GDI32.INSTANCE.DeleteDC(hdc);
-                if (logical != 0 && logical/actual > 1) {
-                    return logical/actual;
-                }
-            }
-        }
+        // JDK9+ Only
         return (int)(Toolkit.getDefaultToolkit().getScreenResolution() / 96.0);
     }
 }

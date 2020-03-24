@@ -261,31 +261,53 @@
     <target name="sign-exe-self" depends="build-exe" unless="signing.tsaurl">
         <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
 
-        <echo>Signing Windows installer: No tsaurl was provided so this exe was not timestamped. Users will not be able to validate this exe after the signer certificate's expiration date or after any future revocation date.</echo>
-        <signexe file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"
-            name="${project.name}"
-            url="${vendor.website}"
-            keystore="${signing.keystore}"
-            alias="${signing.alias}"
-            storepass="${signing.storepass}"
-            keypass="${signing.keypass}"
-            />
+        <echo>
+            Signing Windows installer: No tsaurl was provided so this exe was not timestamped. Users will not be able to validate
+            this exe after the signer certificate's expiration date or after any future revocation date.
+        </echo>
+        <exe-signing file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"/>
     </target>
 
     <target name="sign-exe-tsa" depends="build-exe" if="signing.tsaurl">
         <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
 
         <echo>Signing Windows installer</echo>
-        <signexe file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"
-            name="${project.name}"
-            url="${vendor.website}"
-            keystore="${signing.keystore}"
-            alias="${signing.alias}"
-            storepass="${signing.storepass}"
-            keypass="${signing.keypass}"
-            tsaurl="${signing.tsaurl}"
-            />
+        <exe-signing-tsa file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"
+                     tsaurl="${signing.tsaurl}"
+        />
     </target>
+
+    <macrodef name="exe-signing">
+        <attribute name="file"/>
+
+        <sequential>
+            <signexe file="@{file}"
+                     name="${project.name}"
+                     url="${vendor.website}"
+                     keystore="${signing.keystore}"
+                     alias="${signing.alias}"
+                     storepass="${signing.storepass}"
+                     keypass="${signing.keypass}"
+            />
+        </sequential>
+    </macrodef>
+
+    <macrodef name="exe-signing-tsa">
+        <attribute name="file" />
+        <attribute name="tsaurl" />
+
+        <sequential>
+            <signexe file="@{file}"
+                     name="${project.name}"
+                     url="${vendor.website}"
+                     keystore="${signing.keystore}"
+                     alias="${signing.alias}"
+                     storepass="${signing.storepass}"
+                     keypass="${signing.keypass}"
+                     tsaurl="@{tsaurl}"
+            />
+        </sequential>
+    </macrodef>
 
     <!--
     ################################################################

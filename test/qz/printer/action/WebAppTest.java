@@ -13,6 +13,7 @@ public class WebAppTest {
     private static final Logger log = LoggerFactory.getLogger(WebAppTest.class);
 
     public static void main(String[] args) throws Throwable {
+        PrintHTML.setupEnvironment();
         WebApp.initialize();
 
         boolean audit = false;

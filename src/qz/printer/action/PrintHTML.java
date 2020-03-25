@@ -47,15 +47,19 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
     private JLabel legacyLabel = null;
 
-
     public PrintHTML() {
         super();
+        setupEnvironment();
+        models = new ArrayList<>();
+    }
+
+    public static void setupEnvironment() {
         if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
             // Monocle FX engine
             System.setProperty("javafx.platform", "monocle"); // Standard JDKs
             System.setProperty("glass.platform", "Monocle"); // Headless JDKs
             System.setProperty("headless.geometry", "15360x15360-32");
-            System.setProperty("prism.order", "sw");
+            // System.setProperty("prism.order", "sw"); // Causes JVM crash on Windows
             System.setProperty("monocle.platform", "Headless");
             System.setProperty("testfx.robot", "glass");
 
@@ -64,8 +68,6 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
                 System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
             }
         }
-
-        models = new ArrayList<>();
     }
 
     @Override

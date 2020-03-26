@@ -177,6 +177,8 @@ public class WebApp extends Application {
 
         stage = st;
         stage.setScene(sc);
+        stage.setWidth(1);
+        stage.setHeight(1);
 
         Worker<Void> worker = webView.getEngine().getLoadWorker();
         worker.stateProperty().addListener(stateListener);

@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 
 public class WebAppTest {
@@ -13,7 +14,6 @@ public class WebAppTest {
     private static final Logger log = LoggerFactory.getLogger(WebAppTest.class);
 
     public static void main(String[] args) throws Throwable {
-        PrintHTML.setupEnvironment();
         WebApp.initialize();
 
         boolean audit = false;
@@ -52,13 +52,22 @@ public class WebAppTest {
             //check capture for dimensional accuracy within 1 pixel of expected (due to int rounding)
             int expectedWidth = (int)Math.round(printW * (96d / 72d) * zoom);
             int expectedHeight = (int)Math.round(printH * (96d / 72d) * zoom);
+            boolean result = true;
 
             if (!Arrays.asList(expectedWidth, expectedWidth + 1, expectedWidth - 1).contains(sample.getWidth())) {
                 log.error("Expected width to be {} but got {}", expectedWidth, sample.getWidth());
-                return false;
+                result = false;
             }
             if (!Arrays.asList(expectedHeight, expectedHeight + 1, expectedHeight - 1).contains(sample.getHeight())) {
-                log.error("Expected width to be {} but got {}", expectedHeight, sample.getHeight());
+                log.error("Expected height to be {} but got {}", expectedHeight, sample.getHeight());
+                result = false;
+            }
+
+            if (!result) {
+                if (enableAuditing) {
+                    saveAudit("invalid-", sample);
+                }
+
                 return false;
             }
         }
@@ -82,9 +91,18 @@ public class WebAppTest {
             //check capture for dimensional accuracy within 1 pixel of expected (due to int rounding)
             //expected height is not known for these tests
             int expectedWidth = (int)Math.round(printW * (96d / 72d) * zoom);
+            boolean result = true;
 
             if (!Arrays.asList(expectedWidth, expectedWidth + 1, expectedWidth - 1).contains(sample.getWidth())) {
                 log.error("Expected width to be {} but got {}", expectedWidth, sample.getWidth());
+                result = false;
+            }
+
+            if (!result) {
+                if (enableAuditing) {
+                    saveAudit("invalid-", sample);
+                }
+
                 return false;
             }
         }
@@ -93,13 +111,15 @@ public class WebAppTest {
     }
 
     private static BufferedImage attemptCapture(String index, double width, double height, double zoom, boolean audit) throws Throwable {
-        String color = Integer.toHexString((int)(Math.random() * 4095));
+        int hue = (int)(Math.random() * 360);
+        int level = (int)(Math.random() * 50) + 25;
+
         WebAppModel model = new WebAppModel("<html>" +
-                                                    "<body style='background-color: #" + color + ";'>" +
+                                                    "<body style='background-color: hsl(" + hue + ","+ level +"%,"+ level +"%);'>" +
                                                     "   <table style='font-family: monospace; border: 1px;'>" +
                                                     "       <tr style='height: 6cm;'>" +
-                                                    "           <td valign='top'>You have generated this content:</td>" +
-                                                    "           <td valign='top'><b>x" + index + "</b> times</td>" +
+                                                    "           <td valign='top'>Generated content:</td>" +
+                                                    "           <td valign='top'><b>" + index + "</b></td>" +
                                                     "       </tr>" +
                                                     "       <tr>" +
                                                     "           <td>Content size:</td>" +
@@ -117,11 +137,20 @@ public class WebAppTest {
         log.trace("Generating #{} = [({},{}), x{}]", index, model.getWebWidth(), model.getWebHeight(), model.getZoom());
         BufferedImage capture = WebApp.capture(model);
 
+        //TODO - check bottom right matches expected color
+
         if (audit) {
-            log.info("Sampled {}: {}", index, ImageIO.write(capture, "png", File.createTempFile("qz-", ".png")));
+            saveAudit(index, capture);
         }
 
         return capture;
+    }
+
+    private static void saveAudit(String id, BufferedImage capture) throws IOException {
+        File temp = File.createTempFile("qz-" + id, ".png");
+        ImageIO.write(capture, "png", temp);
+
+        log.info("Sampled {}: {}", id, temp.getName());
     }
 
 }

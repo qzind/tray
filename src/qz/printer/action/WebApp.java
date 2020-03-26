@@ -1,5 +1,6 @@
 package qz.printer.action;
 
+import com.github.zafarkhaja.semver.Version;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -20,8 +21,12 @@ import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import qz.common.Constants;
+import qz.deploy.DeployUtilities;
+import qz.utils.SystemUtilities;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -145,6 +150,19 @@ public class WebApp extends Application {
 
     /** Starts JavaFX thread if not already running */
     public static synchronized void initialize() throws IOException {
+        if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
+            // Monocle FX engine
+            System.setProperty("javafx.platform", "monocle"); // Standard JDKs
+            System.setProperty("glass.platform", "Monocle"); // Headless JDKs
+            System.setProperty("monocle.platform", "Headless");
+            System.setProperty("headless.geometry", "15360x15360-32"); //TODO - determine based on memory, >=1g for 15 (~10 at 500m)
+
+            // JavaFX native libs
+            if (SystemUtilities.isJar()) {
+                System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
+            }
+        }
+
         if (instance == null) {
             startupLatch = new CountDownLatch(1);
 

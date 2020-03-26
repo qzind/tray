@@ -10,7 +10,6 @@
 
 package qz.printer.action;
 
-import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -18,11 +17,9 @@ import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
-import qz.deploy.DeployUtilities;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;
-import qz.utils.SystemUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.swing.*;
@@ -31,7 +28,6 @@ import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -49,25 +45,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
 
     public PrintHTML() {
         super();
-        setupEnvironment();
         models = new ArrayList<>();
-    }
-
-    public static void setupEnvironment() {
-        if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-            // Monocle FX engine
-            System.setProperty("javafx.platform", "monocle"); // Standard JDKs
-            System.setProperty("glass.platform", "Monocle"); // Headless JDKs
-            System.setProperty("headless.geometry", "15360x15360-32");
-            // System.setProperty("prism.order", "sw"); // Causes JVM crash on Windows
-            System.setProperty("monocle.platform", "Headless");
-            System.setProperty("testfx.robot", "glass");
-
-            // JavaFX native libs
-            if (SystemUtilities.isJar()) {
-                System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
-            }
-        }
     }
 
     @Override

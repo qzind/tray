@@ -3,22 +3,14 @@
 <project name="qz" default="distribute" basedir=".">
     <property file="ant/project.properties"/>
     <import file="ant/javafx.xml"/>
+    <import file="ant/signing.xml"/>
 
-    <target name="distribute" depends="init,clean,sign-jar,download-javafx,override-authcert,include-assets,whitelist-certs">
+    <target name="distribute" depends="init,clean,download-javafx,build-jar,override-authcert,include-assets,whitelist-certs">
         <echo message="Process complete" />
     </target>
 
     <target name="init">
         <property environment="env"/>
-
-        <!-- Your custom code signing properties here. Feel free to change. -->
-        <!-- The project will default to qz.ks if it doesn't exist -->
-        <property file="${basedir}/../private/private.properties"/>
-
-        <!-- The default code signing properties which uses qz.ks. -->
-        <!-- Please leave this value default as a fallback. -->
-        <property file="ant/private/private.properties"/>
-
         <condition property="codesign.windows" value="true">
             <and>
                 <isset property="target.platform.windows"/>
@@ -100,37 +92,12 @@
                 <attribute name="Permissions" value="all-permissions"/>
             </manifest>
         </jar>
-    </target>
 
+        <antcall target="sign-jar">
+            <param name="sign.jar.file" value="${dist.dir}/${project.filename}.jar"/>
+        </antcall>
 
-    <target name="sign-jar" depends="codesign,build-jar,sign-jar-self,sign-jar-tsa">
-        <path>
-            <fileset dir="${dist.dir}" includes="**/*.jar" />
-        </path>
-    </target>
-
-    <!-- tsaurl attribute cannot be empty, so separate methods are needed to sign both jars -->
-    <target name="sign-jar-self" unless="signing.tsaurl">
-		<echo>Self-signing Socket jar</echo>
-        <signjar jar="${dist.dir}/${project.filename}.jar"
-                 signedjar="${dist.dir}/${project.filename}.jar"
-                 alias="${signing.alias}"
-                 storepass="${signing.storepass}"
-                 keystore="${signing.keystore}"
-                 keypass="${signing.keypass}"
-                />
-    </target>
-
-    <target name="sign-jar-tsa" if="signing.tsaurl">
-		<echo>Signing Socket jar with timestamp</echo>
-        <signjar jar="${dist.dir}/${project.filename}.jar"
-                 signedjar="${dist.dir}/${project.filename}.jar"
-                 alias="${signing.alias}"
-                 storepass="${signing.storepass}"
-                 keystore="${signing.keystore}"
-                 keypass="${signing.keypass}"
-                 tsaurl="${signing.tsaurl}"
-                />
+        <antcall target="apple-codesign"/>
     </target>
 
     <!-- Get version information from JAR -->
@@ -161,7 +128,7 @@
     <target name="override-authcert" depends="internal-authcert" if="authcert.use">
         <echo>Bundling with manual cert for signing auth: ${authcert.use}</echo>
         <!-- See also: Constants.OVERRIDE_CERT -->
-        <copy file="${authcert.use}" tofile="${dist.dir}/override.crt" overwrite="true"></copy>
+        <copy file="${authcert.use}" tofile="${dist.dir}/override.crt" overwrite="true"/>
         <property name="build.type" value="-community"/>
     </target>
 
@@ -219,7 +186,7 @@
     <target name="nsis-preflight">
         <property name="target.platform.windows" value="true"/>
     </target>
-    <target name="nsis" depends="nsis-preflight,build-exe,sign-exe-self,sign-exe-tsa"/>
+    <target name="nsis" depends="nsis-preflight,build-exe"/>
 
     <target name="build-exe" depends="distribute,cleanup-javafx-dist,nsisbin-1,nsisbin-2,nsisbin-3">
         <echo>Creating installer using ${nsisbin}</echo>
@@ -232,13 +199,29 @@
             <filterchain><expandproperties/></filterchain>
         </copy>
 
+        <!-- Launcher -->
         <exec executable="${nsisbin}" failonerror="true" >
             <arg value="${build.dir}/windows-launcher.nsi"/>
         </exec>
+        <antcall target="sign-exe">
+            <param name="sign.exe.file" value="${dist.dir}/${project.filename}.exe"/>
+        </antcall>
 
+        <!-- Uninstaller TODO: Create an uninstaller -->
+        <!-- <exec executable="${nsisbin}" failonerror="true" >
+            <arg value="${build.dir}/windows-uninstaller.nsi"/>
+        </exec>
+        <antcall target="sign-exe">
+            <param name="sign.exe.file" value="${dist.dir}/uninstall.exe"/>
+        </antcall>-->
+
+        <!-- Installer -->
         <exec executable="${nsisbin}" failonerror="true" >
             <arg value="${build.dir}/windows-installer.nsi"/>
         </exec>
+        <antcall target="sign-exe">
+            <param name="sign.exe.file" value="${out.dir}/${project.filename}${build.type}-${build.version}.exe"/>
+        </antcall>
     </target>
 
     <!-- Linux makensis -->
@@ -255,59 +238,6 @@
     <target name="nsisbin-3" depends="init" if="env.ProgramFiles(x86)">
         <property name="nsisbin" value="${env.ProgramFiles(x86)}/NSIS/makensis.exe"/>
     </target>
-
-    <!-- As seen with signing jars, tsaurl attribute cannot be empty, so separate methods are needed to sign both exes -->
-    <!-- TODO: codesign the launcher, uninstaller -->
-    <target name="sign-exe-self" depends="build-exe" unless="signing.tsaurl">
-        <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
-
-        <echo>
-            Signing Windows installer: No tsaurl was provided so this exe was not timestamped. Users will not be able to validate
-            this exe after the signer certificate's expiration date or after any future revocation date.
-        </echo>
-        <exe-signing file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"/>
-    </target>
-
-    <target name="sign-exe-tsa" depends="build-exe" if="signing.tsaurl">
-        <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
-
-        <echo>Signing Windows installer</echo>
-        <exe-signing-tsa file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"
-                     tsaurl="${signing.tsaurl}"
-        />
-    </target>
-
-    <macrodef name="exe-signing">
-        <attribute name="file"/>
-
-        <sequential>
-            <signexe file="@{file}"
-                     name="${project.name}"
-                     url="${vendor.website}"
-                     keystore="${signing.keystore}"
-                     alias="${signing.alias}"
-                     storepass="${signing.storepass}"
-                     keypass="${signing.keypass}"
-            />
-        </sequential>
-    </macrodef>
-
-    <macrodef name="exe-signing-tsa">
-        <attribute name="file" />
-        <attribute name="tsaurl" />
-
-        <sequential>
-            <signexe file="@{file}"
-                     name="${project.name}"
-                     url="${vendor.website}"
-                     keystore="${signing.keystore}"
-                     alias="${signing.alias}"
-                     storepass="${signing.storepass}"
-                     keypass="${signing.keypass}"
-                     tsaurl="@{tsaurl}"
-            />
-        </sequential>
-    </macrodef>
 
     <!--
     ################################################################
@@ -413,7 +343,7 @@
         <delete dir="${dist.dir}/Contents/MacOS" />
     </target>
 
-    <target name="codesign" depends="init,download-javafx,cleanup-javafx-dist" if="codesign.mac">
+    <target name="apple-codesign" depends="init,download-javafx,cleanup-javafx-dist" if="codesign.mac">
         <property file="ant/apple/apple.properties"/>
         <exec executable="security">
             <arg value="add-certificates"/>
@@ -421,24 +351,24 @@
             <arg value="${basedir}/ant/apple/certs/apple-intermediate.cer"/>
             <arg value="${basedir}/ant/apple/certs/apple-codesign.cer"/>
         </exec>
-        <antcall target="codesign-libs">
+        <antcall target="apple-codesign-libs">
             <param name="signing.jarname" value="communication/jna-*.jar"/>
             <param name="signing.excluded" value="communication/jna-platform-*.jar"/>
             <param name="signing.filetype" value="*.jnilib"/>
         </antcall>
-        <antcall target="codesign-libs">
+        <antcall target="apple-codesign-libs">
             <param name="signing.jarname" value="communication/jssc-*.jar"/>
             <param name="signing.filetype" value="*.dylib"/>
         </antcall>
-        <antcall target="codesign-libs">
+        <antcall target="apple-codesign-libs">
             <param name="signing.jarname" value="communication/hid4java-*.jar"/>
             <param name="signing.filetype" value="*.dylib"/>
         </antcall>
-        <antcall target="codesign-libs">
+        <antcall target="apple-codesign-libs">
             <param name="signing.jarname" value="communication/libusb4java-*-osx-x86.jar"/>
             <param name="signing.filetype" value="*.dylib"/>
         </antcall>
-        <antcall target="codesign-libs">
+        <antcall target="apple-codesign-libs">
             <param name="signing.jarname" value="communication/libusb4java-*-osx-x86_64.jar"/>
             <param name="signing.filetype" value="*.dylib"/>
         </antcall>
@@ -452,7 +382,7 @@
 
     </target>
 
-    <target name="codesign-libs">
+    <target name="apple-codesign-libs">
         <path id="find.jar">
             <fileset dir="lib">
                 <include name="**/${signing.jarname}"/>

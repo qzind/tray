@@ -152,7 +152,7 @@ public class WebApp extends Application {
     public static synchronized void initialize() throws IOException {
         if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
             // Monocle for Windows/MacOS relies on hw pipeline
-            if(!SystemUtilities.isWindows() && !SystemUtilities.isLinux()) {
+            if(!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {
                 // Monocle for Linux relies on sw pipeline (tailored for embedded)
                 System.setProperty("prism.order", "sw");
             }

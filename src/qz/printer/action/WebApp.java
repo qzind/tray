@@ -151,7 +151,12 @@ public class WebApp extends Application {
     /** Starts JavaFX thread if not already running */
     public static synchronized void initialize() throws IOException {
         if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-            // Monocle FX engine
+            // Monocle for Windows/MacOS relies on hw pipeline
+            if(!SystemUtilities.isWindows() && !SystemUtilities.isLinux()) {
+                // Monocle for Linux relies on sw pipeline (tailored for embedded)
+                System.setProperty("prism.order", "sw");
+            }
+
             System.setProperty("javafx.platform", "monocle"); // Standard JDKs
             System.setProperty("glass.platform", "Monocle"); // Headless JDKs
             System.setProperty("monocle.platform", "Headless");

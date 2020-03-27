@@ -108,7 +108,7 @@
     <target name="download-javafx-linux" if="javafx.linux.needed" unless="javafx.linux.found" depends="check-javafx-needed,check-javafx-found">
         <antcall target="download-javafx-platform">
             <param name="javafx.platform" value="linux"/>
-            <param name="monocle.platform" value="windows"/><!-- FIXME, add linux version -->
+            <param name="monocle.platform" value="linux"/>
         </antcall>
     </target>
 

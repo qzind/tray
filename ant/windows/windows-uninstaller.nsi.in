@@ -1,0 +1,62 @@
+!include x64.nsh
+!include LogicLib.nsh
+
+!ifdef NSIS_UNICODE
+	!addplugindir "${basedir}/ant/windows/nsis/Plugins/Release_Unicode"
+!else
+	!addplugindir "${basedir}/ant/windows/nsis/Plugins/Release_ANSI"
+!endif
+!addincludedir "${basedir}/ant/windows/nsis/Include"
+!include StdUtils.nsh
+
+; Run this exe as non-admin
+RequestExecutionLevel admin
+
+!define MUI_ICON "${basedir}/ant/windows/nsis/uninstall.ico"
+
+; Application information
+Name "Uninstall ${project.name}"
+Caption "Uninstall ${project.name}"
+Icon "${basedir}/ant/windows/nsis/uninstall.ico"
+OutFile "${dist.dir}/uninstall.exe"
+ 
+;;;;; SilentInstall silent
+;;;;; AutoCloseWindow true
+;;;;; ShowInstDetails nevershow
+
+; Full path to jar
+!define JAR "$EXEDIR/${project.filename}.jar"
+
+Section
+    ; Set environmental variable for silent uninstall to be picked up by Java
+    ${If} ${Silent}
+      System::Call 'Kernel32::SetEnvironmentVariable(t, t)i ("${vendor.name}_silent", "1").r0'
+    ${EndIf}
+
+    DetailPrint "Uninstalling..."
+    SetOutPath $EXEDIR
+    SetDetailsPrint listonly
+    DetailPrint '$EXEDIR\${project.filename}.exe uninstall'
+    SetDetailsPrint both
+    ClearErrors
+    nsExec::ExecToLog '$EXEDIR\${project.filename}.exe uninstall'
+    Pop $0
+    ${If} "$0" != "0"
+        Abort "Uninstall failed.  Please check log for details."
+    ${EndIf}
+
+    ; Remove all files
+    DetailPrint "Removing all files..."
+    SetOutPath $TEMP
+    RMDir /r "$EXEDIR"
+    Delete '$EXEDIR\${project.filename}.jar'
+    DetailPrint "Finished"
+    SelfDel::Del /RMDIR ; !!!! FIXME: Kaspersky will detect this as an exploit/virus!
+SectionEnd
+
+Function .onInit
+    ${If} ${RunningX64}
+        SetRegView 64
+        ${DisableX64FSRedirection}
+    ${EndIf}
+FunctionEnd

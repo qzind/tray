@@ -6,24 +6,26 @@
     <property name="show.javafx.debug" value="true"/>
 
     <target name="show-javafx-debug" if="show.javafx.debug">
-        <echo>Windows:</echo>
-        <echo> current.platform.windows=${current.platform.windows}</echo>
-        <echo> target.platform.windows=${target.platform.windows}</echo>
-        <echo> javafx.windows.needed=${javafx.windows.needed}</echo>
-        <echo> javafx.windows.found=${javafx.windows.found} (before download)</echo>
-        <echo/>
-        <echo>Mac:</echo>
-        <echo> current.platform.mac=${current.platform.mac}</echo>
-        <echo> target.platform.mac=${target.platform.mac}</echo>
-        <echo> javafx.mac.needed=${javafx.mac.needed}</echo>
-        <echo> javafx.mac.found=${javafx.mac.found} (before download)</echo>
-        <echo/>
-        <echo>Linux:</echo>
-        <echo> current.platform.linux=${current.platform.linux}</echo>
-        <echo> target.platform.linux=${target.platform.linux}</echo>
-        <echo> javafx.linux.needed=${javafx.linux.needed}</echo>
-        <echo> javafx.linux.found=${javafx.linux.found} (before download)</echo>
-        <echo/>
+        <echo level="info">
+        Windows:
+            current.platform.windows=${current.platform.windows}
+            target.platform.windows=${target.platform.windows}
+            javafx.windows.needed=${javafx.windows.needed}
+            javafx.windows.found=${javafx.windows.found} (before download)
+
+        Mac:
+            current.platform.mac=${current.platform.mac}
+            target.platform.mac=${target.platform.mac}
+            javafx.mac.needed=${javafx.mac.needed}
+            javafx.mac.found=${javafx.mac.found} (before download)
+
+        Linux:
+            current.platform.linux=${current.platform.linux}
+            target.platform.linux=${target.platform.linux}
+            javafx.linux.needed=${javafx.linux.needed}
+            javafx.linux.found=${javafx.linux.found} (before download)
+
+        </echo>
     </target>
 
     <target name="get-current-platform">
@@ -137,7 +139,7 @@
         <condition property="javafx.current.extension" value="so">
             <isset property="current.platform.linux"/>
         </condition>
-        <echo>javafx.current.extension=${javafx.current.extension}</echo>
+        <echo level="info">javafx.current.extension=${javafx.current.extension}</echo>
 
         <antcall target="copy-native-platform">
             <param name="dest.dir" value="${dist.dir}"/>
@@ -157,7 +159,7 @@
         <condition property="javafx.target.extension" value="so">
             <isset property="target.platform.linux"/>
         </condition>
-        <echo>javafx.target.extension=${javafx.target.extension}</echo>
+        <echo level="info">javafx.target.extension=${javafx.target.extension}</echo>
 
         <antcall target="copy-native-platform">
             <param name="dest.dir" value="${dist.dir}"/>

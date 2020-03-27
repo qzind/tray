@@ -76,7 +76,7 @@
     </target>
 
     <target name="build-jar" depends="compile-socket">
-        <echo>Building Jar for Socket use</echo>
+        <echo level="info">Building Jar for Socket use</echo>
         <mkdir dir="${sign.lib.dir}"/>
         <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.dir}/${project.filename}.jar" duplicate="preserve">
             <fileset dir="${build.dir}/${project.filename}"/>
@@ -115,18 +115,20 @@
         <!-- Fallback to a safe bundle id if the above command failed -->
         <property name="apple.bundleid" value="io.qz.fallback.${project.filename}" />
 
-        <echo>Version   : ${build.version}</echo>
-        <echo>Bundle Id : ${apple.bundleid}</echo>
+        <echo level="info">
+            Version   : ${build.version}
+            Bundle Id : ${apple.bundleid}
+        </echo>
     </target>
 
     <target name="internal-authcert" unless="authcert.use">
-        <echo>Using internal cert for signing auth</echo>
+        <echo level="info">Using internal cert for signing auth</echo>
         <property name="build.type" value=""/>
     </target>
 
     <!-- install override.crt for "community" branded builds -->
     <target name="override-authcert" depends="internal-authcert" if="authcert.use">
-        <echo>Bundling with manual cert for signing auth: ${authcert.use}</echo>
+        <echo level="info">Bundling with manual cert for signing auth: ${authcert.use}</echo>
         <!-- See also: Constants.OVERRIDE_CERT -->
         <copy file="${authcert.use}" tofile="${dist.dir}/override.crt" overwrite="true"/>
         <property name="build.type" value="-community"/>
@@ -134,7 +136,7 @@
 
     <!-- install certs to "whitelist" directory for whitelabel builds -->
     <target name="whitelist-certs" depends="include-assets" if="whitelist.use">
-        <echo>Copying certificate(s) to dist/whitelist: ${whitelist.use}</echo>
+        <echo level="info">Copying certificate(s) to dist/whitelist: ${whitelist.use}</echo>
         <!-- See also: Constants.WHITELIST_CERT_DIR -->
 
         <mkdir dir="${dist.dir}/whitelist"/>
@@ -142,7 +144,7 @@
     </target>
 
     <target name="include-assets" depends="init,get-version" unless="dist.minimal">
-        <echo>Copying resource files to output</echo>
+        <echo level="info">Copying resource files to output</echo>
 
         <copy todir="${dist.dir}/demo/assets">
             <fileset dir="${basedir}/assets">
@@ -189,17 +191,12 @@
     <target name="nsis" depends="nsis-preflight,build-exe"/>
 
     <target name="build-exe" depends="distribute,cleanup-javafx-dist,nsisbin-1,nsisbin-2,nsisbin-3">
-        <echo>Creating installer using ${nsisbin}</echo>
+        <echo level="info">Creating installer using ${nsisbin}</echo>
 
-        <copy file="${basedir}/ant/windows/windows-installer.nsi.in" tofile="${build.dir}/windows-installer.nsi" overwrite="true">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
+        <!-- Launcher -->
         <copy file="${basedir}/ant/windows/windows-launcher.nsi.in" tofile="${build.dir}/windows-launcher.nsi" overwrite="true">
             <filterchain><expandproperties/></filterchain>
         </copy>
-
-        <!-- Launcher -->
         <exec executable="${nsisbin}" failonerror="true" >
             <arg value="${build.dir}/windows-launcher.nsi"/>
         </exec>
@@ -207,15 +204,21 @@
             <param name="sign.exe.file" value="${dist.dir}/${project.filename}.exe"/>
         </antcall>
 
-        <!-- Uninstaller TODO: Create an uninstaller -->
-        <!-- <exec executable="${nsisbin}" failonerror="true" >
+        <!-- Uninstaller -->
+        <copy file="${basedir}/ant/windows/windows-uninstaller.nsi.in" tofile="${build.dir}/windows-uninstaller.nsi" overwrite="true">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <exec executable="${nsisbin}" failonerror="true" >
             <arg value="${build.dir}/windows-uninstaller.nsi"/>
         </exec>
         <antcall target="sign-exe">
             <param name="sign.exe.file" value="${dist.dir}/uninstall.exe"/>
-        </antcall>-->
+        </antcall>
 
         <!-- Installer -->
+        <copy file="${basedir}/ant/windows/windows-installer.nsi.in" tofile="${build.dir}/windows-installer.nsi" overwrite="true">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
         <exec executable="${nsisbin}" failonerror="true" >
             <arg value="${build.dir}/windows-installer.nsi"/>
         </exec>
@@ -249,7 +252,7 @@
         <property name="target.platform.mac" value="true"/>
     </target>
     <target name="pkgbuild" depends="pkgbuild-preflight,distribute,cleanup-javafx-dist">
-        <echo>Creating installer using pkgbuild</echo>
+        <echo level="info">Creating installer using pkgbuild</echo>
 
         <property file="ant/apple/apple.properties"/>
 
@@ -430,7 +433,7 @@
         <property name="target.platform.linux" value="true"/>
     </target>
     <target name="makeself" depends="makeself-preflight,distribute,cleanup-javafx-dist">
-        <echo>Creating installer using makeself</echo>
+        <echo level="info">Creating installer using makeself</echo>
 
         <copy file="${basedir}/assets/branding/linux-icon.svg" tofile="${dist.dir}/${project.filename}.svg" />
 

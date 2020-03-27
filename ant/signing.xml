@@ -80,8 +80,8 @@
     <macrodef name="tsa-warning">
         <sequential>
             <echo level="warn">
-                Signing Windows installer: No tsaurl was provided so this exe was not timestamped. Users will not be able to validate
-                this exe after the signer certificate's expiration date or after any future revocation date.
+                No tsaurl was provided so the file was not timestamped. Users will not be able to validate
+                this file after the signer certificate's expiration date or after any future revocation date.
             </echo>
         </sequential>
     </macrodef>

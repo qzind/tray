@@ -3,21 +3,18 @@ package qz.printer.action;
 public class WebAppModel {
 
     private String source;
-    private boolean plainText = false;
+    private boolean plainText;
 
-    private double webWidth = 0.0;
-    private double webHeight = 0.0;
-    private boolean isScaled = true;
-    private double zoom = 1.0;
+    private double webWidth;
+    private double webHeight;
+    private boolean isScaled;
+    private double zoom;
 
     public WebAppModel(String source, boolean plainText, double webWidth, double webHeight, boolean isScaled, double zoom) {
-        //values supplied are at print dpi, scale up to web dpi here
-        double increase = 96d / 72d;
-
         this.source = source;
         this.plainText = plainText;
-        this.webWidth = webWidth * increase;
-        this.webHeight = webHeight * increase;
+        this.webWidth = webWidth;
+        this.webHeight = webHeight;
         this.isScaled = isScaled;
         this.zoom = zoom;
     }
@@ -26,20 +23,40 @@ public class WebAppModel {
         return source;
     }
 
+    public void setSource(String source) {
+        this.source = source;
+    }
+
     public boolean isPlainText() {
         return plainText;
+    }
+
+    public void setPlainText(boolean plainText) {
+        this.plainText = plainText;
     }
 
     public double getWebWidth() {
         return webWidth;
     }
 
+    public void setWebWidth(double webWidth) {
+        this.webWidth = webWidth;
+    }
+
     public double getWebHeight() {
         return webHeight;
     }
 
+    public void setWebHeight(double webHeight) {
+        this.webHeight = webHeight;
+    }
+
     public boolean isScaled() {
         return isScaled;
+    }
+
+    public void setScaled(boolean scaled) {
+        isScaled = scaled;
     }
 
     public double getZoom() {
@@ -49,5 +66,4 @@ public class WebAppModel {
     public void setZoom(double zoom) {
         this.zoom = zoom;
     }
-
 }

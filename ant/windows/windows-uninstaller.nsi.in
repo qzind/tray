@@ -16,7 +16,10 @@
 
 !define MUI_PRODUCT "${project.name}"
 !define MUI_VERSION "${build.version}"
-!define MUI_ICON "${basedir}/ant/windows/nsis/uninstall.ico"
+; Branding for qz only
+!if "${project.filename}" == "qz-tray"
+    !define MUI_ICON "${basedir}/ant/windows/nsis/uninstall.ico"
+!endif
 
 !define MUI_PAGE_HEADER_TEXT "Uninstall ${project.name}"
 !define MUI_PAGE_HEADER_SUBTEXT "Remove ${project.name} from your computer"

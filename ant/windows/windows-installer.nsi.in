@@ -81,7 +81,6 @@ Section
 
     ; Create the uninstaller
     SetOutPath $INSTDIR
-    ;;;;; WriteUninstaller "$INSTDIR\uninstall.exe" ; Backslash required
 
     ; Run preinstall tasks
     SetOutPath "$PluginsDir\tmp"
@@ -102,26 +101,6 @@ Section
     ${StdUtils.ExecShellAsUser} $0 "$INSTDIR\${project.filename}.exe" "open" ""
 SectionEnd
 
-;;;;;Section "Uninstall"
-;;;;;    DetailPrint "Uninstalling..."
-;;;;;
-;;;;;    ; Set the $java variable
-;;;;;    TryAgain:
-;;;;;    Call un.FindJava
-;;;;;    !insertmacro VerifyJava "TryAgain"
-;;;;;
-;;;;;    ; Run uninstall tasks
-;;;;;    SetOutPath $INSTDIR
-;;;;;    !insertmacro QzInstaller "uninstall" "" ""
-;;;;;
-;;;;;    ; Remove all files
-;;;;;    DetailPrint "Removing all files..."
-;;;;;    SetDetailsPrint none ; Temporarily suppress details
-;;;;;    SetOutPath $TEMP
-;;;;;    RMDir /r "$INSTDIR"
-;;;;;    SetDetailsPrint both
-;;;;;SectionEnd
-
 !macro Init
     ${If} ${RunningX64}
         SetRegView 64
@@ -140,8 +119,3 @@ SectionEnd
 Function .onInit
     !insertmacro Init
 FunctionEnd
-
-;;;;;; Runs for uninstall
-;;;;;Function un.onInit
-;;;;;    !insertmacro Init
-;;;;;FunctionEnd

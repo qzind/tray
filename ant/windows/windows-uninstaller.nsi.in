@@ -19,6 +19,8 @@
 ; Branding for qz only
 !if "${project.filename}" == "qz-tray"
     !define MUI_ICON "${basedir}/ant/windows/nsis/uninstall.ico"
+!else
+    !define MUI_ICON "${basedir}/assets/branding/windows-icon.ico"
 !endif
 
 !define MUI_PAGE_HEADER_TEXT "Uninstall ${project.name}"

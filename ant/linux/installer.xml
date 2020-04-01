@@ -1,0 +1,50 @@
+<project name="linux-installers" basedir="../../">
+    <property file="ant/project.properties"/>
+
+    <!--
+    ################################################################
+    #                     Linux Installer                          #
+    ################################################################
+    -->
+    <!-- Inform javafx.xml  -->
+    <target name="makeself-preflight">
+        <property name="target.platform.linux" value="true"/>
+    </target>
+    <target name="makeself" depends="makeself-preflight,distribute,cleanup-javafx-dist">
+        <echo level="info">Creating installer using makeself</echo>
+
+        <copy file="${basedir}/assets/branding/linux-icon.svg" tofile="${dist.dir}/${project.filename}.svg" />
+
+        <mkdir dir="${build.dir}/scripts"/>
+        <copy file="${basedir}/ant/linux/linux-installer.sh.in" tofile="${dist.dir}/install" >
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="${basedir}/ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/${project.filename}" >
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="${basedir}/ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <chmod perm="a+x" type="file">
+            <fileset dir="${dist.dir}">
+                <include name="**/${project.filename}"/>
+                <include name="**/install"/>
+                <include name="**/uninstall"/>
+            </fileset>
+        </chmod>
+
+        <exec executable="makeself" failonerror="true">
+            <arg value="${dist.dir}"/>
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.run"/>
+            <arg value="${project.name} Installer"/>
+            <arg value="./install"/>
+        </exec>
+
+        <!-- Cleanup lingering icon (for other OS installers) -->
+        <delete file="${dist.dir}//${project.filename}.svg" />
+    </target>
+
+</project>

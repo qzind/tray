@@ -1,0 +1,185 @@
+<project name="apple-installers" basedir="../../">
+    <property file="ant/project.properties"/>
+
+    <!--
+    ################################################################
+    #                     Apple Installer                          #
+    ################################################################
+    -->
+    <!-- Inform javafx.xml  -->
+    <target name="pkgbuild-preflight">
+        <property name="target.platform.mac" value="true"/>
+    </target>
+    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,cleanup-javafx-dist">
+        <echo level="info">Creating installer using pkgbuild</echo>
+
+        <property file="ant/apple/apple.properties"/>
+
+        <!--
+        ###################################
+        #   Build MacOS Bundle Structure  #
+        ###################################
+        -->
+
+        <mkdir dir="${dist.dir}/Contents/Resources"/>
+        <copy file="${basedir}/assets/branding/apple-icon.icns" tofile="${dist.dir}/Contents/Resources/${project.filename}.icns" />
+
+        <mkdir dir="${dist.dir}/Contents/MacOS"/>
+        <copy file="${basedir}/ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/Contents/MacOS/${project.name}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="${basedir}/ant/apple/apple-bundle.plist.in" tofile="${dist.dir}/Contents/Info.plist">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="${basedir}/ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <mkdir dir="${build.dir}/scripts/payload"/>
+
+        <copy file="${basedir}/ant/apple/apple-preinstall.sh.in" tofile="${build.dir}/scripts/preinstall">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="${basedir}/ant/apple/apple-postinstall.sh.in" tofile="${build.dir}/scripts/postinstall">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <!-- Copy of the jar is needed for preinstall tasks -->
+        <copy todir="${build.dir}/scripts/payload">
+            <fileset dir="${dist.dir}"/>
+        </copy>
+
+        <chmod perm="a+x" type="file">
+            <fileset dir="${build.dir}/scripts">
+                <include name="preinstall"/>
+                <include name="postinstall"/>
+            </fileset>
+            <fileset dir="${build.dir}/scripts/payload">
+                <include name="**/${project.name}"/>
+                <include name="**/uninstall"/>
+            </fileset>
+        </chmod>
+
+        <!-- Disable signing and append "-community" if id is missing -->
+        <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
+            <arg value="-c"/>
+            <arg value="security find-identity -v |grep '(${apple.packager.signid})'"/>
+        </exec>
+        <!-- pkgbuild will fail on blank options; use ownership flag as a dummy fallback  -->
+        <condition property="codesign.qz.cmd" value="--sign" else="--ownership">
+            <equals arg1="${codesign.qz}" arg2="0" />
+        </condition>
+        <condition property="codesign.qz.val" value="${apple.packager.signid}" else="recommended">
+            <equals arg1="${codesign.qz}" arg2="0" />
+        </condition>
+        <condition property="codesign.qz.suffix" value="" else="-community">
+            <equals arg1="${codesign.qz}" arg2="0" />
+        </condition>
+
+        <exec executable="pkgbuild" failonerror="true">
+            <arg value="--identifier"/>
+            <arg value="${project.filename}"/>
+
+            <arg value="--nopayload"/>
+
+            <arg value="--install-location"/>
+            <arg value="/Applications/${project.name}.app"/>
+
+            <arg value="--scripts"/>
+            <arg value="${build.dir}/scripts"/>
+
+            <arg value="--version"/>
+            <arg value="${build.version}"/>
+
+            <arg value="${codesign.qz.cmd}"/>
+            <arg value="${codesign.qz.val}"/>
+
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}${codesign.qz.suffix}.pkg"/>
+        </exec>
+
+        <!-- Cleanup lingering resources for other installer targets -->
+        <delete dir="${dist.dir}/Contents/Resources" />
+        <delete dir="${dist.dir}/Contents/MacOS" />
+    </target>
+
+    <target name="codesign" depends="init,download-javafx,cleanup-javafx-dist" if="codesign.mac">
+        <property file="ant/apple/apple.properties"/>
+        <exec executable="security">
+            <arg value="add-certificates"/>
+            <arg value="${basedir}/ant/apple/certs/apple-packager.cer"/>
+            <arg value="${basedir}/ant/apple/certs/apple-intermediate.cer"/>
+            <arg value="${basedir}/ant/apple/certs/apple-codesign.cer"/>
+        </exec>
+        <antcall target="codesign-libs">
+            <param name="signing.jarname" value="communication/jna-*.jar"/>
+            <param name="signing.excluded" value="communication/jna-platform-*.jar"/>
+            <param name="signing.filetype" value="*.jnilib"/>
+        </antcall>
+        <antcall target="codesign-libs">
+            <param name="signing.jarname" value="communication/jssc-*.jar"/>
+            <param name="signing.filetype" value="*.dylib"/>
+        </antcall>
+        <antcall target="codesign-libs">
+            <param name="signing.jarname" value="communication/hid4java-*.jar"/>
+            <param name="signing.filetype" value="*.dylib"/>
+        </antcall>
+        <antcall target="codesign-libs">
+            <param name="signing.jarname" value="communication/libusb4java-*-osx-x86.jar"/>
+            <param name="signing.filetype" value="*.dylib"/>
+        </antcall>
+        <antcall target="codesign-libs">
+            <param name="signing.jarname" value="communication/libusb4java-*-osx-x86_64.jar"/>
+            <param name="signing.filetype" value="*.dylib"/>
+        </antcall>
+        <!-- Manually sign standalone libs -->
+        <!--use xargs to loop over and codesign all files-->
+        <echo message="Signing ${dist.dir}/libs/*.dylib using ${apple.packager.signid}"/>
+        <exec executable="bash" failonerror="true">
+            <arg value="-c"/>
+            <arg value="echo &quot;$(find ${dist.dir}/libs/*.dylib)&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>
+        </exec>
+
+    </target>
+
+    <target name="codesign-libs">
+        <path id="find.jar">
+            <fileset dir="lib">
+                <include name="**/${signing.jarname}"/>
+                <exclude name="**/${signing.excluded}" if="signing.excluded"/>
+            </fileset>
+        </path>
+
+        <unzip src="${toString:find.jar}" dest="${out.dir}/jar-signing"/>
+        <path id="find.file">
+            <fileset dir="${out.dir}/jar-signing">
+                <include name="**/${signing.filetype}"/>
+            </fileset>
+        </path>
+
+        <delete verbose="true">
+            <fileset dir="${out.dir}/jar-signing">
+                <include name="**/${signing.delete}" if="signing.delete"/>
+            </fileset>
+        </delete>
+
+        <!--use xargs to loop over and codesign all files-->
+        <echo message="Signing ${toString:find.jar} using ${apple.packager.signid}"/>
+        <exec executable="bash" failonerror="true">
+            <arg value="-c"/>
+            <arg value="echo &quot;${toString:find.file}&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>
+        </exec>
+
+        <pathconvert property="find.jar.rel">
+            <path refid="find.jar"/>
+            <globmapper from="${basedir}/*" to="*" handledirsep="true" />
+        </pathconvert>
+        <zip destfile="${sign.lib.dir}/${find.jar.rel}" basedir="${out.dir}/jar-signing" excludes="dont*.*"/>
+
+        <!--cleanup temp folder-->
+        <delete dir="${out.dir}/jar-signing"/>
+    </target>
+
+</project>

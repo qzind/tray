@@ -1,0 +1,67 @@
+<project name="windows-installers" basedir="../../">
+    <property file="ant/project.properties"/>
+
+    <!--
+    ################################################################
+    #                    Windows Installer                         #
+    ################################################################
+    -->
+    <!-- Inform javafx.xml  -->
+    <target name="nsis-preflight">
+        <property name="target.platform.windows" value="true"/>
+    </target>
+    <target name="nsis" depends="nsis-preflight,build-exe"/>
+
+    <target name="build-exe" depends="distribute,cleanup-javafx-dist,nsisbin-from-unix,nsisbin-from-32,nsisbin-from-64">
+        <echo level="info">Creating installer using ${nsisbin}</echo>
+
+        <!-- Launcher -->
+        <copy file="${basedir}/ant/windows/windows-launcher.nsi.in" tofile="${build.dir}/windows-launcher.nsi" overwrite="true">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <exec executable="${nsisbin}" failonerror="true" >
+            <arg value="${build.dir}/windows-launcher.nsi"/>
+        </exec>
+        <antcall target="sign-exe">
+            <param name="sign.exe.file" value="${dist.dir}/${project.filename}.exe"/>
+        </antcall>
+
+        <!-- Uninstaller -->
+        <copy file="${basedir}/ant/windows/windows-uninstaller.nsi.in" tofile="${build.dir}/windows-uninstaller.nsi" overwrite="true">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <exec executable="${nsisbin}" failonerror="true" >
+            <arg value="${build.dir}/windows-uninstaller.nsi"/>
+        </exec>
+        <antcall target="sign-exe">
+            <param name="sign.exe.file" value="${dist.dir}/uninstall.exe"/>
+        </antcall>
+
+        <!-- Installer -->
+        <copy file="${basedir}/ant/windows/windows-installer.nsi.in" tofile="${build.dir}/windows-installer.nsi" overwrite="true">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <exec executable="${nsisbin}" failonerror="true" >
+            <arg value="${build.dir}/windows-installer.nsi"/>
+        </exec>
+        <antcall target="sign-exe">
+            <param name="sign.exe.file" value="${out.dir}/${project.filename}${build.type}-${build.version}.exe"/>
+        </antcall>
+    </target>
+
+    <!-- Linux makensis -->
+    <target name="nsisbin-from-unix" depends="init" unless="env.windir">
+        <property name="nsisbin" value="makensis"/>
+    </target>
+
+    <!-- Win32 makensis -->
+    <target name="nsisbin-from-32" depends="init" unless="env.ProgramFiles(x86)">
+        <property name="nsisexe" value="${env.ProgramFiles}/NSIS/makensis.exe"/>
+    </target>
+
+    <!-- Win64 makensis -->
+    <target name="nsisbin-from-64" depends="init" if="env.ProgramFiles(x86)">
+        <property name="nsisbin" value="${env.ProgramFiles(x86)}/NSIS/makensis.exe"/>
+    </target>
+
+</project>

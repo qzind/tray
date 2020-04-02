@@ -13,7 +13,6 @@
     </target>
 
     <target name="init">
-        <property environment="env"/>
         <condition property="codesign.windows" value="true">
             <and>
                 <isset property="target.platform.windows"/>
@@ -44,12 +43,14 @@
         <mkdir dir="${build.dir}/${project.filename}"/>
 
         <!-- find the pdfbox jar -->
-        <path id="find.jar">
-            <fileset dir="lib/printing/">
-                <include name="pdfbox*.jar"/>
-            </fileset>
+        <path id="pdfbox.found">
+            <first>
+                <fileset dir="lib/printing/">
+                    <include name="pdfbox*.jar"/>
+                </fileset>
+            </first>
         </path>
-        <property name="pdfbox.path" value="${toString:find.jar}" />
+        <pathconvert property="pdfbox.path" refid="pdfbox.found"/>
 
         <javac destdir="${build.dir}/${project.filename}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8">
             <src path="${src.dir}"/>
@@ -74,7 +75,7 @@
         </copy>
 
         <copy todir="${dist.dir}">
-            <fileset file="${basedir}/LICENSE.txt"/>
+            <fileset file="LICENSE.txt"/>
         </copy>
     </target>
 
@@ -103,38 +104,12 @@
         <antcall target="apple-installers.codesign"/>
     </target>
 
-    <!-- Get version information from JAR -->
-    <target name="get-version" depends="build-jar">
-        <property file="ant/project.properties"/>
-        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="build.version">
-            <arg value="--version"/>
-        </java>
-        <!-- Fallback to a bogus version number if the above command failed -->
-        <property name="build.version" value="0.0.0" />
-
-        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="apple.bundleid">
-            <arg value="--bundleid"/>
-        </java>
-        <!-- Fallback to a safe bundle id if the above command failed -->
-        <property name="apple.bundleid" value="io.qz.fallback.${project.filename}" />
-
-        <echo level="info">
-            Version   : ${build.version}
-            Bundle Id : ${apple.bundleid}
-        </echo>
-    </target>
-
-    <target name="internal-authcert" unless="authcert.use">
-        <echo level="info">Using internal cert for signing auth</echo>
-        <property name="build.type" value=""/>
-    </target>
-
     <!-- install override.crt for "community" branded builds -->
-    <target name="override-authcert" depends="internal-authcert" if="authcert.use">
+    <target name="override-authcert" if="authcert.use">
         <echo level="info">Bundling with manual cert for signing auth: ${authcert.use}</echo>
         <!-- See also: Constants.OVERRIDE_CERT -->
+        <property description="suppress-property-warning" name="authcert.use" value="override.crt"/>
         <copy file="${authcert.use}" tofile="${dist.dir}/override.crt" overwrite="true"/>
-        <property name="build.type" value="-community"/>
     </target>
 
     <!-- install certs to "whitelist" directory for whitelabel builds -->
@@ -143,47 +118,26 @@
         <!-- See also: Constants.WHITELIST_CERT_DIR -->
 
         <mkdir dir="${dist.dir}/whitelist"/>
+        <property description="suppress property warning" name="whitelist.use" value=""/>
         <copy file="${whitelist.use}" todir="${dist.dir}/whitelist" overwrite="true"/>
     </target>
 
-    <target name="include-assets" depends="init,get-version" unless="dist.minimal">
+    <target name="include-assets" depends="init" unless="dist.minimal">
         <echo level="info">Copying resource files to output</echo>
 
-        <copy todir="${dist.dir}/demo/assets">
-            <fileset dir="${basedir}/assets">
-                <exclude name="**/*.properties"/>
+        <!-- Create the demo folder -->
+        <copy todir="${dist.dir}/demo">
+            <fileset file="sample.html"/>
+            <fileset dir="${basedir}" includes="css/**"/>
+            <fileset dir="${basedir}" includes="fonts/**"/>
+            <fileset dir="${basedir}" includes="js/**/*.js"/>
+            <fileset dir="${basedir}" includes="assets/**">
                 <exclude name="**/branding/"/>
             </fileset>
         </copy>
-
-        <copy todir="${dist.dir}/demo/js">
-            <fileset dir="js">
-                <exclude name="**/package.json"/>
-                <exclude name="**/README.md"/>
-            </fileset>
-        </copy>
-
-        <copy todir="${dist.dir}/demo/css">
-            <fileset dir="css"/>
-        </copy>
-
-        <copy todir="${dist.dir}/demo/fonts">
-            <fileset dir="fonts"/>
-        </copy>
-
-        <copy todir="${dist.dir}/demo">
-            <fileset file="sample.html"/>
-        </copy>
-    </target>
-
-    <target name="distill-icu" depends="init">
-        <exec executable="python">
-            <arg line="ant/lib/slim-icu.py lib/charsets"/>
-        </exec>
     </target>
 
     <target name="build-installer-apple" depends="apple-installers.pkgbuild" />
     <target name="build-installer-linux" depends="linux-installers.makeself" />
     <target name="build-installer-windows" depends="windows-installers.nsis" />
-
 </project>

@@ -12,7 +12,7 @@
 !include StdUtils.nsh
 
 Name "${project.name}"
-OutFile "${out.dir}/${project.filename}${build.type}-${build.version}.exe"
+OutFile "${nsis.outfile}"
 RequestExecutionLevel admin
 
 !define MUI_ICON "${basedir}/assets/branding/windows-icon.ico"
@@ -77,7 +77,6 @@ Section
     Call FindJava
     !insertmacro VerifyJava "TryAgain"
 
-    ; Create the uninstaller
     SetOutPath $INSTDIR
 
     ; Run preinstall tasks

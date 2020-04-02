@@ -85,4 +85,4 @@ Var /GLOBAL javaw
 
 ; Allows registering identical functions for install and uninstall
 !insertmacro _FindJava ""
-!insertmacro _FindJava "un."
+;!insertmacro _FindJava "un."

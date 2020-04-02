@@ -1,5 +1,6 @@
 <project name="apple-installers" basedir="../../">
     <property file="ant/project.properties"/>
+    <import file="${basedir}/ant/version.xml"/>
 
     <!--
     ################################################################
@@ -10,7 +11,7 @@
     <target name="pkgbuild-preflight">
         <property name="target.platform.mac" value="true"/>
     </target>
-    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,cleanup-javafx-dist">
+    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,get-version,cleanup-javafx-dist">
         <echo level="info">Creating installer using pkgbuild</echo>
 
         <property file="ant/apple/apple.properties"/>
@@ -22,28 +23,28 @@
         -->
 
         <mkdir dir="${dist.dir}/Contents/Resources"/>
-        <copy file="${basedir}/assets/branding/apple-icon.icns" tofile="${dist.dir}/Contents/Resources/${project.filename}.icns" />
+        <copy file="assets/branding/apple-icon.icns" tofile="${dist.dir}/Contents/Resources/${project.filename}.icns" />
 
         <mkdir dir="${dist.dir}/Contents/MacOS"/>
-        <copy file="${basedir}/ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/Contents/MacOS/${project.name}">
+        <copy file="ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/Contents/MacOS/${project.name}">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <copy file="${basedir}/ant/apple/apple-bundle.plist.in" tofile="${dist.dir}/Contents/Info.plist">
+        <copy file="ant/apple/apple-bundle.plist.in" tofile="${dist.dir}/Contents/Info.plist">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <copy file="${basedir}/ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
+        <copy file="ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
         <mkdir dir="${build.dir}/scripts/payload"/>
 
-        <copy file="${basedir}/ant/apple/apple-preinstall.sh.in" tofile="${build.dir}/scripts/preinstall">
+        <copy file="ant/apple/apple-preinstall.sh.in" tofile="${build.dir}/scripts/preinstall">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <copy file="${basedir}/ant/apple/apple-postinstall.sh.in" tofile="${build.dir}/scripts/postinstall">
+        <copy file="ant/apple/apple-postinstall.sh.in" tofile="${build.dir}/scripts/postinstall">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
@@ -145,20 +146,28 @@
     </target>
 
     <target name="codesign-libs">
-        <path id="find.jar">
-            <fileset dir="lib">
-                <include name="**/${signing.jarname}"/>
-                <exclude name="**/${signing.excluded}" if="signing.excluded"/>
-            </fileset>
+        <path id="found.jar">
+            <first>
+                <fileset dir="lib">
+                    <include name="**/${signing.jarname}"/>
+                    <exclude name="**/${signing.excluded}" if="signing.excluded"/>
+                </fileset>
+            </first>
         </path>
+        <pathconvert property="found.jar.path" refid="found.jar"/>
 
-        <unzip src="${toString:find.jar}" dest="${out.dir}/jar-signing"/>
-        <path id="find.file">
+        <unzip src="${found.jar.path}" dest="${out.dir}/jar-signing"/>
+        <path id="found.files">
             <fileset dir="${out.dir}/jar-signing">
                 <include name="**/${signing.filetype}"/>
             </fileset>
         </path>
+        <pathconvert property="found.files.paths" refid="found.files" pathsep=" "/>
 
+        <!-- No-op: makes IntelliJ happy with the undefined "signing.delete" -->
+        <condition description="suppress property warning" property="signing.delete" value="${signing.delete}">
+            <isset property="signing.delete"/>
+        </condition>
         <delete verbose="true">
             <fileset dir="${out.dir}/jar-signing">
                 <include name="**/${signing.delete}" if="signing.delete"/>
@@ -166,20 +175,19 @@
         </delete>
 
         <!--use xargs to loop over and codesign all files-->
-        <echo message="Signing ${toString:find.jar} using ${apple.packager.signid}"/>
+        <echo message="Signing ${found.jar.path} using ${apple.packager.signid}"/>
         <exec executable="bash" failonerror="true">
             <arg value="-c"/>
-            <arg value="echo &quot;${toString:find.file}&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>
+            <arg value="echo &quot;${found.files.paths}&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>
         </exec>
 
-        <pathconvert property="find.jar.rel">
-            <path refid="find.jar"/>
+        <pathconvert property="found.jar.rel">
+            <path refid="found.jar"/>
             <globmapper from="${basedir}/*" to="*" handledirsep="true" />
         </pathconvert>
-        <zip destfile="${sign.lib.dir}/${find.jar.rel}" basedir="${out.dir}/jar-signing" excludes="dont*.*"/>
+        <zip destfile="${sign.lib.dir}/${found.jar.rel}" basedir="${out.dir}/jar-signing" excludes="dont*.*"/>
 
         <!--cleanup temp folder-->
         <delete dir="${out.dir}/jar-signing"/>
     </target>
-
 </project>

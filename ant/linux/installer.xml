@@ -1,5 +1,6 @@
 <project name="linux-installers" basedir="../../">
     <property file="ant/project.properties"/>
+    <import file="${basedir}/ant/version.xml"/>
 
     <!--
     ################################################################
@@ -10,21 +11,21 @@
     <target name="makeself-preflight">
         <property name="target.platform.linux" value="true"/>
     </target>
-    <target name="makeself" depends="makeself-preflight,distribute,cleanup-javafx-dist">
+    <target name="makeself" depends="makeself-preflight,distribute,get-version,cleanup-javafx-dist,get-version">
         <echo level="info">Creating installer using makeself</echo>
 
-        <copy file="${basedir}/assets/branding/linux-icon.svg" tofile="${dist.dir}/${project.filename}.svg" />
+        <copy file="assets/branding/linux-icon.svg" tofile="${dist.dir}/${project.filename}.svg" />
 
         <mkdir dir="${build.dir}/scripts"/>
-        <copy file="${basedir}/ant/linux/linux-installer.sh.in" tofile="${dist.dir}/install" >
+        <copy file="ant/linux/linux-installer.sh.in" tofile="${dist.dir}/install" >
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <copy file="${basedir}/ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/${project.filename}" >
+        <copy file="ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/${project.filename}" >
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <copy file="${basedir}/ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
+        <copy file="ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
@@ -46,5 +47,4 @@
         <!-- Cleanup lingering icon (for other OS installers) -->
         <delete file="${dist.dir}//${project.filename}.svg" />
     </target>
-
 </project>

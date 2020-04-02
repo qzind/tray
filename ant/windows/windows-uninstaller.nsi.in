@@ -38,7 +38,7 @@ CRCCheck On
 Name "Uninstall ${project.name}"
 Caption "Uninstall ${project.name}"
 Icon "${basedir}/ant/windows/nsis/uninstall.ico"
-OutFile "${dist.dir}/uninstall.exe"
+OutFile "${nsis.outfile}"
 
 Var /GLOBAL RESPAWN
 Var /GLOBAL DELETE_DIR

@@ -1,21 +1,14 @@
-<project name="windows-installers" basedir="../../">
+<project name="windows-installer" basedir="../../">
     <property file="ant/project.properties"/>
     <import file="${basedir}/ant/version.xml"/>
-
     <property environment="env"/>
 
-    <!--
-    ################################################################
-    #                    Windows Installer                         #
-    ################################################################
-    -->
     <!-- Inform javafx.xml  -->
     <target name="nsis-preflight">
         <property name="target.platform.windows" value="true"/>
     </target>
-    <target name="nsis" depends="nsis-preflight,init,distribute,get-version,cleanup-javafx-dist,build-exe"/>
 
-    <target name="build-exe">
+    <target name="build-exe" depends="get-version">
         <!-- Launcher -->
         <antcall target="config-compile-sign">
             <param name="nsis.script.in" value="windows-launcher.nsi.in"/>
@@ -47,7 +40,7 @@
         </copy>
 
         <!-- Create the exe -->
-        <exec executable="${nsisbin}" failonerror="true" >
+        <exec executable="${nsisbin}" failonerror="true">
             <arg value="${build.dir}/${nsis.script.out}"/>
         </exec>
 

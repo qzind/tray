@@ -1,4 +1,4 @@
-<project name="apple-installers" basedir="../../">
+<project name="apple-installer" basedir="../../">
     <property file="ant/project.properties"/>
     <import file="${basedir}/ant/version.xml"/>
 
@@ -11,7 +11,7 @@
     <target name="pkgbuild-preflight">
         <property name="target.platform.mac" value="true"/>
     </target>
-    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,get-version,cleanup-javafx-dist">
+    <target name="build-pkg" depends="get-version">
         <echo level="info">Creating installer using pkgbuild</echo>
 
         <property file="ant/apple/apple.properties"/>
@@ -23,7 +23,7 @@
         -->
 
         <mkdir dir="${dist.dir}/Contents/Resources"/>
-        <copy file="assets/branding/apple-icon.icns" tofile="${dist.dir}/Contents/Resources/${project.filename}.icns" />
+        <copy file="assets/branding/apple-icon.icns" tofile="${dist.dir}/Contents/Resources/${project.filename}.icns"/>
 
         <mkdir dir="${dist.dir}/Contents/MacOS"/>
         <copy file="ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/Contents/MacOS/${project.name}">
@@ -71,13 +71,13 @@
         </exec>
         <!-- pkgbuild will fail on blank options; use ownership flag as a dummy fallback  -->
         <condition property="codesign.qz.cmd" value="--sign" else="--ownership">
-            <equals arg1="${codesign.qz}" arg2="0" />
+            <equals arg1="${codesign.qz}" arg2="0"/>
         </condition>
         <condition property="codesign.qz.val" value="${apple.packager.signid}" else="recommended">
-            <equals arg1="${codesign.qz}" arg2="0" />
+            <equals arg1="${codesign.qz}" arg2="0"/>
         </condition>
         <condition property="codesign.qz.suffix" value="" else="-community">
-            <equals arg1="${codesign.qz}" arg2="0" />
+            <equals arg1="${codesign.qz}" arg2="0"/>
         </condition>
 
         <exec executable="pkgbuild" failonerror="true">
@@ -101,12 +101,12 @@
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}${codesign.qz.suffix}.pkg"/>
         </exec>
 
-        <!-- Cleanup lingering resources for other installer targets -->
-        <delete dir="${dist.dir}/Contents/Resources" />
-        <delete dir="${dist.dir}/Contents/MacOS" />
+        <!-- Cleanup lingering files (for other OS installers) -->
+        <delete dir="${dist.dir}/Contents/Resources"/>
+        <delete dir="${dist.dir}/Contents/MacOS"/>
     </target>
 
-    <target name="codesign" depends="init,download-javafx,cleanup-javafx-dist" if="codesign.mac">
+    <target name="codesign-jars" if="codesign.mac">
         <property file="ant/apple/apple.properties"/>
         <exec executable="security">
             <arg value="add-certificates"/>
@@ -174,7 +174,7 @@
             </fileset>
         </delete>
 
-        <!--use xargs to loop over and codesign all files-->
+        <!-- Use xargs to loop over and codesign all files-->
         <echo message="Signing ${found.jar.path} using ${apple.packager.signid}"/>
         <exec executable="bash" failonerror="true">
             <arg value="-c"/>
@@ -183,11 +183,11 @@
 
         <pathconvert property="found.jar.rel">
             <path refid="found.jar"/>
-            <globmapper from="${basedir}/*" to="*" handledirsep="true" />
+            <globmapper from="${basedir}/*" to="*" handledirsep="true"/>
         </pathconvert>
         <zip destfile="${sign.lib.dir}/${found.jar.rel}" basedir="${out.dir}/jar-signing" excludes="dont*.*"/>
 
-        <!--cleanup temp folder-->
+        <!-- Cleanup temp folder-->
         <delete dir="${out.dir}/jar-signing"/>
     </target>
 </project>

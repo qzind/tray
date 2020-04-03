@@ -168,8 +168,9 @@
         </antcall>
     </target>
 
-    <!-- Cleanup dist directory for packaging -->
-    <target name="cleanup-javafx-dist" if="javafx.target.extension" >
+    <!-- Tidy dist directory for packaging -->
+    <target name="tidy-javafx-dist" if="javafx.target.extension">
+        <echo level="info">Removing non-${javafx.target.extension} files</echo>
         <delete>
             <fileset dir="${dist.dir}/libs">
                 <include name="**"/>

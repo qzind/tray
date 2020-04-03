@@ -4,12 +4,13 @@
     <property file="ant/project.properties"/>
     <import file="ant/javafx.xml"/>
     <import file="ant/signing.xml"/>
-    <import file="ant/apple/installer.xml" />
+    <import file="ant/apple/installer.xml"/>
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>
 
     <target name="distribute" depends="init,clean,download-javafx,build-jar,override-authcert,include-assets,whitelist-certs">
-        <echo message="Process complete" />
+        <antcall target="tidy-javafx-dist"/>
+        <echo level="info">Process complete</echo>
     </target>
 
     <target name="init">
@@ -32,7 +33,7 @@
             </and>
         </condition>
 
-        <echo message="Building ${project.filename} using JDK ${ant.java.version}" />
+        <echo message="Building ${project.filename} using JDK ${ant.java.version}"/>
     </target>
 
     <target name="clean" depends="init">
@@ -57,7 +58,7 @@
             <classpath>
                 <!-- prefer bouncycastle from pdfbox over simplersa -->
                 <path id="plugin.override">
-                    <pathelement path="${pdfbox.path}" />
+                    <pathelement path="${pdfbox.path}"/>
                 </path>
                 <fileset dir="lib">
                     <include name="**/*.jar"/>
@@ -101,7 +102,8 @@
             <param name="sign.jar.file" value="${dist.dir}/${project.filename}.jar"/>
         </antcall>
 
-        <antcall target="apple-installers.codesign"/>
+        <!-- Apple: Extract, sign, repackage all nested native libs for notarization -->
+        <antcall target="apple-installer.codesign-jars"/>
     </target>
 
     <!-- install override.crt for "community" branded builds -->
@@ -137,7 +139,11 @@
         </copy>
     </target>
 
-    <target name="build-installer-apple" depends="apple-installers.pkgbuild" />
-    <target name="build-installer-linux" depends="linux-installers.makeself" />
-    <target name="build-installer-windows" depends="windows-installers.nsis" />
+    <!-- <target name="build-installer-apple" depends="apple-installers.pkgbuild"/>
+    <target name="build-installer-linux" depends="linux-installers.makeself"/>
+    <target name="build-installer-windows" depends="windows-installers.nsis"/> -->
+
+    <target name="nsis" depends="nsis-preflight,distribute,build-exe"/>
+    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,build-pkg"/>
+    <target name="makeself" depends="makeself-preflight,distribute,build-run"/>
 </project>

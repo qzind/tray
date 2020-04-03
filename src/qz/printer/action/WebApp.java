@@ -101,7 +101,6 @@ public class WebApp extends Application {
                                     log.debug("Attempting image capture");
 
 
-
                                     webView.snapshot(new Callback<SnapshotResult,Void>() {
                                         @Override
                                         public Void call(SnapshotResult snapshotResult) {
@@ -150,26 +149,34 @@ public class WebApp extends Application {
 
     /** Starts JavaFX thread if not already running */
     public static synchronized void initialize() throws IOException {
-        if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-            // Monocle for Windows/MacOS relies on hw pipeline
-            if(!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {
-                // Monocle for Linux relies on sw pipeline (tailored for embedded)
-                System.setProperty("prism.order", "sw");
-            }
-
-            System.setProperty("javafx.platform", "monocle"); // Standard JDKs
-            System.setProperty("glass.platform", "Monocle"); // Headless JDKs
-            System.setProperty("monocle.platform", "Headless");
-            System.setProperty("headless.geometry", "15360x15360-32"); //TODO - determine based on memory, >=1g for 15 (~10 at 500m)
-
-            // JavaFX native libs
-            if (SystemUtilities.isJar()) {
-                System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
-            }
-        }
-
         if (instance == null) {
             startupLatch = new CountDownLatch(1);
+
+            if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
+                log.trace("Initializing monocle platform");
+
+                // Monocle for Windows/MacOS relies on hw pipeline
+                if (!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {
+                    // Monocle for Linux relies on sw pipeline (tailored for embedded)
+                    System.setProperty("prism.order", "sw");
+                }
+
+                System.setProperty("javafx.platform", "monocle"); // Standard JDKs
+                System.setProperty("glass.platform", "Monocle"); // Headless JDKs
+                System.setProperty("monocle.platform", "Headless");
+
+                long memory = Runtime.getRuntime().maxMemory() / 1000000;
+                int geometry = (int)(1200d * (memory / 100d)); // can support 1 inch of 1200dpi per 100mb of available memory
+                if (geometry > 40000) { geometry = 40000; } // cap at 40k (A1 size at 1200dpi)
+                log.trace("Allowing max headless geometry of {}x{} based on available memory ({} MB)", geometry, geometry, memory);
+
+                System.setProperty("headless.geometry", String.format("%sx%s-32", geometry, geometry));
+
+                // JavaFX native libs
+                if (SystemUtilities.isJar()) {
+                    System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
+                }
+            }
 
             new Thread() {
                 public void run() {

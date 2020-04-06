@@ -139,10 +139,6 @@
         </copy>
     </target>
 
-    <!-- <target name="build-installer-apple" depends="apple-installers.pkgbuild"/>
-    <target name="build-installer-linux" depends="linux-installers.makeself"/>
-    <target name="build-installer-windows" depends="windows-installers.nsis"/> -->
-
     <target name="nsis" depends="nsis-preflight,distribute,build-exe"/>
     <target name="pkgbuild" depends="pkgbuild-preflight,distribute,build-pkg"/>
     <target name="makeself" depends="makeself-preflight,distribute,build-run"/>

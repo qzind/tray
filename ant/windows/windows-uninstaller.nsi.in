@@ -93,7 +93,6 @@ Section
       ${EnableX64FSRedirection}
     ${EndIf}
     SetDetailsPrint both
-    DetailPrint "Completed"
   ${Else}
     ; We're NOT running from $TEMP, copy to temp and respawn ourself
     GetTempFileName $0

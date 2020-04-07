@@ -36,7 +36,7 @@ data = request("request")
 password = ""
 success = pem.LoadPemFile("private-key.pem", password)
 If (success <> 1) Then
-	Response.Write "<pre>" & Server.HTMLEncode(pem.LastErrorText) & "</pre>"
+    Response.Write "<pre>" & Server.HTMLEncode(pem.LastErrorText) & "</pre>"
     Response.End
 End If
 

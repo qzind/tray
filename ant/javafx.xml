@@ -64,6 +64,16 @@
                 </tokenfilter>
             </filterchain>
         </loadresource>
+        <!-- Handle mismatched folder name; Edge-case for early access builds -->
+        <loadresource property="javafx.version-dir">
+            <propertyresource name="javafx.version-url"/>
+            <filterchain>
+                <tokenfilter>
+                    <filetokenizer/>
+                    <replacestring from="-ea" to=""/>
+                </tokenfilter>
+            </filterchain>
+        </loadresource>
     </target>
 
     <!-- Flags if javafx is needed for a particular platform-->
@@ -119,8 +129,8 @@
         <delete file="javafx-${javafx.platform}.zip"/>
 
         <!-- Replace javafx.graphics.jar with Monocle's version -->
-        <get src="${monocle.mirror}/${monocle.platform}/javafx.graphics.jar" verbose="true" dest="${lib.dir}/javafx/${javafx.platform}/javafx-sdk-${javafx.version}/lib/javafx.graphics.monocle.jar"/>
-        <move file="${lib.dir}/javafx/${javafx.platform}/javafx-sdk-${javafx.version}/lib/javafx.graphics.jar" tofile="${lib.dir}/javafx/${javafx.platform}/javafx-sdk-${javafx.version}/lib/javafx.graphics.jar.bak"/>
+        <get src="${monocle.mirror}/${monocle.platform}/${monocle.version}/javafx.graphics.jar" verbose="true" dest="${lib.dir}/javafx/${javafx.platform}/javafx-sdk-${javafx.version-dir}/lib/javafx.graphics.monocle.jar"/>
+        <move file="${lib.dir}/javafx/${javafx.platform}/javafx-sdk-${javafx.version-dir}/lib/javafx.graphics.jar" tofile="${lib.dir}/javafx/${javafx.platform}/javafx-sdk-${javafx.version-dir}/lib/javafx.graphics.jar.bak"/>
     </target>
 
     <!-- Removes old javafx versions -->
@@ -128,7 +138,7 @@
         <delete>
             <fileset dir="${lib.dir}">
                 <include name="**/javafx*/**"/>
-                <exclude name="**/javafx*${javafx.version}*/**"/>
+                <exclude name="**/javafx*${javafx.version-dir}*/**"/>
             </fileset>
         </delete>
     </target>

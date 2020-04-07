@@ -155,12 +155,7 @@ public class WebApp extends Application {
             if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
                 log.trace("Initializing monocle platform");
 
-                // Monocle for Windows/MacOS relies on hw pipeline
-                if (!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {
-                    // Monocle for Linux relies on sw pipeline (tailored for embedded)
-                    System.setProperty("prism.order", "sw");
-                }
-
+                System.setProperty("prism.order", "sw");
                 System.setProperty("javafx.platform", "monocle"); // Standard JDKs
                 System.setProperty("glass.platform", "Monocle"); // Headless JDKs
                 System.setProperty("monocle.platform", "Headless");

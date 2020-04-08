@@ -54,6 +54,7 @@ public class WindowsInstaller extends Installer {
                 WindowsUtilities.deleteRegKey(HKEY_USERS, user.trim() + "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\" + ABOUT_TITLE);
             }
         });
+        FileUtils.deleteQuietly(new File(STARTUP + File.separator + ABOUT_TITLE + ".lnk"));
 
         return this;
     }
@@ -93,7 +94,7 @@ public class WindowsInstaller extends Installer {
         WindowsUtilities.deleteRegData(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLWhitelist", String.format("%s://*", DATA_DIR));
 
         // Cleanup launchers
-        for(WindowsSpecialFolders folder : new WindowsSpecialFolders[] { START_MENU, COMMON_START_MENU, DESKTOP, PUBLIC_DESKTOP }) {
+        for(WindowsSpecialFolders folder : new WindowsSpecialFolders[] { START_MENU, COMMON_START_MENU, DESKTOP, PUBLIC_DESKTOP, COMMON_STARTUP, RECENT }) {
             try {
                 new File(folder + File.separator + ABOUT_TITLE + ".lnk").delete();
                 // Since 2.1, start menus use subfolder

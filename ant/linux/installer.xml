@@ -1,0 +1,45 @@
+<project name="linux-installer" basedir="../../">
+    <property file="ant/project.properties"/>
+    <import file="${basedir}/ant/version.xml"/>
+
+    <!-- Inform javafx.xml -->
+    <target name="makeself-preflight">
+        <property name="target.platform.linux" value="true"/>
+    </target>
+    <target name="build-run" depends="get-version">
+        <echo level="info">Creating installer using makeself</echo>
+
+        <copy file="assets/branding/linux-icon.svg" tofile="${dist.dir}/${project.filename}.svg"/>
+
+        <mkdir dir="${build.dir}/scripts"/>
+        <copy file="ant/linux/linux-installer.sh.in" tofile="${dist.dir}/install">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/${project.filename}">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <copy file="ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <chmod perm="a+x" type="file">
+            <fileset dir="${dist.dir}">
+                <include name="**/${project.filename}"/>
+                <include name="**/install"/>
+                <include name="**/uninstall"/>
+            </fileset>
+        </chmod>
+
+        <exec executable="makeself" failonerror="true">
+            <arg value="${dist.dir}"/>
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.run"/>
+            <arg value="${project.name} Installer"/>
+            <arg value="./install"/>
+        </exec>
+
+        <!-- Cleanup lingering files (for other OS installers) -->
+        <delete file="${dist.dir}//${project.filename}.svg" />
+    </target>
+</project>

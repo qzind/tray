@@ -19,7 +19,7 @@ RequestExecutionLevel user
 Name "${project.name}"
 Caption "${project.name}"
 Icon "${basedir}/assets/branding/windows-icon.ico"
-OutFile "${dist.dir}/${project.filename}.exe"
+OutFile "${nsis.outfile}"
  
 SilentInstall silent
 AutoCloseWindow true

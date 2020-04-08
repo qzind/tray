@@ -1,0 +1,51 @@
+<project name="signing-helpers" basedir="../">
+    <property file="ant/project.properties"/>
+
+    <!-- Custom code-signing properties -->
+    <property file="${basedir}/../private/private.properties"/>
+
+    <!-- Fallback code-signing properties -->
+    <property file="ant/private/private.properties"/>
+
+    <target name="sign-jar">
+        <antcall target="sign-jar-tsa">
+            <param name="sign.jar.file" value="${sign.jar.file}"/>
+        </antcall>
+        <antcall target="sign-jar-self">
+            <param name="sign.jar.file" value="${sign.jar.file}"/>
+        </antcall>
+    </target>
+
+    <target name="sign-jar-tsa" if="signing.tsaurl">
+        <echo level="info">Signing jar with timestamp: ${sign.jar.file}</echo>
+        <signjar jar="${sign.jar.file}"
+                 signedjar="${sign.jar.file}"
+                 alias="${signing.alias}"
+                 storepass="${signing.storepass}"
+                 keystore="${signing.keystore}"
+                 keypass="${signing.keypass}"
+                 tsaurl="${signing.tsaurl}"
+        />
+    </target>
+
+    <target name="sign-jar-self" unless="signing.tsaurl">
+        <echo level="info">Self-signing jar without timestamp: ${sign.jar.file}</echo>
+        <tsa-warning/>
+        <signjar jar="${sign.jar.file}"
+                 signedjar="${sign.jar.file}"
+                 alias="${signing.alias}"
+                 storepass="${signing.storepass}"
+                 keystore="${signing.keystore}"
+                 keypass="${signing.keypass}"
+        />
+    </target>
+
+    <macrodef name="tsa-warning">
+        <sequential>
+            <echo level="warn">
+                No tsaurl was provided so the file was not timestamped. Users will not be able to validate
+                this file after the signer certificate's expiration date or after any future revocation date.
+            </echo>
+        </sequential>
+    </macrodef>
+</project>

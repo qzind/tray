@@ -1,0 +1,111 @@
+<project name="windows-installer" basedir="../../">
+    <property file="ant/project.properties"/>
+    <import file="${basedir}/ant/version.xml"/>
+    <property environment="env"/>
+
+    <!-- Inform javafx.xml  -->
+    <target name="nsis-preflight">
+        <property name="target.platform.windows" value="true"/>
+    </target>
+
+    <target name="build-exe" depends="get-version">
+        <!-- Launcher -->
+        <antcall target="config-compile-sign">
+            <param name="nsis.script.in" value="windows-launcher.nsi.in"/>
+            <param name="nsis.outfile" value="${dist.dir}/${project.filename}.exe"/>
+        </antcall>
+
+        <!-- Uninstaller -->
+        <antcall target="config-compile-sign">
+            <param name="nsis.script.in" value="windows-uninstaller.nsi.in"/>
+            <param name="nsis.outfile" value="${dist.dir}/uninstall.exe"/>
+        </antcall>
+
+        <!-- Installer (bundles dist/ payload) -->
+        <antcall target="config-compile-sign">
+            <param name="nsis.script.in" value="windows-installer.nsi.in"/>
+            <param name="nsis.outfile" value="${out.dir}/${project.filename}${build.type}-${build.version}.exe"/>
+        </antcall>
+    </target>
+
+    <target name="config-compile-sign" depends="find-nsisbin">
+        <echo level="info">Creating ${nsis.outfile} using ${nsisbin}</echo>
+
+        <!-- Calculate file name without suffix  -->
+        <basename property="nsis.script.out" file="${nsis.script.in}" suffix=".in"/>
+
+        <!-- Configure the nsi script with ant parameters -->
+        <copy file="ant/windows/${nsis.script.in}" tofile="${build.dir}/${nsis.script.out}" overwrite="true">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <!-- Create the exe -->
+        <exec executable="${nsisbin}" failonerror="true">
+            <arg value="${build.dir}/${nsis.script.out}"/>
+        </exec>
+
+        <!-- Sign the exe -->
+        <antcall target="sign-exe">
+            <param name="sign.exe.file" value="${nsis.outfile}"/>
+        </antcall>
+    </target>
+
+    <target name="find-nsisbin" depends="nsisbin-from-unix,nsisbin-from-32,nsisbin-from-64"/>
+
+    <!-- Linux makensis -->
+    <target name="nsisbin-from-unix" unless="env.windir">
+        <property name="nsisbin" value="makensis"/>
+    </target>
+
+    <!-- Win32 makensis -->
+    <target name="nsisbin-from-32" unless="env.ProgramFiles(x86)">
+        <property description="suppress property warning" name="env.ProgramFiles" value="C:/Program Files"/>
+        <property name="nsisbin" value="${env.ProgramFiles}/NSIS/makensis.exe"/>
+    </target>
+
+    <!-- Win64 makensis -->
+    <target name="nsisbin-from-64" if="env.ProgramFiles(x86)">
+        <property description="suppress property warning" name="env.ProgramFiles(x86)" value="C:/Program Files (x86)"/>
+        <property name="nsisbin" value="${env.ProgramFiles(x86)}/NSIS/makensis.exe"/>
+    </target>
+
+    <!-- Exe signing -->
+    <import file="${basedir}/ant/signing.xml"/>
+    <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
+    <target name="sign-exe">
+        <antcall target="sign-exe-tsa">
+            <param name="sign.exe.file" value="${sign.exe.file}"/>
+        </antcall>
+        <antcall target="sign-exe-self">
+            <param name="sign.exe.file" value="${sign.exe.file}"/>
+        </antcall>
+    </target>
+
+    <!-- Exe signing with timestamp -->
+    <target name="sign-exe-tsa" if="signing.tsaurl">
+        <echo level="info">Signing exe with timestamp: ${sign.exe.file}</echo>
+        <signexe file="${sign.exe.file}"
+                 name="${project.name}"
+                 url="${vendor.website}"
+                 keystore="${signing.keystore}"
+                 alias="${signing.alias}"
+                 storepass="${signing.storepass}"
+                 keypass="${signing.keypass}"
+                 tsaurl="${signing.tsaurl}"
+        />
+    </target>
+
+    <!-- Exe signing without timestamp -->
+    <target name="sign-exe-self" unless="signing.tsaurl">
+        <echo level="info">Signing exe without timestamp: ${sign.exe.file}</echo>
+        <tsa-warning/>
+        <signexe file="${sign.exe.file}"
+                 name="${project.name}"
+                 url="${vendor.website}"
+                 keystore="${signing.keystore}"
+                 alias="${signing.alias}"
+                 storepass="${signing.storepass}"
+                 keypass="${signing.keypass}"
+        />
+    </target>
+</project>

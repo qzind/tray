@@ -3,22 +3,17 @@
 <project name="qz" default="distribute" basedir=".">
     <property file="ant/project.properties"/>
     <import file="ant/javafx.xml"/>
+    <import file="ant/signing.xml"/>
+    <import file="ant/apple/installer.xml"/>
+    <import file="ant/linux/installer.xml"/>
+    <import file="ant/windows/installer.xml"/>
 
-    <target name="distribute" depends="init,clean,sign-jar,download-javafx,override-authcert,include-assets,whitelist-certs">
-        <echo message="Process complete" />
+    <target name="distribute" depends="init,clean,download-javafx,build-jar,override-authcert,include-assets,whitelist-certs">
+        <antcall target="tidy-javafx-dist"/>
+        <echo level="info">Process complete</echo>
     </target>
 
     <target name="init">
-        <property environment="env"/>
-
-        <!-- Your custom code signing properties here. Feel free to change. -->
-        <!-- The project will default to qz.ks if it doesn't exist -->
-        <property file="${basedir}/../private/private.properties"/>
-
-        <!-- The default code signing properties which uses qz.ks. -->
-        <!-- Please leave this value default as a fallback. -->
-        <property file="ant/private/private.properties"/>
-
         <condition property="codesign.windows" value="true">
             <and>
                 <isset property="target.platform.windows"/>
@@ -38,7 +33,7 @@
             </and>
         </condition>
 
-        <echo message="Building ${project.filename} using JDK ${ant.java.version}" />
+        <echo message="Building ${project.filename} using JDK ${ant.java.version}"/>
     </target>
 
     <target name="clean" depends="init">
@@ -49,19 +44,21 @@
         <mkdir dir="${build.dir}/${project.filename}"/>
 
         <!-- find the pdfbox jar -->
-        <path id="find.jar">
-            <fileset dir="lib/printing/">
-                <include name="pdfbox*.jar"/>
-            </fileset>
+        <path id="pdfbox.found">
+            <first>
+                <fileset dir="lib/printing/">
+                    <include name="pdfbox*.jar"/>
+                </fileset>
+            </first>
         </path>
-        <property name="pdfbox.path" value="${toString:find.jar}" />
+        <pathconvert property="pdfbox.path" refid="pdfbox.found"/>
 
         <javac destdir="${build.dir}/${project.filename}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8">
             <src path="${src.dir}"/>
             <classpath>
                 <!-- prefer bouncycastle from pdfbox over simplersa -->
                 <path id="plugin.override">
-                    <pathelement path="${pdfbox.path}" />
+                    <pathelement path="${pdfbox.path}"/>
                 </path>
                 <fileset dir="lib">
                     <include name="**/*.jar"/>
@@ -79,12 +76,15 @@
         </copy>
 
         <copy todir="${dist.dir}">
-            <fileset file="${basedir}/LICENSE.txt"/>
+            <fileset file="LICENSE.txt"/>
         </copy>
     </target>
 
     <target name="build-jar" depends="compile-socket">
-        <echo>Building Jar for Socket use</echo>
+        <!-- Apple: Extract, sign, repackage all nested native libs for notarization -->
+        <antcall target="apple-installer.codesign-jars"/>
+
+        <echo level="info">Building Jar for Socket use</echo>
         <mkdir dir="${sign.lib.dir}"/>
         <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.dir}/${project.filename}.jar" duplicate="preserve">
             <fileset dir="${build.dir}/${project.filename}"/>
@@ -100,417 +100,46 @@
                 <attribute name="Permissions" value="all-permissions"/>
             </manifest>
         </jar>
-    </target>
 
-
-    <target name="sign-jar" depends="codesign,build-jar,sign-jar-self,sign-jar-tsa">
-        <path>
-            <fileset dir="${dist.dir}" includes="**/*.jar" />
-        </path>
-    </target>
-
-    <!-- tsaurl attribute cannot be empty, so separate methods are needed to sign both jars -->
-    <target name="sign-jar-self" unless="signing.tsaurl">
-		<echo>Self-signing Socket jar</echo>
-        <signjar jar="${dist.dir}/${project.filename}.jar"
-                 signedjar="${dist.dir}/${project.filename}.jar"
-                 alias="${signing.alias}"
-                 storepass="${signing.storepass}"
-                 keystore="${signing.keystore}"
-                 keypass="${signing.keypass}"
-                />
-    </target>
-
-    <target name="sign-jar-tsa" if="signing.tsaurl">
-		<echo>Signing Socket jar with timestamp</echo>
-        <signjar jar="${dist.dir}/${project.filename}.jar"
-                 signedjar="${dist.dir}/${project.filename}.jar"
-                 alias="${signing.alias}"
-                 storepass="${signing.storepass}"
-                 keystore="${signing.keystore}"
-                 keypass="${signing.keypass}"
-                 tsaurl="${signing.tsaurl}"
-                />
-    </target>
-
-    <!-- Get version information from JAR -->
-    <target name="get-version" depends="build-jar">
-        <property file="ant/project.properties"/>
-        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="build.version">
-            <arg value="--version"/>
-        </java>
-        <!-- Fallback to a bogus version number if the above command failed -->
-        <property name="build.version" value="0.0.0" />
-
-        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="apple.bundleid">
-            <arg value="--bundleid"/>
-        </java>
-        <!-- Fallback to a safe bundle id if the above command failed -->
-        <property name="apple.bundleid" value="io.qz.fallback.${project.filename}" />
-
-        <echo>Version   : ${build.version}</echo>
-        <echo>Bundle Id : ${apple.bundleid}</echo>
-    </target>
-
-    <target name="internal-authcert" unless="authcert.use">
-        <echo>Using internal cert for signing auth</echo>
-        <property name="build.type" value=""/>
+        <antcall target="sign-jar">
+            <param name="sign.jar.file" value="${dist.dir}/${project.filename}.jar"/>
+        </antcall>
     </target>
 
     <!-- install override.crt for "community" branded builds -->
-    <target name="override-authcert" depends="internal-authcert" if="authcert.use">
-        <echo>Bundling with manual cert for signing auth: ${authcert.use}</echo>
+    <target name="override-authcert" if="authcert.use">
+        <echo level="info">Bundling with manual cert for signing auth: ${authcert.use}</echo>
         <!-- See also: Constants.OVERRIDE_CERT -->
-        <copy file="${authcert.use}" tofile="${dist.dir}/override.crt" overwrite="true"></copy>
-        <property name="build.type" value="-community"/>
+        <property description="suppress-property-warning" name="authcert.use" value="override.crt"/>
+        <copy file="${authcert.use}" tofile="${dist.dir}/override.crt" overwrite="true"/>
     </target>
 
     <!-- install certs to "whitelist" directory for whitelabel builds -->
     <target name="whitelist-certs" depends="include-assets" if="whitelist.use">
-        <echo>Copying certificate(s) to dist/whitelist: ${whitelist.use}</echo>
+        <echo level="info">Copying certificate(s) to dist/whitelist: ${whitelist.use}</echo>
         <!-- See also: Constants.WHITELIST_CERT_DIR -->
 
         <mkdir dir="${dist.dir}/whitelist"/>
+        <property description="suppress property warning" name="whitelist.use" value=""/>
         <copy file="${whitelist.use}" todir="${dist.dir}/whitelist" overwrite="true"/>
     </target>
 
-    <target name="include-assets" depends="init,get-version" unless="dist.minimal">
-        <echo>Copying resource files to output</echo>
+    <target name="include-assets" depends="init" unless="dist.minimal">
+        <echo level="info">Copying resource files to output</echo>
 
-        <copy todir="${dist.dir}/demo/assets">
-            <fileset dir="${basedir}/assets">
-                <exclude name="**/*.properties"/>
+        <!-- Create the demo folder -->
+        <copy todir="${dist.dir}/demo">
+            <fileset file="sample.html"/>
+            <fileset dir="${basedir}" includes="css/**"/>
+            <fileset dir="${basedir}" includes="fonts/**"/>
+            <fileset dir="${basedir}" includes="js/**/*.js"/>
+            <fileset dir="${basedir}" includes="assets/**">
                 <exclude name="**/branding/"/>
             </fileset>
         </copy>
-
-        <copy todir="${dist.dir}/demo/js">
-            <fileset dir="js">
-                <exclude name="**/package.json"/>
-                <exclude name="**/README.md"/>
-            </fileset>
-        </copy>
-
-        <copy todir="${dist.dir}/demo/css">
-            <fileset dir="css"/>
-        </copy>
-
-        <copy todir="${dist.dir}/demo/fonts">
-            <fileset dir="fonts"/>
-        </copy>
-
-        <copy todir="${dist.dir}/demo">
-            <fileset file="sample.html"/>
-        </copy>
     </target>
 
-    <target name="distill-icu" depends="init">
-        <exec executable="python">
-            <arg line="ant/lib/slim-icu.py lib/charsets"/>
-        </exec>
-    </target>
-
-    <!--
-    ################################################################
-    #                    Windows Installer                         #
-    ################################################################
-    -->
-    <!-- Inform javafx.xml  -->
-    <target name="nsis-preflight">
-        <property name="target.platform.windows" value="true"/>
-    </target>
-    <target name="nsis" depends="nsis-preflight,build-exe,sign-exe-self,sign-exe-tsa"/>
-
-    <target name="build-exe" depends="distribute,cleanup-javafx-dist,nsisbin-1,nsisbin-2,nsisbin-3">
-        <echo>Creating installer using ${nsisbin}</echo>
-
-        <copy file="${basedir}/ant/windows/windows-installer.nsi.in" tofile="${build.dir}/windows-installer.nsi" overwrite="true">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <copy file="${basedir}/ant/windows/windows-launcher.nsi.in" tofile="${build.dir}/windows-launcher.nsi" overwrite="true">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <exec executable="${nsisbin}" failonerror="true" >
-            <arg value="${build.dir}/windows-launcher.nsi"/>
-        </exec>
-
-        <exec executable="${nsisbin}" failonerror="true" >
-            <arg value="${build.dir}/windows-installer.nsi"/>
-        </exec>
-    </target>
-
-    <!-- Linux makensis -->
-    <target name="nsisbin-1" depends="init" unless="env.windir">
-        <property name="nsisbin" value="makensis"/>
-    </target>
-
-    <!-- Win32 makensis -->
-    <target name="nsisbin-2" depends="init" unless="env.ProgramFiles(x86)">
-        <property name="nsisexe" value="${env.ProgramFiles}/NSIS/makensis.exe"/>
-    </target>
-
-    <!-- Win64 makensis -->
-    <target name="nsisbin-3" depends="init" if="env.ProgramFiles(x86)">
-        <property name="nsisbin" value="${env.ProgramFiles(x86)}/NSIS/makensis.exe"/>
-    </target>
-
-    <!-- As seen with signing jars, tsaurl attribute cannot be empty, so separate methods are needed to sign both exes -->
-    <!-- TODO: codesign the launcher, uninstaller -->
-    <target name="sign-exe-self" depends="build-exe" unless="signing.tsaurl">
-        <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
-
-        <echo>Signing Windows installer: No tsaurl was provided so this exe was not timestamped. Users will not be able to validate this exe after the signer certificate's expiration date or after any future revocation date.</echo>
-        <signexe file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"
-            name="${project.name}"
-            url="${vendor.website}"
-            keystore="${signing.keystore}"
-            alias="${signing.alias}"
-            storepass="${signing.storepass}"
-            keypass="${signing.keypass}"
-            />
-    </target>
-
-    <target name="sign-exe-tsa" depends="build-exe" if="signing.tsaurl">
-        <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
-
-        <echo>Signing Windows installer</echo>
-        <signexe file="${out.dir}/${project.filename}${build.type}-${build.version}.exe"
-            name="${project.name}"
-            url="${vendor.website}"
-            keystore="${signing.keystore}"
-            alias="${signing.alias}"
-            storepass="${signing.storepass}"
-            keypass="${signing.keypass}"
-            tsaurl="${signing.tsaurl}"
-            />
-    </target>
-
-    <!--
-    ################################################################
-    #                     Apple Installer                          #
-    ################################################################
-    -->
-    <!-- Inform javafx.xml  -->
-    <target name="pkgbuild-preflight">
-        <property name="target.platform.mac" value="true"/>
-    </target>
-    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,cleanup-javafx-dist">
-        <echo>Creating installer using pkgbuild</echo>
-
-        <property file="ant/apple/apple.properties"/>
-
-        <!--
-        ###################################
-        #   Build MacOS Bundle Structure  #
-        ###################################
-        -->
-
-        <mkdir dir="${dist.dir}/Contents/Resources"/>
-        <copy file="${basedir}/assets/branding/apple-icon.icns" tofile="${dist.dir}/Contents/Resources/${project.filename}.icns" />
-
-        <mkdir dir="${dist.dir}/Contents/MacOS"/>
-        <copy file="${basedir}/ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/Contents/MacOS/${project.name}">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <copy file="${basedir}/ant/apple/apple-bundle.plist.in" tofile="${dist.dir}/Contents/Info.plist">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <copy file="${basedir}/ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <mkdir dir="${build.dir}/scripts/payload"/>
-
-        <copy file="${basedir}/ant/apple/apple-preinstall.sh.in" tofile="${build.dir}/scripts/preinstall">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <copy file="${basedir}/ant/apple/apple-postinstall.sh.in" tofile="${build.dir}/scripts/postinstall">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <!-- Copy of the jar is needed for preinstall tasks -->
-        <copy todir="${build.dir}/scripts/payload">
-            <fileset dir="${dist.dir}"/>
-        </copy>
-
-        <chmod perm="a+x" type="file">
-            <fileset dir="${build.dir}/scripts">
-                <include name="preinstall"/>
-                <include name="postinstall"/>
-            </fileset>
-            <fileset dir="${build.dir}/scripts/payload">
-                <include name="**/${project.name}"/>
-                <include name="**/uninstall"/>
-            </fileset>
-        </chmod>
-
-        <!-- Disable signing and append "-community" if id is missing -->
-        <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
-            <arg value="-c"/>
-            <arg value="security find-identity -v |grep '(${apple.packager.signid})'"/>
-        </exec>
-        <!-- pkgbuild will fail on blank options; use ownership flag as a dummy fallback  -->
-        <condition property="codesign.qz.cmd" value="--sign" else="--ownership">
-            <equals arg1="${codesign.qz}" arg2="0" />
-        </condition>
-        <condition property="codesign.qz.val" value="${apple.packager.signid}" else="recommended">
-            <equals arg1="${codesign.qz}" arg2="0" />
-        </condition>
-        <condition property="codesign.qz.suffix" value="" else="-community">
-            <equals arg1="${codesign.qz}" arg2="0" />
-        </condition>
-
-        <exec executable="pkgbuild" failonerror="true">
-            <arg value="--identifier"/>
-            <arg value="${project.filename}"/>
-
-            <arg value="--nopayload"/>
-
-            <arg value="--install-location"/>
-            <arg value="/Applications/${project.name}.app"/>
-
-            <arg value="--scripts"/>
-            <arg value="${build.dir}/scripts"/>
-
-            <arg value="--version"/>
-            <arg value="${build.version}"/>
-
-            <arg value="${codesign.qz.cmd}"/>
-            <arg value="${codesign.qz.val}"/>
-
-            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}${codesign.qz.suffix}.pkg"/>
-        </exec>
-
-        <!-- Cleanup lingering resources for other installer targets -->
-        <delete dir="${dist.dir}/Contents/Resources" />
-        <delete dir="${dist.dir}/Contents/MacOS" />
-    </target>
-
-    <target name="codesign" depends="init,download-javafx,cleanup-javafx-dist" if="codesign.mac">
-        <property file="ant/apple/apple.properties"/>
-        <exec executable="security">
-            <arg value="add-certificates"/>
-            <arg value="${basedir}/ant/apple/certs/apple-packager.cer"/>
-            <arg value="${basedir}/ant/apple/certs/apple-intermediate.cer"/>
-            <arg value="${basedir}/ant/apple/certs/apple-codesign.cer"/>
-        </exec>
-        <antcall target="codesign-libs">
-            <param name="signing.jarname" value="communication/jna-*.jar"/>
-            <param name="signing.excluded" value="communication/jna-platform-*.jar"/>
-            <param name="signing.filetype" value="*.jnilib"/>
-        </antcall>
-        <antcall target="codesign-libs">
-            <param name="signing.jarname" value="communication/jssc-*.jar"/>
-            <param name="signing.filetype" value="*.dylib"/>
-        </antcall>
-        <antcall target="codesign-libs">
-            <param name="signing.jarname" value="communication/hid4java-*.jar"/>
-            <param name="signing.filetype" value="*.dylib"/>
-        </antcall>
-        <antcall target="codesign-libs">
-            <param name="signing.jarname" value="communication/libusb4java-*-osx-x86.jar"/>
-            <param name="signing.filetype" value="*.dylib"/>
-        </antcall>
-        <antcall target="codesign-libs">
-            <param name="signing.jarname" value="communication/libusb4java-*-osx-x86_64.jar"/>
-            <param name="signing.filetype" value="*.dylib"/>
-        </antcall>
-        <!-- Manually sign standalone libs -->
-        <!--use xargs to loop over and codesign all files-->
-        <echo message="Signing ${dist.dir}/libs/*.dylib using ${apple.packager.signid}"/>
-        <exec executable="bash" failonerror="true">
-            <arg value="-c"/>
-            <arg value="echo &quot;$(find ${dist.dir}/libs/*.dylib)&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>
-        </exec>
-
-    </target>
-
-    <target name="codesign-libs">
-        <path id="find.jar">
-            <fileset dir="lib">
-                <include name="**/${signing.jarname}"/>
-                <exclude name="**/${signing.excluded}" if="signing.excluded"/>
-            </fileset>
-        </path>
-
-        <unzip src="${toString:find.jar}" dest="${out.dir}/jar-signing"/>
-        <path id="find.file">
-            <fileset dir="${out.dir}/jar-signing">
-                <include name="**/${signing.filetype}"/>
-            </fileset>
-        </path>
-
-        <delete verbose="true">
-            <fileset dir="${out.dir}/jar-signing">
-                <include name="**/${signing.delete}" if="signing.delete"/>
-            </fileset>
-        </delete>
-
-        <!--use xargs to loop over and codesign all files-->
-        <echo message="Signing ${toString:find.jar} using ${apple.packager.signid}"/>
-        <exec executable="bash" failonerror="true">
-            <arg value="-c"/>
-            <arg value="echo &quot;${toString:find.file}&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>
-        </exec>
-
-        <pathconvert property="find.jar.rel">
-            <path refid="find.jar"/>
-            <globmapper from="${basedir}/*" to="*" handledirsep="true" />
-        </pathconvert>
-        <zip destfile="${sign.lib.dir}/${find.jar.rel}" basedir="${out.dir}/jar-signing" excludes="dont*.*"/>
-
-        <!--cleanup temp folder-->
-        <delete dir="${out.dir}/jar-signing"/>
-    </target>
-
-    <!--
-    ################################################################
-    #                     Linux Installer                          #
-    ################################################################
-    -->
-    <!-- Inform javafx.xml  -->
-    <target name="makeself-preflight">
-        <property name="target.platform.linux" value="true"/>
-    </target>
-    <target name="makeself" depends="makeself-preflight,distribute,cleanup-javafx-dist">
-        <echo>Creating installer using makeself</echo>
-
-        <copy file="${basedir}/assets/branding/linux-icon.svg" tofile="${dist.dir}/${project.filename}.svg" />
-
-        <mkdir dir="${build.dir}/scripts"/>
-        <copy file="${basedir}/ant/linux/linux-installer.sh.in" tofile="${dist.dir}/install" >
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <copy file="${basedir}/ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/${project.filename}" >
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <copy file="${basedir}/ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <chmod perm="a+x" type="file">
-            <fileset dir="${dist.dir}">
-                <include name="**/${project.filename}"/>
-                <include name="**/install"/>
-                <include name="**/uninstall"/>
-            </fileset>
-        </chmod>
-
-        <exec executable="makeself" failonerror="true">
-            <arg value="${dist.dir}"/>
-            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.run"/>
-            <arg value="${project.name} Installer"/>
-            <arg value="./install"/>
-        </exec>
-
-        <!-- Cleanup lingering icon (for other OS installers) -->
-        <delete file="${dist.dir}//${project.filename}.svg" />
-    </target>
+    <target name="nsis" depends="nsis-preflight,distribute,build-exe"/>
+    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,build-pkg"/>
+    <target name="makeself" depends="makeself-preflight,distribute,build-run"/>
 </project>

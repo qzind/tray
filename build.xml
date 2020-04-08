@@ -81,6 +81,9 @@
     </target>
 
     <target name="build-jar" depends="compile-socket">
+        <!-- Apple: Extract, sign, repackage all nested native libs for notarization -->
+        <antcall target="apple-installer.codesign-jars"/>
+
         <echo level="info">Building Jar for Socket use</echo>
         <mkdir dir="${sign.lib.dir}"/>
         <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.dir}/${project.filename}.jar" duplicate="preserve">
@@ -101,9 +104,6 @@
         <antcall target="sign-jar">
             <param name="sign.jar.file" value="${dist.dir}/${project.filename}.jar"/>
         </antcall>
-
-        <!-- Apple: Extract, sign, repackage all nested native libs for notarization -->
-        <antcall target="apple-installer.codesign-jars"/>
     </target>
 
     <!-- install override.crt for "community" branded builds -->

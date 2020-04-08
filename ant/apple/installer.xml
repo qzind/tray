@@ -137,7 +137,7 @@
         </antcall>
         <!-- Manually sign standalone libs -->
         <!--use xargs to loop over and codesign all files-->
-        <echo message="Signing ${dist.dir}/libs/*.dylib using ${apple.packager.signid}"/>
+        <echo level="info" message="Signing ${dist.dir}/libs/*.dylib using ${apple.packager.signid}"/>
         <exec executable="bash" failonerror="true">
             <arg value="-c"/>
             <arg value="echo &quot;$(find ${dist.dir}/libs/*.dylib)&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>

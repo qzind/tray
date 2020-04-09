@@ -64,16 +64,6 @@
                 </tokenfilter>
             </filterchain>
         </loadresource>
-        <!-- Handle mismatched folder name; Edge-case for early access builds -->
-        <loadresource property="javafx.version-dir">
-            <propertyresource name="javafx.version-url"/>
-            <filterchain>
-                <tokenfilter>
-                    <filetokenizer/>
-                    <replacestring from="-ea" to=""/>
-                </tokenfilter>
-            </filterchain>
-        </loadresource>
     </target>
 
     <!-- Flags if javafx is needed for a particular platform-->
@@ -102,15 +92,13 @@
     <target name="download-javafx-windows" if="javafx.windows.needed" unless="javafx.windows.found" depends="check-javafx-needed,check-javafx-found">
         <antcall target="download-javafx-platform">
             <param name="javafx.platform" value="windows"/>
-            <param name="monocle.platform" value="windows"/>
         </antcall>
     </target>
 
     <!-- Downloads and extracts javafx for macOS -->
     <target name="download-javafx-mac" if="javafx.mac.needed" unless="javafx.mac.found" depends="check-javafx-needed,check-javafx-found">
         <antcall target="download-javafx-platform">
-            <param name="javafx.platform" value="mac"/>
-            <param name="monocle.platform" value="macos"/>
+            <param name="javafx.platform" value="osx"/>
         </antcall>
     </target>
 
@@ -118,19 +106,14 @@
     <target name="download-javafx-linux" if="javafx.linux.needed" unless="javafx.linux.found" depends="check-javafx-needed,check-javafx-found">
         <antcall target="download-javafx-platform">
             <param name="javafx.platform" value="linux"/>
-            <param name="monocle.platform" value="linux"/>
         </antcall>
     </target>
 
     <!-- Downloads and extracts javafx for the specified platform -->
     <target name="download-javafx-platform">
-        <get src="${javafx.mirror}/javafx-${javafx.version-url}-sdk-${javafx.platform}/" verbose="true" dest="javafx-${javafx.platform}.zip"/>
-        <unzip src="javafx-${javafx.platform}.zip" dest="${lib.dir}/javafx/${javafx.platform}" overwrite="true"/>
+        <get src="${javafx.mirror}/openjfx-${javafx.version-url}-${javafx.platform}-x64_bin-sdk.zip" verbose="true" dest="javafx-${javafx.platform}.zip"/>
+        <unzip src="javafx-${javafx.platform}.zip" dest="${lib.dir}/javafx/${javafx.platform}/javafx-${javafx.version}" overwrite="true"/>
         <delete file="javafx-${javafx.platform}.zip"/>
-
-        <!-- Replace javafx.graphics.jar with Monocle's version -->
-        <get src="${monocle.mirror}/${monocle.platform}/${monocle.version}/javafx.graphics.jar" verbose="true" dest="${lib.dir}/javafx/${javafx.platform}/javafx-sdk-${javafx.version-dir}/lib/javafx.graphics.monocle.jar"/>
-        <move file="${lib.dir}/javafx/${javafx.platform}/javafx-sdk-${javafx.version-dir}/lib/javafx.graphics.jar" tofile="${lib.dir}/javafx/${javafx.platform}/javafx-sdk-${javafx.version-dir}/lib/javafx.graphics.jar.bak"/>
     </target>
 
     <!-- Removes old javafx versions -->
@@ -138,7 +121,7 @@
         <delete>
             <fileset dir="${lib.dir}">
                 <include name="**/javafx*/**"/>
-                <exclude name="**/javafx*${javafx.version-dir}*/**"/>
+                <exclude name="**/javafx-${javafx.version}/**"/>
             </fileset>
         </delete>
     </target>

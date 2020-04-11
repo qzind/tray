@@ -22,21 +22,27 @@ import static java.nio.file.attribute.AclEntryFlag.*;
 
 public class WindowsUtilities {
     protected static final Logger log = LoggerFactory.getLogger(WindowsUtilities.class);
+    private static String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
 
-    public static boolean isDarkMode() {
-        String key = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
-
+    public static boolean isDarkDesktop() {
         // 0 = Dark Theme.  -1/1 = Light Theme
         Integer regVal;
-        if((regVal = getRegInt(HKEY_CURRENT_USER, key, "SystemUsesLightTheme")) != null) {
-            // Prefer system theme
-            return regVal == 0;
-        } else if((regVal = getRegInt(HKEY_CURRENT_USER, key, "AppsUseLightTheme")) != null) {
+        if((regVal = getRegInt(HKEY_CURRENT_USER, THEME_REG_KEY, "AppsUseLightTheme")) != null) {
             // Fallback on apps theme
             return regVal == 0;
         }
         return false;
+    }
+
+    public static boolean isDarkTaskbar() {
+        // -1/0 = Dark Theme.  1 = Light Theme
+        Integer regVal;
+        if((regVal = getRegInt(HKEY_CURRENT_USER, THEME_REG_KEY, "SystemUsesLightTheme")) != null) {
+            // Prefer system theme
+            return regVal == 0;
+        }
+        return true;
     }
 
     public static int getScaleFactor() {

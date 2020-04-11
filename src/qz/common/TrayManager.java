@@ -17,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
-import qz.installer.WindowsInstaller;
 import qz.installer.shortcut.ShortcutCreator;
 import qz.ui.*;
 import qz.ui.component.IconCache;
@@ -112,7 +111,7 @@ public class TrayManager {
 
             // OS-specific tray icon handling
             if (SystemTray.isSupported()) {
-                iconCache.fixTrayIcons(SystemUtilities.isDarkMode());
+                iconCache.fixTrayIcons(SystemUtilities.isDarkTaskbar());
             }
 
             // Iterates over all images denoted by IconCache.getTypes() and caches them
@@ -152,13 +151,16 @@ public class TrayManager {
 
             // Detect theme changes
             new Thread(() -> {
-                boolean darkMode = SystemUtilities.isDarkMode();
+                boolean darkDesktopMode = SystemUtilities.isDarkDesktop();
+                boolean darkTaskbarMode = SystemUtilities.isDarkTaskbar();
                 while(true) {
                     try {
                         Thread.sleep(1000);
-                        if (darkMode != SystemUtilities.isDarkMode(true)) {
-                            darkMode = SystemUtilities.isDarkMode();
-                            iconCache.fixTrayIcons(darkMode);
+                        if (darkDesktopMode != SystemUtilities.isDarkDesktop(true) ||
+                            darkTaskbarMode != SystemUtilities.isDarkTaskbar(true)) {
+                            darkDesktopMode = SystemUtilities.isDarkDesktop();
+                            darkTaskbarMode = SystemUtilities.isDarkTaskbar();
+                            iconCache.fixTrayIcons(darkTaskbarMode);
                             refreshIcon();
                             SwingUtilities.invokeLater(() -> {
                                 SystemUtilities.setSystemLookAndFeel();

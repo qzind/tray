@@ -256,7 +256,7 @@ public class IconCache {
      *  - macOS masked icons
      *  - macOS 10.14+ dark mode support
      */
-    public void fixTrayIcons(boolean darkMode) {
+    public void fixTrayIcons(boolean darkTaskbar) {
         // Fix the tray icon to look proper on Ubuntu
         if (SystemUtilities.isUbuntu()) {
             UbuntuUtilities.fixTrayIcons(this);
@@ -269,9 +269,9 @@ public class IconCache {
                 BufferedImage clone = clone(images.get(id));
                 // Even on lite mode desktops, white tray icons were the norm until Windows 10 update 1903
                 if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().lessThan(Version.valueOf("10.0.1903"))) {
-                    darkMode = true;
+                    darkTaskbar = true;
                 }
-                if (darkMode) {
+                if (darkTaskbar) {
                     clone = ColorUtilities.invert(clone);
                 }
                 images.put(id.replaceAll("mask", "default"), clone);

@@ -11,7 +11,6 @@
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
-import com.sun.jna.platform.win32.Advapi32Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -39,7 +38,8 @@ public class SystemUtilities {
     private static final String OS_NAME = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
     private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
 
-    private static Boolean darkMode;
+    private static Boolean darkDesktop;
+    private static Boolean darkTaskbar;
     private static String uname;
     private static String linuxRelease;
     private static String classProtocol;
@@ -283,27 +283,43 @@ public class SystemUtilities {
         return uname;
     }
 
-    public static boolean isDarkMode() {
-        return isDarkMode(false);
+    public static boolean isDarkTaskbar() {
+        return isDarkTaskbar(false);
     }
 
-    public static boolean isDarkMode(boolean recheck) {
-        if (darkMode == null || recheck) {
-            // Check for Dark Mode on MacOS
-            if (isMac()) {
-                darkMode = MacUtilities.isDarkMode();
-            } else if (isWindows()) {
-                darkMode = WindowsUtilities.isDarkMode();
+    public static boolean isDarkTaskbar(boolean recheck) {
+        if(darkTaskbar == null || recheck) {
+            if (!isWindows()) {
+                // Mac and Linux don't differentiate; return the cached darkDesktop value
+                darkTaskbar = isDarkDesktop();
             } else {
-                darkMode = UbuntuUtilities.isDarkMode();
+                darkTaskbar = WindowsUtilities.isDarkTaskbar();
             }
         }
-        return darkMode.booleanValue();
+        return darkTaskbar.booleanValue();
+    }
+
+    public static boolean isDarkDesktop() {
+        return isDarkDesktop(false);
+    }
+
+    public static boolean isDarkDesktop(boolean recheck) {
+        if (darkDesktop == null || recheck) {
+            // Check for Dark Mode on MacOS
+            if (isMac()) {
+                darkDesktop = MacUtilities.isDarkMode();
+            } else if (isWindows()) {
+                darkDesktop = WindowsUtilities.isDarkDesktop();
+            } else {
+                darkDesktop = UbuntuUtilities.isDarkMode();
+            }
+        }
+        return darkDesktop.booleanValue();
     }
 
     public static void adjustThemeColors() {
-        Constants.WARNING_COLOR = isDarkMode() ? Constants.WARNING_COLOR_DARK : Constants.WARNING_COLOR_LITE;
-        Constants.TRUSTED_COLOR = isDarkMode() ? Constants.TRUSTED_COLOR_DARK : Constants.TRUSTED_COLOR_LITE;
+        Constants.WARNING_COLOR = isDarkDesktop() ? Constants.WARNING_COLOR_DARK : Constants.WARNING_COLOR_LITE;
+        Constants.TRUSTED_COLOR = isDarkDesktop() ? Constants.TRUSTED_COLOR_DARK : Constants.TRUSTED_COLOR_LITE;
     }
 
     public static boolean prefersMaskTrayIcon() {
@@ -324,7 +340,7 @@ public class SystemUtilities {
             if(!isMac() && (isUnix() && UbuntuUtilities.isDarkMode())) {
                 darkulaThemeNeeded = false;
             }
-            if(isDarkMode() && darkulaThemeNeeded) {
+            if(isDarkDesktop() && darkulaThemeNeeded) {
                 UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
             } else {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

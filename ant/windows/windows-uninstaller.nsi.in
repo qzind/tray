@@ -1,0 +1,110 @@
+!include MUI2.nsh
+!include x64.nsh
+!include LogicLib.nsh
+!include FileFunc.nsh
+!include WinMessages.nsh
+
+!ifdef NSIS_UNICODE
+	!addplugindir "${basedir}/ant/windows/nsis/Plugins/Release_Unicode"
+!else
+	!addplugindir "${basedir}/ant/windows/nsis/Plugins/Release_ANSI"
+!endif
+!addincludedir "${basedir}/ant/windows/nsis/Include"
+!include StdUtils.nsh
+!include SetTitleBar.nsh
+!include FindJava.nsh
+
+!define MUI_PRODUCT "${project.name}"
+!define MUI_VERSION "${build.version}"
+; Branding for qz only
+!if "${project.filename}" == "qz-tray"
+    !define MUI_ICON "${basedir}/ant/windows/nsis/uninstall.ico"
+!else
+    !define MUI_ICON "${basedir}/assets/branding/windows-icon.ico"
+!endif
+
+!define MUI_PAGE_HEADER_TEXT "Uninstall ${project.name}"
+!define MUI_PAGE_HEADER_SUBTEXT "Remove ${project.name} from your computer"
+!define MUI_INSTFILESPAGE_FINISHHEADER_TEXT "Uninstallation Complete"
+!define MUI_INSTFILESPAGE_FINISHHEADER_SUBTEXT "Uninstall was completed successfully."
+
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_LANGUAGE "English"
+!insertmacro GetParameters
+
+RequestExecutionLevel admin
+CRCCheck On
+
+Name "Uninstall ${project.name}"
+Caption "Uninstall ${project.name}"
+Icon "${basedir}/ant/windows/nsis/uninstall.ico"
+OutFile "${nsis.outfile}"
+
+Var /GLOBAL RESPAWN
+Var /GLOBAL DELETE_DIR
+Var /GLOBAL DELETE_EXE
+
+Section
+  ${SetTitlebar} "Uninstall"
+  SetDetailsPrint textonly
+  DetailPrint "Uninstalling"
+  SetDetailsPrint listonly
+
+  ${GetParameters} $0
+  ${GetOptions} "$0" "/RESPAWN=" $RESPAWN
+  ${GetOptions} "$0" "/DELETE_DIR=" $DELETE_DIR
+  ${GetOptions} "$0" "/DELETE_EXE=" $DELETE_EXE
+
+  ${If} $RESPAWN != ""
+    ; We're running from $TEMP; Perform the uninstall
+
+    ; Set environmental variable for silent uninstall to be picked up by Java
+    ${If} ${Silent}
+      System::Call 'Kernel32::SetEnvironmentVariable(t, t)i ("${vendor.name}_silent", "1").r0'
+    ${EndIf}
+
+    ; Set $javaw variable
+    Call FindJava
+
+    ; Run uninstall step using jar
+    SetDetailsPrint textonly
+    DetailPrint "Running uninstall..."
+    SetDetailsPrint none ; Temporarily suppress details
+    SetOutPath $DELETE_DIR
+    SetDetailsPrint listonly
+    DetailPrint 'Running uninstall: "$java" ${launch.opts} -jar "$DELETE_DIR\${project.filename}.jar" uninstall'
+    ClearErrors
+    nsExec::ExecToLog '"$java" ${launch.opts} -jar "$DELETE_DIR\${project.filename}.jar" uninstall'
+    Pop $0
+    ${If} "$0" != "0"
+        Abort "Uninstall failed."
+    ${EndIf}
+
+    ; Remove all files
+    DetailPrint "Removing remaining files..."
+    SetDetailsPrint none ; Temporarily suppress details
+    SetOutPath $TEMP
+    RMDir /r "$DELETE_DIR"
+
+    ; Remove self from $TEMP after reboot
+    Delete /REBOOTOK $EXEPATH
+
+    ${If} ${RunningX64}
+      ${EnableX64FSRedirection}
+    ${EndIf}
+    SetDetailsPrint both
+  ${Else}
+    ; We're NOT running from $TEMP, copy to temp and respawn ourself
+    GetTempFileName $0
+    CopyFiles "$EXEPATH" "$0"
+    Exec '"$0" /RESPAWN=1 /DELETE_DIR="$EXEDIR" /DELETE_EXE="$EXEPATH"'
+    Quit
+  ${EndIf}
+SectionEnd
+
+Function .onInit
+  ${If} ${RunningX64}
+    SetRegView 64
+    ${DisableX64FSRedirection}
+  ${EndIf}
+FunctionEnd

@@ -89,7 +89,7 @@ public class HttpAboutServlet extends DefaultServlet {
     private void generateCertResponse(HttpServletRequest request, HttpServletResponse response) {
         try {
             String alias = request.getServletPath().split("/")[2];
-            String certData = AboutInfo.formatCert(certificateManager.getSslKeyPair().getCert().getEncoded());
+            String certData = AboutInfo.formatCert(certificateManager.getKeyPair(alias).getCert().getEncoded());
 
             if (certData != null) {
                 response.setStatus(HttpServletResponse.SC_OK);

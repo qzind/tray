@@ -11,18 +11,15 @@
 !include FindJava.nsh
 !include StdUtils.nsh
 
-
 Name "${project.name}"
-OutFile "${out.dir}/${project.filename}${build.type}-${build.version}.exe"
+OutFile "${nsis.outfile}"
 RequestExecutionLevel admin
 
 !define MUI_ICON "${basedir}/assets/branding/windows-icon.ico"
 
 ; Branding for qz only
 !if "${project.filename}" == "qz-tray"
-    !define MUI_UNICON "${basedir}/ant/windows/nsis/uninstall.ico"
     !define MUI_WELCOMEFINISHPAGE_BITMAP "${basedir}\ant\windows\nsis\welcome.bmp"
-    !define MUI_UNWELCOMEFINISHPAGE_BITMAP "${basedir}\ant\windows\nsis\welcome.bmp"
 !endif
 
 !insertmacro MUI_PAGE_WELCOME
@@ -46,6 +43,29 @@ RequestExecutionLevel admin
     ${EndIf}
 !macroend
 
+!macro VerifyJava jumpto
+    ; Test java executable
+    nsExec::ExecToLog '"$java" -version"'
+    Pop $0
+    ${If} "$0" == "0"
+        Goto Resume
+    ${EndIf}
+
+    ; Offer to download Java if missing and non-silent install
+    ${IfNot} ${Silent}
+        MessageBox MB_YESNO "Java is required.  Download now?" IDYES Website IDNO Resume
+
+        ; Visit Java website
+        Website:
+        ExecShell "open" "${java.download}"
+        MessageBox MB_OK "Click OK after Java is installed"
+
+        ; Check again for Java
+        Goto ${jumpto}
+    ${EndIf}
+    Resume:
+!macroend
+
 Section
     ; Set environmental variable for silent install to be picked up by Java
     ${If} ${Silent}
@@ -53,11 +73,11 @@ Section
     ${EndIf}
 
     ; Set the $java variable
+    TryAgain:
     Call FindJava
+    !insertmacro VerifyJava "TryAgain"
 
-    ; Create the uninstaller
     SetOutPath $INSTDIR
-    WriteUninstaller "$INSTDIR\uninstall.exe" ; Backslash required
 
     ; Run preinstall tasks
     SetOutPath "$PluginsDir\tmp"
@@ -78,24 +98,6 @@ Section
     ${StdUtils.ExecShellAsUser} $0 "$INSTDIR\${project.filename}.exe" "open" ""
 SectionEnd
 
-Section "Uninstall"
-    DetailPrint "Uninstalling..."
-
-    ; Set the $java variable
-    Call un.FindJava
-
-    ; Run uninstall tasks
-    SetOutPath $INSTDIR
-    !insertmacro QzInstaller "uninstall" "" ""
-
-    ; Remove all files
-    DetailPrint "Removing all files..."
-    SetDetailsPrint none ; Temporarily suppress details
-    SetOutPath $TEMP
-    RMDir /r "$INSTDIR"
-    SetDetailsPrint both
-SectionEnd
-
 !macro Init
     ${If} ${RunningX64}
         SetRegView 64
@@ -112,10 +114,5 @@ SectionEnd
 
 ; Runs for installs
 Function .onInit
-    !insertmacro Init
-FunctionEnd
-
-; Runs for uninstall
-Function un.onInit
     !insertmacro Init
 FunctionEnd

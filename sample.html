@@ -1412,6 +1412,7 @@
                 list += "<li>" + (data[i].default ? "* " : "") + data[i].name + "<ul>" +
                         "<li><strong>Driver:</strong> " + data[i].driver + "</li>" +
                         "<li><strong>Density:</strong> " + data[i].density + "dpi</li>" +
+                        "<li><strong>Connection:</strong> " + data[i].connection + "</li>" +
                         (data[i].trays ? "<li><strong>Trays:</strong> " + data[i].trays + "</li>" : "") +
                         "</ul></li>";
             }
@@ -2556,7 +2557,7 @@
     });
 
     //make dirty when changed
-    $("input[type=checkbox]").on('click', function() {
+    $("input").on('change', function() {
         $(this).addClass("dirty");
     });
 
@@ -2647,14 +2648,26 @@
     }
 
     function isChecked(checkElm, ifClean) {
-        if (ifClean !== undefined && !checkElm.hasClass("dirty")) {
-            var lbl = checkElm.siblings("label").text();
-            displayMessage("Forced " + lbl + " " + ifClean + ".", 'alert-warning');
+        if (!checkElm.hasClass("dirty")) {
+            if (ifClean !== undefined) {
+                var lbl = checkElm.siblings("label").text();
+                displayMessage("Forced " + lbl + " " + ifClean + ".", 'alert-warning');
+            }
 
             return ifClean;
         }
 
         return checkElm.prop("checked");
+    }
+
+    function includedValue(element, value) {
+        if (value != null) {
+            return value;
+        } else if (element.hasClass("dirty")) {
+            return element.val();
+        } else {
+            return undefined;
+        }
     }
 
     function usbButton(ids, data) {
@@ -2759,7 +2772,7 @@
     }
 
     function updateConfig(cleanConditions) {
-        var pxlSize = null;
+        var pxlSize = undefined;
         if (isChecked($("#pxlSizeActive"), cleanConditions['pxlSizeActive'])) {
             pxlSize = {
                 width: $("#pxlSizeWidth").val(),
@@ -2767,7 +2780,7 @@
             };
         }
 
-        var pxlBounds = null;
+        var pxlBounds = undefined;
         if (isChecked($("#pxlBoundsActive"), cleanConditions['pxlBoundsActive'])) {
             pxlBounds = {
                 x: $("#pxlBoundX").val(),
@@ -2777,7 +2790,7 @@
             };
         }
 
-        var pxlDensity = $("#pxlDensity").val();
+        var pxlDensity = includedValue($("#pxlDensity"));
         if (isChecked($("#pxlDensityAsymm"), cleanConditions['pxlDensityAsymm'])) {
             pxlDensity = {
                 cross: $("#pxlCrossDensity").val(),
@@ -2785,7 +2798,7 @@
             };
         }
 
-        var pxlMargins = $("#pxlMargins").val();
+        var pxlMargins = includedValue($("#pxlMargins"));
         if (isChecked($("#pxlMarginsActive"), cleanConditions['pxlMarginsActive'])) {
             pxlMargins = {
                 top: $("#pxlMarginsTop").val(),
@@ -2798,35 +2811,35 @@
         var copies = 1;
         var jobName = null;
         if ($("#rawTab").hasClass("active")) {
-            copies = $("#rawCopies").val();
-            jobName = $("#rawJobName").val();
+            copies = includedValue($("#rawCopies"));
+            jobName = includedValue($("#rawJobName"));
         } else {
-            copies = $("#pxlCopies").val();
-            jobName = $("#pxlJobName").val();
+            copies = includedValue($("#pxlCopies"));
+            jobName = includedValue($("#pxlJobName"));
         }
 
         cfg.reconfigure({
-                            altPrinting: isChecked($("#rawAltPrinting"), cleanConditions['rawAltPrinting']),
-                            encoding: $("#rawEncoding").val(),
-                            endOfDoc: $("#rawEndOfDoc").val(),
-                            perSpool: $("#rawPerSpool").val(),
+                            altPrinting: includedValue($("#rawAltPrinting"), isChecked($("#rawAltPrinting"), cleanConditions['rawAltPrinting'])),
+                            encoding: includedValue($("#rawEncoding")),
+                            endOfDoc: includedValue($("#rawEndOfDoc")),
+                            perSpool: includedValue($("#rawPerSpool")),
 
                             bounds: pxlBounds,
-                            colorType: $("#pxlColorType").val(),
+                            colorType: includedValue($("#pxlColorType")),
                             copies: copies,
                             density: pxlDensity,
-                            duplex: $("#pxlDuplex").val(),
-                            interpolation: $("#pxlInterpolation").val(),
+                            duplex: includedValue($("#pxlDuplex")),
+                            interpolation: includedValue($("#pxlInterpolation")),
                             jobName: jobName,
                             margins: pxlMargins,
-                            orientation: $("#pxlOrientation").val(),
-                            paperThickness: $("#pxlPaperThickness").val(),
-                            printerTray: $("#pxlPrinterTray").val(),
-                            rasterize: isChecked($("#pxlRasterize"), cleanConditions['pxlRasterize']),
-                            rotation: $("#pxlRotation").val(),
-                            scaleContent: isChecked($("#pxlScale"), cleanConditions['pxlScale']),
+                            orientation: includedValue($("#pxlOrientation")),
+                            paperThickness: includedValue($("#pxlPaperThickness")),
+                            printerTray: includedValue($("#pxlPrinterTray")),
+                            rasterize: includedValue($("#pxlRasterize"), isChecked($("#pxlRasterize"), cleanConditions['pxlRasterize'])),
+                            rotation: includedValue($("#pxlRotation")),
+                            scaleContent: includedValue($("#pxlScale"), isChecked($("#pxlScale"), cleanConditions['pxlScale'])),
                             size: pxlSize,
-                            units: $("input[name='pxlUnits']:checked").val()
+                            units: includedValue($("input[name='pxlUnits']:checked"))
                         });
     }
 

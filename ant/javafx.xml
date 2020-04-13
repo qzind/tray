@@ -1,4 +1,6 @@
 <project name="javafx" default="download-javafx" basedir="..">
+    <property file="ant/project.properties"/>
+    <import file="${basedir}/ant/version.xml"/>
     <target name="download-javafx" depends="get-current-platform,download-javafx-windows,download-javafx-mac,download-javafx-linux,copy-native-current,copy-native-target,show-javafx-debug">
     </target>
 
@@ -6,24 +8,26 @@
     <property name="show.javafx.debug" value="true"/>
 
     <target name="show-javafx-debug" if="show.javafx.debug">
-        <echo>Windows:</echo>
-        <echo> current.platform.windows=${current.platform.windows}</echo>
-        <echo> target.platform.windows=${target.platform.windows}</echo>
-        <echo> javafx.windows.needed=${javafx.windows.needed}</echo>
-        <echo> javafx.windows.found=${javafx.windows.found} (before download)</echo>
-        <echo/>
-        <echo>Mac:</echo>
-        <echo> current.platform.mac=${current.platform.mac}</echo>
-        <echo> target.platform.mac=${target.platform.mac}</echo>
-        <echo> javafx.mac.needed=${javafx.mac.needed}</echo>
-        <echo> javafx.mac.found=${javafx.mac.found} (before download)</echo>
-        <echo/>
-        <echo>Linux:</echo>
-        <echo> current.platform.linux=${current.platform.linux}</echo>
-        <echo> target.platform.linux=${target.platform.linux}</echo>
-        <echo> javafx.linux.needed=${javafx.linux.needed}</echo>
-        <echo> javafx.linux.found=${javafx.linux.found} (before download)</echo>
-        <echo/>
+        <echo level="info">
+        Windows:
+            current.platform.windows=${current.platform.windows}
+            target.platform.windows=${target.platform.windows}
+            javafx.windows.needed=${javafx.windows.needed}
+            javafx.windows.found=${javafx.windows.found} (before download)
+
+        Mac:
+            current.platform.mac=${current.platform.mac}
+            target.platform.mac=${target.platform.mac}
+            javafx.mac.needed=${javafx.mac.needed}
+            javafx.mac.found=${javafx.mac.found} (before download)
+
+        Linux:
+            current.platform.linux=${current.platform.linux}
+            target.platform.linux=${target.platform.linux}
+            javafx.linux.needed=${javafx.linux.needed}
+            javafx.linux.found=${javafx.linux.found} (before download)
+
+        </echo>
     </target>
 
     <target name="get-current-platform">
@@ -64,6 +68,7 @@
                 </tokenfilter>
             </filterchain>
         </loadresource>
+        <property description="suppress property warning" name="javafx.version-url" value="something went wrong"/>
     </target>
 
     <!-- Flags if javafx is needed for a particular platform-->
@@ -110,7 +115,7 @@
     </target>
 
     <!-- Downloads and extracts javafx for the specified platform -->
-    <target name="download-javafx-platform">
+    <target name="download-javafx-platform" depends="get-javafx-version">
         <get src="${javafx.mirror}/javafx-${javafx.version-url}-sdk-${javafx.platform}/" verbose="true" dest="javafx-${javafx.platform}.zip"/>
         <unzip src="javafx-${javafx.platform}.zip" dest="lib/javafx/${javafx.platform}" overwrite="true"/>
         <delete file="javafx-${javafx.platform}.zip"/>
@@ -137,7 +142,7 @@
         <condition property="javafx.current.extension" value="so">
             <isset property="current.platform.linux"/>
         </condition>
-        <echo>javafx.current.extension=${javafx.current.extension}</echo>
+        <echo level="info">javafx.current.extension=${javafx.current.extension}</echo>
 
         <antcall target="copy-native-platform">
             <param name="dest.dir" value="${dist.dir}"/>
@@ -157,7 +162,7 @@
         <condition property="javafx.target.extension" value="so">
             <isset property="target.platform.linux"/>
         </condition>
-        <echo>javafx.target.extension=${javafx.target.extension}</echo>
+        <echo level="info">javafx.target.extension=${javafx.target.extension}</echo>
 
         <antcall target="copy-native-platform">
             <param name="dest.dir" value="${dist.dir}"/>
@@ -166,8 +171,9 @@
         </antcall>
     </target>
 
-    <!-- Cleanup dist directory for packaging -->
-    <target name="cleanup-javafx-dist" if="javafx.target.extension" >
+    <!-- Tidy dist directory for packaging -->
+    <target name="tidy-javafx-dist" if="javafx.target.extension">
+        <echo level="info">Removing non-${javafx.target.extension} files</echo>
         <delete>
             <fileset dir="${dist.dir}/libs">
                 <include name="**"/>
@@ -192,29 +198,29 @@
                 <include name="**/glass.dll"/>
             </fileset>
         </first>
-        <condition property="javafx.windows.found" value="${toString:windows-found}">
-            <not><equals arg1="${toString:windows-found}" arg2=""/></not>
+        <pathconvert property="javafx.windows.files" refid="windows-found"/>
+        <condition property="javafx.windows.found" value="${javafx.windows.files}">
+            <not><equals arg1="${javafx.windows.files}" arg2=""/></not>
         </condition>
-        <property name="javafx.windows.files" value="${toString:windows-found}"/>
 
         <first id="mac-found">
             <fileset dir="lib">
                 <include name="**/libglass.dylib"/>
             </fileset>
         </first>
-        <condition property="javafx.mac.found" value="${toString:mac-found}">
-            <not><equals arg1="${toString:mac-found}" arg2=""/></not>
+        <pathconvert property="javafx.mac.files" refid="mac-found"/>
+        <condition property="javafx.mac.found" value="${javafx.mac.files}">
+            <not><equals arg1="${javafx.mac.files}" arg2=""/></not>
         </condition>
-        <property name="javafx.mac.files" value="${toString:mac-found}"/>
 
         <first id="linux-found">
             <fileset dir="lib">
                 <include name="**/libglass.so"/>
             </fileset>
         </first>
-        <condition property="javafx.linux.found" value="${toString:linux-found}">
-            <not><equals arg1="${toString:linux-found}" arg2=""/></not>
+        <pathconvert property="javafx.linux.files" refid="linux-found"/>
+        <condition property="javafx.linux.found" value="${javafx.linux.files}">
+            <not><equals arg1="${javafx.linux.files}" arg2=""/></not>
         </condition>
-        <property name="javafx.linux.files" value="${toString:linux-found}"/>
     </target>
 </project>

@@ -158,6 +158,15 @@ public class CertificateManager {
         }
     }
 
+    public KeyPairWrapper getKeyPair(String alias) {
+        for(KeyPairWrapper.Type type : KeyPairWrapper.Type.values()) {
+            if (KeyPairWrapper.getAlias(type).equalsIgnoreCase(alias)) {
+                return getKeyPair(type);
+            }
+        }
+        return getKeyPair(KeyPairWrapper.Type.CA);
+    }
+
     public Properties getProperties() {
         return properties;
     }

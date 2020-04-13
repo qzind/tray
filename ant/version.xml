@@ -1,0 +1,28 @@
+<project name="version" basedir="../">
+    <!-- Get version information from JAR -->
+    <target name="get-version">
+        <!-- build.version -->
+        <property file="${basedir}/ant/project.properties"/>
+        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="build.version">
+            <arg value="--version"/>
+        </java>
+        <property description="suppress property warning" name="build.version" value="0.0.0"/>
+
+        <!-- apple.bundleid -->
+        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="apple.bundleid">
+            <arg value="--bundleid"/>
+        </java>
+        <property description="suppress property warning" name="apple.bundleid" value="io.qz.fallback.${project.filename}"/>
+
+        <!-- build.type -->
+        <condition property="build.type" value="-community">
+            <isset property="authcert.use"/>
+        </condition>
+        <property description="fallback value" name="build.type" value=""/>
+
+        <echo level="info">
+            Version   : ${build.version}${build.type}
+            Bundle Id : ${apple.bundleid}
+        </echo>
+    </target>
+</project>

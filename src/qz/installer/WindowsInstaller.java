@@ -54,6 +54,7 @@ public class WindowsInstaller extends Installer {
                 WindowsUtilities.deleteRegKey(HKEY_USERS, user.trim() + "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\" + ABOUT_TITLE);
             }
         });
+        FileUtils.deleteQuietly(new File(STARTUP + File.separator + ABOUT_TITLE + ".lnk"));
 
         return this;
     }
@@ -93,18 +94,19 @@ public class WindowsInstaller extends Installer {
         WindowsUtilities.deleteRegData(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLWhitelist", String.format("%s://*", DATA_DIR));
 
         // Cleanup launchers
-        for(WindowsSpecialFolders folder : new WindowsSpecialFolders[] { START_MENU, COMMON_START_MENU, DESKTOP, PUBLIC_DESKTOP }) {
+        for(WindowsSpecialFolders folder : new WindowsSpecialFolders[] { START_MENU, COMMON_START_MENU, DESKTOP, PUBLIC_DESKTOP, COMMON_STARTUP, RECENT }) {
             try {
                 new File(folder + File.separator + ABOUT_TITLE + ".lnk").delete();
                 // Since 2.1, start menus use subfolder
                 if (folder.equals(COMMON_START_MENU) || folder.equals(START_MENU)) {
+                    FileUtils.deleteQuietly(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE + ".lnk"));
                     FileUtils.deleteDirectory(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE));
                 }
             } catch(IOException ignore) {}
         }
 
         // Cleanup firewall rules
-        ShellUtilities.execute("netsh.exe", "advfirewall", "delete", "rule", String.format("name=\"%s\"", ABOUT_TITLE));
+        ShellUtilities.execute("netsh.exe", "advfirewall", "delete", "rule", String.format("name=%s", ABOUT_TITLE));
         return this;
     }
 
@@ -141,8 +143,8 @@ public class WindowsInstaller extends Installer {
 
         // Firewall rules
         String ports = StringUtils.join(PrintSocketServer.SECURE_PORTS, ",") + "," + StringUtils.join(PrintSocketServer.INSECURE_PORTS, ",");
-        ShellUtilities.execute("netsh.exe", "advfirewall", "delete", "rule", String.format("name=\"%s\"", ABOUT_TITLE));
-        ShellUtilities.execute("netsh.exe", "advfirewall", "firewall", "add", "rule", String.format("name=\"%s\"", ABOUT_TITLE),
+        ShellUtilities.execute("netsh.exe", "advfirewall", "delete", "rule", String.format("name=%s", ABOUT_TITLE));
+        ShellUtilities.execute("netsh.exe", "advfirewall", "firewall", "add", "rule", String.format("name=%s", ABOUT_TITLE),
                                "dir=in", "action=allow", "profile=any", String.format("localport=%s", ports), "localip=any", "protocol=tcp");
         return this;
     }

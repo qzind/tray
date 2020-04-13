@@ -1,7 +1,22 @@
-# Download icu4j source code, build using ant,
-# it will generate icu4j.jar and icu4j-charset.jar
-# Run slim-icu.py to generate slim version
-# Currently this script will only keep Arabic and English data
+# 2018 Yohanes Nugroho <yohanes@gmail.com> (@yohanes)
+#
+# 1. Download icu4j source code, build using ant.
+#    It will generate icu4j.jar and icu4j-charset.jar
+#
+# 2. Run slim-icu.py to generate slim version.
+#
+#    To invoke from ant, add python to $PATH
+#    and add the following to build.xml:
+#
+#      <target name="distill-icu" depends="init">
+#          <exec executable="python">
+#              <arg line="ant/lib/slim-icu.py lib/charsets"/>
+#          </exec>
+#      </target>
+#
+#      ... then call: ant distill-icu
+#
+# 3. Overwrite files in lib/charsets/
 
 # slim ICU
 import sys

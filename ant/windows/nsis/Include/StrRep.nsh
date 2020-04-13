@@ -3,11 +3,11 @@
     Push `${string}`
     Push `${old}`
     Push `${new}`
-    !ifdef __UNINSTALL__
-        Call un.StrRep
-    !else
+    ;!ifdef __UNINSTALL__
+    ;    Call un.StrRep
+    ;!else
         Call StrRep
-    !endif
+    ;!endif
     Pop ${output}
 !macroend
 
@@ -63,4 +63,4 @@
     FunctionEnd
 !macroend
 !insertmacro Func_StrRep ""
-!insertmacro Func_StrRep "un."
+;!insertmacro Func_StrRep "un."

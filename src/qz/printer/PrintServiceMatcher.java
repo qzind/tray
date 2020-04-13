@@ -128,6 +128,7 @@ public class PrintServiceMatcher {
             JSONObject jsonService = new JSONObject();
             jsonService.put("name", ps.getName());
             jsonService.put("driver", printer.getDriver().value());
+            jsonService.put("connection", printer.getConnection());
             jsonService.put("default", ps == defaultService);
 
             for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {

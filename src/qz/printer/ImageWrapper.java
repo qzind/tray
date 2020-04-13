@@ -258,13 +258,13 @@ public class ImageWrapper {
         int w = bi.getWidth();
         int[] rgbPixels = bi.getRGB(0, 0, w, h, null, 0, w);
 
-       /*
-        * It makes most sense to have black pixels as 1's and white pixels
-        * as zero's, however some printer manufacturers had this reversed
-        * and used 0's for the black pixels.  EPL is a common language that
-        * uses 0's for black pixels.
-        * See also: https://support.zebra.com/cpws/docs/eltron/gw_command.htm
-        */
+        /*
+         * It makes most sense to have black pixels as 1's and white pixels
+         * as zero's, however some printer manufacturers had this reversed
+         * and used 0's for the black pixels.  EPL is a common language that
+         * uses 0's for black pixels.
+         * See also: https://support.zebra.com/cpws/docs/eltron/gw_command.htm
+         */
         boolean[] pixels = new boolean[rgbPixels.length];
         for(int i = 0; i < rgbPixels.length; i++) {
             pixels[i] = languageType.requiresImageOutputInverted() != isBlack(rgbPixels[i]);
@@ -463,104 +463,66 @@ public class ImageWrapper {
 
     /**
      * http://android-essential-devtopics.blogspot.com/2013/02/sending-bit-image-to-epson-printer.html
+     * <p>
+     * Images are read as one long array of black or white pixels, as scanned top to bottom and left to right.
+     * Printer format needs this sent in height chunks in bytes (normally 3, for 24 pixels at a time) for each x position along a segment,
+     * and repeated for each segment of height over the byte limit.
      *
      * @param builder the ByteArrayBuilder to use
      */
     private void appendEpsonSlices(ByteArrayBuilder builder) {
-        //        BitSet dots = data.getDots();
-        //        outputStream.write(PrinterCommands.INIT);
+        // set line height to the size of each chunk we will be sending
+        int segmentHeight = dotDensity > 1 ? 24 : (dotDensity == 1 ? 8 : 16); // height will be handled explicitly below if striping
+        // Impact printers (U220, etc) benefit from double-pass striping (odd/even) for higher quality (dotDensity = 1)
+        boolean stripe = dotDensity == 1;
+        int bytesNeeded = (dotDensity <= 1 || stripe)? 1:3;
 
-
-        // So we have our bitmap data sitting in a bit array called "dots."
-        // This is one long array of 1s (black) and 0s (white) pixels arranged
-        // as if we had scanned the bitmap from top to bottom, left to right.
-        // The printer wants to see these arranged in bytes stacked three high.
-        // So, essentially, we need to read 24 bits for x = 0, generate those
-        // bytes, and send them to the printer, then keep increasing x. If our
-        // image is more than 24 dots high, we have to send a second bit image
-        // command to draw the next slice of 24 dots in the image.
-
-        // Set the line spacing to 24 dots, the height of each "stripe" of the
-        // image that we're drawing. If we don't do this, and we need to
-        // draw the bitmap in multiple passes, then we'll end up with some
-        // whitespace between slices of the image since the default line
-        // height--how much the printer moves on a newline--is 30 dots.
-        builder.append(new byte[] {0x1B, 0x33, 24});
-
-        // OK. So, starting from x = 0, read 24 bits down and send that data
-        // to the printer. The offset variable keeps track of our global 'y'
-        // position in the image. For example, if we were drawing a bitmap
-        // that is 48 pixels high, then this while loop will execute twice,
-        // once for each pass of 24 dots. On the first pass, the offset is
-        // 0, and on the second pass, the offset is 24. We keep making
-        // these 24-dot stripes until we've execute past the height of the
-        // bitmap.
-        int offset = 0;
+        int offset = 0; // keep track of chunk offset currently being written
+        boolean zeroPass = true; // track if this segment get rewritten with 1 pixel offset, always true if not striping
 
         while(offset < getHeight()) {
-            // The third and fourth parameters to the bit image command are
-            // 'nL' and 'nH'. The 'L' and the 'H' refer to 'low' and 'high', respectively.
-            // All 'n' really is is the width of the image that we're about to draw.
-            // Since the width can be greater than 255 dots, the parameter has to
-            // be split across two bytes, which is why the documentation says the
-            // width is 'nL' + ('nH' * 256).
-            //builder.append(new byte[] {0x1B, 0x2A, 33, -128, 0});
-            byte nL = (byte)((int)(getWidth() % 256));
-            byte nH = (byte)((int)(getWidth() / 256));
+            // compute 2 byte value of the image width (documentation states width is 'nL' + ('nH' * 256))
+            byte nL = (byte)((getWidth() % 256));
+            byte nH = (byte)((getWidth() / 256));
             builder.append(new byte[] {0x1B, 0x2A, (byte)dotDensity, nL, nH});
 
-            for(int x = 0; x < getWidth(); ++x) {
-                // Remember, 24 dots = 24 bits = 3 bytes.
-                // The 'k' variable keeps track of which of those
-                // three bytes that we're currently scribbling into.
-                for(int k = 0; k < 3; ++k) {
+            for(int x = 0; x < getWidth(); x++) {
+                for(int bite = 0; bite < bytesNeeded; bite++) {
                     byte slice = 0;
 
-                    // A byte is 8 bits. The 'b' variable keeps track
-                    // of which bit in the byte we're recording.
-                    for(int b = 0; b < 8; ++b) {
-                        // Calculate the y position that we're currently
-                        // trying to draw. We take our offset, divide it
-                        // by 8 so we're talking about the y offset in
-                        // terms of bytes, add our current 'k' byte
-                        // offset to that, multiple by 8 to get it in terms
-                        // of bits again, and add our bit offset to it.
-                        int y = (((offset / 8) + k) * 8) + b;
+                    //iterate bit for the byte - striping spans 2 bytes (taking every other bit) to be compacted down into one
+                    for(int bit = (zeroPass? 0:1); bit < 8 * (stripe? 2:1); bit += (stripe? 2:1)) {
+                        // get the y position of the current pixel being found
+                        int y = offset + ((bite * 8) + bit);
 
-                        // Calculate the location of the pixel we want in the bit array.
-                        // It'll be at (y * width) + x.
+                        // calculate the location of the pixel we want in the bit array and update the slice if it is supposed to be black
                         int i = (y * getWidth()) + x;
-
-                        // If the image (or this stripe of the image)
-                        // is shorter than 24 dots, pad with zero.
-                        boolean v = false;
-                        if (i < getImageAsBooleanArray().length) {
-                            v = getImageAsBooleanArray()[i];
+                        if (i < imageAsBooleanArray.length && imageAsBooleanArray[i]) {
+                            // append desired bit to current byte being built, remembering that bits go right to left
+                            slice |= (byte)(1 << (7 - (bit - (zeroPass? 0:1)) / (stripe? 2:1)));
                         }
-
-                        // Finally, store our bit in the byte that we're currently
-                        // scribbling to. Our current 'b' is actually the exact
-                        // opposite of where we want it to be in the byte, so
-                        // subtract it from 7, shift our bit into place in a temp
-                        // byte, and OR it with the target byte to get it into there.
-                        slice |= (byte)((v? 1:0) << (7 - b));
                     }
 
-                    // Phew! Write the damn byte to the buffer
                     builder.append(new byte[] {slice});
                 }
             }
 
-            // We're done with this 24-dot high pass. Render a newline
-            // to bump the print head down to the next line
-            // and keep on trucking.
-            offset += 24;
-            builder.append(new byte[] {10});
+            // move print head down to next segment (or offset by one if striping)
+            if (stripe) {
+                if (zeroPass) {
+                    builder.append(new byte[] {0x1B, 0x4A, 0x01}); // only shift down 1 pixel for the next pass
+                } else {
+                    builder.append(new byte[] {0x1B, 0x4A, (byte)(segmentHeight - 1)}); // shift down remaining pixels
+                    offset += 8 * bytesNeeded; // only shift offset on every other pass (along with segments)
+                }
+
+                zeroPass = !zeroPass;
+            } else {
+                //shift down for next segment
+                builder.append(new byte[] {0x1B, 0x4A, (byte)segmentHeight});
+                offset += 8 * bytesNeeded;
+            }
         }
-
-        // Restore the line spacing to the default of 30 dots.
-        builder.append(new byte[] {0x1B, 0x33, 30});
-
     }
 
     private ArrayList<float[]> convertToCYMK() throws IOException {

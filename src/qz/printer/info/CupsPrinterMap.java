@@ -80,8 +80,10 @@ public class CupsPrinterMap extends NativePrinterMap {
     }
 
     synchronized List<PrinterResolution> getResolutions(NativePrinter printer) {
-        List<PrinterResolution> resolutions = resolutionMap.get(printer);
-        return resolutions != null ? resolutions : new ArrayList<>();
+        if(resolutionMap.get(printer) == null) {
+            fillAttributes(printer);
+        }
+        return resolutionMap.get(printer);
     }
 
     @Override
@@ -160,6 +162,9 @@ public class CupsPrinterMap extends NativePrinterMap {
         }
         if (printer.getDriver().isNull()) {
             printer.setDriver(DEFAULT_CUPS_DRIVER);
+        }
+        if(resolutionMap.get(printer) == null) {
+            addResolution(printer, null); // create empty list
         }
     }
 }

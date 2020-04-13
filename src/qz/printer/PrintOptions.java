@@ -152,27 +152,31 @@ public class PrintOptions {
                 } else {
                     String relDPI = configOpts.optString("density", "").toLowerCase();
                     if ("best".equals(relDPI)) {
-                        PrinterResolution bestRes = rSupport.get(0);
-
+                        PrinterResolution bestRes = null;
                         for(PrinterResolution pr : rSupport) {
-                            if (!pr.lessThanOrEquals(bestRes)) {
+                            if (bestRes == null || !pr.lessThanOrEquals(bestRes)) {
                                 bestRes = pr;
                             }
                         }
-
-                        psOptions.density = bestRes.getFeedResolution(psOptions.units.resSyntax);
-                        psOptions.crossDensity = bestRes.getCrossFeedResolution(psOptions.units.resSyntax);
+                        if(bestRes != null) {
+                            psOptions.density = bestRes.getFeedResolution(psOptions.units.resSyntax);
+                            psOptions.crossDensity = bestRes.getCrossFeedResolution(psOptions.units.resSyntax);
+                        } else {
+                            log.warn("No print densities were found; density: \"{}\" is being ignored", relDPI);
+                        }
                     } else if ("draft".equals(relDPI)) {
-                        PrinterResolution lowestRes = rSupport.get(0);
-
+                        PrinterResolution lowestRes = null;
                         for(PrinterResolution pr : rSupport) {
-                            if (pr.lessThanOrEquals(lowestRes)) {
+                            if (lowestRes == null || pr.lessThanOrEquals(lowestRes)) {
                                 lowestRes = pr;
                             }
                         }
-
-                        psOptions.density = lowestRes.getFeedResolution(psOptions.units.resSyntax);
-                        psOptions.crossDensity = lowestRes.getCrossFeedResolution(psOptions.units.resSyntax);
+                        if(lowestRes != null) {
+                            psOptions.density = lowestRes.getFeedResolution(psOptions.units.resSyntax);
+                            psOptions.crossDensity = lowestRes.getCrossFeedResolution(psOptions.units.resSyntax);
+                        } else {
+                            log.warn("No print densities were found; density: \"{}\" is being ignored", relDPI);
+                        }
                     } else {
                         try { psOptions.density = configOpts.getDouble("density"); }
                         catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "density", configOpts.opt("density")); }

@@ -160,10 +160,13 @@ public class WebApp extends Application {
                 System.setProperty("glass.platform", "Monocle"); // Headless JDKs
                 System.setProperty("monocle.platform", "Headless");
 
-                long memory = Runtime.getRuntime().maxMemory() / 1000000;
-                int geometry = (int)(1200d * (memory / 100d)); // can support 1 inch of 1200dpi per 100mb of available memory
+                // monocle memory footprint is (geometry^2 * depth) >> 3
+                // we'll conservatively shift only 2 from max memory to ensure memory is left for actual printing
+                long memory = Runtime.getRuntime().maxMemory();
+                int geometry = (int)Math.sqrt(((memory)<<2) / 32d);
                 if (geometry > 40000) { geometry = 40000; } // cap at 40k (A1 size at 1200dpi)
-                log.trace("Allowing max headless geometry of {}x{} based on available memory ({} MB)", geometry, geometry, memory);
+
+                log.trace("Allowing max headless geometry of {}x{} based on available memory ({} MB)", geometry, geometry, memory/1000000);
 
                 System.setProperty("headless.geometry", String.format("%sx%s-32", geometry, geometry));
 

@@ -122,8 +122,7 @@ public class CupsPrinterMap extends NativePrinterMap {
             String[] parts = line.split("/HWResolution\\[")[1].split("\\D"); // split on non-digits
             int cross = Integer.parseInt(parts[0]);
             int feed = parts.length > 1? Integer.parseInt(parts[1]) : cross;
-            int type = line.toLowerCase(Locale.ENGLISH).contains("dpi:")? PrinterResolution.DPI:PrinterResolution.DPCM;
-            return new PrinterResolution(cross, feed, type);
+            return new PrinterResolution(cross, feed, PrinterResolution.DPI); // always dpi per https://www.cups.org/doc/spec-ppd.html
         } catch(NumberFormatException nfe) {
             log.warn("Could not parse density from \"{}\"", line, nfe);
         }

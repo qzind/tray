@@ -16,7 +16,7 @@ import qz.common.Constants;
 import qz.common.SecurityInfo;
 import qz.exception.MissingArgException;
 import qz.installer.Installer;
-import qz.installer.TaskKiller;
+import qz.installer.TaskControl;
 import qz.installer.certificate.CertificateManager;
 
 import java.io.File;
@@ -103,9 +103,54 @@ public class ArgParser {
                     // Handle silent installs
                     boolean silent = hasFlag("-s", "--silent");
                     Installer.install(dest, silent); // exception will set error
+
+                    //ArrayList<AppLocator> appList = AppLocator.locate(AppAlias.FIREFOX);
+                    //String command = "cmd /B /C start \"\" " + appList.get(0).getPath() + File.separator  + "firefox.exe\" -private about:restartrequired";
+                    //log.info(command);
+                    //Runtime.getRuntime().exec(command);
+
+                    //WinNT.HANDLE hSnapShot = Kernel32.INSTANCE.CreateToolhelp32Snapshot(TH32CS_SNAPALL, null);
+                    //Tlhelp32.PROCESSENTRY32 process = new Tlhelp32.PROCESSENTRY32();
+                    //
+                    //boolean hRes = Kernel32.INSTANCE.Process32First(hSnapShot, process);
+                    //
+                    //while (hRes) {
+                    //    String imageName = Native.toString(process.szExeFile);
+                    //    if (imageName.equalsIgnoreCase("firefox.exe")) {
+                    //
+                    //        WinNT.HANDLE hModuleSnapShot = Kernel32.INSTANCE.CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, process.th32ProcessID);
+                    //
+                    //        Tlhelp32.MODULEENTRY32W module = new Tlhelp32.MODULEENTRY32W();
+                    //        Kernel32.INSTANCE.Module32FirstW(hModuleSnapShot, module);
+                    //        log.info("module - " + module.szExePath());
+                    //
+                    //        ArrayList<String> command = new ArrayList<>();
+                    //        command.add(module.szExePath());
+                    //        command.add("-private");
+                    //        command.add("about:restartrequired");
+                    //        Process p = new ProcessBuilder(command).start();
+                    //        Kernel32.INSTANCE.CloseHandle(hModuleSnapShot);
+                    //
+                    //        break;
+                    //    }
+                    //    hRes = Kernel32.INSTANCE.Process32Next(hSnapShot, process);
+                    //}
+                    //
+                    //Kernel32.INSTANCE.CloseHandle(hSnapShot);
+
+
+                    //ArrayList<String> command = new ArrayList<>();
+                    //command.add(appList.get(0).getPath() + File.separator  + "firefox.exe");
+                    //command.add("-private");
+                    //command.add("about:restartrequired");
+                    //Process p = new ProcessBuilder(command).start();
+                    String path = TaskControl.locateProcessPath("firefox.exe", true)[0];
+                    String[] cmd = {path, "-private", "about:restartrequired"};
+                    ShellUtilities.executeRaw(cmd);
+
                     return SUCCESS;
                 case CERTGEN:
-                    TaskKiller.killAll();
+                    TaskControl.killAll();
 
                     // Handle trusted SSL certificate
                     String trustedKey = valueOf("-k", "--key");

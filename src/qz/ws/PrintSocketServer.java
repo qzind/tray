@@ -30,7 +30,10 @@ import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.installer.Installer;
+import qz.installer.TaskControl;
 import qz.installer.certificate.*;
+import qz.installer.certificate.firefox.locator.AppAlias;
+import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.utils.ArgParser;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
@@ -63,7 +66,7 @@ public class PrintSocketServer {
     private static boolean headless;
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         ArgParser parser = new ArgParser(args);
         if(parser.intercept()) {
             System.exit(parser.getExitCode());
@@ -74,6 +77,9 @@ public class PrintSocketServer {
         log.info("Java version: {}", Constants.JAVA_VERSION.toString());
         log.info("Java vendor: {}", Constants.JAVA_VENDOR);
         setupFileLogging();
+
+        //Todo Remove this debugging log
+        log.warn(Arrays.toString(TaskControl.locateProcessPath("firefox", false)));
 
         try {
             // Gets and sets the SSL info, properties file

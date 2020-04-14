@@ -104,7 +104,7 @@ public abstract class Installer {
 
     public static boolean preinstall() {
         log.info("Stopping running instances...");
-        return TaskKiller.killAll();
+        return TaskControl.killAll();
     }
 
     public static void install() throws Exception {
@@ -121,7 +121,7 @@ public abstract class Installer {
 
     public static void uninstall() {
         log.info("Stopping running instances...");
-        TaskKiller.killAll();
+        TaskControl.killAll();
         getInstance();
         log.info("Uninstalling from {}", instance.getDestination());
         instance.removeSharedDirectory()

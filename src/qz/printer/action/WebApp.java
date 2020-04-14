@@ -151,6 +151,11 @@ public class WebApp extends Application {
         if (instance == null) {
             startupLatch = new CountDownLatch(1);
 
+            // JavaFX native libs
+            if (SystemUtilities.isJar()) {
+                System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
+            }
+
             if (PrintSocketServer.getTrayManager().isMonocleAllowed()) {
                 log.trace("Initializing monocle platform");
 
@@ -168,11 +173,6 @@ public class WebApp extends Application {
                 log.trace("Allowing max headless geometry of {}x{} based on available memory ({} MB)", geometry, geometry, memory/1000000);
 
                 System.setProperty("headless.geometry", String.format("%sx%s-32", geometry, geometry));
-
-                // JavaFX native libs
-                if (SystemUtilities.isJar()) {
-                    System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
-                }
             }
 
             new Thread() {

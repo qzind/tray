@@ -578,7 +578,7 @@ public class TrayManager {
                 @Override
                 public void run() {
                     boolean showAllNotifications = prefs.getBoolean(notificationsKey, false);
-                    if (showAllNotifications || level == TrayIcon.MessageType.WARNING) {
+                    if (showAllNotifications || level != TrayIcon.MessageType.INFO) {
                         tray.displayMessage(caption, text, level);
                     }
                 }

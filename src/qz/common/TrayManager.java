@@ -10,6 +10,7 @@
 
 package qz.common;
 
+import com.github.zafarkhaja.semver.Version;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -66,6 +67,7 @@ public class TrayManager {
 
     private final PropertyHelper prefs;
     private String notificationsKey = "tray.notifications";
+    private String monocleKey = "tray.monocle";
 
     // Action to run when reload is triggered
     private Thread reloadThread;
@@ -188,6 +190,12 @@ public class TrayManager {
         notificationsItem.setState(prefs.getBoolean(notificationsKey, false));
         notificationsItem.addActionListener(notificationsListener);
 
+        JCheckBoxMenuItem monocleItem = new JCheckBoxMenuItem("Use Monocle for HTML");
+        monocleItem.setToolTipText("Use monocle platform for HTML printing (restart required)");
+        monocleItem.setMnemonic(KeyEvent.VK_U);
+        monocleItem.setState(prefs.getBoolean(monocleKey, true));
+        monocleItem.addActionListener(monocleListener);
+
         JMenuItem openItem = new JMenuItem("Open file location", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
         openItem.setMnemonic(KeyEvent.VK_O);
         openItem.addActionListener(openListener);
@@ -200,6 +208,9 @@ public class TrayManager {
         advancedMenu.add(anonymousItem);
         advancedMenu.add(logItem);
         advancedMenu.add(notificationsItem);
+        if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) { //only include if it can be used
+            advancedMenu.add(monocleItem);
+        }
         advancedMenu.add(new JSeparator());
         advancedMenu.add(openItem);
         advancedMenu.add(desktopItem);
@@ -250,6 +261,16 @@ public class TrayManager {
         public void actionPerformed(ActionEvent e) {
             JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
             prefs.setProperty(notificationsKey, j.getState());
+        }
+    };
+
+    private final ActionListener monocleListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
+            prefs.setProperty(monocleKey, j.getState());
+            displayWarningMessage(String.format("A restart of %s is required to ensure this feature is %sabled.",
+                                                Constants.ABOUT_TITLE, j.getState()? "en":"dis"));
         }
     };
 
@@ -557,7 +578,7 @@ public class TrayManager {
                 @Override
                 public void run() {
                     boolean showAllNotifications = prefs.getBoolean(notificationsKey, false);
-                    if (showAllNotifications || level == TrayIcon.MessageType.ERROR) {
+                    if (showAllNotifications || level == TrayIcon.MessageType.WARNING) {
                         tray.displayMessage(caption, text, level);
                     }
                 }
@@ -571,6 +592,11 @@ public class TrayManager {
                 new SingleInstanceChecker(this, port);
             }
         }
+    }
+
+    public boolean isMonocleAllowed() {
+        boolean useMonocle = prefs.getBoolean(monocleKey, true);
+        return useMonocle && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"));
     }
 
 }

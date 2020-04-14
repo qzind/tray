@@ -6,7 +6,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
-import java.util.logging.Level;
 /**
  * Created by Tres on 12/16/2015.
  */
@@ -40,9 +39,10 @@ public class PropertyHelper extends Properties {
     }
 
     public boolean getBoolean(String key, boolean defaultVal) {
-        try {
-            return Boolean.parseBoolean(getProperty(key));
-        } catch (Throwable t) {
+        String prop = getProperty(key);
+        if (prop != null) {
+            return Boolean.parseBoolean(prop);
+        } else {
             return defaultVal;
         }
     }

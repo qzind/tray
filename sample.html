@@ -351,13 +351,6 @@
                                             </div>
 
                                             <div class="form-group form-inline">
-                                                <label for="pxlDensity" class="tip" data-toggle="tooltip"
-                                                       title="DPI, DPCM, or DPMM depending on units specified">Density
-                                                </label>
-                                                <input type="number" id="pxlDensity" class="form-control pull-right" />
-                                            </div>
-
-                                            <div class="form-group form-inline">
                                                 <label for="pxlDuplex"> Duplex</label>
                                                 <select id="pxlDuplex" class="form-control pull-right">
                                                     <option value="">Single Sided</option>
@@ -421,6 +414,26 @@
                                             </div>
                                         </div>
                                         <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="pxlDensity" class="tip" data-toggle="tooltip"
+                                                       title="DPI, DPCM, or DPMM depending on units specified">Density</label>
+                                                (
+                                                <label for="pxlDensityAsymm" class="inline">Asymmetric:</label>
+                                                <input type="checkbox" id="pxlDensityAsymm" onclick="checkGroupActive('pxlDensityAsymm', 'pxlDensityGroup', 'pxlDensity');">
+                                                )
+                                                <input id="pxlDensity" class="form-control" />
+                                            </div>
+                                            <div class="inline" id="pxlDensityGroup">
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlCrossDensity">&nbsp; Cross:</label>
+                                                    <input type="number" id="pxlCrossDensity" class="form-control pull-right" />
+                                                </div>
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlFeedDensity">&nbsp; Feed:</label>
+                                                    <input type="number" id="pxlFeedDensity" class="form-control pull-right" />
+                                                </div>
+                                            </div>
+
                                             <div class="form-group">
                                                 <label>Units</label>
                                                 <div>
@@ -2272,7 +2285,6 @@
         //config
         $("#pxlColorType").val("color");
         $("#pxlCopies").val(1);
-        $("#pxlDensity").val('');
         $("#pxlDuplex").val("");
         $("#pxlInterpolation").val("");
         $("#pxlJobName").val("");
@@ -2284,6 +2296,12 @@
         $("#pxlRotation").val(0);
         $("#pxlScale").prop('checked', true);
         $("#pxlUnitsIN").prop('checked', true);
+
+        $("#pxlDensity").val('').css('display', '');
+        $("#pxlCrossDensity").val('');
+        $("#pxlFeedDensity").val('');
+        $("#pxlDensityAsymm").prop('checked', false);
+        $("#pxlDensityGroup").css('display', 'none');
 
         $("#pxlMargins").val(0).css('display', '');
         $("#pxlMarginsTop").val(0);
@@ -2772,6 +2790,14 @@
             };
         }
 
+        var pxlDensity = includedValue($("#pxlDensity"));
+        if (isChecked($("#pxlDensityAsymm"), cleanConditions['pxlDensityAsymm'])) {
+            pxlDensity = {
+                cross: $("#pxlCrossDensity").val(),
+                feed: $("#pxlFeedDensity").val()
+            };
+        }
+
         var pxlMargins = includedValue($("#pxlMargins"));
         if (isChecked($("#pxlMarginsActive"), cleanConditions['pxlMarginsActive'])) {
             pxlMargins = {
@@ -2801,7 +2827,7 @@
                             bounds: pxlBounds,
                             colorType: includedValue($("#pxlColorType")),
                             copies: copies,
-                            density: includedValue($("#pxlDensity")),
+                            density: pxlDensity,
                             duplex: includedValue($("#pxlDuplex")),
                             interpolation: includedValue($("#pxlInterpolation")),
                             jobName: jobName,

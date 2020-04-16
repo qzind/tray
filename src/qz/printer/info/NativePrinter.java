@@ -3,10 +3,9 @@ package qz.printer.info;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
-import javax.print.attribute.ResolutionSyntax;
 import javax.print.attribute.standard.PrinterName;
 import javax.print.attribute.standard.PrinterResolution;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class NativePrinter {
@@ -165,22 +164,19 @@ public class NativePrinter {
         return resolution;
     }
 
-    public List<Integer> getResolutions() {
-        // TODO: Test/Implement supported resolutions for CUPS
-        List<Integer> densities = new ArrayList<>();
-
+    public List<PrinterResolution> getResolutions() {
         PrintService ps = getPrintService().value();
         PrinterResolution[] resSupport = (PrinterResolution[])ps.getSupportedAttributeValues(PrinterResolution.class, ps.getSupportedDocFlavors()[0], null);
         if (resSupport == null || resSupport.length == 0) {
+            NativePrinterMap printerMap = NativePrinterMap.getInstance();
+            // CUPS doesn't report resolutions properly, instead return the values scraped from console
+            if(printerMap instanceof CupsPrinterMap) {
+                return ((CupsPrinterMap)printerMap).getResolutions(this);
+            }
             resSupport = new PrinterResolution[]{ getResolution().value() };
         }
-        for(PrinterResolution res : resSupport) {
-            if (res != null) {
-                densities.add(res.getFeedResolution(ResolutionSyntax.DPI));
-            }
-        }
 
-        return densities;
+        return Arrays.asList(resSupport);
     }
 
     public static void getDriverAttributes(NativePrinter printer) {

@@ -165,12 +165,15 @@ public class WebApp extends Application {
                 System.setProperty("monocle.platform", "Headless");
 
                 // monocle memory footprint is (geometry^2 * depth) >> 3
-                // we'll conservatively shift only 2 from max memory to ensure memory is left for actual printing
+                // our allowance will use a lower shift from available memory to ensure a conservative platform size
                 long memory = Runtime.getRuntime().maxMemory();
-                int geometry = (int)Math.sqrt(((memory)<<2) / 32d);
+                long memoryMB = memory / 1048576L;
+                int allowance = memoryMB > 1024? 2 : 1;
+
+                int geometry = (int)Math.sqrt(((memory)<<allowance) / 32d);
                 if (geometry > 40000) { geometry = 40000; } // cap at 40k (A1 size at 1200dpi)
 
-                log.trace("Allowing max headless geometry of {}x{} based on available memory ({} MB)", geometry, geometry, memory/1000000);
+                log.trace("Allowing max headless geometry of {}x{} based on available memory ({} MB)", geometry, geometry, memoryMB);
 
                 System.setProperty("headless.geometry", String.format("%sx%s-32", geometry, geometry));
             }
@@ -217,6 +220,11 @@ public class WebApp extends Application {
     }
 
 
+    public static void clear() {
+        capture.set(null);
+        thrown.set(null);
+    }
+
     /**
      * Sets up capture to run on JavaFX thread and returns snapshot of rendered page
      *
@@ -226,8 +234,7 @@ public class WebApp extends Application {
     public static synchronized BufferedImage capture(final WebAppModel model) throws Throwable {
         captureLatch = new CountDownLatch(1);
 
-        capture.set(null);
-        thrown.set(null);
+        clear();
 
         //ensure JavaFX has started before we run
         if (startupLatch.getCount() > 0) {

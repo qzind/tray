@@ -166,20 +166,9 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         double imgH = imgToPrint.getHeight() / dpiScale;
 
         if (scaleImage) {
-            //scale up to print density (using less of a stretch if image is already larger than page)
-            double upScale = dpiScale * Math.min((pageFormat.getImageableWidth() / imgToPrint.getWidth()), (pageFormat.getImageableHeight() / imgToPrint.getHeight()));
-            if (upScale > dpiScale) { upScale = dpiScale; } else if (upScale < 1) { upScale = 1; }
-            log.debug("Scaling image up by x{}", upScale);
+            imgToPrint = scale(imgToPrint, pageFormat);
 
-            BufferedImage scaled = new BufferedImage((int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2d = scaled.createGraphics();
-            g2d.setRenderingHints(buildRenderingHints(dithering, interpolation));
-            g2d.drawImage(imgToPrint, 0, 0, (int)(imgToPrint.getWidth() * upScale), (int)(imgToPrint.getHeight() * upScale), null);
-            g2d.dispose();
-
-            imgToPrint = scaled;
-
-            // scale image to smallest edge, keeping size ratio
+            // adjust dimensions to smallest edge, keeping size ratio
             if (((float)imgToPrint.getWidth() / (float)imgToPrint.getHeight()) >= (boundW / boundH)) {
                 imgW = boundW;
                 imgH = (imgToPrint.getHeight() / (imgToPrint.getWidth() / boundW));
@@ -212,6 +201,34 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
         // Valid page
         return PAGE_EXISTS;
+    }
+
+    /**
+     * Up scales the provided image to match the page dimensions
+     *
+     * @param image BufferedImage to scale
+     * @param pageFormat PageFormat to match
+     * @return Scaled image
+     */
+    private BufferedImage scale(BufferedImage image, PageFormat pageFormat) {
+        //scale up to print density (using less of a stretch if image is already larger than page)
+        double upScale = dpiScale * Math.min((pageFormat.getImageableWidth() / image.getWidth()), (pageFormat.getImageableHeight() / image.getHeight()));
+        if (upScale > dpiScale) { upScale = dpiScale; } else if (upScale < 1) { upScale = 1; }
+
+        if (upScale > 1) {
+            log.debug("Scaling image up by x{}", upScale);
+
+            BufferedImage scaled = new BufferedImage((int)(image.getWidth() * upScale), (int)(image.getHeight() * upScale), BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = scaled.createGraphics();
+            g2d.setRenderingHints(buildRenderingHints(dithering, interpolation));
+            g2d.drawImage(image, 0, 0, (int)(image.getWidth() * upScale), (int)(image.getHeight() * upScale), null);
+            g2d.dispose();
+
+            return scaled;
+        } else {
+            log.debug("No need to upscale image");
+            return image;
+        }
     }
 
     /**

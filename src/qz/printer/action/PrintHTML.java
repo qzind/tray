@@ -91,6 +91,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor, Printable {
                 models.add(new WebAppModel(source, (format != PrintingUtilities.Format.FILE), pageWidth, pageHeight, pxlOpts.isScaleContent(), pageZoom));
             }
 
+            WebApp.clear();
             log.debug("Parsed {} html records", models.size());
         }
         catch(IOException e) {

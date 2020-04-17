@@ -42,6 +42,28 @@ import java.util.concurrent.atomic.AtomicReference;
 public class WebApp extends Application {
 
     private static final Logger log = LoggerFactory.getLogger(WebApp.class);
+    private static int maxGeometry;
+
+    static {
+        boolean headless = false; // 2.1 or higher only
+        if(headless) {
+            System.setProperty("prism.order", "sw");
+        }
+        // monocle memory footprint is (geometry^2 * depth) >> 3
+        // our allowance will use a lower shift from available memory to ensure a conservative platform size
+        long memory = Runtime.getRuntime().maxMemory();
+        long memoryMB = memory / 1048576L;
+        int allowance = memoryMB > 1024? 3:2;
+        // absence gfx hardware reduces available memory
+        allowance -= (headless ? 1 : 0);
+
+        maxGeometry = (int)Math.sqrt(((memory) << allowance) / 32d);
+        if (maxGeometry > 40000) { maxGeometry = 40000; } // cap at 40k (A1 size at 1200dpi)
+
+        log.trace("Allowing max headless geometry of {}x{} based on available memory ({} MB)", maxGeometry, maxGeometry, memoryMB);
+
+        //System.setProperty("headless.geometry", String.format("%sx%s-32", geometry, geometry));
+    }
 
     private static WebApp instance = null;
 
@@ -161,23 +183,9 @@ public class WebApp extends Application {
             if (PrintSocketServer.getTrayManager().isMonocleAllowed()) {
                 log.trace("Initializing monocle platform");
 
-                System.setProperty("prism.order", "sw");
                 System.setProperty("javafx.platform", "monocle"); // Standard JDKs
                 System.setProperty("glass.platform", "Monocle"); // Headless JDKs
                 System.setProperty("monocle.platform", "Headless");
-
-                // monocle memory footprint is (geometry^2 * depth) >> 3
-                // our allowance will use a lower shift from available memory to ensure a conservative platform size
-                long memory = Runtime.getRuntime().maxMemory();
-                long memoryMB = memory / 1048576L;
-                int allowance = memoryMB > 1024? 2 : 1;
-
-                int geometry = (int)Math.sqrt(((memory)<<allowance) / 32d);
-                if (geometry > 40000) { geometry = 40000; } // cap at 40k (A1 size at 1200dpi)
-
-                log.trace("Allowing max headless geometry of {}x{} based on available memory ({} MB)", geometry, geometry, memoryMB);
-
-                System.setProperty("headless.geometry", String.format("%sx%s-32", geometry, geometry));
             }
 
             new Thread() {
@@ -250,6 +258,14 @@ public class WebApp extends Application {
                     pageWidth = model.getWebWidth();
                     pageHeight = model.getWebHeight();
                     pageZoom = model.getZoom();
+
+                    double minGeometry = Math.max(pageWidth, pageHeight);
+                    if(minGeometry * pageZoom > maxGeometry) {
+                        double oldZoom = pageZoom;
+                        pageZoom = maxGeometry / minGeometry;
+                        log.warn("Zoom level {} decreased to {} due to physical memory limitations", oldZoom, pageZoom);
+                    }
+
 
                     try {
                         Reflect.on(webView).call("setZoom", pageZoom);

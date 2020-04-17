@@ -45,24 +45,25 @@ public class WebApp extends Application {
     private static int maxGeometry;
 
     static {
+        //handle headless
         boolean headless = false; // 2.1 or higher only
-        if(headless) {
+        if(headless && PrintSocketServer.getTrayManager().isMonocleAllowed()) {
             System.setProperty("prism.order", "sw");
         }
-        // monocle memory footprint is (geometry^2 * depth) >> 3
-        // our allowance will use a lower shift from available memory to ensure a conservative platform size
+
+        //monocle memory footprint is (geometry^2 * depth) >> 3
+        //absence of gfx hardware reduces available memory
         long memory = Runtime.getRuntime().maxMemory();
         long memoryMB = memory / 1048576L;
         int allowance = memoryMB > 1024? 3:2;
-        // absence gfx hardware reduces available memory
+
+        //use a lower shift from available memory if headless
         allowance -= (headless ? 1 : 0);
 
+        //set max geom, influencing pageZoom
         maxGeometry = (int)Math.sqrt(((memory) << allowance) / 32d);
         if (maxGeometry > 40000) { maxGeometry = 40000; } // cap at 40k (A1 size at 1200dpi)
-
-        log.trace("Allowing max headless geometry of {}x{} based on available memory ({} MB)", maxGeometry, maxGeometry, memoryMB);
-
-        //System.setProperty("headless.geometry", String.format("%sx%s-32", geometry, geometry));
+        log.trace("Allowing max html geometry of {}x{} based on available memory ({} MB)", maxGeometry, maxGeometry, memoryMB);
     }
 
     private static WebApp instance = null;

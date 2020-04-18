@@ -42,30 +42,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class WebApp extends Application {
 
     private static final Logger log = LoggerFactory.getLogger(WebApp.class);
-    private static int maxGeometry;
-
-    static {
-        //handle headless
-        boolean headless = false; // 2.1 or higher only
-        if(headless && PrintSocketServer.getTrayManager().isMonocleAllowed()) {
-            System.setProperty("prism.order", "sw");
-        }
-
-        //monocle memory footprint is (geometry^2 * depth) >> 3
-        //absence of gfx hardware reduces available memory
-        long memory = Runtime.getRuntime().maxMemory();
-        long memoryMB = memory / 1048576L;
-        int allowance = memoryMB > 1024? 3:2;
-
-        //use a lower shift from available memory if headless
-        allowance -= (headless ? 1 : 0);
-
-        //set max geom, influencing pageZoom
-        maxGeometry = (int)Math.sqrt(((memory) << allowance) / 32d);
-        if (maxGeometry > 40000) { maxGeometry = 40000; } // cap at 40k (A1 size at 1200dpi)
-        log.trace("Allowing max html geometry of {}x{} based on available memory ({} MB)", maxGeometry, maxGeometry, memoryMB);
-    }
-
     private static WebApp instance = null;
 
     private static Stage stage;
@@ -73,6 +49,8 @@ public class WebApp extends Application {
     private static double pageWidth;
     private static double pageHeight;
     private static double pageZoom;
+    private static int maxGeometry;
+    private static boolean headless;
 
     private static CountDownLatch startupLatch;
     private static CountDownLatch captureLatch;
@@ -175,6 +153,8 @@ public class WebApp extends Application {
     public static synchronized void initialize() throws IOException {
         if (instance == null) {
             startupLatch = new CountDownLatch(1);
+            headless = false; // 2.1+ only
+            maxGeometry = calculateMaxGeometry(headless);
 
             // JavaFX native libs
             if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
@@ -187,6 +167,11 @@ public class WebApp extends Application {
                 System.setProperty("javafx.platform", "monocle"); // Standard JDKs
                 System.setProperty("glass.platform", "Monocle"); // Headless JDKs
                 System.setProperty("monocle.platform", "Headless");
+
+                //software rendering required headless environments
+                if(headless) {
+                    System.setProperty("prism.order", "sw");
+                }
             }
 
             new Thread() {
@@ -309,6 +294,27 @@ public class WebApp extends Application {
         if (thrown.get() != null) { throw thrown.get(); }
 
         return capture.get();
+    }
+
+    /**
+     * Calculates the maximum WebView size possible based on system memory
+     * TODO: Make workable with non-squared dimensions
+     */
+    private static int calculateMaxGeometry(boolean headless) {
+        //monocle memory footprint is (geometry^2 * depth) >> 3
+        //absence of gfx hardware reduces available memory
+        long memory = Runtime.getRuntime().maxMemory();
+        long memoryMB = memory / 1048576L;
+        int allowance = memoryMB > 1024? 3:2;
+
+        //use a lower shift from available memory if headless
+        allowance -= (headless ? 1 : 0);
+
+        //set max geom, influencing pageZoom
+        int maxGeometry = (int)Math.sqrt(((memory) << allowance) / 32d);
+        if (maxGeometry > 40000) { maxGeometry = 40000; } // cap at 40k (A1 size at 1200dpi)
+        log.trace("Allowing max html geometry of {}x{} based on available memory ({} MB)", maxGeometry, maxGeometry, memoryMB);
+        return maxGeometry;
     }
 
     private static void unlatch() {

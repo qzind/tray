@@ -7,9 +7,6 @@
  * Connects a web client to the QZ Tray software.
  * Enables printing and device communication from javascript.
  *
- * @requires RSVP
- *     Provides Promises/A+ functionality for API calls.
- *     Can be overridden via <code>qz.api.setPromiseType</code> to remove dependency.
  * @requires Sha256
  *     Provides hashing algorithm for signing messages.
  *     Can be overridden via <code>qz.api.setSha256Type</code> to remove dependency.
@@ -545,7 +542,13 @@ var qz = (function() {
         tools: {
             /** Create a new promise */
             promise: function(resolver) {
-                return new RSVP.Promise(resolver);
+                if(typeof RSVP !== 'undefined') {
+                    return new RSVP.Promise(resolver);
+                } else if(typeof Promise !== 'undefined') {
+                    return new Promise(resolver);
+                } else {
+                    _qz.log.error("Promise/A+ support is required.  See qz.api.setPromiseType(...)");
+                }
             },
 
             stringify: function(object) {
@@ -563,7 +566,32 @@ var qz = (function() {
             },
 
             hash: function(data) {
-                return Sha256.hash(data);
+                if(typeof Sha256 !== 'undefined') {
+                    return Sha256.hash(data);
+                } else if(typeof window !== 'undefined' && window.isSecureContext && typeof TextEncoder === 'object') {
+                    // Use native crypto (HTTPS only)
+                    var buffer = new TextEncoder('utf-8').encode(str)
+                    return crypto.subtle.digest('SHA-256', buffer).then(function (hash) {
+                        var hexCodes = []
+                        var view = new DataView(buffer)
+                        for (var i = 0; i < view.byteLength; i += 4) {
+                            // Using getUint32 reduces the number of iterations needed (we process 4 bytes each time)
+                            var value = view.getUint32(i)
+                            // toString(16) will give the hex representation of the number without padding
+                            var stringValue = value.toString(16)
+                            // We use concatenation and slice for padding
+                            var padding = '00000000'
+                            var paddedValue = (padding + stringValue).slice(-padding.length)
+                            hexCodes.push(paddedValue)
+                        }
+
+                        // Join all the hex strings into one
+                        return hexCodes.join('')
+                    });
+                } else {
+                    _qz.log.error("An sha256 hashing library is required.  See qz.api.setSha256Type(...)");
+                    return "sha256 missing";
+                }
             },
 
             ws: typeof WebSocket !== 'undefined' ? WebSocket : null,

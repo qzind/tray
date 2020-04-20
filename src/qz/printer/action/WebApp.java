@@ -50,7 +50,6 @@ public class WebApp extends Application {
     private static double pageHeight;
     private static double pageZoom;
     private static int maxGeometry;
-    private static boolean headless;
 
     private static CountDownLatch startupLatch;
     private static CountDownLatch captureLatch;
@@ -153,7 +152,7 @@ public class WebApp extends Application {
     public static synchronized void initialize() throws IOException {
         if (instance == null) {
             startupLatch = new CountDownLatch(1);
-            headless = false; // 2.1+ only
+            boolean headless = false; // 2.1+ only
             maxGeometry = calculateMaxGeometry(headless);
 
             // JavaFX native libs

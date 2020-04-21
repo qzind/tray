@@ -6,13 +6,15 @@
 </head>
 
 <!-- Required scripts -->
-<script type="text/javascript" src="js/dependencies/rsvp-3.1.0.min.js"></script>
-<script type="text/javascript" src="js/dependencies/sha-256.min.js"></script>
+<script type="text/javascript" src="js/tray/sha-256.min.js"></script>
 <script type="text/javascript" src="js/qz-tray.js"></script>
 
+<!-- Pollyfills -->
+<script type="text/javascript" src="js/sample/fetch-3.0.0.min.js"></script>
+
 <!-- Page styling -->
-<script type="text/javascript" src="js/additional/jquery-1.11.3.min.js"></script>
-<script type="text/javascript" src="js/additional/bootstrap.min.js"></script>
+<script type="text/javascript" src="js/sample/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="js/sample/bootstrap.min.js"></script>
 <link rel="stylesheet" href="css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/bootstrap.min.css" />
 <link rel="stylesheet" href="css/style.css" />
@@ -1221,10 +1223,11 @@
     /// Authentication setup ///
     qz.security.setCertificatePromise(function(resolve, reject) {
         //Preferred method - from server
-//        $.ajax({ url: "assets/signing/digital-certificate.txt", cache: false, dataType: "text" }).then(resolve, reject);
+//        fetch("assets/signing/digital-certificate.txt", {cache: 'no-store', headers: {'Content-Type': 'text/plain'}})
+//          .then(function(data) { data.ok ? resolve(data.text()) : reject(data.text()); });
 
         //Alternate method 1 - anonymous
-//        resolve();
+//        resolve();  // remove this line in live environment
 
         //Alternate method 2 - direct
         resolve("-----BEGIN CERTIFICATE-----\n" +
@@ -1293,10 +1296,11 @@
     qz.security.setSignaturePromise(function(toSign) {
         return function(resolve, reject) {
             //Preferred method - from server
-//            $.ajax("/secure/url/for/sign-message?request=" + toSign).then(resolve, reject);
+//            fetch("/secure/url/for/sign-message?request=" + toSign, {cache: 'no-store', headers: {'Content-Type': 'text/plain'}})
+//              .then(function(data) { data.ok ? resolve(data.text()) : reject(data.text()); });
 
             //Alternate method - unsigned
-            resolve();
+            resolve(); // remove this line in live environment
         };
     });
 

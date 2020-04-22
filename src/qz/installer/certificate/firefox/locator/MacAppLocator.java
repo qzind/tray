@@ -10,11 +10,12 @@ import qz.utils.ShellUtilities;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
-public class MacAppLocator extends AppLocator {
+public class MacAppLocator {
     protected static final Logger log = LoggerFactory.getLogger(MacAppLocator.class);
 
     private static String[] BLACKLIST = new String[]{ "/Volumes/", "/.Trash/", "/Applications (Parallels)/" };
@@ -43,7 +44,7 @@ public class MacAppLocator extends AppLocator {
             return false;
         }
 
-        private void set(Node node, AppLocator info) {
+        private void set(Node node, AppInfo info) {
             switch(this) {
                 case NAME: info.setName(node.getTextContent()); break;
                 case PATH: info.setPath(node.getTextContent()); break;
@@ -54,17 +55,8 @@ public class MacAppLocator extends AppLocator {
         }
     }
 
-    public boolean isBlacklisted() {
-        for (String item : BLACKLIST) {
-            if (path != null && path.matches(Pattern.quote(item))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static ArrayList<AppLocator> findApp(AppAlias appAlias) {
-        ArrayList<AppLocator> appList = new ArrayList<>();
+    public static ArrayList<AppInfo> findApp(AppAlias appAlias) {
+        ArrayList<AppInfo> appList = new ArrayList<>();
         Document doc;
 
         try {
@@ -80,13 +72,13 @@ public class MacAppLocator extends AppLocator {
         NodeList nodeList = doc.getElementsByTagName("dict");
         for (int i = 0; i < nodeList.getLength(); i++) {
             NodeList dict = nodeList.item(i).getChildNodes();
-            MacAppLocator info = new MacAppLocator();
+            AppInfo appInfo = new AppInfo();
             for (int j = 0; j < dict.getLength(); j++) {
                 Node node = dict.item(j);
                 if (node.getNodeType() == Node.ELEMENT_NODE) {
                     for (SiblingNode sibling : SiblingNode.values()) {
                         if (sibling.wants) {
-                            sibling.set(node, info);
+                            sibling.set(node, appInfo);
                             break;
                         } else if(sibling.isKey(node)) {
                             break;
@@ -94,10 +86,57 @@ public class MacAppLocator extends AppLocator {
                     }
                 }
             }
-            if (appAlias.matches(info)) {
-                appList.add(info);
+            if (appAlias.matches(appInfo)) {
+                appList.add(appInfo);
             }
         }
+
+        for(AppInfo appInfo : appList) {
+            // Mark blacklisted locations
+            for(String listEntry : BLACKLIST) {
+                if (appInfo.getPath() != null && appInfo.getPath().matches(Pattern.quote(listEntry))) {
+                    appInfo.setBlacklisted(true);
+                }
+            }
+            // Calculate exePath
+            appInfo.setExePath(getExePath(appInfo));
+        }
         return appList;
+    }
+
+    /**
+     * Calculate executable path by parsing Contents/Info.plist
+     */
+    private static String getExePath(AppInfo appInfo) {
+        File plist = new File(appInfo.getPath(), "Contents/Info.plist");
+        Document doc;
+        try {
+            if(!plist.exists()) {
+                log.warn("Could not locate plist file for {}: {}",  appInfo.getName(), plist);
+                return null;
+            }
+            // Convert potentially binary plist files to XML
+            Process p = Runtime.getRuntime().exec(new String[] {"plutil", "-convert", "xml1", plist.getCanonicalPath(), "-o", "-"}, ShellUtilities.envp);
+            doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(p.getInputStream());
+        } catch(IOException | ParserConfigurationException | SAXException e) {
+            log.warn("Could not parse plist file for {}: {}", appInfo.getName(), plist, e);
+            return null;
+        }
+        doc.normalizeDocument();
+
+        boolean upNext = false;
+        NodeList nodeList = doc.getElementsByTagName("dict");
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            NodeList dict = nodeList.item(i).getChildNodes();
+            for(int j = 0; j < dict.getLength(); j++) {
+                Node node = dict.item(j);
+                if ("key".equals(node.getNodeName()) && node.getTextContent().equals("CFBundleExecutable")) {
+                    upNext = true;
+                } else if (upNext && "string".equals(node.getNodeName())) {
+                    return String.format(appInfo.getPath() + "/Contents/MacOS/" + node.getTextContent());
+                }
+            }
+        }
+        return null;
     }
 }

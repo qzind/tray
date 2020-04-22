@@ -8,16 +8,11 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
-public class LinuxAppLocator extends AppLocator {
+public class LinuxAppLocator {
     private static final Logger log = LoggerFactory.getLogger(LinuxAppLocator.class);
 
-    public LinuxAppLocator(String name, String path) {
-        setName(name);
-        setPath(path);
-    }
-
-    public static ArrayList<AppLocator> findApp(AppAlias appAlias) {
-        ArrayList<AppLocator> appList = new ArrayList<>();
+    public static ArrayList<AppInfo> findApp(AppAlias appAlias) {
+        ArrayList<AppInfo> appList = new ArrayList<>();
 
         // Workaround for calling "firefox --version" as sudo
         String[] env = appendPaths("HOME=/tmp");
@@ -31,8 +26,8 @@ public class LinuxAppLocator extends AppLocator {
                 if (file.isFile() && file.canExecute()) {
                     try {
                         file = file.getCanonicalFile(); // fix symlinks
-                        AppLocator info = new LinuxAppLocator(alias.name, file.getParentFile().getCanonicalPath());
-                        appList.add(info);
+                        AppInfo appInfo = new AppInfo(alias.name, file.getCanonicalPath(), file.getParentFile().getCanonicalPath());
+                        appList.add(appInfo);
 
                         // Call "--version" on executable to obtain version information
                         Process p = Runtime.getRuntime().exec(new String[] {file.getCanonicalPath(), "--version" }, env);
@@ -42,9 +37,9 @@ public class LinuxAppLocator extends AppLocator {
                         if (version != null) {
                             if(version.contains(" ")) {
                                 String[] split = version.split(" ");
-                                info.setVersion(split[split.length - 1]);
+                                appInfo.setVersion(split[split.length - 1]);
                             } else {
-                                info.setVersion(version.trim());
+                                appInfo.setVersion(version.trim());
                             }
                         }
                         break;
@@ -72,10 +67,5 @@ public class LinuxAppLocator extends AppLocator {
             newPath = newPath + File.pathSeparator + prefix.replaceAll("\\$", posix);
         }
         return newPath.split(File.pathSeparator);
-    }
-
-    @Override
-    boolean isBlacklisted() {
-        return false;
     }
 }

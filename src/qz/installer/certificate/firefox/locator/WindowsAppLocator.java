@@ -20,17 +20,12 @@ import java.util.ArrayList;
 
 import static com.sun.jna.platform.win32.WinReg.HKEY_LOCAL_MACHINE;
 
-public class WindowsAppLocator extends AppLocator {
+public class WindowsAppLocator {
     protected static final Logger log = LoggerFactory.getLogger(MacAppLocator.class);
     private static String REG_TEMPLATE = "Software\\%s%s\\%s%s";
 
-    public WindowsAppLocator(String name, String path, String version) {
-        setName(name);
-        setPath(path);
-        setVersion(version);
-    }
-    public static ArrayList<AppLocator> findApp(AppAlias appAlias) {
-        ArrayList<AppLocator> appList = new ArrayList<>();
+    public static ArrayList<AppInfo> findApp(AppAlias appAlias) {
+        ArrayList<AppInfo> appList = new ArrayList<>();
         for (AppAlias.Alias alias : appAlias.aliases) {
             if (alias.vendor != null) {
                 String[] suffixes = new String[]{ "", " ESR"};
@@ -38,9 +33,9 @@ public class WindowsAppLocator extends AppLocator {
                 for (String suffix : suffixes) {
                     for (String prefix : prefixes) {
                         String key = String.format(REG_TEMPLATE, prefix, alias.vendor, alias.name, suffix);
-                        AppLocator appLocator = getAppInfo(alias.name, key, suffix);
-                        if (appLocator != null && !appList.contains(appLocator)) {
-                            appList.add(appLocator);
+                        AppInfo appInfo = getAppInfo(alias.name, key, suffix);
+                        if (appInfo != null && !appList.contains(appInfo)) {
+                            appList.add(appInfo);
                         }
                     }
                 }
@@ -49,7 +44,7 @@ public class WindowsAppLocator extends AppLocator {
         return appList;
     }
 
-    public static AppLocator getAppInfo(String name, String key, String suffix) {
+    public static AppInfo getAppInfo(String name, String key, String suffix) {
         String version = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "CurrentVersion");
         if (version != null) {
             version = version.split(" ")[0]; // chop off (x86 ...)
@@ -59,19 +54,15 @@ public class WindowsAppLocator extends AppLocator {
                 }
                 version = version + suffix;
             }
-            String path = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key + " " + version + "\\bin", "PathToExe");
-            if (path != null) {
+            String exePath = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key + " " + version + "\\bin", "PathToExe");
+
+            if (exePath != null) {
                 // SemVer: Replace spaces in suffixes with dashes
-                path = new File(path).getParent();
+                String path = new File(exePath).getParent();
                 version = version.replaceAll(" ", "-");
-                return new WindowsAppLocator(name, path, version);
+                return new AppInfo(name, path, exePath, version);
             }
         }
         return null;
-    }
-
-    @Override
-    boolean isBlacklisted() {
-        return false;
     }
 }

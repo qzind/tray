@@ -3,6 +3,7 @@ package qz.installer.browser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.installer.certificate.firefox.locator.AppAlias;
+import qz.installer.certificate.firefox.locator.AppInfo;
 import qz.installer.certificate.firefox.locator.AppLocator;
 
 import java.util.ArrayList;
@@ -17,13 +18,14 @@ public class AppFinderTests {
 
     private static void runTest(AppAlias app) {
         Date begin = new Date();
-        ArrayList<AppLocator> appList = AppLocator.locate(app);
+        ArrayList<AppInfo> appList = AppLocator.locate(app);
 
         StringBuilder output = new StringBuilder("Found apps:\n");
-        for (AppLocator info : appList) {
-            output.append(String.format("      name: '%s', path: '%s', version: '%s'\n",
+        for (AppInfo info : appList) {
+            output.append(String.format("      name: '%s', path: '%s', exePath: '%s', version: '%s'\n",
                                         info.getName(),
                                         info.getPath(),
+                                        info.getExePath(),
                                         info.getVersion()
             ));
         }

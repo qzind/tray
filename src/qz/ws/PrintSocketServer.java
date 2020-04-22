@@ -78,9 +78,6 @@ public class PrintSocketServer {
         log.info("Java vendor: {}", Constants.JAVA_VENDOR);
         setupFileLogging();
 
-        //Todo Remove this debugging log
-        log.warn(Arrays.toString(TaskControl.locateProcessPath("firefox", false)));
-
         try {
             // Gets and sets the SSL info, properties file
             certificateManager = Installer.getInstance().certGen(false);

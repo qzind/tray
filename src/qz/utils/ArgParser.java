@@ -21,6 +21,7 @@ import qz.installer.certificate.CertificateManager;
 
 import java.io.File;
 import java.util.*;
+import java.util.List;
 
 import static qz.common.Constants.*;
 import static qz.utils.ArgParser.ExitStatus.*;
@@ -144,10 +145,6 @@ public class ArgParser {
                     //command.add("-private");
                     //command.add("about:restartrequired");
                     //Process p = new ProcessBuilder(command).start();
-                    String path = TaskControl.locateProcessPath("firefox.exe", true)[0];
-                    String[] cmd = {path, "-private", "about:restartrequired"};
-                    ShellUtilities.executeRaw(cmd);
-
                     return SUCCESS;
                 case CERTGEN:
                     TaskControl.killAll();

@@ -15,10 +15,12 @@ import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
+import qz.installer.TaskControl;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.firefox.locator.AppAlias;
 import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.utils.JsonWriter;
+import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
 import java.io.File;
@@ -29,6 +31,8 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Installs the Firefox Policy file via Policy file or AutoConfig, depending on the version
@@ -67,6 +71,11 @@ public class FirefoxCertificateInstaller {
                     log.warn("Unable to install auto-config script to {}", app.getPath(), e);
                 }
             }
+        }
+        try {
+            restartFirefox(appList);
+        } catch(IOException e) {
+            log.warn("Unable to restart Firefox, this will have to be done manually.", e);
         }
     }
 
@@ -154,5 +163,48 @@ public class FirefoxCertificateInstaller {
 
     public static boolean checkRunning(AppLocator app, boolean isSilent) {
         throw new UnsupportedOperationException();
+    }
+
+    public static void restartFirefox(ArrayList<AppLocator> appList) throws IOException {
+        ArrayList<Path> processPaths = new ArrayList<>();
+        HashMap<AppLocator, Path> appsToRestart = new HashMap<>();
+
+        String fileExtention = SystemUtilities.isWindows() ? ".exe" : "";
+
+        for (AppAlias.Alias alias : AppAlias.FIREFOX.getAliases()) {
+            processPaths.addAll(TaskControl.locateProcessPath(alias.posix + fileExtention, true));
+        }
+        //Todo Remove this debugging log
+        log.warn(processPaths.toString());
+        for (AppLocator app : appList) {
+            Path appPath = Paths.get(app.getPath()).toRealPath();
+            //todo change app.getPath to return a path object?
+            for (Path processPath : processPaths) {
+                if (processPath.startsWith(appPath)) appsToRestart.put(app, processPath);
+            }
+        }
+        String text = "The following must restart for the changes to take effect.";
+        boolean shouldPrompt = false;
+
+        for (Map.Entry<AppLocator, Path> pair: appsToRestart.entrySet()) {
+            AppLocator app = pair.getKey();
+
+            if (app.getVersion().lessThan(Version.forIntegers(60))) {
+                shouldPrompt = true;
+                text += "\n" + app.getName() + " Version: " + app.getVersion();
+            } else {
+                executeRestartRequired(pair.getValue());
+            }
+        }
+
+        if (shouldPrompt) {
+            //Todo Remove this debugging log
+            log.warn(text);
+        }
+    }
+
+    public static void executeRestartRequired(Path processPath) {
+        String[] cmd = {processPath.toString(), "-private", "about:restartrequired"};
+        ShellUtilities.executeRaw(cmd);
     }
 }

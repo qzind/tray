@@ -49,7 +49,6 @@ public class WebApp extends Application {
     private static double pageWidth;
     private static double pageHeight;
     private static double pageZoom;
-    private static int maxGeometry;
 
     private static CountDownLatch startupLatch;
     private static CountDownLatch captureLatch;
@@ -84,9 +83,24 @@ public class WebApp extends Application {
                     pageHeight = Double.parseDouble(heightText);
                 }
 
+                // find and set page zoom for increased quality
+                double usableZoom = calculateSupportedZoom(pageWidth, pageHeight);
+                if (usableZoom < pageZoom) {
+                    log.warn("Zoom level {} decreased to {} due to physical memory limitations", pageZoom, usableZoom);
+                    pageZoom = usableZoom;
+                }
+                try {
+                    Reflect.on(webView).call("setZoom", pageZoom);
+                    log.trace("Zooming in by x{} for increased quality", pageZoom);
+                }
+                catch(ReflectException e) {
+                    log.warn("Unable zoom, using default quality");
+                    pageZoom = 1; //only zoom affects webView scaling
+                }
+
                 log.trace("Setting HTML page height to {}", pageHeight * pageZoom);
-                webView.setMinHeight(pageHeight * pageZoom);
-                webView.setPrefHeight(pageHeight * pageZoom);
+                webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
+                webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
                 webView.autosize();
 
                 //without this runlater, the first capture is missed and all following captures are offset
@@ -152,8 +166,6 @@ public class WebApp extends Application {
     public static synchronized void initialize() throws IOException {
         if (instance == null) {
             startupLatch = new CountDownLatch(1);
-            boolean headless = false; // 2.1+ only
-            maxGeometry = calculateMaxGeometry(headless);
 
             // JavaFX native libs
             if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
@@ -168,7 +180,7 @@ public class WebApp extends Application {
                 System.setProperty("monocle.platform", "Headless");
 
                 //software rendering required headless environments
-                if(headless) {
+                if (PrintSocketServer.isHeadless()) {
                     System.setProperty("prism.order", "sw");
                 }
             }
@@ -244,23 +256,6 @@ public class WebApp extends Application {
                     pageHeight = model.getWebHeight();
                     pageZoom = model.getZoom();
 
-                    double minGeometry = Math.max(pageWidth, pageHeight);
-                    if(minGeometry * pageZoom > maxGeometry) {
-                        double oldZoom = pageZoom;
-                        pageZoom = maxGeometry / minGeometry;
-                        log.warn("Zoom level {} decreased to {} due to physical memory limitations", oldZoom, pageZoom);
-                    }
-
-
-                    try {
-                        Reflect.on(webView).call("setZoom", pageZoom);
-                        log.trace("Zooming in by x{} for increased quality", pageZoom);
-                    }
-                    catch(ReflectException e) {
-                        log.warn("Unable zoom, using default quality");
-                        pageZoom = 1; //only zoom affects webView scaling
-                    }
-
                     webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
                     webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
                     if (pageHeight == 0) {
@@ -295,25 +290,13 @@ public class WebApp extends Application {
         return capture.get();
     }
 
-    /**
-     * Calculates the maximum WebView size possible based on system memory
-     * TODO: Make workable with non-squared dimensions
-     */
-    private static int calculateMaxGeometry(boolean headless) {
-        //monocle memory footprint is (geometry^2 * depth) >> 3
-        //absence of gfx hardware reduces available memory
+    private static double calculateSupportedZoom(double width, double height) {
         long memory = Runtime.getRuntime().maxMemory();
-        long memoryMB = memory / 1048576L;
-        int allowance = memoryMB > 1024? 3:2;
+        int allowance = (memory / 1048576L) > 1024? 3:2;
+        if (PrintSocketServer.isHeadless()) { allowance--; }
+        long availSpace = (long)((memory << allowance) / 72d);
 
-        //use a lower shift from available memory if headless
-        allowance -= (headless ? 1 : 0);
-
-        //set max geom, influencing pageZoom
-        int maxGeometry = (int)Math.sqrt(((memory) << allowance) / 32d);
-        if (maxGeometry > 40000) { maxGeometry = 40000; } // cap at 40k (A1 size at 1200dpi)
-        log.trace("Allowing max html geometry of {}x{} based on available memory ({} MB)", maxGeometry, maxGeometry, memoryMB);
-        return maxGeometry;
+        return Math.sqrt(availSpace / (width * height));
     }
 
     private static void unlatch() {

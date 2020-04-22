@@ -29,9 +29,6 @@ public class TaskControl {
     private static final String[] TRAY_PID_QUERY_POSIX = {"pgrep", "-f", PROPS_FILE + ".jar" };
     private static final String[] KILL_PID_CMD_POSIX = {"kill", "-9", ""/*pid placeholder*/};
 
-    private static final String[] POSIX_PID_QUERY = {"pgrep", null};
-    private static final int POSIX_PID_QUERY_INPUT_INDEX = 1;
-
     private static final String[] WIN32_PID_QUERY = {"wmic.exe", "process", "where", null, "get", "parentprocessid,", "processid"};
     private static final int WIN32_PID_QUERY_INPUT_INDEX = 3;
 
@@ -132,10 +129,12 @@ public class TaskControl {
         if (SystemUtilities.isWindows()) {
             ArrayList<String> parentPIDList = new ArrayList<>();
             String matchPartial = exactMatch ? "Name='%s'" : "Name like '/%%s/%'";
-            String matchString = "(" + String.format(matchPartial, ProcessNames[0]);
 
-            for (String name : ProcessNames) matchString += " OR " + String.format(matchPartial, name);
-
+            String matchString = "(";
+            for (int i = 0; i < ProcessNames.length; i++) {
+                if (i != 0 ) matchString += " OR ";
+                matchString += String.format(matchPartial, ProcessNames[i]);
+            }
             matchString += ")";
 
             WIN32_PID_QUERY[WIN32_PID_QUERY_INPUT_INDEX] = matchString;
@@ -157,15 +156,23 @@ public class TaskControl {
                 }
             }
         } else {
-            for (String processName : ProcessNames) {
-                POSIX_PID_QUERY[POSIX_PID_QUERY_INPUT_INDEX] = processName;
-                String data = ShellUtilities.executeRaw(POSIX_PID_QUERY);
+            String matchString = "";
+            for (int i = 0; i < ProcessNames.length; i++) {
+                if (i != 0 ) matchString += "|";
+                matchString += ProcessNames[i];
+            }
 
-                //Splitting an empty string results in a 1 element array, this is not what we want
-                if (!data.isEmpty()) {
-                    response = data.split("\\s*\\r?\\n");
-                    Collections.addAll(pidList, response);
-                }
+            String data;
+            if (exactMatch) {
+                data = ShellUtilities.executeRaw("pgrep", "-x", matchString);
+            } else {
+                data = ShellUtilities.executeRaw("pgrep", matchString);
+            }
+
+            //Splitting an empty string results in a 1 element array, this is not what we want
+            if (!data.isEmpty()) {
+                response = data.split("\\s*\\r?\\n");
+                Collections.addAll(pidList, response);
             }
         }
         return pidList;

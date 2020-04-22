@@ -104,9 +104,9 @@ public class TaskControl {
         return success;
     }
 
-    public static ArrayList<Path> locateProcessPath(String ProcessName, boolean exactMatch) throws IOException {
+    public static ArrayList<Path> locateProcessPaths(boolean exactMatch, String ... ProcessNames) throws IOException {
         ArrayList<Path> pathList = new ArrayList<>();
-        ArrayList<String> pidArray = getRootPIDs(ProcessName,exactMatch);
+        ArrayList<String> pidArray = getRootPIDs(exactMatch, ProcessNames);
         if (SystemUtilities.isWindows()) {
             for(String pid : pidArray) {
                 WIN32_PATH_QUERY[WIN32_PATH_QUERY_INPUT_INDEX] = "ProcessId=" + pid;
@@ -123,19 +123,20 @@ public class TaskControl {
         return pathList;
     }
 
-    public static ArrayList<String> getRootPIDs(String ProcessName, boolean exactMatch) {
+    public static ArrayList<String> getRootPIDs(boolean exactMatch, String ... ProcessNames) {
         String[] response;
         ArrayList<String> pidList = new ArrayList<>();
 
+        if (ProcessNames.length == 0) return pidList;
+
         if (SystemUtilities.isWindows()) {
             ArrayList<String> parentPIDList = new ArrayList<>();
-            String matchString;
+            String matchPartial = exactMatch ? "Name='%s'" : "Name like '/%%s/%'";
+            String matchString = "(" + String.format(matchPartial, ProcessNames[0]);
 
-            if (exactMatch) {
-                matchString = "Name='" + ProcessName + "'";
-            } else {
-                matchString = "Name like '%" + ProcessName + "%'";
-            }
+            for (String name : ProcessNames) matchString += " OR " + String.format(matchPartial, name);
+
+            matchString += ")";
 
             WIN32_PID_QUERY[WIN32_PID_QUERY_INPUT_INDEX] = matchString;
             response = ShellUtilities.executeRaw(WIN32_PID_QUERY).split("[\\r\\n]+");
@@ -156,14 +157,16 @@ public class TaskControl {
                 }
             }
         } else {
-            POSIX_PID_QUERY[POSIX_PID_QUERY_INPUT_INDEX] = ProcessName;
-            String data = ShellUtilities.executeRaw(POSIX_PID_QUERY);
+            for (String processName : ProcessNames) {
+                POSIX_PID_QUERY[POSIX_PID_QUERY_INPUT_INDEX] = processName;
+                String data = ShellUtilities.executeRaw(POSIX_PID_QUERY);
 
-            //Splitting an empty string results in a 1 element array, this is not what we want
-            if (data.isEmpty()) return pidList;
-
-            response = data.split("\\s*\\r?\\n");
-            Collections.addAll(pidList, response);
+                //Splitting an empty string results in a 1 element array, this is not what we want
+                if (!data.isEmpty()) {
+                    response = data.split("\\s*\\r?\\n");
+                    Collections.addAll(pidList, response);
+                }
+            }
         }
         return pidList;
     }

@@ -171,11 +171,15 @@ public class FirefoxCertificateInstaller {
 
         String fileExtention = SystemUtilities.isWindows() ? ".exe" : "";
 
-        for (AppAlias.Alias alias : AppAlias.FIREFOX.getAliases()) {
-            processPaths.addAll(TaskControl.locateProcessPath(alias.posix + fileExtention, true));
+        AppAlias.Alias[] aliases = AppAlias.FIREFOX.getAliases();
+        String[] appNames = new String[aliases.length];
+        for (int i = 0; i < appNames.length; i++) {
+            appNames[i] = aliases[i].posix + fileExtention;
         }
-        //Todo Remove this debugging log
-        log.warn(processPaths.toString());
+
+        processPaths.addAll(TaskControl.locateProcessPaths(true,appNames));
+
+        log.warn("Found " + processPaths.toString() + " running");
         for (AppLocator app : appList) {
             Path appPath = Paths.get(app.getPath()).toRealPath();
             //todo change app.getPath to return a path object?

@@ -18,7 +18,7 @@ public class AppFinderTests {
 
     private static void runTest(AppAlias app) {
         Date begin = new Date();
-        ArrayList<AppInfo> appList = AppLocator.locate(app);
+        ArrayList<AppInfo> appList = AppLocator.getInstance().locate(app);
 
         StringBuilder output = new StringBuilder("Found apps:\n");
         for (AppInfo info : appList) {

@@ -1,17 +1,24 @@
 package qz.installer.certificate.firefox.locator;
 
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.ShellUtilities;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 
-public class LinuxAppLocator {
+public class LinuxAppLocator extends AppLocator {
     private static final Logger log = LoggerFactory.getLogger(LinuxAppLocator.class);
 
-    public static ArrayList<AppInfo> findApp(AppAlias appAlias) {
+    public ArrayList<AppInfo> locate(AppAlias appAlias) {
         ArrayList<AppInfo> appList = new ArrayList<>();
 
         // Workaround for calling "firefox --version" as sudo
@@ -22,11 +29,13 @@ public class LinuxAppLocator {
 
             // Add non-standard app search locations (e.g. Fedora)
             for (String dirname : appendPaths(alias.posix, "/usr/lib/$/bin", "/usr/lib64/$/bin")) {
-                File file = new File(dirname, alias.posix);
-                if (file.isFile() && file.canExecute()) {
+                Path path = Paths.get(dirname, alias.posix);
+                if (Files.isRegularFile(path) && Files.isExecutable(path)) {
                     try {
-                        file = file.getCanonicalFile(); // fix symlinks
-                        AppInfo appInfo = new AppInfo(alias.name, file.getCanonicalPath(), file.getParentFile().getCanonicalPath());
+                        File file = path.toFile().getCanonicalFile(); // fix symlinks
+                        file = new File(FilenameUtils.removeExtension(file.getPath()));//firefox workaround, changes firefox.sh to firefox
+
+                        AppInfo appInfo = new AppInfo(alias.name, file.getParentFile().getCanonicalPath(), file.getCanonicalPath());
                         appList.add(appInfo);
 
                         // Call "--version" on executable to obtain version information
@@ -53,6 +62,46 @@ public class LinuxAppLocator {
         return appList;
     }
 
+    @Override
+    public ArrayList<String> getPids(boolean exactMatch, ArrayList<String> processNames) {
+        String[] response;
+        ArrayList<String> pidList = new ArrayList<>();
+
+        if (processNames.size() == 0) return pidList;
+
+        //todo quote this
+        String matchString = String.join("|", processNames);
+
+        String data;
+        if (exactMatch) {
+            data = ShellUtilities.executeRaw("pgrep", "-x", matchString);
+        } else {
+            data = ShellUtilities.executeRaw("pgrep", matchString);
+        }
+
+        //Splitting an empty string results in a 1 element array, this is not what we want
+        if (!data.isEmpty()) {
+            response = data.split("\\s*\\r?\\n");
+            Collections.addAll(pidList, response);
+        }
+
+        return pidList;
+    }
+
+    @Override
+    public ArrayList<Path> locateProcessPaths(boolean exactMatch, ArrayList<String> pids) {
+        ArrayList<Path> pathList = new ArrayList<>();
+
+        for(String pid : pids) {
+            try {
+                pathList.add(Paths.get("/proc/", pid, "/exe").toRealPath());
+            } catch(IOException e) {
+                log.warn("Process %s vanished", pid);
+            }
+        }
+
+        return pathList;
+    }
 
     /**
      * Returns a PATH value with provided paths appended, replacing "$" with POSIX app name
@@ -61,7 +110,7 @@ public class LinuxAppLocator {
      * Usage: appendPaths("firefox", "/usr/lib64");
      *
      */
-    public static String[] appendPaths(String posix, String ... prefixes) {
+    private static String[] appendPaths(String posix, String ... prefixes) {
         String newPath = System.getenv("PATH");
         for (String prefix : prefixes) {
             newPath = newPath + File.pathSeparator + prefix.replaceAll("\\$", posix);

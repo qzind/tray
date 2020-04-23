@@ -1,7 +1,6 @@
 package qz.installer;
 
 import com.sun.jna.platform.win32.Kernel32;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,29 +10,18 @@ import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-import static qz.common.Constants.ABOUT_TITLE;
 import static qz.common.Constants.PROPS_FILE;
-import static qz.installer.Installer.InstallType.PREINSTALL;
 
 public class TaskControl {
     protected static final Logger log = LoggerFactory.getLogger(TaskControl.class);
+    //todo will cmd get killed
     private static final String[] JAVA_PID_QUERY_POSIX = {"pgrep", "java" };
     private static final String[] TRAY_PID_QUERY_POSIX = {"pgrep", "-f", PROPS_FILE + ".jar" };
     private static final String[] KILL_PID_CMD_POSIX = {"kill", "-9", ""/*pid placeholder*/};
-
-    private static final String[] WIN32_PID_QUERY = {"wmic.exe", "process", "where", null, "get", "parentprocessid,", "processid"};
-    private static final int WIN32_PID_QUERY_INPUT_INDEX = 3;
-
-    private static final String[] WIN32_PATH_QUERY = {"wmic.exe", "process", "where", null, "get", "ExecutablePath"};
-    private static final int WIN32_PATH_QUERY_INPUT_INDEX = 3;
 
     private static final String[] JAVA_PID_QUERY_WIN32 = {"wmic.exe", "process", "where", "Name like '%java%'", "get", "processid" };
     private static final String[] TRAY_PID_QUERY_WIN32 = {"wmic.exe", "process", "where", "CommandLine like '%" + PROPS_FILE + ".jar" + "%'", "get", "processid" };
@@ -99,82 +87,5 @@ public class TaskControl {
         }
 
         return success;
-    }
-
-    public static ArrayList<Path> locateProcessPaths(boolean exactMatch, String ... ProcessNames) throws IOException {
-        ArrayList<Path> pathList = new ArrayList<>();
-        ArrayList<String> pidArray = getRootPIDs(exactMatch, ProcessNames);
-        if (SystemUtilities.isWindows()) {
-            for(String pid : pidArray) {
-                WIN32_PATH_QUERY[WIN32_PATH_QUERY_INPUT_INDEX] = "ProcessId=" + pid;
-                String[] response = ShellUtilities.executeRaw(WIN32_PATH_QUERY).split("\\s*\\r?\\n");
-                if (response.length > 1) {
-                    pathList.add(Paths.get(response[1]).toRealPath());
-                }
-            }
-        } else {
-            for(String pid : pidArray) {
-                pathList.add(Paths.get("/proc/", pid, "/exe").toRealPath());
-            }
-        }
-        return pathList;
-    }
-
-    public static ArrayList<String> getRootPIDs(boolean exactMatch, String ... ProcessNames) {
-        String[] response;
-        ArrayList<String> pidList = new ArrayList<>();
-
-        if (ProcessNames.length == 0) return pidList;
-
-        if (SystemUtilities.isWindows()) {
-            ArrayList<String> parentPIDList = new ArrayList<>();
-            String matchPartial = exactMatch ? "Name='%s'" : "Name like '/%%s/%'";
-
-            String matchString = "(";
-            for (int i = 0; i < ProcessNames.length; i++) {
-                if (i != 0 ) matchString += " OR ";
-                matchString += String.format(matchPartial, ProcessNames[i]);
-            }
-            matchString += ")";
-
-            WIN32_PID_QUERY[WIN32_PID_QUERY_INPUT_INDEX] = matchString;
-            response = ShellUtilities.executeRaw(WIN32_PID_QUERY).split("[\\r\\n]+");
-
-            // Skip the first result (the first row is column headers)
-            for (int i = 1; i < response.length; i++) {
-                String[] row =  response[i].split("[\\s,]+");
-
-                parentPIDList.add(row[0]);
-                pidList.add(row[1]);
-            }
-
-            // Remove all PIDs that have a parent of the same name
-            for (int i = pidList.size() - 1; i >= 0; i--){
-                if (pidList.contains(parentPIDList.get(i))) {
-                    pidList.remove(i);
-                    parentPIDList.remove(i);
-                }
-            }
-        } else {
-            String matchString = "";
-            for (int i = 0; i < ProcessNames.length; i++) {
-                if (i != 0 ) matchString += "|";
-                matchString += ProcessNames[i];
-            }
-
-            String data;
-            if (exactMatch) {
-                data = ShellUtilities.executeRaw("pgrep", "-x", matchString);
-            } else {
-                data = ShellUtilities.executeRaw("pgrep", matchString);
-            }
-
-            //Splitting an empty string results in a 1 element array, this is not what we want
-            if (!data.isEmpty()) {
-                response = data.split("\\s*\\r?\\n");
-                Collections.addAll(pidList, response);
-            }
-        }
-        return pidList;
     }
 }

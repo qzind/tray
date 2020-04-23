@@ -15,7 +15,6 @@ import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
-import qz.installer.TaskControl;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.firefox.locator.AppAlias;
 import qz.installer.certificate.firefox.locator.AppInfo;
@@ -49,6 +48,7 @@ public class FirefoxCertificateInstaller {
     private static final Version WINDOWS_POLICY_VERSION = Version.valueOf("62.0.0");
     private static final Version MAC_POLICY_VERSION = Version.valueOf("63.0.0");
     private static final Version LINUX_POLICY_VERSION = Version.valueOf("65.0.0");
+    private static final Version MIN_FIREFOX_VERSION = Version.valueOf("60.0.0");
 
     private static String ENTERPRISE_ROOT_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
     private static String INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
@@ -58,7 +58,7 @@ public class FirefoxCertificateInstaller {
     public static final String MAC_POLICY_LOCATION = "Contents/Resources/" + POLICY_LOCATION;
 
     public static void install(X509Certificate cert, String ... hostNames) {
-        ArrayList<AppInfo> appList = AppLocator.locate(AppAlias.FIREFOX);
+        ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
         for(AppInfo appInfo : appList) {
             if(honorsPolicy(appInfo)) {
                 log.info("Installing Firefox ({}) enterprise root certificate policy {}", appInfo.getName(), appInfo.getPath());
@@ -73,24 +73,20 @@ public class FirefoxCertificateInstaller {
                 }
             }
         }
-        try {
-            restartFirefox(appList);
-        } catch(IOException e) {
-            log.warn("Unable to restart Firefox, this will have to be done manually.", e);
-        }
+        restartFirefox(appList);
     }
 
     public static void uninstall() {
-        ArrayList<AppInfo> appList = AppLocator.locate(AppAlias.FIREFOX);
+        ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
         for(AppInfo appInfo : appList) {
             if(honorsPolicy(appInfo)) {
                 if(SystemUtilities.isWindows() || SystemUtilities.isMac()) {
                     log.info("Skipping uninstall of Firefox enterprise root certificate policy {}", appInfo.getPath());
                 } else {
                     try {
-                        File policy = Paths.get(appInfo.getPath(), POLICY_LOCATION).toFile();
+                        File policy = appInfo.getPath().resolve(POLICY_LOCATION).toFile();
                         if(policy.exists()) {
-                            JsonWriter.write(Paths.get(appInfo.getPath(), POLICY_LOCATION).toString(), INSTALL_CERT_POLICY, false, true);
+                            JsonWriter.write(appInfo.getPath().resolve(POLICY_LOCATION).toString(), INSTALL_CERT_POLICY, false, true);
                         }
                     } catch(IOException | JSONException e) {
                         log.warn("Unable to remove Firefox ({}) policy {}", appInfo.getName(), e);
@@ -119,7 +115,8 @@ public class FirefoxCertificateInstaller {
     }
 
     public static void installPolicy(AppInfo app, X509Certificate cert) {
-        Path jsonPath = Paths.get(app.getPath(), SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION);
+        // todo clean this up with path.resolve
+        Path jsonPath = Paths.get(app.getPath().toString(), SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION);
         String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? ENTERPRISE_ROOT_POLICY : INSTALL_CERT_POLICY;
         try {
             if(jsonPolicy.equals(INSTALL_CERT_POLICY)) {
@@ -162,54 +159,20 @@ public class FirefoxCertificateInstaller {
         }
     }
 
-    public static boolean checkRunning(AppLocator app, boolean isSilent) {
-        throw new UnsupportedOperationException();
-    }
+    //todo change name
+    public static void restartFirefox(ArrayList<AppInfo> appList) {
+        ArrayList<Path> processPaths = AppLocator.getRunningPaths(appList);
 
-    public static void restartFirefox(ArrayList<AppInfo> appList) throws IOException {
-        ArrayList<Path> processPaths = new ArrayList<>();
-        HashMap<AppInfo, Path> appsToRestart = new HashMap<>();
-
-        String fileExtention = SystemUtilities.isWindows() ? ".exe" : "";
-
-        AppAlias.Alias[] aliases = AppAlias.FIREFOX.getAliases();
-        String[] appNames = new String[aliases.length];
-        for (int i = 0; i < appNames.length; i++) {
-            appNames[i] = aliases[i].posix + fileExtention;
-        }
-
-        processPaths.addAll(TaskControl.locateProcessPaths(true,appNames));
-
-        log.warn("Found " + processPaths.toString() + " running");
         for (AppInfo appInfo : appList) {
-            Path appPath = Paths.get(appInfo.getPath()).toRealPath();
-            //todo change app.getPath to return a path object?
             for (Path processPath : processPaths) {
-                if (processPath.startsWith(appPath)) appsToRestart.put(appInfo, processPath);
+                if (processPath.equals(appInfo.getExePath())) {
+                    if (appInfo.getVersion().greaterThanOrEqualTo(MIN_FIREFOX_VERSION)) {
+                        ShellUtilities.executeRaw(processPath.toString(), "-private", "about:restartrequired");
+                    } else {
+                        log.warn("{} must be restarted for changes to take effect", appInfo.getName());
+                    }
+                }
             }
         }
-        String text = "The following must restart for the changes to take effect.";
-        boolean shouldPrompt = false;
-
-        for (Map.Entry<AppInfo, Path> pair: appsToRestart.entrySet()) {
-            AppInfo appInfo = pair.getKey();
-
-            if (appInfo.getVersion().lessThan(Version.forIntegers(60))) {
-                shouldPrompt = true;
-                text += "\n" + appInfo.getName() + " Version: " + appInfo.getVersion();
-            } else {
-                executeRestartRequired(pair.getValue());
-            }
-        }
-
-        if (shouldPrompt) {
-            //Todo Remove this debugging log
-            log.warn(text);
-        }
-    }
-
-    public static void executeRestartRequired(Path processPath) {
-        String[] cmd = {processPath.toString(), "-private", "about:restartrequired"};
-        ShellUtilities.executeRaw(cmd);
     }
 }

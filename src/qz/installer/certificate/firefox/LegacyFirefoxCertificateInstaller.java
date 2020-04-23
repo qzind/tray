@@ -19,6 +19,7 @@ import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.security.cert.CertificateEncodingException;
 import java.util.*;
 
@@ -54,14 +55,14 @@ public class LegacyFirefoxCertificateInstaller {
     }
 
     public static File tryWrite(AppInfo appInfo, boolean mkdirs, String ... paths) throws IOException {
-        String dir = appInfo.getPath();
+        Path dir = appInfo.getPath();
         if (SystemUtilities.isMac()) {
-            dir += File.separator + MAC_PREFIX;
+            dir = dir.resolve(MAC_PREFIX);
         }
         for (String path : paths) {
-            dir += File.separator + path;
+            dir = dir.resolve(path);
         }
-        File file = new File(dir);
+        File file = dir.toFile();
 
         if(mkdirs) file.mkdirs();
         if(file.exists() && file.isDirectory() && file.canWrite()) {

@@ -1,5 +1,10 @@
 package qz.installer.certificate.firefox.locator;
 
+import com.sun.jna.Library;
+import com.sun.jna.Memory;
+import com.sun.jna.Native;
+import com.sun.jna.Pointer;
+import com.sun.jna.ptr.IntByReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -12,10 +17,13 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.regex.Pattern;
 
-public class MacAppLocator {
+public class MacAppLocator extends AppLocator{
     protected static final Logger log = LoggerFactory.getLogger(MacAppLocator.class);
 
     private static String[] BLACKLIST = new String[]{ "/Volumes/", "/.Trash/", "/Applications (Parallels)/" };
@@ -55,7 +63,8 @@ public class MacAppLocator {
         }
     }
 
-    public static ArrayList<AppInfo> findApp(AppAlias appAlias) {
+    @Override
+    public ArrayList<AppInfo> locate(AppAlias appAlias) {
         ArrayList<AppInfo> appList = new ArrayList<>();
         Document doc;
 
@@ -94,7 +103,8 @@ public class MacAppLocator {
         for(AppInfo appInfo : appList) {
             // Mark blacklisted locations
             for(String listEntry : BLACKLIST) {
-                if (appInfo.getPath() != null && appInfo.getPath().matches(Pattern.quote(listEntry))) {
+                //todo clean this up
+                if (appInfo.getPath() != null && appInfo.getPath().toString().matches(Pattern.quote(listEntry))) {
                     appInfo.setBlacklisted(true);
                 }
             }
@@ -104,11 +114,49 @@ public class MacAppLocator {
         return appList;
     }
 
+    @Override
+    public ArrayList<String> getPids(boolean exactMatch, ArrayList<String> processNames) {
+        String[] response;
+        ArrayList<String> pidList = new ArrayList<>();
+
+        if (processNames.size() == 0) return pidList;
+
+        //todo make this quoted to support spaces
+        String matchString = String.join("|", processNames);
+
+        String data;
+        if (exactMatch) {
+            data = ShellUtilities.executeRaw("pgrep", "-x", matchString);
+        } else {
+            data = ShellUtilities.executeRaw("pgrep", matchString);
+        }
+
+        //Splitting an empty string results in a 1 element array, this is not what we want
+        if (!data.isEmpty()) {
+            response = data.split("\\s*\\r?\\n");
+            Collections.addAll(pidList, response);
+        }
+
+        return pidList;
+    }
+
+    @Override
+    public ArrayList<Path> locateProcessPaths(boolean exactMatch, ArrayList<String> pids) {
+        ArrayList<Path> processPaths = new ArrayList();
+        for (String pid : pids) {
+            Pointer buf = new Memory(SystemB.PROC_PIDPATHINFO_MAXSIZE);
+            SystemB.INSTANCE.proc_pidpath(Integer.parseInt(pid), buf, SystemB.PROC_PIDPATHINFO_MAXSIZE);
+            processPaths.add(Paths.get(buf.getString(0).trim()));
+        }
+        return processPaths;
+    }
+
     /**
      * Calculate executable path by parsing Contents/Info.plist
      */
     private static String getExePath(AppInfo appInfo) {
-        File plist = new File(appInfo.getPath(), "Contents/Info.plist");
+        //todo clean this up with path.resolve
+        File plist = new File(appInfo.getPath().toString(), "Contents/Info.plist");
         Document doc;
         try {
             if(!plist.exists()) {
@@ -138,5 +186,14 @@ public class MacAppLocator {
             }
         }
         return null;
+    }
+
+    private interface SystemB extends Library {
+        SystemB INSTANCE = Native.loadLibrary("System", SystemB.class);
+        int PROC_ALL_PIDS = 1;
+        int PROC_PIDPATHINFO_MAXSIZE = 1024 * 4;
+        int sysctlbyname(String name, Pointer oldp, IntByReference oldlenp, Pointer newp, int newlen);
+        int proc_listpids(int type, int typeinfo, int[] buffer, int buffersize);
+        int proc_pidpath(int pid, Pointer buffer, int buffersize);
     }
 }

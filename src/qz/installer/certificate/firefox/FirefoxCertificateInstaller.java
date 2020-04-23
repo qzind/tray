@@ -31,8 +31,6 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Installs the Firefox Policy file via Policy file or AutoConfig, depending on the version
@@ -48,7 +46,7 @@ public class FirefoxCertificateInstaller {
     private static final Version WINDOWS_POLICY_VERSION = Version.valueOf("62.0.0");
     private static final Version MAC_POLICY_VERSION = Version.valueOf("63.0.0");
     private static final Version LINUX_POLICY_VERSION = Version.valueOf("65.0.0");
-    private static final Version MIN_FIREFOX_VERSION = Version.valueOf("60.0.0");
+    private static final Version FIREFOX_RESTART_VERSION = Version.valueOf("60.0.0");
 
     private static String ENTERPRISE_ROOT_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
     private static String INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
@@ -59,8 +57,9 @@ public class FirefoxCertificateInstaller {
 
     public static void install(X509Certificate cert, String ... hostNames) {
         ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
+        ArrayList<Path> processPaths = null;
         for(AppInfo appInfo : appList) {
-            if(honorsPolicy(appInfo)) {
+            if (honorsPolicy(appInfo)) {
                 log.info("Installing Firefox ({}) enterprise root certificate policy {}", appInfo.getName(), appInfo.getPath());
                 installPolicy(appInfo, cert);
             } else {
@@ -68,12 +67,24 @@ public class FirefoxCertificateInstaller {
                 try {
                     String certData = Base64.getEncoder().encodeToString(cert.getEncoded());
                     LegacyFirefoxCertificateInstaller.installAutoConfigScript(appInfo, certData, hostNames);
-                } catch(CertificateEncodingException e) {
+                }
+                catch(CertificateEncodingException e) {
                     log.warn("Unable to install auto-config script to {}", appInfo.getPath(), e);
                 }
             }
+            // If installed, look for running versions; issue restart warning
+            if (appInfo.getVersion().greaterThanOrEqualTo(FIREFOX_RESTART_VERSION)) {
+                if(processPaths == null)  processPaths = AppLocator.getRunningPaths(appList);
+                for (Path processPath : processPaths) {
+                    if (processPath.equals(appInfo.getExePath())) {
+                        // Use undocumented "-private" flag, prevents tab from persisting
+                        ShellUtilities.executeRaw(processPath.toString(), "-private", "about:restartrequired");
+                    }
+                }
+            } else {
+                log.warn("{} must be restarted for changes to take effect", appInfo.getName());
+            }
         }
-        restartFirefox(appList);
     }
 
     public static void uninstall() {
@@ -92,7 +103,6 @@ public class FirefoxCertificateInstaller {
                         log.warn("Unable to remove Firefox ({}) policy {}", appInfo.getName(), e);
                     }
                 }
-
             } else {
                 log.info("Uninstalling Firefox auto-config script {}", appInfo.getPath());
                 LegacyFirefoxCertificateInstaller.uninstallAutoConfigScript(appInfo);
@@ -115,8 +125,7 @@ public class FirefoxCertificateInstaller {
     }
 
     public static void installPolicy(AppInfo app, X509Certificate cert) {
-        // todo clean this up with path.resolve
-        Path jsonPath = Paths.get(app.getPath().toString(), SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION);
+        Path jsonPath = app.getPath().resolve(SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION);
         String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? ENTERPRISE_ROOT_POLICY : INSTALL_CERT_POLICY;
         try {
             if(jsonPolicy.equals(INSTALL_CERT_POLICY)) {
@@ -156,23 +165,6 @@ public class FirefoxCertificateInstaller {
             jsonFile.setReadable(true, false);
         } catch(JSONException | IOException e) {
             log.warn("Could not install enterprise policy {} to {}", jsonPolicy, jsonPath.toString(), e);
-        }
-    }
-
-    //todo change name
-    public static void restartFirefox(ArrayList<AppInfo> appList) {
-        ArrayList<Path> processPaths = AppLocator.getRunningPaths(appList);
-
-        for (AppInfo appInfo : appList) {
-            for (Path processPath : processPaths) {
-                if (processPath.equals(appInfo.getExePath())) {
-                    if (appInfo.getVersion().greaterThanOrEqualTo(MIN_FIREFOX_VERSION)) {
-                        ShellUtilities.executeRaw(processPath.toString(), "-private", "about:restartrequired");
-                    } else {
-                        log.warn("{} must be restarted for changes to take effect", appInfo.getName());
-                    }
-                }
-            }
         }
     }
 }

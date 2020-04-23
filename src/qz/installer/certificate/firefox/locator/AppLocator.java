@@ -5,6 +5,7 @@ import qz.utils.SystemUtilities;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public abstract class AppLocator {
     protected static final org.slf4j.Logger log = LoggerFactory.getLogger(AppLocator.class);
@@ -12,10 +13,15 @@ public abstract class AppLocator {
     private static AppLocator INSTANCE = getPlatformSpecificAppLocator();
 
     public abstract ArrayList<AppInfo> locate(AppAlias appAlias);
-    //todo bool for child culling?
-    public abstract ArrayList<String> getPids(boolean exactMatch, ArrayList<String> processNames);
-    public abstract ArrayList<Path> locateProcessPaths(boolean exactMatch, ArrayList<String> pids);
+    public abstract ArrayList<Path> getPidPaths(ArrayList<String> pids);
+    public abstract ArrayList<String> getPids(boolean parentPids, ArrayList<String> processNames);
 
+    public ArrayList<String> getPids(ArrayList<String> processNames) {
+        return getPids(true, processNames);
+    }
+    public ArrayList<String> getPids(boolean parentPids, String ... processNames) {
+        return getPids(parentPids, new ArrayList<>(Arrays.asList(processNames)));
+    }
     public static ArrayList<Path> getRunningPaths(ArrayList<AppInfo> appList) {
         ArrayList<String> appNames = new ArrayList<>();
         for (AppInfo app : appList) {
@@ -23,9 +29,7 @@ public abstract class AppLocator {
             if (!appNames.contains(exeName)) appNames.add(exeName);
         }
 
-        ArrayList<String> pids = INSTANCE.getPids(true, appNames);
-        ArrayList<Path> processPaths = INSTANCE.locateProcessPaths(true, pids);
-        return processPaths;
+        return INSTANCE.getPidPaths(INSTANCE.getPids(appNames));
     }
 
     public static AppLocator getInstance() {

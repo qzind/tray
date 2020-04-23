@@ -35,7 +35,7 @@ public class LinuxAppLocator extends AppLocator {
                         File file = path.toFile().getCanonicalFile(); // fix symlinks
                         file = new File(FilenameUtils.removeExtension(file.getPath()));//firefox workaround, changes firefox.sh to firefox
 
-                        AppInfo appInfo = new AppInfo(alias.name, file.getParentFile().getCanonicalPath(), file.getCanonicalPath());
+                        AppInfo appInfo = new AppInfo(alias.name, file.toPath());
                         appList.add(appInfo);
 
                         // Call "--version" on executable to obtain version information
@@ -63,21 +63,14 @@ public class LinuxAppLocator extends AppLocator {
     }
 
     @Override
-    public ArrayList<String> getPids(boolean exactMatch, ArrayList<String> processNames) {
+    public ArrayList<String> getPids(boolean unused, ArrayList<String> processNames) {
         String[] response;
         ArrayList<String> pidList = new ArrayList<>();
 
         if (processNames.size() == 0) return pidList;
 
-        //todo quote this
-        String matchString = String.join("|", processNames);
-
-        String data;
-        if (exactMatch) {
-            data = ShellUtilities.executeRaw("pgrep", "-x", matchString);
-        } else {
-            data = ShellUtilities.executeRaw("pgrep", matchString);
-        }
+        // Quoting handled by the command processor (e.g. pgrep -x "myapp|my app" is perfectly valid)
+        String data = ShellUtilities.executeRaw("pgrep", "-x", String.join("|", processNames));
 
         //Splitting an empty string results in a 1 element array, this is not what we want
         if (!data.isEmpty()) {
@@ -89,7 +82,7 @@ public class LinuxAppLocator extends AppLocator {
     }
 
     @Override
-    public ArrayList<Path> locateProcessPaths(boolean exactMatch, ArrayList<String> pids) {
+    public ArrayList<Path> getPidPaths(ArrayList<String> pids) {
         ArrayList<Path> pathList = new ArrayList<>();
 
         for(String pid : pids) {

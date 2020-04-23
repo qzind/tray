@@ -13,6 +13,7 @@ package qz.installer.certificate.firefox.locator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.ShellUtilities;
+import qz.utils.SystemUtilities;
 import qz.utils.WindowsUtilities;
 
 
@@ -57,23 +58,14 @@ public class WindowsAppLocator extends AppLocator{
     }
 
     @Override
-    public ArrayList<String> getPids(boolean exactMatch, ArrayList<String> processNames) {
-        String[] response;
+    public ArrayList<String> getPids(boolean parentPids, ArrayList<String> processNames) {
         ArrayList<String> pidList = new ArrayList<>();
-
         ArrayList<String> parentPIDList = new ArrayList<>();
-
-        String matchPrefix = exactMatch ? "Name='" : "Name like '/%";
-        String matchSufix = exactMatch ? "'" : "/%'";
 
         if (processNames.isEmpty()) return pidList;
 
-        String matchString = "(" + matchPrefix;
-        matchString += String.join(matchSufix + " OR " + matchPrefix, processNames);
-        matchString += matchSufix + ")";
-
-        WIN32_PID_QUERY[WIN32_PID_QUERY_INPUT_INDEX] = matchString;
-        response = ShellUtilities.executeRaw(WIN32_PID_QUERY).split("[\\r\\n]+");
+        WIN32_PID_QUERY[WIN32_PID_QUERY_INPUT_INDEX] = "(Name='" + String.join("' OR '", processNames) + "')";
+        String[] response = ShellUtilities.executeRaw(WIN32_PID_QUERY).split("[\\r\\n]+");
 
         // Skip the first result (the first row is column headers)
         for (int i = 1; i < response.length; i++) {
@@ -83,18 +75,29 @@ public class WindowsAppLocator extends AppLocator{
             pidList.add(row[1]);
         }
 
-        // Remove all processes that are child to another process in this set
-        for (int i = pidList.size() - 1; i >= 0; i--){
-            if (pidList.contains(parentPIDList.get(i))) {
-                pidList.remove(i);
-                parentPIDList.remove(i);
+        if(parentPids) {
+            // Remove all processes that are child to another process in this set
+            for(int i = pidList.size() - 1; i >= 0; i--) {
+                if (pidList.contains(parentPIDList.get(i))) {
+                    pidList.remove(i);
+                    parentPIDList.remove(i);
+                }
             }
         }
+
+        if(SystemUtilities.isWindowsXP()) {
+            // Cleanup XP crumbs per https://stackoverflow.com/q/12391655/3196753
+            File f = new File("TempWmicBatchFile.bat");
+            if(f.exists()) {
+                f.deleteOnExit();
+            }
+        }
+
         return pidList;
     }
 
     @Override
-    public ArrayList<Path> locateProcessPaths(boolean exactMatch, ArrayList<String> pids) {
+    public ArrayList<Path> getPidPaths(ArrayList<String> pids) {
         ArrayList<Path> pathList = new ArrayList<>();
 
         for(String pid : pids) {
@@ -112,6 +115,9 @@ public class WindowsAppLocator extends AppLocator{
         return pathList;
     }
 
+    /**
+     * Use a proprietary Firefox-only technique for getting "PathToExe" registry value
+     */
     private static AppInfo getAppInfo(String name, String key, String suffix) {
         String version = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "CurrentVersion");
         if (version != null) {
@@ -122,13 +128,12 @@ public class WindowsAppLocator extends AppLocator{
                 }
                 version = version + suffix;
             }
-            String exePath = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key + " " + version + "\\bin", "PathToExe");
+            Path exePath = Paths.get(WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key + " " + version + "\\bin", "PathToExe"));
 
             if (exePath != null) {
                 // SemVer: Replace spaces in suffixes with dashes
-                String path = new File(exePath).getParent();
                 version = version.replaceAll(" ", "-");
-                return new AppInfo(name, path, exePath, version);
+                return new AppInfo(name, exePath, version);
             }
         }
         return null;

@@ -55,7 +55,7 @@ public class MacAppLocator extends AppLocator{
         private void set(Node node, AppInfo info) {
             switch(this) {
                 case NAME: info.setName(node.getTextContent()); break;
-                case PATH: info.setPath(node.getTextContent()); break;
+                case PATH: info.setPath(Paths.get(node.getTextContent())); break;
                 case VERSION: info.setVersion(node.getTextContent()); break;
                 default: throw new UnsupportedOperationException(this.name() + " not supported");
             }
@@ -115,7 +115,7 @@ public class MacAppLocator extends AppLocator{
     }
 
     @Override
-    public ArrayList<String> getPids(boolean exactMatch, ArrayList<String> processNames) {
+    public ArrayList<String> getPids(boolean parentPids, ArrayList<String> processNames) {
         String[] response;
         ArrayList<String> pidList = new ArrayList<>();
 
@@ -125,7 +125,7 @@ public class MacAppLocator extends AppLocator{
         String matchString = String.join("|", processNames);
 
         String data;
-        if (exactMatch) {
+        if (parentPids) {
             data = ShellUtilities.executeRaw("pgrep", "-x", matchString);
         } else {
             data = ShellUtilities.executeRaw("pgrep", matchString);
@@ -141,7 +141,7 @@ public class MacAppLocator extends AppLocator{
     }
 
     @Override
-    public ArrayList<Path> locateProcessPaths(boolean exactMatch, ArrayList<String> pids) {
+    public ArrayList<Path> getPidPaths(ArrayList<String> pids) {
         ArrayList<Path> processPaths = new ArrayList();
         for (String pid : pids) {
             Pointer buf = new Memory(SystemB.PROC_PIDPATHINFO_MAXSIZE);
@@ -154,17 +154,16 @@ public class MacAppLocator extends AppLocator{
     /**
      * Calculate executable path by parsing Contents/Info.plist
      */
-    private static String getExePath(AppInfo appInfo) {
-        //todo clean this up with path.resolve
-        File plist = new File(appInfo.getPath().toString(), "Contents/Info.plist");
+    private static Path getExePath(AppInfo appInfo) {
+        Path plist = appInfo.getPath().resolve("Contents/Info.plist");
         Document doc;
         try {
-            if(!plist.exists()) {
+            if(!plist.toFile().exists()) {
                 log.warn("Could not locate plist file for {}: {}",  appInfo.getName(), plist);
                 return null;
             }
             // Convert potentially binary plist files to XML
-            Process p = Runtime.getRuntime().exec(new String[] {"plutil", "-convert", "xml1", plist.getCanonicalPath(), "-o", "-"}, ShellUtilities.envp);
+            Process p = Runtime.getRuntime().exec(new String[] {"plutil", "-convert", "xml1", plist.toAbsolutePath().toString(), "-o", "-"}, ShellUtilities.envp);
             doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(p.getInputStream());
         } catch(IOException | ParserConfigurationException | SAXException e) {
             log.warn("Could not parse plist file for {}: {}", appInfo.getName(), plist, e);
@@ -181,7 +180,7 @@ public class MacAppLocator extends AppLocator{
                 if ("key".equals(node.getNodeName()) && node.getTextContent().equals("CFBundleExecutable")) {
                     upNext = true;
                 } else if (upNext && "string".equals(node.getNodeName())) {
-                    return String.format(appInfo.getPath() + "/Contents/MacOS/" + node.getTextContent());
+                    return appInfo.getPath().resolve("Contents/MacOS/" + node.getTextContent());
                 }
             }
         }

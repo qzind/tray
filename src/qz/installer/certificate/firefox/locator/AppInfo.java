@@ -3,7 +3,6 @@ package qz.installer.certificate.firefox.locator;
 import com.github.zafarkhaja.semver.Version;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Container class for installed app information
@@ -17,31 +16,17 @@ public class AppInfo {
 
     public AppInfo() {}
 
-    //todo remove unessesary constructors
-    public AppInfo(String name, String path, String exePath, String version) {
+    public AppInfo(String name, Path exePath, String version) {
         this.name = name;
-        this.path = Paths.get(path);
-        this.exePath = Paths.get(exePath);
-        this.version = parseVersion(version);
-    }
-
-    public AppInfo(String name, String path, String exePath) {
-        this.name = name;
-        this.path = Paths.get(path);
-        this.exePath = Paths.get(exePath);
-    }
-
-    public AppInfo(String name, Path path, Path exePath) {
-        this.name = name;
-        this.path = path;
-        this.exePath = exePath;
-    }
-
-    public AppInfo(String name, Path path, Path exePath, String version) {
-        this.name = name;
-        this.path = path;
+        this.path = exePath.getParent();
         this.exePath = exePath;
         this.version = parseVersion(version);
+    }
+
+    public AppInfo(String name, Path exePath) {
+        this.name = name;
+        this.path = exePath.getParent();
+        this.exePath = exePath;
     }
 
     public String getName() {
@@ -60,20 +45,12 @@ public class AppInfo {
         this.exePath = exePath;
     }
 
-    public void setExePath(String exePath) {
-        this.exePath = Paths.get(exePath);
-    }
-
     public Path getPath() {
         return path;
     }
 
     public void setPath(Path path) {
         this.path = path;
-    }
-
-    public void setPath(String path) {
-        this.path = Paths.get(path);
     }
 
     public Version getVersion() {

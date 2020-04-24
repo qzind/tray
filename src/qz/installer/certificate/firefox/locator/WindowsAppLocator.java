@@ -64,7 +64,7 @@ public class WindowsAppLocator extends AppLocator{
 
         if (processNames.isEmpty()) return pidList;
 
-        WIN32_PID_QUERY[WIN32_PID_QUERY_INPUT_INDEX] = "(Name='" + String.join("' OR '", processNames) + "')";
+        WIN32_PID_QUERY[WIN32_PID_QUERY_INPUT_INDEX] = "(Name='" + String.join("' OR Name='", processNames) + "')";
         String[] response = ShellUtilities.executeRaw(WIN32_PID_QUERY).split("[\\r\\n]+");
 
         // Skip the first result (the first row is column headers)
@@ -111,7 +111,6 @@ public class WindowsAppLocator extends AppLocator{
                 }
             }
         }
-
         return pathList;
     }
 

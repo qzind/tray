@@ -57,7 +57,6 @@ public class FirefoxCertificateInstaller {
 
     public static void install(X509Certificate cert, String ... hostNames) {
         ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
-        ArrayList<Path> processPaths = null;
         for(AppInfo appInfo : appList) {
             if (honorsPolicy(appInfo)) {
                 log.info("Installing Firefox ({}) enterprise root certificate policy {}", appInfo.getName(), appInfo.getPath());
@@ -72,17 +71,16 @@ public class FirefoxCertificateInstaller {
                     log.warn("Unable to install auto-config script to {}", appInfo.getPath(), e);
                 }
             }
-            // If installed, look for running versions; issue restart warning
-            if (appInfo.getVersion().greaterThanOrEqualTo(FIREFOX_RESTART_VERSION)) {
-                if(processPaths == null)  processPaths = AppLocator.getRunningPaths(appList);
-                for (Path processPath : processPaths) {
-                    if (processPath.equals(appInfo.getExePath())) {
-                        // Use undocumented "-private" flag, prevents tab from persisting
+
+            ArrayList<Path> processPaths = AppLocator.getRunningPaths(appList);
+            for (Path processPath : processPaths) {
+                if (processPath.equals(appInfo.getExePath())) {
+                    if (appInfo.getVersion().greaterThanOrEqualTo(FIREFOX_RESTART_VERSION)) {
                         ShellUtilities.executeRaw(processPath.toString(), "-private", "about:restartrequired");
+                    } else {
+                        log.warn("{} must be restarted for changes to take effect", appInfo.getName());
                     }
                 }
-            } else {
-                log.warn("{} must be restarted for changes to take effect", appInfo.getName());
             }
         }
     }

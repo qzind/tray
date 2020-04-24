@@ -3,6 +3,7 @@ package qz.installer.certificate.firefox.locator;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.SystemUtilities;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -105,7 +106,7 @@ public class LinuxAppLocator extends AppLocator {
 
         for(String pid : pids) {
             try {
-                pathList.add(Paths.get("/proc/", pid, "/exe").toRealPath());
+                pathList.add(Paths.get("/proc/", pid, !SystemUtilities.isSolaris() ? "/exe" : "/path/a.out").toRealPath());
             } catch(IOException e) {
                 log.warn("Process {} vanished", pid);
             }

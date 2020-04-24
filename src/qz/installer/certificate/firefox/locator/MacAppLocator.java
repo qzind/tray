@@ -103,7 +103,6 @@ public class MacAppLocator extends AppLocator{
         for(AppInfo appInfo : appList) {
             // Mark blacklisted locations
             for(String listEntry : BLACKLIST) {
-                //todo clean this up
                 if (appInfo.getPath() != null && appInfo.getPath().toString().matches(Pattern.quote(listEntry))) {
                     appInfo.setBlacklisted(true);
                 }

@@ -187,8 +187,25 @@ public class LinuxInstaller extends Installer {
         ArrayList<String> toExport = new ArrayList<>(Arrays.asList(SUDO_EXPORTS));
         for(String pid : pids) {
             try {
-                String delim = Pattern.compile("\0").pattern();
-                String[] vars = new String(Files.readAllBytes(Paths.get(String.format("/proc/%s/environ", pid)))).split(delim);
+                String[] vars;
+                if(SystemUtilities.isSolaris()) {
+                    // Use pargs -e $$ to get environment
+                    log.info("Reading environment info from [pargs, -e, {}]", pid);
+                    String pargs = ShellUtilities.executeRaw("pargs", "-e", pid);
+                    String delim = "]: ";
+                    vars = pargs.split("\\r?\\n");
+                    for(int i = 0; i < vars.length; i++) {
+                        if(vars[i].contains(delim)) {
+                            vars[i] = vars[i].substring(vars[i].indexOf(delim)).trim();
+                        }
+                    }
+                } else {
+                    // Assume /proc/$$/environ
+                    String environ = String.format("/proc/%s/environ", pid);
+                    String delim = Pattern.compile("\0").pattern();
+                    log.info("Reading environment info from {}", environ);
+                    vars = new String(Files.readAllBytes(Paths.get(environ))).split(delim);
+                }
                 for(String var : vars) {
                     String[] parts = var.split("=", 2);
                     if(parts.length == 2) {
@@ -208,7 +225,7 @@ public class LinuxInstaller extends Installer {
         }
 
         if(env.size() == 0) {
-            throw new Exception("Unable to get dbus info from /proc, can't spawn instance");
+            throw new Exception("Unable to get dbus info; can't spawn instance");
         }
 
         // Prepare the environment

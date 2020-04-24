@@ -32,6 +32,7 @@ import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntPredicate;
 
 /**
  * JavaFX container for taking HTML snapshots.
@@ -158,7 +159,7 @@ public class WebApp extends Application {
     public static synchronized void print(final PrinterJob job, final WebAppModel model) throws Throwable {
         model.setZoom(1); //vector prints do not need to use zoom
 
-        load(model, () -> {
+        load(model, (int frames) -> {
             try {
                 PageLayout layout = job.getJobSettings().getPageLayout();
                 if (model.isScaled()) {
@@ -205,6 +206,8 @@ public class WebApp extends Application {
                 });
             }
             catch(Exception e) { unlatch(e); }
+
+            return true; //only runs on first frame
         });
 
         log.trace("Waiting on print..");
@@ -232,25 +235,20 @@ public class WebApp extends Application {
         model.setWebWidth(model.getWebWidth() * increase);
         model.setWebHeight(model.getWebHeight() * increase);
 
-        load(model, () -> Platform.runLater(() -> new AnimationTimer() {
-            int frames = 0;
+        load(model, (int frames) -> {
+            if (frames == 2) {
+                log.debug("Attempting image capture");
 
-            @Override
-            public void handle(long l) {
-                if (++frames == 2) {
-                    log.debug("Attempting image capture");
+                webView.snapshot((snapshotResult) -> {
+                    capture.set(SwingFXUtils.fromFXImage(snapshotResult.getImage(), null));
+                    unlatch(null);
 
-                    webView.snapshot((snapshotResult) -> {
-                        capture.set(SwingFXUtils.fromFXImage(snapshotResult.getImage(), null));
-                        unlatch(null);
-
-                        return null;
-                    }, null, null);
-
-                    stop();
-                }
+                    return null;
+                }, null, null);
             }
-        }.start()));
+
+            return frames >= 2;
+        });
 
         log.trace("Waiting on capture..");
         captureLatch.await(); //released when unlatch is called
@@ -266,7 +264,7 @@ public class WebApp extends Application {
      * @param model  The model specifying the web page parameters.
      * @param action EventHandler that will be ran when the WebView completes loading.
      */
-    private static synchronized void load(WebAppModel model, Runnable action) {
+    private static synchronized void load(WebAppModel model, IntPredicate action) {
         captureLatch = new CountDownLatch(1);
         thrown.set(null);
 
@@ -293,7 +291,16 @@ public class WebApp extends Application {
 
             autosize(webView);
 
-            printAction = action;
+            printAction = () -> Platform.runLater(() -> new AnimationTimer() {
+                int frames = 0;
+
+                @Override
+                public void handle(long l) {
+                    if (action.test(++frames)) {
+                        stop();
+                    }
+                }
+            }.start());
 
             if (model.isPlainText()) {
                 webView.getEngine().loadContent(model.getSource(), "text/html");

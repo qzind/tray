@@ -115,32 +115,6 @@ public class MacAppLocator extends AppLocator{
     }
 
     @Override
-    public ArrayList<String> getPids(boolean parentPids, ArrayList<String> processNames) {
-        String[] response;
-        ArrayList<String> pidList = new ArrayList<>();
-
-        if (processNames.size() == 0) return pidList;
-
-        //todo make this quoted to support spaces
-        String matchString = String.join("|", processNames);
-
-        String data;
-        if (parentPids) {
-            data = ShellUtilities.executeRaw("pgrep", "-x", matchString);
-        } else {
-            data = ShellUtilities.executeRaw("pgrep", matchString);
-        }
-
-        //Splitting an empty string results in a 1 element array, this is not what we want
-        if (!data.isEmpty()) {
-            response = data.split("\\s*\\r?\\n");
-            Collections.addAll(pidList, response);
-        }
-
-        return pidList;
-    }
-
-    @Override
     public ArrayList<Path> getPidPaths(ArrayList<String> pids) {
         ArrayList<Path> processPaths = new ArrayList();
         for (String pid : pids) {

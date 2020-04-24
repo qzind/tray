@@ -9,13 +9,13 @@ package qz.installer;
  * this software. http://www.gnu.org/licenses/lgpl-2.1.html
  */
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.FileUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
-import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -120,6 +120,16 @@ public class MacInstaller extends Installer {
     }
 
     public void spawn(List<String> args) throws Exception {
-        throw new UnsupportedOperationException("Spawn is not yet support on Mac");
+        if(SystemUtilities.isAdmin()) {
+            // macOS unconventionally uses "$USER" during its install process
+            String whoami = System.getenv("USER");
+            if(whoami == null || whoami.isEmpty() || whoami.equals("root")) {
+                // Fallback, should only fire via Terminal + sudo
+                whoami = ShellUtilities.executeRaw("logname").trim();
+            }
+            ShellUtilities.execute("su", whoami, "-c", "\"" + StringUtils.join(args, "\" \"") + "\"");
+        } else {
+            ShellUtilities.execute(args.toArray(new String[args.size()]));
+        }
     }
 }

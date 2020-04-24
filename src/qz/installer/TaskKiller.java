@@ -17,8 +17,8 @@ import java.util.List;
 
 import static qz.common.Constants.PROPS_FILE;
 
-public class TaskControl {
-    protected static final Logger log = LoggerFactory.getLogger(TaskControl.class);
+public class TaskKiller {
+    protected static final Logger log = LoggerFactory.getLogger(TaskKiller.class);
     private static final String[] TRAY_PID_QUERY_POSIX = {"pgrep", "-f", PROPS_FILE + ".jar" };
     private static final String[] KILL_PID_CMD_POSIX = {"kill", "-9", ""/*pid placeholder*/};
 
@@ -50,7 +50,7 @@ public class TaskControl {
         if (!javaProcs.isEmpty()) {
             // Find intersections of java and qz-tray.jar
             List<String> intersections = new ArrayList<>(Arrays.asList(trayProcs));
-            intersections.retainAll(Arrays.asList(javaProcs));
+            intersections.retainAll(javaProcs);
 
             // Remove any instances created by this installer
             intersections.remove("" + selfProc);

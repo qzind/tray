@@ -63,25 +63,6 @@ public class LinuxAppLocator extends AppLocator {
     }
 
     @Override
-    public ArrayList<String> getPids(boolean unused, ArrayList<String> processNames) {
-        String[] response;
-        ArrayList<String> pidList = new ArrayList<>();
-
-        if (processNames.size() == 0) return pidList;
-
-        // Quoting handled by the command processor (e.g. pgrep -x "myapp|my app" is perfectly valid)
-        String data = ShellUtilities.executeRaw("pgrep", "-x", String.join("|", processNames));
-
-        //Splitting an empty string results in a 1 element array, this is not what we want
-        if (!data.isEmpty()) {
-            response = data.split("\\s*\\r?\\n");
-            Collections.addAll(pidList, response);
-        }
-
-        return pidList;
-    }
-
-    @Override
     public ArrayList<Path> getPidPaths(ArrayList<String> pids) {
         ArrayList<Path> pathList = new ArrayList<>();
 

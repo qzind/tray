@@ -159,7 +159,10 @@ public class LinuxInstaller extends Installer {
      * Spawns the process as the underlying regular user account, preserving the environment
      */
     public void spawn(List<String> args) throws Exception {
-        args.remove(0); // the first arg is "spawn", remove it
+        if(!SystemUtilities.isAdmin()) {
+            ShellUtilities.execute(args.toArray(new String[args.size()]));
+            return;
+        }
         String whoami = ShellUtilities.executeRaw("logname").trim();
         if(whoami.isEmpty()) {
             whoami = System.getenv("SUDO_USER");

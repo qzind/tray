@@ -15,18 +15,17 @@ import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
+import qz.installer.Installer;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.firefox.locator.AppAlias;
 import qz.installer.certificate.firefox.locator.AppInfo;
 import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.utils.JsonWriter;
-import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -46,7 +45,7 @@ public class FirefoxCertificateInstaller {
     private static final Version WINDOWS_POLICY_VERSION = Version.valueOf("62.0.0");
     private static final Version MAC_POLICY_VERSION = Version.valueOf("63.0.0");
     private static final Version LINUX_POLICY_VERSION = Version.valueOf("65.0.0");
-    private static final Version FIREFOX_RESTART_VERSION = Version.valueOf("60.0.0");
+    public static final Version FIREFOX_RESTART_VERSION = Version.valueOf("60.0.0");
 
     private static String ENTERPRISE_ROOT_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
     private static String INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
@@ -57,6 +56,7 @@ public class FirefoxCertificateInstaller {
 
     public static void install(X509Certificate cert, String ... hostNames) {
         ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
+        ArrayList<Path> processPaths = AppLocator.getRunningPaths(appList);
         for(AppInfo appInfo : appList) {
             if (honorsPolicy(appInfo)) {
                 log.info("Installing Firefox ({}) enterprise root certificate policy {}", appInfo.getName(), appInfo.getPath());
@@ -72,15 +72,14 @@ public class FirefoxCertificateInstaller {
                 }
             }
 
-            ArrayList<Path> processPaths = AppLocator.getRunningPaths(appList);
-            for (Path processPath : processPaths) {
-                if (processPath.equals(appInfo.getExePath())) {
-                    if (appInfo.getVersion().greaterThanOrEqualTo(FIREFOX_RESTART_VERSION)) {
-                        ShellUtilities.executeRaw(processPath.toString(), "-private", "about:restartrequired");
-                    } else {
-                        log.warn("{} must be restarted for changes to take effect", appInfo.getName());
-                    }
+            if(processPaths.contains(appInfo.getExePath())) {
+                if (appInfo.getVersion().greaterThanOrEqualTo(FIREFOX_RESTART_VERSION)) {
+                    try {
+                        Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
+                        continue;
+                    } catch(Exception ignore) {}
                 }
+                log.warn("{} must be restarted for changes to take effect", appInfo.getName());
             }
         }
     }

@@ -27,9 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.cert.X509Certificate;
-import java.util.List;
-import java.util.Locale;
-import java.util.Properties;
+import java.util.*;
 
 import static qz.common.Constants.*;
 import static qz.installer.certificate.KeyPairWrapper.Type.CA;
@@ -104,7 +102,7 @@ public abstract class Installer {
 
     public static boolean preinstall() {
         log.info("Stopping running instances...");
-        return TaskControl.killAll();
+        return TaskKiller.killAll();
     }
 
     public static void install() throws Exception {
@@ -121,7 +119,7 @@ public abstract class Installer {
 
     public static void uninstall() {
         log.info("Stopping running instances...");
-        TaskControl.killAll();
+        TaskKiller.killAll();
         getInstance();
         log.info("Uninstalling from {}", instance.getDestination());
         instance.removeSharedDirectory()
@@ -279,5 +277,9 @@ public abstract class Installer {
             }
         }
         return newProps;
+    }
+
+    public void spawn(String ... args) throws Exception {
+        spawn(new ArrayList(Arrays.asList(args)));
     }
 }

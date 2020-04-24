@@ -1,5 +1,6 @@
 package qz.installer;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.FileUtilities;
@@ -224,20 +225,20 @@ public class LinuxInstaller extends Installer {
         // Determine if this environment likes sudo
         String[] sudoCmd = { "sudo", "-E", "-u", whoami, "nohup" };
         String[] suCmd = { "su", whoami, "-c", "nohup" };
-        String[] asUser = ShellUtilities.execute("which", "sudo") ? sudoCmd : suCmd;
 
-        // Build and escape our command
-        List<String> argsList = new ArrayList<>();
-        argsList.addAll(Arrays.asList(asUser));
-        String command = "";
-        Pattern quote = Pattern.compile("\"");
-        for(String arg : args) {
-            command += String.format(" %s", arg);
+        ArrayList<String> argsList = new ArrayList<>();
+        if(ShellUtilities.execute("which", "sudo")) {
+            // Pass directly into sudo
+            argsList.addAll(Arrays.asList(sudoCmd));
+            argsList.addAll(args);
+        } else {
+            // Build and escape for su
+            argsList.addAll(Arrays.asList(suCmd));
+            argsList.addAll(Arrays.asList(StringUtils.join(args, "\" \"") + "\""));
         }
-        argsList.add(command.trim());
 
         // Spawn
-        System.out.println(String.join(" ", argsList));
+        log.info("Executing: {}", Arrays.toString(argsList.toArray()));
         Runtime.getRuntime().exec(argsList.toArray(new String[argsList.size()]), envp);
     }
 

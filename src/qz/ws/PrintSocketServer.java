@@ -63,7 +63,7 @@ public class PrintSocketServer {
     private static boolean headless;
 
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         ArgParser parser = new ArgParser(args);
         if(parser.intercept()) {
             System.exit(parser.getExitCode());

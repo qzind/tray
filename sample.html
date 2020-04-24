@@ -2557,7 +2557,7 @@
     });
 
     //make dirty when changed
-    $("input").on('change', function() {
+    $("input").add("select").on('change', function() {
         $(this).addClass("dirty");
     });
 

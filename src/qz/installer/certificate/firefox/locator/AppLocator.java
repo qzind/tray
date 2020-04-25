@@ -17,17 +17,14 @@ public abstract class AppLocator {
     public abstract ArrayList<AppInfo> locate(AppAlias appAlias);
     public abstract ArrayList<Path> getPidPaths(ArrayList<String> pids);
 
-    public ArrayList<String> getPids(ArrayList<String> processNames) {
-        return getPids(true, processNames);
-    }
-    public ArrayList<String> getPids(boolean parentPids, String ... processNames) {
-        return getPids(parentPids, new ArrayList<>(Arrays.asList(processNames)));
+    public ArrayList<String> getPids(String ... processNames) {
+        return getPids(new ArrayList<>(Arrays.asList(processNames)));
     }
 
     /**
      * Linux, Mac
      */
-    public ArrayList<String> getPids(boolean unused, ArrayList<String> processNames) {
+    public ArrayList<String> getPids(ArrayList<String> processNames) {
         String[] response;
         ArrayList<String> pidList = new ArrayList<>();
 

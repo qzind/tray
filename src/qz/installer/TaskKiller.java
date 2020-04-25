@@ -37,12 +37,12 @@ public class TaskKiller {
         String[] killCmd;
         if(SystemUtilities.isWindows()) {
             // Windows may be running under javaw.exe (normal) or java.exe (terminal)
-            javaProcs = AppLocator.getInstance().getPids(false,"java.exe", "javaw.exe");
+            javaProcs = AppLocator.getInstance().getPids("java.exe", "javaw.exe");
             trayProcs = ShellUtilities.executeRaw(TRAY_PID_QUERY_WIN32).split("\\s*\\r?\\n");
             selfProc = Kernel32.INSTANCE.GetCurrentProcessId();
             killCmd = KILL_PID_CMD_WIN32;
         } else {
-            javaProcs = AppLocator.getInstance().getPids(false, "java");
+            javaProcs = AppLocator.getInstance().getPids( "java");
             trayProcs = ShellUtilities.executeRaw(TRAY_PID_QUERY_POSIX).split("\\s*\\r?\\n");
             selfProc = MacUtilities.getProcessID(); // Works for Linux too
             killCmd = KILL_PID_CMD_POSIX;

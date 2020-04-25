@@ -37,6 +37,7 @@ public class LinuxAppLocator extends AppLocator {
                             log.info("Found an '.sh' file: {}, removing file extension: {}", file, file = new File(FilenameUtils.removeExtension(file.getPath())));
                         } else if(contentType != null && contentType.equals("application/x-shellscript")) {
                             // Debian and Arch like to place a stub script directly in /usr/bin/
+                            // TODO: Split into a function; possibly recurse on search paths
                             log.info("{} bin was expected but script found...  Reading...", appAlias.name());
                             BufferedReader reader = new BufferedReader(new FileReader(file));
                             String line;

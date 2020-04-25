@@ -10,6 +10,7 @@
 
 package qz.installer.certificate.firefox.locator;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.ShellUtilities;
@@ -28,7 +29,7 @@ import static com.sun.jna.platform.win32.WinReg.HKEY_LOCAL_MACHINE;
 public class WindowsAppLocator extends AppLocator{
     protected static final Logger log = LoggerFactory.getLogger(MacAppLocator.class);
 
-    private static final String[] WIN32_PID_QUERY = {"wmic.exe", "process", "where", null, "get", "parentprocessid,", "processid"};
+    private static final String[] WIN32_PID_QUERY = {"wmic.exe", "process", "where", null, "get", "processid"};
     private static final int WIN32_PID_QUERY_INPUT_INDEX = 3;
 
     private static final String[] WIN32_PATH_QUERY = {"wmic.exe", "process", "where", null, "get", "ExecutablePath"};
@@ -58,30 +59,19 @@ public class WindowsAppLocator extends AppLocator{
     }
 
     @Override
-    public ArrayList<String> getPids(boolean parentPids, ArrayList<String> processNames) {
+    public ArrayList<String> getPids(ArrayList<String> processNames) {
         ArrayList<String> pidList = new ArrayList<>();
-        ArrayList<String> parentPIDList = new ArrayList<>();
 
         if (processNames.isEmpty()) return pidList;
 
         WIN32_PID_QUERY[WIN32_PID_QUERY_INPUT_INDEX] = "(Name='" + String.join("' OR Name='", processNames) + "')";
         String[] response = ShellUtilities.executeRaw(WIN32_PID_QUERY).split("[\\r\\n]+");
 
-        // Skip the first result (the first row is column headers)
-        for (int i = 1; i < response.length; i++) {
-            String[] row =  response[i].split("[\\s,]+");
-
-            parentPIDList.add(row[0]);
-            pidList.add(row[1]);
-        }
-
-        if(parentPids) {
-            // Remove all processes that are child to another process in this set
-            for(int i = pidList.size() - 1; i >= 0; i--) {
-                if (pidList.contains(parentPIDList.get(i))) {
-                    pidList.remove(i);
-                    parentPIDList.remove(i);
-                }
+        // Add all found pids
+        for(String line : response) {
+            String pid = line.trim();
+            if(StringUtils.isNumeric(pid.trim())) {
+                pidList.add(pid);
             }
         }
 

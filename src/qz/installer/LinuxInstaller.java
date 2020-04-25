@@ -165,7 +165,7 @@ public class LinuxInstaller extends Installer {
             return;
         }
         String whoami = ShellUtilities.executeRaw("logname").trim();
-        if(whoami.isEmpty()) {
+        if(whoami.isEmpty() || SystemUtilities.isSolaris()) {
             whoami = System.getenv("SUDO_USER");
         }
 
@@ -192,11 +192,11 @@ public class LinuxInstaller extends Installer {
                     // Use pargs -e $$ to get environment
                     log.info("Reading environment info from [pargs, -e, {}]", pid);
                     String pargs = ShellUtilities.executeRaw("pargs", "-e", pid);
-                    String delim = "]: ";
                     vars = pargs.split("\\r?\\n");
+                    String delim = "]: ";
                     for(int i = 0; i < vars.length; i++) {
                         if(vars[i].contains(delim)) {
-                            vars[i] = vars[i].substring(vars[i].indexOf(delim)).trim();
+                            vars[i] = vars[i].substring(vars[i].indexOf(delim) + delim.length()).trim();
                         }
                     }
                 } else {
@@ -216,11 +216,15 @@ public class LinuxInstaller extends Installer {
                         }
                     }
                 }
-            } catch(Exception ignore) {}
+            } catch(Exception e) {
+                log.warn("An unexpected error occurred obtaining dbus info", e);
+            }
 
             // Only add vars for the current user
             if(whoami.trim().equals(tempEnv.get("USER"))) {
                 env.putAll(tempEnv);
+            } else {
+                log.debug("Expected USER={} but got USER={}, skipping results for {}", whoami, tempEnv.get("USER"), pid);
             }
         }
 

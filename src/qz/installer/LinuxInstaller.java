@@ -1,5 +1,6 @@
 package qz.installer;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.FileUtilities;
@@ -159,9 +160,12 @@ public class LinuxInstaller extends Installer {
      * Spawns the process as the underlying regular user account, preserving the environment
      */
     public void spawn(List<String> args) throws Exception {
-        args.remove(0); // the first arg is "spawn", remove it
+        if(!SystemUtilities.isAdmin()) {
+            ShellUtilities.execute(args.toArray(new String[args.size()]));
+            return;
+        }
         String whoami = ShellUtilities.executeRaw("logname").trim();
-        if(whoami.isEmpty()) {
+        if(whoami.isEmpty() || SystemUtilities.isSolaris()) {
             whoami = System.getenv("SUDO_USER");
         }
 
@@ -183,8 +187,25 @@ public class LinuxInstaller extends Installer {
         ArrayList<String> toExport = new ArrayList<>(Arrays.asList(SUDO_EXPORTS));
         for(String pid : pids) {
             try {
-                String delim = Pattern.compile("\0").pattern();
-                String[] vars = new String(Files.readAllBytes(Paths.get(String.format("/proc/%s/environ", pid)))).split(delim);
+                String[] vars;
+                if(SystemUtilities.isSolaris()) {
+                    // Use pargs -e $$ to get environment
+                    log.info("Reading environment info from [pargs, -e, {}]", pid);
+                    String pargs = ShellUtilities.executeRaw("pargs", "-e", pid);
+                    vars = pargs.split("\\r?\\n");
+                    String delim = "]: ";
+                    for(int i = 0; i < vars.length; i++) {
+                        if(vars[i].contains(delim)) {
+                            vars[i] = vars[i].substring(vars[i].indexOf(delim) + delim.length()).trim();
+                        }
+                    }
+                } else {
+                    // Assume /proc/$$/environ
+                    String environ = String.format("/proc/%s/environ", pid);
+                    String delim = Pattern.compile("\0").pattern();
+                    log.info("Reading environment info from {}", environ);
+                    vars = new String(Files.readAllBytes(Paths.get(environ))).split(delim);
+                }
                 for(String var : vars) {
                     String[] parts = var.split("=", 2);
                     if(parts.length == 2) {
@@ -195,16 +216,20 @@ public class LinuxInstaller extends Installer {
                         }
                     }
                 }
-            } catch(Exception ignore) {}
+            } catch(Exception e) {
+                log.warn("An unexpected error occurred obtaining dbus info", e);
+            }
 
             // Only add vars for the current user
             if(whoami.trim().equals(tempEnv.get("USER"))) {
                 env.putAll(tempEnv);
+            } else {
+                log.debug("Expected USER={} but got USER={}, skipping results for {}", whoami, tempEnv.get("USER"), pid);
             }
         }
 
         if(env.size() == 0) {
-            throw new Exception("Unable to get dbus info from /proc, can't spawn instance");
+            throw new Exception("Unable to get dbus info; can't spawn instance");
         }
 
         // Prepare the environment
@@ -221,20 +246,20 @@ public class LinuxInstaller extends Installer {
         // Determine if this environment likes sudo
         String[] sudoCmd = { "sudo", "-E", "-u", whoami, "nohup" };
         String[] suCmd = { "su", whoami, "-c", "nohup" };
-        String[] asUser = ShellUtilities.execute("which", "sudo") ? sudoCmd : suCmd;
 
-        // Build and escape our command
-        List<String> argsList = new ArrayList<>();
-        argsList.addAll(Arrays.asList(asUser));
-        String command = "";
-        Pattern quote = Pattern.compile("\"");
-        for(String arg : args) {
-            command += String.format(" %s", arg);
+        ArrayList<String> argsList = new ArrayList<>();
+        if(ShellUtilities.execute("which", "sudo")) {
+            // Pass directly into sudo
+            argsList.addAll(Arrays.asList(sudoCmd));
+            argsList.addAll(args);
+        } else {
+            // Build and escape for su
+            argsList.addAll(Arrays.asList(suCmd));
+            argsList.addAll(Arrays.asList(StringUtils.join(args, "\" \"") + "\""));
         }
-        argsList.add(command.trim());
 
         // Spawn
-        System.out.println(String.join(" ", argsList));
+        log.info("Executing: {}", Arrays.toString(argsList.toArray()));
         Runtime.getRuntime().exec(argsList.toArray(new String[argsList.size()]), envp);
     }
 

@@ -22,10 +22,10 @@ public enum AppAlias {
         return aliases;
     }
 
-    public boolean matches(AppLocator info) {
-        if (info.getName() != null && !info.isBlacklisted()) {
+    public boolean matches(AppInfo appInfo) {
+        if (appInfo.getName() != null && !appInfo.isBlacklisted()) {
             for (Alias alias : aliases) {
-                if (info.getName().toLowerCase(Locale.ENGLISH).matches(alias.name.toLowerCase(Locale.ENGLISH))) {
+                if (appInfo.getName().toLowerCase(Locale.ENGLISH).matches(alias.name.toLowerCase(Locale.ENGLISH))) {
                     return true;
                 }
             }

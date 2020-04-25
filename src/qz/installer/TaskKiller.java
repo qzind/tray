@@ -2,6 +2,9 @@ package qz.installer;
 
 import com.sun.jna.platform.win32.Kernel32;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.utils.MacUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
@@ -12,16 +15,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static qz.common.Constants.ABOUT_TITLE;
 import static qz.common.Constants.PROPS_FILE;
-import static qz.installer.Installer.InstallType.PREINSTALL;
 
 public class TaskKiller {
-    private static final String[] JAVA_PID_QUERY_POSIX = {"pgrep", "java" };
+    protected static final Logger log = LoggerFactory.getLogger(TaskKiller.class);
     private static final String[] TRAY_PID_QUERY_POSIX = {"pgrep", "-f", PROPS_FILE + ".jar" };
     private static final String[] KILL_PID_CMD_POSIX = {"kill", "-9", ""/*pid placeholder*/};
 
-    private static final String[] JAVA_PID_QUERY_WIN32 = {"wmic.exe", "process", "where", "Name like '%java%'", "get", "processid" };
     private static final String[] TRAY_PID_QUERY_WIN32 = {"wmic.exe", "process", "where", "CommandLine like '%" + PROPS_FILE + ".jar" + "%'", "get", "processid" };
     private static final String[] KILL_PID_CMD_WIN32 = {"taskkill.exe", "/F", "/PID", "" /*pid placeholder*/ };
 
@@ -31,25 +31,26 @@ public class TaskKiller {
     public static boolean killAll() {
         boolean success = true;
 
-        String[] javaProcs;
+        ArrayList<String> javaProcs;
         String[] trayProcs;
         int selfProc;
         String[] killCmd;
         if(SystemUtilities.isWindows()) {
-            javaProcs = ShellUtilities.executeRaw(JAVA_PID_QUERY_WIN32).split("\\s*\\r?\\n");
+            // Windows may be running under javaw.exe (normal) or java.exe (terminal)
+            javaProcs = AppLocator.getInstance().getPids("java.exe", "javaw.exe");
             trayProcs = ShellUtilities.executeRaw(TRAY_PID_QUERY_WIN32).split("\\s*\\r?\\n");
             selfProc = Kernel32.INSTANCE.GetCurrentProcessId();
             killCmd = KILL_PID_CMD_WIN32;
         } else {
-            javaProcs = ShellUtilities.executeRaw(JAVA_PID_QUERY_POSIX).split("\\s*\\r?\\n");
+            javaProcs = AppLocator.getInstance().getPids( "java");
             trayProcs = ShellUtilities.executeRaw(TRAY_PID_QUERY_POSIX).split("\\s*\\r?\\n");
             selfProc = MacUtilities.getProcessID(); // Works for Linux too
             killCmd = KILL_PID_CMD_POSIX;
         }
-        if (javaProcs.length > 0) {
+        if (!javaProcs.isEmpty()) {
             // Find intersections of java and qz-tray.jar
             List<String> intersections = new ArrayList<>(Arrays.asList(trayProcs));
-            intersections.retainAll(Arrays.asList(javaProcs));
+            intersections.retainAll(javaProcs);
 
             // Remove any instances created by this installer
             intersections.remove("" + selfProc);

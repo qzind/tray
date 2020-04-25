@@ -14,11 +14,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.installer.certificate.CertificateChainBuilder;
-import qz.installer.certificate.firefox.locator.AppLocator;
+import qz.installer.certificate.firefox.locator.AppInfo;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.security.cert.CertificateEncodingException;
 import java.util.*;
 
@@ -36,7 +37,7 @@ public class LegacyFirefoxCertificateInstaller {
     private static final String PREFS_DIR = "defaults/pref";
     private static final String MAC_PREFIX = "Contents/Resources";
 
-    public static void installAutoConfigScript(AppLocator app, String certData, String ... hostNames) {
+    public static void installAutoConfigScript(AppInfo app, String certData, String ... hostNames) {
         try {
             writePrefsFile(app);
             writeParsedConfig(app, certData, false, hostNames);
@@ -45,23 +46,23 @@ public class LegacyFirefoxCertificateInstaller {
         }
     }
 
-    public static void uninstallAutoConfigScript(AppLocator app) {
+    public static void uninstallAutoConfigScript(AppInfo appInfo) {
         try {
-            writeParsedConfig(app, "", true);
+            writeParsedConfig(appInfo, "", true);
         } catch(Exception e) {
-            log.warn("Error uninstalling auto-config support for {}", app.getName(), e);
+            log.warn("Error uninstalling auto-config support for {}", appInfo.getName(), e);
         }
     }
 
-    public static File tryWrite(AppLocator app, boolean mkdirs, String ... paths) throws IOException {
-        String dir = app.getPath();
+    public static File tryWrite(AppInfo appInfo, boolean mkdirs, String ... paths) throws IOException {
+        Path dir = appInfo.getPath();
         if (SystemUtilities.isMac()) {
-            dir += File.separator + MAC_PREFIX;
+            dir = dir.resolve(MAC_PREFIX);
         }
         for (String path : paths) {
-            dir += File.separator + path;
+            dir = dir.resolve(path);
         }
-        File file = new File(dir);
+        File file = dir.toFile();
 
         if(mkdirs) file.mkdirs();
         if(file.exists() && file.isDirectory() && file.canWrite()) {
@@ -87,7 +88,7 @@ public class LegacyFirefoxCertificateInstaller {
         }
     }
 
-    public static void writePrefsFile(AppLocator app) throws Exception {
+    public static void writePrefsFile(AppInfo app) throws Exception {
         File prefsDir = tryWrite(app, true, PREFS_DIR);
         deleteFile(prefsDir, "firefox-prefs.js"); // cleanup old version
 
@@ -119,10 +120,10 @@ public class LegacyFirefoxCertificateInstaller {
         prefsFile.setReadable(true, false);
     }
 
-    private static void writeParsedConfig(AppLocator app, String certData, boolean uninstall, String ... hostNames) throws IOException, CertificateEncodingException{
+    private static void writeParsedConfig(AppInfo appInfo, String certData, boolean uninstall, String ... hostNames) throws IOException, CertificateEncodingException{
         if (hostNames.length == 0) hostNames = CertificateChainBuilder.DEFAULT_HOSTNAMES;
 
-        File cfgDir = tryWrite(app, false);
+        File cfgDir = tryWrite(appInfo, false);
         deleteFile(cfgDir, "firefox-config.cfg"); // cleanup old version
         File dest = new File(cfgDir.getPath(), CFG_FILE);
 

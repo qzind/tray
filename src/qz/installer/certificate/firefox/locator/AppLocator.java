@@ -1,66 +1,67 @@
 package qz.installer.certificate.firefox.locator;
 
-import com.github.zafarkhaja.semver.Version;
+import org.slf4j.LoggerFactory;
+import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 
 public abstract class AppLocator {
-    String name;
-    String path;
-    Version version;
-    void setName(String name) {
-        this.name = name;
+    protected static final org.slf4j.Logger log = LoggerFactory.getLogger(AppLocator.class);
+
+    private static AppLocator INSTANCE = getPlatformSpecificAppLocator();
+
+    public abstract ArrayList<AppInfo> locate(AppAlias appAlias);
+    public abstract ArrayList<Path> getPidPaths(ArrayList<String> pids);
+
+    public ArrayList<String> getPids(String ... processNames) {
+        return getPids(new ArrayList<>(Arrays.asList(processNames)));
     }
 
-    void setPath(String path) {
-        this.path = path;
+    /**
+     * Linux, Mac
+     */
+    public ArrayList<String> getPids(ArrayList<String> processNames) {
+        String[] response;
+        ArrayList<String> pidList = new ArrayList<>();
+
+        if (processNames.size() == 0) return pidList;
+
+        // Quoting handled by the command processor (e.g. pgrep -x "myapp|my app" is perfectly valid)
+        String data = ShellUtilities.executeRaw("pgrep", "-x", String.join("|", processNames));
+
+        //Splitting an empty string results in a 1 element array, this is not what we want
+        if (!data.isEmpty()) {
+            response = data.split("\\s*\\r?\\n");
+            Collections.addAll(pidList, response);
+        }
+
+        return pidList;
     }
 
-    void setVersion(String version) {
-        try {
-            // Less than three octets (e.g. "56.0") will fail parsing
-            while(version.split("\\.").length < 3) {
-                version = version + ".0";
-            }
-            if (version != null) {
-                this.version = Version.valueOf(version);
-            }
-        } catch(Exception ignore) {}
+    public static ArrayList<Path> getRunningPaths(ArrayList<AppInfo> appList) {
+        ArrayList<String> appNames = new ArrayList<>();
+        for (AppInfo app : appList) {
+            String exeName = app.getExePath().getFileName().toString();
+            if (!appNames.contains(exeName)) appNames.add(exeName);
+        }
+
+        return INSTANCE.getPidPaths(INSTANCE.getPids(appNames));
     }
 
-    public String getName() {
-        return name;
+    public static AppLocator getInstance() {
+        return INSTANCE;
     }
 
-    public String getPath() {
-        return path;
-    }
-
-    public Version getVersion() {
-        return version;
-    }
-
-    abstract boolean isBlacklisted();
-
-    public static ArrayList<AppLocator> locate(AppAlias appAlias) {
+    private static AppLocator getPlatformSpecificAppLocator() {
         if (SystemUtilities.isWindows()) {
-            return WindowsAppLocator.findApp(appAlias);
+            return new WindowsAppLocator();
         } else if (SystemUtilities.isMac()) {
-            return MacAppLocator.findApp(appAlias);
+            return new MacAppLocator();
         }
-        return LinuxAppLocator.findApp(appAlias) ;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if(o instanceof AppLocator && o != null && path != null) {
-            if (SystemUtilities.isWindows()) {
-                return path.equalsIgnoreCase(((AppLocator)o).getPath());
-            } else {
-                return path.equals(((AppLocator)o).getPath());
-            }
-        }
-        return false;
+        return new LinuxAppLocator();
     }
 }

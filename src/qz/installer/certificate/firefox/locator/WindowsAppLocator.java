@@ -10,27 +10,36 @@
 
 package qz.installer.certificate.firefox.locator;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.utils.ShellUtilities;
+import qz.utils.SystemUtilities;
 import qz.utils.WindowsUtilities;
 
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import static com.sun.jna.platform.win32.WinReg.HKEY_LOCAL_MACHINE;
 
-public class WindowsAppLocator extends AppLocator {
+public class WindowsAppLocator extends AppLocator{
     protected static final Logger log = LoggerFactory.getLogger(MacAppLocator.class);
+
+    private static final String[] WIN32_PID_QUERY = {"wmic.exe", "process", "where", null, "get", "processid"};
+    private static final int WIN32_PID_QUERY_INPUT_INDEX = 3;
+
+    private static final String[] WIN32_PATH_QUERY = {"wmic.exe", "process", "where", null, "get", "ExecutablePath"};
+    private static final int WIN32_PATH_QUERY_INPUT_INDEX = 3;
+
     private static String REG_TEMPLATE = "Software\\%s%s\\%s%s";
 
-    public WindowsAppLocator(String name, String path, String version) {
-        setName(name);
-        setPath(path);
-        setVersion(version);
-    }
-    public static ArrayList<AppLocator> findApp(AppAlias appAlias) {
-        ArrayList<AppLocator> appList = new ArrayList<>();
+    @Override
+    public ArrayList<AppInfo> locate(AppAlias appAlias) {
+        ArrayList<AppInfo> appList = new ArrayList<>();
         for (AppAlias.Alias alias : appAlias.aliases) {
             if (alias.vendor != null) {
                 String[] suffixes = new String[]{ "", " ESR"};
@@ -38,9 +47,9 @@ public class WindowsAppLocator extends AppLocator {
                 for (String suffix : suffixes) {
                     for (String prefix : prefixes) {
                         String key = String.format(REG_TEMPLATE, prefix, alias.vendor, alias.name, suffix);
-                        AppLocator appLocator = getAppInfo(alias.name, key, suffix);
-                        if (appLocator != null && !appList.contains(appLocator)) {
-                            appList.add(appLocator);
+                        AppInfo appInfo = getAppInfo(alias.name, key, suffix);
+                        if (appInfo != null && !appList.contains(appInfo)) {
+                            appList.add(appInfo);
                         }
                     }
                 }
@@ -49,7 +58,56 @@ public class WindowsAppLocator extends AppLocator {
         return appList;
     }
 
-    public static AppLocator getAppInfo(String name, String key, String suffix) {
+    @Override
+    public ArrayList<String> getPids(ArrayList<String> processNames) {
+        ArrayList<String> pidList = new ArrayList<>();
+
+        if (processNames.isEmpty()) return pidList;
+
+        WIN32_PID_QUERY[WIN32_PID_QUERY_INPUT_INDEX] = "(Name='" + String.join("' OR Name='", processNames) + "')";
+        String[] response = ShellUtilities.executeRaw(WIN32_PID_QUERY).split("[\\r\\n]+");
+
+        // Add all found pids
+        for(String line : response) {
+            String pid = line.trim();
+            if(StringUtils.isNumeric(pid.trim())) {
+                pidList.add(pid);
+            }
+        }
+
+        if(SystemUtilities.isWindowsXP()) {
+            // Cleanup XP crumbs per https://stackoverflow.com/q/12391655/3196753
+            File f = new File("TempWmicBatchFile.bat");
+            if(f.exists()) {
+                f.deleteOnExit();
+            }
+        }
+
+        return pidList;
+    }
+
+    @Override
+    public ArrayList<Path> getPidPaths(ArrayList<String> pids) {
+        ArrayList<Path> pathList = new ArrayList<>();
+
+        for(String pid : pids) {
+            WIN32_PATH_QUERY[WIN32_PATH_QUERY_INPUT_INDEX] = "ProcessId=" + pid;
+            String[] response = ShellUtilities.executeRaw(WIN32_PATH_QUERY).split("\\s*\\r?\\n");
+            if (response.length > 1) {
+                try {
+                    pathList.add(Paths.get(response[1]).toRealPath());
+                } catch(IOException e) {
+                    log.warn("Could not locate process " + pid);
+                }
+            }
+        }
+        return pathList;
+    }
+
+    /**
+     * Use a proprietary Firefox-only technique for getting "PathToExe" registry value
+     */
+    private static AppInfo getAppInfo(String name, String key, String suffix) {
         String version = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "CurrentVersion");
         if (version != null) {
             version = version.split(" ")[0]; // chop off (x86 ...)
@@ -59,19 +117,14 @@ public class WindowsAppLocator extends AppLocator {
                 }
                 version = version + suffix;
             }
-            String path = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key + " " + version + "\\bin", "PathToExe");
-            if (path != null) {
+            Path exePath = Paths.get(WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key + " " + version + "\\bin", "PathToExe"));
+
+            if (exePath != null) {
                 // SemVer: Replace spaces in suffixes with dashes
-                path = new File(path).getParent();
                 version = version.replaceAll(" ", "-");
-                return new WindowsAppLocator(name, path, version);
+                return new AppInfo(name, exePath, version);
             }
         }
         return null;
-    }
-
-    @Override
-    boolean isBlacklisted() {
-        return false;
     }
 }

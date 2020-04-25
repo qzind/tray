@@ -21,6 +21,7 @@ import qz.installer.certificate.CertificateManager;
 
 import java.io.File;
 import java.util.*;
+import java.util.List;
 
 import static qz.common.Constants.*;
 import static qz.utils.ArgParser.ExitStatus.*;
@@ -146,6 +147,7 @@ public class ArgParser {
                     Installer.uninstall();
                     return SUCCESS;
                 case SPAWN:
+                    args.remove(0); // first argument is "spawn", remove it
                     Installer.getInstance().spawn(args);
                     return SUCCESS;
                 default:

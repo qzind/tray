@@ -17,6 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.utils.ShellUtilities;
+import qz.utils.SystemUtilities;
 import qz.utils.WindowsUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -193,6 +194,9 @@ public class WindowsInstaller extends Installer {
     }
 
     public void spawn(List<String> args) throws Exception {
-        throw new UnsupportedOperationException("Spawn is not yet support on Windows");
+        if(SystemUtilities.isAdmin()) {
+            log.warn("Spawning as user isn't implemented; starting process with elevation instead");
+        }
+        ShellUtilities.execute(args.toArray(new String[args.size()]));
     }
 }

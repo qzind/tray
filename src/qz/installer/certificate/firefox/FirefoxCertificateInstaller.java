@@ -15,8 +15,10 @@ import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
+import qz.installer.Installer;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.firefox.locator.AppAlias;
+import qz.installer.certificate.firefox.locator.AppInfo;
 import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.utils.JsonWriter;
 import qz.utils.SystemUtilities;
@@ -24,7 +26,6 @@ import qz.utils.SystemUtilities;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -44,6 +45,7 @@ public class FirefoxCertificateInstaller {
     private static final Version WINDOWS_POLICY_VERSION = Version.valueOf("62.0.0");
     private static final Version MAC_POLICY_VERSION = Version.valueOf("63.0.0");
     private static final Version LINUX_POLICY_VERSION = Version.valueOf("65.0.0");
+    public static final Version FIREFOX_RESTART_VERSION = Version.valueOf("60.0.0");
 
     private static String ENTERPRISE_ROOT_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
     private static String INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
@@ -53,63 +55,74 @@ public class FirefoxCertificateInstaller {
     public static final String MAC_POLICY_LOCATION = "Contents/Resources/" + POLICY_LOCATION;
 
     public static void install(X509Certificate cert, String ... hostNames) {
-        ArrayList<AppLocator> appList = AppLocator.locate(AppAlias.FIREFOX);
-        for(AppLocator app : appList) {
-            if(honorsPolicy(app)) {
-                log.info("Installing Firefox ({}) enterprise root certificate policy {}", app.getName(), app.getPath());
-                installPolicy(app, cert);
+        ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
+        ArrayList<Path> processPaths = AppLocator.getRunningPaths(appList);
+        for(AppInfo appInfo : appList) {
+            if (honorsPolicy(appInfo)) {
+                log.info("Installing Firefox ({}) enterprise root certificate policy {}", appInfo.getName(), appInfo.getPath());
+                installPolicy(appInfo, cert);
             } else {
-                log.info("Installing Firefox ({}) auto-config script {}", app.getName(), app.getPath());
+                log.info("Installing Firefox ({}) auto-config script {}", appInfo.getName(), appInfo.getPath());
                 try {
                     String certData = Base64.getEncoder().encodeToString(cert.getEncoded());
-                    LegacyFirefoxCertificateInstaller.installAutoConfigScript(app, certData, hostNames);
-                } catch(CertificateEncodingException e) {
-                    log.warn("Unable to install auto-config script to {}", app.getPath(), e);
+                    LegacyFirefoxCertificateInstaller.installAutoConfigScript(appInfo, certData, hostNames);
                 }
+                catch(CertificateEncodingException e) {
+                    log.warn("Unable to install auto-config script to {}", appInfo.getPath(), e);
+                }
+            }
+
+            if(processPaths.contains(appInfo.getExePath())) {
+                if (appInfo.getVersion().greaterThanOrEqualTo(FIREFOX_RESTART_VERSION)) {
+                    try {
+                        Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
+                        continue;
+                    } catch(Exception ignore) {}
+                }
+                log.warn("{} must be restarted for changes to take effect", appInfo.getName());
             }
         }
     }
 
     public static void uninstall() {
-        ArrayList<AppLocator> appList = AppLocator.locate(AppAlias.FIREFOX);
-        for(AppLocator app : appList) {
-            if(honorsPolicy(app)) {
+        ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
+        for(AppInfo appInfo : appList) {
+            if(honorsPolicy(appInfo)) {
                 if(SystemUtilities.isWindows() || SystemUtilities.isMac()) {
-                    log.info("Skipping uninstall of Firefox enterprise root certificate policy {}", app.getPath());
+                    log.info("Skipping uninstall of Firefox enterprise root certificate policy {}", appInfo.getPath());
                 } else {
                     try {
-                        File policy = Paths.get(app.getPath(), POLICY_LOCATION).toFile();
+                        File policy = appInfo.getPath().resolve(POLICY_LOCATION).toFile();
                         if(policy.exists()) {
-                            JsonWriter.write(Paths.get(app.getPath(), POLICY_LOCATION).toString(), INSTALL_CERT_POLICY, false, true);
+                            JsonWriter.write(appInfo.getPath().resolve(POLICY_LOCATION).toString(), INSTALL_CERT_POLICY, false, true);
                         }
                     } catch(IOException | JSONException e) {
-                        log.warn("Unable to remove Firefox ({}) policy {}", app.getName(), e);
+                        log.warn("Unable to remove Firefox ({}) policy {}", appInfo.getName(), e);
                     }
                 }
-
             } else {
-                log.info("Uninstalling Firefox auto-config script {}", app.getPath());
-                LegacyFirefoxCertificateInstaller.uninstallAutoConfigScript(app);
+                log.info("Uninstalling Firefox auto-config script {}", appInfo.getPath());
+                LegacyFirefoxCertificateInstaller.uninstallAutoConfigScript(appInfo);
             }
         }
     }
 
-    public static boolean honorsPolicy(AppLocator app) {
-        if (app.getVersion() == null) {
-            log.warn("Firefox-compatible browser was found {}, but no version information is available", app.getPath());
+    public static boolean honorsPolicy(AppInfo appInfo) {
+        if (appInfo.getVersion() == null) {
+            log.warn("Firefox-compatible browser was found {}, but no version information is available", appInfo.getPath());
             return false;
         }
         if(SystemUtilities.isWindows()) {
-            return app.getVersion().greaterThanOrEqualTo(WINDOWS_POLICY_VERSION);
+            return appInfo.getVersion().greaterThanOrEqualTo(WINDOWS_POLICY_VERSION);
         } else if (SystemUtilities.isMac()) {
-            return app.getVersion().greaterThanOrEqualTo(MAC_POLICY_VERSION);
+            return appInfo.getVersion().greaterThanOrEqualTo(MAC_POLICY_VERSION);
         } else {
-            return app.getVersion().greaterThanOrEqualTo(LINUX_POLICY_VERSION);
+            return appInfo.getVersion().greaterThanOrEqualTo(LINUX_POLICY_VERSION);
         }
     }
 
-    public static void installPolicy(AppLocator app, X509Certificate cert) {
-        Path jsonPath = Paths.get(app.getPath(), SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION);
+    public static void installPolicy(AppInfo app, X509Certificate cert) {
+        Path jsonPath = app.getPath().resolve(SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION);
         String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? ENTERPRISE_ROOT_POLICY : INSTALL_CERT_POLICY;
         try {
             if(jsonPolicy.equals(INSTALL_CERT_POLICY)) {
@@ -150,9 +163,5 @@ public class FirefoxCertificateInstaller {
         } catch(JSONException | IOException e) {
             log.warn("Could not install enterprise policy {} to {}", jsonPolicy, jsonPath.toString(), e);
         }
-    }
-
-    public static boolean checkRunning(AppLocator app, boolean isSilent) {
-        throw new UnsupportedOperationException();
     }
 }

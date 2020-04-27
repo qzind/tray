@@ -49,6 +49,7 @@ if ($signature) {
 }
 
 echo '<h1>Error signing message</h1>';
+http_response_code(500);
 exit(1);
 
 ?>

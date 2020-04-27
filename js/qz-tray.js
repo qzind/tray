@@ -548,6 +548,7 @@ var qz = (function() {
         tools: {
             /** Create a new promise */
             promise: function(resolver) {
+                //prefer global object for historical purposes
                 if(typeof RSVP !== 'undefined') {
                     return new RSVP.Promise(resolver);
                 } else if(typeof Promise !== 'undefined') {
@@ -572,6 +573,7 @@ var qz = (function() {
             },
 
             hash: function(data) {
+                //prefer global object for historical purposes
                 if(typeof Sha256 !== 'undefined') {
                     return Sha256.hash(data);
                 } else {

@@ -1,5 +1,6 @@
 package qz.printer.action;
 
+import com.github.zafarkhaja.semver.Version;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -20,8 +21,13 @@ import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import qz.common.Constants;
+import qz.deploy.DeployUtilities;
+import qz.utils.SystemUtilities;
+import qz.ws.PrintSocketServer;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +42,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class WebApp extends Application {
 
     private static final Logger log = LoggerFactory.getLogger(WebApp.class);
-
     private static WebApp instance = null;
 
     private static Stage stage;
@@ -78,9 +83,24 @@ public class WebApp extends Application {
                     pageHeight = Double.parseDouble(heightText);
                 }
 
+                // find and set page zoom for increased quality
+                double usableZoom = calculateSupportedZoom(pageWidth, pageHeight);
+                if (usableZoom < pageZoom) {
+                    log.warn("Zoom level {} decreased to {} due to physical memory limitations", pageZoom, usableZoom);
+                    pageZoom = usableZoom;
+                }
+                try {
+                    Reflect.on(webView).call("setZoom", pageZoom);
+                    log.trace("Zooming in by x{} for increased quality", pageZoom);
+                }
+                catch(ReflectException e) {
+                    log.warn("Unable zoom, using default quality");
+                    pageZoom = 1; //only zoom affects webView scaling
+                }
+
                 log.trace("Setting HTML page height to {}", pageHeight * pageZoom);
-                webView.setMinHeight(pageHeight * pageZoom);
-                webView.setPrefHeight(pageHeight * pageZoom);
+                webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
+                webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
                 webView.autosize();
 
                 //without this runlater, the first capture is missed and all following captures are offset
@@ -94,7 +114,6 @@ public class WebApp extends Application {
                             public void handle(long l) {
                                 if (++frames == 2) {
                                     log.debug("Attempting image capture");
-
 
 
                                     webView.snapshot(new Callback<SnapshotResult,Void>() {
@@ -148,6 +167,24 @@ public class WebApp extends Application {
         if (instance == null) {
             startupLatch = new CountDownLatch(1);
 
+            // JavaFX native libs
+            if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
+                System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
+            }
+
+            if (PrintSocketServer.getTrayManager().isMonocleAllowed()) {
+                log.trace("Initializing monocle platform");
+
+                System.setProperty("javafx.platform", "monocle"); // Standard JDKs
+                System.setProperty("glass.platform", "Monocle"); // Headless JDKs
+                System.setProperty("monocle.platform", "Headless");
+
+                //software rendering required headless environments
+                if (PrintSocketServer.isHeadless()) {
+                    System.setProperty("prism.order", "sw");
+                }
+            }
+
             new Thread() {
                 public void run() {
                     Application.launch(WebApp.class);
@@ -190,6 +227,11 @@ public class WebApp extends Application {
     }
 
 
+    public static void clear() {
+        capture.set(null);
+        thrown.set(null);
+    }
+
     /**
      * Sets up capture to run on JavaFX thread and returns snapshot of rendered page
      *
@@ -199,8 +241,7 @@ public class WebApp extends Application {
     public static synchronized BufferedImage capture(final WebAppModel model) throws Throwable {
         captureLatch = new CountDownLatch(1);
 
-        capture.set(null);
-        thrown.set(null);
+        clear();
 
         //ensure JavaFX has started before we run
         if (startupLatch.getCount() > 0) {
@@ -214,15 +255,6 @@ public class WebApp extends Application {
                     pageWidth = model.getWebWidth();
                     pageHeight = model.getWebHeight();
                     pageZoom = model.getZoom();
-
-                    try {
-                        Reflect.on(webView).call("setZoom", pageZoom);
-                        log.trace("Zooming in by x{} for increased quality", pageZoom);
-                    }
-                    catch(ReflectException e) {
-                        log.warn("Unable zoom, using default quality");
-                        pageZoom = 1; //only zoom affects webView scaling
-                    }
 
                     webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
                     webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
@@ -256,6 +288,15 @@ public class WebApp extends Application {
         if (thrown.get() != null) { throw thrown.get(); }
 
         return capture.get();
+    }
+
+    private static double calculateSupportedZoom(double width, double height) {
+        long memory = Runtime.getRuntime().maxMemory();
+        int allowance = (memory / 1048576L) > 1024? 3:2;
+        if (PrintSocketServer.isHeadless()) { allowance--; }
+        long availSpace = (long)((memory << allowance) / 72d);
+
+        return Math.sqrt(availSpace / (width * height));
     }
 
     private static void unlatch() {

@@ -224,4 +224,9 @@ public class PrintSocketServer {
         return INSECURE_PORTS.get(insecurePortIndex.get());
     }
 
+    // 2.1+ only
+    public static boolean isHeadless() {
+        return false;
+    }
+
 }

@@ -95,7 +95,24 @@ public class TaskbarTrayIcon extends JFrame implements WindowListener {
         });
     }
 
-    public void displayMessage(String caption, String text, TrayIcon.MessageType level) { /* noop */ }
+    public void displayMessage(String caption, String text, TrayIcon.MessageType level) {
+        int messageType;
+        switch(level) {
+            case WARNING:
+                messageType = JOptionPane.WARNING_MESSAGE;
+                break;
+            case ERROR:
+                messageType = JOptionPane.ERROR_MESSAGE;
+                break;
+            case INFO:
+                messageType = JOptionPane.INFORMATION_MESSAGE;
+                break;
+            case NONE:
+            default:
+                messageType = JOptionPane.PLAIN_MESSAGE;
+        }
+        JOptionPane.showMessageDialog(null, text, caption, messageType);
+    }
 
     @Override
     public void windowDeiconified(WindowEvent e) {

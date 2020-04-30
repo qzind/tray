@@ -9,10 +9,8 @@ import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Scene;
-import javafx.scene.SnapshotResult;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
-import javafx.util.Callback;
 import org.joor.Reflect;
 import org.joor.ReflectException;
 import org.slf4j.Logger;
@@ -116,23 +114,7 @@ public class WebApp extends Application {
                                     log.debug("Attempting image capture");
 
                                     try {
-                                        webView.snapshot(new Callback<SnapshotResult,Void>() {
-                                            @Override
-                                            public Void call(SnapshotResult snapshotResult) {
-                                                try {
-                                                    capture.set(SwingFXUtils.fromFXImage(snapshotResult.getImage(), null));
-                                                }
-                                                catch(Exception e) {
-                                                    log.error("Caught during callback");
-                                                    thrown.set(e);
-                                                }
-                                                finally {
-                                                    unlatch();
-                                                }
-
-                                                return null;
-                                            }
-                                        }, null, null);
+                                        capture.set(SwingFXUtils.fromFXImage(webView.snapshot(null, null), null));
 
                                         //stop timer after snapshot
                                         stop();
@@ -140,6 +122,8 @@ public class WebApp extends Application {
                                     catch(Exception e) {
                                         log.error("Caught during snapshot");
                                         thrown.set(e);
+                                    }
+                                    finally {
                                         unlatch();
                                     }
                                 }

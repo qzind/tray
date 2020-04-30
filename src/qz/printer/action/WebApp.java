@@ -173,8 +173,12 @@ public class WebApp extends Application {
                 }
 
                 // Monocle default for unit tests
-                boolean monocleDefault = true;
-                if (monocleDefault || PrintSocketServer.getTrayManager() != null && PrintSocketServer.getTrayManager().isMonoclePreferred()) {
+                boolean monoclePreferred = true;
+                if(PrintSocketServer.getTrayManager() != null) {
+                    // User preference, if available
+                    monoclePreferred = PrintSocketServer.getTrayManager().isMonoclePreferred();
+                }
+                if (monoclePreferred) {
                     log.trace("Initializing monocle platform");
 
                     System.setProperty("javafx.platform", "monocle"); // Standard JDKs

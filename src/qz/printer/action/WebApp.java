@@ -9,10 +9,8 @@ import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Scene;
-import javafx.scene.SnapshotResult;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
-import javafx.util.Callback;
 import org.joor.Reflect;
 import org.joor.ReflectException;
 import org.slf4j.Logger;
@@ -115,19 +113,19 @@ public class WebApp extends Application {
                                 if (++frames == 2) {
                                     log.debug("Attempting image capture");
 
+                                    try {
+                                        capture.set(SwingFXUtils.fromFXImage(webView.snapshot(null, null), null));
 
-                                    webView.snapshot(new Callback<SnapshotResult,Void>() {
-                                        @Override
-                                        public Void call(SnapshotResult snapshotResult) {
-                                            capture.set(SwingFXUtils.fromFXImage(snapshotResult.getImage(), null));
-                                            unlatch();
-
-                                            return null;
-                                        }
-                                    }, null, null);
-
-                                    //stop timer after snapshot
-                                    stop();
+                                        //stop timer after snapshot
+                                        stop();
+                                    }
+                                    catch(Exception e) {
+                                        log.error("Caught during snapshot");
+                                        thrown.set(e);
+                                    }
+                                    finally {
+                                        unlatch();
+                                    }
                                 }
                             }
                         }.start();
@@ -167,21 +165,30 @@ public class WebApp extends Application {
         if (instance == null) {
             startupLatch = new CountDownLatch(1);
 
-            // JavaFX native libs
-            if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-                System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
-            }
+            // JDK11+ depends bundled javafx
+            if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
+                // JavaFX native libs
+                if (SystemUtilities.isJar()) {
+                    System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
+                }
 
-            if (PrintSocketServer.getTrayManager().isMonocleAllowed()) {
-                log.trace("Initializing monocle platform");
+                // Monocle default for unit tests
+                boolean useMonocle = true;
+                if(PrintSocketServer.getTrayManager() != null) {
+                    // Honor user override
+                    useMonocle = PrintSocketServer.getTrayManager().isMonoclePreferred();
+                }
+                if (useMonocle) {
+                    log.trace("Initializing monocle platform");
 
-                System.setProperty("javafx.platform", "monocle"); // Standard JDKs
-                System.setProperty("glass.platform", "Monocle"); // Headless JDKs
-                System.setProperty("monocle.platform", "Headless");
+                    System.setProperty("javafx.platform", "monocle"); // Standard JDKs
+                    System.setProperty("glass.platform", "Monocle"); // Headless JDKs
+                    System.setProperty("monocle.platform", "Headless");
 
-                //software rendering required headless environments
-                if (PrintSocketServer.isHeadless()) {
-                    System.setProperty("prism.order", "sw");
+                    //software rendering required headless environments
+                    if (PrintSocketServer.isHeadless()) {
+                        System.setProperty("prism.order", "sw");
+                    }
                 }
             }
 
@@ -198,6 +205,14 @@ public class WebApp extends Application {
 
                 if (!startupLatch.await(60, TimeUnit.SECONDS)) {
                     throw new IOException("JavaFX did not start");
+                } else {
+                    log.trace("Running a test snapshot to size the stage...");
+                    try {
+                        capture(new WebAppModel("<h1>startup</h1>", true, 0, 0, true, 2));
+                    }
+                    catch (Throwable t) {
+                        throw new IOException(t);
+                    }
                 }
             }
             catch(InterruptedException ignore) {}

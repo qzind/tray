@@ -115,19 +115,33 @@ public class WebApp extends Application {
                                 if (++frames == 2) {
                                     log.debug("Attempting image capture");
 
+                                    try {
+                                        webView.snapshot(new Callback<SnapshotResult,Void>() {
+                                            @Override
+                                            public Void call(SnapshotResult snapshotResult) {
+                                                try {
+                                                    capture.set(SwingFXUtils.fromFXImage(snapshotResult.getImage(), null));
+                                                }
+                                                catch(Exception e) {
+                                                    log.error("Caught during callback");
+                                                    thrown.set(e);
+                                                }
+                                                finally {
+                                                    unlatch();
+                                                }
 
-                                    webView.snapshot(new Callback<SnapshotResult,Void>() {
-                                        @Override
-                                        public Void call(SnapshotResult snapshotResult) {
-                                            capture.set(SwingFXUtils.fromFXImage(snapshotResult.getImage(), null));
-                                            unlatch();
+                                                return null;
+                                            }
+                                        }, null, null);
 
-                                            return null;
-                                        }
-                                    }, null, null);
-
-                                    //stop timer after snapshot
-                                    stop();
+                                        //stop timer after snapshot
+                                        stop();
+                                    }
+                                    catch(Exception e) {
+                                        log.error("Caught during snapshot");
+                                        thrown.set(e);
+                                        unlatch();
+                                    }
                                 }
                             }
                         }.start();

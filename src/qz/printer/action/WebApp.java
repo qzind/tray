@@ -1,6 +1,8 @@
 package qz.printer.action;
 
 import com.github.zafarkhaja.semver.Version;
+import com.sun.javafx.tk.TKPulseListener;
+import com.sun.javafx.tk.Toolkit;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -113,19 +115,24 @@ public class WebApp extends Application {
                                 if (++frames == 2) {
                                     log.debug("Attempting image capture");
 
-                                    try {
-                                        capture.set(SwingFXUtils.fromFXImage(webView.snapshot(null, null), null));
+                                    Toolkit.getToolkit().addPostSceneTkPulseListener(new TKPulseListener() {
+                                        @Override
+                                        public void pulse() {
+                                            try {
+                                                capture.set(SwingFXUtils.fromFXImage(webView.snapshot(null, null), null));
+                                            }
+                                            catch(Exception e) {
+                                                thrown.set(e);
+                                            }
+                                            finally {
+                                                unlatch();
+                                                Toolkit.getToolkit().removePostSceneTkPulseListener(this);
+                                            }
+                                        }
+                                    });
 
-                                        //stop timer after snapshot
-                                        stop();
-                                    }
-                                    catch(Exception e) {
-                                        log.error("Caught during snapshot");
-                                        thrown.set(e);
-                                    }
-                                    finally {
-                                        unlatch();
-                                    }
+                                    //stop timer after setting up pulses
+                                    stop();
                                 }
                             }
                         }.start();
@@ -166,7 +173,7 @@ public class WebApp extends Application {
             startupLatch = new CountDownLatch(1);
 
             // JDK11+ depends bundled javafx
-            if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
+            if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
                 // JavaFX native libs
                 if (SystemUtilities.isJar()) {
                     System.setProperty("java.library.path", new File(DeployUtilities.detectJarPath()).getParent() + "/libs/");
@@ -174,7 +181,7 @@ public class WebApp extends Application {
 
                 // Monocle default for unit tests
                 boolean useMonocle = true;
-                if(PrintSocketServer.getTrayManager() != null) {
+                if (PrintSocketServer.getTrayManager() != null) {
                     // Honor user override
                     useMonocle = PrintSocketServer.getTrayManager().isMonoclePreferred();
                 }
@@ -210,7 +217,7 @@ public class WebApp extends Application {
                     try {
                         capture(new WebAppModel("<h1>startup</h1>", true, 0, 0, true, 2));
                     }
-                    catch (Throwable t) {
+                    catch(Throwable t) {
                         throw new IOException(t);
                     }
                 }

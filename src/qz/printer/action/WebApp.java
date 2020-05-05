@@ -24,6 +24,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import qz.common.Constants;
 import qz.utils.SystemUtilities;
+import qz.ws.PrintSocketServer;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -48,6 +49,7 @@ public class WebApp extends Application {
 
     private static Stage stage;
     private static WebView webView;
+    private static double pageWidth;
     private static double pageHeight;
     private static double pageZoom;
 
@@ -85,6 +87,16 @@ public class WebApp extends Application {
                 webView.setMinHeight(pageHeight);
                 webView.setPrefHeight(pageHeight);
                 webView.setMaxHeight(pageHeight);
+
+                // find and set page zoom for increased quality
+                double usableZoom = calculateSupportedZoom(pageWidth, pageHeight);
+                if (usableZoom < pageZoom) {
+                    log.warn("Zoom level {} decreased to {} due to physical memory limitations", pageZoom, usableZoom);
+                    pageZoom = usableZoom;
+                }
+                webView.setZoom(pageZoom);
+                log.trace("Zooming in by x{} for increased quality", pageZoom);
+
                 autosize(webView);
             }
 
@@ -108,13 +120,27 @@ public class WebApp extends Application {
 
     /** Starts JavaFX thread if not already running */
     public static synchronized void initialize() throws IOException {
-        //JavaFX native libs
-        if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-            System.setProperty("java.library.path", new File(SystemUtilities.detectJarPath()).getParent() + "/libs/");
-        }
-
         if (instance == null) {
             startupLatch = new CountDownLatch(1);
+
+            // JavaFX native libs
+            if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
+                System.setProperty("java.library.path", new File(SystemUtilities.detectJarPath()).getParent() + "/libs/");
+            }
+
+            if (PrintSocketServer.getTrayManager().isMonocleAllowed()) {
+                log.trace("Initializing monocle platform");
+
+                System.setProperty("javafx.platform", "monocle"); // Standard JDKs
+                System.setProperty("glass.platform", "Monocle"); // Headless JDKs
+                System.setProperty("monocle.platform", "Headless");
+
+                //software rendering required headless environments
+                if (PrintSocketServer.isHeadless()) {
+                    System.setProperty("prism.order", "sw");
+                }
+            }
+
             new Thread(() -> Application.launch(WebApp.class)).start();
         }
 
@@ -271,7 +297,7 @@ public class WebApp extends Application {
         Platform.runLater(() -> {
             //zoom should only be factored on raster prints
             pageZoom = model.getZoom();
-            double pageWidth = model.getWebWidth() * pageZoom;
+            pageWidth = model.getWebWidth() * pageZoom;
             pageHeight = model.getWebHeight() * pageZoom;
 
             log.trace("Setting starting size {}:{}", pageWidth, pageHeight);
@@ -333,6 +359,15 @@ public class WebApp extends Application {
         } catch(SecurityException | ReflectiveOperationException e) {
             log.warn("Unable to update peer; Blank pages may occur.", e);
         }
+    }
+
+    private static double calculateSupportedZoom(double width, double height) {
+        long memory = Runtime.getRuntime().maxMemory();
+        int allowance = (memory / 1048576L) > 1024? 3:2;
+        if (PrintSocketServer.isHeadless()) { allowance--; }
+        long availSpace = (long)((memory << allowance) / 72d);
+
+        return Math.sqrt(availSpace / (width * height));
     }
 
     /**

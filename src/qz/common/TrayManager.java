@@ -10,6 +10,7 @@
 
 package qz.common;
 
+import com.github.zafarkhaja.semver.Version;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -242,6 +243,16 @@ public class TrayManager {
         notificationsItem.addActionListener(notificationsListener);
         diagnosticMenu.add(notificationsItem);
 
+        JCheckBoxMenuItem monocleItem = new JCheckBoxMenuItem("Use Monocle for HTML");
+        monocleItem.setToolTipText("Use monocle platform for HTML printing (restart required)");
+        monocleItem.setMnemonic(KeyEvent.VK_U);
+        monocleItem.setState(prefs.getBoolean(Constants.PREFS_MONOCLE, true));
+        monocleItem.addActionListener(monocleListener);
+
+        if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) { //only include if it can be used
+            diagnosticMenu.add(monocleItem);
+        }
+
         diagnosticMenu.add(new JSeparator());
 
         JMenuItem logItem = new JMenuItem("View logs (live feed)...", iconCache.getIcon(IconCache.Icon.LOG_ICON));
@@ -323,6 +334,16 @@ public class TrayManager {
         @Override
         public void actionPerformed(ActionEvent e) {
             prefs.setProperty(Constants.PREFS_NOTIFICATIONS, ((JCheckBoxMenuItem)e.getSource()).getState());
+        }
+    };
+
+    private final ActionListener monocleListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
+            prefs.setProperty(Constants.PREFS_MONOCLE, j.getState());
+            displayWarningMessage(String.format("A restart of %s is required to ensure this feature is %sabled.",
+                                                Constants.ABOUT_TITLE, j.getState()? "en":"dis"));
         }
     };
 
@@ -577,7 +598,7 @@ public class TrayManager {
             if (tray != null) {
                 SwingUtilities.invokeLater(() -> {
                     boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
-                    if (showAllNotifications || level == TrayIcon.MessageType.ERROR) {
+                    if (showAllNotifications || level != TrayIcon.MessageType.INFO) {
                         tray.displayMessage(caption, text, level);
                     }
                 });
@@ -593,6 +614,11 @@ public class TrayManager {
                 new SingleInstanceChecker(this, port);
             }
         }
+    }
+
+    public boolean isMonocleAllowed() {
+        boolean useMonocle = prefs.getBoolean(Constants.PREFS_MONOCLE, true);
+        return useMonocle && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"));
     }
 
 }

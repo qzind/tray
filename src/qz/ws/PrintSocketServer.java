@@ -209,4 +209,8 @@ public class PrintSocketServer {
         return certificateManager.getProperties();
     }
 
+    public static boolean isHeadless() {
+        return headless;
+    }
+
 }

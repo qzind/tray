@@ -103,7 +103,7 @@
     <!-- Downloads and extracts javafx for macOS -->
     <target name="download-javafx-mac" if="javafx.mac.needed" unless="javafx.mac.found" depends="check-javafx-needed,check-javafx-found">
         <antcall target="download-javafx-platform">
-            <param name="javafx.platform" value="mac"/>
+            <param name="javafx.platform" value="osx"/>
         </antcall>
     </target>
 
@@ -116,8 +116,8 @@
 
     <!-- Downloads and extracts javafx for the specified platform -->
     <target name="download-javafx-platform" depends="get-javafx-version">
-        <get src="${javafx.mirror}/javafx-${javafx.version-url}-sdk-${javafx.platform}/" verbose="true" dest="javafx-${javafx.platform}.zip"/>
-        <unzip src="javafx-${javafx.platform}.zip" dest="lib/javafx/${javafx.platform}" overwrite="true"/>
+        <get src="${javafx.mirror}/openjfx-${javafx.version-url}-${javafx.platform}-x64_bin-sdk.zip" verbose="true" dest="javafx-${javafx.platform}.zip"/>
+        <unzip src="javafx-${javafx.platform}.zip" dest="lib/javafx/${javafx.platform}/javafx-${javafx.version}" overwrite="true"/>
         <delete file="javafx-${javafx.platform}.zip"/>
     </target>
 
@@ -126,7 +126,7 @@
         <delete>
             <fileset dir="lib">
                 <include name="**/javafx*/**"/>
-                <exclude name="**/javafx*${javafx.version}*/**"/>
+                <exclude name="**/javafx-${javafx.version}/**"/>
             </fileset>
         </delete>
     </target>

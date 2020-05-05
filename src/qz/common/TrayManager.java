@@ -616,9 +616,8 @@ public class TrayManager {
         }
     }
 
-    public boolean isMonocleAllowed() {
-        boolean useMonocle = prefs.getBoolean(Constants.PREFS_MONOCLE, true);
-        return useMonocle && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"));
+    public boolean isMonoclePreferred() {
+        return prefs.getBoolean(Constants.PREFS_MONOCLE, true);
     }
 
 }

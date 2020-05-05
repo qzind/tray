@@ -1,6 +1,8 @@
 package qz.printer.action;
 
 import com.github.zafarkhaja.semver.Version;
+import com.sun.javafx.tk.TKPulseListener;
+import com.sun.javafx.tk.Toolkit;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -123,21 +125,30 @@ public class WebApp extends Application {
         if (instance == null) {
             startupLatch = new CountDownLatch(1);
 
-            // JavaFX native libs
-            if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-                System.setProperty("java.library.path", new File(SystemUtilities.detectJarPath()).getParent() + "/libs/");
-            }
+            // JDK11+ depends bundled javafx
+            if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
+                // JavaFX native libs
+                if (SystemUtilities.isJar()) {
+                    System.setProperty("java.library.path", new File(SystemUtilities.detectJarPath()).getParent() + "/libs/");
+                }
 
-            if (PrintSocketServer.getTrayManager().isMonocleAllowed()) {
-                log.trace("Initializing monocle platform");
+                // Monocle default for unit tests
+                boolean useMonocle = true;
+                if (PrintSocketServer.getTrayManager() != null) {
+                    // Honor user override
+                    useMonocle = PrintSocketServer.getTrayManager().isMonoclePreferred();
+                }
+                if (useMonocle) {
+                    log.trace("Initializing monocle platform");
 
-                System.setProperty("javafx.platform", "monocle"); // Standard JDKs
-                System.setProperty("glass.platform", "Monocle"); // Headless JDKs
-                System.setProperty("monocle.platform", "Headless");
+                    System.setProperty("javafx.platform", "monocle"); // Standard JDKs
+                    System.setProperty("glass.platform", "Monocle"); // Headless JDKs
+                    System.setProperty("monocle.platform", "Headless");
 
-                //software rendering required headless environments
-                if (PrintSocketServer.isHeadless()) {
-                    System.setProperty("prism.order", "sw");
+                    //software rendering required headless environments
+                    if (PrintSocketServer.isHeadless()) {
+                        System.setProperty("prism.order", "sw");
+                    }
                 }
             }
 
@@ -149,6 +160,14 @@ public class WebApp extends Application {
                 log.trace("Waiting for JavaFX..");
                 if (!startupLatch.await(60, TimeUnit.SECONDS)) {
                     throw new IOException("JavaFX did not start");
+                } else {
+                    log.trace("Running a test snapshot to size the stage...");
+                    try {
+                        raster(new WebAppModel("<h1>startup</h1>", true, 0, 0, true, 2));
+                    }
+                    catch(Throwable t) {
+                        throw new IOException(t);
+                    }
                 }
             }
             catch(InterruptedException ignore) {}
@@ -265,12 +284,22 @@ public class WebApp extends Application {
             if (frames == 2) {
                 log.debug("Attempting image capture");
 
-                webView.snapshot((snapshotResult) -> {
-                    capture.set(SwingFXUtils.fromFXImage(snapshotResult.getImage(), null));
-                    unlatch(null);
-
-                    return null;
-                }, null, null);
+                Toolkit.getToolkit().addPostSceneTkPulseListener(new TKPulseListener() {
+                    @Override
+                    public void pulse() {
+                        try {
+                            capture.set(SwingFXUtils.fromFXImage(webView.snapshot(null, null), null));
+                            unlatch(null);
+                        }
+                        catch(Exception e) {
+                            log.error("Caught during snapshot");
+                            unlatch(e);
+                        }
+                        finally {
+                            Toolkit.getToolkit().removePostSceneTkPulseListener(this);
+                        }
+                    }
+                });
             }
 
             return frames >= 2;
@@ -356,7 +385,8 @@ public class WebApp extends Application {
                     }
                 }
             }
-        } catch(SecurityException | ReflectiveOperationException e) {
+        }
+        catch(SecurityException | ReflectiveOperationException e) {
             log.warn("Unable to update peer; Blank pages may occur.", e);
         }
     }

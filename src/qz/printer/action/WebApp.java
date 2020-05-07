@@ -296,6 +296,7 @@ public class WebApp extends Application {
                     @Override
                     public void pulse() {
                         try {
+                            // TODO: Revert to Callback once JDK-8244588/SUPQZ-5 is avail (JDK11+ only)
                             capture.set(SwingFXUtils.fromFXImage(webView.snapshot(null, null), null));
                             unlatch(null);
                         }

@@ -54,6 +54,7 @@ public class WebApp extends Application {
     private static double pageWidth;
     private static double pageHeight;
     private static double pageZoom;
+    private static boolean headless;
 
     private static CountDownLatch startupLatch;
     private static CountDownLatch captureLatch;
@@ -124,6 +125,8 @@ public class WebApp extends Application {
     public static synchronized void initialize() throws IOException {
         if (instance == null) {
             startupLatch = new CountDownLatch(1);
+            // For JDK8 compat
+            headless = false;
 
             // JDK11+ depends bundled javafx
             if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
@@ -135,8 +138,13 @@ public class WebApp extends Application {
                 // Monocle default for unit tests
                 boolean useMonocle = true;
                 if (PrintSocketServer.getTrayManager() != null) {
-                    // Honor user override
+                    // Honor user monocle override
                     useMonocle = PrintSocketServer.getTrayManager().isMonoclePreferred();
+                    // Trust TrayManager's headless detection
+                    headless = PrintSocketServer.getTrayManager().isHeadless();
+                } else {
+                    // Fallback for JDK11+
+                    headless = true;
                 }
                 if (useMonocle) {
                     log.trace("Initializing monocle platform");
@@ -146,7 +154,7 @@ public class WebApp extends Application {
                     System.setProperty("monocle.platform", "Headless");
 
                     //software rendering required headless environments
-                    if (PrintSocketServer.isHeadless()) {
+                    if (headless) {
                         System.setProperty("prism.order", "sw");
                     }
                 }
@@ -394,7 +402,7 @@ public class WebApp extends Application {
     private static double calculateSupportedZoom(double width, double height) {
         long memory = Runtime.getRuntime().maxMemory();
         int allowance = (memory / 1048576L) > 1024? 3:2;
-        if (PrintSocketServer.isHeadless()) { allowance--; }
+        if (headless) { allowance--; }
         long availSpace = (long)((memory << allowance) / 72d);
 
         return Math.sqrt(availSpace / (width * height));

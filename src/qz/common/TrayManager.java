@@ -620,4 +620,8 @@ public class TrayManager {
         return prefs.getBoolean(Constants.PREFS_MONOCLE, true);
     }
 
+    public boolean isHeadless() {
+        return headless;
+    }
+
 }

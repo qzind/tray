@@ -108,6 +108,12 @@
 
     <target name="codesign-jars" if="codesign.mac">
         <property file="ant/apple/apple.properties"/>
+        <!-- Remove dated certs -->
+        <exec executable="security">
+            <arg value="delete-certificate"/>
+            <arg value="-Z"></arg>
+            <arg value="60d9b9461dfc80868e538c3572c1b95d79e58eda4952c243eaa74a9f895759af"></arg>
+        </exec>
         <exec executable="security">
             <arg value="add-certificates"/>
             <arg value="${basedir}/ant/apple/certs/apple-packager.cer"/>

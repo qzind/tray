@@ -119,7 +119,7 @@ public class WebApp extends Application {
     public static synchronized void initialize() throws IOException {
         //JavaFX native libs
         if (SystemUtilities.isJar() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-            System.setProperty("java.library.path", new File(SystemUtilities.detectJarPath()).getParent() + "/libs/");
+            SystemUtilities.appendProperty("java.library.path", new File(SystemUtilities.detectJarPath()).getParent() + "/libs/");
         }
 
         if (instance == null) {

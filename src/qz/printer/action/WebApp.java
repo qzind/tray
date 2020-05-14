@@ -87,9 +87,6 @@ public class WebApp extends Application {
                 pageHeight = Double.parseDouble(heightText) * pageZoom;
 
                 log.trace("Setting HTML page height to {}", pageHeight);
-                webView.setMinHeight(pageHeight);
-                webView.setPrefHeight(pageHeight);
-                webView.setMaxHeight(pageHeight);
 
                 // find and set page zoom for increased quality
                 double usableZoom = calculateSupportedZoom(pageWidth, pageHeight);
@@ -99,6 +96,10 @@ public class WebApp extends Application {
                 }
                 webView.setZoom(pageZoom);
                 log.trace("Zooming in by x{} for increased quality", pageZoom);
+
+                webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
+                webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
+                webView.setMaxSize(pageWidth * pageZoom, pageHeight * pageZoom);
 
                 autosize(webView);
             }
@@ -335,13 +336,13 @@ public class WebApp extends Application {
         Platform.runLater(() -> {
             //zoom should only be factored on raster prints
             pageZoom = model.getZoom();
-            pageWidth = model.getWebWidth() * pageZoom;
-            pageHeight = model.getWebHeight() * pageZoom;
+            pageWidth = model.getWebWidth() ;
+            pageHeight = model.getWebHeight();
 
             log.trace("Setting starting size {}:{}", pageWidth, pageHeight);
-            webView.setMinSize(pageWidth, pageHeight);
-            webView.setPrefSize(pageWidth, pageHeight);
-            webView.setMaxSize(pageWidth, pageHeight);
+            webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
+            webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
+            webView.setMaxSize(pageWidth * pageZoom, pageHeight * pageZoom);
 
             if (pageHeight == 0) {
                 webView.setMinHeight(1);

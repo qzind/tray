@@ -59,7 +59,7 @@ public class WebApp extends Application {
     private static CountDownLatch startupLatch;
     private static CountDownLatch captureLatch;
 
-    private static Runnable printAction;
+    private static IntPredicate printAction;
     private static final AtomicReference<Throwable> thrown = new AtomicReference<>();
 
 
@@ -87,24 +87,33 @@ public class WebApp extends Application {
                 pageHeight = Double.parseDouble(heightText) * pageZoom;
 
                 log.trace("Setting HTML page height to {}", pageHeight);
-
-                // find and set page zoom for increased quality
-                double usableZoom = calculateSupportedZoom(pageWidth, pageHeight);
-                if (usableZoom < pageZoom) {
-                    log.warn("Zoom level {} decreased to {} due to physical memory limitations", pageZoom, usableZoom);
-                    pageZoom = usableZoom;
-                }
-                webView.setZoom(pageZoom);
-                log.trace("Zooming in by x{} for increased quality", pageZoom);
-
-                webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
-                webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
-                webView.setMaxSize(pageWidth * pageZoom, pageHeight * pageZoom);
-
-                autosize(webView);
             }
 
-            printAction.run();
+            // find and set page zoom for increased quality
+            double usableZoom = calculateSupportedZoom(pageWidth, pageHeight);
+            if (usableZoom < pageZoom) {
+                log.warn("Zoom level {} decreased to {} due to physical memory limitations", pageZoom, usableZoom);
+                pageZoom = usableZoom;
+            }
+            webView.setZoom(pageZoom);
+            log.trace("Zooming in by x{} for increased quality", pageZoom);
+
+            webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
+            webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
+            webView.setMaxSize(pageWidth * pageZoom, pageHeight * pageZoom);
+
+            autosize(webView);
+
+            Platform.runLater(() -> new AnimationTimer() {
+                int frames = 0;
+
+                @Override
+                public void handle(long l) {
+                    if (printAction.test(++frames)) {
+                        stop();
+                    }
+                }
+            }.start());
         }
     };
 
@@ -352,20 +361,11 @@ public class WebApp extends Application {
 
             //reset additive properties
             webView.getTransforms().clear();
-            webView.setZoom(model.getZoom());
+            webView.setZoom(1);
 
             autosize(webView);
 
-            printAction = () -> Platform.runLater(() -> new AnimationTimer() {
-                int frames = 0;
-
-                @Override
-                public void handle(long l) {
-                    if (action.test(++frames)) {
-                        stop();
-                    }
-                }
-            }.start());
+            printAction = action;
 
             if (model.isPlainText()) {
                 webView.getEngine().loadContent(model.getSource(), "text/html");

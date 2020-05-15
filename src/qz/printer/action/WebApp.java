@@ -84,7 +84,7 @@ public class WebApp extends Application {
             //width was resized earlier (for responsive html), then calculate the best fit height
             if (pageHeight <= 0) {
                 String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
-                pageHeight = Double.parseDouble(heightText) * pageZoom;
+                pageHeight = Double.parseDouble(heightText);
 
                 log.trace("Setting HTML page height to {}", pageHeight);
             }
@@ -345,7 +345,7 @@ public class WebApp extends Application {
         Platform.runLater(() -> {
             //zoom should only be factored on raster prints
             pageZoom = model.getZoom();
-            pageWidth = model.getWebWidth() ;
+            pageWidth = model.getWebWidth();
             pageHeight = model.getWebHeight();
 
             log.trace("Setting starting size {}:{}", pageWidth, pageHeight);
@@ -359,9 +359,10 @@ public class WebApp extends Application {
                 webView.setMaxHeight(1);
             }
 
+            //FIXME: These cause blank pages on raster
             //reset additive properties
-            webView.getTransforms().clear();
-            webView.setZoom(1);
+            //webView.getTransforms().clear();
+            //webView.setZoom(1);
 
             autosize(webView);
 

@@ -263,7 +263,7 @@ public class WebApp extends Application {
                     }
 
                     //reset state
-                    webView.getTransforms().remove(activePage);
+                    webView.getTransforms().clear();
 
                     unlatch(null);
                 });
@@ -358,11 +358,6 @@ public class WebApp extends Application {
                 webView.setPrefHeight(1);
                 webView.setMaxHeight(1);
             }
-
-            //FIXME: These cause blank pages on raster
-            //reset additive properties
-            //webView.getTransforms().clear();
-            //webView.setZoom(1);
 
             autosize(webView);
 

@@ -31,7 +31,7 @@ public class ArgParser {
         SUCCESS(0),
         GENERAL_ERROR(1),
         USAGE_ERROR(2),
-        NO_AUTOSTART(3);
+        NO_AUTOSTART(0);
         private int code;
         ExitStatus(int code) {
             this.code = code;

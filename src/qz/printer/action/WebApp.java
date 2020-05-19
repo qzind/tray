@@ -82,10 +82,9 @@ public class WebApp extends Application {
             }
 
             //width was resized earlier (for responsive html), then calculate the best fit height
+            String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
             if (pageHeight <= 0) {
-                String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
                 pageHeight = Double.parseDouble(heightText);
-
                 log.trace("Setting HTML page height to {}", pageHeight);
             }
 

@@ -82,6 +82,7 @@ public class WebApp extends Application {
             }
 
             //width was resized earlier (for responsive html), then calculate the best fit height
+            // FIXME: Should only be needed when height is unknown but fixes blank vector prints
             String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
             if (pageHeight <= 0) {
                 pageHeight = Double.parseDouble(heightText);

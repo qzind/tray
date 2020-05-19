@@ -1,5 +1,6 @@
 package qz.printer.action;
 
+import javafx.print.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,6 +8,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 
 public class WebAppTest {
@@ -16,20 +19,39 @@ public class WebAppTest {
     public static void main(String[] args) throws Throwable {
         WebApp.initialize();
 
+        // RASTER//
+
         boolean audit = false;
-        if (args.length > 0) { audit = Boolean.parseBoolean(args[0]) || "1".equals(args[0]);}
+        if (args.length > 0) { audit = Boolean.parseBoolean(args[0]) || "1".equals(args[0]); }
         int knownHeightTests = 1000;
-        if (args.length > 1) { knownHeightTests = Integer.parseInt(args[1]);}
+        if (args.length > 1) { knownHeightTests = Integer.parseInt(args[1]); }
         int fitToHeightTests = 1000;
-        if (args.length > 2) { fitToHeightTests = Integer.parseInt(args[2]);}
+        if (args.length > 2) { fitToHeightTests = Integer.parseInt(args[2]); }
 
         if (!testKnownSize(knownHeightTests, audit)) {
             log.error("Testing well defined sizes failed");
         } else if (!testFittedSize(fitToHeightTests, audit)) {
             log.error("Testing fit to height sizing failed");
         } else {
-            log.info("All tests passed");
+            log.info("All raster tests passed");
         }
+
+
+        // VECTOR //
+
+        int vectorKnownHeightPrints = 100;
+        if (args.length > 3) { vectorKnownHeightPrints = Integer.parseInt(args[3]); }
+        int vectorFittedHeightPrints = 100;
+        if (args.length > 4) { vectorFittedHeightPrints = Integer.parseInt(args[4]); }
+
+        if (!testVectorKnownPrints(vectorKnownHeightPrints)) {
+            log.error("Failed vector prints with defined heights");
+        } else if (!testVectorFittedPrints(vectorFittedHeightPrints)) {
+            log.error("Failed vector prints with fit to height sizing");
+        } else {
+            log.info("All vector prints completed");
+        }
+
 
         System.exit(0); //explicit exit since jfx is running in background
     }
@@ -43,7 +65,7 @@ public class WebAppTest {
             double zoom = Math.max(0.5d, (int)(Math.random() * 30) / 10d);
 
             String id = "known-" + i;
-            WebAppModel model = buildModel(id, printW, printH, zoom, (int)(Math.random() * 360));
+            WebAppModel model = buildModel(id, printW, printH, zoom, true, (int)(Math.random() * 360));
             BufferedImage sample = WebApp.raster(model);
 
             if (sample == null) {
@@ -87,7 +109,7 @@ public class WebAppTest {
             double zoom = Math.max(0.5d, (int)(Math.random() * 30) / 10d);
 
             String id = "fitted-" + i;
-            WebAppModel model = buildModel(id, printW, 0, zoom, (int)(Math.random() * 360));
+            WebAppModel model = buildModel(id, printW, 0, zoom, true, (int)(Math.random() * 360));
             BufferedImage sample = WebApp.raster(model);
 
             if (sample == null) {
@@ -119,7 +141,40 @@ public class WebAppTest {
         return true;
     }
 
-    private static WebAppModel buildModel(String index, double width, double height, double zoom, int hue) throws Throwable {
+    public static boolean testVectorKnownPrints(int trials) throws Throwable {
+        PrinterJob job = buildVectorJob("vector-test-known");
+        for(int i = 0; i < trials; i++) {
+            //new size every run
+            double printW = Math.max(2, (int)(Math.random() * 85) / 10d) * 72d;
+            double printH = Math.max(3, (int)(Math.random() * 110) / 10d) * 72d;
+
+            String id = "known-" + i;
+            WebAppModel model = buildModel(id, printW, printH, 1, false, (int)(Math.random() * 360));
+
+            WebApp.print(job, model);
+        }
+        job.endJob();
+
+        return true;
+    }
+
+    public static boolean testVectorFittedPrints(int trials) throws Throwable {
+        PrinterJob job = buildVectorJob("vector-test-fitted");
+        for(int i = 0; i < trials; i++) {
+            //new size every run
+            double printW = Math.max(2, (int)(Math.random() * 85) / 10d) * 72d;
+
+            String id = "fitted-" + i;
+            WebAppModel model = buildModel(id, printW, 0, 1, false, (int)(Math.random() * 360));
+
+            WebApp.print(job, model);
+        }
+        job.endJob();
+
+        return true;
+    }
+
+    private static WebAppModel buildModel(String index, double width, double height, double zoom, boolean scale, int hue) {
         int level = (int)(Math.random() * 50) + 25;
         WebAppModel model = new WebAppModel("<html>" +
                                                     "<body style='background-color: hsl(" + hue + "," + level + "%," + level + "%);'>" +
@@ -139,11 +194,33 @@ public class WebAppTest {
                                                     "   </table>" +
                                                     "</body>" +
                                                     "</html>",
-                                            true, width, height, true, zoom);
+                                            true, width, height, scale, zoom);
 
         log.trace("Generating #{} = [({},{}), x{}]", index, model.getWebWidth(), model.getWebHeight(), model.getZoom());
 
         return model;
+    }
+
+    private static PrinterJob buildVectorJob(String name) throws Throwable {
+        Printer defaultPrinter = Printer.getDefaultPrinter();
+        PrinterJob job = PrinterJob.createPrinterJob(defaultPrinter);
+
+        // All this to remove margins
+        Constructor<PageLayout> plCon = PageLayout.class.getDeclaredConstructor(Paper.class, PageOrientation.class, double.class, double.class, double.class, double.class);
+        plCon.setAccessible(true);
+
+        Paper paper = defaultPrinter.getDefaultPageLayout().getPaper();
+        PageLayout layout = plCon.newInstance(paper, PageOrientation.PORTRAIT, 0, 0, 0, 0);
+
+        Field field = defaultPrinter.getClass().getDeclaredField("defPageLayout");
+        field.setAccessible(true);
+        field.set(defaultPrinter, layout);
+
+        JobSettings settings = job.getJobSettings();
+        settings.setPageLayout(layout);
+        settings.setJobName(name);
+
+        return job;
     }
 
     private static void saveAudit(String id, BufferedImage capture) throws IOException {

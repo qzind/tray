@@ -29,7 +29,10 @@ public class SerialOptions {
     /**
      * Creates an empty/default options object
      */
-    public SerialOptions() {}
+    public SerialOptions() {
+        portSettings = new PortSettings();
+        responseFormat = new ResponseFormat();
+    }
 
     /**
      * Parses the provided JSON object into relevant SerialPort constants

@@ -32,6 +32,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -143,6 +144,9 @@ public class WebApp extends Application {
                 // JavaFX native libs
                 if (SystemUtilities.isJar()) {
                     System.setProperty("java.library.path", new File(SystemUtilities.detectJarPath()).getParent() + "/libs/");
+                } else if(hasConflictingLib()) {
+                    // IDE helper for "no suitable pipeline found" errors
+                    System.err.println("\n=== WARNING ===\nWrong javafx platform detected. Delete lib/javafx/<platform> to correct this.\n");
                 }
 
                 // Monocle default for unit tests
@@ -418,4 +422,16 @@ public class WebApp extends Application {
         stage.hide();
     }
 
+    public static boolean hasConflictingLib() {
+        // If running from the IDE, make sure we're not using the wrong libs
+        URL url = Application.class.getResource("/" + Application.class.getName().replace('.', '/') + ".class");
+        String graphicsJar = url.toString().replaceAll("file:/|jar:", "").replaceAll("!.*", "");
+        log.trace("JavaFX will startup using {}", graphicsJar);
+        if(SystemUtilities.isWindows()) {
+            return !graphicsJar.contains("windows");
+        } else if(SystemUtilities.isMac()) {
+            return !graphicsJar.contains("osx") && !graphicsJar.contains("mac");
+        }
+        return !graphicsJar.contains("linux");
+    }
 }

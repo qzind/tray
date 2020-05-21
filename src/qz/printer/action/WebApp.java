@@ -55,6 +55,7 @@ public class WebApp extends Application {
     private static double pageWidth;
     private static double pageHeight;
     private static double pageZoom;
+    private static boolean raster;
     private static boolean headless;
 
     private static CountDownLatch startupLatch;
@@ -225,6 +226,7 @@ public class WebApp extends Application {
      */
     public static synchronized void print(final PrinterJob job, final WebAppModel model) throws Throwable {
         model.setZoom(1); //vector prints do not need to use zoom
+        raster = false;
 
         load(model, (int frames) -> {
             try {
@@ -301,6 +303,8 @@ public class WebApp extends Application {
         double increase = 96d / 72d;
         model.setWebWidth(model.getWebWidth() * increase);
         model.setWebHeight(model.getWebHeight() * increase);
+
+        raster = true;
 
         load(model, (int frames) -> {
             if (frames == 2) {
@@ -381,23 +385,25 @@ public class WebApp extends Application {
     public static void autosize(WebView webView) {
         webView.autosize();
 
-        // Call updatePeer; fixes a bug with webView resizing
-        // Can be avoided by calling stage.show() but breaks headless environments
-        // See: https://github.com/qzind/tray/issues/513
-        String[] methods = {"impl_updatePeer" /*jfx8*/, "doUpdatePeer" /*jfx11*/};
-        try {
-            for(Method m : webView.getClass().getDeclaredMethods()) {
-                for(String method : methods) {
-                    if (m.getName().equals(method)) {
-                        m.setAccessible(true);
-                        m.invoke(webView);
-                        return;
+        if (!raster) {
+            // Call updatePeer; fixes a bug with webView resizing
+            // Can be avoided by calling stage.show() but breaks headless environments
+            // See: https://github.com/qzind/tray/issues/513
+            String[] methods = {"impl_updatePeer" /*jfx8*/, "doUpdatePeer" /*jfx11*/};
+            try {
+                for(Method m : webView.getClass().getDeclaredMethods()) {
+                    for(String method : methods) {
+                        if (m.getName().equals(method)) {
+                            m.setAccessible(true);
+                            m.invoke(webView);
+                            return;
+                        }
                     }
                 }
             }
-        }
-        catch(SecurityException | ReflectiveOperationException e) {
-            log.warn("Unable to update peer; Blank pages may occur.", e);
+            catch(SecurityException | ReflectiveOperationException e) {
+                log.warn("Unable to update peer; Blank pages may occur.", e);
+            }
         }
     }
 

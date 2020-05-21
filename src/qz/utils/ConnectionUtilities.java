@@ -69,7 +69,11 @@ public final class ConnectionUtilities {
             requestProps.put("Sec-CH-UA-Platform-Version", getPlatformVersion());
             requestProps.put("Sec-CH-UA-Arch", getArch());
             requestProps.put("Sec-CH-UA-Full-Version", Constants.VERSION.toString());
-            requestProps.put("Sec-CH-UA", String.format("\"%s\"; v=\"%s\"", Constants.ABOUT_TITLE, Constants.VERSION));
+            requestProps.put("Sec-CH-UA", String.format("\"%s\"; v=\"%s\", \"%s\"; v=\"%s\"",
+                                                        Constants.ABOUT_TITLE,
+                                                        Constants.VERSION,
+                                                        getFrameworkName(),
+                                                        getFrameworkVersion()));
             log.trace("User agent string for URL requests:\n\n{}", requestProps.toString());
         }
         return requestProps;

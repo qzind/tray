@@ -155,7 +155,12 @@ public class WebAppTest {
         }
         job.endJob();
 
-        return true;
+        while(job.getJobStatus() == PrinterJob.JobStatus.NOT_STARTED || job.getJobStatus() == PrinterJob.JobStatus.PRINTING) {
+            try { Thread.sleep(100); }
+            catch(InterruptedException ignore) {}
+        }
+
+        return job.getJobStatus() != PrinterJob.JobStatus.ERROR;
     }
 
     public static boolean testVectorFittedPrints(int trials) throws Throwable {
@@ -171,7 +176,12 @@ public class WebAppTest {
         }
         job.endJob();
 
-        return true;
+        while(job.getJobStatus() == PrinterJob.JobStatus.NOT_STARTED || job.getJobStatus() == PrinterJob.JobStatus.PRINTING) {
+            try { Thread.sleep(100); }
+            catch(InterruptedException ignore) {}
+        }
+
+        return job.getJobStatus() != PrinterJob.JobStatus.ERROR;
     }
 
     private static WebAppModel buildModel(String index, double width, double height, double zoom, boolean scale, int hue) {

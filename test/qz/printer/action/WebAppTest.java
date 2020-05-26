@@ -15,6 +15,7 @@ import java.util.Arrays;
 public class WebAppTest {
 
     private static final Logger log = LoggerFactory.getLogger(WebAppTest.class);
+    private static final int SPOOLER_WAIT = 2000; // millis
 
     public static void main(String[] args) throws Throwable {
         WebApp.initialize();
@@ -155,10 +156,11 @@ public class WebAppTest {
         }
         job.endJob();
 
-        while(job.getJobStatus() == PrinterJob.JobStatus.NOT_STARTED || job.getJobStatus() == PrinterJob.JobStatus.PRINTING) {
-            try { Thread.sleep(100); }
-            catch(InterruptedException ignore) {}
+        try {
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT/1000);
+            Thread.sleep(2000);
         }
+        catch(InterruptedException ignore) {}
 
         return job.getJobStatus() != PrinterJob.JobStatus.ERROR;
     }
@@ -176,10 +178,11 @@ public class WebAppTest {
         }
         job.endJob();
 
-        while(job.getJobStatus() == PrinterJob.JobStatus.NOT_STARTED || job.getJobStatus() == PrinterJob.JobStatus.PRINTING) {
-            try { Thread.sleep(100); }
-            catch(InterruptedException ignore) {}
+        try {
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT/1000);
+            Thread.sleep(2000);
         }
+        catch(InterruptedException ignore) {}
 
         return job.getJobStatus() != PrinterJob.JobStatus.ERROR;
     }

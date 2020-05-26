@@ -152,8 +152,6 @@ public class AboutInfo {
     }
 
     public static Version findLatestVersion() {
-        Version latestVersion = Constants.VERSION;
-
         try {
             URL api = new URL(Constants.VERSION_CHECK_URL);
             BufferedReader br = new BufferedReader(new InputStreamReader(api.openStream()));
@@ -164,16 +162,22 @@ public class AboutInfo {
                 rawJson.append(line);
             }
 
-            JSONArray json = new JSONArray(rawJson.toString());
-            latestVersion = Version.valueOf(json.getJSONObject(0).getString("name"));
-
-            log.trace("Found latest version: {}", latestVersion);
+            JSONArray versions = new JSONArray(rawJson.toString());
+            for(int i = 0; i < versions.length(); i++) {
+                JSONObject versionData = versions.getJSONObject(i);
+                if(versionData.getString("target_commitish").equals("master")) {
+                    Version latestVersion = Version.valueOf(versionData.getString("name"));
+                    log.trace("Found latest version: {}", latestVersion);
+                    return latestVersion;
+                }
+            }
+            log.error("Failed to get latest version info");
         }
         catch(Exception e) {
             log.error("Failed to get latest version info", e);
         }
 
-        return latestVersion;
+        return Constants.VERSION;
     }
 
 }

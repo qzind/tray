@@ -435,6 +435,15 @@ public class SystemUtilities {
         return "jar".equals(classProtocol);
     }
 
+    public static void appendProperty(String property, String value) {
+        appendProperty(property, value, File.pathSeparator);
+    }
+
+    public static void appendProperty(String property, String value, String delimiter) {
+        String currentValue = System.getProperty(property);
+        System.setProperty(property, currentValue == null ? value : currentValue + delimiter + value);
+    }
+
     public static boolean isJDK() {
         String path = System.getProperty("sun.boot.library.path");
         if(path != null) {

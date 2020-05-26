@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -23,7 +25,7 @@ import qz.common.Constants;
 public final class ConnectionUtilities {
 
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(ConnectionUtilities.class);
-    private static String userAgent;
+    private static Map<String,String> requestProps;
 
     /**
      * Returns an input stream that reads from the URL.
@@ -33,42 +35,60 @@ public final class ConnectionUtilities {
      */
     public static InputStream getInputStream(String urlString) throws IOException {
         URLConnection urlConn = new URL(urlString).openConnection();
-        urlConn.setRequestProperty("User-Agent", getUserAgent());
+        for( String key : getRequestProperties().keySet()) {
+            urlConn.setRequestProperty(key, requestProps.get(key));
+        }
         return urlConn.getInputStream();
     }
 
-    private static String getUserAgent() {
-        if (userAgent == null) {
-            //mozilla 5.0 compat
-            userAgent = String.format("Mozilla/5.0 (%s; %s) %s/%s Java/%s",
-                                      getOS(),
-                                      getArch(),
-                                      Constants.ABOUT_TITLE.replaceAll("[^a-zA-Z]", ""),
-                                      Constants.VERSION.getNormalVersion(),
-                                      System.getProperty("java.vm.specification.version")
-            );
-            log.debug("User agent string for URL requests: {}", userAgent);
+    private static Map<String, String> getRequestProperties() {
+        if (requestProps == null) {
+            requestProps = new HashMap<String, String>() {
+                @Override
+                public String toString() {
+                    StringBuilder sb = new StringBuilder();
+                    for (String key : keySet())
+                        sb.append(key + ": " + get(key) + "\n");
+                    return sb.toString();
+                }
+            };
+
+            // Legacy User-Agent String
+            requestProps.put("User-Agent", String.format("Mozilla/5.0 (%s; %s) %s/%s %s/%s",
+                                                         getUserAgentOS(),
+                                                         getUserAgentArch(),
+                                                         Constants.ABOUT_TITLE.replaceAll("[^a-zA-Z]", ""),
+                                                         Constants.VERSION.getNormalVersion(),
+                                                         getFrameworkName(),
+                                                         getFrameworkMajorVersion()
+
+            ));
+
+            // Client Hints
+            requestProps.put("Sec-CH-UA-Platform", getPlatform(false));
+            requestProps.put("Sec-CH-UA-Platform-Version", getPlatformVersion());
+            requestProps.put("Sec-CH-UA-Arch", getArch());
+            requestProps.put("Sec-CH-UA-Full-Version", Constants.VERSION.toString());
+            requestProps.put("Sec-CH-UA", String.format("\"%s\"; v=\"%s\", \"%s\"; v=\"%s\"",
+                                                        Constants.ABOUT_TITLE,
+                                                        Constants.VERSION,
+                                                        getFrameworkName(),
+                                                        getFrameworkVersion()));
+            log.trace("User agent string for URL requests:\n\n{}", requestProps.toString());
         }
-        return userAgent;
+        return requestProps;
     }
 
     private static String getArch() {
         String arch = System.getProperty("os.arch");
-        arch = "amd64".equalsIgnoreCase(arch) ? "x86_64" : arch;
-        if (SystemUtilities.isWow64()) {
-            return "WOW64";
-        } else if(SystemUtilities.isLinux()) {
-            return "Linux " + arch;
-        }
-        return arch;
+        return "amd64".equalsIgnoreCase(arch) ? "x86_64" : arch;
     }
 
-    private static String getOS() {
-        if (SystemUtilities.isWindows()) {
-            //assume NT
-            return String.format("Windows NT %s", System.getProperty("os.version"));
+    private static String getPlatform(boolean legacy) {
+        if(SystemUtilities.isWindows()) {
+            return legacy ? "Windows NT" : "Windows";
         } else if(SystemUtilities.isMac()) {
-            return String.format("Macintosh; %s %s", System.getProperty("os.name"), System.getProperty("os.version").replace('.', '_'));
+            return legacy ? "Macintosh" : "macOS";
         } else if(SystemUtilities.isLinux()) {
             //detect display manager
             String linuxOS = "";
@@ -85,5 +105,42 @@ public final class ConnectionUtilities {
             return linuxOS;
         }
         return System.getProperty("os.name");
+    }
+
+    private static String getPlatformVersion() {
+        return System.getProperty("os.version");
+    }
+
+    private static String getFrameworkName() {
+        return "Java";
+    }
+
+    private static String getFrameworkMajorVersion() {
+        return System.getProperty("java.vm.specification.version");
+    }
+
+    private static String getFrameworkVersion() {
+        return Constants.JAVA_VERSION.toString();
+    }
+
+    private static String getUserAgentOS() {
+        if (SystemUtilities.isWindows()) {
+            //assume NT
+            return String.format("%s %s", getPlatform(true), getPlatformVersion());
+        } else if(SystemUtilities.isMac()) {
+            return String.format("%s; %s %s", getPlatform(true), System.getProperty("os.name"), getPlatformVersion().replace('.', '_'));
+        }
+        return getPlatform(true);
+    }
+
+    private static String getUserAgentArch() {
+        String arch = System.getProperty("os.arch");
+        arch = "amd64".equalsIgnoreCase(arch) ? "x86_64" : arch;
+        if (SystemUtilities.isWow64()) {
+            return "WOW64";
+        } else if(SystemUtilities.isLinux()) {
+            return "Linux " + arch;
+        }
+        return arch;
     }
 }

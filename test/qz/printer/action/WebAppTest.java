@@ -158,7 +158,7 @@ public class WebAppTest {
 
         try {
             log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT/1000);
-            Thread.sleep(2000);
+            Thread.sleep(SPOOLER_WAIT);
         }
         catch(InterruptedException ignore) {}
 
@@ -180,7 +180,7 @@ public class WebAppTest {
 
         try {
             log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT/1000);
-            Thread.sleep(2000);
+            Thread.sleep(SPOOLER_WAIT);
         }
         catch(InterruptedException ignore) {}
 

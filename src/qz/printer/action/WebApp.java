@@ -163,10 +163,7 @@ public class WebApp extends Application {
                 }
                 if (useMonocle) {
                     log.trace("Initializing monocle platform");
-
-                    System.setProperty("javafx.platform", "monocle"); // Standard JDKs
-                    System.setProperty("glass.platform", "Monocle"); // Headless JDKs
-                    System.setProperty("monocle.platform", "Headless");
+                    System.setProperty("javafx.platform", "monocle");
 
                     //software rendering required headless environments
                     if (headless) {

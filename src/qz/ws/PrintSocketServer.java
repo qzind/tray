@@ -60,7 +60,7 @@ public class PrintSocketServer {
     private static TrayManager trayManager;
     private static CertificateManager certificateManager;
 
-    private static boolean headless;
+    private static boolean forceHeadless;
 
 
     public static void main(String[] args) {
@@ -68,7 +68,7 @@ public class PrintSocketServer {
         if(parser.intercept()) {
             System.exit(parser.getExitCode());
         }
-        headless = parser.hasFlag("-h", "--headless");
+        forceHeadless = parser.hasFlag("-h", "--headless");
         log.info(Constants.ABOUT_TITLE + " version: {}", Constants.VERSION);
         log.info(Constants.ABOUT_TITLE + " vendor: {}", Constants.ABOUT_COMPANY);
         log.info("Java version: {}", Constants.JAVA_VERSION.toString());
@@ -92,7 +92,7 @@ public class PrintSocketServer {
 
         try {
             log.info("Starting {} {}", Constants.ABOUT_TITLE, Constants.VERSION);
-            SwingUtilities.invokeAndWait(() -> trayManager = new TrayManager(headless));
+            SwingUtilities.invokeAndWait(() -> trayManager = new TrayManager(forceHeadless));
             runServer();
         }
         catch(Exception e) {

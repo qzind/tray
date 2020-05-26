@@ -40,9 +40,10 @@ public class PropertyHelper extends Properties {
     }
 
     public boolean getBoolean(String key, boolean defaultVal) {
-        try {
-            return Boolean.parseBoolean(getProperty(key));
-        } catch (Throwable t) {
+        String prop = getProperty(key);
+        if (prop != null) {
+            return Boolean.parseBoolean(prop);
+        } else {
             return defaultVal;
         }
     }

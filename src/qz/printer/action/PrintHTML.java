@@ -76,7 +76,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                 PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
 
                 double pageZoom = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()) / 72.0;
-                if (pageZoom <= 1 || data.optBoolean("forceOriginal")) { pageZoom = 1; }
+                if (pageZoom <= 1) { pageZoom = 1; }
 
                 double pageWidth = 0;
                 double pageHeight = 0;

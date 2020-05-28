@@ -225,6 +225,10 @@ public class WebApp extends Application {
         model.setZoom(1); //vector prints do not need to use zoom
         raster = false;
 
+        // scale print size up to web dpi
+        model.setWebHeight(model.getWebHeight() * (96d / 72d));
+        model.setWebWidth(model.getWebWidth() * (96d / 72d));
+
         load(model, (int frames) -> {
             try {
                 PageLayout layout = job.getJobSettings().getPageLayout();

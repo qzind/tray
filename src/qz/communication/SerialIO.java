@@ -80,7 +80,35 @@ public class SerialIO {
                 data.append(port.readBytes(event.getEventValue(), TIMEOUT));
 
                 String response = null;
-                if (format.getBoundStart() != null && format.getBoundStart().length > 0) {
+                if (format.isBoundNewline()) {
+                    //process as line delimited
+
+                    //find closest line delimiter
+                    Integer endIdx = min(ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] { '\r'} ),
+                                         ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] { '\n'} ));
+                    if(endIdx != null) {
+                        byte[] output = new byte[endIdx];
+                        System.arraycopy(data.getByteArray(), 0, output, 0, endIdx);
+                        data.clearRange(0, endIdx);
+                        StringBuffer sb = new StringBuffer(output.length);
+                        sb.append(output);
+
+                        //remove trailing line delimiter
+                        while(true) {
+                            char endChar = sb.charAt(sb.length() - 1);
+                            if(endChar == '\n' || endChar == '\r') {
+                                sb.setLength(sb.length() - 1);
+                            } else {
+                                break;
+                            }
+                        }
+
+                        if(sb.length() > 0) {
+                            //send non-empty string
+                            response = sb.toString();
+                        }
+                    }
+                } else if (format.getBoundStart() != null && format.getBoundStart().length > 0) {
                     //process as formatted response
                     Integer startIdx = ByteUtilities.firstMatchingIndex(data.getByteArray(), format.getBoundStart());
 
@@ -250,6 +278,12 @@ public class SerialIO {
         portName = null;
 
         return closed;
+    }
+
+    private Integer min(Integer a, Integer b) {
+        if(a == null) return b;
+        if(b == null) return a;
+        return Math.min(a, b);
     }
 
 }

@@ -112,6 +112,11 @@ public class SerialOptions {
                     }
                 }
 
+                if (!respOpts.isNull("untilNewline")) {
+                    try { responseFormat.boundNewline = respOpts.getBoolean("untilNewline"); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "untilNewline", respOpts.opt("untilNewline")); }
+                }
+
                 if (!respOpts.isNull("width")) {
                     try { responseFormat.fixedWidth = respOpts.getInt("width"); }
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "width", respOpts.opt("width")); }
@@ -277,6 +282,7 @@ public class SerialOptions {
         private Charset encoding = Charset.forName("UTF-8");    //Response charset
         private byte[] boundStart;                              //Character(s) denoting start of new response
         private byte[] boundEnd;                                //Character denoting end of a response
+        private boolean boundNewline;                           //If the response should be split on \r?\n
         private int fixedWidth;                                 //Fixed length response bounds
         private ByteParam length;                               //Info about the data length byte(s)
         private ByteParam crc;                                  //Info about the data crc byte(s)
@@ -310,6 +316,8 @@ public class SerialOptions {
         public boolean isIncludeStart() {
             return includeStart;
         }
+
+        public boolean isBoundNewline() { return boundNewline; }
     }
 
     public class ByteParam {

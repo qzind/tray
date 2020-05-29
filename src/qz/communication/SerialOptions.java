@@ -317,7 +317,9 @@ public class SerialOptions {
             return includeStart;
         }
 
-        public boolean isBoundNewline() { return boundNewline; }
+        public boolean isBoundNewline() {
+            return boundNewline;
+        }
     }
 
     public class ByteParam {

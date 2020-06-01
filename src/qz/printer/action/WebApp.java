@@ -234,19 +234,21 @@ public class WebApp extends Application {
         model.setZoom(1); //vector prints do not need to use zoom
         raster = false;
 
-        // scale print size up to web dpi
-        model.setWebHeight(model.getWebHeight() * (96d / 72d));
-        model.setWebWidth(model.getWebWidth() * (96d / 72d));
-
         load(model, (int frames) -> {
             try {
+                double printScale = 72d / 96d;
+                webView.getTransforms().add(new Scale(printScale, printScale));
+
                 PageLayout layout = job.getJobSettings().getPageLayout();
                 if (model.isScaled()) {
+                    double viewWidth = webView.getWidth() * printScale;
+                    double viewHeight = webView.getHeight() * printScale;
+
                     double scale;
-                    if ((webView.getWidth() / webView.getHeight()) >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
-                        scale = (layout.getPrintableWidth() / webView.getWidth());
+                    if ((viewWidth / viewHeight) >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
+                        scale = (layout.getPrintableWidth() / viewWidth);
                     } else {
-                        scale = (layout.getPrintableHeight() / webView.getHeight());
+                        scale = (layout.getPrintableHeight() / viewHeight);
                     }
                     webView.getTransforms().add(new Scale(scale, scale));
                 }
@@ -308,11 +310,6 @@ public class WebApp extends Application {
             stage.show();
             stage.toBack();
         });
-
-        //adjust raster prints to web dpi
-        double increase = 96d / 72d;
-        model.setWebWidth(model.getWebWidth() * increase);
-        model.setWebHeight(model.getWebHeight() * increase);
 
         raster = true;
 

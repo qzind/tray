@@ -198,6 +198,10 @@ public class WebAppTest {
                                                     "           <td>" + width + "x" + height + "</td>" +
                                                     "       </tr>" +
                                                     "       <tr>" +
+                                                    "           <td>Physical size:</td>" +
+                                                    "           <td>" + (width / 72d) + "x" + (height / 72d) + "</td>" +
+                                                    "       </tr>" +
+                                                    "       <tr>" +
                                                     "           <td>Zoomed to</td>" +
                                                     "           <td>x " + zoom + "</td>" +
                                                     "       </tr>" +
@@ -206,7 +210,7 @@ public class WebAppTest {
                                                     "</html>",
                                             true, width, height, scale, zoom);
 
-        log.trace("Generating #{} = [({},{}), x{}]", index, model.getWebWidth(), model.getWebHeight(), model.getZoom());
+        log.trace("Generating #{} = [({},{}), x{}]", index, model.getWidth(), model.getHeight(), model.getZoom());
 
         return model;
     }

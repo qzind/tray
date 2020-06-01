@@ -141,7 +141,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             for(WebAppModel model : models) {
                 try { images.add(WebApp.raster(model)); }
                 catch(Throwable t) {
-                    throw new PrinterException("Failed to take raster of web page, image size is too large");
+                    throw new PrinterException(t.getMessage());
                 }
             }
 

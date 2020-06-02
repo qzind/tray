@@ -33,7 +33,15 @@ import static qz.installer.Installer.PrivilegeLevel.*;
 public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     private static final Logger log = LoggerFactory.getLogger(LinuxCertificateInstaller.class);
 
-    private static String NSSDB = "sql:" + System.getenv("HOME") + "/.pki/nssdb";
+    private static String[] NSSDB_URLS = {
+            // Conventional cert store
+            "sql:" + System.getenv("HOME") + "/.pki/nssdb",
+
+            // Snap-specific cert stores
+            "sql:" + System.getenv("HOME") + "/snap/chromium/current/.pki/nssdb",
+            "sql:" + System.getenv("HOME") + "/snap/opera/current/.pki/nssdb/",
+            "sql:" + System.getenv("HOME") + "/snap/opera-beta/current/.pki/nssdb/"
+    };
 
     private Installer.PrivilegeLevel certType;
 
@@ -57,7 +65,9 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
         boolean success = true;
         if(certType == SYSTEM) return false;
         for(String nickname : idList) {
-            success = success && ShellUtilities.execute("certutil", "-d", NSSDB, "-D", "-n", nickname);
+            for(String nssdb : NSSDB_URLS) {
+                success = success && ShellUtilities.execute("certutil", "-d", nssdb, "-D", "-n", nickname);
+            }
         }
         return success;
     }
@@ -66,16 +76,18 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
         ArrayList<String> nicknames = new ArrayList<>();
         if(certType == SYSTEM) return nicknames;
         try {
-            Process p = Runtime.getRuntime().exec(new String[] {"certutil", "-d", NSSDB, "-L"});
-            BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line;
-            while ((line = in.readLine()) != null) {
-                if (line.startsWith(Constants.ABOUT_COMPANY + " ")) {
-                    nicknames.add(Constants.ABOUT_COMPANY);
-                    break; // Stop reading input; nicknames can't appear more than once
+            for(String nssdb : NSSDB_URLS) {
+                Process p = Runtime.getRuntime().exec(new String[] {"certutil", "-d", nssdb, "-L"});
+                BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line;
+                while((line = in.readLine()) != null) {
+                    if (line.startsWith(Constants.ABOUT_COMPANY + " ")) {
+                        nicknames.add(Constants.ABOUT_COMPANY);
+                        break; // Stop reading input; nicknames can't appear more than once
+                    }
                 }
+                in.close();
             }
-            in.close();
         } catch(IOException e) {
             log.warn("Could not get certificate nicknames", e);
         }
@@ -87,13 +99,18 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     public boolean add(File certFile) {
         if(certType == SYSTEM) return false;
         // Create directories as needed
-        String[] parts = NSSDB.split(":", 2);
-        if(parts.length > 1) {
-            new File(parts[1]).mkdirs();
-            return ShellUtilities.execute("certutil", "-d", NSSDB, "-A", "-t", "TC", "-n", Constants.ABOUT_COMPANY, "-i", certFile.getPath());
+        boolean success = true;
+        for(String nssdb : NSSDB_URLS) {
+            String[] parts = nssdb.split(":", 2);
+            if (parts.length > 1) {
+                new File(parts[1]).mkdirs();
+                if(!ShellUtilities.execute("certutil", "-d", nssdb, "-A", "-t", "TC", "-n", Constants.ABOUT_COMPANY, "-i", certFile.getPath())) {
+                    log.warn("Something went wrong creating {}. HTTPS will fail on browsers which depend on it.", nssdb);
+                    success = false;
+                }
+            }
         }
-        log.warn("Something went wrong creating {}. HTTPS will fail on browsers which depend on it.", NSSDB);
-        return false;
+        return success;
     }
 
     private boolean findCertutil() {

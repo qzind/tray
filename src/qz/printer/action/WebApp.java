@@ -334,6 +334,7 @@ public class WebApp extends Application {
                         }
                     }
                 });
+                Toolkit.getToolkit().requestNextPulse();
             }
 
             return frames >= 2;

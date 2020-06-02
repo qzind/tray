@@ -3,6 +3,7 @@ package qz.printer.action;
 import javafx.print.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.common.Constants;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -10,28 +11,31 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 public class WebAppTest {
 
     private static final Logger log = LoggerFactory.getLogger(WebAppTest.class);
     private static final int SPOOLER_WAIT = 2000; // millis
+    private static final Path RASTER_OUTPUT_DIR = Paths.get("./out"); // see ant ${out.dir}
+    private static final String RASTER_OUTPUT_FORMAT = "png";
 
     public static void main(String[] args) throws Throwable {
         WebApp.initialize();
 
         // RASTER//
 
-        boolean audit = false;
-        if (args.length > 0) { audit = Boolean.parseBoolean(args[0]) || "1".equals(args[0]); }
-        int knownHeightTests = 1000;
-        if (args.length > 1) { knownHeightTests = Integer.parseInt(args[1]); }
-        int fitToHeightTests = 1000;
-        if (args.length > 2) { fitToHeightTests = Integer.parseInt(args[2]); }
+        cleanup();
+        int rasterKnownHeightTests = 1000;
+        if (args.length > 0) { rasterKnownHeightTests = Integer.parseInt(args[1]); }
+        int rasterFittedHeightTests = 1000;
+        if (args.length > 1) { rasterFittedHeightTests = Integer.parseInt(args[2]); }
 
-        if (!testKnownSize(knownHeightTests, audit)) {
+        if (!testRasterKnownSize(rasterKnownHeightTests)) {
             log.error("Testing well defined sizes failed");
-        } else if (!testFittedSize(fitToHeightTests, audit)) {
+        } else if (!testRasterFittedSize(rasterFittedHeightTests)) {
             log.error("Testing fit to height sizing failed");
         } else {
             log.info("All raster tests passed");
@@ -58,7 +62,7 @@ public class WebAppTest {
     }
 
 
-    public static boolean testKnownSize(int trials, boolean enableAuditing) throws Throwable {
+    public static boolean testRasterKnownSize(int trials) throws Throwable {
         for(int i = 0; i < trials; i++) {
             //new size every run
             double printW = Math.max(2, (int)(Math.random() * 110) / 10d) * 72d;
@@ -78,23 +82,19 @@ public class WebAppTest {
             //check capture for dimensional accuracy within 1 pixel of expected (due to int rounding)
             int expectedWidth = (int)Math.round(printW * (96d / 72d) * zoom);
             int expectedHeight = (int)Math.round(printH * (96d / 72d) * zoom);
-            boolean audit = enableAuditing && Math.random() < 0.1;
             boolean passed = true;
 
             if (!Arrays.asList(expectedWidth, expectedWidth + 1, expectedWidth - 1).contains(sample.getWidth())) {
                 log.error("Expected width to be {} but got {}", expectedWidth, sample.getWidth());
-                audit = true;
                 passed = false;
             }
             if (!Arrays.asList(expectedHeight, expectedHeight + 1, expectedHeight - 1).contains(sample.getHeight())) {
                 log.error("Expected height to be {} but got {}", expectedHeight, sample.getHeight());
-                audit = true;
                 passed = false;
             }
 
-            if (audit) {
-                saveAudit(passed? id:"invalid", sample);
-            }
+            saveAudit(passed? id:"invalid", sample);
+
             if (!passed) {
                 return false;
             }
@@ -103,7 +103,7 @@ public class WebAppTest {
         return true;
     }
 
-    public static boolean testFittedSize(int trials, boolean enableAuditing) throws Throwable {
+    public static boolean testRasterFittedSize(int trials) throws Throwable {
         for(int i = 0; i < trials; i++) {
             //new size every run (height always starts at 0)
             double printW = Math.max(2, (int)(Math.random() * 110) / 10d) * 72d;
@@ -122,18 +122,15 @@ public class WebAppTest {
             //check capture for dimensional accuracy within 1 pixel of expected (due to int rounding)
             //expected height is not known for these tests
             int expectedWidth = (int)Math.round(printW * (96d / 72d) * zoom);
-            boolean audit = enableAuditing && Math.random() < 0.1;
             boolean passed = true;
 
             if (!Arrays.asList(expectedWidth, expectedWidth + 1, expectedWidth - 1).contains(sample.getWidth())) {
                 log.error("Expected width to be {} but got {}", expectedWidth, sample.getWidth());
-                audit = true;
                 passed = false;
             }
 
-            if (audit) {
-                saveAudit(passed? id:"invalid", sample);
-            }
+            saveAudit(passed? id:"invalid", sample);
+
             if (!passed) {
                 return false;
             }
@@ -201,6 +198,10 @@ public class WebAppTest {
                                                     "           <td>" + width + "x" + height + "</td>" +
                                                     "       </tr>" +
                                                     "       <tr>" +
+                                                    "           <td>Physical size:</td>" +
+                                                    "           <td>" + (width / 72d) + "x" + (height / 72d) + "</td>" +
+                                                    "       </tr>" +
+                                                    "       <tr>" +
                                                     "           <td>Zoomed to</td>" +
                                                     "           <td>x " + zoom + "</td>" +
                                                     "       </tr>" +
@@ -209,7 +210,7 @@ public class WebAppTest {
                                                     "</html>",
                                             true, width, height, scale, zoom);
 
-        log.trace("Generating #{} = [({},{}), x{}]", index, model.getWebWidth(), model.getWebHeight(), model.getZoom());
+        log.trace("Generating #{} = [({},{}), x{}]", index, model.getWidth(), model.getHeight(), model.getZoom());
 
         return model;
     }
@@ -236,11 +237,24 @@ public class WebAppTest {
         return job;
     }
 
-    private static void saveAudit(String id, BufferedImage capture) throws IOException {
-        File temp = File.createTempFile("qz-" + id, ".png");
-        ImageIO.write(capture, "png", temp);
+    private static void cleanup() {
+        File[] files;
+        if ((files = RASTER_OUTPUT_DIR.toFile().listFiles()).length > 0) {
+            for(File file : files) {
+                if (file.getName().endsWith("." + RASTER_OUTPUT_FORMAT)
+                        && file.getName().startsWith(String.format("%s-", Constants.DATA_DIR))) {
+                    if(!file.delete()) {
+                        log.warn("Could not delete {}", file);
+                    }
+                }
+            }
+        }
+    }
 
-        log.info("Sampled {}: {}", id, temp.getName());
+    private static void saveAudit(String id, BufferedImage capture) throws IOException {
+        Path image = RASTER_OUTPUT_DIR.resolve(String.format("%s-%s.%s", Constants.DATA_DIR, id, RASTER_OUTPUT_FORMAT));
+        ImageIO.write(capture, RASTER_OUTPUT_FORMAT, image.toFile());
+        log.info("Wrote {}: {}", id, image);
     }
 
 }

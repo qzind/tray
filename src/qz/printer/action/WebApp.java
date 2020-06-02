@@ -83,14 +83,6 @@ public class WebApp extends Application {
                 base.getAttributes().setNamedItem(applied);
             }
 
-            //width was resized earlier (for responsive html), then calculate the best fit height
-            // FIXME: Should only be needed when height is unknown but fixes blank vector prints
-            String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
-            if (pageHeight <= 0) {
-                pageHeight = Double.parseDouble(heightText);
-                log.trace("Setting HTML page height to {}", pageHeight);
-            }
-
             // find and set page zoom for increased quality
             double usableZoom = calculateSupportedZoom(pageWidth, pageHeight);
             if (usableZoom < pageZoom) {
@@ -100,9 +92,26 @@ public class WebApp extends Application {
             webView.setZoom(pageZoom);
             log.trace("Zooming in by x{} for increased quality", pageZoom);
 
-            webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
-            webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
-            webView.setMaxSize(pageWidth * pageZoom, pageHeight * pageZoom);
+            //width was resized earlier (for responsive html), then calculate the best fit height
+            // FIXME: Should only be needed when height is unknown but fixes blank vector prints
+            double fittedHeight = findHeight();
+            boolean heightNeeded = pageHeight <= 0;
+
+            if (heightNeeded) {
+                pageHeight = fittedHeight;
+            }
+
+            adjustSize(pageWidth * pageZoom, pageHeight * pageZoom);
+
+            //need to check for height again as resizing can cause partial results
+            if (heightNeeded) {
+                fittedHeight = findHeight();
+                if (fittedHeight != pageHeight) {
+                    adjustSize(pageWidth * pageZoom, fittedHeight * pageZoom);
+                }
+            }
+
+            log.trace("Set HTML page height to {}", pageHeight);
 
             autosize(webView);
 
@@ -145,7 +154,7 @@ public class WebApp extends Application {
                 // JavaFX native libs
                 if (SystemUtilities.isJar()) {
                     SystemUtilities.appendProperty("java.library.path", new File(SystemUtilities.detectJarPath()).getParent() + "/libs/");
-                } else if(hasConflictingLib()) {
+                } else if (hasConflictingLib()) {
                     // IDE helper for "no suitable pipeline found" errors
                     System.err.println("\n=== WARNING ===\nWrong javafx platform detected. Delete lib/javafx/<platform> to correct this.\n");
                 }
@@ -227,13 +236,19 @@ public class WebApp extends Application {
 
         load(model, (int frames) -> {
             try {
+                double printScale = 72d / 96d;
+                webView.getTransforms().add(new Scale(printScale, printScale));
+
                 PageLayout layout = job.getJobSettings().getPageLayout();
                 if (model.isScaled()) {
+                    double viewWidth = webView.getWidth() * printScale;
+                    double viewHeight = webView.getHeight() * printScale;
+
                     double scale;
-                    if ((webView.getWidth() / webView.getHeight()) >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
-                        scale = (layout.getPrintableWidth() / webView.getWidth());
+                    if ((viewWidth / viewHeight) >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
+                        scale = (layout.getPrintableWidth() / viewWidth);
                     } else {
-                        scale = (layout.getPrintableHeight() / webView.getHeight());
+                        scale = (layout.getPrintableHeight() / viewHeight);
                     }
                     webView.getTransforms().add(new Scale(scale, scale));
                 }
@@ -296,11 +311,6 @@ public class WebApp extends Application {
             stage.toBack();
         });
 
-        //adjust raster prints to web dpi
-        double increase = 96d / 72d;
-        model.setWebWidth(model.getWebWidth() * increase);
-        model.setWebHeight(model.getWebHeight() * increase);
-
         raster = true;
 
         load(model, (int frames) -> {
@@ -324,6 +334,7 @@ public class WebApp extends Application {
                         }
                     }
                 });
+                Toolkit.getToolkit().requestNextPulse();
             }
 
             return frames >= 2;
@@ -354,9 +365,7 @@ public class WebApp extends Application {
             pageHeight = model.getWebHeight();
 
             log.trace("Setting starting size {}:{}", pageWidth, pageHeight);
-            webView.setMinSize(pageWidth * pageZoom, pageHeight * pageZoom);
-            webView.setPrefSize(pageWidth * pageZoom, pageHeight * pageZoom);
-            webView.setMaxSize(pageWidth * pageZoom, pageHeight * pageZoom);
+            adjustSize(pageWidth * pageZoom, pageHeight * pageZoom);
 
             if (pageHeight == 0) {
                 webView.setMinHeight(1);
@@ -374,6 +383,17 @@ public class WebApp extends Application {
                 webView.getEngine().load(model.getSource());
             }
         });
+    }
+
+    private static double findHeight() {
+        String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
+        return Double.parseDouble(heightText);
+    }
+
+    private static void adjustSize(double toWidth, double toHeight) {
+        webView.setMinSize(toWidth, toHeight);
+        webView.setPrefSize(toWidth, toHeight);
+        webView.setMaxSize(toWidth, toHeight);
     }
 
     /**
@@ -430,9 +450,9 @@ public class WebApp extends Application {
         URL url = Application.class.getResource("/" + Application.class.getName().replace('.', '/') + ".class");
         String graphicsJar = url.toString().replaceAll("file:/|jar:", "").replaceAll("!.*", "");
         log.trace("JavaFX will startup using {}", graphicsJar);
-        if(SystemUtilities.isWindows()) {
+        if (SystemUtilities.isWindows()) {
             return !graphicsJar.contains("windows");
-        } else if(SystemUtilities.isMac()) {
+        } else if (SystemUtilities.isMac()) {
             return !graphicsJar.contains("osx") && !graphicsJar.contains("mac");
         }
         return !graphicsJar.contains("linux");

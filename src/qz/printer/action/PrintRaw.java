@@ -148,6 +148,13 @@ public class PrintRaw implements PrintProcessor {
     private ImageWrapper getImageWrapper(String data, JSONObject opt, boolean fromFile) throws IOException {
         BufferedImage bi;
 
+        // 2.0 compat
+        if (data.startsWith("data:image/") && data.contains(";base64,")) {
+            String[] parts = data.split(";base64,");
+            data = parts[parts.length - 1];
+            fromFile = false;
+        }
+
         if (fromFile) {
             bi = ImageIO.read(ConnectionUtilities.getInputStream(data));
         } else {

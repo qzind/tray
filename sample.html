@@ -2776,7 +2776,7 @@
     }
 
     function updateConfig(cleanConditions) {
-        var pxlSize = undefined;
+        var pxlSize = null;
         if (isChecked($("#pxlSizeActive"), cleanConditions['pxlSizeActive'])) {
             pxlSize = {
                 width: $("#pxlSizeWidth").val(),
@@ -2784,7 +2784,7 @@
             };
         }
 
-        var pxlBounds = undefined;
+        var pxlBounds = null;
         if (isChecked($("#pxlBoundsActive"), cleanConditions['pxlBoundsActive'])) {
             pxlBounds = {
                 x: $("#pxlBoundX").val(),

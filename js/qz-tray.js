@@ -665,8 +665,11 @@ var qz = (function() {
                 return target;
             },
 
-            isVersion: function(major, minor, patch) {
-                var semver = _qz.websocket.connection.version.split(/[.-]/g);
+            isVersion: function(major, minor, patch, build) {
+                var semver = _qz.websocket.connection.version.split(/[\\+\\.-]/g);
+                if(build != undefined && semver.length > 3) {
+                    return build == semver[3] && patch == semver[2] && minor == semver[1] && major == semver[0];
+                }
                 if(patch != undefined) {
                     return patch == semver[2] && minor == semver[1] && major == semver[0];
                 }

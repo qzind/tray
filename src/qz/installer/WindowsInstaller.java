@@ -55,7 +55,10 @@ public class WindowsInstaller extends Installer {
                 WindowsUtilities.deleteRegKey(HKEY_USERS, user.trim() + "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\" + ABOUT_TITLE);
             }
         });
-        FileUtils.deleteQuietly(new File(STARTUP + File.separator + ABOUT_TITLE + ".lnk"));
+
+        try {
+            FileUtils.deleteQuietly(new File(STARTUP + File.separator + ABOUT_TITLE + ".lnk"));
+        } catch(Win32Exception ignore) {}
 
         return this;
     }
@@ -68,7 +71,7 @@ public class WindowsInstaller extends Installer {
             String exe = destination + File.separator + PROPS_FILE+ ".exe";
             log.info("Creating launcher \"{}\" -> \"{}\"", lnk, exe);
             ShellLink.createLink(exe, lnk);
-        } catch(IOException e) {
+        } catch(IOException | Win32Exception e) {
             log.warn("Could not create launcher", e);
         }
         return this;
@@ -81,7 +84,7 @@ public class WindowsInstaller extends Installer {
             log.info("Creating startup entry \"{}\" -> \"{}\"", lnk, exe);
             ShellLink link = ShellLink.createLink(exe, lnk);
             link.setCMDArgs("--honorautostart"); // honors auto-start preferences
-        } catch(IOException e) {
+        } catch(IOException | Win32Exception e) {
             log.warn("Could not create startup launcher", e);
         }
         return this;
@@ -100,8 +103,10 @@ public class WindowsInstaller extends Installer {
                 new File(folder + File.separator + ABOUT_TITLE + ".lnk").delete();
                 // Since 2.1, start menus use subfolder
                 if (folder.equals(COMMON_START_MENU) || folder.equals(START_MENU)) {
-                    FileUtils.deleteQuietly(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE + ".lnk"));
-                    FileUtils.deleteDirectory(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE));
+                    try {
+                        FileUtils.deleteQuietly(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE + ".lnk"));
+                        FileUtils.deleteDirectory(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE));
+                    } catch(Win32Exception ignore) {}
                 }
             } catch(IOException ignore) {}
         }

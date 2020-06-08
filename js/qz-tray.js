@@ -17,6 +17,13 @@ var qz = (function() {
         };
     }
 
+    if (!Number.isInteger) {
+        Number.isInteger = function(value) {
+            return typeof value === 'number' && isFinite(value) && Math.floor(value) === value;
+        };
+    }
+
+
     // from SHA implementation
     if (typeof String.prototype.utf8Encode == 'undefined') {
         String.prototype.utf8Encode = function() { return unescape(encodeURIComponent(this)); };
@@ -343,6 +350,12 @@ var qz = (function() {
                     //websocket setup, query what version is connected
                     qz.api.getVersion().then(function(version) {
                         _qz.websocket.connection.version = version;
+                        _qz.websocket.connection.semver = version.split(/[\\+\\.-]/g);
+                        for(var i = 0; i < _qz.websocket.connection.semver.length; i++) {
+                            try {
+                                _qz.websocket.connection.semver[i] = parseInt(semver[i]);
+                            } catch(ignore) {}
+                        }
 
                         //algorithm can be declared before a connection, check for incompatibilities now that we have one
                         _qz.compatible.algorithm(true);
@@ -665,8 +678,28 @@ var qz = (function() {
                 return target;
             },
 
+            versionCompare: function(major, minor, patch, build) {
+                var semver = _qz.websocket.connection.semver;
+                if(semver[0] != major) {
+                    return semver[0] - major;
+                }
+                if(minor != undefined && semver[1] != minor) {
+                    return semver[1] - minor;
+                }
+                if(patch != undefined && semver[2] != patch) {
+                    return semver[2] - minor;
+                }
+                if(build != undefined && semver.length > 3 && semver[3] != build) {
+                    if(Number.isInteger(semver[3]) && Number.isInteger(build)) {
+                        return semver[3] - build;
+                    }
+                    return semver[3].toString().localeCompare(build.toString());
+                }
+                return 0;
+            },
+
             isVersion: function(major, minor, patch, build) {
-                var semver = _qz.websocket.connection.version.split(/[\\+\\.-]/g);
+                var semver = _qz.websocket.connection.semver;
                 if(build != undefined && semver.length > 3) {
                     return build == semver[3] && patch == semver[2] && minor == semver[1] && major == semver[0];
                 }
@@ -2326,6 +2359,14 @@ var qz = (function() {
              * @memberof qz.api
              */
             isVersion: _qz.tools.isVersion,
+
+            isVersionGreater: function(major, minor, patch, build) {
+                return _qz.tools.versionCompare(major, minor, patch, build) > 0;
+            },
+
+            isVersionLess: function(major, minor, patch, build) {
+                return _qz.tools.versionCompare(major, minor, patch, build) < 0;
+            },
 
             /**
              * Change the promise library used by QZ API.

@@ -150,7 +150,7 @@ var qz = (function() {
 
                                 if (config.keepAlive > 0) {
                                     var interval = setInterval(function() {
-                                        if (!qz.websocket.isActive()) {
+                                        if (!_qz.tools.isActive()) {
                                             clearInterval(interval);
                                             return;
                                         }
@@ -687,24 +687,38 @@ var qz = (function() {
             },
 
             versionCompare: function(major, minor, patch, build) {
-                var semver = _qz.websocket.connection.semver;
-                if (semver[0] != major) {
-                    return semver[0] - major;
+                if (_qz.tools.assertActive()) {
+                    var semver = _qz.websocket.connection.semver;
+                    if (semver[0] != major) {
+                        return semver[0] - major;
+                    }
+                    if (minor != undefined && semver[1] != minor) {
+                        return semver[1] - minor;
+                    }
+                    if (patch != undefined && semver[2] != patch) {
+                        return semver[2] - patch;
+                    }
+                    if (build != undefined && semver.length > 3 && semver[3] != build) {
+                        return Number.isInteger(semver[3]) && Number.isInteger(build) ? semver[3] - build : semver[3].toString().localeCompare(build.toString());
+                    }
+                    return 0;
                 }
-                if (minor != undefined && semver[1] != minor) {
-                    return semver[1] - minor;
-                }
-                if (patch != undefined && semver[2] != patch) {
-                    return semver[2] - patch;
-                }
-                if (build != undefined && semver.length > 3 && semver[3] != build) {
-                    return Number.isInteger(semver[3]) && Number.isInteger(build) ? semver[3] - build : semver[3].toString().localeCompare(build.toString());
-                }
-                return 0;
             },
 
             isVersion: function(major, minor, patch, build) {
                 return _qz.tools.versionCompare(major, minor, patch, build) == 0;
+            },
+
+            isActive: function() {
+                return _qz.websocket.connection != null && _qz.websocket.connection.established;
+            },
+
+            assertActive: function() {
+                if (_qz.tools.isActive()) {
+                    return true;
+                }
+                // Promise won't reject on throw; yet better than 'undefined'
+                throw new Error("A connection to QZ has not been established yet");
             }
         },
 
@@ -785,7 +799,7 @@ var qz = (function() {
             /** Check if QZ version supports chosen algorithm */
             algorithm: function(quiet) {
                 //if not connected yet we will assume compatibility exists for the time being
-                if (_qz.websocket.connection) {
+                if (_qz.tools.isActive()) {
                     if (_qz.tools.isVersion(2, 0)) {
                         if(!quiet) {
                             _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
@@ -977,7 +991,7 @@ var qz = (function() {
              * @memberof  qz.websocket
              */
             isActive: function() {
-                return _qz.websocket.connection != null && _qz.websocket.connection.established;
+                return _qz.tools.isActive();
             },
 
             /**
@@ -999,7 +1013,7 @@ var qz = (function() {
              */
             connect: function(options) {
                 return _qz.tools.promise(function(resolve, reject) {
-                    if (qz.websocket.isActive()) {
+                    if (_qz.tools.isActive()) {
                         reject(new Error("An open connection with QZ Tray already exists"));
                         return;
                     } else if (_qz.websocket.connection != null) {
@@ -1071,7 +1085,7 @@ var qz = (function() {
              */
             disconnect: function() {
                 return _qz.tools.promise(function(resolve, reject) {
-                    if (qz.websocket.isActive()) {
+                    if (_qz.tools.isActive()) {
                         _qz.websocket.connection.close();
                         _qz.websocket.connection.promise = { resolve: resolve, reject: reject };
                     } else {
@@ -1124,11 +1138,9 @@ var qz = (function() {
              * @memberof qz.websocket
              */
             getConnectionInfo: function() {
-                if (_qz.websocket.connection) {
+                if (_qz.tools.assertActive()) {
                     var url = _qz.websocket.connection.url.split(/[:\/]+/g);
                     return { socket: url[0], host: url[1], port: +url[2] };
-                } else {
-                    throw new Error("A connection to QZ has not been established yet");
                 }
             }
         },

@@ -353,13 +353,16 @@ var qz = (function() {
                         _qz.websocket.connection.semver = version.toLowerCase().replace(/-rc\./g, "-rc").split(/[\\+\\.-]/g);
                         for(var i = 0; i < _qz.websocket.connection.semver.length; i++) {
                             try {
-                                if(i == 3 && _qz.websocket.connection.semver[i].toLowerCase().indexOf("rc") == 0) {
+                                if (i == 3 && _qz.websocket.connection.semver[i].toLowerCase().indexOf("rc") == 0) {
                                     // Handle "rc1" pre-release by negating build info
                                     _qz.websocket.connection.semver[i] = -(_qz.websocket.connection.semver[i].replace(/\D/g, ""));
                                     continue;
                                 }
                                 _qz.websocket.connection.semver[i] = parseInt(_qz.websocket.connection.semver[i]);
                             } catch(ignore) {}
+                            if (_qz.websocket.connection.semver.length < 4) {
+                                _qz.websocket.connection.semver[3] = 0;
+                            }
                         }
 
                         //algorithm can be declared before a connection, check for incompatibilities now that we have one

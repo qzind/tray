@@ -350,10 +350,14 @@ var qz = (function() {
                     //websocket setup, query what version is connected
                     qz.api.getVersion().then(function(version) {
                         _qz.websocket.connection.version = version;
-                        _qz.websocket.connection.semver = version.split(/[\\+\\.-]/g);
+                        _qz.websocket.connection.semver = version.toLowerCase().replace(/-rc\./g, "-rc").split(/[\\+\\.-]/g);
                         for(var i = 0; i < _qz.websocket.connection.semver.length; i++) {
                             try {
-                                _qz.websocket.connection.semver[i] = parseInt(semver[i]);
+                                if(i == 3 && _qz.websocket.connection.semver[i].toLowerCase().indexOf("rc") == 0) {
+                                    // Handle "rc1" pre-release by negating build info
+                                    _qz.websocket.connection.semver[i] = -(_qz.websocket.connection.semver[i].replace(/\D/g, ""));
+                                }
+                                _qz.websocket.connection.semver[i] = parseInt(_qz.websocket.connection.semver[i]);
                             } catch(ignore) {}
                         }
 
@@ -690,7 +694,7 @@ var qz = (function() {
                     return semver[2] - patch;
                 }
                 if (build != undefined && semver.length > 3 && semver[3] != build) {
-                    return +(semver[3].toString().replace(/\D/g, "")) - +(build.toString().replace(/\D/g, ""));
+                    return Number.isInteger(semver[3]) && Number.isInteger(build) ? semver[3] - build : semver[3].toString().localeCompare(build.toString());
                 }
                 return 0;
             },

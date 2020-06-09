@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.1.0-3
+ * @version 2.1.0-4
  * @overview QZ Tray Connector
  * <p/>
  * Connects a web client to the QZ Tray software.
@@ -16,6 +16,13 @@ var qz = (function() {
             return Object.prototype.toString.call(arg) === '[object Array]';
         };
     }
+
+    if (!Number.isInteger) {
+        Number.isInteger = function(value) {
+            return typeof value === 'number' && isFinite(value) && Math.floor(value) === value;
+        };
+    }
+
 
     // from SHA implementation
     if (typeof String.prototype.utf8Encode == 'undefined') {
@@ -343,6 +350,20 @@ var qz = (function() {
                     //websocket setup, query what version is connected
                     qz.api.getVersion().then(function(version) {
                         _qz.websocket.connection.version = version;
+                        _qz.websocket.connection.semver = version.toLowerCase().replace(/-rc\./g, "-rc").split(/[\\+\\.-]/g);
+                        for(var i = 0; i < _qz.websocket.connection.semver.length; i++) {
+                            try {
+                                if (i == 3 && _qz.websocket.connection.semver[i].toLowerCase().indexOf("rc") == 0) {
+                                    // Handle "rc1" pre-release by negating build info
+                                    _qz.websocket.connection.semver[i] = -(_qz.websocket.connection.semver[i].replace(/\D/g, ""));
+                                    continue;
+                                }
+                                _qz.websocket.connection.semver[i] = parseInt(_qz.websocket.connection.semver[i]);
+                            } catch(ignore) {}
+                            if (_qz.websocket.connection.semver.length < 4) {
+                                _qz.websocket.connection.semver[3] = 0;
+                            }
+                        }
 
                         //algorithm can be declared before a connection, check for incompatibilities now that we have one
                         _qz.compatible.algorithm(true);
@@ -665,15 +686,25 @@ var qz = (function() {
                 return target;
             },
 
-            isVersion: function(major, minor, patch) {
-                var semver = _qz.websocket.connection.version.split(/[.-]/g);
-                if(patch != undefined) {
-                    return patch == semver[2] && minor == semver[1] && major == semver[0];
+            versionCompare: function(major, minor, patch, build) {
+                var semver = _qz.websocket.connection.semver;
+                if (semver[0] != major) {
+                    return semver[0] - major;
                 }
-                if(minor != undefined) {
-                    return minor == semver[1] && major == semver[0];
+                if (minor != undefined && semver[1] != minor) {
+                    return semver[1] - minor;
                 }
-                return major == semver[0];
+                if (patch != undefined && semver[2] != patch) {
+                    return semver[2] - patch;
+                }
+                if (build != undefined && semver.length > 3 && semver[3] != build) {
+                    return Number.isInteger(semver[3]) && Number.isInteger(build) ? semver[3] - build : semver[3].toString().localeCompare(build.toString());
+                }
+                return 0;
+            },
+
+            isVersion: function(major, minor, patch, build) {
+                return _qz.tools.versionCompare(major, minor, patch, build) == 0;
             }
         },
 
@@ -1503,15 +1534,17 @@ var qz = (function() {
              * @memberof qz.serial
              */
             sendData: function(port, data, options) {
-                if (typeof data !== 'object') {
-                    data = {
-                        data: data,
-                        type: "PLAIN"
+                if (_qz.tools.versionCompare(2, 1, 0, 12) >= 0) {
+                    if (typeof data !== 'object') {
+                        data = {
+                            data: data,
+                            type: "PLAIN"
+                        }
                     }
-                }
 
-                if (data.type && data.type.toUpperCase() == "FILE") {
-                    data.data = _qz.tools.absolute(data.data);
+                    if (data.type && data.type.toUpperCase() == "FILE") {
+                        data.data = _qz.tools.absolute(data.data);
+                    }
                 }
 
                 var params = {
@@ -1667,15 +1700,18 @@ var qz = (function() {
                         data: arguments[3]
                     };
                 }
-                if (typeof deviceInfo.data !== 'object') {
-                    deviceInfo.data = {
-                        data: deviceInfo.data,
-                        type: "PLAIN"
-                    }
-                }
 
-                if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
-                    deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
+                if (_qz.tools.versionCompare(2, 1, 0, 12) >= 0) {
+                    if (typeof deviceInfo.data !== 'object') {
+                        deviceInfo.data = {
+                            data: deviceInfo.data,
+                            type: "PLAIN"
+                        }
+                    }
+
+                    if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
+                        deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
+                    }
                 }
 
                 return _qz.websocket.dataPromise('usb.sendData', deviceInfo);
@@ -1911,15 +1947,18 @@ var qz = (function() {
                         endpoint: arguments[3]
                     };
                 }
-                if (typeof deviceInfo.data !== 'object') {
-                    deviceInfo.data = {
-                        data: deviceInfo.data,
-                        type: "PLAIN"
-                    }
-                }
 
-                if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
-                    deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
+                if (_qz.tools.versionCompare(2, 1, 0, 12) >= 0) {
+                    if (typeof deviceInfo.data !== 'object') {
+                        deviceInfo.data = {
+                            data: deviceInfo.data,
+                            type: "PLAIN"
+                        }
+                    }
+
+                    if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
+                        deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
+                    }
                 }
 
                 return _qz.websocket.dataPromise('hid.sendData', deviceInfo);
@@ -2323,6 +2362,14 @@ var qz = (function() {
              * @memberof qz.api
              */
             isVersion: _qz.tools.isVersion,
+
+            isVersionGreater: function(major, minor, patch, build) {
+                return _qz.tools.versionCompare(major, minor, patch, build) > 0;
+            },
+
+            isVersionLess: function(major, minor, patch, build) {
+                return _qz.tools.versionCompare(major, minor, patch, build) < 0;
+            },
 
             /**
              * Change the promise library used by QZ API.

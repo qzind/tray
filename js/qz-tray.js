@@ -680,36 +680,23 @@ var qz = (function() {
 
             versionCompare: function(major, minor, patch, build) {
                 var semver = _qz.websocket.connection.semver;
-                if(semver[0] != major) {
+                if (semver[0] != major) {
                     return semver[0] - major;
                 }
-                if(minor != undefined && semver[1] != minor) {
+                if (minor != undefined && semver[1] != minor) {
                     return semver[1] - minor;
                 }
-                if(patch != undefined && semver[2] != patch) {
-                    return semver[2] - minor;
+                if (patch != undefined && semver[2] != patch) {
+                    return semver[2] - patch;
                 }
-                if(build != undefined && semver.length > 3 && semver[3] != build) {
-                    if(Number.isInteger(semver[3]) && Number.isInteger(build)) {
-                        return semver[3] - build;
-                    }
-                    return semver[3].toString().localeCompare(build.toString());
+                if (build != undefined && semver.length > 3 && semver[3] != build) {
+                    return +(semver[3].toString().replace(/\D/g, "")) - +(build.toString().replace(/\D/g, ""));
                 }
                 return 0;
             },
 
             isVersion: function(major, minor, patch, build) {
-                var semver = _qz.websocket.connection.semver;
-                if(build != undefined && semver.length > 3) {
-                    return build == semver[3] && patch == semver[2] && minor == semver[1] && major == semver[0];
-                }
-                if(patch != undefined) {
-                    return patch == semver[2] && minor == semver[1] && major == semver[0];
-                }
-                if(minor != undefined) {
-                    return minor == semver[1] && major == semver[0];
-                }
-                return major == semver[0];
+                return _qz.tools.versionCompare(major, minor, patch, build) == 0;
             }
         },
 
@@ -1539,15 +1526,17 @@ var qz = (function() {
              * @memberof qz.serial
              */
             sendData: function(port, data, options) {
-                if (typeof data !== 'object') {
-                    data = {
-                        data: data,
-                        type: "PLAIN"
+                if (_qz.tools.versionCompare(2, 1, 0, 12) >= 0) {
+                    if (typeof data !== 'object') {
+                        data = {
+                            data: data,
+                            type: "PLAIN"
+                        }
                     }
-                }
 
-                if (data.type && data.type.toUpperCase() == "FILE") {
-                    data.data = _qz.tools.absolute(data.data);
+                    if (data.type && data.type.toUpperCase() == "FILE") {
+                        data.data = _qz.tools.absolute(data.data);
+                    }
                 }
 
                 var params = {
@@ -1703,15 +1692,18 @@ var qz = (function() {
                         data: arguments[3]
                     };
                 }
-                if (typeof deviceInfo.data !== 'object') {
-                    deviceInfo.data = {
-                        data: deviceInfo.data,
-                        type: "PLAIN"
-                    }
-                }
 
-                if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
-                    deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
+                if (_qz.tools.versionCompare(2, 1, 0, 12) >= 0) {
+                    if (typeof deviceInfo.data !== 'object') {
+                        deviceInfo.data = {
+                            data: deviceInfo.data,
+                            type: "PLAIN"
+                        }
+                    }
+
+                    if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
+                        deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
+                    }
                 }
 
                 return _qz.websocket.dataPromise('usb.sendData', deviceInfo);
@@ -1947,15 +1939,18 @@ var qz = (function() {
                         endpoint: arguments[3]
                     };
                 }
-                if (typeof deviceInfo.data !== 'object') {
-                    deviceInfo.data = {
-                        data: deviceInfo.data,
-                        type: "PLAIN"
-                    }
-                }
 
-                if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
-                    deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
+                if (_qz.tools.versionCompare(2, 1, 0, 12) >= 0) {
+                    if (typeof deviceInfo.data !== 'object') {
+                        deviceInfo.data = {
+                            data: deviceInfo.data,
+                            type: "PLAIN"
+                        }
+                    }
+
+                    if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
+                        deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
+                    }
                 }
 
                 return _qz.websocket.dataPromise('hid.sendData', deviceInfo);

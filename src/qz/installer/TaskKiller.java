@@ -35,6 +35,10 @@ public class TaskKiller {
         String[] trayProcs;
         int selfProc;
         String[] killCmd;
+        // Disable service until reboot
+        if(SystemUtilities.isMac()) {
+            ShellUtilities.execute("launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
+        }
         if(SystemUtilities.isWindows()) {
             // Windows may be running under javaw.exe (normal) or java.exe (terminal)
             javaProcs = AppLocator.getInstance().getPids("java.exe", "javaw.exe");

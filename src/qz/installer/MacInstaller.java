@@ -25,7 +25,8 @@ import static qz.common.Constants.*;
 
 public class MacInstaller extends Installer {
     protected static final Logger log = LoggerFactory.getLogger(MacInstaller.class);
-    public static final String PACKAGE_NAME = getPackageName();
+    private static final String PACKAGE_NAME = getPackageName();
+    public static final String LAUNCH_AGENT_PATH = String.format("/Library/LaunchAgents/%s.plist", MacInstaller.PACKAGE_NAME);
     private String destination = "/Applications/" + ABOUT_TITLE + ".app";
 
     public Installer addAppLauncher() {
@@ -34,7 +35,7 @@ public class MacInstaller extends Installer {
     }
 
     public Installer addStartupEntry() {
-        File dest = new File(String.format("/Library/LaunchAgents/%s.plist", PACKAGE_NAME));
+        File dest = new File(LAUNCH_AGENT_PATH);
         HashMap<String, String> fieldMap = new HashMap<>();
         // Dynamic fields
         fieldMap.put("%PACKAGE_NAME%", PACKAGE_NAME);
@@ -64,13 +65,11 @@ public class MacInstaller extends Installer {
         if(ShellUtilities.execute(new String[] { "/usr/bin/defaults", "write", plist }, new String[] { "qz://*" }).isEmpty()) {
             ShellUtilities.execute("/usr/bin/defaults", "write", plist, "URLWhitelist", "-array-add", "qz://*");
         }
-        // Just in case any re-spawned
-        TaskKiller.killAll();
         return this;
     }
     public Installer removeSystemSettings() {
         // Remove startup entry
-        File dest = new File(String.format("/Library/LaunchAgents/%s.plist", PACKAGE_NAME));
+        File dest = new File(LAUNCH_AGENT_PATH);
         dest.delete();
         return this;
     }

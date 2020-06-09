@@ -132,10 +132,10 @@ public class MacInstaller extends Installer {
                 // Fallback, should only fire via Terminal + sudo
                 whoami = ShellUtilities.executeRaw("logname").trim();
             }
-            // Don't wait, it could hang the installer
+            // Start directly without waitFor(...), avoids deadlocking
             Runtime.getRuntime().exec(new String[] { "su", whoami, "-c", "\"" + StringUtils.join(args, "\" \"") + "\""});
         } else {
-            ShellUtilities.execute(args.toArray(new String[args.size()]));
+            Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
         }
     }
 }

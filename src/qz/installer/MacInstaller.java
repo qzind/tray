@@ -127,6 +127,8 @@ public class MacInstaller extends Installer {
                 // Fallback, should only fire via Terminal + sudo
                 whoami = ShellUtilities.executeRaw("logname").trim();
             }
+            // Just in case any re-spawned
+            TaskKiller.killAll();
             ShellUtilities.execute("su", whoami, "-c", "\"" + StringUtils.join(args, "\" \"") + "\"");
         } else {
             ShellUtilities.execute(args.toArray(new String[args.size()]));

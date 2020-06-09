@@ -25,7 +25,7 @@ import static qz.common.Constants.*;
 
 public class MacInstaller extends Installer {
     protected static final Logger log = LoggerFactory.getLogger(MacInstaller.class);
-    private static final String PACKAGE_NAME = getPackageName();
+    public static final String PACKAGE_NAME = getPackageName();
     private String destination = "/Applications/" + ABOUT_TITLE + ".app";
 
     public Installer addAppLauncher() {

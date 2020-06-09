@@ -85,6 +85,12 @@ public class TaskKiller {
             }
         }
 
+        // Temporarily disable autostart
+        if(SystemUtilities.isMac()) {
+            ShellUtilities.execute("/usr/libexec/PlistBuddy", "-c", "Delete :KeepAlive", "-c", "Delete :RunAtLoad",
+                                   String.format("/Library/LaunchAgents/%s.plist", MacInstaller.PACKAGE_NAME));
+        }
+
         return success;
     }
 }

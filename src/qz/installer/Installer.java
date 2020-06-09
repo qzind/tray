@@ -108,7 +108,8 @@ public abstract class Installer {
     public static void install() throws Exception {
         getInstance();
         log.info("Installing to {}", instance.getDestination());
-        instance.deployApp()
+        instance.removeLibs()
+                .deployApp()
                 .removeLegacyStartup()
                 .removeLegacyFiles()
                 .addSharedDirectory()
@@ -153,6 +154,18 @@ public abstract class Installer {
         new File(getDestination(), relativePath).setExecutable(true, false);
     }
 
+    /**
+     * Explicitly purge libs to notify system cache per https://github.com/qzind/tray/issues/662
+     */
+    public Installer removeLibs() {
+        String[] dirs = { "libs" };
+        for (String dir : dirs) {
+            try {
+                FileUtils.deleteDirectory(new File(instance.getDestination() + File.separator + dir));
+            } catch(IOException ignore) {}
+        }
+        return this;
+    }
 
     public Installer removeLegacyFiles() {
         String[] dirs = { "demo/js/3rdparty", "utils", "auth" };

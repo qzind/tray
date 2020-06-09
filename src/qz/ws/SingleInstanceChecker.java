@@ -95,7 +95,7 @@ public class SingleInstanceChecker {
 
         if (message.equals(Constants.PROBE_RESPONSE)) {
             log.warn("{} is already running on {}", Constants.ABOUT_TITLE, session.getRemoteAddress().toString());
-            trayManager.exit(2);
+            trayManager.exit(0);
         }
     }
 

@@ -26,6 +26,7 @@ import static qz.common.Constants.*;
 public class MacInstaller extends Installer {
     protected static final Logger log = LoggerFactory.getLogger(MacInstaller.class);
     private static final String PACKAGE_NAME = getPackageName();
+    public static final String LAUNCH_AGENT_PATH = String.format("/Library/LaunchAgents/%s.plist", MacInstaller.PACKAGE_NAME);
     private String destination = "/Applications/" + ABOUT_TITLE + ".app";
 
     public Installer addAppLauncher() {
@@ -34,7 +35,7 @@ public class MacInstaller extends Installer {
     }
 
     public Installer addStartupEntry() {
-        File dest = new File(String.format("/Library/LaunchAgents/%s.plist", PACKAGE_NAME));
+        File dest = new File(LAUNCH_AGENT_PATH);
         HashMap<String, String> fieldMap = new HashMap<>();
         // Dynamic fields
         fieldMap.put("%PACKAGE_NAME%", PACKAGE_NAME);
@@ -43,6 +44,10 @@ public class MacInstaller extends Installer {
 
         try {
             FileUtilities.configureAssetFile("assets/mac-launchagent.plist.in", dest, fieldMap, MacInstaller.class);
+            // Disable service until reboot
+            if(SystemUtilities.isMac()) {
+                ShellUtilities.execute("launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
+            }
         } catch(IOException e) {
             log.warn("Unable to write startup file: {}", dest, e);
         }
@@ -68,7 +73,7 @@ public class MacInstaller extends Installer {
     }
     public Installer removeSystemSettings() {
         // Remove startup entry
-        File dest = new File(String.format("/Library/LaunchAgents/%s.plist", PACKAGE_NAME));
+        File dest = new File(LAUNCH_AGENT_PATH);
         dest.delete();
         return this;
     }
@@ -127,9 +132,10 @@ public class MacInstaller extends Installer {
                 // Fallback, should only fire via Terminal + sudo
                 whoami = ShellUtilities.executeRaw("logname").trim();
             }
-            ShellUtilities.execute("su", whoami, "-c", "\"" + StringUtils.join(args, "\" \"") + "\"");
+            // Start directly without waitFor(...), avoids deadlocking
+            Runtime.getRuntime().exec(new String[] { "su", whoami, "-c", "\"" + StringUtils.join(args, "\" \"") + "\""});
         } else {
-            ShellUtilities.execute(args.toArray(new String[args.size()]));
+            Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
         }
     }
 }

@@ -44,6 +44,10 @@ public class MacInstaller extends Installer {
 
         try {
             FileUtilities.configureAssetFile("assets/mac-launchagent.plist.in", dest, fieldMap, MacInstaller.class);
+            // Disable service until reboot
+            if(SystemUtilities.isMac()) {
+                ShellUtilities.execute("launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
+            }
         } catch(IOException e) {
             log.warn("Unable to write startup file: {}", dest, e);
         }
@@ -128,7 +132,8 @@ public class MacInstaller extends Installer {
                 // Fallback, should only fire via Terminal + sudo
                 whoami = ShellUtilities.executeRaw("logname").trim();
             }
-            ShellUtilities.execute("su", whoami, "-c", "\"" + StringUtils.join(args, "\" \"") + "\"");
+            // Don't wait, it could hang the installer
+            Runtime.getRuntime().exec(new String[] { "su", whoami, "-c", "\"" + StringUtils.join(args, "\" \"") + "\""});
         } else {
             ShellUtilities.execute(args.toArray(new String[args.size()]));
         }

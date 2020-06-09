@@ -356,6 +356,7 @@ var qz = (function() {
                                 if(i == 3 && _qz.websocket.connection.semver[i].toLowerCase().indexOf("rc") == 0) {
                                     // Handle "rc1" pre-release by negating build info
                                     _qz.websocket.connection.semver[i] = -(_qz.websocket.connection.semver[i].replace(/\D/g, ""));
+                                    continue;
                                 }
                                 _qz.websocket.connection.semver[i] = parseInt(_qz.websocket.connection.semver[i]);
                             } catch(ignore) {}

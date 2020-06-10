@@ -1,31 +1,23 @@
-1. Setup the API
+```js
+const qz = require("qz-tray");
 
-   ```js
-   qz.api.setPromiseType(function promise(resolver) { return new Promise(resolver); });
-   qz.api.setWebSocketType(require('ws'));
-
-   // Node 4.5
-   var createHash = require('sha.js');
-   qz.api.setSha256Type(function(data) {
-       return createHash('sha256').update(data).digest('hex');
-   });
-   ```
-
-2. Code
-
-   ```js
-   var qz = require("qz-tray");
-   // Start promise chain
-   qz.websocket.connect().then(function() {
-      return qz.printers.find();
-   }).then(function(printers) {
-      console.log(printers);
-   }).then(function() {
-      return qz.websocket.disconnect();
-   }).then(function() {
-      process.exit(0);
-   }).catch(function(err) {
-      console.error(err);
-      process.exit(1);
-   });
-  ```
+qz.websocket.connect().then(() => {
+    return qz.printers.find();
+}).then((printers) => {
+    console.log(printers);
+    let config = qz.configs.create('PDF');
+    return qz.print(config, [{
+        type: 'pixel',
+        format: 'html',
+        flavor: 'plain',
+        data: '<h1>Hello JavaScript!</h1>'
+    }]);
+}).then(() => {
+    return qz.websocket.disconnect();
+}).then(() => {
+    // process.exit(0);
+}).catch((err) => {
+    console.error(err);
+    // process.exit(1);
+});
+```

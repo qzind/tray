@@ -90,22 +90,11 @@ public class SerialIO {
                         byte[] output = new byte[endIdx];
                         System.arraycopy(data.getByteArray(), 0, output, 0, endIdx);
                         data.clearRange(0, endIdx);
-                        StringBuffer sb = new StringBuffer(output.length);
-                        sb.append(output);
+                        String buffer = new String(output, format.getEncoding());
 
-                        //remove trailing line delimiter
-                        while(true) {
-                            char endChar = sb.charAt(sb.length() - 1);
-                            if(endChar == '\n' || endChar == '\r') {
-                                sb.setLength(sb.length() - 1);
-                            } else {
-                                break;
-                            }
-                        }
-
-                        if(sb.length() > 0) {
+                        if(!buffer.isEmpty()) {
                             //send non-empty string
-                            response = sb.toString();
+                            response = buffer;
                         }
                     }
                 } else if (format.getBoundStart() != null && format.getBoundStart().length > 0) {

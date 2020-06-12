@@ -87,6 +87,7 @@ public class SerialIO {
                     Integer endIdx = min(ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\r'}),
                                          ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\n'}));
                     if (endIdx != null) {
+                        log.trace("Reading newline-delimited response");
                         byte[] output = new byte[endIdx];
                         System.arraycopy(data.getByteArray(), 0, output, 0, endIdx);
                         String buffer = new String(output, format.getEncoding());

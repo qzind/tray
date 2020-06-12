@@ -80,7 +80,26 @@ public class SerialIO {
                 data.append(port.readBytes(event.getEventValue(), TIMEOUT));
 
                 String response = null;
-                if (format.getBoundStart() != null && format.getBoundStart().length > 0) {
+                if (format.isBoundNewline()) {
+                    //process as line delimited
+
+                    //find closest line delimiter
+                    Integer endIdx = min(ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\r'}),
+                                         ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\n'}));
+                    if (endIdx != null) {
+                        log.trace("Reading newline-delimited response");
+                        byte[] output = new byte[endIdx];
+                        System.arraycopy(data.getByteArray(), 0, output, 0, endIdx);
+                        String buffer = new String(output, format.getEncoding());
+
+                        if (!buffer.isEmpty()) {
+                            //send non-empty string
+                            response = buffer;
+                        }
+
+                        data.clearRange(0, endIdx + 1);
+                    }
+                } else if (format.getBoundStart() != null && format.getBoundStart().length > 0) {
                     //process as formatted response
                     Integer startIdx = ByteUtilities.firstMatchingIndex(data.getByteArray(), format.getBoundStart());
 
@@ -250,6 +269,12 @@ public class SerialIO {
         portName = null;
 
         return closed;
+    }
+
+    private Integer min(Integer a, Integer b) {
+        if (a == null) { return b; }
+        if (b == null) { return a; }
+        return Math.min(a, b);
     }
 
 }

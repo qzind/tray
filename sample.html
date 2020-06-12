@@ -702,6 +702,10 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
+                                                <label for="serialNewline" class="inline">Wait for new line</label>
+                                                <input type="checkbox" id="serialNewline" onclick="checkItemsDisabled('serialNewline', [ 'serialStart', 'serialEnd', 'serialWidth', 'serialHeader' ]);" />
+                                            </div>
+                                            <div class="form-group">
                                                 <label class="inline">Length Bytes</label>
                                                 (
                                                 <label for="serialLengthActive" class="inline">Enable:</label>
@@ -2611,6 +2615,14 @@
         }
     }
 
+    //checkId = toggle checkbox, itemsArray = elements to disable
+    function checkItemsDisabled(checkId, itemsArray) {
+        var disabled = isChecked($("#"+ checkId));
+        for(var index in itemsArray) {
+            $("#"+ itemsArray[index]).prop( "disabled", disabled);
+        }
+    }
+
     function addPrintersLog(msg, color) {
         if (color == undefined) { color = ""; }
 
@@ -2878,6 +2890,7 @@
                 start: $("#serialStart").val(),
                 end: $("#serialEnd").val() || null,
                 width: $("#serialWidth").val() || null,
+                untilNewline: $("#serialNewline").prop('checked'),
                 lengthBytes: null,
                 crcBytes: null,
                 includeHeader: $("#serialHeader").prop('checked'),

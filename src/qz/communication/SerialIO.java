@@ -84,18 +84,19 @@ public class SerialIO {
                     //process as line delimited
 
                     //find closest line delimiter
-                    Integer endIdx = min(ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] { '\r'} ),
-                                         ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] { '\n'} ));
-                    if(endIdx != null) {
+                    Integer endIdx = min(ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\r'}),
+                                         ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\n'}));
+                    if (endIdx != null) {
                         byte[] output = new byte[endIdx];
                         System.arraycopy(data.getByteArray(), 0, output, 0, endIdx);
-                        data.clearRange(0, endIdx);
                         String buffer = new String(output, format.getEncoding());
 
-                        if(!buffer.isEmpty()) {
+                        if (!buffer.isEmpty()) {
                             //send non-empty string
                             response = buffer;
                         }
+
+                        data.clearRange(0, endIdx + 1);
                     }
                 } else if (format.getBoundStart() != null && format.getBoundStart().length > 0) {
                     //process as formatted response
@@ -270,8 +271,8 @@ public class SerialIO {
     }
 
     private Integer min(Integer a, Integer b) {
-        if(a == null) return b;
-        if(b == null) return a;
+        if (a == null) { return b; }
+        if (b == null) { return a; }
         return Math.min(a, b);
     }
 

@@ -19,6 +19,7 @@ import java.awt.*;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -113,7 +114,8 @@ public class PrintOptions {
                 psOptions.density = asymmDPI.optInt("feed");
                 psOptions.crossDensity = asymmDPI.optInt("cross");
             } else {
-                List<PrinterResolution> rSupport = output.getNativePrinter().getResolutions();
+                List<PrinterResolution> rSupport = output.isSetService() ?
+                        output.getNativePrinter().getResolutions() : new ArrayList<>();
 
                 JSONArray possibleDPIs = configOpts.optJSONArray("density");
                 if (possibleDPIs != null && possibleDPIs.length() > 0) {

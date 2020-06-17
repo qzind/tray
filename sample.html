@@ -153,7 +153,7 @@
                                 </label>
                                 <br />
                                 <label>
-                                    <input type="radio" name="pLanguage" id="pLangESCP" value="ESCP" />
+                                    <input type="radio" name="pLanguage" id="pLangESCPOS" value="ESCPOS" />
                                     ESC/POS
                                 </label>
                                 <label>
@@ -1458,7 +1458,7 @@
                     '^XZ\n'
                 ];
                 break;
-            case 'ESCP':
+            case 'ESCPOS':
                 printData = [
                     //defaults to 'type: raw', 'format: command', and 'flavor: plain'
                     { data: '\nPRINTED WITH QZ ' + qzVersion + '.\n\n\n\n\n\n' }
@@ -1664,7 +1664,7 @@
                     { flavor: 'hex', data: 'e44530d0a5e46530d0a5e585a' }
                 ];
                 break;
-            case 'ESCP':
+            case 'ESCPOS':
                 printData = [
                     { flavor: 'hex', data: '0d0a5052494e544544205749544820515a20545241590d0a0d0a' },
                     { flavor: 'hex', data: '5553494e472068657820434f4d4d414e44530d0a0d0a0d0a0d0a' }
@@ -1699,7 +1699,7 @@
                     '^XZ\n'
                 ];
                 break;
-            case 'ESCP':
+            case 'ESCPOS':
                 printData = [
                     //defaults to 'flavor: file'
                     { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: opts },
@@ -1735,7 +1735,7 @@
                     '^XZ\n'
                 ];
                 break;
-            case 'ESCP':
+            case 'ESCPOS':
                 printData = [
                     { type: 'raw', format: 'pdf', flavor: 'file', data: 'assets/pdf_sample.pdf', options: opts }
                 ];
@@ -1770,7 +1770,7 @@
                     '^XZ\n'
                 ];
                 break;
-            case 'ESCP':
+            case 'ESCPOS':
                 printData = [
                     { type: 'raw', format: 'html', flavor: 'file', data: 'https://qz.io/about/', options: opts }
                 ];

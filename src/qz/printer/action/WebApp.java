@@ -83,15 +83,6 @@ public class WebApp extends Application {
                 base.getAttributes().setNamedItem(applied);
             }
 
-            // find and set page zoom for increased quality
-            double usableZoom = calculateSupportedZoom(pageWidth, pageHeight);
-            if (usableZoom < pageZoom) {
-                log.warn("Zoom level {} decreased to {} due to physical memory limitations", pageZoom, usableZoom);
-                pageZoom = usableZoom;
-            }
-            webView.setZoom(pageZoom);
-            log.trace("Zooming in by x{} for increased quality", pageZoom);
-
             //width was resized earlier (for responsive html), then calculate the best fit height
             // FIXME: Should only be needed when height is unknown but fixes blank vector prints
             double fittedHeight = findHeight();
@@ -100,6 +91,15 @@ public class WebApp extends Application {
             if (heightNeeded) {
                 pageHeight = fittedHeight;
             }
+
+            // find and set page zoom for increased quality
+            double usableZoom = calculateSupportedZoom(pageWidth, pageHeight);
+            if (usableZoom < pageZoom) {
+                log.warn("Zoom level {} decreased to {} due to physical memory limitations", pageZoom, usableZoom);
+                pageZoom = usableZoom;
+            }
+            webView.setZoom(pageZoom);
+            log.trace("Zooming in by x{} for increased quality", pageZoom);
 
             adjustSize(pageWidth * pageZoom, pageHeight * pageZoom);
 
@@ -431,7 +431,7 @@ public class WebApp extends Application {
         if (headless) { allowance--; }
         long availSpace = (long)((memory << allowance) / 72d);
 
-        return Math.sqrt(availSpace / (width * height));
+        return Math.sqrt(availSpace / (width * height * 8));
     }
 
     /**

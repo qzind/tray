@@ -325,7 +325,8 @@ public class PrintOptions {
                 defOptions.density = 60000d / psOptions.getUnits().getDPIUnits();
             }
         }
-        if ((psOptions.isRasterize() || format == PrintingUtilities.Format.IMAGE) && psOptions.getDensity() <= 1) {
+        if ((psOptions.isRasterize() || format == PrintingUtilities.Format.IMAGE || format == PrintingUtilities.Format.COMMAND)
+                && psOptions.getDensity() <= 1) {
             psOptions.density = defOptions.density;
             psOptions.crossDensity = defOptions.density;
         }

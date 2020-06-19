@@ -20,21 +20,23 @@ import java.util.List;
  */
 public enum LanguageType {
 
-    ZPL(false, true, "ZPL", "ZPL2", "ZPLII", "ZEBRA"),
-    EPL(true, true, "EPL", "EPL2", "EPLII"),
-    CPCL(false, true),
-    ESCP(false, false, "ESCP", "ESCP2", "ESCPOS", "ESC", "ESC/P", "ESC/P2", "ESCP/P2", "ESC/POS", "ESC\\P", "EPSON"),
-    EVOLIS(false, false),
-    UNKNOWN(false, false);
+    ZPL(false, true, 203, "ZPL", "ZPL2", "ZPLII", "ZEBRA"),
+    EPL(true, true, 203, "EPL", "EPL2", "EPLII"),
+    CPCL(false, true, 72),
+    ESCP(false, false, 180, "ESCP", "ESCP2", "ESCPOS", "ESC", "ESC/P", "ESC/P2", "ESCP/P2", "ESC/POS", "ESC\\P", "EPSON"),
+    EVOLIS(false, false, 72),
+    UNKNOWN(false, false, 72);
 
 
     private boolean imgOutputInvert = false;
     private boolean imgWidthValidated = false;
+    private double defaultDensity = 72;
     private List<String> altNames;
 
-    LanguageType(boolean imgOutputInvert, boolean imgWidthValidated, String... altNames) {
+    LanguageType(boolean imgOutputInvert, boolean imgWidthValidated, double defaultDensity, String... altNames) {
         this.imgOutputInvert = imgOutputInvert;
         this.imgWidthValidated = imgWidthValidated;
+        this.defaultDensity = defaultDensity;
 
         this.altNames = new ArrayList<>();
         Collections.addAll(this.altNames, altNames);
@@ -42,7 +44,7 @@ public enum LanguageType {
 
     public static LanguageType getType(String type) {
         for(LanguageType lang : LanguageType.values()) {
-            if (type.equalsIgnoreCase(lang.name()) || lang.altNames.contains(type)) {
+            if (lang.name().equalsIgnoreCase(type) || lang.altNames.contains(type)) {
                 return lang;
             }
         }
@@ -72,4 +74,9 @@ public enum LanguageType {
     public boolean requiresImageWidthValidated() {
         return imgWidthValidated;
     }
+
+    public double getDefaultDensity() {
+        return defaultDensity;
+    }
+
 }

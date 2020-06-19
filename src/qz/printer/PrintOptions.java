@@ -55,9 +55,6 @@ public class PrintOptions {
         if (!configOpts.isNull("endOfDoc")) {
             rawOptions.endOfDoc = configOpts.optString("endOfDoc", null);
         }
-        if (!configOpts.isNull("language")) {
-            rawOptions.language = configOpts.optString("language", null);
-        }
         if (!configOpts.isNull("perSpool")) {
             try { rawOptions.perSpool = configOpts.getInt("perSpool"); }
             catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "perSpool", configOpts.opt("perSpool")); }
@@ -160,7 +157,7 @@ public class PrintOptions {
                                 bestRes = pr;
                             }
                         }
-                        if(bestRes != null) {
+                        if (bestRes != null) {
                             psOptions.density = bestRes.getFeedResolution(psOptions.units.resSyntax);
                             psOptions.crossDensity = bestRes.getCrossFeedResolution(psOptions.units.resSyntax);
                         } else {
@@ -173,7 +170,7 @@ public class PrintOptions {
                                 lowestRes = pr;
                             }
                         }
-                        if(lowestRes != null) {
+                        if (lowestRes != null) {
                             psOptions.density = lowestRes.getFeedResolution(psOptions.units.resSyntax);
                             psOptions.crossDensity = lowestRes.getCrossFeedResolution(psOptions.units.resSyntax);
                         } else {
@@ -325,8 +322,7 @@ public class PrintOptions {
                 defOptions.density = 60000d / psOptions.getUnits().getDPIUnits();
             }
         }
-        if ((psOptions.isRasterize() || format == PrintingUtilities.Format.IMAGE || format == PrintingUtilities.Format.COMMAND)
-                && psOptions.getDensity() <= 1) {
+        if ((psOptions.isRasterize() || format == PrintingUtilities.Format.IMAGE) && psOptions.getDensity() <= 1) {
             psOptions.density = defOptions.density;
             psOptions.crossDensity = defOptions.density;
         }
@@ -363,7 +359,6 @@ public class PrintOptions {
         private boolean altPrinting = false;    //Alternate printing for linux systems
         private String encoding = null;         //Text encoding / charset
         private String endOfDoc = null;         //End of document character
-        private String language = null;         //Printer language
         private int perSpool = 1;               //Pages per spool
         private int copies = 1;                 //Job copies
         private String jobName = null;          //Job name
@@ -379,10 +374,6 @@ public class PrintOptions {
 
         public String getEndOfDoc() {
             return endOfDoc;
-        }
-
-        public String getLanguage() {
-            return language;
         }
 
         public int getPerSpool() {

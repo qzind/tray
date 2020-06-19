@@ -102,16 +102,13 @@ public class PrintRaw implements PrintProcessor {
             PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "PLAIN").toUpperCase(Locale.ENGLISH));
             PrintOptions.Raw rawOpts = options.getRawOptions();
 
-            double pageZoom = (options.getPixelOptions().getDensity() * options.getPixelOptions().getUnits().as1Inch()) / 72.0;
-            if (pageZoom <= 1) { pageZoom = 1; }
-
             encoding = rawOpts.getEncoding();
             if (encoding == null || encoding.isEmpty()) { encoding = Charset.defaultCharset().name(); }
 
             try {
                 switch(format) {
                     case HTML:
-                        commands.append(getHtmlWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.PLAIN, pageZoom).getImageCommand(opt));
+                        commands.append(getHtmlWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.PLAIN, options.getPixelOptions()).getImageCommand(opt));
                         break;
                     case IMAGE:
                         commands.append(getImageWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.BASE64).getImageCommand(opt));
@@ -190,13 +187,19 @@ public class PrintRaw implements PrintProcessor {
         return getWrapper(bi, opt);
     }
 
-    private ImageWrapper getHtmlWrapper(String data, JSONObject opt, boolean fromFile, double zoom) throws IOException {
+    private ImageWrapper getHtmlWrapper(String data, JSONObject opt, boolean fromFile, PrintOptions.Pixel pxlOpts) throws IOException {
         BufferedImage bi;
 
         try {
             WebApp.initialize(); //starts if not already started
 
-            WebAppModel model = new WebAppModel(data, !fromFile, opt.optInt("pageWidth"), opt.optInt("pageHeight"), false, zoom);
+            double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
+            if (density <= 1) {
+                density = LanguageType.getType(opt.optString("language")).getDefaultDensity();
+            }
+            double pageZoom = density / 72.0;
+
+            WebAppModel model = new WebAppModel(data, !fromFile, opt.optInt("pageWidth"), opt.optInt("pageHeight"), false, pageZoom);
             bi = WebApp.raster(model);
         }
         catch(Throwable t) {

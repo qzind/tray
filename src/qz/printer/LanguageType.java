@@ -22,9 +22,9 @@ public enum LanguageType {
 
     ZPL(false, true, 203, "ZPL", "ZPL2", "ZPLII", "ZEBRA"),
     EPL(true, true, 203, "EPL", "EPL2", "EPLII"),
-    CPCL(false, true, 72),
+    CPCL(false, true, 203),
     ESCP(false, false, 180, "ESCP", "ESCP2", "ESCPOS", "ESC", "ESC/P", "ESC/P2", "ESCP/P2", "ESC/POS", "ESC\\P", "EPSON"),
-    EVOLIS(false, false, 72),
+    EVOLIS(false, false, 300),
     UNKNOWN(false, false, 72);
 
 

@@ -189,6 +189,7 @@ public class PrintRaw implements PrintProcessor {
 
     private ImageWrapper getHtmlWrapper(String data, JSONObject opt, boolean fromFile, PrintOptions.Pixel pxlOpts) throws IOException {
         BufferedImage bi;
+        WebAppModel model = new WebAppModel(data, !fromFile, opt.optInt("pageWidth"), opt.optInt("pageHeight"), false, 1);
 
         try {
             WebApp.initialize(); //starts if not already started
@@ -198,13 +199,26 @@ public class PrintRaw implements PrintProcessor {
                 density = LanguageType.getType(opt.optString("language")).getDefaultDensity();
             }
             double pageZoom = density / 72.0;
+            model.setZoom(pageZoom);
 
-            WebAppModel model = new WebAppModel(data, !fromFile, opt.optInt("pageWidth"), opt.optInt("pageHeight"), false, pageZoom);
             bi = WebApp.raster(model);
         }
         catch(Throwable t) {
-            log.error("Failed to capture html raster");
-            throw new IOException(t);
+            if (model.getZoom() > 1 && t instanceof IllegalArgumentException) {
+                //probably a unrecognized image loader error, try at default zoom
+                try {
+                    log.warn("Capture failed with increased zoom, attempting with default value");
+                    model.setZoom(1);
+                    bi = WebApp.raster(model);
+                }
+                catch(Throwable tt) {
+                    log.error("Failed to capture html raster");
+                    throw new IOException(tt);
+                }
+            } else {
+                log.error("Failed to capture html raster");
+                throw new IOException(t);
+            }
         }
 
         return getWrapper(bi, opt);

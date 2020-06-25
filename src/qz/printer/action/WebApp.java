@@ -327,7 +327,6 @@ public class WebApp extends Application {
                             unlatch(null);
                         }
                         catch(Exception e) {
-                            log.error("Caught during snapshot");
                             unlatch(e);
                         }
                         finally {
@@ -429,9 +428,11 @@ public class WebApp extends Application {
         long memory = Runtime.getRuntime().maxMemory();
         int allowance = (memory / 1048576L) > 1024? 3:2;
         if (headless) { allowance--; }
-        long availSpace = (long)((memory << allowance) / 72d);
+        long availSpace = memory << allowance;
 
-        return Math.sqrt(availSpace / (width * height * 8));
+        // Memory needed for print is roughly estimated as
+        // (width * height) [pixels needed] * (pageZoom * 72d) [print density used] * 3 [rgb channels]
+        return Math.sqrt(availSpace / ((width * height) * (pageZoom * 72d) * 3));
     }
 
     /**

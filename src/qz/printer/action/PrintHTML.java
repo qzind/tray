@@ -141,7 +141,19 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             for(WebAppModel model : models) {
                 try { images.add(WebApp.raster(model)); }
                 catch(Throwable t) {
-                    throw new PrinterException(t.getMessage());
+                    if (model.getZoom() > 1 && t instanceof IllegalArgumentException) {
+                        //probably a unrecognized image loader error, try at default zoom
+                        try {
+                            log.warn("Capture failed with increased zoom, attempting with default value");
+                            model.setZoom(1);
+                            images.add(WebApp.raster(model));
+                        }
+                        catch(Throwable tt) {
+                            throw new PrinterException(tt.getMessage());
+                        }
+                    } else {
+                        throw new PrinterException(t.getMessage());
+                    }
                 }
             }
 

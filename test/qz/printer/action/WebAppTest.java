@@ -22,41 +22,45 @@ public class WebAppTest {
     private static final Path RASTER_OUTPUT_DIR = Paths.get("./out"); // see ant ${out.dir}
     private static final String RASTER_OUTPUT_FORMAT = "png";
 
-    public static void main(String[] args) throws Throwable {
-        WebApp.initialize();
+    public static void main(String[] args) {
+        try {
+            WebApp.initialize();
+            cleanup();
 
-        // RASTER//
+            // RASTER//
 
-        cleanup();
-        int rasterKnownHeightTests = 1000;
-        if (args.length > 0) { rasterKnownHeightTests = Integer.parseInt(args[1]); }
-        int rasterFittedHeightTests = 1000;
-        if (args.length > 1) { rasterFittedHeightTests = Integer.parseInt(args[2]); }
+            int rasterKnownHeightTests = 1000;
+            if (args.length > 1) { rasterKnownHeightTests = Integer.parseInt(args[1]); }
+            int rasterFittedHeightTests = 1000;
+            if (args.length > 2) { rasterFittedHeightTests = Integer.parseInt(args[2]); }
 
-        if (!testRasterKnownSize(rasterKnownHeightTests)) {
-            log.error("Testing well defined sizes failed");
-        } else if (!testRasterFittedSize(rasterFittedHeightTests)) {
-            log.error("Testing fit to height sizing failed");
-        } else {
-            log.info("All raster tests passed");
+            if (!testRasterKnownSize(rasterKnownHeightTests)) {
+                log.error("Testing well defined sizes failed");
+            } else if (!testRasterFittedSize(rasterFittedHeightTests)) {
+                log.error("Testing fit to height sizing failed");
+            } else {
+                log.info("All raster tests passed");
+            }
+
+
+            // VECTOR //
+
+            int vectorKnownHeightPrints = 100;
+            if (args.length > 3) { vectorKnownHeightPrints = Integer.parseInt(args[3]); }
+            int vectorFittedHeightPrints = 100;
+            if (args.length > 4) { vectorFittedHeightPrints = Integer.parseInt(args[4]); }
+
+            if (!testVectorKnownPrints(vectorKnownHeightPrints)) {
+                log.error("Failed vector prints with defined heights");
+            } else if (!testVectorFittedPrints(vectorFittedHeightPrints)) {
+                log.error("Failed vector prints with fit to height sizing");
+            } else {
+                log.info("All vector prints completed");
+            }
         }
-
-
-        // VECTOR //
-
-        int vectorKnownHeightPrints = 100;
-        if (args.length > 3) { vectorKnownHeightPrints = Integer.parseInt(args[3]); }
-        int vectorFittedHeightPrints = 100;
-        if (args.length > 4) { vectorFittedHeightPrints = Integer.parseInt(args[4]); }
-
-        if (!testVectorKnownPrints(vectorKnownHeightPrints)) {
-            log.error("Failed vector prints with defined heights");
-        } else if (!testVectorFittedPrints(vectorFittedHeightPrints)) {
-            log.error("Failed vector prints with fit to height sizing");
-        } else {
-            log.info("All vector prints completed");
+        catch(Throwable t) {
+            log.error("Tests failed due to an exception", t);
         }
-
 
         System.exit(0); //explicit exit since jfx is running in background
     }
@@ -154,7 +158,7 @@ public class WebAppTest {
         job.endJob();
 
         try {
-            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT/1000);
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
             Thread.sleep(SPOOLER_WAIT);
         }
         catch(InterruptedException ignore) {}
@@ -176,7 +180,7 @@ public class WebAppTest {
         job.endJob();
 
         try {
-            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT/1000);
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
             Thread.sleep(SPOOLER_WAIT);
         }
         catch(InterruptedException ignore) {}
@@ -243,7 +247,7 @@ public class WebAppTest {
             for(File file : files) {
                 if (file.getName().endsWith("." + RASTER_OUTPUT_FORMAT)
                         && file.getName().startsWith(String.format("%s-", Constants.DATA_DIR))) {
-                    if(!file.delete()) {
+                    if (!file.delete()) {
                         log.warn("Could not delete {}", file);
                     }
                 }

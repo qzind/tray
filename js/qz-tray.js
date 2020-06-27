@@ -342,32 +342,35 @@ var qz = (function() {
                     //also gives the user a chance to deny the connection
                     function sendCert(cert) {
                         if (cert === undefined) { cert = null; }
-                        _qz.websocket.connection.sendData({ certificate: cert, promise: openPromise });
+
+                        //websocket setup, query what version is connected
+                        qz.api.getVersion().then(function(version) {
+                            _qz.websocket.connection.version = version;
+                            _qz.websocket.connection.semver = version.toLowerCase().replace(/-rc\./g, "-rc").split(/[\\+\\.-]/g);
+                            for(var i = 0; i < _qz.websocket.connection.semver.length; i++) {
+                                try {
+                                    if (i == 3 && _qz.websocket.connection.semver[i].toLowerCase().indexOf("rc") == 0) {
+                                        // Handle "rc1" pre-release by negating build info
+                                        _qz.websocket.connection.semver[i] = -(_qz.websocket.connection.semver[i].replace(/\D/g, ""));
+                                        continue;
+                                    }
+                                    _qz.websocket.connection.semver[i] = parseInt(_qz.websocket.connection.semver[i]);
+                                }
+                                catch(ignore) {}
+
+                                if (_qz.websocket.connection.semver.length < 4) {
+                                    _qz.websocket.connection.semver[3] = 0;
+                                }
+                            }
+
+                            //algorithm can be declared before a connection, check for incompatibilities now that we have one
+                            _qz.compatible.algorithm(true);
+                        }).then(function() {
+                            _qz.websocket.connection.sendData({ certificate: cert, promise: openPromise });
+                        });
                     }
 
                     _qz.security.callCert().then(sendCert).catch(sendCert);
-
-                    //websocket setup, query what version is connected
-                    qz.api.getVersion().then(function(version) {
-                        _qz.websocket.connection.version = version;
-                        _qz.websocket.connection.semver = version.toLowerCase().replace(/-rc\./g, "-rc").split(/[\\+\\.-]/g);
-                        for(var i = 0; i < _qz.websocket.connection.semver.length; i++) {
-                            try {
-                                if (i == 3 && _qz.websocket.connection.semver[i].toLowerCase().indexOf("rc") == 0) {
-                                    // Handle "rc1" pre-release by negating build info
-                                    _qz.websocket.connection.semver[i] = -(_qz.websocket.connection.semver[i].replace(/\D/g, ""));
-                                    continue;
-                                }
-                                _qz.websocket.connection.semver[i] = parseInt(_qz.websocket.connection.semver[i]);
-                            } catch(ignore) {}
-                            if (_qz.websocket.connection.semver.length < 4) {
-                                _qz.websocket.connection.semver[3] = 0;
-                            }
-                        }
-
-                        //algorithm can be declared before a connection, check for incompatibilities now that we have one
-                        _qz.compatible.algorithm(true);
-                    });
                 },
 
                 /** Generate unique ID used to map a response to a call. */
@@ -570,9 +573,9 @@ var qz = (function() {
             /** Create a new promise */
             promise: function(resolver) {
                 //prefer global object for historical purposes
-                if(typeof RSVP !== 'undefined') {
+                if (typeof RSVP !== 'undefined') {
                     return new RSVP.Promise(resolver);
-                } else if(typeof Promise !== 'undefined') {
+                } else if (typeof Promise !== 'undefined') {
                     return new Promise(resolver);
                 } else {
                     _qz.log.error("Promise/A+ support is required.  See qz.api.setPromiseType(...)");
@@ -595,7 +598,7 @@ var qz = (function() {
 
             hash: function(data) {
                 //prefer global object for historical purposes
-                if(typeof Sha256 !== 'undefined') {
+                if (typeof Sha256 !== 'undefined') {
                     return Sha256.hash(data);
                 } else {
                     return _qz.SHA.hash(data);
@@ -609,7 +612,7 @@ var qz = (function() {
                     var a = document.createElement("a");
                     a.href = loc;
                     return a.href;
-                } else if(typeof exports === 'object') {
+                } else if (typeof exports === 'object') {
                     //node.js
                     require('path').resolve(loc);
                 }
@@ -801,7 +804,7 @@ var qz = (function() {
                 //if not connected yet we will assume compatibility exists for the time being
                 if (_qz.tools.isActive()) {
                     if (_qz.tools.isVersion(2, 0)) {
-                        if(!quiet) {
+                        if (!quiet) {
                             _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
                         }
                         return false;
@@ -1202,7 +1205,9 @@ var qz = (function() {
              * @memberof qz.printers
              */
             startListening: function(printers) {
-                if (!Array.isArray(printers)) printers = [printers];
+                if (!Array.isArray(printers)) {
+                    printers = [printers];
+                }
                 var params = {
                     printerNames: printers
                 };
@@ -2230,7 +2235,7 @@ var qz = (function() {
              */
             device: function(hostname, port) {
                 // Wrap 2.0
-                if(_qz.tools.isVersion(2, 0)) {
+                if (_qz.tools.isVersion(2, 0)) {
                     return _qz.compatible.networking(hostname, port, null, null, function(data) {
                         return { ip: data.ipAddress, mac: data.macAddress };
                     });
@@ -2252,7 +2257,7 @@ var qz = (function() {
              */
             devices: function(hostname, port) {
                 // Wrap 2.0
-                if(_qz.tools.isVersion(2, 0)) {
+                if (_qz.tools.isVersion(2, 0)) {
                     return _qz.compatible.networking(hostname, port, null, null, function(data) {
                         return [{ ip: data.ipAddress, mac: data.macAddress }];
                     });
@@ -2305,13 +2310,13 @@ var qz = (function() {
             },
 
             /**
-            * Set which signing algorithm QZ will check signatures against.
-            *
-            * @param {string} algorithm The algorithm used in signing. Valid values: <code>[SHA1 | SHA256 | SHA512]</code>
-            * @since 2.1.0
-            *
-            * @memberof qz.security
-            */
+             * Set which signing algorithm QZ will check signatures against.
+             *
+             * @param {string} algorithm The algorithm used in signing. Valid values: <code>[SHA1 | SHA256 | SHA512]</code>
+             * @since 2.1.0
+             *
+             * @memberof qz.security
+             */
             setSignatureAlgorithm: function(algorithm) {
                 //warn for incompatibilities if known
                 if (!_qz.compatible.algorithm()) {
@@ -2326,13 +2331,13 @@ var qz = (function() {
             },
 
             /**
-            * Get the signing algorithm QZ will be checking signatures against.
-            *
-            * @returns {string} The algorithm used in signing.
-            * @since 2.1.0
-            *
-            * @memberof qz.security
-            */
+             * Get the signing algorithm QZ will be checking signatures against.
+             *
+             * @returns {string} The algorithm used in signing.
+             * @since 2.1.0
+             *
+             * @memberof qz.security
+             */
             getSignatureAlgorithm: function() {
                 return _qz.security.signAlgorithm;
             }

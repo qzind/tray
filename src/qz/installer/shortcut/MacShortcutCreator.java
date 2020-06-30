@@ -22,6 +22,7 @@ import qz.utils.MacUtilities;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -83,7 +84,8 @@ class MacShortcutCreator extends ShortcutCreator {
 
     public void createDesktopShortcut() {
         try {
-            Files.createSymbolicLink(Paths.get(MacInstaller.getAppPath()), Paths.get(SHORTCUT_PATH));
+            new File(SHORTCUT_PATH).delete();
+            Files.createSymbolicLink(Paths.get(SHORTCUT_PATH), Paths.get(MacInstaller.getAppPath()));
         } catch(IOException e) {
             log.warn("Could not create desktop shortcut {}", SHORTCUT_PATH, e);
         }

@@ -105,7 +105,7 @@ public class MacInstaller extends Installer {
         String target = SystemUtilities.getJarPath();
         int appIndex = target.indexOf(".app/");
         if (appIndex > 0) {
-            return target.substring(0, appIndex -1);
+            return target.substring(0, appIndex) + ".app";
         }
         // Fallback on the ".jar" location
         return target;

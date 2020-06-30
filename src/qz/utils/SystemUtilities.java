@@ -37,6 +37,7 @@ public class SystemUtilities {
     // Name of the os, i.e. "Windows XP", "Mac OS X"
     private static final String OS_NAME = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
     private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
+    private static final Locale defaultLocale = Locale.getDefault();
 
     private static Boolean darkDesktop;
     private static Boolean darkTaskbar;
@@ -53,6 +54,18 @@ public class SystemUtilities {
      */
     public static String getOS() {
         return OS_NAME;
+    }
+
+    /**
+     * Call to workaround Locale-specific bugs (See issue #680)
+     * Please call <code>restoreLocale()</code> as soon as possible
+     */
+    public static synchronized void swapLocale() {
+        Locale.setDefault(Locale.US);
+    }
+
+    public static synchronized void restoreLocale() {
+        Locale.setDefault(defaultLocale);
     }
 
     public static Version getOSVersion() {

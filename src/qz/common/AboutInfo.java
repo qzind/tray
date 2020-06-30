@@ -145,7 +145,7 @@ public class AboutInfo {
     }
 
     private static String toISO(Date d) {
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'", Locale.ENGLISH);
         TimeZone tz = TimeZone.getTimeZone("UTC");
         df.setTimeZone(tz);
         return df.format(d);

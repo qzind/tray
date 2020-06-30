@@ -61,7 +61,7 @@ public class SystemUtilities {
      * Please call <code>restoreLocale()</code> as soon as possible
      */
     public static synchronized void swapLocale() {
-        Locale.setDefault(Locale.US);
+        Locale.setDefault(Locale.ENGLISH);
     }
 
     public static synchronized void restoreLocale() {

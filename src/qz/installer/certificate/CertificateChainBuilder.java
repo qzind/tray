@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.*;
 import java.util.Calendar;
+import java.util.Locale;
 
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -108,8 +109,8 @@ public class CertificateChainBuilder {
                 .addRDN(BCStyle.CN, cn)
                 .build();
         BigInteger serial = BigInteger.valueOf(System.currentTimeMillis());
-        Calendar notBefore = Calendar.getInstance();
-        Calendar notAfter = Calendar.getInstance();
+        Calendar notBefore = Calendar.getInstance(Locale.ENGLISH);
+        Calendar notAfter = Calendar.getInstance(Locale.ENGLISH);
         notBefore.add(Calendar.DAY_OF_YEAR, -1);
         notAfter.add(Calendar.DAY_OF_YEAR, age - 1);
 

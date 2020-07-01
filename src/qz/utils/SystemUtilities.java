@@ -23,7 +23,11 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import static com.sun.jna.platform.win32.WinReg.*;
 
@@ -66,6 +70,13 @@ public class SystemUtilities {
 
     public static synchronized void restoreLocale() {
         Locale.setDefault(defaultLocale);
+    }
+
+    public static String toISO(Date d) {
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'", Locale.ENGLISH);
+        TimeZone tz = TimeZone.getTimeZone("UTC");
+        df.setTimeZone(tz);
+        return df.format(d);
     }
 
     public static Version getOSVersion() {

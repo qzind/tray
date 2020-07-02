@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.utils.ShellUtilities;
+import qz.utils.SystemUtilities;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
@@ -122,26 +123,26 @@ public class ExpiryTask extends TimerTask {
         }
 
         Date expireDate = cert.getNotAfter();
-        Calendar now = Calendar.getInstance();
-        Calendar expires = Calendar.getInstance();
+        Calendar now = Calendar.getInstance(Locale.ENGLISH);
+        Calendar expires = Calendar.getInstance(Locale.ENGLISH);
         expires.setTime(expireDate);
 
         // Expired
         if (now.after(expires)) {
-            log.info("SSL certificate has expired {}.  It must be renewed immediately.", expireDate);
+            log.info("SSL certificate has expired {}.  It must be renewed immediately.", SystemUtilities.toISO(expireDate));
             return ExpiryState.EXPIRED;
         }
 
         // Expiring
         expires.add(Calendar.DAY_OF_YEAR, -DEFAULT_GRACE_PERIOD_DAYS);
         if (now.after(expires)) {
-            log.info("SSL certificate will expire in less than {} days: {}", DEFAULT_GRACE_PERIOD_DAYS, expireDate);
+            log.info("SSL certificate will expire in less than {} days: {}", DEFAULT_GRACE_PERIOD_DAYS, SystemUtilities.toISO(expireDate));
             return ExpiryState.EXPIRING;
         }
 
         // Valid
         int days = (int)Math.round((expireDate.getTime() - new Date().getTime()) / (double)86400000);
-        log.info("SSL certificate is still valid for {} more days: {}.  We'll make a new one automatically when needed.", days, expireDate);
+        log.info("SSL certificate is still valid for {} more days: {}.  We'll make a new one automatically when needed.", days, SystemUtilities.toISO(expireDate));
         return ExpiryState.VALID;
     }
 

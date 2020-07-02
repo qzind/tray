@@ -44,7 +44,9 @@ public class HttpAboutServlet extends DefaultServlet {
     private void generateHtmlResponse(HttpServletRequest request, HttpServletResponse response) {
         StringBuilder display = new StringBuilder();
 
-        display.append("<html><body>")
+        display.append("<html>")
+                .append("<head><meta charset=\"UTF-8\"></head>")
+                .append("<body>")
                 .append("<h1>About</h1>");
 
         display.append(newTable());

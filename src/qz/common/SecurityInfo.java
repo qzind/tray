@@ -22,6 +22,26 @@ import java.util.*;
  * Created by Kyle B. on 10/27/2017.
  */
 public class SecurityInfo {
+    /**
+     * Wrap throwable operations into a try/catch
+     */
+    private static class CheckedTreeMap<K, V> extends TreeMap<K, V> {
+        private static final Logger log = LoggerFactory.getLogger(CheckedTreeMap.class);
+
+        interface CheckedValue {
+            Object check() throws Throwable;
+        }
+
+        @SuppressWarnings("unchecked")
+        public V put(K key, CheckedValue value) {
+            try {
+                return put(key, (V)value.check());
+            } catch(Throwable t) {
+                log.warn("A checked exception was suppressed adding key \"{}\"", key, t);
+            }
+            return null;
+        }
+    }
 
     private static final Logger log = LoggerFactory.getLogger(SecurityInfo.class);
 
@@ -44,19 +64,19 @@ public class SecurityInfo {
     }
 
     public static SortedMap<String,String> getLibVersions() {
-        SortedMap<String,String> libVersions = new TreeMap<>();
+        CheckedTreeMap<String,String> libVersions = new CheckedTreeMap<>();
 
         // Use API-provided mechanism if available
-        libVersions.put("jna (native)", Native.VERSION_NATIVE);
+        libVersions.put("jna (native)", () -> Native.VERSION_NATIVE);
         libVersions.put("jna", Native.VERSION);
-        libVersions.put("jssc", jssc.SerialNativeInterface.getLibraryVersion());
+        libVersions.put("jssc", () -> jssc.SerialNativeInterface.getLibraryVersion());
         libVersions.put("jetty", Jetty.VERSION);
         libVersions.put("pdfbox", org.apache.pdfbox.util.Version.getVersion());
-        libVersions.put("purejavahidapi", PureJavaHidApi.getVersion());
+        libVersions.put("purejavahidapi", () -> PureJavaHidApi.getVersion());
         libVersions.put("usb-api", javax.usb.Version.getApiVersion());
         libVersions.put("not-yet-commons-ssl", org.apache.commons.ssl.Version.VERSION);
         libVersions.put("mslinks", mslinks.ShellLink.VERSION);
-        libVersions.put("simplersa", null);
+        libVersions.put("simplersa", (String)null);
         libVersions.put("bouncycastle", "" + new BouncyCastleProvider().getVersion());
 
         libVersions.put("jre", Constants.JAVA_VERSION.toString());

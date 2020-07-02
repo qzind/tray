@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.*;
 import java.util.Calendar;
+import java.util.Locale;
 
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -30,6 +31,7 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import qz.common.Constants;
+import qz.utils.SystemUtilities;
 
 import static qz.installer.certificate.KeyPairWrapper.Type.*;
 
@@ -96,7 +98,7 @@ public class CertificateChainBuilder {
     }
 
     private static X509v3CertificateBuilder createX509Cert(KeyPair keyPair, int age, String ... hostNames) {
-        String cn = hostNames.length > 0 ? hostNames[0] : DEFAULT_HOSTNAMES[0];
+        String cn = hostNames.length > 0? hostNames[0]:DEFAULT_HOSTNAMES[0];
         X500Name name = new X500NameBuilder()
                 .addRDN(BCStyle.C, Constants.ABOUT_COUNTRY)
                 .addRDN(BCStyle.ST, Constants.ABOUT_STATE)
@@ -107,12 +109,15 @@ public class CertificateChainBuilder {
                 .addRDN(BCStyle.CN, cn)
                 .build();
         BigInteger serial = BigInteger.valueOf(System.currentTimeMillis());
-        Calendar notBefore = Calendar.getInstance();
-        Calendar notAfter = Calendar.getInstance();
+        Calendar notBefore = Calendar.getInstance(Locale.ENGLISH);
+        Calendar notAfter = Calendar.getInstance(Locale.ENGLISH);
         notBefore.add(Calendar.DAY_OF_YEAR, -1);
         notAfter.add(Calendar.DAY_OF_YEAR, age - 1);
 
-        return new JcaX509v3CertificateBuilder(name, serial, notBefore.getTime(), notAfter.getTime(), name, keyPair.getPublic());
+        SystemUtilities.swapLocale();
+        X509v3CertificateBuilder x509builder = new JcaX509v3CertificateBuilder(name, serial, notBefore.getTime(), notAfter.getTime(), name, keyPair.getPublic());
+        SystemUtilities.restoreLocale();
+        return x509builder;
     }
 
     /**

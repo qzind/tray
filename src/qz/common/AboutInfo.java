@@ -26,8 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class AboutInfo {
@@ -110,7 +108,7 @@ public class AboutInfo {
                     cert.put("rootca", false);
                 }
                 cert.put("subject", x509.getSubjectX500Principal().getName());
-                cert.put("expires", toISO(x509.getNotAfter()));
+                cert.put("expires", SystemUtilities.toISO(x509.getNotAfter()));
                 cert.put("data", formatCert(x509.getEncoded()));
                 certs.put(cert);
             }
@@ -142,13 +140,6 @@ public class AboutInfo {
 
     public static String getPreferredHostname() {
         return preferredHostname;
-    }
-
-    private static String toISO(Date d) {
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
-        TimeZone tz = TimeZone.getTimeZone("UTC");
-        df.setTimeZone(tz);
-        return df.format(d);
     }
 
     public static Version findLatestVersion() {

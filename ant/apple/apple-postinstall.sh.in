@@ -20,4 +20,4 @@ fi
 ./"${project.name}" certgen
 
 # Start qz by calling open on the .app as an ordinary user
-su "$USER" -c "open ../../"
+su "$USER" -c "open ../../" || true

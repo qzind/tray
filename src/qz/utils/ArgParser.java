@@ -219,9 +219,11 @@ public class ArgParser {
         } catch(MissingArgException e) {
             log.error("Invalid usage");
             exitStatus = USAGE_ERROR;
+            return true;
         } catch(Exception e) {
-            log.error("Internal error occured");
+            log.error("Internal error occurred", e);
             exitStatus = GENERAL_ERROR;
+            return true;
         }
         return false;
     }

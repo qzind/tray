@@ -3,16 +3,14 @@
     <target name="get-version">
         <!-- build.version -->
         <property file="${basedir}/ant/project.properties"/>
-        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="build.version">
+        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="build.version" timeout="60000" failonerror="true">
             <arg value="--version"/>
         </java>
-        <property description="suppress property warning" name="build.version" value="0.0.0"/>
 
         <!-- apple.bundleid -->
-        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="apple.bundleid">
+        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="apple.bundleid" timeout="60000" failonerror="true">
             <arg value="--bundleid"/>
         </java>
-        <property description="suppress property warning" name="apple.bundleid" value="io.qz.fallback.${project.filename}"/>
 
         <!-- build.type -->
         <condition property="build.type" value="-community">

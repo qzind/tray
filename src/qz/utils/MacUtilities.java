@@ -22,6 +22,8 @@ import qz.ui.component.IconCache;
 
 import java.awt.*;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Utility class for MacOS specific functions.
@@ -63,14 +65,26 @@ public class MacUtilities {
      */
     public static String getBundleId() {
         if(bundleId == null) {
-            String[] parts = Constants.ABOUT_URL.split("/");
-            if(Constants.ABOUT_URL.endsWith("/")) {
-                // Handle trailing backslash
-                parts = parts[parts.length - 2].split("\\.");
-            } else {
-                parts = parts[parts.length - 1].split("\\.");
+            ArrayList<String> parts = new ArrayList(Arrays.asList(Constants.ABOUT_URL.split("/")));
+            for(String part : parts) {
+                if(part.contains(".")) {
+                    // Try to use this section as the .com, etc
+                    String[] domain = part.toLowerCase().split("\\.");
+                    // Convert to reverse-domain syntax
+                    for(int i = domain.length -1; i >= 0; i--) {
+                        // Skip "www", "www2", etc
+                        if(i == 0 && domain[i].startsWith("www")) {
+                            break;
+                        }
+                        bundleId = (bundleId == null ? "" : bundleId) + domain[i] + ".";
+                    }
+                }
             }
-            bundleId = parts[1] + "." + parts[0] + "." + Constants.PROPS_FILE;
+        }
+        if(bundleId != null) {
+            bundleId += Constants.PROPS_FILE;
+        } else {
+            bundleId = "io.qz.fallback." + Constants.PROPS_FILE;
         }
         return bundleId;
     }

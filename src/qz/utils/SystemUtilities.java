@@ -317,11 +317,13 @@ public class SystemUtilities {
 
     public static boolean isDarkTaskbar(boolean recheck) {
         if(darkTaskbar == null || recheck) {
-            if (!isWindows()) {
-                // Mac and Linux don't differentiate; return the cached darkDesktop value
+            if (isWindows()) {
+                darkTaskbar = WindowsUtilities.isDarkTaskbar();
+            } else if(isMac() && MacUtilities.isTemplateIconRequired() && !MacUtilities.javaSupportsTemplateIcon()) {
                 darkTaskbar = isDarkDesktop();
             } else {
-                darkTaskbar = WindowsUtilities.isDarkTaskbar();
+                // Linux doesn't differentiate; return the cached darkDesktop value
+                darkTaskbar = isDarkDesktop();
             }
         }
         return darkTaskbar.booleanValue();
@@ -335,7 +337,7 @@ public class SystemUtilities {
         if (darkDesktop == null || recheck) {
             // Check for Dark Mode on MacOS
             if (isMac()) {
-                darkDesktop = MacUtilities.isDarkMode();
+                darkDesktop = MacUtilities.isDarkDesktop();
             } else if (isWindows()) {
                 darkDesktop = WindowsUtilities.isDarkDesktop();
             } else {
@@ -353,7 +355,8 @@ public class SystemUtilities {
     public static boolean prefersMaskTrayIcon() {
         if (Constants.MASK_TRAY_SUPPORTED) {
             if (SystemUtilities.isMac()) {
-                return true;
+                // Fallback to the old, green icon for Big Sur and later until the JDK adds template support
+                return !MacUtilities.isTemplateIconRequired() || MacUtilities.javaSupportsTemplateIcon();
             } else if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().getMajorVersion() >= 10) {
                 return true;
             }

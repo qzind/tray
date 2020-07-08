@@ -283,8 +283,8 @@ public class IconCache {
         for(IconCache.Icon i : IconCache.getTypes()) {
             // See also JXTrayIcon.getSize()
             if (i.isTrayIcon() && SystemUtilities.isMac()) {
-                // Prevent padding from happening twice on WARNING_ICON, DANGER_ICON
-                if (!i.padded || i == Icon.DEFAULT_ICON) {
+                // Prevent padding from happening twice
+                if (!i.padded) {
                     padIcon(i, 25);
                 }
             }

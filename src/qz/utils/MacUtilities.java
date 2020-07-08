@@ -36,6 +36,12 @@ public class MacUtilities {
     private static Dialog aboutDialog;
     private static TrayManager trayManager;
     private static String bundleId;
+    private static Boolean supportsTemplateIcons;
+    private static Version MACOS_VERSION_TEMPLATE_REQUIRED = Version.valueOf("10.16.0");
+    private static Version[] JAVA_VERSION_TEMPLATE_SUPPORTED = new Version[]{
+            Version.valueOf("17.0.0+5"),
+            Version.valueOf("11.999.999") // TODO
+    };
 
     public static void showAboutDialog() {
         if (aboutDialog != null) { aboutDialog.setVisible(true); }
@@ -107,7 +113,7 @@ public class MacUtilities {
      * Runs a shell command to determine if "Dark" desktop theme is enabled
      * @return true if enabled, false if not
      */
-    public static boolean isDarkMode() {
+    public static boolean isDarkDesktop() {
         return !ShellUtilities.execute(new String[] { "defaults", "read", "-g", "AppleInterfaceStyle" }, new String[] { "Dark" }, true, true).isEmpty();
     }
 
@@ -140,6 +146,37 @@ public class MacUtilities {
             log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
         }
         return -1;
+    }
+
+    /**
+     * Prior to Big Sur Beta, the system tray honored the Desktop dark/lite theme.
+     * Starting with Big Sur, special consideration needs to be made to prevent the tray icon
+     * from disappearing into the taskbar.
+     *
+     * Set also <code>MacUtilities.javaSupportsTemplateIcon()</code>
+     */
+    public static boolean isTemplateIconRequired() {
+        return SystemUtilities.getOSVersion().greaterThanOrEqualTo(MACOS_VERSION_TEMPLATE_REQUIRED);
+    }
+
+    /**
+     * Template icon support since 17.0.0+5 or any backport.
+     *
+     * See also: https://bugs.openjdk.java.net/browse/JDK-8252015
+     */
+    public static boolean javaSupportsTemplateIcon() {
+        if(supportsTemplateIcons == null) {
+            for(Version supportAdded : JAVA_VERSION_TEMPLATE_SUPPORTED) {
+                if(Constants.JAVA_VERSION.getMajorVersion() > 17) {
+                    // Assume this is a base feature after JDK 17
+                    supportsTemplateIcons = true;
+                } else if (Constants.JAVA_VERSION.getMajorVersion() == supportAdded.getMajorVersion()) {
+                    // Only compare if major versions match
+                    supportsTemplateIcons = Constants.JAVA_VERSION.compareWithBuildsTo(supportAdded) >= 0;
+                }
+            }
+        }
+        return supportsTemplateIcons;
     }
 
     private interface CLibrary extends Library {

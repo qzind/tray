@@ -21,7 +21,7 @@ public class StatusSession {
 
     private StreamEvent createStatusStream(PrinterStatus status) {
         return new StreamEvent(StreamEvent.Stream.PRINTER, StreamEvent.Type.ACTION)
-                .withData("printerName", status.issuingPrinterName)
+                .withData("printerName", status.getPrinterName())
                 .withData("statusCode", status.type.getCode())
                 .withData("statusText", status.type.getName())
                 .withData("severity", status.type.getSeverity())

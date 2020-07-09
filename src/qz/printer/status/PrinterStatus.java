@@ -1,8 +1,12 @@
 package qz.printer.status;
 
+import qz.printer.info.NativePrinterMap;
+import qz.utils.SystemUtilities;
+
 import java.util.Locale;
 
 import static qz.printer.status.PrinterStatusType.*;
+import static qz.utils.SystemUtilities.isMac;
 
 /**
  * Created by kyle on 7/7/17.
@@ -53,8 +57,19 @@ public class PrinterStatus {
         return new PrinterStatus(statusType, issuingPrinterName, reason);
     }
 
+    public String getPrinterName() {
+        String name;
+        //if (SystemUtilities.isMac()) {
+        //    name = NativePrinterMap.getInstance().getPrinterIdByDescription(issuingPrinterName);
+        //
+        //} else {
+            name = issuingPrinterName;
+        //}
+        return name;
+    }
+
     public String toString() {
-        String returnString = type.getName() + ": Level " + type.getSeverity() + ", StatusCode " + type.getCode() + ", From " + issuingPrinterName;
+        String returnString = type.getName() + ": Level " + type.getSeverity() + ", StatusCode " + type.getCode() + ", From " + getPrinterName();
         if (!cupsString.isEmpty()) {
             returnString += ", CUPS string " + cupsString;
         }

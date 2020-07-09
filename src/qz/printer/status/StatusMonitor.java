@@ -80,20 +80,22 @@ public class StatusMonitor {
                 clientPrinterConnections.add(ALL_PRINTERS, connection);
             }
         } else {  //listen to specific printer(s)
-            for(int i = 0; i < printerNames.length(); i++) {
+            for (int i = 0; i < printerNames.length(); i++) {
                 String printerName = printerNames.getString(i);
-                if (SystemUtilities.isMac()) {
-                    // Since 2.0: Mac printers use Description; Find by CUPS ID
-                    printerName = NativePrinterMap.getInstance().getPrinterId(printerName);
-                }
+                //if (SystemUtilities.isMac()) {
+                //    // Since 2.0: Mac printers use descriptions as printer names; Find CUPS ID by Description
+                //    printerName = NativePrinterMap.getInstance().getPrinterIdByDescription(printerName);
+                //}
                 if (printerName == null || "".equals(printerName)) {
                     throw new IllegalArgumentException();
                 }
+                //Todo Remove this debugging log
+                log.warn("----------- " + printerName);
 
                 if (!clientPrinterConnections.containsKey(printerNames.getString(i))) {
-                    clientPrinterConnections.add(printerNames.getString(i), connection);
+                    clientPrinterConnections.add(printerName, connection);
                 } else if (!clientPrinterConnections.getValues(printerNames.getString(i)).contains(connection)) {
-                    clientPrinterConnections.add(printerNames.getString(i), connection);
+                    clientPrinterConnections.add(printerName, connection);
                 }
             }
         }

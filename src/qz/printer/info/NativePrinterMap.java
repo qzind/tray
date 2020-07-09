@@ -36,6 +36,8 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
                 return entry.getKey();
             }
         }
+        //Todo Remove this debugging log
+        log.warn(entrySet().toString());
         log.warn("Could not find printerId for " + description);
         return description;
     }

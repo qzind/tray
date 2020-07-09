@@ -38,6 +38,7 @@ import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.JobName;
 import javax.print.event.PrintJobEvent;
 import javax.print.event.PrintJobListener;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
@@ -188,20 +189,29 @@ public class PrintRaw implements PrintProcessor {
     }
 
     private ImageWrapper getHtmlWrapper(String data, JSONObject opt, boolean fromFile, PrintOptions.Pixel pxlOpts) throws IOException {
+        double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
+        if (density <= 1) {
+            density = LanguageType.getType(opt.optString("language")).getDefaultDensity();
+        }
+        double pageZoom = density / 72.0;
+
+        double pageWidth = opt.optInt("pageWidth") / density * 72;
+        double pageHeight = opt.optInt("pageHeight") / density * 72;
+
         BufferedImage bi;
-        WebAppModel model = new WebAppModel(data, !fromFile, opt.optInt("pageWidth"), opt.optInt("pageHeight"), false, 1);
+        WebAppModel model = new WebAppModel(data, !fromFile, pageWidth, pageHeight, false, pageZoom);
 
         try {
             WebApp.initialize(); //starts if not already started
-
-            double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
-            if (density <= 1) {
-                density = LanguageType.getType(opt.optString("language")).getDefaultDensity();
-            }
-            double pageZoom = density / 72.0;
-            model.setZoom(pageZoom);
-
             bi = WebApp.raster(model);
+
+            // down scale back from web density
+            double scaleFactor = opt.optDouble("pageWidth", 0) / bi.getWidth();
+            BufferedImage scaled = new BufferedImage((int)(bi.getWidth() * scaleFactor), (int)(bi.getHeight() * scaleFactor), BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = scaled.createGraphics();
+            g2d.drawImage(bi, 0, 0, (int)(bi.getWidth() * scaleFactor), (int)(bi.getHeight() * scaleFactor), null);
+            g2d.dispose();
+            bi = scaled;
         }
         catch(Throwable t) {
             if (model.getZoom() > 1 && t instanceof IllegalArgumentException) {

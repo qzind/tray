@@ -15,7 +15,7 @@ public class WebAppModel {
         this.plainText = plainText;
         this.width = width;
         this.height = height;
-        this.webWidth = width * (96d/72d);
+        this.webWidth = width * (96d / 72d);
         this.webHeight = height * (96d / 72d);
         this.isScaled = isScaled;
         this.zoom = zoom;
@@ -43,6 +43,7 @@ public class WebAppModel {
 
     public void setWidth(double width) {
         this.width = width;
+        this.webWidth = width * (96d / 72d);
     }
 
     public double getHeight() {
@@ -51,22 +52,15 @@ public class WebAppModel {
 
     public void setHeight(double height) {
         this.height = height;
+        this.webHeight = height * (96d / 72d);
     }
 
     public double getWebWidth() {
         return webWidth;
     }
 
-    public void setWebWidth(double webWidth) {
-        this.webWidth = webWidth;
-    }
-
     public double getWebHeight() {
         return webHeight;
-    }
-
-    public void setWebHeight(double webHeight) {
-        this.webHeight = webHeight;
     }
 
     public boolean isScaled() {

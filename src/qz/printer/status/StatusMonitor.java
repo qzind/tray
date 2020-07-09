@@ -82,10 +82,10 @@ public class StatusMonitor {
         } else {  //listen to specific printer(s)
             for (int i = 0; i < printerNames.length(); i++) {
                 String printerName = printerNames.getString(i);
-                //if (SystemUtilities.isMac()) {
-                //    // Since 2.0: Mac printers use descriptions as printer names; Find CUPS ID by Description
-                //    printerName = NativePrinterMap.getInstance().getPrinterIdByDescription(printerName);
-                //}
+                if (SystemUtilities.isMac()) {
+                    // Since 2.0: Mac printers use descriptions as printer names; Find CUPS ID by Description
+                    printerName = NativePrinterMap.getInstance().getPrinterIdByDescription(printerName);
+                }
                 if (printerName == null || "".equals(printerName)) {
                     throw new IllegalArgumentException();
                 }

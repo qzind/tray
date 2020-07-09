@@ -90,8 +90,9 @@ public class StatusMonitor {
                     throw new IllegalArgumentException();
                 }
                 //Todo Remove this debugging log
-                log.warn("----------- " + printerName);
-
+                log.warn("original name" + printerNames.getString(i));
+                log.warn("-----new name " + printerName);
+                clientPrinterConnections.keySet().toString();
                 if (!clientPrinterConnections.containsKey(printerName)) {
                     clientPrinterConnections.add(printerName, connection);
                 } else if (!clientPrinterConnections.getValues(printerName).contains(connection)) {

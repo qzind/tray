@@ -32,12 +32,13 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
     public String getPrinterIdByDescription(String description) {
         for(Map.Entry<String,NativePrinter> entry : entrySet()) {
             NativePrinter info = entry.getValue();
+            //Todo Remove this debugging log
+            log.warn("--id = " + info.getPrinterId());
+            log.warn("desc = " + info.getDescription());
             if (info.getDescription().equals(description)) {
                 return entry.getKey();
             }
         }
-        //Todo Remove this debugging log
-        log.warn(entrySet().toString());
         log.warn("Could not find printerId for " + description);
         return description;
     }

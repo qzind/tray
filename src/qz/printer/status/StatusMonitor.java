@@ -92,9 +92,9 @@ public class StatusMonitor {
                 //Todo Remove this debugging log
                 log.warn("----------- " + printerName);
 
-                if (!clientPrinterConnections.containsKey(printerNames.getString(i))) {
+                if (!clientPrinterConnections.containsKey(printerName)) {
                     clientPrinterConnections.add(printerName, connection);
-                } else if (!clientPrinterConnections.getValues(printerNames.getString(i)).contains(connection)) {
+                } else if (!clientPrinterConnections.getValues(printerName).contains(connection)) {
                     clientPrinterConnections.add(printerName, connection);
                 }
             }

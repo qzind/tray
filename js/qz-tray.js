@@ -1269,7 +1269,7 @@ var qz = (function() {
              *
              * @param {Object} options Default options used by printer configs if not overridden.
              *
-             *  @param {Object} [option.bounds=null] Bounding box rectangle.
+             *  @param {Object} [options.bounds=null] Bounding box rectangle.
              *   @param {number} [options.bounds.x=0] Distance from left for bounding box starting corner
              *   @param {number} [options.bounds.y=0] Distance from top for bounding box starting corner
              *   @param {number} [options.bounds.width=0] Width of bounding box

@@ -38,6 +38,7 @@ import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.JobName;
 import javax.print.event.PrintJobEvent;
 import javax.print.event.PrintJobListener;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
@@ -108,7 +109,7 @@ public class PrintRaw implements PrintProcessor {
             try {
                 switch(format) {
                     case HTML:
-                        commands.append(getHtmlWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.PLAIN).getImageCommand(opt));
+                        commands.append(getHtmlWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.PLAIN, options.getPixelOptions()).getImageCommand(opt));
                         break;
                     case IMAGE:
                         commands.append(getImageWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.BASE64).getImageCommand(opt));
@@ -187,18 +188,47 @@ public class PrintRaw implements PrintProcessor {
         return getWrapper(bi, opt);
     }
 
-    private ImageWrapper getHtmlWrapper(String data, JSONObject opt, boolean fromFile) throws IOException {
+    private ImageWrapper getHtmlWrapper(String data, JSONObject opt, boolean fromFile, PrintOptions.Pixel pxlOpts) throws IOException {
+        double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
+        if (density <= 1) {
+            density = LanguageType.getType(opt.optString("language")).getDefaultDensity();
+        }
+        double pageZoom = density / 72.0;
+
+        double pageWidth = opt.optInt("pageWidth") / density * 72;
+        double pageHeight = opt.optInt("pageHeight") / density * 72;
+
         BufferedImage bi;
+        WebAppModel model = new WebAppModel(data, !fromFile, pageWidth, pageHeight, false, pageZoom);
 
         try {
             WebApp.initialize(); //starts if not already started
-
-            WebAppModel model = new WebAppModel(data, !fromFile, opt.optInt("pageWidth"), opt.optInt("pageHeight"), false, opt.optDouble("zoom"));
             bi = WebApp.raster(model);
+
+            // down scale back from web density
+            double scaleFactor = opt.optDouble("pageWidth", 0) / bi.getWidth();
+            BufferedImage scaled = new BufferedImage((int)(bi.getWidth() * scaleFactor), (int)(bi.getHeight() * scaleFactor), BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = scaled.createGraphics();
+            g2d.drawImage(bi, 0, 0, (int)(bi.getWidth() * scaleFactor), (int)(bi.getHeight() * scaleFactor), null);
+            g2d.dispose();
+            bi = scaled;
         }
         catch(Throwable t) {
-            log.error("Failed to capture html raster");
-            throw new IOException(t);
+            if (model.getZoom() > 1 && t instanceof IllegalArgumentException) {
+                //probably a unrecognized image loader error, try at default zoom
+                try {
+                    log.warn("Capture failed with increased zoom, attempting with default value");
+                    model.setZoom(1);
+                    bi = WebApp.raster(model);
+                }
+                catch(Throwable tt) {
+                    log.error("Failed to capture html raster");
+                    throw new IOException(tt);
+                }
+            } else {
+                log.error("Failed to capture html raster");
+                throw new IOException(t);
+            }
         }
 
         return getWrapper(bi, opt);

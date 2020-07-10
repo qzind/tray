@@ -112,10 +112,10 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                     JSONObject dataOpt = data.getJSONObject("options");
 
                     if (!dataOpt.isNull("pageWidth") && dataOpt.optDouble("pageWidth") > 0) {
-                        pageWidth = dataOpt.optDouble("pageWidth") * (72.0 / pxlOpts.getUnits().as1Inch());
+                        pageWidth = dataOpt.optDouble("pageWidth") * convertFactor;
                     }
                     if (!dataOpt.isNull("pageHeight") && dataOpt.optDouble("pageHeight") > 0) {
-                        pageHeight = dataOpt.optDouble("pageHeight") * (72.0 / pxlOpts.getUnits().as1Inch());
+                        pageHeight = dataOpt.optDouble("pageHeight") * convertFactor;
                     }
                 }
 
@@ -141,7 +141,19 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             for(WebAppModel model : models) {
                 try { images.add(WebApp.raster(model)); }
                 catch(Throwable t) {
-                    throw new PrinterException(t.getMessage());
+                    if (model.getZoom() > 1 && t instanceof IllegalArgumentException) {
+                        //probably a unrecognized image loader error, try at default zoom
+                        try {
+                            log.warn("Capture failed with increased zoom, attempting with default value");
+                            model.setZoom(1);
+                            images.add(WebApp.raster(model));
+                        }
+                        catch(Throwable tt) {
+                            throw new PrinterException(tt.getMessage());
+                        }
+                    } else {
+                        throw new PrinterException(t.getMessage());
+                    }
                 }
             }
 

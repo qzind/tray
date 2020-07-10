@@ -95,7 +95,7 @@ public class StatusMonitor {
                 log.warn("-----new name " + printerName);
                 log.warn(clientPrinterConnections.keySet().toString());
 
-                PrintServiceMatcher.getNativePrinterList();
+                NativePrinterMap.getInstance().putAll(PrintServiceMatcher.getNativePrinterList());
                 if (!clientPrinterConnections.containsKey(printerName)) {
                     clientPrinterConnections.add(printerName, connection);
                 } else if (!clientPrinterConnections.getValues(printerName).contains(connection)) {

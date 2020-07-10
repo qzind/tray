@@ -7,6 +7,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.eclipse.jetty.util.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.printer.PrintServiceMatcher;
 import qz.printer.info.NativePrinterMap;
 import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
@@ -92,7 +93,9 @@ public class StatusMonitor {
                 //Todo Remove this debugging log
                 log.warn("original name" + printerNames.getString(i));
                 log.warn("-----new name " + printerName);
-                clientPrinterConnections.keySet().toString();
+                log.warn(clientPrinterConnections.keySet().toString());
+
+                PrintServiceMatcher.getNativePrinterList();
                 if (!clientPrinterConnections.containsKey(printerName)) {
                     clientPrinterConnections.add(printerName, connection);
                 } else if (!clientPrinterConnections.getValues(printerName).contains(connection)) {

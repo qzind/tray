@@ -85,7 +85,7 @@ public class StatusMonitor {
                 String printerName = printerNames.getString(i);
                 if (SystemUtilities.isMac()) {
                     // Since 2.0: Mac printers use descriptions as printer names; Find CUPS ID by Description
-                    NativePrinterMap.getInstance().putAll(PrintServiceMatcher.getNativePrinterList());
+                    PrintServiceMatcher.getNativePrinterList();
                     printerName = NativePrinterMap.getInstance().getPrinterIdByDescription(printerName);
                 }
                 if (printerName == null || "".equals(printerName)) {

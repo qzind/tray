@@ -1,5 +1,6 @@
 package qz.printer.status;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -48,6 +49,8 @@ public class CupsStatusHandler extends AbstractHandler {
 
         while(eventReader.hasNext() && running) {
             XMLEvent event = eventReader.nextEvent();
+            //Todo Remove this debugging log
+            //log.warn(event.toString() + " : " + event.getEventType());
             switch(event.getEventType()) {
                 case XMLStreamConstants.START_ELEMENT: {
                     StartElement startElement = event.asStartElement();

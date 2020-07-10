@@ -23,13 +23,13 @@ public class PrinterStatus {
         this(type, issuingPrinterName, "");
     }
     public PrinterStatus(PrinterStatusType type, String issuingPrinterName, String cupsString) {
-        this(type, issuingPrinterName, cupsString, issuingPrinterName);
-    }
-
-    public PrinterStatus(PrinterStatusType type, String issuingPrinterName, String cupsString, String issuingPrinterDescription) {
         this.type = type;
         this.issuingPrinterName = issuingPrinterName;
-        this.issuingPrinterDescription = issuingPrinterDescription;
+        if (isMac()) {
+            this.issuingPrinterDescription = NativePrinterMap.getInstance().get(issuingPrinterName).getDescription().value();
+        } else {
+            this.issuingPrinterDescription = issuingPrinterName;
+        }
         this.cupsString = cupsString;
     }
 

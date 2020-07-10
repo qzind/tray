@@ -75,6 +75,9 @@ public class StatusMonitor {
 
     public synchronized static boolean startListening(SocketConnection connection, JSONArray printerNames) throws JSONException {
         if (printerNames.isNull(0)) {  //listen to all printers
+            if (SystemUtilities.isMac()) {
+                PrintServiceMatcher.getNativePrinterList();
+            }
             if (!clientPrinterConnections.containsKey(ALL_PRINTERS)) {
                 clientPrinterConnections.add(ALL_PRINTERS, connection);
             } else if (!clientPrinterConnections.getValues(ALL_PRINTERS).contains(connection)) {

@@ -15,16 +15,21 @@ public class PrinterStatus {
 
     public PrinterStatusType type;
     public String issuingPrinterName;
+    public String issuingPrinterDescription;
     public String cupsString;
 
 
     public PrinterStatus(PrinterStatusType type, String issuingPrinterName) {
         this(type, issuingPrinterName, "");
     }
-
     public PrinterStatus(PrinterStatusType type, String issuingPrinterName, String cupsString) {
+        this(type, issuingPrinterName, cupsString, issuingPrinterName);
+    }
+
+    public PrinterStatus(PrinterStatusType type, String issuingPrinterName, String cupsString, String issuingPrinterDescription) {
         this.type = type;
         this.issuingPrinterName = issuingPrinterName;
+        this.issuingPrinterDescription = issuingPrinterDescription;
         this.cupsString = cupsString;
     }
 
@@ -57,19 +62,8 @@ public class PrinterStatus {
         return new PrinterStatus(statusType, issuingPrinterName, reason);
     }
 
-    public String getPrinterName() {
-        String name;
-        //if (SystemUtilities.isMac()) {
-        //    name = NativePrinterMap.getInstance().getPrinterIdByDescription(issuingPrinterName);
-        //
-        //} else {
-            name = issuingPrinterName;
-        //}
-        return name;
-    }
-
     public String toString() {
-        String returnString = type.getName() + ": Level " + type.getSeverity() + ", StatusCode " + type.getCode() + ", From " + getPrinterName();
+        String returnString = type.getName() + ": Level " + type.getSeverity() + ", StatusCode " + type.getCode() + ", From " + issuingPrinterDescription;
         if (!cupsString.isEmpty()) {
             returnString += ", CUPS string " + cupsString;
         }

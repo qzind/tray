@@ -29,7 +29,7 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
         return instance;
     }
 
-    public String getPrinterId(String description) {
+    public String getPrinterIdByDescription(String description) {
         for(Map.Entry<String,NativePrinter> entry : entrySet()) {
             NativePrinter info = entry.getValue();
             if (info.getDescription().equals(description)) {

@@ -1,8 +1,11 @@
 package qz.printer.status;
 
+import qz.printer.info.NativePrinterMap;
+
 import java.util.Locale;
 
 import static qz.printer.status.PrinterStatusType.*;
+import static qz.utils.SystemUtilities.isMac;
 
 /**
  * Created by kyle on 7/7/17.
@@ -11,6 +14,7 @@ public class PrinterStatus {
 
     public PrinterStatusType type;
     public String issuingPrinterName;
+    public String issuingPrinterDescription;
     public String cupsString;
 
 
@@ -21,6 +25,11 @@ public class PrinterStatus {
     public PrinterStatus(PrinterStatusType type, String issuingPrinterName, String cupsString) {
         this.type = type;
         this.issuingPrinterName = issuingPrinterName;
+        if (isMac()) {
+            this.issuingPrinterDescription = NativePrinterMap.getInstance().get(issuingPrinterName).getDescription().value();
+        } else {
+            this.issuingPrinterDescription = issuingPrinterName;
+        }
         this.cupsString = cupsString;
     }
 
@@ -54,7 +63,7 @@ public class PrinterStatus {
     }
 
     public String toString() {
-        String returnString = type.getName() + ": Level " + type.getSeverity() + ", StatusCode " + type.getCode() + ", From " + issuingPrinterName;
+        String returnString = type.getName() + ": Level " + type.getSeverity() + ", StatusCode " + type.getCode() + ", From " + issuingPrinterDescription;
         if (!cupsString.isEmpty()) {
             returnString += ", CUPS string " + cupsString;
         }

@@ -3,6 +3,8 @@ package qz.printer.status;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -12,6 +14,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.Characters;
+import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import java.io.IOException;
@@ -20,6 +23,7 @@ import java.io.IOException;
  * Created by kyle on 4/27/17.
  */
 public class CupsStatusHandler extends AbstractHandler {
+    private static final Logger log = LoggerFactory.getLogger(CupsStatusHandler.class);
 
     private static String lastGuid;
 
@@ -45,27 +49,35 @@ public class CupsStatusHandler extends AbstractHandler {
         while(eventReader.hasNext() && running) {
             XMLEvent event = eventReader.nextEvent();
             switch(event.getEventType()) {
-                case XMLStreamConstants.START_ELEMENT:
+                case XMLStreamConstants.START_ELEMENT: {
                     StartElement startElement = event.asStartElement();
                     String qName = startElement.getName().getLocalPart();
                     if ("description".equalsIgnoreCase(qName)) {
                         isDescription = true;
+                        description = "";
                     }
                     if ("guid".equalsIgnoreCase(qName)) {
                         isGuid = true;
                     }
                     break;
+                }
+                case XMLStreamConstants.END_ELEMENT: {
+                    EndElement endElement = event.asEndElement();
+                    String qName = endElement.getName().getLocalPart();
+                    if ("description".equalsIgnoreCase(qName)) {
+                        isDescription = false;
+                    }
+                    break;
+                }
                 case XMLStreamConstants.CHARACTERS:
                     Characters characters = event.asCharacters();
                     if (isDescription) {
-                        description = characters.getData();
-                        isDescription = false;
+                        description += characters.getData();
                     }
                     if (isGuid) {
                         String guid = characters.getData();
                         if (isFirstGuid) {
                             firstGuid = guid;
-                            isFirstGuid = false;
                         }
                         if (guid.equals(lastGuid)) {
                             running = false;

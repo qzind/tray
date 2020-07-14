@@ -25,8 +25,6 @@ public class CupsPrinterMap extends NativePrinterMap {
         String output = "\n" + ShellUtilities.executeRaw(new String[] {"lpstat", "-l", "-p"});
         String[] devices = output.split("[\\r\\n]printer ");
 
-        int count = 0;
-
         for (String device : devices) {
             if (device.trim().isEmpty()) {
                 continue;
@@ -37,8 +35,6 @@ public class CupsPrinterMap extends NativePrinterMap {
                 line = line.trim();
                 if (printer == null) {
                     printer = new NativePrinter(line.split("\\s+")[0]);
-                    for (String name  : line.split("\\s+")) {
-                    }
                     printer.getDescription().set();
                     printer.getDriverFile().set();
                 } else {

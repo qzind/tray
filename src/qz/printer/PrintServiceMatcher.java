@@ -34,6 +34,8 @@ public class PrintServiceMatcher {
         NativePrinterMap printers = NativePrinterMap.getInstance();
         printers.putAll(PrintServiceLookup.lookupPrintServices(null, null));
         log.debug("Found {} printers", printers.size());
+        //Todo Remove this debugging log
+        log.warn("jfx print service num {}", PrintServiceLookup.lookupPrintServices(null, null).length);
         return printers;
     }
 

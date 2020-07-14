@@ -1,6 +1,7 @@
 package qz.printer.status;
 
 import com.sun.jna.Pointer;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;

@@ -27,8 +27,11 @@ public class CupsPrinterMap extends NativePrinterMap {
 
         //Todo Remove this debugging log
         log.warn("lpstat devices : " + devices.length);
+        int count = 0;
 
         for (String device : devices) {
+            //Todo Remove this debugging log
+            log.warn("item #{}, {}", count++, device);
             if (device.trim().isEmpty()) {
                 continue;
             }
@@ -37,7 +40,15 @@ public class CupsPrinterMap extends NativePrinterMap {
             for(String line : lines) {
                 line = line.trim();
                 if (printer == null) {
+                    //Todo Remove this debugging log
+                    log.warn("unsplit line = {}", line);
                     printer = new NativePrinter(line.split("\\s+")[0]);
+                    //Todo Remove this debugging log
+                    log.warn("Printer name --- {}, split length {}", printer.getPrinterId(), line.split("\\s+").length);
+                    for (String name  : line.split("\\s+")) {
+                        //Todo Remove this debugging log
+                        log.warn(name);
+                    }
                     printer.getDescription().set();
                     printer.getDriverFile().set();
                 } else {
@@ -48,8 +59,12 @@ public class CupsPrinterMap extends NativePrinterMap {
                         log.warn("desc = " + printer.getDescription());
                     }
                     match = "Interface:";
+                    //Todo Remove this debugging log
+                    log.warn("continued");
                     if (printer.getDriverFile().isNull() && line.startsWith(match)) {
                         printer.setDriverFile(line.substring(line.indexOf(match) + match.length()).trim());
+                        //Todo Remove this debugging log
+                        log.warn("interface = " + printer.getDriverFile());
                     }
                     if (!printer.getDescription().isNull() && !printer.getDriverFile().isNull()) {
                         //Todo Remove this debugging log
@@ -60,10 +75,12 @@ public class CupsPrinterMap extends NativePrinterMap {
             }
 
             for (PrintService service : missing) {
+                //Todo Remove this debugging log
+                log.warn("{} == {} : {}", printer.getPrinterId(), service.getName(),printer.getPrinterId().equals(service.getName()));
                 if ((SystemUtilities.isMac() && printer.getDescription().equals(service.getName()))
                         || (SystemUtilities.isLinux() && printer.getPrinterId().equals(service.getName()))) {
                     //Todo Remove this debugging log
-                    log.warn("item culled");
+                    log.warn("service linked");
                     printer.setPrintService(service);
                     missing.remove(service);
                     break;

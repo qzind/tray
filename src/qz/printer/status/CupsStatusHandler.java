@@ -49,8 +49,6 @@ public class CupsStatusHandler extends AbstractHandler {
 
         while(eventReader.hasNext() && running) {
             XMLEvent event = eventReader.nextEvent();
-            //Todo Remove this debugging log
-            //log.warn(event.toString() + " : " + event.getEventType());
             switch(event.getEventType()) {
                 case XMLStreamConstants.START_ELEMENT: {
                     StartElement startElement = event.asStartElement();
@@ -81,6 +79,7 @@ public class CupsStatusHandler extends AbstractHandler {
                         String guid = characters.getData();
                         if (isFirstGuid) {
                             firstGuid = guid;
+                            isFirstGuid = false;
                         }
                         if (guid.equals(lastGuid)) {
                             running = false;
@@ -88,6 +87,7 @@ public class CupsStatusHandler extends AbstractHandler {
                         } else {
                             String printerName = StringUtils.substringBeforeLast(description, "\"");
                             printerName = StringUtils.substringAfter(printerName, "\"");
+                            printerName = StringEscapeUtils.unescapeXml(printerName);
                             if (!printerName.isEmpty() && StatusMonitor.isListeningTo(printerName)) {
                                 StatusMonitor.statusChanged(CupsUtils.getStatuses(printerName));
                             }

@@ -23,6 +23,7 @@ import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 import javax.print.attribute.ResolutionSyntax;
 import javax.print.attribute.standard.Media;
+import javax.print.attribute.standard.MediaTray;
 import javax.print.attribute.standard.PrinterName;
 import javax.print.attribute.standard.PrinterResolution;
 import java.util.Locale;
@@ -132,7 +133,7 @@ public class PrintServiceMatcher {
             jsonService.put("default", ps == defaultService);
 
             for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
-                if (m.toString().contains("Tray")) { jsonService.accumulate("trays", m.toString()); }
+                if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
             }
 
             PrinterResolution res = printer.getResolution().value();

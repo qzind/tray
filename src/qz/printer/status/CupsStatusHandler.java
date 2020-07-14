@@ -49,6 +49,8 @@ public class CupsStatusHandler extends AbstractHandler {
 
         while(eventReader.hasNext() && running) {
             XMLEvent event = eventReader.nextEvent();
+            //Todo Remove this debugging log
+            log.warn(event.toString());
             switch(event.getEventType()) {
                 case XMLStreamConstants.START_ELEMENT: {
                     StartElement startElement = event.asStartElement();

@@ -8,6 +8,7 @@ import org.eclipse.jetty.util.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.printer.PrintServiceMatcher;
+import qz.printer.info.NativePrinter;
 import qz.printer.info.NativePrinterMap;
 import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
@@ -74,10 +75,11 @@ public class StatusMonitor {
     }
 
     public synchronized static boolean startListening(SocketConnection connection, JSONArray printerNames) throws JSONException {
+
+        if (SystemUtilities.isMac()) {
+            PrintServiceMatcher.getNativePrinterList();
+        }
         if (printerNames.isNull(0)) {  //listen to all printers
-            if (SystemUtilities.isMac()) {
-                PrintServiceMatcher.getNativePrinterList();
-            }
             if (!clientPrinterConnections.containsKey(ALL_PRINTERS)) {
                 clientPrinterConnections.add(ALL_PRINTERS, connection);
             } else if (!clientPrinterConnections.getValues(ALL_PRINTERS).contains(connection)) {
@@ -88,12 +90,20 @@ public class StatusMonitor {
                 String printerName = printerNames.getString(i);
                 if (SystemUtilities.isMac()) {
                     // Since 2.0: Mac printers use descriptions as printer names; Find CUPS ID by Description
-                    printerName = NativePrinterMap.getInstance().getPrinterIdByDescription(printerName);
+                    printerName = NativePrinterMap.getInstance().lookupPrinterId(printerName);
+                    // Handle edge-case where printer was recently renamed/added
+                    if (printerName == null) {
+                        // Call PrintServiceLookup.lookupPrintServices again
+                        PrintServiceMatcher.getNativePrinterList();
+
+                        // FIXME: How do we know we got description from the command line yet?
+                        printerName = NativePrinterMap.getInstance().lookupPrinterId(printerNames.getString(i));
+
+                    }
                 }
                 if (printerName == null || "".equals(printerName)) {
                     throw new IllegalArgumentException();
                 }
-
                 if (!clientPrinterConnections.containsKey(printerName)) {
                     clientPrinterConnections.add(printerName, connection);
                 } else if (!clientPrinterConnections.getValues(printerName).contains(connection)) {

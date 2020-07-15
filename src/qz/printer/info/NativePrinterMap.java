@@ -2,9 +2,11 @@ package qz.printer.info;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.printer.PrintServiceMatcher;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
+import javax.print.attribute.standard.PrinterName;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
@@ -29,15 +31,15 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
         return instance;
     }
 
-    public String getPrinterIdByDescription(String description) {
+    public String lookupPrinterId(String description) {
         for(Map.Entry<String,NativePrinter> entry : entrySet()) {
             NativePrinter info = entry.getValue();
-            if (info.getDescription().equals(description)) {
+            if (description.equals(info.getPrintService().value().getAttribute(PrinterName.class).getValue())) {
                 return entry.getKey();
             }
         }
         log.warn("Could not find printerId for " + description);
-        return description;
+        return null;
     }
 
     public ArrayList<PrintService> findMissing(PrintService[] services) {

@@ -35,8 +35,8 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
         for(Map.Entry<String,NativePrinter> entry : entrySet()) {
             NativePrinter info = entry.getValue();
             //Todo Remove this debugging log
-            log.warn("" + entry.getKey() + " - " + info.getPrintService().value().getAttribute(PrinterName.class).getValue());
-            if (description.equals(info.getPrintService().value().getAttribute(PrinterName.class).getValue())) {
+            log.warn("" + entry.getKey() + " - " + info.getPrintService().value().getName());
+            if (description.equals(info.getPrintService().value().getName())) {
                 //Todo Remove this debugging log
                 log.warn("found match");
                 return entry.getKey();

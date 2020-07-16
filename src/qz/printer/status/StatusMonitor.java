@@ -190,7 +190,7 @@ public class StatusMonitor {
                     //fixme catch for null error, could in theory happen if timing is perfect
                     nativePrinter = PrintServiceMatcher.matchPrinter(ps.issuingPrinterName);
                 }
-                //ps.issuingPrinterDescription = nativePrinter.getDescription().value();
+                ps.issuingPrinterDescription = nativePrinter.getDescription().value();
             }
             if (clientPrinterConnections.containsKey(ps.issuingPrinterName)) {
                 connections.addAll(clientPrinterConnections.get(ps.issuingPrinterName));

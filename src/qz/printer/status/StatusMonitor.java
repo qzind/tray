@@ -183,14 +183,9 @@ public class StatusMonitor {
         for(PrinterStatus ps : statuses) {
             if (isMac()) {
                 NativePrinter nativePrinter = PrintServiceMatcher.matchPrinter(ps.issuingPrinterName);
-                if (nativePrinter == null) {
-                    //Todo Remove this debugging log
-                    log.warn("Printer {} not in list, refreshing list.", ps.issuingPrinterName);
-                    PrintServiceMatcher.getNativePrinterList();
-                    //fixme catch for null error, could in theory happen if timing is perfect
-                    nativePrinter = PrintServiceMatcher.matchPrinter(ps.issuingPrinterName);
+                if (nativePrinter != null) {
+                    ps.issuingPrinterDescription = nativePrinter.getDescription().value();
                 }
-                ps.issuingPrinterDescription = nativePrinter.getDescription().value();
             }
             if (clientPrinterConnections.containsKey(ps.issuingPrinterName)) {
                 connections.addAll(clientPrinterConnections.get(ps.issuingPrinterName));

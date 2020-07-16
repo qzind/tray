@@ -25,11 +25,7 @@ public class PrinterStatus {
     public PrinterStatus(PrinterStatusType type, String issuingPrinterName, String cupsString) {
         this.type = type;
         this.issuingPrinterName = issuingPrinterName;
-        if (isMac()) {
-            this.issuingPrinterDescription = NativePrinterMap.getInstance().get(issuingPrinterName).getDescription().value();
-        } else {
-            this.issuingPrinterDescription = issuingPrinterName;
-        }
+        this.issuingPrinterDescription = issuingPrinterName;
         this.cupsString = cupsString;
     }
 

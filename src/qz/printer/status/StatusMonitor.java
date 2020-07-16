@@ -13,8 +13,10 @@ import qz.printer.info.NativePrinterMap;
 import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
 
+import javax.print.PrintService;
 import java.util.*;
 
+import static qz.utils.SystemUtilities.isMac;
 import static qz.utils.SystemUtilities.isWindows;
 
 /**
@@ -179,6 +181,17 @@ public class StatusMonitor {
     public synchronized static void statusChanged(PrinterStatus[] statuses) {
         HashSet<SocketConnection> connections = new HashSet<>();
         for(PrinterStatus ps : statuses) {
+            if (isMac()) {
+                NativePrinter nativePrinter = PrintServiceMatcher.matchPrinter(ps.issuingPrinterName);
+                if (nativePrinter == null) {
+                    //Todo Remove this debugging log
+                    log.warn("Printer {} not in list, refreshing list.", ps.issuingPrinterName);
+                    PrintServiceMatcher.getNativePrinterList();
+                    //fixme catch for null error, could in theory happen if timing is perfect
+                    nativePrinter = PrintServiceMatcher.matchPrinter(ps.issuingPrinterName);
+                }
+                //ps.issuingPrinterDescription = nativePrinter.getDescription().value();
+            }
             if (clientPrinterConnections.containsKey(ps.issuingPrinterName)) {
                 connections.addAll(clientPrinterConnections.get(ps.issuingPrinterName));
             }

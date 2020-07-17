@@ -14,6 +14,7 @@ import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
 
 import javax.print.PrintService;
+import javax.print.PrintServiceLookup;
 import java.util.*;
 
 import static qz.utils.SystemUtilities.isMac;
@@ -179,10 +180,11 @@ public class StatusMonitor {
         for(PrinterStatus ps : statuses) {
             if (isMac()) {
                 //On MacOS the description is used as the printer name
+                PrintServiceLookup.lookupDefaultPrintService();
+
                 NativePrinter nativePrinter = PrintServiceMatcher.matchPrinter(ps.issuingPrinterName);
                 if (nativePrinter != null) {
-                    //if no printer can be found, fall back to the cups id
-                    ps.issuingPrinterDescription = nativePrinter.getDescription().value();
+                    ps.issuingPrinterDescription = nativePrinter.getPrintService().value().getName();
                 }
             }
             if (clientPrinterConnections.containsKey(ps.issuingPrinterName)) {

@@ -45,7 +45,7 @@ public class CupsStatusHandler extends AbstractHandler {
     private void parseXML(XMLEventReader eventReader) throws XMLStreamException {
         boolean isDescription = false, isGuid = false, isFirstGuid = true, running = true;
         String firstGuid = "";
-        String description = "";
+        String eventDescription = "";
 
         while(eventReader.hasNext() && running) {
             XMLEvent event = eventReader.nextEvent();
@@ -53,10 +53,9 @@ public class CupsStatusHandler extends AbstractHandler {
                 case XMLStreamConstants.START_ELEMENT:
                     StartElement startElement = event.asStartElement();
                     String qName = startElement.getName().getLocalPart();
-                    //This is the description of the rss message, NOT the description of the printer
                     if ("description".equalsIgnoreCase(startElement.getName().getLocalPart())) {
                         isDescription = true;
-                        description = "";
+                        eventDescription = "";
                     }
                     if ("guid".equalsIgnoreCase(qName)) {
                         isGuid = true;
@@ -71,7 +70,7 @@ public class CupsStatusHandler extends AbstractHandler {
                 case XMLStreamConstants.CHARACTERS:
                     Characters characters = event.asCharacters();
                     if (isDescription) {
-                        description += characters.getData();
+                        eventDescription += characters.getData();
                     }
                     if (isGuid) {
                         String guid = characters.getData();
@@ -83,7 +82,7 @@ public class CupsStatusHandler extends AbstractHandler {
                             running = false;
                             break;
                         } else {
-                            String printerName = StringUtils.substringBeforeLast(description, "\"");
+                            String printerName = StringUtils.substringBeforeLast(eventDescription, "\"");
                             printerName = StringUtils.substringAfter(printerName, "\"");
                             printerName = StringEscapeUtils.unescapeXml(printerName);
                             if (!printerName.isEmpty() && StatusMonitor.isListeningTo(printerName)) {

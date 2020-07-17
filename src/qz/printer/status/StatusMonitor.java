@@ -8,16 +8,12 @@ import org.eclipse.jetty.util.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.printer.PrintServiceMatcher;
-import qz.printer.info.NativePrinter;
 import qz.printer.info.NativePrinterMap;
 import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
 
-import javax.print.PrintService;
-import javax.print.PrintServiceLookup;
 import java.util.*;
 
-import static qz.utils.SystemUtilities.isMac;
 import static qz.utils.SystemUtilities.isWindows;
 
 /**
@@ -94,8 +90,6 @@ public class StatusMonitor {
                     if (printerName == null) {
                         // Call PrintServiceLookup.lookupPrintServices again
                         PrintServiceMatcher.getNativePrinterList();
-
-                        // FIXME: How do we know we got description from the command line yet?
                         printerName = NativePrinterMap.getInstance().lookupPrinterId(printerNames.getString(i));
 
                     }
@@ -142,7 +136,7 @@ public class StatusMonitor {
             if (sendForAllPrinters) {
                 connection.getStatusListener().statusChanged(ps);
             } else {
-                connections = clientPrinterConnections.get(ps.issuingPrinterName);
+                connections = clientPrinterConnections.get(ps.getIssuingPrinterName());
                 if ((connections != null) && connections.contains(connection)) {
                     connection.getStatusListener().statusChanged(ps);
                 }
@@ -177,23 +171,15 @@ public class StatusMonitor {
 
     public synchronized static void statusChanged(PrinterStatus[] statuses) {
         HashSet<SocketConnection> connections = new HashSet<>();
-        for(PrinterStatus ps : statuses) {
-            if (isMac()) {
-                //On MacOS the description is used as the printer name
-                NativePrinter nativePrinter = PrintServiceMatcher.matchPrinter(ps.issuingPrinterName);
-                if (nativePrinter != null) {
-                    //If the printer description is missing from the map (usually because the printer was deleted), use the cups id instead
-                    ps.issuingPrinterDescription = nativePrinter.getPrintService().value().getName();
-                }
-            }
-            if (clientPrinterConnections.containsKey(ps.issuingPrinterName)) {
-                connections.addAll(clientPrinterConnections.get(ps.issuingPrinterName));
+        for(PrinterStatus status : statuses) {
+            if (clientPrinterConnections.containsKey(status.getIssuingPrinterName())) {
+                connections.addAll(clientPrinterConnections.get(status.getIssuingPrinterName()));
             }
             if (clientPrinterConnections.containsKey("")) {
                 connections.addAll(clientPrinterConnections.get(""));
             }
-            for(SocketConnection sc : connections) {
-                sc.getStatusListener().statusChanged(ps);
+            for(SocketConnection connection : connections) {
+                connection.getStatusListener().statusChanged(status);
             }
         }
     }

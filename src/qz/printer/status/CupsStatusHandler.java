@@ -43,7 +43,7 @@ public class CupsStatusHandler extends AbstractHandler {
     }
 
     private void parseXML(XMLEventReader eventReader) throws XMLStreamException {
-        boolean isDescription = false, isGuid = false, isFirstGuid = true, running = true;
+        boolean isEventDescription = false, isGuid = false, isFirstGuid = true, running = true;
         String firstGuid = "";
         String eventDescription = "";
 
@@ -54,7 +54,7 @@ public class CupsStatusHandler extends AbstractHandler {
                     StartElement startElement = event.asStartElement();
                     String qName = startElement.getName().getLocalPart();
                     if ("description".equalsIgnoreCase(startElement.getName().getLocalPart())) {
-                        isDescription = true;
+                        isEventDescription = true;
                         eventDescription = "";
                     }
                     if ("guid".equalsIgnoreCase(qName)) {
@@ -64,12 +64,12 @@ public class CupsStatusHandler extends AbstractHandler {
                 case XMLStreamConstants.END_ELEMENT:
                     EndElement endElement = event.asEndElement();
                     if ("description".equalsIgnoreCase(endElement.getName().getLocalPart())) {
-                        isDescription = false;
+                        isEventDescription = false;
                     }
                     break;
                 case XMLStreamConstants.CHARACTERS:
                     Characters characters = event.asCharacters();
-                    if (isDescription) {
+                    if (isEventDescription) {
                         eventDescription += characters.getData();
                     }
                     if (isGuid) {

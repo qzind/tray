@@ -186,6 +186,8 @@ public class StatusMonitor {
                 if (nativePrinter != null) {
                     ps.issuingPrinterDescription = nativePrinter.getPrintService().value().getName();
                 }
+                //Todo Remove this debugging log
+                log.warn(ps.toString());
             }
             if (clientPrinterConnections.containsKey(ps.issuingPrinterName)) {
                 connections.addAll(clientPrinterConnections.get(ps.issuingPrinterName));

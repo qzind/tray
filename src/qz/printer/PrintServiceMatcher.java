@@ -80,21 +80,21 @@ public class PrintServiceMatcher {
             }
 
             if (SystemUtilities.isMac()) {
-                //// 1.9 compat: fallback for old style names
-                //PrinterName name = printer.getLegacyName();
-                //if (name == null || name.getValue() == null) { continue; }
-                //printerName = name.getValue().toLowerCase(Locale.ENGLISH);
-                //if (printerName.equals(printerSearch)) {
-                //    exact = printer;
-                //    continue;
-                //}
-                //if (printerName.startsWith(printerSearch)) {
-                //    begins = printer;
-                //    continue;
-                //}
-                //if (printerName.contains(printerSearch)) {
-                //    partial = printer;
-                //}
+                // 1.9 compat: fallback for old style names
+                PrinterName name = printer.getLegacyName();
+                if (name == null || name.getValue() == null) { continue; }
+                printerName = name.getValue().toLowerCase(Locale.ENGLISH);
+                if (printerName.equals(printerSearch)) {
+                    exact = printer;
+                    continue;
+                }
+                if (printerName.startsWith(printerSearch)) {
+                    begins = printer;
+                    continue;
+                }
+                if (printerName.contains(printerSearch)) {
+                    partial = printer;
+                }
             }
         }
 

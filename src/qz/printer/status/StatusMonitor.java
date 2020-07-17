@@ -182,10 +182,9 @@ public class StatusMonitor {
                 //On MacOS the description is used as the printer name
                 NativePrinter nativePrinter = PrintServiceMatcher.matchPrinter(ps.issuingPrinterName);
                 if (nativePrinter != null) {
+                    //If the printer description is missing from the map (usually because the printer was deleted), use the cups id instead
                     ps.issuingPrinterDescription = nativePrinter.getPrintService().value().getName();
                 }
-                //Todo Remove this debugging log
-                log.warn(ps.toString());
             }
             if (clientPrinterConnections.containsKey(ps.issuingPrinterName)) {
                 connections.addAll(clientPrinterConnections.get(ps.issuingPrinterName));

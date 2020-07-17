@@ -180,8 +180,6 @@ public class StatusMonitor {
         for(PrinterStatus ps : statuses) {
             if (isMac()) {
                 //On MacOS the description is used as the printer name
-                PrintServiceLookup.lookupDefaultPrintService();
-
                 NativePrinter nativePrinter = PrintServiceMatcher.matchPrinter(ps.issuingPrinterName);
                 if (nativePrinter != null) {
                     ps.issuingPrinterDescription = nativePrinter.getPrintService().value().getName();

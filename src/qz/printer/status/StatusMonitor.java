@@ -2,7 +2,6 @@ package qz.printer.status;
 
 import com.sun.jna.platform.win32.Winspool;
 import com.sun.jna.platform.win32.WinspoolUtil;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.eclipse.jetty.util.MultiMap;
@@ -83,7 +82,7 @@ public class StatusMonitor {
             }
         } else {  //listen to specific printer(s)
             for (int i = 0; i < printerNames.length(); i++) {
-                String printerName = StringEscapeUtils.unescapeHtml4(printerNames.getString(i));
+                String printerName = printerNames.getString(i);
                 if (SystemUtilities.isMac()) {
                     // Since 2.0: Mac printers use descriptions as printer names; Find CUPS ID by Description
                     printerName = NativePrinterMap.getInstance().lookupPrinterId(printerName);

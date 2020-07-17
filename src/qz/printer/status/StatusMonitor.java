@@ -77,10 +77,6 @@ public class StatusMonitor {
     }
 
     public synchronized static boolean startListening(SocketConnection connection, JSONArray printerNames) throws JSONException {
-
-        if (SystemUtilities.isMac()) {
-            PrintServiceMatcher.getNativePrinterList();
-        }
         if (printerNames.isNull(0)) {  //listen to all printers
             if (!clientPrinterConnections.containsKey(ALL_PRINTERS)) {
                 clientPrinterConnections.add(ALL_PRINTERS, connection);
@@ -182,8 +178,10 @@ public class StatusMonitor {
         HashSet<SocketConnection> connections = new HashSet<>();
         for(PrinterStatus ps : statuses) {
             if (isMac()) {
+                //On MacOS the description is used as the printer name
                 NativePrinter nativePrinter = PrintServiceMatcher.matchPrinter(ps.issuingPrinterName);
                 if (nativePrinter != null) {
+                    //if no printer can be found, fall back to the cups id
                     ps.issuingPrinterDescription = nativePrinter.getDescription().value();
                 }
             }

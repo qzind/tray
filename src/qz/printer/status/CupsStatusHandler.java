@@ -50,10 +50,11 @@ public class CupsStatusHandler extends AbstractHandler {
         while(eventReader.hasNext() && running) {
             XMLEvent event = eventReader.nextEvent();
             switch(event.getEventType()) {
-                case XMLStreamConstants.START_ELEMENT: {
+                case XMLStreamConstants.START_ELEMENT:
                     StartElement startElement = event.asStartElement();
                     String qName = startElement.getName().getLocalPart();
-                    if ("description".equalsIgnoreCase(qName)) {
+                    //This is the description of the rss message, NOT the description of the printer
+                    if ("description".equalsIgnoreCase(startElement.getName().getLocalPart())) {
                         isDescription = true;
                         description = "";
                     }
@@ -61,15 +62,12 @@ public class CupsStatusHandler extends AbstractHandler {
                         isGuid = true;
                     }
                     break;
-                }
-                case XMLStreamConstants.END_ELEMENT: {
+                case XMLStreamConstants.END_ELEMENT:
                     EndElement endElement = event.asEndElement();
-                    String qName = endElement.getName().getLocalPart();
-                    if ("description".equalsIgnoreCase(qName)) {
+                    if ("description".equalsIgnoreCase(endElement.getName().getLocalPart())) {
                         isDescription = false;
                     }
                     break;
-                }
                 case XMLStreamConstants.CHARACTERS:
                     Characters characters = event.asCharacters();
                     if (isDescription) {

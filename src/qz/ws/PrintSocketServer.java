@@ -206,7 +206,7 @@ public class PrintSocketServer {
     }
 
     public static Properties getTrayProperties() {
-        return certificateManager.getProperties();
+        return certificateManager == null ? null : certificateManager.getProperties();
     }
 
 }

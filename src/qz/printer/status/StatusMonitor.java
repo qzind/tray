@@ -7,6 +7,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.eclipse.jetty.util.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.printer.PrintServiceMatcher;
 import qz.printer.info.NativePrinterMap;
 import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
@@ -40,7 +41,7 @@ public class StatusMonitor {
                 notificationThread.start();
             }
         }
-        //cull threads that don't have associated printers
+        //interrupt threads that don't have associated printers
         for(Map.Entry<String,Thread> e : notificationThreadCollection.entrySet()) {
             if (!printerNameList.contains(e.getKey())) {
                 e.getValue().interrupt();
@@ -80,20 +81,26 @@ public class StatusMonitor {
                 clientPrinterConnections.add(ALL_PRINTERS, connection);
             }
         } else {  //listen to specific printer(s)
-            for(int i = 0; i < printerNames.length(); i++) {
+            for (int i = 0; i < printerNames.length(); i++) {
                 String printerName = printerNames.getString(i);
                 if (SystemUtilities.isMac()) {
-                    // Since 2.0: Mac printers use Description; Find by CUPS ID
-                    printerName = NativePrinterMap.getInstance().getPrinterId(printerName);
+                    // Since 2.0: Mac printers use descriptions as printer names; Find CUPS ID by Description
+                    printerName = NativePrinterMap.getInstance().lookupPrinterId(printerName);
+                    // Handle edge-case where printer was recently renamed/added
+                    if (printerName == null) {
+                        // Call PrintServiceLookup.lookupPrintServices again
+                        PrintServiceMatcher.getNativePrinterList();
+                        printerName = NativePrinterMap.getInstance().lookupPrinterId(printerNames.getString(i));
+
+                    }
                 }
                 if (printerName == null || "".equals(printerName)) {
                     throw new IllegalArgumentException();
                 }
-
-                if (!clientPrinterConnections.containsKey(printerNames.getString(i))) {
-                    clientPrinterConnections.add(printerNames.getString(i), connection);
-                } else if (!clientPrinterConnections.getValues(printerNames.getString(i)).contains(connection)) {
-                    clientPrinterConnections.add(printerNames.getString(i), connection);
+                if (!clientPrinterConnections.containsKey(printerName)) {
+                    clientPrinterConnections.add(printerName, connection);
+                } else if (!clientPrinterConnections.getValues(printerName).contains(connection)) {
+                    clientPrinterConnections.add(printerName, connection);
                 }
             }
         }
@@ -129,7 +136,7 @@ public class StatusMonitor {
             if (sendForAllPrinters) {
                 connection.getStatusListener().statusChanged(ps);
             } else {
-                connections = clientPrinterConnections.get(ps.issuingPrinterName);
+                connections = clientPrinterConnections.get(ps.getIssuingPrinterName());
                 if ((connections != null) && connections.contains(connection)) {
                     connection.getStatusListener().statusChanged(ps);
                 }
@@ -164,15 +171,15 @@ public class StatusMonitor {
 
     public synchronized static void statusChanged(PrinterStatus[] statuses) {
         HashSet<SocketConnection> connections = new HashSet<>();
-        for(PrinterStatus ps : statuses) {
-            if (clientPrinterConnections.containsKey(ps.issuingPrinterName)) {
-                connections.addAll(clientPrinterConnections.get(ps.issuingPrinterName));
+        for(PrinterStatus status : statuses) {
+            if (clientPrinterConnections.containsKey(status.getIssuingPrinterName())) {
+                connections.addAll(clientPrinterConnections.get(status.getIssuingPrinterName()));
             }
             if (clientPrinterConnections.containsKey("")) {
                 connections.addAll(clientPrinterConnections.get(""));
             }
-            for(SocketConnection sc : connections) {
-                sc.getStatusListener().statusChanged(ps);
+            for(SocketConnection connection : connections) {
+                connection.getStatusListener().statusChanged(status);
             }
         }
     }

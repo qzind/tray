@@ -1,5 +1,9 @@
 package qz.printer.status;
 
+import qz.printer.PrintServiceMatcher;
+import qz.printer.info.NativePrinter;
+import qz.utils.SystemUtilities;
+
 import java.util.Locale;
 
 import static qz.printer.status.PrinterStatusType.*;
@@ -10,8 +14,9 @@ import static qz.printer.status.PrinterStatusType.*;
 public class PrinterStatus {
 
     public PrinterStatusType type;
-    public String issuingPrinterName;
     public String cupsString;
+
+    private String issuingPrinterName;
 
 
     public PrinterStatus(PrinterStatusType type, String issuingPrinterName) {
@@ -53,8 +58,29 @@ public class PrinterStatus {
         return new PrinterStatus(statusType, issuingPrinterName, reason);
     }
 
+    public String getIssuingPrinterName() {
+        return issuingPrinterName;
+    }
+
+    /**
+     * Returns a macOS-compatible (as well as Linux/Windows compatible) printer name for reporting back to WebSocket
+     */
+    public String getIssuingPrinterName(boolean isMacOS) {
+        if(!isMacOS) {
+            return issuingPrinterName;
+        }
+
+        //On MacOS the description is used as the printer name
+        NativePrinter nativePrinter = PrintServiceMatcher.matchPrinter(issuingPrinterName);
+        if (nativePrinter == null) {
+            //If the printer description is missing from the map (usually because the printer was deleted), use the cups id instead
+            return issuingPrinterName;
+        }
+        return nativePrinter.getPrintService().value().getName();
+    }
+
     public String toString() {
-        String returnString = type.getName() + ": Level " + type.getSeverity() + ", StatusCode " + type.getCode() + ", From " + issuingPrinterName;
+        String returnString = type.getName() + ": Level " + type.getSeverity() + ", StatusCode " + type.getCode() + ", From " + getIssuingPrinterName(SystemUtilities.isMac());
         if (!cupsString.isEmpty()) {
             returnString += ", CUPS string " + cupsString;
         }

@@ -1,8 +1,11 @@
 package qz.printer.status;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -12,6 +15,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.Characters;
+import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import java.io.IOException;
@@ -20,6 +24,7 @@ import java.io.IOException;
  * Created by kyle on 4/27/17.
  */
 public class CupsStatusHandler extends AbstractHandler {
+    private static final Logger log = LoggerFactory.getLogger(CupsStatusHandler.class);
 
     private static String lastGuid;
 
@@ -38,9 +43,9 @@ public class CupsStatusHandler extends AbstractHandler {
     }
 
     private void parseXML(XMLEventReader eventReader) throws XMLStreamException {
-        boolean isDescription = false, isGuid = false, isFirstGuid = true, running = true;
+        boolean isEventDescription = false, isGuid = false, isFirstGuid = true, running = true;
         String firstGuid = "";
-        String description = "";
+        String eventDescription = "";
 
         while(eventReader.hasNext() && running) {
             XMLEvent event = eventReader.nextEvent();
@@ -48,18 +53,24 @@ public class CupsStatusHandler extends AbstractHandler {
                 case XMLStreamConstants.START_ELEMENT:
                     StartElement startElement = event.asStartElement();
                     String qName = startElement.getName().getLocalPart();
-                    if ("description".equalsIgnoreCase(qName)) {
-                        isDescription = true;
+                    if ("description".equalsIgnoreCase(startElement.getName().getLocalPart())) {
+                        isEventDescription = true;
+                        eventDescription = "";
                     }
                     if ("guid".equalsIgnoreCase(qName)) {
                         isGuid = true;
                     }
                     break;
+                case XMLStreamConstants.END_ELEMENT:
+                    EndElement endElement = event.asEndElement();
+                    if ("description".equalsIgnoreCase(endElement.getName().getLocalPart())) {
+                        isEventDescription = false;
+                    }
+                    break;
                 case XMLStreamConstants.CHARACTERS:
                     Characters characters = event.asCharacters();
-                    if (isDescription) {
-                        description = characters.getData();
-                        isDescription = false;
+                    if (isEventDescription) {
+                        eventDescription += characters.getData();
                     }
                     if (isGuid) {
                         String guid = characters.getData();
@@ -71,8 +82,9 @@ public class CupsStatusHandler extends AbstractHandler {
                             running = false;
                             break;
                         } else {
-                            String printerName = StringUtils.substringBeforeLast(description, "\"");
+                            String printerName = StringUtils.substringBeforeLast(eventDescription, "\"");
                             printerName = StringUtils.substringAfter(printerName, "\"");
+                            printerName = StringEscapeUtils.unescapeXml(printerName);
                             if (!printerName.isEmpty() && StatusMonitor.isListeningTo(printerName)) {
                                 StatusMonitor.statusChanged(CupsUtils.getStatuses(printerName));
                             }

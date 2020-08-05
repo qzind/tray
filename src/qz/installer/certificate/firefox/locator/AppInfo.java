@@ -9,6 +9,8 @@ import java.nio.file.Path;
  */
 public class AppInfo {
     String name;
+    String vendor;
+    String bundleId; // macOS only
     Path path;
     Path exePath;
     Version version;
@@ -16,15 +18,17 @@ public class AppInfo {
 
     public AppInfo() {}
 
-    public AppInfo(String name, Path exePath, String version) {
+    public AppInfo(String name, String vendor, Path exePath, String version) {
         this.name = name;
+        this.vendor = vendor;
         this.path = exePath.getParent();
         this.exePath = exePath;
         this.version = parseVersion(version);
     }
 
-    public AppInfo(String name, Path exePath) {
+    public AppInfo(String name, String vendor, Path exePath) {
         this.name = name;
+        this.vendor = vendor;
         this.path = exePath.getParent();
         this.exePath = exePath;
     }
@@ -33,8 +37,34 @@ public class AppInfo {
         return name;
     }
 
+    /**
+     * Remove vendor prefix
+     */
+    public String getVendorlessName() {
+        if(name.startsWith(vendor)) {
+           return name.substring(name.indexOf(vendor)).trim();
+        }
+        return name;
+    }
+
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getVendor() {
+        return vendor;
+    }
+
+    public void setVendor(String vendor) {
+        this.vendor = vendor;
+    }
+
+    public String getBundleId() {
+        return bundleId;
+    }
+
+    public void setBundleId(String bundleId) {
+        this.bundleId = bundleId;
     }
 
     public Path getExePath() {

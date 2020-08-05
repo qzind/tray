@@ -18,6 +18,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
+import qz.installer.Installer;
+import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
+import qz.installer.certificate.firefox.locator.AppAlias;
+import qz.installer.certificate.firefox.locator.AppInfo;
+import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.installer.shortcut.ShortcutCreator;
 import qz.ui.*;
 import qz.ui.component.IconCache;
@@ -32,6 +37,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -149,6 +155,49 @@ public class TrayManager {
             // The ok/cancel dialog
             confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
             componentList.add(confirmDialog);
+
+            // Detect missing Firefox certs on Windows
+            if(SystemUtilities.isWindows()) {
+                new Thread(() -> {
+                    while(true) {
+                        try {
+                            Thread.sleep(5000);
+                            ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
+                            ArrayList<AppInfo> missingPolicy = new ArrayList();
+                            for(AppInfo appInfo : appList) {
+                                log.info("Checking {}...", appInfo.getName());
+                                // WARNING: If the JSON policy is expanded in the future, this check may wrongly fail!
+                                if (FirefoxCertificateInstaller.honorsPolicy(appInfo) && !FirefoxCertificateInstaller.hasPolicy(appInfo)) {
+                                    log.warn("Firefox policy for {} ({}) is missing!", appInfo.getName(), appInfo.getPath());
+                                    missingPolicy.add(appInfo);
+                                }
+                            }
+
+                            ArrayList<Path> processPaths = null;
+                            for(AppInfo appInfo : missingPolicy) {
+                                // Install alt policy
+                                FirefoxCertificateInstaller.installAltPolicy(appInfo);
+
+                                // Issue restart warning FIXME: Fix redundancies with FirefoxCertificateInstaller
+                                if (appInfo.getVersion().greaterThanOrEqualTo(FirefoxCertificateInstaller.FIREFOX_RESTART_VERSION)) {
+                                    if (processPaths == null) {
+                                        processPaths = AppLocator.getRunningPaths(appList);
+                                    }
+                                    if (processPaths.contains(appInfo.getExePath())) {
+                                        try {
+                                            Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
+                                        }
+                                        catch(Exception ignore) {}
+                                    }
+                                } else {
+                                    log.warn("{} must be restarted for changes to take effect", appInfo.getName());
+                                }
+
+                            }
+                        } catch(InterruptedException ignore) {}
+                    }
+                }).start();
+            }
 
             // Detect theme changes
             new Thread(() -> {

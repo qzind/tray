@@ -47,7 +47,7 @@ public class WindowsAppLocator extends AppLocator{
                 for (String suffix : suffixes) {
                     for (String prefix : prefixes) {
                         String key = String.format(REG_TEMPLATE, prefix, alias.vendor, alias.name, suffix);
-                        AppInfo appInfo = getAppInfo(alias.name, key, suffix);
+                        AppInfo appInfo = getAppInfo(alias.name, alias.vendor, key, suffix);
                         if (appInfo != null && !appList.contains(appInfo)) {
                             appList.add(appInfo);
                         }
@@ -107,7 +107,7 @@ public class WindowsAppLocator extends AppLocator{
     /**
      * Use a proprietary Firefox-only technique for getting "PathToExe" registry value
      */
-    private static AppInfo getAppInfo(String name, String key, String suffix) {
+    private static AppInfo getAppInfo(String name, String vendor, String key, String suffix) {
         String version = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "CurrentVersion");
         if (version != null) {
             version = version.split(" ")[0]; // chop off (x86 ...)
@@ -122,7 +122,7 @@ public class WindowsAppLocator extends AppLocator{
             if (exePath != null) {
                 // SemVer: Replace spaces in suffixes with dashes
                 version = version.replaceAll(" ", "-");
-                return new AppInfo(name, exePath, version);
+                return new AppInfo(name, vendor, exePath, version);
             }
         }
         return null;

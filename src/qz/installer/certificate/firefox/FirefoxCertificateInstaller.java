@@ -11,6 +11,7 @@
 package qz.installer.certificate.firefox;
 
 import com.github.zafarkhaja.semver.Version;
+import com.sun.jna.platform.win32.WinReg;
 import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,9 @@ import qz.installer.certificate.firefox.locator.AppAlias;
 import qz.installer.certificate.firefox.locator.AppInfo;
 import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.utils.JsonWriter;
+import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
+import qz.utils.WindowsUtilities;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,6 +56,9 @@ public class FirefoxCertificateInstaller {
 
     public static final String POLICY_LOCATION = "distribution/policies.json";
     public static final String MAC_POLICY_LOCATION = "Contents/Resources/" + POLICY_LOCATION;
+
+    public static final String WINDOWS_ALT_POLICY = "Software\\Policies\\%s\\%s\\Certificates";
+    public static final String MAC_ALT_POLICY = "%/Library/Preferences/%";
 
     public static void install(X509Certificate cert, String ... hostNames) {
         ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
@@ -121,6 +127,49 @@ public class FirefoxCertificateInstaller {
         }
     }
 
+    public static boolean hasPolicy(AppInfo appInfo) {
+        String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? ENTERPRISE_ROOT_POLICY : INSTALL_CERT_POLICY;
+        return JsonWriter.contains(appInfo.getPath().resolve(POLICY_LOCATION).toFile(), jsonPolicy) ||
+                hasAltPolicy(appInfo);
+    }
+
+    /**
+     * Returns true if an alternative Firefox policy (e.g. registry, plist) is installed
+     */
+    private static boolean hasAltPolicy(AppInfo appInfo) {
+        if(SystemUtilities.isWindows()) {
+            // User preference takes precedent
+            String key = String.format(WINDOWS_ALT_POLICY, appInfo.getVendor(), appInfo.getVendorlessName());
+            Integer foundPolicy = WindowsUtilities.getRegInt(WinReg.HKEY_CURRENT_USER, key, "ImportEnterpriseRoots");
+            if(foundPolicy != null) {
+                //fixme remove debug lines
+                System.err.println("ImportEnterpriseRoots found in HKCU");
+                return foundPolicy == 1;
+            }
+            // Fallback to system preference
+            foundPolicy = WindowsUtilities.getRegInt(WinReg.HKEY_LOCAL_MACHINE, key, "ImportEnterpriseRoots");
+            //fixme remove debug lines
+            if(foundPolicy != null) {  System.err.println("ImportEnterpriseRoots found in HKCU: " + foundPolicy); }
+            return foundPolicy != null && foundPolicy == 1;
+        } else if(SystemUtilities.isMac()) {
+            // User preference takes precedent
+            String plist = String.format(MAC_ALT_POLICY, System.getProperty("user.home"), appInfo.getBundleId());
+            String foundPolicy = ShellUtilities.executeRaw("defaults", "read", plist, "ImportEnterpriseRoots");
+            if(foundPolicy != null ) {
+                //fixme remove debug lines
+                System.err.println("ImportEnterpriseRoots found in USER plist");
+                return foundPolicy.trim().equals("1");
+            }
+            plist = String.format(MAC_ALT_POLICY,"", appInfo.getBundleId());
+            foundPolicy = ShellUtilities.executeRaw("defaults", "read", plist, "ImportEnterpriseRoots");
+
+            //fixme remove debug lines
+            if(foundPolicy != null ) {  System.err.println("ImportEnterpriseRoots found in SYSTEM plist: " + foundPolicy); }
+            return foundPolicy != null && foundPolicy.trim().equals("1");
+        }
+        return false;
+    }
+
     public static void installPolicy(AppInfo app, X509Certificate cert) {
         Path jsonPath = app.getPath().resolve(SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION);
         String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? ENTERPRISE_ROOT_POLICY : INSTALL_CERT_POLICY;
@@ -163,5 +212,16 @@ public class FirefoxCertificateInstaller {
         } catch(JSONException | IOException e) {
             log.warn("Could not install enterprise policy {} to {}", jsonPolicy, jsonPath.toString(), e);
         }
+    }
+
+    public static boolean installAltPolicy(AppInfo appInfo) {
+        if(SystemUtilities.isWindows()) {
+            String key = String.format(WINDOWS_ALT_POLICY, appInfo.getVendor(), appInfo.getVendorlessName());;
+            return WindowsUtilities.addRegValue(WinReg.HKEY_CURRENT_USER, key, "ImportEnterpriseRoots", 1);
+        } else if(SystemUtilities.isMac()) {
+            String plist = String.format(MAC_ALT_POLICY, System.getProperty("user.home"), appInfo.getBundleId());
+            return ShellUtilities.execute("defaults", "write", plist, "ImportEnterpriseRoots", "-bool", "TRUE");
+        }
+        return false;
     }
 }

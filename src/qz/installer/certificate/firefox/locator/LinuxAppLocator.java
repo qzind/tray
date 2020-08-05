@@ -67,7 +67,7 @@ public class LinuxAppLocator extends AppLocator {
                         } else {
                             log.info("Assuming {} {} is installed: {}", alias.vendor, alias.name, file);
                         }
-                        AppInfo appInfo = new AppInfo(alias.name, file.toPath());
+                        AppInfo appInfo = new AppInfo(alias.name, alias.vendor, file.toPath());
                         appList.add(appInfo);
 
                         // Call "--version" on executable to obtain version information

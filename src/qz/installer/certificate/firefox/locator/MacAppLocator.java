@@ -15,12 +15,10 @@ import qz.utils.ShellUtilities;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.regex.Pattern;
 
 public class MacAppLocator extends AppLocator{
@@ -95,7 +93,7 @@ public class MacAppLocator extends AppLocator{
                     }
                 }
             }
-            if (appAlias.matches(appInfo)) {
+            if (appAlias.setBundleId(appInfo)) {
                 appList.add(appInfo);
             }
         }

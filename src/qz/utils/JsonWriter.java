@@ -58,13 +58,7 @@ public class JsonWriter {
 
     public static boolean contains(File path, String data) {
         try {
-            if (!path.exists()) {
-                log.warn("Warning, {} does not exist, skipping.", path);
-                return false;
-            }
-
-            if (data == null && data.isEmpty()) {
-                log.warn("Data is null, nothing to validate against");
+            if (!path.exists() || (data == null && data.isEmpty())) {
                 return false;
             }
 

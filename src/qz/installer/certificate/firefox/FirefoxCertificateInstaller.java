@@ -58,11 +58,10 @@ public class FirefoxCertificateInstaller {
     public static final String MAC_POLICY_LOCATION = "Contents/Resources/" + POLICY_LOCATION;
 
     public static final String WINDOWS_ALT_POLICY = "Software\\Policies\\%s\\%s\\Certificates";
-    public static final String MAC_ALT_POLICY = "%/Library/Preferences/%";
 
     public static void install(X509Certificate cert, String ... hostNames) {
         ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
-        ArrayList<Path> processPaths = AppLocator.getRunningPaths(appList);
+        ArrayList<Path> processPaths = null;
         for(AppInfo appInfo : appList) {
             if (honorsPolicy(appInfo)) {
                 log.info("Installing Firefox ({}) enterprise root certificate policy {}", appInfo.getName(), appInfo.getPath());
@@ -77,16 +76,7 @@ public class FirefoxCertificateInstaller {
                     log.warn("Unable to install auto-config script to {}", appInfo.getPath(), e);
                 }
             }
-
-            if(processPaths.contains(appInfo.getExePath())) {
-                if (appInfo.getVersion().greaterThanOrEqualTo(FIREFOX_RESTART_VERSION)) {
-                    try {
-                        Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
-                        continue;
-                    } catch(Exception ignore) {}
-                }
-                log.warn("{} must be restarted for changes to take effect", appInfo.getName());
-            }
+            issueRestartWarning(processPaths = AppLocator.getRunningPaths(appList, processPaths), appInfo);
         }
     }
 
@@ -127,45 +117,33 @@ public class FirefoxCertificateInstaller {
         }
     }
 
-    public static boolean hasPolicy(AppInfo appInfo) {
+    public static boolean hasSystemPolicy(AppInfo appInfo) {
         String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? ENTERPRISE_ROOT_POLICY : INSTALL_CERT_POLICY;
-        return JsonWriter.contains(appInfo.getPath().resolve(POLICY_LOCATION).toFile(), jsonPolicy) ||
-                hasAltPolicy(appInfo);
+        return JsonWriter.contains(appInfo.getPath().resolve(SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION).toFile(), jsonPolicy);
     }
 
     /**
-     * Returns true if an alternative Firefox policy (e.g. registry, plist) is installed
+     * Returns true if an alternative Firefox policy (e.g. registry, plist user or system) is installed
      */
-    private static boolean hasAltPolicy(AppInfo appInfo) {
+    private static boolean hasAlternatePolicy(AppInfo appInfo, boolean userOnly) {
         if(SystemUtilities.isWindows()) {
-            // User preference takes precedent
-            String key = String.format(WINDOWS_ALT_POLICY, appInfo.getVendor(), appInfo.getVendorlessName());
-            Integer foundPolicy = WindowsUtilities.getRegInt(WinReg.HKEY_CURRENT_USER, key, "ImportEnterpriseRoots");
+            String key = String.format(WINDOWS_ALT_POLICY, appInfo.getVendor(), appInfo.getName(true));
+            Integer foundPolicy = WindowsUtilities.getRegInt(userOnly ? WinReg.HKEY_CURRENT_USER : WinReg.HKEY_LOCAL_MACHINE, key, "ImportEnterpriseRoots");
             if(foundPolicy != null) {
-                //fixme remove debug lines
-                System.err.println("ImportEnterpriseRoots found in HKCU");
                 return foundPolicy == 1;
             }
-            // Fallback to system preference
-            foundPolicy = WindowsUtilities.getRegInt(WinReg.HKEY_LOCAL_MACHINE, key, "ImportEnterpriseRoots");
-            //fixme remove debug lines
-            if(foundPolicy != null) {  System.err.println("ImportEnterpriseRoots found in HKCU: " + foundPolicy); }
-            return foundPolicy != null && foundPolicy == 1;
         } else if(SystemUtilities.isMac()) {
-            // User preference takes precedent
-            String plist = String.format(MAC_ALT_POLICY, System.getProperty("user.home"), appInfo.getBundleId());
-            String foundPolicy = ShellUtilities.executeRaw("defaults", "read", plist, "ImportEnterpriseRoots");
-            if(foundPolicy != null ) {
-                //fixme remove debug lines
-                System.err.println("ImportEnterpriseRoots found in USER plist");
-                return foundPolicy.trim().equals("1");
+            if(!userOnly) {
+                return false; // Skip system check
             }
-            plist = String.format(MAC_ALT_POLICY,"", appInfo.getBundleId());
-            foundPolicy = ShellUtilities.executeRaw("defaults", "read", plist, "ImportEnterpriseRoots");
-
-            //fixme remove debug lines
-            if(foundPolicy != null ) {  System.err.println("ImportEnterpriseRoots found in SYSTEM plist: " + foundPolicy); }
-            return foundPolicy != null && foundPolicy.trim().equals("1");
+            String policesEnabled = ShellUtilities.executeRaw(new String[] { "defaults", "read", appInfo.getBundleId(), "EnterprisePoliciesEnabled"}, true);
+            if(policesEnabled != null && policesEnabled.trim().equals("1")) {
+                String foundPolicy = ShellUtilities.execute(new String[] {"defaults", "read", appInfo.getBundleId(), "Certificates"}, new String[] { "ImportEnterpriseRoots = 1;" }, true, true);
+                return !foundPolicy.isEmpty();
+            }
+            return false;
+        } else {
+            // Linux alternate policy not yet supported
         }
         return false;
     }
@@ -214,13 +192,56 @@ public class FirefoxCertificateInstaller {
         }
     }
 
-    public static boolean installAltPolicy(AppInfo appInfo) {
+    /**
+     * Retroactively checks the system for a missing Firefox cert
+     * - Removed after Firefox upgrade
+     * - Installed after QZ Tray was installed
+     */
+    public static void fixMissingPolicies() {
+        if(!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {
+            return; // Retroactive cert checking for Linux isn't yet supported
+        }
+        ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
+        ArrayList<AppInfo> needsCert = new ArrayList();
+
+        // Iterate Firefox instances without a system-wide or user-wide policy installed
+        for(AppInfo appInfo : appList) {
+            // Warning: JSON policy must match exactly
+            if (honorsPolicy(appInfo) && !hasSystemPolicy(appInfo) && !hasAlternatePolicy(appInfo, true) && !hasAlternatePolicy(appInfo, false)) {
+                log.warn("SSL support for {} ({}) is missing. We'll attempt to install it...", appInfo.getName(), appInfo.getPath());
+                needsCert.add(appInfo);
+            }
+        }
+
+        ArrayList<Path> runningList = null;
+        for(AppInfo appInfo : needsCert) {
+            installAlternatePolicy(appInfo);
+            issueRestartWarning(runningList = AppLocator.getRunningPaths(needsCert, runningList), appInfo);
+        }
+    }
+
+    public static boolean installAlternatePolicy(AppInfo appInfo) {
         if(SystemUtilities.isWindows()) {
-            String key = String.format(WINDOWS_ALT_POLICY, appInfo.getVendor(), appInfo.getVendorlessName());;
+            String key = String.format(WINDOWS_ALT_POLICY, appInfo.getVendor(), appInfo.getName(true));;
             return WindowsUtilities.addRegValue(WinReg.HKEY_CURRENT_USER, key, "ImportEnterpriseRoots", 1);
         } else if(SystemUtilities.isMac()) {
-            String plist = String.format(MAC_ALT_POLICY, System.getProperty("user.home"), appInfo.getBundleId());
-            return ShellUtilities.execute("defaults", "write", plist, "ImportEnterpriseRoots", "-bool", "TRUE");
+            return ShellUtilities.execute(new String[] {"defaults", "write", appInfo.getBundleId(), "EnterprisePoliciesEnabled", "-bool", "TRUE"}, true) &&
+                    ShellUtilities.execute(new String[] {"defaults", "write", appInfo.getBundleId(), "Certificates", "-dict", "ImportEnterpriseRoots", "-bool", "TRUE"}, true);
+        }
+        return false;
+    }
+
+    public static boolean issueRestartWarning(ArrayList<Path> runningPaths, AppInfo appInfo) {
+        if (appInfo.getVersion().greaterThanOrEqualTo(FirefoxCertificateInstaller.FIREFOX_RESTART_VERSION)) {
+            if (runningPaths.contains(appInfo.getExePath())) {
+                try {
+                    Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
+                    return true;
+                }
+                catch(Exception ignore) {}
+            }
+        } else {
+            log.warn("{} must be restarted for changes to take effect", appInfo.getName());
         }
         return false;
     }

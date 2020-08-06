@@ -6,7 +6,7 @@ public enum AppAlias {
     // Tor Browser intentionally excluded; Tor's proxy blocks localhost connections
     FIREFOX(
             // Alias([Vendor], Name)
-            new Alias("Firefox", null, "org.mozilla.firefox"), // macOS, Linux
+            new Alias(null, "Firefox", "org.mozilla.firefox"), // macOS, Linux
             new Alias("Mozilla", "Mozilla Firefox", "org.mozilla.firefox"), // Windows
             new Alias("Mozilla", "SeaMonkey", "org.mozilla.seamonkey"),
             new Alias("Waterfox", "Waterfox", "net.waterfox.waterfoxcurrent"),

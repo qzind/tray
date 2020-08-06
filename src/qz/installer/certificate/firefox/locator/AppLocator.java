@@ -43,13 +43,24 @@ public abstract class AppLocator {
     }
 
     public static ArrayList<Path> getRunningPaths(ArrayList<AppInfo> appList) {
-        ArrayList<String> appNames = new ArrayList<>();
-        for (AppInfo app : appList) {
-            String exeName = app.getExePath().getFileName().toString();
-            if (!appNames.contains(exeName)) appNames.add(exeName);
+        return getRunningPaths(appList, null);
+    }
+
+    /**
+     * Gets the path to the running executables matching on <code>AppInfo.getExePath</code>
+     * This is resource intensive; if a non-null <code>cache</code> is provided, it will return that instead
+     */
+    public static ArrayList<Path> getRunningPaths(ArrayList<AppInfo> appList, ArrayList<Path> cache) {
+        if(cache == null) {
+            ArrayList<String> appNames = new ArrayList<>();
+            for(AppInfo app : appList) {
+                String exeName = app.getExePath().getFileName().toString();
+                if (!appNames.contains(exeName)) appNames.add(exeName);
+            }
+            cache = INSTANCE.getPidPaths(INSTANCE.getPids(appNames));
         }
 
-        return INSTANCE.getPidPaths(INSTANCE.getPids(appNames));
+        return cache;
     }
 
     public static AppLocator getInstance() {

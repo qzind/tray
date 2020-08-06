@@ -146,14 +146,21 @@ public class ShellUtilities {
         return "";
     }
 
+    public static String executeRaw(String ... commandArray) {
+        return executeRaw(commandArray, false);
+    }
+
     /**
      * Executes a synchronous shell command and return the raw character result.
      *
      * @param commandArray array of shell commands to execute
      * @return The entire raw standard output of command
      */
-    public static String executeRaw(String... commandArray) {
-        log.debug("Executing: {}", Arrays.toString(commandArray));
+    public static String executeRaw(String[] commandArray, boolean silent) {
+        if(!silent) {
+            log.debug("Executing: {}", Arrays.toString(commandArray));
+        }
+
         InputStreamReader in = null;
         try {
             Process p = Runtime.getRuntime().exec(commandArray, envp);
@@ -170,7 +177,9 @@ public class ShellUtilities {
             return out.toString();
         }
         catch(IOException ex) {
-            log.error("IOException executing: {} envp: {}", Arrays.toString(commandArray), Arrays.toString(envp), ex);
+            if(!silent) {
+                log.error("IOException executing: {} envp: {}", Arrays.toString(commandArray), Arrays.toString(envp), ex);
+            }
         }
         finally {
             if (in != null) {

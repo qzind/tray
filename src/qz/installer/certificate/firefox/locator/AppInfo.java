@@ -38,11 +38,11 @@ public class AppInfo {
     }
 
     /**
-     * Remove vendor prefix
+     * Remove vendor prefix if exists
      */
-    public String getVendorlessName() {
-        if(name.startsWith(vendor)) {
-           return name.substring(name.indexOf(vendor)).trim();
+    public String getName(boolean stripVendor) {
+        if(stripVendor && name.startsWith(vendor)) {
+           return name.substring(vendor.length()).trim();
         }
         return name;
     }

@@ -63,20 +63,23 @@ public class FirefoxCertificateInstaller {
         ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
         ArrayList<Path> processPaths = null;
         for(AppInfo appInfo : appList) {
+            boolean success = false;
             if (honorsPolicy(appInfo)) {
                 log.info("Installing Firefox ({}) enterprise root certificate policy {}", appInfo.getName(), appInfo.getPath());
-                installPolicy(appInfo, cert);
+                success = installPolicy(appInfo, cert);
             } else {
                 log.info("Installing Firefox ({}) auto-config script {}", appInfo.getName(), appInfo.getPath());
                 try {
                     String certData = Base64.getEncoder().encodeToString(cert.getEncoded());
-                    LegacyFirefoxCertificateInstaller.installAutoConfigScript(appInfo, certData, hostNames);
+                    success = LegacyFirefoxCertificateInstaller.installAutoConfigScript(appInfo, certData, hostNames);
                 }
                 catch(CertificateEncodingException e) {
                     log.warn("Unable to install auto-config script to {}", appInfo.getPath(), e);
                 }
             }
-            issueRestartWarning(processPaths = AppLocator.getRunningPaths(appList, processPaths), appInfo);
+            if(success) {
+                issueRestartWarning(processPaths = AppLocator.getRunningPaths(appList, processPaths), appInfo);
+            }
         }
     }
 
@@ -148,7 +151,7 @@ public class FirefoxCertificateInstaller {
         return false;
     }
 
-    public static void installPolicy(AppInfo app, X509Certificate cert) {
+    public static boolean installPolicy(AppInfo app, X509Certificate cert) {
         Path jsonPath = app.getPath().resolve(SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION);
         String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? ENTERPRISE_ROOT_POLICY : INSTALL_CERT_POLICY;
         try {
@@ -187,9 +190,11 @@ public class FirefoxCertificateInstaller {
 
             // Make sure ew can read
             jsonFile.setReadable(true, false);
+            return true;
         } catch(JSONException | IOException e) {
             log.warn("Could not install enterprise policy {} to {}", jsonPolicy, jsonPath.toString(), e);
         }
+        return false;
     }
 
     /**
@@ -215,8 +220,9 @@ public class FirefoxCertificateInstaller {
 
         ArrayList<Path> runningList = null;
         for(AppInfo appInfo : needsCert) {
-            installAlternatePolicy(appInfo);
-            issueRestartWarning(runningList = AppLocator.getRunningPaths(needsCert, runningList), appInfo);
+            if(installAlternatePolicy(appInfo)) {
+                issueRestartWarning(runningList = AppLocator.getRunningPaths(needsCert, runningList), appInfo);
+            }
         }
     }
 

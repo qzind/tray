@@ -151,16 +151,6 @@ public class TrayManager {
             confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
             componentList.add(confirmDialog);
 
-            // Detect missing Firefox certs
-            new Thread(() -> {
-                while(true) {
-                    try {
-                        Thread.sleep(30000);
-                        FirefoxCertificateInstaller.fixMissingPolicies();
-                    } catch(InterruptedException ignore) {}
-                }
-            }).start();
-
             // Detect theme changes
             new Thread(() -> {
                 boolean darkDesktopMode = SystemUtilities.isDarkDesktop();

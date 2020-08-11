@@ -56,6 +56,7 @@ public class FirefoxCertificateInstaller {
 
     public static final String POLICY_LOCATION = "distribution/policies.json";
     public static final String MAC_POLICY_LOCATION = "Contents/Resources/" + POLICY_LOCATION;
+    public static final String POLICY_AUDIT_MESSAGE = "Enterprise policy installed by " + Constants.ABOUT_TITLE + " on " + SystemUtilities.timeStamp();
 
     public static final String WINDOWS_ALT_POLICY = "Software\\Policies\\%s\\%s\\Certificates";
 
@@ -64,9 +65,13 @@ public class FirefoxCertificateInstaller {
         ArrayList<Path> processPaths = null;
         for(AppInfo appInfo : appList) {
             boolean success = false;
+            // FIXME: Do we really care if Firefox is installed?  Should we just blindly write the policy?
             if (honorsPolicy(appInfo)) {
                 log.info("Installing Firefox ({}) enterprise root certificate policy {}", appInfo.getName(), appInfo.getPath());
                 success = installPolicy(appInfo, cert);
+                if(!success) {
+                    FirefoxCertificateInstaller.fixMissingPolicies();
+                }
             } else {
                 log.info("Installing Firefox ({}) auto-config script {}", appInfo.getName(), appInfo.getPath());
                 try {
@@ -128,20 +133,25 @@ public class FirefoxCertificateInstaller {
     /**
      * Returns true if an alternative Firefox policy (e.g. registry, plist user or system) is installed
      */
-    private static boolean hasAlternatePolicy(AppInfo appInfo, boolean userOnly) {
+    private static boolean hasEnterprisePolicy(AppInfo appInfo, boolean userOnly) {
         if(SystemUtilities.isWindows()) {
+            if(userOnly) {
+                log.warn("Can't write " + appInfo.getName() + " policy as user, aborting");
+                return false;
+            }
             String key = String.format(WINDOWS_ALT_POLICY, appInfo.getVendor(), appInfo.getName(true));
             Integer foundPolicy = WindowsUtilities.getRegInt(userOnly ? WinReg.HKEY_CURRENT_USER : WinReg.HKEY_LOCAL_MACHINE, key, "ImportEnterpriseRoots");
             if(foundPolicy != null) {
                 return foundPolicy == 1;
             }
         } else if(SystemUtilities.isMac()) {
-            if(!userOnly) {
-                return false; // Skip system check
+            String policyLocation = "/Library/Preferences/";
+            if(userOnly) {
+                policyLocation = System.getProperty("user.dir") + policyLocation;
             }
-            String policesEnabled = ShellUtilities.executeRaw(new String[] { "defaults", "read", appInfo.getBundleId(), "EnterprisePoliciesEnabled"}, true);
+            String policesEnabled = ShellUtilities.executeRaw(new String[] { "defaults", "read", policyLocation + appInfo.getBundleId(), "EnterprisePoliciesEnabled"}, true);
             if(policesEnabled != null && policesEnabled.trim().equals("1")) {
-                String foundPolicy = ShellUtilities.execute(new String[] {"defaults", "read", appInfo.getBundleId(), "Certificates"}, new String[] { "ImportEnterpriseRoots = 1;" }, true, true);
+                String foundPolicy = ShellUtilities.execute(new String[] {"defaults", "read", policyLocation + appInfo.getBundleId(), "Certificates"}, new String[] { "ImportEnterpriseRoots = 1;" }, true, true);
                 return !foundPolicy.isEmpty();
             }
             return false;
@@ -198,9 +208,7 @@ public class FirefoxCertificateInstaller {
     }
 
     /**
-     * Retroactively checks the system for a missing Firefox cert
-     * - Removed after Firefox upgrade
-     * - Installed after QZ Tray was installed
+     * Checks the system for a missing Firefox cert
      */
     public static void fixMissingPolicies() {
         if(!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {
@@ -212,7 +220,7 @@ public class FirefoxCertificateInstaller {
         // Iterate Firefox instances without a system-wide or user-wide policy installed
         for(AppInfo appInfo : appList) {
             // Warning: JSON policy must match exactly
-            if (honorsPolicy(appInfo) && !hasSystemPolicy(appInfo) && !hasAlternatePolicy(appInfo, true) && !hasAlternatePolicy(appInfo, false)) {
+            if (honorsPolicy(appInfo) && !hasSystemPolicy(appInfo) && !hasEnterprisePolicy(appInfo, true) && !hasEnterprisePolicy(appInfo, false)) {
                 log.warn("SSL support for {} ({}) is missing. We'll attempt to install it...", appInfo.getName(), appInfo.getPath());
                 needsCert.add(appInfo);
             }
@@ -220,19 +228,21 @@ public class FirefoxCertificateInstaller {
 
         ArrayList<Path> runningList = null;
         for(AppInfo appInfo : needsCert) {
-            if(installAlternatePolicy(appInfo)) {
+            if(installEnterprisePolicy(appInfo)) {
                 issueRestartWarning(runningList = AppLocator.getRunningPaths(needsCert, runningList), appInfo);
             }
         }
     }
 
-    public static boolean installAlternatePolicy(AppInfo appInfo) {
+    public static boolean installEnterprisePolicy(AppInfo appInfo) {
         if(SystemUtilities.isWindows()) {
             String key = String.format(WINDOWS_ALT_POLICY, appInfo.getVendor(), appInfo.getName(true));;
+            WindowsUtilities.addRegValue(WinReg.HKEY_CURRENT_USER, key, "Comment", POLICY_AUDIT_MESSAGE);
             return WindowsUtilities.addRegValue(WinReg.HKEY_CURRENT_USER, key, "ImportEnterpriseRoots", 1);
         } else if(SystemUtilities.isMac()) {
             return ShellUtilities.execute(new String[] {"defaults", "write", appInfo.getBundleId(), "EnterprisePoliciesEnabled", "-bool", "TRUE"}, true) &&
-                    ShellUtilities.execute(new String[] {"defaults", "write", appInfo.getBundleId(), "Certificates", "-dict", "ImportEnterpriseRoots", "-bool", "TRUE"}, true);
+                    ShellUtilities.execute(new String[] {"defaults", "write", appInfo.getBundleId(), "Certificates", "-dict", "ImportEnterpriseRoots", "-bool", "TRUE",
+                                                         "Comment", "-string", POLICY_AUDIT_MESSAGE}, true);
         }
         return false;
     }

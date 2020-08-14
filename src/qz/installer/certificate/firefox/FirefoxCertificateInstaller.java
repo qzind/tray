@@ -247,9 +247,9 @@ public class FirefoxCertificateInstaller {
                     return true;
                 }
                 catch(Exception ignore) {}
+            } else {
+                log.warn("{} must be restarted manually for changes to take effect", appInfo);
             }
-        } else {
-            log.warn("{} must be restarted manually for changes to take effect", appInfo);
         }
         return false;
     }

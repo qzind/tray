@@ -91,7 +91,7 @@ public class FirefoxCertificateInstaller {
                     success = installDistributionPolicy(appInfo, cert);
                 }
             } else {
-                log.info("Installing Firefox auto-config script for", appInfo);
+                log.info("Installing Firefox auto-config script for {}", appInfo);
                 try {
                     String certData = Base64.getEncoder().encodeToString(cert.getEncoded());
                     success = LegacyFirefoxCertificateInstaller.installAutoConfigScript(appInfo, certData, hostNames);

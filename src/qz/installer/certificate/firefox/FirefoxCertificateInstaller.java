@@ -226,7 +226,7 @@ public class FirefoxCertificateInstaller {
         if(SystemUtilities.isWindows()) {
             String key = String.format("Software\\Policies\\%s\\%s\\Certificates", alias.getVendor(), alias.getName(true));;
             WindowsUtilities.addRegValue(userOnly ? WinReg.HKEY_CURRENT_USER : WinReg.HKEY_LOCAL_MACHINE, key, "Comment", POLICY_AUDIT_MESSAGE);
-            return WindowsUtilities.addRegValue(WinReg.HKEY_CURRENT_USER, key, "ImportEnterpriseRoots", 1);
+            return WindowsUtilities.addRegValue(userOnly ? WinReg.HKEY_CURRENT_USER : WinReg.HKEY_LOCAL_MACHINE, key, "ImportEnterpriseRoots", 1);
         } else if(SystemUtilities.isMac()) {
             String policyLocation = "/Library/Preferences/";
             if(userOnly) {

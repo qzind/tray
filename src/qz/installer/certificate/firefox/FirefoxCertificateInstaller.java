@@ -63,16 +63,17 @@ public class FirefoxCertificateInstaller {
         // Blindly install Firefox enterprise policies to the system (macOS, Windows)
         ArrayList<AppAlias.Alias> enterpriseFailed = new ArrayList<>();
         for(AppAlias.Alias alias : AppAlias.FIREFOX.getAliases()) {
+            boolean success = false;
             try {
                 if(alias.isEnterpriseReady() && !hasEnterprisePolicy(alias, false)) {
                     log.info("Installing Firefox enterprise certificate policy for {}", alias);
-                    if (!installEnterprisePolicy(alias, false)) {
-                        log.warn("Unable to install {} enterprise cert support. We'll fallback on the distribution policy instead", alias.getName());
-                        enterpriseFailed.add(alias);
-                    }
+                    success = installEnterprisePolicy(alias, false);
                 }
             } catch(ConflictingPolicyException e) {
-                log.warn("Conflict found installing {} enterprise cert support.  We'll fallback on the distribution policy instead", alias.getName(), e);
+                log.warn("Conflict found installing {} enterprise cert support.", e);
+            }
+            if(!success) {
+                log.warn("Unable to install {} enterprise cert support. We'll fallback on the distribution policy instead", alias.getName());
                 enterpriseFailed.add(alias);
             }
         }

@@ -240,8 +240,8 @@ public class FirefoxCertificateInstaller {
     }
 
     public static boolean issueRestartWarning(ArrayList<Path> runningPaths, AppInfo appInfo) {
-        if (appInfo.getVersion().greaterThanOrEqualTo(FirefoxCertificateInstaller.FIREFOX_RESTART_VERSION)) {
-            if (runningPaths.contains(appInfo.getExePath())) {
+        if (runningPaths.contains(appInfo.getExePath())) {
+            if (appInfo.getVersion().greaterThanOrEqualTo(FirefoxCertificateInstaller.FIREFOX_RESTART_VERSION)) {
                 try {
                     Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
                     return true;

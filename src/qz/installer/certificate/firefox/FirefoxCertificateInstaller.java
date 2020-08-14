@@ -50,15 +50,14 @@ public class FirefoxCertificateInstaller {
     private static final Version LINUX_POLICY_VERSION = Version.valueOf("65.0.0");
     public static final Version FIREFOX_RESTART_VERSION = Version.valueOf("60.0.0");
 
-    private static String ENTERPRISE_ROOT_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
-    private static String INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
-    private static String REMOVE_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"/opt/" + Constants.PROPS_FILE +  "/auth/root-ca.crt\"] } } }";
+    private static String DISTRIBUTION_ENTERPRISE_ROOT_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
+    private static String DISTRIBUTION_INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
+    private static String DISTRIBUTION_REMOVE_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"/opt/" + Constants.PROPS_FILE +  "/auth/root-ca.crt\"] } } }";
 
-    public static final String POLICY_LOCATION = "distribution/policies.json";
-    public static final String MAC_POLICY_LOCATION = "Contents/Resources/" + POLICY_LOCATION;
+    public static final String DISTRIBUTION_POLICY_LOCATION = "distribution/policies.json";
+    public static final String DISTRIBUTION_MAC_POLICY_LOCATION = "Contents/Resources/" + DISTRIBUTION_POLICY_LOCATION;
+
     public static final String POLICY_AUDIT_MESSAGE = "Enterprise policy installed by " + Constants.ABOUT_TITLE + " on " + SystemUtilities.timeStamp();
-
-    public static final String WINDOWS_ALT_POLICY = "Software\\Policies\\%s\\%s\\Certificates";
 
     public static void install(X509Certificate cert, String ... hostNames) {
         // Blindly install Firefox enterprise policies to the system (macOS, Windows)
@@ -115,9 +114,9 @@ public class FirefoxCertificateInstaller {
                     log.info("Skipping uninstall of Firefox enterprise root certificate policy for {}", appInfo);
                 } else {
                     try {
-                        File policy = appInfo.getPath().resolve(POLICY_LOCATION).toFile();
+                        File policy = appInfo.getPath().resolve(DISTRIBUTION_POLICY_LOCATION).toFile();
                         if(policy.exists()) {
-                            JsonWriter.write(appInfo.getPath().resolve(POLICY_LOCATION).toString(), INSTALL_CERT_POLICY, false, true);
+                            JsonWriter.write(appInfo.getPath().resolve(DISTRIBUTION_POLICY_LOCATION).toString(), DISTRIBUTION_INSTALL_CERT_POLICY, false, true);
                         }
                     } catch(IOException | JSONException e) {
                         log.warn("Unable to remove Firefox policy for {}", appInfo, e);
@@ -149,11 +148,7 @@ public class FirefoxCertificateInstaller {
      */
     private static boolean hasEnterprisePolicy(AppAlias.Alias alias, boolean userOnly) throws ConflictingPolicyException {
         if(SystemUtilities.isWindows()) {
-            if(userOnly) {
-                log.warn("Can't write " + alias.getName() + " policy as user, aborting");
-                return false;
-            }
-            String key = String.format(WINDOWS_ALT_POLICY, alias.getVendor(), alias.getName(true));
+            String key = String.format("Software\\Policies\\%s\\%s\\Certificates", alias.getVendor(), alias.getName(true));
             Integer foundPolicy = WindowsUtilities.getRegInt(userOnly ? WinReg.HKEY_CURRENT_USER : WinReg.HKEY_LOCAL_MACHINE, key, "ImportEnterpriseRoots");
             if(foundPolicy != null) {
                 return foundPolicy == 1;
@@ -182,10 +177,10 @@ public class FirefoxCertificateInstaller {
      * Install policy to distribution/policies.json
      */
     public static boolean installDistributionPolicy(AppInfo app, X509Certificate cert) {
-        Path jsonPath = app.getPath().resolve(SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION);
-        String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? ENTERPRISE_ROOT_POLICY : INSTALL_CERT_POLICY;
+        Path jsonPath = app.getPath().resolve(SystemUtilities.isMac() ? DISTRIBUTION_MAC_POLICY_LOCATION:DISTRIBUTION_POLICY_LOCATION);
+        String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? DISTRIBUTION_ENTERPRISE_ROOT_POLICY:DISTRIBUTION_INSTALL_CERT_POLICY;
         try {
-            if(jsonPolicy.equals(INSTALL_CERT_POLICY)) {
+            if(jsonPolicy.equals(DISTRIBUTION_INSTALL_CERT_POLICY)) {
                 // Linux lacks the concept of "enterprise roots", we'll write it to a known location instead
                 File certFile = new File("/usr/lib/mozilla/certificates", Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
 
@@ -211,9 +206,9 @@ public class FirefoxCertificateInstaller {
             distribution.setReadable(true, false);
             distribution.setExecutable(true, false);
 
-            if(jsonPolicy.equals(INSTALL_CERT_POLICY)) {
+            if(jsonPolicy.equals(DISTRIBUTION_INSTALL_CERT_POLICY)) {
                 // Delete previous policy
-                JsonWriter.write(jsonPath.toString(), REMOVE_CERT_POLICY, false, true);
+                JsonWriter.write(jsonPath.toString(), DISTRIBUTION_REMOVE_CERT_POLICY, false, true);
             }
 
             JsonWriter.write(jsonPath.toString(), jsonPolicy, false, false);
@@ -229,8 +224,8 @@ public class FirefoxCertificateInstaller {
 
     public static boolean installEnterprisePolicy(AppAlias.Alias alias, boolean userOnly) {
         if(SystemUtilities.isWindows()) {
-            String key = String.format(WINDOWS_ALT_POLICY, alias.getVendor(), alias.getName(true));;
-            WindowsUtilities.addRegValue(WinReg.HKEY_CURRENT_USER, key, "Comment", POLICY_AUDIT_MESSAGE);
+            String key = String.format("Software\\Policies\\%s\\%s\\Certificates", alias.getVendor(), alias.getName(true));;
+            WindowsUtilities.addRegValue(userOnly ? WinReg.HKEY_CURRENT_USER : WinReg.HKEY_LOCAL_MACHINE, key, "Comment", POLICY_AUDIT_MESSAGE);
             return WindowsUtilities.addRegValue(WinReg.HKEY_CURRENT_USER, key, "ImportEnterpriseRoots", 1);
         } else if(SystemUtilities.isMac()) {
             String policyLocation = "/Library/Preferences/";

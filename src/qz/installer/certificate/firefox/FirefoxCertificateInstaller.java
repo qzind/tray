@@ -70,10 +70,9 @@ public class FirefoxCertificateInstaller {
                     success = installEnterprisePolicy(alias, false);
                 }
             } catch(ConflictingPolicyException e) {
-                log.warn("Conflict found installing {} enterprise cert support.", e);
+                log.warn("Conflict found installing {} enterprise cert support.  We'll fallback on the distribution policy instead", alias.getName(), e);
             }
             if(!success) {
-                log.warn("Unable to install {} enterprise cert support. We'll fallback on the distribution policy instead", alias.getName());
                 enterpriseFailed.add(alias);
             }
         }

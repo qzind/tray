@@ -65,7 +65,7 @@ public class FirefoxCertificateInstaller {
         for(AppAlias.Alias alias : AppAlias.FIREFOX.getAliases()) {
             try {
                 if(alias.isEnterpriseReady() && !hasEnterprisePolicy(alias, false)) {
-                    log.info("Installing Firefox auto-config script for {}", alias);
+                    log.info("Installing Firefox enterprise certificate policy for {}", alias);
                     if (!installEnterprisePolicy(alias, false)) {
                         log.warn("Unable to install {} enterprise cert support. We'll fallback on the distribution policy instead", alias.getName());
                         enterpriseFailed.add(alias);

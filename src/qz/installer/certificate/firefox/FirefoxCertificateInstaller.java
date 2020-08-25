@@ -161,9 +161,9 @@ public class FirefoxCertificateInstaller {
             }
             String policesEnabled = ShellUtilities.executeRaw(new String[] { "defaults", "read", policyLocation + alias.getBundleId(), "EnterprisePoliciesEnabled"}, true);
             String foundPolicy = ShellUtilities.executeRaw(new String[] {"defaults", "read", policyLocation + alias.getBundleId(), "Certificates"}, true);
-            if(policesEnabled != null && foundPolicy != null) {
+            if(!policesEnabled.isEmpty() && !foundPolicy.isEmpty()) {
                 // Policies exist, decide how to proceed
-                if(policesEnabled.equals("1") && foundPolicy.contains("ImportEnterpriseRoots = 1;")) {
+                if(policesEnabled.trim().equals("1") && foundPolicy.contains("ImportEnterpriseRoots = 1;")) {
                     return true;
                 }
                 throw new ConflictingPolicyException(String.format("%s enterprise policy conflict at %s: %s", alias.getName(), policyLocation + alias.getBundleId(), foundPolicy));

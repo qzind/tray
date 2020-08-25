@@ -20,7 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.regex.Pattern;
+import java.util.Iterator;
 
 public class MacAppLocator extends AppLocator{
     protected static final Logger log = LoggerFactory.getLogger(MacAppLocator.class);
@@ -94,10 +94,12 @@ public class MacAppLocator extends AppLocator{
         }
 
         // Remove blacklisted paths
-        for(AppInfo appInfo : appList) {
+        Iterator<AppInfo> appInfoIterator = appList.iterator();
+        while(appInfoIterator.hasNext()) {
+            AppInfo appInfo = appInfoIterator.next();
             for(String listEntry : BLACKLISTED_PATHS) {
-                if (appInfo.getPath() != null && appInfo.getPath().toString().matches(Pattern.quote(listEntry))) {
-                    appList.remove(appInfo);
+                if (appInfo.getPath() != null && appInfo.getPath().toString().contains(listEntry)) {
+                    appInfoIterator.remove();
                 }
             }
         }

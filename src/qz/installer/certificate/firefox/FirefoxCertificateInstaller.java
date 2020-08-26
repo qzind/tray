@@ -11,6 +11,7 @@
 package qz.installer.certificate.firefox;
 
 import com.github.zafarkhaja.semver.Version;
+import com.sun.jna.platform.win32.WinReg;
 import org.codehaus.jettison.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,9 @@ import qz.installer.certificate.firefox.locator.AppAlias;
 import qz.installer.certificate.firefox.locator.AppInfo;
 import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.utils.JsonWriter;
+import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
+import qz.utils.WindowsUtilities;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +35,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 
 /**
- * Installs the Firefox Policy file via Policy file or AutoConfig, depending on the version
+ * Installs the Firefox Policy file via Enterprise Policy, Distribution Policy file or AutoConfig, depending on OS & version
  */
 public class FirefoxCertificateInstaller {
     protected static final Logger log = LoggerFactory.getLogger(FirefoxCertificateInstaller.class);
@@ -47,39 +50,59 @@ public class FirefoxCertificateInstaller {
     private static final Version LINUX_POLICY_VERSION = Version.valueOf("65.0.0");
     public static final Version FIREFOX_RESTART_VERSION = Version.valueOf("60.0.0");
 
-    private static String ENTERPRISE_ROOT_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
-    private static String INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
-    private static String REMOVE_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"/opt/" + Constants.PROPS_FILE +  "/auth/root-ca.crt\"] } } }";
+    private static String DISTRIBUTION_ENTERPRISE_ROOT_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
+    private static String DISTRIBUTION_INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
+    private static String DISTRIBUTION_REMOVE_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"/opt/" + Constants.PROPS_FILE +  "/auth/root-ca.crt\"] } } }";
 
-    public static final String POLICY_LOCATION = "distribution/policies.json";
-    public static final String MAC_POLICY_LOCATION = "Contents/Resources/" + POLICY_LOCATION;
+    public static final String DISTRIBUTION_POLICY_LOCATION = "distribution/policies.json";
+    public static final String DISTRIBUTION_MAC_POLICY_LOCATION = "Contents/Resources/" + DISTRIBUTION_POLICY_LOCATION;
+
+    public static final String POLICY_AUDIT_MESSAGE = "Enterprise policy installed by " + Constants.ABOUT_TITLE + " on " + SystemUtilities.timeStamp();
 
     public static void install(X509Certificate cert, String ... hostNames) {
-        ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
-        ArrayList<Path> processPaths = AppLocator.getRunningPaths(appList);
-        for(AppInfo appInfo : appList) {
+        // Blindly install Firefox enterprise policies to the system (macOS, Windows)
+        ArrayList<AppAlias.Alias> enterpriseFailed = new ArrayList<>();
+        for(AppAlias.Alias alias : AppAlias.FIREFOX.getAliases()) {
+            boolean success = false;
+            try {
+                if(alias.isEnterpriseReady() && !hasEnterprisePolicy(alias, false)) {
+                    log.info("Installing Firefox enterprise certificate policy for {}", alias);
+                    success = installEnterprisePolicy(alias, false);
+                }
+            } catch(ConflictingPolicyException e) {
+                log.warn("Conflict found installing {} enterprise cert support.  We'll fallback on the distribution policy instead", alias.getName(), e);
+            }
+            if(!success) {
+                enterpriseFailed.add(alias);
+            }
+        }
+
+        // Search for installed instances
+        ArrayList<AppInfo> foundApps = AppLocator.getInstance().locate(AppAlias.FIREFOX);
+        ArrayList<Path> processPaths = null;
+
+        for(AppInfo appInfo : foundApps) {
+            boolean success = false;
             if (honorsPolicy(appInfo)) {
-                log.info("Installing Firefox ({}) enterprise root certificate policy {}", appInfo.getName(), appInfo.getPath());
-                installPolicy(appInfo, cert);
+                if((SystemUtilities.isWindows()|| SystemUtilities.isMac()) && !enterpriseFailed.contains(appInfo.getAlias())) {
+                    // Enterprise policy was already installed
+                    success = true;
+                } else {
+                    log.info("Installing Firefox distribution policy for {}", appInfo);
+                    success = installDistributionPolicy(appInfo, cert);
+                }
             } else {
-                log.info("Installing Firefox ({}) auto-config script {}", appInfo.getName(), appInfo.getPath());
+                log.info("Installing Firefox auto-config script for {}", appInfo);
                 try {
                     String certData = Base64.getEncoder().encodeToString(cert.getEncoded());
-                    LegacyFirefoxCertificateInstaller.installAutoConfigScript(appInfo, certData, hostNames);
+                    success = LegacyFirefoxCertificateInstaller.installAutoConfigScript(appInfo, certData, hostNames);
                 }
                 catch(CertificateEncodingException e) {
-                    log.warn("Unable to install auto-config script to {}", appInfo.getPath(), e);
+                    log.warn("Unable to install auto-config script for {}", appInfo, e);
                 }
             }
-
-            if(processPaths.contains(appInfo.getExePath())) {
-                if (appInfo.getVersion().greaterThanOrEqualTo(FIREFOX_RESTART_VERSION)) {
-                    try {
-                        Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
-                        continue;
-                    } catch(Exception ignore) {}
-                }
-                log.warn("{} must be restarted for changes to take effect", appInfo.getName());
+            if(success) {
+                issueRestartWarning(processPaths = AppLocator.getRunningPaths(foundApps, processPaths), appInfo);
             }
         }
     }
@@ -89,19 +112,19 @@ public class FirefoxCertificateInstaller {
         for(AppInfo appInfo : appList) {
             if(honorsPolicy(appInfo)) {
                 if(SystemUtilities.isWindows() || SystemUtilities.isMac()) {
-                    log.info("Skipping uninstall of Firefox enterprise root certificate policy {}", appInfo.getPath());
+                    log.info("Skipping uninstall of Firefox enterprise root certificate policy for {}", appInfo);
                 } else {
                     try {
-                        File policy = appInfo.getPath().resolve(POLICY_LOCATION).toFile();
+                        File policy = appInfo.getPath().resolve(DISTRIBUTION_POLICY_LOCATION).toFile();
                         if(policy.exists()) {
-                            JsonWriter.write(appInfo.getPath().resolve(POLICY_LOCATION).toString(), INSTALL_CERT_POLICY, false, true);
+                            JsonWriter.write(appInfo.getPath().resolve(DISTRIBUTION_POLICY_LOCATION).toString(), DISTRIBUTION_INSTALL_CERT_POLICY, false, true);
                         }
                     } catch(IOException | JSONException e) {
-                        log.warn("Unable to remove Firefox ({}) policy {}", appInfo.getName(), e);
+                        log.warn("Unable to remove Firefox policy for {}", appInfo, e);
                     }
                 }
             } else {
-                log.info("Uninstalling Firefox auto-config script {}", appInfo.getPath());
+                log.info("Uninstalling Firefox auto-config script for {}", appInfo);
                 LegacyFirefoxCertificateInstaller.uninstallAutoConfigScript(appInfo);
             }
         }
@@ -109,7 +132,7 @@ public class FirefoxCertificateInstaller {
 
     public static boolean honorsPolicy(AppInfo appInfo) {
         if (appInfo.getVersion() == null) {
-            log.warn("Firefox-compatible browser was found {}, but no version information is available", appInfo.getPath());
+            log.warn("Firefox-compatible browser found {}, but no version information is available", appInfo);
             return false;
         }
         if(SystemUtilities.isWindows()) {
@@ -121,11 +144,44 @@ public class FirefoxCertificateInstaller {
         }
     }
 
-    public static void installPolicy(AppInfo app, X509Certificate cert) {
-        Path jsonPath = app.getPath().resolve(SystemUtilities.isMac() ? MAC_POLICY_LOCATION : POLICY_LOCATION);
-        String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? ENTERPRISE_ROOT_POLICY : INSTALL_CERT_POLICY;
+    /**
+     * Returns true if an alternative Firefox policy (e.g. registry, plist user or system) is installed
+     */
+    private static boolean hasEnterprisePolicy(AppAlias.Alias alias, boolean userOnly) throws ConflictingPolicyException {
+        if(SystemUtilities.isWindows()) {
+            String key = String.format("Software\\Policies\\%s\\%s\\Certificates", alias.getVendor(), alias.getName(true));
+            Integer foundPolicy = WindowsUtilities.getRegInt(userOnly ? WinReg.HKEY_CURRENT_USER : WinReg.HKEY_LOCAL_MACHINE, key, "ImportEnterpriseRoots");
+            if(foundPolicy != null) {
+                return foundPolicy == 1;
+            }
+        } else if(SystemUtilities.isMac()) {
+            String policyLocation = "/Library/Preferences/";
+            if(userOnly) {
+                policyLocation = System.getProperty("user.dir") + policyLocation;
+            }
+            String policesEnabled = ShellUtilities.executeRaw(new String[] { "defaults", "read", policyLocation + alias.getBundleId(), "EnterprisePoliciesEnabled"}, true);
+            String foundPolicy = ShellUtilities.executeRaw(new String[] {"defaults", "read", policyLocation + alias.getBundleId(), "Certificates"}, true);
+            if(!policesEnabled.isEmpty() && !foundPolicy.isEmpty()) {
+                // Policies exist, decide how to proceed
+                if(policesEnabled.trim().equals("1") && foundPolicy.contains("ImportEnterpriseRoots = 1;")) {
+                    return true;
+                }
+                throw new ConflictingPolicyException(String.format("%s enterprise policy conflict at %s: %s", alias.getName(), policyLocation + alias.getBundleId(), foundPolicy));
+            }
+        } else {
+            // Linux alternate policy not yet supported
+        }
+        return false;
+    }
+
+    /**
+     * Install policy to distribution/policies.json
+     */
+    public static boolean installDistributionPolicy(AppInfo app, X509Certificate cert) {
+        Path jsonPath = app.getPath().resolve(SystemUtilities.isMac() ? DISTRIBUTION_MAC_POLICY_LOCATION:DISTRIBUTION_POLICY_LOCATION);
+        String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? DISTRIBUTION_ENTERPRISE_ROOT_POLICY:DISTRIBUTION_INSTALL_CERT_POLICY;
         try {
-            if(jsonPolicy.equals(INSTALL_CERT_POLICY)) {
+            if(jsonPolicy.equals(DISTRIBUTION_INSTALL_CERT_POLICY)) {
                 // Linux lacks the concept of "enterprise roots", we'll write it to a known location instead
                 File certFile = new File("/usr/lib/mozilla/certificates", Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
 
@@ -151,17 +207,51 @@ public class FirefoxCertificateInstaller {
             distribution.setReadable(true, false);
             distribution.setExecutable(true, false);
 
-            if(jsonPolicy.equals(INSTALL_CERT_POLICY)) {
+            if(jsonPolicy.equals(DISTRIBUTION_INSTALL_CERT_POLICY)) {
                 // Delete previous policy
-                JsonWriter.write(jsonPath.toString(), REMOVE_CERT_POLICY, false, true);
+                JsonWriter.write(jsonPath.toString(), DISTRIBUTION_REMOVE_CERT_POLICY, false, true);
             }
 
             JsonWriter.write(jsonPath.toString(), jsonPolicy, false, false);
 
             // Make sure ew can read
             jsonFile.setReadable(true, false);
+            return true;
         } catch(JSONException | IOException e) {
-            log.warn("Could not install enterprise policy {} to {}", jsonPolicy, jsonPath.toString(), e);
+            log.warn("Could not install distribution policy {} to {}", jsonPolicy, jsonPath.toString(), e);
         }
+        return false;
+    }
+
+    public static boolean installEnterprisePolicy(AppAlias.Alias alias, boolean userOnly) {
+        if(SystemUtilities.isWindows()) {
+            String key = String.format("Software\\Policies\\%s\\%s\\Certificates", alias.getVendor(), alias.getName(true));;
+            WindowsUtilities.addRegValue(userOnly ? WinReg.HKEY_CURRENT_USER : WinReg.HKEY_LOCAL_MACHINE, key, "Comment", POLICY_AUDIT_MESSAGE);
+            return WindowsUtilities.addRegValue(userOnly ? WinReg.HKEY_CURRENT_USER : WinReg.HKEY_LOCAL_MACHINE, key, "ImportEnterpriseRoots", 1);
+        } else if(SystemUtilities.isMac()) {
+            String policyLocation = "/Library/Preferences/";
+            if(userOnly) {
+                policyLocation = System.getProperty("user.dir") + policyLocation;
+            }
+            return ShellUtilities.execute(new String[] {"defaults", "write", policyLocation + alias.getBundleId(), "EnterprisePoliciesEnabled", "-bool", "TRUE"}, true) &&
+                    ShellUtilities.execute(new String[] {"defaults", "write", policyLocation + alias.getBundleId(), "Certificates", "-dict", "ImportEnterpriseRoots", "-bool", "TRUE",
+                                                         "Comment", "-string", POLICY_AUDIT_MESSAGE}, true);
+        }
+        return false;
+    }
+
+    public static boolean issueRestartWarning(ArrayList<Path> runningPaths, AppInfo appInfo) {
+        if (runningPaths.contains(appInfo.getExePath())) {
+            if (appInfo.getVersion().greaterThanOrEqualTo(FirefoxCertificateInstaller.FIREFOX_RESTART_VERSION)) {
+                try {
+                    Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
+                    return true;
+                }
+                catch(Exception ignore) {}
+            } else {
+                log.warn("{} must be restarted manually for changes to take effect", appInfo);
+            }
+        }
+        return false;
     }
 }

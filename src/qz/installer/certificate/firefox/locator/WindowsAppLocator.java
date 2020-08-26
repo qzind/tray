@@ -13,6 +13,7 @@ package qz.installer.certificate.firefox.locator;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.installer.certificate.firefox.locator.AppAlias.Alias;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 import qz.utils.WindowsUtilities;
@@ -40,14 +41,14 @@ public class WindowsAppLocator extends AppLocator{
     @Override
     public ArrayList<AppInfo> locate(AppAlias appAlias) {
         ArrayList<AppInfo> appList = new ArrayList<>();
-        for (AppAlias.Alias alias : appAlias.aliases) {
-            if (alias.vendor != null) {
+        for (Alias alias : appAlias.aliases) {
+            if (alias.getVendor() != null) {
                 String[] suffixes = new String[]{ "", " ESR"};
                 String[] prefixes = new String[]{ "", "WOW6432Node\\"};
                 for (String suffix : suffixes) {
                     for (String prefix : prefixes) {
-                        String key = String.format(REG_TEMPLATE, prefix, alias.vendor, alias.name, suffix);
-                        AppInfo appInfo = getAppInfo(alias.name, key, suffix);
+                        String key = String.format(REG_TEMPLATE, prefix, alias.getVendor(), alias.getName(), suffix);
+                        AppInfo appInfo = getAppInfo(alias, key, suffix);
                         if (appInfo != null && !appList.contains(appInfo)) {
                             appList.add(appInfo);
                         }
@@ -107,7 +108,7 @@ public class WindowsAppLocator extends AppLocator{
     /**
      * Use a proprietary Firefox-only technique for getting "PathToExe" registry value
      */
-    private static AppInfo getAppInfo(String name, String key, String suffix) {
+    private static AppInfo getAppInfo(Alias alias, String key, String suffix) {
         String version = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "CurrentVersion");
         if (version != null) {
             version = version.split(" ")[0]; // chop off (x86 ...)
@@ -122,7 +123,7 @@ public class WindowsAppLocator extends AppLocator{
             if (exePath != null) {
                 // SemVer: Replace spaces in suffixes with dashes
                 version = version.replaceAll(" ", "-");
-                return new AppInfo(name, exePath, version);
+                return new AppInfo(alias, exePath, version);
             }
         }
         return null;

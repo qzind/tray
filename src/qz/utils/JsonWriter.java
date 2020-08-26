@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -53,6 +54,22 @@ public class JsonWriter {
         FileUtils.write(f, config.toString(2));
 
         return true;
+    }
+
+    public static boolean contains(File path, String data) {
+        try {
+            if (!path.exists() || (data == null && data.isEmpty())) {
+                return false;
+            }
+
+            String jsonData = FileUtils.readFileToString(path, Charsets.UTF_8);
+            JSONObject before = new JSONObject(jsonData);
+            JSONObject after = new JSONObject(jsonData);
+            merge(after, new JSONObject(data), true);
+            return before.toString().equals(after.toString());
+        } catch(JSONException | IOException ignore) {
+            return false;
+        }
     }
 
     /**

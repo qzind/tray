@@ -25,10 +25,10 @@ public class LinuxAppLocator extends AppLocator {
         for(AppAlias.Alias alias : appAlias.aliases) {
 
             // Add non-standard app search locations (e.g. Fedora)
-            for (String dirname : appendPaths(alias.posix, "/usr/lib/$/bin", "/usr/lib64/$/bin")) {
-                Path path = Paths.get(dirname, alias.posix);
+            for (String dirname : appendPaths(alias.getPosix(), "/usr/lib/$/bin", "/usr/lib64/$/bin")) {
+                Path path = Paths.get(dirname, alias.getPosix());
                 if (Files.isRegularFile(path) && Files.isExecutable(path)) {
-                    log.info("Found {} {}: {}, investigating...", alias.vendor, alias.name, path);
+                    log.info("Found {} {}: {}, investigating...", alias.getVendor(), alias.getName(true), path);
                     try {
                         File file = path.toFile().getCanonicalFile(); // fix symlinks
                         String contentType = Files.probeContentType(file.toPath());
@@ -42,7 +42,7 @@ public class LinuxAppLocator extends AppLocator {
                             BufferedReader reader = new BufferedReader(new FileReader(file));
                             String line;
                             while((line = reader.readLine()) != null) {
-                                if(line.startsWith("exec") && line.contains(alias.posix)) {
+                                if(line.startsWith("exec") && line.contains(alias.getPosix())) {
                                     String[] parts = line.split(" ");
                                     // Get the app name after "exec"
                                     if (parts.length > 1) {
@@ -65,9 +65,9 @@ public class LinuxAppLocator extends AppLocator {
                                 }
                             }
                         } else {
-                            log.info("Assuming {} {} is installed: {}", alias.vendor, alias.name, file);
+                            log.info("Assuming {} {} is installed: {}", alias.getVendor(), alias.getName(true), file);
                         }
-                        AppInfo appInfo = new AppInfo(alias.name, file.toPath());
+                        AppInfo appInfo = new AppInfo(alias, file.toPath());
                         appList.add(appInfo);
 
                         // Call "--version" on executable to obtain version information
@@ -92,7 +92,7 @@ public class LinuxAppLocator extends AppLocator {
                         }
                         break;
                     } catch(Exception e) {
-                        log.warn("Something went wrong getting app info for {} {}", alias.vendor, alias.name, e);
+                        log.warn("Something went wrong getting app info for {} {}", alias.getVendor(), alias.getName(true), e);
                     }
                 }
             }

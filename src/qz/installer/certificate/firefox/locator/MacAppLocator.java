@@ -15,18 +15,17 @@ import qz.utils.ShellUtilities;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.Iterator;
 
 public class MacAppLocator extends AppLocator{
     protected static final Logger log = LoggerFactory.getLogger(MacAppLocator.class);
 
-    private static String[] BLACKLIST = new String[]{ "/Volumes/", "/.Trash/", "/Applications (Parallels)/" };
+    private static String[] BLACKLISTED_PATHS = new String[]{"/Volumes/", "/.Trash/", "/Applications (Parallels)/" };
 
     /**
      * Helper class for finding key/value siblings from the DDM
@@ -46,20 +45,9 @@ public class MacAppLocator extends AppLocator{
 
         private boolean isKey(Node node) {
             if (node.getNodeName().equals("key") && node.getTextContent().equals(key)) {
-                this.wants = true;
                 return true;
             }
             return false;
-        }
-
-        private void set(Node node, AppInfo info) {
-            switch(this) {
-                case NAME: info.setName(node.getTextContent()); break;
-                case PATH: info.setPath(Paths.get(node.getTextContent())); break;
-                case VERSION: info.setVersion(node.getTextContent()); break;
-                default: throw new UnsupportedOperationException(this.name() + " not supported");
-            }
-            wants = false;
         }
     }
 
@@ -81,34 +69,39 @@ public class MacAppLocator extends AppLocator{
         NodeList nodeList = doc.getElementsByTagName("dict");
         for (int i = 0; i < nodeList.getLength(); i++) {
             NodeList dict = nodeList.item(i).getChildNodes();
-            AppInfo appInfo = new AppInfo();
+            HashMap<SiblingNode, String> foundApp = new HashMap<>();
             for (int j = 0; j < dict.getLength(); j++) {
                 Node node = dict.item(j);
                 if (node.getNodeType() == Node.ELEMENT_NODE) {
                     for (SiblingNode sibling : SiblingNode.values()) {
                         if (sibling.wants) {
-                            sibling.set(node, appInfo);
+                            foundApp.put(sibling, node.getTextContent());
+                            sibling.wants = false;
                             break;
                         } else if(sibling.isKey(node)) {
+                            sibling.wants = true;
                             break;
                         }
                     }
                 }
             }
-            if (appAlias.matches(appInfo)) {
-                appList.add(appInfo);
+            AppAlias.Alias alias;
+            if((alias = AppAlias.findAlias(appAlias, foundApp.get(SiblingNode.NAME), true)) != null) {
+                appList.add(new AppInfo(alias, Paths.get(foundApp.get(SiblingNode.PATH)),
+                        getExePath(foundApp.get(SiblingNode.PATH)), foundApp.get(SiblingNode.VERSION)
+                ));
             }
         }
 
-        for(AppInfo appInfo : appList) {
-            // Mark blacklisted locations
-            for(String listEntry : BLACKLIST) {
-                if (appInfo.getPath() != null && appInfo.getPath().toString().matches(Pattern.quote(listEntry))) {
-                    appInfo.setBlacklisted(true);
+        // Remove blacklisted paths
+        Iterator<AppInfo> appInfoIterator = appList.iterator();
+        while(appInfoIterator.hasNext()) {
+            AppInfo appInfo = appInfoIterator.next();
+            for(String listEntry : BLACKLISTED_PATHS) {
+                if (appInfo.getPath() != null && appInfo.getPath().toString().contains(listEntry)) {
+                    appInfoIterator.remove();
                 }
             }
-            // Calculate exePath
-            appInfo.setExePath(getExePath(appInfo));
         }
         return appList;
     }
@@ -127,19 +120,20 @@ public class MacAppLocator extends AppLocator{
     /**
      * Calculate executable path by parsing Contents/Info.plist
      */
-    private static Path getExePath(AppInfo appInfo) {
-        Path plist = appInfo.getPath().resolve("Contents/Info.plist");
+    private static Path getExePath(String appPath) {
+        Path path = Paths.get(appPath);
+        Path plist = path.resolve("Contents/Info.plist");
         Document doc;
         try {
             if(!plist.toFile().exists()) {
-                log.warn("Could not locate plist file for {}: {}",  appInfo.getName(), plist);
+                log.warn("Could not locate plist file for {}: {}",  appPath, plist);
                 return null;
             }
             // Convert potentially binary plist files to XML
             Process p = Runtime.getRuntime().exec(new String[] {"plutil", "-convert", "xml1", plist.toAbsolutePath().toString(), "-o", "-"}, ShellUtilities.envp);
             doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(p.getInputStream());
         } catch(IOException | ParserConfigurationException | SAXException e) {
-            log.warn("Could not parse plist file for {}: {}", appInfo.getName(), plist, e);
+            log.warn("Could not parse plist file for {}: {}", appPath, appPath, e);
             return null;
         }
         doc.normalizeDocument();
@@ -153,7 +147,7 @@ public class MacAppLocator extends AppLocator{
                 if ("key".equals(node.getNodeName()) && node.getTextContent().equals("CFBundleExecutable")) {
                     upNext = true;
                 } else if (upNext && "string".equals(node.getNodeName())) {
-                    return appInfo.getPath().resolve("Contents/MacOS/" + node.getTextContent());
+                    return path.resolve("Contents/MacOS/" + node.getTextContent());
                 }
             }
         }

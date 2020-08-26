@@ -37,21 +37,25 @@ public class LegacyFirefoxCertificateInstaller {
     private static final String PREFS_DIR = "defaults/pref";
     private static final String MAC_PREFIX = "Contents/Resources";
 
-    public static void installAutoConfigScript(AppInfo app, String certData, String ... hostNames) {
+    public static boolean installAutoConfigScript(AppInfo appInfo, String certData, String ... hostNames) {
         try {
-            writePrefsFile(app);
-            writeParsedConfig(app, certData, false, hostNames);
+            writePrefsFile(appInfo);
+            writeParsedConfig(appInfo, certData, false, hostNames);
+            return true;
         } catch(Exception e) {
-            log.warn("Error installing auto-config support for {}", app.getName(), e);
+            log.warn("Error installing auto-config support for {}", appInfo, e);
         }
+        return false;
     }
 
-    public static void uninstallAutoConfigScript(AppInfo appInfo) {
+    public static boolean uninstallAutoConfigScript(AppInfo appInfo) {
         try {
             writeParsedConfig(appInfo, "", true);
+            return true;
         } catch(Exception e) {
-            log.warn("Error uninstalling auto-config support for {}", appInfo.getName(), e);
+            log.warn("Error uninstalling auto-config support for {}", appInfo, e);
         }
+        return false;
     }
 
     public static File tryWrite(AppInfo appInfo, boolean mkdirs, String ... paths) throws IOException {

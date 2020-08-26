@@ -79,6 +79,10 @@ public class SystemUtilities {
         return df.format(d);
     }
 
+    public static String timeStamp() {
+        return toISO(new Date());
+    }
+
     public static Version getOSVersion() {
         if (osVersion == null) {
             String version = System.getProperty("os.version");

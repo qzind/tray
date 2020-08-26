@@ -22,25 +22,19 @@ public class AppFinderTests {
     private static void runTest(AppAlias app) {
         Date begin = new Date();
         ArrayList<AppInfo> appList = AppLocator.getInstance().locate(app);
-        ArrayList<Path> processPaths = AppLocator.getRunningPaths(appList);
+        ArrayList<Path> runningPaths = AppLocator.getRunningPaths(appList);
 
         StringBuilder output = new StringBuilder("Found apps:\n");
         for (AppInfo appInfo : appList) {
             output.append(String.format("      name: '%s', path: '%s', exePath: '%s', version: '%s'\n",
-                                        appInfo.getName(),
+                                        appInfo.getAlias().getName(),
                                         appInfo.getPath(),
                                         appInfo.getExePath(),
                                         appInfo.getVersion()
             ));
 
-            if(processPaths.contains(appInfo.getExePath())) {
-                if (appInfo.getVersion().greaterThanOrEqualTo(FirefoxCertificateInstaller.FIREFOX_RESTART_VERSION)) {
-                    try {
-                        Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
-                        continue;
-                    } catch(Exception ignore) {}
-                }
-                log.warn("{} must be restarted for changes to take effect", appInfo.getName());
+            if(runningPaths.contains(appInfo.getExePath())) {
+                FirefoxCertificateInstaller.issueRestartWarning(runningPaths, appInfo);
             }
         }
 

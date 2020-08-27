@@ -288,7 +288,11 @@ public class FileUtilities {
     public static boolean isWhiteListed(Path path, boolean allowRootDir, boolean sandbox, Certificate cert) {
         String commonName = cert.isTrusted()? escapeFileName(cert.getCommonName()):"UNTRUSTED";
         if (whiteList == null) {
-            populateWhiteList();
+            whiteList = new ArrayList<>();
+            //default sandbox locations. More can be added through the properties file
+            whiteList.add(new AbstractMap.SimpleEntry<>(USER_DIR, "|sandbox|"));
+            whiteList.add(new AbstractMap.SimpleEntry<>(SHARED_DIR, "|sandbox|"));
+            whiteList.addAll(parseDelimitedPaths(PrintSocketServer.getTrayProperties(), "file.whitelist"));
         }
 
         Path cleanPath = path.normalize().toAbsolutePath();
@@ -318,19 +322,19 @@ public class FileUtilities {
         return lastSlash < 0? "":filePath.substring(0, lastSlash);
     }
 
-    private static void populateWhiteList() {
-        whiteList = new ArrayList<>();
-        //default sandbox locations. More can be added through the properties file
-        whiteList.add(new AbstractMap.SimpleEntry<>(USER_DIR, "|sandbox|"));
-        whiteList.add(new AbstractMap.SimpleEntry<>(SHARED_DIR, "|sandbox|"));
-
-        Properties props = PrintSocketServer.getTrayProperties();
-        if (props != null) {
-            StringBuilder propString = new StringBuilder(props.getProperty("file.whitelist", ""));
+    /**
+     * Parses semi-colon delimited paths with optional pipe-delimited descriptions
+     * e.g. C:\file1.txt;C:\file2.txt
+     *      C:\file1.txt|ABC Inc.;C:\file2.txt|XYZ Inc.
+     */
+    public static ArrayList<Map.Entry<Path, String>> parseDelimitedPaths(String delimited) {
+        ArrayList<Map.Entry<Path, String>> foundPaths = new ArrayList<>();
+        if (delimited != null) {
+            StringBuilder propString = new StringBuilder(delimited);
             boolean escaped = false;
             boolean resetPending = false, tokenPending = false;
             ArrayList<String> tokens = new ArrayList<>();
-            //unescaper and tokenizer
+            //unescape and tokenize
             for(int i = 0; i < propString.length(); i++) {
                 char iteratingChar = propString.charAt(i);
                 //if the char before this was an escape char, we are no longer escaped and we skip delimiter detection
@@ -365,11 +369,16 @@ public class FileUtilities {
                     for(int n = 1; n < tokens.size(); n++) {
                         commonNames += escapeFileName(tokens.get(n)) + "|";
                     }
-                    whiteList.add(new AbstractMap.SimpleEntry<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));
+                    foundPaths.add(new AbstractMap.SimpleEntry<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));
                     tokens.clear();
                 }
             }
         }
+        return foundPaths;
+    }
+
+    public static ArrayList<Map.Entry<Path, String>> parseDelimitedPaths(Properties props, String key) {
+        return parseDelimitedPaths(props == null ? null : props.getProperty(key));
     }
 
     /**
@@ -404,6 +413,10 @@ public class FileUtilities {
 
     public static String readLocalFile(String file) throws IOException {
         return new String(readFile(new DataInputStream(new FileInputStream(file))), Charsets.UTF_8);
+    }
+
+    public static String readLocalFile(Path path) throws IOException {
+        return new String(readFile(new DataInputStream(new FileInputStream(path.toFile()))), Charsets.UTF_8);
     }
 
     public static byte[] readRawFile(String url) throws IOException {

@@ -191,13 +191,6 @@ public class Certificate {
             validFrom = theCertificate.getNotBefore().toInstant();
             validTo = theCertificate.getNotAfter().toInstant();
 
-            // Check for expiration
-            Instant now = Instant.now();
-            if (expired = (validFrom.isAfter(now) || validTo.isBefore(now))) {
-                log.warn("Certificate is expired: CN={}, O={} ({})", getCommonName(), getOrganization(), getFingerprint());
-                valid = false;
-            }
-
             // Check trust anchor against all root certs
             if(!this.rootCA) {
                 for(Certificate rootCA : rootCAs) {
@@ -220,6 +213,13 @@ public class Certificate {
                         log.warn("Problem building certificate chain (normal if multiple CAs are in use)");
                     }
                 }
+            }
+
+            // Check for expiration
+            Instant now = Instant.now();
+            if (expired = (validFrom.isAfter(now) || validTo.isBefore(now))) {
+                log.warn("Certificate is expired: CN={}, O={} ({})", getCommonName(), getOrganization(), getFingerprint());
+                valid = false;
             }
 
             readRenewalInfo();

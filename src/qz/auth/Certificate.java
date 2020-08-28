@@ -48,7 +48,7 @@ public class Certificate {
         }
     }
 
-    public static ArrayList<Certificate> trustedRootCerts = new ArrayList<>();
+    public static ArrayList<Certificate> rootCAs = new ArrayList<>();
     public static Certificate builtIn;
     private static CertPathValidator validator;
     private static CertificateFactory factory;
@@ -70,9 +70,9 @@ public class Certificate {
     private Instant validTo;
 
     //used by review sites UI only
-    private boolean chained = false;
     private boolean expired = false;
-    private boolean valid = true;
+    private boolean valid = false;
+    private boolean rootCA = false; // TODO: Move to constructor?
 
 
     //Pre-set certificate for use when missing
@@ -93,7 +93,7 @@ public class Certificate {
         try {
             Security.addProvider(new BouncyCastleProvider());
             validator = CertPathValidator.getInstance("PKIX");
-            factory = CertificateFactory.getInstance("X.509"); //Setup X.509
+            factory = CertificateFactory.getInstance("X.509");
             builtIn = new Certificate("-----BEGIN CERTIFICATE-----\n" +
                                                           "MIIELzCCAxegAwIBAgIJALm151zCHDxiMA0GCSqGSIb3DQEBCwUAMIGsMQswCQYD\n" +
                                                           "VQQGEwJVUzELMAkGA1UECAwCTlkxEjAQBgNVBAcMCUNhbmFzdG90YTEbMBkGA1UE\n" +
@@ -121,8 +121,8 @@ public class Certificate {
                                                           "-----END CERTIFICATE-----");
 
             builtIn.valid = true;
-            trustInternalRoot(true); // FIXME:  Read this preference in so that the UI can display it later
-            addTrustedCerts();
+            addInternalCA(true); // FIXME:  Read this preference in so that the UI can display it later
+            addAdditionalCAs();
         }
         catch(NoSuchAlgorithmException | CertificateException e) {
             e.printStackTrace();
@@ -130,9 +130,10 @@ public class Certificate {
     }
 
 
-    private static void addTrustedCerts() {
+    private static void addAdditionalCAs() {
         ArrayList<Map.Entry<Path, String>> certPaths = new ArrayList<>();
 
+        // FIXME: FileUtilities.parseDelimitedPaths() truncates last character
         // trustedRootCert (system property)
         certPaths.addAll(FileUtilities.parseDelimitedPaths(System.getProperty("trustedRootCert")));
         // override.crt (app dir)
@@ -141,23 +142,26 @@ public class Certificate {
         // authcert.override (qz-tray.properties)
         certPaths.addAll(FileUtilities.parseDelimitedPaths(PrintSocketServer.getTrayProperties(), "authcert.override"));
 
-        for(Map.Entry<Path, String> path : certPaths) {
-            if(path.getKey() != null) {
-                if (path.getKey().toFile().exists()) {
+        for(Map.Entry<Path, String> certPath : certPaths) {
+            if(certPath.getKey() != null) {
+                if (certPath.getKey().toFile().exists()) {
                     try {
-                        Certificate cert = new Certificate(FileUtilities.readLocalFile(path.getKey()));
-                        if(!trustedRootCerts.contains(cert)) {
-                            log.info("Adding trusted cert: {}", path);
-                            trustedRootCerts.add(cert);
+                        Certificate caCert = new Certificate(FileUtilities.readLocalFile(certPath.getKey()));
+                        caCert.rootCA = true;
+                        caCert.valid = true;
+                        if(!rootCAs.contains(caCert)) {
+                            log.debug("Adding CA certificate: CN={}, O={} ({})",
+                                      caCert.getCommonName(), caCert.getOrganization(), caCert.getFingerprint());
+                            rootCAs.add(caCert);
                         } else {
-                            log.warn("Trusted cert exists, skipping: {}", path);
+                            log.warn("CA cert exists, skipping: {}", certPath.getKey());
                         }
                     }
                     catch(Exception e) {
-                        log.error("Error loading trusted cert: {}", path, e);
+                        log.error("Error loading CA cert: {}", certPath.getKey(), e);
                     }
-                } else if(!path.getValue().equals("quiet")) {
-                    log.warn("Trusted cert \"{}\" was provided, but could not be found, skipping.", path);
+                } else if(!certPath.getValue().equals("quiet")) {
+                    log.warn("CA cert \"{}\" was provided, but could not be found, skipping.", certPath.getKey());
                 }
             }
         }
@@ -187,41 +191,42 @@ public class Certificate {
             validFrom = theCertificate.getNotBefore().toInstant();
             validTo = theCertificate.getNotAfter().toInstant();
 
-            for(Certificate trustedCert : trustedRootCerts) {
-                HashSet<X509Certificate> chain = new HashSet<>();
-                try {
-                    chain.add(trustedCert.theCertificate);
-                    if (theIntermediateCertificate != null) { chain.add(theIntermediateCertificate); }
-                    X509Certificate[] x509Certificates = X509CertificateChainBuilder.buildPath(theCertificate, chain);
+            // Check for expiration
+            Instant now = Instant.now();
+            if (expired = (validFrom.isAfter(now) || validTo.isBefore(now))) {
+                log.warn("Certificate is expired: CN={}, O={} ({})", getCommonName(), getOrganization(), getFingerprint());
+                valid = false;
+            }
 
-                    for(X509Certificate x509Certificate : x509Certificates) {
-                        if (x509Certificate.equals(trustedCert.theCertificate)) {
-                            Instant now = Instant.now();
-                            expired = validFrom.isAfter(now) || validTo.isBefore(now);
-                            if (expired) {
-                                valid = false;
-                            }
-                        }
+            // Check trust anchor against all root certs
+            if(!this.rootCA) {
+                for(Certificate rootCA : rootCAs) {
+                    HashSet<X509Certificate> chain = new HashSet<>();
+                    try {
+                        chain.add(rootCA.theCertificate);
+                        if (theIntermediateCertificate != null) { chain.add(theIntermediateCertificate); }
+                        X509Certificate[] x509Certificates = X509CertificateChainBuilder.buildPath(theCertificate, chain);
+
+                        Set<TrustAnchor> anchor = new HashSet<>();
+                        anchor.add(new TrustAnchor(rootCA.theCertificate, null));
+                        PKIXParameters params = new PKIXParameters(anchor);
+                        params.setRevocationEnabled(false); // TODO: Re-enable, remove proprietary CRL
+                        validator.validate(factory.generateCertPath(Arrays.asList(x509Certificates)), params);
+                        valid = true;
+                        log.debug("Successfully chained certificate: CN={}, O={} ({})", getCommonName(), getOrganization(), getFingerprint());
+                        break; // if successful, don't attempt another chain
                     }
-
-                    Set<TrustAnchor> anchor = new HashSet<>();
-                    anchor.add(new TrustAnchor(trustedCert.theCertificate, null));
-                    PKIXParameters params = new PKIXParameters(anchor);
-                    params.setRevocationEnabled(false); // TODO: Remove proprietary CRL support
-                    validator.validate(factory.generateCertPath(Arrays.asList(x509Certificates)), params);
-                    chained = true;
-                    break; // if successful, don't attempt another chain
-                }
-                catch(Exception e) {
-                    log.warn("Problem building certificate chain (normal if multiple trusted root certs are in use)");
+                    catch(Exception e) {
+                        log.warn("Problem building certificate chain (normal if multiple CAs are in use)");
+                    }
                 }
             }
 
             readRenewalInfo();
             CRL qzCrl = CRL.getInstance();
             if (qzCrl.isLoaded()) {
-                if (qzCrl.isRevoked(getFingerprint()) || theIntermediateCertificate == null || qzCrl.isRevoked(makeThumbPrint(theIntermediateCertificate))) {
-                    log.warn("Problem verifying certificate with CRL");
+                if (qzCrl.isRevoked(getFingerprint()) || (theIntermediateCertificate != null && qzCrl.isRevoked(makeThumbPrint(theIntermediateCertificate)))) {
+                    log.error("Certificate has been revoked and can no longer be used: CN={}, O={} ({})", getCommonName(), getOrganization(), getFingerprint());
                     valid = false;
                 }
             } else {
@@ -320,14 +325,14 @@ public class Certificate {
         return false;
     }
 
-    /** Checks if the certificate has been added to the local trusted store */
+    /** Checks if the certificate has been added to the allow file */
     public boolean isSaved() {
         File allowed = FileUtilities.getFile(Constants.ALLOW_FILE, true);
         File allowedShared = FileUtilities.getFile(Constants.ALLOW_FILE, false);
         return existsInAnyFile(getFingerprint(), allowedShared, allowed);
     }
 
-    /** Checks if the certificate has been added to the local blocked store */
+    /** Checks if the certificate has been added to the local block file */
     public boolean isBlocked() {
         File blocks = FileUtilities.getFile(Constants.BLOCK_FILE, true);
         File blocksShared = FileUtilities.getFile(Constants.BLOCK_FILE, false);
@@ -398,7 +403,7 @@ public class Certificate {
      * Validates certificate against embedded cert.
      */
     public boolean isTrusted() {
-        return isValid() && !isExpired() && chained;
+        return isValid() && !isExpired();
     }
 
     public boolean isValid() {
@@ -438,18 +443,20 @@ public class Certificate {
         return super.equals(obj);
     }
 
-    public static void trustInternalRoot(boolean trust) {
+    public static void addInternalCA(boolean trust) {
         if(trust) {
-            if (!trustedRootCerts.contains(builtIn)) {
-                log.debug("Adding internal trusted root certificate: CN={}, O={} ({})",
+            if (!rootCAs.contains(builtIn)) {
+                log.debug("Adding internal CA certificate: CN={}, O={} ({})",
                           builtIn.getCommonName(), builtIn.getOrganization(), builtIn.getFingerprint());
-                trustedRootCerts.add(0, builtIn);
+                builtIn.rootCA = true;
+                builtIn.valid = true;
+                rootCAs.add(0, builtIn);
             }
         } else {
-            if (trustedRootCerts.contains(builtIn)) {
-                log.debug("Removing internal trusted root certificate: CN={}, O={} ({})",
+            if (rootCAs.contains(builtIn)) {
+                log.debug("Removing internal CA certificate: CN={}, O={} ({})",
                           builtIn.getCommonName(), builtIn.getOrganization(), builtIn.getFingerprint());
-                trustedRootCerts.remove(builtIn);
+                rootCAs.remove(builtIn);
             }
         }
     }

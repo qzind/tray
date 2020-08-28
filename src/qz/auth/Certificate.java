@@ -20,10 +20,7 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.*;
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
+import java.security.cert.*;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -53,6 +50,8 @@ public class Certificate {
 
     public static ArrayList<Certificate> trustedRootCerts = new ArrayList<>();
     public static Certificate builtIn;
+    private static CertPathValidator validator;
+    private static CertificateFactory factory;
 
     public static final String[] saveFields = new String[] {"fingerprint", "commonName", "organization", "validFrom", "validTo", "valid"};
 
@@ -93,6 +92,8 @@ public class Certificate {
     static {
         try {
             Security.addProvider(new BouncyCastleProvider());
+            validator = CertPathValidator.getInstance("PKIX");
+            factory = CertificateFactory.getInstance("X.509"); //Setup X.509
             builtIn = new Certificate("-----BEGIN CERTIFICATE-----\n" +
                                                           "MIIELzCCAxegAwIBAgIJALm151zCHDxiMA0GCSqGSIb3DQEBCwUAMIGsMQswCQYD\n" +
                                                           "VQQGEwJVUzELMAkGA1UECAwCTlkxEjAQBgNVBAcMCUNhbmFzdG90YTEbMBkGA1UE\n" +
@@ -123,7 +124,7 @@ public class Certificate {
             trustInternalRoot(true); // FIXME:  Read this preference in so that the UI can display it later
             addTrustedCerts();
         }
-        catch(CertificateException e) {
+        catch(NoSuchAlgorithmException | CertificateException e) {
             e.printStackTrace();
         }
     }
@@ -166,9 +167,6 @@ public class Certificate {
     @SuppressWarnings("deprecation")
     public Certificate(String in) throws CertificateException {
         try {
-            //Setup X.509
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-
             //Strip beginning and end
             String[] split = in.split("--START INTERMEDIATE CERT--");
             byte[] serverCertificate = Base64.decodeBase64(split[0].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
@@ -176,13 +174,13 @@ public class Certificate {
             X509Certificate theIntermediateCertificate;
             if (split.length == 2) {
                 byte[] intermediateCertificate = Base64.decodeBase64(split[1].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
-                theIntermediateCertificate = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(intermediateCertificate));
+                theIntermediateCertificate = (X509Certificate)factory.generateCertificate(new ByteArrayInputStream(intermediateCertificate));
             } else {
                 theIntermediateCertificate = null; //Self-signed
             }
 
             //Generate cert
-            theCertificate = (X509Certificate)cf.generateCertificate(new ByteArrayInputStream(serverCertificate));
+            theCertificate = (X509Certificate)factory.generateCertificate(new ByteArrayInputStream(serverCertificate));
             commonName = String.valueOf(PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(X509Name.CN).get(0));
             fingerprint = makeThumbPrint(theCertificate);
             organization = String.valueOf(PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(X509Name.O).get(0));
@@ -205,6 +203,12 @@ public class Certificate {
                             }
                         }
                     }
+
+                    Set<TrustAnchor> anchor = new HashSet<>();
+                    anchor.add(new TrustAnchor(trustedCert.theCertificate, null));
+                    PKIXParameters params = new PKIXParameters(anchor);
+                    params.setRevocationEnabled(false); // TODO: Remove proprietary CRL support
+                    validator.validate(factory.generateCertPath(Arrays.asList(x509Certificates)), params);
                     chained = true;
                     break; // if successful, don't attempt another chain
                 }
@@ -213,13 +217,7 @@ public class Certificate {
                 }
             }
 
-            try {
-                readRenewalInfo();
-            }
-            catch(Exception e) {
-                log.error("Error reading certificate renewal info", e);
-            }
-
+            readRenewalInfo();
             CRL qzCrl = CRL.getInstance();
             if (qzCrl.isLoaded()) {
                 if (qzCrl.isRevoked(getFingerprint()) || theIntermediateCertificate == null || qzCrl.isRevoked(makeThumbPrint(theIntermediateCertificate))) {

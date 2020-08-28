@@ -2,7 +2,6 @@ package qz.auth;
 
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.ssl.Base64;
 import org.apache.commons.ssl.X509CertificateChainBuilder;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -72,6 +71,7 @@ public class Certificate {
     private Instant validTo;
 
     //used by review sites UI only
+    private boolean chained = false;
     private boolean expired = false;
     private boolean valid = true;
 
@@ -205,7 +205,7 @@ public class Certificate {
                             }
                         }
                     }
-
+                    chained = true;
                     break; // if successful, don't attempt another chain
                 }
                 catch(Exception e) {
@@ -400,7 +400,7 @@ public class Certificate {
      * Validates certificate against embedded cert.
      */
     public boolean isTrusted() {
-        return isValid() && !isExpired();
+        return isValid() && !isExpired() && chained;
     }
 
     public boolean isValid() {

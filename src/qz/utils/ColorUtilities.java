@@ -88,7 +88,7 @@ public class ColorUtilities {
      * @return New inverted BufferedImage
      */
     public static BufferedImage invert(BufferedImage bi) {
-        BufferedImage inverted = new BufferedImage(bi.getWidth(), bi.getWidth(), BufferedImage.TYPE_INT_ARGB);
+        BufferedImage inverted = new BufferedImage(bi.getWidth(), bi.getHeight(), BufferedImage.TYPE_INT_ARGB);
         for (int y = 0; y < bi.getHeight(); y++) {
             for (int x = 0; x < bi.getWidth(); x++) {
                 int pixel = bi.getRGB(x, y);

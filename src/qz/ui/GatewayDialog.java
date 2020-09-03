@@ -83,7 +83,7 @@ public class GatewayDialog extends JDialog implements Themeable {
 
         bottomPanel = new JPanel();
         bottomPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        persistentCheckBox = new JCheckBox("Remember this decision", false);
+        persistentCheckBox = new JCheckBox(Constants.REMEMBER_THIS_DECISION, false);
         persistentCheckBox.setMnemonic(KeyEvent.VK_R);
         persistentCheckBox.addActionListener(e -> allowButton.setEnabled(!persistentCheckBox.isSelected() || request.isVerified()));
         persistentCheckBox.setAlignmentX(RIGHT_ALIGNMENT);
@@ -128,7 +128,7 @@ public class GatewayDialog extends JDialog implements Themeable {
             // Require confirmation for permanent block
             if (!approved && persistentCheckBox.isSelected()) {
                 ConfirmDialog confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
-                String message = Constants.BLACK_LIST.replace(" blocked ", " block ") + "?";
+                String message = Constants.BLOCK_SITES_TEXT.replace(" blocked ", " block ") + "?";
                 message = String.format(message, request.hasCertificate()? request.getCertName():"");
                 if (!confirmDialog.prompt(message)) {
                     return;

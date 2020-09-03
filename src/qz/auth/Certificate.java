@@ -2,6 +2,7 @@ package qz.auth;
 
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.Charsets;
 import org.apache.commons.ssl.Base64;
 import org.apache.commons.ssl.X509CertificateChainBuilder;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -17,6 +18,7 @@ import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.*;
@@ -52,6 +54,7 @@ public class Certificate {
     public static Certificate builtIn;
     private static CertPathValidator validator;
     private static CertificateFactory factory;
+    private static boolean trustBuiltIn = false;
 
     public static final String[] saveFields = new String[] {"fingerprint", "commonName", "organization", "validFrom", "validTo", "valid"};
 
@@ -121,7 +124,7 @@ public class Certificate {
                                                           "-----END CERTIFICATE-----");
 
             builtIn.valid = true;
-            addInternalCA(true); // FIXME:  Read this preference in so that the UI can display it later
+            setTrustBuiltIn(true);
             addAdditionalCAs();
         }
         catch(NoSuchAlgorithmException | CertificateException e) {
@@ -239,6 +242,10 @@ public class Certificate {
             certificateException.initCause(e);
             throw certificateException;
         }
+    }
+
+    public Certificate(Path path) throws IOException, CertificateException {
+        this(new String(Files.readAllBytes(path), Charsets.UTF_8));
     }
 
     private void readRenewalInfo() {
@@ -443,8 +450,8 @@ public class Certificate {
         return super.equals(obj);
     }
 
-    public static void addInternalCA(boolean trust) {
-        if(trust) {
+    public static void setTrustBuiltIn(boolean trustBuiltIn) {
+        if(trustBuiltIn) {
             if (!rootCAs.contains(builtIn)) {
                 log.debug("Adding internal CA certificate: CN={}, O={} ({})",
                           builtIn.getCommonName(), builtIn.getOrganization(), builtIn.getFingerprint());
@@ -459,6 +466,11 @@ public class Certificate {
                 rootCAs.remove(builtIn);
             }
         }
+        Certificate.trustBuiltIn = trustBuiltIn;
+    }
+
+    public static boolean isTrustBuiltIn() {
+        return trustBuiltIn;
     }
 
 }

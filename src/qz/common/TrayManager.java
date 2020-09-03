@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
-import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.installer.shortcut.ShortcutCreator;
 import qz.ui.*;
 import qz.ui.component.IconCache;
@@ -87,6 +86,9 @@ public class TrayManager {
         name = Constants.ABOUT_TITLE + " " + Constants.VERSION;
 
         prefs = new PropertyHelper(FileUtilities.USER_DIR + File.separator + Constants.PREFS_FILE + ".properties");
+
+        // Set strict certificate mode preference
+        Certificate.setTrustBuiltIn(!prefs.getBoolean(Constants.PREFS_STRICT_MODE, false));
 
         //headless if turned on by user or unsupported by environment
         headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || GraphicsEnvironment.isHeadless();
@@ -212,7 +214,7 @@ public class TrayManager {
         JMenuItem sitesItem = new JMenuItem("Site Manager...", iconCache.getIcon(IconCache.Icon.SAVED_ICON));
         sitesItem.setMnemonic(KeyEvent.VK_M);
         sitesItem.addActionListener(savedListener);
-        sitesDialog = new SiteManagerDialog(sitesItem, iconCache);
+        sitesDialog = new SiteManagerDialog(sitesItem, iconCache, prefs);
         componentList.add(sitesDialog);
 
         JMenuItem diagnosticMenu = new JMenu("Diagnostic");
@@ -473,7 +475,7 @@ public class TrayManager {
 
     private void whiteList(Certificate cert) {
         if (FileUtilities.printLineToFile(Constants.ALLOW_FILE, cert.data())) {
-            displayInfoMessage(String.format(Constants.WHITE_LIST, cert.getOrganization()));
+            displayInfoMessage(String.format(Constants.ALLOW_SITES_TEXT, cert.getOrganization()));
         } else {
             displayErrorMessage("Failed to write to file (Insufficient user privileges)");
         }
@@ -481,7 +483,7 @@ public class TrayManager {
 
     private void blackList(Certificate cert) {
         if (FileUtilities.printLineToFile(Constants.BLOCK_FILE, cert.data())) {
-            displayInfoMessage(String.format(Constants.BLACK_LIST, cert.getOrganization()));
+            displayInfoMessage(String.format(Constants.BLOCK_SITES_TEXT, cert.getOrganization()));
         } else {
             displayErrorMessage("Failed to write to file (Insufficient user privileges)");
         }

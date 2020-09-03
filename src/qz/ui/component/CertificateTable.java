@@ -95,6 +95,9 @@ public class CertificateTable extends DisplayTable implements Themeable {
 
         // First Column
         for(CertificateField field : CertificateField.values()) {
+            if(field.equals(CertificateField.TRUSTED) && !Certificate.isTrustBuiltIn()) {
+                continue; // Remove "Trusted by" text; uncertain in strict mode
+            }
             model.addRow(new Object[] {field, field.getValue(cert)});
         }
 

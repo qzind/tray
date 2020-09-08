@@ -44,23 +44,6 @@ public abstract class Installer {
     // Silence prompts within our control
     public static boolean IS_SILENT =  "1".equals(System.getenv(PROPS_FILE + "_silent"));
 
-
-    public enum InstallType {
-        PREINSTALL(""),
-        INSTALL("install --dest /my/install/location [--silent]"),
-        CERTGEN("certgen [--key key.pem --cert cert.pem] [--pfx cert.pfx --pass 12345] [--host \"list;of;hosts\""),
-        UNINSTALL(""),
-        SPAWN("spawn [params]");
-        public String usage;
-        InstallType(String usage) {
-            this.usage = usage;
-        }
-        @Override
-        public String toString() {
-            return name().toLowerCase(Locale.ENGLISH);
-        }
-    }
-
     public enum PrivilegeLevel {
         USER,
         SYSTEM

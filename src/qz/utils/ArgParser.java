@@ -10,6 +10,7 @@
 
 package qz.utils;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -25,6 +26,7 @@ import java.util.List;
 
 import static qz.common.Constants.*;
 import static qz.utils.ArgParser.ExitStatus.*;
+import static qz.utils.ArgValue.*;
 
 public class ArgParser {
     public enum ExitStatus {
@@ -73,6 +75,10 @@ public class ArgParser {
         return false;
     }
 
+    public boolean hasFlag(ArgValue argValue) {
+        return hasFlag(argValue.getMatches());
+    }
+
     /**
      * Gets the argument value immediately following a command
      * @throws MissingArgException
@@ -93,9 +99,13 @@ public class ArgParser {
         return null;
     }
 
-    public ExitStatus processInstallerArgs(Installer.InstallType type, List<String> args) {
+    public String valueOf(ArgValue argValue) throws MissingArgException {
+        return valueOf(argValue.getMatches());
+    }
+
+    public ExitStatus processInstallerArgs(ArgValue argValue, List<String> args) {
         try {
-            switch(type) {
+            switch(argValue) {
                 case PREINSTALL:
                     return Installer.preinstall() ? SUCCESS : SUCCESS; // don't abort on preinstall
                 case INSTALL:
@@ -151,13 +161,13 @@ public class ArgParser {
                     Installer.getInstance().spawn(args);
                     return SUCCESS;
                 default:
-                    throw new UnsupportedOperationException("Installation type " + type + " is not yet supported");
+                    throw new UnsupportedOperationException("Installation type " + argValue + " is not yet supported");
             }
         } catch(MissingArgException e) {
-            log.error("Valid usage:\n   java -jar {}.jar {}", PROPS_FILE, type.usage);
+            log.error("Valid usage:\n   java -jar {}.jar {}", PROPS_FILE, argValue.getUsage());
             return USAGE_ERROR;
         } catch(Exception e) {
-            log.error("Installation step {} failed", type, e);
+            log.error("Installation step {} failed", argValue, e);
             return GENERAL_ERROR;
         }
     }
@@ -168,15 +178,15 @@ public class ArgParser {
      */
     public boolean intercept() {
         // Fist, handle installation commands (e.g. install, uninstall, certgen, etc)
-        for(Installer.InstallType installType : Installer.InstallType.values()) {
-            if (args.contains(installType.toString())) {
-                exitStatus = processInstallerArgs(installType, args);
+        for(ArgValue argValue : ArgValue.filter(ArgType.INSTALLER)) {
+            if (args.contains(argValue.getMatches())) {
+                exitStatus = processInstallerArgs(argValue, args);
                 return true;
             }
         }
         try {
             // Handle graceful autostart disabling
-            if (hasFlag("-A", "--honorautostart")) {
+            if (hasFlag(AUTOSTART)) {
                 exitStatus = SUCCESS;
                 if(!FileUtilities.isAutostart()) {
                     exitStatus = NO_AUTOSTART;
@@ -187,31 +197,53 @@ public class ArgParser {
                 return false;
             }
 
+            // Handle help request
+            if(hasFlag(HELP)) {
+                System.out.println("Usage: java -jar qz-tray.jar (command)");
+                int lpad = 30;
+                for(ArgType argType : ArgValue.ArgType.values()) {
+                    System.out.println(String.format("%s%s", System.lineSeparator(), argType));
+                    for(ArgValue argValue : ArgValue.filter(argType)) {
+                        String text = String.format("  %s", StringUtils.join(argValue.getMatches(), ", "));
+                        if(argValue.getDescription() != null) {
+                            text = StringUtils.rightPad(text, lpad) + argValue.getDescription();
+                        }
+                        System.out.println(text);
+                        if(argValue.getUsage() != null) {
+                            System.out.println(StringUtils.rightPad("", lpad) + String.format("Usage: %s", argValue.getUsage()));
+                        }
+                    }
+                }
+
+                exitStatus = USAGE_ERROR;
+                return true;
+            }
+
             // Handle version request
-            if (hasFlag("-v", "--version")) {
+            if (hasFlag(ArgValue.VERSION)) {
                 System.out.println(Constants.VERSION);
                 exitStatus = SUCCESS;
                 return true;
             }
             // Handle macOS CFBundleIdentifier request
-            if (hasFlag("-i", "--bundleid")) {
+            if (hasFlag(BUNDLEID)) {
                 System.out.println(MacUtilities.getBundleId());
                 exitStatus = SUCCESS;
                 return true;
             }
             // Handle cert installation
             String certFile;
-            if ((certFile = valueOf("-a", "--whitelist")) != null) {
+            if ((certFile = valueOf(ALLOW)) != null) {
                 exitStatus = FileUtilities.addToCertList(ALLOW_FILE, new File(certFile));
                 return true;
             }
-            if ((certFile = valueOf("-b", "--blacklist")) != null) {
+            if ((certFile = valueOf(BLOCK)) != null) {
                 exitStatus = FileUtilities.addToCertList(BLOCK_FILE, new File(certFile));
                 return true;
             }
 
             // Print library list
-            if (hasFlag("-l", "--libinfo")) {
+            if (hasFlag(LIBINFO)) {
                 SecurityInfo.printLibInfo();
                 exitStatus = SUCCESS;
                 return true;

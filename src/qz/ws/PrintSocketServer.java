@@ -68,7 +68,7 @@ public class PrintSocketServer {
         if(parser.intercept()) {
             System.exit(parser.getExitCode());
         }
-        forceHeadless = parser.hasFlag("-h", "--headless");
+        forceHeadless = parser.hasFlag("--headless");
         log.info(Constants.ABOUT_TITLE + " version: {}", Constants.VERSION);
         log.info(Constants.ABOUT_TITLE + " vendor: {}", Constants.ABOUT_COMPANY);
         log.info("Java version: {}", Constants.JAVA_VERSION.toString());

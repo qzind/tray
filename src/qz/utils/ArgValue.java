@@ -20,13 +20,14 @@ public enum ArgValue {
 
     // Options
     AUTOSTART(OPTION,"--honorautostart", "-A", "Read and honor any autostart preferences before launching.", null),
+    HEADLESS(OPTION, "--headless", "Force startup \"headless\" without graphical interface or interactive components.", null),
 
     // Installer stubs
-    PREINSTALL(INSTALLER, "preinstall", "Perform critical pre-installation steps: Stop instances, special considerations.", null),
+    PREINSTALL(INSTALLER, "preinstall", "Perform critical pre-installation steps: Stop instances, all other special considerations.", null),
     INSTALL(INSTALLER, "install", "Copy to the specified destination and preforms platform-specific registration.", "install --dest /my/install/location [--silent]"),
     CERTGEN(INSTALLER, "certgen", "Performs certificate generation and registration for proper HTTPS support.", "certgen [--key key.pem --cert cert.pem] [--pfx cert.pfx --pass 12345] [--host \"list;of;hosts\"]"),
     UNINSTALL(INSTALLER, "uninstall", "Perform all uninstall tasks: Stop instances, delete files, unregister settings.", null),
-    SPAWN(INSTALLER, "spawn", "Spawn an instance of the specified program as the logged-in user, avoiding the root user at all costs.", "spawn [program params ...]");
+    SPAWN(INSTALLER, "spawn", "Spawn an instance of the specified program as the logged-in user, avoiding starting as the root user if possible.", "spawn [program params ...]");
 
     private ArgType argType;
     private String[] matches;

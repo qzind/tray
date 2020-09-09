@@ -32,6 +32,7 @@ import qz.common.TrayManager;
 import qz.installer.Installer;
 import qz.installer.certificate.*;
 import qz.utils.ArgParser;
+import qz.utils.ArgValue;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
@@ -68,7 +69,7 @@ public class PrintSocketServer {
         if(parser.intercept()) {
             System.exit(parser.getExitCode());
         }
-        forceHeadless = parser.hasFlag("--headless");
+        forceHeadless = parser.hasFlag(ArgValue.HEADLESS);
         log.info(Constants.ABOUT_TITLE + " version: {}", Constants.VERSION);
         log.info(Constants.ABOUT_TITLE + " vendor: {}", Constants.ABOUT_COMPANY);
         log.info("Java version: {}", Constants.JAVA_VERSION.toString());

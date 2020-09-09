@@ -44,6 +44,8 @@ public class ArgParser {
     }
 
     protected static final Logger log = LoggerFactory.getLogger(ArgParser.class);
+    private static final String USAGE_COMMAND = String.format("java -jar %s.jar", PROPS_FILE);
+
     private List<String> args;
     private ExitStatus exitStatus;
 
@@ -164,7 +166,7 @@ public class ArgParser {
                     throw new UnsupportedOperationException("Installation type " + argValue + " is not yet supported");
             }
         } catch(MissingArgException e) {
-            log.error("Valid usage:\n   java -jar {}.jar {}", PROPS_FILE, argValue.getUsage());
+            log.error("Valid usage:\n   {} {}", USAGE_COMMAND, argValue.getUsage());
             return USAGE_ERROR;
         } catch(Exception e) {
             log.error("Installation step {} failed", argValue, e);
@@ -199,7 +201,8 @@ public class ArgParser {
 
             // Handle help request
             if(hasFlag(HELP)) {
-                System.out.println("Usage: java -jar qz-tray.jar (command)");
+
+                System.out.println(String.format("Usage: %s (command)", USAGE_COMMAND));
                 int lpad = 30;
                 for(ArgType argType : ArgValue.ArgType.values()) {
                     System.out.println(String.format("%s%s", System.lineSeparator(), argType));
@@ -210,7 +213,7 @@ public class ArgParser {
                         }
                         System.out.println(text);
                         if(argValue.getUsage() != null) {
-                            System.out.println(StringUtils.rightPad("", lpad) + String.format("Usage: %s", argValue.getUsage()));
+                            System.out.println(StringUtils.rightPad("", lpad) + String.format("  %s %s", USAGE_COMMAND, argValue.getUsage()));
                         }
                     }
                 }

@@ -83,4 +83,53 @@ public enum ArgValue {
         }
         return found.toArray(new ArgValue[found.size()]);
     }
+
+    /**
+     * Child/parent for options
+     */
+    public enum ArgValueOption {
+        // install
+        DEST(ArgValue.INSTALL, "--dest", "-d", "Installs to the specified destination.  If omitted, a sane default will be used."),
+        SILENT(ArgValue.INSTALL, "--silent", "-s", "Suppress all prompts to the user, taking sane defaults."),
+
+        // certgen
+        HOST(ArgValue.CERTGEN, "--host", "--hosts", "Semicolon-delimited hostnames and/or IP addresses to generate the HTTPS certificate for."),
+        CERT(ArgValue.CERTGEN, "--cert", "-c", "Path to a stand-alone HTTPS certificate"),
+        KEY(ArgValue.CERTGEN, "--key", "-k", "Path to a stand-alone HTTPS private key"),
+        PFX(ArgValue.CERTGEN, "--pfx", "--pkcs12", "Path to a paired HTTPS private key and certificate in PKCS#12 format."),
+        PASS(ArgValue.CERTGEN, "--pass", "-p", "Password for decoding private key.");
+
+        ArgValue parent;
+        String[] matches;
+        String description;
+
+        ArgValueOption(ArgValue parent, String match1, String match2, String description) {
+            this.parent = parent;
+            this.matches = new String[]{ match1, match2 };
+            this.description = description;
+        }
+
+        public static ArgValueOption[] filter(ArgValue ... parents) {
+            ArrayList<ArgValue> match = new ArrayList<>(Arrays.asList(parents));
+            ArrayList<ArgValueOption> found = new ArrayList<>();
+            for(ArgValueOption argValueOption : values()) {
+                if(match.contains(argValueOption.getParent())) {
+                    found.add(argValueOption);
+                }
+            }
+            return found.toArray(new ArgValueOption[found.size()]);
+        }
+
+        public ArgValue getParent() {
+            return parent;
+        }
+
+        public String[] getMatches() {
+            return matches;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
 }

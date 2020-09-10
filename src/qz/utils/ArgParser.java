@@ -27,6 +27,7 @@ import java.util.List;
 import static qz.common.Constants.*;
 import static qz.utils.ArgParser.ExitStatus.*;
 import static qz.utils.ArgValue.*;
+import static qz.utils.ArgValue.ArgValueOption.*;
 
 public class ArgParser {
     public enum ExitStatus {
@@ -45,6 +46,8 @@ public class ArgParser {
 
     protected static final Logger log = LoggerFactory.getLogger(ArgParser.class);
     private static final String USAGE_COMMAND = String.format("java -jar %s.jar", PROPS_FILE);
+    private static final int DESCRIPTION_COLUMN = 30;
+    private static final int INDENT_SIZE = 2;
 
     private List<String> args;
     private ExitStatus exitStatus;
@@ -68,7 +71,7 @@ public class ArgParser {
     /**
      * Gets the requested flag status
      */
-    public boolean hasFlag(String ... matches) {
+    private boolean hasFlag(String ... matches) {
         for(String match : matches) {
             if (args.contains(match)) {
                 return true;
@@ -81,11 +84,27 @@ public class ArgParser {
         return hasFlag(argValue.getMatches());
     }
 
+    public ArgValue hasFlags(boolean skipHelp, ArgValue ... argValues) {
+        for(ArgValue argValue : argValues) {
+            if(skipHelp && argValue == HELP) {
+                continue;
+            }
+            if(hasFlag(argValue)) {
+                return argValue;
+            }
+        }
+        return null;
+    }
+
+    public boolean hasFlag(ArgValueOption argValueOption) {
+        return hasFlag(argValueOption.getMatches());
+    }
+
     /**
      * Gets the argument value immediately following a command
      * @throws MissingArgException
      */
-    public String valueOf(String ... matches) throws MissingArgException {
+    private String valueOf(String ... matches) throws MissingArgException {
         for(String match : matches) {
             if (args.contains(match)) {
                 int index = args.indexOf(match) + 1;
@@ -105,6 +124,10 @@ public class ArgParser {
         return valueOf(argValue.getMatches());
     }
 
+    public String valueOf(ArgValueOption argValueOption) throws MissingArgException {
+        return valueOf(argValueOption.getMatches());
+    }
+
     public ExitStatus processInstallerArgs(ArgValue argValue, List<String> args) {
         try {
             switch(argValue) {
@@ -112,19 +135,19 @@ public class ArgParser {
                     return Installer.preinstall() ? SUCCESS : SUCCESS; // don't abort on preinstall
                 case INSTALL:
                     // Handle destination
-                    String dest = valueOf("-d", "--dest");
+                    String dest = valueOf(DEST);
                     // Handle silent installs
-                    boolean silent = hasFlag("-s", "--silent");
+                    boolean silent = hasFlag(SILENT);
                     Installer.install(dest, silent); // exception will set error
                     return SUCCESS;
                 case CERTGEN:
                     TaskKiller.killAll();
 
                     // Handle trusted SSL certificate
-                    String trustedKey = valueOf("-k", "--key");
-                    String trustedCert = valueOf("-c", "--cert");
-                    String trustedPfx = valueOf("--pfx", "--pkcs12");
-                    String trustedPass = valueOf("-p", "--pass");
+                    String trustedKey = valueOf(KEY);
+                    String trustedCert = valueOf(CERT);
+                    String trustedPfx = valueOf(PFX);
+                    String trustedPass = valueOf(PASS);
                     if (trustedKey != null && trustedCert != null) {
                         File key = new File(trustedKey);
                         File cert = new File(trustedCert);
@@ -146,7 +169,7 @@ public class ArgParser {
                         throw new MissingArgException();
                     } else {
                         // Handle localhost override
-                        String hosts = valueOf("--host", "--hosts");
+                        String hosts = valueOf(HOST);
                         if (hosts != null) {
                             Installer.getInstance().certGen(true, hosts.split(";"));
                             return SUCCESS;
@@ -201,19 +224,39 @@ public class ArgParser {
 
             // Handle help request
             if(hasFlag(HELP)) {
-
                 System.out.println(String.format("Usage: %s (command)", USAGE_COMMAND));
-                int lpad = 30;
-                for(ArgType argType : ArgValue.ArgType.values()) {
-                    System.out.println(String.format("%s%s", System.lineSeparator(), argType));
-                    for(ArgValue argValue : ArgValue.filter(argType)) {
-                        String text = String.format("  %s", StringUtils.join(argValue.getMatches(), ", "));
-                        if(argValue.getDescription() != null) {
-                            text = StringUtils.rightPad(text, lpad) + argValue.getDescription();
+
+                ArgValue command;
+                if((command = hasFlags(true, ArgValue.values())) != null) {
+                    // Intercept command-specific help requests
+                    printHelp(command);
+
+                    // Loop over command-specific documentation
+                    ArgValueOption[] argValueOptions = ArgValueOption.filter(command);
+                    if(argValueOptions.length > 0) {
+                        System.out.println("OPTIONS");
+                        for(ArgValueOption argValueOption : argValueOptions) {
+                            printHelp(argValueOption);
                         }
-                        System.out.println(text);
-                        if(argValue.getUsage() != null) {
-                            System.out.println(StringUtils.rightPad("", lpad) + String.format("  %s %s", USAGE_COMMAND, argValue.getUsage()));
+                    } else {
+                        System.out.println(System.lineSeparator() + "No options available for this command.");
+                    }
+                } else {
+                    // Show generic help
+                    for(ArgType argType : ArgValue.ArgType.values()) {
+                        System.out.println(String.format("%s%s", System.lineSeparator(), argType));
+                        for(ArgValue argValue : ArgValue.filter(argType)) {
+                            printHelp(argValue);
+                        }
+                    }
+
+                    System.out.println(String.format("%sFor help on a specific command:", System.lineSeparator()));
+                    System.out.println(String.format("%sUsage: %s --help (command)", StringUtils.rightPad("", INDENT_SIZE), USAGE_COMMAND));
+                    commandLoop:
+                    for(ArgValue argValue : ArgValue.values()) {
+                        for(ArgValueOption ignore : ArgValueOption.filter(argValue)) {
+                            System.out.println(String.format("%s--help %s",  StringUtils.rightPad("", INDENT_SIZE * 2), argValue.getMatches()[0]));
+                            continue commandLoop;
                         }
                     }
                 }
@@ -261,5 +304,25 @@ public class ArgParser {
             return true;
         }
         return false;
+    }
+
+    private static void printHelp(String[] commands, String description, String usage, int indent) {
+        String text = String.format("%s%s", StringUtils.leftPad("", indent), StringUtils.join(commands, ", "));
+        if (description != null) {
+            text = StringUtils.rightPad(text, DESCRIPTION_COLUMN) + description;
+
+        }
+        System.out.println(text);
+        if (usage != null) {
+            System.out.println(StringUtils.rightPad("", DESCRIPTION_COLUMN) + String.format("  %s %s", USAGE_COMMAND, usage));
+        }
+    }
+
+    private static void printHelp(ArgValue argValue) {
+        printHelp(argValue.getMatches(), argValue.getDescription(), argValue.getUsage(), INDENT_SIZE);
+    }
+
+    private static void printHelp(ArgValueOption argValueOption) {
+        printHelp(argValueOption.getMatches(), argValueOption.getDescription(), null, INDENT_SIZE);
     }
 }

@@ -202,13 +202,59 @@ public class ArgParser {
      * If intercepted, returns true and sets the <code>exitStatus</code> to a usable integer
      */
     public boolean intercept() {
-        // Fist, handle installation commands (e.g. install, uninstall, certgen, etc)
+        // First handle help request
+        if(hasFlag(HELP)) {
+            System.out.println(String.format("Usage: %s (command)", USAGE_COMMAND));
+
+            ArgValue command;
+            if((command = hasFlags(true, ArgValue.values())) != null) {
+                // Intercept command-specific help requests
+                printHelp(command);
+
+                // Loop over command-specific documentation
+                ArgValueOption[] argValueOptions = ArgValueOption.filter(command);
+                if(argValueOptions.length > 0) {
+                    System.out.println("OPTIONS");
+                    for(ArgValueOption argValueOption : argValueOptions) {
+                        printHelp(argValueOption);
+                    }
+                } else {
+                    System.out.println(System.lineSeparator() + "No options available for this command.");
+                }
+            } else {
+                // Show generic help
+                for(ArgType argType : ArgValue.ArgType.values()) {
+                    System.out.println(String.format("%s%s", System.lineSeparator(), argType));
+                    for(ArgValue argValue : ArgValue.filter(argType)) {
+                        printHelp(argValue);
+                    }
+                }
+
+                System.out.println(String.format("%sFor help on a specific command:", System.lineSeparator()));
+                System.out.println(String.format("%sUsage: %s --help (command)", StringUtils.rightPad("", INDENT_SIZE), USAGE_COMMAND));
+                commandLoop:
+                for(ArgValue argValue : ArgValue.values()) {
+                    for(ArgValueOption ignore : ArgValueOption.filter(argValue)) {
+                        System.out.println(String.format("%s--help %s",  StringUtils.rightPad("", INDENT_SIZE * 2), argValue.getMatches()[0]));
+                        continue commandLoop;
+                    }
+                }
+            }
+
+            exitStatus = USAGE_ERROR;
+            return true;
+        }
+
+        // Second, handle installation commands (e.g. install, uninstall, certgen, etc)
         for(ArgValue argValue : ArgValue.filter(ArgType.INSTALLER)) {
-            if (args.contains(argValue.getMatches())) {
+            if (hasFlag(argValue)) {
                 exitStatus = processInstallerArgs(argValue, args);
                 return true;
             }
         }
+
+        // Last, handle all other commands including normal startup
+        ArgValue argValue = null;
         try {
             // Handle graceful autostart disabling
             if (hasFlag(AUTOSTART)) {
@@ -220,49 +266,6 @@ public class ArgParser {
                 // Don't intercept
                 exitStatus = SUCCESS;
                 return false;
-            }
-
-            // Handle help request
-            if(hasFlag(HELP)) {
-                System.out.println(String.format("Usage: %s (command)", USAGE_COMMAND));
-
-                ArgValue command;
-                if((command = hasFlags(true, ArgValue.values())) != null) {
-                    // Intercept command-specific help requests
-                    printHelp(command);
-
-                    // Loop over command-specific documentation
-                    ArgValueOption[] argValueOptions = ArgValueOption.filter(command);
-                    if(argValueOptions.length > 0) {
-                        System.out.println("OPTIONS");
-                        for(ArgValueOption argValueOption : argValueOptions) {
-                            printHelp(argValueOption);
-                        }
-                    } else {
-                        System.out.println(System.lineSeparator() + "No options available for this command.");
-                    }
-                } else {
-                    // Show generic help
-                    for(ArgType argType : ArgValue.ArgType.values()) {
-                        System.out.println(String.format("%s%s", System.lineSeparator(), argType));
-                        for(ArgValue argValue : ArgValue.filter(argType)) {
-                            printHelp(argValue);
-                        }
-                    }
-
-                    System.out.println(String.format("%sFor help on a specific command:", System.lineSeparator()));
-                    System.out.println(String.format("%sUsage: %s --help (command)", StringUtils.rightPad("", INDENT_SIZE), USAGE_COMMAND));
-                    commandLoop:
-                    for(ArgValue argValue : ArgValue.values()) {
-                        for(ArgValueOption ignore : ArgValueOption.filter(argValue)) {
-                            System.out.println(String.format("%s--help %s",  StringUtils.rightPad("", INDENT_SIZE * 2), argValue.getMatches()[0]));
-                            continue commandLoop;
-                        }
-                    }
-                }
-
-                exitStatus = USAGE_ERROR;
-                return true;
             }
 
             // Handle version request
@@ -279,11 +282,11 @@ public class ArgParser {
             }
             // Handle cert installation
             String certFile;
-            if ((certFile = valueOf(ALLOW)) != null) {
+            if ((certFile = valueOf(argValue = ALLOW)) != null) {
                 exitStatus = FileUtilities.addToCertList(ALLOW_FILE, new File(certFile));
                 return true;
             }
-            if ((certFile = valueOf(BLOCK)) != null) {
+            if ((certFile = valueOf(argValue = BLOCK)) != null) {
                 exitStatus = FileUtilities.addToCertList(BLOCK_FILE, new File(certFile));
                 return true;
             }
@@ -295,7 +298,11 @@ public class ArgParser {
                 return true;
             }
         } catch(MissingArgException e) {
-            log.error("Invalid usage");
+            System.out.println("Usage:");
+            if(argValue != null) {
+                printHelp(argValue);
+            }
+            log.error("Invalid usage was provided");
             exitStatus = USAGE_ERROR;
             return true;
         } catch(Exception e) {

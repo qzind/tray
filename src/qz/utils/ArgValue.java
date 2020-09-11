@@ -9,47 +9,50 @@ import static qz.utils.ArgValue.ArgType.*;
 
 public enum ArgValue {
     // Informational
-    HELP(INFORMATION, "--help", "-h", "Display help information and exit.", null),
-    VERSION(INFORMATION, "--version", "-v", "Display version information and exit.", null),
-    BUNDLEID(INFORMATION, "--bundleid", "-i", "Display Apple bundle identifier and exit.", null),
-    LIBINFO(INFORMATION, "--libinfo", "-l", "Display detailed library version information and exit.", null),
+    HELP(INFORMATION, "Display help information and exit.", null,
+         "--help", "-h", "/?"),
+    VERSION(INFORMATION, "Display version information and exit.", null,
+            "--version", "-v"),
+    BUNDLEID(INFORMATION, "Display Apple bundle identifier and exit.", null,
+             "--bundleid", "-i"),
+    LIBINFO(INFORMATION, "Display detailed library version information and exit.", null,
+            "--libinfo", "-l"),
 
     // Actions
-    ALLOW(ACTION,"--allow", "--whitelist", "-a", String.format("Add the specified certificate to %s.dat.", Constants.ALLOW_FILE), "--allow cert.pem"),
-    BLOCK(ACTION,"--block", "--blacklist", "-b", String.format("Add the specified certificate to %s.dat.", Constants.BLOCK_FILE), "--block cert.pem"),
+    ALLOW(ACTION,String.format("Add the specified certificate to %s.dat.", Constants.ALLOW_FILE), "--allow cert.pem",
+          "--allow", "--whitelist", "-a"),
+    BLOCK(ACTION, String.format("Add the specified certificate to %s.dat.", Constants.BLOCK_FILE), "--block cert.pem",
+          "--block", "--blacklist", "-b"),
 
     // Options
-    AUTOSTART(OPTION,"--honorautostart", "-A", "Read and honor any autostart preferences before launching.", null),
-    HEADLESS(OPTION, "--headless", "Force startup \"headless\" without graphical interface or interactive components.", null),
+    AUTOSTART(OPTION,"Read and honor any autostart preferences before launching.", null,
+              "--honorautostart", "-A"),
+    HEADLESS(OPTION, "Force startup \"headless\" without graphical interface or interactive components.", null,
+             "--headless"),
 
     // Installer stubs
-    PREINSTALL(INSTALLER, "preinstall", "Perform critical pre-installation steps: Stop instances, all other special considerations.", null),
-    INSTALL(INSTALLER, "install", "Copy to the specified destination and preforms platform-specific registration.", "install --dest /my/install/location [--silent]"),
-    CERTGEN(INSTALLER, "certgen", "Performs certificate generation and registration for proper HTTPS support.", "certgen [--key key.pem --cert cert.pem] [--pfx cert.pfx --pass 12345] [--host \"list;of;hosts\"]"),
-    UNINSTALL(INSTALLER, "uninstall", "Perform all uninstall tasks: Stop instances, delete files, unregister settings.", null),
-    SPAWN(INSTALLER, "spawn", "Spawn an instance of the specified program as the logged-in user, avoiding starting as the root user if possible.", "spawn [program params ...]");
+    PREINSTALL(INSTALLER, "Perform critical pre-installation steps: Stop instances, all other special considerations.", null,
+               "preinstall"),
+    INSTALL(INSTALLER, "Copy to the specified destination and preforms platform-specific registration.", "install --dest /my/install/location [--silent]",
+            "install"),
+    CERTGEN(INSTALLER, "Performs certificate generation and registration for proper HTTPS support.", "certgen [--key key.pem --cert cert.pem] [--pfx cert.pfx --pass 12345] [--host \"list;of;hosts\"]",
+            "certgen"),
+    UNINSTALL(INSTALLER, "Perform all uninstall tasks: Stop instances, delete files, unregister settings.", null,
+              "uninstall"),
+    SPAWN(INSTALLER, "Spawn an instance of the specified program as the logged-in user, avoiding starting as the root user if possible.", "spawn [program params ...]",
+          "spawn");
 
     private ArgType argType;
-    private String[] matches;
     private String description;
     private String usage;
+    private String[] matches;
 
-    ArgValue(ArgType argType, String[] matches, String description, String usage) {
+    ArgValue(ArgType argType, String description, String usage, String ... matches) {
         this.argType = argType;
-        this.matches = matches;
         this.description = description;
         this.usage = usage;
+        this.matches = matches;
     }
-    ArgValue(ArgType argType, String match1, String match2, String match3, String description, String usage) {
-        this(argType, new String[] { match1, match2, match3 }, description, usage);
-    }
-    ArgValue(ArgType argType, String match1, String match2, String description, String usage) {
-        this(argType, new String[] { match1, match2 }, description, usage);
-    }
-    ArgValue(ArgType argType, String match, String description, String usage) {
-        this(argType, new String[] { match }, description, usage);
-    }
-
     public String[] getMatches() {
         return matches;
     }
@@ -89,24 +92,31 @@ public enum ArgValue {
      */
     public enum ArgValueOption {
         // install
-        DEST(ArgValue.INSTALL, "--dest", "-d", "Installs to the specified destination.  If omitted, a sane default will be used."),
-        SILENT(ArgValue.INSTALL, "--silent", "-s", "Suppress all prompts to the user, taking sane defaults."),
+        DEST(ArgValue.INSTALL, "Installs to the specified destination.  If omitted, a sane default will be used.",
+             "--dest", "-d"),
+        SILENT(ArgValue.INSTALL, "Suppress all prompts to the user, taking sane defaults.",
+               "--silent", "-s"),
 
         // certgen
-        HOST(ArgValue.CERTGEN, "--host", "--hosts", "Semicolon-delimited hostnames and/or IP addresses to generate the HTTPS certificate for."),
-        CERT(ArgValue.CERTGEN, "--cert", "-c", "Path to a stand-alone HTTPS certificate"),
-        KEY(ArgValue.CERTGEN, "--key", "-k", "Path to a stand-alone HTTPS private key"),
-        PFX(ArgValue.CERTGEN, "--pfx", "--pkcs12", "Path to a paired HTTPS private key and certificate in PKCS#12 format."),
-        PASS(ArgValue.CERTGEN, "--pass", "-p", "Password for decoding private key.");
+        HOST(ArgValue.CERTGEN, "Semicolon-delimited hostnames and/or IP addresses to generate the HTTPS certificate for.",
+             "--host", "--hosts"),
+        CERT(ArgValue.CERTGEN, "Path to a stand-alone HTTPS certificate",
+             "--cert", "-c"),
+        KEY(ArgValue.CERTGEN, "Path to a stand-alone HTTPS private key",
+            "--key", "-k"),
+        PFX(ArgValue.CERTGEN, "Path to a paired HTTPS private key and certificate in PKCS#12 format.",
+            "--pfx", "--pkcs12"),
+        PASS(ArgValue.CERTGEN, "Password for decoding private key.",
+             "--pass", "-p");
 
         ArgValue parent;
-        String[] matches;
         String description;
+        String[] matches;
 
-        ArgValueOption(ArgValue parent, String match1, String match2, String description) {
+        ArgValueOption(ArgValue parent, String description, String ... matches) {
             this.parent = parent;
-            this.matches = new String[]{ match1, match2 };
             this.description = description;
+            this.matches = matches;
         }
 
         public static ArgValueOption[] filter(ArgValue ... parents) {

@@ -45,10 +45,10 @@ Section
 	StrCpy $opts "${launch.opts}"
 
 	; Check for user overridable launch options
-	ReadEnvStr $0 ${launch.overrides}
+	ClearErrors
+	ReadEnvStr $R0 ${launch.overrides}
 	IfErrors +2 0
-	StrCpy $opts "$opts $0"
-	Pop $0
+	StrCpy $opts "$opts $R0"
 
     Exec '"$javaw" $opts -jar "${JAR}" $params'
     ${If} ${RunningX64}

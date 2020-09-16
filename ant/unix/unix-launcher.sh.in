@@ -40,9 +40,9 @@ if [ -d ./jre ]; then
 fi
 
 # Check for user overridable launch options
-if [ -z "$${launch.overrides}" ]; then
-  echo -e "$OBSERVE Picked up additional launch options: $${launch.overrides}"
-  LAUNCH_OPTS="$LAUNCH_OPTS $${launch.overrides}"
+if [ -z "${dollar}${launch.overrides}" ]; then
+  echo -e "$OBSERVE Picked up additional launch options: ${dollar}${launch.overrides}"
+  LAUNCH_OPTS="$LAUNCH_OPTS ${dollar}${launch.overrides}"
 fi
 
 if [[ "$OSTYPE" == "darwin"* ]]; then

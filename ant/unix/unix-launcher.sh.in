@@ -40,7 +40,7 @@ if [ -d ./jre ]; then
 fi
 
 # Check for user overridable launch options
-if [ -z "${dollar}${launch.overrides}" ]; then
+if [ -n "${dollar}${launch.overrides}" ]; then
   echo -e "$OBSERVE Picked up additional launch options: ${dollar}${launch.overrides}"
   LAUNCH_OPTS="$LAUNCH_OPTS ${dollar}${launch.overrides}"
 fi

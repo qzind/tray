@@ -41,14 +41,14 @@ Section
     ; Sets the $java variable
     Call FindJava
 
-	Var /GLOBAL opts
-	StrCpy $opts "${launch.opts}"
+    Var /GLOBAL opts
+    StrCpy $opts "${launch.opts}"
 
-	; Check for user overridable launch options
-	ClearErrors
-	ReadEnvStr $R0 ${launch.overrides}
-	IfErrors +2 0
-	StrCpy $opts "$opts $R0"
+    ; Check for user overridable launch options
+    ClearErrors
+    ReadEnvStr $R0 ${launch.overrides}
+    IfErrors +2 0
+    StrCpy $opts "$opts $R0"
 
     Exec '"$javaw" $opts -jar "${JAR}" $params'
     ${If} ${RunningX64}

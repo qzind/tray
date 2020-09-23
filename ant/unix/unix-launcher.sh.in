@@ -22,6 +22,7 @@ RED="\\x1B[1;31m";GREEN="\\x1B[1;32m";YELLOW="\\x1B[1;33m";PLAIN="\\x1B[0m"
 SUCCESS="   [${GREEN}success${PLAIN}]"
 FAILURE="   [${RED}failure${PLAIN}]"
 WARNING="   [${YELLOW}warning${PLAIN}]"
+MESSAGE="   [${YELLOW}message${PLAIN}]"
 
 echo "Looking for Java..."
 
@@ -38,10 +39,21 @@ if [ -d ./jre ]; then
     export PATH
 fi
 
+# Check for user overridable launch options
+if [ -n "${dollar}${launch.overrides}" ]; then
+  echo -e "$MESSAGE Picked up additional launch options: ${dollar}${launch.overrides}"
+  LAUNCH_OPTS="$LAUNCH_OPTS ${dollar}${launch.overrides}"
+fi
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
+    DEFAULTS_READ=$(defaults read ${apple.bundleid} ${launch.overrides} 2>/dev/null) || true
+    if [ -n "$DEFAULTS_READ" ]; then
+          echo -e "$MESSAGE Picked up additional launch options: $DEFAULTS_READ"
+          LAUNCH_OPTS="$LAUNCH_OPTS $DEFAULTS_READ"
+    fi
     ICON_PATH="$DIR/Contents/Resources/apple-icon.icns"
     MAC_PRIMARY="/usr/libexec/java_home"
-    MAC_FALLACK="/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin"
+    MAC_FALLBACK="/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin"
     echo "Trying $MAC_PRIMARY..."
     if "$MAC_PRIMARY" -v $JAVA_MIN+ &>/dev/null; then
         echo -e "$SUCCESS Using \"$MAC_PRIMARY -v $JAVA_MIN+ --exec\" to launch $ABOUT_TITLE"
@@ -50,9 +62,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         }
     elif [ -d "/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin" ]; then
         echo -e "$WARNING No luck using $MAC_PRIMARY"
-        echo "Trying $MAC_FALLACK..."
+        echo "Trying $MAC_FALLBACK..."
         java() {
-            "$MAC_FALLACK/java" "$@"
+            "$MAC_FALLBACK/java" "$@"
         }
     fi
 else

@@ -186,6 +186,9 @@ public class LinuxInstaller extends Installer {
         HashMap<String, String> tempEnv = new HashMap<>();
         ArrayList<String> toExport = new ArrayList<>(Arrays.asList(SUDO_EXPORTS));
         for(String pid : pids) {
+            if(pid.isEmpty()) {
+                continue;
+            }
             try {
                 String[] vars;
                 if(SystemUtilities.isSolaris()) {
@@ -225,6 +228,13 @@ public class LinuxInstaller extends Installer {
                 env.putAll(tempEnv);
             } else {
                 log.debug("Expected USER={} but got USER={}, skipping results for {}", whoami, tempEnv.get("USER"), pid);
+            }
+
+            // Use gtk theme
+            if(env.containsKey("XDG_CURRENT_DESKTOP") && !env.containsKey("GNOME_DESKTOP_SESSION_ID")) {
+                if(env.get("XDG_CURRENT_DESKTOP").toLowerCase().contains("gnome")) {
+                    env.put("GNOME_DESKTOP_SESSION_ID", "this-is-deprecated");
+                }
             }
         }
 

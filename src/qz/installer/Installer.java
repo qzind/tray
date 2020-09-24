@@ -42,7 +42,7 @@ public abstract class Installer {
     protected static final Logger log = LoggerFactory.getLogger(Installer.class);
 
     // Silence prompts within our control
-    public static boolean IS_SILENT =  "1".equals(System.getenv(PROPS_FILE + "_silent"));
+    public static boolean IS_SILENT =  "1".equals(System.getenv(DATA_DIR + "_silent"));
 
     public enum PrivilegeLevel {
         USER,
@@ -75,7 +75,7 @@ public abstract class Installer {
     }
 
     public static void install(String destination, boolean silent) throws Exception {
-        IS_SILENT = silent;
+        IS_SILENT |= silent; // preserve environmental variable if possible
         getInstance();
         if (destination != null) {
             instance.setDestination(destination);

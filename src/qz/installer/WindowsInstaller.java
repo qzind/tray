@@ -103,12 +103,10 @@ public class WindowsInstaller extends Installer {
                 new File(folder + File.separator + ABOUT_TITLE + ".lnk").delete();
                 // Since 2.1, start menus use subfolder
                 if (folder.equals(COMMON_START_MENU) || folder.equals(START_MENU)) {
-                    try {
-                        FileUtils.deleteQuietly(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE + ".lnk"));
-                        FileUtils.deleteDirectory(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE));
-                    } catch(Win32Exception ignore) {}
+                    FileUtils.deleteQuietly(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE + ".lnk"));
+                    FileUtils.deleteDirectory(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE));
                 }
-            } catch(IOException ignore) {}
+            } catch(IOException | Win32Exception ignore) {}
         }
 
         // Cleanup firewall rules

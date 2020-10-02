@@ -27,10 +27,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * Created by Steven on 1/27/2015. Package: qz.auth Project: qz-print
@@ -261,24 +258,27 @@ public class Certificate {
     private void readRenewalInfo() throws Exception {
         // "id-at-description" = "2.5.4.13"
         Vector values = PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(new ASN1ObjectIdentifier("2.5.4.13"));
-        if (values.isEmpty()) {
-            return;
-        }
-        String renewalInfo = String.valueOf(values.get(0));
+        Iterator renewals = values.iterator();
 
-        String renewalPrefix = "renewal-of-";
-        if (!renewalInfo.startsWith(renewalPrefix)) {
-            throw new CertificateParsingException("Malformed renewal info");
-        }
-        String previousFingerprint = renewalInfo.substring(renewalPrefix.length());
-        if (previousFingerprint.length() != 40) {
-            throw new CertificateParsingException("Malformed renewal fingerprint");
-        }
+        while(renewals.hasNext()) {
+            String renewalInfo = String.valueOf(renewals.next());
 
-        // Add this certificate to the whitelist if the previous certificate was whitelisted
-        File allowed = FileUtilities.getFile(Constants.ALLOW_FILE, true);
-        if (existsInAnyFile(previousFingerprint, allowed)) {
-            FileUtilities.printLineToFile(Constants.ALLOW_FILE, data());
+            String renewalPrefix = "renewal-of-";
+            if (!renewalInfo.startsWith(renewalPrefix)) {
+                log.warn("Malformed renewal info: {}", renewalInfo);
+                continue;
+            }
+            String previousFingerprint = renewalInfo.substring(renewalPrefix.length());
+            if (previousFingerprint.length() != 40) {
+                log.warn("Malformed renewal fingerprint: {}", previousFingerprint);
+                continue;
+            }
+
+            // Add this certificate to the whitelist if the previous certificate was whitelisted
+            File allowed = FileUtilities.getFile(Constants.ALLOW_FILE, true);
+            if (existsInAnyFile(previousFingerprint, allowed)) {
+                FileUtilities.printLineToFile(Constants.ALLOW_FILE, data());
+            }
         }
     }
 

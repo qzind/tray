@@ -42,24 +42,7 @@ public abstract class Installer {
     protected static final Logger log = LoggerFactory.getLogger(Installer.class);
 
     // Silence prompts within our control
-    public static boolean IS_SILENT =  "1".equals(System.getenv(PROPS_FILE + "_silent"));
-
-
-    public enum InstallType {
-        PREINSTALL(""),
-        INSTALL("install --dest /my/install/location [--silent]"),
-        CERTGEN("certgen [--key key.pem --cert cert.pem] [--pfx cert.pfx --pass 12345] [--host \"list;of;hosts\""),
-        UNINSTALL(""),
-        SPAWN("spawn [params]");
-        public String usage;
-        InstallType(String usage) {
-            this.usage = usage;
-        }
-        @Override
-        public String toString() {
-            return name().toLowerCase(Locale.ENGLISH);
-        }
-    }
+    public static boolean IS_SILENT =  "1".equals(System.getenv(DATA_DIR + "_silent"));
 
     public enum PrivilegeLevel {
         USER,
@@ -92,7 +75,7 @@ public abstract class Installer {
     }
 
     public static void install(String destination, boolean silent) throws Exception {
-        IS_SILENT = silent;
+        IS_SILENT |= silent; // preserve environmental variable if possible
         getInstance();
         if (destination != null) {
             instance.setDestination(destination);

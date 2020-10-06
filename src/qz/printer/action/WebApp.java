@@ -173,7 +173,10 @@ public class WebApp extends Application {
                 if (useMonocle) {
                     log.trace("Initializing monocle platform");
                     System.setProperty("javafx.platform", "monocle");
-                    System.setProperty("glass.platform", "Monocle");
+                    // Don't set glass.platform on Linux per https://github.com/qzind/tray/issues/702
+                    if((SystemUtilities.isWindows() || SystemUtilities.isMac())) {
+                        System.setProperty("glass.platform", "Monocle");
+                    }
 
                     //software rendering required headless environments
                     if (headless) {

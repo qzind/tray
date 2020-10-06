@@ -29,26 +29,11 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from django.http import HttpResponse, HttpResponseBadRequest
 
-def index(request):
-    if request.method == 'GET':
-        message = request.GET.get('request')
-    else:
-        message = request.POST.get('request')
-
-    if message == '' or message == None:
-        return HttpResponseBadRequest("Signing request needs 'request' parameter")
-
-    mykey = os.path.join(os.path.dirname(__file__), "private-key.pem")
-    mypass = None # or mypass = 'S3cur3P@ssw0rd'
-
-    # Load the private key
-    key = serialization.load_pem_private_key(
-        open(mykey).read(), mypass.encode('utf-8'), backend=default_backend()
-    )
-
+def get(self, request, message):
+    # Load signature
+    key = serialization.load_pem_private_key(open("private-key.pem","rb").read(), None, backend=default_backend())
     # Create the signature
-    signature = key.sign(message.encode('utf-8'), padding.PKCS1v15(), hashes.SHA512()) # Use hashes.SHA1 for QZ Tray 2.0 and older
-
+    signature = key.sign(message.encode('utf-8'), padding.PKCS1v15(), hashes.SHA512())  # Use hashes.SHA1() for QZ Tray 2.0 and older
     # Echo the signature
     return HttpResponse(base64.b64encode(signature), content_type="text/plain")
 

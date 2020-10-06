@@ -253,7 +253,7 @@ public class Certificate {
         Vector values = PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(new ASN1ObjectIdentifier("2.5.4.13"));
         Iterator renewals = values.iterator();
 
-        while (renewals.hasNext()) {
+        while(renewals.hasNext()) {
             String renewalInfo = String.valueOf(renewals.next());
 
             String renewalPrefix = "renewal-of-";

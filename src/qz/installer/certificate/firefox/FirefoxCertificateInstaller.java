@@ -157,7 +157,7 @@ public class FirefoxCertificateInstaller {
         } else if(SystemUtilities.isMac()) {
             String policyLocation = "/Library/Preferences/";
             if(userOnly) {
-                policyLocation = System.getProperty("user.dir") + policyLocation;
+                policyLocation = System.getProperty("user.home") + policyLocation;
             }
             String policesEnabled = ShellUtilities.executeRaw(new String[] { "defaults", "read", policyLocation + alias.getBundleId(), "EnterprisePoliciesEnabled"}, true);
             String foundPolicy = ShellUtilities.executeRaw(new String[] {"defaults", "read", policyLocation + alias.getBundleId(), "Certificates"}, true);
@@ -231,7 +231,7 @@ public class FirefoxCertificateInstaller {
         } else if(SystemUtilities.isMac()) {
             String policyLocation = "/Library/Preferences/";
             if(userOnly) {
-                policyLocation = System.getProperty("user.dir") + policyLocation;
+                policyLocation = System.getProperty("user.home") + policyLocation;
             }
             return ShellUtilities.execute(new String[] {"defaults", "write", policyLocation + alias.getBundleId(), "EnterprisePoliciesEnabled", "-bool", "TRUE"}, true) &&
                     ShellUtilities.execute(new String[] {"defaults", "write", policyLocation + alias.getBundleId(), "Certificates", "-dict", "ImportEnterpriseRoots", "-bool", "TRUE",

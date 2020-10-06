@@ -97,7 +97,11 @@ Section
     ; We're NOT running from $TEMP, copy to temp and respawn ourself
     GetTempFileName $0
     CopyFiles "$EXEPATH" "$0"
-    Exec '"$0" /RESPAWN=1 /DELETE_DIR="$EXEDIR" /DELETE_EXE="$EXEPATH"'
+    ${If} ${Silent}
+      Exec '"$0" /S /RESPAWN=1 /DELETE_DIR="$EXEDIR" /DELETE_EXE="$EXEPATH"'
+    ${Else}
+      Exec '"$0" /RESPAWN=1 /DELETE_DIR="$EXEDIR" /DELETE_EXE="$EXEPATH"'
+    ${EndIf}
     Quit
   ${EndIf}
 SectionEnd

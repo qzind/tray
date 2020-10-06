@@ -69,6 +69,8 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
+        dpiScale = (options.getPixelOptions().getDensity() * options.getPixelOptions().getUnits().as1Inch()) / 72.0;
+
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
 

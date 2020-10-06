@@ -170,6 +170,10 @@ public class Certificate {
         }
     }
 
+    public Certificate(Path path) throws IOException, CertificateException {
+        this(new String(Files.readAllBytes(path), Charsets.UTF_8));
+    }
+
     /** Decodes a certificate and intermediate certificate from the given string */
     @SuppressWarnings("deprecation")
     public Certificate(String in) throws CertificateException {
@@ -244,26 +248,23 @@ public class Certificate {
         }
     }
 
-    public Certificate(Path path) throws IOException, CertificateException {
-        this(new String(Files.readAllBytes(path), Charsets.UTF_8));
-    }
+    private void readRenewalInfo() throws Exception {
+        // "id-at-description" = "2.5.4.13"
+        Vector values = PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(new ASN1ObjectIdentifier("2.5.4.13"));
+        Iterator renewals = values.iterator();
 
-    private void readRenewalInfo() {
-        try {
-            // "id-at-description" = "2.5.4.13"
-            Vector values = PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(new ASN1ObjectIdentifier("2.5.4.13"));
-            if (values.isEmpty()) {
-                return;
-            }
-            String renewalInfo = String.valueOf(values.get(0));
+        while (renewals.hasNext()) {
+            String renewalInfo = String.valueOf(renewals.next());
 
             String renewalPrefix = "renewal-of-";
             if (!renewalInfo.startsWith(renewalPrefix)) {
-                throw new CertificateException("Certificate for " + commonName + " has malformed or missing renewal info");
+                log.warn("Malformed renewal info: {}", renewalInfo);
+                continue;
             }
             String previousFingerprint = renewalInfo.substring(renewalPrefix.length());
             if (previousFingerprint.length() != 40) {
-                throw new CertificateException("Certificate for " + commonName + " has malformed or missing fingerprint");
+                log.warn("Malformed renewal fingerprint: {}", previousFingerprint);
+                continue;
             }
 
             // Add this certificate to the whitelist if the previous certificate was whitelisted
@@ -271,9 +272,6 @@ public class Certificate {
             if (existsInAnyFile(previousFingerprint, allowed) && !isSaved()) {
                 FileUtilities.printLineToFile(Constants.ALLOW_FILE, data());
             }
-        }
-        catch(CertificateException e) {
-            log.warn("Certificate for {} has malformed or missing renewal info", commonName, e);
         }
     }
 

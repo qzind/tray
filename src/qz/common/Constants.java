@@ -66,7 +66,7 @@ public class Constants {
     public static final String REMEMBER_THIS_DECISION = "Remember this decision";
     public static final String STRICT_MODE_LABEL = "Use strict certificate mode";
     public static final String STRICT_MODE_TOOLTIP = String.format("Prevents the ability to select \"%s\" for most websites", REMEMBER_THIS_DECISION);
-    public static final String STRICT_MODE_CONFIRM = "Set strict certificate mode?  Most websites will stop working.";
+    public static final String STRICT_MODE_CONFIRM = String.format("Set strict certificate mode?  Most websites will stop working with %s.", ABOUT_TITLE);
     public static final String ALLOW_SITES_LABEL = "Sites permanently allowed access";
     public static final String BLOCK_SITES_LABEL = "Sites permanently blocked from access";
 

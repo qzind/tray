@@ -473,4 +473,8 @@ public class Certificate {
         return trustBuiltIn;
     }
 
+    public static boolean hasAdditionalCAs() {
+        return rootCAs.size() > (isTrustBuiltIn() ? 1 : 0);
+    }
+
 }

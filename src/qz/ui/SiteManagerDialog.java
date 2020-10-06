@@ -5,16 +5,18 @@ import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.common.Constants;
 import qz.common.PropertyHelper;
-import qz.ui.component.CertificateDisplay;
-import qz.ui.component.CertificateTable;
-import qz.ui.component.ContainerList;
-import qz.ui.component.IconCache;
+import qz.ui.component.*;
 import qz.utils.FileUtilities;
 
 import javax.swing.*;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.File;
@@ -25,9 +27,7 @@ import java.nio.file.Paths;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by Tres on 2/23/2015.
@@ -52,7 +52,6 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
     private Thread readerThread;
     private AtomicBoolean threadRunning;
-    private AtomicReference<CertificateDisplay> deleteCertificate;
 
     private long allowTick = -1;
     private long blockTick = -1;
@@ -138,7 +137,6 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             File chooseFolder = null;
             for(String folder : new String[] { "Downloads", "Desktop", ""}) {
                 Path folderFile = Paths.get(System.getProperty("user.home"), folder);
-                System.out.println(folderFile);
                 if(folderFile.toFile().exists()) {
                     chooseFolder = folderFile.toFile();
                     break;
@@ -148,20 +146,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             fileDialog.setDirectory(chooseFolder.toString());
             fileDialog.setMultipleMode(false);
             fileDialog.setVisible(true);
-            try {
-                for(File cert : fileDialog.getFiles()) {
-                    Certificate importCert = new Certificate(cert.toPath());
-                    if (importCert.isValid()) {
-                        CertificateDisplay certificate = new CertificateDisplay(importCert, true);
-                        if (!allowList.contains(importCert) && !Certificate.UNKNOWN.equals(certificate.getCert())) {
-                            FileUtilities.printLineToFile(Constants.ALLOW_FILE, certificate.getCert().data());
-                            allowList.add(certificate);
-                        }
-                    }
-                }
-            } catch(CertificateException | IOException ex) {
-                log.warn("Could not read certificate", ex);
-            }
+            addCertificates(fileDialog.getFiles(), getSelectedList());
         });
         addButton.setEnabled(true);
         addKeyListener(KeyEvent.VK_PLUS, addButton);
@@ -172,13 +157,18 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         deleteButton.setForeground(Constants.WARNING_COLOR);
         addButton.setBorderPainted(false);
         deleteButton.addActionListener(e -> {
-            deleteCertificate.set(getSelectedCertificate());
+            removeCertificate(getSelectedCertificate(), getSelectedList());
             deleteButton.setEnabled(false);
             clearSelection();
         });
         deleteButton.setEnabled(false);
         addKeyListener(KeyEvent.VK_DELETE, deleteButton);
         addKeyListener(KeyEvent.VK_BACK_SPACE, deleteButton);
+
+        // Fixes alignment issues with +/-
+        JSeparator separator = new JSeparator();
+        separator.setOpaque(false);
+        separator.setForeground(new Color(0, 0, 0, 0));
 
         JPanel tabbedPanePanel = new JPanel();
         tabbedPanePanel.setLayout(new BoxLayout(tabbedPanePanel, BoxLayout.Y_AXIS));
@@ -187,7 +177,8 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         toolBar.setFloatable(false);
         toolBar.add(addButton, LEFT_ALIGNMENT);
         toolBar.add(deleteButton, LEFT_ALIGNMENT);
-        tabbedPanePanel.add(toolBar);
+        toolBar.add(separator, LEFT_ALIGNMENT);
+        tabbedPanePanel.add(toolBar, LEFT_ALIGNMENT);
         splitPane.add(tabbedPanePanel);
         splitPane.add(new JScrollPane(certTable));
         splitPane.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -195,24 +186,57 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
         readerThread = new Thread(this);
         threadRunning = new AtomicBoolean(false);
-        deleteCertificate = new AtomicReference<>(null);
 
-        JCheckBox strictModeCheckBox = new JCheckBox(Constants.STRICT_MODE_LABEL, prefs.getBoolean(Constants.PREFS_STRICT_MODE, false));
-        strictModeCheckBox.setToolTipText(Constants.STRICT_MODE_TOOLTIP);
-        strictModeCheckBox.addActionListener(e -> {
-            if(strictModeCheckBox.isSelected() && !new ConfirmDialog(null, "Please Confirm", iconCache).prompt(Constants.STRICT_MODE_CONFIRM)) {
-                strictModeCheckBox.setSelected(false);
-                return;
-            }
-            Certificate.setTrustBuiltIn(!strictModeCheckBox.isSelected());
-            prefs.setProperty(Constants.PREFS_STRICT_MODE, strictModeCheckBox.isSelected());
-            certTable.refreshComponents();
-        });
+        // Hide strict-mode checkbox for standard configurations
+        if(Certificate.hasAdditionalCAs()) {
+            JCheckBox strictModeCheckBox = new JCheckBox(Constants.STRICT_MODE_LABEL, prefs.getBoolean(Constants.PREFS_STRICT_MODE, false));
+            strictModeCheckBox.setToolTipText(Constants.STRICT_MODE_TOOLTIP);
+            strictModeCheckBox.addActionListener(e -> {
+                if (strictModeCheckBox.isSelected() && !new ConfirmDialog(null, "Please Confirm", iconCache).prompt(Constants.STRICT_MODE_CONFIRM)) {
+                    strictModeCheckBox.setSelected(false);
+                    return;
+                }
+                Certificate.setTrustBuiltIn(!strictModeCheckBox.isSelected());
+                prefs.setProperty(Constants.PREFS_STRICT_MODE, strictModeCheckBox.isSelected());
+                certTable.refreshComponents();
+            });
 
-        // Add checkbox near "close" button
-        addPanelComponent(strictModeCheckBox);
+            // Add checkbox near "close" button
+            addPanelComponent(strictModeCheckBox);
+        }
 
         setContent(splitPane, true);
+
+
+        // Register drag/drop events
+        allowList.getList().setDragEnabled(true);
+        blockList.getList().setDragEnabled(true);
+        tabbedPane.setDropTarget(new DropTarget() {
+            @Override
+            public synchronized void drop(DropTargetDropEvent e) {
+                try {
+                    e.acceptDrop(DnDConstants.ACTION_COPY);
+                    addCertificates(e.getTransferable().getTransferData(DataFlavor.javaFileListFlavor), getSelectedList());
+                    return;
+                }
+                catch(IOException | UnsupportedFlavorException ignore) {}
+
+                e.acceptDrop(DnDConstants.ACTION_MOVE);
+                Component targetComponent = e.getDropTargetContext().getComponent();
+                if(targetComponent instanceof JTabbedPane) {
+                    JTabbedPane tabbedPane = (JTabbedPane)targetComponent;
+                    CertificateDisplay selectedCert = getSelectedCertificate();
+                    int targetIndex = tabbedPane.indexAtLocation(e.getLocation().x, e.getLocation().y);
+                    ContainerList<CertificateDisplay> target = getListByIndex(targetIndex);
+                    ContainerList<CertificateDisplay> source = getSelectedList();
+                    if(source != target) {
+                        addCertificate(selectedCert, target);
+                        removeCertificate(selectedCert, source);
+                        clearSelection();
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -277,20 +301,6 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         }
     }
 
-    /**
-     * Thread safe remove certificate from GUI and filesystem
-     */
-    public SiteManagerDialog removeCertificate(CertificateDisplay certificate) {
-        final ContainerList<CertificateDisplay> certList = getSelectedList();
-        if (certificate != null && FileUtilities.deleteFromFile(certList.getTag().toString(), certificate.getCert().data())) {
-            certList.remove(certificate);
-        } else {
-            log.warn("Error removing {} from the list of {} sites", certificate, getSelectedTabName().toLowerCase(Locale.ENGLISH));
-        }
-
-        return this;
-    }
-
     private CertificateDisplay getSelectedCertificate() {
         return (CertificateDisplay)getSelectedList().getList().getSelectedValue();
     }
@@ -303,8 +313,62 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         return "";
     }
 
+    private void removeCertificate(CertificateDisplay certDisplay, ContainerList<CertificateDisplay> list) {
+        if (list.contains(certDisplay)) {
+            String saveFile = (list == allowList ? Constants.ALLOW_FILE : Constants.BLOCK_FILE);
+            if(certDisplay != null && certDisplay.getCert() != null
+                    && FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data())) {
+                list.remove(certDisplay);
+            } else {
+                log.warn("Error removing {} from the list of {} sites", certDisplay, saveFile);
+            }
+        }
+    }
+
+    private void addCertificate(CertificateDisplay certDisplay, ContainerList<CertificateDisplay> list) {
+        if (!list.contains(certDisplay) && !Certificate.UNKNOWN.equals(certDisplay.getCert())) {
+            FileUtilities.printLineToFile(list == allowList ? Constants.ALLOW_FILE : Constants.BLOCK_FILE, certDisplay.getCert().data());
+            list.add(certDisplay);
+        }
+    }
+
+    private void addCertificates(Object dragged, ContainerList<CertificateDisplay> list) {
+        if(dragged instanceof java.util.List) {
+            java.util.List certFiles = (java.util.List)dragged;
+            if(certFiles.size() > 0) {
+                if(certFiles.get(0) instanceof File) {
+                    addCertificates((File[])certFiles.toArray(new File[certFiles.size()]), list);
+                } else {
+                    System.out.println("Nope: " + certFiles.get(0).getClass().getName());
+                }
+
+            }
+
+        } else {
+            log.warn("Coudl not convert certificate to from unknown type: {}", dragged.getClass().getCanonicalName());
+        }
+    }
+
+    private void addCertificates(File[] certFiles, ContainerList<CertificateDisplay> list) {
+        for(File file : certFiles) {
+            try {
+                Certificate importCert = new Certificate(file.toPath());
+                if (importCert.isValid()) {
+                    addCertificate(new CertificateDisplay(importCert, true), list);
+                }
+            }
+            catch(CertificateException | IOException e) {
+                log.warn("Unable to import cert {}", file, e);
+            }
+        }
+    }
+
     private ContainerList<CertificateDisplay> getSelectedList() {
-        if (tabbedPane.getSelectedIndex() == 0) {
+        return getListByIndex(tabbedPane.getSelectedIndex());
+    }
+
+    private ContainerList<CertificateDisplay> getListByIndex(int index) {
+        if (index == 0) {
             return allowList;
         }
 
@@ -334,9 +398,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         // Reads the certificate allowed/blocked files and updates the certificate listing
         while(threadRunning.get()) {
             if (isVisible()) {
-                if (deleteCertificate.get() != null) {
-                    removeCertificate(deleteCertificate.getAndSet(null));
-                } else if (allowFile.lastModified() > allowTick
+                if (allowFile.lastModified() > allowTick
                         || (allowFileShare != null && allowFileShare.lastModified() > allowTick)) {
                     allowTick = Math.max(allowFile.lastModified(), (allowFileShare == null? 0:allowFileShare.lastModified()));
                     readCertificates(allowList, allowFileShare, false);

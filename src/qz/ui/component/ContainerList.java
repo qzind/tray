@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <code>DefaultListModel</code>
  * <p/>
  * Updates to the <code>JList</code> are non-blocking and submitted on the Event Dispatch thread.
- * Class created to reduce the amount of thread-safe calls cluttering up the <code>>SiteManagerDialog</code.
+ * Class created to reduce the amount of thread-safe calls cluttering up the <code>SiteManagerDialog</code>.
  */
 public class ContainerList<D> extends ArrayList<D> {
 
@@ -45,49 +45,37 @@ public class ContainerList<D> extends ArrayList<D> {
 
     @Override
     public boolean remove(final Object o) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                listModel.skipNextSuperCall();
-                listModel.removeElement(o);
-            }
+        SwingUtilities.invokeLater(() -> {
+            listModel.skipNextSuperCall();
+            listModel.removeElement(o);
         });
         return super.remove(o);
     }
 
     @Override
     public boolean add(final D element) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                listModel.skipNextSuperCall();
-                listModel.addElement(element);
-            }
+        SwingUtilities.invokeLater(() -> {
+            listModel.skipNextSuperCall();
+            listModel.addElement(element);
         });
         return super.add(element);
     }
 
     @Override
     public void add(final int index, final D element) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                listModel.skipNextSuperCall();
-                listModel.add(index, element);
-            }
+        SwingUtilities.invokeLater(() -> {
+            listModel.skipNextSuperCall();
+            listModel.add(index, element);
         });
         super.add(index, element);
     }
 
     @Override
     public boolean addAll(final Collection<? extends D> collection) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                for(D element : collection) {
-                    listModel.skipNextSuperCall();
-                    listModel.addElement(element);
-                }
+        SwingUtilities.invokeLater(() -> {
+            for(D element : collection) {
+                listModel.skipNextSuperCall();
+                listModel.addElement(element);
             }
         });
         return super.addAll(collection);
@@ -95,14 +83,11 @@ public class ContainerList<D> extends ArrayList<D> {
 
     @Override
     public boolean addAll(final int index, final Collection<? extends D> c) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                int counter = 0;
-                for(D element : c) {
-                    listModel.skipNextSuperCall();
-                    listModel.add(index + counter++, element);
-                }
+        SwingUtilities.invokeLater(() -> {
+            int counter = 0;
+            for(D element : c) {
+                listModel.skipNextSuperCall();
+                listModel.add(index + counter++, element);
             }
         });
         return super.addAll(index, c);
@@ -110,30 +95,24 @@ public class ContainerList<D> extends ArrayList<D> {
 
     @Override
     public void clear() {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                listModel.skipNextSuperCall();
-                listModel.removeAllElements();
-            }
+        SwingUtilities.invokeLater(() -> {
+            listModel.skipNextSuperCall();
+            listModel.removeAllElements();
         });
         super.clear();
     }
 
     @Override
     protected void removeRange(final int fromIndex, final int toIndex) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                listModel.skipNextSuperCall();
-                listModel.removeRange(fromIndex, toIndex);
-            }
+        SwingUtilities.invokeLater(() -> {
+            listModel.skipNextSuperCall();
+            listModel.removeRange(fromIndex, toIndex);
         });
         super.removeRange(fromIndex, toIndex);
     }
 
     /**
-     * An internal subclass of <code>>DefaultListModel</code> to support the sync-back of elements in case the list
+     * An internal subclass of <code>DefaultListModel</code> to support the sync-back of elements in case the list
      * model is modified directly.
      */
     private class SyncedListModel extends DefaultListModel<D> {

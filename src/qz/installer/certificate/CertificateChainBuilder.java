@@ -56,7 +56,7 @@ public class CertificateChainBuilder {
     public KeyPairWrapper createCaCert() throws IOException, GeneralSecurityException, OperatorException {
         KeyPair keyPair = createRsaKey();
 
-        X509v3CertificateBuilder builder = createX509Cert(keyPair, CA_CERT_AGE);
+        X509v3CertificateBuilder builder = createX509Cert(keyPair, CA_CERT_AGE, hostNames);
 
         builder.addExtension(Extension.basicConstraints, true, new BasicConstraints(1))
                 .addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.keyCertSign + KeyUsage.cRLSign))
@@ -72,7 +72,7 @@ public class CertificateChainBuilder {
 
     public KeyPairWrapper createSslCert(KeyPairWrapper caKeyPairWrapper) throws IOException, GeneralSecurityException, OperatorException {
         KeyPair sslKeyPair = createRsaKey();
-        X509v3CertificateBuilder builder = createX509Cert(sslKeyPair, SSL_CERT_AGE);
+        X509v3CertificateBuilder builder = createX509Cert(sslKeyPair, SSL_CERT_AGE, hostNames);
 
         JcaX509ExtensionUtils utils = new JcaX509ExtensionUtils();
 

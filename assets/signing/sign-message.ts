@@ -24,7 +24,6 @@
 
 import { Component } from '@angular/core';
 import * as qz from 'qz-tray';
-import { sha256 } from 'js-sha256';
 import { KJUR, KEYUTIL, stob64, hextorstr } from 'jsrsasign';
 
 qz.security.setCertificatePromise((resolve, reject) => {

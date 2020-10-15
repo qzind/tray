@@ -229,6 +229,20 @@ public class Certificate {
                 valid = false;
             }
 
+            // If cert matches a rootCA, trust it blindly
+            Iterator<Certificate> allCerts = rootCAs.iterator();
+            while(allCerts.hasNext()) {
+                Certificate cert = allCerts.next();
+                if(cert.equals(this)) {
+                    log.debug("Adding {} to {} list", cert.toString(), Constants.ALLOW_FILE);
+                    if(!isSaved()) {
+                        FileUtilities.printLineToFile(Constants.ALLOW_FILE, data());
+                    }
+                    valid = true;
+                    break;
+                }
+            }
+
             readRenewalInfo();
             CRL qzCrl = CRL.getInstance();
             if (qzCrl.isLoaded()) {

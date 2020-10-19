@@ -9,7 +9,6 @@ FROM openjdk:11-jre as install
 RUN apt-get update
 RUN apt-get install -y libglib2.0-bin
 COPY --from=build /usr/src/tray/out/*.run /tmp
-RUN find /tmp -iname '*.run' -exec {} \;
+RUN find /tmp -iname "*.run" -exec {} \;
 WORKDIR /opt/qz-tray
 ENTRYPOINT ["/opt/qz-tray/qz-tray"]
-CMD ["--headless"]

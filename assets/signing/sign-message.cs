@@ -38,10 +38,12 @@ public static string SignMessage(string request)
     try
     {
         var cert = new X509Certificate2(KEY, PASS, STORAGE_FLAGS);
-        RSACryptoServiceProvider csp = (RSACryptoServiceProvider)cert.PrivateKey;
+        RSACryptoServiceProvider csp = (RSACryptoServiceProvider)cert.PrivateKey;  // PFX defaults to the weaker "SHA1"
         byte[] data = new ASCIIEncoding().GetBytes(request);
+	RSACryptoServiceProvider cspStrong = new RSACryptoServiceProvider(); // 2.1 and higher: Make RSACryptoServiceProvider that can handle SHA256, SHA512
+	cspStrong.ImportParameters(csp.ExportParameters(true));	// Copy to stronger RSACryptoServiceProvider
         byte[] hash = new SHA512CryptoServiceProvider().ComputeHash(data);  // Use SHA1CryptoServiceProvider for QZ Tray 2.0 and older
-        return Convert.ToBase64String(csp.SignHash(hash, CryptoConfig.MapNameToOID("SHA512"))); // Use "SHA1" for QZ Tray 2.0 and older
+        return Convert.ToBase64String(cspStrong.SignHash(hash, CryptoConfig.MapNameToOID("SHA512"))); // Use "SHA1" for QZ Tray 2.0 and older
     }
     catch(Exception ex)
     {

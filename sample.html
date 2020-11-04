@@ -414,6 +414,11 @@
                                                 <label for="pxlRotation">Rotation</label>
                                                 <input type="number" step="any" id="pxlRotation" class="form-control pull-right" />
                                             </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlSpool">Per Spool</label>
+                                                <input type="number" id="pxlSpool" class="form-control pull-right" />
+                                            </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
@@ -2302,6 +2307,7 @@
         $("#pxlPrinterTray").val(null);
         $("#pxlRasterize").prop('checked', false);
         $("#pxlRotation").val(0);
+        $("#pxlSpool").val("");
         $("#pxlScale").prop('checked', true);
         $("#pxlUnitsIN").prop('checked', true);
 
@@ -2825,12 +2831,15 @@
         }
 
         var copies = 1;
+        var perSpool = null;
         var jobName = null;
         if ($("#rawTab").hasClass("active")) {
             copies = includedValue($("#rawCopies"));
+            perSpool = includedValue($("#rawPerSpool"));
             jobName = includedValue($("#rawJobName"));
         } else {
             copies = includedValue($("#pxlCopies"));
+            perSpool = includedValue($("#pxlSpool"));
             jobName = includedValue($("#pxlJobName"));
         }
 
@@ -2838,7 +2847,7 @@
                             altPrinting: includedValue($("#rawAltPrinting"), isChecked($("#rawAltPrinting"), cleanConditions['rawAltPrinting'])),
                             encoding: includedValue($("#rawEncoding")),
                             endOfDoc: includedValue($("#rawEndOfDoc")),
-                            perSpool: includedValue($("#rawPerSpool")),
+                            perSpool: perSpool,
 
                             bounds: pxlBounds,
                             colorType: includedValue($("#pxlColorType")),

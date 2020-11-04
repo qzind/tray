@@ -272,6 +272,9 @@ public class PrintOptions {
             try { psOptions.paperThickness = configOpts.getDouble("paperThickness"); }
             catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "paperThickness", configOpts.opt("paperThickness")); }
         }
+        if (!configOpts.isNull("perSpool")) {
+            psOptions.perSpool = configOpts.optInt("perSpool", 0);
+        }
         if (!configOpts.isNull("printerTray")) {
             psOptions.printerTray = configOpts.optString("printerTray", null);
         }
@@ -404,6 +407,7 @@ public class PrintOptions {
         private Margins margins = new Margins();                                    //Page margins
         private Orientation orientation = null;                                     //Page orientation
         private double paperThickness = -1;                                         //Paper thickness
+        private int perSpool = 0;                                                   //Pages before sending to printer
         private String printerTray = null;                                          //Printer tray to use
         private boolean rasterize = true;                                           //Whether documents are rasterized before printing
         private double rotation = 0;                                                //Image rotation
@@ -462,6 +466,10 @@ public class PrintOptions {
 
         public double getPaperThickness() {
             return paperThickness;
+        }
+
+        public int getPerSpool() {
+            return perSpool;
         }
 
         public String getPrinterTray() {

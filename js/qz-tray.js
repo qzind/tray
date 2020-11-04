@@ -452,7 +452,7 @@ var qz = (function() {
                 altPrinting: false,
                 encoding: null,
                 endOfDoc: null,
-                perSpool: 1
+                perSpool: null // 1 for raw
             }
         },
 
@@ -1306,7 +1306,7 @@ var qz = (function() {
              *  @param {boolean} [options.altPrinting=false] Print the specified file using CUPS command line arguments.  Has no effect on Windows.
              *  @param {string} [options.encoding=null] Character set
              *  @param {string} [options.endOfDoc=null]
-             *  @param {number} [options.perSpool=1] Number of pages per spool.
+             *  @param {number} [options.perSpool=null] Number of pages per spool. Defaults to <code>1</code> for raw print jobs.
              *
              * @memberof qz.configs
              */

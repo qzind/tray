@@ -209,16 +209,16 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             bundle.append(new PDFWrapper(doc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation(), hints), page, doc.getNumberOfPages());
         }
 
-        if (pxlOpts.getPerSpool() > 0 && bundle.getNumberOfPages() > pxlOpts.getPerSpool()) {
+        if (pxlOpts.getSpoolSize() > 0 && bundle.getNumberOfPages() > pxlOpts.getSpoolSize()) {
             int jobNum = 1;
             int offset = 0;
             while(offset < bundle.getNumberOfPages()) {
                 job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT) + "-" + jobNum++);
-                job.setPageable(bundle.wrapAndPresent(offset, pxlOpts.getPerSpool()));
+                job.setPageable(bundle.wrapAndPresent(offset, pxlOpts.getSpoolSize()));
 
                 printCopies(output, pxlOpts, job, attributes);
 
-                offset += pxlOpts.getPerSpool();
+                offset += pxlOpts.getSpoolSize();
             }
         } else {
             job.setJobName(pxlOpts.getJobName(Constants.PDF_PRINT));

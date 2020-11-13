@@ -451,8 +451,7 @@ var qz = (function() {
 
                 altPrinting: false,
                 encoding: null,
-                endOfDoc: null,
-                perSpool: null // 1 for raw
+                spool: null
             }
         },
 
@@ -767,7 +766,16 @@ var qz = (function() {
                         config.rasterize = true;
                     }
                 }
-
+                if(_qz.tools.isVersionLess(2, 1, 3)) {
+                    if(config.spool.size) {
+                        config.perSpool = config.spool.size;
+                        delete config.spool.size;
+                    }
+                    if(config.spool.end) {
+                        config.endOfDoc = config.spool.end;
+                        delete config.spool.end;
+                    }
+                }
                 return config;
             },
 
@@ -1305,8 +1313,11 @@ var qz = (function() {
              *
              *  @param {boolean} [options.altPrinting=false] Print the specified file using CUPS command line arguments.  Has no effect on Windows.
              *  @param {string} [options.encoding=null] Character set
-             *  @param {string} [options.endOfDoc=null]
-             *  @param {number} [options.perSpool=null] Number of pages per spool. Defaults to <code>1</code> for raw print jobs.
+             *  @param {string} [options.endOfDoc=null] DEPRECATED Raw only: Character(s) denoting end of a page to control spooling.
+             *  @param {number} [options.perSpool=1] DEPRECATED: Number of pages per spool.
+             *  @param {Object} [options.spool=null] Advanced spooling options.
+             *   @param {number} [options.spool.size=null] Number of pages per spool.  Default is no limit.  If <code>spool.end</code> is provided, defaults to <code>1</code>
+             *   @param {string} [options.spool.end=null] Raw only: Character(s) denoting end of a page to control spooling.
              *
              * @memberof qz.configs
              */

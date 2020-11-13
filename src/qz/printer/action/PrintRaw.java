@@ -266,9 +266,9 @@ public class PrintRaw implements PrintProcessor {
         PrintOptions.Raw rawOpts = options.getRawOptions();
 
         List<ByteArrayBuilder> pages;
-        if (rawOpts.getPerSpool() > 0 && rawOpts.getEndOfDoc() != null && !rawOpts.getEndOfDoc().isEmpty()) {
+        if (rawOpts.getSpoolSize() > 0 && rawOpts.getSpoolEnd() != null && !rawOpts.getSpoolEnd().isEmpty()) {
             try {
-                pages = ByteUtilities.splitByteArray(commands.getByteArray(), rawOpts.getEndOfDoc().getBytes(encoding), rawOpts.getPerSpool());
+                pages = ByteUtilities.splitByteArray(commands.getByteArray(), rawOpts.getSpoolEnd().getBytes(encoding), rawOpts.getSpoolSize());
             }
             catch(UnsupportedEncodingException e) {
                 throw new PrintException(e);

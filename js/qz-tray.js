@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.1.2
+ * @version 2.1.3-RC1
  * @overview QZ Tray Connector
  * <p/>
  * Connects a web client to the QZ Tray software.
@@ -38,7 +38,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
-        VERSION: "2.1.2",                              //must match @version above
+        VERSION: "2.1.3-RC1",                              //must match @version above
         DEBUG: false,
 
         log: {
@@ -766,12 +766,12 @@ var qz = (function() {
                         config.rasterize = true;
                     }
                 }
-                if(_qz.tools.isVersionLess(2, 1, 3)) {
-                    if(config.spool.size) {
+                if(_qz.tools.versionCompare(2, 1, 3) < 0) {
+                    if(config.spool && config.spool.size) {
                         config.perSpool = config.spool.size;
                         delete config.spool.size;
                     }
-                    if(config.spool.end) {
+                    if(config.spool && config.spool.end) {
                         config.endOfDoc = config.spool.end;
                         delete config.spool.end;
                     }

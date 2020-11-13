@@ -219,8 +219,8 @@
                                             </div>
 
                                             <div class="form-group form-inline">
-                                                <label for="rawEndOfDoc">End Of Doc</label>
-                                                <input type="text" id="rawEndOfDoc" class="form-control pull-right" />
+                                                <label for="rawSpoolEnd">End Of Doc</label>
+                                                <input type="text" id="rawSpoolEnd" class="form-control pull-right" />
                                             </div>
 
                                             <div class="form-group form-inline">
@@ -413,6 +413,11 @@
                                             <div class="form-group form-inline">
                                                 <label for="pxlRotation">Rotation</label>
                                                 <input type="number" step="any" id="pxlRotation" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="pxlSpoolSize">Per Spool</label>
+                                                <input type="number" id="pxlSpoolSize" class="form-control pull-right" />
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -2273,9 +2278,9 @@
     /// Resets ///
     function resetRawOptions() {
         //config
-        $("#rawPerSpool").val(1);
+        $("#rawSpoolSize").val(1);
         $("#rawEncoding").val(null);
-        $("#rawEndOfDoc").val(null);
+        $("#rawSpoolEnd").val(null);
         $("#rawAltPrinting").prop('checked', false);
         $("#rawCopies").val(1);
 
@@ -2302,6 +2307,7 @@
         $("#pxlPrinterTray").val(null);
         $("#pxlRasterize").prop('checked', false);
         $("#pxlRotation").val(0);
+        $("#pxlSpoolSize").val("");
         $("#pxlScale").prop('checked', true);
         $("#pxlUnitsIN").prop('checked', true);
 
@@ -2825,20 +2831,22 @@
         }
 
         var copies = 1;
+        var spoolSize = null;
         var jobName = null;
         if ($("#rawTab").hasClass("active")) {
             copies = includedValue($("#rawCopies"));
+            spoolSize = includedValue($("#rawSpoolSize"));
             jobName = includedValue($("#rawJobName"));
         } else {
             copies = includedValue($("#pxlCopies"));
+            spoolSize = includedValue($("#pxlSpoolSize"));
             jobName = includedValue($("#pxlJobName"));
         }
 
         cfg.reconfigure({
                             altPrinting: includedValue($("#rawAltPrinting"), isChecked($("#rawAltPrinting"), cleanConditions['rawAltPrinting'])),
                             encoding: includedValue($("#rawEncoding")),
-                            endOfDoc: includedValue($("#rawEndOfDoc")),
-                            perSpool: includedValue($("#rawPerSpool")),
+                            spool: { size: spoolSize, end: includedValue($("#rawSpoolEnd")) },
 
                             bounds: pxlBounds,
                             colorType: includedValue($("#pxlColorType")),

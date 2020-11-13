@@ -52,12 +52,30 @@ public class PrintOptions {
         if (!configOpts.isNull("encoding")) {
             rawOptions.encoding = configOpts.optString("encoding", null);
         }
-        if (!configOpts.isNull("endOfDoc")) {
-            rawOptions.endOfDoc = configOpts.optString("endOfDoc", null);
-        }
-        if (!configOpts.isNull("perSpool")) {
-            try { rawOptions.perSpool = configOpts.getInt("perSpool"); }
-            catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "perSpool", configOpts.opt("perSpool")); }
+        if (!configOpts.isNull("spool")) {
+            JSONObject spool = configOpts.optJSONObject("spool");
+            if (spool != null) {
+                if (!spool.isNull("size")) {
+                    try { rawOptions.spoolSize = spool.getInt("size"); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "spool.size", spool.opt("size")); }
+                }
+                // TODO: Implement spool.start
+                if (!spool.isNull("end")) {
+                    rawOptions.spoolEnd = spool.optString("end");
+                }
+
+            } else {
+                LoggerUtilities.optionWarn(log, "JSONObject", "spool", configOpts.opt("spool"));
+            }
+        } else {
+            // Deprecated
+            if (!configOpts.isNull("perSpool")) {
+                try { rawOptions.spoolSize = configOpts.getInt("perSpool"); }
+                catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "perSpool", configOpts.opt("perSpool")); }
+            }
+            if (!configOpts.isNull("endOfDoc")) {
+                rawOptions.spoolEnd = configOpts.optString("endOfDoc", null);
+            }
         }
         if (!configOpts.isNull("copies")) {
             try { rawOptions.copies = configOpts.getInt("copies"); }
@@ -272,6 +290,17 @@ public class PrintOptions {
             try { psOptions.paperThickness = configOpts.getDouble("paperThickness"); }
             catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "paperThickness", configOpts.opt("paperThickness")); }
         }
+        if (!configOpts.isNull("spool")) {
+            JSONObject spool = configOpts.optJSONObject("spool");
+            if (spool != null) {
+                if (!spool.isNull("size")) {
+                    try { psOptions.spoolSize = spool.getInt("size"); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "spool.size", spool.opt("size")); }
+                }
+            } else {
+                LoggerUtilities.optionWarn(log, "JSONObject", "spool", configOpts.opt("spool"));
+            }
+        }
         if (!configOpts.isNull("printerTray")) {
             psOptions.printerTray = configOpts.optString("printerTray", null);
         }
@@ -358,8 +387,8 @@ public class PrintOptions {
     public class Raw {
         private boolean altPrinting = false;    //Alternate printing for linux systems
         private String encoding = null;         //Text encoding / charset
-        private String endOfDoc = null;         //End of document character
-        private int perSpool = 1;               //Pages per spool
+        private String spoolEnd = null;         //End of document character(s)
+        private int spoolSize = 1;              //Pages per spool
         private int copies = 1;                 //Job copies
         private String jobName = null;          //Job name
 
@@ -372,12 +401,12 @@ public class PrintOptions {
             return encoding;
         }
 
-        public String getEndOfDoc() {
-            return endOfDoc;
+        public String getSpoolEnd() {
+            return spoolEnd;
         }
 
-        public int getPerSpool() {
-            return perSpool;
+        public int getSpoolSize() {
+            return spoolSize;
         }
 
         public int getCopies() {
@@ -404,6 +433,7 @@ public class PrintOptions {
         private Margins margins = new Margins();                                    //Page margins
         private Orientation orientation = null;                                     //Page orientation
         private double paperThickness = -1;                                         //Paper thickness
+        private int spoolSize = 0;                                                   //Pages before sending to printer
         private String printerTray = null;                                          //Printer tray to use
         private boolean rasterize = true;                                           //Whether documents are rasterized before printing
         private double rotation = 0;                                                //Image rotation
@@ -462,6 +492,10 @@ public class PrintOptions {
 
         public double getPaperThickness() {
             return paperThickness;
+        }
+
+        public int getSpoolSize() {
+            return spoolSize;
         }
 
         public String getPrinterTray() {

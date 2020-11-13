@@ -766,7 +766,7 @@ var qz = (function() {
                         config.rasterize = true;
                     }
                 }
-                if(_qz.tools.versionCompare(2, 1, 2, 20) < 0) {
+                if(_qz.tools.versionCompare(2, 1, 2, 11) < 0) {
                     if(config.spool) {
                         if(config.spool.size) {
                             config.perSpool = config.spool.size;

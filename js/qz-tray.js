@@ -921,13 +921,20 @@ var qz = (function() {
          * Set the printer assigned to this config.
          * @param {string|Object} newPrinter Name of printer. Use object type to specify printing to file or host.
          *  @param {string} [newPrinter.name] Name of printer to send printing.
-         *  @param {string} [newPrinter.file] Name of file to send printing.
+         *  @param {string} [newPrinter.file] DEPRECATED: Name of file to send printing.
          *  @param {string} [newPrinter.host] IP address or host name to send printing.
          *  @param {string} [newPrinter.port] Port used by &lt;printer.host>.
          */
         this.setPrinter = function(newPrinter) {
             if (typeof newPrinter === 'string') {
                 newPrinter = { name: newPrinter };
+            }
+
+            if(newPrinter && newPrinter.file) {
+                // TODO: Warn for UNC paths too https://github.com/qzind/tray/issues/730
+                if(newPrinter.file.indexOf("\\\\") != 0) {
+                    _qz.log.warn("Printing to file is deprecated.  See https://github.com/qzind/tray/issues/730");
+                }
             }
 
             this.printer = newPrinter;

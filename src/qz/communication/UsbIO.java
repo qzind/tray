@@ -86,6 +86,14 @@ public class UsbIO implements DeviceIO {
         }
     }
 
+    public byte[] getFeatureReport(int responseSize, Byte reportId) throws DeviceException {
+        throw new DeviceException("the usb interface does not yet support feature reports, use the hid one instead");
+    }
+
+    public void sendFeatureReport(byte[] data, Byte reportId) throws DeviceException {
+        throw new DeviceException("the usb interface does not yet support feature reports, use the hid one instead");
+    }
+
     /**
      * Data will be sent to or received from the open usb device, depending on the {@code endpoint} used.
      *

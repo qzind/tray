@@ -23,13 +23,13 @@ public class UsbUtilities {
 
     private static final Logger log = LoggerFactory.getLogger(UsbUtilities.class);
 
-    public static Short hexToShort(String hex) {
+    public static Integer hexToInt(String hex) {
         if (hex == null || hex.isEmpty()) {
             return null;
         }
 
         if (hex.startsWith("0x")) { hex = hex.substring(2); }
-        return (short)Integer.parseInt(hex, 16);
+        return Integer.parseInt(hex, 16);
     }
 
     public static Byte hexToByte(String hex) {
@@ -132,7 +132,7 @@ public class UsbUtilities {
     public static JSONArray getDeviceInterfacesJSON(DeviceOptions dOpts) throws DeviceException {
         JSONArray ifaceJSON = new JSONArray();
 
-        List ifaces = getDeviceInterfaces(dOpts.getVendorId(), dOpts.getProductId());
+        List ifaces = getDeviceInterfaces(dOpts.getVendorId().shortValue(), dOpts.getProductId().shortValue());
         for(Object o : ifaces) {
             UsbInterface iface = (UsbInterface)o;
             UsbInterfaceDescriptor desc = iface.getUsbInterfaceDescriptor();
@@ -154,7 +154,7 @@ public class UsbUtilities {
     public static JSONArray getInterfaceEndpointsJSON(DeviceOptions dOpts) throws DeviceException {
         JSONArray endJSON = new JSONArray();
 
-        List endpoints = getInterfaceEndpoints(dOpts.getVendorId(), dOpts.getProductId(), dOpts.getInterfaceId());
+        List endpoints = getInterfaceEndpoints(dOpts.getVendorId().shortValue(), dOpts.getProductId().shortValue(), dOpts.getInterfaceId());
         for(Object o : endpoints) {
             UsbEndpoint endpoint = (UsbEndpoint)o;
             UsbEndpointDescriptor desc = endpoint.getUsbEndpointDescriptor();

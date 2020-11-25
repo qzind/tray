@@ -25,7 +25,7 @@ public class PJHA_HidIO implements DeviceIO {
 
 
     public PJHA_HidIO(DeviceOptions dOpts) throws DeviceException {
-        this(PJHA_HidUtilities.findDevice(dOpts.getVendorId(), dOpts.getProductId(), dOpts.getUsagePage(), dOpts.getSerial()));
+        this(PJHA_HidUtilities.findDevice(dOpts));
     }
 
     public PJHA_HidIO(HidDeviceInfo deviceInfo) throws DeviceException {

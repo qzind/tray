@@ -134,7 +134,12 @@ public class MacUtilities {
     }
 
     public static int getProcessID() {
-        return CLibrary.INSTANCE.getpid();
+        try {
+            return CLibrary.INSTANCE.getpid();
+        } catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
+            log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
+        }
+        return -1;
     }
 
     private interface CLibrary extends Library {

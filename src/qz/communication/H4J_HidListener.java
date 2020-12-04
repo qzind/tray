@@ -54,7 +54,7 @@ public class H4J_HidListener implements DeviceListener, HidServicesListener {
 
     @Override
     public void close() {
-        HidManager.getHidServices().removeUsbServicesListener(this);
+        HidManager.getHidServices().removeHidServicesListener(this);
     }
 
 }

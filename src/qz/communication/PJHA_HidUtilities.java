@@ -32,20 +32,20 @@ public class PJHA_HidUtilities {
         return devicesJSON;
     }
 
-    public static HidDeviceInfo findDevice(Short vendorId, Short productId, Short usagePage, String serial) {
-        if (vendorId == null) {
+    public static HidDeviceInfo findDevice(DeviceOptions dOpts) {
+        if (dOpts.getVendorId() == null) {
             throw new IllegalArgumentException("Vendor ID cannot be null");
         }
-        if (productId == null) {
+        if (dOpts.getProductId() == null) {
             throw new IllegalArgumentException("Product ID cannot be null");
         }
 
 
         List<HidDeviceInfo> devList = PureJavaHidApi.enumerateDevices();
         for(HidDeviceInfo device : devList) {
-            if (device.getVendorId() == vendorId && device.getProductId() == productId
-                    && (usagePage == null || usagePage == device.getUsagePage())
-                    && (serial == null || serial.equals(device.getSerialNumberString()))) {
+            if (device.getVendorId() == dOpts.getVendorId().shortValue() && device.getProductId() == dOpts.getProductId().shortValue()
+                    && (dOpts.getUsagePage() == null || dOpts.getUsagePage().shortValue() == device.getUsagePage())
+                    && (dOpts.getSerial() == null || dOpts.getSerial().equals(device.getSerialNumberString()))) {
                 return device;
             }
         }

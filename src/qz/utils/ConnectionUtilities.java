@@ -46,12 +46,8 @@ public final class ConnectionUtilities {
             return urlConn.getInputStream();
         } catch(IOException e) {
             if(e instanceof SSLHandshakeException) {
-                try {
-                    logSslInformation(urlString);
-                } catch(Throwable t) {
-                    log.error("Unable to log cert info", t);
-                }
-             }
+                logSslInformation(urlString);
+            }
             throw e;
         }
     }
@@ -81,31 +77,32 @@ public final class ConnectionUtilities {
     /**
      * Log certificate information for a given URL, useful for troubleshooting "PKIX path building failed"
      */
-    private static void logSslInformation(String urlString) throws Exception {
-        URL url = new URL(urlString);
-        SSLContext context = SSLContext.getInstance("TLS");
-        context.init(null, new TrustManager[] {BLIND_TRUST_MANAGER}, null);
-        SSLSocketFactory factory = context.getSocketFactory();
-        SSLSocket socket = (SSLSocket)factory.createSocket(url.getHost(), url.getPort());
+    private static void logSslInformation(String urlString) {
+        StringBuilder certInfo = new StringBuilder("\nCertificate details are unavailable");
         try {
+            URL url = new URL(urlString);
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(null, new TrustManager[] {BLIND_TRUST_MANAGER}, null);
+            SSLSocketFactory factory = context.getSocketFactory();
+            SSLSocket socket = (SSLSocket)factory.createSocket(url.getHost(), url.getPort());
             socket.startHandshake();
             socket.close();
-        } catch (SSLException ignore) {}
 
-        Certificate[] chain = socket.getSession().getPeerCertificates();
-        StringBuilder certInfo = new StringBuilder();
-        if (chain == null) {
-            certInfo.append("\nCertificate details are unavailable");
-        } else {
-            for(java.security.cert.Certificate cert : chain) {
-                if (cert instanceof X509Certificate) {
-                    X509Certificate x = (X509Certificate)cert;
-                    certInfo.append(String.format("\n\n\t%s: %s", "Subject: ", x.getIssuerX500Principal()));
-                    certInfo.append(String.format("\n\t%s: %s", "From: ", x.getNotBefore()));
-                    certInfo.append(String.format("\n\t%s: %s", "Expires: ", x.getNotAfter()));
+            Certificate[] chain = socket.getSession().getPeerCertificates();
+
+            if (chain != null) {
+                certInfo = new StringBuilder();
+                for(java.security.cert.Certificate cert : chain) {
+                    if (cert instanceof X509Certificate) {
+                        X509Certificate x = (X509Certificate)cert;
+                        certInfo.append(String.format("\n\n\t%s: %s", "Subject: ", x.getIssuerX500Principal()));
+                        certInfo.append(String.format("\n\t%s: %s", "From: ", x.getNotBefore()));
+                        certInfo.append(String.format("\n\t%s: %s", "Expires: ", x.getNotAfter()));
+                    }
                 }
             }
-        }
+
+        } catch(Exception ignore) {}
         log.error("A trust exception has occurred with the provided certificate(s). This\n" +
                           "\tmay be SSL misconfiguration, interception by proxy, firewall, antivirus\n" +
                           "\tor in some cases a dated or corrupted Java installation. Please attempt\n" +

@@ -11,6 +11,7 @@ package qz.utils;
 
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
 import org.codehaus.jettison.json.JSONException;
@@ -25,10 +26,12 @@ import qz.auth.Certificate;
 import qz.auth.RequestState;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
+import qz.common.PropertyHelper;
 import qz.communication.FileIO;
 import qz.communication.FileParams;
 import qz.installer.WindowsSpecialFolders;
 import qz.exception.NullCommandException;
+import qz.installer.certificate.CertificateManager;
 import qz.ws.PrintSocketServer;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -318,56 +321,96 @@ public class FileUtilities {
         return lastSlash < 0? "":filePath.substring(0, lastSlash);
     }
 
+    public static ArgParser.ExitStatus writeFileAllowProperty(String path, String vendor) throws IOException {
+        PropertyHelper props = new PropertyHelper(new File(CertificateManager.getWritableLocation(), Constants.PROPS_FILE + ".properties"));
+
+        StringBuilder before = getFileAllowProperty(props);
+        if(!before.isEmpty() && !StringUtils.endsWith(before, ";")) {
+            before.append(";");
+        }
+
+        StringBuilder after = new StringBuilder();
+        after.append(path);
+        if(vendor != null && !vendor.isEmpty()) {
+            after.append("|" + escapeFileName(vendor));
+        }
+        after.append(";");
+
+        // Avoid adding duplicates
+        if(before.indexOf(after.toString()) != -1) {
+            log.warn("Skipping \"{}\" entry in {}.properties, it already exists:  \n\t\tUNCHANGED:", ArgValue.FILE_ALLOW.getMatches()[0], Constants.PROPS_FILE, before);
+            return ArgParser.ExitStatus.SUCCESS;
+        }
+
+        after.append(before);
+        log.info("Updating \"{}\" entry in {}.properties: \n\t\tBEFORE: {}\n\t\tAFTER: {}", ArgValue.FILE_ALLOW.getMatches()[0], Constants.PROPS_FILE, before, after);
+        props.remove("file.whitelist");
+        props.setProperty("file.allow", after.toString());
+        return props.save() ? ArgParser.ExitStatus.SUCCESS : ArgParser.ExitStatus.GENERAL_ERROR;
+    }
+
+    private static StringBuilder getFileAllowProperty(Properties props) {
+        StringBuilder propString = new StringBuilder();
+        if(props != null) {
+            propString.append(props.getProperty("file.allow", ""));
+            if (propString.isEmpty()) {
+                // Deprecated
+                propString.append(props.getProperty("file.whitelist", ""));
+                if (!propString.isEmpty()) {
+                    log.warn("Property \"file.whitelist\" is deprecated and will be removed in a future version.  Please use \"file.whitelist\" instead.");
+                }
+            }
+        }
+        return propString;
+    }
+
     private static void populateWhiteList() {
         whiteList = new ArrayList<>();
         //default sandbox locations. More can be added through the properties file
         whiteList.add(new AbstractMap.SimpleEntry<>(USER_DIR, "|sandbox|"));
         whiteList.add(new AbstractMap.SimpleEntry<>(SHARED_DIR, "|sandbox|"));
 
-        Properties props = PrintSocketServer.getTrayProperties();
-        if (props != null) {
-            StringBuilder propString = new StringBuilder(props.getProperty("file.whitelist", ""));
-            boolean escaped = false;
-            boolean resetPending = false, tokenPending = false;
-            ArrayList<String> tokens = new ArrayList<>();
-            //unescaper and tokenizer
-            for(int i = 0; i < propString.length(); i++) {
-                char iteratingChar = propString.charAt(i);
-                //if the char before this was an escape char, we are no longer escaped and we skip delimiter detection
-                if (escaped) {
-                    escaped = false;
+        StringBuilder propString = getFileAllowProperty(PrintSocketServer.getTrayProperties());
+        boolean escaped = false;
+        boolean resetPending = false, tokenPending = false;
+        ArrayList<String> tokens = new ArrayList<>();
+        //unescaper and tokenizer
+        for(int i = 0; i < propString.length(); i++) {
+            char iteratingChar = propString.charAt(i);
+            //if the char before this was an escape char, we are no longer escaped and we skip delimiter detection
+            if (escaped) {
+                escaped = false;
+            } else {
+                if (iteratingChar == '^') {
+                    escaped = true;
+                    propString.deleteCharAt(i);
+                    i--;
                 } else {
-                    if (iteratingChar == '^') {
-                        escaped = true;
-                        propString.deleteCharAt(i);
-                        i--;
-                    } else {
-                        tokenPending = iteratingChar == '|' || iteratingChar == ';';
-                        resetPending = iteratingChar == ';';
-                    }
+                    tokenPending = iteratingChar == '|' || iteratingChar == ';';
+                    resetPending = iteratingChar == ';';
                 }
-                //If the last char isn't a ; or |
-                if (i == propString.length() - 1) {
-                    tokenPending = true;
-                    resetPending = true;
+            }
+            //If the last char isn't a ; or |
+            if (i == propString.length() - 1) {
+                tokenPending = true;
+                resetPending = true;
+            }
+            //if a delimiter is found, save string to token and delete it from propString
+            if (tokenPending) {
+                tokenPending = false;
+                tokens.add(propString.substring(0, i));
+                propString.delete(0, i + 1);
+                i = -1;
+            }
+            //if a semicolon was found or we are on the last char of the string, dump the tokens into a pair and add it to whiteList
+            if (resetPending) {
+                resetPending = false;
+                String commonNames = tokens.size() > 1? "|":"";
+                for(int n = 1; n < tokens.size(); n++) {
+                    commonNames += escapeFileName(tokens.get(n)) + "|";
                 }
-                //if a delimiter is found, save string to token and delete it from propString
-                if (tokenPending) {
-                    tokenPending = false;
-                    tokens.add(propString.substring(0, i));
-                    propString.delete(0, i + 1);
-                    i = -1;
-                }
-                //if a semicolon was found or we are on the last char of the string, dump the tokens into a pair and add it to whiteList
-                if (resetPending) {
-                    resetPending = false;
-                    String commonNames = tokens.size() > 1? "|":"";
-                    for(int n = 1; n < tokens.size(); n++) {
-                        commonNames += escapeFileName(tokens.get(n)) + "|";
-                    }
-                    whiteList.add(new AbstractMap.SimpleEntry<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));
-                    tokens.clear();
-                }
+                whiteList.add(new AbstractMap.SimpleEntry<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));
+                tokens.clear();
             }
         }
     }

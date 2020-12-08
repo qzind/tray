@@ -291,6 +291,17 @@ public class ArgParser {
                 return true;
             }
 
+            // Handle file.allow
+            String allowPath;
+            if ((allowPath = valueOf(argValue = FILE_ALLOW)) != null) {
+                exitStatus = FileUtilities.writeFileAllowProperty(allowPath, valueOf(SANDBOX));
+                return true;
+            }
+            if ((allowPath = valueOf(argValue = FILE_REMOVE)) != null) {
+                exitStatus = FileUtilities.deleteFileAllowProperty(allowPath, valueOf(SANDBOX));
+                return true;
+            }
+
             // Print library list
             if (hasFlag(LIBINFO)) {
                 SecurityInfo.printLibInfo();

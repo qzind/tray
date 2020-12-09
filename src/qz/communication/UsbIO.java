@@ -87,11 +87,11 @@ public class UsbIO implements DeviceIO {
     }
 
     public byte[] getFeatureReport(int responseSize, Byte reportId) throws DeviceException {
-        throw new DeviceException("the usb interface does not yet support feature reports, use the hid one instead");
+        throw new DeviceException("USB feature reports are not supported");
     }
 
     public void sendFeatureReport(byte[] data, Byte reportId) throws DeviceException {
-        throw new DeviceException("the usb interface does not yet support feature reports, use the hid one instead");
+        throw new DeviceException("USB feature reports are not supported");
     }
 
     /**

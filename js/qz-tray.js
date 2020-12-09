@@ -2048,29 +2048,6 @@ var qz = (function() {
              * @memberof qz.hid
              */
             sendFeatureReport: function(deviceInfo) {
-                //backwards compatibility
-                if (typeof deviceInfo !== 'object') {
-                    deviceInfo = {
-                        vendorId: arguments[0],
-                        productId: arguments[1],
-                        data: arguments[2],
-                        endpoint: arguments[3]
-                    };
-                }
-
-                if (_qz.tools.versionCompare(2, 1, 0, 12) >= 0) {
-                    if (typeof deviceInfo.data !== 'object') {
-                        deviceInfo.data = {
-                            data: deviceInfo.data,
-                            type: "PLAIN"
-                        }
-                    }
-
-                    if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
-                        deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
-                    }
-                }
-
                 return _qz.websocket.dataPromise('hid.sendFeatureReport', deviceInfo);
             },
 
@@ -2088,15 +2065,6 @@ var qz = (function() {
              * @memberof qz.hid
              */
             getFeatureReport: function(deviceInfo) {
-                //backwards compatibility
-                if (typeof deviceInfo !== 'object') {
-                    deviceInfo = {
-                        vendorId: arguments[0],
-                        productId: arguments[1],
-                        responseSize: arguments[2]
-                    };
-                }
-
                 return _qz.websocket.dataPromise('hid.getFeatureReport', deviceInfo);
             },
 

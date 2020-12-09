@@ -37,7 +37,9 @@ public class PJHA_HidListener implements DeviceListener, DeviceRemovalListener {
 
     @Override
     public void close() {
-        device.setDeviceRemovalListener(null);
+        if (device != null) {
+            device.setDeviceRemovalListener(null);
+        }
     }
 
     @Override

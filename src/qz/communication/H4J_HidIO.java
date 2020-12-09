@@ -12,7 +12,7 @@ public class H4J_HidIO implements DeviceIO {
 
 
     public H4J_HidIO(DeviceOptions dOpts) throws DeviceException {
-        this(H4J_HidUtilities.findDevice(dOpts.getVendorId(), dOpts.getProductId(), dOpts.getUsagePage(), dOpts.getSerial()));
+        this(H4J_HidUtilities.findDevice(dOpts));
     }
 
     public H4J_HidIO(HidDevice device) throws DeviceException {

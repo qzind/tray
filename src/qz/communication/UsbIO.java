@@ -14,7 +14,7 @@ public class UsbIO implements DeviceIO {
 
 
     public UsbIO(DeviceOptions dOpts) throws DeviceException {
-        UsbDevice device = UsbUtilities.findDevice(dOpts.getVendorId(), dOpts.getProductId());
+        UsbDevice device = UsbUtilities.findDevice(dOpts.getVendorId().shortValue(), dOpts.getProductId().shortValue());
 
         if (device == null) {
             throw new DeviceException("USB device could not be found");

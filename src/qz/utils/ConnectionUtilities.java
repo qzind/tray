@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,6 +23,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
+
+import javax.net.ssl.*;
 
 public final class ConnectionUtilities {
 
@@ -34,11 +38,76 @@ public final class ConnectionUtilities {
      * @param urlString an absolute URL giving location of resource to read.
      */
     public static InputStream getInputStream(String urlString) throws IOException {
-        URLConnection urlConn = new URL(urlString).openConnection();
-        for( String key : getRequestProperties().keySet()) {
-            urlConn.setRequestProperty(key, requestProps.get(key));
+        try {
+            URLConnection urlConn = new URL(urlString).openConnection();
+            for( String key : getRequestProperties().keySet()) {
+                urlConn.setRequestProperty(key, requestProps.get(key));
+            }
+            return urlConn.getInputStream();
+        } catch(IOException e) {
+            if(e instanceof SSLHandshakeException) {
+                logSslInformation(urlString);
+            }
+            throw e;
         }
-        return urlConn.getInputStream();
+    }
+
+    /**
+     * A blind SSL trust manager, for debugging SSL issues
+     */
+    private static X509TrustManager BLIND_TRUST_MANAGER = new X509TrustManager() {
+        private X509Certificate[] accepted;
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] xcs, String string) {
+            // do nothing
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] accepted, String string) {
+            this.accepted = accepted;
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return accepted;
+        }
+    };
+
+    /**
+     * Log certificate information for a given URL, useful for troubleshooting "PKIX path building failed"
+     */
+    private static void logSslInformation(String urlString) {
+        StringBuilder certInfo = new StringBuilder("\nCertificate details are unavailable");
+        try {
+            URL url = new URL(urlString);
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(null, new TrustManager[] {BLIND_TRUST_MANAGER}, null);
+            SSLSocketFactory factory = context.getSocketFactory();
+            SSLSocket socket = (SSLSocket)factory.createSocket(url.getHost(), url.getPort());
+            socket.startHandshake();
+            socket.close();
+
+            Certificate[] chain = socket.getSession().getPeerCertificates();
+
+            if (chain != null) {
+                certInfo = new StringBuilder();
+                for(java.security.cert.Certificate cert : chain) {
+                    if (cert instanceof X509Certificate) {
+                        X509Certificate x = (X509Certificate)cert;
+                        certInfo.append(String.format("\n\n\t%s: %s", "Subject: ", x.getIssuerX500Principal()));
+                        certInfo.append(String.format("\n\t%s: %s", "From: ", x.getNotBefore()));
+                        certInfo.append(String.format("\n\t%s: %s", "Expires: ", x.getNotAfter()));
+                    }
+                }
+            }
+
+        } catch(Exception ignore) {}
+        log.error("A trust exception has occurred with the provided certificate(s). This\n" +
+                          "\tmay be SSL misconfiguration, interception by proxy, firewall, antivirus\n" +
+                          "\tor in some cases a dated or corrupted Java installation. Please attempt\n" +
+                          "\tto resolve this problem manually before reaching out to support." +
+                          "{}\n", certInfo);
     }
 
     private static Map<String, String> getRequestProperties() {

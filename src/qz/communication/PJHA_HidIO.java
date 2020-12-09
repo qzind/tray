@@ -121,14 +121,7 @@ public class PJHA_HidIO implements DeviceIO {
 
     public void sendFeatureReport(byte[] data, Byte reportId) throws DeviceException {
         if (reportId == null) { reportId = (byte)0x00; }
-
-        byte[] report = new byte[1 + data.length];
-        report[0] = reportId;
-        System.arraycopy(data, 0, report, 1, data.length);
-
-        //NOTE this form of this method is deprecated in most recent version of purejavahidapi
-        //once the dependency is updated, the new version accepts the report id separately from the data
-        int wrote = device.setFeatureReport(report, report.length); 
+        int wrote = device.setFeatureReport(reportId, data, data.length); 
 
         if (wrote == -1) {
             throw new DeviceException("Failed to write to device");

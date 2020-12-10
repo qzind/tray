@@ -325,7 +325,7 @@ public class FileUtilities {
         PropertyHelper props = new PropertyHelper(new File(CertificateManager.getWritableLocation(), Constants.PROPS_FILE + ".properties"));
 
         StringBuilder before = getFileAllowProperty(props);
-        if(!before.isEmpty() && !StringUtils.endsWith(before, ";")) {
+        if(!before.toString().isEmpty() && !StringUtils.endsWith(before, ";")) {
             before.append(";");
         }
 
@@ -353,10 +353,10 @@ public class FileUtilities {
         StringBuilder propString = new StringBuilder();
         if(props != null) {
             propString.append(props.getProperty("file.allow", ""));
-            if (propString.isEmpty()) {
+            if (propString.toString().isEmpty()) {
                 // Deprecated
                 propString.append(props.getProperty("file.whitelist", ""));
-                if (!propString.isEmpty()) {
+                if (!propString.toString().isEmpty()) {
                     log.warn("Property \"file.whitelist\" is deprecated and will be removed in a future version.  Please use \"file.whitelist\" instead.");
                 }
             }

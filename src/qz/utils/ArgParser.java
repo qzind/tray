@@ -298,7 +298,7 @@ public class ArgParser {
                 return true;
             }
             if ((allowPath = valueOf(argValue = FILE_REMOVE)) != null) {
-                exitStatus = FileUtilities.deleteFileAllowProperty(allowPath, valueOf(SANDBOX));
+                //exitStatus = FileUtilities.deleteFileAllowProperty(allowPath, valueOf(SANDBOX));
                 return true;
             }
 

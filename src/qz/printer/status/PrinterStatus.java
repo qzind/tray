@@ -2,6 +2,7 @@ package qz.printer.status;
 
 import qz.printer.PrintServiceMatcher;
 import qz.printer.info.NativePrinter;
+import qz.utils.ByteUtilities;
 import qz.utils.SystemUtilities;
 
 import java.util.Locale;
@@ -13,37 +14,53 @@ import static qz.printer.status.PrinterStatusType.*;
  */
 public class PrinterStatus {
 
-    public PrinterStatusType type;
+    public PrinterStatusType printerStatus;
+    public JobStatusType jobStatus;
     public String cupsString;
 
     private String issuingPrinterName;
 
 
-    public PrinterStatus(PrinterStatusType type, String issuingPrinterName) {
-        this(type, issuingPrinterName, "");
+    public PrinterStatus(PrinterStatusType printerStatus, JobStatusType jobStatus, String issuingPrinterName) {
+        this(printerStatus, jobStatus, issuingPrinterName, "");
     }
 
-    public PrinterStatus(PrinterStatusType type, String issuingPrinterName, String cupsString) {
-        this.type = type;
+    public PrinterStatus(PrinterStatusType printerStatus, JobStatusType jobStatus, String issuingPrinterName, String cupsString) {
+        this.printerStatus = printerStatus;
+        this.jobStatus = jobStatus;
         this.issuingPrinterName = issuingPrinterName;
         this.cupsString = cupsString;
     }
 
-    public static PrinterStatus[] getFromWMICode(int code, String issuingPrinterName) {
-        if (code == 0) {
-            return new PrinterStatus[] {new PrinterStatus(OK, issuingPrinterName)};
+    public static PrinterStatus[] getFromWMICode(int printerStatusCode, int jobStatusCode, String issuingPrinterName) {
+        //if (printerCode == 0) {
+        //    return new PrinterStatus[] {new PrinterStatus(OK, issuingPrinterName)};
+        //}
+
+        // Most of the time a printer or a job will have a singular status
+        // however, bitwise operators allow multiple statuses so we'll prepare our
+        // array to accommodate
+
+        PrinterStatusType[] printerStatuses = PrinterStatusType.unwind(printerStatusCode);
+        JobStatusType[] jobStatuses = JobStatusType.unwind(jobStatusCode);
+        PrinterStatus[] statusArray = new PrinterStatus[printerStatuses.length * jobStatuses.length];
+        int i = 0;
+        for(PrinterStatusType printerStatus : printerStatuses) {
+            for(JobStatusType jobStatus : jobStatuses) {
+                statusArray[i++] = new PrinterStatus(printerStatus, jobStatus, issuingPrinterName);
+            }
         }
 
-        int bitPopulation = Integer.bitCount(code);
+        /*int bitPopulation = Integer.bitCount(printerStatusCode);
         PrinterStatus[] statusArray = new PrinterStatus[bitPopulation];
         int mask = 1;
 
         while(bitPopulation > 0) {
-            if ((mask & code) > 0) {
+            if ((mask & printerStatusCode) > 0) {
                 statusArray[--bitPopulation] = new PrinterStatus(codeLookupTable.get(mask), issuingPrinterName);
             }
             mask <<= 1;
-        }
+        }*/
         return statusArray;
     }
 
@@ -80,7 +97,7 @@ public class PrinterStatus {
     }
 
     public String toString() {
-        String returnString = type.getName() + ": Level " + type.getSeverity() + ", StatusCode " + type.getCode() + ", From " + getIssuingPrinterName(SystemUtilities.isMac());
+        String returnString = printerStatus.getName() + ": Level " + printerStatus.getSeverity() + ", StatusCode " + printerStatus.getCode() + ", From " + getIssuingPrinterName(SystemUtilities.isMac());
         if (!cupsString.isEmpty()) {
             returnString += ", CUPS string " + cupsString;
         }

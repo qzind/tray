@@ -19,9 +19,9 @@ public class StatusSession {
     private StreamEvent createStatusStream(PrinterStatus status) {
         return new StreamEvent(StreamEvent.Stream.PRINTER, StreamEvent.Type.ACTION)
                 .withData("printerName", status.getIssuingPrinterName(SystemUtilities.isMac()))
-                .withData("statusCode", status.type.getCode())
-                .withData("statusText", status.type.getName())
-                .withData("severity", status.type.getSeverity())
+                .withData("statusCode", status.printerStatus.getCode())
+                .withData("statusText", status.printerStatus.getName())
+                .withData("severity", status.printerStatus.getSeverity())
                 .withData("cupsString", status.cupsString)
                 .withData("message", status.toString());
     }

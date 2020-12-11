@@ -4,6 +4,8 @@ import com.sun.jna.platform.win32.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+
 public class WMIPrinterStatusThread extends Thread {
 
     private static final Logger log = LoggerFactory.getLogger(StatusMonitor.class);
@@ -12,6 +14,7 @@ public class WMIPrinterStatusThread extends Thread {
     private final String printerName;
     private final Winspool spool = Winspool.INSTANCE;
     private int lastStatus = -1;
+    //private HashMap<Integer, Integer> jobStatus = null;
 
     private WinNT.HANDLE hChangeObject;
     private WinDef.DWORDByReference pdwChangeResult;
@@ -19,6 +22,7 @@ public class WMIPrinterStatusThread extends Thread {
     public WMIPrinterStatusThread(String name, int status) {
         super("Printer Status Monitor " + name);
         lastStatus = status;
+        jobStatus = new HashMap<>();
         printerName = name;
     }
 
@@ -54,11 +58,13 @@ public class WMIPrinterStatusThread extends Thread {
         if (returnResult) {
             //Requesting an info object every time is required
             int statusCode = WinspoolUtil.getPrinterInfo2(printerName).Status;
-            if (lastStatus != statusCode) {
-                lastStatus = statusCode;
+            //if (lastStatus != statusCode) {
+            //    lastStatus = statusCode;
                 PrinterStatus[] statuses = PrinterStatus.getFromWMICode(statusCode, printerName);
+
                 StatusMonitor.statusChanged(statuses);
-            }
+            //}
+
         } else {
             issueError();
         }

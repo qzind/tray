@@ -271,6 +271,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                 }
             }
             catch(Throwable t) {
+                job.cancelJob();
                 throw new PrinterException(t.getMessage());
             }
 

@@ -2031,6 +2031,44 @@ var qz = (function() {
             },
 
             /**
+             * Send a feature report to a claimed HID device.
+             *
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of HID device's vendor ID.
+             *  @param deviceInfo.productId Hex string of HID device's product ID.
+             *  @param deviceInfo.usagePage Hex string of HID device's usage page when multiple are present.
+             *  @param deviceInfo.serial Serial ID of HID device.
+             *  @param deviceInfo.data Bytes to send over specified endpoint.
+             *  @param deviceInfo.endpoint=0x00 First byte of the data packet signifying the HID report ID.
+             *                             Must be 0x00 for devices only supporting a single report.
+             *  @param deviceInfo.reportId=0x00 Alias for <code>deviceInfo.endpoint</code>. Not used if endpoint is provided.
+             *  @param {string} [deviceInfo.type='PLAIN'] Valid values <code>[FILE | PLAIN | HEX | BASE64]</code>
+             * @returns {Promise<null|Error>}
+             *
+             * @memberof qz.hid
+             */
+            sendFeatureReport: function(deviceInfo) {
+                return _qz.websocket.dataPromise('hid.sendFeatureReport', deviceInfo);
+            },
+
+            /**
+             * Get a feature report from a claimed HID device.
+             *
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of HID device's vendor ID.
+             *  @param deviceInfo.productId Hex string of HID device's product ID.
+             *  @param deviceInfo.usagePage Hex string of HID device's usage page when multiple are present.
+             *  @param deviceInfo.serial Serial ID of HID device.
+             *  @param deviceInfo.responseSize Size of the byte array to receive a response in.
+             * @returns {Promise<Array<string>|Error>} List of (hexadecimal) bytes received from the HID device.
+             *
+             * @memberof qz.hid
+             */
+            getFeatureReport: function(deviceInfo) {
+                return _qz.websocket.dataPromise('hid.getFeatureReport', deviceInfo);
+            },
+
+            /**
              * Provides a continuous stream of read data from a claimed HID device.
              *
              * @param {object} deviceInfo Config details of the HID device.

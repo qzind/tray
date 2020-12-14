@@ -78,6 +78,8 @@ public class PrintSocketClient {
         HID_CLAIMED("hid.isClaimed", false, "check USB claim status"),
         HID_SEND_DATA("hid.sendData", true, "use a USB device"),
         HID_READ_DATA("hid.readData", true, "use a USB device"),
+        HID_SEND_FEATURE_REPORT("hid.sendFeatureReport", true, "use a USB device"),
+        HID_GET_FEATURE_REPORT("hid.getFeatureReport", true, "use a USB device"),
         HID_OPEN_STREAM("hid.openStream", true, "use a USB device"),
         HID_CLOSE_STREAM("hid.closeStream", false, "use a USB device"),
         HID_RELEASE_DEVICE("hid.releaseDevice", false, "release a USB device"),
@@ -457,10 +459,17 @@ public class PrintSocketClient {
                 break;
             }
             case USB_SEND_DATA:
+            case HID_SEND_FEATURE_REPORT :
             case HID_SEND_DATA: {
                 DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
-                    usb.sendData(DeviceUtilities.getDataBytes(params, null), dOpts.getEndpoint());
+
+                    if (call == Method.HID_SEND_FEATURE_REPORT) {
+                        usb.sendFeatureReport(DeviceUtilities.getDataBytes(params, null), dOpts.getEndpoint());
+                    } else {
+                        usb.sendData(DeviceUtilities.getDataBytes(params, null), dOpts.getEndpoint());
+                    }
+
                     sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, String.format("USB Device [v:%s p:%s] must be claimed first.", params.opt("vendorId"), params.opt("productId")));
@@ -469,10 +478,19 @@ public class PrintSocketClient {
                 break;
             }
             case USB_READ_DATA:
+            case HID_GET_FEATURE_REPORT :
             case HID_READ_DATA: {
                 DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
-                    byte[] response = usb.readData(dOpts.getResponseSize(), dOpts.getEndpoint());
+                    byte[] response;
+                    
+                    if (call == Method.HID_GET_FEATURE_REPORT) {
+                        response = usb.getFeatureReport(dOpts.getResponseSize(), dOpts.getEndpoint());
+                    } else {
+                        response = usb.readData(dOpts.getResponseSize(), dOpts.getEndpoint());
+                    }
+
+
                     JSONArray hex = new JSONArray();
                     for(byte b : response) {
                         hex.put(UsbUtil.toHexString(b));

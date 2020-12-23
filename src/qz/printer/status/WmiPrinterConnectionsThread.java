@@ -5,13 +5,13 @@ import com.sun.jna.platform.win32.WinspoolUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WMIPrinterConnectionsThread extends Thread {
+public class WmiPrinterConnectionsThread extends Thread {
 
-    private static final Logger log = LoggerFactory.getLogger(WMIPrinterConnectionsThread.class);
+    private static final Logger log = LoggerFactory.getLogger(WmiPrinterConnectionsThread.class);
 
     private boolean running = true;
 
-    public WMIPrinterConnectionsThread() {
+    public WmiPrinterConnectionsThread() {
         super("Printer Connection Monitor");
     }
 

@@ -3,14 +3,12 @@ package qz.printer.status;
 import com.sun.jna.platform.win32.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.printer.status.job.JobStatus;
-import qz.printer.status.printer.PrinterStatus;
 import qz.printer.status.printer.WmiPrinterStatusMap;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class WMIPrinterStatusThread extends Thread {
+public class WmiPrinterStatusThread extends Thread {
 
     private static final Logger log = LoggerFactory.getLogger(StatusMonitor.class);
 
@@ -22,7 +20,7 @@ public class WMIPrinterStatusThread extends Thread {
     private WinNT.HANDLE hChangeObject;
     private WinDef.DWORDByReference pdwChangeResult;
 
-    public WMIPrinterStatusThread(String name) {
+    public WmiPrinterStatusThread(String name) {
         super("Printer Status Monitor " + name);
         printerName = name;
     }
@@ -60,19 +58,18 @@ public class WMIPrinterStatusThread extends Thread {
             int statusCode = WinspoolUtil.getPrinterInfo2(printerName).Status;
             if (lastStatus != statusCode) {
                 lastStatus = statusCode;
-                PrinterStatus[] statuses = PrinterStatus.fromWmi(statusCode, printerName);
+                Status[] statuses = NativeStatus.fromWmi(statusCode, printerName, NativeStatus.NativeType.PRINTER);
                 StatusMonitor.statusChanged(statuses);
             }
 
             // Handle job status changes
             WinNT.HANDLEByReference phPrinter = new WinNT.HANDLEByReference();
             Winspool.INSTANCE.OpenPrinter(printerName, phPrinter, null);
-            ArrayList<JobStatus> statuses = new ArrayList<>();
+            ArrayList<Status> statuses = new ArrayList<>();
             for(Winspool.JOB_INFO_1 info : WinspoolUtil.getJobInfo1(phPrinter)) {
-                statuses.addAll(Arrays.asList(JobStatus.fromWMI(info.Status, printerName)));
-                StatusMonitor.statusChanged(statuses.toArray(new JobStatus[statuses.size()]));
+                statuses.addAll(Arrays.asList(NativeStatus.fromWmi(info.Status, printerName, NativeStatus.NativeType.JOB, info.JobId)));
+                StatusMonitor.statusChanged(statuses.toArray(new Status[statuses.size()]));
             }
-
         } else {
             issueError();
         }
@@ -81,7 +78,7 @@ public class WMIPrinterStatusThread extends Thread {
     private void issueError() {
         int errorCode = Kernel32.INSTANCE.GetLastError();
         log.error("WMI Error number: {}, This should be reported", errorCode);
-        PrinterStatus[] unknownError = {new PrinterStatus(WmiPrinterStatusMap.UNKNOWN_STATUS, printerName)};
+        Status[] unknownError = {new Status(WmiPrinterStatusMap.UNKNOWN_STATUS, printerName)};
         StatusMonitor.statusChanged(unknownError);
         try {
             //if the error repeats, we don't want to lock up the cpu
@@ -97,16 +94,16 @@ public class WMIPrinterStatusThread extends Thread {
         super.interrupt();
     }
 
-    public static ArrayList<StatusContainer> getAllStatuses() {
-        ArrayList<StatusContainer> statuses = new ArrayList<>();
+    public static ArrayList<Status> getAllStatuses() {
+        ArrayList<Status> statuses = new ArrayList<>();
         Winspool.PRINTER_INFO_2[] wmiPrinters = WinspoolUtil.getPrinterInfo2();
         for(Winspool.PRINTER_INFO_2 printerInfo : wmiPrinters) {
             WinNT.HANDLEByReference phPrinter = new WinNT.HANDLEByReference();
             Winspool.INSTANCE.OpenPrinter(printerInfo.pPrinterName, phPrinter, null);
             for(Winspool.JOB_INFO_1 jobInfo : WinspoolUtil.getJobInfo1(phPrinter)) {
-                statuses.addAll(Arrays.asList(JobStatus.fromWMI(WinspoolUtil.getPrinterInfo2(printerInfo.pPrinterName).Status, printerInfo.pPrinterName)));
+                statuses.addAll(Arrays.asList(NativeStatus.fromWmi(WinspoolUtil.getPrinterInfo2(printerInfo.pPrinterName).Status, printerInfo.pPrinterName, NativeStatus.NativeType.JOB)));
             }
-            statuses.addAll(Arrays.asList(PrinterStatus.fromWmi(printerInfo.Status, printerInfo.pPrinterName)));
+            statuses.addAll(Arrays.asList(NativeStatus.fromWmi(printerInfo.Status, printerInfo.pPrinterName, NativeStatus.NativeType.PRINTER)));
         }
         return statuses;
     }

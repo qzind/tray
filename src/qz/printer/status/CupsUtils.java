@@ -5,8 +5,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.printer.status.Cups.IPP;
-import qz.printer.status.printer.PrinterStatus;
-import qz.printer.status.printer.WmiPrinterStatusMap;
+import qz.printer.status.printer.NativePrinterStatus;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -44,7 +43,7 @@ public class CupsUtils {
         return cups.cupsDoRequest(http, request, "/");
     }
 
-    public static PrinterStatus[] getStatuses(String printerName) {
+    public static Status[] getStatuses(String printerName) {
         Pointer request = cups.ippNewRequest(IPP.GET_PRINTER_ATTRIBUTES);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
@@ -53,27 +52,26 @@ public class CupsUtils {
 
         Pointer response = cups.cupsDoRequest(http, request, "/");
         Pointer attr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
-        ArrayList<PrinterStatus> statuses = new ArrayList<>();
+        ArrayList<Status> statuses = new ArrayList<>();
 
         if (attr != Pointer.NULL) {
             int attrCount = cups.ippGetCount(attr);
             for(int i = 0; i < attrCount; i++) {
                 String data = cups.ippGetString(attr, i, "");
-                PrinterStatus status = PrinterStatus.fromCups(data, printerName);
+                Status status = NativeStatus.fromCups(data, printerName, NativeStatus.NativeType.PRINTER);
                 if (status != null) { statuses.add(status); }
             }
         } else {
-            statuses.add(new PrinterStatus(WmiPrinterStatusMap.NOT_AVAILABLE, printerName, ""));
+            statuses.add(new Status(NativePrinterStatus.UNKNOWN_STATUS, printerName, ""));
         }
 
         cups.ippDelete(response);
 
-        return statuses.toArray(new PrinterStatus[statuses.size()]);
+        return statuses.toArray(new Status[statuses.size()]);
     }
 
-    // FIXME
-    public static ArrayList<Object> getAllStatuses() {
-        ArrayList<Object> statuses = new ArrayList<>();
+    public static ArrayList<Status> getAllStatuses() {
+        ArrayList<Status> statuses = new ArrayList<>();
         Pointer request = cups.ippNewRequest(IPP.GET_PRINTERS);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
@@ -91,7 +89,7 @@ public class CupsUtils {
             String name = cups.ippGetString(attr, 0, "");
 
             for(String reason : reasons) {
-                statuses.add(PrinterStatus.fromCups(reason, name));
+                statuses.add(NativeStatus.fromCups(reason, name, NativeStatus.NativeType.PRINTER));
             }
 
             //for next loop iteration

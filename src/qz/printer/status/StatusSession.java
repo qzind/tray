@@ -1,9 +1,6 @@
 package qz.printer.status;
 
 import org.eclipse.jetty.websocket.api.Session;
-import qz.printer.status.job.JobStatus;
-import qz.printer.status.printer.PrinterStatus;
-import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketClient;
 import qz.ws.StreamEvent;
 
@@ -14,15 +11,19 @@ public class StatusSession {
         this.session = session;
     }
 
-    public void statusChanged(StatusContainer status) {
+    public void statusChanged(Status status) {
         PrintSocketClient.sendStream(session, createStatusStream(status));
     }
 
-    private StreamEvent createStatusStream(StatusContainer status) {
-        return new StreamEvent(StreamEvent.Stream.PRINTER, StreamEvent.Type.ACTION)
+    private StreamEvent createStatusStream(Status status) {
+        StreamEvent streamEvent = new StreamEvent(StreamEvent.Stream.PRINTER, StreamEvent.Type.ACTION)
                 .withData("printerName", status.sanitizePrinterName())
                 .withData("statusText", status.getCode().name())
                 .withData("severity", status.getCode().getLevel())
                 .withData("message", status.toString());
+        if(status.getJobId() > 0) {
+            streamEvent.withData("jobId", status.getJobId());
+        }
+        return streamEvent;
     }
 }

@@ -5,6 +5,8 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.printer.status.Cups.IPP;
+import qz.printer.status.printer.PrinterStatus;
+import qz.printer.status.printer.WmiPrinterStatusMap;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -57,11 +59,11 @@ public class CupsUtils {
             int attrCount = cups.ippGetCount(attr);
             for(int i = 0; i < attrCount; i++) {
                 String data = cups.ippGetString(attr, i, "");
-                PrinterStatus status = PrinterStatus.getFromCupsString(data, printerName);
+                PrinterStatus status = PrinterStatus.fromCups(data, printerName);
                 if (status != null) { statuses.add(status); }
             }
         } else {
-            statuses.add(new PrinterStatus(PrinterStatusType.NOT_AVAILABLE, printerName, ""));
+            statuses.add(new PrinterStatus(WmiPrinterStatusMap.NOT_AVAILABLE, printerName, ""));
         }
 
         cups.ippDelete(response);
@@ -69,8 +71,9 @@ public class CupsUtils {
         return statuses.toArray(new PrinterStatus[statuses.size()]);
     }
 
-    public static ArrayList<PrinterStatus> getAllStatuses() {
-        ArrayList<PrinterStatus> statuses = new ArrayList<>();
+    // FIXME
+    public static ArrayList<Object> getAllStatuses() {
+        ArrayList<Object> statuses = new ArrayList<>();
         Pointer request = cups.ippNewRequest(IPP.GET_PRINTERS);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
@@ -88,7 +91,7 @@ public class CupsUtils {
             String name = cups.ippGetString(attr, 0, "");
 
             for(String reason : reasons) {
-                statuses.add(PrinterStatus.getFromCupsString(reason, name));
+                statuses.add(PrinterStatus.fromCups(reason, name));
             }
 
             //for next loop iteration

@@ -24,6 +24,9 @@ public class StatusSession {
         if(status.getJobId() > 0) {
             streamEvent.withData("jobId", status.getJobId());
         }
+        if(status.getJobName() != null) {
+            streamEvent.withData("jobName", status.getJobName());
+        }
         return streamEvent;
     }
 }

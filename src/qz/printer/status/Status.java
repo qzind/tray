@@ -13,6 +13,7 @@ public class Status {
     private String printer;
     private Object rawCode;
     private int jobId; // job statuses only
+    private String jobName; // job status only
 
     public Status(NativeStatus code, String printer, Object rawCode) {
         this.code = code;
@@ -28,11 +29,12 @@ public class Status {
         this.jobId = -1;
     }
 
-    public Status(NativeStatus code, String printer, Object rawCode, int jobId) {
+    public Status(NativeStatus code, String printer, Object rawCode, int jobId, String jobName) {
         this.code = code;
         this.printer = printer;
         this.rawCode = rawCode;
         this.jobId = jobId;
+        this.jobName = jobName;
     }
 
     public String sanitizePrinterName() {
@@ -61,11 +63,19 @@ public class Status {
         return printer;
     }
 
+    public String getJobName() {
+        return jobName;
+    }
+
     public int getJobId() {
         return jobId;
     }
 
     public String toString() {
-        return code.name() + ": Level " + code.getLevel() + ", From " + sanitizePrinterName() + ", Code " + rawCode + (jobId > 0 ? ", JobId: " + jobId : "");
+        return code.name() + ": Level " + code.getLevel() +
+                ", From " + sanitizePrinterName() +
+                ", Code " + rawCode +
+                (jobId > 0 ? ", JobId: " + jobId : "") +
+                (jobName != null ? ", Job Name: " + jobName : "");
     }
 }

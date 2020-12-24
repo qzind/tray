@@ -77,22 +77,7 @@ public interface NativeStatus {
     }
 
     /**
-     * Printers generally have a single status at a time however, bitwise
-     * operators allow multiple statuses so we'll prepare an array to accommodate
-     */
-    static Status[] fromWmi(int bitwiseCode, String printer, NativeType nativeType) {
-        int[] rawCodes = unwind(bitwiseCode);
-        NativeStatus[] parentCodes = fromRaw(rawCodes, nativeType);
-
-        Status[] statusArray = new Status[rawCodes.length];
-        for(int i = 0; i < rawCodes.length; i++) {
-            statusArray[i] = new Status(parentCodes[i], printer, rawCodes[i]);
-        }
-        return statusArray;
-    }
-
-    /**
-     * Jobs generally have a single status at a time however, bitwise
+     * Printers/Jobs generally have a single status at a time however, bitwise
      * operators allow multiple statuses so we'll prepare an array to accommodate
      */
     static Status[] fromWmi(int bitwiseCode, String printer, NativeType nativeType, int jobId, String jobName) {
@@ -104,6 +89,10 @@ public interface NativeStatus {
             statusArray[i] = new Status(parentCodes[i], printer, rawCodes[i], jobId, jobName);
         }
         return statusArray;
+    }
+
+    static Status[] fromWmi(int bitwiseCode, String printer, NativeType nativeType) {
+        return fromWmi(bitwiseCode, printer, nativeType, -1, null);
     }
 
     static Status fromCups(String reason, String printer, NativeType nativeType) {

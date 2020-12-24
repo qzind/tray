@@ -65,10 +65,9 @@ public class WmiPrinterStatusThread extends Thread {
             // Handle job status changes
             WinNT.HANDLEByReference phPrinter = new WinNT.HANDLEByReference();
             Winspool.INSTANCE.OpenPrinter(printerName, phPrinter, null);
-            ArrayList<Status> statuses = new ArrayList<>();
             for(Winspool.JOB_INFO_1 info : WinspoolUtil.getJobInfo1(phPrinter)) {
-                statuses.addAll(Arrays.asList(NativeStatus.fromWmi(info.Status, printerName, NativeStatus.NativeType.JOB, info.JobId, info.pDocument)));
-                StatusMonitor.statusChanged(statuses.toArray(new Status[statuses.size()]));
+                Status[] statuses = NativeStatus.fromWmi(info.Status, printerName, NativeStatus.NativeType.JOB, info.JobId, info.pDocument);
+                StatusMonitor.statusChanged(statuses);
             }
         } else {
             issueError();

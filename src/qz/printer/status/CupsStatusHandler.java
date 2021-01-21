@@ -82,6 +82,8 @@ public class CupsStatusHandler extends AbstractHandler {
                             running = false;
                             break;
                         } else {
+                            //todo: delete me
+                            log.warn("~~~~~~~~~~~~~"+eventDescription);
                             String printerName = StringUtils.substringBeforeLast(eventDescription, "\"");
                             printerName = StringUtils.substringAfter(printerName, "\"");
                             printerName = StringEscapeUtils.unescapeXml(printerName);

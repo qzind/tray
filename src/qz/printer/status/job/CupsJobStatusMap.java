@@ -10,7 +10,8 @@ import java.util.TreeMap;
  * Created by Tres on 12/23/2020
  */
 public enum CupsJobStatusMap implements NativeStatus.NativeMap {
-    FOO_BAR(NativeJobStatus.EMPTY); // "foo-bar" placeholder until @Vzor- figures these out
+    FOO_BAR(NativeJobStatus.EMPTY), // "foo-bar" placeholder until @Vzor- figures these out
+    COMPLETED(NativeJobStatus.COMPLETE); // "foo-bar" placeholder until @Vzor- figures these out
 
     private static SortedMap<String,NativeStatus> sortedLookupTable;
 

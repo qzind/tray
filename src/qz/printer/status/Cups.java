@@ -1,9 +1,6 @@
 package qz.printer.status;
 
-import com.sun.jna.Library;
-import com.sun.jna.Memory;
-import com.sun.jna.Native;
-import com.sun.jna.Pointer;
+import com.sun.jna.*;
 
 /**
  * Created by kyle on 3/14/17.
@@ -27,6 +24,7 @@ public interface Cups extends Library {
         public static int GET_PRINTER_ATTRIBUTES = INSTANCE.ippOpValue("Get-Printer-Attributes");
         public static int GET_SUBSCRIPTIONS = INSTANCE.ippOpValue("Get-Subscriptions");
         public static int CREATE_PRINTER_SUBSCRIPTION = INSTANCE.ippOpValue("Create-Printer-Subscription");
+        public static int CREATE_JOB_SUBSCRIPTION = INSTANCE.ippOpValue("Create-Job-Subscription");
         public static int CANCEL_SUBSCRIPTION = INSTANCE.ippOpValue("Cancel-Subscription");
         public static final int INT_ERROR = 0;
         public static final int INT_UNDEFINED = -1;
@@ -56,6 +54,7 @@ public interface Cups extends Library {
     int ippEnumValue(String attrname, String enumstring);
     int ippOpValue(String name);
     int ippAddString(Pointer ipp, int group, int tag, String name, String charset, String value);
+    int ippAddStrings(Pointer ipp, int group, int value_tag, String name, int num_values, String language, StringArray values);
     int ippAddInteger (Pointer ipp, int group, int tag, String name, int value);
     int ippGetCount(Pointer attr);
     int ippGetValueTag(Pointer ipp);

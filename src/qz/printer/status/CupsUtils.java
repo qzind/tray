@@ -1,6 +1,7 @@
 package qz.printer.status;
 
 import com.sun.jna.Pointer;
+import com.sun.jna.StringArray;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,11 +136,33 @@ public class CupsUtils {
         Pointer request = cups.ippNewRequest(IPP.CREATE_PRINTER_SUBSCRIPTION);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
-                                   URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers"));
+                          URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers"));
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
         cups.ippAddString(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_URI, "notify-recipient-uri", CHARSET,
-                                   URIUtil.encodePath("rss://localhost:" + rssPort));
+                          URIUtil.encodePath("rss://localhost:" + rssPort));
         cups.ippAddString(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_KEYWORD, "notify-events", CHARSET, "printer-state-changed");
+        cups.ippAddInteger(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_INTEGER, "notify-lease-duration", 0);
+
+        Pointer response = cups.cupsDoRequest(http, request, "/");
+
+        Pointer attr = cups.ippFindAttribute(response, "notify-subscription-id", IPP.TAG_INTEGER);
+        if (attr != Pointer.NULL) { subscriptionID = cups.ippGetInteger(attr, 0); }
+
+        cups.ippDelete(response);
+    }
+
+    static void startJobSubscription(int rssPort) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> freeIppObjs()));
+
+        Pointer request = cups.ippNewRequest(IPP.CREATE_JOB_SUBSCRIPTION);
+
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
+                          URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers"));
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
+        cups.ippAddString(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_URI, "notify-recipient-uri", CHARSET,
+                          URIUtil.encodePath("rss://localhost:" + rssPort));
+        cups.ippAddStrings(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_KEYWORD, "notify-events", 3, CHARSET,
+                          new StringArray(new String[]{"job-created", "job-completed", "printer-state-changed"}));
         cups.ippAddInteger(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_INTEGER, "notify-lease-duration", 0);
 
         Pointer response = cups.cupsDoRequest(http, request, "/");

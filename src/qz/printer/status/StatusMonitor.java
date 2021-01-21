@@ -139,7 +139,7 @@ public class StatusMonitor {
                 itemsToDelete.add(e.getKey());
             }
         }
-        // Don't move this into the earlier loop, it causes a ConcurrentModificationException
+        // fixme: Don't move this into the earlier loop, it causes a ConcurrentModificationException
         for(String s : itemsToDelete) {
             clientPrinterConnections.removeValue(s, connection);
         }

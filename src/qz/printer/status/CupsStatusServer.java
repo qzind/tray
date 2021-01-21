@@ -32,7 +32,7 @@ public class CupsStatusServer {
             try {
                 server.start();
                 cupsRSSPort = CUPS_RSS_PORTS.get(p);
-                CupsUtils.startSubscription(cupsRSSPort);
+                CupsUtils.startJobSubscription(cupsRSSPort);
                 started = true;
             }
             catch(Exception e) {

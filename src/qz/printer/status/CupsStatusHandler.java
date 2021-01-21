@@ -53,7 +53,7 @@ public class CupsStatusHandler extends AbstractHandler {
                 case XMLStreamConstants.START_ELEMENT:
                     StartElement startElement = event.asStartElement();
                     String qName = startElement.getName().getLocalPart();
-                    if ("description".equalsIgnoreCase(startElement.getName().getLocalPart())) {
+                    if ("title".equalsIgnoreCase(startElement.getName().getLocalPart())) {
                         isEventDescription = true;
                         eventDescription = "";
                     }
@@ -63,7 +63,7 @@ public class CupsStatusHandler extends AbstractHandler {
                     break;
                 case XMLStreamConstants.END_ELEMENT:
                     EndElement endElement = event.asEndElement();
-                    if ("description".equalsIgnoreCase(endElement.getName().getLocalPart())) {
+                    if ("title".equalsIgnoreCase(endElement.getName().getLocalPart())) {
                         isEventDescription = false;
                     }
                     break;
@@ -82,10 +82,10 @@ public class CupsStatusHandler extends AbstractHandler {
                             running = false;
                             break;
                         } else {
-                            //todo: delete me
-                            log.warn("~~~~~~~~~~~~~"+eventDescription);
-                            String printerName = StringUtils.substringBeforeLast(eventDescription, "\"");
-                            printerName = StringUtils.substringAfter(printerName, "\"");
+                            eventDescription = StringUtils.substringAfter(eventDescription, ": ");
+                            String printerName = StringUtils.substringBefore(eventDescription, " ");
+                            //Todo Remove this debugging log
+                            log.warn("~~~~~~~~~~" + StringUtils.substringAfterLast(eventDescription, " "));
                             printerName = StringEscapeUtils.unescapeXml(printerName);
                             if (!printerName.isEmpty() && StatusMonitor.isListeningTo(printerName)) {
                                 StatusMonitor.statusChanged(CupsUtils.getStatuses(printerName));

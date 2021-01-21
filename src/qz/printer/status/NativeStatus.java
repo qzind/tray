@@ -1,6 +1,8 @@
 package qz.printer.status;
 
 import org.apache.log4j.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import qz.printer.status.job.CupsJobStatusMap;
 import qz.printer.status.job.WmiJobStatusMap;
 import qz.printer.status.printer.CupsPrinterStatusMap;
@@ -10,6 +12,8 @@ import qz.printer.status.printer.WmiPrinterStatusMap;
 import java.util.Locale;
 
 public interface NativeStatus {
+    Logger log = LoggerFactory.getLogger(NativeStatus.class);
+
     enum NativeType {
         JOB,
         PRINTER
@@ -97,7 +101,6 @@ public interface NativeStatus {
 
     static Status fromCups(String reason, String printer, NativeType nativeType) {
         if (reason == null) { return null; }
-
         reason = reason.toLowerCase(Locale.ENGLISH).replaceAll("-(error|warning|report)", "");
 
         NativeStatus printerStatus = CupsPrinterStatusMap.match(reason);

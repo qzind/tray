@@ -66,6 +66,7 @@ public class CupsUtils {
             statuses.add(new Status(NativePrinterStatus.UNKNOWN_STATUS, printerName, ""));
         }
 
+
         cups.ippDelete(response);
 
         return statuses.toArray(new Status[statuses.size()]);

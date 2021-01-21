@@ -99,6 +99,12 @@ public interface NativeStatus {
         return fromWmi(bitwiseCode, printer, nativeType, -1, null);
     }
 
+
+    static Status fromCups(String reason, String printer, NativeType nativeType, int jobId) {
+        return null;
+    }
+
+
     static Status fromCups(String reason, String printer, NativeType nativeType) {
         if (reason == null) { return null; }
         reason = reason.toLowerCase(Locale.ENGLISH).replaceAll("-(error|warning|report)", "");

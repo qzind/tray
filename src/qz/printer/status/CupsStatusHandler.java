@@ -43,9 +43,9 @@ public class CupsStatusHandler extends AbstractHandler {
     }
 
     private void parseXML(XMLEventReader eventReader) throws XMLStreamException {
-        boolean isEventDescription = false, isGuid = false, isFirstGuid = true, running = true;
+        boolean isEventTitle = false, isGuid = false, isFirstGuid = true, running = true;
         String firstGuid = "";
-        String eventDescription = "";
+        String eventTitle = "";
 
         while(eventReader.hasNext() && running) {
             XMLEvent event = eventReader.nextEvent();
@@ -54,8 +54,8 @@ public class CupsStatusHandler extends AbstractHandler {
                     StartElement startElement = event.asStartElement();
                     String qName = startElement.getName().getLocalPart();
                     if ("title".equalsIgnoreCase(startElement.getName().getLocalPart())) {
-                        isEventDescription = true;
-                        eventDescription = "";
+                        isEventTitle = true;
+                        eventTitle = "";
                     }
                     if ("guid".equalsIgnoreCase(qName)) {
                         isGuid = true;
@@ -64,13 +64,13 @@ public class CupsStatusHandler extends AbstractHandler {
                 case XMLStreamConstants.END_ELEMENT:
                     EndElement endElement = event.asEndElement();
                     if ("title".equalsIgnoreCase(endElement.getName().getLocalPart())) {
-                        isEventDescription = false;
+                        isEventTitle = false;
                     }
                     break;
                 case XMLStreamConstants.CHARACTERS:
                     Characters characters = event.asCharacters();
-                    if (isEventDescription) {
-                        eventDescription += characters.getData();
+                    if (isEventTitle) {
+                        eventTitle += characters.getData();
                     }
                     if (isGuid) {
                         String guid = characters.getData();
@@ -82,13 +82,27 @@ public class CupsStatusHandler extends AbstractHandler {
                             running = false;
                             break;
                         } else {
-                            eventDescription = StringUtils.substringAfter(eventDescription, ": ");
-                            String printerName = StringUtils.substringBefore(eventDescription, " ");
-                            //Todo Remove this debugging log
-                            log.warn("~~~~~~~~~~" + StringUtils.substringAfterLast(eventDescription, " "));
+                            String type = StringUtils.substringBefore(eventTitle, ": ");
+
+                            String printerName = StringUtils.substringAfter(eventTitle, ": ");
+                            printerName = StringUtils.substringBefore(printerName, " ");
                             printerName = StringEscapeUtils.unescapeXml(printerName);
-                            if (!printerName.isEmpty() && StatusMonitor.isListeningTo(printerName)) {
-                                StatusMonitor.statusChanged(CupsUtils.getStatuses(printerName));
+
+                            String state = StringUtils.substringAfterLast(eventTitle, " ");
+
+
+                            if (type.equals("Print Job")) {
+                                String jobNumber = StringUtils.substringAfterLast(printerName, "-");
+                                printerName = StringUtils.substringBeforeLast(printerName, "-");
+                                //Todo Remove this debugging log
+                                log.warn("Job# {} from {} is now {}", jobNumber, printerName, state);
+
+                            }
+
+                            if (type.equals("Printer")) {
+                                if (!printerName.isEmpty() && StatusMonitor.isListeningTo(printerName)) {
+                                    StatusMonitor.statusChanged(CupsUtils.getStatuses(printerName));
+                                }
                             }
                         }
                         isGuid = false;

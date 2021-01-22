@@ -319,8 +319,9 @@ public class SystemUtilities {
         if(darkTaskbar == null || recheck) {
             if (isWindows()) {
                 darkTaskbar = WindowsUtilities.isDarkTaskbar();
-            } else if(isMac() && MacUtilities.isTemplateIconRequired() && !MacUtilities.javaSupportsTemplateIcon()) {
-                darkTaskbar = isDarkDesktop();
+            } else if(isMac()) {
+                // Ignore, we'll set the template flag using JNA
+                darkTaskbar = false;
             } else {
                 // Linux doesn't differentiate; return the cached darkDesktop value
                 darkTaskbar = isDarkDesktop();
@@ -355,8 +356,8 @@ public class SystemUtilities {
     public static boolean prefersMaskTrayIcon() {
         if (Constants.MASK_TRAY_SUPPORTED) {
             if (SystemUtilities.isMac()) {
-                // Fallback to the old, green icon for Big Sur and later until the JDK adds template support
-                return !MacUtilities.isTemplateIconRequired() || MacUtilities.javaSupportsTemplateIcon();
+                // Assume a pid of -1 is a broken JNA
+                return MacUtilities.getProcessID() != -1;
             } else if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().getMajorVersion() >= 10) {
                 return true;
             }

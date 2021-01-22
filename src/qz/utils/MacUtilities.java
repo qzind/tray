@@ -202,12 +202,7 @@ public class MacUtilities {
             if (icon.getPopupMenu() != null) {
                 field = MenuComponent.class.getDeclaredField("peer");
                 field.setAccessible(true);
-                Object peer = field.get(icon.getPopupMenu());
-                if(peer != null) {
-                    cPopupMenuAddressTmp = ptrField.getLong(field.get(icon.getPopupMenu()));
-                } else {
-                    log.warn("TrayIcon peer is null, we can't get the popupMenu");
-                }
+                cPopupMenuAddressTmp = ptrField.getLong(field.get(icon.getPopupMenu()));
             }
 
             final long cPopupMenuAddress = cPopupMenuAddressTmp;
@@ -224,7 +219,7 @@ public class MacUtilities {
                     FoundationUtil.invoke(image, "setTemplate:", true);
                     NativeLong button = FoundationUtil.invoke(statusItem, buttonSelector);
                     FoundationUtil.invoke(button, "setImage:", image);
-                    FoundationUtil.invoke(statusItem, "setLength:", -2d);
+                    //FoundationUtil.invoke(statusItem, "setLength:", -2d);
                     if (cPopupMenuAddress > 0) {
                         FoundationUtil.invoke(statusItem, "setMenu:", FoundationUtil.invoke(new NativeLong(cPopupMenuAddress), "menu"));
                     }

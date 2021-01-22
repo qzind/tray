@@ -327,11 +327,6 @@ public class TrayManager {
 
         if (tray != null) {
             tray.setJPopupMenu(popup);
-            // FIXME FIXME
-            // Workaround for JDK-8252015
-            if(tray.tray().getPopupMenu() != null && SystemUtilities.isMac() && Constants.MASK_TRAY_SUPPORTED && !MacUtilities.jdkSupportsTemplateIcon()) {
-                MacUtilities.toggleTemplateIcon(tray.tray());
-            }
         }
     }
 
@@ -558,6 +553,11 @@ public class TrayManager {
      */
     public void setDefaultIcon() {
         setIcon(IconCache.Icon.DEFAULT_ICON);
+
+        // Workaround for JDK-8252015
+        if(SystemUtilities.isMac() && Constants.MASK_TRAY_SUPPORTED && !MacUtilities.jdkSupportsTemplateIcon()) {
+            MacUtilities.toggleTemplateIcon(tray.tray());
+        }
     }
 
     /** Thread safe method for setting the error status message */

@@ -47,6 +47,7 @@ public class MacUtilities {
     private static String bundleId;
     private static Integer pid;
     private static Boolean jdkSupportsTemplateIcon;
+    private static boolean templateIconForced = false;
 
     public static void showAboutDialog() {
         if (aboutDialog != null) { aboutDialog.setVisible(true); }
@@ -188,6 +189,13 @@ public class MacUtilities {
         // Check if icon is on SystemTray
         if (icon.getImage() == null) {
             throw new IllegalStateException("TrayIcon needs to be added on SystemTray first");
+        }
+
+        // Prevent second invocation; causes icon to disappear
+        if(templateIconForced) {
+            return;
+        } else {
+            templateIconForced = true;
         }
 
         try {

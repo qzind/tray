@@ -30,6 +30,7 @@ public class ClassicTrayIcon extends JXTrayIcon {
         final PopupMenu popup = new PopupMenu();
         setPopupMenu(popup);
         wrapAll(popup, source.getComponents());
+        popup.addNotify();
     }
 
     /**

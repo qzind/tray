@@ -553,6 +553,11 @@ public class TrayManager {
      */
     public void setDefaultIcon() {
         setIcon(IconCache.Icon.DEFAULT_ICON);
+
+        // Workaround for JDK-8252015
+        if(SystemUtilities.isMac() && Constants.MASK_TRAY_SUPPORTED && !MacUtilities.jdkSupportsTemplateIcon()) {
+            MacUtilities.toggleTemplateIcon(tray.tray());
+        }
     }
 
     /** Thread safe method for setting the error status message */

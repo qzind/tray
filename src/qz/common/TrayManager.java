@@ -589,9 +589,7 @@ public class TrayManager {
     }
 
     public void refreshIcon() {
-        SwingUtilities.invokeLater(() -> {
-            tray.setImage(iconCache.getImage(shownIcon, tray.getSize()));
-        });
+        SwingUtilities.invokeLater(() -> tray.setImage(iconCache.getImage(shownIcon, tray.getSize())));
     }
 
     /**

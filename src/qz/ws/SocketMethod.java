@@ -14,6 +14,10 @@ public enum SocketMethod {
     SERIAL_SEND_DATA("serial.sendData", true, "send data over a serial port"),
     SERIAL_CLOSE_PORT("serial.closePort", true, "close a serial port"),
 
+    SOCKET_OPEN_PORT("socket.open", true, "open a socket"),
+    SOCKET_SEND_DATA("socket.sendData", true, "send data over a socket"),
+    SOCKET_CLOSE_PORT("socket.close", true, "close a socket"),
+
     USB_LIST_DEVICES("usb.listDevices", true, "access USB devices"),
     USB_LIST_INTERFACES("usb.listInterfaces", true, "access USB devices"),
     USB_LIST_ENDPOINTS("usb.listEndpoints", true, "access USB devices"),

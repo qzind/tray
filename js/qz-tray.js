@@ -1606,6 +1606,69 @@ var qz = (function() {
             }
         },
 
+        //fixme - naming??
+        /**
+         * Calls related to interaction with communication sockets.
+         * @namespace qz.socket
+         */
+        socket: {
+            /**
+             * Opens a network port for sending and receiving data.
+             *
+             * @param {string} host The connection hostname.
+             * @param {number} port The connection port number.
+             *
+             * @memberof qz.socket
+             */
+            open: function(host, port) {
+                var params = {
+                    host: host,
+                    port: port
+                };
+                return _qz.websocket.dataPromise("socket.open", params);
+            },
+
+            /**
+             * @param {string} host The connection hostname.
+             * @param {number} port The connection port number.
+             *
+             * @memberof qz.socket
+             */
+            close: function(host, port) {
+                var params = {
+                    host: host,
+                    port: port
+                };
+                return _qz.websocket.dataPromise("socket.close", params);
+            },
+
+            /**
+             * Send data over an open socket.
+             *
+             * @param {string} host The connection hostname.
+             * @param {number} port The connection port number.
+             * @param {string|Object} data Data to be sent over the port.
+             *  @param {string} [data.type='PLAIN'] Valid values <code>[PLAIN]</code>
+             *  @param {string} data.data Data to be sent over the port.
+             *
+             * @memberof qz.socket
+             */
+            sendData: function(host, port, data) {
+                if (typeof data !== 'object') {
+                    data = {
+                        data: data,
+                        type: "PLAIN"
+                    };
+                }
+
+                var params = {
+                    host: host,
+                    port: port,
+                    data: data
+                };
+                return _qz.websocket.dataPromise("socket.sendData", params);
+            }
+        },
 
         /**
          * Calls related to interaction with USB devices.

@@ -300,6 +300,34 @@ public class PrintSocketClient {
                 break;
             }
 
+            //fixme - naming??
+            case SOCKET_OPEN_PORT:
+                SocketUtilities.setupSocket(session, UID, connection, params);
+                break;
+            case SOCKET_SEND_DATA: {
+                String location = String.format("%s:%s", params.optString("host"), params.optInt("port"));
+                SocketIO socket = connection.getNetworkSocket(location);
+                if (socket != null) {
+                    String reply = socket.sendData(params);
+                    sendResult(session, UID, reply);
+                } else {
+                    sendError(session, UID, String.format("Socket [%s] is not open.", location));
+                }
+                break;
+            }
+            case SOCKET_CLOSE_PORT: {
+                String location = String.format("%s:%s", params.optString("host"), params.optInt("port"));
+                SocketIO socket = connection.getNetworkSocket(location);
+                if (socket != null) {
+                    socket.close();
+                    connection.removeNetworkSocket(location);
+                    sendResult(session, UID, null);
+                } else {
+                    sendError(session, UID, String.format("Socket [%s] is not open.", location));
+                }
+                break;
+            }
+
             case USB_LIST_DEVICES:
                 sendResult(session, UID, UsbUtilities.getUsbDevicesJSON(params.getBoolean("includeHubs")));
                 break;
@@ -372,7 +400,7 @@ public class PrintSocketClient {
                 break;
             }
             case USB_SEND_DATA:
-            case HID_SEND_FEATURE_REPORT :
+            case HID_SEND_FEATURE_REPORT:
             case HID_SEND_DATA: {
                 DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
@@ -391,7 +419,7 @@ public class PrintSocketClient {
                 break;
             }
             case USB_READ_DATA:
-            case HID_GET_FEATURE_REPORT :
+            case HID_GET_FEATURE_REPORT:
             case HID_READ_DATA: {
                 DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {

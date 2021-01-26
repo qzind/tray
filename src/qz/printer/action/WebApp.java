@@ -166,10 +166,10 @@ public class WebApp extends Application {
                 }
 
                 // Monocle default for unit tests
-                boolean useMonocle = true;
+                boolean useMonocle = false;
                 if (PrintSocketServer.getTrayManager() != null) {
                     // Honor user monocle override
-                    useMonocle = PrintSocketServer.getTrayManager().isMonoclePreferred();
+                    // useMonocle = PrintSocketServer.getTrayManager().isMonoclePreferred();
                     // Trust TrayManager's headless detection
                     headless = PrintSocketServer.getTrayManager().isHeadless();
                 } else {

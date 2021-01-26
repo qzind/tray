@@ -249,6 +249,7 @@ public class TrayManager {
         monocleItem.setMnemonic(KeyEvent.VK_U);
         monocleItem.setState(prefs.getBoolean(Constants.PREFS_MONOCLE, true));
         monocleItem.addActionListener(monocleListener);
+        monocleItem.setEnabled(false);
 
         if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) { //only include if it can be used
             diagnosticMenu.add(monocleItem);

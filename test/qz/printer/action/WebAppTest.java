@@ -34,12 +34,16 @@ public class WebAppTest {
             int rasterFittedHeightTests = 1000;
             if (args.length > 2) { rasterFittedHeightTests = Integer.parseInt(args[2]); }
 
-            if (!testRasterKnownSize(rasterKnownHeightTests)) {
-                log.error("Testing well defined sizes failed");
-            } else if (!testRasterFittedSize(rasterFittedHeightTests)) {
-                log.error("Testing fit to height sizing failed");
+            int failed;
+            if ((failed = testRasterKnownSize(rasterKnownHeightTests)) > 0) {
+                log.error("Testing well defined sizes failed {} of {}", failed, rasterKnownHeightTests);
             } else {
-                log.info("All raster tests passed");
+                log.info("All known size tests passed");
+            }
+            if ((failed = testRasterFittedSize(rasterFittedHeightTests)) > 0) {
+                log.error("Testing fit to height sizing failed {} of {}", failed, rasterFittedHeightTests);
+            } else {
+                log.info("All fitted size tests passed");
             }
 
 
@@ -66,7 +70,8 @@ public class WebAppTest {
     }
 
 
-    public static boolean testRasterKnownSize(int trials) throws Throwable {
+    public static int testRasterKnownSize(int trials) throws Throwable {
+        int failed = 0;
         for(int i = 0; i < trials; i++) {
             //new size every run
             double printW = Math.max(2, (int)(Math.random() * 110) / 10d) * 72d;
@@ -79,7 +84,7 @@ public class WebAppTest {
 
             if (sample == null) {
                 log.error("Failed to create capture");
-                return false;
+                return 1;
             }
 
             //TODO - check bottom right matches expected color
@@ -100,14 +105,15 @@ public class WebAppTest {
             saveAudit(passed? id:"invalid", sample);
 
             if (!passed) {
-                return false;
+                failed++;
             }
         }
 
-        return true;
+        return failed;
     }
 
-    public static boolean testRasterFittedSize(int trials) throws Throwable {
+    public static int testRasterFittedSize(int trials) throws Throwable {
+        int failed = 0;
         for(int i = 0; i < trials; i++) {
             //new size every run (height always starts at 0)
             double printW = Math.max(2, (int)(Math.random() * 110) / 10d) * 72d;
@@ -119,7 +125,7 @@ public class WebAppTest {
 
             if (sample == null) {
                 log.error("Failed to create capture");
-                return false;
+                return 1;
             }
 
             //TODO - check bottom right matches expected color
@@ -136,11 +142,11 @@ public class WebAppTest {
             saveAudit(passed? id:"invalid", sample);
 
             if (!passed) {
-                return false;
+                failed++;
             }
         }
 
-        return true;
+        return failed;
     }
 
     public static boolean testVectorKnownPrints(int trials) throws Throwable {

@@ -190,6 +190,10 @@ public class MacUtilities {
         if (icon.getImage() == null) {
             throw new IllegalStateException("TrayIcon needs to be added on SystemTray first");
         }
+        // Check if icon is on SystemTray
+        if (!Arrays.asList(SystemTray.getSystemTray().getTrayIcons()).contains(icon)) {
+            throw new IllegalStateException("TrayIcon needs to be added on SystemTray first");
+        }
 
         // Prevent second invocation; causes icon to disappear
         if(templateIconForced) {
@@ -206,49 +210,43 @@ public class MacUtilities {
             field.setAccessible(true);
             long cTrayIconAddress = ptrField.getLong(field.get(icon));
 
-            long cPopupMenuAddressTmp = -1;
+            long cPopupMenuAddressTmp = 0;
             if (icon.getPopupMenu() != null) {
                 field = MenuComponent.class.getDeclaredField("peer");
                 field.setAccessible(true);
                 cPopupMenuAddressTmp = ptrField.getLong(field.get(icon.getPopupMenu()));
             }
-
             final long cPopupMenuAddress = cPopupMenuAddressTmp;
 
             final NativeLong statusItem = FoundationUtil.invoke(new NativeLong(cTrayIconAddress), "theItem");
-            NativeLong view = FoundationUtil.invoke(statusItem, "view");
-            final NativeLong image = Foundation.INSTANCE.object_getIvar(view, Foundation.INSTANCE.class_getInstanceVariable(FoundationUtil.invoke(view, "class"), "image"));
-            FoundationUtil.runOnMainThreadAndWait(new Runnable() {
-                @Override
-                public void run() {
-                    FoundationUtil.invoke(statusItem, "setView:", (Object) null);
-                    Pointer buttonSelector = Foundation.INSTANCE.sel_registerName("button");
-                    FoundationUtil.invoke(statusItem, buttonSelector, (Object) null);
-                    FoundationUtil.invoke(image, "setTemplate:", true);
-                    NativeLong button = FoundationUtil.invoke(statusItem, buttonSelector);
-                    FoundationUtil.invoke(button, "setImage:", image);
-                    //FoundationUtil.invoke(statusItem, "setLength:", -2d);
-                    if (cPopupMenuAddress > 0) {
-                        FoundationUtil.invoke(statusItem, "setMenu:", FoundationUtil.invoke(new NativeLong(cPopupMenuAddress), "menu"));
-                    }
+            NativeLong awtView = FoundationUtil.invoke(statusItem, "view");
+            final NativeLong image = Foundation.INSTANCE.object_getIvar(awtView, Foundation.INSTANCE.class_getInstanceVariable(FoundationUtil.invoke(awtView, "class"), "image"));
+            FoundationUtil.invoke(image, "setTemplate:", true);
+            FoundationUtil.runOnMainThreadAndWait(() -> {
+                FoundationUtil.invoke(statusItem, "setView:", (Object) null);
+                NativeLong target;
+                if (SystemUtilities.getOSVersion().greaterThanOrEqualTo(Version.forIntegers(10, 10))) {
+                    target = FoundationUtil.invoke(statusItem, "button");
+                } else {
+                    target = statusItem;
+                }
+                FoundationUtil.invoke(target, "setImage:", image);
+                //FoundationUtil.invoke(statusItem, "setLength:", length);
+
+                if (cPopupMenuAddress != 0) {
+                    FoundationUtil.invoke(statusItem, "setMenu:", FoundationUtil.invoke(new NativeLong(cPopupMenuAddress), "menu"));
+                } else {
                     new ActionCallback(() -> {
                         final ActionListener[] listeners = icon.getActionListeners();
                         final int now = (int) System.currentTimeMillis();
                         for (int i = 0; i < listeners.length; i++) {
                             final int iF = i;
-                            SwingUtilities.invokeLater(new Runnable() {
-                                @Override
-                                public void run() {
-                                    listeners[iF].actionPerformed(new ActionEvent(this, now + iF, null));
-                                }
-                            });
+                            SwingUtilities.invokeLater(() -> listeners[iF].actionPerformed(new ActionEvent(icon, now + iF, null)));
                         }
-                    }).installActionOnNSControl(button);
+                    }).installActionOnNSControl(target);
                 }
             });
-        } catch (Throwable ignore) {
-            ignore.printStackTrace();
-        }
+        } catch (Throwable ignore) {}
     }
 
 }

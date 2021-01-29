@@ -14,13 +14,22 @@ import com.apple.OSXAdapterWrapper;
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.NativeLong;
+import com.sun.jna.Pointer;
+import org.dyorgio.jna.platform.mac.ActionCallback;
+import org.dyorgio.jna.platform.mac.Foundation;
+import org.dyorgio.jna.platform.mac.FoundationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.ui.component.IconCache;
 
+import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +45,9 @@ public class MacUtilities {
     private static Dialog aboutDialog;
     private static TrayManager trayManager;
     private static String bundleId;
+    private static Integer pid;
+    private static Boolean jdkSupportsTemplateIcon;
+    private static boolean templateIconForced = false;
 
     public static void showAboutDialog() {
         if (aboutDialog != null) { aboutDialog.setVisible(true); }
@@ -107,7 +119,7 @@ public class MacUtilities {
      * Runs a shell command to determine if "Dark" desktop theme is enabled
      * @return true if enabled, false if not
      */
-    public static boolean isDarkMode() {
+    public static boolean isDarkDesktop() {
         return !ShellUtilities.execute(new String[] { "defaults", "read", "-g", "AppleInterfaceStyle" }, new String[] { "Dark" }, true, true).isEmpty();
     }
 
@@ -134,17 +146,107 @@ public class MacUtilities {
     }
 
     public static int getProcessID() {
-        try {
-            return CLibrary.INSTANCE.getpid();
-        } catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
-            log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
+        if(pid == null) {
+            try {
+                pid = CLibrary.INSTANCE.getpid();
+            }
+            catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
+                log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
+                pid = -1;
+            }
         }
-        return -1;
+        return pid;
     }
 
     private interface CLibrary extends Library {
         CLibrary INSTANCE = (CLibrary) Native.loadLibrary("c", CLibrary.class);
         int getpid ();
+    }
+
+    /**
+     * Checks for presence of JDK-8252015 using reflection
+     */
+    public static boolean jdkSupportsTemplateIcon() {
+        if(jdkSupportsTemplateIcon == null) {
+            try {
+                // before JDK-8252015: setNativeImage(long, long, boolean)
+                // after  JDK-8252015: setNativeImage(long, long, boolean, boolean)
+                Class.forName("sun.lwawt.macosx.CTrayIcon").getDeclaredMethod("setNativeImage", long.class, long.class, boolean.class, boolean.class);
+                jdkSupportsTemplateIcon = true;
+            }
+            catch(ClassNotFoundException | NoSuchMethodException ignore) {
+                jdkSupportsTemplateIcon = false;
+            }
+        }
+        return jdkSupportsTemplateIcon;
+    }
+
+    public static void toggleTemplateIcon(TrayIcon icon) {
+        // Check if icon has a menu
+        if (icon.getPopupMenu() == null) {
+            throw new IllegalStateException("PopupMenu needs to be set on TrayIcon first");
+        }
+        // Check if icon is on SystemTray
+        if (icon.getImage() == null) {
+            throw new IllegalStateException("TrayIcon needs to be added on SystemTray first");
+        }
+        // Check if icon is on SystemTray
+        if (!Arrays.asList(SystemTray.getSystemTray().getTrayIcons()).contains(icon)) {
+            throw new IllegalStateException("TrayIcon needs to be added on SystemTray first");
+        }
+
+        // Prevent second invocation; causes icon to disappear
+        if(templateIconForced) {
+            return;
+        } else {
+            templateIconForced = true;
+        }
+
+        try {
+            Field ptrField = Class.forName("sun.lwawt.macosx.CFRetainedResource").getDeclaredField("ptr");
+            ptrField.setAccessible(true);
+
+            Field field = TrayIcon.class.getDeclaredField("peer");
+            field.setAccessible(true);
+            long cTrayIconAddress = ptrField.getLong(field.get(icon));
+
+            long cPopupMenuAddressTmp = 0;
+            if (icon.getPopupMenu() != null) {
+                field = MenuComponent.class.getDeclaredField("peer");
+                field.setAccessible(true);
+                cPopupMenuAddressTmp = ptrField.getLong(field.get(icon.getPopupMenu()));
+            }
+            final long cPopupMenuAddress = cPopupMenuAddressTmp;
+
+            final NativeLong statusItem = FoundationUtil.invoke(new NativeLong(cTrayIconAddress), "theItem");
+            NativeLong awtView = FoundationUtil.invoke(statusItem, "view");
+            final NativeLong image = Foundation.INSTANCE.object_getIvar(awtView, Foundation.INSTANCE.class_getInstanceVariable(FoundationUtil.invoke(awtView, "class"), "image"));
+            FoundationUtil.invoke(image, "setTemplate:", true);
+            FoundationUtil.runOnMainThreadAndWait(() -> {
+                FoundationUtil.invoke(statusItem, "setView:", (Object) null);
+                NativeLong target;
+                if (SystemUtilities.getOSVersion().greaterThanOrEqualTo(Version.forIntegers(10, 10))) {
+                    target = FoundationUtil.invoke(statusItem, "button");
+                } else {
+                    target = statusItem;
+                }
+                FoundationUtil.invoke(target, "setImage:", image);
+                //FoundationUtil.invoke(statusItem, "setLength:", length);
+
+                if (cPopupMenuAddress != 0) {
+                    FoundationUtil.invoke(statusItem, "setMenu:", FoundationUtil.invoke(new NativeLong(cPopupMenuAddress), "menu"));
+                } else {
+                    new ActionCallback(() -> {
+                        final ActionListener[] listeners = icon.getActionListeners();
+                        final int now = (int) System.currentTimeMillis();
+                        for (int i = 0; i < listeners.length; i++) {
+                            final int iF = i;
+                            SwingUtilities.invokeLater(() -> listeners[iF].actionPerformed(new ActionEvent(icon, now + iF, null)));
+                        }
+                    }).installActionOnNSControl(target);
+                }
+            });
+        } catch (Throwable ignore) {}
     }
 
 }

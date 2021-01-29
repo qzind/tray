@@ -317,11 +317,14 @@ public class SystemUtilities {
 
     public static boolean isDarkTaskbar(boolean recheck) {
         if(darkTaskbar == null || recheck) {
-            if (!isWindows()) {
-                // Mac and Linux don't differentiate; return the cached darkDesktop value
-                darkTaskbar = isDarkDesktop();
-            } else {
+            if (isWindows()) {
                 darkTaskbar = WindowsUtilities.isDarkTaskbar();
+            } else if(isMac()) {
+                // Ignore, we'll set the template flag using JNA
+                darkTaskbar = false;
+            } else {
+                // Linux doesn't differentiate; return the cached darkDesktop value
+                darkTaskbar = isDarkDesktop();
             }
         }
         return darkTaskbar.booleanValue();
@@ -335,7 +338,7 @@ public class SystemUtilities {
         if (darkDesktop == null || recheck) {
             // Check for Dark Mode on MacOS
             if (isMac()) {
-                darkDesktop = MacUtilities.isDarkMode();
+                darkDesktop = MacUtilities.isDarkDesktop();
             } else if (isWindows()) {
                 darkDesktop = WindowsUtilities.isDarkDesktop();
             } else {
@@ -353,7 +356,8 @@ public class SystemUtilities {
     public static boolean prefersMaskTrayIcon() {
         if (Constants.MASK_TRAY_SUPPORTED) {
             if (SystemUtilities.isMac()) {
-                return true;
+                // Assume a pid of -1 is a broken JNA
+                return MacUtilities.getProcessID() != -1;
             } else if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().getMajorVersion() >= 10) {
                 return true;
             }

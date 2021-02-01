@@ -11,18 +11,18 @@ import java.util.TreeMap;
 public enum WmiJobStatusMap implements NativeStatus.NativeMap {
     EMPTY(NativeJobStatus.EMPTY, -0x00000001), // Fallback for a no-status message
     PAUSED(NativeJobStatus.PAUSED, 0x00000001), // Job is paused
-    ERROR(NativeJobStatus.ERROR, 0x00000002), //	An error is associated with the job
-    DELETING(NativeJobStatus.DELETING, 0x00000004), //	Job is being deleted
+    ERROR(NativeJobStatus.ERROR, 0x00000002), // An error is associated with the job
+    DELETING(NativeJobStatus.DELETING, 0x00000004), // Job is being deleted
     SPOOLING(NativeJobStatus.SPOOLING, 0x00000008),	// Job is spooling
     PRINTING(NativeJobStatus.PRINTING, 0x00000010), // Job is printing
-    OFFLINE(NativeJobStatus.OFFLINE, 0x00000020), //	Job is printing
+    OFFLINE(NativeJobStatus.OFFLINE, 0x00000020), // Job is printing
     PAPEROUT(NativeJobStatus.PAPEROUT, 0x00000040), // Printer is out of paper
     RETAINED(NativeJobStatus.RETAINED, 0x00002000), // Windows Vista and later: Job has been retained in the print queue and cannot be deleted
     PRINTED(NativeJobStatus.PRINTED, 0x00000080), // Job has printed
     DELETED(NativeJobStatus.DELETED, 0x00000100), // Job has been deleted
-    BLOCKED_DEVQ(NativeJobStatus.BLOCKED_DEVQ, 0x00000200), //	The driver cannot print the job
-    USER_INTERVENTION(NativeJobStatus.USER_INTERVENTION, 0x40000000),	// Printer has an error that requires the user to do something
-    RESTART(NativeJobStatus.RESTART, 0x00000800), //	Job has been restarted
+    BLOCKED_DEVQ(NativeJobStatus.ABORTED, 0x00000200), // The driver cannot print the job
+    USER_INTERVENTION(NativeJobStatus.USER_INTERVENTION, 0x40000000), // Printer has an error that requires the user to do something
+    RESTART(NativeJobStatus.RESTART, 0x00000800), // Job has been restarted
     COMPLETE(NativeJobStatus.COMPLETE, 0x00001000), // Windows XP and later: Job is sent to the printer, but the job may not be printed yet
     RENDERING_LOCALLY(NativeJobStatus.RENDERING_LOCALLY, 0x00004000); // Job rendering locally on the client
 

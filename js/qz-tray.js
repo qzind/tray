@@ -1606,7 +1606,6 @@ var qz = (function() {
             }
         },
 
-        //fixme - naming??
         /**
          * Calls related to interaction with communication sockets.
          * @namespace qz.socket

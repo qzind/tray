@@ -299,8 +299,6 @@ public class PrintSocketClient {
                 }
                 break;
             }
-
-            //fixme - naming??
             case SOCKET_OPEN_PORT:
                 SocketUtilities.setupSocket(session, UID, connection, params);
                 break;

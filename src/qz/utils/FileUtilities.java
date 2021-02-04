@@ -60,6 +60,9 @@ public class FileUtilities {
     public static final Path USER_DIR = getUserDirectory();
     public static final Path SHARED_DIR = getSharedDirectory();
     public static final Path TEMP_DIR = getTempDirectory();
+    public static final char FILE_SEPARATOR = ';';
+    public static final char FIELD_SEPARATOR = '|';
+    public static final char ESCAPE_CHAR = '^';
 
     /**
      * Zips up the USER_DIR, places on desktop with timestamp
@@ -179,17 +182,17 @@ public class FileUtilities {
     };
 
     private static final CharSequenceTranslator translator = new LookupTranslator(new String[][] {
-            {"^", "^^"},
-            {"\\", "^b"},
-            {"/", "^f"},
-            {":", "^c"},
-            {"*", "^a"},
-            {"?", "^m"},
-            {"\"", "^q"},
-            {"<", "^g"},
-            {">", "^l"},
-            {"|", "^p"},
-            {"" + (char)0x7f, "^d"}
+            {"" + ESCAPE_CHAR, "" + ESCAPE_CHAR + ESCAPE_CHAR},
+            {"\\", ESCAPE_CHAR + "b"},
+            {"/", ESCAPE_CHAR + "f"},
+            {":", ESCAPE_CHAR + "c"},
+            {"*", ESCAPE_CHAR + "a"},
+            {"?", ESCAPE_CHAR + "m"},
+            {"\"", ESCAPE_CHAR + "q"},
+            {"<", ESCAPE_CHAR + "g"},
+            {">", ESCAPE_CHAR + "l"},
+            {"|", ESCAPE_CHAR + "p"},
+            {"" + (char)0x7f, ESCAPE_CHAR + "d"}
     });
 
     /* resource files */
@@ -291,7 +294,11 @@ public class FileUtilities {
     public static boolean isWhiteListed(Path path, boolean allowRootDir, boolean sandbox, Certificate cert) {
         String commonName = cert.isTrusted()? escapeFileName(cert.getCommonName()):"UNTRUSTED";
         if (whiteList == null) {
-            populateWhiteList();
+            whiteList = new ArrayList<>();
+            //default sandbox locations. More can be added through the properties file
+            whiteList.add(new AbstractMap.SimpleEntry<>(USER_DIR, "|sandbox|"));
+            whiteList.add(new AbstractMap.SimpleEntry<>(SHARED_DIR, "|sandbox|"));
+            whiteList.addAll(parseDelimitedPaths(getFileAllowProperty(PrintSocketServer.getTrayProperties()).toString()));
         }
 
         Path cleanPath = path.normalize().toAbsolutePath();
@@ -321,98 +328,183 @@ public class FileUtilities {
         return lastSlash < 0? "":filePath.substring(0, lastSlash);
     }
 
-    public static ArgParser.ExitStatus writeFileAllowProperty(String path, String vendor) throws IOException {
+    public static ArgParser.ExitStatus addFileAllowProperty(String path, String vendor) throws IOException {
         PropertyHelper props = new PropertyHelper(new File(CertificateManager.getWritableLocation(), Constants.PROPS_FILE + ".properties"));
+        ArrayList<Map.Entry<Path, String>> paths = parseDelimitedPaths(getFileAllowProperty(props).toString());
 
-        StringBuilder before = getFileAllowProperty(props);
-        if(!before.toString().isEmpty() && !StringUtils.endsWith(before, ";")) {
-            before.append(";");
+        int before = paths.size();
+        Iterator<Map.Entry<Path, String>> iterator = paths.iterator();
+        String vendorEscaped = escapePathProperty(vendor);
+        // First, iterate to see if the path already exists
+        boolean found = false;
+        boolean updated = false;
+        while(iterator.hasNext()) {
+            Map.Entry<Path, String> value = iterator.next();
+            if(value.getKey().toString().equals(path)) {
+                found = true;
+                if(vendor != null && !vendor.isEmpty() && !value.getValue().contains(vendorEscaped)) {
+                    String newVal = value.getValue() != null ? value.getValue() : "";
+                    if(!newVal.startsWith("" + FIELD_SEPARATOR)) {
+                        newVal = FIELD_SEPARATOR + newVal;
+                    }
+                    if(!newVal.endsWith("" + FIELD_SEPARATOR)) {
+                        newVal += FIELD_SEPARATOR;
+                    }
+                    newVal += vendorEscaped + FIELD_SEPARATOR;
+                    value.setValue(newVal);
+                    updated = true;
+                }
+            }
         }
-
-        StringBuilder after = new StringBuilder();
-        after.append(path);
-        if(vendor != null && !vendor.isEmpty()) {
-            after.append("|" + escapeFileName(vendor));
+        if(!found) {
+            paths.add(new AbstractMap.SimpleEntry<>(Paths.get(path).normalize().toAbsolutePath(), FIELD_SEPARATOR + vendorEscaped + FIELD_SEPARATOR));
+            updated = true;
         }
-        after.append(";");
-
-        // Avoid adding duplicates
-        if(before.indexOf(after.toString()) != -1) {
-            log.warn("Skipping \"{}\" entry in {}.properties, it already exists:  \n\t\tUNCHANGED:", ArgValue.FILE_ALLOW.getMatches()[0], Constants.PROPS_FILE, before);
+        if(updated) {
+            if(saveFileAllowProperty(props, paths)) {
+                log.info("Added \"file.allow\" entry to {}.properties, it doesn't exist.", Constants.PROPS_FILE);
+                return ArgParser.ExitStatus.SUCCESS;
+            }
+            return ArgParser.ExitStatus.GENERAL_ERROR;
+        } else {
+            log.warn("Skipping \"file.allow\" entry in {}.properties, it already exist.", Constants.PROPS_FILE);
             return ArgParser.ExitStatus.SUCCESS;
         }
+    }
 
-        after.append(before);
-        log.info("Updating \"{}\" entry in {}.properties: \n\t\tBEFORE: {}\n\t\tAFTER: {}", ArgValue.FILE_ALLOW.getMatches()[0], Constants.PROPS_FILE, before, after);
+    public static ArgParser.ExitStatus removeFileAllowProperty(String path) throws IOException {
+        PropertyHelper props = new PropertyHelper(new File(CertificateManager.getWritableLocation(), Constants.PROPS_FILE + ".properties"));
+        ArrayList<Map.Entry<Path, String>> paths = parseDelimitedPaths(getFileAllowProperty(props).toString());
+
+        int before = paths.size();
+        Iterator<Map.Entry<Path, String>> iterator = paths.iterator();
+        while(iterator.hasNext()) {
+            Map.Entry<Path, String> value = iterator.next();
+            if(value.getKey().toString().equals(path)) {
+                iterator.remove();
+            }
+        }
+        if(paths.size() != before) {
+            if(saveFileAllowProperty(props, paths)) {
+                log.info("Removed \"file.allow\" entry from {}.properties.", Constants.PROPS_FILE);
+                return ArgParser.ExitStatus.SUCCESS;
+            }
+            return ArgParser.ExitStatus.GENERAL_ERROR;
+        } else {
+            log.warn("Skipping \"file.allow\" entry in {}.properties, it doesn't exist.", Constants.PROPS_FILE);
+            return ArgParser.ExitStatus.SUCCESS;
+        }
+    }
+
+    private static boolean saveFileAllowProperty(PropertyHelper props, ArrayList<Map.Entry<Path, String>> paths) {
+        StringBuilder fileAllow = new StringBuilder();
+        for(Map.Entry<Path, String> path : paths) {
+            fileAllow
+                    .append(escapePathProperty(path.getKey().toString()))
+                    .append(path.getValue())
+                    .append(FILE_SEPARATOR);
+        }
         props.remove("file.whitelist");
-        props.setProperty("file.allow", after.toString());
-        return props.save() ? ArgParser.ExitStatus.SUCCESS : ArgParser.ExitStatus.GENERAL_ERROR;
+        props.remove("file.allow");
+        if(fileAllow.length() > 0) {
+            props.setProperty("file.allow", fileAllow.toString());
+        }
+        return props.save();
+    }
+
+    /**
+     * Escapes <code>ESCAPE_CHARACTER</code>, <code>FILE_SEPARATOR</code> and <code>FIELD_SEPARATOR</code>
+     * so it a multi-value file path can be safely parsed later
+     */
+    private static String escapePathProperty(String path) {
+        return path == null ? "" : path
+                .replace("" + ESCAPE_CHAR, ("" + ESCAPE_CHAR) + ESCAPE_CHAR)
+                .replace("" + FILE_SEPARATOR, ("" + ESCAPE_CHAR) + FILE_SEPARATOR)
+                .replace("" + FIELD_SEPARATOR, ("" + ESCAPE_CHAR) + FIELD_SEPARATOR);
     }
 
     private static StringBuilder getFileAllowProperty(Properties props) {
         StringBuilder propString = new StringBuilder();
         if(props != null) {
             propString.append(props.getProperty("file.allow", ""));
-            if (propString.toString().isEmpty()) {
+            if (propString.length() == 0) {
                 // Deprecated
                 propString.append(props.getProperty("file.whitelist", ""));
-                if (!propString.toString().isEmpty()) {
-                    log.warn("Property \"file.whitelist\" is deprecated and will be removed in a future version.  Please use \"file.whitelist\" instead.");
+                if (propString.length() > 0) {
+                    log.warn("Property \"file.whitelist\" is deprecated and will be removed in a future version.  Please use \"file.allow\" instead.");
                 }
             }
         }
         return propString;
     }
 
-    private static void populateWhiteList() {
-        whiteList = new ArrayList<>();
-        //default sandbox locations. More can be added through the properties file
-        whiteList.add(new AbstractMap.SimpleEntry<>(USER_DIR, "|sandbox|"));
-        whiteList.add(new AbstractMap.SimpleEntry<>(SHARED_DIR, "|sandbox|"));
-
-        StringBuilder propString = getFileAllowProperty(PrintSocketServer.getTrayProperties());
-        boolean escaped = false;
-        boolean resetPending = false, tokenPending = false;
-        ArrayList<String> tokens = new ArrayList<>();
-        //unescaper and tokenizer
-        for(int i = 0; i < propString.length(); i++) {
-            char iteratingChar = propString.charAt(i);
-            //if the char before this was an escape char, we are no longer escaped and we skip delimiter detection
-            if (escaped) {
-                escaped = false;
-            } else {
-                if (iteratingChar == '^') {
-                    escaped = true;
-                    propString.deleteCharAt(i);
-                    i--;
+    /**
+     * Parses semi-colon delimited paths with optional pipe-delimited descriptions
+     * e.g. C:\file1.txt;C:\file2.txt
+     *      C:\file1.txt|ABC Inc.;C:\file2.txt|XYZ Inc.
+     */
+    public static ArrayList<Map.Entry<Path, String>> parseDelimitedPaths(String delimited, boolean escapeCommonNames) {
+        ArrayList<Map.Entry<Path, String>> foundPaths = new ArrayList<>();
+        if (delimited != null) {
+            StringBuilder propString = new StringBuilder(delimited);
+            boolean escaped = false;
+            boolean resetPending = false, tokenPending = false;
+            ArrayList<String> tokens = new ArrayList<>();
+            //unescape and tokenize
+            for(int i = 0; i < propString.length(); i++) {
+                char iteratingChar = propString.charAt(i);
+                //if the char before this was an escape char, we are no longer escaped and we skip delimiter detection
+                if (escaped) {
+                    escaped = false;
                 } else {
-                    tokenPending = iteratingChar == '|' || iteratingChar == ';';
-                    resetPending = iteratingChar == ';';
+                    if (iteratingChar == ESCAPE_CHAR) {
+                        escaped = true;
+                        propString.deleteCharAt(i);
+                        i--;
+                    } else {
+                        tokenPending = iteratingChar == FIELD_SEPARATOR || iteratingChar == FILE_SEPARATOR;
+                        resetPending = iteratingChar == FILE_SEPARATOR;
+                    }
                 }
-            }
-            //If the last char isn't a ; or |
-            if (i == propString.length() - 1) {
-                tokenPending = true;
-                resetPending = true;
-            }
-            //if a delimiter is found, save string to token and delete it from propString
-            if (tokenPending) {
-                tokenPending = false;
-                tokens.add(propString.substring(0, i));
-                propString.delete(0, i + 1);
-                i = -1;
-            }
-            //if a semicolon was found or we are on the last char of the string, dump the tokens into a pair and add it to whiteList
-            if (resetPending) {
-                resetPending = false;
-                String commonNames = tokens.size() > 1? "|":"";
-                for(int n = 1; n < tokens.size(); n++) {
-                    commonNames += escapeFileName(tokens.get(n)) + "|";
+                //If the last char isn't a ; or |
+                if (i == propString.length() - 1) {
+                    tokenPending = true;
+                    resetPending = true;
                 }
-                whiteList.add(new AbstractMap.SimpleEntry<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));
-                tokens.clear();
+                //if a delimiter is found, save string to token and delete it from propString
+                if (tokenPending) {
+                    tokenPending = false;
+                    tokens.add(propString.substring(0, i));
+                    propString.delete(0, i + 1);
+                    i = -1;
+                }
+                //if a semicolon was found or we are on the last char of the string, dump the tokens into a pair and add it to whiteList
+                if (resetPending) {
+                    resetPending = false;
+                    String commonNames = tokens.size() > 1? "" + FIELD_SEPARATOR:"";
+                    for(int n = 1; n < tokens.size(); n++) {
+                        if(escapeCommonNames) {
+                            commonNames += escapeFileName(tokens.get(n)) + FIELD_SEPARATOR;
+                        } else {
+                            // We still need to maintain some level of escaping for reserved characters
+                            // this is just going to cause headaches later, but we don't have much choice
+                            commonNames += escapePathProperty(tokens.get(n)) + FIELD_SEPARATOR;
+                        }
+                    }
+                    foundPaths.add(new AbstractMap.SimpleEntry<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));
+                    tokens.clear();
+                }
             }
         }
+        return foundPaths;
+    }
+
+    public static ArrayList<Map.Entry<Path, String>> parseDelimitedPaths(String delimited) {
+        return parseDelimitedPaths(delimited, true);
+    }
+
+    public static ArrayList<Map.Entry<Path, String>> parseDelimitedPaths(Properties props, String key) {
+        return parseDelimitedPaths(props == null ? null : props.getProperty(key));
     }
 
     /**
@@ -427,8 +519,8 @@ public class FileUtilities {
     }
 
     /**
-     * Escapes invalid chars from filenames. This does not cause collisions. Escape char is "^"
-     * Characters escaped, ^ \ / : * ? " < > |</>
+     * Escapes invalid chars from filenames. This does not cause collisions. Escape char is <code>ESCAPE_CHAR</code>
+     * Characters escaped, ^ \ / : ; * ? " < > |</>
      * Warning: Restricted filenames such as lpt1, com1, aux... are not escaped by this function
      *
      * @param fileName file name to escape
@@ -439,7 +531,7 @@ public class FileUtilities {
         for(int n = returnStringBuilder.length() - 1; n >= 0; n--) {
             char c = returnStringBuilder.charAt(n);
             if (c < 0x20) {
-                returnStringBuilder.replace(n, n + 1, "^" + String.format("%02d", (int)c));
+                returnStringBuilder.replace(n, n + 1, ESCAPE_CHAR + String.format("%02d", (int)c));
             }
         }
         return returnStringBuilder.toString();

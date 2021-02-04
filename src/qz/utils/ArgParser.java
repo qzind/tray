@@ -223,7 +223,7 @@ public class ArgParser {
                 }
             } else {
                 // Show generic help
-                for(ArgType argType : ArgValue.ArgType.values()) {
+                for(ArgType argType : ArgType.values()) {
                     System.out.println(String.format("%s%s", System.lineSeparator(), argType));
                     for(ArgValue argValue : ArgValue.filter(argType)) {
                         printHelp(argValue);
@@ -294,11 +294,11 @@ public class ArgParser {
             // Handle file.allow
             String allowPath;
             if ((allowPath = valueOf(argValue = FILE_ALLOW)) != null) {
-                exitStatus = FileUtilities.writeFileAllowProperty(allowPath, valueOf(SANDBOX));
+                exitStatus = FileUtilities.addFileAllowProperty(allowPath, valueOf(SANDBOX));
                 return true;
             }
             if ((allowPath = valueOf(argValue = FILE_REMOVE)) != null) {
-                //exitStatus = FileUtilities.deleteFileAllowProperty(allowPath, valueOf(SANDBOX));
+                exitStatus = FileUtilities.removeFileAllowProperty(allowPath);
                 return true;
             }
 

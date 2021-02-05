@@ -1,14 +1,24 @@
-jdk:
-  - oraclejdk8
-  - openjdk11
 matrix:
   include:
     - os: linux
+      jdk: oraclejdk8
       env: TARGET=nsis
     - os: linux
+      jdk: openjdk11
+      env: TARGET=nsis
+    - os: linux
+      jdk: oraclejdk8
+      env: TARGET=makeself
+    - os: linux
+      jdk: openjdk11
       env: TARGET=makeself
     - os: osx
       env: TARGET=pkgbuild
+      jdk: oraclejdk8
+      osx_image: xcode12.2
+    - os: osx
+      env: TARGET=pkgbuild
+      jdk: openjdk11
       osx_image: xcode12.2
 language: java
 dist: trusty

@@ -509,7 +509,7 @@ public class FileUtilities {
 
     /**
      * Escapes invalid chars from filenames. This does not cause collisions. Escape char is <code>ESCAPE_CHAR</code>
-     * Characters escaped, ^ \ / : ; * ? " < > |</>
+     * Characters escaped, ^ \ / : * ? " < > |</>
      * Warning: Restricted filenames such as lpt1, com1, aux... are not escaped by this function
      *
      * @param fileName file name to escape

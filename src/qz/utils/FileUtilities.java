@@ -580,8 +580,8 @@ public class FileUtilities {
     }
 
 
-    public static boolean printLineToFile(String fileName, String message) {
-        File file = getFile(fileName, true);
+    public static boolean printLineToFile(String fileName, String message, boolean local) {
+        File file = getFile(fileName, local);
         if (file == null) { return false; }
 
         try(FileWriter fw = new FileWriter(file, true)) {
@@ -595,6 +595,10 @@ public class FileUtilities {
         }
 
         return false;
+    }
+
+    public static boolean printLineToFile(String fileName, String message) {
+        return printLineToFile(fileName, message, true);
     }
 
     public static File getFile(String name, boolean local) {
@@ -646,7 +650,7 @@ public class FileUtilities {
     public static ArgParser.ExitStatus addToCertList(String list, File certFile) throws Exception {
         FileReader fr = new FileReader(certFile);
         Certificate cert = new Certificate(IOUtils.toString(fr));
-        if(FileUtilities.printLineToFile(list, cert.data())) {
+        if(FileUtilities.printLineToFile(list, cert.data(), !SystemUtilities.isAdmin())) {
             log.info("Successfully added {} to {} list", cert.getOrganization(), ALLOW_FILE);
             return ArgParser.ExitStatus.SUCCESS;
         }

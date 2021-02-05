@@ -25,10 +25,12 @@ import qz.auth.Certificate;
 import qz.auth.RequestState;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
+import qz.common.PropertyHelper;
 import qz.communication.FileIO;
 import qz.communication.FileParams;
 import qz.installer.WindowsSpecialFolders;
 import qz.exception.NullCommandException;
+import qz.installer.certificate.CertificateManager;
 import qz.ws.PrintSocketServer;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -57,6 +59,9 @@ public class FileUtilities {
     public static final Path USER_DIR = getUserDirectory();
     public static final Path SHARED_DIR = getSharedDirectory();
     public static final Path TEMP_DIR = getTempDirectory();
+    public static final char FILE_SEPARATOR = ';';
+    public static final char FIELD_SEPARATOR = '|';
+    public static final char ESCAPE_CHAR = '^';
 
     /**
      * Zips up the USER_DIR, places on desktop with timestamp
@@ -176,17 +181,17 @@ public class FileUtilities {
     };
 
     private static final CharSequenceTranslator translator = new LookupTranslator(new String[][] {
-            {"^", "^^"},
-            {"\\", "^b"},
-            {"/", "^f"},
-            {":", "^c"},
-            {"*", "^a"},
-            {"?", "^m"},
-            {"\"", "^q"},
-            {"<", "^g"},
-            {">", "^l"},
-            {"|", "^p"},
-            {"" + (char)0x7f, "^d"}
+            {"" + ESCAPE_CHAR, "" + ESCAPE_CHAR + ESCAPE_CHAR},
+            {"\\", ESCAPE_CHAR + "b"},
+            {"/", ESCAPE_CHAR + "f"},
+            {":", ESCAPE_CHAR + "c"},
+            {"*", ESCAPE_CHAR + "a"},
+            {"?", ESCAPE_CHAR + "m"},
+            {"\"", ESCAPE_CHAR + "q"},
+            {"<", ESCAPE_CHAR + "g"},
+            {">", ESCAPE_CHAR + "l"},
+            {"|", ESCAPE_CHAR + "p"},
+            {"" + (char)0x7f, ESCAPE_CHAR + "d"}
     });
 
     /* resource files */
@@ -288,15 +293,19 @@ public class FileUtilities {
     public static boolean isWhiteListed(Path path, boolean allowRootDir, boolean sandbox, Certificate cert) {
         String commonName = cert.isTrusted()? escapeFileName(cert.getCommonName()):"UNTRUSTED";
         if (whiteList == null) {
-            populateWhiteList();
+            whiteList = new ArrayList<>();
+            //default sandbox locations. More can be added through the properties file
+            whiteList.add(new AbstractMap.SimpleEntry<>(USER_DIR, FIELD_SEPARATOR + "sandbox" + FIELD_SEPARATOR));
+            whiteList.add(new AbstractMap.SimpleEntry<>(SHARED_DIR, FIELD_SEPARATOR + "sandbox" + FIELD_SEPARATOR));
+            whiteList.addAll(parseDelimitedPaths(getFileAllowProperty(PrintSocketServer.getTrayProperties()).toString()));
         }
 
         Path cleanPath = path.normalize().toAbsolutePath();
         for(Map.Entry<Path,String> allowed : whiteList) {
             if (cleanPath.startsWith(allowed.getKey())) {
-                if ("".equals(allowed.getValue()) || allowed.getValue().contains("|" + commonName + "|") && (allowRootDir || !cleanPath.equals(allowed.getKey()))) {
+                if ("".equals(allowed.getValue()) || allowed.getValue().contains(FIELD_SEPARATOR + commonName + FIELD_SEPARATOR) && (allowRootDir || !cleanPath.equals(allowed.getKey()))) {
                     return true;
-                } else if (allowed.getValue().contains("|sandbox|")) {
+                } else if (allowed.getValue().contains(FIELD_SEPARATOR + "sandbox" + FIELD_SEPARATOR)) {
                     Path p;
                     if (sandbox) {
                         p = Paths.get(allowed.getKey().toString(), FileIO.SANDBOX_DATA_SUFFIX, commonName);
@@ -318,58 +327,173 @@ public class FileUtilities {
         return lastSlash < 0? "":filePath.substring(0, lastSlash);
     }
 
-    private static void populateWhiteList() {
-        whiteList = new ArrayList<>();
-        //default sandbox locations. More can be added through the properties file
-        whiteList.add(new AbstractMap.SimpleEntry<>(USER_DIR, "|sandbox|"));
-        whiteList.add(new AbstractMap.SimpleEntry<>(SHARED_DIR, "|sandbox|"));
+    public static ArgParser.ExitStatus addFileAllowProperty(String path, String commonName) throws IOException {
+        PropertyHelper props = new PropertyHelper(new File(CertificateManager.getWritableLocation(), Constants.PROPS_FILE + ".properties"));
+        ArrayList<Map.Entry<Path, String>> paths = parseDelimitedPaths(getFileAllowProperty(props).toString(), false);
+        Iterator<Map.Entry<Path, String>> iterator = paths.iterator();
+        String commonNameEscaped = escapePathProperty(commonName);
+        // First, iterate to see if the path already exists
+        boolean found = false;
+        boolean updated = false;
+        while(iterator.hasNext()) {
+            Map.Entry<Path, String> value = iterator.next();
+            if(value.getKey().toString().equals(path)) {
+                found = true;
+                if(!commonNameEscaped.isEmpty() && !value.getValue().contains(commonNameEscaped)) {
+                    value.setValue((value.getValue().isEmpty() ? FIELD_SEPARATOR : value.getValue()) + commonNameEscaped + FIELD_SEPARATOR);
+                    updated = true;
+                }
+            }
+        }
+        if(!found) {
+            paths.add(new AbstractMap.SimpleEntry<>(Paths.get(path).normalize().toAbsolutePath(), commonNameEscaped.isEmpty() ? "" : FIELD_SEPARATOR + commonNameEscaped + FIELD_SEPARATOR));
+            updated = true;
+        }
+        if(updated) {
+            if(saveFileAllowProperty(props, paths)) {
+                log.info("Added \"file.allow\" entry to {}.properties.", Constants.PROPS_FILE);
+                return ArgParser.ExitStatus.SUCCESS;
+            }
+            return ArgParser.ExitStatus.GENERAL_ERROR;
+        } else {
+            log.warn("Skipping \"file.allow\" entry in {}.properties, it already exist.", Constants.PROPS_FILE);
+            return ArgParser.ExitStatus.SUCCESS;
+        }
+    }
 
-        Properties props = PrintSocketServer.getTrayProperties();
-        if (props != null) {
-            StringBuilder propString = new StringBuilder(props.getProperty("file.whitelist", ""));
+    public static ArgParser.ExitStatus removeFileAllowProperty(String path) throws IOException {
+        PropertyHelper props = new PropertyHelper(new File(CertificateManager.getWritableLocation(), Constants.PROPS_FILE + ".properties"));
+        ArrayList<Map.Entry<Path, String>> paths = parseDelimitedPaths(getFileAllowProperty(props).toString(), false);
+
+        int before = paths.size();
+        Iterator<Map.Entry<Path, String>> iterator = paths.iterator();
+        while(iterator.hasNext()) {
+            Map.Entry<Path, String> value = iterator.next();
+            if(value.getKey().toString().equals(path)) {
+                iterator.remove();
+            }
+        }
+        if(paths.size() != before) {
+            if(saveFileAllowProperty(props, paths)) {
+                log.info("Removed \"file.allow\" entry from {}.properties.", Constants.PROPS_FILE);
+                return ArgParser.ExitStatus.SUCCESS;
+            }
+            return ArgParser.ExitStatus.GENERAL_ERROR;
+        } else {
+            log.warn("Skipping \"file.allow\" entry in {}.properties, it doesn't exist.", Constants.PROPS_FILE);
+            return ArgParser.ExitStatus.SUCCESS;
+        }
+    }
+
+    private static boolean saveFileAllowProperty(PropertyHelper props, ArrayList<Map.Entry<Path, String>> paths) {
+        StringBuilder fileAllow = new StringBuilder();
+        for(Map.Entry<Path, String> path : paths) {
+            fileAllow
+                    .append(escapePathProperty(path.getKey().toString()))
+                    .append(path.getValue())
+                    .append(FILE_SEPARATOR);
+        }
+        props.remove("file.whitelist");
+        props.remove("file.allow");
+        if(fileAllow.length() > 0) {
+            props.setProperty("file.allow", fileAllow.toString());
+        }
+        return props.save();
+    }
+
+    /**
+     * Escapes <code>ESCAPE_CHARACTER</code>, <code>FILE_SEPARATOR</code> and <code>FIELD_SEPARATOR</code>
+     * so it a multi-value file path can be safely parsed later
+     */
+    private static String escapePathProperty(String path) {
+        return path == null ? "" : path
+                .replace("" + ESCAPE_CHAR, ("" + ESCAPE_CHAR) + ESCAPE_CHAR)
+                .replace("" + FILE_SEPARATOR, ("" + ESCAPE_CHAR) + FILE_SEPARATOR)
+                .replace("" + FIELD_SEPARATOR, ("" + ESCAPE_CHAR) + FIELD_SEPARATOR);
+    }
+
+    private static StringBuilder getFileAllowProperty(Properties props) {
+        StringBuilder propString = new StringBuilder();
+        if(props != null) {
+            propString.append(props.getProperty("file.allow", ""));
+            if (propString.length() == 0) {
+                // Deprecated
+                propString.append(props.getProperty("file.whitelist", ""));
+                if (propString.length() > 0) {
+                    log.warn("Property \"file.whitelist\" is deprecated and will be removed in a future version.  Please use \"file.allow\" instead.");
+                }
+            }
+        }
+        return propString;
+    }
+
+    /**
+     * Parses semi-colon delimited paths with optional pipe-delimited descriptions
+     * e.g. C:\file1.txt;C:\file2.txt
+     *      C:\file1.txt|ABC Inc.;C:\file2.txt|XYZ Inc.
+     */
+    public static ArrayList<Map.Entry<Path, String>> parseDelimitedPaths(String delimited, boolean escapeCommonNames) {
+        ArrayList<Map.Entry<Path, String>> foundPaths = new ArrayList<>();
+        if (delimited != null) {
+            StringBuilder propString = new StringBuilder(delimited);
             boolean escaped = false;
             boolean resetPending = false, tokenPending = false;
             ArrayList<String> tokens = new ArrayList<>();
-            //unescaper and tokenizer
+            //unescape and tokenize
             for(int i = 0; i < propString.length(); i++) {
                 char iteratingChar = propString.charAt(i);
                 //if the char before this was an escape char, we are no longer escaped and we skip delimiter detection
                 if (escaped) {
                     escaped = false;
                 } else {
-                    if (iteratingChar == '^') {
+                    if (iteratingChar == ESCAPE_CHAR) {
                         escaped = true;
                         propString.deleteCharAt(i);
                         i--;
                     } else {
-                        tokenPending = iteratingChar == '|' || iteratingChar == ';';
-                        resetPending = iteratingChar == ';';
+                        tokenPending = iteratingChar == FIELD_SEPARATOR || iteratingChar == FILE_SEPARATOR;
+                        resetPending = iteratingChar == FILE_SEPARATOR;
                     }
                 }
-                //If the last char isn't a ; or |
-                if (i == propString.length() - 1) {
-                    tokenPending = true;
-                    resetPending = true;
-                }
+                boolean lastChar = (i == propString.length() - 1);
                 //if a delimiter is found, save string to token and delete it from propString
-                if (tokenPending) {
-                    tokenPending = false;
-                    tokens.add(propString.substring(0, i));
+                if (tokenPending || lastChar) {
+                    String token = propString.substring(0, lastChar && !tokenPending ? i + 1 : i);
+                    if (!token.isEmpty()) tokens.add(token);
                     propString.delete(0, i + 1);
                     i = -1;
+                    tokenPending = false;
                 }
                 //if a semicolon was found or we are on the last char of the string, dump the tokens into a pair and add it to whiteList
-                if (resetPending) {
+                if (resetPending || lastChar) {
                     resetPending = false;
-                    String commonNames = tokens.size() > 1? "|":"";
+                    String commonNames = tokens.size() > 1? "" + FIELD_SEPARATOR:"";
                     for(int n = 1; n < tokens.size(); n++) {
-                        commonNames += escapeFileName(tokens.get(n)) + "|";
+                        if(escapeCommonNames) {
+                            commonNames += escapeFileName(tokens.get(n)) + FIELD_SEPARATOR;
+                        } else {
+                            // We still need to maintain some level of escaping for reserved characters
+                            // this is just going to cause headaches later, but we don't have much choice
+                            commonNames += escapePathProperty(tokens.get(n));
+                            if(!commonNames.endsWith("" + FIELD_SEPARATOR)) {
+                                commonNames += FIELD_SEPARATOR;
+                            }
+                        }
                     }
-                    whiteList.add(new AbstractMap.SimpleEntry<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));
+                    foundPaths.add(new AbstractMap.SimpleEntry<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));
                     tokens.clear();
                 }
             }
         }
+        return foundPaths;
+    }
+
+    public static ArrayList<Map.Entry<Path, String>> parseDelimitedPaths(String delimited) {
+        return parseDelimitedPaths(delimited, true);
+    }
+
+    public static ArrayList<Map.Entry<Path, String>> parseDelimitedPaths(Properties props, String key) {
+        return parseDelimitedPaths(props == null ? null : props.getProperty(key));
     }
 
     /**
@@ -384,7 +508,7 @@ public class FileUtilities {
     }
 
     /**
-     * Escapes invalid chars from filenames. This does not cause collisions. Escape char is "^"
+     * Escapes invalid chars from filenames. This does not cause collisions. Escape char is <code>ESCAPE_CHAR</code>
      * Characters escaped, ^ \ / : * ? " < > |</>
      * Warning: Restricted filenames such as lpt1, com1, aux... are not escaped by this function
      *
@@ -396,7 +520,7 @@ public class FileUtilities {
         for(int n = returnStringBuilder.length() - 1; n >= 0; n--) {
             char c = returnStringBuilder.charAt(n);
             if (c < 0x20) {
-                returnStringBuilder.replace(n, n + 1, "^" + String.format("%02d", (int)c));
+                returnStringBuilder.replace(n, n + 1, ESCAPE_CHAR + String.format("%02d", (int)c));
             }
         }
         return returnStringBuilder.toString();

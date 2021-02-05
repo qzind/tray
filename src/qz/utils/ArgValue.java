@@ -23,6 +23,10 @@ public enum ArgValue {
           "--allow", "--whitelist", "-a"),
     BLOCK(ACTION, String.format("Add the specified certificate to %s.dat.", Constants.BLOCK_FILE), "--block cert.pem",
           "--block", "--blacklist", "-b"),
+    FILE_ALLOW(ACTION, String.format("Add the specified file.allow entry to %s.properties for FileIO operations, sandboxed to a specified certificate if provided", Constants.PROPS_FILE), "--file-allow /my/file/path [--sandbox \"Company Name\"]",
+          "--file-allow"),
+    FILE_REMOVE(ACTION, String.format("Removes the specified file.allow entry from %s.properties for FileIO operations", Constants.PROPS_FILE), "--file-remove /my/file/path",
+               "--file-remove"),
 
     // Options
     AUTOSTART(OPTION,"Read and honor any autostart preferences before launching.", null,
@@ -91,6 +95,10 @@ public enum ArgValue {
      * Child/parent for options
      */
     public enum ArgValueOption {
+        // action
+        SANDBOX(ArgValue.FILE_ALLOW, "Treats the allow entry as a sandboxed location.  Only certificates with an exact Common Name can access this location",
+             "--sandbox"),
+
         // install
         DEST(ArgValue.INSTALL, "Installs to the specified destination.  If omitted, a sane default will be used.",
              "--dest", "-d"),

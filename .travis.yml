@@ -13,7 +13,7 @@ matrix:
       jdk: openjdk11
       env: TARGET=makeself
     - os: osx
-      jdk: openjdk11
+      jdk: oraclejdk8
       env: TARGET=pkgbuild
       osx_image: xcode12.2
     - os: osx

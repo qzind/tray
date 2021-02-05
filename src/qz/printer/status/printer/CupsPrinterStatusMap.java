@@ -7,9 +7,10 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
+    // printer-state-reasons.  NativePrinterStatus.UNKNOWN_STATUS will fallback to the printer-state instead
     // Mapped printer-state-reasons
     OTHER(NativePrinterStatus.UNKNOWN_STATUS), // "other"
-    NONE(NativePrinterStatus.OK), // "none"
+    NONE(NativePrinterStatus.UNKNOWN_STATUS), // "none"
     MEDIA_NEEDED(NativePrinterStatus.PAPER_OUT), // "media-needed"
     MEDIA_JAM(NativePrinterStatus.PAPER_JAM), // "media-jam"
     MOVING_TO_PAUSED(NativePrinterStatus.OK), // "moving-to-paused"
@@ -843,7 +844,13 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     WRAPPER_UNDER_TEMPERATURE(NativePrinterStatus.UNKNOWN_STATUS), // wrapper-under-temperature
     WRAPPER_UNRECOVERABLE_FAILURE(NativePrinterStatus.UNKNOWN_STATUS), // wrapper-unrecoverable-failure
     WRAPPER_UNRECOVERABLE_STORAGE_ERROR(NativePrinterStatus.UNKNOWN_STATUS), // wrapper-unrecoverable-storage-error
-    WRAPPER_WARMING_UP(NativePrinterStatus.UNKNOWN_STATUS); // wrapper-warming-up
+    WRAPPER_WARMING_UP(NativePrinterStatus.UNKNOWN_STATUS), // wrapper-warming-up
+
+    //printer-state
+
+    IDLE(NativePrinterStatus.OK), // idle
+    PROCESSING(NativePrinterStatus.PROCESSING), // processing
+    STOPPED(NativePrinterStatus.ERROR); // stopped
 
     public static SortedMap<String,NativePrinterStatus> codeLookupTable;
 
@@ -852,17 +859,18 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
         this.parent = parent;
     }
 
-    public static NativePrinterStatus match(String code) {
+    public static NativeStatus match(String code, String state) {
         // Initialize a sorted map to speed up lookups
         if(codeLookupTable == null) {
             codeLookupTable = new TreeMap<>();
             for(CupsPrinterStatusMap value : values()) {
-                // Map "TONER_LOW" to "toner-low", etc
-                codeLookupTable.put(value.name().toLowerCase(Locale.ENGLISH).replace('_', '-'), value.parent);
+                codeLookupTable.put(value.name().toLowerCase(Locale.ENGLISH).replace("_", "-"), value.parent);
             }
         }
-
-        return codeLookupTable.get(code);
+        // If code maps to empty, use state instead
+        NativeStatus status = codeLookupTable.getOrDefault(code, NativePrinterStatus.UNKNOWN_STATUS);
+        if (status == NativePrinterStatus.UNKNOWN_STATUS) status = codeLookupTable.getOrDefault(state, NativePrinterStatus.UNKNOWN_STATUS);
+        return status;
     }
 
     @Override

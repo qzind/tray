@@ -52,14 +52,22 @@ public class CupsUtils {
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
 
         Pointer response = cups.cupsDoRequest(http, request, "/");
-        Pointer attr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
+        Pointer stateAttr = cups.ippFindAttribute(response, "printer-state", IPP.TAG_ENUM);
+        Pointer reasonAttr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
         ArrayList<Status> statuses = new ArrayList<>();
 
-        if (attr != Pointer.NULL) {
-            int attrCount = cups.ippGetCount(attr);
+        String state = "EMPTY";
+        if (stateAttr != Pointer.NULL) {
+            if (cups.ippGetCount(stateAttr) > 0) {
+                state = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(stateAttr, 0));
+            }
+        }
+
+        if (reasonAttr != Pointer.NULL) {
+            int attrCount = cups.ippGetCount(reasonAttr);
             for(int i = 0; i < attrCount; i++) {
-                String data = cups.ippGetString(attr, i, "");
-                Status status = NativeStatus.fromCups(data, printerName, NativeStatus.NativeType.PRINTER);
+                String reason = cups.ippGetString(reasonAttr, i, "");
+                Status status = NativeStatus.fromCups(state, reason, printerName, NativeStatus.NativeType.PRINTER);
                 if (status != null) { statuses.add(status); }
             }
         } else {
@@ -83,8 +91,8 @@ public class CupsUtils {
         Pointer stateAttr = cups.ippFindAttribute(response, "job-state", IPP.TAG_ENUM);
         Pointer reasonAttr = cups.ippFindAttribute(response, "job-state-reasons", IPP.TAG_KEYWORD);
         ArrayList<Status> statuses = new ArrayList<>();
-        String state = "EMPTY";
 
+        String state = "EMPTY";
         if (stateAttr != Pointer.NULL) {
             if (cups.ippGetCount(stateAttr) > 0) {
                 state = Cups.INSTANCE.ippEnumString("job-state", Cups.INSTANCE.ippGetInteger(stateAttr, 0));
@@ -127,7 +135,8 @@ public class CupsUtils {
             String name = cups.ippGetString(attr, 0, "");
 
             for(String reason : reasons) {
-                statuses.add(NativeStatus.fromCups(reason, name, NativeStatus.NativeType.PRINTER));
+                //todo add state
+                statuses.add(NativeStatus.fromCups("UNKNOWN_STATUS", reason, name, NativeStatus.NativeType.PRINTER));
             }
 
             //for next loop iteration
@@ -199,7 +208,7 @@ public class CupsUtils {
         cups.ippAddString(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_URI, "notify-recipient-uri", CHARSET,
                           URIUtil.encodePath("rss://localhost:" + rssPort));
         cups.ippAddStrings(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_KEYWORD, "notify-events", 3, CHARSET,
-                          new StringArray(new String[]{"job-created", "job-completed", "printer-state-changed"}));
+                          new StringArray(new String[]{"job-state-changed", "printer-state-changed"}));
         cups.ippAddInteger(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_INTEGER, "notify-lease-duration", 0);
 
         Pointer response = cups.cupsDoRequest(http, request, "/");

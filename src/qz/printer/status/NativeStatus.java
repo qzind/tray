@@ -72,7 +72,8 @@ public interface NativeStatus {
                     //parentCodes[i] = CupsJobStatusMap.match(rawArray[i]);
                     break;
                 case PRINTER:
-                    parentCodes[i] = CupsPrinterStatusMap.match(rawArray[i]);
+                    //todo add state
+                    parentCodes[i] = CupsPrinterStatusMap.match(rawArray[i], "UNKNOWN_STATUS");
                 default:
 
             }
@@ -105,12 +106,11 @@ public interface NativeStatus {
     }
 
 
-    static Status fromCups(String reason, String printer, NativeType nativeType) {
+    static Status fromCups(String state, String reason, String printer, NativeType nativeType) {
         if (reason == null) { return null; }
         reason = reason.toLowerCase(Locale.ENGLISH).replaceAll("-(error|warning|report)", "");
 
-        NativeStatus printerStatus = CupsPrinterStatusMap.match(reason);
-        if (printerStatus == null) { printerStatus = NativePrinterStatus.UNKNOWN_STATUS; }
+        NativeStatus printerStatus = CupsPrinterStatusMap.match(reason, state);
 
         return new Status(printerStatus, printer, reason);
     }

@@ -1,29 +1,18 @@
+jdk:
+  - oraclejdk8
+  - openjdk11
 matrix:
   include:
     - os: linux
-      jdk: oraclejdk8
       env: TARGET=nsis
     - os: linux
-      jdk: oraclejdk8
-      env: TARGET=makeself
-    - os: linux
-      jdk: openjdk11
-      env: TARGET=nsis
-    - os: linux
-      jdk: openjdk11
       env: TARGET=makeself
     - os: osx
-      jdk: oraclejdk8
       env: TARGET=pkgbuild
       osx_image: xcode12.2
-    - os: osx
-      jdk: openjdk11
-      env: TARGET=pkgbuild
-      osx_image: xcode12.2
-
 language: java
 dist: trusty
 before_script:
-    - sw_vers -productVersion && brew update && brew install ant; ant -version
-    - test -e /etc/lsb-release && sudo apt-get update -qq && sudo apt-get install -y makeself nsis; echo;
+  - sw_vers -productVersion && brew update && brew install ant; ant -version
+  - test -e /etc/lsb-release && sudo apt-get update -qq && sudo apt-get install -y makeself nsis; echo;
 script: ant $TARGET

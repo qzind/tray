@@ -84,24 +84,26 @@ public class CupsStatusHandler extends AbstractHandler {
                         } else {
                             String type = StringUtils.substringBefore(eventTitle, ": ");
 
-                            String printerName = StringUtils.substringAfter(eventTitle, ": ");
-                            printerName = StringUtils.substringBefore(printerName, " ");
-                            printerName = StringEscapeUtils.unescapeXml(printerName);
+                            String name = StringUtils.substringAfter(eventTitle, ": ");
+                            name = StringUtils.substringBefore(name, " ");
+                            name = StringEscapeUtils.unescapeXml(name);
 
                             String state = StringUtils.substringAfterLast(eventTitle, " ");
 
 
                             if (type.equals("Print Job")) {
-                                String jobNumber = StringUtils.substringAfterLast(printerName, "-");
-                                printerName = StringUtils.substringBeforeLast(printerName, "-");
+                                int jobId = Integer.parseInt(StringUtils.substringAfterLast(name, "-"));
+                                String printerName = StringUtils.substringBeforeLast(name, "-");
                                 //Todo Remove this debugging log
-                                log.warn("Job# {} from {} is now {}", jobNumber, printerName, state);
-
+                                log.warn("Job# {} from {} is now {}", jobId, printerName, state);
+                                if (!printerName.isEmpty() && StatusMonitor.isListeningTo(printerName)) {
+                                    StatusMonitor.statusChanged(CupsUtils.getJobStatuses(jobId, printerName));
+                                }
                             }
 
                             if (type.equals("Printer")) {
-                                if (!printerName.isEmpty() && StatusMonitor.isListeningTo(printerName)) {
-                                    StatusMonitor.statusChanged(CupsUtils.getStatuses(printerName));
+                                if (!name.isEmpty() && StatusMonitor.isListeningTo(name)) {
+                                    StatusMonitor.statusChanged(CupsUtils.getStatuses(name));
                                 }
                             }
                         }

@@ -72,6 +72,42 @@ public class CupsUtils {
         return statuses.toArray(new Status[statuses.size()]);
     }
 
+    public static Status[] getJobStatuses(int jobId, String printerName) {
+        Pointer request = cups.ippNewRequest(IPP.GET_JOB_ATTRIBUTES);
+
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "job-uri", CHARSET,
+                          URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/jobs/" + jobId));
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
+
+        Pointer response = cups.cupsDoRequest(http, request, "/");
+        Pointer stateAttr = cups.ippFindAttribute(response, "job-state", IPP.TAG_ENUM);
+        Pointer reasonAttr = cups.ippFindAttribute(response, "job-state-reasons", IPP.TAG_KEYWORD);
+        ArrayList<Status> statuses = new ArrayList<>();
+        String state = "EMPTY";
+
+        if (stateAttr != Pointer.NULL) {
+            if (cups.ippGetCount(stateAttr) > 0) {
+                state = Cups.INSTANCE.ippEnumString("job-state", Cups.INSTANCE.ippGetInteger(stateAttr, 0));
+            }
+        }
+
+        if (reasonAttr != Pointer.NULL) {
+            int attrCount = cups.ippGetCount(reasonAttr);
+            for(int i = 0; i < attrCount; i++) {
+                String reason = cups.ippGetString(reasonAttr, i, "");
+                Status status = NativeStatus.fromCups(reason, state, printerName, jobId, NativeStatus.NativeType.JOB);
+                if (status != null) { statuses.add(status); }
+            }
+        } else {
+            statuses.add(new Status(NativePrinterStatus.UNKNOWN_STATUS, printerName, ""));
+        }
+
+
+        cups.ippDelete(response);
+
+        return statuses.toArray(new Status[statuses.size()]);
+    }
+
     public static ArrayList<Status> getAllStatuses() {
         ArrayList<Status> statuses = new ArrayList<>();
         Pointer request = cups.ippNewRequest(IPP.GET_PRINTERS);

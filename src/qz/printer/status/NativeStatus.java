@@ -69,7 +69,7 @@ public interface NativeStatus {
         for(int i = 0; i < rawArray.length; i++) {
             switch(nativeType) {
                 case JOB:
-                    parentCodes[i] = CupsJobStatusMap.match(rawArray[i]);
+                    //parentCodes[i] = CupsJobStatusMap.match(rawArray[i]);
                     break;
                 case PRINTER:
                     parentCodes[i] = CupsPrinterStatusMap.match(rawArray[i]);
@@ -100,8 +100,8 @@ public interface NativeStatus {
     }
 
 
-    static Status fromCups(String reason, String printer, NativeType nativeType, int jobId) {
-        return null;
+    static Status fromCups(String reason, String state, String printer, int jobId, NativeType nativeType) {
+        return new Status(CupsJobStatusMap.match(reason, state), printer, reason, jobId, printer + jobId);
     }
 
 

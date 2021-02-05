@@ -89,7 +89,9 @@ public enum CupsJobStatusMap implements NativeStatus.NativeMap {
     PROCESSING_STOPPED(NativeJobStatus.PAUSED), // processing-stopped
     CANCELED(NativeJobStatus.CANCELED), // canceled
     ABORTED(NativeJobStatus.ABORTED), // aborted
-    COMPLETED(NativeJobStatus.COMPLETE); // completed
+    COMPLETED(NativeJobStatus.COMPLETE), // completed
+
+    EMPTY(NativeJobStatus.EMPTY);
 
     private static SortedMap<String,NativeStatus> sortedLookupTable;
 
@@ -99,7 +101,7 @@ public enum CupsJobStatusMap implements NativeStatus.NativeMap {
         this.parent = parent;
     }
 
-    public static NativeStatus match(String code) {
+    public static NativeStatus match(String code, String state) {
         // Initialize a sorted map to speed up lookups
         if(sortedLookupTable == null) {
             sortedLookupTable = new TreeMap<>();
@@ -107,8 +109,10 @@ public enum CupsJobStatusMap implements NativeStatus.NativeMap {
                 sortedLookupTable.put(value.name().toLowerCase(Locale.ENGLISH).replace("_", "-"), value.parent);
             }
         }
-
-        return sortedLookupTable.get(code);
+        // If code maps to empty, use state instead
+        NativeStatus status = sortedLookupTable.getOrDefault(code, NativeJobStatus.EMPTY);
+        if (status == NativeJobStatus.EMPTY) status = sortedLookupTable.getOrDefault(state, NativeJobStatus.EMPTY);
+        return status;
     }
 
     @Override

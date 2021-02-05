@@ -19,9 +19,11 @@ public interface Cups extends Library {
         public static int TAG_NAME = INSTANCE.ippTagValue("Name");
         public static int TAG_INTEGER = INSTANCE.ippTagValue("Integer");
         public static int TAG_KEYWORD = INSTANCE.ippTagValue("keyword");
+        public static int TAG_ENUM = INSTANCE.ippTagValue("enum");
         public static int TAG_SUBSCRIPTION = INSTANCE.ippTagValue("Subscription");
         public static int GET_PRINTERS = INSTANCE.ippOpValue("CUPS-Get-Printers");
         public static int GET_PRINTER_ATTRIBUTES = INSTANCE.ippOpValue("Get-Printer-Attributes");
+        public static int GET_JOB_ATTRIBUTES = INSTANCE.ippOpValue("Get-Job-Attributes");
         public static int GET_SUBSCRIPTIONS = INSTANCE.ippOpValue("Get-Subscriptions");
         public static int CREATE_PRINTER_SUBSCRIPTION = INSTANCE.ippOpValue("Create-Printer-Subscription");
         public static int CREATE_JOB_SUBSCRIPTION = INSTANCE.ippOpValue("Create-Job-Subscription");

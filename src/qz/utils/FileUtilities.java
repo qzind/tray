@@ -346,7 +346,7 @@ public class FileUtilities {
             }
         }
         if(!found) {
-            paths.add(new AbstractMap.SimpleEntry<>(Paths.get(path).normalize().toAbsolutePath(), FIELD_SEPARATOR + commonNameEscaped + FIELD_SEPARATOR));
+            paths.add(new AbstractMap.SimpleEntry<>(Paths.get(path).normalize().toAbsolutePath(), commonNameEscaped.isEmpty() ? "" : FIELD_SEPARATOR + commonNameEscaped + FIELD_SEPARATOR));
             updated = true;
         }
         if(updated) {

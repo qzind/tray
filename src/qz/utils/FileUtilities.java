@@ -11,7 +11,6 @@ package qz.utils;
 
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
 import org.codehaus.jettison.json.JSONException;
@@ -328,13 +327,11 @@ public class FileUtilities {
         return lastSlash < 0? "":filePath.substring(0, lastSlash);
     }
 
-    public static ArgParser.ExitStatus addFileAllowProperty(String path, String vendor) throws IOException {
+    public static ArgParser.ExitStatus addFileAllowProperty(String path, String commonName) throws IOException {
         PropertyHelper props = new PropertyHelper(new File(CertificateManager.getWritableLocation(), Constants.PROPS_FILE + ".properties"));
-        ArrayList<Map.Entry<Path, String>> paths = parseDelimitedPaths(getFileAllowProperty(props).toString());
-
-        int before = paths.size();
+        ArrayList<Map.Entry<Path, String>> paths = parseDelimitedPaths(getFileAllowProperty(props).toString(), false);
         Iterator<Map.Entry<Path, String>> iterator = paths.iterator();
-        String vendorEscaped = escapePathProperty(vendor);
+        String commonNameEscaped = escapePathProperty(commonName);
         // First, iterate to see if the path already exists
         boolean found = false;
         boolean updated = false;
@@ -342,27 +339,19 @@ public class FileUtilities {
             Map.Entry<Path, String> value = iterator.next();
             if(value.getKey().toString().equals(path)) {
                 found = true;
-                if(vendor != null && !vendor.isEmpty() && !value.getValue().contains(vendorEscaped)) {
-                    String newVal = value.getValue() != null ? value.getValue() : "";
-                    if(!newVal.startsWith("" + FIELD_SEPARATOR)) {
-                        newVal = FIELD_SEPARATOR + newVal;
-                    }
-                    if(!newVal.endsWith("" + FIELD_SEPARATOR)) {
-                        newVal += FIELD_SEPARATOR;
-                    }
-                    newVal += vendorEscaped + FIELD_SEPARATOR;
-                    value.setValue(newVal);
+                if(!commonNameEscaped.isEmpty() && !value.getValue().contains(commonNameEscaped)) {
+                    value.setValue((value.getValue().isEmpty() ? FIELD_SEPARATOR : value.getValue()) + commonNameEscaped + "|");
                     updated = true;
                 }
             }
         }
         if(!found) {
-            paths.add(new AbstractMap.SimpleEntry<>(Paths.get(path).normalize().toAbsolutePath(), FIELD_SEPARATOR + vendorEscaped + FIELD_SEPARATOR));
+            paths.add(new AbstractMap.SimpleEntry<>(Paths.get(path).normalize().toAbsolutePath(), FIELD_SEPARATOR + commonNameEscaped + FIELD_SEPARATOR));
             updated = true;
         }
         if(updated) {
             if(saveFileAllowProperty(props, paths)) {
-                log.info("Added \"file.allow\" entry to {}.properties, it doesn't exist.", Constants.PROPS_FILE);
+                log.info("Added \"file.allow\" entry to {}.properties.", Constants.PROPS_FILE);
                 return ArgParser.ExitStatus.SUCCESS;
             }
             return ArgParser.ExitStatus.GENERAL_ERROR;
@@ -374,7 +363,7 @@ public class FileUtilities {
 
     public static ArgParser.ExitStatus removeFileAllowProperty(String path) throws IOException {
         PropertyHelper props = new PropertyHelper(new File(CertificateManager.getWritableLocation(), Constants.PROPS_FILE + ".properties"));
-        ArrayList<Map.Entry<Path, String>> paths = parseDelimitedPaths(getFileAllowProperty(props).toString());
+        ArrayList<Map.Entry<Path, String>> paths = parseDelimitedPaths(getFileAllowProperty(props).toString(), false);
 
         int before = paths.size();
         Iterator<Map.Entry<Path, String>> iterator = paths.iterator();
@@ -488,7 +477,10 @@ public class FileUtilities {
                         } else {
                             // We still need to maintain some level of escaping for reserved characters
                             // this is just going to cause headaches later, but we don't have much choice
-                            commonNames += escapePathProperty(tokens.get(n)) + FIELD_SEPARATOR;
+                            commonNames += escapePathProperty(tokens.get(n));
+                            if(!commonNames.endsWith("" + FIELD_SEPARATOR)) {
+                                commonNames += FIELD_SEPARATOR;
+                            }
                         }
                     }
                     foundPaths.add(new AbstractMap.SimpleEntry<>(Paths.get(tokens.get(0)).normalize().toAbsolutePath(), commonNames));

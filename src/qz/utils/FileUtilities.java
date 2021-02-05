@@ -295,17 +295,17 @@ public class FileUtilities {
         if (whiteList == null) {
             whiteList = new ArrayList<>();
             //default sandbox locations. More can be added through the properties file
-            whiteList.add(new AbstractMap.SimpleEntry<>(USER_DIR, "|sandbox|"));
-            whiteList.add(new AbstractMap.SimpleEntry<>(SHARED_DIR, "|sandbox|"));
+            whiteList.add(new AbstractMap.SimpleEntry<>(USER_DIR, FIELD_SEPARATOR + "sandbox" + FIELD_SEPARATOR));
+            whiteList.add(new AbstractMap.SimpleEntry<>(SHARED_DIR, FIELD_SEPARATOR + "sandbox" + FIELD_SEPARATOR));
             whiteList.addAll(parseDelimitedPaths(getFileAllowProperty(PrintSocketServer.getTrayProperties()).toString()));
         }
 
         Path cleanPath = path.normalize().toAbsolutePath();
         for(Map.Entry<Path,String> allowed : whiteList) {
             if (cleanPath.startsWith(allowed.getKey())) {
-                if ("".equals(allowed.getValue()) || allowed.getValue().contains("|" + commonName + "|") && (allowRootDir || !cleanPath.equals(allowed.getKey()))) {
+                if ("".equals(allowed.getValue()) || allowed.getValue().contains(FIELD_SEPARATOR + commonName + FIELD_SEPARATOR) && (allowRootDir || !cleanPath.equals(allowed.getKey()))) {
                     return true;
-                } else if (allowed.getValue().contains("|sandbox|")) {
+                } else if (allowed.getValue().contains(FIELD_SEPARATOR + "sandbox" + FIELD_SEPARATOR)) {
                     Path p;
                     if (sandbox) {
                         p = Paths.get(allowed.getKey().toString(), FileIO.SANDBOX_DATA_SUFFIX, commonName);
@@ -340,7 +340,7 @@ public class FileUtilities {
             if(value.getKey().toString().equals(path)) {
                 found = true;
                 if(!commonNameEscaped.isEmpty() && !value.getValue().contains(commonNameEscaped)) {
-                    value.setValue((value.getValue().isEmpty() ? FIELD_SEPARATOR : value.getValue()) + commonNameEscaped + "|");
+                    value.setValue((value.getValue().isEmpty() ? FIELD_SEPARATOR : value.getValue()) + commonNameEscaped + FIELD_SEPARATOR);
                     updated = true;
                 }
             }
@@ -455,20 +455,17 @@ public class FileUtilities {
                         resetPending = iteratingChar == FILE_SEPARATOR;
                     }
                 }
-                //If the last char isn't a ; or |
-                if (i == propString.length() - 1) {
-                    tokenPending = true;
-                    resetPending = true;
-                }
+                boolean lastChar = (i == propString.length() - 1);
                 //if a delimiter is found, save string to token and delete it from propString
-                if (tokenPending) {
-                    tokenPending = false;
-                    tokens.add(propString.substring(0, i));
+                if (tokenPending || lastChar) {
+                    String token = propString.substring(0, lastChar && !tokenPending ? i + 1 : i);
+                    if (!token.isEmpty()) tokens.add(token);
                     propString.delete(0, i + 1);
                     i = -1;
+                    tokenPending = false;
                 }
                 //if a semicolon was found or we are on the last char of the string, dump the tokens into a pair and add it to whiteList
-                if (resetPending) {
+                if (resetPending || lastChar) {
                     resetPending = false;
                     String commonNames = tokens.size() > 1? "" + FIELD_SEPARATOR:"";
                     for(int n = 1; n < tokens.size(); n++) {

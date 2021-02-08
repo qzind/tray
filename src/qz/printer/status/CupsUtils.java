@@ -122,25 +122,28 @@ public class CupsUtils {
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
         Pointer response = cups.cupsDoRequest(http, request, "/");
-        Pointer attr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
+        Pointer stateAttr = cups.ippFindAttribute(response, "printer-state", IPP.TAG_ENUM);
+        Pointer reasonAttr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
+        Pointer nameAttr = cups.ippFindAttribute(response, "printer-name", IPP.TAG_NAME);
 
-        while(attr != Pointer.NULL) {
+        while(stateAttr != Pointer.NULL) {
+
             //save reasons until we have name, we need to go through the attrs in order
-            String[] reasons = new String[cups.ippGetCount(attr)];
+            String[] reasons = new String[cups.ippGetCount(reasonAttr)];
             for(int i = 0; i < reasons.length; i++) {
-                reasons[i] = cups.ippGetString(attr, i, "");
+                reasons[i] = cups.ippGetString(reasonAttr, i, "");
             }
-
-            attr = cups.ippFindNextAttribute(response, "printer-name", IPP.TAG_NAME);
-            String name = cups.ippGetString(attr, 0, "");
+            String state = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(stateAttr, 0));
+            String name = cups.ippGetString(nameAttr, 0, "");
 
             for(String reason : reasons) {
-                //todo add state
-                statuses.add(NativeStatus.fromCups("UNKNOWN_STATUS", reason, name, NativeStatus.NativeType.PRINTER));
+                statuses.add(NativeStatus.fromCups(state, reason, name, NativeStatus.NativeType.PRINTER));
             }
 
             //for next loop iteration
-            attr = cups.ippFindNextAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
+            stateAttr = cups.ippFindNextAttribute(response, "printer-state", IPP.TAG_ENUM);
+            reasonAttr = cups.ippFindNextAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
+            nameAttr = cups.ippFindNextAttribute(response, "printer-name", IPP.TAG_NAME);
         }
 
         cups.ippDelete(response);

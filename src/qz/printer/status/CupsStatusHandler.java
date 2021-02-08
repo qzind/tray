@@ -90,7 +90,6 @@ public class CupsStatusHandler extends AbstractHandler {
 
                             String state = StringUtils.substringAfterLast(eventTitle, " ");
 
-
                             if (type.equals("Print Job")) {
                                 int jobId = Integer.parseInt(StringUtils.substringAfterLast(name, "-"));
                                 String printerName = StringUtils.substringBeforeLast(name, "-");

@@ -62,26 +62,6 @@ public interface NativeStatus {
     }
 
     /**
-     * Assume <code>String[]</code> is Linux/Unix/Cups
-     */
-    static NativeStatus[] fromRaw(String[] rawArray, NativeType nativeType) {
-        NativeStatus[] parentCodes = new NativeStatus[rawArray.length];
-        for(int i = 0; i < rawArray.length; i++) {
-            switch(nativeType) {
-                case JOB:
-                    //parentCodes[i] = CupsJobStatusMap.match(rawArray[i]);
-                    break;
-                case PRINTER:
-                    //todo add state
-                    parentCodes[i] = CupsPrinterStatusMap.match(rawArray[i], "UNKNOWN_STATUS");
-                default:
-
-            }
-        }
-        return parentCodes;
-    }
-
-    /**
      * Printers/Jobs generally have a single status at a time however, bitwise
      * operators allow multiple statuses so we'll prepare an array to accommodate
      */

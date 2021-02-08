@@ -67,7 +67,7 @@ public class CupsUtils {
             int attrCount = cups.ippGetCount(reasonAttr);
             for(int i = 0; i < attrCount; i++) {
                 String reason = cups.ippGetString(reasonAttr, i, "");
-                Status status = NativeStatus.fromCups(state, reason, printerName, NativeStatus.NativeType.PRINTER);
+                Status status = NativeStatus.fromCupsPrinterStatus(state, reason, printerName);
                 if (status != null) { statuses.add(status); }
             }
         } else {
@@ -101,7 +101,7 @@ public class CupsUtils {
             int attrCount = cups.ippGetCount(reasonAttr);
             for(int i = 0; i < attrCount; i++) {
                 String reason = cups.ippGetString(reasonAttr, i, "");
-                Status status = NativeStatus.fromCups(reason, state, printerName, jobId, NativeStatus.NativeType.JOB);
+                Status status = NativeStatus.fromCupsJobStatus(reason, state, printerName, jobId);
                 if (status != null) { statuses.add(status); }
             }
         } else {
@@ -133,7 +133,7 @@ public class CupsUtils {
             String name = cups.ippGetString(nameAttr, 0, "");
 
             for(String reason : reasons) {
-                statuses.add(NativeStatus.fromCups(state, reason, name, NativeStatus.NativeType.PRINTER));
+                statuses.add(NativeStatus.fromCupsPrinterStatus(state, reason, name));
             }
 
             //for next loop iteration

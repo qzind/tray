@@ -93,8 +93,6 @@ public class CupsStatusHandler extends AbstractHandler {
                             if (type.equals("Print Job")) {
                                 int jobId = Integer.parseInt(StringUtils.substringAfterLast(name, "-"));
                                 String printerName = StringUtils.substringBeforeLast(name, "-");
-                                //Todo Remove this debugging log
-                                log.warn("Job# {} from {} is now {}", jobId, printerName, state);
                                 if (!printerName.isEmpty() && StatusMonitor.isListeningTo(printerName)) {
                                     StatusMonitor.statusChanged(CupsUtils.getJobStatuses(jobId, printerName));
                                 }

@@ -32,7 +32,7 @@ public class StatusMonitor {
         ArrayList<String> printerNameList = new ArrayList<>();
 
         Winspool.PRINTER_INFO_2[] printers = WinspoolUtil.getPrinterInfo2();
-        for(Winspool.PRINTER_INFO_2 printer : printers) {
+        for (Winspool.PRINTER_INFO_2 printer : printers) {
             printerNameList.add(printer.pPrinterName);
             if (!notificationThreadCollection.containsKey(printer.pPrinterName)) {
                 Thread notificationThread = new WmiPrinterStatusThread(printer.pPrinterName);
@@ -41,7 +41,7 @@ public class StatusMonitor {
             }
         }
         //interrupt threads that don't have associated printers
-        for(Map.Entry<String,Thread> e : notificationThreadCollection.entrySet()) {
+        for (Map.Entry<String,Thread> e : notificationThreadCollection.entrySet()) {
             if (!printerNameList.contains(e.getKey())) {
                 e.getValue().interrupt();
                 notificationThreadCollection.remove(e.getKey());
@@ -61,7 +61,7 @@ public class StatusMonitor {
     }
 
     public synchronized static void closeNotificationThreads() {
-        for(Thread t : notificationThreadCollection.values()) {
+        for (Thread t : notificationThreadCollection.values()) {
             t.interrupt();
         }
         notificationThreadCollection.clear();
@@ -120,7 +120,7 @@ public class StatusMonitor {
             sendForAllPrinters = connections.contains(connection);
         }
 
-        for(Status status : statuses) {
+        for (Status status : statuses) {
             if (sendForAllPrinters) {
                 connection.getStatusListener().statusChanged(status);
             } else {
@@ -133,17 +133,11 @@ public class StatusMonitor {
     }
 
     public synchronized static void closeListener(SocketConnection connection) {
-        ArrayList<String> itemsToDelete = new ArrayList<>();
-        for(Map.Entry<String,List<SocketConnection>> e : clientPrinterConnections.entrySet()) {
-            if (e.getValue().contains(connection)) {
-                itemsToDelete.add(e.getKey());
+        for (Iterator<Map.Entry<String, List<SocketConnection>>> i = clientPrinterConnections.entrySet().iterator(); i.hasNext();) {
+            if (i.next().getValue().contains(connection)) {
+                i.remove();
             }
         }
-        // fixme: Don't move this into the earlier loop, it causes a ConcurrentModificationException
-        for(String s : itemsToDelete) {
-            clientPrinterConnections.removeValue(s, connection);
-        }
-
         if (clientPrinterConnections.isEmpty()) {
             if (isWindows()) {
                 closeNotificationThreads();
@@ -159,14 +153,14 @@ public class StatusMonitor {
 
     public synchronized static void statusChanged(Status[] statuses) {
         HashSet<SocketConnection> connections = new HashSet<>();
-        for(Status status : statuses) {
+        for (Status status : statuses) {
             if (clientPrinterConnections.containsKey(status.getPrinter())) {
                 connections.addAll(clientPrinterConnections.get(status.getPrinter()));
             }
             if (clientPrinterConnections.containsKey("")) {
                 connections.addAll(clientPrinterConnections.get(""));
             }
-            for(SocketConnection connection : connections) {
+            for (SocketConnection connection : connections) {
                 connection.getStatusListener().statusChanged(status);
             }
         }

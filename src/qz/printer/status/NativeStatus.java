@@ -12,8 +12,6 @@ import qz.utils.ByteUtilities;
 import java.util.Locale;
 
 public interface NativeStatus {
-    Logger log = LoggerFactory.getLogger(NativeStatus.class);
-
     interface NativeMap {
         NativeStatus getParent();
         Object getRawCode();

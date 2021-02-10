@@ -26,7 +26,6 @@ public class CupsUtils {
     private static Pointer http;
     private static int subscriptionID = IPP.INT_UNDEFINED;
 
-
     synchronized static void initCupsHttp() {
         if (!httpInitialised) {
             httpInitialised = true;
@@ -179,27 +178,6 @@ public class CupsUtils {
     }
 
     static void startSubscription(int rssPort) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> freeIppObjs()));
-
-        Pointer request = cups.ippNewRequest(IPP.CREATE_PRINTER_SUBSCRIPTION);
-
-        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
-                          URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers"));
-        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
-        cups.ippAddString(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_URI, "notify-recipient-uri", CHARSET,
-                          URIUtil.encodePath("rss://localhost:" + rssPort));
-        cups.ippAddString(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_KEYWORD, "notify-events", CHARSET, "printer-state-changed");
-        cups.ippAddInteger(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_INTEGER, "notify-lease-duration", 0);
-
-        Pointer response = cups.cupsDoRequest(http, request, "/");
-
-        Pointer attr = cups.ippFindAttribute(response, "notify-subscription-id", IPP.TAG_INTEGER);
-        if (attr != Pointer.NULL) { subscriptionID = cups.ippGetInteger(attr, 0); }
-
-        cups.ippDelete(response);
-    }
-
-    static void startJobSubscription(int rssPort) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> freeIppObjs()));
 
         Pointer request = cups.ippNewRequest(IPP.CREATE_JOB_SUBSCRIPTION);

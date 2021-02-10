@@ -59,23 +59,6 @@ public enum WmiPrinterStatusMap implements NativeStatus.NativeMap {
         return sortedLookupTable.get(rawCode);
     }
 
-    /**
-     * Unwinds an integer into an array of <code>PrinterStatus.Code</code>
-     */
-    public static NativeStatus[] unwind(int bitwiseCode) {
-        int size = Integer.bitCount(bitwiseCode);
-        NativeStatus[] matches = new NativeStatus[size];
-        int mask = 1;
-
-        while(size > 0) {
-            if ((mask & bitwiseCode) > 0) {
-                matches[--size] = match(mask);
-            }
-            mask <<= 1;
-        }
-        return matches;
-    }
-
     @Override
     public NativeStatus getParent() {
         return parent;

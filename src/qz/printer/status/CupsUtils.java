@@ -86,13 +86,16 @@ public class CupsUtils {
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
 
         Pointer response = cups.cupsDoRequest(http, request, "/");
+        Pointer nameAttr = cups.ippFindAttribute(response, "job-name", IPP.TAG_NAME);
         Pointer stateAttr = cups.ippFindAttribute(response, "job-state", IPP.TAG_ENUM);
         Pointer reasonAttr = cups.ippFindAttribute(response, "job-state-reasons", IPP.TAG_KEYWORD);
         ArrayList<Status> statuses = new ArrayList<>();
 
+        String jobName = "EMPTY";
         String state = "EMPTY";
         if (stateAttr != Pointer.NULL) {
             if (cups.ippGetCount(stateAttr) > 0) {
+                jobName = cups.ippGetString(nameAttr, 0, "");
                 state = Cups.INSTANCE.ippEnumString("job-state", Cups.INSTANCE.ippGetInteger(stateAttr, 0));
             }
         }
@@ -101,7 +104,7 @@ public class CupsUtils {
             int attrCount = cups.ippGetCount(reasonAttr);
             for(int i = 0; i < attrCount; i++) {
                 String reason = cups.ippGetString(reasonAttr, i, "");
-                Status status = NativeStatus.fromCupsJobStatus(reason, state, printerName, jobId);
+                Status status = NativeStatus.fromCupsJobStatus(reason, state, printerName, jobId, jobName);
                 if (status != null) { statuses.add(status); }
             }
         } else {

@@ -56,8 +56,8 @@ public interface NativeStatus {
     }
 
 
-    static Status fromCupsJobStatus(String reason, String state, String printer, int jobId) {
-        return new Status(CupsJobStatusMap.match(reason, state), printer, reason, jobId, printer + jobId);
+    static Status fromCupsJobStatus(String reason, String state, String printer, int jobId, String jobName) {
+        return new Status(CupsJobStatusMap.match(reason, state), printer, reason, jobId, jobName);
     }
 
 

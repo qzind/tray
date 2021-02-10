@@ -10,6 +10,15 @@ import java.util.TreeMap;
  * Created by Tres on 12/23/2020
  */
 public enum CupsJobStatusMap implements NativeStatus.NativeMap {
+    // job-state
+    PENDING(NativeJobStatus.SPOOLING), // pending
+    PENDING_HELD(NativeJobStatus.PAUSED), // pending-held
+    PROCESSING(NativeJobStatus.SPOOLING), // processing
+    PROCESSING_STOPPED(NativeJobStatus.PAUSED), // processing-stopped
+    CANCELED(NativeJobStatus.CANCELED), // canceled
+    ABORTED(NativeJobStatus.ABORTED), // aborted
+    COMPLETED(NativeJobStatus.COMPLETE), // completed
+
     // job-state-reasons.  NativeJobStatus.EMPTY will fallback to the job-state instead
     ABORTED_BY_SYSTEM(NativeJobStatus.ABORTED), // aborted-by-system
     ACCOUNT_AUTHORIZATION_FAILED(NativeJobStatus.EMPTY), // account-authorization-failed
@@ -81,15 +90,6 @@ public enum CupsJobStatusMap implements NativeStatus.NativeMap {
     UNSUPPORTED_DOCUMENT_FORMAT(NativeJobStatus.EMPTY), // unsupported-document-format
     WAITING_FOR_USER_ACTION(NativeJobStatus.USER_INTERVENTION), // waiting-for-user-action
     WARNINGS_DETECTED(NativeJobStatus.EMPTY), // warnings-detected
-
-    // job-state
-    PENDING(NativeJobStatus.SPOOLING), // pending
-    PENDING_HELD(NativeJobStatus.PAUSED), // pending-held
-    PROCESSING(NativeJobStatus.SPOOLING), // processing
-    PROCESSING_STOPPED(NativeJobStatus.PAUSED), // processing-stopped
-    CANCELED(NativeJobStatus.CANCELED), // canceled
-    ABORTED(NativeJobStatus.ABORTED), // aborted
-    COMPLETED(NativeJobStatus.COMPLETE), // completed
 
     EMPTY(NativeJobStatus.EMPTY);
 

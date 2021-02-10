@@ -7,6 +7,11 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
+    //printer-state
+    IDLE(NativePrinterStatus.OK), // idle
+    PROCESSING(NativePrinterStatus.PROCESSING), // processing
+    STOPPED(NativePrinterStatus.ERROR), // stopped
+
     // printer-state-reasons.  NativePrinterStatus.UNKNOWN_STATUS will fallback to the printer-state instead
     // Mapped printer-state-reasons
     OTHER(NativePrinterStatus.UNKNOWN_STATUS), // "other"
@@ -844,13 +849,7 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     WRAPPER_UNDER_TEMPERATURE(NativePrinterStatus.UNKNOWN_STATUS), // wrapper-under-temperature
     WRAPPER_UNRECOVERABLE_FAILURE(NativePrinterStatus.UNKNOWN_STATUS), // wrapper-unrecoverable-failure
     WRAPPER_UNRECOVERABLE_STORAGE_ERROR(NativePrinterStatus.UNKNOWN_STATUS), // wrapper-unrecoverable-storage-error
-    WRAPPER_WARMING_UP(NativePrinterStatus.UNKNOWN_STATUS), // wrapper-warming-up
-
-    //printer-state
-
-    IDLE(NativePrinterStatus.OK), // idle
-    PROCESSING(NativePrinterStatus.PROCESSING), // processing
-    STOPPED(NativePrinterStatus.ERROR); // stopped
+    WRAPPER_WARMING_UP(NativePrinterStatus.UNKNOWN_STATUS); // wrapper-warming-up
 
     public static SortedMap<String,NativePrinterStatus> codeLookupTable;
 

@@ -57,7 +57,7 @@ public interface Cups extends Library {
     int ippEnumValue(String attrname, String enumstring);
     int ippOpValue(String name);
     int ippAddString(Pointer ipp, int group, int tag, String name, String charset, String value);
-    int ippAddStrings(Pointer ipp, int group, int value_tag, String name, int num_values, String language, StringArray values);
+    int ippAddStrings(Pointer ipp, int group, int tag, String name, int num_values, String language, StringArray values);
     int ippAddInteger (Pointer ipp, int group, int tag, String name, int value);
     int ippGetCount(Pointer attr);
     int ippGetValueTag(Pointer ipp);

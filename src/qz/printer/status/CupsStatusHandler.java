@@ -66,7 +66,6 @@ public class CupsStatusHandler extends AbstractHandler {
                     statuses.add(NativeStatus.fromCupsPrinterStatus(reason, printerState, printerName));
                 }
             } else {
-                //Todo Remove this debugging log
                 log.error("Unknown event type {}.", eventType);
             }
             eventNumberAttr = cups.ippFindNextAttribute(response, "notify-sequence-number", Cups.IPP.TAG_INTEGER);

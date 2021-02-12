@@ -299,6 +299,7 @@ public class PrintSocketClient {
                 }
                 break;
             }
+
             case SOCKET_OPEN_PORT:
                 SocketUtilities.setupSocket(session, UID, connection, params);
                 break;
@@ -306,8 +307,8 @@ public class PrintSocketClient {
                 String location = String.format("%s:%s", params.optString("host"), params.optInt("port"));
                 SocketIO socket = connection.getNetworkSocket(location);
                 if (socket != null) {
-                    String reply = socket.sendData(params);
-                    sendResult(session, UID, reply);
+                    socket.sendData(params);
+                    sendResult(session, UID, null);
                 } else {
                     sendError(session, UID, String.format("Socket [%s] is not open.", location));
                 }
@@ -656,7 +657,7 @@ public class PrintSocketClient {
      */
     public static void sendError(Session session, String messageUID, Exception ex) {
         String message = ex.getMessage();
-        if (message == null || message.equals("")) {
+        if (message == null || message.isEmpty()) {
             message = ex.getClass().getSimpleName();
         }
 

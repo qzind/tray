@@ -1962,9 +1962,7 @@
     }
 
     function sendSocketData() {
-        qz.socket.sendData($("#socketHost").val(), $("#socketPort").val(), $("#socketData").val()).then(function(response) {
-            displayMessage("<strong>Response:</strong> " + response + "<br/>");
-        }).catch(displayError);
+        qz.socket.sendData($("#socketHost").val(), $("#socketPort").val(), $("#socketData").val()).catch(displayError);
     }
 
     function closeSocket() {
@@ -2563,6 +2561,16 @@
         } else {
             console.log(streamEvent.exception);
             displayMessage("Received an error from serial port [" + streamEvent.portName + "]: <em>" + streamEvent.exception + "</em>", 'alert-error');
+        }
+    });
+
+    qz.socket.setSocketCallbacks(function(socketEvent) {
+        if (socketEvent.type !== 'ERROR') {
+            console.log('Socket', socketEvent.host, socketEvent.port, 'received response', socketEvent.response);
+            displayMessage("Received output from network socket [" + socketEvent.host + ":" + socketEvent.port + "]: <em>" + socketEvent.response + "</em>");
+        } else {
+            console.log(socketEvent.exception);
+            displayMessage("Received error from network socket [" + socketEvent.host + ":" + socketEvent.port + "]: <em>" + socketEvent.exception + "</em>", 'alert-error');
         }
     });
 

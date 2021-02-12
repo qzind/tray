@@ -11,6 +11,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 
 public class SocketIO {
@@ -19,14 +20,16 @@ public class SocketIO {
 
     private String host;
     private int port;
+    private Charset encoding;
 
     private Socket socket;
     private DataOutputStream dataOut;
     private DataInputStream dataIn;
 
-    public SocketIO(String host, int port) {
+    public SocketIO(String host, int port, Charset encoding) {
         this.host = host;
         this.port = port;
+        this.encoding = encoding;
     }
 
     public boolean open() throws IOException {
@@ -37,15 +40,16 @@ public class SocketIO {
         return socket.isConnected();
     }
 
-    public String sendData(JSONObject params) throws JSONException, IOException {
-        log.debug("Sending data over [{}:{}]", host, port);
-        dataOut.write(DeviceUtilities.getDataBytes(params, null)); //fixme - charset from options
-        dataOut.flush();
-
-        return processSocketResponse();
+    public boolean isOpen() {
+        return socket.isConnected();
     }
 
-    //fixme - this is blocking, use a socketchannel??
+    public void sendData(JSONObject params) throws JSONException, IOException {
+        log.debug("Sending data over [{}:{}]", host, port);
+        dataOut.write(DeviceUtilities.getDataBytes(params, encoding));
+        dataOut.flush();
+    }
+
     public String processSocketResponse() throws IOException {
         byte[] response = new byte[1024];
         ArrayList<Byte> fullResponse = new ArrayList<>();
@@ -57,7 +61,7 @@ public class SocketIO {
         }
         while(dataIn.available() > 0);
 
-        return new String(ArrayUtils.toPrimitive(fullResponse.toArray(new Byte[0]))); //fixme - charset from options
+        return new String(ArrayUtils.toPrimitive(fullResponse.toArray(new Byte[0])), encoding);
     }
 
     public void close() throws IOException {

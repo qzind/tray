@@ -2,6 +2,8 @@ package qz.printer.status;
 
 import qz.printer.PrintServiceMatcher;
 import qz.printer.info.NativePrinter;
+import qz.printer.status.job.NativeJobStatus;
+import qz.printer.status.printer.NativePrinterStatus;
 import qz.printer.status.printer.WmiPrinterStatusMap;
 import qz.utils.SystemUtilities;
 
@@ -21,7 +23,7 @@ public class Status {
         PRINTER;
     }
 
-    public Status(NativeStatus code, String printer, Object rawCode) {
+    public Status(NativePrinterStatus code, String printer, Object rawCode) {
         this.code = code;
         this.printer = printer;
         this.rawCode = rawCode;
@@ -29,7 +31,7 @@ public class Status {
         this.eventType = EventType.PRINTER;
     }
 
-    public Status(NativeStatus code, String printer, Object rawCode, int jobId, String jobName) {
+    public Status(NativeJobStatus code, String printer, Object rawCode, int jobId, String jobName) {
         this.code = code;
         this.printer = printer;
         this.rawCode = rawCode;

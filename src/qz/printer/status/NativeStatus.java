@@ -28,7 +28,7 @@ public interface NativeStatus {
      */
     static Status[] fromWmiJobStatus(int bitwiseCode, String printer, int jobId, String jobName) {
         int[] rawCodes = ByteUtilities.unwind(bitwiseCode);
-        NativeStatus[] parentCodes = new NativeStatus[rawCodes.length];
+        NativeJobStatus[] parentCodes = new NativeJobStatus[rawCodes.length];
         for(int i = 0; i < rawCodes.length; i++) {
             parentCodes[i] = WmiJobStatusMap.match(rawCodes[i]);
         }
@@ -42,14 +42,14 @@ public interface NativeStatus {
 
     static Status[] fromWmiPrinterStatus(int bitwiseCode, String printer) {
         int[] rawCodes = ByteUtilities.unwind(bitwiseCode);
-        NativeStatus[] parentCodes = new NativeStatus[rawCodes.length];
+        NativePrinterStatus[] parentCodes = new NativePrinterStatus[rawCodes.length];
         for(int i = 0; i < rawCodes.length; i++) {
             parentCodes[i] = WmiPrinterStatusMap.match(rawCodes[i]);
         }
 
         Status[] statusArray = new Status[rawCodes.length];
         for(int i = 0; i < rawCodes.length; i++) {
-            statusArray[i] = new Status(parentCodes[i], printer, rawCodes[i], -1, null);
+            statusArray[i] = new Status(parentCodes[i], printer, rawCodes[i]);
         }
         return statusArray;
     }

@@ -6,7 +6,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.printer.status.Cups.IPP;
-import qz.printer.status.printer.NativePrinterStatus;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -43,75 +42,19 @@ public class CupsUtils {
         return cups.cupsDoRequest(http, request, "/");
     }
 
-    public static Status[] getStatuses(String printerName) {
-        Pointer request = cups.ippNewRequest(IPP.GET_PRINTER_ATTRIBUTES);
+    /**
+     * Gets all statuses relating to our subscriptionId with a sequence number greater than eventNumber
+     */
+    public static Pointer getStatuses(int eventNumber) {
+        Pointer request = cups.ippNewRequest(IPP.GET_NOTIFICATIONS);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
-                                   URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/" + printerName));
+                                   URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/"));
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
+        cups.ippAddInteger(request, IPP.TAG_OPERATION, IPP.TAG_INTEGER, "notify-subscription-ids", subscriptionID);
+        cups.ippAddInteger(request, IPP.TAG_OPERATION, IPP.TAG_INTEGER, "notify-sequence-numbers", eventNumber);
 
-        Pointer response = cups.cupsDoRequest(http, request, "/");
-        Pointer stateAttr = cups.ippFindAttribute(response, "printer-state", IPP.TAG_ENUM);
-        Pointer reasonAttr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
-        ArrayList<Status> statuses = new ArrayList<>();
-
-        String state = "EMPTY";
-        if (stateAttr != Pointer.NULL) {
-            if (cups.ippGetCount(stateAttr) > 0) {
-                state = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(stateAttr, 0));
-            }
-        }
-
-        if (reasonAttr != Pointer.NULL) {
-            int attrCount = cups.ippGetCount(reasonAttr);
-            for(int i = 0; i < attrCount; i++) {
-                String reason = cups.ippGetString(reasonAttr, i, "");
-                Status status = NativeStatus.fromCupsPrinterStatus(state, reason, printerName);
-                if (status != null) { statuses.add(status); }
-            }
-        } else {
-            statuses.add(new Status(NativePrinterStatus.UNKNOWN_STATUS, printerName, ""));
-        }
-
-        cups.ippDelete(response);
-        return statuses.toArray(new Status[statuses.size()]);
-    }
-
-    public static Status[] getJobStatuses(int jobId, String printerName) {
-        Pointer request = cups.ippNewRequest(IPP.GET_JOB_ATTRIBUTES);
-
-        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "job-uri", CHARSET,
-                          URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/jobs/" + jobId));
-        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
-
-        Pointer response = cups.cupsDoRequest(http, request, "/");
-        Pointer nameAttr = cups.ippFindAttribute(response, "job-name", IPP.TAG_NAME);
-        Pointer stateAttr = cups.ippFindAttribute(response, "job-state", IPP.TAG_ENUM);
-        Pointer reasonAttr = cups.ippFindAttribute(response, "job-state-reasons", IPP.TAG_KEYWORD);
-        ArrayList<Status> statuses = new ArrayList<>();
-
-        String jobName = "EMPTY";
-        String state = "EMPTY";
-        if (stateAttr != Pointer.NULL) {
-            if (cups.ippGetCount(stateAttr) > 0) {
-                jobName = cups.ippGetString(nameAttr, 0, "");
-                state = Cups.INSTANCE.ippEnumString("job-state", Cups.INSTANCE.ippGetInteger(stateAttr, 0));
-            }
-        }
-
-        if (reasonAttr != Pointer.NULL) {
-            int attrCount = cups.ippGetCount(reasonAttr);
-            for(int i = 0; i < attrCount; i++) {
-                String reason = cups.ippGetString(reasonAttr, i, "");
-                Status status = NativeStatus.fromCupsJobStatus(reason, state, printerName, jobId, jobName);
-                if (status != null) { statuses.add(status); }
-            }
-        } else {
-            statuses.add(new Status(NativePrinterStatus.UNKNOWN_STATUS, printerName, ""));
-        }
-
-        cups.ippDelete(response);
-        return statuses.toArray(new Status[statuses.size()]);
+        return cups.cupsDoRequest(http, request, "/");
     }
 
     public static ArrayList<Status> getAllStatuses() {

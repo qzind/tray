@@ -1,7 +1,6 @@
 package qz.printer.status;
 
-import org.apache.commons.lang3.StringEscapeUtils;
-import org.apache.commons.lang3.StringUtils;
+import com.sun.jna.Pointer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.slf4j.Logger;
@@ -10,15 +9,8 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.Characters;
-import javax.xml.stream.events.EndElement;
-import javax.xml.stream.events.StartElement;
-import javax.xml.stream.events.XMLEvent;
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * Created by kyle on 4/27/17.
@@ -26,90 +18,62 @@ import java.io.IOException;
 public class CupsStatusHandler extends AbstractHandler {
     private static final Logger log = LoggerFactory.getLogger(CupsStatusHandler.class);
 
-    private static String lastGuid;
+    private static Cups cups = Cups.INSTANCE;
+    private static int lastEventNumber = 0;
 
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         baseRequest.setHandled(true);
         if (request.getReader().readLine() != null) {
-            try {
-                XMLInputFactory factory = XMLInputFactory.newInstance();
-                XMLEventReader eventReader = factory.createXMLEventReader(request.getReader());
-                parseXML(eventReader);
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
+            getNotifications();
         }
     }
 
-    private void parseXML(XMLEventReader eventReader) throws XMLStreamException {
-        boolean isEventTitle = false, isGuid = false, isFirstGuid = true, running = true;
-        String firstGuid = "";
-        String eventTitle = "";
+    private void getNotifications() {
+        Pointer response = CupsUtils.getStatuses(lastEventNumber + 1);
 
-        while(eventReader.hasNext() && running) {
-            XMLEvent event = eventReader.nextEvent();
-            switch(event.getEventType()) {
-                case XMLStreamConstants.START_ELEMENT:
-                    StartElement startElement = event.asStartElement();
-                    String qName = startElement.getName().getLocalPart();
-                    if ("title".equalsIgnoreCase(startElement.getName().getLocalPart())) {
-                        isEventTitle = true;
-                        eventTitle = "";
-                    }
-                    if ("guid".equalsIgnoreCase(qName)) {
-                        isGuid = true;
-                    }
-                    break;
-                case XMLStreamConstants.END_ELEMENT:
-                    EndElement endElement = event.asEndElement();
-                    if ("title".equalsIgnoreCase(endElement.getName().getLocalPart())) {
-                        isEventTitle = false;
-                    }
-                    break;
-                case XMLStreamConstants.CHARACTERS:
-                    Characters characters = event.asCharacters();
-                    if (isEventTitle) {
-                        eventTitle += characters.getData();
-                    }
-                    if (isGuid) {
-                        String guid = characters.getData();
-                        if (isFirstGuid) {
-                            firstGuid = guid;
-                            isFirstGuid = false;
-                        }
-                        if (guid.equals(lastGuid)) {
-                            running = false;
-                            break;
-                        } else {
-                            String type = StringUtils.substringBefore(eventTitle, ": ");
+        Pointer eventNumberAttr = cups.ippFindAttribute(response, "notify-sequence-number", Cups.IPP.TAG_INTEGER);
+        Pointer eventTypeAttr = cups.ippFindAttribute(response, "notify-subscribed-event", Cups.IPP.TAG_KEYWORD);
+        ArrayList<Status> statuses = new ArrayList<>();
 
-                            String name = StringUtils.substringAfter(eventTitle, ": ");
-                            name = StringUtils.substringBefore(name, " ");
-                            name = StringEscapeUtils.unescapeXml(name);
+        while (eventNumberAttr != Pointer.NULL) {
+            lastEventNumber = cups.ippGetInteger(eventNumberAttr, 0);
+            Pointer printerNameAttr = cups.ippFindNextAttribute(response, "printer-name", Cups.IPP.TAG_NAME);
 
-                            String state = StringUtils.substringAfterLast(eventTitle, " ");
+            String printerName = cups.ippGetString(printerNameAttr, 0, "");
+            String eventType = cups.ippGetString(eventTypeAttr, 0, "");
+            if (eventType.startsWith("job")) {
+                Pointer JobIdAttr = cups.ippFindNextAttribute(response, "notify-job-id", Cups.IPP.TAG_INTEGER);
+                Pointer jobStateAttr = cups.ippFindNextAttribute(response, "job-state", Cups.IPP.TAG_ENUM);
+                Pointer jobNameAttr = cups.ippFindNextAttribute(response, "job-name", Cups.IPP.TAG_NAME);
+                Pointer jobStateReasonsAttr = cups.ippFindNextAttribute(response, "job-state-reasons", Cups.IPP.TAG_KEYWORD);
+                int jobId = cups.ippGetInteger(JobIdAttr, 0);
+                String jobState = Cups.INSTANCE.ippEnumString("job-state", Cups.INSTANCE.ippGetInteger(jobStateAttr, 0));
+                String jobName = cups.ippGetString(jobNameAttr, 0, "");
 
-                            if (type.equals("Print Job")) {
-                                int jobId = Integer.parseInt(StringUtils.substringAfterLast(name, "-"));
-                                String printerName = StringUtils.substringBeforeLast(name, "-");
-                                if (!printerName.isEmpty() && StatusMonitor.isListeningTo(printerName)) {
-                                    StatusMonitor.statusChanged(CupsUtils.getJobStatuses(jobId, printerName));
-                                }
-                            }
+                int attrCount = cups.ippGetCount(jobStateReasonsAttr);
+                for (int i = 0;  i < attrCount; i++) {
+                    String reason = cups.ippGetString(jobStateReasonsAttr, i, "");
+                    statuses.add(NativeStatus.fromCupsJobStatus(reason, jobState, printerName, jobId, jobName));
+                }
+            } else if (eventType.startsWith("printer")) {
+                Pointer PrinterStateAttr = cups.ippFindNextAttribute(response, "printer-state", Cups.IPP.TAG_ENUM);
+                Pointer PrinterStateReasonsAttr = cups.ippFindNextAttribute(response, "printer-state-reasons", Cups.IPP.TAG_KEYWORD);
+                String printerState = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(PrinterStateAttr, 0));
 
-                            if (type.equals("Printer")) {
-                                if (!name.isEmpty() && StatusMonitor.isListeningTo(name)) {
-                                    StatusMonitor.statusChanged(CupsUtils.getStatuses(name));
-                                }
-                            }
-                        }
-                        isGuid = false;
-                    }
-                    break;
+                int attrCount = cups.ippGetCount(PrinterStateReasonsAttr);
+                for (int i = 0;  i < attrCount; i++) {
+                    String reason = cups.ippGetString(PrinterStateReasonsAttr, i, "");
+                    statuses.add(NativeStatus.fromCupsPrinterStatus(reason, printerState, printerName));
+                }
+            } else {
+                //Todo Remove this debugging log
+                log.error("Unknown event type {}.", eventType);
             }
+            eventNumberAttr = cups.ippFindNextAttribute(response, "notify-sequence-number", Cups.IPP.TAG_INTEGER);
+            eventTypeAttr = cups.ippFindNextAttribute(response, "notify-subscribed-event", Cups.IPP.TAG_KEYWORD);
         }
 
-        lastGuid = firstGuid;
+        cups.ippDelete(response);
+        StatusMonitor.statusChanged(statuses.toArray(new Status[statuses.size()]));
     }
 }

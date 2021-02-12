@@ -39,7 +39,7 @@ public class CupsStatusHandler extends AbstractHandler {
             lastEventNumber = cups.ippGetInteger(eventNumberAttr, 0);
             Pointer printerNameAttr = cups.ippFindNextAttribute(response, "printer-name", Cups.IPP.TAG_NAME);
 
-            String printerName = cups.ippGetString(printerNameAttr, 0, "");
+            String printer = cups.ippGetString(printerNameAttr, 0, "");
             String eventType = cups.ippGetString(eventTypeAttr, 0, "");
             if (eventType.startsWith("job")) {
                 Pointer JobIdAttr = cups.ippFindNextAttribute(response, "notify-job-id", Cups.IPP.TAG_INTEGER);
@@ -53,20 +53,20 @@ public class CupsStatusHandler extends AbstractHandler {
                 int attrCount = cups.ippGetCount(jobStateReasonsAttr);
                 for (int i = 0;  i < attrCount; i++) {
                     String reason = cups.ippGetString(jobStateReasonsAttr, i, "");
-                    statuses.add(NativeStatus.fromCupsJobStatus(reason, jobState, printerName, jobId, jobName));
+                    statuses.add(NativeStatus.fromCupsJobStatus(reason, jobState, printer, jobId, jobName));
                 }
             } else if (eventType.startsWith("printer")) {
                 Pointer PrinterStateAttr = cups.ippFindNextAttribute(response, "printer-state", Cups.IPP.TAG_ENUM);
                 Pointer PrinterStateReasonsAttr = cups.ippFindNextAttribute(response, "printer-state-reasons", Cups.IPP.TAG_KEYWORD);
-                String printerState = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(PrinterStateAttr, 0));
+                String state = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(PrinterStateAttr, 0));
 
                 int attrCount = cups.ippGetCount(PrinterStateReasonsAttr);
                 for (int i = 0;  i < attrCount; i++) {
                     String reason = cups.ippGetString(PrinterStateReasonsAttr, i, "");
-                    statuses.add(NativeStatus.fromCupsPrinterStatus(reason, printerState, printerName));
+                    statuses.add(NativeStatus.fromCupsPrinterStatus(reason, state, printer));
                 }
             } else {
-                log.error("Unknown event type {}.", eventType);
+                log.debug("Unknown CUPS event type {}.", eventType);
             }
             eventNumberAttr = cups.ippFindNextAttribute(response, "notify-sequence-number", Cups.IPP.TAG_INTEGER);
             eventTypeAttr = cups.ippFindNextAttribute(response, "notify-subscribed-event", Cups.IPP.TAG_KEYWORD);

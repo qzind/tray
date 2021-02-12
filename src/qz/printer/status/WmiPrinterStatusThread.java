@@ -3,6 +3,7 @@ package qz.printer.status;
 import com.sun.jna.platform.win32.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.printer.status.printer.NativePrinterStatus;
 import qz.printer.status.printer.WmiPrinterStatusMap;
 
 import java.util.ArrayList;
@@ -77,7 +78,7 @@ public class WmiPrinterStatusThread extends Thread {
     private void issueError() {
         int errorCode = Kernel32.INSTANCE.GetLastError();
         log.error("WMI Error number: {}, This should be reported", errorCode);
-        Status[] unknownError = {new Status(WmiPrinterStatusMap.UNKNOWN_STATUS, printerName)};
+        Status[] unknownError = { new Status(NativePrinterStatus.UNMAPPED, printerName, WmiPrinterStatusMap.UNKNOWN_STATUS.getRawCode()) };
         StatusMonitor.statusChanged(unknownError);
         try {
             //if the error repeats, we don't want to lock up the cpu

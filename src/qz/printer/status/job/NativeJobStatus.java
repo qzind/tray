@@ -7,24 +7,25 @@ import qz.printer.status.NativeStatus;
  * Created by kyle on 7/7/17.
  */
 public enum NativeJobStatus implements NativeStatus {
-    EMPTY(Level.INFO),
-    PAUSED(Level.WARN),
-    ERROR(Level.ERROR),
+    ABORTED(Level.ERROR),
+    CANCELED(Level.WARN),
+    COMPLETE(Level.INFO),
+    DELETED(Level.WARN),
     DELETING(Level.WARN),
+    ERROR(Level.ERROR),
+    OFFLINE(Level.ERROR),
+    PRINTING(Level.INFO),
     SPOOLING(Level.INFO),
     SCHEDULED(Level.INFO),
-    PRINTING(Level.INFO),
-    OFFLINE(Level.ERROR),
     PAPEROUT(Level.WARN),
     RETAINED(Level.INFO),
+    PAUSED(Level.WARN),
     PRINTED(Level.INFO),
-    DELETED(Level.WARN),
-    CANCELED(Level.WARN),
-    ABORTED(Level.ERROR),
-    USER_INTERVENTION(Level.WARN),
     RESTART(Level.WARN),
-    COMPLETE(Level.INFO),
-    RENDERING_LOCALLY(Level.INFO);
+    RENDERING_LOCALLY(Level.INFO),
+    USER_INTERVENTION(Level.WARN),
+    UNMAPPED(Level.FATAL), // should never make it to the user
+    UNKNOWN(Level.INFO);
 
     private Level level;
 
@@ -39,6 +40,6 @@ public enum NativeJobStatus implements NativeStatus {
 
     @Override
     public NativeStatus getDefault() {
-        return EMPTY;
+        return UNKNOWN;
     }
 }

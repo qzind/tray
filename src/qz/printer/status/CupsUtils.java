@@ -75,10 +75,10 @@ public class CupsUtils {
                 reasons[i] = cups.ippGetString(reasonAttr, i, "");
             }
             String state = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(stateAttr, 0));
-            String name = cups.ippGetString(nameAttr, 0, "");
+            String printer = cups.ippGetString(nameAttr, 0, "");
 
             for(String reason : reasons) {
-                statuses.add(NativeStatus.fromCupsPrinterStatus(state, reason, name));
+                statuses.add(NativeStatus.fromCupsPrinterStatus(reason, state, printer));
             }
 
             //for next loop iteration

@@ -9,7 +9,7 @@ import java.util.TreeMap;
  * Created by tresf on 12/10/2020
  */
 public enum WmiJobStatusMap implements NativeStatus.NativeMap {
-    EMPTY(NativeJobStatus.EMPTY, -0x00000001), // Fallback for a no-status message
+    EMPTY(NativeJobStatus.UNKNOWN, -0x00000001), // Fallback for a no-status message
     PAUSED(NativeJobStatus.PAUSED, 0x00000001), // Job is paused
     ERROR(NativeJobStatus.ERROR, 0x00000002), // An error is associated with the job
     DELETING(NativeJobStatus.DELETING, 0x00000004), // Job is being deleted
@@ -26,17 +26,17 @@ public enum WmiJobStatusMap implements NativeStatus.NativeMap {
     COMPLETE(NativeJobStatus.COMPLETE, 0x00001000), // Windows XP and later: Job is sent to the printer, but the job may not be printed yet
     RENDERING_LOCALLY(NativeJobStatus.RENDERING_LOCALLY, 0x00004000); // Job rendering locally on the client
 
-    private static SortedMap<Integer,NativeStatus> sortedLookupTable;
+    private static SortedMap<Integer,NativeJobStatus> sortedLookupTable;
 
-    private final NativeStatus parent;
+    private final NativeJobStatus parent;
     private final int rawCode;
 
-    WmiJobStatusMap(NativeStatus parent, int rawCode) {
+    WmiJobStatusMap(NativeJobStatus parent, int rawCode) {
         this.parent = parent;
         this.rawCode = rawCode;
     }
 
-    public static NativeStatus match(int code) {
+    public static NativeJobStatus match(int code) {
         // Initialize a sorted map to speed up lookups
         if(sortedLookupTable == null) {
             sortedLookupTable = new TreeMap<>();

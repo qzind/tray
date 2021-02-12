@@ -35,19 +35,19 @@ public enum WmiPrinterStatusMap implements NativeStatus.NativeMap {
     DOOR_OPEN(NativePrinterStatus.DOOR_OPEN, 0x00400000),
     SERVER_UNKNOWN(NativePrinterStatus.SERVER_UNKNOWN, 0x00800000),
     POWER_SAVE(NativePrinterStatus.POWER_SAVE, 0x01000000),
-    UNKNOWN_STATUS(NativePrinterStatus.UNKNOWN_STATUS, 0x02000000);
+    UNKNOWN_STATUS(NativePrinterStatus.UNKNOWN, 0x02000000);
 
-    private static SortedMap<Integer,NativeStatus> sortedLookupTable;
+    private static SortedMap<Integer,NativePrinterStatus> sortedLookupTable;
 
-    private NativeStatus parent;
+    private NativePrinterStatus parent;
     private final int rawCode;
 
-    WmiPrinterStatusMap(NativeStatus parent, int rawCode) {
+    WmiPrinterStatusMap(NativePrinterStatus parent, int rawCode) {
         this.parent = parent;
         this.rawCode = rawCode;
     }
 
-    public static NativeStatus match(int rawCode) {
+    public static NativePrinterStatus match(int rawCode) {
         // Initialize a sorted map to speed up lookups
         if(sortedLookupTable == null) {
             sortedLookupTable = new TreeMap<>();

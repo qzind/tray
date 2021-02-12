@@ -12,21 +12,21 @@ public class Status {
     private NativeStatus code;
     private String printer;
     private Object rawCode;
+    private EventType eventType;
     private int jobId; // job statuses only
     private String jobName; // job status only
+
+    enum EventType {
+        JOB,
+        PRINTER;
+    }
 
     public Status(NativeStatus code, String printer, Object rawCode) {
         this.code = code;
         this.printer = printer;
         this.rawCode = rawCode;
         this.jobId = -1;
-    }
-
-    public Status(NativeStatus.NativeMap code, String printer) {
-        this.code = code.getParent();
-        this.printer = printer;
-        this.rawCode = code.getRawCode();
-        this.jobId = -1;
+        this.eventType = EventType.PRINTER;
     }
 
     public Status(NativeStatus code, String printer, Object rawCode, int jobId, String jobName) {
@@ -35,6 +35,7 @@ public class Status {
         this.rawCode = rawCode;
         this.jobId = jobId;
         this.jobName = jobName;
+        this.eventType = EventType.JOB;
     }
 
     public String sanitizePrinterName() {
@@ -63,6 +64,10 @@ public class Status {
         return printer;
     }
 
+    public EventType getEventType() {
+        return eventType;
+    }
+
     public String getJobName() {
         return jobName;
     }
@@ -74,6 +79,7 @@ public class Status {
     public String toString() {
         return code.name() + ": Level " + code.getLevel() +
                 ", From " + sanitizePrinterName() +
+                ", EventType " + eventType +
                 ", Code " + rawCode +
                 (jobId > 0 ? ", JobId: " + jobId : "") +
                 (jobName != null ? ", Job Name: " + jobName : "");

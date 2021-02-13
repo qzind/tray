@@ -50,7 +50,7 @@ public enum CupsJobStatusMap implements NativeStatus.NativeMap {
     JOB_DELAY_OUTPUT_UNTIL_SPECIFIED(REASON, NativeJobStatus.SCHEDULED), // job-delay-output-until-specified
     JOB_DIGITAL_SIGNATURE_WAIT(REASON, NativeJobStatus.UNMAPPED), // job-digital-signature-wait
     JOB_FETCHABLE(REASON, NativeJobStatus.UNMAPPED), // job-fetchable
-    JOB_HELD_FOR_REVIEW(REASON, NativeJobStatus.UNMAPPED), // job-held-for-review
+    JOB_HELD_FOR_REVIEW(REASON, NativeJobStatus.SPOOLING), // job-held-for-review
     JOB_HOLD_UNTIL_SPECIFIED(REASON, NativeJobStatus.PAUSED), // job-hold-until-specified
     JOB_INCOMING(REASON, NativeJobStatus.UNMAPPED), // job-incoming
     JOB_INTERPRETING(REASON, NativeJobStatus.UNMAPPED), // job-interpreting

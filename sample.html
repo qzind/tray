@@ -2161,10 +2161,7 @@
         if (printerName === "NONE") {
             return displayMessage("Please search for a valid printer first", "alert-warning");
         }
-        qz.printers.stopListening().then(function() {
-            clearPrintersLog();
-            return qz.printers.startListening(printerName);
-        }).then(function() {
+        qz.printers.startListening(printerName).then(function() {
             displayMessage("Started listening for " + (printerName ? printerName : "all") + " printer events");
         }).catch(displayError);
     }

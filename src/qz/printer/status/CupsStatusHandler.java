@@ -19,7 +19,7 @@ public class CupsStatusHandler extends AbstractHandler {
     private static final Logger log = LoggerFactory.getLogger(CupsStatusHandler.class);
 
     private static Cups cups = Cups.INSTANCE;
-    private static int lastEventNumber = 0;
+    private int lastEventNumber = 0;
 
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         baseRequest.setHandled(true);

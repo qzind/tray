@@ -14,14 +14,14 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     PROCESSING(STATE, NativePrinterStatus.PROCESSING), // processing
     STOPPED(STATE, NativePrinterStatus.ERROR), // stopped
 
-    // printer-state-reasons.  NativePrinterStatus.UNMAPPED_STATUS will fallback to the printer-state instead
+    // printer-state-reasons.  NativePrinterStatus.UNMAPPED will fallback to the printer-state instead
     // Mapped printer-state-reasons
     OTHER(REASON, NativePrinterStatus.UNMAPPED), // "other"
     NONE(REASON, NativePrinterStatus.UNMAPPED), // "none"
     MEDIA_NEEDED(REASON, NativePrinterStatus.PAPER_OUT), // "media-needed"
     MEDIA_JAM(REASON, NativePrinterStatus.PAPER_JAM), // "media-jam"
     MOVING_TO_PAUSED(REASON, NativePrinterStatus.OK), // "moving-to-paused"
-    PAUSED(REASON, NativePrinterStatus.PAUSED), // "paused"
+    PAUSED(REASON, NativePrinterStatus.UNMAPPED), // "paused"
     SHUTDOWN(REASON, NativePrinterStatus.OFFLINE), // "shutdown"
     CONNECTING_TO_DEVICE(REASON, NativePrinterStatus.OK), // "connecting-to-device"
     TIMED_OUT(REASON, NativePrinterStatus.NOT_AVAILABLE), // "timed-out"

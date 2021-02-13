@@ -20,7 +20,7 @@ public enum CupsJobStatusMap implements NativeStatus.NativeMap {
     ABORTED(STATE, NativeJobStatus.ABORTED), // aborted
     COMPLETED(STATE, NativeJobStatus.COMPLETE), // completed
 
-    // job-state-reasons.  NativeJobStatus.EMPTY will fallback to the job-state instead
+    // job-state-reasons.  NativeJobStatus.UNMAPPED will fallback to the job-state instead
     ABORTED_BY_SYSTEM(REASON, NativeJobStatus.ABORTED), // aborted-by-system
     ACCOUNT_AUTHORIZATION_FAILED(REASON, NativeJobStatus.UNMAPPED), // account-authorization-failed
     ACCOUNT_CLOSED(REASON, NativeJobStatus.UNMAPPED), // account-closed
@@ -51,7 +51,7 @@ public enum CupsJobStatusMap implements NativeStatus.NativeMap {
     JOB_DIGITAL_SIGNATURE_WAIT(REASON, NativeJobStatus.UNMAPPED), // job-digital-signature-wait
     JOB_FETCHABLE(REASON, NativeJobStatus.UNMAPPED), // job-fetchable
     JOB_HELD_FOR_REVIEW(REASON, NativeJobStatus.UNMAPPED), // job-held-for-review
-    JOB_HOLD_UNTIL_SPECIFIED(REASON, NativeJobStatus.SCHEDULED), // job-hold-until-specified
+    JOB_HOLD_UNTIL_SPECIFIED(REASON, NativeJobStatus.PAUSED), // job-hold-until-specified
     JOB_INCOMING(REASON, NativeJobStatus.UNMAPPED), // job-incoming
     JOB_INTERPRETING(REASON, NativeJobStatus.UNMAPPED), // job-interpreting
     JOB_OUTGOING(REASON, NativeJobStatus.UNMAPPED), // job-outgoing
@@ -78,7 +78,7 @@ public enum CupsJobStatusMap implements NativeStatus.NativeMap {
     JOB_SUSPENDING(REASON, NativeJobStatus.UNMAPPED), // job-suspending
     JOB_TRANSFERRING(REASON, NativeJobStatus.UNMAPPED), // job-transferring
     JOB_TRANSFORMING(REASON, NativeJobStatus.UNMAPPED), // job-transforming
-    PRINTER_STOPPED(REASON, NativeJobStatus.UNMAPPED), // printer-stopped
+    PRINTER_STOPPED(REASON, NativeJobStatus.PAUSED), // printer-stopped
     PRINTER_STOPPED_PARTLY(REASON, NativeJobStatus.UNMAPPED), // printer-stopped-partly
     PROCESSING_TO_STOP_POINT(REASON, NativeJobStatus.UNMAPPED), // processing-to-stop-point
     QUEUED_IN_DEVICE(REASON, NativeJobStatus.UNMAPPED), // queued-in-device

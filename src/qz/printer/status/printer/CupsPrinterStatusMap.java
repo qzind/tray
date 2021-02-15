@@ -17,7 +17,6 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     // printer-state-reasons.  NativePrinterStatus.UNMAPPED will fallback to the printer-state instead
     // Mapped printer-state-reasons
     OTHER(REASON, NativePrinterStatus.UNMAPPED), // "other"
-    NONE(REASON, NativePrinterStatus.UNMAPPED), // "none"
     MEDIA_NEEDED(REASON, NativePrinterStatus.PAPER_OUT), // "media-needed"
     MEDIA_JAM(REASON, NativePrinterStatus.PAPER_JAM), // "media-jam"
     MOVING_TO_PAUSED(REASON, NativePrinterStatus.OK), // "moving-to-paused"

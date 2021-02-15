@@ -70,7 +70,6 @@ public interface NativeStatus {
 
     static Status fromCupsPrinterStatus(String reason, String state, String printer) {
         if (reason == null) { return null; }
-        reason = reason.toLowerCase(Locale.ENGLISH).replaceAll("-(error|warning|report)", "");
 
         NativePrinterStatus cupsPrinterStatus = CupsPrinterStatusMap.matchReason(reason);
         if(cupsPrinterStatus == null) {

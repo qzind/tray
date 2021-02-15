@@ -61,9 +61,15 @@
                     <div class="btn-toolbar">
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-success" onclick="startConnection();">Connect</button>
+                            <button id="toggleConnectionGroup" type="button" class="btn btn-success" onclick="checkGroupActive('toggleConnectionGroup', 'connectionGroup'); $('#connectionHost').select();"><span class="fa fa-caret-down"></span>&nbsp;</button>
                             <button type="button" class="btn btn-warning" onclick="endConnection();">Disconnect</button>
                         </div>
-                        <button type="button" class="btn btn-info" onclick="listNetworkDevices();">List Network Info</button>
+                        <button type="button" class="btn btn-info" onclick="listNetworkDevices();">Network Info</button>
+                    </div>
+                    <div class="form-group" id="connectionGroup">
+                        <hr>
+                        <label for="printerSearch">Connect to host:</label>
+                        <input type="text" id="connectionHost" value="localhost" class="form-control" />
                     </div>
                 </div>
             </div>
@@ -1327,6 +1333,15 @@
     }
 
     function startConnection(config) {
+        host = $('#connectionHost').val().trim();
+        // Connect to a print-server instance, if specified
+        if(host != "" && host != 'localhost') {
+            if(config) {
+                config.host = host;
+            } else {
+                config = { host: host };
+            }
+        }
         if (!qz.websocket.isActive()) {
             updateState('Waiting', 'default');
 
@@ -2344,6 +2359,9 @@
         $("#pPxlWidth").val('');
         $("#pPxlHeight").val('');
 
+        //connection
+        $("#connectionGroup").css('display', 'none');
+
         $("#pxlContent").find(".dirty").removeClass("dirty");
     }
 
@@ -2615,7 +2633,20 @@
 
     //checkId = toggle checkbox, groupId = group/element to show, toggleId = group/element to hide
     function checkGroupActive(checkId, groupId, toggleId) {
-        if (isChecked($("#"+ checkId))) {
+        var checkBox = $("#"+ checkId);
+        var useVisibility = false;
+        var invisible = false;
+        if(typeof checkBox.prop("checked") === 'undefined') {
+            // if we're not dealing with a checkbox, rely blindly on visibility instead
+            useVisibility = true;
+            invisible = ($("#"+ groupId).css('display') == 'none');
+            if(invisible) {
+                checkBox.addClass("active");
+            } else {
+                checkBox.removeClass('active');
+            }
+        }
+        if (isChecked(checkBox) || (useVisibility && invisible)) {
             $("#"+ groupId).css('display', '');
             if (toggleId) { $("#"+ toggleId).css('display', 'none'); }
         } else {

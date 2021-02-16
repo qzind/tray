@@ -12,7 +12,7 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     // printer-state
     IDLE(STATE, NativePrinterStatus.OK), // idle
     PROCESSING(STATE, NativePrinterStatus.PROCESSING), // processing
-    STOPPED(STATE, NativePrinterStatus.ERROR), // stopped
+    STOPPED(STATE, NativePrinterStatus.PAUSED), // stopped
 
     // printer-state-reasons.  NativePrinterStatus.UNMAPPED will fallback to the printer-state instead
     // Mapped printer-state-reasons

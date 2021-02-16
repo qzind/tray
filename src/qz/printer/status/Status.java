@@ -79,10 +79,10 @@ public class Status {
     }
 
     public String toString() {
-        return code.name() + ": Level " + code.getLevel() +
-                ", From " + sanitizePrinterName() +
-                ", EventType " + eventType +
-                ", Code " + rawCode +
+        return code.name() + ": Level: " + code.getLevel() +
+                ", From: " + sanitizePrinterName() +
+                ", EventType: " + eventType +
+                ", Code: " + rawCode +
                 (jobId > 0 ? ", JobId: " + jobId : "") +
                 (jobName != null ? ", Job Name: " + jobName : "");
     }

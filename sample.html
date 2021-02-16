@@ -1032,7 +1032,7 @@
                             <div class="panel-body">
                                 <div class="row">
                                     <div class="col-md-12">
-                                        <div id="printersLog"></div>
+                                        <pre id="printersLog"></pre>
                                     </div>
                                 </div>
                                 <hr />
@@ -2633,7 +2633,8 @@
     }
 
     function addPrintersLog(streamEvent) {
-        var msg = '<div class="' + (streamEvent.severity || "") + '">' + new Date().toString() + ": " + streamEvent.message + "</div>";
+        var icon = '<span class="fa ' + (streamEvent.eventType == 'JOB' ? 'fa-exchange' : 'fa-print') + '"></span>&nbsp;';
+        var msg = '<p class="' + (streamEvent.severity || "") + ' text-nowrap">' + icon + new Date().toString() + ": " + streamEvent.message + "</p>";
         var $log = $("#printersLog");
         $log.html($log.html() + msg);
     }

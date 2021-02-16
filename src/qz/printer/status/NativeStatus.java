@@ -56,12 +56,13 @@ public interface NativeStatus {
 
 
     static Status fromCupsJobStatus(String reason, String state, String printer, int jobId, String jobName) {
+        // First check known job-state-reason pairs
         NativeJobStatus cupsJobStatus = CupsJobStatusMap.matchReason(reason);
         if(cupsJobStatus == null) {
-            // Don't return the raw reason if we couldn't find it mapped, return state instead
+            // Don't return the raw job-state-reason if we couldn't find it mapped, return job-state instead
             return new Status(CupsJobStatusMap.matchState(state), printer, state, jobId, jobName);
         } else if(cupsJobStatus == NativeJobStatus.UNMAPPED) {
-            // Still return the state, but let the user know what the unmapped state reason was
+            // Still lookup the job-state, but let the user know what the unmapped job-state-reason was
             return new Status(CupsJobStatusMap.matchState(state), printer, reason, jobId, jobName);
         }
         return new Status(cupsJobStatus, printer, reason, jobId, jobName);

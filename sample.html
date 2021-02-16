@@ -61,7 +61,9 @@
                     <div class="btn-toolbar">
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-success" onclick="startConnection();">Connect</button>
-                            <button id="toggleConnectionGroup" type="button" class="btn btn-success" onclick="checkGroupActive('toggleConnectionGroup', 'connectionGroup'); $('#connectionHost').select();"><span class="fa fa-caret-down"></span>&nbsp;</button>
+                            <button id="toggleConnectionGroup" type="button" class="btn btn-success"
+                                    onclick="checkGroupActive('toggleConnectionGroup', 'connectionGroup'); $('#connectionHost').select();"
+                                    data-toggle="tooltip" data-placement="bottom" title="Connect to QZ Tray running on a print server"><span class="fa fa-caret-down"></span>&nbsp;</button>
                             <button type="button" class="btn btn-warning" onclick="endConnection();">Disconnect</button>
                         </div>
                         <button type="button" class="btn btn-info" onclick="listNetworkDevices();">Network Info</button>

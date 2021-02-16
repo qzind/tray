@@ -2539,7 +2539,7 @@
     });
 
     qz.printers.setPrinterCallbacks(function(streamEvent) {
-        addPrintersLog(streamEvent.message, streamEvent.severity);
+        addPrintersLog(streamEvent);
     });
 
     qz.file.setFileCallbacks(function(streamEvent) {
@@ -2632,11 +2632,8 @@
         }
     }
 
-    function addPrintersLog(msg, color) {
-        if (color == undefined) { color = ""; }
-
-        msg = '<div class="' + color + '">' + new Date().toString() + ": " + msg + "</div>";
-
+    function addPrintersLog(streamEvent) {
+        var msg = '<div class="' + (streamEvent.severity || "") + '">' + new Date().toString() + ": " + streamEvent.message + "</div>";
         var $log = $("#printersLog");
         $log.html($log.html() + msg);
     }

@@ -21,6 +21,7 @@ public class StatusSession {
                 .withData("eventType", status.getEventType())
                 .withData("statusText", status.getCode().name())
                 .withData("severity", status.getCode().getLevel())
+                .withData("statusCode", status.getRawCode())
                 .withData("message", status.toString());
         if(status.getJobId() > 0) {
             streamEvent.withData("jobId", status.getJobId());

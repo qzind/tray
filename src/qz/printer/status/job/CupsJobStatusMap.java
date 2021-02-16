@@ -5,114 +5,137 @@ import qz.printer.status.NativeStatus;
 import java.util.Locale;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import static qz.printer.status.job.CupsJobStatusMap.CupsJobStatusType.*;
 
 /**
  * Created by Tres on 12/23/2020
  */
 public enum CupsJobStatusMap implements NativeStatus.NativeMap {
-    // job-state-reasons.  NativeJobStatus.EMPTY will fallback to the job-state instead
-    ABORTED_BY_SYSTEM(NativeJobStatus.ABORTED), // aborted-by-system
-    ACCOUNT_AUTHORIZATION_FAILED(NativeJobStatus.EMPTY), // account-authorization-failed
-    ACCOUNT_CLOSED(NativeJobStatus.EMPTY), // account-closed
-    ACCOUNT_INFO_NEEDED(NativeJobStatus.USER_INTERVENTION), // account-info-needed
-    ACCOUNT_LIMIT_REACHED(NativeJobStatus.EMPTY), // account-limit-reached
-    COMPRESSION_ERROR(NativeJobStatus.EMPTY), // compression-error
-    CONFLICTING_ATTRIBUTES(NativeJobStatus.EMPTY), // conflicting-attributes
-    CONNECTED_TO_DESTINATION(NativeJobStatus.EMPTY), // connected-to-destination
-    CONNECTING_TO_DESTINATION(NativeJobStatus.EMPTY), // connecting-to-destination
-    DESTINATION_URI_FAILED(NativeJobStatus.EMPTY), // destination-uri-failed
-    DIGITAL_SIGNATURE_DID_NOT_VERIFY(NativeJobStatus.EMPTY), // digital-signature-did-not-verify
-    DIGITAL_SIGNATURE_TYPE_NOT_SUPPORTED(NativeJobStatus.EMPTY), // digital-signature-type-not-supported
-    DOCUMENT_ACCESS_ERROR(NativeJobStatus.EMPTY), // document-access-error
-    DOCUMENT_FORMAT_ERROR(NativeJobStatus.EMPTY), // document-format-error
-    DOCUMENT_PASSWORD_ERROR(NativeJobStatus.EMPTY), // document-password-error
-    DOCUMENT_PERMISSION_ERROR(NativeJobStatus.EMPTY), // document-permission-error
-    DOCUMENT_SECURITY_ERROR(NativeJobStatus.EMPTY), // document-security-error
-    DOCUMENT_UNPRINTABLE_ERROR(NativeJobStatus.EMPTY), // document-unprintable-error
-    ERRORS_DETECTED(NativeJobStatus.EMPTY), // errors-detected
-    JOB_CANCELED_AT_DEVICE(NativeJobStatus.CANCELED), // job-canceled-at-device
-    JOB_CANCELED_BY_OPERATOR(NativeJobStatus.CANCELED), // job-canceled-by-operator
-    JOB_CANCELED_BY_USER(NativeJobStatus.CANCELED), // job-canceled-by-user
-    JOB_COMPLETED_SUCCESSFULLY(NativeJobStatus.COMPLETE), // job-completed-successfully
-    JOB_COMPLETED_WITH_ERRORS(NativeJobStatus.COMPLETE), // job-completed-with-errors
-    JOB_COMPLETED_WITH_WARNINGS(NativeJobStatus.COMPLETE), // job-completed-with-warnings
-    JOB_DATA_INSUFFICIENT(NativeJobStatus.EMPTY), // job-data-insufficient
-    JOB_DELAY_OUTPUT_UNTIL_SPECIFIED(NativeJobStatus.SCHEDULED), // job-delay-output-until-specified
-    JOB_DIGITAL_SIGNATURE_WAIT(NativeJobStatus.EMPTY), // job-digital-signature-wait
-    JOB_FETCHABLE(NativeJobStatus.EMPTY), // job-fetchable
-    JOB_HELD_FOR_REVIEW(NativeJobStatus.EMPTY), // job-held-for-review
-    JOB_HOLD_UNTIL_SPECIFIED(NativeJobStatus.SCHEDULED), // job-hold-until-specified
-    JOB_INCOMING(NativeJobStatus.EMPTY), // job-incoming
-    JOB_INTERPRETING(NativeJobStatus.EMPTY), // job-interpreting
-    JOB_OUTGOING(NativeJobStatus.EMPTY), // job-outgoing
-    JOB_PASSWORD_WAIT(NativeJobStatus.USER_INTERVENTION), // job-password-wait
-    JOB_PRINTED_SUCCESSFULLY(NativeJobStatus.COMPLETE), // job-printed-successfully
-    JOB_PRINTED_WITH_ERRORS(NativeJobStatus.COMPLETE), // job-printed-with-errors
-    JOB_PRINTED_WITH_WARNINGS(NativeJobStatus.COMPLETE), // job-printed-with-warnings
-    JOB_PRINTING(NativeJobStatus.PRINTING), // job-printing
-    JOB_QUEUED(NativeJobStatus.SPOOLING), // job-queued
-    JOB_QUEUED_FOR_MARKER(NativeJobStatus.SPOOLING), // job-queued-for-marker
-    JOB_RELEASE_WAIT(NativeJobStatus.EMPTY), // job-release-wait
-    JOB_RESTARTABLE(NativeJobStatus.EMPTY), // job-restartable
-    JOB_RESUMING(NativeJobStatus.SPOOLING), // job-resuming
-    JOB_SAVED_SUCCESSFULLY(NativeJobStatus.RETAINED), // job-saved-successfully
-    JOB_SAVED_WITH_ERRORS(NativeJobStatus.RETAINED), // job-saved-with-errors
-    JOB_SAVED_WITH_WARNINGS(NativeJobStatus.RETAINED), // job-saved-with-warnings
-    JOB_SAVING(NativeJobStatus.EMPTY), // job-saving
-    JOB_SPOOLING(NativeJobStatus.EMPTY), // job-spooling
-    JOB_STREAMING(NativeJobStatus.EMPTY), // job-streaming
-    JOB_SUSPENDED(NativeJobStatus.PAUSED), // job-suspended
-    JOB_SUSPENDED_BY_OPERATOR(NativeJobStatus.PAUSED), // job-suspended-by-operator
-    JOB_SUSPENDED_BY_SYSTEM(NativeJobStatus.PAUSED), // job-suspended-by-system
-    JOB_SUSPENDED_BY_USER(NativeJobStatus.PAUSED), // job-suspended-by-user
-    JOB_SUSPENDING(NativeJobStatus.EMPTY), // job-suspending
-    JOB_TRANSFERRING(NativeJobStatus.EMPTY), // job-transferring
-    JOB_TRANSFORMING(NativeJobStatus.EMPTY), // job-transforming
-    PRINTER_STOPPED(NativeJobStatus.EMPTY), // printer-stopped
-    PRINTER_STOPPED_PARTLY(NativeJobStatus.EMPTY), // printer-stopped-partly
-    PROCESSING_TO_STOP_POINT(NativeJobStatus.EMPTY), // processing-to-stop-point
-    QUEUED_IN_DEVICE(NativeJobStatus.EMPTY), // queued-in-device
-    RESOURCES_ARE_NOT_READY(NativeJobStatus.EMPTY), // resources-are-not-ready
-    RESOURCES_ARE_NOT_SUPPORTED(NativeJobStatus.EMPTY), // resources-are-not-supported
-    SERVICE_OFF_LINE(NativeJobStatus.EMPTY), // service-off-line
-    SUBMISSION_INTERRUPTED(NativeJobStatus.EMPTY), // submission-interrupted
-    UNSUPPORTED_ATTRIBUTES_OR_VALUES(NativeJobStatus.EMPTY), // unsupported-attributes-or-values
-    UNSUPPORTED_COMPRESSION(NativeJobStatus.EMPTY), // unsupported-compression
-    UNSUPPORTED_DOCUMENT_FORMAT(NativeJobStatus.EMPTY), // unsupported-document-format
-    WAITING_FOR_USER_ACTION(NativeJobStatus.USER_INTERVENTION), // waiting-for-user-action
-    WARNINGS_DETECTED(NativeJobStatus.EMPTY), // warnings-detected
-
     // job-state
-    PENDING(NativeJobStatus.SPOOLING), // pending
-    PENDING_HELD(NativeJobStatus.PAUSED), // pending-held
-    PROCESSING(NativeJobStatus.SPOOLING), // processing
-    PROCESSING_STOPPED(NativeJobStatus.PAUSED), // processing-stopped
-    CANCELED(NativeJobStatus.CANCELED), // canceled
-    ABORTED(NativeJobStatus.ABORTED), // aborted
-    COMPLETED(NativeJobStatus.COMPLETE); // completed
+    PENDING(STATE, NativeJobStatus.SPOOLING), // pending
+    PENDING_HELD(STATE, NativeJobStatus.PAUSED), // pending-held
+    PROCESSING(STATE, NativeJobStatus.SPOOLING), // processing
+    PROCESSING_STOPPED(STATE, NativeJobStatus.PAUSED), // processing-stopped
+    CANCELED(STATE, NativeJobStatus.CANCELED), // canceled
+    ABORTED(STATE, NativeJobStatus.ABORTED), // aborted
+    COMPLETED(STATE, NativeJobStatus.COMPLETE), // completed
 
-    private static SortedMap<String,NativeStatus> sortedLookupTable;
+    // job-state-reasons.  NativeJobStatus.UNMAPPED will fallback to the job-state instead
+    ABORTED_BY_SYSTEM(REASON, NativeJobStatus.ABORTED), // aborted-by-system
+    ACCOUNT_AUTHORIZATION_FAILED(REASON, NativeJobStatus.UNMAPPED), // account-authorization-failed
+    ACCOUNT_CLOSED(REASON, NativeJobStatus.UNMAPPED), // account-closed
+    ACCOUNT_INFO_NEEDED(REASON, NativeJobStatus.USER_INTERVENTION), // account-info-needed
+    ACCOUNT_LIMIT_REACHED(REASON, NativeJobStatus.UNMAPPED), // account-limit-reached
+    COMPRESSION_ERROR(REASON, NativeJobStatus.UNMAPPED), // compression-error
+    CONFLICTING_ATTRIBUTES(REASON, NativeJobStatus.UNMAPPED), // conflicting-attributes
+    CONNECTED_TO_DESTINATION(REASON, NativeJobStatus.UNMAPPED), // connected-to-destination
+    CONNECTING_TO_DESTINATION(REASON, NativeJobStatus.UNMAPPED), // connecting-to-destination
+    DESTINATION_URI_FAILED(REASON, NativeJobStatus.UNMAPPED), // destination-uri-failed
+    DIGITAL_SIGNATURE_DID_NOT_VERIFY(REASON, NativeJobStatus.UNMAPPED), // digital-signature-did-not-verify
+    DIGITAL_SIGNATURE_TYPE_NOT_SUPPORTED(REASON, NativeJobStatus.UNMAPPED), // digital-signature-type-not-supported
+    DOCUMENT_ACCESS_ERROR(REASON, NativeJobStatus.UNMAPPED), // document-access-error
+    DOCUMENT_FORMAT_ERROR(REASON, NativeJobStatus.UNMAPPED), // document-format-error
+    DOCUMENT_PASSWORD_ERROR(REASON, NativeJobStatus.UNMAPPED), // document-password-error
+    DOCUMENT_PERMISSION_ERROR(REASON, NativeJobStatus.UNMAPPED), // document-permission-error
+    DOCUMENT_SECURITY_ERROR(REASON, NativeJobStatus.UNMAPPED), // document-security-error
+    DOCUMENT_UNPRINTABLE_ERROR(REASON, NativeJobStatus.UNMAPPED), // document-unprintable-error
+    ERRORS_DETECTED(REASON, NativeJobStatus.UNMAPPED), // errors-detected
+    JOB_CANCELED_AT_DEVICE(REASON, NativeJobStatus.CANCELED), // job-canceled-at-device
+    JOB_CANCELED_BY_OPERATOR(REASON, NativeJobStatus.CANCELED), // job-canceled-by-operator
+    JOB_CANCELED_BY_USER(REASON, NativeJobStatus.CANCELED), // job-canceled-by-user
+    JOB_COMPLETED_SUCCESSFULLY(REASON, NativeJobStatus.COMPLETE), // job-completed-successfully
+    JOB_COMPLETED_WITH_ERRORS(REASON, NativeJobStatus.COMPLETE), // job-completed-with-errors
+    JOB_COMPLETED_WITH_WARNINGS(REASON, NativeJobStatus.COMPLETE), // job-completed-with-warnings
+    JOB_DATA_INSUFFICIENT(REASON, NativeJobStatus.UNMAPPED), // job-data-insufficient
+    JOB_DELAY_OUTPUT_UNTIL_SPECIFIED(REASON, NativeJobStatus.SCHEDULED), // job-delay-output-until-specified
+    JOB_DIGITAL_SIGNATURE_WAIT(REASON, NativeJobStatus.UNMAPPED), // job-digital-signature-wait
+    JOB_FETCHABLE(REASON, NativeJobStatus.UNMAPPED), // job-fetchable
+    JOB_HELD_FOR_REVIEW(REASON, NativeJobStatus.SPOOLING), // job-held-for-review
+    JOB_HOLD_UNTIL_SPECIFIED(REASON, NativeJobStatus.PAUSED), // job-hold-until-specified
+    JOB_INCOMING(REASON, NativeJobStatus.UNMAPPED), // job-incoming
+    JOB_INTERPRETING(REASON, NativeJobStatus.UNMAPPED), // job-interpreting
+    JOB_OUTGOING(REASON, NativeJobStatus.UNMAPPED), // job-outgoing
+    JOB_PASSWORD_WAIT(REASON, NativeJobStatus.USER_INTERVENTION), // job-password-wait
+    JOB_PRINTED_SUCCESSFULLY(REASON, NativeJobStatus.COMPLETE), // job-printed-successfully
+    JOB_PRINTED_WITH_ERRORS(REASON, NativeJobStatus.COMPLETE), // job-printed-with-errors
+    JOB_PRINTED_WITH_WARNINGS(REASON, NativeJobStatus.COMPLETE), // job-printed-with-warnings
+    JOB_PRINTING(REASON, NativeJobStatus.PRINTING), // job-printing
+    JOB_QUEUED(REASON, NativeJobStatus.SPOOLING), // job-queued
+    JOB_QUEUED_FOR_MARKER(REASON, NativeJobStatus.SPOOLING), // job-queued-for-marker
+    JOB_RELEASE_WAIT(REASON, NativeJobStatus.UNMAPPED), // job-release-wait
+    JOB_RESTARTABLE(REASON, NativeJobStatus.UNMAPPED), // job-restartable
+    JOB_RESUMING(REASON, NativeJobStatus.SPOOLING), // job-resuming
+    JOB_SAVED_SUCCESSFULLY(REASON, NativeJobStatus.RETAINED), // job-saved-successfully
+    JOB_SAVED_WITH_ERRORS(REASON, NativeJobStatus.RETAINED), // job-saved-with-errors
+    JOB_SAVED_WITH_WARNINGS(REASON, NativeJobStatus.RETAINED), // job-saved-with-warnings
+    JOB_SAVING(REASON, NativeJobStatus.UNMAPPED), // job-saving
+    JOB_SPOOLING(REASON, NativeJobStatus.UNMAPPED), // job-spooling
+    JOB_STREAMING(REASON, NativeJobStatus.UNMAPPED), // job-streaming
+    JOB_SUSPENDED(REASON, NativeJobStatus.PAUSED), // job-suspended
+    JOB_SUSPENDED_BY_OPERATOR(REASON, NativeJobStatus.PAUSED), // job-suspended-by-operator
+    JOB_SUSPENDED_BY_SYSTEM(REASON, NativeJobStatus.PAUSED), // job-suspended-by-system
+    JOB_SUSPENDED_BY_USER(REASON, NativeJobStatus.PAUSED), // job-suspended-by-user
+    JOB_SUSPENDING(REASON, NativeJobStatus.UNMAPPED), // job-suspending
+    JOB_TRANSFERRING(REASON, NativeJobStatus.UNMAPPED), // job-transferring
+    JOB_TRANSFORMING(REASON, NativeJobStatus.UNMAPPED), // job-transforming
+    PRINTER_STOPPED(REASON, NativeJobStatus.PAUSED), // printer-stopped
+    PRINTER_STOPPED_PARTLY(REASON, NativeJobStatus.UNMAPPED), // printer-stopped-partly
+    PROCESSING_TO_STOP_POINT(REASON, NativeJobStatus.UNMAPPED), // processing-to-stop-point
+    QUEUED_IN_DEVICE(REASON, NativeJobStatus.UNMAPPED), // queued-in-device
+    RESOURCES_ARE_NOT_READY(REASON, NativeJobStatus.UNMAPPED), // resources-are-not-ready
+    RESOURCES_ARE_NOT_SUPPORTED(REASON, NativeJobStatus.UNMAPPED), // resources-are-not-supported
+    SERVICE_OFF_LINE(REASON, NativeJobStatus.UNMAPPED), // service-off-line
+    SUBMISSION_INTERRUPTED(REASON, NativeJobStatus.UNMAPPED), // submission-interrupted
+    UNSUPPORTED_ATTRIBUTES_OR_VALUES(REASON, NativeJobStatus.UNMAPPED), // unsupported-attributes-or-values
+    UNSUPPORTED_COMPRESSION(REASON, NativeJobStatus.UNMAPPED), // unsupported-compression
+    UNSUPPORTED_DOCUMENT_FORMAT(REASON, NativeJobStatus.UNMAPPED), // unsupported-document-format
+    WAITING_FOR_USER_ACTION(REASON, NativeJobStatus.USER_INTERVENTION), // waiting-for-user-action
+    WARNINGS_DETECTED(REASON, NativeJobStatus.UNKNOWN); // warnings-detected
 
-    private final NativeStatus parent;
+    private static SortedMap<String,NativeJobStatus> sortedReasonLookupTable;
+    private static SortedMap<String,NativeJobStatus> sortedStateLookupTable;
 
-    CupsJobStatusMap(NativeStatus parent) {
+    private final NativeJobStatus parent;
+    private final CupsJobStatusType type;
+
+    enum CupsJobStatusType {
+        STATE,
+        REASON;
+    }
+
+    CupsJobStatusMap(CupsJobStatusType type, NativeJobStatus parent) {
+        this.type = type;
         this.parent = parent;
     }
 
-    public static NativeStatus match(String code) {
+    public static NativeJobStatus matchReason(String code) {
         // Initialize a sorted map to speed up lookups
-        if(sortedLookupTable == null) {
-            sortedLookupTable = new TreeMap<>();
+        if(sortedReasonLookupTable == null) {
+            sortedReasonLookupTable = new TreeMap<>();
             for(CupsJobStatusMap value : values()) {
-                sortedLookupTable.put(value.name().toLowerCase(Locale.ENGLISH).replace("_", "-"), value.parent);
+                if(value.type == REASON) {
+                    sortedReasonLookupTable.put(value.name().toLowerCase(Locale.ENGLISH).replace("_", "-"), value.parent);
+                }
             }
         }
+        return sortedReasonLookupTable.get(code);
+    }
 
-        return sortedLookupTable.get(code);
+    public static NativeJobStatus matchState(String state) {
+        // Initialize a sorted map to speed up lookups
+        if(sortedStateLookupTable == null) {
+            sortedStateLookupTable = new TreeMap<>();
+            for(CupsJobStatusMap value : values()) {
+                if(value.type == STATE) {
+                    sortedStateLookupTable.put(value.name().toLowerCase(Locale.ENGLISH).replace("_", "-"), value.parent);
+                }
+            }
+        }
+        return sortedStateLookupTable.getOrDefault(state, NativeJobStatus.UNKNOWN);
     }
 
     @Override
-    public NativeStatus getParent() {
+    public NativeJobStatus getParent() {
         return parent;
     }
 

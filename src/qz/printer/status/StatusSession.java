@@ -18,6 +18,7 @@ public class StatusSession {
     private StreamEvent createStatusStream(Status status) {
         StreamEvent streamEvent = new StreamEvent(StreamEvent.Stream.PRINTER, StreamEvent.Type.ACTION)
                 .withData("printerName", status.sanitizePrinterName())
+                .withData("eventType", status.getEventType())
                 .withData("statusText", status.getCode().name())
                 .withData("severity", status.getCode().getLevel())
                 .withData("message", status.toString());

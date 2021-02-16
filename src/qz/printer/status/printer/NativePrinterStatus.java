@@ -35,7 +35,8 @@ public enum NativePrinterStatus implements NativeStatus {
     DOOR_OPEN(WARN),
     SERVER_UNKNOWN(WARN),
     POWER_SAVE(INFO),
-    UNKNOWN_STATUS(FATAL);
+    UNKNOWN(INFO),
+    UNMAPPED(FATAL); // should never make it to the user
 
     private Level level;
 
@@ -45,7 +46,7 @@ public enum NativePrinterStatus implements NativeStatus {
 
     @Override
     public NativeStatus getDefault() {
-        return UNKNOWN_STATUS;
+        return UNKNOWN;
     }
 
     @Override

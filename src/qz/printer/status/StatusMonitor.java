@@ -88,7 +88,7 @@ public class StatusMonitor {
                     // Handle edge-case where printer was recently renamed/added
                     if (printerName == null) {
                         // Call PrintServiceLookup.lookupPrintServices again
-                        PrintServiceMatcher.getNativePrinterList();
+                        PrintServiceMatcher.getNativePrinterList(true);
                         printerName = NativePrinterMap.getInstance().lookupPrinterId(printerNames.getString(i));
                     }
                 }

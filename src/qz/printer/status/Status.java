@@ -46,7 +46,7 @@ public class Status {
         }
 
         // On MacOS the description is used as the printer name
-        NativePrinter nativePrinter = PrintServiceMatcher.matchPrinter(printer);
+        NativePrinter nativePrinter = PrintServiceMatcher.matchPrinter(printer, true);
         if (nativePrinter == null) {
             // If the printer description is missing from the map (usually because the printer was deleted), use the cups id instead
             return printer;

@@ -1253,6 +1253,8 @@ var qz = (function() {
              * @since 2.1.0
              *
              * @see qz.printers.startListening
+             *
+             * @memberof qz.printers
              */
             getStatus: function() {
                 return _qz.websocket.dataPromise('printers.getStatus');

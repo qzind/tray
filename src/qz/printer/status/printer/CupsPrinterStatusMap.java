@@ -1,5 +1,7 @@
 package qz.printer.status.printer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import qz.printer.status.NativeStatus;
 
 import java.util.Locale;
@@ -16,6 +18,7 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
 
     // printer-state-reasons.  NativePrinterStatus.UNMAPPED will fallback to the printer-state instead
     // Mapped printer-state-reasons
+    OFFLINE_REPORT(REASON, NativePrinterStatus.OFFLINE), // "offline-report"
     OTHER(REASON, NativePrinterStatus.UNMAPPED), // "other"
     MEDIA_NEEDED(REASON, NativePrinterStatus.PAPER_OUT), // "media-needed"
     MEDIA_JAM(REASON, NativePrinterStatus.PAPER_JAM), // "media-jam"
@@ -852,6 +855,7 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     WRAPPER_UNRECOVERABLE_STORAGE_ERROR(REASON, NativePrinterStatus.UNMAPPED), // wrapper-unrecoverable-storage-error
     WRAPPER_WARMING_UP(REASON, NativePrinterStatus.UNMAPPED); // wrapper-warming-up
 
+    private static final Logger log = LoggerFactory.getLogger(CupsPrinterStatusMap.class);
     public static SortedMap<String,NativePrinterStatus> sortedReasonLookupTable;
     public static SortedMap<String,NativePrinterStatus> sortedStateLookupTable;
 
@@ -878,7 +882,12 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
                 }
             }
         }
-        return sortedReasonLookupTable.get(code);
+        NativePrinterStatus status = sortedReasonLookupTable.get(code);
+        if(status == null && !code.equalsIgnoreCase("none")) {
+            // Don't warn for "none"
+            log.warn("Printer state-reason \"{}\" was not found", code);
+        }
+        return status;
     }
 
     public static NativePrinterStatus matchState(String state) {

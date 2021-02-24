@@ -1,5 +1,7 @@
 package qz.printer.status.job;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import qz.printer.status.NativeStatus;
 
 import java.util.Locale;
@@ -92,6 +94,7 @@ public enum CupsJobStatusMap implements NativeStatus.NativeMap {
     WAITING_FOR_USER_ACTION(REASON, NativeJobStatus.USER_INTERVENTION), // waiting-for-user-action
     WARNINGS_DETECTED(REASON, NativeJobStatus.UNKNOWN); // warnings-detected
 
+    private static final Logger log = LoggerFactory.getLogger(CupsJobStatusMap.class);
     private static SortedMap<String,NativeJobStatus> sortedReasonLookupTable;
     private static SortedMap<String,NativeJobStatus> sortedStateLookupTable;
 
@@ -118,7 +121,13 @@ public enum CupsJobStatusMap implements NativeStatus.NativeMap {
                 }
             }
         }
-        return sortedReasonLookupTable.get(code);
+
+        NativeJobStatus status = sortedReasonLookupTable.get(code);
+        if(status == null && !code.equalsIgnoreCase("none")) {
+            // Don't warn for "none"
+            log.warn("Printer job state-reason \"{}\" was not found", code);
+        }
+        return status;
     }
 
     public static NativeJobStatus matchState(String state) {

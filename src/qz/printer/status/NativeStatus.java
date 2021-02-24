@@ -1,7 +1,6 @@
 package qz.printer.status;
 
 import org.apache.log4j.Level;
-import qz.printer.info.NativePrinter;
 import qz.printer.status.job.CupsJobStatusMap;
 import qz.printer.status.job.NativeJobStatus;
 import qz.printer.status.job.WmiJobStatusMap;
@@ -9,8 +8,6 @@ import qz.printer.status.printer.CupsPrinterStatusMap;
 import qz.printer.status.printer.NativePrinterStatus;
 import qz.printer.status.printer.WmiPrinterStatusMap;
 import qz.utils.ByteUtilities;
-
-import java.util.Locale;
 
 public interface NativeStatus {
     interface NativeMap {

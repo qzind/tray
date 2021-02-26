@@ -243,7 +243,7 @@ public class PrintRaw implements PrintProcessor {
 
     private ImageWrapper getWrapper(BufferedImage img, JSONObject opt, PrintOptions.Pixel pxlOpts) {
         // Rotate image using orientation or rotation before sending to ImageWrapper
-        if(pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
+        if(pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
             img = PrintImage.rotate(img, pxlOpts.getOrientation().getDegreesRot(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
         } else if(pxlOpts.getRotation() % 360 != 0) {
             img = PrintImage.rotate(img, pxlOpts.getRotation(), pxlOpts.getDithering(), pxlOpts.getInterpolation());

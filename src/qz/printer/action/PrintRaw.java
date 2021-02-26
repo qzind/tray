@@ -43,6 +43,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -109,7 +110,7 @@ public class PrintRaw implements PrintProcessor {
             try {
                 switch(format) {
                     case HTML:
-                        commands.append(getHtmlWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.PLAIN, options.getPixelOptions()).getImageCommand(opt));
+                        commands.append(getHtmlWrapper(cmd, opt, flavor, options.getPixelOptions()).getImageCommand(opt));
                         break;
                     case IMAGE:
                         commands.append(getImageWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.BASE64).getImageCommand(opt));
@@ -188,7 +189,9 @@ public class PrintRaw implements PrintProcessor {
         return getWrapper(bi, opt);
     }
 
-    private ImageWrapper getHtmlWrapper(String data, JSONObject opt, boolean fromFile, PrintOptions.Pixel pxlOpts) throws IOException {
+    private ImageWrapper getHtmlWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Pixel pxlOpts) throws IOException {
+        String source = flavor == PrintingUtilities.Flavor.BASE64 ?  new String(Base64.decodeBase64(data), StandardCharsets.UTF_8) : data;
+
         double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
         if (density <= 1) {
             density = LanguageType.getType(opt.optString("language")).getDefaultDensity();
@@ -199,7 +202,7 @@ public class PrintRaw implements PrintProcessor {
         double pageHeight = opt.optInt("pageHeight") / density * 72;
 
         BufferedImage bi;
-        WebAppModel model = new WebAppModel(data, !fromFile, pageWidth, pageHeight, false, pageZoom);
+        WebAppModel model = new WebAppModel(source, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, false, pageZoom);
 
         try {
             WebApp.initialize(); //starts if not already started

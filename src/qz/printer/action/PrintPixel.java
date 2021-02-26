@@ -9,7 +9,6 @@ import qz.utils.SystemUtilities;
 
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
-import javax.print.attribute.ResolutionSyntax;
 import javax.print.attribute.standard.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -185,7 +184,7 @@ public abstract class PrintPixel {
         return imgToPrint;
     }
 
-    protected Map<RenderingHints.Key,Object> buildRenderingHints(Object dithering, Object interpolation) {
+    protected static Map<RenderingHints.Key,Object> buildRenderingHints(Object dithering, Object interpolation) {
         Map<RenderingHints.Key,Object> rhMap = new HashMap<>();
         rhMap.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
         rhMap.put(RenderingHints.KEY_DITHERING, dithering);

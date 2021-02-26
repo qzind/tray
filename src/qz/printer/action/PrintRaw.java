@@ -103,6 +103,7 @@ public class PrintRaw implements PrintProcessor {
             PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "COMMAND").toUpperCase(Locale.ENGLISH));
             PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "PLAIN").toUpperCase(Locale.ENGLISH));
             PrintOptions.Raw rawOpts = options.getRawOptions();
+            PrintOptions.Pixel pxlOpts = options.getPixelOptions();
 
             encoding = rawOpts.getEncoding();
             if (encoding == null || encoding.isEmpty()) { encoding = Charset.defaultCharset().name(); }
@@ -110,13 +111,13 @@ public class PrintRaw implements PrintProcessor {
             try {
                 switch(format) {
                     case HTML:
-                        commands.append(getHtmlWrapper(cmd, opt, flavor, options.getPixelOptions()).getImageCommand(opt));
+                        commands.append(getHtmlWrapper(cmd, opt, flavor, pxlOpts).getImageCommand(opt));
                         break;
                     case IMAGE:
-                        commands.append(getImageWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.BASE64).getImageCommand(opt));
+                        commands.append(getImageWrapper(cmd, opt, flavor, pxlOpts).getImageCommand(opt));
                         break;
                     case PDF:
-                        commands.append(getPdfWrapper(cmd, opt, flavor != PrintingUtilities.Flavor.BASE64).getImageCommand(opt));
+                        commands.append(getPdfWrapper(cmd, opt, flavor, pxlOpts).getImageCommand(opt));
                         break;
                     case COMMAND:
                     default:
@@ -147,9 +148,10 @@ public class PrintRaw implements PrintProcessor {
         }
     }
 
-    private ImageWrapper getImageWrapper(String data, JSONObject opt, boolean fromFile) throws IOException {
+    private ImageWrapper getImageWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Pixel pxlOpts) throws IOException {
         BufferedImage bi;
 
+        boolean fromFile = flavor != PrintingUtilities.Flavor.BASE64;
         // 2.0 compat
         if (data.startsWith("data:image/") && data.contains(";base64,")) {
             String[] parts = data.split(";base64,");
@@ -163,16 +165,16 @@ public class PrintRaw implements PrintProcessor {
             bi = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(data)));
         }
 
-        return getWrapper(bi, opt);
+        return getWrapper(bi, opt, pxlOpts);
     }
 
-    private ImageWrapper getPdfWrapper(String data, JSONObject opt, boolean fromFile) throws IOException {
+    private ImageWrapper getPdfWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Pixel pxlOpts) throws IOException {
         PDDocument doc;
 
-        if (fromFile) {
-            doc = PDDocument.load(ConnectionUtilities.getInputStream(data));
-        } else {
+        if (flavor == PrintingUtilities.Flavor.BASE64) {
             doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data)));
+        } else {
+            doc = PDDocument.load(ConnectionUtilities.getInputStream(data));
         }
 
         double scale;
@@ -186,7 +188,7 @@ public class PrintRaw implements PrintProcessor {
         if (scale <= 0) { scale = 1.0; }
 
         BufferedImage bi = new PDFRenderer(doc).renderImage(0, (float)scale);
-        return getWrapper(bi, opt);
+        return getWrapper(bi, opt, pxlOpts);
     }
 
     private ImageWrapper getHtmlWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Pixel pxlOpts) throws IOException {
@@ -236,10 +238,17 @@ public class PrintRaw implements PrintProcessor {
             }
         }
 
-        return getWrapper(bi, opt);
+        return getWrapper(bi, opt, pxlOpts);
     }
 
-    private ImageWrapper getWrapper(BufferedImage img, JSONObject opt) {
+    private ImageWrapper getWrapper(BufferedImage img, JSONObject opt, PrintOptions.Pixel pxlOpts) {
+        // Rotate image using orientation or rotation before sending to ImageWrapper
+        if(pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
+            img = PrintImage.rotate(img, pxlOpts.getOrientation().getDegreesRot(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
+        } else if(pxlOpts.getRotation() % 360 != 0) {
+            img = PrintImage.rotate(img, pxlOpts.getRotation(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
+        }
+
         ImageWrapper iw = new ImageWrapper(img, LanguageType.getType(opt.optString("language")));
         iw.setCharset(Charset.forName(encoding));
 

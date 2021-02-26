@@ -189,8 +189,10 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                 settings.setPrintSides(PrintSides.TUMBLE);
             }
             if (pxlOpts.getPrinterTray() != null) {
-                fxPrinter.getPrinterAttributes().getSupportedPaperSources().stream()
-                        .filter(source -> pxlOpts.getPrinterTray().equals(source.getName())).forEach(settings::setPaperSource);
+                PaperSource tray = findFXTray(fxPrinter.getPrinterAttributes().getSupportedPaperSources(), pxlOpts.getPrinterTray());
+                if (tray != null) {
+                    settings.setPaperSource(tray);
+                }
             }
 
             if (pxlOpts.getDensity() > 0) {

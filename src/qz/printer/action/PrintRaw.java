@@ -190,7 +190,9 @@ public class PrintRaw implements PrintProcessor {
     }
 
     private ImageWrapper getHtmlWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Pixel pxlOpts) throws IOException {
-        String source = flavor == PrintingUtilities.Flavor.BASE64 ?  new String(Base64.decodeBase64(data), StandardCharsets.UTF_8) : data;
+        if (flavor == PrintingUtilities.Flavor.BASE64) {
+            data = new String(Base64.decodeBase64(data), StandardCharsets.UTF_8);
+        }
 
         double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
         if (density <= 1) {
@@ -202,7 +204,7 @@ public class PrintRaw implements PrintProcessor {
         double pageHeight = opt.optInt("pageHeight") / density * 72;
 
         BufferedImage bi;
-        WebAppModel model = new WebAppModel(source, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, false, pageZoom);
+        WebAppModel model = new WebAppModel(data, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, false, pageZoom);
 
         try {
             WebApp.initialize(); //starts if not already started

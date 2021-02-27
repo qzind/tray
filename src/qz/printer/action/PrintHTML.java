@@ -76,9 +76,12 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
                 PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
 
-                String source = flavor == PrintingUtilities.Flavor.BASE64 ?
-                        new String(Base64.decodeBase64(data.getString("data")), StandardCharsets.UTF_8) :
-                        data.getString("data");
+                String source;
+                if (flavor == PrintingUtilities.Flavor.BASE64) {
+                    source = new String(Base64.decodeBase64(data.getString("data")), StandardCharsets.UTF_8);
+                } else {
+                    source = data.getString("data");
+                }
 
                 double pageZoom = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()) / 72.0;
                 if (pageZoom <= 1) { pageZoom = 1; }

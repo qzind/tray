@@ -150,19 +150,17 @@ public class PrintRaw implements PrintProcessor {
 
     private ImageWrapper getImageWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Pixel pxlOpts) throws IOException {
         BufferedImage bi;
-
-        boolean fromFile = flavor != PrintingUtilities.Flavor.BASE64;
         // 2.0 compat
         if (data.startsWith("data:image/") && data.contains(";base64,")) {
             String[] parts = data.split(";base64,");
             data = parts[parts.length - 1];
-            fromFile = false;
+            flavor = PrintingUtilities.Flavor.BASE64;
         }
 
-        if (fromFile) {
-            bi = ImageIO.read(ConnectionUtilities.getInputStream(data));
-        } else {
+        if (flavor == PrintingUtilities.Flavor.BASE64) {
             bi = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(data)));
+        } else {
+            bi = ImageIO.read(ConnectionUtilities.getInputStream(data));
         }
 
         return getWrapper(bi, opt, pxlOpts);

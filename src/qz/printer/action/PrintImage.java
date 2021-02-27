@@ -268,7 +268,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
      * @param angle Rotation angle in degrees
      * @return Rotated image data
      */
-    private BufferedImage rotate(BufferedImage image, double angle) {
+    public static BufferedImage rotate(BufferedImage image, double angle, Object dithering, Object interpolation) {
         double rads = Math.toRadians(angle);
         double sin = Math.abs(Math.sin(rads)), cos = Math.abs(Math.cos(rads));
 
@@ -293,6 +293,10 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         g2d.dispose();
 
         return result;
+    }
+
+    private BufferedImage rotate(BufferedImage image, double angle) {
+        return rotate(image, angle, dithering, interpolation);
     }
 
     @Override

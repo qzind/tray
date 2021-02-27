@@ -17,14 +17,14 @@ public enum WmiJobStatusMap implements NativeStatus.NativeMap {
     PRINTING(NativeJobStatus.PRINTING, 0x00000010), // Job is printing
     OFFLINE(NativeJobStatus.OFFLINE, 0x00000020), // Job is printing
     PAPEROUT(NativeJobStatus.PAPEROUT, 0x00000040), // Printer is out of paper
-    RETAINED(NativeJobStatus.RETAINED, 0x00002000), // Windows Vista and later: Job has been retained in the print queue and cannot be deleted
-    PRINTED(NativeJobStatus.PRINTED, 0x00000080), // Job has printed
+    PRINTED(NativeJobStatus.COMPLETE, 0x00000080), // Job has printed
     DELETED(NativeJobStatus.DELETED, 0x00000100), // Job has been deleted
     BLOCKED_DEVQ(NativeJobStatus.ABORTED, 0x00000200), // The driver cannot print the job
-    USER_INTERVENTION(NativeJobStatus.USER_INTERVENTION, 0x40000000), // Printer has an error that requires the user to do something
     RESTART(NativeJobStatus.RESTART, 0x00000800), // Job has been restarted
-    COMPLETE(NativeJobStatus.COMPLETE, 0x00001000), // Windows XP and later: Job is sent to the printer, but the job may not be printed yet
-    RENDERING_LOCALLY(NativeJobStatus.RENDERING_LOCALLY, 0x00004000); // Job rendering locally on the client
+    COMPLETE(NativeJobStatus.PRINTED, 0x00001000), // Windows XP and later: Job is sent to the printer, but the job may not be printed yet
+    RETAINED(NativeJobStatus.RETAINED, 0x00002000), // Windows Vista and later: Job has been retained in the print queue and cannot be deleted
+    RENDERING_LOCALLY(NativeJobStatus.RENDERING_LOCALLY, 0x00004000), // Job rendering locally on the client
+    USER_INTERVENTION(NativeJobStatus.USER_INTERVENTION, 0x40000000); // Printer has an error that requires the user to do something
 
     private static SortedMap<Integer,NativeJobStatus> sortedLookupTable;
 

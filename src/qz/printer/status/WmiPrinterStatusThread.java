@@ -8,9 +8,7 @@ import org.slf4j.LoggerFactory;
 import qz.printer.status.printer.NativePrinterStatus;
 import qz.printer.status.printer.WmiPrinterStatusMap;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.*;
 
 import static com.sun.jna.platform.win32.Winspool.*;
 import static qz.printer.status.job.WmiJobStatusMap.DELETED;
@@ -22,13 +20,19 @@ public class WmiPrinterStatusThread extends Thread {
     private boolean closing = false;
     private final String printerName;
     private final Winspool spool = Winspool.INSTANCE;
-    private int lastStatus = -1;
-    private String docName = "InvalidName";
 
     private WinNT.HANDLE hChangeObject;
     private WinDef.DWORDByReference pdwChangeResult;
 
+    private HashMap<Integer, String> docNames = new HashMap<>();
+    private HashMap<Integer, ArrayList<Integer>> pendingJobStatuses = new HashMap<>();
     private HashMap<Integer, Integer> lastJobStatusCodes = new HashMap<>();
+
+    private static ArrayList<String> invalidNames = new ArrayList<String>() {{
+        add("Local Downlevel Document");
+        add("Remote Downlevel Document");
+        add(null);
+    }};
 
     Winspool.PRINTER_NOTIFY_OPTIONS listenOptions;
     Winspool.PRINTER_NOTIFY_OPTIONS statusOptions;
@@ -91,32 +95,10 @@ public class WmiPrinterStatusThread extends Thread {
                 Winspool.PRINTER_NOTIFY_INFO data = Structure.newInstance(Winspool.PRINTER_NOTIFY_INFO.class, dataPointer.getValue());
                 data.read();
 
-                // The element containing our Doc name is not always the first item
-                // fixme this operates on the assumption that we will only see 1 document name per batch. Test and remove me + debuggingBool
-                boolean debuggingBool = false;
                 for (Winspool.PRINTER_NOTIFY_INFO_DATA d: data.aData) {
-                    if (d.Type == JOB_NOTIFY_TYPE && d.Field == JOB_NOTIFY_FIELD_DOCUMENT) {
-                        if (debuggingBool) log.error("Multiple doc names passed, this is very bad.");
-                        debuggingBool = true;
-                        docName = d.NotifyData.Data.pBuf.getWideString(0);
-                    }
+                    decodeJobStatus(d);
                 }
-                for (Winspool.PRINTER_NOTIFY_INFO_DATA d: data.aData) {
-                    if (d.Field == JOB_NOTIFY_FIELD_STATUS) {
-                        int newStatusCode = d.NotifyData.adwData[0];
-                        int oldStatusCode = lastJobStatusCodes.getOrDefault(d.Id, 0);
-
-                        // This only sets status flags if they are not in oldStatusCode
-                        int statusToReport = newStatusCode & (~oldStatusCode);
-                        StatusMonitor.statusChanged(NativeStatus.fromWmiJobStatus(statusToReport, printerName, d.Id, docName));
-
-                        lastJobStatusCodes.put(d.Id, newStatusCode);
-                        // If this code had the 'DELETED' flag set, remove it from our list
-                        if ((newStatusCode & (int)DELETED.getRawCode())!= 0) {
-                            lastJobStatusCodes.remove(d.Id);
-                        }
-                    }
-                }
+                sendPendingStatuses();
                 Winspool.INSTANCE.FreePrinterNotifyInfo(data.getPointer());
             } else {
                 //Todo why do we end up here so often, what causes dataPointer to be null?
@@ -126,8 +108,54 @@ public class WmiPrinterStatusThread extends Thread {
         }
     }
 
-    private Status[] decodeJobStatus(Winspool.PRINTER_NOTIFY_INFO_DATA data) {
-        return null;
+    private void decodeJobStatus(Winspool.PRINTER_NOTIFY_INFO_DATA d) {
+        // The element containing our Doc name is not always the first item
+        // fixme this operates on the assumption that we will only see 1 document name per batch. Test and remove me
+        if (d.Type == JOB_NOTIFY_TYPE && d.Field == JOB_NOTIFY_FIELD_DOCUMENT) {
+            docNames.put(d.Id, d.NotifyData.Data.pBuf.getWideString(0));
+        } else if (d.Field == JOB_NOTIFY_FIELD_STATUS) {
+            ArrayList<Integer> statusList = pendingJobStatuses.get(d.Id);
+
+            int newStatusCode = d.NotifyData.adwData[0];
+            int oldStatusCode = lastJobStatusCodes.getOrDefault(d.Id, 0);
+
+            // This only sets status flags if they are not in oldStatusCode
+            int statusToReport = newStatusCode & (~oldStatusCode);
+            if (statusToReport != 0) {
+                if  (statusList == null) {
+                    statusList = new ArrayList<>();
+                    pendingJobStatuses.put(d.Id, statusList);
+                }
+                statusList.add(statusToReport);
+            }
+
+            lastJobStatusCodes.put(d.Id, newStatusCode);
+        }
+    }
+
+    private void sendPendingStatuses() {
+        if (pendingJobStatuses.size() == 0) return;
+        for (Iterator<Map.Entry<Integer, ArrayList<Integer>>> i = pendingJobStatuses.entrySet().iterator(); i.hasNext();) {
+            Map.Entry<Integer, ArrayList<Integer>> jobCodesEntry = i.next();
+            ArrayList<Integer> codes = jobCodesEntry.getValue();
+            int jobId =jobCodesEntry.getKey();
+            String docName = docNames.get(jobId);
+
+            Boolean wasDeleted = (codes.get(codes.size() - 1) & (int)DELETED.getRawCode()) != 0;
+            // if the name is valid, or we end with a DELETED status, send the pending statuses
+            if (!invalidNames.contains(docName) || wasDeleted) {
+                for (int code: codes) {
+                    StatusMonitor.statusChanged(NativeStatus.fromWmiJobStatus(code, printerName, jobId, docName));
+                }
+                i.remove();
+            }
+            if (wasDeleted) {
+                docNames.remove(jobId);
+                lastJobStatusCodes.remove(jobId);
+                //Todo Remove this debugging log
+                log.warn("Job Lists now down to  {} {} {}", pendingJobStatuses.size(), docNames.size(), lastJobStatusCodes.size());
+            }
+        }
     }
 
     private void issueError() {

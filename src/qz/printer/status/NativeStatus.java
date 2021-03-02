@@ -38,9 +38,11 @@ public interface NativeStatus {
     }
 
     static Status[] fromWmiPrinterStatus(int bitwiseCode, String printer) {
-        if (bitwiseCode == 0) return new Status[] {new Status(NativePrinterStatus.OK, printer, 0)};
-
         int[] rawCodes = ByteUtilities.unwind(bitwiseCode);
+        // WmiPrinterStatusMap has an explicit 0x00000000 = OK, so we'll need to shim that
+        if(rawCodes.length == 0) {
+            rawCodes = new int[] { (Integer)WmiPrinterStatusMap.OK.getRawCode() };
+        }
         NativePrinterStatus[] parentCodes = new NativePrinterStatus[rawCodes.length];
         for(int i = 0; i < rawCodes.length; i++) {
             parentCodes[i] = WmiPrinterStatusMap.match(rawCodes[i]);

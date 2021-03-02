@@ -14,6 +14,7 @@ import java.util.*;
 import static com.sun.jna.platform.win32.Winspool.JOB_NOTIFY_FIELD_DOCUMENT;
 import static com.sun.jna.platform.win32.Winspool.JOB_NOTIFY_FIELD_STATUS;
 import static com.sun.jna.platform.win32.Winspool.PRINTER_NOTIFY_FIELD_STATUS;
+import static org.apache.log4j.Level.*;
 
 public class WmiPrinterStatusThread extends Thread {
 
@@ -30,6 +31,25 @@ public class WmiPrinterStatusThread extends Thread {
     private HashMap<Integer, String> docNames = new HashMap<>();
     private HashMap<Integer, ArrayList<Integer>> pendingJobStatuses = new HashMap<>();
     private HashMap<Integer, Integer> lastJobStatusCodes = new HashMap<>();
+
+    // Printer status isn't very good about reporting recovered errors, we'll try to track them manually
+    private static ArrayList<NativeStatus> notOk = new ArrayList<>(Arrays.asList(
+            NativePrinterStatus.PAUSED,
+            NativePrinterStatus.ERROR,
+            NativePrinterStatus.PAPER_JAM,
+            NativePrinterStatus.PAPER_OUT,
+            NativePrinterStatus.MANUAL_FEED,
+            NativePrinterStatus.PAPER_PROBLEM,
+            NativePrinterStatus.OFFLINE,
+            NativePrinterStatus.OUTPUT_BIN_FULL,
+            NativePrinterStatus.NOT_AVAILABLE,
+            NativePrinterStatus.NO_TONER,
+            NativePrinterStatus.USER_INTERVENTION,
+            NativePrinterStatus.OUT_OF_MEMORY,
+            NativePrinterStatus.DOOR_OPEN,
+            NativePrinterStatus.SERVER_UNKNOWN,
+            NativePrinterStatus.UNMAPPED
+    ));
 
     Winspool.PRINTER_NOTIFY_OPTIONS listenOptions;
     Winspool.PRINTER_NOTIFY_OPTIONS statusOptions;
@@ -116,7 +136,14 @@ public class WmiPrinterStatusThread extends Thread {
         if (d.Type == Winspool.PRINTER_NOTIFY_TYPE) {
             if (d.Field == PRINTER_NOTIFY_FIELD_STATUS) {
                 if (d.NotifyData.adwData[0] !=lastPrinterStatus) {
-                    StatusMonitor.statusChanged(NativeStatus.fromWmiPrinterStatus(d.NotifyData.adwData[0], printerName));
+                    Status[] statuses = NativeStatus.fromWmiPrinterStatus(d.NotifyData.adwData[0], printerName);
+                    for(Status status : statuses) {
+                        if(notOk.contains(status)) {
+                            log.info("{} reported {} and that it's not OK, we'll send a dedicated OK when it clears", printerName, status);
+                            // TODO: actually implement what the above message says
+                        }
+                    }
+                    StatusMonitor.statusChanged(statuses);
                     lastPrinterStatus = d.NotifyData.adwData[0];
                 }
             } else {

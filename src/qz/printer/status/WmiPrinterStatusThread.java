@@ -5,13 +5,15 @@ import com.sun.jna.platform.win32.*;
 import com.sun.jna.ptr.PointerByReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.printer.status.job.WmiJobStatusMap;
 import qz.printer.status.printer.NativePrinterStatus;
 import qz.printer.status.printer.WmiPrinterStatusMap;
 
 import java.util.*;
 
-import static com.sun.jna.platform.win32.Winspool.*;
-import static qz.printer.status.job.WmiJobStatusMap.DELETED;
+import static com.sun.jna.platform.win32.Winspool.JOB_NOTIFY_FIELD_DOCUMENT;
+import static com.sun.jna.platform.win32.Winspool.JOB_NOTIFY_FIELD_STATUS;
+import static com.sun.jna.platform.win32.Winspool.PRINTER_NOTIFY_FIELD_STATUS;
 
 public class WmiPrinterStatusThread extends Thread {
 
@@ -41,11 +43,11 @@ public class WmiPrinterStatusThread extends Thread {
         listenOptions.Flags = Winspool.PRINTER_NOTIFY_OPTIONS_REFRESH;
         listenOptions.Count = 2;
 
-        PRINTER_NOTIFY_OPTIONS_TYPE.ByReference[] mem = (PRINTER_NOTIFY_OPTIONS_TYPE.ByReference[])
-                new PRINTER_NOTIFY_OPTIONS_TYPE.ByReference().toArray(2);
-        mem[0].Type = JOB_NOTIFY_TYPE;
+        Winspool.PRINTER_NOTIFY_OPTIONS_TYPE.ByReference[] mem = (Winspool.PRINTER_NOTIFY_OPTIONS_TYPE.ByReference[])
+                new Winspool.PRINTER_NOTIFY_OPTIONS_TYPE.ByReference().toArray(2);
+        mem[0].Type = Winspool.JOB_NOTIFY_TYPE;
         mem[0].setFields(new short[] { JOB_NOTIFY_FIELD_STATUS, JOB_NOTIFY_FIELD_DOCUMENT });
-        mem[1].Type = PRINTER_NOTIFY_TYPE;
+        mem[1].Type = Winspool.PRINTER_NOTIFY_TYPE;
         mem[1].setFields(new short[] { PRINTER_NOTIFY_FIELD_STATUS });
         listenOptions.pTypes = mem[0];
 
@@ -54,11 +56,11 @@ public class WmiPrinterStatusThread extends Thread {
         //statusOptions.Flags = Winspool.PRINTER_NOTIFY_OPTIONS_REFRESH;
         statusOptions.Count = 2;
 
-        mem = (PRINTER_NOTIFY_OPTIONS_TYPE.ByReference[])
-                new PRINTER_NOTIFY_OPTIONS_TYPE.ByReference().toArray(2);
-        mem[0].Type = JOB_NOTIFY_TYPE;
+        mem = (Winspool.PRINTER_NOTIFY_OPTIONS_TYPE.ByReference[])
+                new Winspool.PRINTER_NOTIFY_OPTIONS_TYPE.ByReference().toArray(2);
+        mem[0].Type = Winspool.JOB_NOTIFY_TYPE;
         mem[0].setFields(new short[] { JOB_NOTIFY_FIELD_STATUS, JOB_NOTIFY_FIELD_DOCUMENT });
-        mem[1].Type = PRINTER_NOTIFY_TYPE;
+        mem[1].Type = Winspool.PRINTER_NOTIFY_TYPE;
         mem[1].setFields(new short[] { PRINTER_NOTIFY_FIELD_STATUS });
         statusOptions.pTypes = mem[0];
     }
@@ -111,7 +113,7 @@ public class WmiPrinterStatusThread extends Thread {
     }
 
     private void decodeJobStatus(Winspool.PRINTER_NOTIFY_INFO_DATA d) {
-        if (d.Type == PRINTER_NOTIFY_TYPE) {
+        if (d.Type == Winspool.PRINTER_NOTIFY_TYPE) {
             if (d.Field == PRINTER_NOTIFY_FIELD_STATUS) {
                 if (d.NotifyData.adwData[0] !=lastPrinterStatus) {
                     StatusMonitor.statusChanged(NativeStatus.fromWmiPrinterStatus(d.NotifyData.adwData[0], printerName));
@@ -123,7 +125,7 @@ public class WmiPrinterStatusThread extends Thread {
             }
         }
         // The element containing our Doc name is not always the first item
-        if (d.Type == JOB_NOTIFY_TYPE && d.Field == JOB_NOTIFY_FIELD_DOCUMENT) {
+        if (d.Type == Winspool.JOB_NOTIFY_TYPE && d.Field == JOB_NOTIFY_FIELD_DOCUMENT) {
             docNames.put(d.Id, d.NotifyData.Data.pBuf.getWideString(0));
         } else if (d.Field == JOB_NOTIFY_FIELD_STATUS) {
             ArrayList<Integer> statusList = pendingJobStatuses.get(d.Id);
@@ -158,7 +160,7 @@ public class WmiPrinterStatusThread extends Thread {
             i.remove();
 
             // If the job was deleted, remove it from our lists
-            if ((codes.get(codes.size() - 1) & (int)DELETED.getRawCode()) != 0) {
+            if ((codes.get(codes.size() - 1) & (int)WmiJobStatusMap.DELETED.getRawCode()) != 0) {
                 docNames.remove(jobId);
                 lastJobStatusCodes.remove(jobId);
             }

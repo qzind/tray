@@ -38,6 +38,8 @@ public interface NativeStatus {
     }
 
     static Status[] fromWmiPrinterStatus(int bitwiseCode, String printer) {
+        if (bitwiseCode == 0) return new Status[] {new Status(NativePrinterStatus.OK, printer, 0)};
+
         int[] rawCodes = ByteUtilities.unwind(bitwiseCode);
         NativePrinterStatus[] parentCodes = new NativePrinterStatus[rawCodes.length];
         for(int i = 0; i < rawCodes.length; i++) {

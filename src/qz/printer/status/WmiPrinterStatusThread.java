@@ -20,6 +20,7 @@ public class WmiPrinterStatusThread extends Thread {
     private boolean closing = false;
     private final String printerName;
     private final Winspool spool = Winspool.INSTANCE;
+    private int lastPrinterStatus = -1;
 
     private WinNT.HANDLE hChangeObject;
     private WinDef.DWORDByReference pdwChangeResult;
@@ -27,12 +28,6 @@ public class WmiPrinterStatusThread extends Thread {
     private HashMap<Integer, String> docNames = new HashMap<>();
     private HashMap<Integer, ArrayList<Integer>> pendingJobStatuses = new HashMap<>();
     private HashMap<Integer, Integer> lastJobStatusCodes = new HashMap<>();
-
-    private static ArrayList<String> invalidNames = new ArrayList<String>() {{
-        add("Local Downlevel Document");
-        add("Remote Downlevel Document");
-        add(null);
-    }};
 
     Winspool.PRINTER_NOTIFY_OPTIONS listenOptions;
     Winspool.PRINTER_NOTIFY_OPTIONS statusOptions;
@@ -44,21 +39,28 @@ public class WmiPrinterStatusThread extends Thread {
         listenOptions = new Winspool.PRINTER_NOTIFY_OPTIONS();
         listenOptions.Version = 2;
         listenOptions.Flags = Winspool.PRINTER_NOTIFY_OPTIONS_REFRESH;
-        listenOptions.Count = 1;
-        PRINTER_NOTIFY_OPTIONS_TYPE.ByReference listenOptionsType = new Winspool.PRINTER_NOTIFY_OPTIONS_TYPE.ByReference();
-        listenOptionsType.Type = JOB_NOTIFY_TYPE;
-        listenOptionsType.setFields(new short[] { JOB_NOTIFY_FIELD_STATUS, JOB_NOTIFY_FIELD_DOCUMENT });
-        listenOptionsType.toArray(1);
-        listenOptions.pTypes = listenOptionsType;
+        listenOptions.Count = 2;
+
+        PRINTER_NOTIFY_OPTIONS_TYPE.ByReference[] mem = (PRINTER_NOTIFY_OPTIONS_TYPE.ByReference[])
+                new PRINTER_NOTIFY_OPTIONS_TYPE.ByReference().toArray(2);
+        mem[0].Type = JOB_NOTIFY_TYPE;
+        mem[0].setFields(new short[] { JOB_NOTIFY_FIELD_STATUS, JOB_NOTIFY_FIELD_DOCUMENT });
+        mem[1].Type = PRINTER_NOTIFY_TYPE;
+        mem[1].setFields(new short[] { PRINTER_NOTIFY_FIELD_STATUS });
+        listenOptions.pTypes = mem[0];
 
         statusOptions = new Winspool.PRINTER_NOTIFY_OPTIONS();
         statusOptions.Version = 2;
-        statusOptions.Count = 0;
-        PRINTER_NOTIFY_OPTIONS_TYPE.ByReference statusOptionsType = new Winspool.PRINTER_NOTIFY_OPTIONS_TYPE.ByReference();
-        statusOptionsType.Type = JOB_NOTIFY_TYPE;
-        statusOptionsType.setFields(new short[] { JOB_NOTIFY_FIELD_STATUS, JOB_NOTIFY_FIELD_DOCUMENT });
-        statusOptionsType.toArray(1);
-        statusOptions.pTypes = statusOptionsType;
+        //statusOptions.Flags = Winspool.PRINTER_NOTIFY_OPTIONS_REFRESH;
+        statusOptions.Count = 2;
+
+        mem = (PRINTER_NOTIFY_OPTIONS_TYPE.ByReference[])
+                new PRINTER_NOTIFY_OPTIONS_TYPE.ByReference().toArray(2);
+        mem[0].Type = JOB_NOTIFY_TYPE;
+        mem[0].setFields(new short[] { JOB_NOTIFY_FIELD_STATUS, JOB_NOTIFY_FIELD_DOCUMENT });
+        mem[1].Type = PRINTER_NOTIFY_TYPE;
+        mem[1].setFields(new short[] { PRINTER_NOTIFY_FIELD_STATUS });
+        statusOptions.pTypes = mem[0];
     }
 
     @Override
@@ -109,8 +111,18 @@ public class WmiPrinterStatusThread extends Thread {
     }
 
     private void decodeJobStatus(Winspool.PRINTER_NOTIFY_INFO_DATA d) {
+        if (d.Type == PRINTER_NOTIFY_TYPE) {
+            if (d.Field == PRINTER_NOTIFY_FIELD_STATUS) {
+                if (d.NotifyData.adwData[0] !=lastPrinterStatus) {
+                    StatusMonitor.statusChanged(NativeStatus.fromWmiPrinterStatus(d.NotifyData.adwData[0], printerName));
+                    lastPrinterStatus = d.NotifyData.adwData[0];
+                }
+            } else {
+                // todo delete this
+                log.warn("Unknown event field {}", d.Field);
+            }
+        }
         // The element containing our Doc name is not always the first item
-        // fixme this operates on the assumption that we will only see 1 document name per batch. Test and remove me
         if (d.Type == JOB_NOTIFY_TYPE && d.Field == JOB_NOTIFY_FIELD_DOCUMENT) {
             docNames.put(d.Id, d.NotifyData.Data.pBuf.getWideString(0));
         } else if (d.Field == JOB_NOTIFY_FIELD_STATUS) {
@@ -138,22 +150,17 @@ public class WmiPrinterStatusThread extends Thread {
         for (Iterator<Map.Entry<Integer, ArrayList<Integer>>> i = pendingJobStatuses.entrySet().iterator(); i.hasNext();) {
             Map.Entry<Integer, ArrayList<Integer>> jobCodesEntry = i.next();
             ArrayList<Integer> codes = jobCodesEntry.getValue();
-            int jobId =jobCodesEntry.getKey();
-            String docName = docNames.get(jobId);
+            int jobId = jobCodesEntry.getKey();
 
-            Boolean wasDeleted = (codes.get(codes.size() - 1) & (int)DELETED.getRawCode()) != 0;
-            // if the name is valid, or we end with a DELETED status, send the pending statuses
-            if (!invalidNames.contains(docName) || wasDeleted) {
-                for (int code: codes) {
-                    StatusMonitor.statusChanged(NativeStatus.fromWmiJobStatus(code, printerName, jobId, docName));
-                }
-                i.remove();
+            for (int code: codes) {
+                StatusMonitor.statusChanged(NativeStatus.fromWmiJobStatus(code, printerName, jobId, docNames.get(jobId)));
             }
-            if (wasDeleted) {
+            i.remove();
+
+            // If the job was deleted, remove it from our lists
+            if ((codes.get(codes.size() - 1) & (int)DELETED.getRawCode()) != 0) {
                 docNames.remove(jobId);
                 lastJobStatusCodes.remove(jobId);
-                //Todo Remove this debugging log
-                log.warn("Job Lists now down to  {} {} {}", pendingJobStatuses.size(), docNames.size(), lastJobStatusCodes.size());
             }
         }
     }

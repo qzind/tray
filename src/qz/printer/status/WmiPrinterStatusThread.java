@@ -20,6 +20,7 @@ public class WmiPrinterStatusThread extends Thread {
     private final Winspool spool = Winspool.INSTANCE;
     private int lastPrinterStatus = -1;
     private boolean wasOk = false;
+    private boolean holdsJobs = false;
 
     private WinNT.HANDLE hChangeObject;
     private WinDef.DWORDByReference pdwChangeResult;
@@ -63,7 +64,7 @@ public class WmiPrinterStatusThread extends Thread {
         mem[0].Type = Winspool.JOB_NOTIFY_TYPE;
         mem[0].setFields(new short[] {Winspool.JOB_NOTIFY_FIELD_STATUS, Winspool.JOB_NOTIFY_FIELD_DOCUMENT });
         mem[1].Type = Winspool.PRINTER_NOTIFY_TYPE;
-        mem[1].setFields(new short[] { Winspool.PRINTER_NOTIFY_FIELD_STATUS });
+        mem[1].setFields(new short[] {Winspool.PRINTER_NOTIFY_FIELD_STATUS, Winspool.PRINTER_NOTIFY_FIELD_ATTRIBUTES });
         listenOptions.pTypes = mem[0];
 
         statusOptions = new Winspool.PRINTER_NOTIFY_OPTIONS();
@@ -76,7 +77,7 @@ public class WmiPrinterStatusThread extends Thread {
         mem[0].Type = Winspool.JOB_NOTIFY_TYPE;
         mem[0].setFields(new short[] { Winspool.JOB_NOTIFY_FIELD_STATUS, Winspool.JOB_NOTIFY_FIELD_DOCUMENT });
         mem[1].Type = Winspool.PRINTER_NOTIFY_TYPE;
-        mem[1].setFields(new short[] { Winspool.PRINTER_NOTIFY_FIELD_STATUS });
+        mem[1].setFields(new short[] { Winspool.PRINTER_NOTIFY_FIELD_STATUS, Winspool.PRINTER_NOTIFY_FIELD_ATTRIBUTES });
         statusOptions.pTypes = mem[0];
     }
 
@@ -97,6 +98,13 @@ public class WmiPrinterStatusThread extends Thread {
     private void attachToSystem() {
         WinNT.HANDLEByReference phPrinterObject = new WinNT.HANDLEByReference();
         spool.OpenPrinter(printerName, phPrinterObject, null);
+
+        for (Winspool.PRINTER_INFO_2 printerInfo : WinspoolUtil.getPrinterInfo2()) {
+            if (printerInfo.pPrinterName.equals(printerName)) {
+                holdsJobs = (printerInfo.Attributes & Winspool.PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS) > 0;
+            }
+        }
+
         pdwChangeResult = new WinDef.DWORDByReference();
         //The second param determines what kind of event releases our lock
         //See https://msdn.microsoft.com/en-us/library/windows/desktop/dd162722(v=vs.85).aspx
@@ -142,6 +150,12 @@ public class WmiPrinterStatusThread extends Thread {
 
                     lastPrinterStatus = d.NotifyData.adwData[0];
                 }
+            } else if (d.Field == Winspool.PRINTER_NOTIFY_FIELD_ATTRIBUTES) {
+                for (Winspool.PRINTER_INFO_2 printerInfo : WinspoolUtil.getPrinterInfo2()) {
+                    if (printerInfo.pPrinterName.equals(printerName)) {
+                        holdsJobs = (printerInfo.Attributes & Winspool.PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS) > 0;
+                    }
+                }
             } else {
                 // todo delete this
                 log.warn("Unknown event field {}", d.Field);
@@ -152,21 +166,14 @@ public class WmiPrinterStatusThread extends Thread {
             docNames.put(d.Id, d.NotifyData.Data.pBuf.getWideString(0));
         } else if (d.Field == Winspool.JOB_NOTIFY_FIELD_STATUS) {
             ArrayList<Integer> statusList = pendingJobStatuses.get(d.Id);
-
-            int newStatusCode = d.NotifyData.adwData[0];
-            int oldStatusCode = lastJobStatusCodes.getOrDefault(d.Id, 0);
-
-            // This only sets status flags if they are not in oldStatusCode
-            int statusToReport = newStatusCode & (~oldStatusCode);
-            if (statusToReport != 0) {
-                if  (statusList == null) {
-                    statusList = new ArrayList<>();
-                    pendingJobStatuses.put(d.Id, statusList);
-                }
-                statusList.add(statusToReport);
+            if (statusList == null) {
+                statusList = new ArrayList<>();
+                pendingJobStatuses.put(d.Id, statusList);
             }
+            //Todo Remove this debugging log
+            log.warn("code {}", d.NotifyData.adwData[0]);
 
-            lastJobStatusCodes.put(d.Id, newStatusCode);
+            statusList.add(d.NotifyData.adwData[0]);
         }
     }
 
@@ -178,15 +185,35 @@ public class WmiPrinterStatusThread extends Thread {
             int jobId = jobCodesEntry.getKey();
 
             for (int code: codes) {
-                StatusMonitor.statusChanged(NativeStatus.fromWmiJobStatus(code, printerName, jobId, docNames.get(jobId)));
+                int newStatusCode = code;
+                int oldStatusCode = lastJobStatusCodes.getOrDefault(jobId, 0);
+
+                // This only sets status flags if they are not in oldStatusCode
+                int statusToReport = newStatusCode & (~oldStatusCode);
+                if (statusToReport != 0) {
+                    StatusMonitor.statusChanged(NativeStatus.fromWmiJobStatus(statusToReport, printerName, jobId, docNames.get(jobId)));
+                }
+                lastJobStatusCodes.put(jobId, newStatusCode);
             }
             i.remove();
 
-            // If the job was deleted, remove it from our lists
-            if ((codes.get(codes.size() - 1) & (int)WmiJobStatusMap.DELETED.getRawCode()) != 0) {
+
+            boolean isFinalCode = false;
+            int code = codes.get(codes.size() - 1);
+            // If that was the last status we will see from a job, remove it from our lists.
+
+            isFinalCode |= (code & (int)WmiJobStatusMap.DELETED.getRawCode()) > 0;
+            // If the printer holds jobs, the last event we will see is 'printed' or 'deleted', otherwise it will be just 'deleted'.
+            if (holdsJobs) {
+                isFinalCode |= (code & (int)WmiJobStatusMap.PRINTED.getRawCode()) > 0;
+                isFinalCode &= (code & (int)WmiJobStatusMap.PRINTING.getRawCode()) == 0;
+            }
+            if (isFinalCode) {
                 docNames.remove(jobId);
                 lastJobStatusCodes.remove(jobId);
             }
+            //Todo Remove this debugging log
+            log.warn("We remember {} jobs", docNames.size());
         }
     }
 

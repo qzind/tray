@@ -4,7 +4,6 @@ import qz.printer.PrintServiceMatcher;
 import qz.printer.info.NativePrinter;
 import qz.printer.status.job.NativeJobStatus;
 import qz.printer.status.printer.NativePrinterStatus;
-import qz.printer.status.printer.WmiPrinterStatusMap;
 import qz.utils.SystemUtilities;
 
 /**
@@ -76,6 +75,16 @@ public class Status {
 
     public int getJobId() {
         return jobId;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj != null && obj instanceof Status) {
+            Status status = (Status)obj;
+            boolean stuff =  status.eventType == eventType && status.printer.equals(printer) && status.jobId == jobId && rawCode.equals(status.rawCode);
+            return stuff;
+        }
+        return super.equals(obj);
     }
 
     public String toString() {

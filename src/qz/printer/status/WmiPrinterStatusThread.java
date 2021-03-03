@@ -30,7 +30,7 @@ public class WmiPrinterStatusThread extends Thread {
     private HashMap<Integer, Integer> lastJobStatusCodes = new HashMap<>();
 
     // Printer status isn't very good about reporting recovered errors, we'll try to track them manually
-    private static final int notOk =
+    private static final int notOkMask =
             (int)WmiPrinterStatusMap.PAUSED.getRawCode() |
             (int)WmiPrinterStatusMap.ERROR.getRawCode() |
             (int)WmiPrinterStatusMap.PAPER_JAM.getRawCode() |
@@ -69,7 +69,8 @@ public class WmiPrinterStatusThread extends Thread {
 
         statusOptions = new Winspool.PRINTER_NOTIFY_OPTIONS();
         statusOptions.Version = 2;
-        //statusOptions.Flags = Winspool.PRINTER_NOTIFY_OPTIONS_REFRESH;
+        // Status option 'refresh' leads to a loss of data associated with our lock. I don't know why.
+        // statusOptions.Flags = Winspool.PRINTER_NOTIFY_OPTIONS_REFRESH;
         statusOptions.Count = 2;
 
         mem = (Winspool.PRINTER_NOTIFY_OPTIONS_TYPE.ByReference[])
@@ -99,6 +100,8 @@ public class WmiPrinterStatusThread extends Thread {
         WinNT.HANDLEByReference phPrinterObject = new WinNT.HANDLEByReference();
         spool.OpenPrinter(printerName, phPrinterObject, null);
 
+        // Determine if the printer deletes jobs after printing
+        // todo this should probably be done once, instead of once for every printer thread
         for (Winspool.PRINTER_INFO_2 printerInfo : WinspoolUtil.getPrinterInfo2()) {
             if (printerInfo.pPrinterName.equals(printerName)) {
                 holdsJobs = (printerInfo.Attributes & Winspool.PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS) > 0;
@@ -137,43 +140,48 @@ public class WmiPrinterStatusThread extends Thread {
 
     private void decodeJobStatus(Winspool.PRINTER_NOTIFY_INFO_DATA d) {
         if (d.Type == Winspool.PRINTER_NOTIFY_TYPE) {
+            // Printer Status Changed
             if (d.Field == Winspool.PRINTER_NOTIFY_FIELD_STATUS) {
                 if (d.NotifyData.adwData[0] != lastPrinterStatus) {
                     Status[] statuses = NativeStatus.fromWmiPrinterStatus(d.NotifyData.adwData[0], printerName);
                     StatusMonitor.statusChanged(statuses);
 
-                    boolean isOk = (d.NotifyData.adwData[0] & notOk) == 0;
+                    // If the printer was in an error state before and is not now, send an 'OK'
+                    boolean isOk = (d.NotifyData.adwData[0] & notOkMask) == 0;
                     if (isOk && !wasOk) {
+                        // If the status is 0x00000000, fromWmiPrinterStatus returns 'OK'. We don't want to send a duplicate.
                         if (d.NotifyData.adwData[0] != 0) StatusMonitor.statusChanged(new Status[]{new Status(NativePrinterStatus.OK, printerName, 0)});
                     }
                     wasOk = isOk;
 
                     lastPrinterStatus = d.NotifyData.adwData[0];
                 }
+            // Printer Attributes Changed
             } else if (d.Field == Winspool.PRINTER_NOTIFY_FIELD_ATTRIBUTES) {
-                for (Winspool.PRINTER_INFO_2 printerInfo : WinspoolUtil.getPrinterInfo2()) {
-                    if (printerInfo.pPrinterName.equals(printerName)) {
-                        holdsJobs = (printerInfo.Attributes & Winspool.PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS) > 0;
-                    }
-                }
+                // Check to see if "hold jobs" changed
+                holdsJobs = (d.NotifyData.adwData[0] & Winspool.PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS) > 0;
             } else {
                 // todo delete this
                 log.warn("Unknown event field {}", d.Field);
             }
-        }
-        // The element containing our Doc name is not always the first item
-        if (d.Type == Winspool.JOB_NOTIFY_TYPE && d.Field == Winspool.JOB_NOTIFY_FIELD_DOCUMENT) {
-            docNames.put(d.Id, d.NotifyData.Data.pBuf.getWideString(0));
-        } else if (d.Field == Winspool.JOB_NOTIFY_FIELD_STATUS) {
-            ArrayList<Integer> statusList = pendingJobStatuses.get(d.Id);
-            if (statusList == null) {
-                statusList = new ArrayList<>();
-                pendingJobStatuses.put(d.Id, statusList);
-            }
-            //Todo Remove this debugging log
-            log.warn("code {}", d.NotifyData.adwData[0]);
+        } else if (d.Type == Winspool.JOB_NOTIFY_TYPE) {
+            // Job Name Set or Changed
+            if (d.Field == Winspool.JOB_NOTIFY_FIELD_DOCUMENT) {
+                // The element containing our Doc name is not always the first item of the event
+                // The Job name is only sent once, catalog it for later statuses
+                docNames.put(d.Id, d.NotifyData.Data.pBuf.getWideString(0));
+            // Job Status Changed
+            } else if (d.Field == Winspool.JOB_NOTIFY_FIELD_STATUS) {
+                ArrayList<Integer> statusList = pendingJobStatuses.get(d.Id);
+                if (statusList == null) {
+                    statusList = new ArrayList<>();
+                    pendingJobStatuses.put(d.Id, statusList);
+                }
+                //Todo Remove this debugging log
+                log.warn("code {}", d.NotifyData.adwData[0]);
 
-            statusList.add(d.NotifyData.adwData[0]);
+                statusList.add(d.NotifyData.adwData[0]);
+            }
         }
     }
 
@@ -198,16 +206,15 @@ public class WmiPrinterStatusThread extends Thread {
             i.remove();
 
 
-            boolean isFinalCode = false;
             int code = codes.get(codes.size() - 1);
-            // If that was the last status we will see from a job, remove it from our lists.
+            boolean isFinalCode = (code & (int)WmiJobStatusMap.DELETED.getRawCode()) > 0;
 
-            isFinalCode |= (code & (int)WmiJobStatusMap.DELETED.getRawCode()) > 0;
-            // If the printer holds jobs, the last event we will see is 'printed' or 'deleted', otherwise it will be just 'deleted'.
+            // If the printer holds jobs, the last event we will see is 'printed' or 'deleted' and not 'printing', otherwise it will be just 'deleted'.
             if (holdsJobs) {
                 isFinalCode |= (code & (int)WmiJobStatusMap.PRINTED.getRawCode()) > 0;
                 isFinalCode &= (code & (int)WmiJobStatusMap.PRINTING.getRawCode()) == 0;
             }
+            // If that was the last status we will see from a job, remove it from our lists.
             if (isFinalCode) {
                 docNames.remove(jobId);
                 lastJobStatusCodes.remove(jobId);

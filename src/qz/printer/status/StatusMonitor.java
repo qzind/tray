@@ -35,7 +35,8 @@ public class StatusMonitor {
         for (Winspool.PRINTER_INFO_2 printer : printers) {
             printerNameList.add(printer.pPrinterName);
             if (!notificationThreadCollection.containsKey(printer.pPrinterName)) {
-                Thread notificationThread = new WmiPrinterStatusThread(printer.pPrinterName);
+                boolean holdsJobs = (printer.Attributes & Winspool.PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS) > 0;
+                Thread notificationThread = new WmiPrinterStatusThread(printer.pPrinterName, holdsJobs);
                 notificationThreadCollection.put(printer.pPrinterName, notificationThread);
                 notificationThread.start();
             }

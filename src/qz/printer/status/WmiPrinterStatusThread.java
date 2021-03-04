@@ -20,7 +20,7 @@ public class WmiPrinterStatusThread extends Thread {
     private final Winspool spool = Winspool.INSTANCE;
     private int lastPrinterStatus = -1;
     private boolean wasOk = false;
-    private boolean holdsJobs = false;
+    private boolean holdsJobs;
 
     private WinNT.HANDLE hChangeObject;
     private WinDef.DWORDByReference pdwChangeResult;
@@ -50,9 +50,15 @@ public class WmiPrinterStatusThread extends Thread {
     Winspool.PRINTER_NOTIFY_OPTIONS listenOptions;
     Winspool.PRINTER_NOTIFY_OPTIONS statusOptions;
 
-    public WmiPrinterStatusThread(String name) {
+    private static final ArrayList<String> invalidNames = new ArrayList<String>() {{
+        add("Local Downlevel Document");
+        add("Remote Downlevel Document");
+    }};
+
+    public WmiPrinterStatusThread(String name, boolean holdsJobs) {
         super("Printer Status Monitor " + name);
         printerName = name;
+        this.holdsJobs = holdsJobs;
 
         listenOptions = new Winspool.PRINTER_NOTIFY_OPTIONS();
         listenOptions.Version = 2;
@@ -99,14 +105,6 @@ public class WmiPrinterStatusThread extends Thread {
     private void attachToSystem() {
         WinNT.HANDLEByReference phPrinterObject = new WinNT.HANDLEByReference();
         spool.OpenPrinter(printerName, phPrinterObject, null);
-
-        // Determine if the printer deletes jobs after printing
-        // todo this should probably be done once, instead of once for every printer thread
-        for (Winspool.PRINTER_INFO_2 printerInfo : WinspoolUtil.getPrinterInfo2()) {
-            if (printerInfo.pPrinterName.equals(printerName)) {
-                holdsJobs = (printerInfo.Attributes & Winspool.PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS) > 0;
-            }
-        }
 
         pdwChangeResult = new WinDef.DWORDByReference();
         //The second param determines what kind of event releases our lock
@@ -191,6 +189,16 @@ public class WmiPrinterStatusThread extends Thread {
             Map.Entry<Integer, ArrayList<Integer>> jobCodesEntry = i.next();
             ArrayList<Integer> codes = jobCodesEntry.getValue();
             int jobId = jobCodesEntry.getKey();
+
+            // Wait until we have a real docName
+            if (invalidNames.contains(docNames.get(jobId))) continue;
+
+            // Workaround for double 'printed' statuses
+            if (holdsJobs && docNames.get(jobId) == null && codes.size() == 1 && codes.get(0) == (int)WmiJobStatusMap.PRINTED.getRawCode()) {
+                i.remove();
+                lastJobStatusCodes.remove(jobId);
+                continue;
+            }
 
             for (int code: codes) {
                 int newStatusCode = code;

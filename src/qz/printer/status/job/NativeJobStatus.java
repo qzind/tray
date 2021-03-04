@@ -20,7 +20,7 @@ public enum NativeJobStatus implements NativeStatus {
     PAPEROUT(Level.WARN),
     RETAINED(Level.INFO),
     PAUSED(Level.WARN),
-    PRINTED(Level.INFO),
+    SENT(Level.INFO),
     RESTART(Level.WARN),
     RENDERING_LOCALLY(Level.INFO),
     USER_INTERVENTION(Level.WARN),

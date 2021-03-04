@@ -50,10 +50,18 @@ public class WmiPrinterStatusThread extends Thread {
     Winspool.PRINTER_NOTIFY_OPTIONS listenOptions;
     Winspool.PRINTER_NOTIFY_OPTIONS statusOptions;
 
-    private static final ArrayList<String> invalidNames = new ArrayList<String>() {{
-        add("Local Downlevel Document");
-        add("Remote Downlevel Document");
-    }};
+    // Honor translated strings, if available
+    static ArrayList<String> invalidNames;
+    static {
+        try {
+            invalidNames.add(User32Util.loadString("%SystemRoot%\\system32\\localspl.dll,108"));
+            invalidNames.add(User32Util.loadString("%SystemRoot%\\system32\\localspl.dll,107"));
+        } catch(Exception e) {
+            log.warn("Unable to obtain strings, defaulting to en-US values.", e);
+            invalidNames.add("Local Downlevel Document");
+            invalidNames.add("Remote Downlevel Document");
+        }
+    }
 
     public WmiPrinterStatusThread(String name, boolean holdsJobs) {
         super("Printer Status Monitor " + name);

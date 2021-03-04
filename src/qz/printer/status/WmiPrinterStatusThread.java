@@ -51,7 +51,7 @@ public class WmiPrinterStatusThread extends Thread {
     Winspool.PRINTER_NOTIFY_OPTIONS statusOptions;
 
     // Honor translated strings, if available
-    static ArrayList<String> invalidNames;
+    private static final ArrayList<String> invalidNames = new ArrayList<>();
     static {
         try {
             invalidNames.add(User32Util.loadString("%SystemRoot%\\system32\\localspl.dll,108"));

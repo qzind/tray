@@ -1,5 +1,6 @@
 package qz.printer.action;
 
+import javafx.print.PaperSource;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,12 +19,12 @@ import java.awt.print.PageFormat;
 import java.awt.print.Paper;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public abstract class PrintPixel {
 
@@ -44,34 +45,9 @@ public abstract class PrintPixel {
             attributes.add(pxlOpts.getOrientation().getAsOrientRequested());
         }
         if (pxlOpts.getPrinterTray() != null && !pxlOpts.getPrinterTray().isEmpty()) {
-            Pattern exactPattern = Pattern.compile("\\b" + Pattern.quote(pxlOpts.getPrinterTray()) + "\\b", Pattern.CASE_INSENSITIVE);
-            Pattern fuzzyPattern = Pattern.compile("\\b.*?[" + Pattern.quote(pxlOpts.getPrinterTray()) +"]+.*?\\b", Pattern.CASE_INSENSITIVE);
-            Media bestFit = null;
-            Integer fuzzyFitDelta = null;
-
-            for(Media m : supported) {
-                if (m instanceof MediaTray) {
-                    Matcher exactly = exactPattern.matcher(m.toString().trim());
-                    Matcher fuzzily = fuzzyPattern.matcher(m.toString().trim());
-
-                    if (exactly.find()) {
-                        bestFit = m;
-                        break;
-                    }
-
-                    while(fuzzily.find()) {
-                        //look for as close to exact match as possible
-                        int delta = Math.abs(fuzzily.group().length() - pxlOpts.getPrinterTray().length());
-                        if (fuzzyFitDelta == null || delta < fuzzyFitDelta) {
-                            fuzzyFitDelta = delta;
-                            bestFit = m;
-                        }
-                    }
-                }
-            }
-
-            if (bestFit != null) {
-                attributes.add(bestFit);
+            Media tray = findMediaTray(supported, pxlOpts.getPrinterTray());
+            if (tray != null) {
+                attributes.add(tray);
             }
         }
 
@@ -202,6 +178,53 @@ public abstract class PrintPixel {
 
 
         return rhMap;
+    }
+
+    protected Media findMediaTray(Media[] supportedMedia, String traySelection) {
+        HashMap<String,Media> mediaTrays = new HashMap<>();
+        for(Media m : supportedMedia) {
+            if (m instanceof MediaTray) {
+                mediaTrays.put(m.toString(), m);
+            }
+        }
+
+        String tray = findTray(mediaTrays.keySet(), traySelection);
+        return mediaTrays.get(tray);
+    }
+
+    protected PaperSource findFXTray(Set<PaperSource> paperSources, String traySelection) {
+        Map<String,PaperSource> fxTrays = paperSources.stream().collect(Collectors.toMap(PaperSource::getName, Function.identity()));
+
+        String tray = findTray(fxTrays.keySet(), traySelection);
+        return fxTrays.get(tray);
+    }
+
+    private String findTray(Set<String> trayOptions, String traySelection) {
+        Pattern exactPattern = Pattern.compile("\\b" + Pattern.quote(traySelection) + "\\b", Pattern.CASE_INSENSITIVE);
+        Pattern fuzzyPattern = Pattern.compile("\\b.*?[" + Pattern.quote(traySelection) + "]+.*?\\b", Pattern.CASE_INSENSITIVE);
+        String bestFit = null;
+        Integer fuzzyFitDelta = null;
+
+        for(String option : trayOptions) {
+            Matcher exactly = exactPattern.matcher(option.trim());
+            Matcher fuzzily = fuzzyPattern.matcher(option.trim());
+
+            if (exactly.find()) {
+                bestFit = option;
+                break;
+            }
+
+            while(fuzzily.find()) {
+                //look for as close to exact match as possible
+                int delta = Math.abs(fuzzily.group().length() - traySelection.length());
+                if (fuzzyFitDelta == null || delta < fuzzyFitDelta) {
+                    fuzzyFitDelta = delta;
+                    bestFit = option;
+                }
+            }
+        }
+
+        return bestFit;
     }
 
 }

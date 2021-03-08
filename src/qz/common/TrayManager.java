@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
-import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.installer.shortcut.ShortcutCreator;
 import qz.ui.*;
 import qz.ui.component.IconCache;

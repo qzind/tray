@@ -11,11 +11,11 @@
 package qz.utils;
 
 import com.apple.OSXAdapterWrapper;
+import org.dyorgio.jna.platform.mac.NSApplication;
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
-import com.sun.jna.Pointer;
 import org.dyorgio.jna.platform.mac.ActionCallback;
 import org.dyorgio.jna.platform.mac.Foundation;
 import org.dyorgio.jna.platform.mac.FoundationUtil;
@@ -159,8 +159,8 @@ public class MacUtilities {
     }
 
     private interface CLibrary extends Library {
-        CLibrary INSTANCE = (CLibrary) Native.loadLibrary("c", CLibrary.class);
-        int getpid ();
+        CLibrary INSTANCE = Native.load("c", CLibrary.class);
+        int getpid();
     }
 
     /**
@@ -247,6 +247,17 @@ public class MacUtilities {
                 }
             });
         } catch (Throwable ignore) {}
+    }
+
+    public static void setFocus() {
+        try {
+            NSApplication.sharedApplication().activateIgnoringOtherApps(true);
+        } catch(Exception e) {
+            log.warn("Couldn't set focus using JNA, falling back to command line instead");
+            ShellUtilities.executeAppleScript("tell application \"System Events\" \n" +
+                                                      "set frontmost of every process whose unix id is " + MacUtilities.getProcessID() + " to true \n" +
+                                                        "end tell");
+        }
     }
 
 }

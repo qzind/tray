@@ -155,7 +155,7 @@ public class MacAppLocator extends AppLocator{
     }
 
     private interface SystemB extends Library {
-        SystemB INSTANCE = Native.loadLibrary("System", SystemB.class);
+        SystemB INSTANCE = Native.load("System", SystemB.class);
         int PROC_ALL_PIDS = 1;
         int PROC_PIDPATHINFO_MAXSIZE = 1024 * 4;
         int sysctlbyname(String name, Pointer oldp, IntByReference oldlenp, Pointer newp, int newlen);

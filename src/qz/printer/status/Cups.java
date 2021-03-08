@@ -10,7 +10,7 @@ import com.sun.jna.Pointer;
  */
 public interface Cups extends Library {
 
-    Cups INSTANCE = Native.loadLibrary("cups", Cups.class);
+    Cups INSTANCE = Native.load("cups", Cups.class);
 
     /**
      * Static class to facilitate readability of values

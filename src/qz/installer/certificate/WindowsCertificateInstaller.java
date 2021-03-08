@@ -195,7 +195,7 @@ public class WindowsCertificateInstaller extends NativeCertificateInstaller {
         int CERT_FIND_SUBJECT_STR = 524295;
         int CERT_FIND_SHA1_HASH = 65536;
 
-        Crypt32 INSTANCE = Native.loadLibrary("Crypt32", Crypt32.class, W32APIOptions.DEFAULT_OPTIONS);
+        Crypt32 INSTANCE = Native.load("Crypt32", Crypt32.class, W32APIOptions.DEFAULT_OPTIONS);
 
         WinCrypt.HCERTSTORE CertOpenStore(int lpszStoreProvider, int dwMsgAndCertEncodingType, Pointer hCryptProv, int dwFlags, String pvPara);
         boolean CertCloseStore(WinCrypt.HCERTSTORE hCertStore, int dwFlags);

@@ -11,14 +11,11 @@
 package qz.utils;
 
 import com.apple.OSXAdapterWrapper;
-import org.dyorgio.jna.platform.mac.NSApplication;
+import org.dyorgio.jna.platform.mac.*;
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
-import org.dyorgio.jna.platform.mac.ActionCallback;
-import org.dyorgio.jna.platform.mac.Foundation;
-import org.dyorgio.jna.platform.mac.FoundationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -120,7 +117,12 @@ public class MacUtilities {
      * @return true if enabled, false if not
      */
     public static boolean isDarkDesktop() {
-        return !ShellUtilities.execute(new String[] { "defaults", "read", "-g", "AppleInterfaceStyle" }, new String[] { "Dark" }, true, true).isEmpty();
+        try {
+            return "Dark".equalsIgnoreCase(NSUserDefaults.standard().stringForKey(new NSString("AppleInterfaceStyle")).toString());
+        } catch(Exception e) {
+            log.warn("An exception occurred obtaining theme information, falling back to command line instead.");
+            return !ShellUtilities.execute(new String[] {"defaults", "read", "-g", "AppleInterfaceStyle"}, new String[] {"Dark"}, true, true).isEmpty();
+        }
     }
 
     public static int getScaleFactor() {

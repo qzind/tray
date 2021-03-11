@@ -11,6 +11,7 @@
 package qz.utils;
 
 import com.apple.OSXAdapterWrapper;
+import com.sun.jna.platform.unix.LibC;
 import org.dyorgio.jna.platform.mac.*;
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Library;
@@ -145,6 +146,18 @@ public class MacUtilities {
             log.warn("Unable to determine screen scale factor.  Defaulting to 1.", e);
         }
         return 1;
+    }
+
+    public static String getHostName() {
+        try {
+            byte[] hostName = new byte[255];
+            if (LibC.INSTANCE.gethostname(hostName, hostName.length) == 0) {
+                return Native.toString(hostName);
+            }
+        } catch(Throwable t) {
+            log.warn("Couldn't get hostname using LibC, we'll fallback to command line instead.");
+        }
+        return null;
     }
 
     public static int getProcessID() {

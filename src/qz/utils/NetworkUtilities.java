@@ -28,7 +28,17 @@ public class NetworkUtilities {
     private static final Logger log = LoggerFactory.getLogger(NetworkUtilities.class);
 
     private static NetworkUtilities instance;
-    private static String systemName = ShellUtilities.getHostName();
+    private static String systemName;
+    static {
+        if(SystemUtilities.isWindows()) {
+            systemName = System.getenv("COMPUTERNAME");
+        } else {
+            systemName = MacUtilities.getHostName(); // works for Linux too
+        }
+        if(systemName == null || systemName.trim().isEmpty()) {
+            systemName = ShellUtilities.getHostName();
+        }
+    }
     private static String userName = System.getProperty("user.name");
 
     private ArrayList<Device> devices;

@@ -232,21 +232,22 @@ public class ShellUtilities {
             if (!SystemUtilities.isMac()) {
                 Desktop.getDesktop().open(directory);
             } else {
-                // Mac tries to open the .app rather than browsing it.
-                // Instead, try to select the first child
+                // Mac tries to open the .app rather than browsing it.  Instead, pass a child to select it in finder
                 File[] files = directory.listFiles();
                 if (files != null && files.length > 0) {
                     try {
-                        // First try JDK 9+ technique
+                        // Use browseFileDirectory (JDK9+) via reflection
                         Method m = Desktop.class.getDeclaredMethod("browseFileDirectory", File.class);
                         m.invoke(Desktop.getDesktop(), files[0].getCanonicalFile());
                     }
                     catch(ReflectiveOperationException e) {
+                        // Fallback to open -R
                         ShellUtilities.execute("open", "-R", files[0].getCanonicalPath());
                     }
                 }
             }
-        } catch(IOException io) {
+        }
+        catch(IOException io) {
             if (SystemUtilities.isLinux()) {
                 // Fallback on xdg-open for Linux
                 ShellUtilities.execute("xdg-open", directory.getPath());

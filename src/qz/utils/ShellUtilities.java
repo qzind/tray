@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.*;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -231,14 +232,21 @@ public class ShellUtilities {
             if (!SystemUtilities.isMac()) {
                 Desktop.getDesktop().open(directory);
             } else {
-                // Mac tries to open the .app rather than browsing it.  Instead, pass a child with -R to select it in finder
+                // Mac tries to open the .app rather than browsing it.
+                // Instead, try to select the first child
                 File[] files = directory.listFiles();
                 if (files != null && files.length > 0) {
-                    ShellUtilities.execute("open", "-R", files[0].getCanonicalPath());
+                    try {
+                        // First try JDK 9+ technique
+                        Method m = Desktop.class.getDeclaredMethod("browseFileDirectory", File.class);
+                        m.invoke(Desktop.getDesktop(), files[0].getCanonicalFile());
+                    }
+                    catch(ReflectiveOperationException e) {
+                        ShellUtilities.execute("open", "-R", files[0].getCanonicalPath());
+                    }
                 }
             }
-        }
-        catch(IOException io) {
+        } catch(IOException io) {
             if (SystemUtilities.isLinux()) {
                 // Fallback on xdg-open for Linux
                 ShellUtilities.execute("xdg-open", directory.getPath());

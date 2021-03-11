@@ -149,15 +149,18 @@ public class MacUtilities {
     }
 
     public static String getHostName() {
+        String hostName = null;
         try {
-            byte[] hostName = new byte[255];
-            if (LibC.INSTANCE.gethostname(hostName, hostName.length) == 0) {
-                return Native.toString(hostName);
+            byte[] bytes = new byte[255];
+            if (LibC.INSTANCE.gethostname(bytes, bytes.length) == 0) {
+                hostName = Native.toString(bytes);
             }
-        } catch(Throwable t) {
+        } catch(Throwable ignore) {}
+        if(hostName == null || hostName.trim().isEmpty()) {
             log.warn("Couldn't get hostname using LibC, we'll fallback to command line instead.");
+            hostName = ShellUtilities.getHostName();
         }
-        return null;
+        return hostName;
     }
 
     public static int getProcessID() {

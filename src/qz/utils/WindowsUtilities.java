@@ -251,4 +251,20 @@ public class WindowsUtilities {
             log.warn("Could not set writable: {}", path, e);
         }
     }
+
+    public static String getHostName() {
+        String hostName = null;
+        try {
+            hostName = Kernel32Util.getComputerName(); // always uppercase
+        } catch(Throwable ignore) {}
+        if(hostName == null || hostName.trim().isEmpty()) {
+            log.warn("Couldn't get hostname using Kernel32Util, will fallback to environmental variable COMPUTERNAME instead");
+            hostName = System.getenv("COMPUTERNAME"); // always uppercase
+        }
+        if(hostName == null || hostName.trim().isEmpty()) {
+            log.warn("Couldn't get hostname using COMPUTERNAME, will fallback to command line instead");
+            hostName = ShellUtilities.getHostName().toUpperCase(); // uppercase to match others
+        }
+        return hostName;
+    }
 }

@@ -449,7 +449,7 @@ var qz = (function() {
                 size: null,
                 units: 'in',
 
-                altPrinting: false,
+                forceRaw: false,
                 encoding: null,
                 spool: null
             }
@@ -764,6 +764,12 @@ var qz = (function() {
                 if (_qz.tools.isVersion(2, 0)) {
                     if (!dirty.rasterize) {
                         config.rasterize = true;
+                    }
+                }
+                if(_qz.tools.versionCompare(2, 1, 4) < 0) {
+                    if(config.forceRaw) {
+                        config.altPrinting = config.forceRaw;
+                        delete config.forceRaw;
                     }
                 }
                 if(_qz.tools.versionCompare(2, 1, 2, 11) < 0) {
@@ -1323,10 +1329,11 @@ var qz = (function() {
              *   @param {number} [options.size.height=null] Page height.
              *  @param {string} [options.units='in'] Page units, applies to paper size, margins, and density. Valid value <code>[in | cm | mm]</code>
              *
-             *  @param {boolean} [options.altPrinting=false] Print the specified file using CUPS command line arguments.  Has no effect on Windows.
+             *  @param {boolean} [options.forceRaw=false] Print the specified raw data using direct method, skipping the driver.  Not yet supported on Windows.
              *  @param {string} [options.encoding=null] Character set
              *  @param {string} [options.endOfDoc=null] DEPRECATED Raw only: Character(s) denoting end of a page to control spooling.
              *  @param {number} [options.perSpool=1] DEPRECATED: Raw only: Number of pages per spool.
+             *  @param {boolean} [options.retainTemp=false] Retain any temporary files used.  Ignored unless <code>forceRaw</code> <code>true</code>.
              *  @param {Object} [options.spool=null] Advanced spooling options.
              *   @param {number} [options.spool.size=null] Number of pages per spool.  Default is no limit.  If <code>spool.end</code> is provided, defaults to <code>1</code>
              *   @param {string} [options.spool.end=null] Raw only: Character(s) denoting end of a page to control spooling.

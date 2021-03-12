@@ -4,8 +4,11 @@ import com.sun.jna.Pointer;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.printer.info.NativePrinter;
 import qz.printer.status.Cups.IPP;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 
@@ -40,6 +43,24 @@ public class CupsUtils {
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
 
         return cups.cupsDoRequest(http, request, "/");
+    }
+
+    public static boolean sendRawFile(NativePrinter nativePrinter, File file) throws IOException {
+        String printer = nativePrinter == null ? null : nativePrinter.getName();
+        if(printer == null || printer.trim().isEmpty()) {
+            throw new UnsupportedOperationException("Printer name is blank or invalid");
+        }
+
+        Pointer request = cups.ippNewRequest(IPP.OP_PRINT_JOB);
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET, URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/" + printer));
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_MIMETYPE, "document-format", null, IPP.CUPS_FORMAT_TEXT);
+        Pointer fileResponse = cups.cupsDoFileRequest(http, request, "/ipp/print", file.getCanonicalPath());
+        Pointer response = cups.cupsDoRequest(http, request, "/");
+        // FIXME: Why does this segfault?
+        //cups.ippDelete(fileResponse);
+        //cups.ippDelete(response);
+        return true;
     }
 
     public static PrinterStatus[] getStatuses(String printerName) {

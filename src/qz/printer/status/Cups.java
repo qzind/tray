@@ -23,19 +23,25 @@ public interface Cups extends Library {
         public static int TAG_INTEGER = INSTANCE.ippTagValue("Integer");
         public static int TAG_KEYWORD = INSTANCE.ippTagValue("keyword");
         public static int TAG_SUBSCRIPTION = INSTANCE.ippTagValue("Subscription");
+        public static int TAG_MIMETYPE = INSTANCE.ippTagValue("mimetype");
         public static int GET_PRINTERS = INSTANCE.ippOpValue("CUPS-Get-Printers");
         public static int GET_PRINTER_ATTRIBUTES = INSTANCE.ippOpValue("Get-Printer-Attributes");
         public static int GET_SUBSCRIPTIONS = INSTANCE.ippOpValue("Get-Subscriptions");
         public static int CREATE_PRINTER_SUBSCRIPTION = INSTANCE.ippOpValue("Create-Printer-Subscription");
         public static int CANCEL_SUBSCRIPTION = INSTANCE.ippOpValue("Cancel-Subscription");
+
+        public static final int OP_PRINT_JOB = 0x02;
         public static final int INT_ERROR = 0;
         public static final int INT_UNDEFINED = -1;
+
+        public static final String CUPS_FORMAT_TEXT ="text/plain";
     }
 
     //See https://www.cups.org/doc/api-cups.html and https://www.cups.org/doc/api-httpipp.html for usage
 
     Pointer cupsEncryption();
     Pointer httpConnectEncrypt(String host, int port, Pointer encryption);
+    Pointer cupsDoFileRequest(Pointer http, Pointer request, String resource, String filename);
     Pointer cupsDoRequest(Pointer http, Pointer request, String resource);
     Pointer ippNewRequest(int op);
     Pointer ippGetString(Pointer attr, int element, Pointer dataLen);

@@ -55,7 +55,7 @@ public class CupsUtils {
             }
 
             Pointer request = cups.ippNewRequest(IPP.OP_PRINT_JOB);
-            cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET, URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/d" + printer));
+            cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET, URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/" + printer));
             cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
             cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_MIMETYPE, "document-format", null, IPP.CUPS_FORMAT_TEXT);
             // request is automatically closed

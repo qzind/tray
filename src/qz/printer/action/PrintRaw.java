@@ -444,7 +444,6 @@ public class PrintRaw implements PrintProcessor {
                             CupsStatusServer.runServer();
                         }
                         success = CupsUtils.sendRawFile(printer, tmp);
-                        CupsUtils.freeIppObjs();
                         break;
                     case WIN32_WMI:
                     default:

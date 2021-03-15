@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import qz.printer.info.NativePrinter;
 import qz.printer.status.Cups.IPP;
 
+import javax.print.PrintException;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -45,21 +46,38 @@ public class CupsUtils {
         return cups.cupsDoRequest(http, request, "/");
     }
 
-    public static boolean sendRawFile(NativePrinter nativePrinter, File file) throws IOException {
-        String printer = nativePrinter == null ? null : nativePrinter.getName();
-        if(printer == null || printer.trim().isEmpty()) {
-            throw new UnsupportedOperationException("Printer name is blank or invalid");
-        }
+    public static boolean sendRawFile(NativePrinter nativePrinter, File file) throws PrintException, IOException {
+        Pointer fileResponse = null;
+        try {
+            String printer = nativePrinter == null? null:nativePrinter.getPrinterId();
+            if (printer == null || printer.trim().isEmpty()) {
+                throw new UnsupportedOperationException("Printer name is blank or invalid");
+            }
 
-        Pointer request = cups.ippNewRequest(IPP.OP_PRINT_JOB);
-        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET, URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/" + printer));
-        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
-        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_MIMETYPE, "document-format", null, IPP.CUPS_FORMAT_TEXT);
-        Pointer fileResponse = cups.cupsDoFileRequest(http, request, "/ipp/print", file.getCanonicalPath());
-        Pointer response = cups.cupsDoRequest(http, request, "/");
-        // FIXME: Why does this segfault?
-        //cups.ippDelete(fileResponse);
-        //cups.ippDelete(response);
+            Pointer request = cups.ippNewRequest(IPP.OP_PRINT_JOB);
+            cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET, URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/d" + printer));
+            cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
+            cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_MIMETYPE, "document-format", null, IPP.CUPS_FORMAT_TEXT);
+            // request is automatically closed
+            fileResponse = cups.cupsDoFileRequest(http, request, "/ipp/print", file.getCanonicalPath());
+            // For debugging:
+            // parseResponse(fileResponse);
+            if (cups.ippFindAttribute(fileResponse, "job-id", IPP.TAG_INTEGER) == Pointer.NULL) {
+                Pointer statusMessage = cups.ippFindAttribute(fileResponse, "status-message", IPP.TAG_TEXT);
+                if (statusMessage != Pointer.NULL) {
+                    String exception = Cups.INSTANCE.ippGetString(statusMessage, 0, "");
+                    if (exception != null && !exception.trim().isEmpty()) {
+                        throw new PrintException(exception);
+                    }
+                }
+                throw new PrintException("An unknown printer exception has occurred");
+            }
+        }
+        finally{
+            if (fileResponse != null) {
+                cups.ippDelete(fileResponse);
+            }
+        }
         return true;
     }
 
@@ -193,5 +211,44 @@ public class CupsUtils {
             subscriptionID = IPP.INT_UNDEFINED;
             cups.httpClose(http);
         }
+    }
+
+    @SuppressWarnings("unused")
+    static void parseResponse(Pointer response) {
+        Pointer attr = Cups.INSTANCE.ippFirstAttribute(response);
+        while (true) {
+            if (attr == Pointer.NULL) {
+                break;
+            }
+            System.out.println(parseAttr(attr));
+            attr = Cups.INSTANCE.ippNextAttribute(response);
+        }
+        System.out.println("------------------------");
+    }
+
+    static String parseAttr(Pointer attr){
+        int valueTag = Cups.INSTANCE.ippGetValueTag(attr);
+        int attrCount = Cups.INSTANCE.ippGetCount(attr);
+        String data = "";
+        String attrName = Cups.INSTANCE.ippGetName(attr);
+        for (int i = 0; i < attrCount; i++) {
+            if (valueTag == Cups.INSTANCE.ippTagValue("Integer")) {
+                data += Cups.INSTANCE.ippGetInteger(attr, i);
+            } else if (valueTag == Cups.INSTANCE.ippTagValue("Boolean")) {
+                data += (Cups.INSTANCE.ippGetInteger(attr, i) == 1);
+            } else if (valueTag == Cups.INSTANCE.ippTagValue("Enum")) {
+                data += Cups.INSTANCE.ippEnumString(attrName, Cups.INSTANCE.ippGetInteger(attr, i));
+            } else {
+                data += Cups.INSTANCE.ippGetString(attr, i, "");
+            }
+            if (i + 1 < attrCount) {
+                data += ", ";
+            }
+        }
+
+        if (attrName == null){
+            return "------------------------";
+        }
+        return String.format("%s: %d %s {%s}", attrName, attrCount, Cups.INSTANCE.ippTagString(valueTag), data);
     }
 }

@@ -20,6 +20,7 @@ public interface Cups extends Library {
         public static int TAG_OPERATION = INSTANCE.ippTagValue("Operation");
         public static int TAG_URI = INSTANCE.ippTagValue("uri");
         public static int TAG_NAME = INSTANCE.ippTagValue("Name");
+        public static int TAG_TEXT = INSTANCE.ippTagValue("Text");
         public static int TAG_INTEGER = INSTANCE.ippTagValue("Integer");
         public static int TAG_KEYWORD = INSTANCE.ippTagValue("keyword");
         public static int TAG_SUBSCRIPTION = INSTANCE.ippTagValue("Subscription");

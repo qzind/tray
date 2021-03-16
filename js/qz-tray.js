@@ -189,20 +189,20 @@ var qz = (function() {
                     //called when an open connection is closed
                     _qz.websocket.connection.onclose = function(evt) {
                         _qz.log.trace(evt);
-                        _qz.log.info("Closed connection with QZ Tray");
 
-                        //if this is set, then an explicit close call was made
-                        if (this.promise != undefined) {
-                            this.promise.resolve();
-                        }
-
-                        _qz.websocket.callClose(evt);
                         _qz.websocket.connection = null;
+                        _qz.websocket.callClose(evt);
+                        _qz.log.info("Closed connection with QZ Tray");
 
                         for(var uid in _qz.websocket.pendingCalls) {
                             if (_qz.websocket.pendingCalls.hasOwnProperty(uid)) {
                                 _qz.websocket.pendingCalls[uid].reject(new Error("Connection closed before response received"));
                             }
+                        }
+
+                        //if this is set, then an explicit close call was made
+                        if (this.promise != undefined) {
+                            this.promise.resolve();
                         }
                     };
 

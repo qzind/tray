@@ -123,6 +123,7 @@ public class CupsUtils {
     static void startSubscription(int rssPort) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> freeIppObjs()));
 
+        String[] subscriptions = {"job-state-changed", "printer-state-changed"};
         Pointer request = cups.ippNewRequest(IPP.CREATE_JOB_SUBSCRIPTION);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
@@ -130,8 +131,8 @@ public class CupsUtils {
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
         cups.ippAddString(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_URI, "notify-recipient-uri", CHARSET,
                           URIUtil.encodePath("rss://localhost:" + rssPort));
-        cups.ippAddStrings(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_KEYWORD, "notify-events", 3, CHARSET,
-                          new StringArray(new String[]{"job-state-changed", "printer-state-changed"}));
+        cups.ippAddStrings(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_KEYWORD, "notify-events", subscriptions.length, CHARSET,
+                          new StringArray(subscriptions));
         cups.ippAddInteger(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_INTEGER, "notify-lease-duration", 0);
 
         Pointer response = cups.cupsDoRequest(http, request, "/");

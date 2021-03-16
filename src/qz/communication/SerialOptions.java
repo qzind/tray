@@ -70,7 +70,7 @@ public class SerialOptions {
             }
 
             if (!serialOpts.isNull("encoding")) {
-                try { portSettings.encoding =Charset.forName(serialOpts.getString("encoding")); }
+                try { portSettings.encoding = Charset.forName(serialOpts.getString("encoding")); }
                 catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "encoding", serialOpts.opt("encoding")); }
             }
         }

@@ -46,93 +46,6 @@ public class PrintSocketClient {
     //websocket port -> Connection
     private static final HashMap<Integer,SocketConnection> openConnections = new HashMap<>();
 
-    private enum Method {
-        PRINTERS_GET_DEFAULT("printers.getDefault", true, "access connected printers"),
-        PRINTERS_FIND("printers.find", true, "access connected printers"),
-        PRINTERS_DETAIL("printers.detail", true, "access connected printers"),
-        PRINTERS_START_LISTENING("printers.startListening", true, "listen for printer status"),
-        PRINTERS_GET_STATUS("printers.getStatus", false),
-        PRINTERS_STOP_LISTENING("printers.stopListening", false),
-        PRINT("print", true, "print to %s"),
-
-        SERIAL_FIND_PORTS("serial.findPorts", true, "access serial ports"),
-        SERIAL_OPEN_PORT("serial.openPort", true, "open a serial port"),
-        SERIAL_SEND_DATA("serial.sendData", true, "send data over a serial port"),
-        SERIAL_CLOSE_PORT("serial.closePort", true, "close a serial port"),
-
-        USB_LIST_DEVICES("usb.listDevices", true, "access USB devices"),
-        USB_LIST_INTERFACES("usb.listInterfaces", true, "access USB devices"),
-        USB_LIST_ENDPOINTS("usb.listEndpoints", true, "access USB devices"),
-        USB_CLAIM_DEVICE("usb.claimDevice", true, "claim a USB device"),
-        USB_CLAIMED("usb.isClaimed", false, "check USB claim status"),
-        USB_SEND_DATA("usb.sendData", true, "use a USB device"),
-        USB_READ_DATA("usb.readData", true, "use a USB device"),
-        USB_OPEN_STREAM("usb.openStream", true, "use a USB device"),
-        USB_CLOSE_STREAM("usb.closeStream", false, "use a USB device"),
-        USB_RELEASE_DEVICE("usb.releaseDevice", false, "release a USB device"),
-
-        HID_LIST_DEVICES("hid.listDevices", true, "access USB devices"),
-        HID_START_LISTENING("hid.startListening", true, "listen for USB devices"),
-        HID_STOP_LISTENING("hid.stopListening", false),
-        HID_CLAIM_DEVICE("hid.claimDevice", true, "claim a USB device"),
-        HID_CLAIMED("hid.isClaimed", false, "check USB claim status"),
-        HID_SEND_DATA("hid.sendData", true, "use a USB device"),
-        HID_READ_DATA("hid.readData", true, "use a USB device"),
-        HID_SEND_FEATURE_REPORT("hid.sendFeatureReport", true, "use a USB device"),
-        HID_GET_FEATURE_REPORT("hid.getFeatureReport", true, "use a USB device"),
-        HID_OPEN_STREAM("hid.openStream", true, "use a USB device"),
-        HID_CLOSE_STREAM("hid.closeStream", false, "use a USB device"),
-        HID_RELEASE_DEVICE("hid.releaseDevice", false, "release a USB device"),
-
-        FILE_LIST("file.list", true, "view the filesystem"),
-        FILE_START_LISTENING("file.startListening", true, "listen for filesystem events"),
-        FILE_STOP_LISTENING("file.stopListening", false),
-        FILE_READ("file.read", true, "read the content of a file"),
-        FILE_WRITE("file.write", true, "write to a file"),
-        FILE_REMOVE("file.remove", true, "delete a file"),
-
-        NETWORKING_DEVICE("networking.device", true),
-        NETWORKING_DEVICES("networking.devices", true),
-        NETWORKING_DEVICE_LEGACY("websocket.getNetworkInfo", true),
-        GET_VERSION("getVersion", false),
-
-        INVALID("", false);
-
-
-        private String callName;
-        private String dialogPrompt;
-        private boolean dialogShown;
-
-        Method(String callName, boolean dialogShown) {
-            this(callName, dialogShown, "access local resources");
-        }
-
-        Method(String callName, boolean dialogShown, String dialogPrompt) {
-            this.callName = callName;
-
-            this.dialogShown = dialogShown;
-            this.dialogPrompt = dialogPrompt;
-        }
-
-        public boolean isDialogShown() {
-            return dialogShown;
-        }
-
-        public String getDialogPrompt() {
-            return dialogPrompt;
-        }
-
-        public static Method findFromCall(String call) {
-            for(Method m : Method.values()) {
-                if (m.callName.equals(call)) {
-                    return m;
-                }
-            }
-
-            return INVALID;
-        }
-    }
-
 
     @OnWebSocketConnect
     public void onConnect(Session session) {
@@ -266,18 +179,18 @@ public class PrintSocketClient {
      */
     private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, DeviceException, IOException, ListenerNotFoundException {
         String UID = json.optString("uid");
-        Method call = Method.findFromCall(json.optString("call"));
+        SocketMethod call = SocketMethod.findFromCall(json.optString("call"));
         JSONObject params = json.optJSONObject("params");
         if (params == null) { params = new JSONObject(); }
 
-        if (call == Method.INVALID && (UID == null || UID.isEmpty())) {
+        if (call == SocketMethod.INVALID && (UID == null || UID.isEmpty())) {
             //incorrect message format, likely incompatible qz version
             session.close(4003, "Connected to incompatible " + Constants.ABOUT_TITLE + " version");
             return;
         }
 
         String prompt = call.getDialogPrompt();
-        if (call == Method.PRINT) {
+        if (call == SocketMethod.PRINT) {
             //special formatting for print dialogs
             JSONObject pr = params.optJSONObject("printer");
             if (pr != null) {
@@ -295,7 +208,7 @@ public class PrintSocketClient {
         }
 
         // used in usb calls
-        DeviceOptions dOpts = new DeviceOptions(params, DeviceOptions.DeviceMode.parse(call.callName));
+        DeviceOptions dOpts = new DeviceOptions(params, DeviceOptions.DeviceMode.parse(call.getCallName()));
 
 
         //call appropriate methods
@@ -387,6 +300,33 @@ public class PrintSocketClient {
                 break;
             }
 
+            case SOCKET_OPEN_PORT:
+                SocketUtilities.setupSocket(session, UID, connection, params);
+                break;
+            case SOCKET_SEND_DATA: {
+                String location = String.format("%s:%s", params.optString("host"), params.optInt("port"));
+                SocketIO socket = connection.getNetworkSocket(location);
+                if (socket != null) {
+                    socket.sendData(params);
+                    sendResult(session, UID, null);
+                } else {
+                    sendError(session, UID, String.format("Socket [%s] is not open.", location));
+                }
+                break;
+            }
+            case SOCKET_CLOSE_PORT: {
+                String location = String.format("%s:%s", params.optString("host"), params.optInt("port"));
+                SocketIO socket = connection.getNetworkSocket(location);
+                if (socket != null) {
+                    socket.close();
+                    connection.removeNetworkSocket(location);
+                    sendResult(session, UID, null);
+                } else {
+                    sendError(session, UID, String.format("Socket [%s] is not open.", location));
+                }
+                break;
+            }
+
             case USB_LIST_DEVICES:
                 sendResult(session, UID, UsbUtilities.getUsbDevicesJSON(params.getBoolean("includeHubs")));
                 break;
@@ -428,7 +368,7 @@ public class PrintSocketClient {
             case HID_CLAIM_DEVICE: {
                 if (connection.getDevice(dOpts) == null) {
                     DeviceIO device;
-                    if (call == Method.USB_CLAIM_DEVICE) {
+                    if (call == SocketMethod.USB_CLAIM_DEVICE) {
                         device = new UsbIO(dOpts);
                     } else {
                         if (SystemUtilities.isWindows()) {
@@ -459,12 +399,12 @@ public class PrintSocketClient {
                 break;
             }
             case USB_SEND_DATA:
-            case HID_SEND_FEATURE_REPORT :
+            case HID_SEND_FEATURE_REPORT:
             case HID_SEND_DATA: {
                 DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
 
-                    if (call == Method.HID_SEND_FEATURE_REPORT) {
+                    if (call == SocketMethod.HID_SEND_FEATURE_REPORT) {
                         usb.sendFeatureReport(DeviceUtilities.getDataBytes(params, null), dOpts.getEndpoint());
                     } else {
                         usb.sendData(DeviceUtilities.getDataBytes(params, null), dOpts.getEndpoint());
@@ -478,13 +418,13 @@ public class PrintSocketClient {
                 break;
             }
             case USB_READ_DATA:
-            case HID_GET_FEATURE_REPORT :
+            case HID_GET_FEATURE_REPORT:
             case HID_READ_DATA: {
                 DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
                     byte[] response;
-                    
-                    if (call == Method.HID_GET_FEATURE_REPORT) {
+
+                    if (call == SocketMethod.HID_GET_FEATURE_REPORT) {
                         response = usb.getFeatureReport(dOpts.getResponseSize(), dOpts.getEndpoint());
                     } else {
                         response = usb.readData(dOpts.getResponseSize(), dOpts.getEndpoint());
@@ -504,7 +444,7 @@ public class PrintSocketClient {
             }
             case USB_OPEN_STREAM:
             case HID_OPEN_STREAM: {
-                StreamEvent.Stream stream = (call == Method.USB_OPEN_STREAM? StreamEvent.Stream.USB:StreamEvent.Stream.HID);
+                StreamEvent.Stream stream = (call == SocketMethod.USB_OPEN_STREAM? StreamEvent.Stream.USB:StreamEvent.Stream.HID);
                 UsbUtilities.setupUsbStream(session, UID, connection, dOpts, stream);
                 break;
             }
@@ -717,7 +657,7 @@ public class PrintSocketClient {
      */
     public static void sendError(Session session, String messageUID, Exception ex) {
         String message = ex.getMessage();
-        if (message == null || message.equals("")) {
+        if (message == null || message.isEmpty()) {
             message = ex.getClass().getSimpleName();
         }
 

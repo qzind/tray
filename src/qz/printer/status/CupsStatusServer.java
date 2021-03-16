@@ -22,7 +22,6 @@ public class CupsStatusServer {
     private static Server server;
 
     public static synchronized void runServer() {
-        CupsUtils.initCupsHttp();
         CupsUtils.clearSubscriptions();
         boolean started = false;
         for(int p = 0; p < CUPS_RSS_PORTS.size(); p++) {

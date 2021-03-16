@@ -24,16 +24,20 @@ public class CupsUtils {
 
     private static Cups cups = Cups.INSTANCE;
 
-    private static boolean httpInitialised = false;
     private static Pointer http;
     private static int subscriptionID = IPP.INT_UNDEFINED;
 
+    static Pointer getCupsHttp() {
+        if (http == null) http = cups.httpConnectEncrypt(cups.cupsServer(), IPP.PORT, cups.cupsEncryption());
+        return http;
+    }
 
-    synchronized static void initCupsHttp() {
-        if (!httpInitialised) {
-            httpInitialised = true;
-            http = cups.httpConnectEncrypt(cups.cupsServer(), IPP.PORT, cups.cupsEncryption());
-        }
+    static synchronized Pointer doRequest(Pointer request, String resource) {
+        return cups.cupsDoRequest(getCupsHttp(), request, resource);
+    }
+
+    static synchronized Pointer doFileRequest(Pointer request, String resource, String fileName) {
+        return cups.cupsDoFileRequest(getCupsHttp(), request, resource, fileName);
     }
 
     static Pointer listSubscriptions() {
@@ -43,11 +47,10 @@ public class CupsUtils {
                                    URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/"));
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
 
-        return cups.cupsDoRequest(http, request, "/");
+        return doRequest(request, "/");
     }
 
-    public synchronized static boolean sendRawFile(NativePrinter nativePrinter, File file) throws PrintException, IOException {
-        initCupsHttp();
+    public static boolean sendRawFile(NativePrinter nativePrinter, File file) throws PrintException, IOException {
         Pointer fileResponse = null;
         try {
             String printer = nativePrinter == null? null:nativePrinter.getPrinterId();
@@ -60,7 +63,8 @@ public class CupsUtils {
             cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
             cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_MIMETYPE, "document-format", null, IPP.CUPS_FORMAT_TEXT);
             // request is automatically closed
-            fileResponse = cups.cupsDoFileRequest(http, request, "/ipp/print", file.getCanonicalPath());
+            fileResponse = doFileRequest(request, "/ipp/print", file.getCanonicalPath());
+
             // For debugging:
             // parseResponse(fileResponse);
             if (cups.ippFindAttribute(fileResponse, "job-id", IPP.TAG_INTEGER) == Pointer.NULL) {
@@ -89,7 +93,7 @@ public class CupsUtils {
                                    URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/" + printerName));
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
 
-        Pointer response = cups.cupsDoRequest(http, request, "/");
+        Pointer response = doRequest(request, "/");
         Pointer attr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
         ArrayList<PrinterStatus> statuses = new ArrayList<>();
 
@@ -114,7 +118,7 @@ public class CupsUtils {
         Pointer request = cups.ippNewRequest(IPP.GET_PRINTERS);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
-        Pointer response = cups.cupsDoRequest(http, request, "/");
+        Pointer response = doRequest(request, "/");
         Pointer attr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
 
         while(attr != Pointer.NULL) {
@@ -181,7 +185,7 @@ public class CupsUtils {
         cups.ippAddString(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_KEYWORD, "notify-events", CHARSET, "printer-state-changed");
         cups.ippAddInteger(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_INTEGER, "notify-lease-duration", 0);
 
-        Pointer response = cups.cupsDoRequest(http, request, "/");
+        Pointer response = doRequest(request, "/");
 
         Pointer attr = cups.ippFindAttribute(response, "notify-subscription-id", IPP.TAG_INTEGER);
         if (attr != Pointer.NULL) { subscriptionID = cups.ippGetInteger(attr, 0); }
@@ -201,16 +205,16 @@ public class CupsUtils {
                                    URIUtil.encodePath("ipp://localhost:" + IPP.PORT));
         cups.ippAddInteger(request, IPP.TAG_OPERATION, IPP.TAG_INTEGER, "notify-subscription-id", id);
 
-        Pointer response = cups.cupsDoRequest(http, request, "/");
+        Pointer response = doRequest(request, "/");
         cups.ippDelete(response);
     }
 
     public synchronized static void freeIppObjs() {
-        if (httpInitialised) {
-            httpInitialised = false;
+        if (http != null) {
             endSubscription(subscriptionID);
             subscriptionID = IPP.INT_UNDEFINED;
             cups.httpClose(http);
+            http = null;
         }
     }
 

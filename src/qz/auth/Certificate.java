@@ -37,6 +37,7 @@ import java.util.*;
 public class Certificate {
 
     private static final Logger log = LoggerFactory.getLogger(Certificate.class);
+    private static final String QUIETLY_FAIL = "quiet";
 
     public enum Algorithm {
         SHA1("SHA1withRSA"),
@@ -135,14 +136,14 @@ public class Certificate {
 
     private static void addAdditionalCAs() {
         ArrayList<Map.Entry<Path, String>> certPaths = new ArrayList<>();
-
-        // FIXME: FileUtilities.parseDelimitedPaths() truncates last character
-        // trustedRootCert (system property)
+        // First, look for "-DtrustedRootCert" command line property
         certPaths.addAll(FileUtilities.parseDelimitedPaths(System.getProperty("trustedRootCert")));
-        // override.crt (app dir)
+
+        // Second, look for "override.crt" within App directory
         String override = FileUtilities.getParentDirectory(SystemUtilities.getJarPath()) + File.separator + Constants.OVERRIDE_CERT;
-        certPaths.add(new AbstractMap.SimpleEntry<>(Paths.get(override), "quiet"));
-        // authcert.override (qz-tray.properties)
+        certPaths.add(new AbstractMap.SimpleEntry<>(Paths.get(override), QUIETLY_FAIL));
+
+        // Third, look for "authcert.override" property in qz-tray.properties
         certPaths.addAll(FileUtilities.parseDelimitedPaths(PrintSocketServer.getTrayProperties(), "authcert.override"));
 
         for(Map.Entry<Path, String> certPath : certPaths) {
@@ -163,7 +164,7 @@ public class Certificate {
                     catch(Exception e) {
                         log.error("Error loading CA cert: {}", certPath.getKey(), e);
                     }
-                } else if(!certPath.getValue().equals("quiet")) {
+                } else if(!certPath.getValue().equals(QUIETLY_FAIL)) {
                     log.warn("CA cert \"{}\" was provided, but could not be found, skipping.", certPath.getKey());
                 }
             }

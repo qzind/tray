@@ -492,6 +492,10 @@ public class FileUtilities {
         return parseDelimitedPaths(props == null ? null : props.getProperty(key));
     }
 
+    public static ArrayList<Map.Entry<Path, String>> parseDelimitedPaths(String delimited) {
+        return parseDelimitedPaths(delimited, false);
+    }
+
     /**
      * Returns whether or not the supplied path is restricted, such as the qz-tray data directory
      * Warning:  This does not follow symlinks

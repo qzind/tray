@@ -46,7 +46,8 @@ public class CupsUtils {
         return cups.cupsDoRequest(http, request, "/");
     }
 
-    public static boolean sendRawFile(NativePrinter nativePrinter, File file) throws PrintException, IOException {
+    public synchronized static boolean sendRawFile(NativePrinter nativePrinter, File file) throws PrintException, IOException {
+        initCupsHttp();
         Pointer fileResponse = null;
         try {
             String printer = nativePrinter == null? null:nativePrinter.getPrinterId();

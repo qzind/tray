@@ -29,7 +29,6 @@ import qz.printer.LanguageType;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.printer.info.NativePrinter;
-import qz.printer.status.CupsStatusServer;
 import qz.printer.status.CupsUtils;
 import qz.utils.*;
 
@@ -439,10 +438,7 @@ public class PrintRaw implements PrintProcessor {
                         }
                         break;
                     case CUPS_RSS:
-                        // Submit job via cupsDoRequest(...) via JNA against localhost:631
-                        if (!CupsStatusServer.isRunning()) {
-                            CupsStatusServer.runServer();
-                        }
+                        // Submit job via cupsDoRequest(...) via JNA against localhost:631\
                         success = CupsUtils.sendRawFile(printer, tmp);
                         break;
                     case WIN32_WMI:

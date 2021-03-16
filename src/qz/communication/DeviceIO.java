@@ -23,4 +23,8 @@ public interface DeviceIO {
 
     void sendData(byte[] data, Byte exchangeConfig) throws DeviceException;
 
+
+    byte[] getFeatureReport(int responseSize, Byte reportId) throws DeviceException;
+
+    void sendFeatureReport(byte[] data, Byte reportId) throws DeviceException;
 }

@@ -83,7 +83,7 @@ public class AboutInfo {
 
         environment
                 .put("os", SystemUtilities.getOS())
-                .put("java", Constants.JAVA_VERSION)
+                .put("java", String.format("%s (%s)", Constants.JAVA_VERSION, System.getProperty("os.arch")))
                 .put("uptime", DurationFormatUtils.formatDurationWords(uptime, true, false))
                 .put("uptimeMillis", uptime);
 

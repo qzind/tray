@@ -48,19 +48,18 @@ public class H4J_HidUtilities {
         return devicesJSON;
     }
 
-
-    public static HidDevice findDevice(Short vendorId, Short productId, Short usagePage, String serial) {
-        if (vendorId == null) {
+    public static HidDevice findDevice(DeviceOptions dOpts) {
+        if (dOpts.getVendorId() == null) {
             throw new IllegalArgumentException("Vendor ID cannot be null");
         }
-        if (productId == null) {
+        if (dOpts.getProductId() == null) {
             throw new IllegalArgumentException("Product ID cannot be null");
         }
 
         List<HidDevice> devices = getHidDevices();
         for(HidDevice device : devices) {
-            if (device.isVidPidSerial(vendorId, productId, serial)
-                    && (usagePage == null || usagePage == (short)device.getUsagePage())) {
+            if (device.isVidPidSerial(dOpts.getVendorId(), dOpts.getProductId(), dOpts.getSerial())
+                    && (dOpts.getUsagePage() == null || dOpts.getUsagePage() == device.getUsagePage())) {
                 return device;
             }
         }

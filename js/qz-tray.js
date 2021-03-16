@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.1.2
+ * @version 2.1.2+11
  * @overview QZ Tray Connector
  * <p/>
  * Connects a web client to the QZ Tray software.
@@ -38,7 +38,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
-        VERSION: "2.1.2",                              //must match @version above
+        VERSION: "2.1.2+11",                              //must match @version above
         DEBUG: false,
 
         log: {
@@ -57,7 +57,7 @@ var qz = (function() {
 
         //stream types
         streams: {
-            serial: 'SERIAL', usb: 'USB', hid: 'HID', printer: 'PRINTER', file: 'FILE'
+            serial: 'SERIAL', usb: 'USB', hid: 'HID', printer: 'PRINTER', file: 'FILE', socket: 'SOCKET'
         },
 
 
@@ -189,20 +189,20 @@ var qz = (function() {
                     //called when an open connection is closed
                     _qz.websocket.connection.onclose = function(evt) {
                         _qz.log.trace(evt);
-                        _qz.log.info("Closed connection with QZ Tray");
 
-                        //if this is set, then an explicit close call was made
-                        if (this.promise != undefined) {
-                            this.promise.resolve();
-                        }
-
-                        _qz.websocket.callClose(evt);
                         _qz.websocket.connection = null;
+                        _qz.websocket.callClose(evt);
+                        _qz.log.info("Closed connection with QZ Tray");
 
                         for(var uid in _qz.websocket.pendingCalls) {
                             if (_qz.websocket.pendingCalls.hasOwnProperty(uid)) {
                                 _qz.websocket.pendingCalls[uid].reject(new Error("Connection closed before response received"));
                             }
+                        }
+
+                        //if this is set, then an explicit close call was made
+                        if (this.promise != undefined) {
+                            this.promise.resolve();
                         }
                     };
 
@@ -295,6 +295,9 @@ var qz = (function() {
                                         }
 
                                         _qz.serial.callSerial(JSON.parse(returned.event));
+                                        break;
+                                    case _qz.streams.socket:
+                                        _qz.socket.callSocket(JSON.parse(returned.event));
                                         break;
                                     case _qz.streams.usb:
                                         if (!returned.event) {
@@ -451,8 +454,7 @@ var qz = (function() {
 
                 altPrinting: false,
                 encoding: null,
-                endOfDoc: null,
-                perSpool: 1
+                spool: null
             }
         },
 
@@ -468,6 +470,22 @@ var qz = (function() {
                     }
                 } else {
                     _qz.serial.serialCallbacks(streamEvent);
+                }
+            }
+        },
+
+
+        socket: {
+            /** List of functions called when receiving data from network socket connection. */
+            socketCallbacks: [],
+            /** Calls all functions registered to listen for network socket events. */
+            callSocket: function(socketEvent) {
+                if (Array.isArray(_qz.socket.socketCallbacks)) {
+                    for(var i = 0; i < _qz.socket.socketCallbacks.length; i++) {
+                        _qz.socket.socketCallbacks[i](socketEvent);
+                    }
+                } else {
+                    _qz.socket.socketCallbacks(socketEvent);
                 }
             }
         },
@@ -767,7 +785,19 @@ var qz = (function() {
                         config.rasterize = true;
                     }
                 }
-
+                if(_qz.tools.versionCompare(2, 1, 2, 11) < 0) {
+                    if(config.spool) {
+                        if(config.spool.size) {
+                            config.perSpool = config.spool.size;
+                            delete config.spool.size;
+                        }
+                        if(config.spool.end) {
+                            config.endOfDoc = config.spool.end;
+                            delete config.spool.end;
+                        }
+                        delete config.spool;
+                    }
+                }
                 return config;
             },
 
@@ -910,13 +940,20 @@ var qz = (function() {
          * Set the printer assigned to this config.
          * @param {string|Object} newPrinter Name of printer. Use object type to specify printing to file or host.
          *  @param {string} [newPrinter.name] Name of printer to send printing.
-         *  @param {string} [newPrinter.file] Name of file to send printing.
+         *  @param {string} [newPrinter.file] DEPRECATED: Name of file to send printing.
          *  @param {string} [newPrinter.host] IP address or host name to send printing.
          *  @param {string} [newPrinter.port] Port used by &lt;printer.host>.
          */
         this.setPrinter = function(newPrinter) {
             if (typeof newPrinter === 'string') {
                 newPrinter = { name: newPrinter };
+            }
+
+            if(newPrinter && newPrinter.file) {
+                // TODO: Warn for UNC paths too https://github.com/qzind/tray/issues/730
+                if(newPrinter.file.indexOf("\\\\") != 0) {
+                    _qz.log.warn("Printing to file is deprecated.  See https://github.com/qzind/tray/issues/730");
+                }
             }
 
             this.printer = newPrinter;
@@ -1235,6 +1272,8 @@ var qz = (function() {
              * @since 2.1.0
              *
              * @see qz.printers.startListening
+             *
+             * @memberof qz.printers
              */
             getStatus: function() {
                 return _qz.websocket.dataPromise('printers.getStatus');
@@ -1305,8 +1344,11 @@ var qz = (function() {
              *
              *  @param {boolean} [options.altPrinting=false] Print the specified file using CUPS command line arguments.  Has no effect on Windows.
              *  @param {string} [options.encoding=null] Character set
-             *  @param {string} [options.endOfDoc=null]
-             *  @param {number} [options.perSpool=1] Number of pages per spool.
+             *  @param {string} [options.endOfDoc=null] DEPRECATED Raw only: Character(s) denoting end of a page to control spooling.
+             *  @param {number} [options.perSpool=1] DEPRECATED: Raw only: Number of pages per spool.
+             *  @param {Object} [options.spool=null] Advanced spooling options.
+             *   @param {number} [options.spool.size=null] Number of pages per spool.  Default is no limit.  If <code>spool.end</code> is provided, defaults to <code>1</code>
+             *   @param {string} [options.spool.end=null] Raw only: Character(s) denoting end of a page to control spooling.
              *
              * @memberof qz.configs
              */
@@ -1585,6 +1627,85 @@ var qz = (function() {
             }
         },
 
+        /**
+         * Calls related to interaction with communication sockets.
+         * @namespace qz.socket
+         */
+        socket: {
+            /**
+             * Opens a network port for sending and receiving data.
+             *
+             * @param {string} host The connection hostname.
+             * @param {number} port The connection port number.
+             * @param {Object} [options] Network socket configuration.
+             *  @param {string} [options.encoding='UTF-8'] Character set for communications.
+             *
+             * @memberof qz.socket
+             */
+            open: function(host, port, options) {
+                var params = {
+                    host: host,
+                    port: port,
+                    options: options
+                };
+                return _qz.websocket.dataPromise("socket.open", params);
+            },
+
+            /**
+             * @param {string} host The connection hostname.
+             * @param {number} port The connection port number.
+             *
+             * @memberof qz.socket
+             */
+            close: function(host, port) {
+                var params = {
+                    host: host,
+                    port: port
+                };
+                return _qz.websocket.dataPromise("socket.close", params);
+            },
+
+            /**
+             * Send data over an open socket.
+             *
+             * @param {string} host The connection hostname.
+             * @param {number} port The connection port number.
+             * @param {string|Object} data Data to be sent over the port.
+             *  @param {string} [data.type='PLAIN'] Valid values <code>[PLAIN]</code>
+             *  @param {string} data.data Data to be sent over the port.
+             *
+             * @memberof qz.socket
+             */
+            sendData: function(host, port, data) {
+                if (typeof data !== 'object') {
+                    data = {
+                        data: data,
+                        type: "PLAIN"
+                    };
+                }
+
+                var params = {
+                    host: host,
+                    port: port,
+                    data: data
+                };
+                return _qz.websocket.dataPromise("socket.sendData", params);
+            },
+
+            /**
+             * List of functions called for any response from open network sockets.
+             * Event data will contain <code>{string} host</code> and <code>{number} port</code> for all types.
+             *  For RECEIVE types, <code>{string} response</code>.
+             *  For ERROR types, <code>{string} exception</code>.
+             *
+             * @param {Function|Array<Function>} calls Single or array of <code>Function({Object} eventData)</code> calls.
+             *
+             * @memberof qz.socket
+             */
+            setSocketCallbacks: function(calls) {
+                _qz.socket.socketCallbacks = calls;
+            }
+        },
 
         /**
          * Calls related to interaction with USB devices.
@@ -2007,6 +2128,44 @@ var qz = (function() {
                 }
 
                 return _qz.websocket.dataPromise('hid.readData', deviceInfo);
+            },
+
+            /**
+             * Send a feature report to a claimed HID device.
+             *
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of HID device's vendor ID.
+             *  @param deviceInfo.productId Hex string of HID device's product ID.
+             *  @param deviceInfo.usagePage Hex string of HID device's usage page when multiple are present.
+             *  @param deviceInfo.serial Serial ID of HID device.
+             *  @param deviceInfo.data Bytes to send over specified endpoint.
+             *  @param deviceInfo.endpoint=0x00 First byte of the data packet signifying the HID report ID.
+             *                             Must be 0x00 for devices only supporting a single report.
+             *  @param deviceInfo.reportId=0x00 Alias for <code>deviceInfo.endpoint</code>. Not used if endpoint is provided.
+             *  @param {string} [deviceInfo.type='PLAIN'] Valid values <code>[FILE | PLAIN | HEX | BASE64]</code>
+             * @returns {Promise<null|Error>}
+             *
+             * @memberof qz.hid
+             */
+            sendFeatureReport: function(deviceInfo) {
+                return _qz.websocket.dataPromise('hid.sendFeatureReport', deviceInfo);
+            },
+
+            /**
+             * Get a feature report from a claimed HID device.
+             *
+             * @param {object} deviceInfo Config details of the HID device.
+             *  @param deviceInfo.vendorId Hex string of HID device's vendor ID.
+             *  @param deviceInfo.productId Hex string of HID device's product ID.
+             *  @param deviceInfo.usagePage Hex string of HID device's usage page when multiple are present.
+             *  @param deviceInfo.serial Serial ID of HID device.
+             *  @param deviceInfo.responseSize Size of the byte array to receive a response in.
+             * @returns {Promise<Array<string>|Error>} List of (hexadecimal) bytes received from the HID device.
+             *
+             * @memberof qz.hid
+             */
+            getFeatureReport: function(deviceInfo) {
+                return _qz.websocket.dataPromise('hid.getFeatureReport', deviceInfo);
             },
 
             /**

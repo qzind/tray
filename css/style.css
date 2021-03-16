@@ -330,6 +330,13 @@ footer {
     border-radius: 0 6px 6px 6px;
 }
 
+button > .fa-caret-down {
+    height: 100%;
+    display: inline;
+    margin-left: -.75em;
+    margin-right: -1em;
+}
+
 @media (min-width: 768px) {
     .dropdown-submenu:hover > .dropdown-menu {
         display: block;

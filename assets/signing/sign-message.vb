@@ -31,10 +31,13 @@ Public Sub SignMessage(message As String)
 	Dim cert = New X509Certificate2(KEY, X509KeyStorageFlags.MachineKeySet Or X509KeyStorageFlags.PersistKeySet Or X509KeyStorageFlags.Exportable)
 	Dim csp As RSACryptoServiceProvider = CType(cert.PrivateKey,RSACryptoServiceProvider)
 	
+	Dim cspStrong as RSACryptoServiceProvider() = New RSACryptoServiceProvider() ' 2.1 and higher: Make RSACryptoServiceProvider that can handle SHA256, SHA512
+	cspStrong.ImportParameters(csp.ExportParameters(true))	' Copy to stronger RSACryptoServiceProvider
+
 	Dim data As Byte() = New ASCIIEncoding().GetBytes(message)
 	Dim hash As Byte() = New SHA512Managed().ComputeHash(data) ' Use SHA1Managed() for QZ Tray 2.0 and older
 	
 	Response.ContentType = "text/plain"
-	Response.Write(Convert.ToBase64String(csp.SignHash(hash, CryptoConfig.MapNameToOID("SHA512")))) ' Use "SHA1" for QZ Tray 2.0 and older
+	Response.Write(Convert.ToBase64String(cspStrong.SignHash(hash, CryptoConfig.MapNameToOID("SHA512")))) ' Use "SHA1" for QZ Tray 2.0 and older
 	Environment.[Exit](0)
 End Sub

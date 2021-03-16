@@ -14,7 +14,7 @@ public class UsbIO implements DeviceIO {
 
 
     public UsbIO(DeviceOptions dOpts) throws DeviceException {
-        UsbDevice device = UsbUtilities.findDevice(dOpts.getVendorId(), dOpts.getProductId());
+        UsbDevice device = UsbUtilities.findDevice(dOpts.getVendorId().shortValue(), dOpts.getProductId().shortValue());
 
         if (device == null) {
             throw new DeviceException("USB device could not be found");
@@ -84,6 +84,14 @@ public class UsbIO implements DeviceIO {
         catch(UsbException e) {
             throw new DeviceException(e);
         }
+    }
+
+    public byte[] getFeatureReport(int responseSize, Byte reportId) throws DeviceException {
+        throw new DeviceException("USB feature reports are not supported");
+    }
+
+    public void sendFeatureReport(byte[] data, Byte reportId) throws DeviceException {
+        throw new DeviceException("USB feature reports are not supported");
     }
 
     /**

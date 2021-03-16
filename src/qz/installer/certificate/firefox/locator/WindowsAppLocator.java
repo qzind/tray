@@ -118,12 +118,14 @@ public class WindowsAppLocator extends AppLocator{
                 }
                 version = version + suffix;
             }
-            Path exePath = Paths.get(WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key + " " + version + "\\bin", "PathToExe"));
+            String exePath = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key + " " + version + "\\bin", "PathToExe");
 
             if (exePath != null) {
                 // SemVer: Replace spaces in suffixes with dashes
                 version = version.replaceAll(" ", "-");
-                return new AppInfo(alias, exePath, version);
+                return new AppInfo(alias, Paths.get(exePath), version);
+            } else {
+                log.warn("Couldn't locate \"PathToExe\" for \"{}\" in \"{}\", skipping", alias.getName(), key);
             }
         }
         return null;

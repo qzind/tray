@@ -70,6 +70,12 @@ public class WebApp extends Application {
         log.trace("New state: {} > {}", oldState, newState);
 
         if (newState == Worker.State.SUCCEEDED) {
+            boolean hasBody = (boolean)webView.getEngine().executeScript("document.body != null");
+            if (!hasBody) {
+                log.warn("Loaded page has no body - likely a redirect, skipping state");
+                return;
+            }
+
             //ensure html tag doesn't use scrollbars, clipping page instead
             Document doc = webView.getEngine().getDocument();
             NodeList tags = doc.getElementsByTagName("html");

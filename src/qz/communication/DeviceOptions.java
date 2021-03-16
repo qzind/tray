@@ -24,8 +24,8 @@ public class DeviceOptions {
 
     private DeviceMode deviceMode;
 
-    private Short vendorId;
-    private Short productId;
+    private Integer vendorId;
+    private Integer productId;
 
     //usb specific
     private Byte interfaceId;
@@ -34,14 +34,14 @@ public class DeviceOptions {
     private int responseSize;
 
     //hid specific
-    private Short usagePage;
+    private Integer usagePage;
     private String serial;
 
     public DeviceOptions(JSONObject parameters, DeviceMode deviceMode) {
         this.deviceMode = deviceMode;
 
-        vendorId = UsbUtilities.hexToShort(parameters.optString("vendorId"));
-        productId = UsbUtilities.hexToShort(parameters.optString("productId"));
+        vendorId = UsbUtilities.hexToInt(parameters.optString("vendorId"));
+        productId = UsbUtilities.hexToInt(parameters.optString("productId"));
 
         if (!parameters.isNull("interface")) {
             interfaceId = UsbUtilities.hexToByte(parameters.optString("interface"));
@@ -55,7 +55,7 @@ public class DeviceOptions {
         responseSize = parameters.optInt("responseSize");
 
         if (!parameters.isNull("usagePage")) {
-            usagePage = UsbUtilities.hexToShort(parameters.optString("usagePage"));
+            usagePage = UsbUtilities.hexToInt(parameters.optString("usagePage"));
         }
         if (!parameters.isNull("serial")) {
             serial = parameters.optString("serial", "");
@@ -63,11 +63,11 @@ public class DeviceOptions {
         }
     }
 
-    public Short getVendorId() {
+    public Integer getVendorId() {
         return vendorId;
     }
 
-    public Short getProductId() {
+    public Integer getProductId() {
         return productId;
     }
 
@@ -87,7 +87,7 @@ public class DeviceOptions {
         return responseSize;
     }
 
-    public Short getUsagePage() {
+    public Integer getUsagePage() {
         return usagePage;
     }
 

@@ -25,7 +25,7 @@ public class PJHA_HidIO implements DeviceIO {
 
 
     public PJHA_HidIO(DeviceOptions dOpts) throws DeviceException {
-        this(PJHA_HidUtilities.findDevice(dOpts.getVendorId(), dOpts.getProductId(), dOpts.getUsagePage(), dOpts.getSerial()));
+        this(PJHA_HidUtilities.findDevice(dOpts));
     }
 
     public PJHA_HidIO(HidDeviceInfo deviceInfo) throws DeviceException {
@@ -108,6 +108,25 @@ public class PJHA_HidIO implements DeviceIO {
         if (wrote == -1) {
             throw new DeviceException("Failed to write to device");
         }
+    }
+
+    public byte[] getFeatureReport(int responseSize, Byte unused) throws DeviceException {
+        byte[] response = new byte[responseSize];
+        int read = device.getFeatureReport(response, responseSize);
+        if (read == -1) {
+            throw new DeviceException("Failed to read from device");
+        }
+        return response;
+    }
+
+    public void sendFeatureReport(byte[] data, Byte reportId) throws DeviceException {
+        if (reportId == null) { reportId = (byte)0x00; }
+        int wrote = device.setFeatureReport(reportId, data, data.length); 
+
+        if (wrote == -1) {
+            throw new DeviceException("Failed to write to device");
+        }
+
     }
 
     public void close() {

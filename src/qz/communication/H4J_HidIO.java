@@ -12,7 +12,7 @@ public class H4J_HidIO implements DeviceIO {
 
 
     public H4J_HidIO(DeviceOptions dOpts) throws DeviceException {
-        this(H4J_HidUtilities.findDevice(dOpts.getVendorId(), dOpts.getProductId(), dOpts.getUsagePage(), dOpts.getSerial()));
+        this(H4J_HidUtilities.findDevice(dOpts));
     }
 
     public H4J_HidIO(HidDevice device) throws DeviceException {
@@ -64,6 +64,28 @@ public class H4J_HidIO implements DeviceIO {
         if (reportId == null) { reportId = (byte)0x00; }
 
         int wrote = device.write(data, data.length, reportId);
+        if (wrote == -1) {
+            throw new DeviceException("Failed to write to device");
+        }
+    }
+
+    public byte[] getFeatureReport(int responseSize, Byte reportId) throws DeviceException {
+        if (reportId == null) { reportId = (byte)0x00; }
+        byte[] response = new byte[responseSize];
+
+        int read = device.getFeatureReport(response, reportId);
+        if (read == -1) {
+            throw new DeviceException("Failed to read from device");
+        }
+
+        return response;
+
+    }
+
+    public void sendFeatureReport(byte[] data, Byte reportId) throws DeviceException {
+        if (reportId == null) { reportId = (byte)0x00; }
+
+        int wrote = device.sendFeatureReport(data, reportId);
         if (wrote == -1) {
             throw new DeviceException("Failed to write to device");
         }

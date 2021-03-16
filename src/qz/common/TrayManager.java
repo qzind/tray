@@ -165,7 +165,7 @@ public class TrayManager {
                             darkDesktopMode = SystemUtilities.isDarkDesktop();
                             darkTaskbarMode = SystemUtilities.isDarkTaskbar();
                             iconCache.fixTrayIcons(darkTaskbarMode);
-                            refreshIcon();
+                            refreshIcon(null);
                             SwingUtilities.invokeLater(() -> {
                                 SystemUtilities.setSystemLookAndFeel();
                                 for(Component c : componentList) {
@@ -554,7 +554,12 @@ public class TrayManager {
      * Thread safe method for setting the default icon
      */
     public void setDefaultIcon() {
-        setIcon(IconCache.Icon.DEFAULT_ICON);
+        // Workaround for JDK-8252015
+        if(SystemUtilities.isMac() && Constants.MASK_TRAY_SUPPORTED && !MacUtilities.jdkSupportsTemplateIcon()) {
+            setIcon(IconCache.Icon.DEFAULT_ICON, () -> MacUtilities.toggleTemplateIcon(tray.tray()));
+        } else {
+            setIcon(IconCache.Icon.DEFAULT_ICON);
+        }
     }
 
     /** Thread safe method for setting the error status message */
@@ -578,15 +583,24 @@ public class TrayManager {
     }
 
     /** Thread safe method for setting the specified icon */
-    private void setIcon(final IconCache.Icon i) {
+    private void setIcon(final IconCache.Icon i, Runnable whenDone) {
         if (tray != null && i != shownIcon) {
             shownIcon = i;
-            refreshIcon();
+            refreshIcon(whenDone);
         }
     }
 
-    public void refreshIcon() {
-        SwingUtilities.invokeLater(() -> tray.setImage(iconCache.getImage(shownIcon, tray.getSize())));
+    private void setIcon(final IconCache.Icon i) {
+        setIcon(i, null);
+    }
+
+    public void refreshIcon(final Runnable whenDone) {
+        SwingUtilities.invokeLater(() -> {
+            tray.setImage(iconCache.getImage(shownIcon, tray.getSize()));
+            if(whenDone != null) {
+                whenDone.run();
+            }
+        });
     }
 
     /**

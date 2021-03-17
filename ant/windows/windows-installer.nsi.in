@@ -33,10 +33,10 @@ RequestExecutionLevel admin
     SetDetailsPrint textonly
     DetailPrint "Running ${step}..."
     SetDetailsPrint listonly
-    DetailPrint 'Running ${step}: "$java" ${launch.opts} -jar "$OUTDIR\${project.filename}.jar" "${step}" "${option}" "${value}"'
+    DetailPrint 'Running ${step}: "$java" ${install.opts} -jar "$OUTDIR\${project.filename}.jar" "${step}" "${option}" "${value}"'
     SetDetailsPrint both
     ClearErrors
-    ExecDos::exec /NOUNLOAD /DISABLEFSR '"$java" ${launch.opts} -jar "$OUTDIR\${project.filename}.jar" "${step}" "${option}" "${value}"' "" "$EXEDIR/${project.filename}_${step}.log"
+    ExecDos::exec /NOUNLOAD /DISABLEFSR '"$java" ${install.opts} -jar "$OUTDIR\${project.filename}.jar" "${step}" "${option}" "${value}"' "" "$EXEDIR/${project.filename}_${step}.log"
     Pop $0
     ${If} "$0" != "0"
         Abort "Installation failed during ${step} step.  Please check log for details."

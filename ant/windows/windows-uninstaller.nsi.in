@@ -72,9 +72,9 @@ Section
     SetDetailsPrint none ; Temporarily suppress details
     SetOutPath $DELETE_DIR
     SetDetailsPrint listonly
-    DetailPrint 'Running uninstall: "$java" ${launch.opts} -jar "$DELETE_DIR\${project.filename}.jar" uninstall'
+    DetailPrint 'Running uninstall: "$java" ${install.opts} -jar "$DELETE_DIR\${project.filename}.jar" uninstall'
     ClearErrors
-    nsExec::ExecToLog '"$java" ${launch.opts} -jar "$DELETE_DIR\${project.filename}.jar" uninstall'
+    nsExec::ExecToLog '"$java" ${install.opts} -jar "$DELETE_DIR\${project.filename}.jar" uninstall'
     Pop $0
     ${If} "$0" != "0"
         Abort "Uninstall failed."

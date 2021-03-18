@@ -167,7 +167,7 @@ public class PrintOptions {
                         psOptions.crossDensity = usableRes.getCrossFeedResolution(psOptions.units.resSyntax);
                     }
                 } else {
-                    String relDPI = configOpts.optString("density", "").toLowerCase();
+                    String relDPI = configOpts.optString("density", "").toLowerCase(Locale.ENGLISH);
                     if ("best".equals(relDPI)) {
                         PrinterResolution bestRes = null;
                         for(PrinterResolution pr : rSupport) {
@@ -220,7 +220,7 @@ public class PrintOptions {
             catch(JSONException e) {
                 //not a boolean, try as a string
                 try {
-                    String duplex = configOpts.getString("duplex").toLowerCase();
+                    String duplex = configOpts.getString("duplex").toLowerCase(Locale.ENGLISH);
                     if (duplex.matches("^(duplex|(two.sided.)?long(.edge)?)$")) {
                         psOptions.duplex = Sides.DUPLEX;
                     } else if (duplex.matches("^(tumble|(two.sided.)?short(.edge)?)$")) {

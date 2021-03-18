@@ -58,8 +58,8 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
 
     // CUPS defined states (defined by CUPS, but not part of the IPP specification)
     OFFLINE(REASON, NativePrinterStatus.OFFLINE), // "offline"
-    CUPS_INSECURE_FILTER(REASON, NativePrinterStatus.SERVER_UNKNOWN), // "cups-insecure-filter"
-    CUPS_MISSING_FILTER(REASON, NativePrinterStatus.ERROR), // "cups-missing-filter"
+    CUPS_INSECURE_FILTER_WARNING(REASON, NativePrinterStatus.SERVER_UNKNOWN), // "cups-insecure-filter-warning"
+    CUPS_MISSING_FILTER_WARNING(REASON, NativePrinterStatus.ERROR), // "cups-missing-filter-warning"
     CUPS_WAITING_FOR_JOB_COMPLETED(REASON, NativePrinterStatus.PRINTING), // "cups-waiting-for-job-completed");
 
     // Unmapped printer-state-reasons

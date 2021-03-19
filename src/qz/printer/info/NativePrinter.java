@@ -2,7 +2,6 @@ package qz.printer.info;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.common.TrayManager;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;

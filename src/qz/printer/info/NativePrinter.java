@@ -1,5 +1,8 @@
 package qz.printer.info;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import qz.common.TrayManager;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
@@ -9,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class NativePrinter {
+    private static final Logger log = LoggerFactory.getLogger(NativePrinter.class);
     /**
      * Simple object wrapper allowing lazy fetching of values
      * @param <T>
@@ -142,9 +146,13 @@ public class NativePrinter {
 
     public void setPrintService(PrintService printService) {
         // Fetch resolution, if available
-        Object resolution = printService.getDefaultAttributeValue(PrinterResolution.class);
-        if (resolution != null) {
-            this.resolution.set((PrinterResolution)resolution);
+        try {
+            Object resolution = printService.getDefaultAttributeValue(PrinterResolution.class);
+            if (resolution != null) {
+                this.resolution.set((PrinterResolution)resolution);
+            }
+        } catch(IllegalArgumentException e) {
+            log.warn("Unable to obtain PrinterResolution from {}", printService.getName(), e);
         }
         this.printService.set(printService);
     }

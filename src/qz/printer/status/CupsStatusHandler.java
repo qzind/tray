@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Created by kyle on 4/27/17.
@@ -20,6 +21,7 @@ public class CupsStatusHandler extends AbstractHandler {
 
     private static Cups cups = Cups.INSTANCE;
     private int lastEventNumber = 0;
+    private HashMap<String, ArrayList<String>> lastPrinterStatusMap = new HashMap<>();
 
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         baseRequest.setHandled(true);
@@ -56,6 +58,9 @@ public class CupsStatusHandler extends AbstractHandler {
                     statuses.add(NativeStatus.fromCupsJobStatus(reason, jobState, printer, jobId, jobName));
                 }
             } else if (eventType.startsWith("printer")) {
+                ArrayList<String> oldStatuses = lastPrinterStatusMap.getOrDefault(printer, new ArrayList<>());
+                ArrayList<String> newStatuses = new ArrayList<>();
+
                 Pointer PrinterStateAttr = cups.ippFindNextAttribute(response, "printer-state", Cups.IPP.TAG_ENUM);
                 Pointer PrinterStateReasonsAttr = cups.ippFindNextAttribute(response, "printer-state-reasons", Cups.IPP.TAG_KEYWORD);
                 String state = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(PrinterStateAttr, 0));
@@ -63,8 +68,11 @@ public class CupsStatusHandler extends AbstractHandler {
                 int attrCount = cups.ippGetCount(PrinterStateReasonsAttr);
                 for (int i = 0;  i < attrCount; i++) {
                     String reason = cups.ippGetString(PrinterStateReasonsAttr, i, "");
-                    statuses.add(NativeStatus.fromCupsPrinterStatus(reason, state, printer));
+                    String statusConcat = state + reason;
+                    if (!oldStatuses.contains(statusConcat)) statuses.add(NativeStatus.fromCupsPrinterStatus(reason, state, printer));
+                    newStatuses.add(statusConcat);
                 }
+                lastPrinterStatusMap.put(printer, newStatuses);
             } else {
                 log.debug("Unknown CUPS event type {}.", eventType);
             }

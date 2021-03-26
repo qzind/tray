@@ -133,7 +133,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
         try {
             SystemUtilities.setSystemLookAndFeel();
             return JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(null, "A critical component, \"certutil\" wasn't found.  Attempt to fetch it now?");
-        } catch(HeadlessException ignore) {}
+        } catch(Throwable ignore) {}
         return true;
     }
 }

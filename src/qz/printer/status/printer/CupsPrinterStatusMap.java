@@ -25,7 +25,7 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     MOVING_TO_PAUSED(REASON, NativePrinterStatus.OK), // "moving-to-paused"
     PAUSED(REASON, NativePrinterStatus.UNMAPPED), // "paused"
     SHUTDOWN(REASON, NativePrinterStatus.OFFLINE), // "shutdown"
-    CONNECTING_TO_DEVICE(REASON, NativePrinterStatus.OK), // "connecting-to-device"
+    CONNECTING_TO_DEVICE(REASON, NativePrinterStatus.PROCESSING), // "connecting-to-device"
     TIMED_OUT(REASON, NativePrinterStatus.NOT_AVAILABLE), // "timed-out"
     STOPPING(REASON, NativePrinterStatus.OK), // "stopping"
     STOPPED_PARTLY(REASON, NativePrinterStatus.PAUSED), // "stopped-partly"

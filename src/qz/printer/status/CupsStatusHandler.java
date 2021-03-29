@@ -32,7 +32,7 @@ public class CupsStatusHandler extends AbstractHandler {
         }
     }
 
-    private void getNotifications() {
+    private synchronized void getNotifications() {
         Pointer response = CupsUtils.getStatuses(lastEventNumber + 1);
 
         Pointer eventNumberAttr = cups.ippFindAttribute(response, "notify-sequence-number", Cups.IPP.TAG_INTEGER);
@@ -56,7 +56,8 @@ public class CupsStatusHandler extends AbstractHandler {
                 // Statuses come in blocks eg. {printing, toner_low} We only want to display a status if it didn't exist in the last block
                 // Get the list of statuses from the last block associated with this printer
                 // '/' Is a documented invalid character for CUPS printer names. We will use that as a separator
-                ArrayList<Status> oldStatuses = lastJobStatusMap.getOrDefault(printer + "/" + jobId, new ArrayList<>());
+                String jobKey = printer + "/" + jobId;
+                ArrayList<Status> oldStatuses = lastJobStatusMap.getOrDefault(jobKey, new ArrayList<>());
                 ArrayList<Status> newStatuses = new ArrayList<>();
 
                 boolean completed = false;
@@ -67,15 +68,18 @@ public class CupsStatusHandler extends AbstractHandler {
                     // If this status was one we didn't see last block, send it
                     if (!oldStatuses.contains(pending)) statuses.add(pending);
                     // If the job is complete, we need to remove it from our map
-                    if (pending.getCode() == NativeJobStatus.COMPLETE) completed = true;
+                    if ((pending.getCode() == NativeJobStatus.COMPLETE) ||
+                            (pending.getCode() == NativeJobStatus.CANCELED)) {
+                        completed = true;
+                    }
                     // regardless, remember the status for the next block
                     newStatuses.add(pending);
                 }
                 if (completed) {
-                    lastJobStatusMap.remove(printer + jobId);
+                    lastJobStatusMap.remove(jobKey);
                 } else {
                     // Replace the old list with the new one
-                    lastJobStatusMap.put(printer + jobId, newStatuses);
+                    lastJobStatusMap.put(jobKey, newStatuses);
                 }
             } else if (eventType.startsWith("printer")) {
                 Pointer printerStateAttr = cups.ippFindNextAttribute(response, "printer-state", Cups.IPP.TAG_ENUM);
@@ -106,5 +110,7 @@ public class CupsStatusHandler extends AbstractHandler {
 
         cups.ippDelete(response);
         StatusMonitor.statusChanged(statuses.toArray(new Status[statuses.size()]));
+        //Todo Remove this debugging log
+        log.warn("We remember {} jobs", lastJobStatusMap.size());
     }
 }

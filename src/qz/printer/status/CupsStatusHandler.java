@@ -22,7 +22,6 @@ public class CupsStatusHandler extends AbstractHandler {
 
     private static Cups cups = Cups.INSTANCE;
     private int lastEventNumber = 0;
-    //todo could perhaps be the same list
     private HashMap<String, ArrayList<Status>> lastPrinterStatusMap = new HashMap<>();
     private HashMap<String, ArrayList<Status>> lastJobStatusMap = new HashMap<>();
 
@@ -54,36 +53,42 @@ public class CupsStatusHandler extends AbstractHandler {
                 int jobId = cups.ippGetInteger(JobIdAttr, 0);
                 String jobState = Cups.INSTANCE.ippEnumString("job-state", Cups.INSTANCE.ippGetInteger(jobStateAttr, 0));
                 String jobName = cups.ippGetString(jobNameAttr, 0, "");
-
-                // todo: this should be job url maybe
-                ArrayList<Status> oldStatuses = lastJobStatusMap.getOrDefault(printer + jobId, new ArrayList<>());
+                // Statuses come in blocks eg. {printing, toner_low} We only want to display a status if it didn't exist in the last block
+                // Get the list of statuses from the last block associated with this printer
+                // '/' Is a documented invalid character for CUPS printer names. We will use that as a separator
+                ArrayList<Status> oldStatuses = lastJobStatusMap.getOrDefault(printer + "/" + jobId, new ArrayList<>());
                 ArrayList<Status> newStatuses = new ArrayList<>();
 
                 boolean completed = false;
                 int attrCount = cups.ippGetCount(jobStateReasonsAttr);
                 for (int i = 0;  i < attrCount; i++) {
                     String reason = cups.ippGetString(jobStateReasonsAttr, i, "");
-                    Status status = NativeStatus.fromCupsJobStatus(reason, jobState, printer, jobId, jobName);
-                    if (!oldStatuses.contains(status)) statuses.add(status);
-                    if (status.getCode() == NativeJobStatus.COMPLETE) completed = true;
+                    Status pending = NativeStatus.fromCupsJobStatus(reason, jobState, printer, jobId, jobName);
+                    // If this status was one we didn't see last block, send it
+                    if (!oldStatuses.contains(pending)) statuses.add(pending);
+                    // If the job is complete, we need to remove it from our map
+                    if (pending.getCode() == NativeJobStatus.COMPLETE) completed = true;
+                    // regardless, remember the status for the next block
+                    newStatuses.add(pending);
                 }
                 if (completed) {
                     lastJobStatusMap.remove(printer + jobId);
                 } else {
+                    // Replace the old list with the new one
                     lastJobStatusMap.put(printer + jobId, newStatuses);
                 }
             } else if (eventType.startsWith("printer")) {
-                Pointer PrinterStateAttr = cups.ippFindNextAttribute(response, "printer-state", Cups.IPP.TAG_ENUM);
-                Pointer PrinterStateReasonsAttr = cups.ippFindNextAttribute(response, "printer-state-reasons", Cups.IPP.TAG_KEYWORD);
-                String state = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(PrinterStateAttr, 0));
+                Pointer printerStateAttr = cups.ippFindNextAttribute(response, "printer-state", Cups.IPP.TAG_ENUM);
+                Pointer printerStateReasonsAttr = cups.ippFindNextAttribute(response, "printer-state-reasons", Cups.IPP.TAG_KEYWORD);
+                String state = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(printerStateAttr, 0));
                 // Statuses come in blocks eg. {printing, toner_low} We only want to display a status if it didn't exist in the last block
                 // Get the list of statuses from the last block associated with this printer
                 ArrayList<Status> oldStatuses = lastPrinterStatusMap.getOrDefault(printer, new ArrayList<>());
                 ArrayList<Status> newStatuses = new ArrayList<>();
 
-                int attrCount = cups.ippGetCount(PrinterStateReasonsAttr);
+                int attrCount = cups.ippGetCount(printerStateReasonsAttr);
                 for (int i = 0;  i < attrCount; i++) {
-                    String reason = cups.ippGetString(PrinterStateReasonsAttr, i, "");
+                    String reason = cups.ippGetString(printerStateReasonsAttr, i, "");
                     Status pending = NativeStatus.fromCupsPrinterStatus(reason, state, printer);
                     // If this status was one we didn't see last block, send it
                     if (!oldStatuses.contains(pending)) statuses.add(pending);

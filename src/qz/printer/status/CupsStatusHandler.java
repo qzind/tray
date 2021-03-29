@@ -22,6 +22,7 @@ public class CupsStatusHandler extends AbstractHandler {
     private static Cups cups = Cups.INSTANCE;
     private int lastEventNumber = 0;
     private HashMap<String, ArrayList<String>> lastPrinterStatusMap = new HashMap<>();
+    private HashMap<String, ArrayList<String>> lastJobStatusMap = new HashMap<>();
 
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         baseRequest.setHandled(true);
@@ -52,10 +53,19 @@ public class CupsStatusHandler extends AbstractHandler {
                 String jobState = Cups.INSTANCE.ippEnumString("job-state", Cups.INSTANCE.ippGetInteger(jobStateAttr, 0));
                 String jobName = cups.ippGetString(jobNameAttr, 0, "");
 
+                ArrayList<String> oldStatuses = lastJobStatusMap.getOrDefault(printer + jobId, new ArrayList<>());
+                ArrayList<String> newStatuses = new ArrayList<>();
+
                 int attrCount = cups.ippGetCount(jobStateReasonsAttr);
                 for (int i = 0;  i < attrCount; i++) {
                     String reason = cups.ippGetString(jobStateReasonsAttr, i, "");
-                    statuses.add(NativeStatus.fromCupsJobStatus(reason, jobState, printer, jobId, jobName));
+                    String statusConcat = jobState + reason;
+                    if (!oldStatuses.contains(statusConcat)) statuses.add(NativeStatus.fromCupsJobStatus(reason, jobState, printer, jobId, jobName));
+                }
+                if (newStatuses.contains("job-completed-successfully")) {
+                    lastJobStatusMap.remove(printer + jobId);
+                } else {
+                    lastJobStatusMap.put(printer + jobId, newStatuses);
                 }
             } else if (eventType.startsWith("printer")) {
                 ArrayList<String> oldStatuses = lastPrinterStatusMap.getOrDefault(printer, new ArrayList<>());

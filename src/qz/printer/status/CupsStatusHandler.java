@@ -5,6 +5,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.printer.status.job.NativeJobStatus;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -21,8 +22,9 @@ public class CupsStatusHandler extends AbstractHandler {
 
     private static Cups cups = Cups.INSTANCE;
     private int lastEventNumber = 0;
-    private HashMap<String, ArrayList<String>> lastPrinterStatusMap = new HashMap<>();
-    private HashMap<String, ArrayList<String>> lastJobStatusMap = new HashMap<>();
+    //todo could perhaps be the same list
+    private HashMap<String, ArrayList<Status>> lastPrinterStatusMap = new HashMap<>();
+    private HashMap<String, ArrayList<Status>> lastJobStatusMap = new HashMap<>();
 
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         baseRequest.setHandled(true);
@@ -53,35 +55,42 @@ public class CupsStatusHandler extends AbstractHandler {
                 String jobState = Cups.INSTANCE.ippEnumString("job-state", Cups.INSTANCE.ippGetInteger(jobStateAttr, 0));
                 String jobName = cups.ippGetString(jobNameAttr, 0, "");
 
-                ArrayList<String> oldStatuses = lastJobStatusMap.getOrDefault(printer + jobId, new ArrayList<>());
-                ArrayList<String> newStatuses = new ArrayList<>();
+                // todo: this should be job url maybe
+                ArrayList<Status> oldStatuses = lastJobStatusMap.getOrDefault(printer + jobId, new ArrayList<>());
+                ArrayList<Status> newStatuses = new ArrayList<>();
 
+                boolean completed = false;
                 int attrCount = cups.ippGetCount(jobStateReasonsAttr);
                 for (int i = 0;  i < attrCount; i++) {
                     String reason = cups.ippGetString(jobStateReasonsAttr, i, "");
-                    String statusConcat = jobState + reason;
-                    if (!oldStatuses.contains(statusConcat)) statuses.add(NativeStatus.fromCupsJobStatus(reason, jobState, printer, jobId, jobName));
+                    Status status = NativeStatus.fromCupsJobStatus(reason, jobState, printer, jobId, jobName);
+                    if (!oldStatuses.contains(status)) statuses.add(status);
+                    if (status.getCode() == NativeJobStatus.COMPLETE) completed = true;
                 }
-                if (newStatuses.contains("job-completed-successfully")) {
+                if (completed) {
                     lastJobStatusMap.remove(printer + jobId);
                 } else {
                     lastJobStatusMap.put(printer + jobId, newStatuses);
                 }
             } else if (eventType.startsWith("printer")) {
-                ArrayList<String> oldStatuses = lastPrinterStatusMap.getOrDefault(printer, new ArrayList<>());
-                ArrayList<String> newStatuses = new ArrayList<>();
-
                 Pointer PrinterStateAttr = cups.ippFindNextAttribute(response, "printer-state", Cups.IPP.TAG_ENUM);
                 Pointer PrinterStateReasonsAttr = cups.ippFindNextAttribute(response, "printer-state-reasons", Cups.IPP.TAG_KEYWORD);
                 String state = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(PrinterStateAttr, 0));
+                // Statuses come in blocks eg. {printing, toner_low} We only want to display a status if it didn't exist in the last block
+                // Get the list of statuses from the last block associated with this printer
+                ArrayList<Status> oldStatuses = lastPrinterStatusMap.getOrDefault(printer, new ArrayList<>());
+                ArrayList<Status> newStatuses = new ArrayList<>();
 
                 int attrCount = cups.ippGetCount(PrinterStateReasonsAttr);
                 for (int i = 0;  i < attrCount; i++) {
                     String reason = cups.ippGetString(PrinterStateReasonsAttr, i, "");
-                    String statusConcat = state + reason;
-                    if (!oldStatuses.contains(statusConcat)) statuses.add(NativeStatus.fromCupsPrinterStatus(reason, state, printer));
-                    newStatuses.add(statusConcat);
+                    Status pending = NativeStatus.fromCupsPrinterStatus(reason, state, printer);
+                    // If this status was one we didn't see last block, send it
+                    if (!oldStatuses.contains(pending)) statuses.add(pending);
+                    // regardless, remember the status for the next block
+                    newStatuses.add(pending);
                 }
+                // Replace the old list with the new one
                 lastPrinterStatusMap.put(printer, newStatuses);
             } else {
                 log.debug("Unknown CUPS event type {}.", eventType);

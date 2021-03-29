@@ -81,8 +81,7 @@ public class Status {
     public boolean equals(Object obj) {
         if(obj != null && obj instanceof Status) {
             Status status = (Status)obj;
-            boolean stuff =  status.eventType == eventType && status.printer.equals(printer) && status.jobId == jobId && rawCode.equals(status.rawCode);
-            return stuff;
+            return status.eventType == eventType && status.printer.equals(printer) && status.jobId == jobId && rawCode.equals(status.rawCode);
         }
         return super.equals(obj);
     }

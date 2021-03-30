@@ -137,7 +137,7 @@ public class WmiPrinterStatusThread extends Thread {
                 sendPendingStatuses();
                 Winspool.INSTANCE.FreePrinterNotifyInfo(data.getPointer());
             } else {
-                //Todo why do we end up here so often, what causes dataPointer to be null?
+                //Fixme Why do we end up here so often, what causes dataPointer to be null?
             }
         } else {
             issueError();
@@ -167,7 +167,6 @@ public class WmiPrinterStatusThread extends Thread {
                 // Check to see if "hold jobs" changed
                 holdsJobs = (d.NotifyData.adwData[0] & Winspool.PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS) > 0;
             } else {
-                // todo delete this
                 log.warn("Unknown event field {}", d.Field);
             }
         } else if (d.Type == Winspool.JOB_NOTIFY_TYPE) {
@@ -183,9 +182,6 @@ public class WmiPrinterStatusThread extends Thread {
                     statusList = new ArrayList<>();
                     pendingJobStatuses.put(d.Id, statusList);
                 }
-                //Todo Remove this debugging log
-                log.warn("code {}", d.NotifyData.adwData[0]);
-
                 statusList.add(d.NotifyData.adwData[0]);
             }
         }
@@ -235,8 +231,6 @@ public class WmiPrinterStatusThread extends Thread {
                 docNames.remove(jobId);
                 lastJobStatusCodes.remove(jobId);
             }
-            //Todo Remove this debugging log
-            log.warn("We remember {} jobs", docNames.size());
         }
     }
 

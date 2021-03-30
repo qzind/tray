@@ -110,7 +110,5 @@ public class CupsStatusHandler extends AbstractHandler {
 
         cups.ippDelete(response);
         StatusMonitor.statusChanged(statuses.toArray(new Status[statuses.size()]));
-        //Todo Remove this debugging log
-        log.warn("We remember {} jobs", lastJobStatusMap.size());
     }
 }

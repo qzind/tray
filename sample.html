@@ -70,8 +70,14 @@
                     </div>
                     <div class="form-group" id="connectionGroup">
                         <hr>
-                        <label for="printerSearch">Connect to host:</label>
+                        <label for="connectionHost">Connect to host:</label>
                         <input type="text" id="connectionHost" value="localhost" class="form-control" />
+                        <div class="form-group form-inline">
+                            <label for="connectionUsingSecure" data-toggle="tooltip" title="HTTPS Only: Allow secure pages to connect to insecure locations.">
+                                Secure
+                            </label>
+                            <input checked type="checkbox" id="connectionUsingSecure" class="pull-right"/>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1390,12 +1396,14 @@
 
     function startConnection(config) {
         host = $('#connectionHost').val().trim();
+        usingSecure = $("#connectionUsingSecure").prop('checked');
         // Connect to a print-server instance, if specified
         if(host != "" && host != 'localhost') {
             if(config) {
                 config.host = host;
+                config.usingSecure = usingSecure;
             } else {
-                config = { host: host };
+                config = { host: host,  usingSecure: usingSecure };
             }
         }
         if (!qz.websocket.isActive()) {
@@ -2368,6 +2376,12 @@
 
 
     /// Resets ///
+    function resetGeneralOptions() {
+        //connection
+        $("#connectionHost").val('localhost');
+        $("#connectionUsingSecure").prop('disabled', location.protocol !== 'https:');
+    }
+
     function resetRawOptions() {
         //config
         $("#rawSpoolSize").val(1);
@@ -2517,6 +2531,7 @@
     $(document).ready(function() {
         window.readingWeight = false;
 
+        resetGeneralOptions();
         resetRawOptions();
         resetPixelOptions();
         resetSerialOptions();

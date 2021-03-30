@@ -1,6 +1,6 @@
 ^XA^CF,0,0,0
 ^FX Please avoid using PR (print rate) or MD (media darkness) commands;
-They may change or be outside the reange of current printer settings for subsequent print jobs and result in bad prints -lite1979^FS
+They may change or be outside the range of current printer settings for subsequent print jobs and result in bad prints -lite1979^FS
 ^PW812^PON^CI13
 ^FO0,147^GB800,4,4^FS
 ^FO0,401^GB800,4,4^FS

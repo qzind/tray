@@ -1,24 +1,18 @@
 package qz.printer.status;
 
-import org.apache.commons.lang3.StringEscapeUtils;
-import org.apache.commons.lang3.StringUtils;
+import com.sun.jna.Pointer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.printer.status.job.NativeJobStatus;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.Characters;
-import javax.xml.stream.events.EndElement;
-import javax.xml.stream.events.StartElement;
-import javax.xml.stream.events.XMLEvent;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Created by kyle on 4/27/17.
@@ -26,75 +20,95 @@ import java.io.IOException;
 public class CupsStatusHandler extends AbstractHandler {
     private static final Logger log = LoggerFactory.getLogger(CupsStatusHandler.class);
 
-    private static String lastGuid;
+    private static Cups cups = Cups.INSTANCE;
+    private int lastEventNumber = 0;
+    private HashMap<String, ArrayList<Status>> lastPrinterStatusMap = new HashMap<>();
+    private HashMap<String, ArrayList<Status>> lastJobStatusMap = new HashMap<>();
 
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         baseRequest.setHandled(true);
         if (request.getReader().readLine() != null) {
-            try {
-                XMLInputFactory factory = XMLInputFactory.newInstance();
-                XMLEventReader eventReader = factory.createXMLEventReader(request.getReader());
-                parseXML(eventReader);
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
+            getNotifications();
         }
     }
 
-    private void parseXML(XMLEventReader eventReader) throws XMLStreamException {
-        boolean isEventDescription = false, isGuid = false, isFirstGuid = true, running = true;
-        String firstGuid = "";
-        String eventDescription = "";
+    private synchronized void getNotifications() {
+        Pointer response = CupsUtils.getStatuses(lastEventNumber + 1);
 
-        while(eventReader.hasNext() && running) {
-            XMLEvent event = eventReader.nextEvent();
-            switch(event.getEventType()) {
-                case XMLStreamConstants.START_ELEMENT:
-                    StartElement startElement = event.asStartElement();
-                    String qName = startElement.getName().getLocalPart();
-                    if ("description".equalsIgnoreCase(startElement.getName().getLocalPart())) {
-                        isEventDescription = true;
-                        eventDescription = "";
+        Pointer eventNumberAttr = cups.ippFindAttribute(response, "notify-sequence-number", Cups.IPP.TAG_INTEGER);
+        Pointer eventTypeAttr = cups.ippFindAttribute(response, "notify-subscribed-event", Cups.IPP.TAG_KEYWORD);
+        ArrayList<Status> statuses = new ArrayList<>();
+
+        while (eventNumberAttr != Pointer.NULL) {
+            lastEventNumber = cups.ippGetInteger(eventNumberAttr, 0);
+            Pointer printerNameAttr = cups.ippFindNextAttribute(response, "printer-name", Cups.IPP.TAG_NAME);
+
+            String printer = cups.ippGetString(printerNameAttr, 0, "");
+            String eventType = cups.ippGetString(eventTypeAttr, 0, "");
+            if (eventType.startsWith("job")) {
+                Pointer JobIdAttr = cups.ippFindNextAttribute(response, "notify-job-id", Cups.IPP.TAG_INTEGER);
+                Pointer jobStateAttr = cups.ippFindNextAttribute(response, "job-state", Cups.IPP.TAG_ENUM);
+                Pointer jobNameAttr = cups.ippFindNextAttribute(response, "job-name", Cups.IPP.TAG_NAME);
+                Pointer jobStateReasonsAttr = cups.ippFindNextAttribute(response, "job-state-reasons", Cups.IPP.TAG_KEYWORD);
+                int jobId = cups.ippGetInteger(JobIdAttr, 0);
+                String jobState = Cups.INSTANCE.ippEnumString("job-state", Cups.INSTANCE.ippGetInteger(jobStateAttr, 0));
+                String jobName = cups.ippGetString(jobNameAttr, 0, "");
+                // Statuses come in blocks eg. {printing, toner_low} We only want to display a status if it didn't exist in the last block
+                // Get the list of statuses from the last block associated with this printer
+                // '/' Is a documented invalid character for CUPS printer names. We will use that as a separator
+                String jobKey = printer + "/" + jobId;
+                ArrayList<Status> oldStatuses = lastJobStatusMap.getOrDefault(jobKey, new ArrayList<>());
+                ArrayList<Status> newStatuses = new ArrayList<>();
+
+                boolean completed = false;
+                int attrCount = cups.ippGetCount(jobStateReasonsAttr);
+                for (int i = 0;  i < attrCount; i++) {
+                    String reason = cups.ippGetString(jobStateReasonsAttr, i, "");
+                    Status pending = NativeStatus.fromCupsJobStatus(reason, jobState, printer, jobId, jobName);
+                    // If this status was one we didn't see last block, send it
+                    if (!oldStatuses.contains(pending)) statuses.add(pending);
+                    // If the job is complete, we need to remove it from our map
+                    if ((pending.getCode() == NativeJobStatus.COMPLETE) ||
+                            (pending.getCode() == NativeJobStatus.CANCELED)) {
+                        completed = true;
                     }
-                    if ("guid".equalsIgnoreCase(qName)) {
-                        isGuid = true;
-                    }
-                    break;
-                case XMLStreamConstants.END_ELEMENT:
-                    EndElement endElement = event.asEndElement();
-                    if ("description".equalsIgnoreCase(endElement.getName().getLocalPart())) {
-                        isEventDescription = false;
-                    }
-                    break;
-                case XMLStreamConstants.CHARACTERS:
-                    Characters characters = event.asCharacters();
-                    if (isEventDescription) {
-                        eventDescription += characters.getData();
-                    }
-                    if (isGuid) {
-                        String guid = characters.getData();
-                        if (isFirstGuid) {
-                            firstGuid = guid;
-                            isFirstGuid = false;
-                        }
-                        if (guid.equals(lastGuid)) {
-                            running = false;
-                            break;
-                        } else {
-                            String printerName = StringUtils.substringBeforeLast(eventDescription, "\"");
-                            printerName = StringUtils.substringAfter(printerName, "\"");
-                            printerName = StringEscapeUtils.unescapeXml(printerName);
-                            if (!printerName.isEmpty() && StatusMonitor.isListeningTo(printerName)) {
-                                StatusMonitor.statusChanged(CupsUtils.getStatuses(printerName));
-                            }
-                        }
-                        isGuid = false;
-                    }
-                    break;
+                    // regardless, remember the status for the next block
+                    newStatuses.add(pending);
+                }
+                if (completed) {
+                    lastJobStatusMap.remove(jobKey);
+                } else {
+                    // Replace the old list with the new one
+                    lastJobStatusMap.put(jobKey, newStatuses);
+                }
+            } else if (eventType.startsWith("printer")) {
+                Pointer printerStateAttr = cups.ippFindNextAttribute(response, "printer-state", Cups.IPP.TAG_ENUM);
+                Pointer printerStateReasonsAttr = cups.ippFindNextAttribute(response, "printer-state-reasons", Cups.IPP.TAG_KEYWORD);
+                String state = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(printerStateAttr, 0));
+                // Statuses come in blocks eg. {printing, toner_low} We only want to display a status if it didn't exist in the last block
+                // Get the list of statuses from the last block associated with this printer
+                ArrayList<Status> oldStatuses = lastPrinterStatusMap.getOrDefault(printer, new ArrayList<>());
+                ArrayList<Status> newStatuses = new ArrayList<>();
+
+                int attrCount = cups.ippGetCount(printerStateReasonsAttr);
+                for (int i = 0;  i < attrCount; i++) {
+                    String reason = cups.ippGetString(printerStateReasonsAttr, i, "");
+                    Status pending = NativeStatus.fromCupsPrinterStatus(reason, state, printer);
+                    // If this status was one we didn't see last block, send it
+                    if (!oldStatuses.contains(pending)) statuses.add(pending);
+                    // regardless, remember the status for the next block
+                    newStatuses.add(pending);
+                }
+                // Replace the old list with the new one
+                lastPrinterStatusMap.put(printer, newStatuses);
+            } else {
+                log.debug("Unknown CUPS event type {}.", eventType);
             }
+            eventNumberAttr = cups.ippFindNextAttribute(response, "notify-sequence-number", Cups.IPP.TAG_INTEGER);
+            eventTypeAttr = cups.ippFindNextAttribute(response, "notify-subscribed-event", Cups.IPP.TAG_KEYWORD);
         }
 
-        lastGuid = firstGuid;
+        cups.ippDelete(response);
+        StatusMonitor.statusChanged(statuses.toArray(new Status[statuses.size()]));
     }
 }

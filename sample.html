@@ -1094,7 +1094,7 @@
                             <div class="panel-body">
                                 <div class="row">
                                     <div class="col-md-12">
-                                        <div id="printersLog"></div>
+                                        <pre id="printersLog"></pre>
                                     </div>
                                 </div>
                                 <hr />
@@ -2641,7 +2641,7 @@
     });
 
     qz.printers.setPrinterCallbacks(function(streamEvent) {
-        addPrintersLog(streamEvent.message, streamEvent.severity);
+        addPrintersLog(streamEvent);
     });
 
     qz.file.setFileCallbacks(function(streamEvent) {
@@ -2747,11 +2747,9 @@
         }
     }
 
-    function addPrintersLog(msg, color) {
-        if (color == undefined) { color = ""; }
-
-        msg = '<div class="' + color + '">' + new Date().toString() + ": " + msg + "</div>";
-
+    function addPrintersLog(streamEvent) {
+        var icon = '<span class="fa ' + (streamEvent.eventType == 'JOB' ? 'fa-exchange' : 'fa-print') + '"></span>&nbsp;';
+        var msg = '<p class="' + (streamEvent.severity || "") + ' text-nowrap">' + icon + new Date().toString() + ": " + streamEvent.message + "</p>";
         var $log = $("#printersLog");
         $log.html($log.html() + msg);
     }

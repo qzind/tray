@@ -1,6 +1,7 @@
 package qz.printer.status;
 
 import com.sun.jna.Pointer;
+import com.sun.jna.StringArray;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,6 @@ public class CupsUtils {
     private static Pointer http;
     private static int subscriptionID = IPP.INT_UNDEFINED;
 
-
     synchronized static void initCupsHttp() {
         if (!httpInitialised) {
             httpInitialised = true;
@@ -42,57 +42,49 @@ public class CupsUtils {
         return cups.cupsDoRequest(http, request, "/");
     }
 
-    public static PrinterStatus[] getStatuses(String printerName) {
-        Pointer request = cups.ippNewRequest(IPP.GET_PRINTER_ATTRIBUTES);
+    /**
+     * Gets all statuses relating to our subscriptionId with a sequence number greater than eventNumber
+     */
+    public static Pointer getStatuses(int eventNumber) {
+        Pointer request = cups.ippNewRequest(IPP.GET_NOTIFICATIONS);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
-                                   URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/" + printerName));
+                                   URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/"));
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
+        cups.ippAddInteger(request, IPP.TAG_OPERATION, IPP.TAG_INTEGER, "notify-subscription-ids", subscriptionID);
+        cups.ippAddInteger(request, IPP.TAG_OPERATION, IPP.TAG_INTEGER, "notify-sequence-numbers", eventNumber);
 
-        Pointer response = cups.cupsDoRequest(http, request, "/");
-        Pointer attr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
-        ArrayList<PrinterStatus> statuses = new ArrayList<>();
-
-        if (attr != Pointer.NULL) {
-            int attrCount = cups.ippGetCount(attr);
-            for(int i = 0; i < attrCount; i++) {
-                String data = cups.ippGetString(attr, i, "");
-                PrinterStatus status = PrinterStatus.getFromCupsString(data, printerName);
-                if (status != null) { statuses.add(status); }
-            }
-        } else {
-            statuses.add(new PrinterStatus(PrinterStatusType.NOT_AVAILABLE, printerName, ""));
-        }
-
-        cups.ippDelete(response);
-
-        return statuses.toArray(new PrinterStatus[statuses.size()]);
+        return cups.cupsDoRequest(http, request, "/");
     }
 
-    public static ArrayList<PrinterStatus> getAllStatuses() {
-        ArrayList<PrinterStatus> statuses = new ArrayList<>();
+    public static ArrayList<Status> getAllStatuses() {
+        ArrayList<Status> statuses = new ArrayList<>();
         Pointer request = cups.ippNewRequest(IPP.GET_PRINTERS);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
         Pointer response = cups.cupsDoRequest(http, request, "/");
-        Pointer attr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
+        Pointer stateAttr = cups.ippFindAttribute(response, "printer-state", IPP.TAG_ENUM);
+        Pointer reasonAttr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
+        Pointer nameAttr = cups.ippFindAttribute(response, "printer-name", IPP.TAG_NAME);
 
-        while(attr != Pointer.NULL) {
+        while(stateAttr != Pointer.NULL) {
+
             //save reasons until we have name, we need to go through the attrs in order
-            String[] reasons = new String[cups.ippGetCount(attr)];
+            String[] reasons = new String[cups.ippGetCount(reasonAttr)];
             for(int i = 0; i < reasons.length; i++) {
-                reasons[i] = cups.ippGetString(attr, i, "");
+                reasons[i] = cups.ippGetString(reasonAttr, i, "");
             }
-
-            attr = cups.ippFindNextAttribute(response, "printer-name", IPP.TAG_NAME);
-            String name = cups.ippGetString(attr, 0, "");
+            String state = Cups.INSTANCE.ippEnumString("printer-state", Cups.INSTANCE.ippGetInteger(stateAttr, 0));
+            String printer = cups.ippGetString(nameAttr, 0, "");
 
             for(String reason : reasons) {
-                statuses.add(PrinterStatus.getFromCupsString(reason, name));
+                statuses.add(NativeStatus.fromCupsPrinterStatus(reason, state, printer));
             }
 
             //for next loop iteration
-            attr = cups.ippFindNextAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
+            stateAttr = cups.ippFindNextAttribute(response, "printer-state", IPP.TAG_ENUM);
+            reasonAttr = cups.ippFindNextAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
+            nameAttr = cups.ippFindNextAttribute(response, "printer-name", IPP.TAG_NAME);
         }
 
         cups.ippDelete(response);
@@ -131,14 +123,16 @@ public class CupsUtils {
     static void startSubscription(int rssPort) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> freeIppObjs()));
 
-        Pointer request = cups.ippNewRequest(IPP.CREATE_PRINTER_SUBSCRIPTION);
+        String[] subscriptions = {"job-state-changed", "printer-state-changed"};
+        Pointer request = cups.ippNewRequest(IPP.CREATE_JOB_SUBSCRIPTION);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
-                                   URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers"));
+                          URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers"));
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
         cups.ippAddString(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_URI, "notify-recipient-uri", CHARSET,
-                                   URIUtil.encodePath("rss://localhost:" + rssPort));
-        cups.ippAddString(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_KEYWORD, "notify-events", CHARSET, "printer-state-changed");
+                          URIUtil.encodePath("rss://localhost:" + rssPort));
+        cups.ippAddStrings(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_KEYWORD, "notify-events", subscriptions.length, CHARSET,
+                          new StringArray(subscriptions));
         cups.ippAddInteger(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_INTEGER, "notify-lease-duration", 0);
 
         Pointer response = cups.cupsDoRequest(http, request, "/");

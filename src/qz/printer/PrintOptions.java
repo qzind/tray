@@ -50,7 +50,14 @@ public class PrintOptions {
             catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "altPrinting", configOpts.opt("altPrinting")); }
         }
         if (!configOpts.isNull("encoding")) {
-            rawOptions.encoding = configOpts.optString("encoding", null);
+            JSONObject encodings = configOpts.optJSONObject("encoding");
+            if(encodings != null) {
+                rawOptions.srcEncoding = encodings.optString("from", null);
+                rawOptions.destEncoding = encodings.optString("to", null);
+            }
+            else {
+                rawOptions.destEncoding = configOpts.optString("encoding", null);
+            }
         }
         if (!configOpts.isNull("spool")) {
             JSONObject spool = configOpts.optJSONObject("spool");
@@ -129,8 +136,8 @@ public class PrintOptions {
                 psOptions.density = asymmDPI.optInt("feed");
                 psOptions.crossDensity = asymmDPI.optInt("cross");
             } else {
-                List<PrinterResolution> rSupport = output.isSetService() ?
-                        output.getNativePrinter().getResolutions() : new ArrayList<>();
+                List<PrinterResolution> rSupport = output.isSetService()?
+                        output.getNativePrinter().getResolutions():new ArrayList<>();
 
                 JSONArray possibleDPIs = configOpts.optJSONArray("density");
                 if (possibleDPIs != null && possibleDPIs.length() > 0) {
@@ -386,7 +393,8 @@ public class PrintOptions {
     /** Raw printing options */
     public class Raw {
         private boolean altPrinting = false;    //Alternate printing for linux systems
-        private String encoding = null;         //Text encoding / charset
+        private String destEncoding = null;     //Text encoding / charset
+        private String srcEncoding = null;      //Conversion text encoding
         private String spoolEnd = null;         //End of document character(s)
         private int spoolSize = 1;              //Pages per spool
         private int copies = 1;                 //Job copies
@@ -397,8 +405,12 @@ public class PrintOptions {
             return altPrinting;
         }
 
-        public String getEncoding() {
-            return encoding;
+        public String getDestEncoding() {
+            return destEncoding;
+        }
+
+        public String getSrcEncoding() {
+            return srcEncoding;
         }
 
         public String getSpoolEnd() {

@@ -43,7 +43,6 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -61,7 +60,7 @@ public class PrintRaw implements PrintProcessor {
 
     private ByteArrayBuilder commands;
 
-    private String encoding = null;
+    private String destEncoding = null;
 
 
     public PrintRaw() {
@@ -73,8 +72,8 @@ public class PrintRaw implements PrintProcessor {
         return PrintingUtilities.Format.COMMAND;
     }
 
-    private byte[] getBytes(String str, String encoding) throws ArabicShapingException, IOException {
-        switch(encoding.toLowerCase(Locale.ENGLISH)) {
+    private byte[] getBytes(String str, String destEncoding) throws ArabicShapingException, IOException {
+        switch(destEncoding.toLowerCase(Locale.ENGLISH)) {
             case "ibm864":
             case "cp864":
             case "csibm864":
@@ -82,7 +81,7 @@ public class PrintRaw implements PrintProcessor {
             case "ibm-864":
                 return ArabicConversionUtilities.convertToIBM864(str);
             default:
-                return str.getBytes(encoding);
+                return str.getBytes(destEncoding);
         }
     }
 
@@ -105,38 +104,38 @@ public class PrintRaw implements PrintProcessor {
             PrintOptions.Raw rawOpts = options.getRawOptions();
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
 
-            encoding = rawOpts.getEncoding();
-            if (encoding == null || encoding.isEmpty()) { encoding = Charset.defaultCharset().name(); }
+            destEncoding = rawOpts.getDestEncoding();
+            if (destEncoding == null || destEncoding.isEmpty()) { destEncoding = Charset.defaultCharset().name(); }
 
             try {
                 switch(format) {
                     case HTML:
-                        commands.append(getHtmlWrapper(cmd, opt, flavor, pxlOpts).getImageCommand(opt));
+                        commands.append(getHtmlWrapper(cmd, opt, flavor, rawOpts, pxlOpts).getImageCommand(opt));
                         break;
                     case IMAGE:
-                        commands.append(getImageWrapper(cmd, opt, flavor, pxlOpts).getImageCommand(opt));
+                        commands.append(getImageWrapper(cmd, opt, flavor, rawOpts, pxlOpts).getImageCommand(opt));
                         break;
                     case PDF:
-                        commands.append(getPdfWrapper(cmd, opt, flavor, pxlOpts).getImageCommand(opt));
+                        commands.append(getPdfWrapper(cmd, opt, flavor, rawOpts, pxlOpts).getImageCommand(opt));
                         break;
                     case COMMAND:
                     default:
                         switch(flavor) {
                             case BASE64:
-                                commands.append(Base64.decodeBase64(cmd));
+                                commands.append(seekConversion(Base64.decodeBase64(cmd), rawOpts));
                                 break;
                             case FILE:
-                                commands.append(FileUtilities.readRawFile(cmd));
+                                commands.append(seekConversion(FileUtilities.readRawFile(cmd), rawOpts));
                                 break;
                             case HEX:
-                                commands.append(ByteUtilities.hexStringToByteArray(cmd));
+                                commands.append(seekConversion(ByteUtilities.hexStringToByteArray(cmd), rawOpts));
                                 break;
                             case XML:
-                                commands.append(Base64.decodeBase64(FileUtilities.readXMLFile(cmd, opt.optString("xmlTag"))));
+                                commands.append(seekConversion(Base64.decodeBase64(FileUtilities.readXMLFile(cmd, opt.optString("xmlTag"))), rawOpts));
                                 break;
                             case PLAIN:
                             default:
-                                commands.append(getBytes(cmd, encoding));
+                                commands.append(getBytes(cmd, destEncoding));
                                 break;
                         }
                         break;
@@ -148,7 +147,24 @@ public class PrintRaw implements PrintProcessor {
         }
     }
 
-    private ImageWrapper getImageWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Pixel pxlOpts) throws IOException {
+    private byte[] seekConversion(byte[] rawBytes, PrintOptions.Raw rawOpts) {
+        if (rawOpts.getSrcEncoding() != null) {
+            if(rawOpts.getSrcEncoding().equals(rawOpts.getDestEncoding())) {
+                log.warn("Provided srcEncoding and destEncoding are the same, skipping");
+            } else {
+                try {
+                    String rawConvert = new String(rawBytes, rawOpts.getSrcEncoding());
+                    return rawConvert.getBytes(rawOpts.getDestEncoding());
+                }
+                catch(UnsupportedEncodingException e) {
+                    throw new UnsupportedOperationException(e);
+                }
+            }
+        }
+        return rawBytes;
+    }
+
+    private ImageWrapper getImageWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         BufferedImage bi;
         // 2.0 compat
         if (data.startsWith("data:image/") && data.contains(";base64,")) {
@@ -158,7 +174,7 @@ public class PrintRaw implements PrintProcessor {
         }
 
         if (flavor == PrintingUtilities.Flavor.BASE64) {
-            bi = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(data)));
+            bi = ImageIO.read(new ByteArrayInputStream(seekConversion(Base64.decodeBase64(data), rawOpts)));
         } else {
             bi = ImageIO.read(ConnectionUtilities.getInputStream(data));
         }
@@ -166,11 +182,11 @@ public class PrintRaw implements PrintProcessor {
         return getWrapper(bi, opt, pxlOpts);
     }
 
-    private ImageWrapper getPdfWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Pixel pxlOpts) throws IOException {
+    private ImageWrapper getPdfWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         PDDocument doc;
 
         if (flavor == PrintingUtilities.Flavor.BASE64) {
-            doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data)));
+            doc = PDDocument.load(new ByteArrayInputStream(seekConversion(Base64.decodeBase64(data), rawOpts)));
         } else {
             doc = PDDocument.load(ConnectionUtilities.getInputStream(data));
         }
@@ -189,9 +205,9 @@ public class PrintRaw implements PrintProcessor {
         return getWrapper(bi, opt, pxlOpts);
     }
 
-    private ImageWrapper getHtmlWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Pixel pxlOpts) throws IOException {
+    private ImageWrapper getHtmlWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         if (flavor == PrintingUtilities.Flavor.BASE64) {
-            data = new String(Base64.decodeBase64(data), StandardCharsets.UTF_8);
+            data = new String(seekConversion(Base64.decodeBase64(data), rawOpts), rawOpts.getDestEncoding());
         }
 
         double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
@@ -241,14 +257,14 @@ public class PrintRaw implements PrintProcessor {
 
     private ImageWrapper getWrapper(BufferedImage img, JSONObject opt, PrintOptions.Pixel pxlOpts) {
         // Rotate image using orientation or rotation before sending to ImageWrapper
-        if(pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
+        if (pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
             img = PrintImage.rotate(img, pxlOpts.getOrientation().getDegreesRot(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
-        } else if(pxlOpts.getRotation() % 360 != 0) {
+        } else if (pxlOpts.getRotation() % 360 != 0) {
             img = PrintImage.rotate(img, pxlOpts.getRotation(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
         }
 
         ImageWrapper iw = new ImageWrapper(img, LanguageType.getType(opt.optString("language")));
-        iw.setCharset(Charset.forName(encoding));
+        iw.setCharset(Charset.forName(destEncoding));
 
         //ESC/POS only
         int density = opt.optInt("dotDensity", -1);
@@ -280,7 +296,7 @@ public class PrintRaw implements PrintProcessor {
         List<ByteArrayBuilder> pages;
         if (rawOpts.getSpoolSize() > 0 && rawOpts.getSpoolEnd() != null && !rawOpts.getSpoolEnd().isEmpty()) {
             try {
-                pages = ByteUtilities.splitByteArray(commands.getByteArray(), rawOpts.getSpoolEnd().getBytes(encoding), rawOpts.getSpoolSize());
+                pages = ByteUtilities.splitByteArray(commands.getByteArray(), rawOpts.getSpoolEnd().getBytes(destEncoding), rawOpts.getSpoolSize());
             }
             catch(UnsupportedEncodingException e) {
                 throw new PrintException(e);
@@ -435,7 +451,7 @@ public class PrintRaw implements PrintProcessor {
     @Override
     public void cleanup() {
         commands.clear();
-        encoding = null;
+        destEncoding = null;
     }
 
 }

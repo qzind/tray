@@ -393,8 +393,8 @@ public class PrintOptions {
     /** Raw printing options */
     public class Raw {
         private boolean altPrinting = false;    //Alternate printing for linux systems
-        private String destEncoding = null;         //Text encoding / charset
-        private String srcEncoding = null;     //Conversion text encoding
+        private String destEncoding = null;     //Text encoding / charset
+        private String srcEncoding = null;      //Conversion text encoding
         private String spoolEnd = null;         //End of document character(s)
         private int spoolSize = 1;              //Pages per spool
         private int copies = 1;                 //Job copies

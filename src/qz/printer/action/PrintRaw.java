@@ -43,7 +43,6 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -108,40 +107,31 @@ public class PrintRaw implements PrintProcessor {
             encoding = rawOpts.getEncoding();
             if (encoding == null || encoding.isEmpty()) { encoding = Charset.defaultCharset().name(); }
 
-            if (rawOpts.getSrcEncoding() != null) {
-                try {
-                    cmd = new String(cmd.getBytes(rawOpts.getSrcEncoding()), encoding);
-                }
-                catch(UnsupportedEncodingException e) {
-                    throw new UnsupportedOperationException(e);
-                }
-            }
-
             try {
                 switch(format) {
                     case HTML:
-                        commands.append(getHtmlWrapper(cmd, opt, flavor, pxlOpts).getImageCommand(opt));
+                        commands.append(getHtmlWrapper(cmd, opt, flavor, rawOpts, pxlOpts).getImageCommand(opt));
                         break;
                     case IMAGE:
-                        commands.append(getImageWrapper(cmd, opt, flavor, pxlOpts).getImageCommand(opt));
+                        commands.append(getImageWrapper(cmd, opt, flavor, rawOpts, pxlOpts).getImageCommand(opt));
                         break;
                     case PDF:
-                        commands.append(getPdfWrapper(cmd, opt, flavor, pxlOpts).getImageCommand(opt));
+                        commands.append(getPdfWrapper(cmd, opt, flavor, rawOpts, pxlOpts).getImageCommand(opt));
                         break;
                     case COMMAND:
                     default:
                         switch(flavor) {
                             case BASE64:
-                                commands.append(Base64.decodeBase64(cmd));
+                                commands.append(seekConversion(Base64.decodeBase64(cmd), rawOpts));
                                 break;
                             case FILE:
-                                commands.append(FileUtilities.readRawFile(cmd));
+                                commands.append(seekConversion(FileUtilities.readRawFile(cmd), rawOpts));
                                 break;
                             case HEX:
-                                commands.append(ByteUtilities.hexStringToByteArray(cmd));
+                                commands.append(seekConversion(ByteUtilities.hexStringToByteArray(cmd), rawOpts));
                                 break;
                             case XML:
-                                commands.append(Base64.decodeBase64(FileUtilities.readXMLFile(cmd, opt.optString("xmlTag"))));
+                                commands.append(seekConversion(Base64.decodeBase64(FileUtilities.readXMLFile(cmd, opt.optString("xmlTag"))), rawOpts));
                                 break;
                             case PLAIN:
                             default:
@@ -157,7 +147,21 @@ public class PrintRaw implements PrintProcessor {
         }
     }
 
-    private ImageWrapper getImageWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Pixel pxlOpts) throws IOException {
+    private byte[] seekConversion(byte[] rawBytes, PrintOptions.Raw rawOpts) {
+        if (rawOpts.getSrcEncoding() != null) {
+            try {
+                String rawConvert = new String(rawBytes, rawOpts.getSrcEncoding());
+                return rawConvert.getBytes(rawOpts.getEncoding());
+            }
+            catch(UnsupportedEncodingException e) {
+                throw new UnsupportedOperationException(e);
+            }
+        } else {
+            return rawBytes;
+        }
+    }
+
+    private ImageWrapper getImageWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         BufferedImage bi;
         // 2.0 compat
         if (data.startsWith("data:image/") && data.contains(";base64,")) {
@@ -167,7 +171,7 @@ public class PrintRaw implements PrintProcessor {
         }
 
         if (flavor == PrintingUtilities.Flavor.BASE64) {
-            bi = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(data)));
+            bi = ImageIO.read(new ByteArrayInputStream(seekConversion(Base64.decodeBase64(data), rawOpts)));
         } else {
             bi = ImageIO.read(ConnectionUtilities.getInputStream(data));
         }
@@ -175,11 +179,11 @@ public class PrintRaw implements PrintProcessor {
         return getWrapper(bi, opt, pxlOpts);
     }
 
-    private ImageWrapper getPdfWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Pixel pxlOpts) throws IOException {
+    private ImageWrapper getPdfWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         PDDocument doc;
 
         if (flavor == PrintingUtilities.Flavor.BASE64) {
-            doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data)));
+            doc = PDDocument.load(new ByteArrayInputStream(seekConversion(Base64.decodeBase64(data), rawOpts)));
         } else {
             doc = PDDocument.load(ConnectionUtilities.getInputStream(data));
         }
@@ -198,9 +202,9 @@ public class PrintRaw implements PrintProcessor {
         return getWrapper(bi, opt, pxlOpts);
     }
 
-    private ImageWrapper getHtmlWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Pixel pxlOpts) throws IOException {
+    private ImageWrapper getHtmlWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         if (flavor == PrintingUtilities.Flavor.BASE64) {
-            data = new String(Base64.decodeBase64(data), StandardCharsets.UTF_8);
+            data = new String(seekConversion(Base64.decodeBase64(data), rawOpts), rawOpts.getEncoding());
         }
 
         double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());

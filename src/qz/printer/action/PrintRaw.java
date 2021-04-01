@@ -60,7 +60,7 @@ public class PrintRaw implements PrintProcessor {
 
     private ByteArrayBuilder commands;
 
-    private String encoding = null;
+    private String destEncoding = null;
 
 
     public PrintRaw() {
@@ -72,8 +72,8 @@ public class PrintRaw implements PrintProcessor {
         return PrintingUtilities.Format.COMMAND;
     }
 
-    private byte[] getBytes(String str, String encoding) throws ArabicShapingException, IOException {
-        switch(encoding.toLowerCase(Locale.ENGLISH)) {
+    private byte[] getBytes(String str, String destEncoding) throws ArabicShapingException, IOException {
+        switch(destEncoding.toLowerCase(Locale.ENGLISH)) {
             case "ibm864":
             case "cp864":
             case "csibm864":
@@ -81,7 +81,7 @@ public class PrintRaw implements PrintProcessor {
             case "ibm-864":
                 return ArabicConversionUtilities.convertToIBM864(str);
             default:
-                return str.getBytes(encoding);
+                return str.getBytes(destEncoding);
         }
     }
 
@@ -104,8 +104,8 @@ public class PrintRaw implements PrintProcessor {
             PrintOptions.Raw rawOpts = options.getRawOptions();
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
 
-            encoding = rawOpts.getEncoding();
-            if (encoding == null || encoding.isEmpty()) { encoding = Charset.defaultCharset().name(); }
+            destEncoding = rawOpts.getDestEncoding();
+            if (destEncoding == null || destEncoding.isEmpty()) { destEncoding = Charset.defaultCharset().name(); }
 
             try {
                 switch(format) {
@@ -135,7 +135,7 @@ public class PrintRaw implements PrintProcessor {
                                 break;
                             case PLAIN:
                             default:
-                                commands.append(getBytes(cmd, encoding));
+                                commands.append(getBytes(cmd, destEncoding));
                                 break;
                         }
                         break;
@@ -149,16 +149,19 @@ public class PrintRaw implements PrintProcessor {
 
     private byte[] seekConversion(byte[] rawBytes, PrintOptions.Raw rawOpts) {
         if (rawOpts.getSrcEncoding() != null) {
-            try {
-                String rawConvert = new String(rawBytes, rawOpts.getSrcEncoding());
-                return rawConvert.getBytes(rawOpts.getEncoding());
+            if(rawOpts.getSrcEncoding().equals(rawOpts.getDestEncoding())) {
+                log.warn("Provided srcEncoding and destEncoding are the same, skipping");
+            } else {
+                try {
+                    String rawConvert = new String(rawBytes, rawOpts.getSrcEncoding());
+                    return rawConvert.getBytes(rawOpts.getDestEncoding());
+                }
+                catch(UnsupportedEncodingException e) {
+                    throw new UnsupportedOperationException(e);
+                }
             }
-            catch(UnsupportedEncodingException e) {
-                throw new UnsupportedOperationException(e);
-            }
-        } else {
-            return rawBytes;
         }
+        return rawBytes;
     }
 
     private ImageWrapper getImageWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
@@ -204,7 +207,7 @@ public class PrintRaw implements PrintProcessor {
 
     private ImageWrapper getHtmlWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         if (flavor == PrintingUtilities.Flavor.BASE64) {
-            data = new String(seekConversion(Base64.decodeBase64(data), rawOpts), rawOpts.getEncoding());
+            data = new String(seekConversion(Base64.decodeBase64(data), rawOpts), rawOpts.getDestEncoding());
         }
 
         double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
@@ -261,7 +264,7 @@ public class PrintRaw implements PrintProcessor {
         }
 
         ImageWrapper iw = new ImageWrapper(img, LanguageType.getType(opt.optString("language")));
-        iw.setCharset(Charset.forName(encoding));
+        iw.setCharset(Charset.forName(destEncoding));
 
         //ESC/POS only
         int density = opt.optInt("dotDensity", -1);
@@ -293,7 +296,7 @@ public class PrintRaw implements PrintProcessor {
         List<ByteArrayBuilder> pages;
         if (rawOpts.getSpoolSize() > 0 && rawOpts.getSpoolEnd() != null && !rawOpts.getSpoolEnd().isEmpty()) {
             try {
-                pages = ByteUtilities.splitByteArray(commands.getByteArray(), rawOpts.getSpoolEnd().getBytes(encoding), rawOpts.getSpoolSize());
+                pages = ByteUtilities.splitByteArray(commands.getByteArray(), rawOpts.getSpoolEnd().getBytes(destEncoding), rawOpts.getSpoolSize());
             }
             catch(UnsupportedEncodingException e) {
                 throw new PrintException(e);
@@ -448,7 +451,7 @@ public class PrintRaw implements PrintProcessor {
     @Override
     public void cleanup() {
         commands.clear();
-        encoding = null;
+        destEncoding = null;
     }
 
 }

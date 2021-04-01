@@ -52,11 +52,11 @@ public class PrintOptions {
         if (!configOpts.isNull("encoding")) {
             try {
                 JSONObject encodings = configOpts.getJSONObject("encoding");
-                rawOptions.src_encoding = encodings.optString("from", null);
-                rawOptions.encoding = encodings.optString("to", null);
+                rawOptions.srcEncoding = encodings.optString("from", null);
+                rawOptions.destEncoding = encodings.optString("to", null);
             }
             catch(JSONException e) {
-                rawOptions.encoding = configOpts.optString("encoding", null);
+                rawOptions.destEncoding = configOpts.optString("encoding", null);
             }
         }
         if (!configOpts.isNull("spool")) {
@@ -393,8 +393,8 @@ public class PrintOptions {
     /** Raw printing options */
     public class Raw {
         private boolean altPrinting = false;    //Alternate printing for linux systems
-        private String encoding = null;         //Text encoding / charset
-        private String src_encoding = null;     //Conversion text encoding
+        private String destEncoding = null;         //Text encoding / charset
+        private String srcEncoding = null;     //Conversion text encoding
         private String spoolEnd = null;         //End of document character(s)
         private int spoolSize = 1;              //Pages per spool
         private int copies = 1;                 //Job copies
@@ -405,12 +405,12 @@ public class PrintOptions {
             return altPrinting;
         }
 
-        public String getEncoding() {
-            return encoding;
+        public String getDestEncoding() {
+            return destEncoding;
         }
 
         public String getSrcEncoding() {
-            return src_encoding;
+            return srcEncoding;
         }
 
         public String getSpoolEnd() {

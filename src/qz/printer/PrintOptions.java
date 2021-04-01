@@ -50,7 +50,14 @@ public class PrintOptions {
             catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "altPrinting", configOpts.opt("altPrinting")); }
         }
         if (!configOpts.isNull("encoding")) {
-            rawOptions.encoding = configOpts.optString("encoding", null);
+            try {
+                JSONObject encodings = configOpts.getJSONObject("encoding");
+                rawOptions.src_encoding = encodings.optString("from", null);
+                rawOptions.encoding = encodings.optString("to", null);
+            }
+            catch(JSONException e) {
+                rawOptions.encoding = configOpts.optString("encoding", null);
+            }
         }
         if (!configOpts.isNull("spool")) {
             JSONObject spool = configOpts.optJSONObject("spool");
@@ -129,8 +136,8 @@ public class PrintOptions {
                 psOptions.density = asymmDPI.optInt("feed");
                 psOptions.crossDensity = asymmDPI.optInt("cross");
             } else {
-                List<PrinterResolution> rSupport = output.isSetService() ?
-                        output.getNativePrinter().getResolutions() : new ArrayList<>();
+                List<PrinterResolution> rSupport = output.isSetService()?
+                        output.getNativePrinter().getResolutions():new ArrayList<>();
 
                 JSONArray possibleDPIs = configOpts.optJSONArray("density");
                 if (possibleDPIs != null && possibleDPIs.length() > 0) {
@@ -387,6 +394,7 @@ public class PrintOptions {
     public class Raw {
         private boolean altPrinting = false;    //Alternate printing for linux systems
         private String encoding = null;         //Text encoding / charset
+        private String src_encoding = null;     //Conversion text encoding
         private String spoolEnd = null;         //End of document character(s)
         private int spoolSize = 1;              //Pages per spool
         private int copies = 1;                 //Job copies
@@ -399,6 +407,10 @@ public class PrintOptions {
 
         public String getEncoding() {
             return encoding;
+        }
+
+        public String getSrcEncoding() {
+            return src_encoding;
         }
 
         public String getSpoolEnd() {

@@ -50,12 +50,12 @@ public class PrintOptions {
             catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "altPrinting", configOpts.opt("altPrinting")); }
         }
         if (!configOpts.isNull("encoding")) {
-            try {
-                JSONObject encodings = configOpts.getJSONObject("encoding");
+            JSONObject encodings = configOpts.optJSONObject("encoding");
+            if(encodings != null) {
                 rawOptions.srcEncoding = encodings.optString("from", null);
                 rawOptions.destEncoding = encodings.optString("to", null);
             }
-            catch(JSONException e) {
+            else {
                 rawOptions.destEncoding = configOpts.optString("encoding", null);
             }
         }

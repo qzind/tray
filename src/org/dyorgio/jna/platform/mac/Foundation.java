@@ -51,7 +51,17 @@ public interface Foundation extends Library {
 
     boolean class_addMethod(NativeLong clazz, Pointer selector, Callback callback, String types);
 
-    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, Object... args);
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector);
+
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, Pointer var1, NativeLong var2, boolean var3);
+
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, NativeLong var1);
+
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, Object[] var1);
+
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, Pointer var1);
+
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, byte[] bytes, int len, long encoding);
 
     Pointer sel_registerName(String selectorName);
 }

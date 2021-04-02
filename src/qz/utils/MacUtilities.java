@@ -173,11 +173,6 @@ public class MacUtilities {
      * Checks for presence of JDK-8252015 using reflection
      */
     public static boolean jdkSupportsTemplateIcon() {
-        // Prevent hard-crash
-        // See also https://github.com/dyorgio/macos-tray-icon-fixer/issues/5
-        if(isArm()) {
-            return true;
-        }
         if(jdkSupportsTemplateIcon == null) {
             try {
                 // before JDK-8252015: setNativeImage(long, long, boolean)

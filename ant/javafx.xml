@@ -116,7 +116,7 @@
 
     <!-- Downloads and extracts javafx for the specified platform -->
     <target name="download-javafx-platform" depends="get-javafx-version">
-        <get src="${javafx.mirror}/openjfx-${javafx.version-url}-${javafx.platform}-x64_bin-sdk.zip" verbose="true" dest="javafx-${javafx.platform}.zip"/>
+        <get src="${javafx.mirror}/openjfx-${javafx.version-url}_${javafx.platform}-${javafx.arch}_bin-sdk.zip" verbose="true" dest="javafx-${javafx.platform}.zip"/>
         <unzip src="javafx-${javafx.platform}.zip" dest="lib/javafx/${javafx.platform}/javafx-${javafx.version}" overwrite="true"/>
         <delete file="javafx-${javafx.platform}.zip"/>
     </target>

@@ -232,7 +232,7 @@ public class LinuxInstaller extends Installer {
 
             // Use gtk theme
             if(env.containsKey("XDG_CURRENT_DESKTOP") && !env.containsKey("GNOME_DESKTOP_SESSION_ID")) {
-                if(env.get("XDG_CURRENT_DESKTOP").toLowerCase().contains("gnome")) {
+                if(env.get("XDG_CURRENT_DESKTOP").toLowerCase(Locale.ENGLISH).contains("gnome")) {
                     env.put("GNOME_DESKTOP_SESSION_ID", "this-is-deprecated");
                 }
             }

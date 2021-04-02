@@ -51,7 +51,14 @@ public class PrintOptions {
         }
 
         if (!configOpts.isNull("encoding")) {
-            rawOptions.encoding = configOpts.optString("encoding", null);
+            JSONObject encodings = configOpts.optJSONObject("encoding");
+            if(encodings != null) {
+                rawOptions.srcEncoding = encodings.optString("from", null);
+                rawOptions.destEncoding = encodings.optString("to", null);
+            }
+            else {
+                rawOptions.destEncoding = configOpts.optString("encoding", null);
+            }
         }
         if (!configOpts.isNull("spool")) {
             JSONObject spool = configOpts.optJSONObject("spool");
@@ -134,8 +141,8 @@ public class PrintOptions {
                 psOptions.density = asymmDPI.optInt("feed");
                 psOptions.crossDensity = asymmDPI.optInt("cross");
             } else {
-                List<PrinterResolution> rSupport = output.isSetService() ?
-                        output.getNativePrinter().getResolutions() : new ArrayList<>();
+                List<PrinterResolution> rSupport = output.isSetService()?
+                        output.getNativePrinter().getResolutions():new ArrayList<>();
 
                 JSONArray possibleDPIs = configOpts.optJSONArray("density");
                 if (possibleDPIs != null && possibleDPIs.length() > 0) {
@@ -172,7 +179,7 @@ public class PrintOptions {
                         psOptions.crossDensity = usableRes.getCrossFeedResolution(psOptions.units.resSyntax);
                     }
                 } else {
-                    String relDPI = configOpts.optString("density", "").toLowerCase();
+                    String relDPI = configOpts.optString("density", "").toLowerCase(Locale.ENGLISH);
                     if ("best".equals(relDPI)) {
                         PrinterResolution bestRes = null;
                         for(PrinterResolution pr : rSupport) {
@@ -225,7 +232,7 @@ public class PrintOptions {
             catch(JSONException e) {
                 //not a boolean, try as a string
                 try {
-                    String duplex = configOpts.getString("duplex").toLowerCase();
+                    String duplex = configOpts.getString("duplex").toLowerCase(Locale.ENGLISH);
                     if (duplex.matches("^(duplex|(two.sided.)?long(.edge)?)$")) {
                         psOptions.duplex = Sides.DUPLEX;
                     } else if (duplex.matches("^(tumble|(two.sided.)?short(.edge)?)$")) {
@@ -390,8 +397,9 @@ public class PrintOptions {
 
     /** Raw printing options */
     public class Raw {
-        private boolean forceRaw = false;    //Alternate printing for linux systems
-        private String encoding = null;         //Text encoding / charset
+        private boolean forceRaw = false;       //Alternate printing for linux systems
+        private String destEncoding = null;     //Text encoding / charset
+        private String srcEncoding = null;      //Conversion text encoding
         private String spoolEnd = null;         //End of document character(s)
         private int spoolSize = 1;              //Pages per spool
         private int copies = 1;                 //Job copies
@@ -403,8 +411,12 @@ public class PrintOptions {
             return forceRaw;
         }
 
-        public String getEncoding() {
-            return encoding;
+        public String getDestEncoding() {
+            return destEncoding;
+        }
+
+        public String getSrcEncoding() {
+            return srcEncoding;
         }
 
         public String getSpoolEnd() {

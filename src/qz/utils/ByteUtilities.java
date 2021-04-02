@@ -243,4 +243,18 @@ public class ByteUtilities {
         return parsed;
     }
 
+    public static int[] unwind(int bitwiseCode) {
+        int bitPopulation = Integer.bitCount(bitwiseCode);
+        int[] matches = new int[bitPopulation];
+        int mask = 1;
+
+        while(bitPopulation > 0) {
+            if ((mask & bitwiseCode) > 0) {
+                matches[--bitPopulation] = mask;
+            }
+            mask <<= 1;
+        }
+        return matches;
+    }
+
 }

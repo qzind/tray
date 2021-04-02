@@ -1,9 +1,6 @@
 package qz.printer.status;
 
-import com.sun.jna.Library;
-import com.sun.jna.Memory;
-import com.sun.jna.Native;
-import com.sun.jna.Pointer;
+import com.sun.jna.*;
 
 /**
  * Created by kyle on 3/14/17.
@@ -23,12 +20,16 @@ public interface Cups extends Library {
         public static int TAG_TEXT = INSTANCE.ippTagValue("Text");
         public static int TAG_INTEGER = INSTANCE.ippTagValue("Integer");
         public static int TAG_KEYWORD = INSTANCE.ippTagValue("keyword");
+        public static int TAG_ENUM = INSTANCE.ippTagValue("enum");
         public static int TAG_SUBSCRIPTION = INSTANCE.ippTagValue("Subscription");
         public static int TAG_MIMETYPE = INSTANCE.ippTagValue("mimetype");
         public static int GET_PRINTERS = INSTANCE.ippOpValue("CUPS-Get-Printers");
         public static int GET_PRINTER_ATTRIBUTES = INSTANCE.ippOpValue("Get-Printer-Attributes");
+        public static int GET_JOB_ATTRIBUTES = INSTANCE.ippOpValue("Get-Job-Attributes");
         public static int GET_SUBSCRIPTIONS = INSTANCE.ippOpValue("Get-Subscriptions");
+        public static int GET_NOTIFICATIONS = INSTANCE.ippOpValue("Get-Notifications");
         public static int CREATE_PRINTER_SUBSCRIPTION = INSTANCE.ippOpValue("Create-Printer-Subscription");
+        public static int CREATE_JOB_SUBSCRIPTION = INSTANCE.ippOpValue("Create-Job-Subscription");
         public static int CANCEL_SUBSCRIPTION = INSTANCE.ippOpValue("Cancel-Subscription");
 
         public static final int OP_PRINT_JOB = 0x02;
@@ -63,6 +64,7 @@ public interface Cups extends Library {
     int ippEnumValue(String attrname, String enumstring);
     int ippOpValue(String name);
     int ippAddString(Pointer ipp, int group, int tag, String name, String charset, String value);
+    int ippAddStrings(Pointer ipp, int group, int tag, String name, int num_values, String language, StringArray values);
     int ippAddInteger (Pointer ipp, int group, int tag, String name, int value);
     int ippGetCount(Pointer attr);
     int ippGetValueTag(Pointer ipp);

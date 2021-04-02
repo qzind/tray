@@ -379,7 +379,7 @@ public class SystemUtilities {
             }
             adjustThemeColors();
             return true;
-        } catch (Exception e) {
+        } catch (Throwable t) {
             LoggerFactory.getLogger(SystemUtilities.class).warn("Error getting the default look and feel");
         }
         return false;

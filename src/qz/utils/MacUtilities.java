@@ -31,6 +31,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * Utility class for MacOS specific functions.
@@ -79,7 +80,7 @@ public class MacUtilities {
             for(String part : parts) {
                 if(part.contains(".")) {
                     // Try to use this section as the .com, etc
-                    String[] domain = part.toLowerCase().split("\\.");
+                    String[] domain = part.toLowerCase(Locale.ENGLISH).split("\\.");
                     // Convert to reverse-domain syntax
                     for(int i = domain.length -1; i >= 0; i--) {
                         // Skip "www", "www2", etc

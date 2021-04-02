@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.1.2+11
+ * @version 2.1.2+12
  * @overview QZ Tray Connector
  * <p/>
  * Connects a web client to the QZ Tray software.
@@ -38,7 +38,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
-        VERSION: "2.1.2+11",                              //must match @version above
+        VERSION: "2.1.2+12",                              //must match @version above
         DEBUG: false,
 
         log: {
@@ -57,7 +57,7 @@ var qz = (function() {
 
         //stream types
         streams: {
-            serial: 'SERIAL', usb: 'USB', hid: 'HID', printer: 'PRINTER', file: 'FILE'
+            serial: 'SERIAL', usb: 'USB', hid: 'HID', printer: 'PRINTER', file: 'FILE', socket: 'SOCKET'
         },
 
 
@@ -189,20 +189,20 @@ var qz = (function() {
                     //called when an open connection is closed
                     _qz.websocket.connection.onclose = function(evt) {
                         _qz.log.trace(evt);
-                        _qz.log.info("Closed connection with QZ Tray");
 
-                        //if this is set, then an explicit close call was made
-                        if (this.promise != undefined) {
-                            this.promise.resolve();
-                        }
-
-                        _qz.websocket.callClose(evt);
                         _qz.websocket.connection = null;
+                        _qz.websocket.callClose(evt);
+                        _qz.log.info("Closed connection with QZ Tray");
 
                         for(var uid in _qz.websocket.pendingCalls) {
                             if (_qz.websocket.pendingCalls.hasOwnProperty(uid)) {
                                 _qz.websocket.pendingCalls[uid].reject(new Error("Connection closed before response received"));
                             }
+                        }
+
+                        //if this is set, then an explicit close call was made
+                        if (this.promise != undefined) {
+                            this.promise.resolve();
                         }
                     };
 
@@ -295,6 +295,9 @@ var qz = (function() {
                                         }
 
                                         _qz.serial.callSerial(JSON.parse(returned.event));
+                                        break;
+                                    case _qz.streams.socket:
+                                        _qz.socket.callSocket(JSON.parse(returned.event));
                                         break;
                                     case _qz.streams.usb:
                                         if (!returned.event) {
@@ -467,6 +470,22 @@ var qz = (function() {
                     }
                 } else {
                     _qz.serial.serialCallbacks(streamEvent);
+                }
+            }
+        },
+
+
+        socket: {
+            /** List of functions called when receiving data from network socket connection. */
+            socketCallbacks: [],
+            /** Calls all functions registered to listen for network socket events. */
+            callSocket: function(socketEvent) {
+                if (Array.isArray(_qz.socket.socketCallbacks)) {
+                    for(var i = 0; i < _qz.socket.socketCallbacks.length; i++) {
+                        _qz.socket.socketCallbacks[i](socketEvent);
+                    }
+                } else {
+                    _qz.socket.socketCallbacks(socketEvent);
                 }
             }
         },
@@ -1330,7 +1349,9 @@ var qz = (function() {
              *  @param {string} [options.units='in'] Page units, applies to paper size, margins, and density. Valid value <code>[in | cm | mm]</code>
              *
              *  @param {boolean} [options.forceRaw=false] Print the specified raw data using direct method, skipping the driver.  Not yet supported on Windows.
-             *  @param {string} [options.encoding=null] Character set
+             *  @param {string|Object} [options.encoding=null] Character set for commands. Can be provided as an object for converting encoding types for RAW types.
+             *   @param {string} [options.encoding.from] If this encoding type is provided, RAW type commands will be parsed from this for the purpose of being converted to the <code>encoding.to</code> value.
+             *   @param {string} [options.encoding.to] Encoding RAW type commands will be converted into. If <Code>encoding.from</code> is not provided, this will be treated as if a string was passed for encoding.
              *  @param {string} [options.endOfDoc=null] DEPRECATED Raw only: Character(s) denoting end of a page to control spooling.
              *  @param {number} [options.perSpool=1] DEPRECATED: Raw only: Number of pages per spool.
              *  @param {boolean} [options.retainTemp=false] Retain any temporary files used.  Ignored unless <code>forceRaw</code> <code>true</code>.
@@ -1615,6 +1636,85 @@ var qz = (function() {
             }
         },
 
+        /**
+         * Calls related to interaction with communication sockets.
+         * @namespace qz.socket
+         */
+        socket: {
+            /**
+             * Opens a network port for sending and receiving data.
+             *
+             * @param {string} host The connection hostname.
+             * @param {number} port The connection port number.
+             * @param {Object} [options] Network socket configuration.
+             *  @param {string} [options.encoding='UTF-8'] Character set for communications.
+             *
+             * @memberof qz.socket
+             */
+            open: function(host, port, options) {
+                var params = {
+                    host: host,
+                    port: port,
+                    options: options
+                };
+                return _qz.websocket.dataPromise("socket.open", params);
+            },
+
+            /**
+             * @param {string} host The connection hostname.
+             * @param {number} port The connection port number.
+             *
+             * @memberof qz.socket
+             */
+            close: function(host, port) {
+                var params = {
+                    host: host,
+                    port: port
+                };
+                return _qz.websocket.dataPromise("socket.close", params);
+            },
+
+            /**
+             * Send data over an open socket.
+             *
+             * @param {string} host The connection hostname.
+             * @param {number} port The connection port number.
+             * @param {string|Object} data Data to be sent over the port.
+             *  @param {string} [data.type='PLAIN'] Valid values <code>[PLAIN]</code>
+             *  @param {string} data.data Data to be sent over the port.
+             *
+             * @memberof qz.socket
+             */
+            sendData: function(host, port, data) {
+                if (typeof data !== 'object') {
+                    data = {
+                        data: data,
+                        type: "PLAIN"
+                    };
+                }
+
+                var params = {
+                    host: host,
+                    port: port,
+                    data: data
+                };
+                return _qz.websocket.dataPromise("socket.sendData", params);
+            },
+
+            /**
+             * List of functions called for any response from open network sockets.
+             * Event data will contain <code>{string} host</code> and <code>{number} port</code> for all types.
+             *  For RECEIVE types, <code>{string} response</code>.
+             *  For ERROR types, <code>{string} exception</code>.
+             *
+             * @param {Function|Array<Function>} calls Single or array of <code>Function({Object} eventData)</code> calls.
+             *
+             * @memberof qz.socket
+             */
+            setSocketCallbacks: function(calls) {
+                _qz.socket.socketCallbacks = calls;
+            }
+        },
 
         /**
          * Calls related to interaction with USB devices.

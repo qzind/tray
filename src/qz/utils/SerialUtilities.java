@@ -7,6 +7,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
+import org.scijava.nativelib.NativeLibraryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.communication.SerialIO;
@@ -23,8 +24,21 @@ import java.util.Locale;
  * @author Tres
  */
 public class SerialUtilities {
-
     private static final Logger log = LoggerFactory.getLogger(SerialUtilities.class);
+
+    // Detect possible bug with jssc
+    // TODO: Remove when https://github.com/java-native/jssc/issues/80 is fixed
+    static {
+        for(NativeLibraryUtil.Architecture arch : NativeLibraryUtil.Architecture.values()) {
+            String test = arch.name().toLowerCase();
+            String control = arch.name().toLowerCase(Locale.ENGLISH);
+            if(!test.equals(control)) {
+                log.warn("NativeLibraryUtil.Architecture value \"{}\" != \"{}\", setting Locale to Locale.ENGLISH per scijava/native-lib-loader#39", test, control);
+                Locale.setDefault(Locale.ENGLISH);
+                break;
+            }
+        }
+    }
 
     private static final List<Integer> VALID_BAUD = Arrays.asList(SerialPort.BAUDRATE_110, SerialPort.BAUDRATE_300,
                                                                   SerialPort.BAUDRATE_600, SerialPort.BAUDRATE_1200,

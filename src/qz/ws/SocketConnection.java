@@ -5,8 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.communication.*;
-import qz.printer.status.StatusSession;
 import qz.printer.status.StatusMonitor;
+import qz.printer.status.StatusSession;
 import qz.utils.FileWatcher;
 
 import java.io.IOException;
@@ -25,6 +25,8 @@ public class SocketConnection {
 
     // serial port -> open SerialIO
     private final HashMap<String,SerialIO> openSerialPorts = new HashMap<>();
+    // socket 'host:port' -> open ProtocolIO
+    private final HashMap<String,SocketIO> openNetworkSockets = new HashMap<>();
 
     // absolute path -> open file listener
     private final HashMap<Path,FileIO> openFiles = new HashMap<>();
@@ -56,6 +58,19 @@ public class SocketConnection {
 
     public void removeSerialPort(String port) {
         openSerialPorts.remove(port);
+    }
+
+
+    public void addNetworkSocket(String location, SocketIO io) {
+        openNetworkSockets.put(location, io);
+    }
+
+    public SocketIO getNetworkSocket(String location) {
+        return openNetworkSockets.get(location);
+    }
+
+    public void removeNetworkSocket(String location) {
+        openNetworkSockets.remove(location);
     }
 
 
@@ -139,6 +154,10 @@ public class SocketConnection {
 
         for(SerialIO sio : openSerialPorts.values()) {
             sio.close();
+        }
+
+        for(SocketIO pio : openNetworkSockets.values()) {
+            pio.close();
         }
 
         for(DeviceIO dio : openDevices.values()) {

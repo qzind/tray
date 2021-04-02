@@ -17,6 +17,7 @@ import java.net.URLConnection;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -137,6 +138,7 @@ public final class ConnectionUtilities {
             requestProps.put("Sec-CH-UA-Platform", getPlatform(false));
             requestProps.put("Sec-CH-UA-Platform-Version", getPlatformVersion());
             requestProps.put("Sec-CH-UA-Arch", getArch());
+            requestProps.put("Sec-CH-UA-Bitness", getBitness());
             requestProps.put("Sec-CH-UA-Full-Version", Constants.VERSION.toString());
             requestProps.put("Sec-CH-UA", String.format("\"%s\"; v=\"%s\", \"%s\"; v=\"%s\"",
                                                         Constants.ABOUT_TITLE,
@@ -150,7 +152,38 @@ public final class ConnectionUtilities {
 
     private static String getArch() {
         String arch = System.getProperty("os.arch");
-        return "amd64".equalsIgnoreCase(arch) ? "x86_64" : arch;
+        if(arch != null) {
+            arch = arch.toLowerCase(Locale.ENGLISH);
+            if(arch.startsWith("amd") || arch.startsWith("x86") || arch.startsWith("i386")) {
+                return "x86";
+            } else if(arch.startsWith("aarch") || arch.startsWith("arm")) {
+                return "arm";
+            } else if(arch.startsWith("riscv") || arch.startsWith("rv")) {
+                return "riscv";
+            } if(arch.startsWith("ppc") || arch.startsWith("power")) {
+                return "ppc";
+            }
+        }
+        return arch == null ? "unknown" : arch;
+    }
+
+    private static String getBitness() {
+        // If available, will return "64" or "32"
+        String bitness = System.getProperty("sun.arch.data.model");
+        if(bitness != null ) {
+            return bitness;
+        }
+        // Fallback on parsing os.arch
+        bitness = System.getProperty("os.arch");
+        if(bitness != null) {
+            bitness = bitness.toLowerCase(Locale.ENGLISH);
+            // 32-bit is now much less common, code to the exceptions
+            if(bitness.equals("arm") || bitness.endsWith("86") || bitness.endsWith("32")) {
+                // i386, x86
+                return "32";
+            }
+        }
+        return "64";
     }
 
     private static String getPlatform(boolean legacy) {

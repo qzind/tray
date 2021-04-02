@@ -19,7 +19,6 @@ import static qz.utils.SystemUtilities.isWindows;
 /**
  * Created by Kyle on 2/23/2017.
  */
-
 public class StatusMonitor {
     private static final Logger log = LoggerFactory.getLogger(StatusMonitor.class);
 
@@ -33,16 +32,17 @@ public class StatusMonitor {
         ArrayList<String> printerNameList = new ArrayList<>();
 
         Winspool.PRINTER_INFO_2[] printers = WinspoolUtil.getPrinterInfo2();
-        for(Winspool.PRINTER_INFO_2 printer : printers) {
+        for (Winspool.PRINTER_INFO_2 printer : printers) {
             printerNameList.add(printer.pPrinterName);
             if (!notificationThreadCollection.containsKey(printer.pPrinterName)) {
-                Thread notificationThread = new WMIPrinterStatusThread(printer.pPrinterName, printer.Status);
+                boolean holdsJobs = (printer.Attributes & Winspool.PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS) > 0;
+                Thread notificationThread = new WmiPrinterStatusThread(printer.pPrinterName, holdsJobs);
                 notificationThreadCollection.put(printer.pPrinterName, notificationThread);
                 notificationThread.start();
             }
         }
         //interrupt threads that don't have associated printers
-        for(Map.Entry<String,Thread> e : notificationThreadCollection.entrySet()) {
+        for (Map.Entry<String,Thread> e : notificationThreadCollection.entrySet()) {
             if (!printerNameList.contains(e.getKey())) {
                 e.getValue().interrupt();
                 notificationThreadCollection.remove(e.getKey());
@@ -50,7 +50,7 @@ public class StatusMonitor {
         }
 
         if (printerConnectionsThread == null) {
-            printerConnectionsThread = new WMIPrinterConnectionsThread();
+            printerConnectionsThread = new WmiPrinterConnectionsThread();
             printerConnectionsThread.start();
         }
 
@@ -62,7 +62,7 @@ public class StatusMonitor {
     }
 
     public synchronized static void closeNotificationThreads() {
-        for(Thread t : notificationThreadCollection.values()) {
+        for (Thread t : notificationThreadCollection.values()) {
             t.interrupt();
         }
         notificationThreadCollection.clear();
@@ -80,7 +80,7 @@ public class StatusMonitor {
             } else if (!clientPrinterConnections.getValues(ALL_PRINTERS).contains(connection)) {
                 clientPrinterConnections.add(ALL_PRINTERS, connection);
             }
-        } else {  //listen to specific printer(s)
+        } else {  // listen to specific printer(s)
             for (int i = 0; i < printerNames.length(); i++) {
                 String printerName = printerNames.getString(i);
                 if (SystemUtilities.isMac()) {
@@ -89,9 +89,8 @@ public class StatusMonitor {
                     // Handle edge-case where printer was recently renamed/added
                     if (printerName == null) {
                         // Call PrintServiceLookup.lookupPrintServices again
-                        PrintServiceMatcher.getNativePrinterList();
+                        PrintServiceMatcher.getNativePrinterList(true);
                         printerName = NativePrinterMap.getInstance().lookupPrinterId(printerNames.getString(i));
-
                     }
                 }
                 if (printerName == null || "".equals(printerName)) {
@@ -115,47 +114,31 @@ public class StatusMonitor {
 
     public synchronized static void sendStatuses(SocketConnection connection) {
         boolean sendForAllPrinters = false;
-        ArrayList<PrinterStatus> printers;
-
-        if (isWindows()) {
-            printers = new ArrayList<>();
-            Winspool.PRINTER_INFO_2[] wmiPrinters = WinspoolUtil.getPrinterInfo2();
-            for(Winspool.PRINTER_INFO_2 p : wmiPrinters) {
-                printers.addAll(Arrays.asList(PrinterStatus.getFromWMICode(p.Status, p.pPrinterName)));
-            }
-        } else {
-            printers = CupsUtils.getAllStatuses();
-        }
+        ArrayList<Status> statuses = isWindows() ? WmiPrinterStatusThread.getAllStatuses(): CupsUtils.getAllStatuses();
 
         List<SocketConnection> connections = clientPrinterConnections.get("");
         if (connections != null) {
             sendForAllPrinters = connections.contains(connection);
         }
 
-        for(PrinterStatus ps : printers) {
+        for (Status status : statuses) {
             if (sendForAllPrinters) {
-                connection.getStatusListener().statusChanged(ps);
+                connection.getStatusListener().statusChanged(status);
             } else {
-                connections = clientPrinterConnections.get(ps.getIssuingPrinterName());
+                connections = clientPrinterConnections.get(status.getPrinter());
                 if ((connections != null) && connections.contains(connection)) {
-                    connection.getStatusListener().statusChanged(ps);
+                    connection.getStatusListener().statusChanged(status);
                 }
             }
         }
     }
 
     public synchronized static void closeListener(SocketConnection connection) {
-        ArrayList<String> itemsToDelete = new ArrayList<>();
-        for(Map.Entry<String,List<SocketConnection>> e : clientPrinterConnections.entrySet()) {
-            if (e.getValue().contains(connection)) {
-                itemsToDelete.add(e.getKey());
+        for (Iterator<Map.Entry<String, List<SocketConnection>>> i = clientPrinterConnections.entrySet().iterator(); i.hasNext();) {
+            if (i.next().getValue().contains(connection)) {
+                i.remove();
             }
         }
-        //Don't move this into the earlier loop, it causes a ConcurrentModificationException
-        for(String s : itemsToDelete) {
-            clientPrinterConnections.removeValue(s, connection);
-        }
-
         if (clientPrinterConnections.isEmpty()) {
             if (isWindows()) {
                 closeNotificationThreads();
@@ -169,16 +152,16 @@ public class StatusMonitor {
         return clientPrinterConnections.containsKey(PrinterName) || clientPrinterConnections.containsKey("");
     }
 
-    public synchronized static void statusChanged(PrinterStatus[] statuses) {
+    public synchronized static void statusChanged(Status[] statuses) {
         HashSet<SocketConnection> connections = new HashSet<>();
-        for(PrinterStatus status : statuses) {
-            if (clientPrinterConnections.containsKey(status.getIssuingPrinterName())) {
-                connections.addAll(clientPrinterConnections.get(status.getIssuingPrinterName()));
+        for (Status status : statuses) {
+            if (clientPrinterConnections.containsKey(status.getPrinter())) {
+                connections.addAll(clientPrinterConnections.get(status.getPrinter()));
             }
             if (clientPrinterConnections.containsKey("")) {
                 connections.addAll(clientPrinterConnections.get(""));
             }
-            for(SocketConnection connection : connections) {
+            for (SocketConnection connection : connections) {
                 connection.getStatusListener().statusChanged(status);
             }
         }

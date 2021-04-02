@@ -18,6 +18,7 @@ import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -125,11 +126,14 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     }
 
     private boolean promptCertutil() {
-        // Assume silent installs want certutil
-        if(Installer.IS_SILENT) {
+        // Assume silent or headless installs want certutil
+        if(Installer.IS_SILENT || GraphicsEnvironment.isHeadless()) {
             return true;
         }
-        SystemUtilities.setSystemLookAndFeel();
-        return JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(null, "A critical component, \"certutil\" wasn't found.  Attempt to fetch it now?");
+        try {
+            SystemUtilities.setSystemLookAndFeel();
+            return JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(null, "A critical component, \"certutil\" wasn't found.  Attempt to fetch it now?");
+        } catch(Throwable ignore) {}
+        return true;
     }
 }

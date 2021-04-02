@@ -31,11 +31,15 @@ import java.util.Locale;
 public class PrintServiceMatcher {
     private static final Logger log = LoggerFactory.getLogger(PrintServiceMatcher.class);
 
-    public static NativePrinterMap getNativePrinterList() {
+    public static NativePrinterMap getNativePrinterList(boolean silent) {
         NativePrinterMap printers = NativePrinterMap.getInstance();
         printers.putAll(PrintServiceLookup.lookupPrintServices(null, null));
-        log.debug("Found {} printers", printers.size());
+        if(!silent) log.debug("Found {} printers", printers.size());
         return printers;
+    }
+
+    public static NativePrinterMap getNativePrinterList() {
+        return getNativePrinterList(false);
     }
 
     public static String findPrinterName(String query) throws JSONException {
@@ -53,16 +57,17 @@ public class PrintServiceMatcher {
      *
      * @param printerSearch Search query to compare against service names.
      */
-    public static NativePrinter matchPrinter(String printerSearch) {
+    public static NativePrinter matchPrinter(String printerSearch, boolean silent) {
         NativePrinter exact = null;
         NativePrinter begins = null;
         NativePrinter partial = null;
 
-        log.debug("Searching for PrintService matching {}", printerSearch);
+        if(!silent) log.debug("Searching for PrintService matching {}", printerSearch);
+
         printerSearch = printerSearch.toLowerCase(Locale.ENGLISH);
 
         // Search services for matches
-        for(NativePrinter printer : getNativePrinterList().values()) {
+        for(NativePrinter printer : getNativePrinterList(silent).values()) {
             if (printer.getName() == null) {
                 continue;
             }
@@ -110,7 +115,7 @@ public class PrintServiceMatcher {
         }
 
         if (use != null) {
-            log.debug("Found match: {}", use.getPrintService().value().getName());
+            if(!silent) log.debug("Found match: {}", use.getPrintService().value().getName());
         } else {
             log.warn("Printer not found: {}", printerSearch);
         }
@@ -118,6 +123,9 @@ public class PrintServiceMatcher {
         return use;
     }
 
+    public static NativePrinter matchPrinter(String printerSearch) {
+        return matchPrinter(printerSearch, false);
+    }
 
     public static JSONArray getPrintersJSON() throws JSONException {
         JSONArray list = new JSONArray();

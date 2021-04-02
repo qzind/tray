@@ -28,11 +28,17 @@ public class CupsUtils {
     private static Pointer http;
     private static int subscriptionID = IPP.INT_UNDEFINED;
 
-    synchronized static void initCupsHttp() {
-        if (!httpInitialised) {
-            httpInitialised = true;
-            http = cups.httpConnectEncrypt(cups.cupsServer(), IPP.PORT, cups.cupsEncryption());
-        }
+    static Pointer getCupsHttp() {
+        if (http == null) http = cups.httpConnectEncrypt(cups.cupsServer(), IPP.PORT, cups.cupsEncryption());
+        return http;
+    }
+
+    static synchronized Pointer doRequest(Pointer request, String resource) {
+        return cups.cupsDoRequest(getCupsHttp(), request, resource);
+    }
+
+    static synchronized Pointer doFileRequest(Pointer request, String resource, String fileName) {
+        return cups.cupsDoFileRequest(getCupsHttp(), request, resource, fileName);
     }
 
     static Pointer listSubscriptions() {
@@ -93,7 +99,7 @@ public class CupsUtils {
         cups.ippAddInteger(request, IPP.TAG_OPERATION, IPP.TAG_INTEGER, "notify-subscription-ids", subscriptionID);
         cups.ippAddInteger(request, IPP.TAG_OPERATION, IPP.TAG_INTEGER, "notify-sequence-numbers", eventNumber);
 
-        return cups.cupsDoRequest(http, request, "/");
+        return doRequest(request, "/");
     }
 
     public static ArrayList<Status> getAllStatuses() {
@@ -102,7 +108,7 @@ public class CupsUtils {
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
 
-        Pointer response = cups.cupsDoRequest(http, request, "/");
+        Pointer response = doRequest(request, "/");
         Pointer stateAttr = cups.ippFindAttribute(response, "printer-state", IPP.TAG_ENUM);
         Pointer reasonAttr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
         Pointer nameAttr = cups.ippFindAttribute(response, "printer-name", IPP.TAG_NAME);

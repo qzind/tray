@@ -229,7 +229,7 @@ public class MacUtilities {
             final NativeLong image = Foundation.INSTANCE.object_getIvar(awtView, Foundation.INSTANCE.class_getInstanceVariable(FoundationUtil.invoke(awtView, "class"), "image"));
             FoundationUtil.invoke(image, "setTemplate:", true);
             FoundationUtil.runOnMainThreadAndWait(() -> {
-                FoundationUtil.invoke(statusItem, "setView:", (Object) null);
+                FoundationUtil.invoke(statusItem, "setView:", FoundationUtil.NULL);
                 NativeLong target;
                 if (SystemUtilities.getOSVersion().greaterThanOrEqualTo(Version.forIntegers(10, 10))) {
                     target = FoundationUtil.invoke(statusItem, "button");

@@ -53,14 +53,18 @@ public interface Foundation extends Library {
 
     NativeLong objc_msgSend(NativeLong receiver, Pointer selector);
 
-    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, Pointer var1, NativeLong var2, boolean var3);
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, Pointer obj);
 
-    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, NativeLong var1);
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, NativeLong objAddress);
 
-    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, Object[] var1);
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, boolean boolArg);
 
-    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, Pointer var1);
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, double doubleArg);
 
+    // Used by NSObject.performSelectorOnMainThread
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, Pointer selectorDst, NativeLong objAddress, boolean wait);
+
+    // Used by NSString.fromJavaString
     NativeLong objc_msgSend(NativeLong receiver, Pointer selector, byte[] bytes, int len, long encoding);
 
     Pointer sel_registerName(String selectorName);

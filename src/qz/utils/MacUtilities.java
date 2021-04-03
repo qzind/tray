@@ -164,11 +164,6 @@ public class MacUtilities {
         int getpid ();
     }
 
-    private static boolean isArm() {
-        String arch = System.getProperty("os.arch");
-        return arch != null && arch.toLowerCase().startsWith("aarch") || arch.toLowerCase().startsWith("arm");
-    }
-
     /**
      * Checks for presence of JDK-8252015 using reflection
      */

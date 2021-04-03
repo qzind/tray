@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="EntryPointsManager">
-    <entry_points version="2.0" />
     <list size="4">
       <item index="0" class="java.lang.String" itemvalue="org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose" />
       <item index="1" class="java.lang.String" itemvalue="org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect" />
@@ -9,5 +8,5 @@
       <item index="3" class="java.lang.String" itemvalue="org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage" />
     </list>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="false" assert-keyword="true" jdk-15="true" project-jdk-name="11" project-jdk-type="JavaSDK" />
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" project-jdk-name="11" project-jdk-type="JavaSDK" />
 </project>

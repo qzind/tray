@@ -275,6 +275,10 @@ public class SystemUtilities {
         return linuxRelease != null && linuxRelease.contains("Fedora");
     }
 
+    public static boolean isArm(String arch) {
+        return arch != null && arch.toLowerCase().startsWith("aarch") || arch.toLowerCase().startsWith("arm");
+    }
+
     /**
      * Returns the output of {@code cat /etc/lsb-release} or equivalent
      *

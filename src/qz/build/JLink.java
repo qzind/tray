@@ -24,18 +24,19 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Locale;
 
 public class JLink {
     private static final Logger log = LoggerFactory.getLogger(JLink.class);
-    private static final String DOWNLOAD_URL = "https://github.com/AdoptOpenJDK/openjdk%s-binaries/releases/download/jdk-%s/OpenJDK%sU-jdk_%s_%s_%s_%s.%s";
-    private static final String JAVA_VENDOR = "AdoptOpenJDK";
-    private static final String JAVA_VERSION = "11.0.10+9";
+    private static final String JAVA_AMD64_VENDOR = "AdoptOpenJDK";
+    private static final String JAVA_ARM64_VENDOR = "BellSoft";
+    private static final String JAVA_VERSION = "11.0.10+9";;
     private static final String JAVA_MAJOR = JAVA_VERSION.split("\\.")[0];
     private static final String JAVA_MINOR = JAVA_VERSION.split("\\.")[1];
     private static final String JAVA_PATCH = JAVA_VERSION.split("\\.|\\+|-")[2];
     private static final String JAVA_VERSION_FILE = JAVA_VERSION.replaceAll("\\+", "_");
     private static final String JAVA_DEFAULT_GC_ENGINE = "hotspot";
-    private static final String JAVA_DEFAULT_ARCH = "x64";
+    private static final String JAVA_DEFAULT_ARCH = VendorArch.ADOPT_AMD64.use;
 
     private String jarPath;
     private String jdepsPath;
@@ -43,10 +44,11 @@ public class JLink {
     private String jlinkPath;
     private String jmodsPath;
     private String outPath;
+    private String javaVendor;
     private LinkedHashSet<String> depList;
 
-
     public JLink(String platform, String arch, String gcEngine) throws IOException {
+        javaVendor = SystemUtilities.isArm(arch) ? JAVA_ARM64_VENDOR : JAVA_AMD64_VENDOR;
         downloadJdk(platform, arch, gcEngine)
                 .calculateJarPath()
                 .calculateOutPath()
@@ -72,31 +74,37 @@ public class JLink {
             }
             log.info("No platform specified, assuming '{}'", platform);
         }
-        if(arch == null) {
-            arch = JAVA_DEFAULT_ARCH;
-            log.info("No architecture specified, assuming '{}'", arch);
-        }
+
+        arch = VendorArch.match(javaVendor, arch, JAVA_DEFAULT_ARCH);
+        platform = VendorOs.match(javaVendor, platform);
+
+
         if(gcEngine == null) {
             gcEngine = JAVA_DEFAULT_GC_ENGINE;
             log.info("No garbage collector specified, assuming '{}'", gcEngine);
         }
 
-        String fileExt = platform.equals("windows") ? "zip" : "tar.gz";
+        String fileExt;
+        switch(VendorUrlPattern.getVendor(javaVendor)) {
+            case BELL:
+                fileExt = platform.equals("linux") ? "tar.gz" : "zip";
+                break;
+            case ADOPT:
+            default:
+                fileExt = platform.equals("windows") ? "zip" : "tar.gz";
+        }
 
-        // Assume consistent formatting
-        String url = String.format(DOWNLOAD_URL, JAVA_MAJOR, JAVA_VERSION,
-                                   JAVA_MAJOR, arch, platform, gcEngine,
-                                   JAVA_VERSION_FILE, fileExt);
+        String url = VendorUrlPattern.format(javaVendor, arch, platform, gcEngine, JAVA_MAJOR, JAVA_VERSION, JAVA_VERSION_FILE, fileExt);
 
-        // Saves to out e.g. "out/jlink/jdk-platform-11_0_7"
-        String extractedJdk = new Fetcher(String.format("jlink/jdk-%s-%s", platform, JAVA_VERSION_FILE), url)
+        // Saves to out e.g. "out/jlink/jdk-AdoptOpenjdk-amd64-platform-11_0_7"
+        String extractedJdk = new Fetcher(String.format("jlink/jdk-%s-%s-%s-%s", javaVendor.toLowerCase(Locale.ENGLISH), arch, platform, JAVA_VERSION_FILE), url)
                 .fetch()
                 .uncompress();
 
         // Get first subfolder, e.g. jdk-11.0.7+10
         for(File subfolder : new File(extractedJdk).listFiles(pathname -> pathname.isDirectory())) {
             extractedJdk = subfolder.getPath();
-            if(platform.equals("mac")) {
+            if(platform.equals("mac") && Paths.get(extractedJdk, "/Contents/Home").toFile().isDirectory()) {
                 extractedJdk += "/Contents/Home";
             }
             log.info("Selecting JDK home: {}", extractedJdk);
@@ -175,14 +183,20 @@ public class JLink {
             File macOS = new File(outPath, "../MacOS").getCanonicalFile();
             macOS.mkdirs();
             log.info("Deploying {}/libjli.dylib", macOS);
-            FileUtils.copyFileToDirectory(new File(jmodsPath, "../../MacOS/libjli.dylib"), macOS);
+            try {
+                // Bundle format
+                FileUtils.copyFileToDirectory(new File(jmodsPath, "../../MacOS/libjli.dylib"), macOS);
+            } catch(IOException ignore) {
+                // Flat format
+                FileUtils.copyFileToDirectory(new File(jmodsPath, "../lib/jli/libjli.dylib"), macOS);
+            }
 
             // Deploy Contents/Info.plist
             HashMap<String, String> fieldMap = new HashMap<>();
             fieldMap.put("%BUNDLE_ID%", MacUtilities.getBundleId() + ".jre"); // e.g. io.qz.qz-tray.jre
             fieldMap.put("%BUNDLE_VERSION%", String.format("%s.%s.%s", JAVA_MAJOR, JAVA_MINOR, JAVA_PATCH));
             fieldMap.put("%BUNDLE_VERSION_FULL%", JAVA_VERSION);
-            fieldMap.put("%BUNDLE_VENDOR%", JAVA_VENDOR);
+            fieldMap.put("%BUNDLE_VENDOR%", javaVendor);
             log.info("Deploying {}/Info.plist", macOS.getParent());
             FileUtilities.configureAssetFile("assets/mac-runtime.plist.in", new File(macOS.getParentFile(), "Info.plist"), fieldMap, JLink.class);
         }

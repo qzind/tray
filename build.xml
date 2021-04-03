@@ -159,6 +159,8 @@
             <arg value="jlink"/>
             <arg value="--platform"/>
             <arg value="${target.platform}"/>
+            <arg value="--arch"/>
+            <arg value="${jre.arch}"/>
         </java>
     </target>
 

@@ -58,12 +58,28 @@ public final class FoundationUtil {
         return !NULL.equals(id);
     }
 
-    public static NativeLong invoke(NativeLong id, String selector, Object... args) {
-        return FOUNDATION.objc_msgSend(id, Foundation.INSTANCE.sel_registerName(selector), args);
+    public static NativeLong invoke(NativeLong id, String selector) {
+        return FOUNDATION.objc_msgSend(id, Foundation.INSTANCE.sel_registerName(selector));
     }
 
-    public static NativeLong invoke(NativeLong id, Pointer selectorPointer, Object... args) {
-        return FOUNDATION.objc_msgSend(id, selectorPointer, args);
+    public static NativeLong invoke(NativeLong id, String selector, boolean boolArg) {
+        return FOUNDATION.objc_msgSend(id, Foundation.INSTANCE.sel_registerName(selector), boolArg);
+    }
+
+    public static NativeLong invoke(NativeLong id, String selector, double doubleArg) {
+        return FOUNDATION.objc_msgSend(id, Foundation.INSTANCE.sel_registerName(selector), doubleArg);
+    }
+
+    public static NativeLong invoke(NativeLong id, String selector, NativeLong objAddress) {
+        return FOUNDATION.objc_msgSend(id, Foundation.INSTANCE.sel_registerName(selector), objAddress);
+    }
+
+    public static NativeLong invoke(NativeLong id, Pointer selectorPointer) {
+        return FOUNDATION.objc_msgSend(id, selectorPointer);
+    }
+
+    public static NativeLong invoke(NativeLong id, Pointer selectorPointer, NativeLong objAddress) {
+        return FOUNDATION.objc_msgSend(id, selectorPointer, objAddress);
     }
 
     public static void runOnMainThreadAndWait(Runnable runnable) throws InterruptedException, ExecutionException {

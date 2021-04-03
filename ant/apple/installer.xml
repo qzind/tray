@@ -11,7 +11,7 @@
     <target name="pkgbuild-preflight">
         <property name="target.platform.mac" value="true"/>
     </target>
-    <target name="build-pkg" depends="get-version">
+    <target name="build-pkg" depends="codesign-jre,get-version">
         <echo level="info">Creating installer using pkgbuild</echo>
 
         <property file="ant/apple/apple.properties"/>
@@ -62,6 +62,9 @@
                 <include name="**/${project.name}"/>
                 <include name="**/uninstall"/>
             </fileset>
+            <fileset dir="${build.dir}/scripts/payload/PlugIns/Java.runtime/Contents/Home/bin">
+                <include name="**"/>
+            </fileset>
         </chmod>
 
         <!-- Disable signing and append "-community" if id is missing -->
@@ -102,8 +105,32 @@
         </exec>
 
         <!-- Cleanup lingering files (for other OS installers) -->
-        <delete dir="${dist.dir}/Contents/Resources"/>
-        <delete dir="${dist.dir}/Contents/MacOS"/>
+        <!-- FIXME BRING BACK BEFORE MERGE <delete dir="${dist.dir}/Contents/Resources"/> -->
+        <!-- FIXME BRING BACK BEFORE MERGE <delete dir="${dist.dir}/Contents/MacOS"/> -->
+        <!-- FIXME BUILD AN APP HERE LOCALLY -->
+        <delete dir="${dist.dir}/../QZ Tray.app"/>
+        <move todir="${dist.dir}/../QZ Tray.app">
+            <fileset dir="${dist.dir}"/>
+        </move>
+        <chmod perm="a+x">
+            <fileset dir="${dist.dir}/../QZ Tray.app/Contents/MacOS"/>
+        </chmod>
+    </target>
+
+    <target name="codesign-jre" if="codesign.mac">
+        <property file="ant/apple/apple.properties"/>
+        <exec executable="codesign" failonerror="true">
+            <arg value="--force"/>
+            <arg value="-s"/>
+            <arg value="${apple.packager.signid}"/>
+            <arg value="--timestamp"/>
+            <arg value="--options"/>
+            <arg value="runtime"/>
+            <arg value="--entitlements"/>
+            <arg value="${basedir}/ant/apple/apple-entitlements.plist"/>
+            <arg value="--deep"/>
+            <arg value="${dist.dir}/PlugIns/Java.runtime"/>
+        </exec>
     </target>
 
     <target name="codesign-jars" if="codesign.mac">
@@ -140,7 +167,7 @@
         <echo level="info" message="Signing ${dist.dir}/libs/*.dylib using ${apple.packager.signid}"/>
         <exec executable="bash" failonerror="true">
             <arg value="-c"/>
-            <arg value="echo &quot;$(find ${dist.dir}/libs/*.dylib)&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>
+            <arg value="echo &quot;$(find ${dist.dir}/libs/*.dylib)&quot; |tr ':' '\n' |xargs codesign --force -s &quot;${apple.packager.signid}&quot; -v"/>
         </exec>
 
     </target>

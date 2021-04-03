@@ -19,10 +19,7 @@ import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -122,13 +119,20 @@ public abstract class Installer {
         FileUtils.copyDirectory(src.toFile(), dest.toFile());
         FileUtilities.setPermissionsRecursively(dest, false);
         if(SystemUtilities.isWindows()) {
-            // skip
-        } else if(SystemUtilities.isMac()) {
+            return this; // skip
+        }
+
+        if(SystemUtilities.isMac()) {
             setExecutable("uninstall");
             setExecutable("Contents/MacOS/" + ABOUT_TITLE);
         } else {
             setExecutable("uninstall");
             setExecutable(PROPS_FILE);
+        }
+
+        // Set jre/bin/java and friends executable
+        for(File file : new File(getDestination(), "PlugIns/Java.runtime/Contents/Home/bin").listFiles(pathname -> !pathname.isDirectory())) {
+            file.setExecutable(true, false);
         }
         return this;
     }

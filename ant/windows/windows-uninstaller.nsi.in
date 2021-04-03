@@ -64,6 +64,7 @@ Section
     ${EndIf}
 
     ; Set $javaw variable
+    Push "$DELETE_DIR"
     Call FindJava
 
     ; Run uninstall step using jar

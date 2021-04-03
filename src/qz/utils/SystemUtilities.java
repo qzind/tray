@@ -109,13 +109,16 @@ public class SystemUtilities {
         }
     }
 
+    public static Version getJavaVersion() {
+        return getJavaVersion(System.getProperty("java.version"));
+    }
+
     /**
      * Handle Java versioning nuances
      * To eventually be replaced with <code>java.lang.Runtime.Version</code> (JDK9+)
      */
-    public static Version getJavaVersion() {
-        String version = System.getProperty("java.version");
-        String[] parts = version.split("\\D+");
+    public static Version getJavaVersion(String version) {
+        String[] parts = version.trim().split("\\D+");
 
         int major = 1;
         int minor = 0;

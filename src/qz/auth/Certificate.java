@@ -10,6 +10,7 @@ import org.bouncycastle.jce.PrincipalUtil;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.App;
 import qz.common.Constants;
 import qz.utils.ByteUtilities;
 import qz.utils.FileUtilities;
@@ -149,7 +150,7 @@ public class Certificate {
 
         // Fallback (deprecated): Parse "authcert.override" from qz-tray.properties
         // Entry was created by 2.0 build system, removed in newer versions in favor of the hard-coded filename
-        Properties props = PrintSocketServer.getTrayProperties();
+        Properties props = App.getTrayProperties();
         helpText = "Properties file entry \"authcert.override\"";
         if(props != null && setOverrideCert(props.getProperty("authcert.override"), helpText, false)) {
             log.warn("Deprecation warning: \"authcert.override\" is no longer supported.\n" +

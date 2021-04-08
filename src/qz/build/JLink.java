@@ -152,7 +152,7 @@ public class JLink {
         log.info("Calling jdeps to determine runtime dependencies");
         depList = new LinkedHashSet<>();
 
-        // JDK13+ allows suppressing of missing deps
+        // JDK13+ requires suppressing of missing deps
         String raw = jdepsVersion.getMajorVersion() >= 13 ?
                 ShellUtilities.executeRaw(jdepsPath, "--list-deps", "--ignore-missing-deps", jarPath) :
                 ShellUtilities.executeRaw(jdepsPath, "--list-deps", jarPath);
@@ -161,8 +161,9 @@ public class JLink {
         }
         for(String item : raw.split("\\r?\\n")) {
             item = item.trim();
+            System.out.println(item);
             if(!item.isEmpty()) {
-                if(item.startsWith("JDK")) {
+                if(item.startsWith("JDK") || item.startsWith("jdk8internals")) {
                     // Remove e.g. "JDK removed internal API/sun.reflect"
                     log.trace("Removing dependency: '{}'", item);
                     continue;

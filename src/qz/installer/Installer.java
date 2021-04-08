@@ -121,6 +121,12 @@ public abstract class Installer {
 
         FileUtils.copyDirectory(src.toFile(), dest.toFile());
         FileUtilities.setPermissionsRecursively(dest, false);
+
+        if(!SystemUtilities.isWindows()) {
+            setExecutable("uninstall");
+            setExecutable(SystemUtilities.isMac()? "Contents/MacOS/" + ABOUT_TITLE:PROPS_FILE);
+        }
+
         return setJrePermissions();
     }
 
@@ -128,25 +134,17 @@ public abstract class Installer {
         if(SystemUtilities.isWindows()) {
             return this; // skip
         }
-        String jreLocation;
-        if(SystemUtilities.isMac()) {
-            setExecutable("uninstall");
-            setExecutable("Contents/MacOS/" + ABOUT_TITLE);
-            jreLocation = "PlugIns/Java.runtime/Contents/Home/bin";
-        } else {
-            setExecutable("uninstall");
-            setExecutable(PROPS_FILE);
-            jreLocation = "jre/bin";
-        }
+        File jreLocation = new File(SystemUtilities.detectAppPath().toFile(), SystemUtilities.isMac() ?  "PlugIns/Java.runtime/Contents/Home" : "jre");
+        File jreBin = new File(jreLocation, "bin");
+        File jreLib = new File(jreLocation, "lib");
 
         // Set jre/bin/java and friends executable
-        for(File file : new File(getDestination(), jreLocation).listFiles(pathname -> !pathname.isDirectory())) {
+        for(File file : jreBin.listFiles(pathname -> !pathname.isDirectory())) {
             file.setExecutable(true, false);
         }
 
         // Set jspawnhelper executable
-        String spawnHelper = jreLocation + "../lib/jspawnhelper" + (SystemUtilities.isWindows() ? ".exe" : "");
-        new File(getDestination(), spawnHelper).setExecutable(true, false);
+        new File(jreLib, "jspawnhelper" + (SystemUtilities.isWindows() ? ".exe" : "")).setExecutable(true, false);
         return this;
     }
 

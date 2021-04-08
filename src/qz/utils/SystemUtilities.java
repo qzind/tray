@@ -193,7 +193,12 @@ public class SystemUtilities {
         if (jarPath != null) {
             File jar = new File(jarPath);
             if (jar.getPath().endsWith(".jar") && jar.exists()) {
-                return Paths.get(jar.getParent());
+                Path app = Paths.get(jar.getParent());
+                // Bundled Java uses new directory structure
+                if(app.endsWith("Contents")) {
+                    app = app.getParent();
+                }
+                return app;
             }
         }
         return null;

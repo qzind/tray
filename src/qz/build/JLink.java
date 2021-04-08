@@ -14,10 +14,7 @@ import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.*;
 import qz.common.Constants;
-import qz.utils.FileUtilities;
-import qz.utils.MacUtilities;
-import qz.utils.ShellUtilities;
-import qz.utils.SystemUtilities;
+import qz.utils.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,14 +42,25 @@ public class JLink {
     private String jmodsPath;
     private String outPath;
     private String javaVendor;
+    private String targetPlatform;
     private LinkedHashSet<String> depList;
 
-    public JLink(String platform, String arch, String gcEngine) throws IOException {
+    public JLink(String targetPlatform, String arch, String gcEngine) throws IOException {
         javaVendor = SystemUtilities.isArm(arch) ? JAVA_ARM64_VENDOR : JAVA_AMD64_VENDOR;
-        downloadJdk(platform, arch, gcEngine)
+        this.targetPlatform = targetPlatform;
+
+        // jdeps and jlink require matching major JDK versions.  Download if needed.
+        if(Constants.JAVA_VERSION.getMajorVersion() != Integer.parseInt(JAVA_MAJOR)) {
+            log.warn("Java versions are incompatible, locating a suitable runtime for Java " + JAVA_MAJOR + "...");
+            downloadJdk(null, System.getProperty("os.arch"), gcEngine);
+            calculateToolPaths(jmodsPath + "/../");
+        } else {
+            calculateToolPaths(null);
+        }
+
+        downloadJdk(targetPlatform, arch, gcEngine)
                 .calculateJarPath()
                 .calculateOutPath()
-                .calculateToolPaths()
                 .calculateDepList()
                 .deployJre();
     }
@@ -65,6 +73,7 @@ public class JLink {
 
     private JLink downloadJdk(String platform, String arch, String gcEngine) throws IOException {
         if(platform == null) {
+            // Must match ArgValue.JLINK --platform values
             if(SystemUtilities.isMac()) {
                 platform = "mac";
             } else if(SystemUtilities.isWindows()) {
@@ -112,7 +121,7 @@ public class JLink {
         }
 
         jmodsPath = Paths.get(extractedJdk, "jmods").toString();
-        log.info("Selecting jmods: {}", jmodsPath);
+        log.info("Selecting jmods folder: {}", jmodsPath);
 
         return this;
     }
@@ -128,7 +137,7 @@ public class JLink {
     }
 
     private JLink calculateOutPath() throws IOException {
-        if(SystemUtilities.isMac()) {
+        if(targetPlatform.equals("mac")) {
             outPath = Paths.get(jarPath, "../PlugIns/Java.runtime/Contents/Home").toFile().getCanonicalPath();
         } else {
             outPath = Paths.get(jarPath, "../jre").toFile().getCanonicalPath();
@@ -137,13 +146,17 @@ public class JLink {
         return this;
     }
 
-    private JLink calculateToolPaths() throws IOException {
-        String javaHome = System.getProperty("java.home");
+    private JLink calculateToolPaths(String javaHome) throws IOException {
+        if(javaHome == null) {
+            javaHome = System.getProperty("java.home");
+        }
         log.info("Using JAVA_HOME: {}", javaHome);
         jdepsPath = Paths.get(javaHome, "bin", SystemUtilities.isWindows() ? "jdeps.exe" : "jdeps").toFile().getCanonicalPath();
         jlinkPath = Paths.get(javaHome, "bin", SystemUtilities.isWindows() ? "jlink.exe" : "jlink").toFile().getCanonicalPath();
         log.info("Assuming jdeps path: {}", jdepsPath);
         log.info("Assuming jlink path: {}", jlinkPath);
+        new File(jdepsPath).setExecutable(true, false);
+        new File(jlinkPath).setExecutable(true, false);
         jdepsVersion = SystemUtilities.getJavaVersion(ShellUtilities.executeRaw(jdepsPath, "--version"));
         return this;
     }
@@ -161,7 +174,6 @@ public class JLink {
         }
         for(String item : raw.split("\\r?\\n")) {
             item = item.trim();
-            System.out.println(item);
             if(!item.isEmpty()) {
                 if(item.startsWith("JDK") || item.startsWith("jdk8internals")) {
                     // Remove e.g. "JDK removed internal API/sun.reflect"
@@ -179,7 +191,7 @@ public class JLink {
     }
 
     private JLink deployJre() throws IOException {
-        if(SystemUtilities.isMac()) {
+        if(targetPlatform.equals("mac")) {
             // Deploy Contents/MacOS/libjli.dylib
             File macOS = new File(outPath, "../MacOS").getCanonicalFile();
             macOS.mkdirs();

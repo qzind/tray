@@ -83,7 +83,7 @@ public abstract class Installer {
     public static boolean preinstall() {
         getInstance();
         log.info("Fixing runtime permissions...");
-        instance.setJrePermissions();
+        instance.setJrePermissions(SystemUtilities.detectAppPath().toString());
         log.info("Stopping running instances...");
         return TaskKiller.killAll();
     }
@@ -125,13 +125,13 @@ public abstract class Installer {
         if(!SystemUtilities.isWindows()) {
             setExecutable("uninstall");
             setExecutable(SystemUtilities.isMac()? "Contents/MacOS/" + ABOUT_TITLE:PROPS_FILE);
-            return setJrePermissions();
+            return setJrePermissions(getDestination());
         }
         return this;
     }
 
-    private Installer setJrePermissions() {
-        File jreLocation = new File(SystemUtilities.detectAppPath().toFile(), SystemUtilities.isMac() ?  "PlugIns/Java.runtime/Contents/Home" : "jre");
+    private Installer setJrePermissions(String dest) {
+        File jreLocation = new File(dest, SystemUtilities.isMac() ?  "PlugIns/Java.runtime/Contents/Home" : "jre");
         File jreBin = new File(jreLocation, "bin");
         File jreLib = new File(jreLocation, "lib");
 

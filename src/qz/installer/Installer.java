@@ -121,14 +121,13 @@ public abstract class Installer {
 
         FileUtils.copyDirectory(src.toFile(), dest.toFile());
         FileUtilities.setPermissionsRecursively(dest, false);
-        if(SystemUtilities.isWindows()) {
-            return this; // skip
-        }
-
         return setJrePermissions();
     }
 
     private Installer setJrePermissions() {
+        if(SystemUtilities.isWindows()) {
+            return this; // skip
+        }
         String jreLocation;
         if(SystemUtilities.isMac()) {
             setExecutable("uninstall");

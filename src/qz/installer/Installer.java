@@ -125,15 +125,12 @@ public abstract class Installer {
         if(!SystemUtilities.isWindows()) {
             setExecutable("uninstall");
             setExecutable(SystemUtilities.isMac()? "Contents/MacOS/" + ABOUT_TITLE:PROPS_FILE);
+            return setJrePermissions();
         }
-
-        return setJrePermissions();
+        return this;
     }
 
     private Installer setJrePermissions() {
-        if(SystemUtilities.isWindows()) {
-            return this; // skip
-        }
         File jreLocation = new File(SystemUtilities.detectAppPath().toFile(), SystemUtilities.isMac() ?  "PlugIns/Java.runtime/Contents/Home" : "jre");
         File jreBin = new File(jreLocation, "bin");
         File jreLib = new File(jreLocation, "lib");

@@ -155,7 +155,7 @@
         <property description="target.platform default" name="target.platform" value="linux"/>
 
         <echo level="info">Downloading and bundling the jre for ${target.platform}</echo>
-        <java jar="${dist.dir}/${project.filename}.jar" fork="true">
+        <java jar="${dist.dir}/${project.filename}.jar" fork="true" failonerror="true">
             <arg value="jlink"/>
             <arg value="--platform"/>
             <arg value="${target.platform}"/>

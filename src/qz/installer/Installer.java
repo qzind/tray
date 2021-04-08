@@ -122,18 +122,25 @@ public abstract class Installer {
             return this; // skip
         }
 
+        String jreLocation;
         if(SystemUtilities.isMac()) {
             setExecutable("uninstall");
             setExecutable("Contents/MacOS/" + ABOUT_TITLE);
+            jreLocation = "PlugIns/Java.runtime/Contents/Home/bin";
         } else {
             setExecutable("uninstall");
             setExecutable(PROPS_FILE);
+            jreLocation = "jre/bin";
         }
 
         // Set jre/bin/java and friends executable
-        for(File file : new File(getDestination(), "PlugIns/Java.runtime/Contents/Home/bin").listFiles(pathname -> !pathname.isDirectory())) {
+        for(File file : new File(getDestination(), jreLocation).listFiles(pathname -> !pathname.isDirectory())) {
             file.setExecutable(true, false);
         }
+
+        // Set jspawnhelper executable
+        String spawnHelper = jreLocation + "../lib/jspawnhelper" + (SystemUtilities.isWindows() ? ".exe" : "");
+        new File(getDestination(), spawnHelper).setExecutable(true, false);
         return this;
     }
 

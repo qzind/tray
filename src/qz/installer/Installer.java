@@ -81,6 +81,9 @@ public abstract class Installer {
     }
 
     public static boolean preinstall() {
+        getInstance();
+        log.info("Fixing runtime permissions...");
+        instance.setJrePermissions();
         log.info("Stopping running instances...");
         return TaskKiller.killAll();
     }
@@ -122,6 +125,10 @@ public abstract class Installer {
             return this; // skip
         }
 
+        return setJrePermissions();
+    }
+
+    private Installer setJrePermissions() {
         String jreLocation;
         if(SystemUtilities.isMac()) {
             setExecutable("uninstall");

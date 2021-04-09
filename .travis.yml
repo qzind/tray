@@ -27,6 +27,7 @@ matrix:
       arch: amd64
 language: java
 dist: trusty
+apt: ant
 before_script:
   - sw_vers -productVersion && brew update && brew install ant && brew uninstall --ignore-dependencies openjdk && brew install openjdk@11 && ln -s /usr/local/opt/openjdk@11 /usr/local/opt/openjdk; ant -version
   - test -e /etc/lsb-release && sudo apt-get update -qq && sudo apt-get install -y makeself nsis; echo;

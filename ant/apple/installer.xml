@@ -11,59 +11,92 @@
     <target name="pkgbuild-preflight">
         <property name="target.platform.mac" value="true"/>
     </target>
-    <target name="build-pkg" depends="codesign-jre,get-version">
-        <echo level="info">Creating installer using pkgbuild</echo>
 
+    <target name="build-app" depends="codesign-jre,get-version">
+        <echo level="info">Creating app bundle</echo>
         <property file="ant/apple/apple.properties"/>
-
         <!--
         ###################################
         #   Build MacOS Bundle Structure  #
         ###################################
         -->
 
+        <!-- Contents/ -->
+        <copy file="ant/apple/apple-bundle.plist.in" tofile="${dist.dir}/Info.plist">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <copy file="ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <!-- Contents/Resources/ -->
         <mkdir dir="${dist.dir}/Resources"/>
         <copy file="assets/branding/apple-icon.icns" tofile="${dist.dir}/Resources/${project.filename}.icns"/>
+        <copy file="${dist.dir}/LICENSE.txt" tofile="${dist.dir}/Resources/LICENSE.txt"/>
+        <delete file="${dist.dir}/LICENSE.txt"/>
 
+        <!-- Contents/Resources/MacOS/ -->
         <mkdir dir="${dist.dir}/MacOS"/>
         <copy file="ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/MacOS/${project.name}">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <copy file="ant/apple/apple-bundle.plist.in" tofile="${dist.dir}/Info.plist">
-            <filterchain><expandproperties/></filterchain>
+        <!-- set bundle files executable -->
+        <chmod perm="a+x" type="file">
+            <!-- changes here need to be repeated in the payload too -->
+            <fileset dir="${dist.dir}">
+                <include name="**/${project.name}"/>
+                <include name="**/uninstall"/>
+            </fileset>
+            <fileset dir="${dist.dir}/PlugIns/Java.runtime/Contents/Home/bin">
+                <include name="**"/>
+            </fileset>
+            <fileset dir="${dist.dir}/PlugIns/Java.runtime/Contents/Home/lib">
+                <include name="jspawnhelper"/>
+            </fileset>
+        </chmod>
+    </target>
+
+    <target name="build-pkg" depends="build-app,codesign-jre,get-version">
+        <echo level="info">Creating installer using pkgbuild</echo>
+        <property file="ant/apple/apple.properties"/>
+        <!--
+        #####################################
+        #  Create scripts, payload and pkg  #
+        #####################################
+        -->
+
+        <!-- payload/Contents/ -->
+        <mkdir dir="${build.dir}/scripts/payload/Resources"/>
+        <copy todir="${build.dir}/scripts/payload/Contents">
+            <fileset dir="${dist.dir}"/>
         </copy>
 
-        <copy file="ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
+        <!-- scripts/ -->
+        <copy file="ant/apple/apple-preinstall.sh.in" tofile="${build.dir}/scripts//preinstall">
             <filterchain><expandproperties/></filterchain>
         </copy>
-
-        <mkdir dir="${build.dir}/scripts/payload"/>
-
-        <copy file="ant/apple/apple-preinstall.sh.in" tofile="${build.dir}/scripts/preinstall">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
         <copy file="ant/apple/apple-postinstall.sh.in" tofile="${build.dir}/scripts/postinstall">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <!-- Copy of the jar is needed for preinstall tasks -->
-        <copy todir="${build.dir}/scripts/payload">
-            <fileset dir="${dist.dir}"/>
-        </copy>
-
+        <!-- set payload files executable -->
         <chmod perm="a+x" type="file">
             <fileset dir="${build.dir}/scripts">
                 <include name="preinstall"/>
                 <include name="postinstall"/>
             </fileset>
-            <fileset dir="${build.dir}/scripts/payload">
+
+            <!-- ant drops permissions, apply again to payload -->
+            <fileset dir="${build.dir}/scripts/payload/Contents">
                 <include name="**/${project.name}"/>
                 <include name="**/uninstall"/>
             </fileset>
-            <fileset dir="${build.dir}/scripts/payload/PlugIns/Java.runtime/Contents/Home/bin">
+            <fileset dir="${build.dir}/scripts/payload/Contents/PlugIns/Java.runtime/Contents/Home/bin">
                 <include name="**"/>
+            </fileset>
+            <fileset dir="${build.dir}/scripts/payload/Contents/PlugIns/Java.runtime/Contents/Home/lib">
+                <include name="jspawnhelper"/>
             </fileset>
         </chmod>
 
@@ -103,18 +136,6 @@
 
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}${codesign.qz.suffix}.pkg"/>
         </exec>
-
-        <!-- Cleanup lingering files (for other OS installers) -->
-        <!-- FIXME BRING BACK BEFORE MERGE <delete dir="${dist.dir}/Contents/Resources"/> -->
-        <!-- FIXME BRING BACK BEFORE MERGE <delete dir="${dist.dir}/Contents/MacOS"/> -->
-        <!-- FIXME BUILD AN APP HERE LOCALLY -->
-        <delete dir="${dist.dir}/../QZ Tray.app"/>
-        <move todir="${dist.dir}/../QZ Tray.app/Contents">
-            <fileset dir="${dist.dir}"/>
-        </move>
-        <chmod perm="a+x">
-            <fileset dir="${dist.dir}/../QZ Tray.app/Contents/MacOS"/>
-        </chmod>
     </target>
 
     <target name="codesign-jre" if="codesign.mac">

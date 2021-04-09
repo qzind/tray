@@ -145,7 +145,7 @@
 
     <!-- Removes old javafx versions -->
     <target name="cleanup-old-javafx" depends="get-javafx-version">
-        <delete>
+        <delete includeemptydirs="true">
             <fileset dir="lib">
                 <include name="**/javafx*/**"/>
                 <exclude name="**/javafx-${javafx.version}/**"/>
@@ -196,7 +196,7 @@
     <!-- Tidy dist directory for packaging -->
     <target name="tidy-javafx-dist" if="javafx.target.extension">
         <echo level="info">Removing non-${javafx.target.extension} files</echo>
-        <delete>
+        <delete includeemptydirs="true">
             <fileset dir="${dist.dir}/libs">
                 <include name="**"/>
                 <exclude name="**/*.${javafx.target.extension}"/>

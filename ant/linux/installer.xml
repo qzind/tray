@@ -38,8 +38,5 @@
             <arg value="${project.name} Installer"/>
             <arg value="./install"/>
         </exec>
-
-        <!-- Cleanup lingering files (for other OS installers) -->
-        <delete file="${dist.dir}//${project.filename}.svg" />
     </target>
 </project>

@@ -131,7 +131,7 @@ public abstract class Installer {
     }
 
     private Installer setJrePermissions(String dest) {
-        File jreLocation = new File(dest, SystemUtilities.isMac() ?  "PlugIns/Java.runtime/Contents/Home" : "jre");
+        File jreLocation = new File(dest, SystemUtilities.isMac() ?  "Contents/PlugIns/Java.runtime/Contents/Home" : "jre");
         File jreBin = new File(jreLocation, "bin");
         File jreLib = new File(jreLocation, "lib");
 

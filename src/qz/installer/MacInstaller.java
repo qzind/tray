@@ -9,6 +9,7 @@ package qz.installer;
  * this software. http://www.gnu.org/licenses/lgpl-2.1.html
  */
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,7 @@ import qz.utils.SystemUtilities;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.*;
 import java.util.HashMap;
 import java.util.List;
 
@@ -76,6 +78,50 @@ public class MacInstaller extends Installer {
         File dest = new File(LAUNCH_AGENT_PATH);
         dest.delete();
         return this;
+    }
+
+    @Override
+    public Installer removeLegacyFiles() {
+        // Files/folders moved to Contents/ since #770
+        String dirs[] = {
+                "demo",
+                "libs"
+        };
+        String[] files = {
+                PROPS_FILE + ".jar",
+                "uninstall",
+                "LICENSE.TXT",
+                "Contents/Resources/apple-icon.icns"
+        };
+        String[] move = {
+                PROPS_FILE + ".properties"
+        };
+        for (String dir : dirs) {
+            try {
+                FileUtils.deleteDirectory(new File(getInstance().getDestination() + File.separator + dir));
+            } catch(IOException ignore) {}
+        }
+        for (String file : files) {
+            new File(getInstance().getDestination() + File.separator + file).delete();
+        }
+        // Move from "/" to "/Contents"
+        for (String file : move) {
+            Path dest, source = null;
+            try {
+                source = Paths.get(getInstance().getDestination(), file);
+                dest = Paths.get(getInstance().getDestination(), "Contents", file);
+                if(source.toFile().exists()) {
+                    Files.move(source, dest);
+                }
+            } catch(IOException ignore) {
+            } finally {
+                if(source != null) {
+                    source.toFile().delete();
+                }
+            }
+        }
+
+        return super.removeLegacyFiles();
     }
 
     /**

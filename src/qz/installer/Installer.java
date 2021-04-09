@@ -164,7 +164,7 @@ public abstract class Installer {
 
     public Installer removeLegacyFiles() {
         String[] dirs = { "demo/js/3rdparty", "utils", "auth" };
-        String[] files = { "demo/js/qz-websocket.js", "windows-icon.ico", "Contents/Resources/apple-icon.icns" };
+        String[] files = { "demo/js/qz-websocket.js", "windows-icon.ico" };
         for (String dir : dirs) {
             try {
                 FileUtils.deleteDirectory(new File(instance.getDestination() + File.separator + dir));

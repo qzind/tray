@@ -22,15 +22,15 @@
         ###################################
         -->
 
-        <mkdir dir="${dist.dir}/Contents/Resources"/>
-        <copy file="assets/branding/apple-icon.icns" tofile="${dist.dir}/Contents/Resources/${project.filename}.icns"/>
+        <mkdir dir="${dist.dir}/Resources"/>
+        <copy file="assets/branding/apple-icon.icns" tofile="${dist.dir}/Resources/${project.filename}.icns"/>
 
-        <mkdir dir="${dist.dir}/Contents/MacOS"/>
-        <copy file="ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/Contents/MacOS/${project.name}">
+        <mkdir dir="${dist.dir}/MacOS"/>
+        <copy file="ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/MacOS/${project.name}">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <copy file="ant/apple/apple-bundle.plist.in" tofile="${dist.dir}/Contents/Info.plist">
+        <copy file="ant/apple/apple-bundle.plist.in" tofile="${dist.dir}/Info.plist">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
@@ -109,7 +109,7 @@
         <!-- FIXME BRING BACK BEFORE MERGE <delete dir="${dist.dir}/Contents/MacOS"/> -->
         <!-- FIXME BUILD AN APP HERE LOCALLY -->
         <delete dir="${dist.dir}/../QZ Tray.app"/>
-        <move todir="${dist.dir}/../QZ Tray.app">
+        <move todir="${dist.dir}/../QZ Tray.app/Contents">
             <fileset dir="${dist.dir}"/>
         </move>
         <chmod perm="a+x">

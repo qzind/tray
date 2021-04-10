@@ -45,6 +45,7 @@ public class WindowsShortcutCreator extends ShortcutCreator {
 
     /**
      * Calculates .exe path from .jar
+     * fixme: overlaps SystemUtilities.getAppPath
      */
     private static String getAppPath() {
         return SystemUtilities.getJarPath().replaceAll(".jar$", ".exe");

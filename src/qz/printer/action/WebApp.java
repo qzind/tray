@@ -159,7 +159,7 @@ public class WebApp extends Application {
             if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
                 // JavaFX native libs
                 if (SystemUtilities.isJar()) {
-                    SystemUtilities.appendProperty("java.library.path", new File(SystemUtilities.detectJarPath()).getParent() + "/libs/");
+                    SystemUtilities.appendProperty("java.library.path", new File(SystemUtilities.getJarPath()).getParent() + "/libs/");
                 } else if (hasConflictingLib()) {
                     // IDE helper for "no suitable pipeline found" errors
                     System.err.println("\n=== WARNING ===\nWrong javafx platform detected. Delete lib/javafx/<platform> to correct this.\n");

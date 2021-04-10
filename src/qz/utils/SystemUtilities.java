@@ -156,29 +156,21 @@ public class SystemUtilities {
 
     /**
      * Determines the currently running Jar's absolute path on the local filesystem
+     * todo: make this return a sane directory for running via ide
      *
      * @return A String value representing the absolute path to the currently running
      * jar
      */
-    public static String detectJarPath() {
+    public static String getJarPath() {
+        if (jarPath != null) {
+            return jarPath;
+        }
         try {
-            String jarPath = new File(SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getCanonicalPath();
+            String path = new File(SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getCanonicalPath();
             // Fix characters that get URL encoded when calling getPath()
-            return URLDecoder.decode(jarPath, "UTF-8");
+            jarPath = URLDecoder.decode(path, "UTF-8");
         } catch(IOException ex) {
             log.error("Unable to determine Jar path", ex);
-        }
-        return null;
-    }
-
-    /**
-     * Returns the jar which we will create a shortcut for
-     *
-     * @return The path to the jar path which has been set
-     */
-    public static String getJarPath() {
-        if (jarPath == null) {
-            jarPath = detectJarPath();
         }
         return jarPath;
     }
@@ -189,7 +181,7 @@ public class SystemUtilities {
      * @return
      */
     public static Path detectAppPath() {
-        String jarPath = detectJarPath();
+        String jarPath = getJarPath();
         if (jarPath != null) {
             File jar = new File(jarPath);
             if (jar.getPath().endsWith(".jar") && jar.exists()) {

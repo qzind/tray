@@ -90,7 +90,7 @@ public class SecurityInfo {
             Method method = VersionInfo.getMethod("getVersion");
             Object version = method.invoke(null);
             libVersions.put("javafx", (String)version);
-            if (fxPath.contains(SystemUtilities.detectJarPath()) || fxPath.contains("/tray/")) {
+            if (fxPath.contains(SystemUtilities.getJarPath()) || fxPath.contains("/tray/")) {
                 libVersions.put("javafx (location)", "Bundled/" + Constants.ABOUT_TITLE);
             } else {
                 libVersions.put("javafx (location)", "System/" + Constants.JAVA_VENDOR);

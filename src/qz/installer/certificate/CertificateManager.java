@@ -329,7 +329,7 @@ public class CertificateManager {
 
         if (subDirs.length == 0) {
             // Assume root directory is next to jar (e.g. qz-tray.properties)
-            Path appPath = SystemUtilities.detectAppPath();
+            Path appPath = Paths.get(SystemUtilities.getJarPath()).getParent();
             // Handle null path, such as running from IDE
             if(appPath != null) {
                 locs.add(appPath);

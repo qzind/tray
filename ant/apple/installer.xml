@@ -67,7 +67,6 @@
         -->
 
         <!-- payload/Contents/ -->
-        <mkdir dir="${build.dir}/scripts/payload/Resources"/>
         <copy todir="${build.dir}/scripts/payload/Contents">
             <fileset dir="${dist.dir}"/>
         </copy>

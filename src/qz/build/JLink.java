@@ -133,7 +133,7 @@ public class JLink {
         return this;
     }
 
-    private JLink calculateJarPath() throws IOException {
+    private JLink calculateJarPath() {
         if(SystemUtilities.isJar()) {
             jarPath = SystemUtilities.getJarPath();
         } else {

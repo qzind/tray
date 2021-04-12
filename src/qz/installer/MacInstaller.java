@@ -141,18 +141,6 @@ public class MacInstaller extends Installer {
         return this;
     }
 
-    //fixme: overlaps systemUtilities.getAppPath
-    public static String getAppPath() {
-        // Return the Mac ".app" location
-        String target = SystemUtilities.getJarPath().toString();
-        int appIndex = target.indexOf(".app/");
-        if (appIndex > 0) {
-            return target.substring(0, appIndex) + ".app";
-        }
-        // Fallback on the ".jar" location
-        return target;
-    }
-
     public static String getPackageName() {
         String packageName;
         String[] parts = ABOUT_URL.split("\\W");

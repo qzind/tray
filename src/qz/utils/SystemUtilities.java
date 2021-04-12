@@ -203,20 +203,22 @@ public class SystemUtilities {
     }
 
     /**
-     * Returns the app's path, based on the jar location
-     * or null if no .jar is found (such as running from IDE)
-     * @return
+     * Returns the app's path, calculated from the jar location
+     * or working directory if none can be found
      */
     public static Path getAppPath() {
-        Path jar = getJarPath();
-        if (jar == null || !isJar() || !Files.exists(jar)) return null;
-
-        Path app = jar.getParent();
-        // Bundled Java uses new directory structure
-        if(app != null && app.endsWith("Contents")) {
-            app = app.getParent();
+        Path appPath = getJarParentPath();
+        if(appPath == null) {
+            // We should never get here
+            appPath = Paths.get(System.getProperty("user.dir"));
         }
-        return app;
+
+        // Assume we're installed and running from /Applications/QZ Tray.app/Contents/qz-tray.jar
+        if(appPath.endsWith("Contents")) {
+            return appPath.getParent();
+        }
+        // For all other use-cases, qz-tray.jar is installed in the root of the application
+        return appPath;
     }
 
     /**

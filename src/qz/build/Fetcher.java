@@ -62,7 +62,8 @@ public class Fetcher {
         this.url = url;
         this.resourceName = resourceName;
         this.format = Format.parse(url);
-        this.rootDir = SystemUtilities.getAppPath();
+        // Try to calculate out/
+        this.rootDir = SystemUtilities.getJarParentPath().getParent();
     }
 
     @SuppressWarnings("unused")
@@ -113,7 +114,7 @@ public class Fetcher {
     }
 
     public static void unzip(String sourceFile, File targetDir) throws IOException {
-        try (ZipInputStream zipIn = new ZipInputStream(new FileInputStream(new File(sourceFile)))) {
+        try (ZipInputStream zipIn = new ZipInputStream(new FileInputStream(sourceFile))) {
             for (ZipEntry ze; (ze = zipIn.getNextEntry()) != null; ) {
                 Path resolvedPath = targetDir.toPath().resolve(ze.getName());
                 if (ze.isDirectory()) {

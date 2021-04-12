@@ -42,10 +42,6 @@
 
     <target name="quick-clean">
         <!-- Cleanup lingering files (for other OS installers) -->
-        <delete dir="${dist.dir}/Contents/" failonerror="false"/>
-        <delete file="${dist.dir}/${project.filename}.svg" failonerror="false"/>
-        <delete dir="${dist.dir}/lib/" failonerror="false"/>
-        <delete dir="${dist.dir}/jre/" failonerror="false"/>
         <delete includeemptydirs="true" failonerror="false">
             <fileset dir="${out.dir}">
                 <include name="**/*"/>

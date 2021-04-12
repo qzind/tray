@@ -116,6 +116,14 @@ public class SystemUtilities {
     }
 
     /**
+     * Call a java command (e.g. java) with "--version" and parse the output
+     * The double dash "--" is since JDK9 but important to send the command output to stdout
+     */
+    public static Version getJavaVersion(Path javaCommand) {
+        return getJavaVersion(ShellUtilities.executeRaw(javaCommand.toString(), "--version"));
+    }
+
+    /**
      * Handle Java versioning nuances
      * To eventually be replaced with <code>java.lang.Runtime.Version</code> (JDK9+)
      */
@@ -180,12 +188,18 @@ public class SystemUtilities {
     /**
      * Returns the folder containing the running jar
      * or null if no .jar is found (such as running from IDE)
-     * @return
      */
     public static Path getJarParentPath(){
         Path path = getJarPath();
         if (path == null) return null;
         return path.getParent();
+    }
+
+    /**
+     * Returns the jar's parent path, or a fallback if we're not a jar
+     */
+    public static Path getJarParentPath(String relativeFallback) {
+        return getJarParentPath().resolve(SystemUtilities.isJar() ? ".": relativeFallback);
     }
 
     /**

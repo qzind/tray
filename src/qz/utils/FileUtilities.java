@@ -779,6 +779,9 @@ public class FileUtilities {
         writer.close();
     }
 
+    public static void configureAssetFile(String relativeAsset, Path dest, HashMap<String, String> additionalMappings, Class relativeClass) throws IOException {
+        configureAssetFile(relativeAsset, dest.toFile(), additionalMappings, relativeClass);
+    }
 
     public static Path getTempDirectory() {
         try {

@@ -18,6 +18,9 @@ import qz.utils.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -35,12 +38,12 @@ public class JLink {
     private static final String JAVA_DEFAULT_GC_ENGINE = "hotspot";
     private static final String JAVA_DEFAULT_ARCH = VendorArch.ADOPT_AMD64.use;
 
-    private String jarPath;
-    private String jdepsPath;
+    private Path jarPath;
+    private Path jdepsPath;
+    private Path jlinkPath;
+    private Path jmodsPath;
+    private Path outPath;
     private Version jdepsVersion;
-    private String jlinkPath;
-    private String jmodsPath;
-    private String outPath;
     private String javaVendor;
     private String targetPlatform;
     private LinkedHashSet<String> depList;
@@ -53,7 +56,7 @@ public class JLink {
         if(Constants.JAVA_VERSION.getMajorVersion() != Integer.parseInt(JAVA_MAJOR)) {
             log.warn("Java versions are incompatible, locating a suitable runtime for Java " + JAVA_MAJOR + "...");
             downloadJdk(null, System.getProperty("os.arch"), gcEngine);
-            calculateToolPaths(jmodsPath + "/../");
+            calculateToolPaths(jmodsPath.resolve(".."));
         } else {
             calculateToolPaths(null);
         }
@@ -66,6 +69,13 @@ public class JLink {
     }
 
     public static void main(String ... args) throws IOException {
+        JLink jlink = new JLink(null, null, null).calculateJarPath();
+        System.out.println(jlink.jarPath);
+        if(true) {
+            System.exit(0);
+        }
+
+
         new JLink(args.length > 0 ? args[0] : null,
                   args.length > 1 ? args[1] : null,
                   args.length > 2 ? args[2] : null);
@@ -120,44 +130,47 @@ public class JLink {
             break;
         }
 
-        jmodsPath = Paths.get(extractedJdk, "jmods").toString();
+        jmodsPath = Paths.get(extractedJdk, "jmods");
         log.info("Selecting jmods folder: {}", jmodsPath);
 
         return this;
     }
 
     private JLink calculateJarPath() throws IOException {
-        jarPath = SystemUtilities.getJarPath().toString();
-        if(!jarPath.endsWith(".jar")) {
-            // Assume running from IDE
-            jarPath = Paths.get(jarPath, "..", "dist", Constants.PROPS_FILE + ".jar").toFile().getCanonicalPath();
+        if(SystemUtilities.isJar()) {
+            jarPath = SystemUtilities.getJarPath();
+        } else {
+            // Detect out/dist/qz-tray.jar for IDE usage
+            jarPath = SystemUtilities.getJarParentPath()
+                    .resolve("../../")
+                    .resolve(Constants.PROPS_FILE + ".jar");
         }
         log.info("Assuming jar path: {}", jarPath);
         return this;
     }
 
-    private JLink calculateOutPath() throws IOException {
+    private JLink calculateOutPath() {
         if(targetPlatform.equals("mac")) {
-            outPath = Paths.get(jarPath, "../PlugIns/Java.runtime/Contents/Home").toFile().getCanonicalPath();
+            outPath = jarPath.resolve("../PlugIns/Java.runtime/Contents/Home").toAbsolutePath();
         } else {
-            outPath = Paths.get(jarPath, "../jre").toFile().getCanonicalPath();
+            outPath = jarPath.resolve("../jre").toAbsolutePath();
         }
         log.info("Assuming output path: {}", outPath);
         return this;
     }
 
-    private JLink calculateToolPaths(String javaHome) throws IOException {
+    private JLink calculateToolPaths(Path javaHome) throws IOException {
         if(javaHome == null) {
-            javaHome = System.getProperty("java.home");
+            javaHome = Paths.get(System.getProperty("java.home"));
         }
         log.info("Using JAVA_HOME: {}", javaHome);
-        jdepsPath = Paths.get(javaHome, "bin", SystemUtilities.isWindows() ? "jdeps.exe" : "jdeps").toFile().getCanonicalPath();
-        jlinkPath = Paths.get(javaHome, "bin", SystemUtilities.isWindows() ? "jlink.exe" : "jlink").toFile().getCanonicalPath();
+        jdepsPath = javaHome.resolve("bin").resolve(SystemUtilities.isWindows() ? "jdeps.exe" : "jdeps").toAbsolutePath();
+        jlinkPath = javaHome.resolve("bin").resolve(SystemUtilities.isWindows() ? "jlink.exe" : "jlink").toAbsolutePath();
         log.info("Assuming jdeps path: {}", jdepsPath);
         log.info("Assuming jlink path: {}", jlinkPath);
-        new File(jdepsPath).setExecutable(true, false);
-        new File(jlinkPath).setExecutable(true, false);
-        jdepsVersion = SystemUtilities.getJavaVersion(ShellUtilities.executeRaw(jdepsPath, "--version"));
+        jdepsPath.toFile().setExecutable(true, false);
+        jlinkPath.toFile().setExecutable(true, false);
+        jdepsVersion = SystemUtilities.getJavaVersion(jdepsPath);
         return this;
     }
 
@@ -167,8 +180,8 @@ public class JLink {
 
         // JDK13+ requires suppressing of missing deps
         String raw = jdepsVersion.getMajorVersion() >= 13 ?
-                ShellUtilities.executeRaw(jdepsPath, "--list-deps", "--ignore-missing-deps", jarPath) :
-                ShellUtilities.executeRaw(jdepsPath, "--list-deps", jarPath);
+                ShellUtilities.executeRaw(jdepsPath.toString(), "--list-deps", "--ignore-missing-deps", jarPath.toString()) :
+                ShellUtilities.executeRaw(jdepsPath.toString(), "--list-deps", jarPath.toString());
         if (raw == null || raw.trim().isEmpty() || raw.trim().startsWith("Warning") ) {
             throw new IOException("An unexpected error occurred calling jdeps.  Please check the logs for details.\n" + raw);
         }
@@ -193,15 +206,14 @@ public class JLink {
     private JLink deployJre() throws IOException {
         if(targetPlatform.equals("mac")) {
             // Deploy Contents/MacOS/libjli.dylib
-            File macOS = new File(outPath, "../MacOS").getCanonicalFile();
-            macOS.mkdirs();
+            Path macOS = Files.createDirectory(outPath.resolve("../MacOS"));
             log.info("Deploying {}/libjli.dylib", macOS);
             try {
-                // Bundle format
-                FileUtils.copyFileToDirectory(new File(jmodsPath, "../../MacOS/libjli.dylib"), macOS);
+                // Not all jdks use a bundle format, but try this first
+                Files.copy(jmodsPath.resolve("../../MacOS/libjli.dylib"), macOS);
             } catch(IOException ignore) {
-                // Flat format
-                FileUtils.copyFileToDirectory(new File(jmodsPath, "../lib/jli/libjli.dylib"), macOS);
+                // Fallback to flat format
+                Files.copy(jmodsPath.resolve("../lib/jli/libjli.dylib"), macOS);
             }
 
             // Deploy Contents/Info.plist
@@ -211,28 +223,28 @@ public class JLink {
             fieldMap.put("%BUNDLE_VERSION_FULL%", JAVA_VERSION);
             fieldMap.put("%BUNDLE_VENDOR%", javaVendor);
             log.info("Deploying {}/Info.plist", macOS.getParent());
-            FileUtilities.configureAssetFile("assets/mac-runtime.plist.in", new File(macOS.getParentFile(), "Info.plist"), fieldMap, JLink.class);
+            FileUtilities.configureAssetFile("assets/mac-runtime.plist.in", macOS.getParent().resolve("Info.plist"), fieldMap, JLink.class);
         }
 
-        FileUtils.deleteQuietly(new File(outPath));
+        FileUtils.deleteQuietly(outPath.toFile());
 
-        if(ShellUtilities.execute(jlinkPath,
+        if(ShellUtilities.execute(jlinkPath.toString(),
                                   "--strip-debug",
                                   "--compress=2",
                                   "--no-header-files",
                                   "--no-man-pages",
-                                  "--module-path", jmodsPath,
+                                  "--module-path", jmodsPath.toString(),
                                   "--add-modules", String.join(",", depList),
-                                  "--output", outPath)) {
+                                  "--output", outPath.toString())) {
             log.info("Successfully deployed a jre to {}", outPath);
 
             // Remove all but java/javaw
-            for(File binFile : new File(outPath, "bin").listFiles()) {
-                if(!binFile.getName().startsWith("java")) {
+            Files.list(outPath.resolve("bin")).forEach(binFile -> {
+                if (!binFile.startsWith("java")) {
                     log.info("Removing {}", binFile);
-                    binFile.delete();
+                    binFile.toFile().delete();
                 }
-            }
+            });
 
             return this;
 

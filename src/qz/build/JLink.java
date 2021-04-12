@@ -18,10 +18,7 @@ import qz.utils.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -151,9 +148,9 @@ public class JLink {
 
     private JLink calculateOutPath() {
         if(targetPlatform.equals("mac")) {
-            outPath = jarPath.resolve("../PlugIns/Java.runtime/Contents/Home").toAbsolutePath();
+            outPath = jarPath.resolve("../PlugIns/Java.runtime/Contents/Home").normalize();
         } else {
-            outPath = jarPath.resolve("../jre").toAbsolutePath();
+            outPath = jarPath.resolve("../jre").normalize();
         }
         log.info("Assuming output path: {}", outPath);
         return this;
@@ -164,8 +161,8 @@ public class JLink {
             javaHome = Paths.get(System.getProperty("java.home"));
         }
         log.info("Using JAVA_HOME: {}", javaHome);
-        jdepsPath = javaHome.resolve("bin").resolve(SystemUtilities.isWindows() ? "jdeps.exe" : "jdeps").toAbsolutePath();
-        jlinkPath = javaHome.resolve("bin").resolve(SystemUtilities.isWindows() ? "jlink.exe" : "jlink").toAbsolutePath();
+        jdepsPath = javaHome.resolve("bin").resolve(SystemUtilities.isWindows() ? "jdeps.exe" : "jdeps").normalize();
+        jlinkPath = javaHome.resolve("bin").resolve(SystemUtilities.isWindows() ? "jlink.exe" : "jlink").normalize();
         log.info("Assuming jdeps path: {}", jdepsPath);
         log.info("Assuming jlink path: {}", jlinkPath);
         jdepsPath.toFile().setExecutable(true, false);
@@ -206,14 +203,15 @@ public class JLink {
     private JLink deployJre() throws IOException {
         if(targetPlatform.equals("mac")) {
             // Deploy Contents/MacOS/libjli.dylib
-            Path macOS = Files.createDirectory(outPath.resolve("../MacOS"));
-            log.info("Deploying {}/libjli.dylib", macOS);
+            Path macOS = Files.createDirectories(outPath.resolve("../MacOS").normalize());
+            Path jliLib = macOS.resolve("libjli.dylib");
+            log.info("Deploying {}", macOS);
             try {
                 // Not all jdks use a bundle format, but try this first
-                Files.copy(jmodsPath.resolve("../../MacOS/libjli.dylib"), macOS);
+                Files.copy(jmodsPath.resolve("../../MacOS/libjli.dylib").normalize(), jliLib, StandardCopyOption.REPLACE_EXISTING);
             } catch(IOException ignore) {
                 // Fallback to flat format
-                Files.copy(jmodsPath.resolve("../lib/jli/libjli.dylib"), macOS);
+                Files.copy(jmodsPath.resolve("../lib/jli/libjli.dylib").normalize(), jliLib, StandardCopyOption.REPLACE_EXISTING);
             }
 
             // Deploy Contents/Info.plist

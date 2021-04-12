@@ -209,7 +209,7 @@ public class SystemUtilities {
      */
     public static Path getAppPath() {
         Path jar = getJarPath();
-        if (jar == null || !jar.endsWith(".jar") || !Files.exists(jar)) return null;
+        if (jar == null || !isJar() || !Files.exists(jar)) return null;
 
         Path app = jar.getParent();
         // Bundled Java uses new directory structure

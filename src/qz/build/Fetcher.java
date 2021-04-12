@@ -58,7 +58,7 @@ public class Fetcher {
     File tempExtracted;
     File extracted;
 
-    public Fetcher(String resourceName, String url) throws IOException {
+    public Fetcher(String resourceName, String url) {
         this.url = url;
         this.resourceName = resourceName;
         this.format = Format.parse(url);

@@ -129,12 +129,9 @@ public class FileUtilities {
     }
 
     public static boolean childOf(File childFile, Path parentPath) {
-        Path child = childFile.toPath().toAbsolutePath();
-        Path parent = parentPath.toAbsolutePath();
-        if(SystemUtilities.isWindows()) {
-            return child.toString().toLowerCase(Locale.ENGLISH).startsWith(parent.toString().toLowerCase(Locale.ENGLISH));
-        }
-        return child.toString().startsWith(parent.toString());
+        Path child = childFile.toPath().normalize().toAbsolutePath();
+        Path parent = parentPath.normalize().toAbsolutePath();
+        return child.startsWith(parent);
     }
 
     public static Path inheritParentPermissions(Path filePath) {

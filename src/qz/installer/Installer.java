@@ -83,7 +83,7 @@ public abstract class Installer {
     public static boolean preinstall() {
         getInstance();
         log.info("Fixing runtime permissions...");
-        instance.setJrePermissions(SystemUtilities.detectAppPath().toString());
+        instance.setJrePermissions(SystemUtilities.getAppPath().toString());
         log.info("Stopping running instances...");
         return TaskKiller.killAll();
     }
@@ -112,7 +112,7 @@ public abstract class Installer {
     }
 
     public Installer deployApp() throws IOException {
-        Path src = SystemUtilities.detectAppPath();
+        Path src = SystemUtilities.getAppPath();
         Path dest = Paths.get(getDestination());
 
         if(!Files.exists(dest)) {
@@ -252,8 +252,8 @@ public abstract class Installer {
      */
     public Installer addUserSettings() {
         // Check for whitelisted certificates in <install>/whitelist/
-        Path whiteList = Paths.get(FileUtilities.getParentDirectory(SystemUtilities.getJarPath()), WHITELIST_CERT_DIR);
-        if(whiteList.toFile().exists() && whiteList.toFile().isDirectory()) {
+        Path whiteList = SystemUtilities.getJarParentPath().resolve(WHITELIST_CERT_DIR);
+        if(Files.exists(whiteList) && Files.isDirectory(whiteList)) {
             for(File file : whiteList.toFile().listFiles()) {
                 try {
                     Certificate cert = new Certificate(FileUtilities.readLocalFile(file.getPath()));

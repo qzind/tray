@@ -48,6 +48,6 @@ public class WindowsShortcutCreator extends ShortcutCreator {
      * fixme: overlaps SystemUtilities.getAppPath
      */
     private static String getAppPath() {
-        return SystemUtilities.getJarPath().replaceAll(".jar$", ".exe");
+        return SystemUtilities.getJarPath().toString().replaceAll(".jar$", ".exe");
     }
 }

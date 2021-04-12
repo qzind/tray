@@ -127,7 +127,7 @@ public class JLink {
     }
 
     private JLink calculateJarPath() throws IOException {
-        jarPath = SystemUtilities.getJarPath();
+        jarPath = SystemUtilities.getJarPath().toString();
         if(!jarPath.endsWith(".jar")) {
             // Assume running from IDE
             jarPath = Paths.get(jarPath, "..", "dist", Constants.PROPS_FILE + ".jar").toFile().getCanonicalPath();

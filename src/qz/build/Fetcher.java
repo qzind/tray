@@ -62,7 +62,7 @@ public class Fetcher {
         this.url = url;
         this.resourceName = resourceName;
         this.format = Format.parse(url);
-        this.rootDir = Paths.get(new File(SystemUtilities.getJarPath()).getParentFile().getParent());
+        this.rootDir = SystemUtilities.getAppPath();
     }
 
     @SuppressWarnings("unused")

@@ -11,15 +11,11 @@
 package qz.common;
 
 import com.github.zafarkhaja.semver.Version;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.App;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
-import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.installer.shortcut.ShortcutCreator;
 import qz.ui.*;
 import qz.ui.component.IconCache;
@@ -35,8 +31,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Manages the icons and actions associated with the TrayIcon
@@ -219,7 +213,7 @@ public class TrayManager {
         JMenuItem diagnosticMenu = new JMenu("Diagnostic");
 
         JMenuItem browseApp = new JMenuItem("Browse App folder...", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
-        browseApp.setToolTipText(FileUtilities.getParentDirectory(SystemUtilities.getJarPath()));
+        browseApp.setToolTipText(SystemUtilities.getJarParentPath().toString());
         browseApp.setMnemonic(KeyEvent.VK_O);
         browseApp.addActionListener(e -> ShellUtilities.browseAppDirectory());
         diagnosticMenu.add(browseApp);

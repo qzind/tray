@@ -322,12 +322,6 @@ public class FileUtilities {
         return false;
     }
 
-    public static String getParentDirectory(String filePath) {
-        // Working path should always default to the JARs parent folder
-        int lastSlash = filePath.lastIndexOf(File.separator);
-        return lastSlash < 0? "":filePath.substring(0, lastSlash);
-    }
-
     public static ArgParser.ExitStatus addFileAllowProperty(String path, String commonName) throws IOException {
         PropertyHelper props = new PropertyHelper(new File(CertificateManager.getWritableLocation(), Constants.PROPS_FILE + ".properties"));
         ArrayList<Map.Entry<Path, String>> paths = parseDelimitedPaths(getFileAllowProperty(props).toString(), false);

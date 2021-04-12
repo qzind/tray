@@ -142,7 +142,7 @@ public class Certificate {
         }
 
         // Preferred: Look for file called "override.crt" in installation directory
-        override = FileUtilities.getParentDirectory(SystemUtilities.getJarPath()) + File.separator + Constants.OVERRIDE_CERT;
+        override = SystemUtilities.getJarParentPath() + File.separator + Constants.OVERRIDE_CERT;
         helpText = String.format("Override cert \"%s\"", Constants.OVERRIDE_CERT);
         if(setOverrideCert(override, helpText, true)) {
             return;

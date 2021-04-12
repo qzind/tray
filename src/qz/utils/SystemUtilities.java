@@ -19,8 +19,10 @@ import qz.common.TrayManager;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
@@ -49,7 +51,7 @@ public class SystemUtilities {
     private static String linuxRelease;
     private static String classProtocol;
     private static Version osVersion;
-    private static String jarPath;
+    private static Path jarPath;
 
 
     /**
@@ -161,18 +163,29 @@ public class SystemUtilities {
      * @return A String value representing the absolute path to the currently running
      * jar
      */
-    public static String getJarPath() {
-        if (jarPath != null) {
-            return jarPath;
-        }
+    public static Path getJarPath() {
+        // jarPath won't change, send the cached value if we have it
+        if (jarPath != null) return jarPath;
         try {
-            String path = new File(SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getCanonicalPath();
-            // Fix characters that get URL encoded when calling getPath()
-            jarPath = URLDecoder.decode(path, "UTF-8");
-        } catch(IOException ex) {
+            String uri = URLDecoder.decode(SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8");
+            jarPath = Paths.get(uri);
+            if (jarPath == null) return null;
+            jarPath = jarPath.toAbsolutePath();
+        } catch(InvalidPathException | UnsupportedEncodingException ex) {
             log.error("Unable to determine Jar path", ex);
         }
         return jarPath;
+    }
+
+    /**
+     * Returns the folder containing the running jar
+     * or null if no .jar is found (such as running from IDE)
+     * @return
+     */
+    public static Path getJarParentPath(){
+        Path path = getJarPath();
+        if (path == null) return null;
+        return path.getParent();
     }
 
     /**
@@ -180,20 +193,16 @@ public class SystemUtilities {
      * or null if no .jar is found (such as running from IDE)
      * @return
      */
-    public static Path detectAppPath() {
-        String jarPath = getJarPath();
-        if (jarPath != null) {
-            File jar = new File(jarPath);
-            if (jar.getPath().endsWith(".jar") && jar.exists()) {
-                Path app = Paths.get(jar.getParent());
-                // Bundled Java uses new directory structure
-                if(app.endsWith("Contents")) {
-                    app = app.getParent();
-                }
-                return app;
-            }
+    public static Path getAppPath() {
+        Path jar = getJarPath();
+        if (jar == null || !jar.endsWith(".jar") || !Files.exists(jar)) return null;
+
+        Path app = jar.getParent();
+        // Bundled Java uses new directory structure
+        if(app != null && app.endsWith("Contents")) {
+            app = app.getParent();
         }
-        return null;
+        return app;
     }
 
     /**

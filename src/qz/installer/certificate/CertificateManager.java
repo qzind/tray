@@ -329,7 +329,7 @@ public class CertificateManager {
 
         if (subDirs.length == 0) {
             // Assume root directory is next to jar (e.g. qz-tray.properties)
-            Path appPath = Paths.get(SystemUtilities.getJarPath()).getParent();
+            Path appPath = SystemUtilities.getJarParentPath();
             // Handle null path, such as running from IDE
             if(appPath != null) {
                 locs.add(appPath);
@@ -370,7 +370,7 @@ public class CertificateManager {
 
     public static Properties loadProperties(KeyPairWrapper... keyPairs) {
         log.info("Try to find SSL properties file...");
-        Path[] locations = {SystemUtilities.detectAppPath(), SHARED_DIR, USER_DIR};
+        Path[] locations = {SystemUtilities.getJarParentPath(), SHARED_DIR, USER_DIR};
 
         Properties props = null;
         for(Path location : locations) {

@@ -130,13 +130,8 @@ public class MacInstaller extends Installer {
     public Installer removeLegacyStartup() {
         log.info("Removing startup entries for all users matching " + ABOUT_TITLE);
         String script = "tell application \"System Events\" to delete "
-                + "every login item where name is \"" + ABOUT_TITLE + "\"";
-
-        // Handle edge-case for when running from IDE
-        File jar = new File(SystemUtilities.getJarPath());
-        if(jar.getName().endsWith(".jar")) {
-            script += " or name is \"" + jar.getName() + "\"";
-        }
+                + "every login item where name is \"" + ABOUT_TITLE + "\""
+                + " or name is \"" + PROPS_FILE + ".jar\"";
 
         // Run on background thread in case System Events is hung or slow to respond
         final String finalScript = script;
@@ -149,7 +144,7 @@ public class MacInstaller extends Installer {
     //fixme: overlaps systemUtilities.getAppPath
     public static String getAppPath() {
         // Return the Mac ".app" location
-        String target = SystemUtilities.getJarPath();
+        String target = SystemUtilities.getJarPath().toString();
         int appIndex = target.indexOf(".app/");
         if (appIndex > 0) {
             return target.substring(0, appIndex) + ".app";

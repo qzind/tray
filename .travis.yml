@@ -33,5 +33,6 @@ addons:
       - ant
 before_script:
   - sw_vers -productVersion && brew update && brew install ant && brew uninstall --ignore-dependencies openjdk && brew install openjdk@11 && ln -s /usr/local/opt/openjdk@11 /usr/local/opt/openjdk; ant -version
+  - test -e /etc/lsb-release && sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6B05F25D762E3157; echo;
   - test -e /etc/lsb-release && sudo apt-get update -qq && sudo apt-get install -y makeself nsis; echo;
 script: ant $TARGET

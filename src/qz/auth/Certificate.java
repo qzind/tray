@@ -303,7 +303,7 @@ public class Certificate {
             cert.validFrom = UNKNOWN_MIN;
             cert.validTo = UNKNOWN_MAX;
 
-            log.error("Unable to parse certificate date", e);
+            log.warn("Unable to parse certificate date: {}", e.getMessage());
         }
 
         cert.valid = Boolean.parseBoolean(data.get("valid"));

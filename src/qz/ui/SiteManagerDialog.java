@@ -7,16 +7,16 @@ import qz.common.Constants;
 import qz.common.PropertyHelper;
 import qz.ui.component.*;
 import qz.utils.FileUtilities;
+import qz.utils.SystemUtilities;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetDropEvent;
+import java.awt.dnd.*;
 import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.File;
@@ -39,6 +39,9 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     private JSplitPane splitPane;
 
     private JTabbedPane tabbedPane;
+    private Border plainBorder;
+    private Color plainBackground;
+    private Border dragBorder;
 
     private ContainerList<CertificateDisplay> allowList;
     private ContainerList<CertificateDisplay> blockList;
@@ -92,6 +95,9 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                     allowList.getList().setSelectedIndex(0);
             }
         });
+        plainBorder = tabbedPane.getBorder();
+        plainBackground = tabbedPane.getBackground();
+        dragBorder = BorderFactory.createLineBorder(Constants.TRUSTED_COLOR);
 
         final ListModel allowListModel = allowList.getList().getModel();
         final ListModel blockListModel = blockList.getList().getModel();
@@ -146,7 +152,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             fileDialog.setDirectory(chooseFolder.toString());
             fileDialog.setMultipleMode(false);
             fileDialog.setVisible(true);
-            addCertificates(fileDialog.getFiles(), getSelectedList());
+            addCertificates(fileDialog.getFiles(), getSelectedList(), true);
         });
         addButton.setEnabled(true);
         addKeyListener(KeyEvent.VK_PLUS, addButton);
@@ -187,36 +193,63 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         readerThread = new Thread(this);
         threadRunning = new AtomicBoolean(false);
 
-        // Hide strict-mode checkbox for standard configurations
-        if(Certificate.hasAdditionalCAs()) {
-            JCheckBox strictModeCheckBox = new JCheckBox(Constants.STRICT_MODE_LABEL, prefs.getBoolean(Constants.PREFS_STRICT_MODE, false));
-            strictModeCheckBox.setToolTipText(Constants.STRICT_MODE_TOOLTIP);
-            strictModeCheckBox.addActionListener(e -> {
-                if (strictModeCheckBox.isSelected() && !new ConfirmDialog(null, "Please Confirm", iconCache).prompt(Constants.STRICT_MODE_CONFIRM)) {
-                    strictModeCheckBox.setSelected(false);
-                    return;
-                }
-                Certificate.setTrustBuiltIn(!strictModeCheckBox.isSelected());
-                prefs.setProperty(Constants.PREFS_STRICT_MODE, strictModeCheckBox.isSelected());
-                certTable.refreshComponents();
-            });
+        JCheckBox strictModeCheckBox = new JCheckBox(Constants.STRICT_MODE_LABEL, prefs.getBoolean(Constants.PREFS_STRICT_MODE, false));
+        strictModeCheckBox.setToolTipText(Constants.STRICT_MODE_TOOLTIP);
+        strictModeCheckBox.addActionListener(e -> {
+            if (strictModeCheckBox.isSelected() && !new ConfirmDialog(null, "Please Confirm", iconCache).prompt(Constants.STRICT_MODE_CONFIRM)) {
+                strictModeCheckBox.setSelected(false);
+                return;
+            }
+            Certificate.setTrustBuiltIn(!strictModeCheckBox.isSelected());
+            prefs.setProperty(Constants.PREFS_STRICT_MODE, strictModeCheckBox.isSelected());
+            certTable.refreshComponents();
+        });
 
+
+        // Hide strict-mode checkbox for standard configurations
+        if(Certificate.hasAdditionalCAs() || strictModeCheckBox.isSelected()) {
             // Add checkbox near "close" button
             addPanelComponent(strictModeCheckBox);
         }
 
         setContent(splitPane, true);
 
-
         // Register drag/drop events
         allowList.getList().setDragEnabled(true);
         blockList.getList().setDragEnabled(true);
         tabbedPane.setDropTarget(new DropTarget() {
             @Override
+            public synchronized void dragEnter(DropTargetDragEvent e) {
+                for(DataFlavor flavor : e.getTransferable().getTransferDataFlavors()) {
+                    if(flavor.equals(DataFlavor.javaFileListFlavor)) {
+                        // Dragged from file system
+                        tabbedPane.setBorder(dragBorder);
+                        e.acceptDrag(DnDConstants.ACTION_COPY);
+                        return;
+                    } else if(flavor.equals(DataFlavor.stringFlavor)) {
+                        // Dragged from JList
+                        Component target = e.getDropTargetContext().getComponent();
+                        if(target instanceof JTabbedPane) {
+                            target.setBackground(Constants.TRUSTED_COLOR);
+                            e.acceptDrag(DnDConstants.ACTION_MOVE);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public synchronized void dragExit(DropTargetEvent e) {
+                tabbedPane.setBorder(plainBorder);
+                tabbedPane.setBackground(plainBackground);
+            }
+
+            @Override
             public synchronized void drop(DropTargetDropEvent e) {
+                tabbedPane.setBorder(plainBorder);
+                tabbedPane.setBackground(plainBackground);
                 try {
                     e.acceptDrop(DnDConstants.ACTION_COPY);
-                    addCertificates(e.getTransferable().getTransferData(DataFlavor.javaFileListFlavor), getSelectedList());
+                    addCertificates(e.getTransferable().getTransferData(DataFlavor.javaFileListFlavor), getSelectedList(), true);
                     return;
                 }
                 catch(IOException | UnsupportedFlavorException ignore) {}
@@ -230,7 +263,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                     ContainerList<CertificateDisplay> target = getListByIndex(targetIndex);
                     ContainerList<CertificateDisplay> source = getSelectedList();
                     if(source != target) {
-                        addCertificate(selectedCert, target);
+                        addCertificate(selectedCert, target, false);
                         removeCertificate(selectedCert, source);
                         clearSelection();
                     }
@@ -305,6 +338,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         return (CertificateDisplay)getSelectedList().getList().getSelectedValue();
     }
 
+    @SuppressWarnings("unused")
     private String getSelectedTabName() {
         if (tabbedPane.getSelectedIndex() >= 0) {
             return tabbedPane.getTitleAt(tabbedPane.getSelectedIndex());
@@ -325,19 +359,22 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         }
     }
 
-    private void addCertificate(CertificateDisplay certDisplay, ContainerList<CertificateDisplay> list) {
+    private void addCertificate(CertificateDisplay certDisplay, ContainerList<CertificateDisplay> list, boolean selectWhenDone) {
         if (!list.contains(certDisplay) && !Certificate.UNKNOWN.equals(certDisplay.getCert())) {
             FileUtilities.printLineToFile(list == allowList ? Constants.ALLOW_FILE : Constants.BLOCK_FILE, certDisplay.getCert().data());
-            list.add(certDisplay);
+            list.addAndCallback(certDisplay, selectWhenDone ? () -> {
+                list.getList().setSelectedValue(certDisplay, true);
+                return null;
+            } : null);
         }
     }
 
-    private void addCertificates(Object dragged, ContainerList<CertificateDisplay> list) {
+    private void addCertificates(Object dragged, ContainerList<CertificateDisplay> list, boolean selectWhenDone) {
         if(dragged instanceof java.util.List) {
             java.util.List certFiles = (java.util.List)dragged;
             if(certFiles.size() > 0) {
                 if(certFiles.get(0) instanceof File) {
-                    addCertificates((File[])certFiles.toArray(new File[certFiles.size()]), list);
+                    addCertificates((File[])certFiles.toArray(new File[certFiles.size()]), list, selectWhenDone);
                 } else {
                     System.out.println("Nope: " + certFiles.get(0).getClass().getName());
                 }
@@ -345,22 +382,44 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             }
 
         } else {
-            log.warn("Coudl not convert certificate to from unknown type: {}", dragged.getClass().getCanonicalName());
+            log.warn("Could not convert certificate to from unknown type: {}", dragged.getClass().getCanonicalName());
         }
     }
 
-    private void addCertificates(File[] certFiles, ContainerList<CertificateDisplay> list) {
+    private void addCertificates(File[] certFiles, ContainerList<CertificateDisplay> list, boolean selectWhenDone) {
         for(File file : certFiles) {
             try {
                 Certificate importCert = new Certificate(file.toPath());
                 if (importCert.isValid()) {
-                    addCertificate(new CertificateDisplay(importCert, true), list);
+                    addCertificate(new CertificateDisplay(importCert, true), list, selectWhenDone);
+                    continue;
                 }
+                // Warn of any invalid certs
+                showInvalidCertWarning(file, importCert);
             }
             catch(CertificateException | IOException e) {
                 log.warn("Unable to import cert {}", file, e);
             }
         }
+    }
+
+    private void showInvalidCertWarning(File file, Certificate cert) {
+        String override = FileUtilities.getParentDirectory(SystemUtilities.getJarPath()) + File.separator + Constants.OVERRIDE_CERT;
+        String message = String.format("<html>" +
+                                               "The provided certificate \"%s\" is unrecognized and not yet trusted.  To trust it," +
+                                               "<ul>" +
+                                               "<li>Copy it to <strong><code>\"%s\"</code></strong>, or</li>" +
+                                               "<li>Set <strong><code>%s=-D%s=\"%s\"</code></strong>, or</li>" +
+                                               "<li>Modify <strong><code>%s.properties</code></strong>, add <strong><code>%s=%s</code></strong><br></li>" +
+                                               "</ul>" +
+                                               "... and then restart %s." +
+                                               "</html>",
+                                       cert.getCommonName(),
+                                       override,
+                                       "QZ_OPTS", Certificate.OVERRIDE_CA_FLAG, file,
+                                       Constants.PROPS_FILE, Certificate.OVERRIDE_CA_PROPERTY, file,
+                                       Constants.ABOUT_TITLE);
+        JOptionPane.showMessageDialog(this, message, "Unrecognized Certificate", JOptionPane.WARNING_MESSAGE);
     }
 
     private ContainerList<CertificateDisplay> getSelectedList() {

@@ -3,6 +3,7 @@ package qz.ui.component;
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -68,6 +69,20 @@ public class ContainerList<D> extends ArrayList<D> {
             listModel.add(index, element);
         });
         super.add(index, element);
+    }
+
+    public boolean addAndCallback(final D element, final Callable callable) {
+        SwingUtilities.invokeLater(() -> {
+            listModel.skipNextSuperCall();
+            listModel.addElement(element);
+            if(callable != null) {
+                try {
+                    callable.call();
+                }
+                catch(Exception ignore) {}
+            }
+        });
+        return super.add(element);
     }
 
     @Override

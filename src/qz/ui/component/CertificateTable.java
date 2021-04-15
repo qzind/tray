@@ -85,6 +85,8 @@ public class CertificateTable extends DisplayTable implements Themeable {
     @Override
     public void refreshComponents() {
         if (cert == null) {
+            removeRows();
+            repaint();
             return;
         }
 

@@ -42,17 +42,13 @@
         </copy>
 
         <!-- set bundle files executable -->
-        <chmod perm="a+x" type="file">
+        <chmod perm="a+x" type="file" failonerror="false">
             <!-- changes here need to be repeated in the payload too -->
             <fileset dir="${dist.dir}">
                 <include name="**/${project.name}"/>
                 <include name="**/uninstall"/>
-            </fileset>
-            <fileset dir="${dist.dir}/PlugIns/Java.runtime/Contents/Home/bin">
-                <include name="**"/>
-            </fileset>
-            <fileset dir="${dist.dir}/PlugIns/Java.runtime/Contents/Home/lib">
-                <include name="jspawnhelper"/>
+                <include name="**/bin/*"/>
+                <include name="**/lib/jspawnhelper"/>
             </fileset>
         </chmod>
     </target>
@@ -90,12 +86,8 @@
             <fileset dir="${build.dir}/scripts/payload/Contents">
                 <include name="**/${project.name}"/>
                 <include name="**/uninstall"/>
-            </fileset>
-            <fileset dir="${build.dir}/scripts/payload/Contents/PlugIns/Java.runtime/Contents/Home/bin">
-                <include name="**"/>
-            </fileset>
-            <fileset dir="${build.dir}/scripts/payload/Contents/PlugIns/Java.runtime/Contents/Home/lib">
-                <include name="jspawnhelper"/>
+                <include name="**/bin/*"/>
+                <include name="**/lib/jspawnhelper"/>
             </fileset>
         </chmod>
 
@@ -137,7 +129,7 @@
         </exec>
     </target>
 
-    <target name="codesign-jre" if="codesign.mac">
+    <target name="codesign-jre" if="codesign.mac" unless="jre.skip">
         <property file="ant/apple/apple.properties"/>
         <exec executable="codesign" failonerror="true">
             <arg value="--force"/>

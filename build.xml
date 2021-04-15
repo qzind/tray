@@ -155,7 +155,7 @@
         </copy>
     </target>
 
-    <target name="download-jre">
+    <target name="download-jre" unless="jre.skip">
         <condition property="target.platform" value="windows">
             <isset property="target.platform.windows"/>
         </condition>

@@ -237,11 +237,16 @@ public class JLink {
             log.info("Successfully deployed a jre to {}", outPath);
 
             // Remove all but java/javaw
+            String[] keep = { "java", "java.exe", "javaw.exe" };
             Files.list(outPath.resolve("bin")).forEach(binFile -> {
-                if (!binFile.startsWith("java")) {
-                    log.info("Removing {}", binFile);
-                    binFile.toFile().delete();
+                for(String name : keep) {
+                    if (binFile.endsWith(name)) {
+                        log.info("Keeping {}", binFile);
+                        return; // iterate forEach
+                    }
                 }
+                log.info("Deleting {}", binFile);
+                binFile.toFile().delete();
             });
 
             return this;

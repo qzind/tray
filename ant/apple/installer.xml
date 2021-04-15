@@ -42,7 +42,7 @@
         </copy>
 
         <!-- set bundle files executable -->
-        <chmod perm="a+x" type="file" failonerror="false">
+        <chmod perm="a+x" type="file">
             <!-- changes here need to be repeated in the payload too -->
             <fileset dir="${dist.dir}">
                 <include name="**/${project.name}"/>

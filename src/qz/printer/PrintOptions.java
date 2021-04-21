@@ -351,6 +351,9 @@ public class PrintOptions {
                 List<PrinterResolution> rSupport = output.getNativePrinter().getResolutions();
                 if (rSupport.size() > 0) {
                     defaultRes = rSupport.get(0);
+                    log.warn("Default resolution for {} is missing, using fallback: {}", output.getNativePrinter().getName(), defaultRes);
+                } else {
+                    log.warn("Default resolution for {} is missing, no fallback available.", output.getNativePrinter().getName());
                 }
             }
         }

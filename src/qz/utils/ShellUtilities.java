@@ -54,6 +54,26 @@ public class ShellUtilities {
         }
     }
 
+    public static boolean elevateCopy(Path source, Path dest) {
+        source = source.toAbsolutePath().normalize();
+        dest = dest.toAbsolutePath().normalize();
+
+        if(SystemUtilities.isWindows()) {
+            // Explorer will prompt if insufficient access
+            if(!WindowsUtilities.nativeFileCopy(source, dest)) {
+                return WindowsUtilities.elevatedFileCopy(source, dest);
+            }
+            return true;
+        } else if(SystemUtilities.isMac()){
+            // Finder will prompt if insufficient access
+            return MacUtilities.nativeFileCopy(source, dest);
+        } else {
+            // TODO: Implement Linux
+            // Use gksudo, etc
+        }
+        return false;
+    }
+
     public static boolean execute(String... commandArray) {
         return execute(commandArray, false);
     }

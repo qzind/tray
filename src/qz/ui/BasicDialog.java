@@ -117,6 +117,11 @@ public class BasicDialog extends JDialog implements Themeable {
     }
 
     public void addPanelComponent(JComponent component) {
+        for(Component c : buttonPanel.getComponents()) {
+            if(component.equals(c)) {
+                return; // don't add twice
+            }
+        }
         buttonPanel.add(component, buttonPanel.getComponents().length - stockButtonCount);
     }
 

@@ -1,12 +1,18 @@
 package qz.ui;
 
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.common.Constants;
 import qz.common.PropertyHelper;
+import qz.installer.certificate.CertificateChainBuilder;
+import qz.installer.certificate.CertificateManager;
+import qz.installer.certificate.KeyPairWrapper;
 import qz.ui.component.*;
 import qz.utils.FileUtilities;
+import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
@@ -17,11 +23,8 @@ import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.dnd.*;
-import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.awt.event.*;
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.cert.CertificateException;
@@ -35,6 +38,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class SiteManagerDialog extends BasicDialog implements Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(SiteManagerDialog.class);
+
+    private static final String IMPORT_NEEDED = "The provided certificate \"%s\" is unrecognized and not yet trusted.\n"  +
+            "Would you like to automatically copy it to \"%s\"?";
+    private static final String IMPORT_FAILED = "Failed to import certificate.  Please import manually.";
+    private static final String IMPORT_QUESTION = "Successfully created a new demo keypair.  Automatically install?";
+
+    private static final String DEMO_CERT_QUESTION = "Create a new demo keypair for %s?\nThis should only be done by developers.";
+    private static final String DEMO_CERT_NAME = String.format("%s Demo Cert", Constants.ABOUT_TITLE);
 
     private JSplitPane splitPane;
 
@@ -52,6 +63,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
     private JButton addButton;
     private JButton deleteButton;
+    private JCheckBox strictModeCheckBox;
 
     private Thread readerThread;
     private AtomicBoolean threadRunning;
@@ -136,10 +148,11 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
         addButton = new JButton("+");
         Font addFont = addButton.getFont();
-        addButton.setFont(addFont.deriveFont(Font.BOLD, addFont.getSize() * 1.50f));
-        addButton.setForeground(Constants.TRUSTED_COLOR);
-        addButton.setBorderPainted(false);
-        addButton.addActionListener(e -> {
+        JPopupMenu addMenu = new JPopupMenu();
+        JMenuItem browseItem = new JMenuItem("Browse...", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
+        browseItem.setToolTipText("Browse for a certificate to import.");
+        browseItem.setMnemonic(KeyEvent.VK_B);
+        browseItem.addActionListener(e -> {
             File chooseFolder = null;
             for(String folder : new String[] { "Downloads", "Desktop", ""}) {
                 Path folderFile = Paths.get(System.getProperty("user.home"), folder);
@@ -153,6 +166,38 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             fileDialog.setMultipleMode(false);
             fileDialog.setVisible(true);
             addCertificates(fileDialog.getFiles(), getSelectedList(), true);
+        });
+        JMenuItem createNewItem = new JMenuItem("Create New...", iconCache.getIcon(IconCache.Icon.SETTINGS_ICON));
+        createNewItem.setToolTipText("Developers only: Create and import a new demo keypair for signing.");
+        createNewItem.setMnemonic(KeyEvent.VK_N);
+        createNewItem.addActionListener(e -> {
+            int generateCert = JOptionPane.showConfirmDialog(this, String.format(DEMO_CERT_QUESTION, Constants.ABOUT_TITLE), "Please Confirm", JOptionPane.YES_NO_OPTION);
+            if(generateCert != JOptionPane.YES_OPTION) {
+                return;
+            }
+            try {
+                Path created = createDemoCertificate();
+                int installKeypair = JOptionPane.showConfirmDialog(this, IMPORT_QUESTION, "Keypair Created", JOptionPane.YES_NO_OPTION);
+                if(installKeypair == JOptionPane.YES_OPTION) {
+                    addCertificates(new File[] {created.resolve(Constants.SIGNING_CERTIFICATE).toFile()}, allowList, true);
+                }
+                ShellUtilities.browseDirectory(created);
+            }
+            catch(Throwable t) {
+                JOptionPane.showMessageDialog(this, "Sorry, an error occurred, please check the logs.");
+                log.error("An exception occurred creating or installing the demo certificate", t);
+            }
+        });
+        addMenu.add(browseItem);
+        addMenu.add(createNewItem);
+        addButton.setFont(addFont.deriveFont(Font.BOLD, addFont.getSize() * 1.50f));
+        addButton.setForeground(Constants.TRUSTED_COLOR);
+        addButton.setBorderPainted(false);
+        addButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                addMenu.show(addButton, e.getX(), e.getY());
+            }
         });
         addButton.setEnabled(true);
         addKeyListener(KeyEvent.VK_PLUS, addButton);
@@ -193,7 +238,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         readerThread = new Thread(this);
         threadRunning = new AtomicBoolean(false);
 
-        JCheckBox strictModeCheckBox = new JCheckBox(Constants.STRICT_MODE_LABEL, prefs.getBoolean(Constants.PREFS_STRICT_MODE, false));
+        strictModeCheckBox = new JCheckBox(Constants.STRICT_MODE_LABEL, prefs.getBoolean(Constants.PREFS_STRICT_MODE, false));
         strictModeCheckBox.setToolTipText(Constants.STRICT_MODE_TOOLTIP);
         strictModeCheckBox.addActionListener(e -> {
             if (strictModeCheckBox.isSelected() && !new ConfirmDialog(null, "Please Confirm", iconCache).prompt(Constants.STRICT_MODE_CONFIRM)) {
@@ -204,13 +249,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             prefs.setProperty(Constants.PREFS_STRICT_MODE, strictModeCheckBox.isSelected());
             certTable.refreshComponents();
         });
-
-
-        // Hide strict-mode checkbox for standard configurations
-        if(Certificate.hasAdditionalCAs() || strictModeCheckBox.isSelected()) {
-            // Add checkbox near "close" button
-            addPanelComponent(strictModeCheckBox);
-        }
+        refreshStrictModeCheckbox();
 
         setContent(splitPane, true);
 
@@ -270,6 +309,14 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                 }
             }
         });
+    }
+
+    private void refreshStrictModeCheckbox() {
+        // Hide strict-mode checkbox for standard configurations
+        if(Certificate.hasAdditionalCAs() || strictModeCheckBox.isSelected()) {
+            // Add checkbox near "close" button
+            addPanelComponent(strictModeCheckBox);
+        }
     }
 
     @Override
@@ -405,21 +452,23 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
     private void showInvalidCertWarning(File file, Certificate cert) {
         String override = FileUtilities.getParentDirectory(SystemUtilities.getJarPath()) + File.separator + Constants.OVERRIDE_CERT;
-        String message = String.format("<html>" +
-                                               "The provided certificate \"%s\" is unrecognized and not yet trusted.  To trust it," +
-                                               "<ul>" +
-                                               "<li>Copy it to <strong><code>\"%s\"</code></strong>, or</li>" +
-                                               "<li>Set <strong><code>%s=-D%s=\"%s\"</code></strong>, or</li>" +
-                                               "<li>Modify <strong><code>%s.properties</code></strong>, add <strong><code>%s=%s</code></strong><br></li>" +
-                                               "</ul>" +
-                                               "... and then restart %s." +
-                                               "</html>",
+        String message = String.format(IMPORT_NEEDED,
                                        cert.getCommonName(),
-                                       override,
-                                       "QZ_OPTS", Certificate.OVERRIDE_CA_FLAG, file,
-                                       Constants.PROPS_FILE, Certificate.OVERRIDE_CA_PROPERTY, file,
-                                       Constants.ABOUT_TITLE);
-        JOptionPane.showMessageDialog(this, message, "Unrecognized Certificate", JOptionPane.WARNING_MESSAGE);
+                                       override);
+        int copyAnswer = JOptionPane.showConfirmDialog(this, message, "Unrecognized Certificate", JOptionPane.YES_NO_OPTION);
+        if(copyAnswer == JOptionPane.YES_OPTION) {
+            Cursor backupCursor = getCursor();
+            setCursor(new Cursor(Cursor.WAIT_CURSOR));
+            boolean copySuccess = ShellUtilities.elevateCopy(file.toPath(), Paths.get(SystemUtilities.getJarPath()).getParent().resolve(Constants.OVERRIDE_CERT));
+            setCursor(backupCursor);
+            if(copySuccess) {
+                Certificate.scanAdditionalCAs();
+                addCertificates(new File[] { file }, allowList, true);
+                refreshStrictModeCheckbox();
+            } else {
+                JOptionPane.showMessageDialog(this, String.format(IMPORT_FAILED), "Import failed", JOptionPane.WARNING_MESSAGE);
+            }
+        }
     }
 
     private ContainerList<CertificateDisplay> getSelectedList() {
@@ -519,6 +568,41 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         }
 
         return certList;
+    }
+
+    /**
+     * Creates a demo cert and key, returns the parent folder where they were created
+     */
+    private static Path createDemoCertificate() throws Throwable {
+        CertificateChainBuilder chainBuilder = new CertificateChainBuilder(DEMO_CERT_NAME);
+
+        KeyPairWrapper keyPair = chainBuilder.createCaCert();
+        // Some locations a user might be happy with
+        Path homeDir = Paths.get(System.getProperty("user.home"));
+        Path[] paths = { homeDir.resolve("Desktop"),  homeDir.resolve("Downloads"),  homeDir };
+        for(Path path : paths) {
+            File file = path.toAbsolutePath().normalize().toFile();
+            if(file.isDirectory() && file.canWrite()) {
+                Path certData = file.toPath().resolve(DEMO_CERT_NAME);
+                if(certData.toFile().mkdir() || (certData.toFile().isDirectory() && certData.toFile().exists())) {
+                    // Write our PKCS#8 PEM file
+                    File privateKey = certData.resolve(Constants.SIGNING_PRIVATE_KEY).toFile();
+                    PemObject pemObject = new PemObject("PRIVATE KEY", keyPair.getKey().getEncoded());
+                    log.info("Writing PKCS#8 Private Key: {}", privateKey);
+                    FileWriter writer = new FileWriter(privateKey);
+                    PemWriter pemWriter = new PemWriter(writer);
+                    pemWriter.writeObject(pemObject);
+                    pemWriter.flush();
+
+                    // Write our x509 certificate file
+                    log.info("Writing x509 Certificate: {}", privateKey);
+                    File certificate = certData.resolve(Constants.SIGNING_CERTIFICATE).toFile();
+                    CertificateManager.writeCert(keyPair.getCert(), certificate);
+                    return certData;
+                }
+            }
+        }
+        throw new CertificateException("Can't create certificate");
     }
 
 }

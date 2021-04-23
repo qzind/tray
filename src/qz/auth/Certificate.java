@@ -128,7 +128,7 @@ public class Certificate {
 
             builtIn.valid = true;
             setTrustBuiltIn(true);
-            addAdditionalCAs();
+            scanAdditionalCAs();
         }
         catch(NoSuchAlgorithmException | CertificateException e) {
             e.printStackTrace();
@@ -136,7 +136,7 @@ public class Certificate {
     }
 
 
-    private static void addAdditionalCAs() {
+    public static void scanAdditionalCAs() {
         ArrayList<Map.Entry<Path, String>> certPaths = new ArrayList<>();
         // First, look for "-DtrustedRootCert" command line property
         certPaths.addAll(FileUtilities.parseDelimitedPaths(System.getProperty(OVERRIDE_CA_FLAG)));
@@ -202,6 +202,7 @@ public class Certificate {
             validTo = theCertificate.getNotAfter().toInstant();
 
             // Check trust anchor against all root certs
+            Certificate foundRoot = null;
             if(!this.rootCA) {
                 for(Certificate rootCA : rootCAs) {
                     HashSet<X509Certificate> chain = new HashSet<>();
@@ -215,6 +216,7 @@ public class Certificate {
                         PKIXParameters params = new PKIXParameters(anchor);
                         params.setRevocationEnabled(false); // TODO: Re-enable, remove proprietary CRL
                         validator.validate(factory.generateCertPath(Arrays.asList(x509Certificates)), params);
+                        foundRoot = rootCA;
                         valid = true;
                         log.debug("Successfully chained certificate: CN={}, O={} ({})", getCommonName(), getOrganization(), getFingerprint());
                         break; // if successful, don't attempt another chain
@@ -232,11 +234,12 @@ public class Certificate {
                 valid = false;
             }
 
-            // If cert matches a rootCA, trust it blindly
+            // If cert matches a rootCA trust it blindly
+            // If cert is chained to a 3rd party rootCA, trust it blindly as well
             Iterator<Certificate> allCerts = rootCAs.iterator();
             while(allCerts.hasNext()) {
                 Certificate cert = allCerts.next();
-                if(cert.equals(this)) {
+                if(cert.equals(this) || (cert.equals(foundRoot) && !cert.equals(builtIn))) {
                     log.debug("Adding {} to {} list", cert.toString(), Constants.ALLOW_FILE);
                     if(!isSaved()) {
                         FileUtilities.printLineToFile(Constants.ALLOW_FILE, data());
@@ -443,13 +446,18 @@ public class Certificate {
         return ByteUtilities.bytesToHex(md.digest(), false);
     }
 
-    public String data() {
+    private String data(boolean assumeTrusted) {
         return getFingerprint() + "\t" +
                 getCommonName() + "\t" +
                 getOrganization() + "\t" +
                 getValidFrom() + "\t" +
                 getValidTo() + "\t" +
-                isTrusted();
+                // Used by equals(), may fail if it hasn't been trusted yet
+                (assumeTrusted ? true : isTrusted());
+    }
+
+    public String data() {
+        return data(false);
     }
 
     @Override
@@ -460,7 +468,7 @@ public class Certificate {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Certificate) {
-            return ((Certificate)obj).data().equals(data());
+            return ((Certificate)obj).data(true).equals(data(true));
         }
         return super.equals(obj);
     }

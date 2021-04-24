@@ -40,6 +40,7 @@ public class GatewayDialog extends JDialog implements Themeable {
     private String description;
     private RequestState request;
     private boolean approved;
+    private boolean persistent;
 
     public GatewayDialog(Frame owner, String title, IconCache iconCache) {
         super(owner, title, true);
@@ -124,13 +125,15 @@ public class GatewayDialog extends JDialog implements Themeable {
         @Override
         public void actionPerformed(ActionEvent e) {
             approved = e.getSource().equals(allowButton);
+            persistent = persistentCheckBox.isSelected();
 
             // Require confirmation for permanent block
-            if (!approved && persistentCheckBox.isSelected()) {
+            if (!approved && persistent) {
                 ConfirmDialog confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
                 String message = Constants.BLACK_LIST.replace(" blocked ", " block ") + "?";
                 message = String.format(message, request.hasCertificate()? request.getCertName():"");
                 if (!confirmDialog.prompt(message)) {
+                    persistent = false;
                     return;
                 }
             }
@@ -180,7 +183,7 @@ public class GatewayDialog extends JDialog implements Themeable {
     }
 
     public boolean isPersistent() {
-        return persistentCheckBox.isSelected();
+        return persistent;
     }
 
     public void setRequest(RequestState req) {
@@ -202,6 +205,7 @@ public class GatewayDialog extends JDialog implements Themeable {
     public boolean prompt(String description, RequestState request, Point position) {
         //reset dialog state on new prompt
         approved = false;
+        persistent = false;
         persistentCheckBox.setSelected(false);
 
         if (request == null || request.hasBlockedCert()) {

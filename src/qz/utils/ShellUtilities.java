@@ -59,19 +59,19 @@ public class ShellUtilities {
         dest = dest.toAbsolutePath().normalize();
 
         if(SystemUtilities.isWindows()) {
-            // Explorer will prompt if insufficient access
+            // JNA/Explorer will prompt if insufficient access
             if(!WindowsUtilities.nativeFileCopy(source, dest)) {
+                // Fallback to a powershell trick
                 return WindowsUtilities.elevatedFileCopy(source, dest);
             }
             return true;
         } else if(SystemUtilities.isMac()){
-            // Finder will prompt if insufficient access
+            // JNA/Finder will prompt if insufficient access
             return MacUtilities.nativeFileCopy(source, dest);
         } else {
-            // TODO: Implement Linux
-            // Use gksudo, etc
+            // No reliable JNA method; Use pkexec/gksu/etc
+            return LinuxUtilities.elevatedFileCopy(source, dest);
         }
-        return false;
     }
 
     public static boolean execute(String... commandArray) {

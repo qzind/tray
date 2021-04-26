@@ -44,7 +44,10 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     private static final String IMPORT_FAILED = "Failed to import certificate.  Please import manually.";
     private static final String IMPORT_QUESTION = "Successfully created a new demo keypair.  Automatically install?";
 
-    private static final String DEMO_CERT_QUESTION = "Create a new demo keypair for %s?\nThis should only be done by developers.";
+    private static final String DEMO_CERT_QUESTION = "Create a new demo keypair for %s?\n" +
+            "* This keypair will only work on this computer.\n" +
+            "* This should only be done by developers.\n" +
+            "* See also https://qz.io/wiki/signing";
     private static final String DEMO_CERT_NAME = String.format("%s Demo Cert", Constants.ABOUT_TITLE);
 
     private JSplitPane splitPane;

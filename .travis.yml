@@ -18,7 +18,13 @@ matrix:
       osx_image: xcode12.2
 language: java
 dist: trusty
-before_script:
-  - sw_vers -productVersion && brew update && brew install ant; ant -version
-  - test -e /etc/lsb-release && sudo apt-get update -qq && sudo apt-get install -y makeself nsis; echo;
+addons:
+  homebrew:
+    packages:
+      - ant
+  apt:
+    packages:
+      - ant
+      - makeself
+      - nsis
 script: ant $TARGET

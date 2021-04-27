@@ -251,4 +251,25 @@ public class WindowsUtilities {
             log.warn("Could not set writable: {}", path, e);
         }
     }
+
+    public static boolean nativeFileCopy(Path source, Path destination) {
+        try {
+            ShellAPI.SHFILEOPSTRUCT op = new ShellAPI.SHFILEOPSTRUCT();
+            op.wFunc = ShellAPI.FO_COPY;
+            op.fFlags = Shell32.FOF_NOCOPYSECURITYATTRIBS | Shell32.FOF_NOCONFIRMATION;
+            op.pFrom = op.encodePaths(new String[] {source.toString()});
+            op.pTo = op.encodePaths(new String[] {destination.toString()});
+            return Shell32.INSTANCE.SHFileOperation(op) == 0 && op.fAnyOperationsAborted == false;
+        } catch(Throwable t) {
+            log.warn("Unable to perform native file copy using JNA", t);
+        }
+        return false;
+    }
+
+    public static boolean elevatedFileCopy(Path source, Path destination) {
+        // Recursively start powershell.exe, but elevated
+        String args = String.format("'Copy-Item',-Path,'%s',-Destination,'%s'", source, destination);
+        String[] command = {"Start-Process", "powershell.exe", "-ArgumentList", args, "-Wait", "-Verb", "RunAs"};
+        return ShellUtilities.execute("powershell.exe", "-command", String.join(" ", command));
+    }
 }

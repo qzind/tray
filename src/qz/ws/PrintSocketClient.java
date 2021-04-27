@@ -22,13 +22,13 @@ import qz.utils.*;
 
 import javax.management.ListenerNotFoundException;
 import javax.print.PrintServiceLookup;
-import javax.security.cert.CertificateParsingException;
 import javax.usb.util.UsbUtil;
 import java.awt.*;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.*;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
@@ -115,7 +115,7 @@ public class PrintSocketClient {
 
                     log.debug("Received new certificate from connection through {}", connectionPort);
                 }
-                catch(CertificateParsingException ignore) {
+                catch(CertificateException ignore) {
                     request.markNewConnection(Certificate.UNKNOWN);
                 }
 

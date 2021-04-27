@@ -488,12 +488,12 @@ public class FileUtilities {
         return foundPaths;
     }
 
-    public static ArrayList<Map.Entry<Path, String>> parseDelimitedPaths(String delimited) {
-        return parseDelimitedPaths(delimited, true);
-    }
-
     public static ArrayList<Map.Entry<Path, String>> parseDelimitedPaths(Properties props, String key) {
         return parseDelimitedPaths(props == null ? null : props.getProperty(key));
+    }
+
+    public static ArrayList<Map.Entry<Path, String>> parseDelimitedPaths(String delimited) {
+        return parseDelimitedPaths(delimited, false);
     }
 
     /**
@@ -528,6 +528,10 @@ public class FileUtilities {
 
     public static String readLocalFile(String file) throws IOException {
         return new String(readFile(new DataInputStream(new FileInputStream(file))), Charsets.UTF_8);
+    }
+
+    public static String readLocalFile(Path path) throws IOException {
+        return new String(readFile(new DataInputStream(new FileInputStream(path.toFile()))), Charsets.UTF_8);
     }
 
     public static byte[] readRawFile(String url) throws IOException {

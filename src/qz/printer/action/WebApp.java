@@ -176,7 +176,7 @@ public class WebApp extends Application {
                     // Fallback for JDK11+
                     headless = true;
                 }
-                if (useMonocle) {
+                if (useMonocle && SystemUtilities.hasMonocle()) {
                     log.trace("Initializing monocle platform");
                     System.setProperty("javafx.platform", "monocle");
                     // Don't set glass.platform on Linux per https://github.com/qzind/tray/issues/702
@@ -188,6 +188,8 @@ public class WebApp extends Application {
                     if (headless) {
                         System.setProperty("prism.order", "sw");
                     }
+                } else {
+                    log.warn("Monocle platform will not be used");
                 }
             }
 

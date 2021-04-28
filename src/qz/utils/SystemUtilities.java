@@ -45,6 +45,7 @@ public class SystemUtilities {
 
     private static Boolean darkDesktop;
     private static Boolean darkTaskbar;
+    private static Boolean hasMonocle;
     private static String uname;
     private static String linuxRelease;
     private static String classProtocol;
@@ -493,5 +494,17 @@ public class SystemUtilities {
             }
         }
         return false;
+    }
+
+    public static boolean hasMonocle() {
+        if(hasMonocle == null) {
+            try {
+                Class.forName("com.sun.glass.ui.monocle.MonoclePlatformFactory");
+                hasMonocle = true;
+            } catch (ClassNotFoundException e) {
+                hasMonocle = false;
+            }
+        }
+        return hasMonocle;
     }
 }

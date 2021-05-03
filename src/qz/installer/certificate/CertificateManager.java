@@ -279,6 +279,10 @@ public class CertificateManager {
     }
 
     public static void writeCert(X509Certificate data, File dest) throws IOException {
+        // PEMWriter doesn't always clear the file, explicitly delete it, see issue #796
+        if(dest.exists()) {
+            dest.delete();
+        }
         JcaMiscPEMGenerator cert = new JcaMiscPEMGenerator(data);
         JcaPEMWriter writer = new JcaPEMWriter(new OutputStreamWriter(Files.newOutputStream(dest.toPath(), StandardOpenOption.CREATE)));
         writer.writeObject(cert.generate());

@@ -2926,7 +2926,7 @@
 
     function updateConfig(cleanConditions) {
         var pxlSize = null;
-        if (isChecked($("#pxlSizeActive"), cleanConditions['pxlSizeActive'])) {
+        if (isChecked($("#pxlSizeActive"), cleanConditions['pxlSizeActive']) && (($("#pxlSizeWidth").val() !== '') || ($("#pxlSizeHeight").val() !== ''))) {
             pxlSize = {
                 width: $("#pxlSizeWidth").val(),
                 height: $("#pxlSizeHeight").val()

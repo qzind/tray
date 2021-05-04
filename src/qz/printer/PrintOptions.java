@@ -335,7 +335,11 @@ public class PrintOptions {
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "size.height", subSize.opt("height")); }
                 }
 
-                psOptions.size = s;
+                if (s.height <= 0 && s.width <= 0) {
+                    log.warn("Page size has been set without dimensions, using default");
+                } else {
+                    psOptions.size = s;
+                }
             } else {
                 LoggerUtilities.optionWarn(log, "JSONObject", "size", configOpts.opt("size"));
             }

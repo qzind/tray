@@ -207,6 +207,10 @@ public class PrintSocketClient {
             return;
         }
 
+        if (call != SocketMethod.GET_VERSION) {
+            trayManager.voidIdleActions();
+        }
+
         // used in usb calls
         DeviceOptions dOpts = new DeviceOptions(params, DeviceOptions.DeviceMode.parse(call.getCallName()));
 

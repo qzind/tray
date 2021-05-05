@@ -6,6 +6,7 @@ import org.apache.commons.io.Charsets;
 import org.apache.commons.ssl.Base64;
 import org.apache.commons.ssl.X509CertificateChainBuilder;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.PrincipalUtil;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -58,6 +59,8 @@ public class Certificate {
     private static CertPathValidator validator;
     private static CertificateFactory factory;
     private static boolean trustBuiltIn = false;
+    // id-at-description used for storing renewal information
+    private static ASN1ObjectIdentifier RENEWAL_OF = new ASN1ObjectIdentifier("2.5.4.13");
 
     public static final String[] saveFields = new String[] {"fingerprint", "commonName", "organization", "validFrom", "validTo", "valid"};
 
@@ -178,7 +181,6 @@ public class Certificate {
     }
 
     /** Decodes a certificate and intermediate certificate from the given string */
-    @SuppressWarnings("deprecation")
     public Certificate(String in) throws CertificateException {
         try {
             //Strip beginning and end
@@ -195,9 +197,12 @@ public class Certificate {
 
             //Generate cert
             theCertificate = (X509Certificate)factory.generateCertificate(new ByteArrayInputStream(serverCertificate));
-            commonName = String.valueOf(PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(X509Name.CN).get(0));
+            commonName = getSubjectX509Principal(theCertificate, BCStyle.CN);
+            if(commonName.isEmpty()) {
+                throw new CertificateException("Common Name cannot be blank.");
+            }
             fingerprint = makeThumbPrint(theCertificate);
-            organization = String.valueOf(PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(X509Name.O).get(0));
+            organization = getSubjectX509Principal(theCertificate, BCStyle.O);
             validFrom = theCertificate.getNotBefore().toInstant();
             validTo = theCertificate.getNotAfter().toInstant();
 
@@ -269,8 +274,7 @@ public class Certificate {
     }
 
     private void readRenewalInfo() throws Exception {
-        // "id-at-description" = "2.5.4.13"
-        Vector values = PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(new ASN1ObjectIdentifier("2.5.4.13"));
+        Vector values = PrincipalUtil.getSubjectX509Principal(theCertificate).getValues(RENEWAL_OF);
         Iterator renewals = values.iterator();
 
         while(renewals.hasNext()) {
@@ -498,6 +502,18 @@ public class Certificate {
 
     public static boolean hasAdditionalCAs() {
         return rootCAs.size() > (isTrustBuiltIn() ? 1 : 0);
+    }
+
+    private static String getSubjectX509Principal(X509Certificate cert, ASN1ObjectIdentifier key) {
+        try {
+            Vector v = PrincipalUtil.getSubjectX509Principal(cert).getValues(key);
+            if(v.size() > 0) {
+                return String.valueOf(v.get(0));
+            }
+        } catch(CertificateEncodingException e) {
+            log.warn("Certificate encoding exception occurred", e);
+        }
+        return "";
     }
 
 }

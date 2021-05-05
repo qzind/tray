@@ -180,7 +180,7 @@ public class WebApp extends Application {
                     log.trace("Initializing monocle platform");
                     System.setProperty("javafx.platform", "monocle");
                     // Don't set glass.platform on Linux per https://github.com/qzind/tray/issues/702
-                    if((SystemUtilities.isWindows() || SystemUtilities.isMac())) {
+                    if ((SystemUtilities.isWindows() || SystemUtilities.isMac())) {
                         System.setProperty("glass.platform", "Monocle");
                     }
 
@@ -283,19 +283,25 @@ public class WebApp extends Application {
                     int rowsNeed = Math.max(1, (int)Math.ceil(webView.getHeight() / printBounds.getHeight() * useScale - 0.1));
                     log.debug("Document will be printed across {} pages", columnsNeed * rowsNeed);
 
-                    for(int row = 0; row < rowsNeed; row++) {
-                        for(int col = 0; col < columnsNeed; col++) {
-                            activePage.setX((-col * printBounds.getWidth()) / useScale);
-                            activePage.setY((-row * printBounds.getHeight()) / useScale);
+                    try {
+                        for(int row = 0; row < rowsNeed; row++) {
+                            for(int col = 0; col < columnsNeed; col++) {
+                                activePage.setX((-col * printBounds.getWidth()) / useScale);
+                                activePage.setY((-row * printBounds.getHeight()) / useScale);
 
-                            job.printPage(webView);
+                                job.printPage(webView);
+                            }
+
+                            unlatch(null);
                         }
                     }
-
-                    //reset state
-                    webView.getTransforms().clear();
-
-                    unlatch(null);
+                    catch(Exception e) {
+                        unlatch(e);
+                    }
+                    finally {
+                        //reset state
+                        webView.getTransforms().clear();
+                    }
                 });
             }
             catch(Exception e) { unlatch(e); }

@@ -226,7 +226,7 @@ public class WebApp extends Application {
 
         // Fix blank pages for WebKit > 609.1
         // See also https://github.com/qzind/tray/issues/778
-        if(getWebkitVersion() == null || getWebkitVersion().greaterThanOrEqualTo(Version.forIntegers(609, 1, 0))) {
+        if(getWebkitVersion() == null || getWebkitVersion().greaterThan(Version.forIntegers(609, 1, 0))) {
             VECTOR_FRAMES = 30; // 30 pulses needed for vector graphics
         }
 

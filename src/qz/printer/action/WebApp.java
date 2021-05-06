@@ -491,13 +491,14 @@ public class WebApp extends Application {
         if(webkitVersion == null) {
             if(webView != null) {
                 String userAgent = webView.getEngine().getUserAgent();
-                String[] split = userAgent.split("WebKit/");
-                if (split.length > 1) {
-                    System.out.println("   split[1]: " + split[1]);
-                    String[] split2 = split[1].split(" ");
-                    if (split2.length > 0) {
-                        System.out.println("   split2[0]: " + split2[0]);
-                        webkitVersion = Version.valueOf(split2[0]);
+                String[] parts = userAgent.split("WebKit/");
+                if (parts.length > 1) {
+                    String[] split = parts[1].split(" ");
+                    if (split.length > 0) {
+                        try {
+                            webkitVersion = Version.valueOf(split[0]);
+                            log.info("WebKit version {} detected", webkitVersion);
+                        } catch(Exception ignore) {}
                     }
                 }
                 if(webkitVersion == null) {

@@ -501,7 +501,7 @@ public class SystemUtilities {
             try {
                 Class.forName("com.sun.glass.ui.monocle.MonoclePlatformFactory");
                 hasMonocle = true;
-            } catch (ClassNotFoundException e) {
+            } catch (ClassNotFoundException | UnsupportedClassVersionError e) {
                 hasMonocle = false;
             }
         }

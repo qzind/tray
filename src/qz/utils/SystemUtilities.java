@@ -11,6 +11,7 @@
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -468,13 +469,42 @@ public class SystemUtilities {
         return "jar".equals(classProtocol);
     }
 
-    public static void appendProperty(String property, String value) {
-        appendProperty(property, value, File.pathSeparator);
+    /**
+     * Allows in-line insertion of a property before another
+     * @param value the end of a value to insert before, assumes to end with File.pathSeparator
+     */
+    public static void insertPathProperty(String property, String value, String insertBefore) {
+        insertPathProperty(property, value, File.pathSeparator, insertBefore);
     }
 
-    public static void appendProperty(String property, String value, String delimiter) {
+    private static void insertPathProperty(String property, String value, String delimiter, String insertBefore) {
         String currentValue = System.getProperty(property);
-        System.setProperty(property, currentValue == null ? value : currentValue + delimiter + value);
+        if(currentValue == null || currentValue.trim().isEmpty()) {
+            // Set it directly, there's nothing there
+            System.setProperty(property, value);
+            return;
+        }
+        // Blindly split on delimiter, safe according to POSIX standards
+        // See also: https://stackoverflow.com/a/29213487/3196753
+        String[] paths = currentValue.split(delimiter);
+        StringBuilder finalProperty = new StringBuilder();
+        boolean inserted = false;
+        for(String path : paths) {
+            if(!inserted && path.endsWith(insertBefore)) {
+                finalProperty.append(value + delimiter);
+                inserted = true;
+            }
+            finalProperty.append(path + delimiter);
+        }
+        // Add to end if delimiter wasn't found
+        if(!inserted) {
+            finalProperty.append(value);
+        }
+        // Truncate trailing delimiter
+        if(StringUtils.endsWith(finalProperty, delimiter)) {
+            finalProperty.setLength(finalProperty.length() - delimiter.length());
+        }
+        System.setProperty(property, finalProperty.toString());
     }
 
     public static boolean isJDK() {

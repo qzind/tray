@@ -42,6 +42,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     private static final String IMPORT_NEEDED = "The provided certificate \"%s\" is unrecognized and not yet trusted.\n"  +
             "Would you like to automatically copy it to \"%s\"?";
     private static final String IMPORT_FAILED = "Failed to import certificate.  Please import manually.";
+    private static final String INVALID_CERTIFICATE = "An exception occurred importing the certificate.  Please check the logs for details.";
     private static final String IMPORT_QUESTION = "Successfully created a new demo keypair.  Automatically install?";
 
     private static final String DEMO_CERT_QUESTION = "Create a new demo keypair for %s?\n" +
@@ -449,6 +450,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             }
             catch(CertificateException | IOException e) {
                 log.warn("Unable to import cert {}", file, e);
+                JOptionPane.showMessageDialog(this, String.format(INVALID_CERTIFICATE), "Import failed", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

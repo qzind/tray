@@ -642,7 +642,7 @@ var qz = (function() {
                     if (data[i].constructor === Object) {
                         var absolute = false;
 
-                        if (data[i].data.search(/data:image\/\w+;base64,/) === 0) {
+                        if (data[i].data && data[i].data.search(/data:image\/\w+;base64,/) === 0) {
                             //upgrade from old base64 behavior
                             data[i].flavor = "base64";
                             data[i].data = data[i].data.replace(/^data:image\/\w+;base64,/, "");

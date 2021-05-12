@@ -73,7 +73,7 @@ public class SingleInstanceChecker {
 
     @OnWebSocketError
     public void onError(Throwable e) {
-        if (!e.getMessage().contains("Connection refused")) {
+        if (!e.getMessage().contains("Connection refused") && !e.getMessage().contains("Failed to upgrade to websocket")) {
             log.warn("WebSocket error", e);
         }
     }

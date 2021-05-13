@@ -140,7 +140,7 @@
         <echo level="info" message="Signing ${dist.dir}/libs/*.dylib using ${apple.packager.signid}"/>
         <exec executable="bash" failonerror="true">
             <arg value="-c"/>
-            <arg value="echo &quot;$(find ${dist.dir}/libs/*.dylib)&quot; |tr ':' '\n' |xargs codesign -f -s &quot;${apple.packager.signid}&quot; -v"/>
+            <arg value="echo &quot;$(find ${dist.dir}/libs/*.dylib)&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>
         </exec>
 
     </target>

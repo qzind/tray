@@ -129,6 +129,19 @@ public class WindowsUtilities {
         return false;
     }
 
+    // gracefully swallow InvocationTargetException
+    public static boolean deleteRegValue(HKEY root, String key, String value) {
+        try {
+            if (Advapi32Util.registryValueExists(root, key, value)) {
+                Advapi32Util.registryDeleteValue(root, key, value);
+                return true;
+            }
+        } catch(Exception e) {
+            log.warn("Couldn't delete value {}\\\\{}\\\\{}", getHkeyName(root), key, value);
+        }
+        return false;
+    }
+
     /**
      * Adds a registry entry at <code>key</code>/<code>0</code>, incrementing as needed
      */

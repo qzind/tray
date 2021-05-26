@@ -49,12 +49,9 @@ public class WindowsInstaller extends Installer {
      */
     public Installer removeLegacyStartup() {
         log.info("Removing legacy startup entries for all users matching " + ABOUT_TITLE);
-        // This can take a while, run in a background thread
-        SwingUtilities.invokeLater(() -> {
-            for (String user : Advapi32Util.registryGetKeys(HKEY_CURRENT_USER)) {
-                WindowsUtilities.deleteRegKey(HKEY_USERS, user.trim() + "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\" + ABOUT_TITLE);
-            }
-        });
+        for (String user : Advapi32Util.registryGetKeys(HKEY_USERS)) {
+            WindowsUtilities.deleteRegValue(HKEY_USERS, user.trim() + "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", ABOUT_TITLE);
+        }
 
         try {
             FileUtils.deleteQuietly(new File(STARTUP + File.separator + ABOUT_TITLE + ".lnk"));

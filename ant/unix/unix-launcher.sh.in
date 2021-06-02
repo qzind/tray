@@ -96,7 +96,7 @@ if command -v java &>/dev/null; then
         else
             prefix="../../" # back two directories, e.g. postinstall
         fi
-        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$ICON_PATH" -jar -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="true" "${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
+        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$ICON_PATH" -jar -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="${java.mask.tray}" "${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
     else
         java $LAUNCH_OPTS -jar "$PROPS_FILE.jar" "$@"
     fi

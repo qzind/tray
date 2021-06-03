@@ -538,7 +538,7 @@ public class SystemUtilities {
         return hasMonocle;
     }
 
-    public static Version[] JDK_8266929 = {
+    public static final Version[] JDK_8266929_VERSIONS = {
             Version.valueOf("11.0.11"),
             Version.valueOf("1.8.0+291"),
             Version.valueOf("1.8.0+292")
@@ -550,7 +550,7 @@ public class SystemUtilities {
      */
     public static void clearAlgorithms() {
         boolean needsPatch = false;
-        for(Version affected : JDK_8266929) {
+        for(Version affected : JDK_8266929_VERSIONS) {
             if(affected.getMajorVersion() == 1) {
                 // Java 1.8 honors build/update information
                 if(affected.compareWithBuildsTo(Constants.JAVA_VERSION) == 0) {

@@ -537,4 +537,51 @@ public class SystemUtilities {
         }
         return hasMonocle;
     }
+
+    public static final Version[] JDK_8266929_VERSIONS = {
+            Version.valueOf("11.0.11"),
+            Version.valueOf("1.8.0+291"),
+            Version.valueOf("1.8.0+292")
+    };
+
+    /**
+     * Fixes JDK-8266929 by clearing the oidTable
+     * See also: https://github.com/qzind/tray/issues/814
+     */
+    public static void clearAlgorithms() {
+        boolean needsPatch = false;
+        for(Version affected : JDK_8266929_VERSIONS) {
+            if(affected.getMajorVersion() == 1) {
+                // Java 1.8 honors build/update information
+                if(affected.compareWithBuildsTo(Constants.JAVA_VERSION) == 0) {
+                    needsPatch = true;
+                }
+            } else if (affected.compareTo(Constants.JAVA_VERSION) == 0) {
+                // Java 9.0+ ignores build/update information
+                needsPatch = true;
+            }
+        }
+        if(!needsPatch) {
+            log.debug("Skipping JDK-8266929 patch for {}", Constants.JAVA_VERSION);
+            return;
+        }
+        try {
+            log.info("Applying JDK-8266929 patch");
+            Class<?> algorithmIdClass = Class.forName("sun.security.x509.AlgorithmId");
+            java.lang.reflect.Field oidTableField = algorithmIdClass.getDeclaredField("oidTable");
+            oidTableField.setAccessible(true);
+            // Set oidTable to null
+            oidTableField.set(algorithmIdClass, null);
+            // Java 1.8
+            if(Constants.JAVA_VERSION.getMajorVersion() == 1) {
+                java.lang.reflect.Field initOidTableField = algorithmIdClass.getDeclaredField("initOidTable");
+                initOidTableField.setAccessible(true);
+                // Set init flag back to false
+                initOidTableField.set(algorithmIdClass, false);
+            }
+            log.info("Successfully applied JDK-8266929 patch");
+        } catch (Exception e) {
+            log.warn("Unable to apply JDK-8266929 patch.  Some algorithms may fail.", e);
+        }
+    }
 }

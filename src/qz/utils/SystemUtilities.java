@@ -370,11 +370,15 @@ public class SystemUtilities {
     public static boolean setSystemLookAndFeel() {
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
-            boolean darkulaThemeNeeded = true;
+            boolean darculaThemeNeeded = true;
             if(!isMac() && (isUnix() && UbuntuUtilities.isDarkMode())) {
-                darkulaThemeNeeded = false;
+                darculaThemeNeeded = false;
             }
-            if(isDarkDesktop() && darkulaThemeNeeded) {
+            // Disable darcula on JDK16+ per https://github.com/bobbylight/Darcula/issues/8
+            if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("16.0.0"))) {
+                darculaThemeNeeded = false;
+            }
+            if(isDarkDesktop() && darculaThemeNeeded) {
                 UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
             } else {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

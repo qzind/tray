@@ -31,11 +31,16 @@ import java.util.Locale;
 public class PrintServiceMatcher {
     private static final Logger log = LoggerFactory.getLogger(PrintServiceMatcher.class);
 
-    public static NativePrinterMap getNativePrinterList(boolean silent) {
+    public static NativePrinterMap getNativePrinterList(boolean silent, boolean withAttributes) {
         NativePrinterMap printers = NativePrinterMap.getInstance();
         printers.putAll(PrintServiceLookup.lookupPrintServices(null, null));
         if(!silent) log.debug("Found {} printers", printers.size());
+        if(withAttributes) printers.values().forEach(NativePrinter::getDriverAttributes);
         return printers;
+    }
+
+    public static NativePrinterMap getNativePrinterList(boolean silent) {
+        return getNativePrinterList(silent, false);
     }
 
     public static NativePrinterMap getNativePrinterList() {

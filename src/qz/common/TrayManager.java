@@ -19,6 +19,8 @@ import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
 import qz.installer.shortcut.ShortcutCreator;
+import qz.printer.PrintServiceMatcher;
+import qz.printer.action.WebApp;
 import qz.ui.*;
 import qz.ui.component.IconCache;
 import qz.ui.tray.TrayType;
@@ -32,8 +34,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
-import java.nio.file.Paths;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -75,6 +78,9 @@ public class TrayManager {
 
     // Action to run when reload is triggered
     private Thread reloadThread;
+
+    // Actions to run if idle after startup
+    private ArrayList<Timer> idleTimers;
 
     public TrayManager() {
         this(false);
@@ -162,7 +168,7 @@ public class TrayManager {
                     try {
                         Thread.sleep(1000);
                         if (darkDesktopMode != SystemUtilities.isDarkDesktop(true) ||
-                            darkTaskbarMode != SystemUtilities.isDarkTaskbar(true)) {
+                                darkTaskbarMode != SystemUtilities.isDarkTaskbar(true)) {
                             darkDesktopMode = SystemUtilities.isDarkDesktop();
                             darkTaskbarMode = SystemUtilities.isDarkTaskbar();
                             iconCache.fixTrayIcons(darkTaskbarMode);
@@ -182,7 +188,8 @@ public class TrayManager {
                                 }
                             });
                         }
-                    } catch(InterruptedException ignore) {}
+                    }
+                    catch(InterruptedException ignore) {}
                 }
             }).start();
         }
@@ -190,6 +197,25 @@ public class TrayManager {
         if (tray != null) {
             addMenuItems();
         }
+
+        // Initialize idle actions
+        idleTimers = new ArrayList<>();
+
+        // Slow to find printers the first time if a lot of printers are installed
+        performIfIdle((int)TimeUnit.SECONDS.toMillis(10), evt -> {
+            log.debug("IDLE: Performing first run of find printers");
+            PrintServiceMatcher.getNativePrinterList(false, true);
+        });
+        // Slow to start JavaFX the first time
+        performIfIdle((int)TimeUnit.SECONDS.toMillis(60), evt -> {
+            log.debug("IDLE: Starting up JFX for HTML printing");
+            try {
+                WebApp.initialize();
+            }
+            catch(IOException e) {
+                log.error("Idle runner failed to preemptively start JavaFX service");
+            }
+        });
     }
 
     /**
@@ -645,6 +671,25 @@ public class TrayManager {
 
     public boolean isHeadless() {
         return headless;
+    }
+
+    private void performIfIdle(int idleQualifier, ActionListener performer) {
+        Timer timer = new Timer(idleQualifier, evt -> {
+            performer.actionPerformed(evt);
+            idleTimers.remove(evt.getSource());
+        });
+        timer.setRepeats(false);
+        timer.start();
+
+        idleTimers.add(timer);
+    }
+
+    public void voidIdleActions() {
+        if (idleTimers.size() > 0) {
+            log.trace("Not idle, stopping any actions that haven't ran yet");
+            idleTimers.forEach(Timer::stop);
+            idleTimers.clear();
+        }
     }
 
 }

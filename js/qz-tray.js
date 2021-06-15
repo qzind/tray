@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.1.2+12
+ * @version 2.1.3
  * @overview QZ Tray Connector
  * <p/>
  * Connects a web client to the QZ Tray software.
@@ -38,7 +38,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
-        VERSION: "2.1.2+12",                              //must match @version above
+        VERSION: "2.1.3",                              //must match @version above
         DEBUG: false,
 
         log: {
@@ -642,7 +642,7 @@ var qz = (function() {
                     if (data[i].constructor === Object) {
                         var absolute = false;
 
-                        if (data[i].data.search(/data:image\/\w+;base64,/) === 0) {
+                        if (data[i].data && data[i].data.search(/data:image\/\w+;base64,/) === 0) {
                             //upgrade from old base64 behavior
                             data[i].flavor = "base64";
                             data[i].data = data[i].data.replace(/^data:image\/\w+;base64,/, "");

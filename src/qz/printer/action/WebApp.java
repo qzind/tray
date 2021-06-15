@@ -49,7 +49,9 @@ public class WebApp extends Application {
     private static final Logger log = LoggerFactory.getLogger(WebApp.class);
 
     private static WebApp instance = null;
-
+    private static Version webkitVersion = null;
+    private static int CAPTURE_FRAMES = 2;
+    private static int VECTOR_FRAMES = 1;
     private static Stage stage;
     private static WebView webView;
     private static double pageWidth;
@@ -159,7 +161,11 @@ public class WebApp extends Application {
             if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
                 // JavaFX native libs
                 if (SystemUtilities.isJar()) {
-                    SystemUtilities.appendProperty("java.library.path", new File(SystemUtilities.detectJarPath()).getParent() + "/libs/");
+                    SystemUtilities.insertPathProperty(
+                            "java.library.path",
+                            new File(SystemUtilities.detectJarPath()).getParent() + "/libs/",
+                            "/jni" /* appends to end if not found */
+                    );
                 } else if (hasConflictingLib()) {
                     // IDE helper for "no suitable pipeline found" errors
                     System.err.println("\n=== WARNING ===\nWrong javafx platform detected. Delete lib/javafx/<platform> to correct this.\n");
@@ -176,11 +182,11 @@ public class WebApp extends Application {
                     // Fallback for JDK11+
                     headless = true;
                 }
-                if (useMonocle) {
+                if (useMonocle && SystemUtilities.hasMonocle()) {
                     log.trace("Initializing monocle platform");
                     System.setProperty("javafx.platform", "monocle");
                     // Don't set glass.platform on Linux per https://github.com/qzind/tray/issues/702
-                    if((SystemUtilities.isWindows() || SystemUtilities.isMac())) {
+                    if ((SystemUtilities.isWindows() || SystemUtilities.isMac())) {
                         System.setProperty("glass.platform", "Monocle");
                     }
 
@@ -188,6 +194,8 @@ public class WebApp extends Application {
                     if (headless) {
                         System.setProperty("prism.order", "sw");
                     }
+                } else {
+                    log.warn("Monocle platform will not be used");
                 }
             }
 
@@ -219,6 +227,13 @@ public class WebApp extends Application {
         log.debug("Started JavaFX");
 
         webView = new WebView();
+
+        // Fix blank pages for WebKit > 609.1
+        // See also https://github.com/qzind/tray/issues/778
+        if(getWebkitVersion() == null || getWebkitVersion().greaterThan(Version.forIntegers(609, 1, 0))) {
+            VECTOR_FRAMES = 30; // 30 pulses needed for vector graphics
+        }
+
         st.setScene(new Scene(webView));
         stage = st;
         stage.setWidth(1);
@@ -245,60 +260,67 @@ public class WebApp extends Application {
         raster = false;
 
         load(model, (int frames) -> {
-            try {
-                double printScale = 72d / 96d;
-                webView.getTransforms().add(new Scale(printScale, printScale));
+            if(frames == VECTOR_FRAMES) {
+                try {
+                    double printScale = 72d / 96d;
+                    webView.getTransforms().add(new Scale(printScale, printScale));
 
-                PageLayout layout = job.getJobSettings().getPageLayout();
-                if (model.isScaled()) {
-                    double viewWidth = webView.getWidth() * printScale;
-                    double viewHeight = webView.getHeight() * printScale;
+                    PageLayout layout = job.getJobSettings().getPageLayout();
+                    if (model.isScaled()) {
+                        double viewWidth = webView.getWidth() * printScale;
+                        double viewHeight = webView.getHeight() * printScale;
 
-                    double scale;
-                    if ((viewWidth / viewHeight) >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
-                        scale = (layout.getPrintableWidth() / viewWidth);
-                    } else {
-                        scale = (layout.getPrintableHeight() / viewHeight);
-                    }
-                    webView.getTransforms().add(new Scale(scale, scale));
-                }
-
-                Platform.runLater(() -> {
-                    double useScale = 1;
-                    for(Transform t : webView.getTransforms()) {
-                        if (t instanceof Scale) { useScale *= ((Scale)t).getX(); }
-                    }
-
-                    PageLayout page = job.getJobSettings().getPageLayout();
-                    Rectangle printBounds = new Rectangle(0, 0, page.getPrintableWidth(), page.getPrintableHeight());
-                    log.debug("Paper area: {},{}:{},{}", (int)page.getLeftMargin(), (int)page.getTopMargin(),
-                              (int)page.getPrintableWidth(), (int)page.getPrintableHeight());
-
-                    Translate activePage = new Translate();
-                    webView.getTransforms().add(activePage);
-
-                    int columnsNeed = Math.max(1, (int)Math.ceil(webView.getWidth() / printBounds.getWidth() * useScale - 0.1));
-                    int rowsNeed = Math.max(1, (int)Math.ceil(webView.getHeight() / printBounds.getHeight() * useScale - 0.1));
-                    log.debug("Document will be printed across {} pages", columnsNeed * rowsNeed);
-
-                    for(int row = 0; row < rowsNeed; row++) {
-                        for(int col = 0; col < columnsNeed; col++) {
-                            activePage.setX((-col * printBounds.getWidth()) / useScale);
-                            activePage.setY((-row * printBounds.getHeight()) / useScale);
-
-                            job.printPage(webView);
+                        double scale;
+                        if ((viewWidth / viewHeight) >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
+                            scale = (layout.getPrintableWidth() / viewWidth);
+                        } else {
+                            scale = (layout.getPrintableHeight() / viewHeight);
                         }
+                        webView.getTransforms().add(new Scale(scale, scale));
                     }
 
-                    //reset state
-                    webView.getTransforms().clear();
+                    Platform.runLater(() -> {
+                        double useScale = 1;
+                        for(Transform t : webView.getTransforms()) {
+                            if (t instanceof Scale) { useScale *= ((Scale)t).getX(); }
+                        }
 
-                    unlatch(null);
-                });
+                        PageLayout page = job.getJobSettings().getPageLayout();
+                        Rectangle printBounds = new Rectangle(0, 0, page.getPrintableWidth(), page.getPrintableHeight());
+                        log.debug("Paper area: {},{}:{},{}", (int)page.getLeftMargin(), (int)page.getTopMargin(),
+                                  (int)page.getPrintableWidth(), (int)page.getPrintableHeight());
+
+                        Translate activePage = new Translate();
+                        webView.getTransforms().add(activePage);
+
+                        int columnsNeed = Math.max(1, (int)Math.ceil(webView.getWidth() / printBounds.getWidth() * useScale - 0.1));
+                        int rowsNeed = Math.max(1, (int)Math.ceil(webView.getHeight() / printBounds.getHeight() * useScale - 0.1));
+                        log.debug("Document will be printed across {} pages", columnsNeed * rowsNeed);
+
+                        try {
+                            for(int row = 0; row < rowsNeed; row++) {
+                                for(int col = 0; col < columnsNeed; col++) {
+                                    activePage.setX((-col * printBounds.getWidth()) / useScale);
+                                    activePage.setY((-row * printBounds.getHeight()) / useScale);
+
+                                    job.printPage(webView);
+                                }
+
+                                unlatch(null);
+                            }
+                        }
+                        catch(Exception e) {
+                            unlatch(e);
+                        }
+                        finally {
+                            //reset state
+                            webView.getTransforms().clear();
+                        }
+                    });
+                }
+                catch(Exception e) { unlatch(e); }
             }
-            catch(Exception e) { unlatch(e); }
-
-            return true; //only runs on first frame
+            return frames >= VECTOR_FRAMES;
         });
 
         log.trace("Waiting on print..");
@@ -324,7 +346,7 @@ public class WebApp extends Application {
         raster = true;
 
         load(model, (int frames) -> {
-            if (frames == 2) {
+            if (frames == CAPTURE_FRAMES) {
                 log.debug("Attempting image capture");
 
                 Toolkit.getToolkit().addPostSceneTkPulseListener(new TKPulseListener() {
@@ -346,7 +368,7 @@ public class WebApp extends Application {
                 Toolkit.getToolkit().requestNextPulse();
             }
 
-            return frames >= 2;
+            return frames >= CAPTURE_FRAMES;
         });
 
         log.trace("Waiting on capture..");
@@ -467,5 +489,29 @@ public class WebApp extends Application {
             return !graphicsJar.contains("osx") && !graphicsJar.contains("mac");
         }
         return !graphicsJar.contains("linux");
+    }
+
+    public static Version getWebkitVersion() {
+        if(webkitVersion == null) {
+            if(webView != null) {
+                String userAgent = webView.getEngine().getUserAgent();
+                String[] parts = userAgent.split("WebKit/");
+                if (parts.length > 1) {
+                    String[] split = parts[1].split(" ");
+                    if (split.length > 0) {
+                        try {
+                            webkitVersion = Version.valueOf(split[0]);
+                            log.info("WebKit version {} detected", webkitVersion);
+                        } catch(Exception ignore) {}
+                    }
+                }
+                if(webkitVersion == null) {
+                    log.warn("WebKit version couldn't be parsed from UserAgent: {}", userAgent);
+                }
+            } else {
+                log.warn("Can't get WebKit version, JavaFX hasn't started yet.");
+            }
+        }
+        return webkitVersion;
     }
 }

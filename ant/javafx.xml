@@ -54,10 +54,27 @@
         <property file="ant/project.properties"/>
         <property name="javafx.version" value="11.0.2"/>
         <property name="javafx.mirror" value="https://gluonhq.com/download"/>
+        <property name="javafx.arch" value="aarch64"/>
         <property name="lib.dir" value="lib"/>
         <property name="dist.dir" value="out/dist"/>
         -->
         <!-- end required properties -->
+
+        <!-- ARM64 -->
+        <condition property="javafx.version" value="${javafx.aarch64.version}">
+            <equals arg1="aarch64" arg2="${jre.arch}"/>
+        </condition>
+        <condition property="javafx.mirror" value="${javafx.aarch64.mirror}">
+            <equals arg1="aarch64" arg2="${jre.arch}"/>
+        </condition>
+        <condition property="javafx.arch" value="${javafx.aarch64.arch}">
+            <equals arg1="aarch64" arg2="${jre.arch}"/>
+        </condition>
+
+        <!-- Intel (fallback) -->
+        <property name="javafx.version" value="${javafx.x86_64.version}" description="fallback"/>
+        <property name="javafx.mirror" value="${javafx.x86_64.mirror}" description="fallback"/>
+        <property name="javafx.arch" value="${javafx.x86_64.arch}" description="fallback"/>
 
         <loadresource property="javafx.version-url">
             <propertyresource name="javafx.version"/>
@@ -116,7 +133,7 @@
 
     <!-- Downloads and extracts javafx for the specified platform -->
     <target name="download-javafx-platform" depends="get-javafx-version">
-        <get src="${javafx.mirror}/openjfx-${javafx.version-url}-${javafx.platform}-x64_bin-sdk.zip" verbose="true" dest="javafx-${javafx.platform}.zip"/>
+        <get src="${javafx.mirror}/openjfx-${javafx.version-url}-${javafx.platform}-${javafx.arch}_bin-sdk.zip" verbose="true" dest="javafx-${javafx.platform}.zip"/>
         <unzip src="javafx-${javafx.platform}.zip" dest="lib/javafx/${javafx.platform}/javafx-${javafx.version}" overwrite="true"/>
         <delete file="javafx-${javafx.platform}.zip"/>
     </target>

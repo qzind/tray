@@ -87,6 +87,14 @@ else
     echo -e "$SUCCESS Java $curver was detected"
 fi
 
+jigsaw=$(echo -e "9.0\n$curver")
+actual=$(echo "$jigsaw" |sort -t '.' -k 1,1 -k 2,2 -n)
+if [ "$jigsaw" != "$actual" ]; then
+    echo -e "$SUCCESS Java < 9.0, skipping jigsaw options"
+else
+    echo -e "$SUCCESS Java >= 9.0, adding jigsaw options"
+    LAUNCH_OPTS="$LAUNCH_OPTS ${launch.jigsaw}"
+fi
 
 if command -v java &>/dev/null; then
     echo -e "$ABOUT_TITLE is starting..."
@@ -96,7 +104,7 @@ if command -v java &>/dev/null; then
         else
             prefix="../../" # back two directories, e.g. postinstall
         fi
-        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$ICON_PATH" -jar -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="true" "${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
+        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$ICON_PATH" -jar -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="${java.mask.tray}" "${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
     else
         java $LAUNCH_OPTS -jar "$PROPS_FILE.jar" "$@"
     fi

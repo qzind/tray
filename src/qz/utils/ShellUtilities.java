@@ -55,6 +55,26 @@ public class ShellUtilities {
         }
     }
 
+    public static boolean elevateCopy(Path source, Path dest) {
+        source = source.toAbsolutePath().normalize();
+        dest = dest.toAbsolutePath().normalize();
+
+        if(SystemUtilities.isWindows()) {
+            // JNA/Explorer will prompt if insufficient access
+            if(!WindowsUtilities.nativeFileCopy(source, dest)) {
+                // Fallback to a powershell trick
+                return WindowsUtilities.elevatedFileCopy(source, dest);
+            }
+            return true;
+        } else if(SystemUtilities.isMac()){
+            // JNA/Finder will prompt if insufficient access
+            return MacUtilities.nativeFileCopy(source, dest);
+        } else {
+            // No reliable JNA method; Use pkexec/gksu/etc
+            return LinuxUtilities.elevatedFileCopy(source, dest);
+        }
+    }
+
     public static boolean execute(String... commandArray) {
         return execute(commandArray, false);
     }

@@ -129,6 +129,19 @@ public class WindowsUtilities {
         return false;
     }
 
+    // gracefully swallow InvocationTargetException
+    public static boolean deleteRegValue(HKEY root, String key, String value) {
+        try {
+            if (Advapi32Util.registryValueExists(root, key, value)) {
+                Advapi32Util.registryDeleteValue(root, key, value);
+                return true;
+            }
+        } catch(Exception e) {
+            log.warn("Couldn't delete value {}\\\\{}\\\\{}", getHkeyName(root), key, value);
+        }
+        return false;
+    }
+
     /**
      * Adds a registry entry at <code>key</code>/<code>0</code>, incrementing as needed
      */
@@ -266,5 +279,26 @@ public class WindowsUtilities {
             hostName = ShellUtilities.getHostName().toUpperCase(); // uppercase to match others
         }
         return hostName;
+    }
+
+    public static boolean nativeFileCopy(Path source, Path destination) {
+        try {
+            ShellAPI.SHFILEOPSTRUCT op = new ShellAPI.SHFILEOPSTRUCT();
+            op.wFunc = ShellAPI.FO_COPY;
+            op.fFlags = Shell32.FOF_NOCOPYSECURITYATTRIBS | Shell32.FOF_NOCONFIRMATION;
+            op.pFrom = op.encodePaths(new String[] {source.toString()});
+            op.pTo = op.encodePaths(new String[] {destination.toString()});
+            return Shell32.INSTANCE.SHFileOperation(op) == 0 && op.fAnyOperationsAborted == false;
+        } catch(Throwable t) {
+            log.warn("Unable to perform native file copy using JNA", t);
+        }
+        return false;
+    }
+
+    public static boolean elevatedFileCopy(Path source, Path destination) {
+        // Recursively start powershell.exe, but elevated
+        String args = String.format("'Copy-Item',-Path,'%s',-Destination,'%s'", source, destination);
+        String[] command = {"Start-Process", "powershell.exe", "-ArgumentList", args, "-Wait", "-Verb", "RunAs"};
+        return ShellUtilities.execute("powershell.exe", "-command", String.join(" ", command));
     }
 }

@@ -14,8 +14,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 
 /**
  * Wraps a Swing JMenuItem or JSeparator into an AWT item including text, shortcuts and action listeners.
@@ -28,21 +26,25 @@ public class AWTMenuWrapper {
     private AWTMenuWrapper(JCheckBoxMenuItem item) {
         this.item = new CheckboxMenuItem(item.getText());
         wrapState(item);
+        wrapEnabled(item);
         wrapShortcut(item);
         wrapItemListeners(item);
     }
 
     private AWTMenuWrapper(JMenuItem item) {
         this.item = new MenuItem(item.getText());
+        wrapEnabled(item);
         wrapShortcut(item);
         wrapActionListeners(item);
     }
 
     private AWTMenuWrapper(JMenu menu) {
         this.item = new Menu(menu.getText());
+        wrapEnabled(menu);
         wrapShortcut(menu);
     }
 
+    @SuppressWarnings("unused")
     private AWTMenuWrapper(JSeparator ignore) {
         this.item = new MenuItem("-");
     }
@@ -64,12 +66,9 @@ public class AWTMenuWrapper {
     // Special case for CheckboxMenuItem
     private void wrapItemListeners(final JMenuItem item) {
         for (final ActionListener l : item.getActionListeners()) {
-            ((CheckboxMenuItem)this.item).addItemListener(new ItemListener() {
-                @Override
-                public void itemStateChanged(ItemEvent e) {
-                    ((JCheckBoxMenuItem)item).setState(((CheckboxMenuItem)AWTMenuWrapper.this.item).getState());
-                    l.actionPerformed(new ActionEvent(item, e.getID(), item.getActionCommand()));
-                }
+            ((CheckboxMenuItem)this.item).addItemListener(e -> {
+                ((JCheckBoxMenuItem)item).setState(((CheckboxMenuItem)AWTMenuWrapper.this.item).getState());
+                l.actionPerformed(new ActionEvent(item, e.getID(), item.getActionCommand()));
             });
         }
     }
@@ -78,6 +77,15 @@ public class AWTMenuWrapper {
         if (this.item instanceof CheckboxMenuItem && item instanceof JCheckBoxMenuItem) {
             ((CheckboxMenuItem)this.item).setState(((JCheckBoxMenuItem)item).getState());
         }
+    }
+
+    private void wrapEnabled(JMenuItem item) {
+        // Match initial state
+        this.item.setEnabled(item.isEnabled());
+        // Monitor future state
+        item.addPropertyChangeListener("enabled", evt -> {
+            this.item.setEnabled((Boolean)evt.getNewValue());
+        });
     }
 
     public static MenuItem wrap(Component c) {

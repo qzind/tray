@@ -51,7 +51,21 @@ public interface Foundation extends Library {
 
     boolean class_addMethod(NativeLong clazz, Pointer selector, Callback callback, String types);
 
-    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, Object... args);
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector);
+
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, Pointer obj);
+
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, NativeLong objAddress);
+
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, boolean boolArg);
+
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, double doubleArg);
+
+    // Used by NSObject.performSelectorOnMainThread
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, Pointer selectorDst, NativeLong objAddress, boolean wait);
+
+    // Used by NSString.fromJavaString
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, byte[] bytes, int len, long encoding);
 
     Pointer sel_registerName(String selectorName);
 }

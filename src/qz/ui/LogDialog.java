@@ -63,13 +63,10 @@ public class LogDialog extends BasicDialog {
         // add new appender to Log4J just for text area
         logStream = new WriterAppender(new PatternLayout("[%p] %d{ISO8601} @ %c:%L%n\t%m%n"), new OutputStream() {
             @Override
-            public void write(final int b) throws IOException {
-                SwingUtilities.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        logArea.append(String.valueOf((char)b));
-                        logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
-                    }
+            public void write(final int b) {
+                SwingUtilities.invokeLater(() -> {
+                    logArea.append(String.valueOf((char)b));
+                    logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
                 });
             }
         });

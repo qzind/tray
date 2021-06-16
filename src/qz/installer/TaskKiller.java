@@ -44,7 +44,7 @@ public class TaskKiller {
         String[] killCmd;
         // Disable service until reboot
         if(SystemUtilities.isMac()) {
-            ShellUtilities.execute("launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
+            ShellUtilities.execute("/bin/launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
         }
         if(SystemUtilities.isWindows()) {
             // Windows may be running under javaw.exe (normal) or java.exe (terminal)

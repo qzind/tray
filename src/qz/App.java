@@ -5,11 +5,9 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.rolling.FixedWindowRollingPolicy;
 import org.apache.log4j.rolling.RollingFileAppender;
 import org.apache.log4j.rolling.SizeBasedTriggeringPolicy;
-import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
-import qz.common.TrayManager;
 import qz.installer.Installer;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.ExpiryTask;
@@ -20,10 +18,8 @@ import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
-import javax.swing.*;
 import java.io.File;
 import java.util.Properties;
-import java.util.function.Consumer;
 
 public class App {
     private static final Logger log = LoggerFactory.getLogger(App.class);

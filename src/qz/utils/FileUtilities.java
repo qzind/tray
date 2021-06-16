@@ -29,10 +29,9 @@ import qz.common.Constants;
 import qz.common.PropertyHelper;
 import qz.communication.FileIO;
 import qz.communication.FileParams;
-import qz.installer.WindowsSpecialFolders;
 import qz.exception.NullCommandException;
+import qz.installer.WindowsSpecialFolders;
 import qz.installer.certificate.CertificateManager;
-import qz.ws.PrintSocketServer;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;

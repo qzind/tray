@@ -22,17 +22,14 @@ import org.slf4j.LoggerFactory;
 import qz.App;
 import qz.common.Constants;
 import qz.common.TrayManager;
-import qz.installer.certificate.*;
-import qz.utils.ArgParser;
-import qz.utils.ArgValue;
-import qz.utils.FileUtilities;
-import qz.utils.SystemUtilities;
+import qz.installer.certificate.CertificateManager;
 
 import javax.swing.*;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.net.BindException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -99,8 +96,8 @@ public class PrintSocketServer {
 
                 running.set(true);
 
-                trayManager.setServer(server, insecurePortIndex.get());
                 log.info("Server started on port(s) " + getPorts(server));
+                trayManager.setServer(server, insecurePortIndex.get());
                 server.join();
             }
             catch(IOException | MultiException e) {

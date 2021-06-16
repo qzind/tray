@@ -16,7 +16,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import qz.common.Constants;
-import qz.installer.MacInstaller;
 import qz.utils.MacUtilities;
 import qz.utils.SystemUtilities;
 

@@ -29,7 +29,6 @@ import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;

@@ -1,11 +1,18 @@
+/**
+ * @author Tres Finocchiaro
+ *
+ * Copyright (C) 2021 Tres Finocchiaro, QZ Industries, LLC
+ *
+ * LGPL 2.1 This is free software.  This software and source code are released under
+ * the "LGPL 2.1 License".  A copy of this license should be distributed with
+ * this software. http://www.gnu.org/licenses/lgpl-2.1.html
+ */
 package qz.installer;
 
-import com.sun.jna.platform.win32.Kernel32;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.installer.certificate.firefox.locator.AppLocator;
-import qz.utils.MacUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
@@ -43,12 +50,12 @@ public class TaskKiller {
             // Windows may be running under javaw.exe (normal) or java.exe (terminal)
             javaProcs = AppLocator.getInstance().getPids("java.exe", "javaw.exe");
             trayProcs = ShellUtilities.executeRaw(TRAY_PID_QUERY_WIN32).split("\\s*\\r?\\n");
-            selfProc = Kernel32.INSTANCE.GetCurrentProcessId();
+            selfProc = SystemUtilities.getProcessId();
             killCmd = KILL_PID_CMD_WIN32;
         } else {
             javaProcs = AppLocator.getInstance().getPids( "java");
             trayProcs = ShellUtilities.executeRaw(TRAY_PID_QUERY_POSIX).split("\\s*\\r?\\n");
-            selfProc = MacUtilities.getProcessID(); // Works for Linux too
+            selfProc = SystemUtilities.getProcessId(); // Works for Linux too
             killCmd = KILL_PID_CMD_POSIX;
         }
         if (!javaProcs.isEmpty()) {

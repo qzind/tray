@@ -29,7 +29,7 @@ public class NetworkUtilities {
     private static final Logger log = LoggerFactory.getLogger(NetworkUtilities.class);
 
     private static NetworkUtilities instance;
-    private static String systemName = SystemUtilities.isWindows() ? WindowsUtilities.getHostName() : MacUtilities.getHostName();
+    private static String systemName = SystemUtilities.getHostName();
     private static String userName = System.getProperty("user.name");
 
     public static void main(String ... args) {

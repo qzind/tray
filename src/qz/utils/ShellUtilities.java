@@ -213,8 +213,11 @@ public class ShellUtilities {
 
     /**
      * Gets the computer's "hostname" from command line
+     *
+     * This should only be used as a fallback for when JNA is not available,
+     * see <code>SystemUtilities.getHostName()</code> instead.
      */
-    public static String getHostName() {
+    static String getHostName() {
         return execute(new String[] {"hostname"}, new String[] {""});
     }
 

@@ -13,6 +13,7 @@ package qz.utils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.build.JLink;
 import qz.common.Constants;
 import qz.common.SecurityInfo;
 import qz.exception.MissingArgException;
@@ -45,11 +46,13 @@ public class ArgParser {
     }
 
     protected static final Logger log = LoggerFactory.getLogger(ArgParser.class);
+
     private static final String USAGE_COMMAND = String.format("java -jar %s.jar", PROPS_FILE);
     private static final int DESCRIPTION_COLUMN = 30;
     private static final int INDENT_SIZE = 2;
 
     private List<String> args;
+    private boolean headless;
     private ExitStatus exitStatus;
 
     public ArgParser(String[] args) {
@@ -60,13 +63,11 @@ public class ArgParser {
         return args;
     }
 
-    public ExitStatus getExitStatus() {
-        return exitStatus;
-    }
-
     public int getExitCode() {
         return exitStatus.getCode();
     }
+
+    public boolean isHeadless() { return headless; };
 
     /**
      * Gets the requested flag status
@@ -197,6 +198,24 @@ public class ArgParser {
         }
     }
 
+    public ExitStatus processBuildArgs(ArgValue argValue) {
+        try {
+            switch(argValue) {
+                case JLINK:
+                    new JLink(valueOf("--platform", "-p"), valueOf("--arch", "-a"), valueOf("--gc", "-g"));
+                    return SUCCESS;
+                default:
+                    throw new UnsupportedOperationException("Build type " + argValue + " is not yet supported");
+            }
+        } catch(MissingArgException e) {
+            log.error("Valid usage:\n   {} {}", USAGE_COMMAND, argValue.getUsage());
+            return USAGE_ERROR;
+        } catch(Exception e) {
+            log.error("Build step {} failed", argValue, e);
+            return GENERAL_ERROR;
+        }
+    }
+
     /**
      * Attempts to intercept utility command line args.
      * If intercepted, returns true and sets the <code>exitStatus</code> to a usable integer
@@ -223,7 +242,7 @@ public class ArgParser {
                 }
             } else {
                 // Show generic help
-                for(ArgType argType : ArgType.values()) {
+                for(ArgValue.ArgType argType : ArgValue.ArgType.values()) {
                     System.out.println(String.format("%s%s", System.lineSeparator(), argType));
                     for(ArgValue argValue : ArgValue.filter(argType)) {
                         printHelp(argValue);
@@ -245,11 +264,18 @@ public class ArgParser {
             return true;
         }
 
-        // Second, handle installation commands (e.g. install, uninstall, certgen, etc)
-        for(ArgValue argValue : ArgValue.filter(ArgType.INSTALLER)) {
-            if (hasFlag(argValue)) {
-                exitStatus = processInstallerArgs(argValue, args);
-                return true;
+        // Second, handle build or install commands
+        ArgValue found = hasFlags(true, ArgValue.filter(ArgType.INSTALLER, ArgType.BUILD));
+        if(found != null) {
+            switch(found.getType()) {
+                case BUILD:
+                    // Handle build commands (e.g. jlink)
+                    exitStatus = processBuildArgs(found);
+                    return true;
+                case INSTALLER:
+                    // Handle install commands (e.g. install, uninstall, certgen, etc)
+                    exitStatus = processInstallerArgs(found, args);
+                    return true;
             }
         }
 
@@ -263,6 +289,13 @@ public class ArgParser {
                     exitStatus = NO_AUTOSTART;
                     return true;
                 }
+                // Don't intercept
+                exitStatus = SUCCESS;
+                return false;
+            }
+
+            // Handle headless flag
+            if(headless = hasFlag("-h", "--headless")) {
                 // Don't intercept
                 exitStatus = SUCCESS;
                 return false;

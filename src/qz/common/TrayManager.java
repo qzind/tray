@@ -11,9 +11,7 @@
 package qz.common;
 
 import com.github.zafarkhaja.semver.Version;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
@@ -37,8 +35,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Manages the icons and actions associated with the TrayIcon
@@ -247,7 +243,7 @@ public class TrayManager {
         JMenuItem diagnosticMenu = new JMenu("Diagnostic");
 
         JMenuItem browseApp = new JMenuItem("Browse App folder...", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
-        browseApp.setToolTipText(FileUtilities.getParentDirectory(SystemUtilities.getJarPath()));
+        browseApp.setToolTipText(SystemUtilities.getJarParentPath().toString());
         browseApp.setMnemonic(KeyEvent.VK_O);
         browseApp.addActionListener(e -> ShellUtilities.browseAppDirectory());
         diagnosticMenu.add(browseApp);
@@ -521,57 +517,19 @@ public class TrayManager {
         }
     }
 
-    /**
-     * Sets the WebSocket Server instance for displaying port information and restarting the server
-     *
-     * @param server            The Server instance contain to bind the reload action to
-     * @param running           Object used to notify PrintSocket to reiterate its main while loop
-     * @param securePortIndex   Object used to notify PrintSocket to reset its port array counter
-     * @param insecurePortIndex Object used to notify PrintSocket to reset its port array counter
-     */
-    public void setServer(final Server server, final AtomicBoolean running, final AtomicInteger securePortIndex, final AtomicInteger insecurePortIndex) {
+    public void setServer(Server server, int insecurePortIndex) {
         if (server != null && server.getConnectors().length > 0) {
-            singleInstanceCheck(PrintSocketServer.INSECURE_PORTS, insecurePortIndex.get());
+            singleInstanceCheck(PrintSocketServer.INSECURE_PORTS, insecurePortIndex);
 
-            displayInfoMessage("Server started on port(s) " + TrayManager.getPorts(server));
+            displayInfoMessage("Server started on port(s) " + PrintSocketServer.getPorts(server));
 
             if (!headless) {
                 aboutDialog.setServer(server);
                 setDefaultIcon();
             }
-
-            setReloadThread(new Thread(() -> {
-                try {
-                    setDangerIcon();
-                    running.set(false);
-                    securePortIndex.set(0);
-                    insecurePortIndex.set(0);
-
-                    server.stop();
-                }
-                catch(Exception e) {
-                    displayErrorMessage("Error stopping print socket: " + e.getLocalizedMessage());
-                }
-            }));
         } else {
             displayErrorMessage("Invalid server");
         }
-    }
-
-    /**
-     * Returns a String representation of the ports assigned to the specified Server
-     */
-    public static String getPorts(Server server) {
-        StringBuilder ports = new StringBuilder();
-        for(Connector c : server.getConnectors()) {
-            if (ports.length() > 0) {
-                ports.append(", ");
-            }
-
-            ports.append(((ServerConnector)c).getLocalPort());
-        }
-
-        return ports.toString();
     }
 
     /**

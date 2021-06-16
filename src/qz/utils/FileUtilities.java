@@ -21,6 +21,7 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import qz.App;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
 import qz.common.ByteArrayBuilder;
@@ -28,10 +29,9 @@ import qz.common.Constants;
 import qz.common.PropertyHelper;
 import qz.communication.FileIO;
 import qz.communication.FileParams;
-import qz.installer.WindowsSpecialFolders;
 import qz.exception.NullCommandException;
+import qz.installer.WindowsSpecialFolders;
 import qz.installer.certificate.CertificateManager;
-import qz.ws.PrintSocketServer;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -128,12 +128,9 @@ public class FileUtilities {
     }
 
     public static boolean childOf(File childFile, Path parentPath) {
-        Path child = childFile.toPath().toAbsolutePath();
-        Path parent = parentPath.toAbsolutePath();
-        if(SystemUtilities.isWindows()) {
-            return child.toString().toLowerCase(Locale.ENGLISH).startsWith(parent.toString().toLowerCase(Locale.ENGLISH));
-        }
-        return child.toString().startsWith(parent.toString());
+        Path child = childFile.toPath().normalize().toAbsolutePath();
+        Path parent = parentPath.normalize().toAbsolutePath();
+        return child.startsWith(parent);
     }
 
     public static Path inheritParentPermissions(Path filePath) {
@@ -297,7 +294,7 @@ public class FileUtilities {
             //default sandbox locations. More can be added through the properties file
             whiteList.add(new AbstractMap.SimpleEntry<>(USER_DIR, FIELD_SEPARATOR + "sandbox" + FIELD_SEPARATOR));
             whiteList.add(new AbstractMap.SimpleEntry<>(SHARED_DIR, FIELD_SEPARATOR + "sandbox" + FIELD_SEPARATOR));
-            whiteList.addAll(parseDelimitedPaths(getFileAllowProperty(PrintSocketServer.getTrayProperties()).toString()));
+            whiteList.addAll(parseDelimitedPaths(getFileAllowProperty(App.getTrayProperties()).toString()));
         }
 
         Path cleanPath = path.normalize().toAbsolutePath();
@@ -319,12 +316,6 @@ public class FileUtilities {
             }
         }
         return false;
-    }
-
-    public static String getParentDirectory(String filePath) {
-        // Working path should always default to the JARs parent folder
-        int lastSlash = filePath.lastIndexOf(File.separator);
-        return lastSlash < 0? "":filePath.substring(0, lastSlash);
     }
 
     public static ArgParser.ExitStatus addFileAllowProperty(String path, String commonName) throws IOException {
@@ -788,6 +779,9 @@ public class FileUtilities {
         writer.close();
     }
 
+    public static void configureAssetFile(String relativeAsset, Path dest, HashMap<String, String> additionalMappings, Class relativeClass) throws IOException {
+        configureAssetFile(relativeAsset, dest.toFile(), additionalMappings, relativeClass);
+    }
 
     public static Path getTempDirectory() {
         try {

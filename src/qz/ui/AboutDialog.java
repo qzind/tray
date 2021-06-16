@@ -62,7 +62,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
 
         LinkLabel linkLibrary = new LinkLabel("Detailed library information");
-        if(server.isRunning() && !server.isStopping()) {
+        if(server != null && server.isRunning() && !server.isStopping()) {
             linkLibrary.setLinkLocation(String.format("%s://%s:%s", server.getURI().getScheme(), AboutInfo.getPreferredHostname(), server.getURI().getPort()));
         }
         Box versionBox = Box.createHorizontalBox();

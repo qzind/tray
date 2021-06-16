@@ -9,6 +9,7 @@ package qz.installer;
  * this software. http://www.gnu.org/licenses/lgpl-2.1.html
  */
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,7 @@ import qz.utils.SystemUtilities;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.*;
 import java.util.HashMap;
 import java.util.List;
 
@@ -78,19 +80,58 @@ public class MacInstaller extends Installer {
         return this;
     }
 
+    @Override
+    public Installer removeLegacyFiles() {
+        // Files/folders moved to Contents/ since #770
+        String dirs[] = {
+                "demo",
+                "libs"
+        };
+        String[] files = {
+                PROPS_FILE + ".jar",
+                "uninstall",
+                "LICENSE.TXT",
+                "Contents/Resources/apple-icon.icns"
+        };
+        String[] move = {
+                PROPS_FILE + ".properties"
+        };
+        for (String dir : dirs) {
+            try {
+                FileUtils.deleteDirectory(new File(getInstance().getDestination() + File.separator + dir));
+            } catch(IOException ignore) {}
+        }
+        for (String file : files) {
+            new File(getInstance().getDestination() + File.separator + file).delete();
+        }
+        // Move from "/" to "/Contents"
+        for (String file : move) {
+            Path dest, source = null;
+            try {
+                source = Paths.get(getInstance().getDestination(), file);
+                dest = Paths.get(getInstance().getDestination(), "Contents", file);
+                if(source.toFile().exists()) {
+                    Files.move(source, dest);
+                }
+            } catch(IOException ignore) {
+            } finally {
+                if(source != null) {
+                    source.toFile().delete();
+                }
+            }
+        }
+
+        return super.removeLegacyFiles();
+    }
+
     /**
      * Removes legacy (<= 2.0) startup entries
      */
     public Installer removeLegacyStartup() {
         log.info("Removing startup entries for all users matching " + ABOUT_TITLE);
         String script = "tell application \"System Events\" to delete "
-                + "every login item where name is \"" + ABOUT_TITLE + "\"";
-
-        // Handle edge-case for when running from IDE
-        File jar = new File(SystemUtilities.getJarPath());
-        if(jar.getName().endsWith(".jar")) {
-            script += " or name is \"" + jar.getName() + "\"";
-        }
+                + "every login item where name is \"" + ABOUT_TITLE + "\""
+                + " or name is \"" + PROPS_FILE + ".jar\"";
 
         // Run on background thread in case System Events is hung or slow to respond
         final String finalScript = script;
@@ -98,17 +139,6 @@ public class MacInstaller extends Installer {
             ShellUtilities.executeAppleScript(finalScript);
         }).run();
         return this;
-    }
-
-    public static String getAppPath() {
-        // Return the Mac ".app" location
-        String target = SystemUtilities.getJarPath();
-        int appIndex = target.indexOf(".app/");
-        if (appIndex > 0) {
-            return target.substring(0, appIndex) + ".app";
-        }
-        // Fallback on the ".jar" location
-        return target;
     }
 
     public static String getPackageName() {

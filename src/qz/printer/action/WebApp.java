@@ -29,7 +29,6 @@ import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -163,7 +162,7 @@ public class WebApp extends Application {
                 if (SystemUtilities.isJar()) {
                     SystemUtilities.insertPathProperty(
                             "java.library.path",
-                            new File(SystemUtilities.detectJarPath()).getParent() + "/libs/",
+                            SystemUtilities.getJarParentPath() + "/libs/",
                             "/jni" /* appends to end if not found */
                     );
                 } else if (hasConflictingLib()) {

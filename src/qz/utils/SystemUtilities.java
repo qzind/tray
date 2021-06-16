@@ -20,8 +20,9 @@ import qz.common.TrayManager;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
@@ -51,7 +52,7 @@ public class SystemUtilities {
     private static String linuxRelease;
     private static String classProtocol;
     private static Version osVersion;
-    private static String jarPath;
+    private static Path jarPath;
 
 
     /**
@@ -111,13 +112,24 @@ public class SystemUtilities {
         }
     }
 
+    public static Version getJavaVersion() {
+        return getJavaVersion(System.getProperty("java.version"));
+    }
+
+    /**
+     * Call a java command (e.g. java) with "--version" and parse the output
+     * The double dash "--" is since JDK9 but important to send the command output to stdout
+     */
+    public static Version getJavaVersion(Path javaCommand) {
+        return getJavaVersion(ShellUtilities.executeRaw(javaCommand.toString(), "--version"));
+    }
+
     /**
      * Handle Java versioning nuances
      * To eventually be replaced with <code>java.lang.Runtime.Version</code> (JDK9+)
      */
-    public static Version getJavaVersion() {
-        String version = System.getProperty("java.version");
-        String[] parts = version.split("\\D+");
+    public static Version getJavaVersion(String version) {
+        String[] parts = version.trim().split("\\D+");
 
         int major = 1;
         int minor = 0;
@@ -155,47 +167,59 @@ public class SystemUtilities {
 
     /**
      * Determines the currently running Jar's absolute path on the local filesystem
+     * todo: make this return a sane directory for running via ide
      *
      * @return A String value representing the absolute path to the currently running
      * jar
      */
-    public static String detectJarPath() {
+    public static Path getJarPath() {
+        // jarPath won't change, send the cached value if we have it
+        if (jarPath != null) return jarPath;
         try {
-            String jarPath = new File(SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getCanonicalPath();
-            // Fix characters that get URL encoded when calling getPath()
-            return URLDecoder.decode(jarPath, "UTF-8");
-        } catch(IOException ex) {
+            String uri = URLDecoder.decode(SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8");
+            jarPath = Paths.get(uri);
+            if (jarPath == null) return null;
+            jarPath = jarPath.toAbsolutePath();
+        } catch(InvalidPathException | UnsupportedEncodingException ex) {
             log.error("Unable to determine Jar path", ex);
-        }
-        return null;
-    }
-
-    /**
-     * Returns the jar which we will create a shortcut for
-     *
-     * @return The path to the jar path which has been set
-     */
-    public static String getJarPath() {
-        if (jarPath == null) {
-            jarPath = detectJarPath();
         }
         return jarPath;
     }
 
     /**
-     * Returns the app's path, based on the jar location
+     * Returns the folder containing the running jar
      * or null if no .jar is found (such as running from IDE)
-     * @return
      */
-    public static Path detectAppPath() {
-        String jarPath = detectJarPath();
-        if (jarPath != null) {
-            File jar = new File(jarPath);
-            if (jar.getPath().endsWith(".jar") && jar.exists()) {
-                return Paths.get(jar.getParent());
-            }
+    public static Path getJarParentPath(){
+        Path path = getJarPath();
+        if (path == null) return null;
+        return path.getParent();
+    }
+
+    /**
+     * Returns the jar's parent path, or a fallback if we're not a jar
+     */
+    public static Path getJarParentPath(String relativeFallback) {
+        return getJarParentPath().resolve(SystemUtilities.isJar() ? ".": relativeFallback);
+    }
+
+    /**
+     * Returns the app's path, calculated from the jar location
+     * or working directory if none can be found
+     */
+    public static Path getAppPath() {
+        Path appPath = getJarParentPath();
+        if(appPath == null) {
+            // We should never get here
+            appPath = Paths.get(System.getProperty("user.dir"));
         }
-        return null;
+
+        // Assume we're installed and running from /Applications/QZ Tray.app/Contents/qz-tray.jar
+        if(appPath.endsWith("Contents")) {
+            return appPath.getParent();
+        }
+        // For all other use-cases, qz-tray.jar is installed in the root of the application
+        return appPath;
     }
 
     /**
@@ -272,6 +296,10 @@ public class SystemUtilities {
     public static boolean isFedora() {
         getLinuxRelease();
         return linuxRelease != null && linuxRelease.contains("Fedora");
+    }
+
+    public static boolean isArm(String arch) {
+        return arch != null && arch.toLowerCase().startsWith("aarch") || arch.toLowerCase().startsWith("arm");
     }
 
     /**

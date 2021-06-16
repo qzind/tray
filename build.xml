@@ -8,7 +8,7 @@
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>
 
-    <target name="distribute" depends="init,clean,download-javafx,build-jar,override-authcert,include-assets,whitelist-certs">
+    <target name="distribute" depends="init,quick-clean,download-javafx,build-jar,override-authcert,include-assets,whitelist-certs">
         <antcall target="tidy-javafx-dist"/>
         <echo level="info">Process complete</echo>
     </target>
@@ -38,6 +38,16 @@
 
     <target name="clean" depends="init">
         <delete dir="${out.dir}"/>
+    </target>
+
+    <target name="quick-clean">
+        <!-- Cleanup lingering files (for other OS installers) -->
+        <delete includeemptydirs="true" failonerror="false">
+            <fileset dir="${out.dir}">
+                <include name="**/*"/>
+                <exclude name="**/jlink/**"/>
+            </fileset>
+        </delete>
     </target>
 
     <target name="compile-socket" depends="init">
@@ -84,9 +94,9 @@
         <!-- Apple: Extract, sign, repackage all nested native libs for notarization -->
         <antcall target="apple-installer.codesign-jars"/>
 
-        <echo level="info">Building Jar for Socket use</echo>
+        <echo level="info">Building jar</echo>
         <mkdir dir="${sign.lib.dir}"/>
-        <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.dir}/${project.filename}.jar" duplicate="preserve">
+        <jar compress="false" index="${jar.index}" destfile="${out.dir}/${project.filename}.jar.tmp" duplicate="preserve">
             <fileset dir="${build.dir}/${project.filename}"/>
             <zipgroupfileset dir="${sign.lib.dir}" includes="**/*.jar" erroronmissingdir="false"/>
             <zipgroupfileset dir="lib">
@@ -94,12 +104,18 @@
                 <exclude name="**/jfxrt.jar"/>
                 <exclude name="**/jssc-*.jar" if="codesign.mac"/>
             </zipgroupfileset>
+        </jar>
+        <!-- Strip jlink-incompat files -->
+        <echo level="info">Stripping jlink-incompatible files</echo>
+        <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.dir}/${project.filename}.jar" duplicate="preserve">
+            <zipfileset src="${out.dir}/${project.filename}.jar.tmp" excludes="*.class,LICENSE,jetty-dir.css"/>
             <manifest>
                 <attribute name="Application-Name" value="${project.name}"/>
                 <attribute name="Main-Class" value="qz.ws.PrintSocketServer"/>
                 <attribute name="Permissions" value="all-permissions"/>
             </manifest>
         </jar>
+        <delete file="${out.dir}/${project.filename}.jar.tmp"/>
 
         <antcall target="sign-jar">
             <param name="sign.jar.file" value="${dist.dir}/${project.filename}.jar"/>
@@ -139,7 +155,26 @@
         </copy>
     </target>
 
-    <target name="nsis" depends="nsis-preflight,distribute,build-exe"/>
-    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,build-pkg"/>
-    <target name="makeself" depends="makeself-preflight,distribute,build-run"/>
+    <target name="download-jre" unless="jre.skip">
+        <condition property="target.platform" value="windows">
+            <isset property="target.platform.windows"/>
+        </condition>
+        <condition property="target.platform" value="mac">
+            <isset property="target.platform.mac"/>
+        </condition>
+        <property description="target.platform default" name="target.platform" value="linux"/>
+
+        <echo level="info">Downloading and bundling the jre for ${target.platform}</echo>
+        <java jar="${dist.dir}/${project.filename}.jar" fork="true" failonerror="true">
+            <arg value="jlink"/>
+            <arg value="--platform"/>
+            <arg value="${target.platform}"/>
+            <arg value="--arch"/>
+            <arg value="${jre.arch}"/>
+        </java>
+    </target>
+
+    <target name="nsis" depends="nsis-preflight,distribute,download-jre,build-exe"/>
+    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,download-jre,build-pkg"/>
+    <target name="makeself" depends="makeself-preflight,distribute,download-jre,build-run"/>
 </project>

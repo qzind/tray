@@ -239,7 +239,7 @@ public class ShellUtilities {
     }
 
     public static void browseAppDirectory() {
-        browseDirectory(FileUtilities.getParentDirectory(SystemUtilities.getJarPath()));
+        browseDirectory(SystemUtilities.getJarParentPath());
     }
 
     public static void browseDirectory(String directory) {

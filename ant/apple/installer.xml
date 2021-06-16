@@ -11,56 +11,83 @@
     <target name="pkgbuild-preflight">
         <property name="target.platform.mac" value="true"/>
     </target>
-    <target name="build-pkg" depends="get-version">
-        <echo level="info">Creating installer using pkgbuild</echo>
 
+    <target name="build-app" depends="codesign-jre,get-version">
+        <echo level="info">Creating app bundle</echo>
         <property file="ant/apple/apple.properties"/>
-
         <!--
         ###################################
         #   Build MacOS Bundle Structure  #
         ###################################
         -->
 
-        <mkdir dir="${dist.dir}/Contents/Resources"/>
-        <copy file="assets/branding/apple-icon.icns" tofile="${dist.dir}/Contents/Resources/${project.filename}.icns"/>
-
-        <mkdir dir="${dist.dir}/Contents/MacOS"/>
-        <copy file="ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/Contents/MacOS/${project.name}">
+        <!-- Contents/ -->
+        <copy file="ant/apple/apple-bundle.plist.in" tofile="${dist.dir}/Info.plist">
             <filterchain><expandproperties/></filterchain>
         </copy>
-
-        <copy file="ant/apple/apple-bundle.plist.in" tofile="${dist.dir}/Contents/Info.plist">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
         <copy file="ant/unix/unix-uninstall.sh.in" tofile="${dist.dir}/uninstall">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <mkdir dir="${build.dir}/scripts/payload"/>
+        <!-- Contents/Resources/ -->
+        <mkdir dir="${dist.dir}/Resources"/>
+        <copy file="assets/branding/apple-icon.icns" tofile="${dist.dir}/Resources/${project.filename}.icns"/>
+        <copy file="${dist.dir}/LICENSE.txt" tofile="${dist.dir}/Resources/LICENSE.txt"/>
+        <delete file="${dist.dir}/LICENSE.txt"/>
 
-        <copy file="ant/apple/apple-preinstall.sh.in" tofile="${build.dir}/scripts/preinstall">
+        <!-- Contents/Resources/MacOS/ -->
+        <mkdir dir="${dist.dir}/MacOS"/>
+        <copy file="ant/unix/unix-launcher.sh.in" tofile="${dist.dir}/MacOS/${project.name}">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
+        <!-- set bundle files executable -->
+        <chmod perm="a+x" type="file">
+            <!-- changes here need to be repeated in the payload too -->
+            <fileset dir="${dist.dir}">
+                <include name="**/${project.name}"/>
+                <include name="**/uninstall"/>
+                <include name="**/bin/*"/>
+                <include name="**/lib/jspawnhelper"/>
+            </fileset>
+        </chmod>
+    </target>
+
+    <target name="build-pkg" depends="build-app,codesign-jre,get-version">
+        <echo level="info">Creating installer using pkgbuild</echo>
+        <property file="ant/apple/apple.properties"/>
+        <!--
+        #####################################
+        #  Create scripts, payload and pkg  #
+        #####################################
+        -->
+
+        <!-- payload/Contents/ -->
+        <copy todir="${build.dir}/scripts/payload/Contents">
+            <fileset dir="${dist.dir}"/>
+        </copy>
+
+        <!-- scripts/ -->
+        <copy file="ant/apple/apple-preinstall.sh.in" tofile="${build.dir}/scripts//preinstall">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
         <copy file="ant/apple/apple-postinstall.sh.in" tofile="${build.dir}/scripts/postinstall">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <!-- Copy of the jar is needed for preinstall tasks -->
-        <copy todir="${build.dir}/scripts/payload">
-            <fileset dir="${dist.dir}"/>
-        </copy>
-
+        <!-- set payload files executable -->
         <chmod perm="a+x" type="file">
             <fileset dir="${build.dir}/scripts">
                 <include name="preinstall"/>
                 <include name="postinstall"/>
             </fileset>
-            <fileset dir="${build.dir}/scripts/payload">
+
+            <!-- ant drops permissions, apply again to payload -->
+            <fileset dir="${build.dir}/scripts/payload/Contents">
                 <include name="**/${project.name}"/>
                 <include name="**/uninstall"/>
+                <include name="**/bin/*"/>
+                <include name="**/lib/jspawnhelper"/>
             </fileset>
         </chmod>
 
@@ -100,10 +127,22 @@
 
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}${codesign.qz.suffix}.pkg"/>
         </exec>
+    </target>
 
-        <!-- Cleanup lingering files (for other OS installers) -->
-        <delete dir="${dist.dir}/Contents/Resources"/>
-        <delete dir="${dist.dir}/Contents/MacOS"/>
+    <target name="codesign-jre" if="codesign.mac" unless="jre.skip">
+        <property file="ant/apple/apple.properties"/>
+        <exec executable="codesign" failonerror="true">
+            <arg value="--force"/>
+            <arg value="-s"/>
+            <arg value="${apple.packager.signid}"/>
+            <arg value="--timestamp"/>
+            <arg value="--options"/>
+            <arg value="runtime"/>
+            <arg value="--entitlements"/>
+            <arg value="${basedir}/ant/apple/apple-entitlements.plist"/>
+            <arg value="--deep"/>
+            <arg value="${dist.dir}/PlugIns/Java.runtime"/>
+        </exec>
     </target>
 
     <target name="codesign-jars" if="codesign.mac">
@@ -140,7 +179,7 @@
         <echo level="info" message="Signing ${dist.dir}/libs/*.dylib using ${apple.packager.signid}"/>
         <exec executable="bash" failonerror="true">
             <arg value="-c"/>
-            <arg value="echo &quot;$(find ${dist.dir}/libs/*.dylib)&quot; |tr ':' '\n' |xargs codesign -f -s &quot;${apple.packager.signid}&quot; -v"/>
+            <arg value="echo &quot;$(find ${dist.dir}/libs/*.dylib)&quot; |tr ':' '\n' |xargs codesign --force -s &quot;${apple.packager.signid}&quot; -v"/>
         </exec>
 
     </target>

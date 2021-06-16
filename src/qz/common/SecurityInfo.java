@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.GeneralSecurityException;
@@ -85,11 +86,11 @@ public class SecurityInfo {
         //JFX info, if it exists
         try {
             Class<?> VersionInfo = Class.forName("com.sun.javafx.runtime.VersionInfo");
-            String fxPath = VersionInfo.getProtectionDomain().getCodeSource().getLocation().toString();
+            String fxPath = URLDecoder.decode(VersionInfo.getProtectionDomain().getCodeSource().getLocation().toString(), "UTF-8");
             Method method = VersionInfo.getMethod("getVersion");
             Object version = method.invoke(null);
             libVersions.put("javafx", (String)version);
-            if (fxPath.contains(SystemUtilities.detectJarPath()) || fxPath.contains("/tray/")) {
+            if (fxPath.contains(SystemUtilities.getJarParentPath("../../").toString())) {
                 libVersions.put("javafx (location)", "Bundled/" + Constants.ABOUT_TITLE);
             } else {
                 libVersions.put("javafx (location)", "System/" + Constants.JAVA_VENDOR);

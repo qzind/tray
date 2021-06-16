@@ -32,11 +32,11 @@ if [ -n "$JAVA_HOME" ]; then
     PATH="$JAVA_HOME/bin:$PATH"
 fi
 
-# Check for bundled JRE
-if [ -d ./jre ]; then
-    echo -e "$SUCCESS A bundled runtime was found.  Using..."
-    PATH="$(pwd)/jre/bin:$PATH"
-    export PATH
+# Always prefer relative jre/jdk
+if [[ "$DIR" == *"/Contents/MacOS"* ]]; then
+    PATH="$DIR/../PlugIns/Java.runtime/Contents/Home/bin:$PATH"
+else
+    PATH="$DIR/jre/bin:$DIR/jdk/bin:$PATH"
 fi
 
 # Check for user overridable launch options
@@ -45,30 +45,41 @@ if [ -n "${dollar}${launch.overrides}" ]; then
   LAUNCH_OPTS="$LAUNCH_OPTS ${dollar}${launch.overrides}"
 fi
 
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    DEFAULTS_READ=$(defaults read ${apple.bundleid} ${launch.overrides} 2>/dev/null) || true
-    if [ -n "$DEFAULTS_READ" ]; then
-          echo -e "$MESSAGE Picked up additional launch options: $DEFAULTS_READ"
-          LAUNCH_OPTS="$LAUNCH_OPTS $DEFAULTS_READ"
-    fi
-    ICON_PATH="$DIR/Contents/Resources/apple-icon.icns"
-    MAC_PRIMARY="/usr/libexec/java_home"
-    MAC_FALLBACK="/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin"
-    echo "Trying $MAC_PRIMARY..."
-    if "$MAC_PRIMARY" -v $JAVA_MIN+ &>/dev/null; then
-        echo -e "$SUCCESS Using \"$MAC_PRIMARY -v $JAVA_MIN+ --exec\" to launch $ABOUT_TITLE"
-        java() {
-            "$MAC_PRIMARY" -v $JAVA_MIN+ --exec java "$@"
-        }
-    elif [ -d "/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin" ]; then
-        echo -e "$WARNING No luck using $MAC_PRIMARY"
-        echo "Trying $MAC_FALLBACK..."
-        java() {
-            "$MAC_FALLBACK/java" "$@"
-        }
-    fi
+# Fallback on some known locations
+if ! command -v java > /dev/null ; then
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+      # Apple: Fallback on system-wide install
+      DEFAULTS_READ=$(defaults read ${apple.bundleid} ${launch.overrides} 2>/dev/null) || true
+      if [ -n "$DEFAULTS_READ" ]; then
+            echo -e "$MESSAGE Picked up additional launch options: $DEFAULTS_READ"
+            LAUNCH_OPTS="$LAUNCH_OPTS $DEFAULTS_READ"
+      fi
+      MAC_PRIMARY="/usr/libexec/java_home"
+      MAC_FALLBACK="/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin"
+      echo "Trying $MAC_PRIMARY..."
+      if "$MAC_PRIMARY" -v $JAVA_MIN+ &>/dev/null; then
+          echo -e "$SUCCESS Using \"$MAC_PRIMARY -v $JAVA_MIN+ --exec\" to launch $ABOUT_TITLE"
+          java() {
+              "$MAC_PRIMARY" -v $JAVA_MIN+ --exec java "$@"
+          }
+      elif [ -d "/Library/Internet Plug-Ins/JavaAppletPlugin.plugin/Contents/Home/bin" ]; then
+          echo -e "$WARNING No luck using $MAC_PRIMARY"
+          echo "Trying $MAC_FALLBACK..."
+          java() {
+              "$MAC_FALLBACK/java" "$@"
+          }
+      fi
+  else
+       # Linux/Unix: Fallback on known install location(s)
+       PATH="$PATH:/usr/java/latest/bin/"
+  fi
+fi
+
+if command -v java > /dev/null ; then
+    echo -e "$SUCCESS Java was found: $(command -v java)"
 else
-    export PATH="$PATH:/usr/java/latest/bin/"
+    echo -e "$FAILURE Please install Java $JAVA_MIN or higher to continue"
+    exit 1
 fi
 
 # Make sure Java version is sufficient
@@ -102,9 +113,9 @@ if command -v java &>/dev/null; then
         if [ -f "$PROPS_FILE.jar" ]; then
             prefix="" # aside launcher, e.g. preinstall
         else
-            prefix="../../" # back two directories, e.g. postinstall
+            prefix="../" # back two directories, e.g. postinstall
         fi
-        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$ICON_PATH" -jar -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="${java.mask.tray}" "${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
+        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$DIR/Contents/Resources/apple-icon.icns" -jar -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="true" "${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
     else
         java $LAUNCH_OPTS -jar "$PROPS_FILE.jar" "$@"
     fi

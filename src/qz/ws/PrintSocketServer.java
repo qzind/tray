@@ -29,6 +29,7 @@ import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.BindException;
 import java.util.*;
@@ -98,7 +99,7 @@ public class PrintSocketServer {
 
                 running.set(true);
 
-                trayManager.setServer(server, running, securePortIndex, insecurePortIndex);
+                trayManager.setServer(server, insecurePortIndex.get());
                 log.info("Server started on port(s) " + getPorts(server));
                 server.join();
             }

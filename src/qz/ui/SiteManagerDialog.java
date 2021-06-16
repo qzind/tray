@@ -456,7 +456,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     }
 
     private void showInvalidCertWarning(File file, Certificate cert) {
-        String override = FileUtilities.getParentDirectory(SystemUtilities.getJarPath()) + File.separator + Constants.OVERRIDE_CERT;
+        Path override = SystemUtilities.getJarParentPath().resolve(Constants.OVERRIDE_CERT);
         String message = String.format(IMPORT_NEEDED,
                                        cert.getCommonName(),
                                        override);
@@ -464,7 +464,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         if(copyAnswer == JOptionPane.YES_OPTION) {
             Cursor backupCursor = getCursor();
             setCursor(new Cursor(Cursor.WAIT_CURSOR));
-            boolean copySuccess = ShellUtilities.elevateCopy(file.toPath(), Paths.get(SystemUtilities.getJarPath()).getParent().resolve(Constants.OVERRIDE_CERT));
+            boolean copySuccess = ShellUtilities.elevateCopy(file.toPath(), SystemUtilities.getJarParentPath().resolve(Constants.OVERRIDE_CERT));
             setCursor(backupCursor);
             if(copySuccess) {
                 Certificate.scanAdditionalCAs();

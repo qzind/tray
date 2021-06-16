@@ -145,8 +145,7 @@ public class Certificate {
         certPaths.addAll(FileUtilities.parseDelimitedPaths(System.getProperty(OVERRIDE_CA_FLAG)));
 
         // Second, look for "override.crt" within App directory
-        String override = FileUtilities.getParentDirectory(SystemUtilities.getJarPath()) + File.separator + Constants.OVERRIDE_CERT;
-        certPaths.add(new AbstractMap.SimpleEntry<>(Paths.get(override), QUIETLY_FAIL));
+        certPaths.add(new AbstractMap.SimpleEntry<>(SystemUtilities.getJarParentPath().resolve(Constants.OVERRIDE_CERT), QUIETLY_FAIL));
 
         // Third, look for "authcert.override" property in qz-tray.properties
         certPaths.addAll(FileUtilities.parseDelimitedPaths(App.getTrayProperties(), OVERRIDE_CA_PROPERTY));

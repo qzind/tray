@@ -9,6 +9,7 @@
  */
 package qz.utils;
 
+import com.sun.jna.platform.win32.Kernel32Util;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -28,8 +29,12 @@ public class NetworkUtilities {
     private static final Logger log = LoggerFactory.getLogger(NetworkUtilities.class);
 
     private static NetworkUtilities instance;
-    private static String systemName = ShellUtilities.getHostName();
+    private static String systemName = SystemUtilities.getHostName();
     private static String userName = System.getProperty("user.name");
+
+    public static void main(String ... args) {
+        System.out.println(Kernel32Util.getComputerName());
+    }
 
     private ArrayList<Device> devices;
     private Device primaryDevice;

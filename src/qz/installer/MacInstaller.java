@@ -48,7 +48,7 @@ public class MacInstaller extends Installer {
             FileUtilities.configureAssetFile("assets/mac-launchagent.plist.in", dest, fieldMap, MacInstaller.class);
             // Disable service until reboot
             if(SystemUtilities.isMac()) {
-                ShellUtilities.execute("launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
+                ShellUtilities.execute("/bin/launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
             }
         } catch(IOException e) {
             log.warn("Unable to write startup file: {}", dest, e);

@@ -29,6 +29,7 @@ import qz.printer.LanguageType;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.printer.info.NativePrinter;
+import qz.printer.status.CupsUtils;
 import qz.utils.*;
 
 import javax.imageio.ImageIO;
@@ -62,6 +63,11 @@ public class PrintRaw implements PrintProcessor {
 
     private String destEncoding = null;
 
+    private enum Backend {
+        CUPS_RSS,
+        CUPS_LPR,
+        WIN32_WMI
+    }
 
     public PrintRaw() {
         commands = new ByteArrayBuilder();
@@ -314,8 +320,14 @@ public class PrintRaw implements PrintProcessor {
                     } else if (output.isSetFile()) {
                         printToFile(output.getFile(), bab.getByteArray());
                     } else {
-                        if (rawOpts.isAltPrinting()) {
-                            printToAlternate(output.getNativePrinter(), bab.getByteArray());
+                        if (rawOpts.isForceRaw()) {
+                            if(SystemUtilities.isWindows()) {
+                                // Placeholder only; not yet supported
+                                printToBackend(output.getNativePrinter(), bab.getByteArray(), rawOpts.isRetainTemp(), Backend.WIN32_WMI);
+                            } else {
+                                // Try CUPS backend first, fallback to LPR
+                                printToBackend(output.getNativePrinter(), bab.getByteArray(), rawOpts.isRetainTemp(), Backend.CUPS_RSS, Backend.CUPS_LPR);
+                            }
                         } else {
                             printToPrinter(output.getPrintService(), bab.getByteArray(), rawOpts);
                         }
@@ -425,25 +437,45 @@ public class PrintRaw implements PrintProcessor {
     }
 
     /**
-     * Alternate printing mode for CUPS capable OSs, issues lp via command line
-     * on Linux, BSD, Solaris, OSX, etc. This will never work on Windows.
+     * Direct/backend printing modes for forced raw printing
      */
-    public void printToAlternate(NativePrinter printer, byte[] cmds) throws IOException, PrintException {
+    public void printToBackend(NativePrinter printer, byte[] cmds, boolean retainTemp, Backend... backends) throws IOException, PrintException {
         File tmp = File.createTempFile("qz_raw_", null);
+        boolean success = false;
         try {
             printToFile(tmp, cmds);
-            String[] lpCmd = new String[] {
-                    "lp", "-d", printer.getPrinterId(), "-o", "raw", tmp.getAbsolutePath()
-            };
-            boolean success = ShellUtilities.execute(lpCmd);
-
+            for(Backend backend : backends) {
+                switch(backend) {
+                    case CUPS_LPR:
+                        // Use command line "lp" on Linux, BSD, Solaris, OSX, etc.
+                        String[] lpCmd = new String[] {"lp", "-d", printer.getPrinterId(), "-o", "raw", tmp.getAbsolutePath()};
+                        if (!(success = ShellUtilities.execute(lpCmd))) {
+                            log.debug(StringUtils.join(lpCmd, ' '));
+                        }
+                        break;
+                    case CUPS_RSS:
+                        // Submit job via cupsDoRequest(...) via JNA against localhost:631\
+                        success = CupsUtils.sendRawFile(printer, tmp);
+                        break;
+                    case WIN32_WMI:
+                    default:
+                        throw new UnsupportedOperationException("Raw backend \"" + backend + "\" is not yet supported.");
+                }
+                if(success) {
+                    break;
+                }
+            }
             if (!success) {
-                throw new PrintException("Alternate printing failed: " + StringUtils.join(lpCmd, ' '));
+                throw new PrintException("Forced raw printing failed");
             }
         }
         finally {
-            if (!tmp.delete()) {
-                tmp.deleteOnExit();
+            if(!retainTemp) {
+                if (!tmp.delete()) {
+                    tmp.deleteOnExit();
+                }
+            } else{
+                log.warn("Temp file retained: {}", tmp);
             }
         }
     }

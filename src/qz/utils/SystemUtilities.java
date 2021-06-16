@@ -387,7 +387,7 @@ public class SystemUtilities {
         if (Constants.MASK_TRAY_SUPPORTED) {
             if (SystemUtilities.isMac()) {
                 // Assume a pid of -1 is a broken JNA
-                return MacUtilities.getProcessID() != -1;
+                return getProcessId() != -1;
             } else if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().getMajorVersion() >= 10) {
                 return true;
             }
@@ -615,5 +615,18 @@ public class SystemUtilities {
         } catch (Exception e) {
             log.warn("Unable to apply JDK-8266929 patch.  Some algorithms may fail.", e);
         }
+    }
+
+    public static String getHostName() {
+        String hostName = SystemUtilities.isWindows() ? WindowsUtilities.getHostName() : UnixUtilities.getHostName();
+        if(hostName == null || hostName.trim().isEmpty()) {
+            log.warn("Couldn't get hostname using internal techniques, will fallback to command line instead");
+            hostName = ShellUtilities.getHostName().toUpperCase(); // uppercase to match others
+        }
+        return hostName;
+    }
+
+    public static int getProcessId() {
+        return SystemUtilities.isWindows() ? WindowsUtilities.getProcessId() : UnixUtilities.getProcessId();
     }
 }

@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.*;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -212,8 +213,11 @@ public class ShellUtilities {
 
     /**
      * Gets the computer's "hostname" from command line
+     *
+     * This should only be used as a fallback for when JNA is not available,
+     * see <code>SystemUtilities.getHostName()</code> instead.
      */
-    public static String getHostName() {
+    static String getHostName() {
         return execute(new String[] {"hostname"}, new String[] {""});
     }
 
@@ -251,10 +255,18 @@ public class ShellUtilities {
             if (!SystemUtilities.isMac()) {
                 Desktop.getDesktop().open(directory);
             } else {
-                // Mac tries to open the .app rather than browsing it.  Instead, pass a child with -R to select it in finder
+                // Mac tries to open the .app rather than browsing it.  Instead, pass a child to select it in finder
                 File[] files = directory.listFiles();
                 if (files != null && files.length > 0) {
-                    ShellUtilities.execute("open", "-R", files[0].getCanonicalPath());
+                    try {
+                        // Use browseFileDirectory (JDK9+) via reflection
+                        Method m = Desktop.class.getDeclaredMethod("browseFileDirectory", File.class);
+                        m.invoke(Desktop.getDesktop(), files[0].getCanonicalFile());
+                    }
+                    catch(ReflectiveOperationException e) {
+                        // Fallback to open -R
+                        ShellUtilities.execute("open", "-R", files[0].getCanonicalPath());
+                    }
                 }
             }
         }

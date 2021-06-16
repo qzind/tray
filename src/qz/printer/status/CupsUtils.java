@@ -5,8 +5,12 @@ import com.sun.jna.StringArray;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.printer.info.NativePrinter;
 import qz.printer.status.Cups.IPP;
 
+import javax.print.PrintException;
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 
@@ -21,15 +25,20 @@ public class CupsUtils {
 
     private static Cups cups = Cups.INSTANCE;
 
-    private static boolean httpInitialised = false;
     private static Pointer http;
     private static int subscriptionID = IPP.INT_UNDEFINED;
 
-    synchronized static void initCupsHttp() {
-        if (!httpInitialised) {
-            httpInitialised = true;
-            http = cups.httpConnectEncrypt(cups.cupsServer(), IPP.PORT, cups.cupsEncryption());
-        }
+    static Pointer getCupsHttp() {
+        if (http == null) http = cups.httpConnectEncrypt(cups.cupsServer(), IPP.PORT, cups.cupsEncryption());
+        return http;
+    }
+
+    static synchronized Pointer doRequest(Pointer request, String resource) {
+        return cups.cupsDoRequest(getCupsHttp(), request, resource);
+    }
+
+    static synchronized Pointer doFileRequest(Pointer request, String resource, String fileName) {
+        return cups.cupsDoFileRequest(getCupsHttp(), request, resource, fileName);
     }
 
     static Pointer listSubscriptions() {
@@ -39,7 +48,43 @@ public class CupsUtils {
                                    URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/"));
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
 
-        return cups.cupsDoRequest(http, request, "/");
+        return doRequest(request, "/");
+    }
+
+    public static boolean sendRawFile(NativePrinter nativePrinter, File file) throws PrintException, IOException {
+        Pointer fileResponse = null;
+        try {
+            String printer = nativePrinter == null? null:nativePrinter.getPrinterId();
+            if (printer == null || printer.trim().isEmpty()) {
+                throw new UnsupportedOperationException("Printer name is blank or invalid");
+            }
+
+            Pointer request = cups.ippNewRequest(IPP.OP_PRINT_JOB);
+            cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET, URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/" + printer));
+            cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
+            cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_MIMETYPE, "document-format", null, IPP.CUPS_FORMAT_TEXT);
+            // request is automatically closed
+            fileResponse = doFileRequest(request, "/ipp/print", file.getCanonicalPath());
+
+            // For debugging:
+            // parseResponse(fileResponse);
+            if (cups.ippFindAttribute(fileResponse, "job-id", IPP.TAG_INTEGER) == Pointer.NULL) {
+                Pointer statusMessage = cups.ippFindAttribute(fileResponse, "status-message", IPP.TAG_TEXT);
+                if (statusMessage != Pointer.NULL) {
+                    String exception = Cups.INSTANCE.ippGetString(statusMessage, 0, "");
+                    if (exception != null && !exception.trim().isEmpty()) {
+                        throw new PrintException(exception);
+                    }
+                }
+                throw new PrintException("An unknown printer exception has occurred");
+            }
+        }
+        finally{
+            if (fileResponse != null) {
+                cups.ippDelete(fileResponse);
+            }
+        }
+        return true;
     }
 
     /**
@@ -54,7 +99,7 @@ public class CupsUtils {
         cups.ippAddInteger(request, IPP.TAG_OPERATION, IPP.TAG_INTEGER, "notify-subscription-ids", subscriptionID);
         cups.ippAddInteger(request, IPP.TAG_OPERATION, IPP.TAG_INTEGER, "notify-sequence-numbers", eventNumber);
 
-        return cups.cupsDoRequest(http, request, "/");
+        return doRequest(request, "/");
     }
 
     public static ArrayList<Status> getAllStatuses() {
@@ -62,7 +107,8 @@ public class CupsUtils {
         Pointer request = cups.ippNewRequest(IPP.GET_PRINTERS);
 
         cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
-        Pointer response = cups.cupsDoRequest(http, request, "/");
+
+        Pointer response = doRequest(request, "/");
         Pointer stateAttr = cups.ippFindAttribute(response, "printer-state", IPP.TAG_ENUM);
         Pointer reasonAttr = cups.ippFindAttribute(response, "printer-state-reasons", IPP.TAG_KEYWORD);
         Pointer nameAttr = cups.ippFindAttribute(response, "printer-name", IPP.TAG_NAME);
@@ -135,7 +181,7 @@ public class CupsUtils {
                           new StringArray(subscriptions));
         cups.ippAddInteger(request, IPP.TAG_SUBSCRIPTION, IPP.TAG_INTEGER, "notify-lease-duration", 0);
 
-        Pointer response = cups.cupsDoRequest(http, request, "/");
+        Pointer response = doRequest(request, "/");
 
         Pointer attr = cups.ippFindAttribute(response, "notify-subscription-id", IPP.TAG_INTEGER);
         if (attr != Pointer.NULL) { subscriptionID = cups.ippGetInteger(attr, 0); }
@@ -155,16 +201,55 @@ public class CupsUtils {
                                    URIUtil.encodePath("ipp://localhost:" + IPP.PORT));
         cups.ippAddInteger(request, IPP.TAG_OPERATION, IPP.TAG_INTEGER, "notify-subscription-id", id);
 
-        Pointer response = cups.cupsDoRequest(http, request, "/");
+        Pointer response = doRequest(request, "/");
         cups.ippDelete(response);
     }
 
     public synchronized static void freeIppObjs() {
-        if (httpInitialised) {
-            httpInitialised = false;
+        if (http != null) {
             endSubscription(subscriptionID);
             subscriptionID = IPP.INT_UNDEFINED;
             cups.httpClose(http);
+            http = null;
         }
+    }
+
+    @SuppressWarnings("unused")
+    static void parseResponse(Pointer response) {
+        Pointer attr = Cups.INSTANCE.ippFirstAttribute(response);
+        while (true) {
+            if (attr == Pointer.NULL) {
+                break;
+            }
+            System.out.println(parseAttr(attr));
+            attr = Cups.INSTANCE.ippNextAttribute(response);
+        }
+        System.out.println("------------------------");
+    }
+
+    static String parseAttr(Pointer attr){
+        int valueTag = Cups.INSTANCE.ippGetValueTag(attr);
+        int attrCount = Cups.INSTANCE.ippGetCount(attr);
+        String data = "";
+        String attrName = Cups.INSTANCE.ippGetName(attr);
+        for (int i = 0; i < attrCount; i++) {
+            if (valueTag == Cups.INSTANCE.ippTagValue("Integer")) {
+                data += Cups.INSTANCE.ippGetInteger(attr, i);
+            } else if (valueTag == Cups.INSTANCE.ippTagValue("Boolean")) {
+                data += (Cups.INSTANCE.ippGetInteger(attr, i) == 1);
+            } else if (valueTag == Cups.INSTANCE.ippTagValue("Enum")) {
+                data += Cups.INSTANCE.ippEnumString(attrName, Cups.INSTANCE.ippGetInteger(attr, i));
+            } else {
+                data += Cups.INSTANCE.ippGetString(attr, i, "");
+            }
+            if (i + 1 < attrCount) {
+                data += ", ";
+            }
+        }
+
+        if (attrName == null){
+            return "------------------------";
+        }
+        return String.format("%s: %d %s {%s}", attrName, attrCount, Cups.INSTANCE.ippTagString(valueTag), data);
     }
 }

@@ -35,7 +35,7 @@ import com.sun.jna.Pointer;
  */
 public interface Foundation extends Library {
 
-    public static final Foundation INSTANCE = Native.load("Foundation", Foundation.class);
+    Foundation INSTANCE = Native.load("Foundation", Foundation.class);
 
     NativeLong class_getInstanceVariable(NativeLong classPointer, String name);
 

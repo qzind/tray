@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
 import qz.installer.shortcut.ShortcutCreator;
+import qz.printer.PrintServiceMatcher;
+import qz.printer.action.WebApp;
 import qz.ui.*;
 import qz.ui.component.IconCache;
 import qz.ui.tray.TrayType;
@@ -30,7 +32,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Manages the icons and actions associated with the TrayIcon
@@ -71,6 +77,9 @@ public class TrayManager {
     // Action to run when reload is triggered
     private Thread reloadThread;
 
+    // Actions to run if idle after startup
+    private ArrayList<Timer> idleTimers;
+
     public TrayManager() {
         this(false);
     }
@@ -82,6 +91,9 @@ public class TrayManager {
         name = Constants.ABOUT_TITLE + " " + Constants.VERSION;
 
         prefs = new PropertyHelper(FileUtilities.USER_DIR + File.separator + Constants.PREFS_FILE + ".properties");
+
+        // Set strict certificate mode preference
+        Certificate.setTrustBuiltIn(!prefs.getBoolean(Constants.PREFS_STRICT_MODE, false));
 
         //headless if turned on by user or unsupported by environment
         headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || GraphicsEnvironment.isHeadless();
@@ -154,7 +166,7 @@ public class TrayManager {
                     try {
                         Thread.sleep(1000);
                         if (darkDesktopMode != SystemUtilities.isDarkDesktop(true) ||
-                            darkTaskbarMode != SystemUtilities.isDarkTaskbar(true)) {
+                                darkTaskbarMode != SystemUtilities.isDarkTaskbar(true)) {
                             darkDesktopMode = SystemUtilities.isDarkDesktop();
                             darkTaskbarMode = SystemUtilities.isDarkTaskbar();
                             iconCache.fixTrayIcons(darkTaskbarMode);
@@ -174,7 +186,8 @@ public class TrayManager {
                                 }
                             });
                         }
-                    } catch(InterruptedException ignore) {}
+                    }
+                    catch(InterruptedException ignore) {}
                 }
             }).start();
         }
@@ -182,6 +195,25 @@ public class TrayManager {
         if (tray != null) {
             addMenuItems();
         }
+
+        // Initialize idle actions
+        idleTimers = new ArrayList<>();
+
+        // Slow to find printers the first time if a lot of printers are installed
+        performIfIdle((int)TimeUnit.SECONDS.toMillis(10), evt -> {
+            log.debug("IDLE: Performing first run of find printers");
+            PrintServiceMatcher.getNativePrinterList(false, true);
+        });
+        // Slow to start JavaFX the first time
+        performIfIdle((int)TimeUnit.SECONDS.toMillis(60), evt -> {
+            log.debug("IDLE: Starting up JFX for HTML printing");
+            try {
+                WebApp.initialize();
+            }
+            catch(IOException e) {
+                log.error("Idle runner failed to preemptively start JavaFX service");
+            }
+        });
     }
 
     /**
@@ -207,7 +239,7 @@ public class TrayManager {
         JMenuItem sitesItem = new JMenuItem("Site Manager...", iconCache.getIcon(IconCache.Icon.SAVED_ICON));
         sitesItem.setMnemonic(KeyEvent.VK_M);
         sitesItem.addActionListener(savedListener);
-        sitesDialog = new SiteManagerDialog(sitesItem, iconCache);
+        sitesDialog = new SiteManagerDialog(sitesItem, iconCache, prefs);
         componentList.add(sitesDialog);
 
         JMenuItem diagnosticMenu = new JMenu("Diagnostic");
@@ -243,6 +275,11 @@ public class TrayManager {
         monocleItem.setToolTipText("Use monocle platform for HTML printing (restart required)");
         monocleItem.setMnemonic(KeyEvent.VK_U);
         monocleItem.setState(prefs.getBoolean(Constants.PREFS_MONOCLE, true));
+        if(!SystemUtilities.hasMonocle()) {
+            log.warn("Monocle engine was not detected");
+            monocleItem.setEnabled(false);
+            monocleItem.setToolTipText("Monocle HTML engine was not detected");
+        }
         monocleItem.addActionListener(monocleListener);
 
         if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) { //only include if it can be used
@@ -468,7 +505,7 @@ public class TrayManager {
 
     private void whiteList(Certificate cert) {
         if (FileUtilities.printLineToFile(Constants.ALLOW_FILE, cert.data())) {
-            displayInfoMessage(String.format(Constants.WHITE_LIST, cert.getOrganization()));
+            displayInfoMessage(String.format(Constants.ALLOW_SITES_TEXT, cert.getOrganization()));
         } else {
             displayErrorMessage("Failed to write to file (Insufficient user privileges)");
         }
@@ -476,7 +513,7 @@ public class TrayManager {
 
     private void blackList(Certificate cert) {
         if (FileUtilities.printLineToFile(Constants.BLOCK_FILE, cert.data())) {
-            displayInfoMessage(String.format(Constants.BLACK_LIST, cert.getOrganization()));
+            displayInfoMessage(String.format(Constants.BLOCK_SITES_TEXT, cert.getOrganization()));
         } else {
             displayErrorMessage("Failed to write to file (Insufficient user privileges)");
         }
@@ -594,6 +631,25 @@ public class TrayManager {
 
     public boolean isHeadless() {
         return headless;
+    }
+
+    private void performIfIdle(int idleQualifier, ActionListener performer) {
+        Timer timer = new Timer(idleQualifier, evt -> {
+            performer.actionPerformed(evt);
+            idleTimers.remove(evt.getSource());
+        });
+        timer.setRepeats(false);
+        timer.start();
+
+        idleTimers.add(timer);
+    }
+
+    public void voidIdleActions() {
+        if (idleTimers.size() > 0) {
+            log.trace("Not idle, stopping any actions that haven't ran yet");
+            idleTimers.forEach(Timer::stop);
+            idleTimers.clear();
+        }
     }
 
 }

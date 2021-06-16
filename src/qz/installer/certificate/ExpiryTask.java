@@ -26,7 +26,7 @@ import javax.naming.ldap.Rdn;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.cert.CertificateParsingException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.*;
 
@@ -243,7 +243,7 @@ public class ExpiryTask extends TimerTask {
                 log.error("getSubjectAlternativeNames is null?");
             }
             log.debug("Parsed hostNames: {}", String.join(", ", hostNameList));
-        } catch(CertificateParsingException e) {
+        } catch(CertificateException e) {
             log.warn("Can't parse hostNames from this cert.  Cert renewals will contain default values instead");
         }
         return hostNameList.toArray(new String[hostNameList.size()]);

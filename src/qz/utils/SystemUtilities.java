@@ -11,6 +11,7 @@
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -47,6 +48,7 @@ public class SystemUtilities {
 
     private static Boolean darkDesktop;
     private static Boolean darkTaskbar;
+    private static Boolean hasMonocle;
     private static String uname;
     private static String linuxRelease;
     private static String classProtocol;
@@ -397,11 +399,15 @@ public class SystemUtilities {
     public static boolean setSystemLookAndFeel() {
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
-            boolean darkulaThemeNeeded = true;
+            boolean darculaThemeNeeded = true;
             if(!isMac() && (isUnix() && UbuntuUtilities.isDarkMode())) {
-                darkulaThemeNeeded = false;
+                darculaThemeNeeded = false;
             }
-            if(isDarkDesktop() && darkulaThemeNeeded) {
+            // Disable darcula on JDK16+ per https://github.com/bobbylight/Darcula/issues/8
+            if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("16.0.0"))) {
+                darculaThemeNeeded = false;
+            }
+            if(isDarkDesktop() && darculaThemeNeeded) {
                 UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
             } else {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -496,13 +502,42 @@ public class SystemUtilities {
         return "jar".equals(classProtocol);
     }
 
-    public static void appendProperty(String property, String value) {
-        appendProperty(property, value, File.pathSeparator);
+    /**
+     * Allows in-line insertion of a property before another
+     * @param value the end of a value to insert before, assumes to end with File.pathSeparator
+     */
+    public static void insertPathProperty(String property, String value, String insertBefore) {
+        insertPathProperty(property, value, File.pathSeparator, insertBefore);
     }
 
-    public static void appendProperty(String property, String value, String delimiter) {
+    private static void insertPathProperty(String property, String value, String delimiter, String insertBefore) {
         String currentValue = System.getProperty(property);
-        System.setProperty(property, currentValue == null ? value : currentValue + delimiter + value);
+        if(currentValue == null || currentValue.trim().isEmpty()) {
+            // Set it directly, there's nothing there
+            System.setProperty(property, value);
+            return;
+        }
+        // Blindly split on delimiter, safe according to POSIX standards
+        // See also: https://stackoverflow.com/a/29213487/3196753
+        String[] paths = currentValue.split(delimiter);
+        StringBuilder finalProperty = new StringBuilder();
+        boolean inserted = false;
+        for(String path : paths) {
+            if(!inserted && path.endsWith(insertBefore)) {
+                finalProperty.append(value + delimiter);
+                inserted = true;
+            }
+            finalProperty.append(path + delimiter);
+        }
+        // Add to end if delimiter wasn't found
+        if(!inserted) {
+            finalProperty.append(value);
+        }
+        // Truncate trailing delimiter
+        if(StringUtils.endsWith(finalProperty, delimiter)) {
+            finalProperty.setLength(finalProperty.length() - delimiter.length());
+        }
+        System.setProperty(property, finalProperty.toString());
     }
 
     public static boolean isJDK() {
@@ -522,5 +557,64 @@ public class SystemUtilities {
             }
         }
         return false;
+    }
+
+    public static boolean hasMonocle() {
+        if(hasMonocle == null) {
+            try {
+                Class.forName("com.sun.glass.ui.monocle.MonoclePlatformFactory");
+                hasMonocle = true;
+            } catch (ClassNotFoundException | UnsupportedClassVersionError e) {
+                hasMonocle = false;
+            }
+        }
+        return hasMonocle;
+    }
+
+    public static final Version[] JDK_8266929_VERSIONS = {
+            Version.valueOf("11.0.11"),
+            Version.valueOf("1.8.0+291"),
+            Version.valueOf("1.8.0+292")
+    };
+
+    /**
+     * Fixes JDK-8266929 by clearing the oidTable
+     * See also: https://github.com/qzind/tray/issues/814
+     */
+    public static void clearAlgorithms() {
+        boolean needsPatch = false;
+        for(Version affected : JDK_8266929_VERSIONS) {
+            if(affected.getMajorVersion() == 1) {
+                // Java 1.8 honors build/update information
+                if(affected.compareWithBuildsTo(Constants.JAVA_VERSION) == 0) {
+                    needsPatch = true;
+                }
+            } else if (affected.compareTo(Constants.JAVA_VERSION) == 0) {
+                // Java 9.0+ ignores build/update information
+                needsPatch = true;
+            }
+        }
+        if(!needsPatch) {
+            log.debug("Skipping JDK-8266929 patch for {}", Constants.JAVA_VERSION);
+            return;
+        }
+        try {
+            log.info("Applying JDK-8266929 patch");
+            Class<?> algorithmIdClass = Class.forName("sun.security.x509.AlgorithmId");
+            java.lang.reflect.Field oidTableField = algorithmIdClass.getDeclaredField("oidTable");
+            oidTableField.setAccessible(true);
+            // Set oidTable to null
+            oidTableField.set(algorithmIdClass, null);
+            // Java 1.8
+            if(Constants.JAVA_VERSION.getMajorVersion() == 1) {
+                java.lang.reflect.Field initOidTableField = algorithmIdClass.getDeclaredField("initOidTable");
+                initOidTableField.setAccessible(true);
+                // Set init flag back to false
+                initOidTableField.set(algorithmIdClass, false);
+            }
+            log.info("Successfully applied JDK-8266929 patch");
+        } catch (Exception e) {
+            log.warn("Unable to apply JDK-8266929 patch.  Some algorithms may fail.", e);
+        }
     }
 }

@@ -11,15 +11,12 @@
 package qz.ws;
 
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
-import org.eclipse.jetty.websocket.server.pathmap.ServletPathSpec;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.App;
@@ -63,37 +60,35 @@ public class PrintSocketServer {
             PrintSocketServer.setTrayManager(new TrayManager(headless));
         });
 
-        while(!running.get() && securePortIndex.get() < SECURE_PORTS.size() && insecurePortIndex.get() < INSECURE_PORTS.size()) {
-            server = new Server(getInsecurePortInUse());
-            if (certManager != null) {
-                // Bind the secure socket on the proper port number (i.e. 9341), add it as an additional connector
-                SslConnectionFactory sslConnection = new SslConnectionFactory(certManager.configureSslContextFactory(), HttpVersion.HTTP_1_1.asString());
-                HttpConnectionFactory httpConnection = new HttpConnectionFactory(new HttpConfiguration());
+        Server server = findAvailableSecurePort(certManager);
+        Connector secureConnector = null;
+        if (server.getConnectors().length > 0 && !server.getConnectors()[0].isFailed()) {
+            secureConnector = server.getConnectors()[0];
+        }
 
-                ServerConnector connector = new ServerConnector(server, sslConnection, httpConnection);
-                connector.setHost(certManager.getProperties().getProperty("wss.host"));
-                connector.setPort(getSecurePortInUse());
-                server.addConnector(connector);
-            } else {
-                log.warn("Could not start secure WebSocket");
-            }
-
+        final AtomicBoolean running = new AtomicBoolean(false);
+        while(!running.get() && insecurePortIndex.get() < INSECURE_PORTS.size()) {
             try {
+                ServerConnector connector = new ServerConnector(server);
+                connector.setPort(getInsecurePortInUse());
+                if (secureConnector != null) {
+                    //setup insecure connector before secure
+                    server.setConnectors(new Connector[] {connector, secureConnector});
+                } else {
+                    server.setConnectors(new Connector[] {connector});
+                }
+
                 ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
                 // Handle WebSocket connections
-                WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
-                filter.addMapping(new ServletPathSpec("/"), new WebSocketCreator() {
-                    @Override
-                    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp) {
-                        return new PrintSocketClient();
-                    }
-                });
+                WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configure(context);
+                filter.addMapping(new ServletPathSpec("/"), (req, resp) -> new PrintSocketClient());
                 filter.getFactory().getPolicy().setMaxTextMessageSize(MAX_MESSAGE_SIZE);
 
                 // Handle HTTP landing page
                 ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet(certManager));
                 httpServlet.setInitParameter("resourceBase","/");
+
                 context.addServlet(httpServlet, "/");
                 context.addServlet(httpServlet, "/json");
 
@@ -102,27 +97,71 @@ public class PrintSocketServer {
                 server.start();
 
                 running.set(true);
-                trayManager.setServer(server, insecurePortIndex.get());
+
+                trayManager.setServer(server, running, securePortIndex, insecurePortIndex);
                 log.info("Server started on port(s) " + getPorts(server));
                 server.join();
             }
-            catch(BindException | MultiException e) {
+            catch(IOException | MultiException e) {
                 //order of getConnectors is the order we added them -> insecure first
                 if (server.getConnectors()[0].isFailed()) {
                     insecurePortIndex.incrementAndGet();
                 }
-                if (server.getConnectors().length > 1 && server.getConnectors()[1].isFailed()) {
-                    securePortIndex.incrementAndGet();
-                }
 
                 //explicitly stop the server, because if only 1 port has an exception the other will still be opened
-                try { server.stop(); }catch(Exception ignore) { ignore.printStackTrace(); }
+                try { server.stop(); }catch(Exception stopEx) { stopEx.printStackTrace(); }
             }
             catch(Exception e) {
                 e.printStackTrace();
                 trayManager.displayErrorMessage(e.getLocalizedMessage());
+                break;
             }
         }
+    }
+
+    private static Server findAvailableSecurePort(CertificateManager certManager) {
+        Server server = new Server();
+
+        if (certManager != null) {
+            final AtomicBoolean runningSecure = new AtomicBoolean(false);
+            while(!runningSecure.get() && securePortIndex.get() < SECURE_PORTS.size()) {
+                try {
+                    // Bind the secure socket on the proper port number (i.e. 8181), add it as an additional connector
+                    SslConnectionFactory sslConnection = new SslConnectionFactory(certManager.configureSslContextFactory(), HttpVersion.HTTP_1_1.asString());
+                    HttpConnectionFactory httpConnection = new HttpConnectionFactory(new HttpConfiguration());
+
+                    ServerConnector secureConnector = new ServerConnector(server, sslConnection, httpConnection);
+                    secureConnector.setHost(certManager.getProperties().getProperty("wss.host"));
+                    secureConnector.setPort(getSecurePortInUse());
+                    server.setConnectors(new Connector[] {secureConnector});
+
+                    server.start();
+                    log.trace("Established secure WebSocket on port {}", getSecurePortInUse());
+
+                    //only starting to test port availability; insecure port will actually start
+                    server.stop();
+                    runningSecure.set(true);
+                }
+                catch(IOException | MultiException e) {
+                    if (server.getConnectors()[0].isFailed()) {
+                        securePortIndex.incrementAndGet();
+                    }
+
+                    try { server.stop(); }catch(Exception stopEx) { stopEx.printStackTrace(); }
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                    trayManager.displayErrorMessage(e.getLocalizedMessage());
+                    break;
+                }
+            }
+        }
+
+        if (server.getConnectors().length == 0 || server.getConnectors()[0].isFailed()) {
+            log.warn("Could not start secure WebSocket");
+        }
+
+        return server;
     }
 
     public static void setTrayManager(TrayManager manager) {

@@ -83,9 +83,17 @@ public class SerialIO {
                 if (format.isBoundNewline()) {
                     //process as line delimited
 
-                    //find closest line delimiter
-                    Integer endIdx = min(ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\r'}),
-                                         ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\n'}));
+                    // check for CR AND NL
+                    Integer endIdx = ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\r', '\n'});
+                    int delimSize = 2;
+
+                    // check for CR OR NL
+                    if(endIdx == null) {
+                        endIdx = min(
+                                ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\r'}),
+                                ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\n'}));
+                        delimSize = 1;
+                    }
                     if (endIdx != null) {
                         log.trace("Reading newline-delimited response");
                         byte[] output = new byte[endIdx];
@@ -97,7 +105,7 @@ public class SerialIO {
                             response = buffer;
                         }
 
-                        data.clearRange(0, endIdx + 1);
+                        data.clearRange(0, endIdx + delimSize);
                     }
                 } else if (format.getBoundStart() != null && format.getBoundStart().length > 0) {
                     //process as formatted response

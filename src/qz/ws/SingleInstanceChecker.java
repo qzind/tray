@@ -73,7 +73,7 @@ public class SingleInstanceChecker {
 
     @OnWebSocketError
     public void onError(Throwable e) {
-        if (!e.getMessage().contains("Connection refused")) {
+        if (!e.getMessage().contains("Connection refused") && !e.getMessage().contains("Failed to upgrade to websocket")) {
             log.warn("WebSocket error", e);
         }
     }
@@ -100,20 +100,17 @@ public class SingleInstanceChecker {
     }
 
     private void autoCloseClient(final int millis) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(millis);
-                    if (client != null) {
-                        if (!(client.isStopped() || client.isStopping())) {
-                            client.stop();
-                        }
+        new Thread(() -> {
+            try {
+                Thread.sleep(millis);
+                if (client != null) {
+                    if (!(client.isStopped() || client.isStopping())) {
+                        client.stop();
                     }
                 }
-                catch(Exception ignore) {
-                    log.error("Couldn't close client after delay");
-                }
+            }
+            catch(Exception ignore) {
+                log.error("Couldn't close client after delay");
             }
         }).start();
     }

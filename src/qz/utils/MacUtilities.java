@@ -29,8 +29,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
@@ -248,6 +251,28 @@ public class MacUtilities {
                 }
             });
         } catch (Throwable ignore) {}
+    }
+
+    public static boolean nativeFileCopy(Path source, Path destination) {
+        try {
+            // AppleScript's "duplicate" requires an existing destination
+            if (!destination.toFile().isDirectory()) {
+                // To perform this in a single operation in AppleScript, the source and dest
+                // file names must match.  Copy to a temp directory first to retain desired name.
+                Path tempFile = Files.createTempDirectory("qz_cert_").resolve(destination.getFileName());
+                log.debug("Copying {} to {} to obtain the desired name", source, tempFile);
+                source = Files.copy(source, tempFile);
+                destination = destination.getParent();
+            }
+            return ShellUtilities.executeAppleScript(
+                    "tell application \"Finder\" to duplicate " +
+                            "file (POSIX file \"" + source + "\" as alias) " +
+                            "to folder (POSIX file \"" + destination + "\" as alias) " +
+                            "with replacing");
+        } catch(Throwable t) {
+            log.warn("Unable to perform native file copy using AppleScript", t);
+        }
+        return false;
     }
 
 }

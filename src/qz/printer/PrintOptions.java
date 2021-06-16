@@ -51,11 +51,10 @@ public class PrintOptions {
         }
         if (!configOpts.isNull("encoding")) {
             JSONObject encodings = configOpts.optJSONObject("encoding");
-            if(encodings != null) {
+            if (encodings != null) {
                 rawOptions.srcEncoding = encodings.optString("from", null);
                 rawOptions.destEncoding = encodings.optString("to", null);
-            }
-            else {
+            } else {
                 rawOptions.destEncoding = configOpts.optString("encoding", null);
             }
         }
@@ -336,7 +335,11 @@ public class PrintOptions {
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "size.height", subSize.opt("height")); }
                 }
 
-                psOptions.size = s;
+                if (s.height <= 0 && s.width <= 0) {
+                    log.warn("Page size has been set without dimensions, using default");
+                } else {
+                    psOptions.size = s;
+                }
             } else {
                 LoggerUtilities.optionWarn(log, "JSONObject", "size", configOpts.opt("size"));
             }
@@ -346,6 +349,17 @@ public class PrintOptions {
         PrinterResolution defaultRes = null;
         if (output.isSetService()) {
             defaultRes = output.getNativePrinter().getResolution().value();
+
+            if (defaultRes == null) {
+                //printer has no default resolution set, see if it is possible to pull anything
+                List<PrinterResolution> rSupport = output.getNativePrinter().getResolutions();
+                if (rSupport.size() > 0) {
+                    defaultRes = rSupport.get(0);
+                    log.warn("Default resolution for {} is missing, using fallback: {}", output.getNativePrinter().getName(), defaultRes);
+                } else {
+                    log.warn("Default resolution for {} is missing, no fallback available.", output.getNativePrinter().getName());
+                }
+            }
         }
         if (defaultRes != null) {
             //convert dphi to unit-dependant density ourselves (to keep as double type)

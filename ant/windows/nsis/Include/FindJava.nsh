@@ -90,7 +90,7 @@ Var /GLOBAL java_major
         ; Isolate version number, e.g. "1.8.0"
         ${StrTok} $0 "$1" "$\"" "1" "1"
         ; Isolate major version
-        ${StrTok} $0 "$0" "." "0" "1"
+        ${StrTok} $R0 "$0" "." "0" "1"
         ; Handle old 1.x.x version format
         ${If} "$R0" == "1"
             ${StrTok} $R0 "$0" "." "1" "1"

@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="PrintSocketServer" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="qz.ws.PrintSocketServer" />
+    <module name="tray" />
+    <option name="VM_PARAMETERS" value="--add-opens java.desktop/sun.lwawt.macosx=ALL-UNNAMED --add-opens java.desktop/java.awt=ALL-UNNAMED --add-exports java.desktop/com.apple.laf=ALL-UNNAMED --add-exports java.desktop/sun.swing=ALL-UNNAMED" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -374,10 +374,6 @@ public class SystemUtilities {
             if(!isMac() && (isUnix() && UbuntuUtilities.isDarkMode())) {
                 darculaThemeNeeded = false;
             }
-            // Disable darcula on JDK16+ per https://github.com/bobbylight/Darcula/issues/8
-            if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("16.0.0"))) {
-                darculaThemeNeeded = false;
-            }
             if(isDarkDesktop() && darculaThemeNeeded) {
                 UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
             } else {

@@ -43,6 +43,10 @@ Section
 
     Var /GLOBAL opts
     StrCpy $opts "${launch.opts}"
+    ; Handle jdk9+ flags
+    ${If} $java_major >= 9
+        StrCpy $opts "${launch.opts} ${launch.jigsaw}"
+    ${EndIf}
 
     ; Check for user overridable launch options
     ClearErrors

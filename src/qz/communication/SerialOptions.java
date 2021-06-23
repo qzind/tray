@@ -204,7 +204,12 @@ public class SerialOptions {
             }
 
             if (!serialOpts.isNull("width")) {
-                try { responseFormat.fixedWidth = serialOpts.getInt("width"); }
+                try {
+                    responseFormat.fixedWidth = serialOpts.getInt("width");
+                    if (responseFormat.boundEnd.length > 0) {
+                        log.warn("Combining 'width' property with 'end' property has undefined behavior and should not be used");
+                    }
+                }
                 catch(JSONException e) { LoggerUtilities.optionWarn(log, "integer", "width", serialOpts.opt("width")); }
             }
         }

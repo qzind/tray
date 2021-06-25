@@ -8,6 +8,7 @@
 !endif
 !addincludedir "${basedir}/ant/windows/nsis/Include"
 !include StdUtils.nsh
+!include StrLoc.nsh
 !include FindJava.nsh
 
 !insertmacro GetParameters
@@ -54,7 +55,17 @@ Section
     IfErrors +2 0
     StrCpy $opts "$opts $R0"
 
-    Exec '"$javaw" $opts -jar "${JAR}" $params'
+    Var /GLOBAL command
+    StrCpy $command '"$javaw" $opts -jar "${JAR}" $params'
+
+    ; If ends in "-console.exe", use "cmd /s /k" to launch
+    ${StrLoc} $R1 "${nsis.outfile}" "-console.exe" "<"
+    ${If} $R1 == "0"
+        ExpandEnvStrings $R2 %COMSPEC%
+        StrCpy $command '"$R2" /s /k "$command"'
+    ${EndIf}
+
+    Exec $command
     ${If} ${RunningX64}
         ${EnableX64FSRedirection}
     ${EndIf}

@@ -116,6 +116,15 @@ public class BasicDialog extends JDialog implements Themeable {
         return contentComponent;
     }
 
+    public void addPanelComponent(JComponent component) {
+        for(Component c : buttonPanel.getComponents()) {
+            if(component.equals(c)) {
+                return; // don't add twice
+            }
+        }
+        buttonPanel.add(component, buttonPanel.getComponents().length - stockButtonCount);
+    }
+
     public JButton addPanelButton(String title, IconCache.Icon icon, int mnemonic) {
         return addPanelButton(title, iconCache == null? null:iconCache.getIcon(icon), mnemonic);
     }
@@ -166,9 +175,7 @@ public class BasicDialog extends JDialog implements Themeable {
     public void setVisible(boolean b) {
         // fix window focus on macOS
         if (SystemUtilities.isMac() && !GraphicsEnvironment.isHeadless()) {
-            ShellUtilities.executeAppleScript("tell application \"System Events\" \n" +
-                                                      "set frontmost of every process whose unix id is " + MacUtilities.getProcessID() + " to true \n" +
-                                                      "end tell");
+            MacUtilities.setFocus();
         }
         super.setVisible(b);
     }

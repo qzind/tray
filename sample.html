@@ -245,10 +245,10 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group form-inline">
-                                                <label class="tip" for="rawAltPrinting" data-toggle="tooltip" title="Bypass driver when using CUPS">
-                                                    Alternate Printing
+                                                <label class="tip" for="rawForceRaw" data-toggle="tooltip" title="Bypass printer driver (CUPS only)">
+                                                    Force Raw
                                                 </label>
-                                                <input type="checkbox" id="rawAltPrinting" class="pull-right" />
+                                                <input type="checkbox" id="rawForceRaw" class="pull-right" />
                                             </div>
 
                                             <div class="form-group form-inline">
@@ -1527,8 +1527,8 @@
             case 'EPL':
                 printData = [
                     '\nN\n',
-                    'q609\n',
-                    'Q203,26\n',
+                    'q812\n', //  q=width in dots - check printer dpi
+                    'Q1218,26\n', // Q=height in dots - check printer dpi
                     'B5,26,0,1A,3,7,152,B,"1234"\n',
                     'A310,26,0,3,1,1,N,"SKU 00000 MFG 0000"\n',
                     'A310,56,0,3,1,1,N,"TEST PRINT SUCCESSFUL"\n',
@@ -1809,8 +1809,8 @@
             case 'EPL':
                 printData = [
                     '\nN\n',
-                    'q609\n',
-                    'Q203,26\n',
+                    'q812\n',
+                    'Q1218,26\n',
                     { type: 'raw', format: 'pdf', flavor: 'file', data: 'assets/pdf_sample.pdf', options: opts },
                     '\nP1,1\n'
                 ];
@@ -1844,8 +1844,8 @@
             case 'EPL':
                 printData = [
                     '\nN\n',
-                    'q609\n',
-                    'Q203,26\n',
+                    'q812\n',
+                    'Q1218,26\n',
                     { type: 'raw', format: 'html', flavor: 'file', data: 'https://qz.io/about/', options: opts },
                     '\nP1,1\n'
                 ];
@@ -2387,7 +2387,7 @@
         $("#rawSpoolSize").val(1);
         $("#rawEncoding").val(null);
         $("#rawSpoolEnd").val(null);
-        $("#rawAltPrinting").prop('checked', false);
+        $("#rawForceRaw").prop('checked', false);
         $("#rawCopies").val(1);
 
         //printer
@@ -2926,7 +2926,7 @@
 
     function updateConfig(cleanConditions) {
         var pxlSize = null;
-        if (isChecked($("#pxlSizeActive"), cleanConditions['pxlSizeActive'])) {
+        if (isChecked($("#pxlSizeActive"), cleanConditions['pxlSizeActive']) && (($("#pxlSizeWidth").val() !== '') || ($("#pxlSizeHeight").val() !== ''))) {
             pxlSize = {
                 width: $("#pxlSizeWidth").val(),
                 height: $("#pxlSizeHeight").val()
@@ -2975,7 +2975,7 @@
         }
 
         cfg.reconfigure({
-                            altPrinting: includedValue($("#rawAltPrinting"), isChecked($("#rawAltPrinting"), cleanConditions['rawAltPrinting'])),
+                            forceRaw: includedValue($("#rawForceRaw"), isChecked($("#rawForceRaw"), cleanConditions['rawForceRaw'])),
                             encoding: includedValue($("#rawEncoding")),
                             spool: { size: spoolSize, end: includedValue($("#rawSpoolEnd")) },
 

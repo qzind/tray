@@ -45,6 +45,11 @@ import static qz.installer.certificate.KeyPairWrapper.Type.*;
  * Stores and maintains reading and writing of certificate related files
  */
 public class CertificateManager {
+    static {
+        // Workaround for JDK-8266929
+        // See also https://github.com/qzind/tray/issues/814
+        SystemUtilities.clearAlgorithms();
+    }
     private static final Logger log = LoggerFactory.getLogger(CertificateManager.class);
 
     public static String DEFAULT_KEYSTORE_FORMAT = "PKCS12";
@@ -279,6 +284,10 @@ public class CertificateManager {
     }
 
     public static void writeCert(X509Certificate data, File dest) throws IOException {
+        // PEMWriter doesn't always clear the file, explicitly delete it, see issue #796
+        if(dest.exists()) {
+            dest.delete();
+        }
         JcaMiscPEMGenerator cert = new JcaMiscPEMGenerator(data);
         JcaPEMWriter writer = new JcaPEMWriter(new OutputStreamWriter(Files.newOutputStream(dest.toPath(), StandardOpenOption.CREATE)));
         writer.writeObject(cert.generate());

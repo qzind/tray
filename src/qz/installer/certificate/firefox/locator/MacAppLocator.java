@@ -59,7 +59,10 @@ public class MacAppLocator extends AppLocator{
         try {
             // system_profile benchmarks about 30% better than lsregister
             Process p = Runtime.getRuntime().exec(new String[] {"system_profiler", "SPApplicationsDataType", "-xml"}, ShellUtilities.envp);
-            doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(p.getInputStream());
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            // don't let the <!DOCTYPE> fail parsing per https://github.com/qzind/tray/issues/809
+            dbf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            doc = dbf.newDocumentBuilder().parse(p.getInputStream());
         } catch(IOException | ParserConfigurationException | SAXException e) {
             log.warn("Could not retrieve app listing for {}", appAlias.name(), e);
             return appList;
@@ -155,7 +158,7 @@ public class MacAppLocator extends AppLocator{
     }
 
     private interface SystemB extends Library {
-        SystemB INSTANCE = Native.loadLibrary("System", SystemB.class);
+        SystemB INSTANCE = Native.load("System", SystemB.class);
         int PROC_ALL_PIDS = 1;
         int PROC_PIDPATHINFO_MAXSIZE = 1024 * 4;
         int sysctlbyname(String name, Pointer oldp, IntByReference oldlenp, Pointer newp, int newlen);

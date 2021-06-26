@@ -1,3 +1,12 @@
+/**
+ * @author Tres Finocchiaro
+ *
+ * Copyright (C) 2021 Tres Finocchiaro, QZ Industries, LLC
+ *
+ * LGPL 2.1 This is free software.  This software and source code are released under
+ * the "LGPL 2.1 License".  A copy of this license should be distributed with
+ * this software. http://www.gnu.org/licenses/lgpl-2.1.html
+ */
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
@@ -24,6 +33,7 @@ public class WindowsUtilities {
     protected static final Logger log = LoggerFactory.getLogger(WindowsUtilities.class);
     private static String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
+    private static Integer pid;
 
     public static boolean isDarkDesktop() {
         // 0 = Dark Theme.  -1/1 = Light Theme
@@ -125,6 +135,19 @@ public class WindowsUtilities {
             }
         } catch(Exception e) {
             log.warn("Couldn't delete value {}\\\\{}", getHkeyName(root), key);
+        }
+        return false;
+    }
+
+    // gracefully swallow InvocationTargetException
+    public static boolean deleteRegValue(HKEY root, String key, String value) {
+        try {
+            if (Advapi32Util.registryValueExists(root, key, value)) {
+                Advapi32Util.registryDeleteValue(root, key, value);
+                return true;
+            }
+        } catch(Exception e) {
+            log.warn("Couldn't delete value {}\\\\{}\\\\{}", getHkeyName(root), key, value);
         }
         return false;
     }
@@ -250,5 +273,51 @@ public class WindowsUtilities {
         } catch(IOException e) {
             log.warn("Could not set writable: {}", path, e);
         }
+    }
+
+    static String getHostName() {
+        String hostName = null;
+        try {
+            hostName = Kernel32Util.getComputerName(); // always uppercase
+        } catch(Throwable ignore) {}
+        if(hostName == null || hostName.trim().isEmpty()) {
+            log.warn("Couldn't get hostname using Kernel32Util, will fallback to environmental variable COMPUTERNAME instead");
+            hostName = System.getenv("COMPUTERNAME"); // always uppercase
+        }
+        return hostName;
+    }
+
+    public static boolean nativeFileCopy(Path source, Path destination) {
+        try {
+            ShellAPI.SHFILEOPSTRUCT op = new ShellAPI.SHFILEOPSTRUCT();
+            op.wFunc = ShellAPI.FO_COPY;
+            op.fFlags = Shell32.FOF_NOCOPYSECURITYATTRIBS | Shell32.FOF_NOCONFIRMATION;
+            op.pFrom = op.encodePaths(new String[] {source.toString()});
+            op.pTo = op.encodePaths(new String[] {destination.toString()});
+            return Shell32.INSTANCE.SHFileOperation(op) == 0 && op.fAnyOperationsAborted == false;
+        } catch(Throwable t) {
+            log.warn("Unable to perform native file copy using JNA", t);
+        }
+        return false;
+    }
+
+    public static boolean elevatedFileCopy(Path source, Path destination) {
+        // Recursively start powershell.exe, but elevated
+        String args = String.format("'Copy-Item',-Path,'%s',-Destination,'%s'", source, destination);
+        String[] command = {"Start-Process", "powershell.exe", "-ArgumentList", args, "-Wait", "-Verb", "RunAs"};
+        return ShellUtilities.execute("powershell.exe", "-command", String.join(" ", command));
+    }
+
+    static int getProcessId() {
+        if(pid == null) {
+            try {
+                pid = Kernel32.INSTANCE.GetCurrentProcessId();
+            }
+            catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
+                log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
+                pid = -1;
+            }
+        }
+        return pid;
     }
 }

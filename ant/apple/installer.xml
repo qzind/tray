@@ -315,7 +315,7 @@
         <echo message="Signing ${found.jar.path} using ${apple.packager.signid}"/>
         <exec executable="bash" failonerror="true">
             <arg value="-c"/>
-            <arg value="echo &quot;${found.files.paths}&quot; |tr ':' '\n' |xargs codesign -s &quot;${apple.packager.signid}&quot; -v"/>
+            <arg value="echo &quot;${found.files.paths}&quot; |tr ':' '\n' |xargs codesign -f -s &quot;${apple.packager.signid}&quot; -v"/>
         </exec>
 
         <pathconvert property="found.jar.rel">

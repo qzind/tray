@@ -6,14 +6,12 @@ import org.apache.log4j.WriterAppender;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
 import qz.utils.FileUtilities;
-import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
-import java.io.IOException;
 import java.io.OutputStream;
 
 /**
@@ -63,13 +61,10 @@ public class LogDialog extends BasicDialog {
         // add new appender to Log4J just for text area
         logStream = new WriterAppender(new PatternLayout("[%p] %d{ISO8601} @ %c:%L%n\t%m%n"), new OutputStream() {
             @Override
-            public void write(final int b) throws IOException {
-                SwingUtilities.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        logArea.append(String.valueOf((char)b));
-                        logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
-                    }
+            public void write(final int b) {
+                SwingUtilities.invokeLater(() -> {
+                    logArea.append(String.valueOf((char)b));
+                    logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
                 });
             }
         });

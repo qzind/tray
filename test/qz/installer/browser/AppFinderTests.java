@@ -2,7 +2,6 @@ package qz.installer.browser;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.installer.Installer;
 import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.installer.certificate.firefox.locator.AppAlias;
 import qz.installer.certificate.firefox.locator.AppInfo;

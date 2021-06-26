@@ -11,19 +11,13 @@
 package qz.utils;
 
 import com.apple.OSXAdapterWrapper;
+import org.dyorgio.jna.platform.mac.*;
 import com.github.zafarkhaja.semver.Version;
-import com.sun.jna.Library;
-import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
-import com.sun.jna.Pointer;
-import org.dyorgio.jna.platform.mac.ActionCallback;
-import org.dyorgio.jna.platform.mac.Foundation;
-import org.dyorgio.jna.platform.mac.FoundationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.TrayManager;
-import qz.ui.component.IconCache;
 
 import javax.swing.*;
 import java.awt.*;
@@ -31,6 +25,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
@@ -41,12 +37,10 @@ import java.util.Locale;
  * @author Tres Finocchiaro
  */
 public class MacUtilities {
-
-    private static final Logger log = LoggerFactory.getLogger(IconCache.class);
+    private static final Logger log = LoggerFactory.getLogger(MacUtilities.class);
     private static Dialog aboutDialog;
     private static TrayManager trayManager;
     private static String bundleId;
-    private static Integer pid;
     private static Boolean jdkSupportsTemplateIcon;
     private static boolean templateIconForced = false;
 
@@ -121,7 +115,12 @@ public class MacUtilities {
      * @return true if enabled, false if not
      */
     public static boolean isDarkDesktop() {
-        return !ShellUtilities.execute(new String[] { "defaults", "read", "-g", "AppleInterfaceStyle" }, new String[] { "Dark" }, true, true).isEmpty();
+        try {
+            return "Dark".equalsIgnoreCase(NSUserDefaults.standard().stringForKey(new NSString("AppleInterfaceStyle")).toString());
+        } catch(Exception e) {
+            log.warn("An exception occurred obtaining theme information, falling back to command line instead.");
+            return !ShellUtilities.execute(new String[] {"defaults", "read", "-g", "AppleInterfaceStyle"}, new String[] {"Dark"}, true, true).isEmpty();
+        }
     }
 
     public static int getScaleFactor() {
@@ -144,24 +143,6 @@ public class MacUtilities {
             log.warn("Unable to determine screen scale factor.  Defaulting to 1.", e);
         }
         return 1;
-    }
-
-    public static int getProcessID() {
-        if(pid == null) {
-            try {
-                pid = CLibrary.INSTANCE.getpid();
-            }
-            catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
-                log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
-                pid = -1;
-            }
-        }
-        return pid;
-    }
-
-    private interface CLibrary extends Library {
-        CLibrary INSTANCE = (CLibrary) Native.loadLibrary("c", CLibrary.class);
-        int getpid ();
     }
 
     /**
@@ -248,6 +229,39 @@ public class MacUtilities {
                 }
             });
         } catch (Throwable ignore) {}
+    }
+
+    public static void setFocus() {
+        try {
+            NSApplication.sharedApplication().activateIgnoringOtherApps(true);
+        } catch(Exception e) {
+            log.warn("Couldn't set focus using JNA, falling back to command line instead");
+            ShellUtilities.executeAppleScript("tell application \"System Events\" \n" +
+                                                      "set frontmost of every process whose unix id is " + UnixUtilities.getProcessId() + " to true \n" +
+                                                        "end tell");
+        }
+    }
+
+    public static boolean nativeFileCopy(Path source, Path destination) {
+        try {
+            // AppleScript's "duplicate" requires an existing destination
+            if (!destination.toFile().isDirectory()) {
+                // To perform this in a single operation in AppleScript, the source and dest
+                // file names must match.  Copy to a temp directory first to retain desired name.
+                Path tempFile = Files.createTempDirectory("qz_cert_").resolve(destination.getFileName());
+                log.debug("Copying {} to {} to obtain the desired name", source, tempFile);
+                source = Files.copy(source, tempFile);
+                destination = destination.getParent();
+            }
+            return ShellUtilities.executeAppleScript(
+                    "tell application \"Finder\" to duplicate " +
+                            "file (POSIX file \"" + source + "\" as alias) " +
+                            "to folder (POSIX file \"" + destination + "\" as alias) " +
+                            "with replacing");
+        } catch(Throwable t) {
+            log.warn("Unable to perform native file copy using AppleScript", t);
+        }
+        return false;
     }
 
 }

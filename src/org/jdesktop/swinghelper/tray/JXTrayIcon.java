@@ -128,11 +128,7 @@ public class JXTrayIcon extends TrayIcon {
 
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                createGui();
-            }
-        });
+        SwingUtilities.invokeLater(() -> createGui());
     }
 
     static Image createImage() {

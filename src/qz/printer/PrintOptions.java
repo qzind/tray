@@ -39,23 +39,23 @@ public class PrintOptions {
         if (configOpts == null) { return; }
 
         //check for raw options
-        if (!configOpts.isNull("altPrinting")) {
-            try {
-                rawOptions.altPrinting = configOpts.getBoolean("altPrinting");
-                if (rawOptions.altPrinting && SystemUtilities.isWindows()) {
-                    log.warn("Alternate raw printing is not supported on Windows");
-                    rawOptions.altPrinting = false;
-                }
-            }
-            catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "altPrinting", configOpts.opt("altPrinting")); }
+        if (!configOpts.isNull("forceRaw")) {
+            rawOptions.forceRaw = configOpts.optBoolean("forceRaw", false);
+        } else if (!configOpts.isNull("altPrinting")) {
+            log.warn("Raw option \"altPrinting\" is deprecated.  Please use \"forceRaw\" instead.");
+            rawOptions.forceRaw = configOpts.optBoolean("altPrinting", false);
         }
+        if (rawOptions.forceRaw && SystemUtilities.isWindows()) {
+            log.warn("Forced raw printing is not supported on Windows");
+            rawOptions.forceRaw = false;
+        }
+
         if (!configOpts.isNull("encoding")) {
             JSONObject encodings = configOpts.optJSONObject("encoding");
-            if(encodings != null) {
+            if (encodings != null) {
                 rawOptions.srcEncoding = encodings.optString("from", null);
                 rawOptions.destEncoding = encodings.optString("to", null);
-            }
-            else {
+            } else {
                 rawOptions.destEncoding = configOpts.optString("encoding", null);
             }
         }
@@ -91,6 +91,10 @@ public class PrintOptions {
         if (!configOpts.isNull("jobName")) {
             rawOptions.jobName = configOpts.optString("jobName", null);
         }
+        if (!configOpts.isNull("retainTemp")) {
+            rawOptions.retainTemp = configOpts.optBoolean("retainTemp", false);
+        }
+
 
         //check for pixel options
         if (!configOpts.isNull("units")) {
@@ -336,7 +340,11 @@ public class PrintOptions {
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "size.height", subSize.opt("height")); }
                 }
 
-                psOptions.size = s;
+                if (s.height <= 0 && s.width <= 0) {
+                    log.warn("Page size has been set without dimensions, using default");
+                } else {
+                    psOptions.size = s;
+                }
             } else {
                 LoggerUtilities.optionWarn(log, "JSONObject", "size", configOpts.opt("size"));
             }
@@ -346,6 +354,17 @@ public class PrintOptions {
         PrinterResolution defaultRes = null;
         if (output.isSetService()) {
             defaultRes = output.getNativePrinter().getResolution().value();
+
+            if (defaultRes == null) {
+                //printer has no default resolution set, see if it is possible to pull anything
+                List<PrinterResolution> rSupport = output.getNativePrinter().getResolutions();
+                if (rSupport.size() > 0) {
+                    defaultRes = rSupport.get(0);
+                    log.warn("Default resolution for {} is missing, using fallback: {}", output.getNativePrinter().getName(), defaultRes);
+                } else {
+                    log.warn("Default resolution for {} is missing, no fallback available.", output.getNativePrinter().getName());
+                }
+            }
         }
         if (defaultRes != null) {
             //convert dphi to unit-dependant density ourselves (to keep as double type)
@@ -392,17 +411,18 @@ public class PrintOptions {
 
     /** Raw printing options */
     public class Raw {
-        private boolean altPrinting = false;    //Alternate printing for linux systems
+        private boolean forceRaw = false;       //Alternate printing for linux systems
         private String destEncoding = null;     //Text encoding / charset
         private String srcEncoding = null;      //Conversion text encoding
         private String spoolEnd = null;         //End of document character(s)
         private int spoolSize = 1;              //Pages per spool
         private int copies = 1;                 //Job copies
         private String jobName = null;          //Job name
+        private boolean retainTemp = false;     //Retain any temporary files
 
 
-        public boolean isAltPrinting() {
-            return altPrinting;
+        public boolean isForceRaw() {
+            return forceRaw;
         }
 
         public String getDestEncoding() {
@@ -424,6 +444,8 @@ public class PrintOptions {
         public int getCopies() {
             return copies;
         }
+
+        public boolean isRetainTemp() { return retainTemp; }
 
         public String getJobName(String defaultVal) {
             return jobName == null || jobName.isEmpty()? defaultVal:jobName;

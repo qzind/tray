@@ -102,12 +102,13 @@ fi
 if command -v java &>/dev/null; then
     echo -e "$ABOUT_TITLE is starting..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        if [ -f "$PROPS_FILE.jar" ]; then
-            prefix="" # aside launcher, e.g. preinstall
-        else
-            prefix="../" # back two directories, e.g. postinstall
-        fi
-        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$DIR/Contents/Resources/apple-icon.icns" -jar -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="true" "${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
+#        if [ -f "$PROPS_FILE.jar" ]; then
+#            prefix="../Resources" # aside launcher, e.g. preinstall
+#        else
+#            prefix="../Resources" # back two directories, e.g. postinstall
+#        fi
+#        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$DIR/Contents/Resources/apple-icon.icns" -jar -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="true" "${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
+        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$DIR/Contents/Resources/apple-icon.icns" -jar -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="true" "../Resources/${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
     else
         java $LAUNCH_OPTS -jar "$PROPS_FILE.jar" "$@"
     fi

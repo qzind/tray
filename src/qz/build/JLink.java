@@ -148,7 +148,7 @@ public class JLink {
 
     private JLink calculateOutPath() {
         if(targetPlatform.equals("mac")) {
-            outPath = jarPath.resolve("../PlugIns/Java.runtime/Contents/Home").normalize();
+            outPath = jarPath.resolve("../Java.runtime/Contents/Home").normalize();
         } else {
             outPath = jarPath.resolve("../jre").normalize();
         }

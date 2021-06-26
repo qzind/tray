@@ -214,8 +214,8 @@ public class SystemUtilities {
         }
 
         // Assume we're installed and running from /Applications/QZ Tray.app/Contents/qz-tray.jar
-        if(appPath.endsWith("Contents")) {
-            return appPath.getParent();
+        if(appPath.endsWith("Resources")) {
+            return appPath.getParent().getParent();
         }
         // For all other use-cases, qz-tray.jar is installed in the root of the application
         return appPath;

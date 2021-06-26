@@ -20,9 +20,7 @@ import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.security.cert.X509Certificate;
 import java.util.*;
 
@@ -115,16 +113,18 @@ public abstract class Installer {
         Path src = SystemUtilities.getAppPath();
         Path dest = Paths.get(getDestination());
 
-        if(!Files.exists(dest)) {
-            Files.createDirectories(dest);
+        // fixme do it the old way and do symlinks after
+        for (Path path : (Iterable<Path>) Files.walk(dest).sorted(Comparator.reverseOrder())::iterator) {
+            Files.delete(path);
         }
-
-        FileUtils.copyDirectory(src.toFile(), dest.toFile());
+        for (Path path : (Iterable<Path>) Files.walk(src).sorted(Comparator.naturalOrder())::iterator) {
+            Files.copy(path, dest.resolve(src.relativize(path)), LinkOption.NOFOLLOW_LINKS);
+        }
         FileUtilities.setPermissionsRecursively(dest, false);
 
         if(!SystemUtilities.isWindows()) {
-            setExecutable("uninstall");
-            setExecutable(SystemUtilities.isMac()? "Contents/MacOS/" + ABOUT_TITLE:PROPS_FILE);
+            setExecutable(SystemUtilities.isMac() ? "Contents/Resources/uninstall" : "uninstall");
+            setExecutable(SystemUtilities.isMac() ? "Contents/MacOS/" + ABOUT_TITLE : PROPS_FILE);
             return setJrePermissions(getDestination());
         }
         return this;

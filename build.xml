@@ -176,5 +176,6 @@
 
     <target name="nsis" depends="nsis-preflight,distribute,download-jre,build-exe"/>
     <target name="pkgbuild" depends="pkgbuild-preflight,distribute,download-jre,build-pkg"/>
+    <target name="dmg" depends="dmg-preflight,distribute,download-jre,build-dmg"/>
     <target name="makeself" depends="makeself-preflight,distribute,download-jre,build-run"/>
 </project>

@@ -95,60 +95,20 @@
         <copy file="ant/apple/apple-postinstall.sh.in" tofile="${build.dir}/scripts/postinstall">
             <filterchain><expandproperties/></filterchain>
         </copy>
-
-        <!-- Copy app bundle -->
-        <mkdir dir="${build.dir}/scripts/payload"/>
-
-        <copy todir="${build.dir}/scripts/payload/${project.name}.app">
-            <fileset dir="${build.appdir}" includes="**"/>
-        </copy>
-
-        <!-- set payload files executable -->
         <chmod perm="a+x" type="file">
             <fileset dir="${build.dir}/scripts">
                 <include name="preinstall"/>
                 <include name="postinstall"/>
             </fileset>
-            <fileset dir="${build.dir}/scripts/payload/${project.name}.app">
-                <include name="**/${project.name}"/>
-                <include name="**/Resources/uninstall"/>
-                <include name="**/bin/*"/>
-                <include name="**/lib/jspawnhelper"/>
-            </fileset>
         </chmod>
 
-        <property name="build.sandboxed" value="false"/>
-        <copy file="ant/apple/apple-entitlements.plist.in" tofile="${build.dir}/apple-entitlements.plist">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-        <copy file="ant/apple/apple-entitlements-inherit.plist.in" tofile="${build.dir}/apple-entitlements-inherit.plist">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
+        <!-- Copy app bundle -->
+        <mkdir dir="${build.dir}/scripts/payload"/>
 
-        <!-- use xargs to loop over and codesign all files-->
-        <echo level="info" message="Signing ${build.appdir} using ${apple.packager.signid}"/>
-        <!-- Find -X fails on spaces but doesn't failonerror, this may lead to overlooked errors. -->
-        <!-- Currently the only file that may contains a space is the main executable which we omit from signing anyway. -->
-        <exec executable="bash" failonerror="true" dir="${build.appdir}">
-            <arg value="-c"/>
-            <arg value="find -X &quot;.&quot; -type f -not -name &quot;libjli.dylib&quot; -not -name &quot;${project.name}&quot; -exec sh -c 'file -I &quot;{}&quot; |grep -m1 &quot;x-mach-binary&quot;|cut -f 1 -d \:' \; |xargs codesign --force -s &quot;${apple.packager.signid}&quot; --timestamp --options runtime"/>
-        </exec>
-        <exec executable="codesign" failonerror="true">
-            <arg value="--force"/>
-            <arg line="-s &quot;${apple.packager.signid}&quot;"/>
-            <arg value="--timestamp"/>
-            <arg line="--options runtime"/>
-            <arg line="--entitlement ${build.dir}/apple-entitlements-inherit.plist"/>
-            <arg value="${build.appdir}/Contents/PlugIns/Java.runtime"/>
-        </exec>
-        <exec executable="codesign" failonerror="true">
-            <arg value="--force"/>
-            <arg line="-s &quot;${apple.packager.signid}&quot;"/>
-            <arg value="--timestamp"/>
-            <arg line="--options runtime"/>
-            <arg line="--entitlement ${build.dir}/apple-entitlements.plist"/>
-            <arg value="${build.appdir}"/>
-        </exec>
+        <property name="build.sandboxed" value="false"/>
+        <antcall target="copy-bundle">
+            <param name="build.copydir" value="${build.dir}/scripts/payload/${project.name}.app"/>
+        </antcall>
 
         <!-- Disable signing and append "-community" if id is missing -->
         <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
@@ -199,37 +159,9 @@
         </copy>
 
         <property name="build.sandboxed" value="true"/>
-        <copy file="ant/apple/apple-entitlements.plist.in" tofile="${build.dir}/apple-entitlements.plist">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-        <copy file="ant/apple/apple-entitlements-inherit.plist.in" tofile="${build.dir}/apple-entitlements-inherit.plist">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <!-- use xargs to loop over and codesign all files-->
-        <echo level="info" message="Signing ${build.appdir} using ${apple.packager.signid}"/>
-        <!-- Find -X fails on spaces but doesn't failonerror, this may lead to overlooked errors. -->
-        <!-- Currently the only file that may contains a space is the main executable which we omit from signing anyway. -->
-        <exec executable="bash" failonerror="true" dir="${build.appdir}">
-            <arg value="-c"/>
-            <arg value="find -X &quot;.&quot; -type f -not -name &quot;libjli.dylib&quot; -not -name &quot;${project.name}&quot; -exec sh -c 'file -I &quot;{}&quot; |grep -m1 &quot;x-mach-binary&quot;|cut -f 1 -d \:' \; |xargs codesign --force -s &quot;${apple.packager.signid}&quot; --timestamp --options runtime"/>
-        </exec>
-        <exec executable="codesign" failonerror="true">
-            <arg value="--force"/>
-            <arg line="-s &quot;${apple.packager.signid}&quot;"/>
-            <arg value="--timestamp"/>
-            <arg line="--options runtime"/>
-            <arg line="--entitlement ${build.dir}/apple-entitlements-inherit.plist"/>
-            <arg value="${build.appdir}/Contents/PlugIns/Java.runtime"/>
-        </exec>
-        <exec executable="codesign" failonerror="true">
-            <arg value="--force"/>
-            <arg line="-s &quot;${apple.packager.signid}&quot;"/>
-            <arg value="--timestamp"/>
-            <arg line="--options runtime"/>
-            <arg line="--entitlement ${build.dir}/apple-entitlements.plist"/>
-            <arg value="${build.appdir}"/>
-        </exec>
+        <antcall target="copy-bundle">
+            <param name="build.copydir" value="${dist.dir}/${project.name}.app"/>
+        </antcall>
 
         <!-- Disable signing and append "-community" if id is missing -->
         <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
@@ -249,6 +181,54 @@
 
     <target name="codesign-jre" if="codesign.mac" unless="jre.skip">
         <property file="ant/apple/apple.properties"/>
+    </target>
+
+    <target name="copy-bundle">
+        <copy todir="${build.copydir}">
+            <fileset dir="${build.appdir}" includes="**"/>
+        </copy>
+
+        <!-- set payload files executable -->
+        <chmod perm="a+x" type="file">
+            <fileset dir="${build.copydir}">
+                <include name="**/${project.name}"/>
+                <include name="**/Resources/uninstall"/>
+                <include name="**/bin/*"/>
+                <include name="**/lib/jspawnhelper"/>
+            </fileset>
+        </chmod>
+
+        <copy file="ant/apple/apple-entitlements.plist.in" tofile="${build.dir}/apple-entitlements.plist">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <copy file="ant/apple/apple-entitlements-inherit.plist.in" tofile="${build.dir}/apple-entitlements-inherit.plist">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+
+        <!-- use xargs to loop over and codesign all files-->
+        <echo level="info" message="Signing ${build.copydir} using ${apple.packager.signid}"/>
+        <!-- Find -X fails on spaces but doesn't failonerror, this may lead to overlooked errors. -->
+        <!-- Currently the only file that may contains a space is the main executable which we omit from signing anyway. -->
+        <exec executable="bash" failonerror="true" dir="${build.copydir}">
+            <arg value="-c"/>
+            <arg value="find -X &quot;.&quot; -type f -not -name &quot;libjli.dylib&quot; -not -name &quot;${project.name}&quot; -exec sh -c 'file -I &quot;{}&quot; |grep -m1 &quot;x-mach-binary&quot;|cut -f 1 -d \:' \; |xargs codesign --force -s &quot;${apple.packager.signid}&quot; --timestamp --options runtime"/>
+        </exec>
+        <exec executable="codesign" failonerror="true">
+            <arg value="--force"/>
+            <arg line="-s &quot;${apple.packager.signid}&quot;"/>
+            <arg value="--timestamp"/>
+            <arg line="--options runtime"/>
+            <arg line="--entitlement ${build.dir}/apple-entitlements-inherit.plist"/>
+            <arg value="${build.copydir}/Contents/PlugIns/Java.runtime"/>
+        </exec>
+        <exec executable="codesign" failonerror="true">
+            <arg value="--force"/>
+            <arg line="-s &quot;${apple.packager.signid}&quot;"/>
+            <arg value="--timestamp"/>
+            <arg line="--options runtime"/>
+            <arg line="--entitlement ${build.dir}/apple-entitlements.plist"/>
+            <arg value="${build.copydir}"/>
+        </exec>
     </target>
 
     <target name="codesign-jars" if="codesign.mac">

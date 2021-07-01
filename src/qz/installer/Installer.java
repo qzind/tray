@@ -38,6 +38,7 @@ public abstract class Installer {
 
     // Silence prompts within our control
     public static boolean IS_SILENT =  "1".equals(System.getenv(DATA_DIR + "_silent"));
+    public static String JRE_LOCATION = SystemUtilities.isMac() ? "Contents/PlugIns/Java.runtime/Contents/Home" : "jre";
 
     public enum PrivilegeLevel {
         USER,
@@ -117,6 +118,8 @@ public abstract class Installer {
             Files.createDirectories(dest);
         }
 
+        // Delete the JDK blindly
+        FileUtils.deleteDirectory(dest.resolve(JRE_LOCATION).toFile());
         FileUtils.copyDirectory(src.toFile(), dest.toFile());
         FileUtilities.setPermissionsRecursively(dest, false);
 
@@ -129,7 +132,7 @@ public abstract class Installer {
     }
 
     private Installer setJrePermissions(String dest) {
-        File jreLocation = new File(dest, SystemUtilities.isMac() ?  "Contents/PlugIns/Java.runtime/Contents/Home" : "jre");
+        File jreLocation = new File(dest, JRE_LOCATION);
         File jreBin = new File(jreLocation, "bin");
         File jreLib = new File(jreLocation, "lib");
 

@@ -178,7 +178,7 @@
         <!-- Currently the only file that may contains a space is the main executable which we omit from signing anyway. -->
         <exec executable="bash" failonerror="true" dir="${build.appdir}">
             <arg value="-c"/>
-            <arg value="find -X &quot;.&quot; -type f -not -name &quot;libjli.dylib&quot; -not -name &quot;${project.name}&quot; -exec sh -c 'file -I &quot;{}&quot; |grep -m1 &quot;x-mach-binary&quot;|cut -f 1 -d \:' \; |xargs codesign --force -s &quot;${apple.packager.signid}&quot; --timestamp --options runtime"/>
+            <arg value="find -X &quot;.&quot; -type f -not -path &quot;*/Contents/MacOS/*&quot; -exec sh -c 'file -I &quot;{}&quot; |grep -m1 &quot;x-mach-binary&quot;|cut -f 1 -d \:' \; |xargs codesign --force -s &quot;${apple.packager.signid}&quot; --timestamp --options runtime"/>
         </exec>
         <exec executable="codesign" failonerror="true">
             <arg value="--force"/>

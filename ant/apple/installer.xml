@@ -129,7 +129,7 @@
         <!-- Contents/Resources/ -->
         <copy todir="${build.appdir}/Contents/Resources">
             <fileset dir="${dist.dir}">
-                <include name="${project.name}.jar"/>
+                <include name="${project.filename}.jar"/>
                 <include name="LICENSE.txt"/>
             </fileset>
         </copy>

@@ -27,7 +27,7 @@ public class JLink {
     private static final Logger log = LoggerFactory.getLogger(JLink.class);
     private static final String JAVA_AMD64_VENDOR = "AdoptOpenJDK";
     private static final String JAVA_ARM64_VENDOR = "BellSoft";
-    private static final String JAVA_VERSION = "11.0.10+9";;
+    private static final String JAVA_VERSION = "11.0.11+10";;
     private static final String JAVA_MAJOR = JAVA_VERSION.split("\\.")[0];
     private static final String JAVA_MINOR = JAVA_VERSION.split("\\.")[1];
     private static final String JAVA_PATCH = JAVA_VERSION.split("\\.|\\+|-")[2];
@@ -175,8 +175,8 @@ public class JLink {
         log.info("Calling jdeps to determine runtime dependencies");
         depList = new LinkedHashSet<>();
 
-        // JDK13+ requires suppressing of missing deps
-        String raw = jdepsVersion.getMajorVersion() >= 13 ?
+        // JDK11.0.11+requires suppressing of missing deps
+        String raw = jdepsVersion.compareTo(Version.valueOf("11.0.10")) > 0 ?
                 ShellUtilities.executeRaw(jdepsPath.toString(), "--list-deps", "--ignore-missing-deps", jarPath.toString()) :
                 ShellUtilities.executeRaw(jdepsPath.toString(), "--list-deps", jarPath.toString());
         if (raw == null || raw.trim().isEmpty() || raw.trim().startsWith("Warning") ) {

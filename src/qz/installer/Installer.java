@@ -14,6 +14,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
+import qz.common.Constants;
 import qz.installer.certificate.*;
 import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.utils.FileUtilities;
@@ -120,14 +121,6 @@ public abstract class Installer {
         FileUtils.copyDirectory(src.toFile(), dest.toFile());
         FileUtilities.setPermissionsRecursively(dest, false);
 
-        // fixme do it the old way and do symlinks after
-        //for (Path path : (Iterable<Path>) Files.walk(dest).sorted(Comparator.reverseOrder())::iterator) {
-        //    Files.delete(path);
-        //}
-        //for (Path path : (Iterable<Path>) Files.walk(src).sorted(Comparator.naturalOrder())::iterator) {
-        //    Files.copy(path, dest.resolve(src.relativize(path)), LinkOption.NOFOLLOW_LINKS);
-        //}
-
         if(!SystemUtilities.isWindows()) {
             setExecutable(SystemUtilities.isMac() ? "Contents/Resources/uninstall" : "uninstall");
             setExecutable(SystemUtilities.isMac() ? "Contents/MacOS/" + ABOUT_TITLE : PROPS_FILE);
@@ -142,8 +135,11 @@ public abstract class Installer {
         File jreLib = new File(jreLocation, "lib");
 
         // Set jre/bin/java and friends executable
-        for(File file : jreBin.listFiles(pathname -> !pathname.isDirectory())) {
-            file.setExecutable(true, false);
+        File[] files = jreBin.listFiles(pathname -> !pathname.isDirectory());
+        if(files != null) {
+            for(File file : files) {
+                file.setExecutable(true, false);
+            }
         }
 
         // Set jspawnhelper executable
@@ -169,16 +165,44 @@ public abstract class Installer {
     }
 
     public Installer removeLegacyFiles() {
-        String[] dirs = { "demo/js/3rdparty", "utils", "auth" };
-        String[] files = { "demo/js/qz-websocket.js", "windows-icon.ico" };
-        for (String dir : dirs) {
+        ArrayList<String> dirs = new ArrayList<>();
+        ArrayList<String> files = new ArrayList<>();
+        HashMap<String, String> move = new HashMap<String, String>();
+
+        // QZ Tray 2.0 files
+        dirs.add("demo/js/3rdparty");
+        dirs.add("utils");
+        dirs.add("auth");
+        files.add("demo/js/qz-websocket.js");
+        files.add("windows-icon.ico");
+
+        // QZ Tray 2.1 files
+        if(SystemUtilities.isMac()) {
+            // Moved to macOS Application Bundle standard https://developer.apple.com/go/?id=bundle-structure
+            dirs.add("demo");
+            dirs.add("libs");
+            files.add(PROPS_FILE + ".jar");
+            files.add("LICENSE.txt");
+            files.add("uninstall");
+            move.put(PROPS_FILE + ".properties", "Contents/Resources/" + PROPS_FILE + ".properties");
+        }
+
+        dirs.forEach(dir -> {
             try {
                 FileUtils.deleteDirectory(new File(instance.getDestination() + File.separator + dir));
             } catch(IOException ignore) {}
-        }
-        for (String file : files) {
+        });
+
+        files.forEach(file -> {
             new File(instance.getDestination() + File.separator + file).delete();
-        }
+        });
+
+        move.forEach((src, dest) -> {
+            try {
+                FileUtils.moveFile(new File(instance.getDestination() + File.separator + src),
+                                   new File(instance.getDestination() + File.separator + dest));
+            } catch(IOException ignore) {}
+        });
         return this;
     }
 

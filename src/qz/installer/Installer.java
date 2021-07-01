@@ -113,14 +113,20 @@ public abstract class Installer {
         Path src = SystemUtilities.getAppPath();
         Path dest = Paths.get(getDestination());
 
-        // fixme do it the old way and do symlinks after
-        for (Path path : (Iterable<Path>) Files.walk(dest).sorted(Comparator.reverseOrder())::iterator) {
-            Files.delete(path);
+        if(!Files.exists(dest)) {
+            Files.createDirectories(dest);
         }
-        for (Path path : (Iterable<Path>) Files.walk(src).sorted(Comparator.naturalOrder())::iterator) {
-            Files.copy(path, dest.resolve(src.relativize(path)), LinkOption.NOFOLLOW_LINKS);
-        }
+
+        FileUtils.copyDirectory(src.toFile(), dest.toFile());
         FileUtilities.setPermissionsRecursively(dest, false);
+
+        // fixme do it the old way and do symlinks after
+        //for (Path path : (Iterable<Path>) Files.walk(dest).sorted(Comparator.reverseOrder())::iterator) {
+        //    Files.delete(path);
+        //}
+        //for (Path path : (Iterable<Path>) Files.walk(src).sorted(Comparator.naturalOrder())::iterator) {
+        //    Files.copy(path, dest.resolve(src.relativize(path)), LinkOption.NOFOLLOW_LINKS);
+        //}
 
         if(!SystemUtilities.isWindows()) {
             setExecutable(SystemUtilities.isMac() ? "Contents/Resources/uninstall" : "uninstall");

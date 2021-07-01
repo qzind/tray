@@ -214,7 +214,7 @@ public class SystemUtilities {
             appPath = Paths.get(System.getProperty("user.dir"));
         }
 
-        // Assume we're installed and running from /Applications/QZ Tray.app/Contents/qz-tray.jar
+        // Assume we're installed and running from /Applications/QZ Tray.app/Contents/Resources/qz-tray.jar
         if(appPath.endsWith("Resources")) {
             return appPath.getParent().getParent();
         }

@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.installer.Installer;
 import qz.utils.FileUtilities;
+import qz.utils.MacUtilities;
 import qz.utils.SystemUtilities;
 
 import java.io.*;
@@ -336,7 +337,15 @@ public class CertificateManager {
         // Get an array of preferred directories
         ArrayList<Path> locs = new ArrayList<>();
 
-        if (subDirs.length == 0) {
+        // Sandbox is only supported on macOS currently
+        boolean sandboxed = false;
+        if(SystemUtilities.isMac()) {
+             sandboxed = MacUtilities.isSandboxed();
+             log.debug("Running in a sandbox: {}", sandboxed);
+        }
+
+        // Sandboxed installations must remain sealed, don't write to them
+        if (subDirs.length == 0 && !sandboxed) {
             // Assume root directory is next to jar (e.g. qz-tray.properties)
             Path appPath = SystemUtilities.getJarParentPath();
             // Handle null path, such as running from IDE

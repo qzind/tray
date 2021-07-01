@@ -43,6 +43,7 @@ public class MacUtilities {
     private static String bundleId;
     private static Boolean jdkSupportsTemplateIcon;
     private static boolean templateIconForced = false;
+    private static boolean sandboxed = System.getenv("APP_SANDBOX_CONTAINER_ID") == null;
 
     public static void showAboutDialog() {
         if (aboutDialog != null) { aboutDialog.setVisible(true); }
@@ -264,4 +265,7 @@ public class MacUtilities {
         return false;
     }
 
+    public static boolean isSandboxed() {
+        return sandboxed;
+    }
 }

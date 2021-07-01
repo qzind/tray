@@ -14,7 +14,6 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.auth.Certificate;
-import qz.common.Constants;
 import qz.installer.certificate.*;
 import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.utils.FileUtilities;

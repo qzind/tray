@@ -169,7 +169,7 @@ public abstract class Installer {
     public Installer removeLegacyFiles() {
         ArrayList<String> dirs = new ArrayList<>();
         ArrayList<String> files = new ArrayList<>();
-        HashMap<String, String> move = new HashMap<String, String>();
+        HashMap<String, String> move = new HashMap<>();
 
         // QZ Tray 2.0 files
         dirs.add("demo/js/3rdparty");

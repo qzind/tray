@@ -80,50 +80,6 @@ public class MacInstaller extends Installer {
         return this;
     }
 
-    @Override
-    public Installer removeLegacyFiles() {
-        // Files/folders moved to Contents/ since #770
-        String dirs[] = {
-                "demo",
-                "libs"
-        };
-        String[] files = {
-                PROPS_FILE + ".jar",
-                "uninstall",
-                "LICENSE.TXT",
-                "Contents/Resources/apple-icon.icns"
-        };
-        String[] move = {
-                PROPS_FILE + ".properties"
-        };
-        for (String dir : dirs) {
-            try {
-                FileUtils.deleteDirectory(new File(getInstance().getDestination() + File.separator + dir));
-            } catch(IOException ignore) {}
-        }
-        for (String file : files) {
-            new File(getInstance().getDestination() + File.separator + file).delete();
-        }
-        // Move from "/" to "/Contents"
-        for (String file : move) {
-            Path dest, source = null;
-            try {
-                source = Paths.get(getInstance().getDestination(), file);
-                dest = Paths.get(getInstance().getDestination(), "Contents", file);
-                if(source.toFile().exists()) {
-                    Files.move(source, dest);
-                }
-            } catch(IOException ignore) {
-            } finally {
-                if(source != null) {
-                    source.toFile().delete();
-                }
-            }
-        }
-
-        return super.removeLegacyFiles();
-    }
-
     /**
      * Removes legacy (<= 2.0) startup entries
      */

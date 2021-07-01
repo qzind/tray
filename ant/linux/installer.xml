@@ -2,10 +2,6 @@
     <property file="ant/project.properties"/>
     <import file="${basedir}/ant/version.xml"/>
 
-    <!-- Inform javafx.xml -->
-    <target name="makeself-preflight">
-        <property name="target.platform.linux" value="true"/>
-    </target>
     <target name="build-run" depends="get-version">
         <echo level="info">Creating installer using makeself</echo>
 

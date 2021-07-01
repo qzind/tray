@@ -17,6 +17,7 @@
             <isset property="authcert.use"/>
         </condition>
         <property description="fallback value" name="build.type" value=""/>
+        <property description="fallback value" name="build.version" value=""/>
 
         <echo level="info">
             Version   : ${build.version}${build.type}

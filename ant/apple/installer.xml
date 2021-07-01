@@ -7,28 +7,111 @@
     #                     Apple Installer                          #
     ################################################################
     -->
-    <!-- Inform javafx.xml  -->
-    <target name="pkgbuild-preflight">
-        <property name="target.platform.mac" value="true"/>
+
+    <target name="build-pkg" depends="codesign-jre,get-version">
+        <echo level="info">Creating installer using pkgbuild</echo>
+        <property file="ant/apple/apple.properties"/>
+        <!--
+        #####################################
+        #  Create scripts, payload and pkg  #
+        #####################################
+        -->
+
+        <mkdir dir="${build.dir}/scripts/payload"/>
+
+        <!-- Build app without sandboxing by default-->
+        <property name="build.sandboxed" value="false"/>
+        <antcall target="build-app">
+            <param name="build.appdir" value="${build.dir}/scripts/payload/${project.name}.app"/>
+        </antcall>
+
+        <!-- scripts/ -->
+        <copy file="ant/apple/apple-preinstall.sh.in" tofile="${build.dir}/scripts/preinstall">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <copy file="ant/apple/apple-postinstall.sh.in" tofile="${build.dir}/scripts/postinstall">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
+        <chmod perm="a+x" type="file">
+            <fileset dir="${build.dir}/scripts">
+                <include name="preinstall"/>
+                <include name="postinstall"/>
+            </fileset>
+        </chmod>
+
+        <!-- Disable signing and append "-community" if id is missing -->
+        <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
+            <arg value="-c"/>
+            <arg value="security find-identity -v |grep '(${apple.packager.signid})'"/>
+        </exec>
+
+        <!-- pkgbuild will fail on blank options; use ownership flag as a dummy fallback  -->
+        <condition property="codesign.qz.cmd" value="--sign" else="--ownership">
+            <equals arg1="${codesign.qz}" arg2="0"/>
+        </condition>
+        <condition property="codesign.qz.val" value="${apple.packager.signid}" else="recommended">
+            <equals arg1="${codesign.qz}" arg2="0"/>
+        </condition>
+
+        <exec executable="pkgbuild" failonerror="true">
+            <arg value="--identifier"/>
+            <arg value="${project.filename}"/>
+
+            <arg value="--nopayload"/>
+
+            <arg value="--install-location"/>
+            <arg value="/Applications/${project.name}.app"/>
+
+            <arg value="--scripts"/>
+            <arg value="${build.dir}/scripts"/>
+
+            <arg value="--version"/>
+            <arg value="${build.version}"/>
+
+            <arg value="${codesign.qz.cmd}"/>
+            <arg value="${codesign.qz.val}"/>
+
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.pkg"/>
+        </exec>
     </target>
 
-    <!-- Inform javafx.xml  -->
-    <target name="dmg-preflight">
-        <property name="target.platform.mac" value="true"/>
-    </target>
-
-    <target name="build-app" depends="codesign-jre,get-version">
+    <target name="build-dmg" depends="codesign-jre,get-version">
         <echo level="info">Creating app bundle</echo>
         <property file="ant/apple/apple.properties"/>
         <!--
-        ###################################
-        #   Build MacOS Bundle Structure  #
-        ###################################
+        #####################################
+        #  Create payload and bundle as dmg #
+        #####################################
         -->
 
-        <!-- TODO: Determine if "payload" is a good home for both .pkg and .dmg -->
-        <property name="build.appdir" value="${build.dir}/scripts/payload/${project.name}.app"/>
+        <!-- Dmg JSON -->
+        <copy file="ant/apple/appdmg.json.in" tofile="${build.dir}/appdmg.json">
+            <filterchain><expandproperties/></filterchain>
+        </copy>
 
+        <!-- Build app with sandboxing by default-->
+        <property name="build.sandboxed" value="true"/>
+        <antcall target="build-app">
+            <param name="build.appdir" value="${dist.dir}/${project.name}.app"/>
+        </antcall>
+
+        <!-- Disable signing and append "-community" if id is missing -->
+        <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
+            <arg value="-c"/>
+            <arg value="security find-identity -v |grep '(${apple.packager.signid})'"/>
+        </exec>
+
+        <exec executable="appdmg" failonerror="true">
+            <arg value="${build.dir}/appdmg.json"/>
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.dmg"/>
+        </exec>
+    </target>
+
+    <target name="codesign-jre" if="codesign.mac" unless="jre.skip">
+        <property file="ant/apple/apple.properties"/>
+    </target>
+
+    <target name="build-app">
         <!-- App Bundle -->
         <mkdir dir="${build.appdir}"/>
 
@@ -68,9 +151,13 @@
             <fileset dir="${dist.dir}/libs" includes="**"/>
         </copy>
 
-        <!-- set bundle files executable -->
+        <copy todir="${build.appdir}">
+            <fileset dir="${build.appdir}" includes="**"/>
+        </copy>
+
+        <!-- set payload files executable -->
         <chmod perm="a+x" type="file">
-            <fileset dir="${build.appdir}/Contents">
+            <fileset dir="${build.appdir}">
                 <include name="**/${project.name}"/>
                 <include name="**/Resources/uninstall"/>
                 <include name="**/bin/*"/>
@@ -78,123 +165,6 @@
             </fileset>
         </chmod>
 
-    </target>
-
-    <target name="build-pkg" depends="build-app,codesign-jre,get-version">
-        <echo level="info">Creating installer using pkgbuild</echo>
-        <property file="ant/apple/apple.properties"/>
-        <!--
-        #####################################
-        #  Create scripts, payload and pkg  #
-        #####################################
-        -->
-
-        <!-- scripts/ -->
-        <copy file="ant/apple/apple-preinstall.sh.in" tofile="${build.dir}/scripts/preinstall">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-        <copy file="ant/apple/apple-postinstall.sh.in" tofile="${build.dir}/scripts/postinstall">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-        <chmod perm="a+x" type="file">
-            <fileset dir="${build.dir}/scripts">
-                <include name="preinstall"/>
-                <include name="postinstall"/>
-            </fileset>
-        </chmod>
-
-        <!-- Copy app bundle -->
-        <mkdir dir="${build.dir}/scripts/payload"/>
-
-        <!-- Codesign the entire bundle, including the JDK -->
-        <property name="build.sandboxed" value="false"/>
-        <antcall target="codesign-bundle">
-            <!-- <param name="build.copydir" value="${dist.dir}/${project.name}.app"/> -->
-            <!-- FIXME: This param is redundant unless ".pkg" and ".dmg" diverge -->
-            <param name="build.appdir" value="${build.dir}/scripts/payload/${project.name}.app"/>
-            <param name="build.sandboxed" value="false"/>
-        </antcall>
-
-        <!-- Disable signing and append "-community" if id is missing -->
-        <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
-            <arg value="-c"/>
-            <arg value="security find-identity -v |grep '(${apple.packager.signid})'"/>
-        </exec>
-
-        <!-- pkgbuild will fail on blank options; use ownership flag as a dummy fallback  -->
-        <condition property="codesign.qz.cmd" value="--sign" else="--ownership">
-            <equals arg1="${codesign.qz}" arg2="0"/>
-        </condition>
-        <condition property="codesign.qz.val" value="${apple.packager.signid}" else="recommended">
-            <equals arg1="${codesign.qz}" arg2="0"/>
-        </condition>
-        <condition property="codesign.qz.suffix" value="" else="-community">
-            <equals arg1="${codesign.qz}" arg2="0"/>
-        </condition>
-
-        <exec executable="pkgbuild" failonerror="true">
-            <arg value="--identifier"/>
-            <arg value="${project.filename}"/>
-
-            <arg value="--nopayload"/>
-
-            <arg value="--install-location"/>
-            <arg value="/Applications/${project.name}.app"/>
-
-            <arg value="--scripts"/>
-            <arg value="${build.dir}/scripts"/>
-
-            <arg value="--version"/>
-            <arg value="${build.version}"/>
-
-            <arg value="${codesign.qz.cmd}"/>
-            <arg value="${codesign.qz.val}"/>
-
-            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}${codesign.qz.suffix}.pkg"/>
-        </exec>
-    </target>
-
-    <target name="build-dmg" depends="build-app,codesign-jre,get-version">
-        <echo level="info">Creating app bundle</echo>
-        <property file="ant/apple/apple.properties"/>
-
-        <!-- Dmg JSON -->
-        <copy file="ant/apple/appdmg.json.in" tofile="${build.dir}/appdmg.json">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
-
-        <!-- Codesign the entire bundle, including the JDK -->
-        <antcall target="codesign-bundle">
-            <!-- <param name="build.copydir" value="${dist.dir}/${project.name}.app"/> -->
-            <!-- FIXME: This param is redundant unless ".pkg" and ".dmg" diverge -->
-            <param name="build.appdir" value="${build.dir}/scripts/payload/${project.name}.app"/>
-            <!-- Set to the following value to "false" to disable sandboxed DMGs -->
-            <param name="build.sandboxed" value="true"/>
-        </antcall>
-
-        <!-- FIXME: Remove the non-standard "-community" code below -->
-        <!-- Disable signing and append "-community" if id is missing -->
-        <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
-            <arg value="-c"/>
-            <arg value="security find-identity -v |grep '(${apple.packager.signid})'"/>
-        </exec>
-
-        <condition property="codesign.qz.suffix" value="" else="-community">
-            <equals arg1="${codesign.qz}" arg2="0"/>
-        </condition>
-
-        <exec executable="appdmg" failonerror="true">
-            <arg value="${build.dir}/appdmg.json"/>
-            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}${codesign.qz.suffix}.dmg"/>
-        </exec>
-    </target>
-
-    <target name="codesign-jre" if="codesign.mac" unless="jre.skip">
-        <property file="ant/apple/apple.properties"/>
-    </target>
-
-    <target name="codesign-bundle">
-        <echo level="info" message="Configuring entitlements with build.sandboxed: ${build.sandboxed}"/>
         <copy file="ant/apple/apple-entitlements.plist.in" tofile="${build.dir}/apple-entitlements.plist">
             <filterchain><expandproperties/></filterchain>
         </copy>

@@ -3,11 +3,6 @@
     <import file="${basedir}/ant/version.xml"/>
     <property environment="env"/>
 
-    <!-- Inform javafx.xml  -->
-    <target name="nsis-preflight">
-        <property name="target.platform.windows" value="true"/>
-    </target>
-
     <target name="build-exe" depends="get-version">
         <!-- Launcher -->
         <antcall target="config-compile-sign">

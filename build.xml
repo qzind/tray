@@ -174,8 +174,23 @@
         </java>
     </target>
 
-    <target name="nsis" depends="nsis-preflight,distribute,download-jre,build-exe"/>
-    <target name="pkgbuild" depends="pkgbuild-preflight,distribute,download-jre,build-pkg"/>
-    <target name="dmg" depends="dmg-preflight,distribute,download-jre,build-dmg"/>
-    <target name="makeself" depends="makeself-preflight,distribute,download-jre,build-run"/>
+    <target name="nsis" depends="target-platform-windows,distribute,download-jre,build-exe"/>
+    <target name="pkgbuild" depends="target-platform-mac,distribute,download-jre,build-pkg"/>
+    <target name="dmg" depends="target-platform-mac,distribute,download-jre,build-dmg"/>
+    <target name="makeself" depends="target-platform-linux,distribute,download-jre,build-run"/>
+
+    <!-- Optionally, force Linux Java runtime and Java FX -->
+    <target name="target-platform-linux">
+        <property name="target.platform.linux" value="true"/>
+    </target>
+
+    <!-- Optionally, force Windows Java runtime and Java FX -->
+    <target name="target-platform-windows">
+        <property name="target.platform.windows" value="true"/>
+    </target>
+
+    <!-- Optionally, force Mac Java runtime and Java FX -->
+    <target name="target-platform-mac">
+        <property name="target.platform.mac" value="true"/>
+    </target>
 </project>

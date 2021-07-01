@@ -39,7 +39,7 @@
             </fileset>
         </chmod>
 
-        <!-- Disable signing and append "-community" if id is missing -->
+        <!-- Disable signing if id is missing -->
         <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
             <arg value="-c"/>
             <arg value="security find-identity -v |grep '(${apple.packager.signid})'"/>
@@ -95,7 +95,7 @@
             <param name="build.appdir" value="${dist.dir}/${project.name}.app"/>
         </antcall>
 
-        <!-- Disable signing and append "-community" if id is missing -->
+        <!-- Disable signing if id is missing -->
         <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
             <arg value="-c"/>
             <arg value="security find-identity -v |grep '(${apple.packager.signid})'"/>

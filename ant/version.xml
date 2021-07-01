@@ -11,11 +11,6 @@
         <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="apple.bundleid" timeout="60000" failonerror="true">
             <arg value="--bundleid"/>
         </java>
-
-        <!-- build.type -->
-        <condition property="build.type" value="-community">
-            <isset property="authcert.use"/>
-        </condition>
         <property description="fallback value" name="build.type" value=""/>
         <property description="fallback value" name="build.version" value=""/>
 

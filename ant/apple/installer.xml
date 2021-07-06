@@ -92,7 +92,7 @@
         <!-- Build app with sandboxing by default-->
         <property name="build.sandboxed" value="true"/>
         <antcall target="build-app">
-            <param name="build.appdir" value="${dist.dir}/${project.name}.app"/>
+            <param name="build.appdir" value="${build.dir}/${project.name}.app"/>
         </antcall>
 
         <!-- Disable signing if id is missing -->

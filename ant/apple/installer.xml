@@ -179,22 +179,23 @@
         </exec>
         <exec executable="codesign" failonerror="true">
             <arg value="--force"/>
-            <arg line="-s &quot;${apple.packager.signid}&quot;"/>
+            <arg value="-s"/>
+            <arg value="${apple.packager.signid}"/>
             <arg value="--timestamp"/>
-            <arg line="--options"/>
-            <arg line="runtime"/>
-            <arg line="--entitlement"/>
-            <arg line="${build.dir}/apple-entitlements.plist"/>
+            <arg value="--options"/>
+            <arg value="runtime"/>
+            <arg value="--entitlement"/>
+            <arg value="${build.dir}/apple-entitlements.plist"/>
             <arg value="${build.appdir}/Contents/PlugIns/Java.runtime"/>
         </exec>
         <exec executable="codesign" failonerror="true">
-            <arg value="--force"/>
-            <arg line="-s &quot;${apple.packager.signid}&quot;"/>
+            <arg value="-s"/>
+            <arg value="${apple.packager.signid}"/>
             <arg value="--timestamp"/>
-            <arg line="--options"/>
-            <arg line="runtime"/>
-            <arg line="--entitlement"/>
-            <arg line="${build.dir}/apple-entitlements.plist"/>
+            <arg value="--options"/>
+            <arg value="runtime"/>
+            <arg value="--entitlement"/>
+            <arg value="${build.dir}/apple-entitlements.plist"/>
             <arg value="${build.appdir}"/>
         </exec>
     </target>

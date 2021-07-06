@@ -162,7 +162,7 @@ public class WebApp extends Application {
                 if (SystemUtilities.isJar()) {
                     SystemUtilities.insertPathProperty(
                             "java.library.path",
-                            SystemUtilities.getJarParentPath() + "/libs/",
+                            SystemUtilities.getAppPath().resolve("Contents/Frameworks").toString(),
                             "/jni" /* appends to end if not found */
                     );
                 } else if (hasConflictingLib()) {

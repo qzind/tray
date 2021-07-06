@@ -168,9 +168,6 @@
         <copy file="ant/apple/apple-entitlements.plist.in" tofile="${build.dir}/apple-entitlements.plist">
             <filterchain><expandproperties/></filterchain>
         </copy>
-        <copy file="ant/apple/apple-entitlements-inherit.plist.in" tofile="${build.dir}/apple-entitlements-inherit.plist">
-            <filterchain><expandproperties/></filterchain>
-        </copy>
 
         <!-- use xargs to loop over and codesign all files-->
         <echo level="info" message="Signing ${build.appdir} using ${apple.packager.signid}"/>
@@ -178,22 +175,26 @@
         <!-- Currently the only file that may contains a space is the main executable which we omit from signing anyway. -->
         <exec executable="bash" failonerror="true" dir="${build.appdir}">
             <arg value="-c"/>
-            <arg value="find -X &quot;.&quot; -type f -not -path &quot;*/Contents/MacOS/*&quot; -exec sh -c 'file -I &quot;{}&quot; |grep -m1 &quot;x-mach-binary&quot;|cut -f 1 -d \:' \; |xargs codesign --force -s &quot;${apple.packager.signid}&quot; --timestamp --options runtime"/>
+            <arg value="find -X &quot;.&quot; -type f -not -path &quot;*/Contents/MacOS/*&quot; -exec sh -c 'file -I &quot;{}&quot; |grep -m1 &quot;x-mach-binary&quot;|cut -f 1 -d \:' \; |xargs codesign --force -s &quot;${apple.packager.signid}&quot; --timestamp --options runtime --entitlement &quot;${build.dir}/apple-entitlements.plist&quot;"/>
         </exec>
         <exec executable="codesign" failonerror="true">
             <arg value="--force"/>
             <arg line="-s &quot;${apple.packager.signid}&quot;"/>
             <arg value="--timestamp"/>
-            <arg line="--options runtime"/>
-            <arg line="--entitlement ${build.dir}/apple-entitlements-inherit.plist"/>
+            <arg line="--options"/>
+            <arg line="runtime"/>
+            <arg line="--entitlement"/>
+            <arg line="${build.dir}/apple-entitlements.plist"/>
             <arg value="${build.appdir}/Contents/PlugIns/Java.runtime"/>
         </exec>
         <exec executable="codesign" failonerror="true">
             <arg value="--force"/>
             <arg line="-s &quot;${apple.packager.signid}&quot;"/>
             <arg value="--timestamp"/>
-            <arg line="--options runtime"/>
-            <arg line="--entitlement ${build.dir}/apple-entitlements.plist"/>
+            <arg line="--options"/>
+            <arg line="runtime"/>
+            <arg line="--entitlement"/>
+            <arg line="${build.dir}/apple-entitlements.plist"/>
             <arg value="${build.appdir}"/>
         </exec>
     </target>

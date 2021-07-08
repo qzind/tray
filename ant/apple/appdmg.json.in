@@ -6,6 +6,6 @@
     { "x": 133, "y": 244, "type": "file", "path": "${build.dir}/${project.name}.app" }
   ],
   "code-sign": {
-    "signing-identity" : "${apple.packager.signid}"
+    "signing-identity" : "${codesign.activeid}"
   }
 }

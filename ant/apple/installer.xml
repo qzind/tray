@@ -8,9 +8,8 @@
     ################################################################
     -->
 
-    <target name="build-pkg" depends="codesign-jre,get-version">
+    <target name="build-pkg" depends="get-identity,get-version">
         <echo level="info">Creating installer using pkgbuild</echo>
-        <property file="ant/apple/apple.properties"/>
         <!--
         #####################################
         #  Create scripts, payload and pkg  #
@@ -39,17 +38,11 @@
             </fileset>
         </chmod>
 
-        <!-- Disable signing if id is missing -->
-        <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
-            <arg value="-c"/>
-            <arg value="security find-identity -v |grep '(${apple.packager.signid})'"/>
-        </exec>
-
         <!-- pkgbuild will fail on blank options; use ownership flag as a dummy fallback  -->
         <condition property="codesign.qz.cmd" value="--sign" else="--ownership">
             <equals arg1="${codesign.qz}" arg2="0"/>
         </condition>
-        <condition property="codesign.qz.val" value="${apple.packager.signid}" else="recommended">
+        <condition property="codesign.qz.val" value="${codesign.activeid}" else="recommended">
             <equals arg1="${codesign.qz}" arg2="0"/>
         </condition>
 
@@ -75,9 +68,8 @@
         </exec>
     </target>
 
-    <target name="build-dmg" depends="codesign-jre,get-version">
+    <target name="build-dmg" depends="get-identity,get-version">
         <echo level="info">Creating app bundle</echo>
-        <property file="ant/apple/apple.properties"/>
         <!--
         #####################################
         #  Create payload and bundle as dmg #
@@ -95,23 +87,13 @@
             <param name="build.appdir" value="${build.dir}/${project.name}.app"/>
         </antcall>
 
-        <!-- Disable signing if id is missing -->
-        <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
-            <arg value="-c"/>
-            <arg value="security find-identity -v |grep '(${apple.packager.signid})'"/>
-        </exec>
-
         <exec executable="appdmg" failonerror="true">
             <arg value="${build.dir}/appdmg.json"/>
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.dmg"/>
         </exec>
     </target>
 
-    <target name="codesign-jre" if="codesign.mac" unless="jre.skip">
-        <property file="ant/apple/apple.properties"/>
-    </target>
-
-    <target name="build-app">
+    <target name="build-app" depends="get-identity">
         <!-- App Bundle -->
         <mkdir dir="${build.appdir}"/>
 
@@ -170,17 +152,17 @@
         </copy>
 
         <!-- use xargs to loop over and codesign all files-->
-        <echo level="info" message="Signing ${build.appdir} using ${apple.packager.signid}"/>
+        <echo level="info" message="Signing ${build.appdir} using ${codesign.activeid}"/>
         <!-- Find -X fails on spaces but doesn't failonerror, this may lead to overlooked errors. -->
         <!-- Currently the only file that may contains a space is the main executable which we omit from signing anyway. -->
         <exec executable="bash" failonerror="true" dir="${build.appdir}">
             <arg value="-c"/>
-            <arg value="find -X &quot;.&quot; -type f -not -path &quot;*/Contents/MacOS/*&quot; -exec sh -c 'file -I &quot;{}&quot; |grep -m1 &quot;x-mach-binary&quot;|cut -f 1 -d \:' \; |xargs codesign --force -s &quot;${apple.packager.signid}&quot; --timestamp --options runtime --entitlement &quot;${build.dir}/apple-entitlements.plist&quot;"/>
+            <arg value="find -X &quot;.&quot; -type f -not -path &quot;*/Contents/MacOS/*&quot; -exec sh -c 'file -I &quot;{}&quot; |grep -m1 &quot;x-mach-binary&quot;|cut -f 1 -d \:' \; |xargs codesign --force -s &quot;${codesign.activeid}&quot; --timestamp --options runtime --entitlement &quot;${build.dir}/apple-entitlements.plist&quot;"/>
         </exec>
         <exec executable="codesign" failonerror="true">
             <arg value="--force"/>
             <arg value="-s"/>
-            <arg value="${apple.packager.signid}"/>
+            <arg value="${codesign.activeid}"/>
             <arg value="--timestamp"/>
             <arg value="--options"/>
             <arg value="runtime"/>
@@ -190,7 +172,7 @@
         </exec>
         <exec executable="codesign" failonerror="true">
             <arg value="-s"/>
-            <arg value="${apple.packager.signid}"/>
+            <arg value="${codesign.activeid}"/>
             <arg value="--timestamp"/>
             <arg value="--options"/>
             <arg value="runtime"/>
@@ -200,8 +182,8 @@
         </exec>
     </target>
 
-    <target name="codesign-jars" if="codesign.mac">
-        <property file="ant/apple/apple.properties"/>
+<!--    todo: how does codesign.mac work into all of this, is it redundant?-->
+    <target name="codesign-jars" if="codesign.mac" depends="get-identity">
         <exec executable="security">
             <arg value="add-certificates"/>
             <arg value="${basedir}/ant/apple/certs/apple-packager.cer"/>
@@ -231,7 +213,7 @@
         </antcall>
     </target>
 
-    <target name="codesign-libs">
+    <target name="codesign-libs" depends="get-identity">
         <path id="found.jar">
             <first>
                 <fileset dir="lib">
@@ -261,10 +243,10 @@
         </delete>
 
         <!-- Use xargs to loop over and codesign all files-->
-        <echo message="Signing ${found.jar.path} using ${apple.packager.signid}"/>
+        <echo message="Signing ${found.jar.path} using ${codesign.activeid}"/>
         <exec executable="bash" failonerror="true">
             <arg value="-c"/>
-            <arg value="echo &quot;${found.files.paths}&quot; |tr ':' '\n' |xargs codesign -f -s &quot;${apple.packager.signid}&quot; -v"/>
+            <arg value="echo &quot;${found.files.paths}&quot; |tr ':' '\n' |xargs codesign -f -s &quot;${codesign.activeid}&quot; -v"/>
         </exec>
 
         <pathconvert property="found.jar.rel">
@@ -275,5 +257,18 @@
 
         <!-- Cleanup temp folder-->
         <delete dir="${out.dir}/jar-signing"/>
+    </target>
+
+    <target name="get-identity">
+        <property file="ant/apple/apple.properties"/>
+        <!-- Disable signing if id is missing -->
+        <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
+            <arg value="-c"/>
+            <arg value="security find-identity -v |grep '(${apple.packager.signid})'"/>
+        </exec>
+
+        <condition property="codesign.activeid" value="${apple.packager.signid}" else="-">
+            <equals arg1="${codesign.qz}" arg2="0"/>
+        </condition>
     </target>
 </project>

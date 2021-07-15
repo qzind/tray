@@ -373,7 +373,12 @@ var qz = (function() {
                         });
                     }
 
-                    _qz.security.callCert().then(sendCert).catch(sendCert);
+                    function catchAndSendNull(error) {
+                        _qz.log.warn("Failed to get certificate:", error);
+                        sendCert(null);
+                    }
+
+                    _qz.security.callCert().then(sendCert).catch(catchAndSendNull);
                 },
 
                 /** Generate unique ID used to map a response to a call. */

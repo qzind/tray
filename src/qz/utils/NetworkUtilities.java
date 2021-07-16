@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.Properties;
 
 /**
  * @author Tres
@@ -30,6 +31,10 @@ public class NetworkUtilities {
     private static NetworkUtilities instance;
     private static String systemName = ShellUtilities.getHostName();
     private static String userName = System.getProperty("user.name");
+
+    // overridable in preferences, see "networking.hostname", "networking.port"
+    private static String defaultHostname = "google.com";
+    private static int defaultPort = 443;
 
     private ArrayList<Device> devices;
     private Device primaryDevice;
@@ -49,11 +54,12 @@ public class NetworkUtilities {
         return instance;
     }
 
-    public static JSONArray getDevicesJSON(String hostname, int port) throws JSONException {
+    public static JSONArray getDevicesJSON(JSONObject params) throws JSONException {
         JSONArray network = new JSONArray();
 
         try {
-            for(Device device : getInstance(hostname, port).gatherDevices()) {
+            for(Device device : getInstance(params.optString("hostname", defaultHostname),
+                                            params.optInt("port", defaultPort)).gatherDevices()) {
                 network.put(device.toJSON());
             }
         }
@@ -63,8 +69,9 @@ public class NetworkUtilities {
         return network;
     }
 
-    public static JSONObject getDeviceJSON(String hostname, int port) throws JSONException {
-        Device primary = getInstance(hostname, port).primaryDevice;
+    public static JSONObject getDeviceJSON(JSONObject params) throws JSONException {
+        Device primary = getInstance(params.optString("hostname", defaultHostname),
+                                     params.optInt("port", defaultPort)).primaryDevice;
 
         if (primary != null) {
             return primary.toJSON();
@@ -104,6 +111,25 @@ public class NetworkUtilities {
         }
 
         return null;
+    }
+
+    /**
+     * Sets the <code>defaultHostname</code> and <code>defaultPort</code> by parsing the properties file
+     */
+    public static void setPreferences(Properties props) {
+        String hostName = props.getProperty("networking.hostname");
+        if(hostName != null && !hostName.trim().isEmpty()) {
+            defaultHostname = hostName;
+        }
+
+        String port = props.getProperty("networking.port");
+        if(port != null && !port.trim().isEmpty()) {
+            try {
+                defaultPort = Integer.parseInt(port);
+            } catch(Exception parseError) {
+                log.warn("Unable to parse \"networking.port\"", parseError);
+            }
+        }
     }
 
     private static class Device {

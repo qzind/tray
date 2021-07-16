@@ -31,10 +31,7 @@ import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.ExpiryTask;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.installer.certificate.NativeCertificateInstaller;
-import qz.utils.ArgParser;
-import qz.utils.ArgValue;
-import qz.utils.FileUtilities;
-import qz.utils.SystemUtilities;
+import qz.utils.*;
 
 import javax.swing.*;
 import java.io.File;
@@ -89,6 +86,9 @@ public class PrintSocketServer {
             log.error("Something went critically wrong loading HTTPS", e);
         }
         Installer.getInstance().addUserSettings();
+
+        // Load overridable preferences set in qz-tray.properties file
+        NetworkUtilities.setPreferences(certificateManager.getProperties());
 
         // Linux needs the cert installed in user-space on every launch for Chrome SSL to work
         if (!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {

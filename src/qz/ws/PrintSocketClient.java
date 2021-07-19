@@ -573,17 +573,17 @@ public class PrintSocketClient {
                 break;
             }
             case NETWORKING_DEVICE_LEGACY:
-                JSONObject networkDevice = NetworkUtilities.getDeviceJSON(params.optString("hostname", "google.com"), params.optInt("port", 443));
+                JSONObject networkDevice = NetworkUtilities.getDeviceJSON(params);
                 JSONObject legacyDevice = new JSONObject();
                 legacyDevice.put("ipAddress", networkDevice.optString("ip", null));
                 legacyDevice.put("macAddress", networkDevice.optString("mac", null));
                 sendResult(session, UID, legacyDevice);
                 break;
             case NETWORKING_DEVICE:
-                sendResult(session, UID, NetworkUtilities.getDeviceJSON(params.optString("hostname", "google.com"), params.optInt("port", 443)));
+                sendResult(session, UID, NetworkUtilities.getDeviceJSON(params));
                 break;
             case NETWORKING_DEVICES:
-                sendResult(session, UID, NetworkUtilities.getDevicesJSON(params.optString("hostname", "google.com"), params.optInt("port", 443)));
+                sendResult(session, UID, NetworkUtilities.getDevicesJSON(params));
                 break;
             case GET_VERSION:
                 sendResult(session, UID, Constants.VERSION);

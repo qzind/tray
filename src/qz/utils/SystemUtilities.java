@@ -178,7 +178,7 @@ public class SystemUtilities {
         try {
             String uri = URLDecoder.decode(SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8");
             jarPath = Paths.get(uri);
-            if (jarPath == null) return null;
+            if (jarPath == null) return Paths.get("");
             jarPath = jarPath.toAbsolutePath();
         } catch(InvalidPathException | UnsupportedEncodingException ex) {
             log.error("Unable to determine Jar path", ex);
@@ -192,7 +192,7 @@ public class SystemUtilities {
      */
     public static Path getJarParentPath(){
         Path path = getJarPath();
-        if (path == null) return null;
+        if (path == null || path.getParent() == null) return Paths.get("");
         return path.getParent();
     }
 

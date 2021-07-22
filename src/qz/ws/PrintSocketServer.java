@@ -58,13 +58,12 @@ public class PrintSocketServer {
             PrintSocketServer.setTrayManager(new TrayManager(headless));
         });
 
-        Server server = findAvailableSecurePort(certManager);
+        server = findAvailableSecurePort(certManager);
         Connector secureConnector = null;
         if (server.getConnectors().length > 0 && !server.getConnectors()[0].isFailed()) {
             secureConnector = server.getConnectors()[0];
         }
 
-        final AtomicBoolean running = new AtomicBoolean(false);
         while(!running.get() && insecurePortIndex.get() < INSECURE_PORTS.size()) {
             try {
                 ServerConnector connector = new ServerConnector(server);
@@ -85,7 +84,7 @@ public class PrintSocketServer {
 
                 // Handle HTTP landing page
                 ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet(certManager));
-                httpServlet.setInitParameter("resourceBase","/");
+                httpServlet.setInitParameter("resourceBase", "/");
 
                 context.addServlet(httpServlet, "/");
                 context.addServlet(httpServlet, "/json");
@@ -93,6 +92,20 @@ public class PrintSocketServer {
                 server.setHandler(context);
                 server.setStopAtShutdown(true);
                 server.start();
+
+                trayManager.setReloadThread(new Thread(() -> {
+                    try {
+                        trayManager.setDangerIcon();
+                        running.set(false);
+                        securePortIndex.set(0);
+                        insecurePortIndex.set(0);
+                        server.stop();
+                    }
+                    catch(Exception e) {
+                        log.error("Failed to reload", e);
+                        trayManager.displayErrorMessage("Error stopping print socket: " + e.getLocalizedMessage());
+                    }
+                }));
 
                 running.set(true);
 
@@ -164,18 +177,6 @@ public class PrintSocketServer {
 
     public static void setTrayManager(TrayManager manager) {
         trayManager = manager;
-        trayManager.setReloadThread(new Thread(() -> {
-            try {
-                trayManager.setDangerIcon();
-                running.set(false);
-                securePortIndex.set(0);
-                insecurePortIndex.set(0);
-                server.stop();
-            }
-            catch(Exception e) {
-                trayManager.displayErrorMessage("Error stopping print socket: " + e.getLocalizedMessage());
-            }
-        }));
     }
 
     public static TrayManager getTrayManager() {

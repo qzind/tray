@@ -176,9 +176,9 @@ public class SystemUtilities {
         // jarPath won't change, send the cached value if we have it
         if (jarPath != null) return jarPath;
         try {
-            String uri = URLDecoder.decode(SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8");
-            jarPath = Paths.get(uri);
-            if (jarPath == null) return Paths.get("");
+            String url = URLDecoder.decode(SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8");
+            jarPath = new File(url).toPath();
+            if (jarPath == null) return null;
             jarPath = jarPath.toAbsolutePath();
         } catch(InvalidPathException | UnsupportedEncodingException ex) {
             log.error("Unable to determine Jar path", ex);
@@ -192,7 +192,7 @@ public class SystemUtilities {
      */
     public static Path getJarParentPath(){
         Path path = getJarPath();
-        if (path == null || path.getParent() == null) return Paths.get("");
+        if (path == null || path.getParent() == null) return null;
         return path.getParent();
     }
 

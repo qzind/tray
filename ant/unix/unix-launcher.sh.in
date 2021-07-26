@@ -110,7 +110,7 @@ fi
 if command -v java &>/dev/null; then
     echo -e "$ABOUT_TITLE is starting..."
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$DIR/Contents/Resources/apple-icon.icns" -jar -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="true" "$DIR/../Resources/${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
+        java $LAUNCH_OPTS -Xdock:name="$ABOUT_TITLE" -Xdock:icon="$DIR/../Resources/$PROPS_FILE.icns" -jar -Dapple.awt.UIElement="true" -Dapple.awt.enableTemplateImages="true" "$DIR/../Resources/${prefix}$PROPS_FILE.jar" -NSRequiresAquaSystemAppearance False "$@"
     else
         java $LAUNCH_OPTS -jar "$PROPS_FILE.jar" "$@"
     fi

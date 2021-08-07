@@ -33,6 +33,12 @@ public class H4J_HidListener implements DeviceListener, HidServicesListener {
     }
 
     @Override
+    public void hidDataReceived(HidServicesEvent hidServicesEvent) {
+        log.debug("Data received: {}", hidServicesEvent.getDataReceived().length + " bytes");
+        // TODO: Handle event?
+    }
+
+    @Override
     public void hidDeviceDetached(HidServicesEvent hidServicesEvent) {
         log.debug("Device detached: {}", hidServicesEvent.getHidDevice().getProduct());
         PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Detached"));

@@ -1,7 +1,9 @@
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
+import com.sun.jna.Native;
 import com.sun.jna.platform.win32.*;
+import com.sun.jna.win32.W32APIOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -284,5 +286,38 @@ public class WindowsUtilities {
         String args = String.format("'Copy-Item',-Path,'%s',-Destination,'%s'", source, destination);
         String[] command = {"Start-Process", "powershell.exe", "-ArgumentList", args, "-Wait", "-Verb", "RunAs"};
         return ShellUtilities.execute("powershell.exe", "-command", String.join(" ", command));
+    }
+
+    static int getProcessId() {
+        try {
+            return Kernel32.INSTANCE.GetCurrentProcessId();
+        } catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
+            log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
+        }
+        return -1;
+    }
+
+    static boolean processRunning(int pid) {
+        Kernel32 kernel32 = null;
+        WinNT.HANDLE snapshot = null;
+        try {
+            kernel32 = Native.load(Kernel32.class, W32APIOptions.UNICODE_OPTIONS);
+            Tlhelp32.PROCESSENTRY32.ByReference processEntry = new Tlhelp32.PROCESSENTRY32.ByReference();
+            snapshot = kernel32.CreateToolhelp32Snapshot(Tlhelp32.TH32CS_SNAPPROCESS, new WinDef.DWORD(0));
+
+            int i = 0;
+            int size = processEntry.dwSize.intValue();
+            while (kernel32.Process32Next(snapshot, processEntry) && i < size) {
+                if (processEntry.th32ProcessID.intValue() == pid)
+                    return true;
+                i++;
+            }
+        } catch(Exception e) {
+            log.warn("An exception occurred trying to see if pid {} is running", pid, e);
+        }
+        if(kernel32 != null && snapshot != null) {
+            kernel32.CloseHandle(snapshot);
+        }
+        return false;
     }
 }

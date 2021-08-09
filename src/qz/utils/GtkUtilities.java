@@ -98,7 +98,7 @@ public class GtkUtilities {
     }
 
     private interface GTK3 extends GTK {
-        GTK3 INSTANCE = Native.loadLibrary("gtk-3", GTK3.class);
+        GTK3 INSTANCE = Native.load("gtk-3", GTK3.class);
 
         // Gtk 3.0+
         int gtk_get_minor_version ();
@@ -112,7 +112,7 @@ public class GtkUtilities {
     }
 
     private interface GTK2 extends GTK {
-        GTK2 INSTANCE = Native.loadLibrary("gtk-x11-2.0", GTK2.class);
+        GTK2 INSTANCE = Native.load("gtk-x11-2.0", GTK2.class);
 
         // Gtk 2.1-3.0
         double gdk_screen_get_resolution(Pointer screen);

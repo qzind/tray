@@ -588,7 +588,17 @@ public class PrintSocketClient {
             case GET_VERSION:
                 sendResult(session, UID, Constants.VERSION);
                 break;
+            case WEBSOCKET_STEAL:
+                log.info("Another instance of {} is asking this to close", Constants.ABOUT_TITLE);
+                int pid = json.optInt("pid", -1);
+                if(pid != -1) {
+                    // TODO: Verify valid PID
+                    log.info("Shutting down per request of pid {}", pid);
 
+                    session.close(SingleInstanceChecker.REQUEST_INSTANCE_TAKEOVER);
+                    trayManager.exit(0);
+                }
+                log.warn("A valid pid was not provided, ignoring request to close");
             case INVALID:
             default:
                 sendError(session, UID, "Invalid function call: " + json.optString("call", "NONE"));

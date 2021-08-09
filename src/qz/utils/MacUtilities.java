@@ -149,7 +149,7 @@ public class MacUtilities {
         return 1;
     }
 
-    public static int getProcessID() {
+    static int getProcessId() {
         if(pid == null) {
             try {
                 pid = CLibrary.INSTANCE.getpid();
@@ -163,7 +163,7 @@ public class MacUtilities {
     }
 
     private interface CLibrary extends Library {
-        CLibrary INSTANCE = (CLibrary) Native.loadLibrary("c", CLibrary.class);
+        CLibrary INSTANCE = Native.load("c", CLibrary.class);
         int getpid ();
     }
 

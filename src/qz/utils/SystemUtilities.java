@@ -111,6 +111,13 @@ public class SystemUtilities {
         }
     }
 
+    public static int getProcessId() {
+        if(isWindows()) {
+            return WindowsUtilities.getProcessId();
+        }
+        return MacUtilities.getProcessId();  // works for Linux too
+    }
+
     /**
      * Handle Java versioning nuances
      * To eventually be replaced with <code>java.lang.Runtime.Version</code> (JDK9+)
@@ -359,7 +366,7 @@ public class SystemUtilities {
         if (Constants.MASK_TRAY_SUPPORTED) {
             if (SystemUtilities.isMac()) {
                 // Assume a pid of -1 is a broken JNA
-                return MacUtilities.getProcessID() != -1;
+                return MacUtilities.getProcessId() != -1;
             } else if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().getMajorVersion() >= 10) {
                 return true;
             }

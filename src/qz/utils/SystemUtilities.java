@@ -12,6 +12,7 @@ package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.ssl.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -22,12 +23,15 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Random;
 import java.util.TimeZone;
 
 import static com.sun.jna.platform.win32.WinReg.*;
@@ -116,13 +120,6 @@ public class SystemUtilities {
             return WindowsUtilities.getProcessId();
         }
         return MacUtilities.getProcessId(); // works for Linux too
-    }
-
-    public static boolean processRunning(int pid) {
-        if(SystemUtilities.isWindows()) {
-            return WindowsUtilities.processRunning(pid);
-        }
-        return MacUtilities.processRunning(pid); // works for Linux too
     }
 
     /**
@@ -597,5 +594,56 @@ public class SystemUtilities {
         } catch (Exception e) {
             log.warn("Unable to apply JDK-8266929 patch.  Some algorithms may fail.", e);
         }
+    }
+
+    /**
+     * A challenge which can only be calculated by an app installed and running on this machine
+     * Calculates two bytes:
+     * - First byte is a salted version of the timestamp of qz-tray.jar
+     * - Second byte is a throw-away byte
+     * - Bytes are converted to Base64 and returned as a String
+     */
+    public static String calculateSaltedChallenge() {
+        int salt = new Random().nextInt(9);
+        long salted = (calculateChallenge() * 10) + salt;
+        long obfuscated = salted * new Random().nextInt(9);
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 2);
+        buffer.putLong(obfuscated);
+        buffer.putLong(0, salted);
+        return new String(Base64.encodeBase64(buffer.array(), false), StandardCharsets.UTF_8);
+    }
+
+    private static long calculateChallenge() {
+        if(getJarPath() != null) {
+            File jarFile = new File(getJarPath());
+            if (jarFile.exists()) {
+                return jarFile.lastModified();
+            }
+        }
+        return -1L; // Fallback when running from IDE
+    }
+
+    /**
+     * Decodes challenge string to see if it originated from this application
+     * - Base64 string is decoded into two bytes
+     * - First byte is unsalted
+     * - Second byte is ignored
+     * - If unsalted value of first byte matches the timestamp of qz-tray.jar, return true
+     * - If unsalted value doesn't match or if any exceptions occurred, we assume the message is invalid
+     */
+    public static boolean validateSaltedChallenge(String message) {
+        try {
+            log.info("Attempting to validating challenge: {}", message);
+            byte[] decoded = Base64.decodeBase64(message);
+            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 2);
+            buffer.put(decoded);
+            buffer.flip();//need flip
+            long salted = buffer.getLong(0); // only first byte matters
+            long challenge = salted / 10L;
+            return challenge == calculateChallenge();
+        } catch(Exception ignore) {
+            log.warn("An exception occurred validating challenge: {}", message, ignore);
+        }
+        return false;
     }
 }

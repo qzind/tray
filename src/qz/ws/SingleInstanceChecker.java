@@ -21,10 +21,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.TrayManager;
+import qz.utils.ArgValue;
 import qz.utils.SystemUtilities;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Properties;
 
 /**
  * Created by Kyle on 12/1/2015.
@@ -38,11 +40,13 @@ public class SingleInstanceChecker {
     public static CloseStatus INSTANCE_ALREADY_RUNNING = new CloseStatus(4441, "Already running");
     public static CloseStatus REQUEST_INSTANCE_TAKEOVER = new CloseStatus(4442, "WebSocket stolen");
 
+    public static final String STEAL_WEBSOCKET_FLAG = "stealWebsocket";
+    public static final String STEAL_WEBSOCKET_PROPERTY = "websocket.steal";
+
     private static final int AUTO_CLOSE = 6 * 1000;
     private static final int TIMEOUT = 3 * 1000;
 
-    // FIXME: This should default to false :)
-    private static boolean steal = true;
+    public static boolean stealWebsocket;
 
     private TrayManager trayManager;
     private WebSocketClient client;
@@ -77,7 +81,7 @@ public class SingleInstanceChecker {
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason) {
-        log.warn("Connection closed, {}", reason);
+        log.warn("Remote connection closed - {}", reason);
     }
 
     @OnWebSocketError
@@ -100,11 +104,9 @@ public class SingleInstanceChecker {
 
     @OnWebSocketMessage
     public void onMessage(Session session, String message) {
-        // session.close();
-
         if (message.equals(Constants.PROBE_RESPONSE)) {
             log.warn("{} is already running on {}", Constants.ABOUT_TITLE, session.getRemoteAddress().toString());
-            if(steal) {
+            if(stealWebsocket) {
                 stealInstance(session);
             } else {
                 shutDown(session);
@@ -122,10 +124,11 @@ public class SingleInstanceChecker {
         log.info("Asking other instance of {} to shut down.", Constants.ABOUT_TITLE);
         try {
             JSONObject reply = new JSONObject();
-            reply.put("call", SocketMethod.WEBSOCKET_STEAL.getCallName());
-            reply.put("pid", SystemUtilities.getProcessId());
+            reply.put("call", SocketMethod.WEBSOCKET_STOP.getCallName());
+            // Send something unique, only an app running on this PC would know
+            reply.put("challenge", SystemUtilities.calculateSaltedChallenge());
             session.getRemote().sendString(reply.toString());
-            log.info("Shutdown message delivered.");
+            log.info("Remote shutdown message delivered.");
         }
         catch(IOException | JSONException e) {
             log.warn("Unable to send message, giving up.", e);
@@ -149,12 +152,22 @@ public class SingleInstanceChecker {
         }).start();
     }
 
-    /**
-     * Indicate if this instance is to survive when two are detected (default is false)
-     *
-     * @param steal Whether or not to steal the instance and request the other to shutdown
-     */
-    public void setSteal(boolean steal) {
-        SingleInstanceChecker.steal = steal;
+    public static void setPreferences(Properties props) {
+        // Don't override if already set via command line
+        if(stealWebsocket) {
+            log.info("Picked up command line flag: {}", ArgValue.STEAL.getMatches()[0]);
+        } else {
+            // Don't override if set by System property
+            stealWebsocket = Boolean.parseBoolean(System.getProperty(STEAL_WEBSOCKET_FLAG, "false"));
+            if (stealWebsocket) {
+                log.info("Picked up flag from system property: {}", STEAL_WEBSOCKET_FLAG);
+            } else {
+                stealWebsocket = Boolean.parseBoolean(props.getProperty(STEAL_WEBSOCKET_PROPERTY, "false"));
+                if (stealWebsocket) {
+                    log.info("Picked up flag from properties file: {}", STEAL_WEBSOCKET_PROPERTY);
+                }
+            }
+        }
+        log.info("If other instances of {} are found, {} INSTANCE will shut down", Constants.ABOUT_TITLE, stealWebsocket ? "the OTHER" : "THIS");
     }
 }

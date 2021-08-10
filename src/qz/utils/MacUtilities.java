@@ -162,11 +162,6 @@ public class MacUtilities {
         return pid;
     }
 
-    static boolean processRunning(int pid) {
-        // TODO: Convert to JNI
-        return ShellUtilities.execute("ps", "-p", "" + pid);
-    }
-
     private interface CLibrary extends Library {
         CLibrary INSTANCE = Native.load("c", CLibrary.class);
         int getpid ();

@@ -296,28 +296,4 @@ public class WindowsUtilities {
         }
         return -1;
     }
-
-    static boolean processRunning(int pid) {
-        Kernel32 kernel32 = null;
-        WinNT.HANDLE snapshot = null;
-        try {
-            kernel32 = Native.load(Kernel32.class, W32APIOptions.UNICODE_OPTIONS);
-            Tlhelp32.PROCESSENTRY32.ByReference processEntry = new Tlhelp32.PROCESSENTRY32.ByReference();
-            snapshot = kernel32.CreateToolhelp32Snapshot(Tlhelp32.TH32CS_SNAPPROCESS, new WinDef.DWORD(0));
-
-            int i = 0;
-            int size = processEntry.dwSize.intValue();
-            while (kernel32.Process32Next(snapshot, processEntry) && i < size) {
-                if (processEntry.th32ProcessID.intValue() == pid)
-                    return true;
-                i++;
-            }
-        } catch(Exception e) {
-            log.warn("An exception occurred trying to see if pid {} is running", pid, e);
-        }
-        if(kernel32 != null && snapshot != null) {
-            kernel32.CloseHandle(snapshot);
-        }
-        return false;
-    }
 }

@@ -12,7 +12,7 @@ public class Constants {
     public static final String HEXES = "0123456789ABCDEF";
     public static final char[] HEXES_ARRAY = HEXES.toCharArray();
     public static final int BYTE_BUFFER_SIZE = 8192;
-    public static final Version VERSION = Version.valueOf("2.1.3");
+    public static final Version VERSION = Version.valueOf("2.1.3+steal1");
     public static final Version JAVA_VERSION = SystemUtilities.getJavaVersion();
     public static final String JAVA_VENDOR = System.getProperty("java.vendor");
 
@@ -23,7 +23,7 @@ public class Constants {
     public static final String LOG_FILE = "debug";
     public static final String PROPS_FILE = "qz-tray"; // .properties extension is assumed
     public static final String PREFS_FILE = "prefs"; // .properties extension is assumed
-    public static final String[] PERSIST_PROPS = { "file.whitelist", "file.allow", "networking.hostname", "networking.port" };
+    public static final String[] PERSIST_PROPS = { "file.whitelist", "file.allow", "networking.hostname", "networking.port", "websocket.steal" };
     public static final String AUTOSTART_FILE = ".autostart";
     public static final String DATA_DIR = "qz";
     public static final int LOG_SIZE = 524288;

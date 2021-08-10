@@ -12,6 +12,7 @@ package qz.installer;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.common.Constants;
 import qz.utils.FileUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
@@ -66,8 +67,8 @@ public class MacInstaller extends Installer {
     public Installer addSystemSettings() {
         // Chrome protocol handler
         String plist = "/Library/Preferences/com.google.Chrome.plist";
-        if(ShellUtilities.execute(new String[] { "/usr/bin/defaults", "write", plist }, new String[] { "qz://*" }).isEmpty()) {
-            ShellUtilities.execute("/usr/bin/defaults", "write", plist, "URLWhitelist", "-array-add", "qz://*");
+        if(ShellUtilities.execute(new String[] { "/usr/bin/defaults", "write", plist }, new String[] {DATA_DIR + "://*" }).isEmpty()) {
+            ShellUtilities.execute("/usr/bin/defaults", "write", plist, "URLWhitelist", "-array-add", DATA_DIR +"://*");
         }
         return this;
     }

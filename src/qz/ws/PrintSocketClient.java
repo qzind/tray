@@ -5,6 +5,7 @@ import org.apache.commons.io.IOUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.*;
@@ -46,6 +47,11 @@ public class PrintSocketClient {
     //websocket port -> Connection
     private static final HashMap<Integer,SocketConnection> openConnections = new HashMap<>();
 
+    private Server server;
+
+    public PrintSocketClient(Server server) {
+        this.server = server;
+    }
 
     @OnWebSocketConnect
     public void onConnect(Session session) {
@@ -588,15 +594,21 @@ public class PrintSocketClient {
             case GET_VERSION:
                 sendResult(session, UID, Constants.VERSION);
                 break;
-            case WEBSOCKET_STEAL:
+            case WEBSOCKET_STOP:
                 log.info("Another instance of {} is asking this to close", Constants.ABOUT_TITLE);
-                int pid = json.optInt("pid", -1);
-                if(pid != -1 && SystemUtilities.processRunning(pid)) {
-                    log.info("Honoring shutdown request by pid {}", pid);
+                String challenge = json.optString("challenge", "");
+                if(SystemUtilities.validateSaltedChallenge(challenge)) {
+                    log.info("Challenge validated: {}, honoring shutdown request", challenge);
+
                     session.close(SingleInstanceChecker.REQUEST_INSTANCE_TAKEOVER);
+                    try {
+                        server.stop();
+                    } catch(Exception ignore) {}
                     trayManager.exit(0);
+                } else {
+                    log.warn("A valid challenge was not provided: {}, ignoring request to close", challenge);
                 }
-                log.warn("A valid pid was not provided, ignoring request to close");
+                break;
             case INVALID:
             default:
                 sendError(session, UID, "Invalid function call: " + json.optString("call", "NONE"));

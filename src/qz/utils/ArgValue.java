@@ -31,6 +31,8 @@ public enum ArgValue {
     // Options
     AUTOSTART(OPTION,"Read and honor any autostart preferences before launching.", null,
               "--honorautostart", "-A"),
+    STEAL(OPTION, "Ask other running instance to stop so that this instance can take precedence.", null,
+          "--steal", Constants.DATA_DIR + ":steal"),
     HEADLESS(OPTION, "Force startup \"headless\" without graphical interface or interactive components.", null,
              "--headless"),
 

@@ -115,7 +115,14 @@ public class SystemUtilities {
         if(isWindows()) {
             return WindowsUtilities.getProcessId();
         }
-        return MacUtilities.getProcessId();  // works for Linux too
+        return MacUtilities.getProcessId(); // works for Linux too
+    }
+
+    public static boolean processRunning(int pid) {
+        if(SystemUtilities.isWindows()) {
+            return WindowsUtilities.processRunning(pid);
+        }
+        return MacUtilities.processRunning(pid); // works for Linux too
     }
 
     /**

@@ -119,12 +119,13 @@ public class SingleInstanceChecker {
     }
 
     private void stealInstance(Session session) {
-        log.info("Asking other instance of {} to shutting down.", Constants.ABOUT_TITLE);
+        log.info("Asking other instance of {} to shut down.", Constants.ABOUT_TITLE);
         try {
             JSONObject reply = new JSONObject();
             reply.put("call", SocketMethod.WEBSOCKET_STEAL.getCallName());
             reply.put("pid", SystemUtilities.getProcessId());
             session.getRemote().sendString(reply.toString());
+            log.info("Shutdown message delivered.");
         }
         catch(IOException | JSONException e) {
             log.warn("Unable to send message, giving up.", e);

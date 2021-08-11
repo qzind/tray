@@ -176,7 +176,7 @@ public class BasicDialog extends JDialog implements Themeable {
         // fix window focus on macOS
         if (SystemUtilities.isMac() && !GraphicsEnvironment.isHeadless()) {
             ShellUtilities.executeAppleScript("tell application \"System Events\" \n" +
-                                                      "set frontmost of every process whose unix id is " + MacUtilities.getProcessID() + " to true \n" +
+                                                      "set frontmost of every process whose unix id is " + SystemUtilities.getProcessId() + " to true \n" +
                                                       "end tell");
         }
         super.setVisible(b);

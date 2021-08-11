@@ -143,6 +143,7 @@ public class AboutInfo {
     }
 
     public static Version findLatestVersion() {
+        log.trace("Looking for newer versions of {} online", Constants.ABOUT_TITLE);
         try {
             URL api = new URL(Constants.VERSION_CHECK_URL);
             BufferedReader br = new BufferedReader(new InputStreamReader(api.openStream()));
@@ -158,14 +159,14 @@ public class AboutInfo {
                 JSONObject versionData = versions.getJSONObject(i);
                 if(versionData.getString("target_commitish").equals("master")) {
                     Version latestVersion = Version.valueOf(versionData.getString("name"));
-                    log.trace("Found latest version: {}", latestVersion);
+                    log.trace("Found latest version of {} online: {}", Constants.ABOUT_TITLE, latestVersion);
                     return latestVersion;
                 }
             }
-            log.error("Failed to get latest version info");
+            throw new Exception("Could not find valid json version information online.");
         }
         catch(Exception e) {
-            log.error("Failed to get latest version info", e);
+            log.error("Failed to get latest version of {} online", Constants.ABOUT_TITLE, e);
         }
 
         return Constants.VERSION;

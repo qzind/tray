@@ -1,7 +1,9 @@
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
+import com.sun.jna.Native;
 import com.sun.jna.platform.win32.*;
+import com.sun.jna.win32.W32APIOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -284,5 +286,14 @@ public class WindowsUtilities {
         String args = String.format("'Copy-Item',-Path,'%s',-Destination,'%s'", source, destination);
         String[] command = {"Start-Process", "powershell.exe", "-ArgumentList", args, "-Wait", "-Verb", "RunAs"};
         return ShellUtilities.execute("powershell.exe", "-command", String.join(" ", command));
+    }
+
+    static int getProcessId() {
+        try {
+            return Kernel32.INSTANCE.GetCurrentProcessId();
+        } catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
+            log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
+        }
+        return -1;
     }
 }

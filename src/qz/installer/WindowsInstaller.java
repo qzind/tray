@@ -62,6 +62,8 @@ public class WindowsInstaller extends Installer {
 
     public Installer addAppLauncher() {
         try {
+            // Delete old 2.0 launcher
+            FileUtils.deleteQuietly(new File(COMMON_START_MENU + File.separator + "Programs" + File.separator + ABOUT_TITLE + ".lnk"));
             Path loc = Paths.get(COMMON_START_MENU.toString(), "Programs", ABOUT_TITLE);
             loc.toFile().mkdirs();
             String lnk = loc + File.separator + ABOUT_TITLE + ".lnk";

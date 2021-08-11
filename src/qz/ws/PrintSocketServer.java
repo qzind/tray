@@ -43,6 +43,9 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static qz.utils.ArgParser.ExitStatus.SUCCESS;
+import static qz.utils.ArgValue.STEAL;
+
 /**
  * Created by robert on 9/9/2014.
  */
@@ -63,13 +66,14 @@ public class PrintSocketServer {
 
     private static boolean forceHeadless;
 
-
     public static void main(String[] args) {
         ArgParser parser = new ArgParser(args);
         if (parser.intercept()) {
             System.exit(parser.getExitCode());
         }
         forceHeadless = parser.hasFlag(ArgValue.HEADLESS);
+        SingleInstanceChecker.stealWebsocket = parser.hasFlag(STEAL);
+
         log.info(Constants.ABOUT_TITLE + " version: {}", Constants.VERSION);
         log.info(Constants.ABOUT_TITLE + " vendor: {}", Constants.ABOUT_COMPANY);
         log.info("Java version: {}", Constants.JAVA_VERSION.toString());
@@ -89,6 +93,7 @@ public class PrintSocketServer {
 
         // Load overridable preferences set in qz-tray.properties file
         NetworkUtilities.setPreferences(certificateManager.getProperties());
+        SingleInstanceChecker.setPreferences(certificateManager.getProperties());
 
         // Linux needs the cert installed in user-space on every launch for Chrome SSL to work
         if (!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {
@@ -151,7 +156,7 @@ public class PrintSocketServer {
 
                 // Handle WebSocket connections
                 WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configure(context);
-                filter.addMapping(new ServletPathSpec("/"), (req, resp) -> new PrintSocketClient());
+                filter.addMapping(new ServletPathSpec("/"), (req, resp) -> new PrintSocketClient(server));
                 filter.getFactory().getPolicy().setMaxTextMessageSize(MAX_MESSAGE_SIZE);
 
                 // Handle HTTP landing page

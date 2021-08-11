@@ -26,7 +26,7 @@ matrix:
       osx_image: xcode12.2
       arch: amd64
     - os: osx
-      env: TARGET="-Djre.arch=aarch64 pkgbuild"
+      env: TARGET="-Dtarget.arch=aarch64 pkgbuild"
       jdk: openjdk11
       osx_image: xcode12.3
       arch: amd64

@@ -341,6 +341,7 @@ public class CertificateManager {
         boolean sandboxed = false;
         if(SystemUtilities.isMac()) {
              sandboxed = MacUtilities.isSandboxed();
+             //todo move to about security table or delete
              log.debug("Running in a sandbox: {}", sandboxed);
         }
 

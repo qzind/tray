@@ -8,7 +8,7 @@
     ################################################################
     -->
 
-    <target name="build-pkg" depends="get-identity,get-version">
+    <target name="build-pkg" depends="get-identity,add-certificates,get-version">
         <echo level="info">Creating installer using pkgbuild</echo>
         <!--
         #####################################
@@ -68,7 +68,7 @@
         </exec>
     </target>
 
-    <target name="build-dmg" depends="get-identity,get-version">
+    <target name="build-dmg" depends="get-identity,add-certificates,get-version">
         <echo level="info">Creating app bundle</echo>
         <!--
         #####################################
@@ -157,7 +157,7 @@
         <!-- Currently the only file that may contains a space is the main executable which we omit from signing anyway. -->
         <exec executable="bash" failonerror="true" dir="${build.appdir}">
             <arg value="-c"/>
-            <arg value="find -X &quot;.&quot; -type f -not -path &quot;*/Contents/MacOS/*&quot; -exec sh -c 'file -I &quot;{}&quot; |grep -m1 &quot;x-mach-binary&quot;|cut -f 1 -d \:' \; |xargs codesign --force -s &quot;${codesign.activeid}&quot; --timestamp --options runtime --entitlement &quot;${build.dir}/apple-entitlements.plist&quot;"/>
+            <arg value="find -X &quot;.&quot; -type f -not -path &quot;*/Contents/MacOS/*&quot; -exec sh -c 'file -I &quot;{}&quot; |grep -m1 &quot;x-mach-binary&quot;|cut -f 1 -d \:' \; |xargs codesign --force -s &quot;${codesign.activeid}&quot; --timestamp --options runtime"/>
         </exec>
         <exec executable="codesign" failonerror="true">
             <arg value="--force"/>
@@ -168,6 +168,7 @@
             <arg value="runtime"/>
             <arg value="--entitlement"/>
             <arg value="${build.dir}/apple-entitlements.plist"/>
+            <arg value="${build.appdir}/Contents/PlugIns/Java.runtime/Contents/Home/bin/java"/>
             <arg value="${build.appdir}/Contents/PlugIns/Java.runtime"/>
         </exec>
         <exec executable="codesign" failonerror="true">
@@ -180,83 +181,34 @@
             <arg value="${build.dir}/apple-entitlements.plist"/>
             <arg value="${build.appdir}"/>
         </exec>
+
+        <antcall target="verify-signature"/>
     </target>
 
-<!--    todo: how does codesign.mac work into all of this, is it redundant?-->
-    <target name="codesign-jars" if="codesign.mac" depends="get-identity">
+    <target name="add-certificates" depends="get-identity">
         <exec executable="security">
             <arg value="add-certificates"/>
             <arg value="${basedir}/ant/apple/certs/apple-packager.cer"/>
             <arg value="${basedir}/ant/apple/certs/apple-intermediate.cer"/>
             <arg value="${basedir}/ant/apple/certs/apple-codesign.cer"/>
         </exec>
-        <antcall target="codesign-libs">
-            <param name="signing.jarname" value="communication/jna-*.jar"/>
-            <param name="signing.excluded" value="communication/jna-platform-*.jar"/>
-            <param name="signing.filetype" value="*.jnilib"/>
-        </antcall>
-        <antcall target="codesign-libs">
-            <param name="signing.jarname" value="communication/jssc-*.jar"/>
-            <param name="signing.filetype" value="*.dylib"/>
-        </antcall>
-        <antcall target="codesign-libs">
-            <param name="signing.jarname" value="communication/hid4java-*.jar"/>
-            <param name="signing.filetype" value="*.dylib"/>
-        </antcall>
-        <antcall target="codesign-libs">
-            <param name="signing.jarname" value="communication/libusb4java-*-osx-x86.jar"/>
-            <param name="signing.filetype" value="*.dylib"/>
-        </antcall>
-        <antcall target="codesign-libs">
-            <param name="signing.jarname" value="communication/libusb4java-*-osx-x86_64.jar"/>
-            <param name="signing.filetype" value="*.dylib"/>
-        </antcall>
     </target>
 
-    <target name="codesign-libs" depends="get-identity">
-        <path id="found.jar">
-            <first>
-                <fileset dir="lib">
-                    <include name="**/${signing.jarname}"/>
-                    <exclude name="**/${signing.excluded}" if="signing.excluded"/>
-                </fileset>
-            </first>
-        </path>
-        <pathconvert property="found.jar.path" refid="found.jar"/>
+    <target name="externalize-libs-mac" if="target.platform.mac">
+        <echo level="info">Copying native library files to libs</echo>
 
-        <unzip src="${found.jar.path}" dest="${out.dir}/jar-signing"/>
-        <path id="found.files">
-            <fileset dir="${out.dir}/jar-signing">
-                <include name="**/${signing.filetype}"/>
-            </fileset>
-        </path>
-        <pathconvert property="found.files.paths" refid="found.files" pathsep=" "/>
-
-        <!-- No-op: makes IntelliJ happy with the undefined "signing.delete" -->
-        <condition description="suppress property warning" property="signing.delete" value="${signing.delete}">
-            <isset property="signing.delete"/>
-        </condition>
-        <delete verbose="true">
-            <fileset dir="${out.dir}/jar-signing">
-                <include name="**/${signing.delete}" if="signing.delete"/>
-            </fileset>
-        </delete>
-
-        <!-- Use xargs to loop over and codesign all files-->
-        <echo message="Signing ${found.jar.path} using ${codesign.activeid}"/>
-        <exec executable="bash" failonerror="true">
-            <arg value="-c"/>
-            <arg value="echo &quot;${found.files.paths}&quot; |tr ':' '\n' |xargs codesign -f -s &quot;${codesign.activeid}&quot; -v"/>
-        </exec>
-
-        <pathconvert property="found.jar.rel">
-            <path refid="found.jar"/>
-            <globmapper from="${basedir}/*" to="*" handledirsep="true"/>
-        </pathconvert>
-        <zip destfile="${sign.lib.dir}/${found.jar.rel}" basedir="${out.dir}/jar-signing" excludes="dont*.*"/>
-
-        <!-- Cleanup temp folder-->
-        <delete dir="${out.dir}/jar-signing"/>
+        <copy todir="${dist.dir}/libs/" flatten="true" verbose="true">
+                <zipfileset dir="lib">
+                    <!--x86_64-->
+                    <include name="**/darwin/*" if="target.x86_64"/> <!-- todo remove this when hid4java is updated -->
+                    <include name="**/darwin-x86-64/*" if="target.x86_64"/> <!-- jna/hid4java -->
+                    <include name="**/osx_64/*" if="target.x86_64"/> <!-- jssc -->
+                    <!--aarch64-->
+                    <include name="**/dummy/*" if="target.aarch64"/>
+                    <include name="**/darwin-aarch64/*" if="target.aarch64"/> <!-- jna/hid4java -->
+                    <include name="**/osx_arm64/*" if="target.aarch64"/> <!-- jssc -->
+                </zipfileset>
+        </copy>
     </target>
 
     <target name="get-identity">
@@ -270,5 +222,35 @@
         <condition property="codesign.activeid" value="${apple.packager.signid}" else="-">
             <equals arg1="${codesign.qz}" arg2="0"/>
         </condition>
+    </target>
+
+    <target name="verify-signature">
+        <echo level="info" message="Verifying Signatures"/>
+
+        <exec executable="codesign" failonerror="false" resultproperty="signing.verification.jre">
+            <arg value="-v"/>
+            <arg value="--strict"/>
+            <arg value="${build.appdir}/Contents/PlugIns/Java.runtime"/>
+        </exec>
+
+        <exec executable="codesign" failonerror="false" resultproperty="signing.verification.app">
+            <arg value="-v"/>
+            <arg value="--strict"/>
+            <arg value="${build.appdir}"/>
+        </exec>
+
+        <condition property="signing.message.jre" value="Pass" else="Fail - This may prevent the application for launching.">
+            <equals arg1="${signing.verification.jre}" arg2="0"/>
+        </condition>
+        <condition property="signing.message.app" value="Pass" else="Fail - This may prevent the application for launching.">
+            <equals arg1="${signing.verification.app}" arg2="0"/>
+        </condition>
+<!--todo, what should this say? testing is needed-->
+        <condition property="signing.message.identity" value=" - An ad hoc signature has been used. The resulting app may fail to run on other systems." else="">
+            <equals arg1="${codesign.activeid}" arg2="-"/>
+        </condition>
+
+        <echo level="info" message="Jre Signature: ${signing.message.jre}"/>
+        <echo level="info" message="App Signature: ${signing.message.app}${signing.message.identity}"/>
     </target>
 </project>

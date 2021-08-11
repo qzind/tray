@@ -76,6 +76,10 @@
         </antcall>
     </target>
 
+    <target name="externalize-libs-windows" if="target.platform.windows">
+<!--        todo -->
+    </target>
+
     <!-- Exe signing with timestamp -->
     <target name="sign-exe-tsa" if="signing.tsaurl">
         <echo level="info">Signing exe with timestamp: ${sign.exe.file}</echo>

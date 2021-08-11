@@ -9,7 +9,6 @@
     <import file="ant/windows/installer.xml"/>
 
     <target name="distribute" depends="init,quick-clean,download-javafx,build-jar,override-authcert,include-assets,whitelist-certs">
-        <antcall target="tidy-javafx-dist"/>
         <echo level="info">Process complete</echo>
     </target>
 
@@ -23,12 +22,6 @@
         <condition property="codesign.linux" value="true">
             <and>
                 <isset property="target.platform.linux"/>
-                <isset property="signing.tsaurl"/>
-            </and>
-        </condition>
-        <condition property="codesign.mac" value="true">
-            <and>
-                <isset property="target.platform.mac"/>
                 <isset property="signing.tsaurl"/>
             </and>
         </condition>
@@ -90,36 +83,54 @@
         </copy>
     </target>
 
-    <target name="build-jar" depends="compile-socket">
-        <!-- Apple: Extract, sign, repackage all nested native libs for notarization -->
-        <antcall target="apple-installer.codesign-jars"/>
-
+    <target name="build-jar" depends="compile-socket,copy-libs,externalize-libs">
         <echo level="info">Building jar</echo>
-        <mkdir dir="${sign.lib.dir}"/>
-        <jar compress="false" index="${jar.index}" destfile="${out.dir}/${project.filename}.jar.tmp" duplicate="preserve">
-            <fileset dir="${build.dir}/${project.filename}"/>
-            <zipgroupfileset dir="${sign.lib.dir}" includes="**/*.jar" erroronmissingdir="false"/>
-            <zipgroupfileset dir="lib">
-                <include name="**/*.jar"/>
-                <exclude name="**/jfxrt.jar"/>
-                <exclude name="**/jssc-*.jar" if="codesign.mac"/>
-            </zipgroupfileset>
-        </jar>
+
         <!-- Strip jlink-incompat files -->
         <echo level="info">Stripping jlink-incompatible files</echo>
         <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.dir}/${project.filename}.jar" duplicate="preserve">
-            <zipfileset src="${out.dir}/${project.filename}.jar.tmp" excludes="*.class,LICENSE,jetty-dir.css"/>
+            <fileset dir="${build.dir}/${project.filename}"/>
+            <!-- Some root level files will cause jlink to fail, they need to be cleaned up -->
+            <fileset dir="${out.dir}/libs-temp" excludes="*.class,LICENSE,jetty-dir.css"/>
             <manifest>
                 <attribute name="Application-Name" value="${project.name}"/>
                 <attribute name="Main-Class" value="qz.ws.PrintSocketServer"/>
                 <attribute name="Permissions" value="all-permissions"/>
             </manifest>
         </jar>
-        <delete file="${out.dir}/${project.filename}.jar.tmp"/>
+        <delete dir="${out.dir}/libs-temp"/>
+    </target>
 
-        <antcall target="sign-jar">
-            <param name="sign.jar.file" value="${dist.dir}/${project.filename}.jar"/>
-        </antcall>
+    <target name="externalize-libs" if="build.external-libs" depends="externalize-libs-mac,externalize-libs-windows">
+        <delete>
+            <fileset dir="${out.dir}/libs-temp">
+                <include name="**/*.jnilib"/>
+                <include name="**/*.dylib"/>
+                <include name="**/*.dll"/>
+                <include name="**/*.so"/>
+                <include name="**/*.a"/>
+            </fileset>
+        </delete>
+
+        <!-- Delete empty files-->
+        <delete includeemptydirs="true">
+            <fileset dir="${out.dir}/libs-temp">
+                <and>
+                    <size value="0"/>
+                    <type type="dir"/>
+                </and>
+            </fileset>
+        </delete>
+    </target>
+
+    <target name="copy-libs">
+        <mkdir dir="${out.dir}/libs-temp"/>
+        <unzip dest="${out.dir}/libs-temp" overwrite="false">
+            <fileset dir="lib">
+                <include name="**/*.jar"/>
+                <exclude name="**/jfxrt.jar"/>
+            </fileset>
+        </unzip>
     </target>
 
     <!-- install override.crt for "community" branded builds -->
@@ -170,14 +181,14 @@
             <arg value="--platform"/>
             <arg value="${target.platform}"/>
             <arg value="--arch"/>
-            <arg value="${jre.arch}"/>
+            <arg value="${target.arch}"/>
         </java>
     </target>
 
-    <target name="nsis" depends="target-platform-windows,distribute,download-jre,build-exe"/>
-    <target name="pkgbuild" depends="target-platform-mac,distribute,download-jre,build-pkg"/>
-    <target name="dmg" depends="target-platform-mac,distribute,download-jre,build-dmg"/>
-    <target name="makeself" depends="target-platform-linux,distribute,download-jre,build-run"/>
+    <target name="nsis" depends="target-arch-set,target-platform-windows,distribute,download-jre,build-exe"/>
+    <target name="pkgbuild" depends="target-arch-set,target-platform-mac,distribute,download-jre,build-pkg"/>
+    <target name="dmg" depends="target-arch-set,target-platform-mac,distribute,download-jre,build-dmg"/>
+    <target name="makeself" depends="target-arch-set,target-platform-linux,distribute,download-jre,build-run"/>
 
     <!-- Optionally, force Linux Java runtime and Java FX -->
     <target name="target-platform-linux">
@@ -192,5 +203,14 @@
     <!-- Optionally, force Mac Java runtime and Java FX -->
     <target name="target-platform-mac">
         <property name="target.platform.mac" value="true"/>
+    </target>
+
+    <target name="target-arch-set">
+        <condition property="target.x86_64">
+            <equals arg1="x86_64" arg2="${target.arch}"/>
+        </condition>
+        <condition property="target.aarch64">
+            <equals arg1="aarch64" arg2="${target.arch}"/>
+        </condition>
     </target>
 </project>

@@ -100,6 +100,10 @@ public class SecurityInfo {
             libVersions.put("javafx (location)", "Failed");
         }
 
+        // This is needed to load the jna class which initializes the needed properties
+        int ignore = Native.BOOL_SIZE;
+        libVersions.put("jna lib location", System.getProperty("jnidispatch.path"));
+
         // Fallback to maven manifest information
         HashMap<String,String> mavenVersions = getMavenVersions();
 

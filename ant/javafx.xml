@@ -62,13 +62,13 @@
 
         <!-- ARM64 -->
         <condition property="javafx.version" value="${javafx.aarch64.version}">
-            <equals arg1="aarch64" arg2="${jre.arch}"/>
+            <equals arg1="aarch64" arg2="${target.arch}"/>
         </condition>
         <condition property="javafx.mirror" value="${javafx.aarch64.mirror}">
-            <equals arg1="aarch64" arg2="${jre.arch}"/>
+            <equals arg1="aarch64" arg2="${target.arch}"/>
         </condition>
         <condition property="javafx.arch" value="${javafx.aarch64.arch}">
-            <equals arg1="aarch64" arg2="${jre.arch}"/>
+            <equals arg1="aarch64" arg2="${target.arch}"/>
         </condition>
 
         <!-- Intel (fallback) -->
@@ -186,17 +186,6 @@
             <param name="prefix.pattern" value="javafx*/"/>
             <param name="native.extension" value="${javafx.target.extension}"/>
         </antcall>
-    </target>
-
-    <!-- Tidy dist directory for packaging -->
-    <target name="tidy-javafx-dist" if="javafx.target.extension">
-        <echo level="info">Removing non-${javafx.target.extension} files</echo>
-        <delete includeemptydirs="true">
-            <fileset dir="${dist.dir}/libs">
-                <include name="**"/>
-                <exclude name="**/*.${javafx.target.extension}"/>
-            </fileset>
-        </delete>
     </target>
 
     <!-- Copies native libraries for specified platform -->

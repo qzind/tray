@@ -232,6 +232,21 @@ public class SystemUtilities {
     }
 
     /**
+     * Predicts the location of jnidispatch and sets jna.boot.library.path.
+     * Note, this must be called before any jna vars/methods are referenced.
+     *
+     * @return
+     */
+    public static boolean bindJnaBootLib() {
+        if (isInstalled() && isMac()) {
+            System.setProperty("jna.boot.library.path", SystemUtilities.getJarParentPath().getParent().resolve("Frameworks").toString());
+        } else {
+            System.setProperty("jna.boot.library.path", SystemUtilities.getJarParentPath().resolve("libs").toString());
+        }
+        return true;
+    }
+
+    /**
      * Determine if the current Operating System is Windows
      *
      * @return {@code true} if Windows, {@code false} otherwise
@@ -499,6 +514,19 @@ public class SystemUtilities {
             classProtocol = SystemUtilities.class.getResource("").getProtocol();
         }
         return "jar".equals(classProtocol);
+    }
+
+    /**
+     * Todo:
+     * @return true if running from a jar, false if running from IDE
+     */
+    public static boolean isInstalled() {
+        Path path = getJarParentPath();
+        if(path == null) {
+            return false;
+        }
+        // Assume dist or out are signs we're running from some form of build directory
+        return !path.endsWith("dist") && !path.endsWith("out");
     }
 
     /**

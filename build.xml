@@ -94,7 +94,7 @@
             <fileset dir="${out.dir}/libs-temp" excludes="*.class,LICENSE,jetty-dir.css"/>
             <manifest>
                 <attribute name="Application-Name" value="${project.name}"/>
-                <attribute name="Main-Class" value="qz.ws.PrintSocketServer"/>
+                <attribute name="Main-Class" value="qz.App"/>
                 <attribute name="Permissions" value="all-permissions"/>
             </manifest>
         </jar>

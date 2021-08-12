@@ -13,10 +13,9 @@ import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.ExpiryTask;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.installer.certificate.NativeCertificateInstaller;
-import qz.utils.ArgParser;
-import qz.utils.FileUtilities;
-import qz.utils.SystemUtilities;
+import qz.utils.*;
 import qz.ws.PrintSocketServer;
+import qz.ws.SingleInstanceChecker;
 
 import java.io.File;
 import java.util.Properties;
@@ -30,7 +29,7 @@ public class App {
         if(parser.intercept()) {
             System.exit(parser.getExitCode());
         }
-
+        SingleInstanceChecker.stealWebsocket = parser.hasFlag(ArgValue.STEAL);
         setupFileLogging();
         log.info(Constants.ABOUT_TITLE + " version: {}", Constants.VERSION);
         log.info(Constants.ABOUT_TITLE + " vendor: {}", Constants.ABOUT_COMPANY);
@@ -48,6 +47,10 @@ public class App {
             log.error("Something went critically wrong loading HTTPS", e);
         }
         Installer.getInstance().addUserSettings();
+
+        // Load overridable preferences set in qz-tray.properties file
+        NetworkUtilities.setPreferences(certManager.getProperties());
+        SingleInstanceChecker.setPreferences(certManager.getProperties());
 
         // Linux needs the cert installed in user-space on every launch for Chrome SSL to work
         if(!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {

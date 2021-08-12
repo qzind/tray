@@ -677,9 +677,8 @@ public class SystemUtilities {
 
     private static long calculateChallenge() {
         if(getJarPath() != null) {
-            File jarFile = new File(getJarPath());
-            if (jarFile.exists()) {
-                return jarFile.lastModified();
+            if (getJarPath().toFile().exists()) {
+                return getJarPath().toFile().lastModified();
             }
         }
         return -1L; // Fallback when running from IDE

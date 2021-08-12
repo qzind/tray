@@ -23,10 +23,6 @@ import qz.App;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.installer.certificate.CertificateManager;
-import qz.installer.certificate.ExpiryTask;
-import qz.installer.certificate.KeyPairWrapper;
-import qz.installer.certificate.NativeCertificateInstaller;
-import qz.utils.*;
 
 import javax.swing.*;
 import java.io.IOException;
@@ -64,8 +60,6 @@ public class PrintSocketServer {
             PrintSocketServer.setTrayManager(new TrayManager(headless));
         });
 
-        // FIXME: Move this next line
-        // SingleInstanceChecker.stealWebsocket = parser.hasFlag(STEAL);
         server = findAvailableSecurePort(certManager);
         Connector secureConnector = null;
         if (server.getConnectors().length > 0 && !server.getConnectors()[0].isFailed()) {

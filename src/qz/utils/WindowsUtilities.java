@@ -35,6 +35,7 @@ public class WindowsUtilities {
     protected static final Logger log = LoggerFactory.getLogger(WindowsUtilities.class);
     private static String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
+    private static Integer pid;
 
     public static boolean isDarkDesktop() {
         // 0 = Dark Theme.  -1/1 = Light Theme
@@ -310,10 +311,14 @@ public class WindowsUtilities {
     }
 
     static int getProcessId() {
-        try {
-            return Kernel32.INSTANCE.GetCurrentProcessId();
-        } catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
-            log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
+        if(pid == null) {
+            try {
+                pid = Kernel32.INSTANCE.GetCurrentProcessId();
+            }
+            catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
+                log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
+            }
         }
+        return pid;
     }
 }

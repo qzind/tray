@@ -53,7 +53,7 @@ public class LinuxInstaller extends Installer {
         fieldMap.put("%DESTINATION%", destination);
         fieldMap.put("%LINUX_ICON%", String.format("%s.svg", PROPS_FILE));
         fieldMap.put("%COMMAND%", String.format("%s/%s", destination, PROPS_FILE));
-        fieldMap.put("%PARAM%", isStartup ? "--honorautostart" : "");
+        fieldMap.put("%PARAM%", isStartup ? "--honorautostart" : "%u");
 
         File launcher = new File(location);
         try {

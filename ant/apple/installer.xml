@@ -21,8 +21,10 @@
         <!-- Build app without sandboxing by default-->
         <property name="build.sandboxed" value="false"/>
         <antcall target="build-app">
-            <param name="build.appdir" value="${build.dir}/scripts/payload/${project.name}.app"/>
+            <param name="bundle.dir" value="${build.dir}/scripts/payload/${project.name}.app"/>
         </antcall>
+        <!-- Add a break in the logs -->
+        <antcall target="packaging"/>
 
         <!-- scripts/ -->
         <copy file="ant/apple/apple-preinstall.sh.in" tofile="${build.dir}/scripts/preinstall">
@@ -76,8 +78,10 @@
         <!-- Build app with sandboxing by default-->
         <property name="build.sandboxed" value="true"/>
         <antcall target="build-app">
-            <param name="build.appdir" value="${build.dir}/${project.name}.app"/>
+            <param name="bundle.dir" value="${build.dir}/${project.name}.app"/>
         </antcall>
+        <!-- Add a break in the logs -->
+        <antcall target="packaging"/>
 
         <exec executable="appdmg" failonerror="true">
             <arg value="${build.dir}/appdmg.json"/>
@@ -87,51 +91,51 @@
 
     <target name="build-app" depends="get-identity">
         <!-- App Bundle -->
-        <mkdir dir="${build.appdir}"/>
+        <mkdir dir="${bundle.dir}"/>
 
         <!-- Contents/ -->
-        <copy file="ant/apple/apple-bundle.plist.in" tofile="${build.appdir}/Contents/Info.plist">
+        <copy file="ant/apple/apple-bundle.plist.in" tofile="${bundle.dir}/Contents/Info.plist">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
         <!-- Contents/MacOS/ -->
-        <mkdir dir="${build.appdir}/Contents/MacOS"/>
-        <copy file="ant/unix/unix-launcher.sh.in" tofile="${build.appdir}/Contents/MacOS/${project.name}">
+        <mkdir dir="${bundle.dir}/Contents/MacOS"/>
+        <copy file="ant/unix/unix-launcher.sh.in" tofile="${bundle.dir}/Contents/MacOS/${project.name}">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
         <!-- Contents/Resources/ -->
-        <copy todir="${build.appdir}/Contents/Resources">
+        <copy todir="${bundle.dir}/Contents/Resources">
             <fileset dir="${dist.dir}">
                 <include name="${project.filename}.jar"/>
                 <include name="LICENSE.txt"/>
             </fileset>
         </copy>
-        <copy file="assets/branding/apple-icon.icns" tofile="${build.appdir}/Contents/Resources/${project.filename}.icns"/>
+        <copy file="assets/branding/apple-icon.icns" tofile="${bundle.dir}/Contents/Resources/${project.filename}.icns"/>
 
-        <copy file="ant/unix/unix-uninstall.sh.in" tofile="${build.appdir}/Contents/Resources/uninstall">
+        <copy file="ant/unix/unix-uninstall.sh.in" tofile="${bundle.dir}/Contents/Resources/uninstall">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <copy todir="${build.appdir}/Contents/Resources/demo">
+        <copy todir="${bundle.dir}/Contents/Resources/demo">
             <fileset dir="${dist.dir}/demo" includes="**"/>
         </copy>
 
         <!-- Java runtime -->
-        <copy todir="${build.appdir}/Contents/PlugIns/Java.runtime">
+        <copy todir="${bundle.dir}/Contents/PlugIns/Java.runtime">
             <fileset dir="${dist.dir}/Java.runtime" includes="**"/>
         </copy>
-        <copy todir="${build.appdir}/Contents/Frameworks">
+        <copy todir="${bundle.dir}/Contents/Frameworks">
             <fileset dir="${dist.dir}/libs" includes="**"/>
         </copy>
 
-        <copy todir="${build.appdir}">
-            <fileset dir="${build.appdir}" includes="**"/>
+        <copy todir="${bundle.dir}">
+            <fileset dir="${bundle.dir}" includes="**"/>
         </copy>
 
         <!-- set payload files executable -->
         <chmod perm="a+x" type="file">
-            <fileset dir="${build.appdir}">
+            <fileset dir="${bundle.dir}">
                 <include name="**/${project.name}"/>
                 <include name="**/Resources/uninstall"/>
                 <include name="**/bin/*"/>
@@ -144,10 +148,10 @@
         </copy>
 
         <!-- use xargs to loop over and codesign all files-->
-        <echo level="info" message="Signing ${build.appdir} using ${codesign.activeid}"/>
+        <echo level="info" message="Signing ${bundle.dir} using ${codesign.activeid}"/>
         <!-- Find -X fails on spaces but doesn't failonerror, this may lead to overlooked errors. -->
         <!-- Currently the only file that may contains a space is the main executable which we omit from signing anyway. -->
-        <exec executable="bash" failonerror="true" dir="${build.appdir}">
+        <exec executable="bash" failonerror="true" dir="${bundle.dir}">
             <arg value="-c"/>
             <arg value="find -X &quot;.&quot; -type f -not -path &quot;*/Contents/MacOS/*&quot; -exec sh -c 'file -I &quot;{}&quot; |grep -m1 &quot;x-mach-binary&quot;|cut -f 1 -d \:' \; |xargs codesign --force -s &quot;${codesign.activeid}&quot; --timestamp --options runtime"/>
         </exec>
@@ -160,8 +164,8 @@
             <arg value="runtime"/>
             <arg value="--entitlement"/>
             <arg value="${build.dir}/apple-entitlements.plist"/>
-            <arg value="${build.appdir}/Contents/PlugIns/Java.runtime/Contents/Home/bin/java"/>
-            <arg value="${build.appdir}/Contents/PlugIns/Java.runtime"/>
+            <arg value="${bundle.dir}/Contents/PlugIns/Java.runtime/Contents/Home/bin/java"/>
+            <arg value="${bundle.dir}/Contents/PlugIns/Java.runtime"/>
         </exec>
         <exec executable="codesign" failonerror="true">
             <arg value="-s"/>
@@ -171,10 +175,19 @@
             <arg value="runtime"/>
             <arg value="--entitlement"/>
             <arg value="${build.dir}/apple-entitlements.plist"/>
-            <arg value="${build.appdir}"/>
+            <arg value="${bundle.dir}"/>
         </exec>
 
-        <antcall target="verify-signature"/>
+        <!-- Verify Java.runtime -->
+        <antcall target="verify-signature">
+            <param name="signed.bundle.name" value="Java.runtime"/>
+            <param name="signed.bundle.dir" value="${bundle.dir}/Contents/PlugIns/Java.runtime"/>
+        </antcall>
+        <!-- Verify QZ Tray.app -->
+        <antcall target="verify-signature" >
+            <param name="signed.bundle.name" value="${project.name}.app"/>
+            <param name="signed.bundle.dir" value="${bundle.dir}"/>
+        </antcall>
     </target>
 
     <target name="add-certificates" depends="get-identity">
@@ -214,35 +227,32 @@
         <condition property="codesign.activeid" value="${apple.packager.signid}" else="-">
             <equals arg1="${codesign.qz}" arg2="0"/>
         </condition>
+        <!-- Property to show warning later -->
+        <condition property="codesign.selfsign">
+            <equals arg1="${codesign.activeid}" arg2="-"/>
+        </condition>
     </target>
 
     <target name="verify-signature">
-        <echo level="info" message="Verifying Signatures"/>
+        <echo level="info">Verifying ${signed.bundle.name} Signature</echo>
+        <echo level="info">Location: ${signed.bundle.dir}</echo>
 
-        <exec executable="codesign" failonerror="false" resultproperty="signing.verification.jre">
+        <exec executable="codesign" failifexecutionfails="false" resultproperty="signing.status">
             <arg value="-v"/>
             <arg value="--strict"/>
-            <arg value="${build.appdir}/Contents/PlugIns/Java.runtime"/>
+            <arg value="${signed.bundle.dir}"/>
         </exec>
-
-        <exec executable="codesign" failonerror="false" resultproperty="signing.verification.app">
-            <arg value="-v"/>
-            <arg value="--strict"/>
-            <arg value="${build.appdir}"/>
-        </exec>
-
-        <condition property="signing.message.jre" value="Pass" else="Fail - This may prevent the application for launching.">
-            <equals arg1="${signing.verification.jre}" arg2="0"/>
+        <condition property="message.severity" value="info" else="warn">
+            <equals arg1="${signing.status}" arg2="0"/>
         </condition>
-        <condition property="signing.message.app" value="Pass" else="Fail - This may prevent the application for launching.">
-            <equals arg1="${signing.verification.app}" arg2="0"/>
+        <condition property="message.description"
+                   value="Signing passed: Successfully signed"
+                   else="Signing failed:: Signing failed (will prevent app from launching)">
+            <equals arg1="${signing.status}" arg2="0"/>
         </condition>
-<!--todo, what should this say? testing is needed-->
-        <condition property="signing.message.identity" value=" - An ad hoc signature has been used. The resulting app may fail to run on other systems." else="">
-            <equals arg1="${codesign.activeid}" arg2="-"/>
-        </condition>
-
-        <echo level="info" message="Jre Signature: ${signing.message.jre}"/>
-        <echo level="info" message="App Signature: ${signing.message.app}${signing.message.identity}"/>
+        <echo level="${message.severity}">${message.description}</echo>
     </target>
+
+    <!-- Stub title/separator workaround for build-pkg/build-dmg -->
+    <target name="packaging"/>
 </project>

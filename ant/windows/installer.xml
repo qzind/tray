@@ -10,6 +10,15 @@
             <param name="nsis.outfile" value="${dist.dir}/${project.filename}.exe"/>
         </antcall>
 
+        <!-- Debug Launcher -->
+        <copy file="ant/windows/windows-launcher.nsi.in" tofile="ant/windows/windows-debug-launcher.nsi.in" overwrite="true"/>
+        <replace file="ant/windows/windows-debug-launcher.nsi.in" token="$javaw" value="$java"/>
+        <replace file="ant/windows/windows-debug-launcher.nsi.in" token="/assets/branding/windows-icon.ico" value="/ant/windows/nsis/console.ico"/>
+        <antcall target="config-compile-sign">
+            <param name="nsis.script.in" value="windows-debug-launcher.nsi.in"/>
+            <param name="nsis.outfile" value="${dist.dir}/${project.filename}-console.exe"/>
+        </antcall>
+
         <!-- Uninstaller -->
         <antcall target="config-compile-sign">
             <param name="nsis.script.in" value="windows-uninstaller.nsi.in"/>

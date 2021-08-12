@@ -23,6 +23,10 @@ import qz.App;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.installer.certificate.CertificateManager;
+import qz.installer.certificate.ExpiryTask;
+import qz.installer.certificate.KeyPairWrapper;
+import qz.installer.certificate.NativeCertificateInstaller;
+import qz.utils.*;
 
 import javax.swing.*;
 import java.io.IOException;
@@ -32,6 +36,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static qz.utils.ArgParser.ExitStatus.SUCCESS;
+import static qz.utils.ArgValue.STEAL;
 
 /**
  * Created by robert on 9/9/2014.
@@ -52,12 +59,13 @@ public class PrintSocketServer {
     private static TrayManager trayManager;
     private static Server server;
 
-
     public static void runServer(CertificateManager certManager, boolean headless) throws InterruptedException, InvocationTargetException {
         SwingUtilities.invokeAndWait(() -> {
             PrintSocketServer.setTrayManager(new TrayManager(headless));
         });
 
+        // FIXME: Move this next line
+        // SingleInstanceChecker.stealWebsocket = parser.hasFlag(STEAL);
         server = findAvailableSecurePort(certManager);
         Connector secureConnector = null;
         if (server.getConnectors().length > 0 && !server.getConnectors()[0].isFailed()) {
@@ -79,7 +87,7 @@ public class PrintSocketServer {
 
                 // Handle WebSocket connections
                 WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configure(context);
-                filter.addMapping(new ServletPathSpec("/"), (req, resp) -> new PrintSocketClient());
+                filter.addMapping(new ServletPathSpec("/"), (req, resp) -> new PrintSocketClient(server));
                 filter.getFactory().getPolicy().setMaxTextMessageSize(MAX_MESSAGE_SIZE);
 
                 // Handle HTTP landing page

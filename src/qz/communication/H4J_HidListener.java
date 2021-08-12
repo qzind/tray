@@ -1,5 +1,6 @@
 package qz.communication;
 
+import org.codehaus.jettison.json.JSONArray;
 import org.eclipse.jetty.websocket.api.Session;
 import org.hid4java.HidDevice;
 import org.hid4java.HidManager;
@@ -33,6 +34,18 @@ public class H4J_HidListener implements DeviceListener, HidServicesListener {
     }
 
     @Override
+    public void hidDataReceived(HidServicesEvent hidServicesEvent) {
+        log.debug("Data received: {}", hidServicesEvent.getDataReceived().length + " bytes");
+
+        JSONArray hex = new JSONArray();
+        for(byte b : hidServicesEvent.getDataReceived()) {
+            hex.put(UsbUtil.toHexString(b));
+        }
+
+        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Data Received", hex));
+    }
+
+    @Override
     public void hidDeviceDetached(HidServicesEvent hidServicesEvent) {
         log.debug("Device detached: {}", hidServicesEvent.getHidDevice().getProduct());
         PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Detached"));
@@ -45,10 +58,20 @@ public class H4J_HidListener implements DeviceListener, HidServicesListener {
     }
 
     private StreamEvent createStreamAction(HidDevice device, String action) {
-        return new StreamEvent(StreamEvent.Stream.HID, StreamEvent.Type.ACTION)
+        return createStreamAction(device, action, null);
+    }
+
+    private StreamEvent createStreamAction(HidDevice device, String action, JSONArray dataArr) {
+        StreamEvent event = new StreamEvent(StreamEvent.Stream.HID, StreamEvent.Type.ACTION)
                 .withData("vendorId", UsbUtil.toHexString(device.getVendorId()))
                 .withData("productId", UsbUtil.toHexString(device.getProductId()))
                 .withData("actionType", action);
+
+        if (dataArr != null) {
+            event.withData("data", dataArr);
+        }
+
+        return event;
     }
 
 

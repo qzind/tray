@@ -146,6 +146,11 @@ public class MacUtilities {
         return 1;
     }
 
+    private interface CLibrary extends Library {
+        CLibrary INSTANCE = Native.load("c", CLibrary.class);
+        int getpid ();
+    }
+
     /**
      * Checks for presence of JDK-8252015 using reflection
      */

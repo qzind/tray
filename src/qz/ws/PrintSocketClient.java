@@ -5,6 +5,7 @@ import org.apache.commons.io.IOUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.*;
@@ -46,6 +47,11 @@ public class PrintSocketClient {
     //websocket port -> Connection
     private static final HashMap<Integer,SocketConnection> openConnections = new HashMap<>();
 
+    private Server server;
+
+    public PrintSocketClient(Server server) {
+        this.server = server;
+    }
 
     @OnWebSocketConnect
     public void onConnect(Session session) {
@@ -573,22 +579,36 @@ public class PrintSocketClient {
                 break;
             }
             case NETWORKING_DEVICE_LEGACY:
-                JSONObject networkDevice = NetworkUtilities.getDeviceJSON(params.optString("hostname", "google.com"), params.optInt("port", 443));
+                JSONObject networkDevice = NetworkUtilities.getDeviceJSON(params);
                 JSONObject legacyDevice = new JSONObject();
                 legacyDevice.put("ipAddress", networkDevice.optString("ip", null));
                 legacyDevice.put("macAddress", networkDevice.optString("mac", null));
                 sendResult(session, UID, legacyDevice);
                 break;
             case NETWORKING_DEVICE:
-                sendResult(session, UID, NetworkUtilities.getDeviceJSON(params.optString("hostname", "google.com"), params.optInt("port", 443)));
+                sendResult(session, UID, NetworkUtilities.getDeviceJSON(params));
                 break;
             case NETWORKING_DEVICES:
-                sendResult(session, UID, NetworkUtilities.getDevicesJSON(params.optString("hostname", "google.com"), params.optInt("port", 443)));
+                sendResult(session, UID, NetworkUtilities.getDevicesJSON(params));
                 break;
             case GET_VERSION:
                 sendResult(session, UID, Constants.VERSION);
                 break;
+            case WEBSOCKET_STOP:
+                log.info("Another instance of {} is asking this to close", Constants.ABOUT_TITLE);
+                String challenge = json.optString("challenge", "");
+                if(SystemUtilities.validateSaltedChallenge(challenge)) {
+                    log.info("Challenge validated: {}, honoring shutdown request", challenge);
 
+                    session.close(SingleInstanceChecker.REQUEST_INSTANCE_TAKEOVER);
+                    try {
+                        server.stop();
+                    } catch(Exception ignore) {}
+                    trayManager.exit(0);
+                } else {
+                    log.warn("A valid challenge was not provided: {}, ignoring request to close", challenge);
+                }
+                break;
             case INVALID:
             default:
                 sendError(session, UID, "Invalid function call: " + json.optString("call", "NONE"));

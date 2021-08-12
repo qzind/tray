@@ -5,6 +5,8 @@ import qz.utils.SystemUtilities;
 
 import java.awt.*;
 
+import static qz.ws.SingleInstanceChecker.STEAL_WEBSOCKET_PROPERTY;
+
 /**
  * Created by robert on 7/9/2014.
  */
@@ -23,7 +25,7 @@ public class Constants {
     public static final String LOG_FILE = "debug";
     public static final String PROPS_FILE = "qz-tray"; // .properties extension is assumed
     public static final String PREFS_FILE = "prefs"; // .properties extension is assumed
-    public static final String[] PERSIST_PROPS = { "file.whitelist", "file.allow" };
+    public static final String[] PERSIST_PROPS = {"file.whitelist", "file.allow", "networking.hostname", "networking.port", STEAL_WEBSOCKET_PROPERTY };
     public static final String AUTOSTART_FILE = ".autostart";
     public static final String DATA_DIR = "qz";
     public static final int LOG_SIZE = 524288;

@@ -40,7 +40,7 @@ public class TaskKiller {
 
         ArrayList<String> javaProcs;
         String[] trayProcs;
-        int selfProc;
+        int selfProc = SystemUtilities.getProcessId();
         String[] killCmd;
         // Disable service until reboot
         if(SystemUtilities.isMac()) {
@@ -50,12 +50,10 @@ public class TaskKiller {
             // Windows may be running under javaw.exe (normal) or java.exe (terminal)
             javaProcs = AppLocator.getInstance().getPids("java.exe", "javaw.exe");
             trayProcs = ShellUtilities.executeRaw(TRAY_PID_QUERY_WIN32).split("\\s*\\r?\\n");
-            selfProc = SystemUtilities.getProcessId();
             killCmd = KILL_PID_CMD_WIN32;
         } else {
             javaProcs = AppLocator.getInstance().getPids( "java");
             trayProcs = ShellUtilities.executeRaw(TRAY_PID_QUERY_POSIX).split("\\s*\\r?\\n");
-            selfProc = SystemUtilities.getProcessId(); // Works for Linux too
             killCmd = KILL_PID_CMD_POSIX;
         }
         if (!javaProcs.isEmpty()) {

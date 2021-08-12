@@ -54,6 +54,8 @@ public enum SocketMethod {
     NETWORKING_DEVICE_LEGACY("websocket.getNetworkInfo", true),
     GET_VERSION("getVersion", false),
 
+    WEBSOCKET_STOP("websocket.stop", false),
+
     INVALID("", false);
 
 

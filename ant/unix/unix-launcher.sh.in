@@ -105,6 +105,9 @@ if [ "$jigsaw" != "$actual" ]; then
 else
     echo -e "$SUCCESS Java >= 9.0, adding jigsaw options"
     LAUNCH_OPTS="$LAUNCH_OPTS ${launch.jigsaw}"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        LAUNCH_OPTS="$LAUNCH_OPTS ${apple.launch.jigsaw}"
+    fi
 fi
 
 if command -v java &>/dev/null; then

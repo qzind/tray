@@ -199,17 +199,15 @@
         </exec>
     </target>
 
-    <target name="externalize-libs-mac" if="target.platform.mac">
+    <target name="copy-dylibs" if="target.platform.mac">
         <echo level="info">Copying native library files to libs</echo>
 
         <copy todir="${dist.dir}/libs/" flatten="true" verbose="true">
                 <zipfileset dir="lib">
                     <!--x86_64-->
-                    <include name="**/darwin/*" if="target.x86_64"/> <!-- todo remove this when hid4java is updated -->
                     <include name="**/darwin-x86-64/*" if="target.x86_64"/> <!-- jna/hid4java -->
                     <include name="**/osx_64/*" if="target.x86_64"/> <!-- jssc -->
                     <!--aarch64-->
-                    <include name="**/dummy/*" if="target.aarch64"/>
                     <include name="**/darwin-aarch64/*" if="target.aarch64"/> <!-- jna/hid4java -->
                     <include name="**/osx_arm64/*" if="target.aarch64"/> <!-- jssc -->
                 </zipfileset>

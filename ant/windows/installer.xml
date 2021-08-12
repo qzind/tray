@@ -85,8 +85,19 @@
         </antcall>
     </target>
 
-    <target name="externalize-libs-windows" if="target.platform.windows">
-<!--        todo -->
+    <target name="copy-dlls" if="target.platform.windows">
+        <echo level="info">Copying native library files to libs</echo>
+
+        <copy todir="${dist.dir}/libs/" flatten="true" verbose="true">
+            <zipfileset dir="lib">
+                <!--x86_64-->
+                <include name="**/win32-x86-64/*" if="target.x86_64"/> <!-- jna/hid4java -->
+                <include name="**/windows_64/*" if="target.x86_64"/> <!-- jssc -->
+                <!--aarch64-->
+                <include name="**/win32-aarch64/*" if="target.aarch64"/> <!-- jna/hid4java -->
+                <include name="**/windows_arm64/*" if="target.aarch64"/> <!-- jssc -->
+            </zipfileset>
+        </copy>
     </target>
 
     <!-- Exe signing with timestamp -->

@@ -35,4 +35,19 @@
             <arg value="./install"/>
         </exec>
     </target>
+
+    <target name="copy-solibs" if="target.platform.linux">
+        <echo level="info">Copying native library files to libs</echo>
+
+        <copy todir="${dist.dir}/libs/" flatten="true" verbose="true">
+            <zipfileset dir="lib">
+                <!--x86_64-->
+                <include name="**/linux-x86-64/*" if="target.x86_64"/> <!-- jna/hid4java -->
+                <include name="**/linux_64/*" if="target.x86_64"/> <!-- jssc -->
+                <!--aarch64-->
+                <include name="**/linux-aarch64/*" if="target.aarch64"/> <!-- jna/hid4java -->
+                <include name="**/linux_arm64/*" if="target.aarch64"/> <!-- jssc -->
+            </zipfileset>
+        </copy>
+    </target>
 </project>

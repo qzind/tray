@@ -101,7 +101,8 @@
         <delete dir="${out.dir}/libs-temp"/>
     </target>
 
-    <target name="externalize-libs" if="build.external-libs" depends="externalize-libs-mac,externalize-libs-windows">
+    <target name="externalize-libs" if="separate.static.libs" depends="copy-dylibs,copy-dlls,copy-solibs">
+        <!-- Strip embedded, native resources -->
         <delete>
             <fileset dir="${out.dir}/libs-temp">
                 <include name="**/*.jnilib"/>

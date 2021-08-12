@@ -370,6 +370,15 @@ public class ImageWrapper {
                 }
 
                 break;
+            case SBPL:
+                String sbplHexAsString = ByteUtilities.getHexString(getImageAsIntArray());
+                StringBuilder sbpl = new StringBuilder("GH")
+                        .append(String.format("%03d", getWidth() / 8))
+                        .append(String.format("%03d", getHeight() / 8))
+                        .append(sbplHexAsString);
+
+                getByteBuffer().append(new byte[] {27}).append(sbpl, charset);
+                break;
             default:
                 throw new InvalidRawImageException(languageType + " image conversion is not yet supported.");
         }

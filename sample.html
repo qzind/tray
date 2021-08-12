@@ -179,6 +179,10 @@
                                     <input type="radio" name="pLanguage" id="pLangEVOLIS" value="EVOLIS" />
                                     Evolis
                                 </label>
+                                <label>
+                                    <input type="radio" name="pLanguage" id="pLangSBPL" value="SBPL" />
+                                    SBPL
+                                </label>
                             </div>
                         </div>
                         <div class="form-group">
@@ -1566,6 +1570,13 @@
                     '\x1BSe\x0D'       // End of sequence
                 ];
                 break;
+            case 'SBPL':
+                printData = [
+                    '\x1bA',
+                    '\x1bH0100\x1bV0100\x1bXSPRINTED WITH QZ ' + qzVersion,
+                    '\x1bQ1\x1bZ'
+                ];
+                break;
             default:
                 displayError("Sample page cannot print commands using this printer language");
                 return;
@@ -1790,6 +1801,14 @@
                 printData = [
                     //defaults to 'flavor: file'
                     { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: opts },
+                ];
+                break;
+            case 'SBPL':
+                printData = [
+                    '\x1bA',
+                    '\x1bH0100\x1bV0100',
+                    { type: 'raw', format: 'image', data: 'assets/img/Lion.jpg', options: opts },
+                    '\x1bQ1\x1bZ'
                 ];
                 break;
             default:

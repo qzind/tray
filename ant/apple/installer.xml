@@ -38,14 +38,6 @@
             </fileset>
         </chmod>
 
-        <!-- pkgbuild will fail on blank options; use ownership flag as a dummy fallback  -->
-        <condition property="codesign.qz.cmd" value="--sign" else="--ownership">
-            <equals arg1="${codesign.qz}" arg2="0"/>
-        </condition>
-        <condition property="codesign.qz.val" value="${codesign.activeid}" else="recommended">
-            <equals arg1="${codesign.qz}" arg2="0"/>
-        </condition>
-
         <exec executable="pkgbuild" failonerror="true">
             <arg value="--identifier"/>
             <arg value="${project.filename}"/>
@@ -61,8 +53,8 @@
             <arg value="--version"/>
             <arg value="${build.version}"/>
 
-            <arg value="${codesign.qz.cmd}"/>
-            <arg value="${codesign.qz.val}"/>
+            <arg value="--sign"/>
+            <arg value="${codesign.activeid}"/>
 
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.pkg"/>
         </exec>
@@ -213,12 +205,12 @@
 
     <target name="get-identity">
         <property file="ant/apple/apple.properties"/>
-        <!-- Disable signing if id is missing -->
+        <!-- Ensure ${apple.packager.signid} is in Keychain -->
         <exec executable="bash" failonerror="false" resultproperty="codesign.qz">
             <arg value="-c"/>
             <arg value="security find-identity -v |grep '(${apple.packager.signid})'"/>
         </exec>
-
+        <!-- Fallback to "-" (ad-hoc) if ${apple.packager.signid} isn't found -->
         <condition property="codesign.activeid" value="${apple.packager.signid}" else="-">
             <equals arg1="${codesign.qz}" arg2="0"/>
         </condition>

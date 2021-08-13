@@ -25,7 +25,7 @@ public enum LanguageType {
     CPCL(false, true, 203),
     ESCP(false, false, 180, "ESCP", "ESCP2", "ESCPOS", "ESC", "ESC/P", "ESC/P2", "ESCP/P2", "ESC/POS", "ESC\\P", "EPSON"),
     EVOLIS(false, false, 300),
-    SBPL(false, true, 72, "SATO"),
+    SBPL(false, true, 203, "SATO"),
     UNKNOWN(false, false, 72);
 
 

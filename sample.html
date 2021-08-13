@@ -1572,9 +1572,9 @@
                 break;
             case 'SBPL':
                 printData = [
-                    '\x1bA',
-                    '\x1bH0100\x1bV0100\x1bXSPRINTED WITH QZ ' + qzVersion,
-                    '\x1bQ1\x1bZ'
+                    '\x1BA',
+                    '\x1BH0100\x1BV0100\x1BXSPRINTED WITH QZ ' + qzVersion,
+                    '\x1BQ1\x1BZ'
                 ];
                 break;
             default:
@@ -1805,10 +1805,10 @@
                 break;
             case 'SBPL':
                 printData = [
-                    '\x1bA',
-                    '\x1bH0100\x1bV0100',
-                    { type: 'raw', format: 'image', data: 'assets/img/Lion.jpg', options: opts },
-                    '\x1bQ1\x1bZ'
+                    '\x1BA',
+                    '\x1BH0100\x1BV0100',
+                    { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: opts },
+                    '\x1BQ1\x1BZ'
                 ];
                 break;
             default:

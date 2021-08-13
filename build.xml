@@ -2,13 +2,14 @@
 
 <project name="qz" default="distribute" basedir=".">
     <property file="ant/project.properties"/>
+    <import file="ant/platform-detect.xml"/>
     <import file="ant/javafx.xml"/>
     <import file="ant/signing.xml"/>
     <import file="ant/apple/installer.xml"/>
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>
 
-    <target name="distribute" depends="init,quick-clean,download-javafx,build-jar,override-authcert,include-assets,whitelist-certs">
+    <target name="distribute" depends="init,quick-clean,download-javafx,build-jar,dist-fx,override-authcert,include-assets,whitelist-certs">
         <echo level="info">Process complete</echo>
     </target>
 
@@ -39,6 +40,7 @@
             <fileset dir="${out.dir}">
                 <include name="**/*"/>
                 <exclude name="**/jlink/**"/>
+                <exclude name="**/javafx-*/**"/>
             </fileset>
         </delete>
     </target>
@@ -186,32 +188,10 @@
         </java>
     </target>
 
-    <target name="nsis" depends="target-arch-set,target-platform-windows,distribute,download-jre,build-exe"/>
-    <target name="pkgbuild" depends="target-arch-set,target-platform-mac,distribute,download-jre,build-pkg"/>
-    <target name="dmg" depends="target-arch-set,target-platform-mac,distribute,download-jre,build-dmg"/>
-    <target name="makeself" depends="target-arch-set,target-platform-linux,distribute,download-jre,build-run"/>
+    <target name="nsis" depends="get-target-arch,target-os-windows,distribute,download-jre,build-exe"/>
+    <target name="pkgbuild" depends="get-target-arch,target-os-mac,distribute,download-jre,build-pkg"/>
+    <target name="dmg" depends="get-target-arch,target-os-mac,distribute,download-jre,build-dmg"/>
+    <target name="makeself" depends="get-target-arch,target-os-linux,distribute,download-jre,build-run"/>
 
-    <!-- Optionally, force Linux Java runtime and Java FX -->
-    <target name="target-platform-linux">
-        <property name="target.platform.linux" value="true"/>
-    </target>
 
-    <!-- Optionally, force Windows Java runtime and Java FX -->
-    <target name="target-platform-windows">
-        <property name="target.platform.windows" value="true"/>
-    </target>
-
-    <!-- Optionally, force Mac Java runtime and Java FX -->
-    <target name="target-platform-mac">
-        <property name="target.platform.mac" value="true"/>
-    </target>
-
-    <target name="target-arch-set">
-        <condition property="target.x86_64">
-            <equals arg1="x86_64" arg2="${target.arch}"/>
-        </condition>
-        <condition property="target.aarch64">
-            <equals arg1="aarch64" arg2="${target.arch}"/>
-        </condition>
-    </target>
 </project>

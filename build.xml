@@ -9,20 +9,20 @@
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>
 
-    <target name="distribute" depends="init,quick-clean,download-javafx,build-jar,dist-fx,override-authcert,include-assets,whitelist-certs">
+    <target name="distribute" depends="init,quick-clean,download-javafx,build-jar,override-authcert,include-assets,whitelist-certs">
         <echo level="info">Process complete</echo>
     </target>
 
     <target name="init">
         <condition property="codesign.windows" value="true">
             <and>
-                <isset property="target.platform.windows"/>
+                <isset property="target.os.windows"/>
                 <isset property="signing.tsaurl"/>
             </and>
         </condition>
         <condition property="codesign.linux" value="true">
             <and>
-                <isset property="target.platform.linux"/>
+                <isset property="target.os.linux"/>
                 <isset property="signing.tsaurl"/>
             </and>
         </condition>
@@ -170,19 +170,19 @@
     </target>
 
     <target name="download-jre" unless="jre.skip">
-        <condition property="target.platform" value="windows">
-            <isset property="target.platform.windows"/>
+        <condition property="target.os" value="windows">
+            <isset property="target.os.windows"/>
         </condition>
-        <condition property="target.platform" value="mac">
-            <isset property="target.platform.mac"/>
+        <condition property="target.os" value="mac">
+            <isset property="target.os.mac"/>
         </condition>
-        <property description="target.platform default" name="target.platform" value="linux"/>
+        <property description="target.os default" name="target.os" value="linux"/>
 
-        <echo level="info">Downloading and bundling the jre for ${target.platform}</echo>
+        <echo level="info">Downloading and bundling the jre for ${target.os}</echo>
         <java jar="${dist.dir}/${project.filename}.jar" fork="true" failonerror="true">
             <arg value="jlink"/>
             <arg value="--platform"/>
-            <arg value="${target.platform}"/>
+            <arg value="${target.os}"/>
             <arg value="--arch"/>
             <arg value="${target.arch}"/>
         </java>

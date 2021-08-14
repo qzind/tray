@@ -199,10 +199,11 @@
         </exec>
     </target>
 
-    <target name="copy-dylibs" if="target.platform.mac">
+    <target name="copy-dylibs" if="target.os.mac">
         <echo level="info">Copying native library files to libs</echo>
 
-        <copy todir="${dist.dir}/libs/" flatten="true" verbose="true">
+        <mkdir dir="${dist.dir}/libs"/>
+        <copy todir="${dist.dir}/libs" flatten="true" verbose="true">
                 <zipfileset dir="lib">
                     <!--x86_64-->
                     <include name="**/darwin-x86-64/*" if="target.x86_64"/> <!-- jna/hid4java -->

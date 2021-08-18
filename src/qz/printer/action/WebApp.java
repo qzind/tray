@@ -25,6 +25,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import qz.common.Constants;
+import qz.utils.LibUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -158,17 +159,8 @@ public class WebApp extends Application {
 
             // JDK11+ depends bundled javafx
             if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-                // JavaFX native libs
-                if (SystemUtilities.isJar()) {
-                    SystemUtilities.insertPathProperty(
-                            "java.library.path",
-                            SystemUtilities.getAppPath().resolve("Contents/Frameworks").toString(),
-                            "/jni" /* appends to end if not found */
-                    );
-                } else if (hasConflictingLib()) {
-                    // IDE helper for "no suitable pipeline found" errors
-                    System.err.println("\n=== WARNING ===\nWrong javafx platform detected. Delete lib/javafx/<platform> to correct this.\n");
-                }
+                //fixme delete this and retest
+                LibUtilities.bindJavafxLibs();
 
                 // Monocle default for unit tests
                 boolean useMonocle = true;
@@ -475,19 +467,6 @@ public class WebApp extends Application {
 
         captureLatch.countDown();
         stage.hide();
-    }
-
-    public static boolean hasConflictingLib() {
-        // If running from the IDE, make sure we're not using the wrong libs
-        URL url = Application.class.getResource("/" + Application.class.getName().replace('.', '/') + ".class");
-        String graphicsJar = url.toString().replaceAll("file:/|jar:", "").replaceAll("!.*", "");
-        log.trace("JavaFX will startup using {}", graphicsJar);
-        if (SystemUtilities.isWindows()) {
-            return !graphicsJar.contains("windows");
-        } else if (SystemUtilities.isMac()) {
-            return !graphicsJar.contains("osx") && !graphicsJar.contains("mac");
-        }
-        return !graphicsJar.contains("linux");
     }
 
     public static Version getWebkitVersion() {

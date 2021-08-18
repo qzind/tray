@@ -240,21 +240,6 @@ public class SystemUtilities {
     }
 
     /**
-     * Predicts the location of jnidispatch and sets jna.boot.library.path.
-     * Note, this must be called before any jna vars/methods are referenced.
-     *
-     * @return
-     */
-    public static boolean bindJnaBootLib() {
-        if (isInstalled() && isMac()) {
-            System.setProperty("jna.boot.library.path", SystemUtilities.getJarParentPath().getParent().resolve("Frameworks").toString());
-        } else {
-            System.setProperty("jna.boot.library.path", SystemUtilities.getJarParentPath().resolve("libs").toString());
-        }
-        return true;
-    }
-
-    /**
      * Determine if the current Operating System is Windows
      *
      * @return {@code true} if Windows, {@code false} otherwise

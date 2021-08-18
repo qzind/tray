@@ -179,6 +179,10 @@
                                     <input type="radio" name="pLanguage" id="pLangEVOLIS" value="EVOLIS" />
                                     Evolis
                                 </label>
+                                <label>
+                                    <input type="radio" name="pLanguage" id="pLangSBPL" value="SBPL" />
+                                    SBPL
+                                </label>
                             </div>
                         </div>
                         <div class="form-group">
@@ -189,6 +193,7 @@
                                 <button type="button" class="btn btn-default" onclick="printFile('zpl_sample.txt');">zpl_sample.txt</button>
                                 <button type="button" class="btn btn-default" onclick="printFile('fgl_sample.txt');">fgl_sample.txt</button>
                                 <button type="button" class="btn btn-default" onclick="printFile('epl_sample.txt');">epl_sample.txt</button>
+                                <button type="button" class="btn btn-default" onclick="printFile('sbpl_sample.txt');">sbpl_sample.txt</button>
                             </div>
                         </div>
                     </div>
@@ -1566,6 +1571,13 @@
                     '\x1BSe\x0D'       // End of sequence
                 ];
                 break;
+            case 'SBPL':
+                printData = [
+                    '\x1BA',
+                    '\x1BH0100\x1BV0100\x1BXSPRINTED WITH QZ ' + qzVersion,
+                    '\x1BQ1\x1BZ'
+                ];
+                break;
             default:
                 displayError("Sample page cannot print commands using this printer language");
                 return;
@@ -1790,6 +1802,14 @@
                 printData = [
                     //defaults to 'flavor: file'
                     { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: opts },
+                ];
+                break;
+            case 'SBPL':
+                printData = [
+                    '\x1BA',
+                    '\x1BH0100\x1BV0100',
+                    { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: opts },
+                    '\x1BQ1\x1BZ'
                 ];
                 break;
             default:

@@ -6,10 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Loader;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Files;
@@ -17,7 +15,8 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 public class LibUtilities {
-    private static final Logger log = LoggerFactory.getLogger(LibUtilities.class);
+    // private static final Logger log = LoggerFactoryy.getLogger(LibUtilities.class);
+    private static final Log log = new Log();
 
     private static Boolean isExternalLibs = null;
     private static Boolean isInternalLibs = null;
@@ -70,8 +69,8 @@ public class LibUtilities {
                 String extraLib = (String)getExtraLibName.invoke(Loader.class);
                 if (extraLib != null) System.load(getLibsLocation().resolve(extraLib).toString());
                 System.load(getLibsLocation().resolve(lib).toString());
-            } catch(InvocationTargetException | NoSuchMethodException | NoSuchFieldException | IllegalAccessException e) {
-                log.error("Failed to bind usb4java", e);
+            } catch(Throwable t) {
+                log.error("Failed to bind usb4java", t);
             }
         }
     }
@@ -131,5 +130,35 @@ public class LibUtilities {
             return !graphicsJar.contains("osx") && !graphicsJar.contains("mac");
         }
         return !graphicsJar.contains("linux");
+    }
+
+    // FIXME: This wrapper shouldn't be needed?
+    public static class Log {
+        public void warn(String message, Throwable t) {
+            err("WARN: " + message, t);
+        }
+        public void error(String message, Throwable t) {
+            err("WARN: " + message, t);
+        }
+        private void err(String message, Throwable t) {
+            System.err.println(message);
+            t.printStackTrace();
+        }
+        public void debug(String message) {
+            out("DEBUG: " + message);
+        }
+        public void trace(String message) {
+            out("DEBUG: " + message);
+        }
+        public void trace(String message, String stuff) {
+            out("DEBUG: " + message + ": " + stuff);
+        }
+        public void info(String message, Throwable t) {
+            out("INFO: " + message);
+        }
+        private void out(String message) {
+            System.out.println(message);
+        }
+
     }
 }

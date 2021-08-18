@@ -112,8 +112,17 @@ public class SystemUtilities {
         if (SystemUtilities.isWindows()) {
             return ShellUtilities.execute("net", "session");
         } else {
-            return ShellUtilities.executeRaw("whoami").trim().equals("root");
+            return whoami().equals("root");
         }
+    }
+
+    public static String whoami() {
+        String whoami = System.getProperty("user.name");
+        if(whoami == null || whoami.trim().isEmpty()) {
+            // Fallback on Command line
+            whoami = ShellUtilities.executeRaw("whoami").trim();
+        }
+        return whoami;
     }
 
     public static Version getJavaVersion() {

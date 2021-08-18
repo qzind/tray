@@ -164,13 +164,13 @@ public class LinuxInstaller extends Installer {
             ShellUtilities.execute(args.toArray(new String[args.size()]));
             return;
         }
-        String whoami = ShellUtilities.executeRaw("logname").trim();
-        if(whoami.isEmpty() || SystemUtilities.isSolaris()) {
-            whoami = System.getenv("SUDO_USER");
+        String sudoer = ShellUtilities.executeRaw("logname").trim();
+        if(sudoer.isEmpty() || SystemUtilities.isSolaris()) {
+            sudoer = System.getenv("SUDO_USER");
         }
 
-        if(whoami != null && !whoami.trim().isEmpty()) {
-            whoami = whoami.trim();
+        if(sudoer != null && !sudoer.trim().isEmpty()) {
+            sudoer = sudoer.trim();
         } else {
             throw new Exception("Unable to get current user, can't spawn instance");
         }
@@ -224,10 +224,10 @@ public class LinuxInstaller extends Installer {
             }
 
             // Only add vars for the current user
-            if(whoami.trim().equals(tempEnv.get("USER"))) {
+            if(sudoer.trim().equals(tempEnv.get("USER"))) {
                 env.putAll(tempEnv);
             } else {
-                log.debug("Expected USER={} but got USER={}, skipping results for {}", whoami, tempEnv.get("USER"), pid);
+                log.debug("Expected USER={} but got USER={}, skipping results for {}", sudoer, tempEnv.get("USER"), pid);
             }
 
             // Use gtk theme
@@ -254,8 +254,8 @@ public class LinuxInstaller extends Installer {
         }
 
         // Determine if this environment likes sudo
-        String[] sudoCmd = { "sudo", "-E", "-u", whoami, "nohup" };
-        String[] suCmd = { "su", whoami, "-c", "nohup" };
+        String[] sudoCmd = { "sudo", "-E", "-u", sudoer, "nohup" };
+        String[] suCmd = { "su", sudoer, "-c", "nohup" };
 
         ArrayList<String> argsList = new ArrayList<>();
         if(ShellUtilities.execute("which", "sudo")) {

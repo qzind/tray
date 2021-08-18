@@ -113,13 +113,13 @@ public class MacInstaller extends Installer {
     public void spawn(List<String> args) throws Exception {
         if(SystemUtilities.isAdmin()) {
             // macOS unconventionally uses "$USER" during its install process
-            String whoami = System.getenv("USER");
-            if(whoami == null || whoami.isEmpty() || whoami.equals("root")) {
+            String sudoer = System.getenv("USER");
+            if(sudoer == null || sudoer.isEmpty() || sudoer.equals("root")) {
                 // Fallback, should only fire via Terminal + sudo
-                whoami = ShellUtilities.executeRaw("logname").trim();
+                sudoer = ShellUtilities.executeRaw("logname").trim();
             }
             // Start directly without waitFor(...), avoids deadlocking
-            Runtime.getRuntime().exec(new String[] { "su", whoami, "-c", "\"" + StringUtils.join(args, "\" \"") + "\""});
+            Runtime.getRuntime().exec(new String[] { "su", sudoer, "-c", "\"" + StringUtils.join(args, "\" \"") + "\""});
         } else {
             Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
         }

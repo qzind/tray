@@ -3,12 +3,12 @@
     <target name="get-version">
         <!-- build.version -->
         <property file="${basedir}/ant/project.properties"/>
-        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="build.version" timeout="60000" failonerror="true">
+        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="build.version" errorproperty="build.version.error" timeout="60000" failonerror="true">
             <arg value="--version"/>
         </java>
 
         <!-- apple.bundleid -->
-        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="apple.bundleid" timeout="60000" failonerror="true">
+        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="apple.bundleid" errorproperty="apple.bundleid.error" timeout="60000" failonerror="true">
             <arg value="--bundleid"/>
         </java>
         <property description="fallback value" name="build.type" value=""/>

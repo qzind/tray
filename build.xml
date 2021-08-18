@@ -9,7 +9,7 @@
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>
 
-    <target name="distribute" depends="init,quick-clean,download-javafx,build-jar,override-authcert,include-assets,whitelist-certs">
+    <target name="distribute" depends="init,quick-clean,dist-fx,build-jar,override-authcert,include-assets,whitelist-certs">
         <echo level="info">Process complete</echo>
     </target>
 

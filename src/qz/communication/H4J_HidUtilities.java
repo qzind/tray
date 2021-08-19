@@ -44,7 +44,7 @@ public class H4J_HidUtilities {
                     .put("manufacturer", device.getManufacturer())
                     .put("product", device.getProduct());
 
-            String uid = String.format("v%sp%su%ss%s", deviceJSON.get("vendorId"), deviceJSON.get("productId"), deviceJSON.get("usagePage"), deviceJSON.get("serial"));
+            String uid = String.format("v%sp%su%ss%s", deviceJSON.optString("vendorId"), deviceJSON.optString("productId"), deviceJSON.optString("usagePage"), deviceJSON.optString("serial"));
             if (!unique.contains(uid)) {
                 devicesJSON.put(deviceJSON);
                 unique.add(uid);

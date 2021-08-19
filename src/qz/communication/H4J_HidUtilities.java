@@ -10,6 +10,7 @@ import org.hid4java.HidServices;
 import qz.utils.SystemUtilities;
 
 import javax.usb.util.UsbUtil;
+import java.util.HashSet;
 import java.util.List;
 
 public class H4J_HidUtilities {
@@ -32,6 +33,7 @@ public class H4J_HidUtilities {
         List<HidDevice> devices = getHidDevices();
         JSONArray devicesJSON = new JSONArray();
 
+        HashSet<String> unique = new HashSet<>();
         for(HidDevice device : devices) {
             JSONObject deviceJSON = new JSONObject();
 
@@ -42,7 +44,11 @@ public class H4J_HidUtilities {
                     .put("manufacturer", device.getManufacturer())
                     .put("product", device.getProduct());
 
-            devicesJSON.put(deviceJSON);
+            String uid = String.format("v%sp%su%ss%s", deviceJSON.optString("vendorId"), deviceJSON.optString("productId"), deviceJSON.optString("usagePage"), deviceJSON.optString("serial"));
+            if (!unique.contains(uid)) {
+                devicesJSON.put(deviceJSON);
+                unique.add(uid);
+            }
         }
 
         return devicesJSON;

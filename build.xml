@@ -9,7 +9,7 @@
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>
 
-    <target name="distribute" depends="init,quick-clean,dist-fx,build-jar,override-authcert,include-assets,whitelist-certs">
+    <target name="distribute" depends="init,quick-clean,build-jar,override-authcert,include-assets,whitelist-certs">
         <echo level="info">Process complete</echo>
     </target>
 
@@ -126,7 +126,16 @@
         </delete>
     </target>
 
-    <target name="copy-libs">
+    <target name="copy-libs" depends="download-javafx">
+        <!-- Copy jfx libs-->
+        <mkdir dir="${dist.dir}/libs"/>
+        <copy todir="${dist.dir}/libs" flatten="true">
+            <fileset dir="${target.fx.basedir}">
+                <include name="${target.fx.id}*/**/*.${target.libext}"/>
+            </fileset>
+        </copy>
+
+        <!-- Copy third-party libs-->
         <mkdir dir="${out.dir}/libs-temp"/>
         <unzip dest="${out.dir}/libs-temp" overwrite="false">
             <fileset dir="lib">

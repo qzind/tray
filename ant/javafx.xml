@@ -218,25 +218,4 @@
         <unzip src="${fx.zip}" dest="${fx.dir}" overwrite="true"/>
         <delete file="${fx.zip}"/>
     </target>
-
-    <!-- Copies native libraries for target platform -->
-    <target name="dist-fx" depends="download-javafx">
-        <antcall target="copy-native-files">
-            <param name="dest.dir" value="${dist.dir}/libs"/>
-            <param name="src.dir" value="${target.fx.basedir}"/>
-            <param name="prefix.pattern" value="${target.fx.id}*/"/>
-            <param name="native.extension" value="${target.libext}"/>
-        </antcall>
-    </target>
-
-    <!-- Copies native libraries for specified platform -->
-    <!-- FIXME: Kyle to combine this with other native copy tasks -->
-    <target name="copy-native-files">
-        <mkdir dir="${dest.dir}"/>
-        <copy todir="${dest.dir}" flatten="true">
-            <fileset dir="${src.dir}">
-                <include name="${prefix.pattern}**/*.${native.extension}"/>
-            </fileset>
-        </copy>
-    </target>
 </project>

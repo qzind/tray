@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
  */
 public class UnixUtilities {
     private static final Logger log = LoggerFactory.getLogger(UnixUtilities.class);
+    private static String uname;
+    private static String linuxRelease;
     private static Integer pid;
 
     static String getHostName() {
@@ -49,5 +51,64 @@ public class UnixUtilities {
     private interface CLibrary extends Library {
         CLibrary INSTANCE = Native.load("c", CLibrary.class);
         int getpid();
+    }
+
+    /**
+     * Returns the output of {@code uname -a} shell command, useful for parsing the Linux Version
+     *
+     * @return the output of {@code uname -a}, or null if not running Linux
+     */
+    public static String getUname() {
+        if (SystemUtilities.isUnix() && uname == null) {
+            uname = ShellUtilities.execute(
+                    new String[] {"uname", "-a"},
+                    null
+            );
+        }
+
+        return uname;
+    }
+
+    /**
+     * Returns the output of {@code cat /etc/lsb-release} or equivalent
+     *
+     * @return the output of the command or null if not running Linux
+     */
+    public static String getLinuxRelease() {
+        if (SystemUtilities.isLinux() && linuxRelease == null) {
+            String[] releases = {"/etc/lsb-release", "/etc/redhat-release"};
+            for(String release : releases) {
+                String result = ShellUtilities.execute(
+                        new String[] {"cat", release},
+                        null
+                );
+                if (!result.isEmpty()) {
+                    linuxRelease = result;
+                    break;
+                }
+            }
+        }
+
+        return linuxRelease;
+    }
+
+    /**
+     * Returns whether the output of {@code uname -a} shell command contains "Ubuntu"
+     *
+     * @return {@code true} if this OS is Ubuntu
+     */
+    public static boolean isUbuntu() {
+        return getUname().contains("Ubuntu");
+    }
+
+
+    /**
+     * Returns whether the output of <code>cat /etc/redhat-release/code> shell command contains "Fedora"
+     *
+     * @return {@code true} if this OS is Fedora
+     */
+    public static boolean isFedora() {
+        getLinuxRelease();
+        return linuxRelease != null && linuxRelease.contains("Fedora");
     }
 }

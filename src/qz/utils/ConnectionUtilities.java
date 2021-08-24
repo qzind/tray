@@ -151,20 +151,19 @@ public final class ConnectionUtilities {
     }
 
     private static String getArch() {
-        String arch = System.getProperty("os.arch");
-        if(arch != null) {
-            arch = arch.toLowerCase(Locale.ENGLISH);
-            if(arch.startsWith("amd") || arch.startsWith("x86") || arch.startsWith("i386")) {
+        switch(SystemUtilities.getJreArch()) {
+            case X86:
+            case X86_64:
                 return "x86";
-            } else if(arch.startsWith("aarch") || arch.startsWith("arm")) {
+            case AARCH64:
                 return "arm";
-            } else if(arch.startsWith("riscv") || arch.startsWith("rv")) {
+            case RISCV:
                 return "riscv";
-            } if(arch.startsWith("ppc") || arch.startsWith("power")) {
+            case PPC:
                 return "ppc";
-            }
+            default:
+                return "unknown";
         }
-        return arch == null ? "unknown" : arch;
     }
 
     private static String getBitness() {
@@ -173,17 +172,17 @@ public final class ConnectionUtilities {
         if(bitness != null ) {
             return bitness;
         }
-        // Fallback on parsing os.arch
-        bitness = System.getProperty("os.arch");
-        if(bitness != null) {
-            bitness = bitness.toLowerCase(Locale.ENGLISH);
-            // 32-bit is now much less common, code to the exceptions
-            if(bitness.equals("arm") || bitness.endsWith("86") || bitness.endsWith("32")) {
-                // i386, x86
+        // fallback on some sane, hard-coded values
+        switch(SystemUtilities.getJreArch()) {
+            case ARM:
+            case X86:
                 return "32";
-            }
+            case X86_64:
+            case RISCV:
+            case PPC:
+            default:
+                return "64";
         }
-        return "64";
     }
 
     private static String getPlatform(boolean legacy) {
@@ -199,9 +198,9 @@ public final class ConnectionUtilities {
             if (!GraphicsEnvironment.isHeadless() && parts != null && parts.length > 2) {
                 linuxOS = parts[2];
             }
-            if (SystemUtilities.isUbuntu()) {
+            if (UnixUtilities.isUbuntu()) {
                 linuxOS += (linuxOS.isEmpty() ? "" : "; ") + "Ubuntu";
-            } else if(SystemUtilities.isFedora()) {
+            } else if(UnixUtilities.isFedora()) {
                 linuxOS += (linuxOS.isEmpty()? "" : "; ") + "Fedora";
             }
             return linuxOS;
@@ -236,13 +235,27 @@ public final class ConnectionUtilities {
     }
 
     private static String getUserAgentArch() {
-        String arch = System.getProperty("os.arch");
-        arch = "amd64".equalsIgnoreCase(arch) ? "x86_64" : arch;
-        if (SystemUtilities.isWow64()) {
-            return "WOW64";
-        } else if(SystemUtilities.isLinux()) {
-            return "Linux " + arch;
+        String arch;
+        switch (SystemUtilities.getJreArch()) {
+            case X86:
+                arch = "x86";
+                break;
+            case X86_64:
+                arch = "x86_64";
+                break;
+            default:
+                arch = SystemUtilities.OS_ARCH;
         }
-        return arch;
+
+        switch(SystemUtilities.getOsType()) {
+            case LINUX:
+                return "Linux " + arch;
+            case WINDOWS:
+                if(WindowsUtilities.isWow64()) {
+                    return "WOW64";
+                }
+            default:
+                return arch;
+        }
     }
 }

@@ -106,14 +106,17 @@ public class TrayManager {
         iconCache = new IconCache();
 
         if (!headless && SystemTray.isSupported()) { // UI mode with tray
-            if (SystemUtilities.isWindows()) {
-                tray = TrayType.JX.init();
-                // Undocumented HiDPI behavior
-                tray.setImageAutoSize(true);
-            } else if (SystemUtilities.isMac()) {
-                tray = TrayType.CLASSIC.init();
-            } else {
-                tray = TrayType.MODERN.init();
+            switch(SystemUtilities.getOsType()) {
+                case WINDOWS:
+                    tray = TrayType.JX.init();
+                    // Undocumented HiDPI behavior
+                    tray.setImageAutoSize(true);
+                    break;
+                case MAC:
+                    tray = TrayType.CLASSIC.init();
+                    break;
+                default:
+                    tray = TrayType.MODERN.init();
             }
 
             // OS-specific tray icon handling

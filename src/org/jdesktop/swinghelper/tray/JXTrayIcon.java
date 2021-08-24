@@ -72,7 +72,7 @@ public class JXTrayIcon extends TrayIcon {
         if (menu != null) {
             Point location = mouseEvent.getLocationOnScreen();
             // Handle HiDPI factor discrepancy between mouse position and window position
-            if(SystemUtilities.isWindows() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("9.0.0"))) {
+            if(SystemUtilities.isWindows() && Constants.JAVA_VERSION.getMajorVersion() >= 9) {
                 location.setLocation(location.getX() / WindowsUtilities.getScaleFactor(), location.getY() / WindowsUtilities.getScaleFactor());
             }
             showJPopupMenu((int)location.getX(), (int)location.getY());
@@ -162,25 +162,29 @@ public class JXTrayIcon extends TrayIcon {
     @Override
     public Dimension getSize() {
         Dimension iconSize = new Dimension(super.getSize());
-        // macOS edge-cases
-        if (SystemUtilities.isMac()) {
-            // Handle retina display
-            int scale = MacUtilities.getScaleFactor();
+        switch(SystemUtilities.getOsType()) {
+            // macOS icons are slightly smaller than the size reported
+            case MAC:
+                // Handle retina display
+                int macScale = MacUtilities.getScaleFactor();
 
-            // Handle undocumented icon border (e.g. 20px has 16px icon)
-            // See also IconCache.fixTrayIcons()
-            iconSize.width -= iconSize.width / 5;
-            iconSize.height -= iconSize.height / 5;
+                // Handle undocumented icon border (e.g. 20px has 16px icon)
+                // See also IconCache.fixTrayIcons()
+                iconSize.width -= iconSize.width / 5;
+                iconSize.height -= iconSize.height / 5;
 
-            return new Dimension(iconSize.width * scale, iconSize.height * scale);
-        } else if(SystemUtilities.isWindows() && Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("9.0.0"))) {
-            // JDK9+ required for HiDPI tray icons on Windows
-            int scale = WindowsUtilities.getScaleFactor();
+                return new Dimension(iconSize.width * macScale, iconSize.height * macScale);
+            case WINDOWS:
+                if(Constants.JAVA_VERSION.getMajorVersion() >= 9) {
+                    // JDK9+ required for HiDPI tray icons on Windows
+                    int winScale = WindowsUtilities.getScaleFactor();
 
-            // Handle undocumented HiDPI icon support
-            // Requires TrayIcon.setImageAutoSize(true);
-            iconSize.width *= scale;
-            iconSize.height *= scale;
+                    // Handle undocumented HiDPI icon support
+                    // Requires TrayIcon.setImageAutoSize(true);
+                    iconSize.width *= winScale;
+                    iconSize.height *= winScale;
+                }
+                break;
         }
         return iconSize;
     }

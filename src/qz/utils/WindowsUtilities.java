@@ -10,9 +10,7 @@
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
-import com.sun.jna.Native;
 import com.sun.jna.platform.win32.*;
-import com.sun.jna.win32.W32APIOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -27,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.sun.jna.platform.win32.WinReg.*;
+import static qz.utils.SystemUtilities.*;
 
 import static java.nio.file.attribute.AclEntryPermission.*;
 import static java.nio.file.attribute.AclEntryFlag.*;
@@ -35,6 +34,7 @@ public class WindowsUtilities {
     protected static final Logger log = LoggerFactory.getLogger(WindowsUtilities.class);
     private static String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
+    private static Boolean isWow64;
     private static Integer pid;
 
     public static boolean isDarkDesktop() {
@@ -321,5 +321,26 @@ public class WindowsUtilities {
             }
         }
         return pid;
+    }
+
+    public static boolean isWindowsXP() {
+        return isWindows() && OS_NAME.contains("xp");
+    }
+
+
+    /**
+     * Detect 32-bit JVM on 64-bit Windows
+     * @return
+     */
+    public static boolean isWow64() {
+        if(isWow64 == null) {
+            isWow64 = false;
+            if (SystemUtilities.isWindows()) {
+                if (SystemUtilities.getJreArch() != JreArch.X86_64) {
+                    isWow64 = System.getenv("PROGRAMFILES(x86)") != null;
+                }
+            }
+        }
+        return isWow64;
     }
 }

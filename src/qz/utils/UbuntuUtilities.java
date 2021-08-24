@@ -99,7 +99,7 @@ public class UbuntuUtilities {
      */
     public static void fixTrayIcons(IconCache iconCache) {
         // Execute some shell commands to determine specific Linux OS
-        if (SystemUtilities.isUbuntu()) {
+        if (UnixUtilities.isUbuntu()) {
             for(IconCache.Icon i : IconCache.getTypes()) {
                 if (i.isTrayIcon()) {
                     iconCache.setBgColor(i, getTrayColor());

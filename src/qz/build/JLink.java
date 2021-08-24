@@ -46,7 +46,13 @@ public class JLink {
     private LinkedHashSet<String> depList;
 
     public JLink(String targetPlatform, String arch, String gcEngine) throws IOException {
-        javaVendor = SystemUtilities.isArm(arch) ? JAVA_ARM64_VENDOR : JAVA_AMD64_VENDOR;
+        switch(SystemUtilities.getJreArch(arch)) {
+            case AARCH64:
+                javaVendor = JAVA_ARM64_VENDOR;
+            case X86_64:
+            default:
+                javaVendor = JAVA_AMD64_VENDOR;
+        }
         this.targetPlatform = targetPlatform;
 
         // jdeps and jlink require matching major JDK versions.  Download if needed.
@@ -81,13 +87,17 @@ public class JLink {
     private JLink downloadJdk(String platform, String arch, String gcEngine) throws IOException {
         if(platform == null) {
             // Must match ArgValue.JLINK --platform values
-            if(SystemUtilities.isMac()) {
-                platform = "mac";
-            } else if(SystemUtilities.isWindows()) {
-                platform = "windows";
-            } else {
-                platform = "linux";
+            switch(SystemUtilities.getOsType()) {
+                case MAC:
+                    platform = "mac";
+                    break;
+                case WINDOWS:
+                    platform = "windows";
+                    break;
+                default:
+                    platform = "linux";
             }
+
             log.info("No platform specified, assuming '{}'", platform);
         }
 

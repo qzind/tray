@@ -44,29 +44,86 @@ import static com.sun.jna.platform.win32.WinReg.*;
  * @author Tres Finocchiaro
  */
 public class SystemUtilities {
-
-    // Name of the os, i.e. "Windows XP", "Mac OS X"
-    private static final String OS_NAME = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+    static final String OS_NAME = System.getProperty("os.name");
+    static final String OS_ARCH = System.getProperty("os.arch");
+    private static final OsType OS_TYPE = getOsType(OS_NAME);
+    private static final JreArch JRE_ARCH = getJreArch(OS_ARCH);
     private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
     private static final Locale defaultLocale = Locale.getDefault();
 
     private static Boolean darkDesktop;
     private static Boolean darkTaskbar;
     private static Boolean hasMonocle;
-    private static String uname;
-    private static String linuxRelease;
     private static String classProtocol;
     private static Version osVersion;
     private static Path jarPath;
     private static Integer pid;
 
+    public enum OsType {
+        MAC,
+        WINDOWS,
+        LINUX,
+        SOLARIS,
+        UNKNOWN
+    }
 
-    /**
-     * @return Lowercase version of the operating system name
-     * identified by {@code System.getProperty("os.name");}.
-     */
-    public static String getOS() {
-        return OS_NAME;
+    public enum JreArch {
+        X86,
+        X86_64,
+        ARM, // 32-bit
+        AARCH64,
+        RISCV,
+        PPC,
+        UNKNOWN
+    }
+
+    public static OsType getOsType() {
+        return OS_TYPE;
+    }
+
+    public static OsType getOsType(String os) {
+        if(os != null) {
+            String osLower = os.toLowerCase(Locale.ENGLISH);
+            if (osLower.contains("win")) {
+                return OsType.WINDOWS;
+            } else if (osLower.contains("mac")) {
+                return OsType.MAC;
+            } else if (osLower.contains("linux")) {
+                return OsType.LINUX;
+            } else if (osLower.contains("sunos")) {
+                return OsType.SOLARIS;
+            }
+        }
+        return OsType.UNKNOWN;
+    }
+
+    public static JreArch getJreArch() {
+        return JRE_ARCH;
+    }
+
+    public static JreArch getJreArch(String arch) {
+        if(arch != null) {
+            String archLower = arch.toLowerCase(Locale.ENGLISH);
+            if (archLower.equals("arm")) {
+                return JreArch.ARM;
+            }
+            if (archLower.contains("amd64") || archLower.contains("x86_64")) {
+                return JreArch.X86_64;
+            }
+            if (archLower.contains("86")) { // x86, i386, i486, i586, i686
+                return JreArch.X86;
+            }
+            if (archLower.startsWith("aarch") || archLower.startsWith("arm")) {
+                return JreArch.AARCH64;
+            }
+            if (archLower.startsWith("riscv") || archLower.startsWith("rv")) {
+                return JreArch.RISCV;
+            }
+            if (archLower.startsWith("ppc") || archLower.startsWith("power")) {
+                return JreArch.PPC;
+            }
+        }
+        return JreArch.UNKNOWN;
     }
 
     /**
@@ -111,10 +168,11 @@ public class SystemUtilities {
     }
 
     public static boolean isAdmin() {
-        if (SystemUtilities.isWindows()) {
-            return ShellUtilities.execute("net", "session");
-        } else {
-            return whoami().equals("root");
+        switch(OS_TYPE) {
+            case WINDOWS:
+                return ShellUtilities.execute("net", "session");
+            default:
+                return whoami().equals("root");
         }
     }
 
@@ -268,24 +326,13 @@ public class SystemUtilities {
     }
 
     /**
-     * Detect 32-bit JVM on 64-bit Windows
-     * @return
-     */
-    public static boolean isWow64() {
-        String arch = System.getProperty("os.arch");
-        return isWindows() && !arch.contains("x86_64") && !arch.contains("amd64") && System.getenv("PROGRAMFILES(x86)") != null;
-    }
-
-    /**
      * Determine if the current Operating System is Windows
      *
      * @return {@code true} if Windows, {@code false} otherwise
      */
     public static boolean isWindows() {
-        return (OS_NAME.contains("win"));
+        return OS_TYPE == OsType.WINDOWS;
     }
-
-    public static boolean isWindowsXP() { return OS_NAME.contains("win") && OS_NAME.contains("xp"); }
 
     /**
      * Determine if the current Operating System is Mac OS
@@ -293,7 +340,7 @@ public class SystemUtilities {
      * @return {@code true} if Mac OS, {@code false} otherwise
      */
     public static boolean isMac() {
-        return (OS_NAME.contains("mac"));
+        return OS_TYPE == OsType.MAC;
     }
 
     /**
@@ -302,7 +349,7 @@ public class SystemUtilities {
      * @return {@code true} if Linux, {@code false} otherwise
      */
     public static boolean isLinux() {
-        return (OS_NAME.contains("linux"));
+        return OS_TYPE == OsType.LINUX;
     }
 
     /**
@@ -311,7 +358,12 @@ public class SystemUtilities {
      * @return {@code true} if Unix, {@code false} otherwise
      */
     public static boolean isUnix() {
-        return (OS_NAME.contains("mac") || OS_NAME.contains("nix") || OS_NAME.contains("nux") || OS_NAME.indexOf("aix") > 0 || OS_NAME.contains("sunos"));
+        if(OS_NAME != null) {
+            String osLower = OS_NAME.toLowerCase(Locale.ENGLISH);
+            return OS_TYPE == OsType.MAC || OS_TYPE == OsType.SOLARIS || OS_TYPE == OsType.LINUX ||
+                    osLower.contains("nix") || osLower.indexOf("aix") > 0;
+        }
+        return false;
     }
 
     /**
@@ -320,70 +372,7 @@ public class SystemUtilities {
      * @return {@code true} if Solaris, {@code false} otherwise
      */
     public static boolean isSolaris() {
-        return (OS_NAME.contains("sunos"));
-    }
-
-    /**
-     * Returns whether the output of {@code uname -a} shell command contains "Ubuntu"
-     *
-     * @return {@code true} if this OS is Ubuntu
-     */
-    public static boolean isUbuntu() {
-        getUname();
-        return uname != null && uname.contains("Ubuntu");
-    }
-
-    /**
-     * Returns whether the output of <code>cat /etc/redhat-release/code> shell command contains "Fedora"
-     *
-     * @return {@code true} if this OS is Fedora
-     */
-    public static boolean isFedora() {
-        getLinuxRelease();
-        return linuxRelease != null && linuxRelease.contains("Fedora");
-    }
-
-    public static boolean isArm(String arch) {
-        return arch != null && arch.toLowerCase().startsWith("aarch") || arch.toLowerCase().startsWith("arm");
-    }
-
-    /**
-     * Returns the output of {@code cat /etc/lsb-release} or equivalent
-     *
-     * @return the output of the command or null if not running Linux
-     */
-    public static String getLinuxRelease() {
-        if (isLinux() && linuxRelease == null) {
-            String[] releases = {"/etc/lsb-release", "/etc/redhat-release"};
-            for(String release : releases) {
-                String result = ShellUtilities.execute(
-                        new String[] {"cat", release},
-                        null
-                );
-                if (!result.isEmpty()) {
-                    linuxRelease = result;
-                    break;
-                }
-            }
-        }
-
-        return linuxRelease;
-    }
-
-    /**
-     * Returns the output of {@code uname -a} shell command, useful for parsing the Linux Version
-     *
-     * @return the output of {@code uname -a}, or null if not running Linux
-     */
-    public static String getUname() {
-        if (isLinux() && uname == null) {
-            uname = ShellUtilities.execute(
-                    new String[] {"uname", "-a"},
-                    null
-            );
-        }
-
-        return uname;
+        return OS_TYPE == OsType.SOLARIS;
     }
 
     public static boolean isDarkTaskbar() {

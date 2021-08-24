@@ -16,6 +16,7 @@ import qz.common.Constants;
 import qz.installer.Installer;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
+import qz.utils.UnixUtilities;
 
 import javax.swing.*;
 import java.awt.*;
@@ -116,7 +117,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
 
     private boolean findCertutil() {
         if (!ShellUtilities.execute("which", "certutil")) {
-            if (SystemUtilities.isUbuntu() && certType == SYSTEM && promptCertutil()) {
+            if (UnixUtilities.isUbuntu() && certType == SYSTEM && promptCertutil()) {
                 return ShellUtilities.execute("apt-get", "install", "-y", "libnss3-tools");
             } else {
                 log.warn("A critical component, \"certutil\" wasn't found and cannot be installed automatically. HTTPS will fail on browsers which depend on it.");

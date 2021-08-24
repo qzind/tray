@@ -72,11 +72,13 @@ public abstract class AppLocator {
     }
 
     private static AppLocator getPlatformSpecificAppLocator() {
-        if (SystemUtilities.isWindows()) {
-            return new WindowsAppLocator();
-        } else if (SystemUtilities.isMac()) {
-            return new MacAppLocator();
+        switch(SystemUtilities.getOsType()) {
+            case WINDOWS:
+                return new WindowsAppLocator();
+            case MAC:
+                return new MacAppLocator();
+            default:
+                return new LinuxAppLocator();
         }
-        return new LinuxAppLocator();
     }
 }

@@ -11,7 +11,7 @@
 package qz.installer;
 
 import com.sun.jna.platform.win32.*;
-import qz.utils.SystemUtilities;
+import qz.utils.WindowsUtilities;
 
 /**
  * Windows XP-compatible special folder's wrapper for JNA
@@ -84,7 +84,7 @@ public enum WindowsSpecialFolders {
     }
 
     public String getPath() {
-        if(SystemUtilities.isWindowsXP()) {
+        if(WindowsUtilities.isWindowsXP()) {
             return Shell32Util.getSpecialFolderPath(csidl, false);
         }
         return Shell32Util.getKnownFolderPath(guid);

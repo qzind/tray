@@ -59,12 +59,15 @@ public abstract class Installer {
 
     public static Installer getInstance() {
         if(instance == null) {
-            if(SystemUtilities.isWindows()) {
-                instance = new WindowsInstaller();
-            } else if(SystemUtilities.isMac()) {
-                instance = new MacInstaller();
-            } else {
-                instance = new LinuxInstaller();
+            switch(SystemUtilities.getOsType()) {
+                case WINDOWS:
+                    instance = new WindowsInstaller();
+                    break;
+                case MAC:
+                    instance = new MacInstaller();
+                    break;
+                default:
+                    instance = new LinuxInstaller();
             }
         }
         return instance;

@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import qz.utils.ColorUtilities;
 import qz.utils.SystemUtilities;
 import qz.utils.UbuntuUtilities;
+import qz.utils.UnixUtilities;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -258,7 +259,7 @@ public class IconCache {
      */
     public void fixTrayIcons(boolean darkTaskbar) {
         // Fix the tray icon to look proper on Ubuntu
-        if (SystemUtilities.isUbuntu()) {
+        if (UnixUtilities.isUbuntu()) {
             UbuntuUtilities.fixTrayIcons(this);
         }
 

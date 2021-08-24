@@ -20,10 +20,12 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
 
     public static NativePrinterMap getInstance() {
         if (instance == null) {
-            if (SystemUtilities.isWindows()) {
-                instance = new WindowsPrinterMap();
-            } else {
-                instance = new CupsPrinterMap();
+            switch(SystemUtilities.getOsType()) {
+                case WINDOWS:
+                    instance = new WindowsPrinterMap();
+                    break;
+                default:
+                    instance = new CupsPrinterMap();
             }
         }
         return instance;

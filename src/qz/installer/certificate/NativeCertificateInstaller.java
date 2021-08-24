@@ -34,12 +34,16 @@ public abstract class NativeCertificateInstaller {
     }
     public static NativeCertificateInstaller getInstance(Installer.PrivilegeLevel type) {
         if (instance == null) {
-            if (SystemUtilities.isWindows()) {
-                instance = new WindowsCertificateInstaller(type);
-            } else if(SystemUtilities.isMac()) {
-                instance = new MacCertificateInstaller(type);
-            } else {
-                instance = new LinuxCertificateInstaller(type);
+            switch(SystemUtilities.getOsType()) {
+                case WINDOWS:
+                    instance = new WindowsCertificateInstaller(type);
+                    break;
+                case MAC:
+                    instance = new MacCertificateInstaller(type);
+                    break;
+                case LINUX:
+                default:
+                    instance = new LinuxCertificateInstaller(type);
             }
         }
         return instance;

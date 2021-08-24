@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import qz.utils.FileUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
+import qz.utils.UnixUtilities;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -87,7 +89,7 @@ public class LinuxInstaller extends Installer {
 
     public Installer addSystemSettings() {
         // Legacy Ubuntu versions only: Patch Unity to show the System Tray
-        if(SystemUtilities.isUbuntu()) {
+        if(UnixUtilities.isUbuntu()) {
             ShellUtilities.execute("gsettings", "set", "com.canonical.Unity.Panel", "systray", "-whitelist", "\"['all']\"");
 
             if(ShellUtilities.execute("killall", "-w", "unity", "-panel")) {

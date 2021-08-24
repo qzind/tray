@@ -32,7 +32,6 @@ import qz.ws.PrintSocketServer;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -158,10 +157,7 @@ public class WebApp extends Application {
             headless = false;
 
             // JDK11+ depends bundled javafx
-            if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-                //fixme delete this and retest
-                LibUtilities.bindJavafxLibs();
-
+            if (Constants.JAVA_VERSION.getMajorVersion() >= 11) {
                 // Monocle default for unit tests
                 boolean useMonocle = true;
                 if (PrintSocketServer.getTrayManager() != null) {
@@ -177,8 +173,13 @@ public class WebApp extends Application {
                     log.trace("Initializing monocle platform");
                     System.setProperty("javafx.platform", "monocle");
                     // Don't set glass.platform on Linux per https://github.com/qzind/tray/issues/702
-                    if ((SystemUtilities.isWindows() || SystemUtilities.isMac())) {
-                        System.setProperty("glass.platform", "Monocle");
+                    switch(SystemUtilities.getOsType()) {
+                        case WINDOWS:
+                        case MAC:
+                            System.setProperty("glass.platform", "Monocle");
+                            break;
+                        default:
+                            // don't set "glass.platform"
                     }
 
                     //software rendering required headless environments

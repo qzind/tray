@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
+import qz.utils.WindowsUtilities;
 import qz.ws.PrintSocketServer;
 
 import java.io.File;
@@ -87,7 +88,7 @@ public class TaskKiller {
             }
         }
 
-        if(SystemUtilities.isWindowsXP()) {
+        if(WindowsUtilities.isWindowsXP()) {
             File f = new File("TempWmicBatchFile.bat");
             if(f.exists()) {
                 f.deleteOnExit();

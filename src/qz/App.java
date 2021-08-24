@@ -26,7 +26,7 @@ public class App {
 
     public static void main(String ... args) {
         ArgParser parser = new ArgParser(args);
-        LibUtilities.bindLibs();
+        LibUtilities.getInstance().bind();
         if(parser.intercept()) {
             System.exit(parser.getExitCode());
         }

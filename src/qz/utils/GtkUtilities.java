@@ -15,17 +15,21 @@ public class GtkUtilities {
      * Initializes Gtk2/3 and returns the desktop scaling factor, usually 1.0 or 2.0
      */
     public static double getScaleFactor() {
-        GTK gtkHandle = getGtkInstance();
-        if (gtkHandle != null && gtkHandle.gtk_init_check(0, null)) {
-            log.debug("Initialized Gtk");
+        try {
+            GTK gtkHandle = getGtkInstance();
+            if (gtkHandle != null && gtkHandle.gtk_init_check(0, null)) {
+                log.debug("Initialized Gtk");
 
-            if (gtkHandle instanceof GTK2) {
-                return getGtk2ScaleFactor((GTK2)gtkHandle);
+                if (gtkHandle instanceof GTK2) {
+                    return getGtk2ScaleFactor((GTK2)gtkHandle);
+                } else {
+                    return getGtk3ScaleFactor((GTK3)gtkHandle);
+                }
             } else {
-                return getGtk3ScaleFactor((GTK3)gtkHandle);
+                log.warn("An error occurred initializing the Gtk library");
             }
-        } else {
-            log.warn("An error occurred initializing the Gtk library");
+        } catch(Throwable t) {
+            log.warn("An error occurred initializing the Gtk library", t);
         }
         return 0;
     }

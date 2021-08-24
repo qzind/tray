@@ -22,6 +22,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -57,6 +58,7 @@ public class SystemUtilities {
     private static String classProtocol;
     private static Version osVersion;
     private static Path jarPath;
+    private static Integer pid;
 
 
     /**
@@ -138,7 +140,33 @@ public class SystemUtilities {
     }
 
     public static int getProcessId() {
-        return SystemUtilities.isWindows() ? WindowsUtilities.getProcessId() : UnixUtilities.getProcessId();
+        if(pid == null) {
+            // Try Java 9+
+            if(Constants.JAVA_VERSION.getMajorVersion() >= 9) {
+                pid = getProcessIdJigsaw();
+            }
+            // Try JNA
+            if(pid == null || pid == -1) {
+                pid = SystemUtilities.isWindows() ? WindowsUtilities.getProcessId() : UnixUtilities.getProcessId();
+            }
+        }
+        return pid;
+    }
+
+    private static int getProcessIdJigsaw() {
+        try {
+            Class processHandle = Class.forName("java.lang.ProcessHandle");
+            Method current = processHandle.getDeclaredMethod("current");
+            Method pid = processHandle.getDeclaredMethod("pid");
+            Object processHandleInstance = current.invoke(processHandle);
+            Object pidValue = pid.invoke(processHandleInstance);
+            if(pidValue instanceof Long) {
+                return ((Long)pidValue).intValue();
+            }
+        } catch(Throwable t) {
+            log.warn("Could not get process ID using Java 9+, will attempt to fallback to JNA", t);
+        }
+        return -1;
     }
 
     /**

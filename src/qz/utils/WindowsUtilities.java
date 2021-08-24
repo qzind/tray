@@ -317,6 +317,7 @@ public class WindowsUtilities {
             }
             catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
                 log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
+                pid = -1;
             }
         }
         return pid;

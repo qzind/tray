@@ -41,15 +41,15 @@
 
         <mkdir dir="${dist.dir}/libs"/>
         <copy todir="${dist.dir}/libs" flatten="true" verbose="true">
-            <zipfileset dir="lib">
+            <fileset dir="${out.dir}/libs-temp">
                 <!--x86_64-->
-                <include name="**/linux-x86-64/*" if="target.x86_64"/> <!-- jna/hid4java -->
-                <include name="**/linux-x86_64/*" if="target.x86_64"/> <!-- usb4java -->
-                <include name="**/linux_64/*" if="target.x86_64"/> <!-- jssc -->
+                <include name="**/linux-x86-64/*" if="target.arch.x86_64"/> <!-- jna/hid4java -->
+                <include name="**/linux-x86_64/*" if="target.arch.x86_64"/> <!-- usb4java -->
+                <include name="**/linux_64/*" if="target.arch.x86_64"/> <!-- jssc -->
                 <!--aarch64-->
-                <include name="**/linux-aarch64/*" if="target.aarch64"/> <!-- jna/hid4java/usb4java -->
-                <include name="**/linux_arm64/*" if="target.aarch64"/> <!-- jssc -->
-            </zipfileset>
+                <include name="**/linux-aarch64/*" if="target.arch.aarch64"/> <!-- jna/hid4java/usb4java -->
+                <include name="**/linux_arm64/*" if="target.arch.aarch64"/> <!-- jssc -->
+            </fileset>
         </copy>
     </target>
 </project>

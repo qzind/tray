@@ -13,6 +13,8 @@ package qz.utils;
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.ssl.Base64;
+import org.joor.Reflect;
+import org.joor.ReflectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -50,6 +52,15 @@ public class SystemUtilities {
     private static final JreArch JRE_ARCH = getJreArch(OS_ARCH);
     private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
     private static final Locale defaultLocale = Locale.getDefault();
+
+    static {
+        if(!isWindows() && !isMac()) {
+            // Force hid4java to use libusb: https://github.com/qzind/tray/issues/853
+            try {
+                Reflect.on("org.hid4java.jna.HidApi").set("useLibUsbVariant", true);
+            } catch(ReflectException ignore) {}
+        }
+    }
 
     private static Boolean darkDesktop;
     private static Boolean darkTaskbar;

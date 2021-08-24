@@ -143,7 +143,9 @@ public class SocketConnection {
 
     public synchronized void openDevice(DeviceIO device, DeviceOptions dOpts) throws DeviceException {
         device.open();
-        addDevice(dOpts, device);
+        if (device.isOpen()) {
+            addDevice(dOpts, device);
+        }
     }
 
     /**

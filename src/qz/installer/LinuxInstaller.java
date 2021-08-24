@@ -55,7 +55,7 @@ public class LinuxInstaller extends Installer {
         fieldMap.put("%DESTINATION%", destination);
         fieldMap.put("%LINUX_ICON%", String.format("%s.svg", PROPS_FILE));
         fieldMap.put("%COMMAND%", String.format("%s/%s", destination, PROPS_FILE));
-        fieldMap.put("%PARAM%", isStartup ? "--honorautostart" : "");
+        fieldMap.put("%PARAM%", isStartup ? "--honorautostart" : "%u");
 
         File launcher = new File(location);
         try {
@@ -128,6 +128,8 @@ public class LinuxInstaller extends Installer {
                 udev.delete();
             }
             FileUtilities.configureAssetFile("assets/linux-udev.rules.in", new File(UDEV_RULES), new HashMap<>(), LinuxInstaller.class);
+            // udev rules should be -rw-r--r--
+            udev.setReadable(true, false);
             ShellUtilities.execute("udevadm", "control", "--reload-rules");
         } catch(IOException e) {
             log.warn("Could not install udev rules, usb support may fail {}", UDEV_RULES, e);

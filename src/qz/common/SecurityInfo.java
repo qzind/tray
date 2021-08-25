@@ -77,6 +77,7 @@ public class SecurityInfo {
         });
         libVersions.put("jna", Native.VERSION);
         libVersions.put("jssc", () -> jssc.SerialNativeInterface.getLibraryVersion());
+        libVersions.put("jssc (native)", () -> jssc.SerialNativeInterface.getNativeLibraryVersion());
         libVersions.put("jetty", Jetty.VERSION);
         libVersions.put("pdfbox", org.apache.pdfbox.util.Version.getVersion());
         libVersions.put("purejavahidapi", () -> PureJavaHidApi.getVersion());

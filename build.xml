@@ -61,7 +61,7 @@
         <javac destdir="${build.dir}/${project.filename}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8">
             <src path="${src.dir}"/>
             <classpath>
-                <!-- prefer bouncycastle from pdfbox over simplersa -->
+                <!-- prefer bouncycastle from pdfbox over others -->
                 <path id="plugin.override">
                     <pathelement path="${pdfbox.path}"/>
                 </path>

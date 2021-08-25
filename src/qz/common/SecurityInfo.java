@@ -84,7 +84,6 @@ public class SecurityInfo {
         libVersions.put("usb-api", javax.usb.Version.getApiVersion());
         libVersions.put("not-yet-commons-ssl", org.apache.commons.ssl.Version.VERSION);
         libVersions.put("mslinks", mslinks.ShellLink.VERSION);
-        libVersions.put("simplersa", (String)null);
         libVersions.put("bouncycastle", "" + new BouncyCastleProvider().getVersion());
 
         libVersions.put("jre", Constants.JAVA_VERSION.toString());

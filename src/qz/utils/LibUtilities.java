@@ -5,11 +5,17 @@ import javafx.application.Application;
 import org.usb4java.Loader;
 import qz.common.Constants;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Helper for setting various booth paths for finding native libraries
@@ -18,7 +24,7 @@ import java.util.Arrays;
 public class LibUtilities {
     // Files indicating whether or not we can load natives from an external location
     private static final String[] INDICATOR_RESOURCES = {"/com/sun/jna/" + Platform.RESOURCE_PREFIX };
-    private static final String LIB_DIR = "libs";
+    private static final String LIB_DIR = "./libs";
     private static final String MAC_LIB_DIR = "../Contents/Frameworks";
 
     private static final LibUtilities INSTANCE = new LibUtilities();
@@ -28,6 +34,15 @@ public class LibUtilities {
 
     // The base library path
     private final Path basePath;
+
+    // Common native file extensions, by platform
+    private static HashMap<SystemUtilities.OsType, String[]> extensionMap = new HashMap<>();
+    static {
+        extensionMap.put(SystemUtilities.OsType.WINDOWS, new String[]{ "dll" });
+        extensionMap.put(SystemUtilities.OsType.MAC, new String[]{ "jnilib", "dylib" });
+        extensionMap.put(SystemUtilities.OsType.LINUX, new String[]{ "so" });
+        extensionMap.put(SystemUtilities.OsType.UNKNOWN, new String[]{ "so" });
+    }
 
     public LibUtilities() {
         this(calculateBasePath(), calculateExternalized());
@@ -51,14 +66,30 @@ public class LibUtilities {
         }
         // JavaFX is always externalized
         if(Constants.JAVA_VERSION.getMajorVersion() >= 11) {
-            bindProperties("java.library.path"); // javafx
+            // Calculate basePath for IDE
+            Path fxBase = SystemUtilities.isJar() ? basePath :
+                    findNativeLib("glass", SystemUtilities.getJarParentPath("../lib").normalize());
+            bindProperty("java.library.path", fxBase); // javafx
         }
+    }
 
-        // TODO: Determine fx "libs" or "${basedir}/lib/javafx" for the running jre and remove
-        if (detectJavaFxConflict()) {
-            // IDE helper for "no suitable pipeline found" errors
-            System.err.println("\n=== WARNING ===\nWrong javafx platform detected. Delete lib/javafx/<platform> to correct this.\n");
-        }
+    /**
+     * Search recursively for a native library in the specified path
+     */
+    private static Path findNativeLib(String libName, Path basePath) {
+        String[] extensions = extensionMap.get(SystemUtilities.getOsType());
+        String prefix = !SystemUtilities.isWindows() ? "lib" : "";
+        List<Path> found = new ArrayList<>();
+        try (Stream<Path> walkStream = Files.walk(basePath)) {
+            walkStream.filter(p -> p.toFile().isFile()).forEach(f -> {
+                for(String extension : extensions) {
+                    if (f.getFileName().toString().equals(prefix + libName + "." + extension)) {
+                        found.add(f.getParent());
+                    }
+                }
+            });
+        } catch(IOException ignore) {}
+        return found.size() > 0 ? found.get(0) : null;
     }
 
     /**
@@ -67,7 +98,7 @@ public class LibUtilities {
     private static Path calculateBasePath() {
         return SystemUtilities.getJarParentPath().resolve(
                 useFrameworks() ? MAC_LIB_DIR : LIB_DIR
-        );
+        ).normalize();
     }
 
     /**
@@ -92,6 +123,9 @@ public class LibUtilities {
      * Binds a system property to the specified <code>basePath</code>
      */
     private void bindProperty(String property, Path basePath) {
+        if(property == null || basePath == null) {
+            return;
+        }
         if(!property.equals("java.library.path")) {
             System.setProperty(property, basePath.toString());
         } else {

@@ -32,10 +32,9 @@
     </target>
 
     <target name="host-fx-exists" depends="platform-detect">
-        <!-- TODO: Read/write a breadcrumb to know when exact version for a download has changed -->
         <!-- Host fx is saved to lib/ -->
         <property name="host.fx.basedir" value="${basedir}/lib"/>
-        <property name="host.fx.id" value="javafx-${host.os}-${host.arch}"/>
+        <property name="host.fx.id" value="javafx-${host.os}-${host.arch}-${host.fx.urlver}"/>
         <property name="host.fx.dir" value="${host.fx.basedir}/${host.fx.id}"/>
         <mkdir dir="${host.fx.dir}"/>
 
@@ -67,10 +66,9 @@
     </target>
 
     <target name="target-fx-exists">
-        <!-- TODO: Read/write a breadcrumb to know when exact version for a download has changed -->
         <!-- Target fx is saved to out/ -->
         <property name="target.fx.basedir" value="${out.dir}"/>
-        <property name="target.fx.id" value="javafx-${target.os}-${target.arch}"/>
+        <property name="target.fx.id" value="javafx-${target.os}-${target.arch}-${target.fx.urlver}"/>
         <property name="target.fx.dir" value="${target.fx.basedir}/${target.fx.id}"/>
         <mkdir dir="${target.fx.dir}"/>
 
@@ -181,12 +179,12 @@
     <!-- Downloads and extracts javafx for the specified platform -->
     <target name="download-extract-javafx">
         <!-- Cleanup old versions -->
-        <delete includeemptydirs="true">
+        <delete includeemptydirs="true" defaultexcludes="false">
             <fileset dir="${fx.basedir}">
                 <include name="javafx*/"/>
-                <exclude name="${fx.dir}/"/>
             </fileset>
         </delete>
+        <mkdir dir="${fx.id}"/>
 
         <!-- Valid os values: "windows", "linux", "osx" -->
         <!-- translate "mac" to "osx" -->

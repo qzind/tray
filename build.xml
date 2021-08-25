@@ -31,7 +31,7 @@
     </target>
 
     <target name="clean" depends="init">
-        <delete dir="${out.dir}"/>
+        <delete dir="${out.dir}" includeemptydirs="true" defaultexcludes="false"/>
     </target>
 
     <target name="quick-clean">
@@ -85,7 +85,7 @@
         </copy>
     </target>
 
-    <target name="build-jar" depends="compile-socket,copy-libs,externalize-libs">
+    <target name="build-jar" depends="download-javafx,compile-socket,copy-libs,externalize-libs">
         <echo level="info">Building jar</echo>
 
         <!-- Strip jlink-incompat files -->
@@ -100,7 +100,7 @@
                 <attribute name="Permissions" value="all-permissions"/>
             </manifest>
         </jar>
-        <delete dir="${out.dir}/libs-temp"/>
+        <delete dir="${out.dir}/libs-temp" includeemptydirs="true" defaultexcludes="false"/>
     </target>
 
     <target name="externalize-libs" if="separate.static.libs" depends="copy-dylibs,copy-dlls,copy-solibs">
@@ -116,7 +116,7 @@
         </delete>
 
         <!-- Delete empty files-->
-        <delete includeemptydirs="true">
+        <delete includeemptydirs="true" defaultexcludes="false">
             <fileset dir="${out.dir}/libs-temp">
                 <and>
                     <size value="0"/>
@@ -130,17 +130,24 @@
         <!-- Copy jfx libs-->
         <mkdir dir="${dist.dir}/libs"/>
         <copy todir="${dist.dir}/libs" flatten="true">
-            <fileset dir="${target.fx.basedir}">
-                <include name="${target.fx.id}*/**/*.${target.libext}"/>
+            <fileset dir="${target.fx.dir}">
+                <include name="**/*.${target.libext}"/>
             </fileset>
         </copy>
 
-        <!-- Copy third-party libs-->
+        <!-- Copy platform independent third-party libs -->
         <mkdir dir="${out.dir}/libs-temp"/>
         <unzip dest="${out.dir}/libs-temp" overwrite="false">
-            <fileset dir="lib">
+            <fileset dir="${basedir}/lib">
                 <include name="**/*.jar"/>
-                <exclude name="**/jfxrt.jar"/>
+                <exclude name="**/javafx*"/>
+            </fileset>
+        </unzip>
+        <!-- Copy platform specific target javafx version -->
+        <echo level="info">Copying ${target.fx.dir}</echo>
+        <unzip dest="${out.dir}/libs-temp" overwrite="false">
+            <fileset dir="${target.fx.dir}">
+                <include name="**/*.jar"/>
             </fileset>
         </unzip>
     </target>

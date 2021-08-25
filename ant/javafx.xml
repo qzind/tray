@@ -184,7 +184,7 @@
                 <include name="javafx*/"/>
             </fileset>
         </delete>
-        <mkdir dir="${fx.id}"/>
+        <mkdir dir="${fx.dir}"/>
 
         <!-- Valid os values: "windows", "linux", "osx" -->
         <!-- translate "mac" to "osx" -->
@@ -212,6 +212,7 @@
         <echo level="info">Downloading JavaFX from ${fx.url}</echo>
         <echo level="info">Temporarily saving JavaFX to ${fx.zip}</echo>
 
+        <mkdir dir="${out.dir}"/>
         <get src="${fx.url}" verbose="true" dest="${fx.zip}"/>
         <unzip src="${fx.zip}" dest="${fx.dir}" overwrite="true"/>
         <delete file="${fx.zip}"/>

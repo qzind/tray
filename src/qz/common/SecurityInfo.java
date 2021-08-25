@@ -3,10 +3,9 @@ package qz.common;
 import com.sun.jna.Native;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.jetty.util.Jetty;
-import org.hid4java.HidServices;
-import org.hid4java.jna.HidApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.LibUsb;
 import purejavahidapi.PureJavaHidApi;
 import qz.utils.SystemUtilities;
 
@@ -41,8 +40,8 @@ public class SecurityInfo {
                 return put(key, (V)value.check());
             } catch(Throwable t) {
                 log.warn("A checked exception was suppressed adding key \"{}\"", key, t);
+                return put(key, (V)"missing");
             }
-            return null;
         }
     }
 
@@ -85,6 +84,7 @@ public class SecurityInfo {
         libVersions.put("not-yet-commons-ssl", org.apache.commons.ssl.Version.VERSION);
         libVersions.put("mslinks", mslinks.ShellLink.VERSION);
         libVersions.put("bouncycastle", "" + new BouncyCastleProvider().getVersion());
+        libVersions.put("usb4java (native)", () -> LibUsb.getVersion());
 
         libVersions.put("jre", Constants.JAVA_VERSION.toString());
         libVersions.put("jre (vendor)", Constants.JAVA_VENDOR);

@@ -142,11 +142,12 @@
                         <a href="https://qz.io/wiki/What-is-Raw-Printing" target="new">What is Raw Printing?</a>
 
                         <span style="float: right;">
-                            <a href="javascript:findPrinter('Zebra', true);">Zebra</a> |
-                            <a href="javascript:findPrinter('ZDesigner', true);">ZDesigner</a> |
-                            <a href="javascript:findPrinter('Epson', true);">Epson</a> |
-                            <a href="javascript:findPrinter('Citizen', true);">Citizen</a> |
-                            <a href="javascript:findPrinter('Star', true);">Star</a>
+                            <a href="javascript:findPrinter('Zebra', true, 'ZPL');">Zebra</a> |
+                            <a href="javascript:findPrinter('ZDesigner', true, 'ZPL');">ZDesigner</a> |
+                            <a href="javascript:findPrinter('SATO', true, 'SBPL');">SATO</a> |
+                            <a href="javascript:findPrinter('Epson', true, 'ESCPOS');">Epson</a> |
+                            <a href="javascript:findPrinter('Citizen', true, 'ESCPOS');">Citizen</a> |
+                            <a href="javascript:findPrinter('Star', true, 'ESCPOS');">Star</a>
                         </span>
                     </div>
                 </div>
@@ -1479,11 +1480,18 @@
     }
 
     /// Detection ///
-    function findPrinter(query, set) {
+    function findPrinter(query, set, radio) {
         $("#printerSearch").val(query);
         qz.printers.find(query).then(function(data) {
             displayMessage("<strong>Found:</strong> " + data);
             if (set) { setPrinter(data); }
+            if(radio) {
+                var input = document.querySelector("input[value='" + radio + "']");
+                if(input) {
+                    input.checked = true;
+                    $(input.parentElement).fadeOut(300).fadeIn(500);
+                }
+            }
         }).catch(displayError);
     }
 

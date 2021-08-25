@@ -3,6 +3,8 @@ package qz.common;
 import com.sun.jna.Native;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.jetty.util.Jetty;
+import org.hid4java.HidServices;
+import org.hid4java.jna.HidApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import purejavahidapi.PureJavaHidApi;
@@ -69,6 +71,11 @@ public class SecurityInfo {
 
         // Use API-provided mechanism if available
         libVersions.put("jna (native)", () -> Native.VERSION_NATIVE);
+        libVersions.put("jna (location)", () -> {
+            @SuppressWarnings("unused")
+            int ignore = Native.BOOL_SIZE;
+            return System.getProperty("jnidispatch.path");
+        });
         libVersions.put("jna", Native.VERSION);
         libVersions.put("jssc", () -> jssc.SerialNativeInterface.getLibraryVersion());
         libVersions.put("jetty", Jetty.VERSION);
@@ -100,15 +107,6 @@ public class SecurityInfo {
             libVersions.put("javafx (location)", "Failed");
         }
 
-        // Implicitly call Native.loadNativeDispatchLibrary() to populate "jnidispatch.path"
-        try {
-            @SuppressWarnings("unused")
-            int ignore = Native.BOOL_SIZE;
-            libVersions.put("jna (location)", System.getProperty("jnidispatch.path"));
-        } catch(Throwable t) {
-            libVersions.put("jna (location)", "Failed");
-        }
-
         // Fallback to maven manifest information
         HashMap<String,String> mavenVersions = getMavenVersions();
 
@@ -116,7 +114,7 @@ public class SecurityInfo {
                               "slf4j-log4j12", "usb4java-javax", "java-semver", "commons-pool2",
                               "websocket-server", "jettison", "commons-codec", "log4j", "slf4j-api",
                               "websocket-servlet", "jetty-http", "commons-lang3", "javax-websocket-server-impl",
-                              "javax.servlet-api", "usb4java", "websocket-api", "jetty-util", "websocket-client",
+                              "javax.servlet-api", "hid4java", "usb4java", "websocket-api", "jetty-util", "websocket-client",
                               "javax.websocket-api", "commons-io", "jetty-security"};
 
         for(String lib : mavenLibs) {

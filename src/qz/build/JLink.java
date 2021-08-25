@@ -207,6 +207,8 @@ public class JLink {
                 depList.add(item);
             }
         }
+        // "jar:" URLs create transient zipfs dependency, see https://stackoverflow.com/a/57846672/3196753
+        depList.add("jdk.zipfs");
         return this;
     }
 

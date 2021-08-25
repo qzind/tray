@@ -148,7 +148,7 @@ public class SecurityInfo {
         final HashMap<String,String> mavenVersions = new HashMap<>();
         String jar = "jar:" + SecurityInfo.class.getProtectionDomain().getCodeSource().getLocation().toString();
         try(FileSystem fs = FileSystems.newFileSystem(new URI(jar), new HashMap<String,String>())) {
-            Files.walkFileTree(fs.getPath("/META-INF/maven"), new HashSet<FileVisitOption>(), 3, new SimpleFileVisitor<Path>() {
+            Files.walkFileTree(fs.getPath("/META-INF/maven"), new HashSet<>(), 3, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     if (file.toString().endsWith(".properties")) {

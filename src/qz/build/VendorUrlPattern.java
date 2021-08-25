@@ -9,7 +9,7 @@ import java.util.Locale;
  * Each JDK provider uses their own url format
  */
 public enum VendorUrlPattern {
-    ADOPT("https://github.com/AdoptOpenJDK/openjdk%s-binaries/releases/download/jdk-%s/OpenJDK%sU-jdk_%s_%s_%s_%s.%s"),
+    ADOPT("https://github.com/adoptium/temurin%s-binaries/releases/download/jdk-%s/OpenJDK%sU-jdk_%s_%s_%s_%s.%s"),
     BELL("https://download.bell-sw.com/java/%s/bellsoft-jdk%s-%s-%s.%s");
 
     private static final VendorUrlPattern DEFAULT_VENDOR = ADOPT;

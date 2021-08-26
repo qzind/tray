@@ -25,7 +25,7 @@ public class LibUtilities {
     // Files indicating whether or not we can load natives from an external location
     private static final String[] INDICATOR_RESOURCES = {"/com/sun/jna/" + Platform.RESOURCE_PREFIX };
     private static final String LIB_DIR = "./libs";
-    private static final String MAC_LIB_DIR = "../Contents/Frameworks";
+    private static final String MAC_LIB_DIR = "../Frameworks";
 
     private static final LibUtilities INSTANCE = new LibUtilities();
 
@@ -161,9 +161,7 @@ public class LibUtilities {
             String extraLib = (String)getExtraLibName.invoke(Loader.class);
             if (extraLib != null) System.load(basePath.resolve(extraLib).toString());
             System.load(basePath.resolve(lib).toString());
-        } catch(Throwable t) {
-            System.err.println("Failed to bind usb4java: " + t.getLocalizedMessage());
-        }
+        } catch(Throwable ignore) {}
     }
 
     // TODO: Determine fx "libs" or "${basedir}/lib/javafx" for the running jre and remove

@@ -235,7 +235,7 @@ public class MacUtilities {
     public static void setFocus() {
         try {
             NSApplication.sharedApplication().activateIgnoringOtherApps(true);
-        } catch(Exception e) {
+        } catch(Throwable t) {
             log.warn("Couldn't set focus using JNA, falling back to command line instead");
             ShellUtilities.executeAppleScript("tell application \"System Events\" \n" +
                                                       "set frontmost of every process whose unix id is " + UnixUtilities.getProcessId() + " to true \n" +

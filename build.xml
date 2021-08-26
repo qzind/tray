@@ -150,6 +150,15 @@
                 <include name="**/*.jar"/>
             </fileset>
         </unzip>
+        <!-- Remove files that can/did collide during unpacking -->
+        <delete includeemptydirs="true" failonerror="false">
+            <fileset dir="${out.dir}/libs-temp">
+                <include name="**/META-INF/**"/>
+                <exclude name="**/META-INF/maven/**"/>
+                <include name="LICENSE*"/>
+                <include name="README*"/>
+            </fileset>
+        </delete>
     </target>
 
     <!-- install override.crt for "community" branded builds -->

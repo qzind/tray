@@ -97,13 +97,11 @@
         </exec>
 
         <!-- Inject title, background -->
-        <replace file="${out.dir}/distribution.xml" token="&lt;pkg-ref">
-            <replacevalue><![CDATA[
-                <title>@project.name@ @build.version@</title>
-                    <background file="background.png" mime-type="image/png" alignment="bottomleft" scaling="none"/>
-                    <background-darkAqua file="background-dark.png" mime-type="image/png" alignment="bottomleft" scaling="none"/>
-                <pkg-ref]]>
-            </replacevalue>
+        <replace file="${out.dir}/distribution.xml" token="&lt;options customize">
+            <replacevalue><![CDATA[<title>@project.name@ @build.version@</title>
+	<background file="background.png" mime-type="image/png" alignment="bottomleft" scaling="none"/>
+	<background-darkAqua file="background-dark.png" mime-type="image/png" alignment="bottomleft" scaling="none"/>
+	<options customize]]></replacevalue>
             <replacefilter token="@project.name@" value="${project.name}"/>
             <replacefilter token="@build.version@" value="${build.version}"/>
         </replace>

@@ -314,7 +314,7 @@ public class SystemUtilities {
      * Returns the jar's parent path, or a fallback if we're not a jar
      */
     public static Path getJarParentPath(String relativeFallback) {
-        return getJarParentPath().resolve(SystemUtilities.isJar() ? ".": relativeFallback);
+        return getJarParentPath().resolve(SystemUtilities.isJar() ? "": relativeFallback);
     }
 
     /**

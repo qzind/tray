@@ -58,8 +58,74 @@
             <arg value="--sign"/>
             <arg value="${codesign.activeid}"/>
 
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
+        </exec>
+
+        <!-- TODO: Remove this entire block, replace with proper backgrounds from @RebeccaDefield -->
+        <!-- Use php to create dark and light stub background files -->
+        <exec executable="php" failonerror="true">
+            <arg value="-r"/>
+            <arg line="'$i = imagecreate(2000, 1000); imagecolorallocate($i, 213, 219, 213); imagepng($i, &quot;${basedir}/ant/apple/pkg-background.png&quot;);'"/>
+        </exec>
+        <exec executable="php" failonerror="true">
+            <arg value="-r"/>
+            <arg line="'$i = imagecreate(2000, 1000); imagecolorallocate($i, 27, 35, 30); imagepng($i, &quot;${basedir}/ant/apple/pkg-background-dark.png&quot;);'"/>
+        </exec>
+        <!-- TODO: End remove block -->
+
+        <!-- Copy branded resources to out/resources -->
+        <copy file="${basedir}/ant/apple/pkg-background.png" tofile="${out.dir}/resources/background.png" failonerror="true"/>
+        <copy file="${basedir}/ant/apple/pkg-background-dark.png" tofile="${out.dir}/resources/background-dark.png" failonerror="true"/>
+
+        <!-- Create a distribution.xml file for productbuild -->
+        <exec executable="productbuild" failonerror="true">
+            <arg value="--synthesize"/>
+
+            <arg value="--sign"/>
+            <arg value="${codesign.activeid}"/>
+
+            <arg value="--timestamp"/>
+
+            <arg value="--package"/>
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
+
+            <arg value="--scripts"/>
+            <arg value="${build.dir}/scripts"/>
+
+            <arg value="${out.dir}/distribution.xml"/>
+        </exec>
+
+        <!-- Inject title, background -->
+        <replace file="${out.dir}/distribution.xml" token="&lt;pkg-ref">
+            <replacevalue><![CDATA[
+                <title>@project.name@ @build.version@</title>
+                    <background file="background.png" mime-type="image/png" alignment="bottomleft" scaling="none"/>
+                    <background-darkAqua file="background-dark.png" mime-type="image/png" alignment="bottomleft" scaling="none"/>
+                <pkg-ref]]>
+            </replacevalue>
+            <replacefilter token="@project.name@" value="${project.name}"/>
+            <replacefilter token="@build.version@" value="${build.version}"/>
+        </replace>
+
+        <!-- Create a branded .pkg using productbuild -->
+        <exec executable="productbuild" failonerror="true">
+            <arg value="--sign"/>
+            <arg value="${codesign.activeid}"/>
+
+            <arg value="--timestamp"/>
+
+            <arg value="--distribution"/>
+            <arg value="${out.dir}/distribution.xml"/>
+
+            <arg value="--resources"/>
+            <arg value="${out.dir}/resources"/>
+
+            <arg value="--package-path"/>
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
+
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.pkg"/>
         </exec>
+
     </target>
 
     <target name="build-dmg" depends="get-identity,add-certificates,get-version">

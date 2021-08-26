@@ -74,6 +74,7 @@
         <!-- TODO: End remove block -->
 
         <!-- Copy branded resources to out/resources -->
+        <mkdir dir="{out.dir}/resources"/>
         <copy file="${basedir}/ant/apple/pkg-background.png" tofile="${out.dir}/resources/background.png" failonerror="true"/>
         <copy file="${basedir}/ant/apple/pkg-background-dark.png" tofile="${out.dir}/resources/background-dark.png" failonerror="true"/>
 

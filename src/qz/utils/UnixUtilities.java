@@ -98,7 +98,11 @@ public class UnixUtilities {
      * @return {@code true} if this OS is Ubuntu
      */
     public static boolean isUbuntu() {
-        return SystemUtilities.isLinux() && getUname().contains("Ubuntu");
+        if(!SystemUtilities.isLinux()) {
+            return false;
+        }
+        getUname();
+        return uname != null && uname.contains("Ubuntu");
     }
 
 

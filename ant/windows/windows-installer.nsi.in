@@ -1,3 +1,5 @@
+!define MUI_BGCOLOR "SYSCLR:Window"
+!define MUI_TEXTCOLOR "SYSCLR:WindowText"
 !include MUI2.nsh
 !include x64.nsh
 !include LogicLib.nsh

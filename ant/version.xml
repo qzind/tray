@@ -13,6 +13,7 @@
         </java>
         <property description="fallback value" name="build.type" value=""/>
         <property description="fallback value" name="build.version" value=""/>
+        <property description="fallback value" name="apple.bundleid" value=""/>
 
         <echo level="info">
             Version   : ${build.version}${build.type}

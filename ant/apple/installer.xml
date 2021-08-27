@@ -42,7 +42,7 @@
 
         <exec executable="pkgbuild" failonerror="true">
             <arg value="--identifier"/>
-            <arg value="${project.filename}"/>
+            <arg value="${apple.bundleid}"/>
 
             <arg value="--nopayload"/>
 

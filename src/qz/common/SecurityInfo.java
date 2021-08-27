@@ -93,11 +93,11 @@ public class SecurityInfo {
         //JFX info, if it exists
         try {
             Class<?> VersionInfo = Class.forName("com.sun.javafx.runtime.VersionInfo");
-            String fxPath = URLDecoder.decode(VersionInfo.getProtectionDomain().getCodeSource().getLocation().toString(), "UTF-8");
+            Path fxPath = Paths.get(VersionInfo.getProtectionDomain().getCodeSource().getLocation().toURI());
             Method method = VersionInfo.getMethod("getVersion");
             Object version = method.invoke(null);
             libVersions.put("javafx", (String)version);
-            if (fxPath.contains(SystemUtilities.getJarParentPath("../../").toString())) {
+            if (fxPath.startsWith(SystemUtilities.getJarParentPath("../../"))) {
                 libVersions.put("javafx (location)", "Bundled/" + Constants.ABOUT_TITLE);
             } else {
                 libVersions.put("javafx (location)", "System/" + Constants.JAVA_VENDOR);

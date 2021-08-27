@@ -92,19 +92,16 @@ public class SecurityInfo {
 
         //JFX info, if it exists
         try {
+            // "DO NOT LINK JAVAFX EVER" - JavaFX may not exist, use reflection to avoid compilation errors
             Class<?> VersionInfo = Class.forName("com.sun.javafx.runtime.VersionInfo");
             Path fxPath = Paths.get(VersionInfo.getProtectionDomain().getCodeSource().getLocation().toURI());
             Method method = VersionInfo.getMethod("getVersion");
             Object version = method.invoke(null);
             libVersions.put("javafx", (String)version);
-            if (fxPath.startsWith(SystemUtilities.getJarParentPath("../../"))) {
-                libVersions.put("javafx (location)", "Bundled/" + Constants.ABOUT_TITLE);
-            } else {
-                libVersions.put("javafx (location)", "System/" + Constants.JAVA_VENDOR);
-            }
+            libVersions.put("javafx (location)", fxPath.toString());
         } catch(Throwable e) {
-            libVersions.put("javafx", "Failed");
-            libVersions.put("javafx (location)", "Failed");
+            libVersions.put("javafx", "missing");
+            libVersions.put("javafx (location)", "missing");
         }
 
         // Fallback to maven manifest information

@@ -73,10 +73,14 @@ public abstract class NativeCertificateInstaller {
     public boolean install(File certFile) {
         String helper = instance.getClass().getSimpleName();
         String store = instance.getInstallType().name();
-        if (remove(find())) {
-            log.info("Certificate removed from {} store using {}", store, helper);
+        if(SystemUtilities.isJar()) {
+            if (remove(find())) {
+                log.info("Certificate removed from {} store using {}", store, helper);
+            } else {
+                log.warn("Could not remove certificate from {} store using {}", store, helper);
+            }
         } else {
-            log.warn("Could not remove certificate from {} store using {}", store, helper);
+            log.info("Skipping {} store certificate removal, IDE detected.", store, helper);
         }
         if (add(certFile)) {
             log.info("Certificate added to {} store using {}", store,  helper);

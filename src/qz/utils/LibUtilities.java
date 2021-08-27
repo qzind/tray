@@ -58,22 +58,19 @@ public class LibUtilities {
     }
 
     public void bind() {
-        try {
-            if (externalized) {
-                bindProperties("jna.boot.library.path", // jna, hid4java
-                               "jssc.boot.library.path" // jssc
-                );
-                bindUsb4Java();
-            }
-            // JavaFX is always externalized
-            if (Constants.JAVA_VERSION.getMajorVersion() >= 11) {
-                // Calculate basePath for IDE
-                Path fxBase = SystemUtilities.isJar()? basePath:
-                        findNativeLib("glass", SystemUtilities.getJarParentPath("../lib").normalize());
-                bindProperty("java.library.path", fxBase); // javafx
-            }
-        } catch(Exception ignore) {} //Exceptions during install must not print to stdout
-        //todo: display logs without corrupting the output name during build steps
+        if (externalized) {
+            bindProperties("jna.boot.library.path", // jna, hid4java
+                           "jssc.boot.library.path" // jssc
+            );
+            bindUsb4Java();
+        }
+        // JavaFX is always externalized
+        if (Constants.JAVA_VERSION.getMajorVersion() >= 11) {
+            // Calculate basePath for IDE
+            Path fxBase = SystemUtilities.isJar()? basePath:
+                    findNativeLib("glass", SystemUtilities.getJarParentPath("../lib").normalize());
+            bindProperty("java.library.path", fxBase); // javafx
+        }
     }
 
     /**

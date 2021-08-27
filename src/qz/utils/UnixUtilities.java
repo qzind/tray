@@ -98,7 +98,7 @@ public class UnixUtilities {
      * @return {@code true} if this OS is Ubuntu
      */
     public static boolean isUbuntu() {
-        return getUname().contains("Ubuntu");
+        return SystemUtilities.isLinux() && getUname().contains("Ubuntu");
     }
 
 
@@ -108,6 +108,9 @@ public class UnixUtilities {
      * @return {@code true} if this OS is Fedora
      */
     public static boolean isFedora() {
+        if(!SystemUtilities.isLinux()) {
+            return false;
+        }
         getLinuxRelease();
         return linuxRelease != null && linuxRelease.contains("Fedora");
     }

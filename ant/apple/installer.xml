@@ -107,7 +107,7 @@
         </replace>
 
         <!-- Create a branded .pkg using productbuild -->
-        <exec executable="productbuild" failonerror="true">
+        <exec executable="productbuild" dir="${out.dir}" failonerror="true">
             <arg value="--sign"/>
             <arg value="${codesign.activeid}"/>
 
@@ -120,7 +120,7 @@
             <arg value="${out.dir}/resources"/>
 
             <arg value="--package-path"/>
-            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
+            <arg value="${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
 
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.pkg"/>
         </exec>

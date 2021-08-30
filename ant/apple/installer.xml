@@ -65,11 +65,11 @@
         <!-- Use php to create dark and light stub background files -->
         <exec executable="php" failonerror="true">
             <arg value="-r"/>
-            <arg line="'$i = imagecreate(2000, 1000); imagecolorallocate($i, 213, 219, 213); imagepng($i, &quot;${basedir}/ant/apple/pkg-background.png&quot;);'"/>
+            <arg line="'$i = imagecreate(2000, 1000); imagecolorallocate($i, 213, 219, 213); imagestring($i, 5, 20, 955, &quot;PLACEHOLDER (ant/apple/pkg-background.png)&quot;, imagecolorallocate($i, 0, 0, 0)); imagepng($i, &quot;${basedir}/ant/apple/pkg-background.png&quot;);'"/>
         </exec>
         <exec executable="php" failonerror="true">
             <arg value="-r"/>
-            <arg line="'$i = imagecreate(2000, 1000); imagecolorallocate($i, 27, 35, 30); imagepng($i, &quot;${basedir}/ant/apple/pkg-background-dark.png&quot;);'"/>
+            <arg line="'$i = imagecreate(2000, 1000); imagecolorallocate($i, 27, 35, 30); imagestring($i, 5, 20, 955, &quot;PLACEHOLDER (ant/apple/pkg-background-dark.png)&quot;, imagecolorallocate($i, 255, 255, 255)); imagepng($i, &quot;${basedir}/ant/apple/pkg-background-dark.png&quot;);'"/>
         </exec>
         <!-- TODO: End remove block -->
 

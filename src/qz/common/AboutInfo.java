@@ -85,6 +85,7 @@ public class AboutInfo {
                 .put("os", SystemUtilities.getOsType().toString().toLowerCase())
                 .put("java", String.format("%s (%s)", Constants.JAVA_VERSION, SystemUtilities.getJreArch().toString().toLowerCase()))
                 .put("java (location)", System.getProperty("java.home"))
+                .put("java (vendor)", Constants.JAVA_VENDOR)
                 .put("uptime", DurationFormatUtils.formatDurationWords(uptime, true, false))
                 .put("uptimeMillis", uptime);
 

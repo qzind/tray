@@ -262,7 +262,7 @@ public class JLink {
             }
 
             Files.list(outPath.resolve("bin")).forEach(binFile -> {
-                if(Files.isDirectory(binFile) || binFile.toString().endsWith(keepExt)) {
+                if(Files.isDirectory(binFile) || (keepExt != null && binFile.toString().endsWith(keepExt))) {
                     log.info("Keeping {}", binFile);
                     return; // iterate forEach
                 }

@@ -4,6 +4,16 @@
     <property environment="env"/>
 
     <target name="build-exe" depends="get-version">
+        <!-- Sign Libs and Runtime -->
+        <fileset dir="${dist.dir}/" id="sign-win.bin-fileset">
+            <include name="**/*.dll"/>
+            <include name="**/*.exe"/>
+        </fileset>
+        <pathconvert pathsep=" " property="sign-win.binnames" refid="sign-win.bin-fileset"/>
+        <antcall target="sign-win">
+            <param name="sign.win.file" value="${sign-win.binnames}"/>
+        </antcall>
+
         <!-- Launcher -->
         <antcall target="config-compile-sign">
             <param name="nsis.script.in" value="windows-launcher.nsi.in"/>
@@ -99,19 +109,11 @@
                 <include name="**/windows_arm64/*" if="target.arch.aarch64"/> <!-- jssc -->
             </fileset>
         </copy>
-        <fileset dir="${dist.dir}/libs" id="sign-win.libsset">
-            <include name="*.dll"/>
-        </fileset>
-        <pathconvert pathsep=" " property="sign-win.libnames" refid="sign-win.libsset"/>
-
-
-        <antcall target="sign-win">
-            <param name="sign.win.file" value="${sign-win.libnames}"/>
-        </antcall>
     </target>
 
     <!-- Exe signing with timestamp -->
     <target name="sign-win-tsa" if="signing.tsaurl">
+        <property description="suppress property warning" name="signing.tsaurl" value="something went wrong"/>
         <echo level="info">Signing with timestamp: ${sign.win.file}</echo>
         <java jar="${basedir}/ant/lib/jsign-4.0.jar" fork="true" failonerror="true">
             <arg value="--name"/>

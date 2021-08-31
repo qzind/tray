@@ -106,7 +106,11 @@ public class FileUtilities {
      */
     private static Path getUserDirectory() {
         if(SystemUtilities.isWindows()) {
-            return Paths.get(WindowsSpecialFolders.ROAMING_APPDATA.getPath(), Constants.DATA_DIR);
+            try {
+                return Paths.get(WindowsSpecialFolders.ROAMING_APPDATA.getPath(), Constants.DATA_DIR);
+            } catch(Throwable ignore) {
+                return Paths.get(System.getenv("APPDATA"), Constants.DATA_DIR);
+            }
         } else if(SystemUtilities.isMac()) {
             return Paths.get(System.getProperty("user.home"), "/Library/Application Support/", Constants.DATA_DIR);
         } else {
@@ -119,7 +123,11 @@ public class FileUtilities {
      */
     private static Path getSharedDirectory() {
         if(SystemUtilities.isWindows()) {
-            return Paths.get(WindowsSpecialFolders.PROGRAM_DATA.getPath(), Constants.DATA_DIR);
+            try {
+                return Paths.get(WindowsSpecialFolders.PROGRAM_DATA.getPath(), Constants.DATA_DIR);
+            } catch(Throwable ignore) {
+                return Paths.get(System.getenv("PROGRAMDATA"), Constants.DATA_DIR);
+            }
         } else if(SystemUtilities.isMac()) {
             return Paths.get("/Library/Application Support/", Constants.DATA_DIR);
         } else {

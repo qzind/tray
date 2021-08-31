@@ -32,11 +32,11 @@ if [ -n "$JAVA_HOME" ]; then
     PATH="$JAVA_HOME/bin:$PATH"
 fi
 
-# Always prefer relative jre/jdk
+# Always prefer relative runtime/jre
 if [[ "$DIR" == *"/Contents/MacOS"* ]]; then
     PATH="$DIR/../PlugIns/Java.runtime/Contents/Home/bin:$PATH"
 else
-    PATH="$DIR/jre/bin:$DIR/jdk/bin:$PATH"
+    PATH="$DIR/runtime/bin:$DIR/jre/bin:$PATH"
 fi
 
 # Check for user overridable launch options

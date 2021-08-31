@@ -80,12 +80,11 @@ Var /GLOBAL java_major
         ${EndIf}
 
         ; Check payload directories
-        !insertmacro _ReadPayload "$R0" "jre"
-        !insertmacro _ReadPayload "$R0" "jdk"
+        !insertmacro _ReadPayload "$R0" "runtime"
 
         ; Check relative directories
+        !insertmacro _ReadWorking "runtime"
         !insertmacro _ReadWorking "jre"
-        !insertmacro _ReadWorking "jdk"
 
         ; Check common env vars
         !insertmacro _ReadEnv "JAVA_HOME"

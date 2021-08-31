@@ -38,7 +38,7 @@ public abstract class Installer {
 
     // Silence prompts within our control
     public static boolean IS_SILENT =  "1".equals(System.getenv(DATA_DIR + "_silent"));
-    public static String JRE_LOCATION = SystemUtilities.isMac() ? "Contents/PlugIns/Java.runtime/Contents/Home" : "jre";
+    public static String JRE_LOCATION = SystemUtilities.isMac() ? "Contents/PlugIns/Java.runtime/Contents/Home" : "runtime";
 
     public enum PrivilegeLevel {
         USER,

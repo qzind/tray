@@ -161,7 +161,7 @@ public class JLink {
         if(targetPlatform.equals("mac")) {
             outPath = jarPath.resolve("../Java.runtime/Contents/Home").normalize();
         } else {
-            outPath = jarPath.resolve("../jre").normalize();
+            outPath = jarPath.resolve("../runtime").normalize();
         }
         log.info("Assuming output path: {}", outPath);
         return this;

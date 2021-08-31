@@ -250,9 +250,23 @@ public class JLink {
             log.info("Successfully deployed a jre to {}", outPath);
 
             // Remove all but java/javaw
-            String[] keep = { "java", "java.exe", "javaw.exe" };
+            String[] keepFiles;
+            String keepExt;
+            if(targetPlatform.equals("windows")) {
+                keepFiles = new String[]{ "java.exe", "javaw.exe" };
+                // Windows stores ".dll" files in bin
+                keepExt = ".dll";
+            } else {
+                keepFiles = new String[]{ "java" };
+                keepExt = null;
+            }
+
             Files.list(outPath.resolve("bin")).forEach(binFile -> {
-                for(String name : keep) {
+                if(Files.isDirectory(binFile) || binFile.toString().endsWith(keepExt)) {
+                    log.info("Keeping {}", binFile);
+                    return; // iterate forEach
+                }
+                for(String name : keepFiles) {
                     if (binFile.endsWith(name)) {
                         log.info("Keeping {}", binFile);
                         return; // iterate forEach

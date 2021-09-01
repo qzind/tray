@@ -46,27 +46,24 @@ public class JLink {
     private LinkedHashSet<String> depList;
 
     public JLink(String targetPlatform, String arch, String gcEngine) throws IOException {
-        switch(SystemUtilities.getJreArch(arch)) {
-            case AARCH64:
-                javaVendor = JAVA_ARM64_VENDOR;
-                break;
-            case X86_64:
-            default:
-                javaVendor = JAVA_AMD64_VENDOR;
-        }
+        this.javaVendor = getJavaVendor(arch);
         this.targetPlatform = targetPlatform;
 
         // jdeps and jlink require matching major JDK versions.  Download if needed.
         if(Constants.JAVA_VERSION.getMajorVersion() != Integer.parseInt(JAVA_MAJOR)) {
             log.warn("Java versions are incompatible, locating a suitable runtime for Java " + JAVA_MAJOR + "...");
-            downloadJdk(null, System.getProperty("os.arch"), gcEngine);
-            calculateToolPaths(jmodsPath.resolve(".."));
+            String hostArch = System.getProperty("os.arch");
+            String hostJdk = downloadJdk(getJavaVendor(hostArch), null, hostArch, gcEngine);
+            calculateToolPaths(Paths.get(hostJdk));
         } else {
             calculateToolPaths(null);
         }
 
-        downloadJdk(targetPlatform, arch, gcEngine)
-                .calculateJarPath()
+        String extractedJdk = downloadJdk(javaVendor, targetPlatform, arch, gcEngine);
+        jmodsPath = Paths.get(extractedJdk, "jmods");
+        log.info("Selecting jmods folder: {}", jmodsPath);
+
+        calculateJarPath()
                 .calculateOutPath()
                 .calculateDepList()
                 .deployJre();
@@ -85,7 +82,23 @@ public class JLink {
                   args.length > 2 ? args[2] : null);
     }
 
-    private JLink downloadJdk(String platform, String arch, String gcEngine) throws IOException {
+    private String getJavaVendor(String arch) {
+        String vendor;
+        switch(SystemUtilities.getJreArch(arch)) {
+            case AARCH64:
+                vendor = JAVA_ARM64_VENDOR;
+                break;
+            case X86_64:
+            default:
+                vendor = JAVA_AMD64_VENDOR;
+        }
+        return vendor;
+    }
+
+    /**
+     * Download the JDK and return the path it was extracted to
+     */
+    private static String downloadJdk(String javaVendor, String platform, String arch, String gcEngine) throws IOException {
         if(platform == null) {
             // Must match ArgValue.JLINK --platform values
             switch(SystemUtilities.getOsType()) {
@@ -138,10 +151,7 @@ public class JLink {
             break;
         }
 
-        jmodsPath = Paths.get(extractedJdk, "jmods");
-        log.info("Selecting jmods folder: {}", jmodsPath);
-
-        return this;
+        return extractedJdk;
     }
 
     private JLink calculateJarPath() {

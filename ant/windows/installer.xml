@@ -114,12 +114,13 @@
     <!-- Exe signing with timestamp -->
     <target name="sign-win-tsa" if="signing.tsaurl">
         <property description="suppress property warning" name="signing.tsaurl" value="something went wrong"/>
-        <echo level="info">Signing with timestamp: ${sign.win.file}</echo>
+        <echo level="info">Signing with timestamp:</echo>
         <java jar="${basedir}/ant/lib/jsign-4.0.jar" fork="true" failonerror="true">
             <arg value="--name"/>
             <arg value="${project.name}"/>
             <arg value="--url"/>
             <arg value="${vendor.website}"/>
+            <arg value="--replace"/>
             <arg value="--keystore"/>
             <arg value="${signing.keystore}"/>
             <arg value="--alias"/>
@@ -136,13 +137,14 @@
 
     <!-- Exe signing without timestamp -->
     <target name="sign-win-self" unless="signing.tsaurl">
-        <echo level="info">Signing without timestamp: ${sign.win.file}</echo>
+        <echo level="info">Signing without timestamp:</echo>
         <tsa-warning/>
         <java jar="${basedir}/ant/lib/jsign-4.0.jar" fork="true" failonerror="true">
             <arg value="--name"/>
             <arg value="${project.name}"/>
             <arg value="--url"/>
             <arg value="${vendor.website}"/>
+            <arg value="--replace"/>
             <arg value="--keystore"/>
             <arg value="${signing.keystore}"/>
             <arg value="--alias"/>

@@ -5,13 +5,13 @@
 
     <target name="build-exe" depends="get-version">
         <!-- Sign Libs and Runtime -->
-        <fileset dir="${dist.dir}/" id="sign-win.bin-fileset">
+        <fileset dir="${dist.dir}/" id="win.sign.found">
             <include name="**/*.dll"/>
             <include name="**/*.exe"/>
         </fileset>
-        <pathconvert pathsep=" " property="sign-win.binnames" refid="sign-win.bin-fileset"/>
+        <pathconvert pathsep=" " property="win.sign.separated" refid="win.sign.found"/>
         <antcall target="sign-win">
-            <param name="sign.win.file" value="${sign-win.binnames}"/>
+            <param name="sign.win.file" value="${win.sign.separated}"/>
         </antcall>
 
         <!-- Launcher -->
@@ -64,6 +64,18 @@
         </antcall>
     </target>
 
+    <target name="find-jsign">
+        <!-- Locate jsign -->
+        <path id="jsign.found">
+            <first>
+                <fileset dir="${basedir}/ant/lib/">
+                    <include name="jsign*.jar"/>
+                </fileset>
+            </first>
+        </path>
+        <pathconvert property="jsign.path" refid="jsign.found"/>
+    </target>
+
     <target name="find-nsisbin" depends="nsisbin-from-unix,nsisbin-from-32,nsisbin-from-64"/>
 
     <!-- Linux makensis -->
@@ -85,7 +97,6 @@
 
     <!-- Exe signing -->
     <import file="${basedir}/ant/signing.xml"/>
-    <taskdef name="signexe" classname="net.jsign.JsignTask" classpath="${basedir}/ant/lib/jsign-4.0.jar"/>
     <target name="sign-win">
         <antcall target="sign-win-tsa">
             <param name="sign.win.file" value="${sign.win.file}"/>
@@ -112,10 +123,10 @@
     </target>
 
     <!-- Exe signing with timestamp -->
-    <target name="sign-win-tsa" if="signing.tsaurl">
+    <target name="sign-win-tsa" if="signing.tsaurl" depends="find-jsign">
         <property description="suppress property warning" name="signing.tsaurl" value="something went wrong"/>
         <echo level="info">Signing with timestamp:</echo>
-        <java jar="${basedir}/ant/lib/jsign-4.0.jar" fork="true" failonerror="true">
+        <java jar="${jsign.path}" fork="true" failonerror="true">
             <arg value="--name"/>
             <arg value="${project.name}"/>
             <arg value="--url"/>
@@ -136,10 +147,10 @@
     </target>
 
     <!-- Exe signing without timestamp -->
-    <target name="sign-win-self" unless="signing.tsaurl">
+    <target name="sign-win-self" unless="signing.tsaurl" depends="find-jsign">
         <echo level="info">Signing without timestamp:</echo>
         <tsa-warning/>
-        <java jar="${basedir}/ant/lib/jsign-4.0.jar" fork="true" failonerror="true">
+        <java jar="${jsign.path}" fork="true" failonerror="true">
             <arg value="--name"/>
             <arg value="${project.name}"/>
             <arg value="--url"/>

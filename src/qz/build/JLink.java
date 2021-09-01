@@ -244,6 +244,7 @@ public class JLink {
                                   "--compress=2",
                                   "--no-header-files",
                                   "--no-man-pages",
+                                  "--exclude-files=glob:**/legal/**",
                                   "--module-path", jmodsPath.toString(),
                                   "--add-modules", String.join(",", depList),
                                   "--output", outPath.toString())) {

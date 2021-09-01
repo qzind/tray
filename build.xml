@@ -9,6 +9,9 @@
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>
 
+    <!-- Fixes some odd empty directory issues -->
+    <defaultexcludes remove="**/.DS_Store"/>
+
     <target name="distribute" depends="init,quick-clean,build-jar,override-authcert,include-assets,whitelist-certs">
         <echo level="info">Process complete</echo>
     </target>
@@ -36,9 +39,9 @@
 
     <target name="quick-clean">
         <!-- Cleanup lingering files (for other OS installers) -->
-        <delete includeemptydirs="true" failonerror="false">
+        <delete includeemptydirs="true" defaultexcludes="false" failonerror="false">
             <fileset dir="${out.dir}">
-                <include name="**/*"/>
+                <include name="**/**"/>
                 <exclude name="**/jlink/**"/>
                 <exclude name="**/javafx-*/**"/>
             </fileset>

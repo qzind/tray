@@ -1401,17 +1401,19 @@
     }
 
     function startConnection(config) {
-        host = $('#connectionHost').val().trim();
-        usingSecure = $("#connectionUsingSecure").prop('checked');
+        var host = $('#connectionHost').val().trim();
+        var usingSecure = $("#connectionUsingSecure").prop('checked');
+
         // Connect to a print-server instance, if specified
-        if(host != "" && host != 'localhost') {
-            if(config) {
+        if (host != "" && host != 'localhost') {
+            if (config) {
                 config.host = host;
                 config.usingSecure = usingSecure;
             } else {
-                config = { host: host,  usingSecure: usingSecure };
+                config = { host: host, usingSecure: usingSecure };
             }
         }
+
         if (!qz.websocket.isActive()) {
             updateState('Waiting', 'default');
 
@@ -1456,8 +1458,7 @@
 
         qz.networking.devices().then(function(data) {
             var list = '';
-            var hostname = '';
-            var username = '';
+
             for(var i = 0; i < data.length; i++) {
                 var info = data[i];
 
@@ -1466,8 +1467,8 @@
                         "   <strong>Hostname:</strong> <code>" + info.hostname + "</code>" +
                         "</li>" +
                         "<li>" +
-                        "   <strong>Username:</strong> <code>" + info.username + "</code>"
-                    "</li>";
+                        "   <strong>Username:</strong> <code>" + info.username + "</code>" +
+                        "</li>";
                 }
                 list += "<li>" +
                     "   <strong>Interface:</strong> <code>" + (info.name || "UNKNOWN") + (info.id ? "</code> (<code>" + info.id + "</code>)" : "</code>") +
@@ -2407,7 +2408,14 @@
     function resetGeneralOptions() {
         //connection
         $("#connectionHost").val('localhost');
-        $("#connectionUsingSecure").prop('disabled', location.protocol !== 'https:');
+
+        var secureOpt = $("#connectionUsingSecure");
+        if (location.protocol !== 'https:') {
+            secureOpt.prop('disabled', true);
+            secureOpt.prop('checked', false);
+        } else {
+            secureOpt.prop('disabled', false);
+        }
     }
 
     function resetRawOptions() {

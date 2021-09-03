@@ -112,6 +112,8 @@
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.pkg"/>
         </exec>
 
+        <!-- Cleanup unbranded version -->
+        <delete file="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
     </target>
 
     <target name="build-dmg" depends="get-identity,add-certificates,get-version">

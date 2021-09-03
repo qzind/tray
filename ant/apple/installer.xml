@@ -63,7 +63,7 @@
 
         <!-- Copy branded resources to out/resources -->
         <mkdir dir="${out.dir}/resources"/>
-        <copy file="${basedir}/ant/apple/pkg-background.png" tofile="${out.dir}/resources/background.tiff" failonerror="true"/>
+        <copy file="${basedir}/ant/apple/pkg-background.tiff" tofile="${out.dir}/resources/background.tiff" failonerror="true"/>
 
         <!-- Create a distribution.xml file for productbuild -->
         <exec executable="productbuild" failonerror="true">

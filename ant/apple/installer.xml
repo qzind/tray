@@ -61,9 +61,14 @@
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
         </exec>
 
+        <!-- Branding for qz only -->
+        <condition property="pkg.background" value="pkg-background.tiff" else="pkg-background-blank.tiff">
+            <equals arg1="${project.filename}" arg2="qz-tray"/>
+        </condition>
+
         <!-- Copy branded resources to out/resources -->
         <mkdir dir="${out.dir}/resources"/>
-        <copy file="${basedir}/ant/apple/pkg-background.tiff" tofile="${out.dir}/resources/background.tiff" failonerror="true"/>
+        <copy file="${basedir}/ant/apple/${pkg.background}" tofile="${out.dir}/resources/background.tiff" failonerror="true"/>
 
         <!-- Create a distribution.xml file for productbuild -->
         <exec executable="productbuild" failonerror="true">

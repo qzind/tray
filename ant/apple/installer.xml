@@ -61,22 +61,9 @@
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
         </exec>
 
-        <!-- TODO: Remove this entire block, replace with proper backgrounds from @RebeccaDefield -->
-        <!-- Use php to create dark and light stub background files -->
-        <exec executable="php" failonerror="true">
-            <arg value="-r"/>
-            <arg line="'$i = imagecreate(2000, 1000); imagecolorallocate($i, 213, 219, 213); imagestring($i, 5, 20, 955, &quot;PLACEHOLDER (ant/apple/pkg-background.png)&quot;, imagecolorallocate($i, 0, 0, 0)); imagepng($i, &quot;${basedir}/ant/apple/pkg-background.png&quot;);'"/>
-        </exec>
-        <exec executable="php" failonerror="true">
-            <arg value="-r"/>
-            <arg line="'$i = imagecreate(2000, 1000); imagecolorallocate($i, 27, 35, 30); imagestring($i, 5, 20, 955, &quot;PLACEHOLDER (ant/apple/pkg-background-dark.png)&quot;, imagecolorallocate($i, 255, 255, 255)); imagepng($i, &quot;${basedir}/ant/apple/pkg-background-dark.png&quot;);'"/>
-        </exec>
-        <!-- TODO: End remove block -->
-
         <!-- Copy branded resources to out/resources -->
         <mkdir dir="${out.dir}/resources"/>
-        <copy file="${basedir}/ant/apple/pkg-background.png" tofile="${out.dir}/resources/background.png" failonerror="true"/>
-        <copy file="${basedir}/ant/apple/pkg-background-dark.png" tofile="${out.dir}/resources/background-dark.png" failonerror="true"/>
+        <copy file="${basedir}/ant/apple/pkg-background.png" tofile="${out.dir}/resources/background.tiff" failonerror="true"/>
 
         <!-- Create a distribution.xml file for productbuild -->
         <exec executable="productbuild" failonerror="true">
@@ -99,8 +86,8 @@
         <!-- Inject title, background -->
         <replace file="${out.dir}/distribution.xml" token="&lt;options customize">
             <replacevalue><![CDATA[<title>@project.name@ @build.version@</title>
-	<background file="background.png" mime-type="image/png" alignment="bottomleft" scaling="none"/>
-	<background-darkAqua file="background-dark.png" mime-type="image/png" alignment="bottomleft" scaling="none"/>
+	<background file="background.tiff" mime-type="image/tiff" alignment="bottomleft" scaling="none"/>
+	<background-darkAqua file="background.tiff" mime-type="image/tiff" alignment="bottomleft" scaling="none"/>
 	<options customize]]></replacevalue>
             <replacefilter token="@project.name@" value="${project.name}"/>
             <replacefilter token="@build.version@" value="${build.version}"/>

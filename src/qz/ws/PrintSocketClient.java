@@ -6,6 +6,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.*;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
 
 
 @WebSocket
@@ -82,6 +84,12 @@ public class PrintSocketClient {
     @OnWebSocketError
     public void onError(Session session, Throwable error) {
         if (error instanceof EOFException) { return; }
+
+        if (error instanceof CloseException && error.getCause() instanceof TimeoutException) {
+            log.error("Timeout error (Lost connection with client)", error);
+            return;
+        }
+
         log.error("Connection error", error);
         trayManager.displayErrorMessage(error.getMessage());
     }

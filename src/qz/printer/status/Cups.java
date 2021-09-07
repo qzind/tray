@@ -36,7 +36,7 @@ public interface Cups extends Library {
         public static final int INT_ERROR = 0;
         public static final int INT_UNDEFINED = -1;
 
-        public static final String CUPS_FORMAT_TEXT ="text/plain";
+        public static final String CUPS_FORMAT_TEXT = "application/vnd.cups-raw";
     }
 
     //See https://www.cups.org/doc/api-cups.html and https://www.cups.org/doc/api-httpipp.html for usage

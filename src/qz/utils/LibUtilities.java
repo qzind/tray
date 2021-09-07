@@ -59,8 +59,9 @@ public class LibUtilities {
 
     public void bind() {
         if (externalized) {
-            bindProperties("jna.boot.library.path", // jna, hid4java
-                           "jssc.boot.library.path" // jssc
+            bindProperties("jna.boot.library.path", // jna
+                    "jna.library.path", // hid4java
+                    "jssc.boot.library.path" // jssc
             );
             bindUsb4Java();
         }

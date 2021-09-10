@@ -5,7 +5,7 @@
     <import file="${basedir}/ant/version.xml"/>
     <property environment="env"/>
 
-    <target name="build-exe" depends="get-version">
+    <target name="build-exe" depends="get-version,download-nssm">
         <!-- Sign Libs and Runtime -->
         <fileset dir="${dist.dir}/" id="win.sign.found">
             <include name="**/*.dll"/>
@@ -202,10 +202,5 @@
             <mapper type="flatten"/>
         </unzip>
         <delete file="${nssm.zip}"/>
-
-        <!-- Resign nssm.exe using our own signature -->
-        <antcall target="sign-win">
-            <param name="sign.win.file" value="${dist.dir}/utils/nssm.exe"/>
-        </antcall>
     </target>
 </project>

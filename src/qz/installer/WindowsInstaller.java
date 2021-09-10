@@ -248,7 +248,9 @@ public class WindowsInstaller extends Installer {
 
         WindowsUtilities.stopService(PROPS_FILE);
         Path nssm = SystemUtilities.getJarParentPath().resolve("utils/nssm.exe");
-        if(ShellUtilities.execute(nssm.toString(), "remove", PROPS_FILE)) {
+        if(ShellUtilities.execute(nssm.toString(), "remove", PROPS_FILE, "confirm")) {
+            // Old tutorials used "QZ Tray" as the service name
+            ShellUtilities.execute(nssm.toString(), "remove", ABOUT_TITLE, "confirm");
             // Restore default autostart settings by deleting the preference file
             FileUtils.deleteQuietly(FileUtilities.SHARED_DIR.resolve(AUTOSTART_FILE).toFile());
             log.info("System service successfully removed: {}", PROPS_FILE);

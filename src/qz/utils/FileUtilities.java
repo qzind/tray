@@ -38,6 +38,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
@@ -47,6 +48,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static qz.common.Constants.ALLOW_FILE;
+import static qz.common.Constants.AUTOSTART_FILE;
 
 /**
  * Common static file i/o utilities
@@ -157,6 +159,18 @@ public class FileUtilities {
         }
         return filePath;
 
+    }
+
+    public static boolean disableGlobalAutoStart() {
+        Path autostart = SHARED_DIR.resolve(AUTOSTART_FILE);
+        try {
+            Files.write(autostart, "0".getBytes(StandardCharsets.UTF_8), StandardOpenOption.TRUNCATE_EXISTING);
+            return true;
+        }
+        catch(IOException e) {
+            log.warn("Unable to write a zero to the global autostart file: {}", autostart);
+        }
+        return false;
     }
 
     private static final String[] badExtensions = new String[] {

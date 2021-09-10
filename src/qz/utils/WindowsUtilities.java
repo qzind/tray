@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.sun.jna.platform.win32.WinReg.*;
+import static qz.common.Constants.PROPS_FILE;
 import static qz.utils.SystemUtilities.*;
 
 import static java.nio.file.attribute.AclEntryPermission.*;
@@ -342,5 +343,37 @@ public class WindowsUtilities {
             }
         }
         return isWow64;
+    }
+
+    public static boolean stopService(String serviceName) {
+        try {
+            W32ServiceManager serviceManager = new W32ServiceManager();
+            serviceManager.open(Winsvc.SC_MANAGER_ALL_ACCESS);
+            W32Service service = serviceManager.openService(serviceName, Winsvc.SC_MANAGER_ALL_ACCESS);
+            service.stopService();
+            service.close();
+            return true;
+        } catch(Throwable t) {
+            log.warn("Could not stop service {} using JNA, will fallback to command line.", serviceName);
+        }
+
+        // Start the newly registered service
+        return ShellUtilities.execute("net", "stop", PROPS_FILE);
+    }
+
+    public static boolean startService(String serviceName) {
+        try {
+            W32ServiceManager serviceManager = new W32ServiceManager();
+            serviceManager.open(Winsvc.SC_MANAGER_ALL_ACCESS);
+            W32Service service = serviceManager.openService(serviceName, Winsvc.SC_MANAGER_ALL_ACCESS);
+            service.startService();
+            service.close();
+            return true;
+        } catch(Throwable t) {
+            log.warn("Could not start service {} using JNA, will fallback to command line.", serviceName);
+        }
+
+        // Start the newly registered service
+        return ShellUtilities.execute("net", "start", PROPS_FILE);
     }
 }

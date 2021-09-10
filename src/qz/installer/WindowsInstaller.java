@@ -16,9 +16,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.utils.ShellUtilities;
-import qz.utils.SystemUtilities;
-import qz.utils.WindowsUtilities;
+import qz.common.Constants;
+import qz.utils.*;
 import qz.ws.PrintSocketServer;
 
 import javax.swing.*;
@@ -29,8 +28,11 @@ import static com.sun.jna.platform.win32.WinReg.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 
@@ -200,5 +202,60 @@ public class WindowsInstaller extends Installer {
             log.warn("Spawning as user isn't implemented; starting process with elevation instead");
         }
         ShellUtilities.execute(args.toArray(new String[args.size()]));
+    }
+
+    @Override
+    public Installer addServiceRegistration(String user) {
+        if(!SystemUtilities.isAdmin()) {
+            throw new UnsupportedOperationException("Installing a service requires elevation");
+        }
+
+        Path nssm = SystemUtilities.getJarParentPath().resolve("utils/nssm.exe");
+        Path qz = SystemUtilities.getJarParentPath().resolve(PROPS_FILE + ".exe");
+        String servicePath = String.format("\"" + qz.toString() + "\" %s %s %s",
+                                           ArgValue.WAIT.getMatches()[0],
+                                           ArgValue.STEAL.getMatches()[0],
+                                           ArgValue.HEADLESS.getMatches()[0]);
+
+        // Install the service
+        if(ShellUtilities.execute(nssm.toString(), "install", PROPS_FILE, servicePath)) {
+            ShellUtilities.execute(nssm.toString(), "set", "DisplayName", ABOUT_TITLE);
+            ShellUtilities.execute(nssm.toString(), "set", "Description", ABOUT_DESCRIPTION);
+            ShellUtilities.execute(nssm.toString(), "set", "DependOnService", "Spooler");
+            log.info("Successfully registered system service: {}", PROPS_FILE);
+            if(user != null && !user.trim().isEmpty()) {
+                log.info("Setting service to run as {}", user);
+                if(!ShellUtilities.execute(nssm.toString(), "set", "ObjectName", user)) {
+                    log.warn("Could not set service to run as {}, please configure manually.", user);
+                }
+            }
+            // Kill all running instances
+            TaskKiller.killAll();
+            // Instruct autostart to be ignored
+            FileUtilities.disableGlobalAutoStart();
+            if(WindowsUtilities.startService(PROPS_FILE)) {
+                return this;
+            }
+        }
+        throw new UnsupportedOperationException("An error occurred installing the service");
+    }
+
+    @Override
+    public Installer removeServiceRegistration() {
+        if(!SystemUtilities.isAdmin()) {
+            throw new UnsupportedOperationException("Removing a service requires elevation");
+        }
+
+        WindowsUtilities.stopService(PROPS_FILE);
+        Path nssm = SystemUtilities.getJarParentPath().resolve("utils/nssm.exe");
+        if(ShellUtilities.execute(nssm.toString(), "remove", PROPS_FILE)) {
+            // Restore default autostart settings by deleting the preference file
+            FileUtils.deleteQuietly(FileUtilities.SHARED_DIR.resolve(AUTOSTART_FILE).toFile());
+            log.info("System service successfully removed: {}", PROPS_FILE);
+        } else {
+            log.error("An error occurred removing system service: {}, please try to remove manually using 'sc ", PROPS_FILE);
+        }
+
+        return this;
     }
 }

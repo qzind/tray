@@ -49,7 +49,9 @@ public abstract class Installer {
     public abstract Installer addAppLauncher();
     public abstract Installer addStartupEntry();
     public abstract Installer addSystemSettings();
+    public abstract Installer addServiceRegistration(String user);
     public abstract Installer removeSystemSettings();
+    public abstract Installer removeServiceRegistration();
     public abstract void spawn(List<String> args) throws Exception;
 
     public abstract void setDestination(String destination);
@@ -97,6 +99,7 @@ public abstract class Installer {
                 .deployApp()
                 .removeLegacyStartup()
                 .removeLegacyFiles()
+                .removeServiceRegistration()
                 .addSharedDirectory()
                 .addAppLauncher()
                 .addStartupEntry()
@@ -110,6 +113,7 @@ public abstract class Installer {
         log.info("Uninstalling from {}", instance.getDestination());
         instance.removeSharedDirectory()
                 .removeSystemSettings()
+                .removeServiceRegistration()
                 .removeCerts();
     }
 

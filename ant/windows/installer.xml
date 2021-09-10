@@ -1,5 +1,7 @@
 <project name="windows-installer" basedir="../../">
     <property file="ant/project.properties"/>
+    <property file="ant/windows/windows.properties"/>
+    <import file="${basedir}/ant/platform-detect.xml"/>
     <import file="${basedir}/ant/version.xml"/>
     <property environment="env"/>
 
@@ -166,5 +168,44 @@
             <arg value="${signing.keypass}"/>
             <arg line="${sign.win.file}"/>
         </java>
+    </target>
+
+    <target name="nssm-exists">
+        <available file="${dist.dir}/utils/nssm.exe" property="nssm.exists"/>
+    </target>
+
+    <target name="download-nssm" depends="platform-detect,nssm-exists" unless="${nssm.exists}">
+        <delete includeemptydirs="true" defaultexcludes="false" failonerror="false">
+            <fileset dir="${dist.dir}/utils">
+                <include name="nssm.exe/"/>
+            </fileset>
+        </delete>
+        <mkdir dir="${dist.dir}/utils"/>
+
+        <property name="nssm.zip" value="${out.dir}/nssm.zip"/>
+
+        <echo level="info">Downloading nssm ${nssm.url}</echo>
+        <echo level="info">Temporarily saving nssm to ${nssm.zip}</echo>
+
+        <mkdir dir="${out.dir}"/>
+        <get src="${nssm.url}" verbose="true" dest="${nssm.zip}"/>
+
+        <!-- Determine which architecture to extract -->
+        <condition property="nssm.subdir" value="win64" else="win32">
+            <isset property="target.arch.x86_64"/>
+        </condition>
+        <echo level="info">Copying ${nssm.subdir}/nssm.exe</echo>
+        <unzip src="${nssm.zip}" dest="${dist.dir}/utils" overwrite="true">
+            <patternset>
+                <include name="**/win64/nssm.exe"/>
+            </patternset>
+            <mapper type="flatten"/>
+        </unzip>
+        <delete file="${nssm.zip}"/>
+
+        <!-- Resign nssm.exe using our own signature -->
+        <antcall target="sign-win">
+            <param name="sign.win.file" value="${dist.dir}/utils/nssm.exe"/>
+        </antcall>
     </target>
 </project>

@@ -164,7 +164,7 @@ public class FileUtilities {
     public static boolean disableGlobalAutoStart() {
         Path autostart = SHARED_DIR.resolve(AUTOSTART_FILE);
         try {
-            Files.write(autostart, "0".getBytes(StandardCharsets.UTF_8), StandardOpenOption.TRUNCATE_EXISTING);
+            Files.write(autostart, "0".getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE_NEW, StandardOpenOption.TRUNCATE_EXISTING);
             return true;
         }
         catch(IOException e) {

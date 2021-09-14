@@ -95,11 +95,11 @@ public abstract class Installer {
     public static void install() throws Exception {
         getInstance();
         log.info("Installing to {}", instance.getDestination());
-        instance.removeLibs()
+        instance.removeServiceRegistration()
+                .removeLibs()
                 .deployApp()
                 .removeLegacyStartup()
                 .removeLegacyFiles()
-                .removeServiceRegistration()
                 .addSharedDirectory()
                 .addAppLauncher()
                 .addStartupEntry()

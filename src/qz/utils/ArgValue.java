@@ -130,7 +130,9 @@ public enum ArgValue {
 
         // service
         RUNAS(ArgValue.SERVICE, "Username to run the system service as (Windows only)",
-              "--runas", "--user", "-u");
+              "--runas", "--user", "-u"),
+        REMOVE(ArgValue.SERVICE, "Remove the system service as (Windows only)",
+                "--remove", "-r");
 
         ArgValue parent;
         String description;

@@ -345,6 +345,18 @@ public class WindowsUtilities {
         return isWow64;
     }
 
+    public static boolean serviceExists(String serviceName) {
+        try {
+            W32ServiceManager serviceManager = new W32ServiceManager();
+            serviceManager.open(Winsvc.SC_MANAGER_ALL_ACCESS);
+            W32Service service = serviceManager.openService(serviceName, Winsvc.SC_MANAGER_ALL_ACCESS);
+            return true;
+        } catch(Win32Exception e) {
+            return false;
+        } catch(Throwable t) {}
+        return ShellUtilities.execute("sc", "query", serviceName);
+    }
+
     public static boolean stopService(String serviceName) {
         try {
             W32ServiceManager serviceManager = new W32ServiceManager();

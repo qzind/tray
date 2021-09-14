@@ -180,8 +180,8 @@ public abstract class Installer {
 
         // QZ Tray 2.0 files
         dirs.add("demo/js/3rdparty");
-        dirs.add("utils");
         dirs.add("auth");
+        files.add("utils/windows-cleanup.js");
         files.add("demo/js/qz-websocket.js");
         files.add("windows-icon.ico");
 

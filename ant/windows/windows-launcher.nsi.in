@@ -66,7 +66,18 @@ Section
         StrCpy $command '"$R2" /s /k "$command"'
     ${EndIf}
 
-    Exec $command
+    ; Allow return of exit code
+    ${StrLoc} $R2 $params "--wait" "<"
+    ${If} $R2 != ""
+        ; Switch from /k to /c to capture exit code from -console.exe
+        ${StrRep} $command "$command" " /k " " /c "
+        ExecWait $command $R3
+        ; Set error-level
+        SetErrorLevel $R3
+    ${Else}
+        Exec $command
+    ${EndIf}
+
     ${If} ${RunningX64}
         ${EnableX64FSRedirection}
     ${EndIf}

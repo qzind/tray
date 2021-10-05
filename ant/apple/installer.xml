@@ -1,4 +1,4 @@
-<project name="apple-installer" basedir="../../">
+<project name="apple-installer" basedir="../../" xmlns:if="ant:if">
     <property file="ant/project.properties"/>
     <import file="${basedir}/ant/version.xml"/>
 
@@ -55,8 +55,8 @@
             <arg value="--version"/>
             <arg value="${build.version}"/>
 
-            <arg value="${codesign.signcmd}"/>
-            <arg value="${codesign.pkgid}"/>
+            <arg value="--sign" if:true="${codesign.available}"/>
+            <arg value="${codesign.activeid}" if:true="${codesign.available}"/>
 
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
         </exec>
@@ -74,8 +74,8 @@
         <exec executable="productbuild" failonerror="true">
             <arg value="--synthesize"/>
 
-            <arg value="${codesign.signcmd}"/>
-            <arg value="${codesign.pkgid}"/>
+            <arg value="--sign" if:true="${codesign.available}"/>
+            <arg value="${codesign.activeid}" if:true="${codesign.available}"/>
 
             <arg value="--timestamp"/>
 
@@ -100,8 +100,8 @@
 
         <!-- Create a branded .pkg using productbuild -->
         <exec executable="productbuild" dir="${out.dir}" failonerror="true">
-            <arg value="${codesign.signcmd}"/>
-            <arg value="${codesign.pkgid}"/>
+            <arg value="--sign" if:true="${codesign.available}"/>
+            <arg value="${codesign.activeid}" if:true="${codesign.available}"/>
 
             <arg value="--timestamp"/>
 
@@ -288,11 +288,8 @@
             <equals arg1="${codesign.qz}" arg2="0"/>
         </condition>
 
-        <!-- Fallback to blank values for pkgbuild and productbuild if ${apple.packager.signid} isn't found -->
-        <condition property="codesign.signcmd" value="--sign" else="">
-            <equals arg1="${codesign.qz}" arg2="0"/>
-        </condition>
-        <condition property="codesign.pkgid" value="${apple.packager.signid}" else="">
+        <!-- Fallback to "-" (ad-hoc) if ${apple.packager.signid} isn't found -->
+        <condition property="codesign.available">
             <equals arg1="${codesign.qz}" arg2="0"/>
         </condition>
 

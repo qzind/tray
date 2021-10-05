@@ -55,8 +55,8 @@
             <arg value="--version"/>
             <arg value="${build.version}"/>
 
-            <arg value="--sign"/>
-            <arg value="${codesign.activeid}"/>
+            <arg value="${codesign.signcmd}"/>
+            <arg value="${codesign.pkgid}"/>
 
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
         </exec>
@@ -74,8 +74,8 @@
         <exec executable="productbuild" failonerror="true">
             <arg value="--synthesize"/>
 
-            <arg value="--sign"/>
-            <arg value="${codesign.activeid}"/>
+            <arg value="${codesign.signcmd}"/>
+            <arg value="${codesign.pkgid}"/>
 
             <arg value="--timestamp"/>
 
@@ -100,8 +100,8 @@
 
         <!-- Create a branded .pkg using productbuild -->
         <exec executable="productbuild" dir="${out.dir}" failonerror="true">
-            <arg value="--sign"/>
-            <arg value="${codesign.activeid}"/>
+            <arg value="${codesign.signcmd}"/>
+            <arg value="${codesign.pkgid}"/>
 
             <arg value="--timestamp"/>
 
@@ -287,6 +287,15 @@
         <condition property="codesign.activeid" value="${apple.packager.signid}" else="-">
             <equals arg1="${codesign.qz}" arg2="0"/>
         </condition>
+
+        <!-- Fallback to blank values for pkgbuild and productbuild if ${apple.packager.signid} isn't found -->
+        <condition property="codesign.signcmd" value="--sign" else="">
+            <equals arg1="${codesign.qz}" arg2="0"/>
+        </condition>
+        <condition property="codesign.pkgid" value="${apple.packager.signid}" else="">
+            <equals arg1="${codesign.qz}" arg2="0"/>
+        </condition>
+
         <!-- Property to show warning later -->
         <condition property="codesign.selfsign">
             <equals arg1="${codesign.activeid}" arg2="-"/>

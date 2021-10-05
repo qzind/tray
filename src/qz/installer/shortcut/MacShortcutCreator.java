@@ -16,8 +16,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import qz.common.Constants;
-import qz.installer.MacInstaller;
 import qz.utils.MacUtilities;
+import qz.utils.SystemUtilities;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -85,7 +85,14 @@ class MacShortcutCreator extends ShortcutCreator {
     public void createDesktopShortcut() {
         try {
             new File(SHORTCUT_PATH).delete();
-            Files.createSymbolicLink(Paths.get(SHORTCUT_PATH), Paths.get(MacInstaller.getAppPath()));
+            if(SystemUtilities.getJarParentPath().endsWith("Contents")) {
+                // We're probably running from an .app bundle
+                Files.createSymbolicLink(Paths.get(SHORTCUT_PATH), SystemUtilities.getAppPath());
+            } else {
+                // We're running from a mystery location, use the jar instead
+                Files.createSymbolicLink(Paths.get(SHORTCUT_PATH), SystemUtilities.getJarPath());
+            }
+
         } catch(IOException e) {
             log.warn("Could not create desktop shortcut {}", SHORTCUT_PATH, e);
         }

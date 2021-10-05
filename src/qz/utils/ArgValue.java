@@ -46,7 +46,11 @@ public enum ArgValue {
     UNINSTALL(INSTALLER, "Perform all uninstall tasks: Stop instances, delete files, unregister settings.", null,
               "uninstall"),
     SPAWN(INSTALLER, "Spawn an instance of the specified program as the logged-in user, avoiding starting as the root user if possible.", "spawn [program params ...]",
-          "spawn");
+          "spawn"),
+
+    // Build stubs
+    JLINK(BUILD, "Download, compress and bundle a Java Runtime", "jlink [--platform mac|windows|linux] [--arch x64|aarch64] [--gc hotspot|j9]",
+          "jlink");
 
     private ArgType argType;
     private String description;
@@ -79,7 +83,8 @@ public enum ArgValue {
         INFORMATION,
         ACTION,
         OPTION,
-        INSTALLER
+        INSTALLER,
+        BUILD,
     }
 
     public static ArgValue[] filter(ArgType ... argTypes) {

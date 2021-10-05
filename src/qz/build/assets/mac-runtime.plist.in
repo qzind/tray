@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>libjli.dylib</string>
+	<key>CFBundleGetInfoString</key>
+	<string>%BUNDLE_VENDOR% %BUNDLE_VERSION_FULL%</string>
+	<key>CFBundleIdentifier</key>
+	<string>%BUNDLE_ID%</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>7.0</string>
+	<key>CFBundleName</key>
+	<string>Java Runtime Image</string>
+	<key>CFBundlePackageType</key>
+	<string>BNDL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>%BUNDLE_VERSION%</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>%BUNDLE_VERSION%</string>
+	<key>JavaVM</key>
+	<dict>
+		<key>JVMCapabilities</key>
+		<array>
+			<string>CommandLine</string>
+			<string>JNI</string>
+			<string>BundledApp</string>
+		</array>
+		<key>JVMMinimumFrameworkVersion</key>
+		<string>17.0.0</string>
+		<key>JVMMinimumSystemVersion</key>
+		<string>10.6.0</string>
+		<key>JVMPlatformVersion</key>
+		<string>%BUNDLE_VERSION_FULL%</string>
+		<key>JVMVendor</key>
+		<string>%BUNDLE_VENDOR%</string>
+		<key>JVMVersion</key>
+		<string>%BUNDLE_VERSION%</string>
+	</dict>
+</dict>
+</plist>

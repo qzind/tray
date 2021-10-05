@@ -7,21 +7,19 @@ import org.apache.commons.ssl.Base64;
 import org.apache.commons.ssl.X509CertificateChainBuilder;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x500.style.BCStyle;
-import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.PrincipalUtil;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.App;
 import qz.common.Constants;
 import qz.utils.ByteUtilities;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
-import qz.ws.PrintSocketServer;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.*;
 import java.time.DateTimeException;
@@ -138,18 +136,16 @@ public class Certificate {
         }
     }
 
-
     public static void scanAdditionalCAs() {
         ArrayList<Map.Entry<Path, String>> certPaths = new ArrayList<>();
         // First, look for "-DtrustedRootCert" command line property
         certPaths.addAll(FileUtilities.parseDelimitedPaths(System.getProperty(OVERRIDE_CA_FLAG)));
 
         // Second, look for "override.crt" within App directory
-        String override = FileUtilities.getParentDirectory(SystemUtilities.getJarPath()) + File.separator + Constants.OVERRIDE_CERT;
-        certPaths.add(new AbstractMap.SimpleEntry<>(Paths.get(override), QUIETLY_FAIL));
+        certPaths.add(new AbstractMap.SimpleEntry<>(SystemUtilities.getJarParentPath().resolve(Constants.OVERRIDE_CERT), QUIETLY_FAIL));
 
         // Third, look for "authcert.override" property in qz-tray.properties
-        certPaths.addAll(FileUtilities.parseDelimitedPaths(PrintSocketServer.getTrayProperties(), OVERRIDE_CA_PROPERTY));
+        certPaths.addAll(FileUtilities.parseDelimitedPaths(App.getTrayProperties(), OVERRIDE_CA_PROPERTY));
 
         for(Map.Entry<Path, String> certPath : certPaths) {
             if(certPath.getKey() != null) {

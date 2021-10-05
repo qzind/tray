@@ -9,6 +9,7 @@ package qz.installer;
  * this software. http://www.gnu.org/licenses/lgpl-2.1.html
  */
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,7 @@ import qz.utils.SystemUtilities;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.*;
 import java.util.HashMap;
 import java.util.List;
 
@@ -46,7 +48,7 @@ public class MacInstaller extends Installer {
             FileUtilities.configureAssetFile("assets/mac-launchagent.plist.in", dest, fieldMap, MacInstaller.class);
             // Disable service until reboot
             if(SystemUtilities.isMac()) {
-                ShellUtilities.execute("launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
+                ShellUtilities.execute("/bin/launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
             }
         } catch(IOException e) {
             log.warn("Unable to write startup file: {}", dest, e);
@@ -84,13 +86,8 @@ public class MacInstaller extends Installer {
     public Installer removeLegacyStartup() {
         log.info("Removing startup entries for all users matching " + ABOUT_TITLE);
         String script = "tell application \"System Events\" to delete "
-                + "every login item where name is \"" + ABOUT_TITLE + "\"";
-
-        // Handle edge-case for when running from IDE
-        File jar = new File(SystemUtilities.getJarPath());
-        if(jar.getName().endsWith(".jar")) {
-            script += " or name is \"" + jar.getName() + "\"";
-        }
+                + "every login item where name is \"" + ABOUT_TITLE + "\""
+                + " or name is \"" + PROPS_FILE + ".jar\"";
 
         // Run on background thread in case System Events is hung or slow to respond
         final String finalScript = script;
@@ -98,17 +95,6 @@ public class MacInstaller extends Installer {
             ShellUtilities.executeAppleScript(finalScript);
         }).run();
         return this;
-    }
-
-    public static String getAppPath() {
-        // Return the Mac ".app" location
-        String target = SystemUtilities.getJarPath();
-        int appIndex = target.indexOf(".app/");
-        if (appIndex > 0) {
-            return target.substring(0, appIndex) + ".app";
-        }
-        // Fallback on the ".jar" location
-        return target;
     }
 
     public static String getPackageName() {
@@ -127,13 +113,13 @@ public class MacInstaller extends Installer {
     public void spawn(List<String> args) throws Exception {
         if(SystemUtilities.isAdmin()) {
             // macOS unconventionally uses "$USER" during its install process
-            String whoami = System.getenv("USER");
-            if(whoami == null || whoami.isEmpty() || whoami.equals("root")) {
+            String sudoer = System.getenv("USER");
+            if(sudoer == null || sudoer.isEmpty() || sudoer.equals("root")) {
                 // Fallback, should only fire via Terminal + sudo
-                whoami = ShellUtilities.executeRaw("logname").trim();
+                sudoer = ShellUtilities.executeRaw("logname").trim();
             }
             // Start directly without waitFor(...), avoids deadlocking
-            Runtime.getRuntime().exec(new String[] { "su", whoami, "-c", "\"" + StringUtils.join(args, "\" \"") + "\""});
+            Runtime.getRuntime().exec(new String[] { "su", sudoer, "-c", "\"" + StringUtils.join(args, "\" \"") + "\""});
         } else {
             Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
         }

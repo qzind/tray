@@ -3,12 +3,17 @@
     <import file="${basedir}/ant/version.xml"/>
     <property environment="env"/>
 
-    <!-- Inform javafx.xml  -->
-    <target name="nsis-preflight">
-        <property name="target.platform.windows" value="true"/>
-    </target>
-
     <target name="build-exe" depends="get-version">
+        <!-- Sign Libs and Runtime -->
+        <fileset dir="${dist.dir}/" id="win.sign.found">
+            <include name="**/*.dll"/>
+            <include name="**/*.exe"/>
+        </fileset>
+        <pathconvert pathsep=" " property="win.sign.separated" refid="win.sign.found"/>
+        <antcall target="sign-win">
+            <param name="sign.win.file" value="${win.sign.separated}"/>
+        </antcall>
+
         <!-- Launcher -->
         <antcall target="config-compile-sign">
             <param name="nsis.script.in" value="windows-launcher.nsi.in"/>
@@ -54,9 +59,21 @@
         </exec>
 
         <!-- Sign the exe -->
-        <antcall target="sign-exe">
-            <param name="sign.exe.file" value="${nsis.outfile}"/>
+        <antcall target="sign-win">
+            <param name="sign.win.file" value="${nsis.outfile}"/>
         </antcall>
+    </target>
+
+    <target name="find-jsign">
+        <!-- Locate jsign -->
+        <path id="jsign.found">
+            <first>
+                <fileset dir="${basedir}/ant/lib/">
+                    <include name="jsign*.jar"/>
+                </fileset>
+            </first>
+        </path>
+        <pathconvert property="jsign.path" refid="jsign.found"/>
     </target>
 
     <target name="find-nsisbin" depends="nsisbin-from-unix,nsisbin-from-32,nsisbin-from-64"/>
@@ -80,41 +97,74 @@
 
     <!-- Exe signing -->
     <import file="${basedir}/ant/signing.xml"/>
-    <taskdef name="signexe" classname="net.jsign.PESignerTask" classpath="${basedir}/ant/lib/jsign-1.2.jar"/>
-    <target name="sign-exe">
-        <antcall target="sign-exe-tsa">
-            <param name="sign.exe.file" value="${sign.exe.file}"/>
+    <target name="sign-win">
+        <antcall target="sign-win-tsa">
+            <param name="sign.win.file" value="${sign.win.file}"/>
         </antcall>
-        <antcall target="sign-exe-self">
-            <param name="sign.exe.file" value="${sign.exe.file}"/>
+        <antcall target="sign-win-self">
+            <param name="sign.win.file" value="${sign.win.file}"/>
         </antcall>
+    </target>
+
+    <target name="copy-dlls" if="target.os.windows">
+        <echo level="info">Copying native library files to libs</echo>
+        <copy todir="${dist.dir}/libs" flatten="true" verbose="true">
+            <fileset dir="${out.dir}/libs-temp">
+                <!--x86_64-->
+                <include name="**/win32-x86-64/*" if="target.arch.x86_64"/> <!-- jna/hid4java -->
+                <include name="**/windows-x86_64/*" if="target.arch.x86_64"/> <!-- usb4java -->
+                <include name="**/windows_64/*" if="target.arch.x86_64"/> <!-- jssc -->
+                <!--aarch64-->
+                <include name="**/win32-aarch64/*" if="target.arch.aarch64"/> <!-- jna/hid4java -->
+                <include name="**/windows-aarch64/*" if="target.arch.aarch64"/> <!-- usb4java -->
+                <include name="**/windows_arm64/*" if="target.arch.aarch64"/> <!-- jssc -->
+            </fileset>
+        </copy>
     </target>
 
     <!-- Exe signing with timestamp -->
-    <target name="sign-exe-tsa" if="signing.tsaurl">
-        <echo level="info">Signing exe with timestamp: ${sign.exe.file}</echo>
-        <signexe file="${sign.exe.file}"
-                 name="${project.name}"
-                 url="${vendor.website}"
-                 keystore="${signing.keystore}"
-                 alias="${signing.alias}"
-                 storepass="${signing.storepass}"
-                 keypass="${signing.keypass}"
-                 tsaurl="${signing.tsaurl}"
-        />
+    <target name="sign-win-tsa" if="signing.tsaurl" depends="find-jsign">
+        <property description="suppress property warning" name="signing.tsaurl" value="something went wrong"/>
+        <echo level="info">Signing with timestamp:</echo>
+        <java jar="${jsign.path}" fork="true" failonerror="true">
+            <arg value="--name"/>
+            <arg value="${project.name}"/>
+            <arg value="--url"/>
+            <arg value="${vendor.website}"/>
+            <arg value="--replace"/>
+            <arg value="--keystore"/>
+            <arg value="${signing.keystore}"/>
+            <arg value="--alias"/>
+            <arg value="${signing.alias}"/>
+            <arg value="--storepass"/>
+            <arg value="${signing.storepass}"/>
+            <arg value="--keypass"/>
+            <arg value="${signing.keypass}"/>
+            <arg value="--tsaurl"/>
+            <arg value="${signing.tsaurl}"/>
+            <arg line="${sign.win.file}"/>
+        </java>
     </target>
 
     <!-- Exe signing without timestamp -->
-    <target name="sign-exe-self" unless="signing.tsaurl">
-        <echo level="info">Signing exe without timestamp: ${sign.exe.file}</echo>
+    <target name="sign-win-self" unless="signing.tsaurl" depends="find-jsign">
+        <echo level="info">Signing without timestamp:</echo>
         <tsa-warning/>
-        <signexe file="${sign.exe.file}"
-                 name="${project.name}"
-                 url="${vendor.website}"
-                 keystore="${signing.keystore}"
-                 alias="${signing.alias}"
-                 storepass="${signing.storepass}"
-                 keypass="${signing.keypass}"
-        />
+        <java jar="${jsign.path}" fork="true" failonerror="true">
+            <arg value="--name"/>
+            <arg value="${project.name}"/>
+            <arg value="--url"/>
+            <arg value="${vendor.website}"/>
+            <arg value="--replace"/>
+            <arg value="--keystore"/>
+            <arg value="${signing.keystore}"/>
+            <arg value="--alias"/>
+            <arg value="${signing.alias}"/>
+            <arg value="--storepass"/>
+            <arg value="${signing.storepass}"/>
+            <arg value="--keypass"/>
+            <arg value="${signing.keypass}"/>
+            <arg line="${sign.win.file}"/>
+        </java>
     </target>
 </project>

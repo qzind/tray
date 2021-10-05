@@ -19,13 +19,8 @@ import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.*;
+import java.nio.file.*;
 import java.security.cert.X509Certificate;
 import java.util.*;
 
@@ -43,6 +38,7 @@ public abstract class Installer {
 
     // Silence prompts within our control
     public static boolean IS_SILENT =  "1".equals(System.getenv(DATA_DIR + "_silent"));
+    public static String JRE_LOCATION = SystemUtilities.isMac() ? "Contents/PlugIns/Java.runtime/Contents/Home" : "runtime";
 
     public enum PrivilegeLevel {
         USER,
@@ -63,12 +59,15 @@ public abstract class Installer {
 
     public static Installer getInstance() {
         if(instance == null) {
-            if(SystemUtilities.isWindows()) {
-                instance = new WindowsInstaller();
-            } else if(SystemUtilities.isMac()) {
-                instance = new MacInstaller();
-            } else {
-                instance = new LinuxInstaller();
+            switch(SystemUtilities.getOsType()) {
+                case WINDOWS:
+                    instance = new WindowsInstaller();
+                    break;
+                case MAC:
+                    instance = new MacInstaller();
+                    break;
+                default:
+                    instance = new LinuxInstaller();
             }
         }
         return instance;
@@ -84,6 +83,9 @@ public abstract class Installer {
     }
 
     public static boolean preinstall() {
+        getInstance();
+        log.info("Fixing runtime permissions...");
+        instance.setJrePermissions(SystemUtilities.getAppPath().toString());
         log.info("Stopping running instances...");
         return TaskKiller.killAll();
     }
@@ -112,24 +114,41 @@ public abstract class Installer {
     }
 
     public Installer deployApp() throws IOException {
-        Path src = SystemUtilities.detectAppPath();
+        Path src = SystemUtilities.getAppPath();
         Path dest = Paths.get(getDestination());
 
         if(!Files.exists(dest)) {
             Files.createDirectories(dest);
         }
 
+        // Delete the JDK blindly
+        FileUtils.deleteDirectory(dest.resolve(JRE_LOCATION).toFile());
         FileUtils.copyDirectory(src.toFile(), dest.toFile());
         FileUtilities.setPermissionsRecursively(dest, false);
-        if(SystemUtilities.isWindows()) {
-            // skip
-        } else if(SystemUtilities.isMac()) {
-            setExecutable("uninstall");
-            setExecutable("Contents/MacOS/" + ABOUT_TITLE);
-        } else {
-            setExecutable("uninstall");
-            setExecutable(PROPS_FILE);
+
+        if(!SystemUtilities.isWindows()) {
+            setExecutable(SystemUtilities.isMac() ? "Contents/Resources/uninstall" : "uninstall");
+            setExecutable(SystemUtilities.isMac() ? "Contents/MacOS/" + ABOUT_TITLE : PROPS_FILE);
+            return setJrePermissions(getDestination());
         }
+        return this;
+    }
+
+    private Installer setJrePermissions(String dest) {
+        File jreLocation = new File(dest, JRE_LOCATION);
+        File jreBin = new File(jreLocation, "bin");
+        File jreLib = new File(jreLocation, "lib");
+
+        // Set jre/bin/java and friends executable
+        File[] files = jreBin.listFiles(pathname -> !pathname.isDirectory());
+        if(files != null) {
+            for(File file : files) {
+                file.setExecutable(true, false);
+            }
+        }
+
+        // Set jspawnhelper executable
+        new File(jreLib, "jspawnhelper" + (SystemUtilities.isWindows() ? ".exe" : "")).setExecutable(true, false);
         return this;
     }
 
@@ -151,16 +170,44 @@ public abstract class Installer {
     }
 
     public Installer removeLegacyFiles() {
-        String[] dirs = { "demo/js/3rdparty", "utils", "auth" };
-        String[] files = { "demo/js/qz-websocket.js", "windows-icon.ico", "Contents/Resources/apple-icon.icns" };
-        for (String dir : dirs) {
+        ArrayList<String> dirs = new ArrayList<>();
+        ArrayList<String> files = new ArrayList<>();
+        HashMap<String, String> move = new HashMap<>();
+
+        // QZ Tray 2.0 files
+        dirs.add("demo/js/3rdparty");
+        dirs.add("utils");
+        dirs.add("auth");
+        files.add("demo/js/qz-websocket.js");
+        files.add("windows-icon.ico");
+
+        // QZ Tray 2.1 files
+        if(SystemUtilities.isMac()) {
+            // Moved to macOS Application Bundle standard https://developer.apple.com/go/?id=bundle-structure
+            dirs.add("demo");
+            dirs.add("libs");
+            files.add(PROPS_FILE + ".jar");
+            files.add("LICENSE.txt");
+            files.add("uninstall");
+            move.put(PROPS_FILE + ".properties", "Contents/Resources/" + PROPS_FILE + ".properties");
+        }
+
+        dirs.forEach(dir -> {
             try {
                 FileUtils.deleteDirectory(new File(instance.getDestination() + File.separator + dir));
             } catch(IOException ignore) {}
-        }
-        for (String file : files) {
+        });
+
+        files.forEach(file -> {
             new File(instance.getDestination() + File.separator + file).delete();
-        }
+        });
+
+        move.forEach((src, dest) -> {
+            try {
+                FileUtils.moveFile(new File(instance.getDestination() + File.separator + src),
+                                   new File(instance.getDestination() + File.separator + dest));
+            } catch(IOException ignore) {}
+        });
         return this;
     }
 
@@ -202,8 +249,11 @@ public abstract class Installer {
 
             if (forceNew || needsInstall) {
                 // Remove installed certs per request (usually the desktop installer, or failure to write properties)
-                List<String> matchingCerts = installer.find();
-                installer.remove(matchingCerts);
+                // Skip if running from IDE, this may accidentally remove sandboxed certs
+                if(SystemUtilities.isJar()) {
+                    List<String> matchingCerts = installer.find();
+                    installer.remove(matchingCerts);
+                }
                 installer.install(caCert);
                 FirefoxCertificateInstaller.install(caCert, hostNames);
             } else {
@@ -240,8 +290,8 @@ public abstract class Installer {
      */
     public Installer addUserSettings() {
         // Check for whitelisted certificates in <install>/whitelist/
-        Path whiteList = Paths.get(FileUtilities.getParentDirectory(SystemUtilities.getJarPath()), WHITELIST_CERT_DIR);
-        if(whiteList.toFile().exists() && whiteList.toFile().isDirectory()) {
+        Path whiteList = SystemUtilities.getJarParentPath().resolve(WHITELIST_CERT_DIR);
+        if(Files.exists(whiteList) && Files.isDirectory(whiteList)) {
             for(File file : whiteList.toFile().listFiles()) {
                 try {
                     Certificate cert = new Certificate(FileUtilities.readLocalFile(file.getPath()));

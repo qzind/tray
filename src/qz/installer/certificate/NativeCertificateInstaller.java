@@ -34,12 +34,16 @@ public abstract class NativeCertificateInstaller {
     }
     public static NativeCertificateInstaller getInstance(Installer.PrivilegeLevel type) {
         if (instance == null) {
-            if (SystemUtilities.isWindows()) {
-                instance = new WindowsCertificateInstaller(type);
-            } else if(SystemUtilities.isMac()) {
-                instance = new MacCertificateInstaller(type);
-            } else {
-                instance = new LinuxCertificateInstaller(type);
+            switch(SystemUtilities.getOsType()) {
+                case WINDOWS:
+                    instance = new WindowsCertificateInstaller(type);
+                    break;
+                case MAC:
+                    instance = new MacCertificateInstaller(type);
+                    break;
+                case LINUX:
+                default:
+                    instance = new LinuxCertificateInstaller(type);
             }
         }
         return instance;
@@ -69,10 +73,14 @@ public abstract class NativeCertificateInstaller {
     public boolean install(File certFile) {
         String helper = instance.getClass().getSimpleName();
         String store = instance.getInstallType().name();
-        if (remove(find())) {
-            log.info("Certificate removed from {} store using {}", store, helper);
+        if(SystemUtilities.isJar()) {
+            if (remove(find())) {
+                log.info("Certificate removed from {} store using {}", store, helper);
+            } else {
+                log.warn("Could not remove certificate from {} store using {}", store, helper);
+            }
         } else {
-            log.warn("Could not remove certificate from {} store using {}", store, helper);
+            log.info("Skipping {} store certificate removal, IDE detected.", store, helper);
         }
         if (add(certFile)) {
             log.info("Certificate added to {} store using {}", store,  helper);

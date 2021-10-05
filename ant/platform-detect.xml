@@ -1,0 +1,248 @@
+<project name="host-info" default="platform-detect" basedir="..">
+    <property file="ant/project.properties"/>
+    <!--
+        Detects and echos host and target information
+
+        String:
+        - host.os, host.arch, host.libext, host.libprefix
+        - target.os, target.arch, target.libext, target.libprefix
+
+        Booleans:
+        - host.${host.arch}=true, host.${host.os}=true
+        - target.${target.arch}=true, target.${target.os}=true
+    -->
+    <target name="platform-detect" depends="get-target-os,get-target-arch,get-libext">
+        <!-- Echo host information -->
+        <antcall target="echo-platform">
+            <param name="title" value="Host"/>
+            <param name="prefix" value="host"/>
+            <param name="prefix.os" value="${host.os}"/>
+            <param name="prefix.arch" value="${host.arch}"/>
+            <param name="prefix.libext" value="${host.libext}"/>
+        </antcall>
+        <!-- Echo target information -->
+        <antcall target="echo-platform">
+            <param name="title" value="Target"/>
+            <param name="prefix" value="target"/>
+            <param name="prefix.os" value="${target.os}"/>
+            <param name="prefix.arch" value="${target.arch}"/>
+            <param name="prefix.libext" value="${target.libext}"/>
+        </antcall>
+    </target>
+    <target name="echo-platform">
+        <!-- Make output more readable -->
+
+        <!-- Boolean platform.os.foo value -->
+        <condition property="os.echo" value="${prefix}.os.windows">
+            <isset property="${prefix}.os.windows"/>
+        </condition>
+        <condition property="os.echo" value="${prefix}.os.mac">
+            <isset property="${prefix}.os.mac"/>
+        </condition>
+        <property name="os.echo" value="${prefix}.os.linux" description="fallback value"/>
+
+        <!-- Boolean target.arch.foo value -->
+        <condition property="arch.echo" value="${prefix}.arch.aarch64">
+            <isset property="${prefix}.arch.aarch64"/>
+        </condition>
+        <property name="arch.echo" value="${prefix}.arch.x86_64" description="fallback value"/>
+
+        <echo level="info">
+        ${title} platform:
+            ${prefix}.os: &quot;${prefix.os}&quot;
+            ${prefix}.arch: &quot;${prefix.arch}&quot;
+            ${prefix}.libext: &quot;${prefix.libext}&quot;
+            ${os.echo}: true
+            ${arch.echo}: true
+        </echo>
+
+    </target>
+
+    <!-- Force Linux runtime.  Set by "makeself" target -->
+    <target name="target-os-linux">
+        <!-- String value -->
+        <property name="target.os" value ="linux"/>
+        <!-- Boolean value -->
+        <property name="target.os.linux" value="true"/>
+    </target>
+
+    <!-- Force Linux runtime.  Set by "nsis" target -->
+    <target name="target-os-windows">
+        <!-- String value -->
+        <property name="target.os" value ="windows"/>
+        <!-- Boolean value -->
+        <property name="target.os.windows" value="true"/>
+    </target>
+
+    <!-- Force Linux runtime.  Set by "pkgbuild", "dmg" targets -->
+    <target name="target-os-mac">
+        <!-- String value -->
+        <property name="target.os" value ="mac"/>
+        <!-- Boolean value -->
+        <property name="target.os.mac" value="true"/>
+    </target>
+
+    <target name="get-target-os" depends="get-host-os">
+        <!-- Suppress property warning :) -->
+        <condition description="suppress property warning (no-op)"
+                   property="target.os" value="${target.os}">
+            <isset property="target.os"/>
+        </condition>
+        <!-- Set Boolean if only the String was set -->
+        <condition property="target.os.windows">
+            <and>
+                <isset property="target.os"/>
+                <equals arg1="${target.os}" arg2="windows"/>
+            </and>
+        </condition>
+        <condition property="target.os.mac">
+            <and>
+                <isset property="target.os"/>
+                <equals arg1="${target.os}" arg2="mac"/>
+            </and>
+        </condition>
+        <condition property="target.os.linux">
+            <and>
+                <isset property="target.os"/>
+                <equals arg1="${target.os}" arg2="linux"/>
+            </and>
+        </condition>
+
+        <!-- Fallback to host boolean values if target values aren't specified -->
+        <property name="target.os" value="${host.os}" description="fallback value"/>
+        <condition property="target.os.windows" description="fallback value">
+            <equals arg1="${target.os}" arg2="windows"/>
+        </condition>
+        <condition property="target.os.mac" description="fallback value">
+            <equals arg1="${target.os}" arg2="mac"/>
+        </condition>
+        <condition property="target.os.linux" description="fallback value">
+            <equals arg1="${target.os}" arg2="linux"/>
+        </condition>
+    </target>
+
+    <!-- Calculate target architecture based on ${target.arch} value -->
+    <target name="get-target-arch" depends="get-host-arch">
+        <!-- Fallback to ${host.arch} if not specified -->
+        <property name="target.arch" value="${host.arch}" description="fallback value"/>
+        <condition property="target.arch.x86_64">
+            <equals arg1="amd64" arg2="${target.arch}"/>
+        </condition>
+        <condition property="target.arch.x86_64">
+            <equals arg1="x86_64" arg2="${target.arch}"/>
+        </condition>
+        <condition property="target.arch.aarch64">
+            <equals arg1="aarch64" arg2="${target.arch}"/>
+        </condition>
+        <!-- Warning: Placeholder only! 32-bit builds are not supported -->
+        <condition property="target.arch.x86">
+            <equals arg1="x86" arg2="${target.arch}"/>
+        </condition>
+    </target>
+
+    <!-- Calculate native file extension -->
+    <target name="get-libext" depends="get-host-os">
+        <!-- Some constants -->
+        <property name="windows.libext" value="dll"/>
+        <property name="mac.libext" value="dylib"/>
+        <property name="linux.libext" value="so"/>
+        <!-- Host uses "dll" -->
+        <condition property="host.libext" value="${windows.libext}">
+            <isset property="host.os.windows"/>
+        </condition>
+        <!-- Host uses "dylib" -->
+        <condition property="host.libext" value="${mac.libext}">
+            <isset property="host.os.mac"/>
+        </condition>
+        <!-- Host uses "so" -->
+        <condition property="host.libext" value="${linux.libext}">
+            <isset property="host.os.linux"/>
+        </condition>
+        <!-- Target uses "dll" -->
+        <condition property="target.libext" value="${windows.libext}">
+            <isset property="target.os.windows"/>
+        </condition>
+        <!-- Target uses "dylib" -->
+        <condition property="target.libext" value="${mac.libext}">
+            <isset property="target.os.mac"/>
+        </condition>
+        <!-- Target uses "so" -->
+        <condition property="target.libext" value="${linux.libext}">
+            <isset property="target.os.linux"/>
+        </condition>
+
+        <!-- Target uses "" or "lib" prefix for native files -->
+        <condition property="host.libprefix" value="" else="lib">
+            <isset property="host.os.windows"/>
+        </condition>
+
+        <!-- Host uses "" or "lib" prefix for native files -->
+        <condition property="target.libprefix" value="" else="lib">
+            <isset property="target.os.windows"/>
+        </condition>
+    </target>
+
+    <!-- Calculate and standardize host architecture based on ${os.arch} value -->
+    <target name="get-host-arch">
+        <!-- Boolean value (x86_64) -->
+        <condition property="host.arch.x86_64">
+            <equals arg1="amd64" arg2="${os.arch}"/>
+        </condition>
+        <condition property="host.arch.x86_64">
+            <equals arg1="x86_64" arg2="${os.arch}"/>
+        </condition>
+
+        <!-- Boolean value (aarch64) -->
+        <condition property="host.arch.aarch64">
+            <equals arg1="aarch64" arg2="${os.arch}"/>
+        </condition>
+
+        <!-- Boolean value (x86 - unsupported) -->
+        <condition property="host.arch.x86">
+            <equals arg1="x86" arg2="${os.arch}"/>
+        </condition>
+
+        <!-- String value (aarch64) -->
+        <condition property="host.arch" value="aarch64">
+            <equals arg1="aarch64" arg2="${os.arch}"/>
+        </condition>
+        <!-- String value (x86) -->
+        <condition property="host.arch" value="x86">
+            <equals arg1="x86" arg2="${os.arch}"/>
+        </condition>
+        <condition property="host.arch" value="x86">
+            <equals arg1="i386" arg2="${os.arch}"/>
+        </condition>
+
+        <!-- String value (x86_64 - fallback, most common) -->
+        <property name="host.arch" value="x86_64" description="fallback value"/>
+    </target>
+
+    <!-- Calculate the host os -->
+    <target name="get-host-os">
+        <!-- Boolean value -->
+        <condition property="host.os.windows" value="true">
+            <os family="windows"/>
+        </condition>
+        <condition property="host.os.mac" value="true">
+            <os family="mac"/>
+        </condition>
+        <condition property="host.os.linux" value="true">
+            <and>
+                <os family="unix"/>
+                <not>
+                    <os family="mac"/>
+                </not>
+            </and>
+        </condition>
+
+        <!-- String value -->
+        <condition property="host.os" value="windows">
+            <os family="windows"/>
+        </condition>
+        <condition property="host.os" value="mac">
+            <os family="mac"/>
+        </condition>
+        <property name="host.os" value="linux" description="fallback value"/>
+    </target>
+</project>

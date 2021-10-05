@@ -25,14 +25,13 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import qz.common.Constants;
+import qz.utils.LibUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -158,19 +157,7 @@ public class WebApp extends Application {
             headless = false;
 
             // JDK11+ depends bundled javafx
-            if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-                // JavaFX native libs
-                if (SystemUtilities.isJar()) {
-                    SystemUtilities.insertPathProperty(
-                            "java.library.path",
-                            new File(SystemUtilities.detectJarPath()).getParent() + "/libs/",
-                            "/jni" /* appends to end if not found */
-                    );
-                } else if (hasConflictingLib()) {
-                    // IDE helper for "no suitable pipeline found" errors
-                    System.err.println("\n=== WARNING ===\nWrong javafx platform detected. Delete lib/javafx/<platform> to correct this.\n");
-                }
-
+            if (Constants.JAVA_VERSION.getMajorVersion() >= 11) {
                 // Monocle default for unit tests
                 boolean useMonocle = true;
                 if (PrintSocketServer.getTrayManager() != null) {
@@ -186,8 +173,13 @@ public class WebApp extends Application {
                     log.trace("Initializing monocle platform");
                     System.setProperty("javafx.platform", "monocle");
                     // Don't set glass.platform on Linux per https://github.com/qzind/tray/issues/702
-                    if ((SystemUtilities.isWindows() || SystemUtilities.isMac())) {
-                        System.setProperty("glass.platform", "Monocle");
+                    switch(SystemUtilities.getOsType()) {
+                        case WINDOWS:
+                        case MAC:
+                            System.setProperty("glass.platform", "Monocle");
+                            break;
+                        default:
+                            // don't set "glass.platform"
                     }
 
                     //software rendering required headless environments
@@ -476,19 +468,6 @@ public class WebApp extends Application {
 
         captureLatch.countDown();
         stage.hide();
-    }
-
-    public static boolean hasConflictingLib() {
-        // If running from the IDE, make sure we're not using the wrong libs
-        URL url = Application.class.getResource("/" + Application.class.getName().replace('.', '/') + ".class");
-        String graphicsJar = url.toString().replaceAll("file:/|jar:", "").replaceAll("!.*", "");
-        log.trace("JavaFX will startup using {}", graphicsJar);
-        if (SystemUtilities.isWindows()) {
-            return !graphicsJar.contains("windows");
-        } else if (SystemUtilities.isMac()) {
-            return !graphicsJar.contains("osx") && !graphicsJar.contains("mac");
-        }
-        return !graphicsJar.contains("linux");
     }
 
     public static Version getWebkitVersion() {

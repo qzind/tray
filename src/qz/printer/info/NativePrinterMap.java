@@ -2,11 +2,9 @@ package qz.printer.info;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qz.printer.PrintServiceMatcher;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
-import javax.print.attribute.standard.PrinterName;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
@@ -22,10 +20,12 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
 
     public static NativePrinterMap getInstance() {
         if (instance == null) {
-            if (SystemUtilities.isWindows()) {
-                instance = new WindowsPrinterMap();
-            } else {
-                instance = new CupsPrinterMap();
+            switch(SystemUtilities.getOsType()) {
+                case WINDOWS:
+                    instance = new WindowsPrinterMap();
+                    break;
+                default:
+                    instance = new CupsPrinterMap();
             }
         }
         return instance;

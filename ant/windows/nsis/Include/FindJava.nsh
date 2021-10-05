@@ -50,6 +50,12 @@ Var /GLOBAL java_major
     IfFileExists "$0" Found
 !macroend
 
+!macro _ReadPayload root path
+    ClearErrors
+    StrCpy $0 "${root}\${path}\bin\${EXE}"
+    IfFileExists $0 Found
+!macroend
+
 !macro _ReadWorking path
     ClearErrors
     StrCpy $0 "$EXEDIR\${path}\bin\${EXE}"
@@ -66,13 +72,19 @@ Var /GLOBAL java_major
 ; Create the shared function.
 !macro _FindJava un
     Function ${un}FindJava
+        ; Snag payload directory off the stack
+        exch $R0
+
         ${If} ${RunningX64}
             SetRegView 64
         ${EndIf}
 
+        ; Check payload directories
+        !insertmacro _ReadPayload "$R0" "runtime"
+
         ; Check relative directories
+        !insertmacro _ReadWorking "runtime"
         !insertmacro _ReadWorking "jre"
-        !insertmacro _ReadWorking "jdk"
 
         ; Check common env vars
         !insertmacro _ReadEnv "JAVA_HOME"
@@ -93,6 +105,9 @@ Var /GLOBAL java_major
         StrCpy $java $0
         ${StrRep} '$java' '$java' 'javaw.exe' '${EXE}' ; AdoptOpenJDK returns "javaw.exe"
         ${StrRep} '$javaw' '$java' '${EXE}' 'javaw.exe'
+
+        ; Discard payload directory
+        pop $R0
 
         ; Detect java version
         nsExec::ExecToStack '"$java" -version'

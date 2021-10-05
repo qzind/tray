@@ -124,7 +124,7 @@ public class MacAppLocator extends AppLocator{
      * Calculate executable path by parsing Contents/Info.plist
      */
     private static Path getExePath(String appPath) {
-        Path path = Paths.get(appPath);
+        Path path = Paths.get(appPath).toAbsolutePath().normalize();
         Path plist = path.resolve("Contents/Info.plist");
         Document doc;
         try {
@@ -133,7 +133,7 @@ public class MacAppLocator extends AppLocator{
                 return null;
             }
             // Convert potentially binary plist files to XML
-            Process p = Runtime.getRuntime().exec(new String[] {"plutil", "-convert", "xml1", plist.toAbsolutePath().toString(), "-o", "-"}, ShellUtilities.envp);
+            Process p = Runtime.getRuntime().exec(new String[] {"plutil", "-convert", "xml1", plist.toString(), "-o", "-"}, ShellUtilities.envp);
             doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(p.getInputStream());
         } catch(IOException | ParserConfigurationException | SAXException e) {
             log.warn("Could not parse plist file for {}: {}", appPath, appPath, e);

@@ -1,8 +1,8 @@
 package qz.ui.tray;
 
 import qz.common.Constants;
-import qz.utils.SystemUtilities;
 import qz.utils.UbuntuUtilities;
+import qz.utils.UnixUtilities;
 
 import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
@@ -27,7 +27,7 @@ public class TaskbarTrayIcon extends JFrame implements WindowListener {
         setTaskBarTitle(getTitle());
         setSize(0, 0);
         getContentPane().setBackground(Color.BLACK);
-        if (SystemUtilities.isUbuntu()) {
+        if (UnixUtilities.isUbuntu()) {
             // attempt to camouflage the single pixel left behind
             getContentPane().setBackground(UbuntuUtilities.getTrayColor());
         }

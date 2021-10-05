@@ -10,11 +10,6 @@
 
 package qz.ws;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.rolling.FixedWindowRollingPolicy;
-import org.apache.log4j.rolling.RollingFileAppender;
-import org.apache.log4j.rolling.SizeBasedTriggeringPolicy;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.*;
@@ -24,22 +19,17 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qz.App;
 import qz.common.Constants;
 import qz.common.TrayManager;
-import qz.installer.Installer;
 import qz.installer.certificate.CertificateManager;
-import qz.installer.certificate.ExpiryTask;
-import qz.installer.certificate.KeyPairWrapper;
-import qz.installer.certificate.NativeCertificateInstaller;
-import qz.utils.*;
 
 import javax.swing.*;
-import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -60,87 +50,22 @@ public class PrintSocketServer {
 
     private static final AtomicInteger securePortIndex = new AtomicInteger(0);
     private static final AtomicInteger insecurePortIndex = new AtomicInteger(0);
+    private static final AtomicBoolean running = new AtomicBoolean(false);
 
     private static TrayManager trayManager;
-    private static CertificateManager certificateManager;
+    private static Server server;
 
-    private static boolean forceHeadless;
+    public static void runServer(CertificateManager certManager, boolean headless) throws InterruptedException, InvocationTargetException {
+        SwingUtilities.invokeAndWait(() -> {
+            PrintSocketServer.setTrayManager(new TrayManager(headless));
+        });
 
-    public static void main(String[] args) {
-        ArgParser parser = new ArgParser(args);
-        if (parser.intercept()) {
-            System.exit(parser.getExitCode());
-        }
-        forceHeadless = parser.hasFlag(ArgValue.HEADLESS);
-        SingleInstanceChecker.stealWebsocket = parser.hasFlag(STEAL);
-
-        log.info(Constants.ABOUT_TITLE + " version: {}", Constants.VERSION);
-        log.info(Constants.ABOUT_TITLE + " vendor: {}", Constants.ABOUT_COMPANY);
-        log.info("Java version: {}", Constants.JAVA_VERSION.toString());
-        log.info("Java vendor: {}", Constants.JAVA_VENDOR);
-        setupFileLogging();
-
-        try {
-            // Gets and sets the SSL info, properties file
-            certificateManager = Installer.getInstance().certGen(false);
-            // Reoccurring (e.g. hourly) cert expiration check
-            new ExpiryTask(certificateManager).schedule();
-        }
-        catch(Exception e) {
-            log.error("Something went critically wrong loading HTTPS", e);
-        }
-        Installer.getInstance().addUserSettings();
-
-        // Load overridable preferences set in qz-tray.properties file
-        NetworkUtilities.setPreferences(certificateManager.getProperties());
-        SingleInstanceChecker.setPreferences(certificateManager.getProperties());
-
-        // Linux needs the cert installed in user-space on every launch for Chrome SSL to work
-        if (!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {
-            NativeCertificateInstaller.getInstance().install(certificateManager.getKeyPair(KeyPairWrapper.Type.CA).getCert());
-        }
-
-        try {
-            log.info("Starting {} {}", Constants.ABOUT_TITLE, Constants.VERSION);
-            SwingUtilities.invokeAndWait(() -> trayManager = new TrayManager(forceHeadless));
-            runServer();
-        }
-        catch(Exception e) {
-            log.error("Could not start tray manager", e);
-        }
-
-        log.warn("The web socket server is no longer running");
-    }
-
-    private static void setupFileLogging() {
-        FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
-        rollingPolicy.setFileNamePattern(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log.%i");
-        rollingPolicy.setMaxIndex(Constants.LOG_ROTATIONS);
-
-        SizeBasedTriggeringPolicy triggeringPolicy = new SizeBasedTriggeringPolicy(Constants.LOG_SIZE);
-
-        RollingFileAppender fileAppender = new RollingFileAppender();
-        fileAppender.setLayout(new PatternLayout("%d{ISO8601} [%p] %m%n"));
-        fileAppender.setThreshold(Level.DEBUG);
-        fileAppender.setFile(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log");
-        fileAppender.setRollingPolicy(rollingPolicy);
-        fileAppender.setTriggeringPolicy(triggeringPolicy);
-        fileAppender.setEncoding("UTF-8");
-
-        fileAppender.setImmediateFlush(true);
-        fileAppender.activateOptions();
-
-        org.apache.log4j.Logger.getRootLogger().addAppender(fileAppender);
-    }
-
-    public static void runServer() {
-        Server server = findAvailableSecurePort();
+        server = findAvailableSecurePort(certManager);
         Connector secureConnector = null;
         if (server.getConnectors().length > 0 && !server.getConnectors()[0].isFailed()) {
             secureConnector = server.getConnectors()[0];
         }
 
-        final AtomicBoolean running = new AtomicBoolean(false);
         while(!running.get() && insecurePortIndex.get() < INSECURE_PORTS.size()) {
             try {
                 ServerConnector connector = new ServerConnector(server);
@@ -160,8 +85,9 @@ public class PrintSocketServer {
                 filter.getFactory().getPolicy().setMaxTextMessageSize(MAX_MESSAGE_SIZE);
 
                 // Handle HTTP landing page
-                ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet(certificateManager));
+                ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet(certManager));
                 httpServlet.setInitParameter("resourceBase", "/");
+
                 context.addServlet(httpServlet, "/");
                 context.addServlet(httpServlet, "/json");
 
@@ -169,10 +95,24 @@ public class PrintSocketServer {
                 server.setStopAtShutdown(true);
                 server.start();
 
-                running.set(true);
-                log.info("Server started on port(s) " + TrayManager.getPorts(server));
-                trayManager.setServer(server, running, securePortIndex, insecurePortIndex);
+                trayManager.setReloadThread(new Thread(() -> {
+                    try {
+                        trayManager.setDangerIcon();
+                        running.set(false);
+                        securePortIndex.set(0);
+                        insecurePortIndex.set(0);
+                        server.stop();
+                    }
+                    catch(Exception e) {
+                        log.error("Failed to reload", e);
+                        trayManager.displayErrorMessage("Error stopping print socket: " + e.getLocalizedMessage());
+                    }
+                }));
 
+                running.set(true);
+
+                log.info("Server started on port(s) " + getPorts(server));
+                trayManager.setServer(server, insecurePortIndex.get());
                 server.join();
             }
             catch(IOException | MultiException e) {
@@ -192,19 +132,19 @@ public class PrintSocketServer {
         }
     }
 
-    private static Server findAvailableSecurePort() {
+    private static Server findAvailableSecurePort(CertificateManager certManager) {
         Server server = new Server();
 
-        if (certificateManager != null) {
+        if (certManager != null) {
             final AtomicBoolean runningSecure = new AtomicBoolean(false);
             while(!runningSecure.get() && securePortIndex.get() < SECURE_PORTS.size()) {
                 try {
                     // Bind the secure socket on the proper port number (i.e. 8181), add it as an additional connector
-                    SslConnectionFactory sslConnection = new SslConnectionFactory(certificateManager.configureSslContextFactory(), HttpVersion.HTTP_1_1.asString());
+                    SslConnectionFactory sslConnection = new SslConnectionFactory(certManager.configureSslContextFactory(), HttpVersion.HTTP_1_1.asString());
                     HttpConnectionFactory httpConnection = new HttpConnectionFactory(new HttpConfiguration());
 
                     ServerConnector secureConnector = new ServerConnector(server, sslConnection, httpConnection);
-                    secureConnector.setHost(certificateManager.getProperties().getProperty("wss.host"));
+                    secureConnector.setHost(certManager.getProperties().getProperty("wss.host"));
                     secureConnector.setPort(getSecurePortInUse());
                     server.setConnectors(new Connector[] {secureConnector});
 
@@ -237,13 +177,25 @@ public class PrintSocketServer {
         return server;
     }
 
-    /**
-     * Get the TrayManager instance for this SocketServer
-     *
-     * @return The TrayManager instance
-     */
+    public static void setTrayManager(TrayManager manager) {
+        trayManager = manager;
+    }
+
     public static TrayManager getTrayManager() {
         return trayManager;
+    }
+
+    public static Server getServer() {
+        return server;
+    }
+
+    public static AtomicBoolean getRunning() {
+        return running;
+    }
+
+    @Deprecated
+    public static void main(String ... args) {
+        App.main(args);
     }
 
     public static int getSecurePortInUse() {
@@ -254,8 +206,20 @@ public class PrintSocketServer {
         return INSECURE_PORTS.get(insecurePortIndex.get());
     }
 
-    public static Properties getTrayProperties() {
-        return certificateManager == null? null:certificateManager.getProperties();
+    /**
+     * Returns a String representation of the ports assigned to the specified Server
+     */
+    public static String getPorts(Server server) {
+        StringBuilder ports = new StringBuilder();
+        for(Connector c : server.getConnectors()) {
+            if (ports.length() > 0) {
+                ports.append(", ");
+            }
+
+            ports.append(((ServerConnector)c).getLocalPort());
+        }
+
+        return ports.toString();
     }
 
 }

@@ -5,7 +5,7 @@ set -e
 
 # Get working directory
 DIR=$(cd "$(dirname "$0")" && pwd)
-pushd "$DIR/payload/Contents/MacOS/"
+pushd "$DIR/payload/${project.name}.app/Contents/MacOS/"
 
 # Offer to download Java if missing
 if ! ./"${project.name}" --version; then

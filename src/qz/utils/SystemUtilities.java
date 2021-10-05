@@ -23,10 +23,12 @@ import qz.common.TrayManager;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
@@ -44,9 +46,10 @@ import static com.sun.jna.platform.win32.WinReg.*;
  * @author Tres Finocchiaro
  */
 public class SystemUtilities {
-
-    // Name of the os, i.e. "Windows XP", "Mac OS X"
-    private static final String OS_NAME = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+    static final String OS_NAME = System.getProperty("os.name");
+    static final String OS_ARCH = System.getProperty("os.arch");
+    private static final OsType OS_TYPE = getOsType(OS_NAME);
+    private static final JreArch JRE_ARCH = getJreArch(OS_ARCH);
     private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
     private static final Locale defaultLocale = Locale.getDefault();
 
@@ -62,19 +65,76 @@ public class SystemUtilities {
     private static Boolean darkDesktop;
     private static Boolean darkTaskbar;
     private static Boolean hasMonocle;
-    private static String uname;
-    private static String linuxRelease;
     private static String classProtocol;
     private static Version osVersion;
-    private static String jarPath;
+    private static Path jarPath;
+    private static Integer pid;
 
+    public enum OsType {
+        MAC,
+        WINDOWS,
+        LINUX,
+        SOLARIS,
+        UNKNOWN
+    }
 
-    /**
-     * @return Lowercase version of the operating system name
-     * identified by {@code System.getProperty("os.name");}.
-     */
-    public static String getOS() {
-        return OS_NAME;
+    public enum JreArch {
+        X86,
+        X86_64,
+        ARM, // 32-bit
+        AARCH64,
+        RISCV,
+        PPC,
+        UNKNOWN
+    }
+
+    public static OsType getOsType() {
+        return OS_TYPE;
+    }
+
+    public static OsType getOsType(String os) {
+        if(os != null) {
+            String osLower = os.toLowerCase(Locale.ENGLISH);
+            if (osLower.contains("win")) {
+                return OsType.WINDOWS;
+            } else if (osLower.contains("mac")) {
+                return OsType.MAC;
+            } else if (osLower.contains("linux")) {
+                return OsType.LINUX;
+            } else if (osLower.contains("sunos")) {
+                return OsType.SOLARIS;
+            }
+        }
+        return OsType.UNKNOWN;
+    }
+
+    public static JreArch getJreArch() {
+        return JRE_ARCH;
+    }
+
+    public static JreArch getJreArch(String arch) {
+        if(arch != null) {
+            String archLower = arch.toLowerCase(Locale.ENGLISH);
+            if (archLower.equals("arm")) {
+                return JreArch.ARM;
+            }
+            if (archLower.contains("amd64") || archLower.contains("x86_64")) {
+                return JreArch.X86_64;
+            }
+            if (archLower.contains("86")) { // x86, i386, i486, i586, i686
+                return JreArch.X86;
+            }
+            if (archLower.startsWith("aarch") || archLower.startsWith("arm")) {
+                return JreArch.AARCH64;
+            }
+            if (archLower.startsWith("riscv") || archLower.startsWith("rv")) {
+                return JreArch.RISCV;
+            }
+            if (archLower.startsWith("ppc") || archLower.startsWith("power")) {
+                return JreArch.PPC;
+            }
+        }
+        return JreArch.UNKNOWN;
     }
 
     /**
@@ -119,27 +179,71 @@ public class SystemUtilities {
     }
 
     public static boolean isAdmin() {
-        if (SystemUtilities.isWindows()) {
-            return ShellUtilities.execute("net", "session");
-        } else {
-            return ShellUtilities.executeRaw("whoami").trim().equals("root");
+        switch(OS_TYPE) {
+            case WINDOWS:
+                return ShellUtilities.execute("net", "session");
+            default:
+                return whoami().equals("root");
         }
     }
 
-    public static int getProcessId() {
-        if(isWindows()) {
-            return WindowsUtilities.getProcessId();
+    public static String whoami() {
+        String whoami = System.getProperty("user.name");
+        if(whoami == null || whoami.trim().isEmpty()) {
+            // Fallback on Command line
+            whoami = ShellUtilities.executeRaw("whoami").trim();
         }
-        return MacUtilities.getProcessId(); // works for Linux too
+        return whoami;
+    }
+
+    public static Version getJavaVersion() {
+        return getJavaVersion(System.getProperty("java.version"));
+    }
+
+    /**
+     * Call a java command (e.g. java) with "--version" and parse the output
+     * The double dash "--" is since JDK9 but important to send the command output to stdout
+     */
+    public static Version getJavaVersion(Path javaCommand) {
+        return getJavaVersion(ShellUtilities.executeRaw(javaCommand.toString(), "--version"));
+    }
+
+    public static int getProcessId() {
+        if(pid == null) {
+            // Try Java 9+
+            if(Constants.JAVA_VERSION.getMajorVersion() >= 9) {
+                pid = getProcessIdJigsaw();
+            }
+            // Try JNA
+            if(pid == null || pid == -1) {
+                pid = SystemUtilities.isWindows() ? WindowsUtilities.getProcessId() : UnixUtilities.getProcessId();
+            }
+        }
+        return pid;
+    }
+
+    private static int getProcessIdJigsaw() {
+        try {
+            Class processHandle = Class.forName("java.lang.ProcessHandle");
+            Method current = processHandle.getDeclaredMethod("current");
+            Method pid = processHandle.getDeclaredMethod("pid");
+            Object processHandleInstance = current.invoke(processHandle);
+            Object pidValue = pid.invoke(processHandleInstance);
+            if(pidValue instanceof Long) {
+                return ((Long)pidValue).intValue();
+            }
+        } catch(Throwable t) {
+            log.warn("Could not get process ID using Java 9+, will attempt to fallback to JNA", t);
+        }
+        return -1;
     }
 
     /**
      * Handle Java versioning nuances
      * To eventually be replaced with <code>java.lang.Runtime.Version</code> (JDK9+)
      */
-    public static Version getJavaVersion() {
-        String version = System.getProperty("java.version");
-        String[] parts = version.split("\\D+");
+    public static Version getJavaVersion(String version) {
+        String[] parts = version.trim().split("\\D+");
 
         int major = 1;
         int minor = 0;
@@ -177,56 +281,59 @@ public class SystemUtilities {
 
     /**
      * Determines the currently running Jar's absolute path on the local filesystem
+     * todo: make this return a sane directory for running via ide
      *
      * @return A String value representing the absolute path to the currently running
      * jar
      */
-    public static String detectJarPath() {
+    public static Path getJarPath() {
+        // jarPath won't change, send the cached value if we have it
+        if (jarPath != null) return jarPath;
         try {
-            String jarPath = new File(SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getCanonicalPath();
-            // Fix characters that get URL encoded when calling getPath()
-            return URLDecoder.decode(jarPath, "UTF-8");
-        } catch(IOException ex) {
+            String url = URLDecoder.decode(SystemUtilities.class.getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8");
+            jarPath = new File(url).toPath();
+            if (jarPath == null) return null;
+            jarPath = jarPath.toAbsolutePath();
+        } catch(InvalidPathException | UnsupportedEncodingException ex) {
             log.error("Unable to determine Jar path", ex);
-        }
-        return null;
-    }
-
-    /**
-     * Returns the jar which we will create a shortcut for
-     *
-     * @return The path to the jar path which has been set
-     */
-    public static String getJarPath() {
-        if (jarPath == null) {
-            jarPath = detectJarPath();
         }
         return jarPath;
     }
 
     /**
-     * Returns the app's path, based on the jar location
+     * Returns the folder containing the running jar
      * or null if no .jar is found (such as running from IDE)
-     * @return
      */
-    public static Path detectAppPath() {
-        String jarPath = detectJarPath();
-        if (jarPath != null) {
-            File jar = new File(jarPath);
-            if (jar.getPath().endsWith(".jar") && jar.exists()) {
-                return Paths.get(jar.getParent());
-            }
-        }
-        return null;
+    public static Path getJarParentPath(){
+        Path path = getJarPath();
+        if (path == null || path.getParent() == null) return null;
+        return path.getParent();
     }
 
     /**
-     * Detect 32-bit JVM on 64-bit Windows
-     * @return
+     * Returns the jar's parent path, or a fallback if we're not a jar
      */
-    public static boolean isWow64() {
-        String arch = System.getProperty("os.arch");
-        return isWindows() && !arch.contains("x86_64") && !arch.contains("amd64") && System.getenv("PROGRAMFILES(x86)") != null;
+    public static Path getJarParentPath(String relativeFallback) {
+        return getJarParentPath().resolve(SystemUtilities.isJar() ? "": relativeFallback).normalize();
+    }
+
+    /**
+     * Returns the app's path, calculated from the jar location
+     * or working directory if none can be found
+     */
+    public static Path getAppPath() {
+        Path appPath = getJarParentPath();
+        if(appPath == null) {
+            // We should never get here
+            appPath = Paths.get(System.getProperty("user.dir"));
+        }
+
+        // Assume we're installed and running from /Applications/QZ Tray.app/Contents/Resources/qz-tray.jar
+        if(appPath.endsWith("Resources")) {
+            return appPath.getParent().getParent();
+        }
+        // For all other use-cases, qz-tray.jar is installed in the root of the application
+        return appPath;
     }
 
     /**
@@ -235,10 +342,8 @@ public class SystemUtilities {
      * @return {@code true} if Windows, {@code false} otherwise
      */
     public static boolean isWindows() {
-        return (OS_NAME.contains("win"));
+        return OS_TYPE == OsType.WINDOWS;
     }
-
-    public static boolean isWindowsXP() { return OS_NAME.contains("win") && OS_NAME.contains("xp"); }
 
     /**
      * Determine if the current Operating System is Mac OS
@@ -246,7 +351,7 @@ public class SystemUtilities {
      * @return {@code true} if Mac OS, {@code false} otherwise
      */
     public static boolean isMac() {
-        return (OS_NAME.contains("mac"));
+        return OS_TYPE == OsType.MAC;
     }
 
     /**
@@ -255,7 +360,7 @@ public class SystemUtilities {
      * @return {@code true} if Linux, {@code false} otherwise
      */
     public static boolean isLinux() {
-        return (OS_NAME.contains("linux"));
+        return OS_TYPE == OsType.LINUX;
     }
 
     /**
@@ -264,7 +369,12 @@ public class SystemUtilities {
      * @return {@code true} if Unix, {@code false} otherwise
      */
     public static boolean isUnix() {
-        return (OS_NAME.contains("mac") || OS_NAME.contains("nix") || OS_NAME.contains("nux") || OS_NAME.indexOf("aix") > 0 || OS_NAME.contains("sunos"));
+        if(OS_NAME != null) {
+            String osLower = OS_NAME.toLowerCase(Locale.ENGLISH);
+            return OS_TYPE == OsType.MAC || OS_TYPE == OsType.SOLARIS || OS_TYPE == OsType.LINUX ||
+                    osLower.contains("nix") || osLower.indexOf("aix") > 0;
+        }
+        return false;
     }
 
     /**
@@ -273,66 +383,7 @@ public class SystemUtilities {
      * @return {@code true} if Solaris, {@code false} otherwise
      */
     public static boolean isSolaris() {
-        return (OS_NAME.contains("sunos"));
-    }
-
-    /**
-     * Returns whether the output of {@code uname -a} shell command contains "Ubuntu"
-     *
-     * @return {@code true} if this OS is Ubuntu
-     */
-    public static boolean isUbuntu() {
-        getUname();
-        return uname != null && uname.contains("Ubuntu");
-    }
-
-    /**
-     * Returns whether the output of <code>cat /etc/redhat-release/code> shell command contains "Fedora"
-     *
-     * @return {@code true} if this OS is Fedora
-     */
-    public static boolean isFedora() {
-        getLinuxRelease();
-        return linuxRelease != null && linuxRelease.contains("Fedora");
-    }
-
-    /**
-     * Returns the output of {@code cat /etc/lsb-release} or equivalent
-     *
-     * @return the output of the command or null if not running Linux
-     */
-    public static String getLinuxRelease() {
-        if (isLinux() && linuxRelease == null) {
-            String[] releases = {"/etc/lsb-release", "/etc/redhat-release"};
-            for(String release : releases) {
-                String result = ShellUtilities.execute(
-                        new String[] {"cat", release},
-                        null
-                );
-                if (!result.isEmpty()) {
-                    linuxRelease = result;
-                    break;
-                }
-            }
-        }
-
-        return linuxRelease;
-    }
-
-    /**
-     * Returns the output of {@code uname -a} shell command, useful for parsing the Linux Version
-     *
-     * @return the output of {@code uname -a}, or null if not running Linux
-     */
-    public static String getUname() {
-        if (isLinux() && uname == null) {
-            uname = ShellUtilities.execute(
-                    new String[] {"uname", "-a"},
-                    null
-            );
-        }
-
-        return uname;
+        return OS_TYPE == OsType.SOLARIS;
     }
 
     public static boolean isDarkTaskbar() {
@@ -381,7 +432,7 @@ public class SystemUtilities {
         if (Constants.MASK_TRAY_SUPPORTED) {
             if (SystemUtilities.isMac()) {
                 // Assume a pid of -1 is a broken JNA
-                return MacUtilities.getProcessId() != -1;
+                return getProcessId() != -1;
             } else if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().getMajorVersion() >= 10) {
                 return true;
             }
@@ -489,6 +540,19 @@ public class SystemUtilities {
             classProtocol = SystemUtilities.class.getResource("").getProtocol();
         }
         return "jar".equals(classProtocol);
+    }
+
+    /**
+     * Todo:
+     * @return true if running from a jar, false if running from IDE
+     */
+    public static boolean isInstalled() {
+        Path path = getJarParentPath();
+        if(path == null) {
+            return false;
+        }
+        // Assume dist or out are signs we're running from some form of build directory
+        return !path.endsWith("dist") && !path.endsWith("out");
     }
 
     /**
@@ -607,6 +671,15 @@ public class SystemUtilities {
         }
     }
 
+    public static String getHostName() {
+        String hostName = SystemUtilities.isWindows() ? WindowsUtilities.getHostName() : UnixUtilities.getHostName();
+        if(hostName == null || hostName.trim().isEmpty()) {
+            log.warn("Couldn't get hostname using internal techniques, will fallback to command line instead");
+            hostName = ShellUtilities.getHostName().toUpperCase(); // uppercase to match others
+        }
+        return hostName;
+    }
+
     /**
      * A challenge which can only be calculated by an app installed and running on this machine
      * Calculates two bytes:
@@ -626,9 +699,8 @@ public class SystemUtilities {
 
     private static long calculateChallenge() {
         if(getJarPath() != null) {
-            File jarFile = new File(getJarPath());
-            if (jarFile.exists()) {
-                return jarFile.lastModified();
+            if (getJarPath().toFile().exists()) {
+                return getJarPath().toFile().lastModified();
             }
         }
         return -1L; // Fallback when running from IDE

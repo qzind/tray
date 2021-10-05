@@ -1,0 +1,12 @@
+{
+  "title": "${project.name}",
+  "background": "${basedir}/ant/apple/dmg-background.png",
+  "icon-size": 128,
+  "contents": [
+    { "x": 501, "y": 154, "type": "link", "path": "/Applications" },
+    { "x": 179, "y": 154, "type": "file", "path": "${build.dir}/${project.name}.app" }
+  ],
+  "code-sign": {
+    "signing-identity" : "${codesign.activeid}"
+  }
+}

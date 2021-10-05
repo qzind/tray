@@ -76,7 +76,7 @@ public class WindowsAppLocator extends AppLocator{
             }
         }
 
-        if(SystemUtilities.isWindowsXP()) {
+        if(WindowsUtilities.isWindowsXP()) {
             // Cleanup XP crumbs per https://stackoverflow.com/q/12391655/3196753
             File f = new File("TempWmicBatchFile.bat");
             if(f.exists()) {

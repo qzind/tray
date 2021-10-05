@@ -40,6 +40,7 @@ Section
     ${GetParameters} $params
 
     ; Sets the $java variable
+    Push "$EXEDIR"
     Call FindJava
 
     Var /GLOBAL opts

@@ -1,13 +1,21 @@
+/**
+ * @author Tres Finocchiaro
+ *
+ * Copyright (C) 2021 Tres Finocchiaro, QZ Industries, LLC
+ *
+ * LGPL 2.1 This is free software.  This software and source code are released under
+ * the "LGPL 2.1 License".  A copy of this license should be distributed with
+ * this software. http://www.gnu.org/licenses/lgpl-2.1.html
+ */
 package qz.installer;
 
-import com.sun.jna.platform.win32.Kernel32;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.installer.certificate.firefox.locator.AppLocator;
-import qz.utils.MacUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
+import qz.utils.WindowsUtilities;
 import qz.ws.PrintSocketServer;
 
 import java.io.File;
@@ -37,7 +45,7 @@ public class TaskKiller {
         String[] killCmd;
         // Disable service until reboot
         if(SystemUtilities.isMac()) {
-            ShellUtilities.execute("launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
+            ShellUtilities.execute("/bin/launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
         }
         if(SystemUtilities.isWindows()) {
             // Windows may be running under javaw.exe (normal) or java.exe (terminal)
@@ -80,7 +88,7 @@ public class TaskKiller {
             }
         }
 
-        if(SystemUtilities.isWindowsXP()) {
+        if(WindowsUtilities.isWindowsXP()) {
             File f = new File("TempWmicBatchFile.bat");
             if(f.exists()) {
                 f.deleteOnExit();

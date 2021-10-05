@@ -1,9 +1,18 @@
+/**
+ * @author Tres Finocchiaro
+ *
+ * Copyright (C) 2021 Tres Finocchiaro, QZ Industries, LLC
+ *
+ * LGPL 2.1 This is free software.  This software and source code are released under
+ * the "LGPL 2.1 License".  A copy of this license should be distributed with
+ * this software. http://www.gnu.org/licenses/lgpl-2.1.html
+ */
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Native;
 import com.sun.jna.platform.win32.*;
-import com.sun.jna.win32.W32APIOptions;
+import com.sun.jna.ptr.IntByReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -15,9 +24,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.*;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.sun.jna.platform.win32.WinReg.*;
+import static qz.utils.SystemUtilities.*;
 
 import static java.nio.file.attribute.AclEntryPermission.*;
 import static java.nio.file.attribute.AclEntryFlag.*;
@@ -26,6 +37,8 @@ public class WindowsUtilities {
     protected static final Logger log = LoggerFactory.getLogger(WindowsUtilities.class);
     private static String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
+    private static Boolean isWow64;
+    private static Integer pid;
 
     public static boolean isDarkDesktop() {
         // 0 = Dark Theme.  -1/1 = Light Theme
@@ -267,6 +280,22 @@ public class WindowsUtilities {
         }
     }
 
+    static String getHostName() {
+        String hostName = null;
+        try {
+            // GetComputerName() is limited to 15 chars, use GetComputerNameEx instead
+            char buffer[] = new char[255];
+            IntByReference lpnSize = new IntByReference(buffer.length);
+            Kernel32.INSTANCE.GetComputerNameEx(WinBase.COMPUTER_NAME_FORMAT.ComputerNameDnsHostname, buffer, lpnSize);
+            hostName = Native.toString(buffer).toUpperCase(Locale.ENGLISH); // Force uppercase for backwards compatibility
+        } catch(Throwable ignore) {}
+        if(hostName == null || hostName.trim().isEmpty()) {
+            log.warn("Couldn't get hostname using Kernel32, will fallback to environmental variable COMPUTERNAME instead");
+            hostName = System.getenv("COMPUTERNAME"); // always uppercase
+        }
+        return hostName;
+    }
+
     public static boolean nativeFileCopy(Path source, Path destination) {
         try {
             ShellAPI.SHFILEOPSTRUCT op = new ShellAPI.SHFILEOPSTRUCT();
@@ -289,11 +318,36 @@ public class WindowsUtilities {
     }
 
     static int getProcessId() {
-        try {
-            return Kernel32.INSTANCE.GetCurrentProcessId();
-        } catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
-            log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
+        if(pid == null) {
+            try {
+                pid = Kernel32.INSTANCE.GetCurrentProcessId();
+            }
+            catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
+                log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
+                pid = -1;
+            }
         }
-        return -1;
+        return pid;
+    }
+
+    public static boolean isWindowsXP() {
+        return isWindows() && OS_NAME.contains("xp");
+    }
+
+
+    /**
+     * Detect 32-bit JVM on 64-bit Windows
+     * @return
+     */
+    public static boolean isWow64() {
+        if(isWow64 == null) {
+            isWow64 = false;
+            if (SystemUtilities.isWindows()) {
+                if (SystemUtilities.getJreArch() != JreArch.X86_64) {
+                    isWow64 = System.getenv("PROGRAMFILES(x86)") != null;
+                }
+            }
+        }
+        return isWow64;
     }
 }

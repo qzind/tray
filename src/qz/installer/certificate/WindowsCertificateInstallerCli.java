@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.installer.Installer;
 import qz.utils.ShellUtilities;
-import qz.utils.SystemUtilities;
+import qz.utils.WindowsUtilities;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ public class WindowsCertificateInstallerCli extends NativeCertificateInstaller {
     }
 
     public boolean add(File certFile) {
-        if (SystemUtilities.isWindowsXP()) return false;
+        if (WindowsUtilities.isWindowsXP()) return false;
         if (certType == Installer.PrivilegeLevel.USER) {
             // This will prompt the user
             return ShellUtilities.execute("certutil.exe", "-addstore", "-f", "-user", "Root", certFile.getPath());
@@ -45,7 +45,7 @@ public class WindowsCertificateInstallerCli extends NativeCertificateInstaller {
     }
 
     public boolean remove(List<String> idList) {
-        if (SystemUtilities.isWindowsXP()) return false;
+        if (WindowsUtilities.isWindowsXP()) return false;
         boolean success = true;
         for (String certId : idList) {
             if (certType == Installer.PrivilegeLevel.USER) {

@@ -1,3 +1,5 @@
+!define MUI_BGCOLOR "SYSCLR:Window"
+!define MUI_TEXTCOLOR "SYSCLR:WindowText"
 !include MUI2.nsh
 !include x64.nsh
 !include LogicLib.nsh
@@ -72,18 +74,22 @@ Section
       System::Call 'Kernel32::SetEnvironmentVariable(t, t)i ("${vendor.name}_silent", "1").r0'
     ${EndIf}
 
-    ; Set the $java variable
-    TryAgain:
-    Call FindJava
-    !insertmacro VerifyJava "TryAgain"
-
+    ; Echo final destination to logs
     SetOutPath $INSTDIR
 
-    ; Run preinstall tasks
-    SetOutPath "$PluginsDir\tmp"
+    ; Copy files to a temporary location
+    SetOutPath "$PLUGINSDIR\payload"
     DetailPrint "Extracting..."
     SetDetailsPrint none ; Temporarily suppress details
     File /r "${dist.dir}\*"
+
+    ; Set the $java variable
+    TryAgain:
+    Push "$OUTDIR"
+    Call FindJava
+    !insertmacro VerifyJava "TryAgain"
+
+    ; Run preinstall tasks
     SetDetailsPrint both
     !insertmacro QzInstaller "preinstall" "" ""
 

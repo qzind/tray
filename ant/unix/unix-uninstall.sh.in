@@ -14,7 +14,7 @@ pushd "$DIR"
 
 echo "Running uninstall tasks..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    "$DIR/Contents/MacOS/${project.name}" uninstall
+    "$DIR/../MacOS/${project.name}" uninstall
 else
     "$DIR/${project.filename}" uninstall
 fi

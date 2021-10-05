@@ -5,6 +5,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.jetty.util.Jetty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.LibUsb;
 import purejavahidapi.PureJavaHidApi;
 import qz.utils.SystemUtilities;
 
@@ -12,6 +13,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.GeneralSecurityException;
@@ -38,8 +40,8 @@ public class SecurityInfo {
                 return put(key, (V)value.check());
             } catch(Throwable t) {
                 log.warn("A checked exception was suppressed adding key \"{}\"", key, t);
+                return put(key, (V)"missing");
             }
-            return null;
         }
     }
 
@@ -68,35 +70,38 @@ public class SecurityInfo {
 
         // Use API-provided mechanism if available
         libVersions.put("jna (native)", () -> Native.VERSION_NATIVE);
+        libVersions.put("jna (location)", () -> {
+            @SuppressWarnings("unused")
+            int ignore = Native.BOOL_SIZE;
+            return System.getProperty("jnidispatch.path");
+        });
         libVersions.put("jna", Native.VERSION);
         libVersions.put("jssc", () -> jssc.SerialNativeInterface.getLibraryVersion());
+        libVersions.put("jssc (native)", () -> jssc.SerialNativeInterface.getNativeLibraryVersion());
         libVersions.put("jetty", Jetty.VERSION);
         libVersions.put("pdfbox", org.apache.pdfbox.util.Version.getVersion());
         libVersions.put("purejavahidapi", () -> PureJavaHidApi.getVersion());
         libVersions.put("usb-api", javax.usb.Version.getApiVersion());
         libVersions.put("not-yet-commons-ssl", org.apache.commons.ssl.Version.VERSION);
         libVersions.put("mslinks", mslinks.ShellLink.VERSION);
-        libVersions.put("simplersa", (String)null);
         libVersions.put("bouncycastle", "" + new BouncyCastleProvider().getVersion());
+        libVersions.put("usb4java (native)", () -> LibUsb.getVersion().toString());
 
         libVersions.put("jre", Constants.JAVA_VERSION.toString());
         libVersions.put("jre (vendor)", Constants.JAVA_VENDOR);
 
         //JFX info, if it exists
         try {
+            // "DO NOT LINK JAVAFX EVER" - JavaFX may not exist, use reflection to avoid compilation errors
             Class<?> VersionInfo = Class.forName("com.sun.javafx.runtime.VersionInfo");
-            String fxPath = VersionInfo.getProtectionDomain().getCodeSource().getLocation().toString();
+            Path fxPath = Paths.get(VersionInfo.getProtectionDomain().getCodeSource().getLocation().toURI());
             Method method = VersionInfo.getMethod("getVersion");
             Object version = method.invoke(null);
             libVersions.put("javafx", (String)version);
-            if (fxPath.contains(SystemUtilities.detectJarPath()) || fxPath.contains("/tray/")) {
-                libVersions.put("javafx (location)", "Bundled/" + Constants.ABOUT_TITLE);
-            } else {
-                libVersions.put("javafx (location)", "System/" + Constants.JAVA_VENDOR);
-            }
+            libVersions.put("javafx (location)", fxPath.toString());
         } catch(Throwable e) {
-            libVersions.put("javafx", "Failed");
-            libVersions.put("javafx (location)", "Failed");
+            libVersions.put("javafx", "missing");
+            libVersions.put("javafx (location)", "missing");
         }
 
         // Fallback to maven manifest information
@@ -106,7 +111,7 @@ public class SecurityInfo {
                               "slf4j-log4j12", "usb4java-javax", "java-semver", "commons-pool2",
                               "websocket-server", "jettison", "commons-codec", "log4j", "slf4j-api",
                               "websocket-servlet", "jetty-http", "commons-lang3", "javax-websocket-server-impl",
-                              "javax.servlet-api", "usb4java", "websocket-api", "jetty-util", "websocket-client",
+                              "javax.servlet-api", "hid4java", "usb4java", "websocket-api", "jetty-util", "websocket-client",
                               "javax.websocket-api", "commons-io", "jetty-security"};
 
         for(String lib : mavenLibs) {
@@ -138,7 +143,7 @@ public class SecurityInfo {
         final HashMap<String,String> mavenVersions = new HashMap<>();
         String jar = "jar:" + SecurityInfo.class.getProtectionDomain().getCodeSource().getLocation().toString();
         try(FileSystem fs = FileSystems.newFileSystem(new URI(jar), new HashMap<String,String>())) {
-            Files.walkFileTree(fs.getPath("/META-INF/maven"), new HashSet<FileVisitOption>(), 3, new SimpleFileVisitor<Path>() {
+            Files.walkFileTree(fs.getPath("/META-INF/maven"), new HashSet<>(), 3, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     if (file.toString().endsWith(".properties")) {

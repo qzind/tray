@@ -136,7 +136,7 @@ public class LegacyFirefoxCertificateInstaller {
         fieldMap.put("%CERT_DATA%", certData);
         fieldMap.put("%COMMON_NAME%", hostNames[0]);
         fieldMap.put("%TIMESTAMP%", uninstall ? "-1" : "" + new Date().getTime());
-        fieldMap.put("%APP_PATH%", SystemUtilities.isMac() ? SystemUtilities.detectAppPath() != null ? SystemUtilities.detectAppPath().toString() : "" : "");
+        fieldMap.put("%APP_PATH%", SystemUtilities.isMac() ? SystemUtilities.getAppPath() != null ? SystemUtilities.getAppPath().toString() : "" : "");
         fieldMap.put("%UNINSTALL%", "" + uninstall);
 
         FileUtilities.configureAssetFile(CFG_TEMPLATE, dest, fieldMap, LegacyFirefoxCertificateInstaller.class);

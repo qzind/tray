@@ -10,7 +10,9 @@
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
+import com.sun.jna.Native;
 import com.sun.jna.platform.win32.*;
+import com.sun.jna.ptr.IntByReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.common.Constants;
@@ -22,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.*;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.sun.jna.platform.win32.WinReg.*;
@@ -280,10 +283,14 @@ public class WindowsUtilities {
     static String getHostName() {
         String hostName = null;
         try {
-            hostName = Kernel32Util.getComputerName(); // always uppercase
+            // GetComputerName() is limited to 15 chars, use GetComputerNameEx instead
+            char buffer[] = new char[255];
+            IntByReference lpnSize = new IntByReference(buffer.length);
+            Kernel32.INSTANCE.GetComputerNameEx(WinBase.COMPUTER_NAME_FORMAT.ComputerNameDnsHostname, buffer, lpnSize);
+            hostName = Native.toString(buffer).toUpperCase(Locale.ENGLISH); // Force uppercase for backwards compatibility
         } catch(Throwable ignore) {}
         if(hostName == null || hostName.trim().isEmpty()) {
-            log.warn("Couldn't get hostname using Kernel32Util, will fallback to environmental variable COMPUTERNAME instead");
+            log.warn("Couldn't get hostname using Kernel32, will fallback to environmental variable COMPUTERNAME instead");
             hostName = System.getenv("COMPUTERNAME"); // always uppercase
         }
         return hostName;

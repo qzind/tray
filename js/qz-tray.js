@@ -2616,13 +2616,6 @@ var qz = (function() {
         define(qz);
     } else if (typeof exports === 'object') {
         module.exports = qz;
-        try {
-            var crypto = require('crypto');
-            qz.api.setSha256Type(function(data) {
-                return crypto.createHash('sha256').update(data).digest('hex');
-            });
-        }
-        catch(ignore) {}
     } else {
         window.qz = qz;
     }

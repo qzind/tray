@@ -3,11 +3,6 @@
 # Halt on first error
 set -e
 
-if [ $(uname -m) != ${target.arch} ]; then
-    osascript -e "tell app \"Installer\" to display dialog \"Incorrect architecture. Please run the $(uname -m) installer.\""
-    exit 1
-fi
-
 # Get working directory
 DIR=$(cd "$(dirname "$0")" && pwd)
 pushd "$DIR/payload/${project.name}.app/Contents/MacOS/"

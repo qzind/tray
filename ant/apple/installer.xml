@@ -70,7 +70,15 @@
         <mkdir dir="${out.dir}/resources"/>
         <copy file="${basedir}/ant/apple/${pkg.background}" tofile="${out.dir}/resources/background.tiff" failonerror="true"/>
 
-        <copy file="ant/apple/product-def.plist.in" tofile="${out.dir}/product-def.plist">
+        <!-- Create product definition plist that stipulates supported arch -->
+        <condition property="build.archdef" value="arm64">
+            <isset property="target.arch.aarch64"/>
+        </condition>
+        <condition property="build.archdef" value="x86_64">
+            <isset property="target.arch.x86_64"/>
+        </condition>
+
+        <copy file="ant/apple/product-def.plist.in" tofile="${build.dir}/product-def.plist">
             <filterchain><expandproperties/></filterchain>
         </copy>
 
@@ -87,7 +95,7 @@
             <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
 
             <arg value="--product"/>
-            <arg value="${out.dir}/product-def.plist"/>
+            <arg value="${build.dir}/product-def.plist"/>
 
             <arg value="--scripts"/>
             <arg value="${build.dir}/scripts"/>
@@ -119,7 +127,7 @@
             <arg value="${out.dir}/resources"/>
 
             <arg value="--product"/>
-            <arg value="${out.dir}/product-def.plist"/>
+            <arg value="${build.dir}/product-def.plist"/>
 
             <arg value="--package-path"/>
             <arg value="${project.filename}${build.type}-${build.version}-unbranded.pkg"/>

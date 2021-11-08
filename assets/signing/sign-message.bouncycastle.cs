@@ -43,9 +43,13 @@ string SignMessage(string msg)
     return Convert.ToBase64String(sig.GenerateSignature());
 }
 
-AsymmetricKeyParameter getPrivateKey() {
+AsymmetricKeyParameter getPrivateKey()
+{
     using (var reader = System.IO.File.OpenText(privateKey))
-        return (new PemReader(reader, null).ReadObject() as AsymmetricCipherKeyPair).Private;
+    {
+        var pem = new PemReader(reader).ReadObject();
+        return pem as AsymmetricKeyParameter ?? (pem as AsymmetricCipherKeyPair).Private;
+    }
 }
 
 
@@ -54,7 +58,10 @@ AsymmetricKeyParameter getPrivateKey() {
 
 string certificate = "digital-certificate.txt";
 
-string GetCertificate() {
+string GetCertificate()
+{
     using (var reader = System.IO.File.OpenText(certificate))
+    {
         return reader.ReadToEnd();
+    }
 }

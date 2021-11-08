@@ -44,8 +44,10 @@ string SignMessage(string msg)
 }
 
 AsymmetricKeyParameter getPrivateKey() {
-    using (var reader = System.IO.File.OpenText(privateKey))
-        return (new PemReader(reader, null).ReadObject() as AsymmetricCipherKeyPair).Private;
+    using (var reader = System.IO.File.OpenText(privateKey)) {
+        var pem = new PemReader(reader).ReadObject();
+        return pem as AsymmetricKeyParameter ?? (pem as AsymmetricCipherKeyPair).Private;
+    }
 }
 
 

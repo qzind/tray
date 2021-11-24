@@ -2552,10 +2552,34 @@ var qz = (function() {
              */
             isVersion: _qz.tools.isVersion,
 
+            /**
+             * Checks if the connected QZ Tray application is greater than the specified version.
+             *
+             * @param {string|number} major Major version to check
+             * @param {string|number} [minor] Minor version to check
+             * @param {string|number} [patch] Patch version to check
+             * @param {string|number} [build] Build version to check
+             * @returns {boolean} True if connected version is greater than the version specified.
+             *
+             * @memberof qz.api
+             * @since 2.1.0-4
+             */
             isVersionGreater: function(major, minor, patch, build) {
                 return _qz.tools.versionCompare(major, minor, patch, build) > 0;
             },
 
+            /**
+             * Checks if the connected QZ Tray application is less than the specified version.
+             *
+             * @param {string|number} major Major version to check
+             * @param {string|number} [minor] Minor version to check
+             * @param {string|number} [patch] Patch version to check
+             * @param {string|number} [build] Build version to check
+             * @returns {boolean} True if connected version is less than the version specified.
+             *
+             * @memberof qz.api
+             * @since 2.1.0-4
+             */
             isVersionLess: function(major, minor, patch, build) {
                 return _qz.tools.versionCompare(major, minor, patch, build) < 0;
             },

@@ -36,6 +36,7 @@ import qz.utils.*;
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -97,7 +98,11 @@ public class PrintSocketServer {
 
         // Linux needs the cert installed in user-space on every launch for Chrome SSL to work
         if (!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {
-            NativeCertificateInstaller.getInstance().install(certificateManager.getKeyPair(KeyPairWrapper.Type.CA).getCert());
+            X509Certificate caCert = certificateManager.getKeyPair(KeyPairWrapper.Type.CA).getCert();
+            // Only install if a CA cert exists (e.g. one we generated)
+            if(caCert != null) {
+                NativeCertificateInstaller.getInstance().install(certificateManager.getKeyPair(KeyPairWrapper.Type.CA).getCert());
+            }
         }
 
         try {

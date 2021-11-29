@@ -208,11 +208,15 @@ public abstract class Installer {
                 FirefoxCertificateInstaller.install(caCert, hostNames);
             } else {
                 // Make sure the certificate is recognized by the system
-                File tempCert = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
-                CertificateManager.writeCert(caCert, tempCert); // temp cert
-                if(!installer.verify(tempCert)) {
-                    installer.install(caCert);
-                    FirefoxCertificateInstaller.install(caCert, hostNames);
+                if(caCert == null) {
+                    log.info("CA cert is empty, skipping installation checks.  This is normal for trusted/3rd-party SSL certificates.");
+                } else {
+                    File tempCert = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
+                    CertificateManager.writeCert(caCert, tempCert); // temp cert
+                    if (!installer.verify(tempCert)) {
+                        installer.install(caCert);
+                        FirefoxCertificateInstaller.install(caCert, hostNames);
+                    }
                 }
             }
         }

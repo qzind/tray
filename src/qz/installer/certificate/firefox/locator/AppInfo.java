@@ -73,7 +73,15 @@ public class AppInfo {
                 version = version + ".0";
             }
             return Version.valueOf(version);
-        } catch(Exception ignore) {}
+        } catch(Exception ignore1) {
+            // Catch poor formatting (e.g. "97.0a1"), try to use major version only
+            if(version.split("\\.").length > 0) {
+                try {
+                    String[] tryFix = version.split("\\.");
+                    return Version.valueOf(tryFix[0] + ".0.0-unknown");
+                } catch(Exception ignore2) {}
+            }
+        }
         return null;
     }
 

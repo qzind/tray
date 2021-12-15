@@ -1,7 +1,7 @@
 package qz.communication;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import purejavahidapi.HidDevice;
 import purejavahidapi.HidDeviceInfo;
 import purejavahidapi.InputReportListener;
@@ -14,7 +14,7 @@ import java.util.Vector;
 
 public class PJHA_HidIO implements DeviceIO {
 
-    private static final Logger log = LoggerFactory.getLogger(PJHA_HidIO.class);
+    private static final Logger log = LogManager.getLogger(PJHA_HidIO.class);
 
     private HidDeviceInfo deviceInfo;
     private HidDevice device;
@@ -121,7 +121,7 @@ public class PJHA_HidIO implements DeviceIO {
 
     public void sendFeatureReport(byte[] data, Byte reportId) throws DeviceException {
         if (reportId == null) { reportId = (byte)0x00; }
-        int wrote = device.setFeatureReport(reportId, data, data.length); 
+        int wrote = device.setFeatureReport(reportId, data, data.length);
 
         if (wrote == -1) {
             throw new DeviceException("Failed to write to device");

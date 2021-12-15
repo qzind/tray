@@ -10,8 +10,8 @@
 
 package qz.installer.certificate.firefox;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.Constants;
 import qz.installer.certificate.CertificateChainBuilder;
 import qz.installer.certificate.firefox.locator.AppInfo;
@@ -29,7 +29,7 @@ import java.util.*;
  * For old Firefox-compatible browsers still in the wild such as Firefox 52 ESR, SeaMonkey, WaterFox, etc.
  */
 public class LegacyFirefoxCertificateInstaller {
-    private static final Logger log = LoggerFactory.getLogger(CertificateChainBuilder.class);
+    private static final Logger log = LogManager.getLogger(CertificateChainBuilder.class);
 
     private static final String CFG_TEMPLATE = "assets/firefox-autoconfig.js.in";
     private static final String CFG_FILE = Constants.PROPS_FILE + ".cfg";

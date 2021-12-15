@@ -5,8 +5,8 @@ import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 public class MacAppLocator extends AppLocator{
-    protected static final Logger log = LoggerFactory.getLogger(MacAppLocator.class);
+    protected static final Logger log = LogManager.getLogger(MacAppLocator.class);
 
     private static String[] BLACKLISTED_PATHS = new String[]{"/Volumes/", "/.Trash/", "/Applications (Parallels)/" };
 

@@ -3,8 +3,8 @@ package qz.communication;
 import org.apache.commons.lang3.ArrayUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.utils.DeviceUtilities;
 
 import java.io.DataInputStream;
@@ -16,7 +16,7 @@ import java.util.ArrayList;
 
 public class SocketIO {
 
-    private static final Logger log = LoggerFactory.getLogger(SocketIO.class);
+    private static final Logger log = LogManager.getLogger(SocketIO.class);
 
     private String host;
     private int port;

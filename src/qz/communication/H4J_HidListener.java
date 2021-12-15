@@ -6,8 +6,8 @@ import org.hid4java.HidDevice;
 import org.hid4java.HidManager;
 import org.hid4java.HidServicesListener;
 import org.hid4java.event.HidServicesEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.ws.PrintSocketClient;
 import qz.ws.StreamEvent;
 
@@ -15,7 +15,7 @@ import javax.usb.util.UsbUtil;
 
 public class H4J_HidListener implements DeviceListener, HidServicesListener {
 
-    private static final Logger log = LoggerFactory.getLogger(H4J_HidListener.class);
+    private static final Logger log = LogManager.getLogger(H4J_HidListener.class);
 
     private Session session;
 

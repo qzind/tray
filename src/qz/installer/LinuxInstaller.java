@@ -1,8 +1,8 @@
 package qz.installer;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.utils.FileUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 import static qz.common.Constants.*;
 
 public class LinuxInstaller extends Installer {
-    protected static final Logger log = LoggerFactory.getLogger(LinuxInstaller.class);
+    protected static final Logger log = LogManager.getLogger(LinuxInstaller.class);
 
     public static final String SHORTCUT_NAME = PROPS_FILE + ".desktop";
     public static final String STARTUP_DIR = "/etc/xdg/autostart/";

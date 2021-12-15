@@ -7,8 +7,8 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.IOException;
 import java.net.URL;
@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class DeviceUtilities {
 
-    private static final Logger log = LoggerFactory.getLogger(DeviceUtilities.class);
+    private static final Logger log = LogManager.getLogger(DeviceUtilities.class);
 
 
     public enum DataType {

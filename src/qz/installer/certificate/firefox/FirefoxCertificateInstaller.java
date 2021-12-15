@@ -13,8 +13,8 @@ package qz.installer.certificate.firefox;
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.platform.win32.WinReg;
 import org.codehaus.jettison.json.JSONException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.Constants;
 import qz.installer.Installer;
 import qz.installer.certificate.CertificateManager;
@@ -38,7 +38,7 @@ import java.util.Base64;
  * Installs the Firefox Policy file via Enterprise Policy, Distribution Policy file or AutoConfig, depending on OS & version
  */
 public class FirefoxCertificateInstaller {
-    protected static final Logger log = LoggerFactory.getLogger(FirefoxCertificateInstaller.class);
+    protected static final Logger log = LogManager.getLogger(FirefoxCertificateInstaller.class);
 
     /**
      * Versions are for Mozilla's official Firefox release.

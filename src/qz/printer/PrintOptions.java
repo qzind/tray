@@ -3,8 +3,8 @@ package qz.printer;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.utils.LoggerUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
@@ -25,7 +25,7 @@ import java.util.Locale;
 
 public class PrintOptions {
 
-    private static final Logger log = LoggerFactory.getLogger(PrintOptions.class);
+    private static final Logger log = LogManager.getLogger(PrintOptions.class);
 
     private Pixel psOptions = new Pixel();
     private Raw rawOptions = new Raw();

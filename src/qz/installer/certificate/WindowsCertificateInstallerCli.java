@@ -10,8 +10,8 @@
 
 package qz.installer.certificate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.Constants;
 import qz.installer.Installer;
 import qz.utils.ShellUtilities;
@@ -27,7 +27,7 @@ import java.util.List;
  */
 @SuppressWarnings("UnusedDeclaration") //Library class
 public class WindowsCertificateInstallerCli extends NativeCertificateInstaller {
-    private static final Logger log = LoggerFactory.getLogger(WindowsCertificateInstallerCli.class);
+    private static final Logger log = LogManager.getLogger(WindowsCertificateInstallerCli.class);
     private Installer.PrivilegeLevel certType;
 
     public WindowsCertificateInstallerCli(Installer.PrivilegeLevel certType) {

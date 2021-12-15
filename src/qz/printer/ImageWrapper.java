@@ -12,8 +12,8 @@ package qz.printer;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.ByteArrayBuilder;
 import qz.exception.InvalidRawImageException;
 import qz.utils.ByteUtilities;
@@ -48,7 +48,7 @@ import java.util.ArrayList;
 @SuppressWarnings("UnusedDeclaration") //Library class
 public class ImageWrapper {
 
-    private static final Logger log = LoggerFactory.getLogger(ImageWrapper.class);
+    private static final Logger log = LogManager.getLogger(ImageWrapper.class);
 
     /**
      * Represents the CHECK_BLACK quantization method, where only fully black

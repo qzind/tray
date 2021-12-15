@@ -3,8 +3,8 @@ package qz.printer.status;
 import com.sun.jna.Pointer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.printer.status.job.NativeJobStatus;
 
 import javax.servlet.ServletException;
@@ -18,7 +18,7 @@ import java.util.HashMap;
  * Created by kyle on 4/27/17.
  */
 public class CupsStatusHandler extends AbstractHandler {
-    private static final Logger log = LoggerFactory.getLogger(CupsStatusHandler.class);
+    private static final Logger log = LogManager.getLogger(CupsStatusHandler.class);
 
     private static Cups cups = Cups.INSTANCE;
     private int lastEventNumber = 0;

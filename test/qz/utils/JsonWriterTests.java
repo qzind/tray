@@ -1,14 +1,14 @@
 package qz.utils;
 
 import org.codehaus.jettison.json.JSONException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.IOException;
 
 public class JsonWriterTests {
 
-    private static final Logger log = LoggerFactory.getLogger(JsonWriterTests.class);
+    private static final Logger log = LogManager.getLogger(JsonWriterTests.class);
 
     private static String DEFAULT_PATH = "/Applications/Firefox.app/Contents/Resources/distribution/policies.json";
     private static String DEFAULT_DATA = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";

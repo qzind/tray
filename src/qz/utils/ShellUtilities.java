@@ -11,8 +11,8 @@
 package qz.utils;
 
 import org.apache.commons.io.Charsets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.awt.*;
 import java.io.*;
@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public class ShellUtilities {
 
-    private static final Logger log = LoggerFactory.getLogger(ShellUtilities.class);
+    private static final Logger log = LogManager.getLogger(ShellUtilities.class);
 
     // Shell environment overrides.  null = don't override
     public static String[] envp = null;

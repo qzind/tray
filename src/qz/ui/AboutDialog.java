@@ -2,8 +2,8 @@ package qz.ui;
 
 import com.github.zafarkhaja.semver.Version;
 import org.eclipse.jetty.server.Server;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.AboutInfo;
 import qz.common.Constants;
 import qz.ui.component.EmLabel;
@@ -26,7 +26,7 @@ import java.util.Map;
  */
 public class AboutDialog extends BasicDialog implements Themeable {
 
-    private static final Logger log = LoggerFactory.getLogger(AboutDialog.class);
+    private static final Logger log = LogManager.getLogger(AboutDialog.class);
 
     private Server server;
 

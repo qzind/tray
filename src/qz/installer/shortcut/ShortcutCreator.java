@@ -10,8 +10,8 @@
 
 package qz.installer.shortcut;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.utils.SystemUtilities;
 
 /**
@@ -22,7 +22,7 @@ import qz.utils.SystemUtilities;
  */
 public abstract class ShortcutCreator {
     private static ShortcutCreator instance;
-    protected static final Logger log = LoggerFactory.getLogger(ShortcutCreator.class);
+    protected static final Logger log = LogManager.getLogger(ShortcutCreator.class);
     public abstract boolean canAutoStart();
     public abstract void createDesktopShortcut();
 

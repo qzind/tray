@@ -10,8 +10,8 @@ import org.bouncycastle.x509.extension.X509ExtensionUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.installer.certificate.CertificateManager;
 import qz.utils.SystemUtilities;
@@ -30,7 +30,7 @@ import java.util.*;
 
 public class AboutInfo {
 
-    private static final Logger log = LoggerFactory.getLogger(AboutInfo.class);
+    private static final Logger log = LogManager.getLogger(AboutInfo.class);
 
     private static String preferredHostname = "localhost";
 

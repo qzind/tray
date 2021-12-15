@@ -1,6 +1,7 @@
 package qz.installer.certificate.firefox.locator;
 
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
@@ -10,7 +11,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 public abstract class AppLocator {
-    protected static final org.slf4j.Logger log = LoggerFactory.getLogger(AppLocator.class);
+    protected static final Logger log = LogManager.getLogger(AppLocator.class);
 
     private static AppLocator INSTANCE = getPlatformSpecificAppLocator();
 

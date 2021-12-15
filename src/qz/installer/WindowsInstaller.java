@@ -14,8 +14,8 @@ import com.sun.jna.platform.win32.*;
 import mslinks.ShellLink;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 import qz.utils.WindowsUtilities;
@@ -35,7 +35,7 @@ import java.util.List;
 
 
 public class WindowsInstaller extends Installer {
-    protected static final Logger log = LoggerFactory.getLogger(WindowsInstaller.class);
+    protected static final Logger log = LogManager.getLogger(WindowsInstaller.class);
     private String destination = getDefaultDestination();
     private String destinationExe = getDefaultDestination() + File.separator + PROPS_FILE + ".exe";
 

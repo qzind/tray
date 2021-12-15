@@ -10,11 +10,14 @@
 
 package qz.ws;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.rolling.FixedWindowRollingPolicy;
-import org.apache.log4j.rolling.RollingFileAppender;
-import org.apache.log4j.rolling.SizeBasedTriggeringPolicy;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.appender.RollingFileAppender;
+import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
+import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
+import org.apache.logging.log4j.core.filter.ThresholdFilter;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.*;
@@ -22,8 +25,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.installer.Installer;
@@ -31,6 +32,7 @@ import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.ExpiryTask;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.installer.certificate.NativeCertificateInstaller;
+import org.apache.logging.log4j.LogManager;
 import qz.utils.*;
 
 import javax.swing.*;
@@ -44,7 +46,6 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static qz.utils.ArgParser.ExitStatus.SUCCESS;
 import static qz.utils.ArgValue.STEAL;
 
 /**
@@ -53,7 +54,7 @@ import static qz.utils.ArgValue.STEAL;
 
 public class PrintSocketServer {
 
-    private static final Logger log = LoggerFactory.getLogger(PrintSocketServer.class);
+    private static final Logger log = LogManager.getLogger(PrintSocketServer.class);
 
     private static final int MAX_MESSAGE_SIZE = Integer.MAX_VALUE;
     public static final List<Integer> SECURE_PORTS = Collections.unmodifiableList(Arrays.asList(Constants.WSS_PORTS));
@@ -118,24 +119,20 @@ public class PrintSocketServer {
     }
 
     private static void setupFileLogging() {
-        FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
-        rollingPolicy.setFileNamePattern(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log.%i");
-        rollingPolicy.setMaxIndex(Constants.LOG_ROTATIONS);
+        RollingFileAppender fileAppender = RollingFileAppender.newBuilder()
+                .setName("log-file")
+                .withAppend(true)
+                .setLayout(PatternLayout.newBuilder().withPattern("%d{ISO8601} [%p] %m%n").build())
+                .setFilter(ThresholdFilter.createFilter(Level.DEBUG, Filter.Result.ACCEPT, Filter.Result.DENY))
+                .withFileName(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log")
+                .withFilePattern(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log.%i")
+                .withStrategy(DefaultRolloverStrategy.newBuilder().withMax(String.valueOf(Constants.LOG_ROTATIONS)).build())
+                .withPolicy(SizeBasedTriggeringPolicy.createPolicy(String.valueOf(Constants.LOG_SIZE)))
+                .withImmediateFlush(true)
+                .build();
+        fileAppender.start();
 
-        SizeBasedTriggeringPolicy triggeringPolicy = new SizeBasedTriggeringPolicy(Constants.LOG_SIZE);
-
-        RollingFileAppender fileAppender = new RollingFileAppender();
-        fileAppender.setLayout(new PatternLayout("%d{ISO8601} [%p] %m%n"));
-        fileAppender.setThreshold(Level.DEBUG);
-        fileAppender.setFile(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log");
-        fileAppender.setRollingPolicy(rollingPolicy);
-        fileAppender.setTriggeringPolicy(triggeringPolicy);
-        fileAppender.setEncoding("UTF-8");
-
-        fileAppender.setImmediateFlush(true);
-        fileAppender.activateOptions();
-
-        org.apache.log4j.Logger.getRootLogger().addAppender(fileAppender);
+        LoggerUtilities.getRootLogger().addAppender(fileAppender);
     }
 
     public static void runServer() {

@@ -10,8 +10,8 @@
 
 package qz.installer.certificate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.Constants;
 import qz.installer.Installer;
 import qz.utils.ShellUtilities;
@@ -32,7 +32,7 @@ import static qz.installer.Installer.PrivilegeLevel.*;
  * @author Tres Finocchiaro
  */
 public class LinuxCertificateInstaller extends NativeCertificateInstaller {
-    private static final Logger log = LoggerFactory.getLogger(LinuxCertificateInstaller.class);
+    private static final Logger log = LogManager.getLogger(LinuxCertificateInstaller.class);
 
     private static String[] NSSDB_URLS = {
             // Conventional cert store

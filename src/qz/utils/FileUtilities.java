@@ -15,8 +15,8 @@ import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -55,7 +55,7 @@ import static qz.common.Constants.ALLOW_FILE;
  */
 public class FileUtilities {
 
-    private static final Logger log = LoggerFactory.getLogger(FileUtilities.class);
+    private static final Logger log = LogManager.getLogger(FileUtilities.class);
     public static final Path USER_DIR = getUserDirectory();
     public static final Path SHARED_DIR = getSharedDirectory();
     public static final Path TEMP_DIR = getTempDirectory();

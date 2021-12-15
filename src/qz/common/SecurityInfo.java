@@ -3,8 +3,8 @@ package qz.common;
 import com.sun.jna.Native;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.jetty.util.Jetty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import purejavahidapi.PureJavaHidApi;
 import qz.utils.SystemUtilities;
 
@@ -26,7 +26,7 @@ public class SecurityInfo {
      * Wrap throwable operations into a try/catch
      */
     private static class CheckedTreeMap<K, V> extends TreeMap<K, V> {
-        private static final Logger log = LoggerFactory.getLogger(CheckedTreeMap.class);
+        private static final Logger log = LogManager.getLogger(CheckedTreeMap.class);
 
         interface CheckedValue {
             Object check() throws Throwable;
@@ -43,7 +43,7 @@ public class SecurityInfo {
         }
     }
 
-    private static final Logger log = LoggerFactory.getLogger(SecurityInfo.class);
+    private static final Logger log = LogManager.getLogger(SecurityInfo.class);
 
     public static KeyStore getKeyStore(Properties props) {
         if (props != null) {
@@ -103,8 +103,8 @@ public class SecurityInfo {
         HashMap<String,String> mavenVersions = getMavenVersions();
 
         String[] mavenLibs = {"jetty-servlet", "apache-log4j-extras", "jetty-io", "websocket-common",
-                              "slf4j-log4j12", "usb4java-javax", "java-semver", "commons-pool2",
-                              "websocket-server", "jettison", "commons-codec", "log4j", "slf4j-api",
+                              "usb4java-javax", "java-semver", "commons-pool2",
+                              "websocket-server", "jettison", "commons-codec", "log4j",
                               "websocket-servlet", "jetty-http", "commons-lang3", "javax-websocket-server-impl",
                               "javax.servlet-api", "usb4java", "websocket-api", "jetty-util", "websocket-client",
                               "javax.websocket-api", "commons-io", "jetty-security"};

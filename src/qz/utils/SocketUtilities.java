@@ -3,8 +3,8 @@ package qz.utils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.communication.SocketIO;
 import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 
 public class SocketUtilities {
 
-    private static final Logger log = LoggerFactory.getLogger(SocketUtilities.class);
+    private static final Logger log = LogManager.getLogger(SocketUtilities.class);
 
     public static void setupSocket(final Session session, String UID, SocketConnection connection, JSONObject params) throws JSONException {
         final String host = params.getString("host");

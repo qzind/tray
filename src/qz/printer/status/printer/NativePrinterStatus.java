@@ -1,9 +1,9 @@
 package qz.printer.status.printer;
 
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
 import qz.printer.status.NativeStatus;
 
-import static org.apache.log4j.Level.*;
+import static org.apache.logging.log4j.Level.*;
 
 /**
  * Created by kyle on 7/7/17.

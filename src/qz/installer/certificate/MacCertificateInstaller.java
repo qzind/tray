@@ -10,8 +10,8 @@
 
 package qz.installer.certificate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.Constants;
 import qz.installer.Installer;
 import qz.utils.ShellUtilities;
@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MacCertificateInstaller extends NativeCertificateInstaller {
-    private static final Logger log = LoggerFactory.getLogger(MacCertificateInstaller.class);
+    private static final Logger log = LogManager.getLogger(MacCertificateInstaller.class);
 
     public static final String USER_STORE = System.getProperty("user.home") + "/Library/Keychains/login.keychain"; // aka login.keychain-db
     public static final String SYSTEM_STORE = "/Library/Keychains/System.keychain";

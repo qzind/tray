@@ -4,8 +4,8 @@ import jssc.*;
 import org.apache.commons.codec.binary.StringUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.ByteArrayBuilder;
 import qz.utils.ByteUtilities;
 import qz.utils.DeviceUtilities;
@@ -17,7 +17,7 @@ import java.io.IOException;
  */
 public class SerialIO {
 
-    private static final Logger log = LoggerFactory.getLogger(SerialIO.class);
+    private static final Logger log = LogManager.getLogger(SerialIO.class);
 
     // Timeout to wait before giving up on reading the specified amount of bytes
     private static final int TIMEOUT = 1200;

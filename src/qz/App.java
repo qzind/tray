@@ -97,5 +97,9 @@ public class App {
         fileAppender.start();
 
         LoggerUtilities.getRootLogger().addAppender(fileAppender);
+
+        //disable jetty logging
+        System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
+        System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
     }
 }

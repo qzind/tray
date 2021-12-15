@@ -2,8 +2,8 @@ package qz.printer.action;
 
 import javafx.print.PaperSource;
 import org.apache.commons.lang3.ArrayUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.SystemUtilities;
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 public abstract class PrintPixel {
 
-    private static final Logger log = LoggerFactory.getLogger(PrintPixel.class);
+    private static final Logger log = LogManager.getLogger(PrintPixel.class);
 
     private static final List<Integer> MAC_BAD_IMAGE_TYPES = Arrays.asList(BufferedImage.TYPE_BYTE_BINARY, BufferedImage.TYPE_CUSTOM);
 

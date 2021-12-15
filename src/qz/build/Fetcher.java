@@ -1,8 +1,8 @@
 package qz.build;
 
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
@@ -44,7 +44,7 @@ public class Fetcher {
         }
     }
 
-    private static final Logger log = LoggerFactory.getLogger(Fetcher.class);
+    private static final Logger log = LogManager.getLogger(Fetcher.class);
 
     public static void main(String ... args) throws IOException {
         new Fetcher("jlink/qz-tray-src_x.x.x", "https://github.com/qzind/tray/archive/master.tar.gz").fetch().uncompress();

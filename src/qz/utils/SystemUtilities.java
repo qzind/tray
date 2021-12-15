@@ -15,8 +15,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.ssl.Base64;
 import org.joor.Reflect;
 import org.joor.ReflectException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.common.TrayManager;
 
@@ -50,7 +50,7 @@ public class SystemUtilities {
     static final String OS_ARCH = System.getProperty("os.arch");
     private static final OsType OS_TYPE = getOsType(OS_NAME);
     private static final JreArch JRE_ARCH = getJreArch(OS_ARCH);
-    private static final Logger log = LoggerFactory.getLogger(TrayManager.class);
+    private static final Logger log = LogManager.getLogger(TrayManager.class);
     private static final Locale defaultLocale = Locale.getDefault();
 
     static {
@@ -455,7 +455,7 @@ public class SystemUtilities {
             adjustThemeColors();
             return true;
         } catch (Throwable t) {
-            LoggerFactory.getLogger(SystemUtilities.class).warn("Error getting the default look and feel");
+            log.warn("Error getting the default look and feel");
         }
         return false;
     }

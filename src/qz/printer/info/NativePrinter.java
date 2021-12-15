@@ -1,7 +1,7 @@
 package qz.printer.info;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class NativePrinter {
-    private static final Logger log = LoggerFactory.getLogger(NativePrinter.class);
+    private static final Logger log = LogManager.getLogger(NativePrinter.class);
     /**
      * Simple object wrapper allowing lazy fetching of values
      * @param <T>

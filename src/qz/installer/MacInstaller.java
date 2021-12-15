@@ -11,8 +11,8 @@ package qz.installer;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.utils.FileUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
@@ -26,7 +26,7 @@ import java.util.List;
 import static qz.common.Constants.*;
 
 public class MacInstaller extends Installer {
-    protected static final Logger log = LoggerFactory.getLogger(MacInstaller.class);
+    protected static final Logger log = LogManager.getLogger(MacInstaller.class);
     private static final String PACKAGE_NAME = getPackageName();
     public static final String LAUNCH_AGENT_PATH = String.format("/Library/LaunchAgents/%s.plist", MacInstaller.PACKAGE_NAME);
     private String destination = "/Applications/" + ABOUT_TITLE + ".app";

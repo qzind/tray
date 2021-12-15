@@ -5,8 +5,8 @@ import com.sun.jna.platform.win32.WinspoolUtil;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.eclipse.jetty.util.MultiMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.info.NativePrinterMap;
 import qz.utils.SystemUtilities;
@@ -20,7 +20,7 @@ import static qz.utils.SystemUtilities.isWindows;
  * Created by Kyle on 2/23/2017.
  */
 public class StatusMonitor {
-    private static final Logger log = LoggerFactory.getLogger(StatusMonitor.class);
+    private static final Logger log = LogManager.getLogger(StatusMonitor.class);
 
     private static final String ALL_PRINTERS = "";
 

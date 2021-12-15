@@ -20,8 +20,8 @@ import com.sun.jna.win32.StdCallLibrary;
 import com.sun.jna.win32.W32APIOptions;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.openssl.PEMParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.installer.Installer;
 
@@ -31,7 +31,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 public class WindowsCertificateInstaller extends NativeCertificateInstaller {
-    private static final Logger log = LoggerFactory.getLogger(WindowsCertificateInstaller.class);
+    private static final Logger log = LogManager.getLogger(WindowsCertificateInstaller.class);
     private WinCrypt.HCERTSTORE store;
     private byte[] certBytes;
     private Installer.PrivilegeLevel certType;

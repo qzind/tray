@@ -5,8 +5,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.utils.ByteUtilities;
 import qz.utils.DeviceUtilities;
 import qz.utils.LoggerUtilities;
@@ -18,7 +18,7 @@ import java.util.Locale;
 
 public class SerialOptions {
 
-    private static final Logger log = LoggerFactory.getLogger(SerialOptions.class);
+    private static final Logger log = LogManager.getLogger(SerialOptions.class);
 
     private static final String DEFAULT_BEGIN = "0x0002";
     private static final String DEFAULT_END = "0x000D";

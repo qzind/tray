@@ -1,6 +1,7 @@
 package qz.common;
 
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,7 +12,7 @@ import java.util.Properties;
  * Created by Tres on 12/16/2015.
  */
 public class PropertyHelper extends Properties {
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(TrayManager.class);
+    private static final Logger log = LogManager.getLogger(TrayManager.class);
     private String file;
 
     /**

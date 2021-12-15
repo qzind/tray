@@ -1,8 +1,8 @@
 package qz.printer.info;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.utils.WindowsUtilities;
 
 import javax.print.PrintService;
@@ -10,7 +10,7 @@ import javax.print.PrintService;
 import static com.sun.jna.platform.win32.WinReg.*;
 
 public class WindowsPrinterMap extends NativePrinterMap {
-    private static final Logger log = LoggerFactory.getLogger(WindowsPrinterMap.class);
+    private static final Logger log = LogManager.getLogger(WindowsPrinterMap.class);
 
     public synchronized NativePrinterMap putAll(PrintService[] services) {
         for (PrintService service : findMissing(services)) {

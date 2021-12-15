@@ -17,8 +17,8 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.utils.ArgValue;
@@ -35,7 +35,7 @@ import java.util.Properties;
 @WebSocket
 public class SingleInstanceChecker {
 
-    private static final Logger log = LoggerFactory.getLogger(SingleInstanceChecker.class);
+    private static final Logger log = LogManager.getLogger(SingleInstanceChecker.class);
 
     public static CloseStatus INSTANCE_ALREADY_RUNNING = new CloseStatus(4441, "Already running");
     public static CloseStatus REQUEST_INSTANCE_TAKEOVER = new CloseStatus(4442, "WebSocket stolen");

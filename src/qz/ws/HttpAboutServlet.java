@@ -4,8 +4,8 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.servlet.DefaultServlet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.AboutInfo;
 import qz.installer.certificate.CertificateManager;
 
@@ -19,7 +19,7 @@ import java.util.Iterator;
  */
 public class HttpAboutServlet extends DefaultServlet {
 
-    private static final Logger log = LoggerFactory.getLogger(PrintSocketServer.class);
+    private static final Logger log = LogManager.getLogger(PrintSocketServer.class);
 
     private static final int JSON_INDENT = 2;
     private CertificateManager certificateManager;

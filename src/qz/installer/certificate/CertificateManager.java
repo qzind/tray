@@ -20,8 +20,8 @@ import org.bouncycastle.openssl.jcajce.JcaMiscPEMGenerator;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.OperatorException;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.installer.Installer;
 import qz.utils.FileUtilities;
@@ -51,7 +51,7 @@ public class CertificateManager {
         // See also https://github.com/qzind/tray/issues/814
         SystemUtilities.clearAlgorithms();
     }
-    private static final Logger log = LoggerFactory.getLogger(CertificateManager.class);
+    private static final Logger log = LogManager.getLogger(CertificateManager.class);
 
     public static String DEFAULT_KEYSTORE_FORMAT = "PKCS12";
     public static String DEFAULT_KEYSTORE_EXTENSION = ".p12";

@@ -14,8 +14,8 @@ import com.apple.OSXAdapterWrapper;
 import org.dyorgio.jna.platform.mac.*;
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.NativeLong;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.common.TrayManager;
 
@@ -37,7 +37,7 @@ import java.util.Locale;
  * @author Tres Finocchiaro
  */
 public class MacUtilities {
-    private static final Logger log = LoggerFactory.getLogger(MacUtilities.class);
+    private static final Logger log = LogManager.getLogger(MacUtilities.class);
     private static Dialog aboutDialog;
     private static TrayManager trayManager;
     private static String bundleId;

@@ -18,8 +18,8 @@ import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
@@ -46,7 +46,7 @@ import java.util.Locale;
 
 public class PrintHTML extends PrintImage implements PrintProcessor {
 
-    private static final Logger log = LoggerFactory.getLogger(PrintHTML.class);
+    private static final Logger log = LogManager.getLogger(PrintHTML.class);
 
     private List<WebAppModel> models;
 

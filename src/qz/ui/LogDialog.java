@@ -1,11 +1,14 @@
 package qz.ui;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.WriterAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.appender.OutputStreamAppender;
+import org.apache.logging.log4j.core.filter.ThresholdFilter;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
 import qz.utils.FileUtilities;
+import qz.utils.LoggerUtilities;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -27,7 +30,7 @@ public class LogDialog extends BasicDialog {
 
     private JButton clearButton;
 
-    private WriterAppender logStream;
+    private OutputStreamAppender logStream;
 
 
     public LogDialog(JMenuItem caller, IconCache iconCache) {
@@ -59,7 +62,11 @@ public class LogDialog extends BasicDialog {
         setResizable(true);
 
         // add new appender to Log4J just for text area
-        logStream = new WriterAppender(new PatternLayout("[%p] %d{ISO8601} @ %c:%L%n\t%m%n"), new OutputStream() {
+        logStream = OutputStreamAppender.newBuilder()
+                .setName("ui-dialog")
+                .setLayout(PatternLayout.newBuilder().withPattern("[%p] %d{ISO8601} @ %c:%L%n\t%m%n").build())
+                .setFilter(ThresholdFilter.createFilter(Level.TRACE, Filter.Result.ACCEPT, Filter.Result.DENY))
+                .setTarget(new OutputStream() {
             @Override
             public void write(final int b) {
                 SwingUtilities.invokeLater(() -> {
@@ -67,17 +74,17 @@ public class LogDialog extends BasicDialog {
                     logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
                 });
             }
-        });
-        logStream.setThreshold(Level.TRACE);
+                }).build();
+        logStream.start();
     }
 
     @Override
     public void setVisible(boolean visible) {
         if (visible) {
             logArea.setText(null);
-            org.apache.log4j.Logger.getRootLogger().addAppender(logStream);
+            LoggerUtilities.getRootLogger().addAppender(logStream);
         } else {
-            org.apache.log4j.Logger.getRootLogger().removeAppender(logStream);
+            LoggerUtilities.getRootLogger().removeAppender(logStream);
         }
 
         super.setVisible(visible);

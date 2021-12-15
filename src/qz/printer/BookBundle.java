@@ -1,7 +1,7 @@
 package qz.printer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
 import java.awt.print.Book;
@@ -15,7 +15,7 @@ import java.awt.print.PrinterException;
  */
 public class BookBundle extends Book {
 
-    private static final Logger log = LoggerFactory.getLogger(BookBundle.class);
+    private static final Logger log = LogManager.getLogger(BookBundle.class);
 
     private Printable lastPrint;
     private int lastStarted;

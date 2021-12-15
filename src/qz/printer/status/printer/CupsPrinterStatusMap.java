@@ -1,7 +1,7 @@
 package qz.printer.status.printer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.printer.status.NativeStatus;
 
 import java.util.Locale;
@@ -861,7 +861,7 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     WRAPPER_UNRECOVERABLE_STORAGE_ERROR(REASON, NativePrinterStatus.UNMAPPED), // wrapper-unrecoverable-storage-error
     WRAPPER_WARMING_UP(REASON, NativePrinterStatus.UNMAPPED); // wrapper-warming-up
 
-    private static final Logger log = LoggerFactory.getLogger(CupsPrinterStatusMap.class);
+    private static final Logger log = LogManager.getLogger(CupsPrinterStatusMap.class);
     public static SortedMap<String,NativePrinterStatus> sortedReasonLookupTable;
     public static SortedMap<String,NativePrinterStatus> sortedStateLookupTable;
 

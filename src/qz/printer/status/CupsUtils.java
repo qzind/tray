@@ -3,8 +3,8 @@ package qz.printer.status;
 import com.sun.jna.Pointer;
 import com.sun.jna.StringArray;
 import org.eclipse.jetty.util.URIUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.printer.info.NativePrinter;
 import qz.printer.status.Cups.IPP;
 
@@ -18,7 +18,7 @@ import java.util.ArrayList;
  * Created by kyle on 5/17/17.
  */
 public class CupsUtils {
-    private static final Logger log = LoggerFactory.getLogger(CupsUtils.class);
+    private static final Logger log = LogManager.getLogger(CupsUtils.class);
 
     public static String USER = System.getProperty("user.name");
     public static String CHARSET = "";

@@ -1,6 +1,6 @@
 package qz.printer.status.job;
 
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
 import qz.printer.status.NativeStatus;
 
 /**

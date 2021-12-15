@@ -1,8 +1,8 @@
 package qz.printer.action;
 
 import javafx.print.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 
 import javax.imageio.ImageIO;
@@ -17,7 +17,7 @@ import java.util.Arrays;
 
 public class WebAppTest {
 
-    private static final Logger log = LoggerFactory.getLogger(WebAppTest.class);
+    private static final Logger log = LogManager.getLogger(WebAppTest.class);
     private static final int SPOOLER_WAIT = 2000; // millis
     private static final Path RASTER_OUTPUT_DIR = Paths.get("./out"); // see ant ${out.dir}
     private static final String RASTER_OUTPUT_FORMAT = "png";

@@ -7,8 +7,8 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.communication.SerialIO;
 import qz.communication.SerialOptions;
 import qz.ws.PrintSocketClient;
@@ -24,7 +24,7 @@ import java.util.Locale;
  */
 public class SerialUtilities {
 
-    private static final Logger log = LoggerFactory.getLogger(SerialUtilities.class);
+    private static final Logger log = LogManager.getLogger(SerialUtilities.class);
 
     private static final List<Integer> VALID_BAUD = Arrays.asList(SerialPort.BAUDRATE_110, SerialPort.BAUDRATE_300,
                                                                   SerialPort.BAUDRATE_600, SerialPort.BAUDRATE_1200,

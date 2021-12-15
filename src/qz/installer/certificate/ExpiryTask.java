@@ -14,8 +14,8 @@ import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
@@ -33,7 +33,7 @@ import java.util.*;
 import static qz.utils.FileUtilities.*;
 
 public class ExpiryTask extends TimerTask {
-    private static final Logger log = LoggerFactory.getLogger(CertificateManager.class);
+    private static final Logger log = LogManager.getLogger(CertificateManager.class);
     public static final int DEFAULT_INITIAL_DELAY = 60 * 1000; // 1 minute
     public static final int DEFAULT_CHECK_FREQUENCY = 3600 * 1000; // 1 hour
     private static final int DEFAULT_GRACE_PERIOD_DAYS = 5;

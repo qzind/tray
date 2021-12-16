@@ -199,8 +199,8 @@ public class JLink {
 
         // JDK11.0.11+requires suppressing of missing deps
         String raw = jdepsVersion.compareTo(Version.valueOf("11.0.10")) > 0 ?
-                ShellUtilities.executeRaw(jdepsPath.toString(), "--list-deps", "--ignore-missing-deps", jarPath.toString()) :
-                ShellUtilities.executeRaw(jdepsPath.toString(), "--list-deps", jarPath.toString());
+                ShellUtilities.executeRaw(jdepsPath.toString(), "--multi-release", "9", "--list-deps", "--ignore-missing-deps", jarPath.toString()) :
+                ShellUtilities.executeRaw(jdepsPath.toString(), "--multi-release", "9", "--list-deps", jarPath.toString());
         if (raw == null || raw.trim().isEmpty() || raw.trim().startsWith("Warning") ) {
             throw new IOException("An unexpected error occurred calling jdeps.  Please check the logs for details.\n" + raw);
         }

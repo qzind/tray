@@ -96,7 +96,7 @@
         <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.dir}/${project.filename}.jar" duplicate="preserve">
             <fileset dir="${build.dir}/${project.filename}"/>
             <!-- Some root level files will cause jlink to fail, they need to be cleaned up -->
-            <fileset dir="${out.dir}/libs-temp" excludes="*.class,LICENSE,jetty-dir.css"/>
+            <fileset dir="${out.dir}/libs-temp" excludes="*.class,LICENSE,jetty-dir.css,about.html,Log4j-*"/>
             <manifest>
                 <attribute name="Application-Name" value="${project.name}"/>
                 <attribute name="Main-Class" value="qz.App"/>

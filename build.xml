@@ -157,13 +157,14 @@
         <!-- Remove files that can/did collide during unpacking -->
         <delete includeemptydirs="true" failonerror="false">
             <fileset dir="${out.dir}/libs-temp">
-                <include name="**/META-INF/**"/>
-                <exclude name="**/META-INF/maven/**"/>
-                <exclude name="**/META-INF/versions/**"/>
-                <exclude name="**/META-INF/services/**"/>
-                <exclude name="**/META-INF/org/apache/logging/**"/>
                 <include name="LICENSE*"/>
                 <include name="README*"/>
+                <include name="**/META-INF/**"/>
+                <!-- Used by SecurityInfo.getMavenVersions() -->
+                <exclude name="**/META-INF/maven/**"/>
+                <!-- Required by log4j -->
+                <exclude name="**/META-INF/**/apache/logging/**"/>
+                <exclude name="**/META-INF/services/**"/>
             </fileset>
         </delete>
     </target>

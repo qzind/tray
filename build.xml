@@ -159,6 +159,9 @@
             <fileset dir="${out.dir}/libs-temp">
                 <include name="**/META-INF/**"/>
                 <exclude name="**/META-INF/maven/**"/>
+                <exclude name="**/META-INF/versions/**"/>
+                <exclude name="**/META-INF/services/**"/>
+                <exclude name="**/META-INF/org/apache/logging/**"/>
                 <include name="LICENSE*"/>
                 <include name="README*"/>
             </fileset>

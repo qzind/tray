@@ -19,8 +19,8 @@ import com.sun.jna.Pointer;
 import org.dyorgio.jna.platform.mac.ActionCallback;
 import org.dyorgio.jna.platform.mac.Foundation;
 import org.dyorgio.jna.platform.mac.FoundationUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.ui.component.IconCache;
@@ -45,7 +45,7 @@ import java.util.Locale;
  */
 public class MacUtilities {
 
-    private static final Logger log = LoggerFactory.getLogger(IconCache.class);
+    private static final Logger log = LogManager.getLogger(IconCache.class);
     private static Dialog aboutDialog;
     private static TrayManager trayManager;
     private static String bundleId;

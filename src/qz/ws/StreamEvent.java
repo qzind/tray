@@ -2,8 +2,8 @@ package qz.ws;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 public class StreamEvent {
 
@@ -15,7 +15,7 @@ public class StreamEvent {
         RECEIVE, ERROR, ACTION
     }
 
-    private static final Logger log = LoggerFactory.getLogger(StreamEvent.class);
+    private static final Logger log = LogManager.getLogger(StreamEvent.class);
 
     private Stream streamType;
     private Type eventType;

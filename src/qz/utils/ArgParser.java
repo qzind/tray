@@ -11,8 +11,8 @@
 package qz.utils;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.Constants;
 import qz.common.SecurityInfo;
 import qz.exception.MissingArgException;
@@ -44,7 +44,7 @@ public class ArgParser {
         }
     }
 
-    protected static final Logger log = LoggerFactory.getLogger(ArgParser.class);
+    protected static final Logger log = LogManager.getLogger(ArgParser.class);
     private static final String USAGE_COMMAND = String.format("java -jar %s.jar", PROPS_FILE);
     private static final int DESCRIPTION_COLUMN = 30;
     private static final int INDENT_SIZE = 2;

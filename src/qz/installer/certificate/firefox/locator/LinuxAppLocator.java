@@ -1,8 +1,8 @@
 package qz.installer.certificate.firefox.locator;
 
 import org.apache.commons.io.FilenameUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.utils.SystemUtilities;
 
 import java.io.*;
@@ -12,7 +12,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 
 public class LinuxAppLocator extends AppLocator {
-    private static final Logger log = LoggerFactory.getLogger(LinuxAppLocator.class);
+    private static final Logger log = LogManager.getLogger(LinuxAppLocator.class);
 
     public ArrayList<AppInfo> locate(AppAlias appAlias) {
         ArrayList<AppInfo> appList = new ArrayList<>();
@@ -97,7 +97,7 @@ public class LinuxAppLocator extends AppLocator {
                 }
             }
         }
-        
+
         return appList;
     }
 

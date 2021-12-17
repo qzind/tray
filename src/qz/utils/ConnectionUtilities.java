@@ -22,14 +22,15 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.Constants;
 
 import javax.net.ssl.*;
 
 public final class ConnectionUtilities {
 
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(ConnectionUtilities.class);
+    private static final Logger log = LogManager.getLogger(ConnectionUtilities.class);
     private static Map<String,String> requestProps;
 
     /**

@@ -2,12 +2,12 @@ package qz.printer.status;
 
 import com.sun.jna.platform.win32.Winspool;
 import com.sun.jna.platform.win32.WinspoolUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 public class WmiPrinterConnectionsThread extends Thread {
 
-    private static final Logger log = LoggerFactory.getLogger(WmiPrinterConnectionsThread.class);
+    private static final Logger log = LogManager.getLogger(WmiPrinterConnectionsThread.class);
 
     private boolean running = true;
 

@@ -18,8 +18,8 @@ import javafx.scene.transform.Transform;
 import javafx.scene.transform.Translate;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -46,7 +46,7 @@ import java.util.function.IntPredicate;
  */
 public class WebApp extends Application {
 
-    private static final Logger log = LoggerFactory.getLogger(WebApp.class);
+    private static final Logger log = LogManager.getLogger(WebApp.class);
 
     private static WebApp instance = null;
     private static Version webkitVersion = null;

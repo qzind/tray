@@ -12,8 +12,8 @@ package qz.installer.certificate;
 
 import org.bouncycastle.openssl.jcajce.JcaMiscPEMGenerator;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.installer.Installer;
 import qz.utils.SystemUtilities;
 
@@ -26,7 +26,7 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 
 public abstract class NativeCertificateInstaller {
-    private static final Logger log = LoggerFactory.getLogger(NativeCertificateInstaller.class);
+    private static final Logger log = LogManager.getLogger(NativeCertificateInstaller.class);
     protected static NativeCertificateInstaller instance;
 
     public static NativeCertificateInstaller getInstance() {

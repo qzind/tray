@@ -1,8 +1,8 @@
 package qz.printer.status;
 
 import org.eclipse.jetty.server.Server;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.Constants;
 
 import java.util.Arrays;
@@ -14,7 +14,7 @@ import java.util.List;
  * Created by kyle on 4/27/17.
  */
 public class CupsStatusServer {
-    private static final Logger log = LoggerFactory.getLogger(CupsStatusServer.class);
+    private static final Logger log = LogManager.getLogger(CupsStatusServer.class);
 
     public static final List<Integer> CUPS_RSS_PORTS = Collections.unmodifiableList(Arrays.asList(Constants.CUPS_RSS_PORTS));
 

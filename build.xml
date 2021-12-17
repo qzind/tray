@@ -98,6 +98,7 @@
                 <attribute name="Application-Name" value="${project.name}"/>
                 <attribute name="Main-Class" value="qz.ws.PrintSocketServer"/>
                 <attribute name="Permissions" value="all-permissions"/>
+                <attribute name="Multi-Release" value="true"/>
             </manifest>
         </jar>
 

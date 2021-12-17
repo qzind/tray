@@ -10,8 +10,8 @@ import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.jce.PrincipalUtil;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.common.Constants;
 import qz.utils.ByteUtilities;
 import qz.utils.FileUtilities;
@@ -37,7 +37,7 @@ import java.util.*;
  */
 public class Certificate {
 
-    private static final Logger log = LoggerFactory.getLogger(Certificate.class);
+    private static final Logger log = LogManager.getLogger(Certificate.class);
     private static final String QUIETLY_FAIL = "quiet";
     public static final String OVERRIDE_CA_FLAG = "trustedRootCert";
     public static final String OVERRIDE_CA_PROPERTY = "authcert.override";

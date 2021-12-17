@@ -16,8 +16,8 @@
 
 package qz.utils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -29,7 +29,7 @@ import java.awt.image.BufferedImage;
  */
 public class ColorUtilities {
 
-    private static final Logger log = LoggerFactory.getLogger(ColorUtilities.class);
+    private static final Logger log = LogManager.getLogger(ColorUtilities.class);
 
     public static final Color DEFAULT_COLOR = Color.WHITE;
 

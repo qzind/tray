@@ -1,7 +1,7 @@
 package qz.installer.browser;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import qz.installer.Installer;
 import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.installer.certificate.firefox.locator.AppAlias;
@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class AppFinderTests {
-    private static final Logger log = LoggerFactory.getLogger(AppFinderTests.class);
+    private static final Logger log = LogManager.getLogger(AppFinderTests.class);
 
     public static void main(String ... args) throws Exception {
         runTest(AppAlias.FIREFOX);

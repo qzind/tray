@@ -1,18 +1,19 @@
 package qz.common;
 
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
-import java.util.logging.Level;
+
 /**
  * Created by Tres on 12/16/2015.
  */
 public class PropertyHelper extends Properties {
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(TrayManager.class);
+    private static final Logger log = LogManager.getLogger(TrayManager.class);
     private String file;
 
     /**

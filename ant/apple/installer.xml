@@ -168,6 +168,7 @@
             <fileset dir="${dist.dir}">
                 <include name="${project.filename}.jar"/>
                 <include name="LICENSE.txt"/>
+                <include name="override.crt"/>
             </fileset>
         </copy>
         <copy file="assets/branding/apple-icon.icns" tofile="${bundle.dir}/Contents/Resources/${project.filename}.icns"/>

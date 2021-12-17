@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%p] %d{ISO8601} @ %c:%L%n\t%m%n"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <!-- Default -->
+        <Root level="trace">
+            <AppenderRef ref="console"/>
+        </Root>
+    </Loggers>
+</Configuration>

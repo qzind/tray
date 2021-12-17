@@ -14,8 +14,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.installer.LinuxInstaller;
 
 /**
@@ -23,7 +23,7 @@ import qz.installer.LinuxInstaller;
  */
 class LinuxShortcutCreator extends ShortcutCreator {
 
-    private static final Logger log = LoggerFactory.getLogger(LinuxShortcutCreator.class);
+    private static final Logger log = LogManager.getLogger(LinuxShortcutCreator.class);
     private static String DESKTOP = System.getProperty("user.home") + "/Desktop/";
 
     public boolean canAutoStart() {

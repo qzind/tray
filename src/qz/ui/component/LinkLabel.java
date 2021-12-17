@@ -1,7 +1,7 @@
 package qz.ui.component;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.ui.Themeable;
 import qz.utils.ShellUtilities;
@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class LinkLabel extends EmLabel implements Themeable {
 
-    private static final Logger log = LoggerFactory.getLogger(LinkLabel.class);
+    private static final Logger log = LogManager.getLogger(LinkLabel.class);
 
     private ArrayList<ActionListener> actionListeners;
 

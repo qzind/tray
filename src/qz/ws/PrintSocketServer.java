@@ -10,6 +10,8 @@
 
 package qz.ws;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.*;
@@ -17,8 +19,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import qz.App;
 import qz.common.Constants;
 import qz.common.TrayManager;
@@ -42,7 +42,7 @@ import static qz.utils.ArgValue.STEAL;
 
 public class PrintSocketServer {
 
-    private static final Logger log = LoggerFactory.getLogger(PrintSocketServer.class);
+    private static final Logger log = LogManager.getLogger(PrintSocketServer.class);
 
     private static final int MAX_MESSAGE_SIZE = Integer.MAX_VALUE;
     public static final List<Integer> SECURE_PORTS = Collections.unmodifiableList(Arrays.asList(Constants.WSS_PORTS));

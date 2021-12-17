@@ -12,7 +12,8 @@ package qz.build;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.io.FileUtils;
-import org.slf4j.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.utils.*;
 
@@ -24,7 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 
 public class JLink {
-    private static final Logger log = LoggerFactory.getLogger(JLink.class);
+    private static final Logger log = LogManager.getLogger(JLink.class);
     private static final String JAVA_AMD64_VENDOR = "AdoptOpenJDK";
     private static final String JAVA_ARM64_VENDOR = "BellSoft";
     private static final String JAVA_VERSION = "11.0.12+7";
@@ -198,8 +199,8 @@ public class JLink {
 
         // JDK11.0.11+requires suppressing of missing deps
         String raw = jdepsVersion.compareTo(Version.valueOf("11.0.10")) > 0 ?
-                ShellUtilities.executeRaw(jdepsPath.toString(), "--list-deps", "--ignore-missing-deps", jarPath.toString()) :
-                ShellUtilities.executeRaw(jdepsPath.toString(), "--list-deps", jarPath.toString());
+                ShellUtilities.executeRaw(jdepsPath.toString(), "--multi-release", "9", "--list-deps", "--ignore-missing-deps", jarPath.toString()) :
+                ShellUtilities.executeRaw(jdepsPath.toString(), "--multi-release", "9", "--list-deps", jarPath.toString());
         if (raw == null || raw.trim().isEmpty() || raw.trim().startsWith("Warning") ) {
             throw new IOException("An unexpected error occurred calling jdeps.  Please check the logs for details.\n" + raw);
         }

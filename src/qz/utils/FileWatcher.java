@@ -2,8 +2,8 @@ package qz.utils;
 
 import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.communication.FileIO;
 
 import java.io.BufferedReader;
@@ -18,7 +18,7 @@ import java.util.HashSet;
 
 public class FileWatcher {
 
-    private static final Logger log = LoggerFactory.getLogger(FileWatcher.class);
+    private static final Logger log = LogManager.getLogger(FileWatcher.class);
 
     private static Thread watchThread;
     private static WatchService watchService;

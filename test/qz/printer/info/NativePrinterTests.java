@@ -1,7 +1,7 @@
 package tests.qz.printer.info;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.info.NativePrinter;
 import qz.printer.info.NativePrinterMap;
@@ -9,7 +9,7 @@ import qz.printer.info.NativePrinterMap;
 import java.util.Date;
 
 public class NativePrinterTests {
-    private static final Logger log = LoggerFactory.getLogger(NativePrinterTests.class);
+    private static final Logger log = LogManager.getLogger(NativePrinterTests.class);
 
     public static void main(String ... args) {
         for (int i = 0; i < 10; i++) {

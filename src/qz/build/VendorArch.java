@@ -1,7 +1,7 @@
 package qz.build;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Locale;
 
@@ -20,7 +20,7 @@ public enum VendorArch {
     ADOPT_AARCH64("aarch64", "aarch64", "arm64"),
     BELL_AARCH64("aarch64", "aarch64", "arm64");
 
-    private static final Logger log = LoggerFactory.getLogger(VendorArch.class);
+    private static final Logger log = LogManager.getLogger(VendorArch.class);
 
     String use;
     String[] matches;

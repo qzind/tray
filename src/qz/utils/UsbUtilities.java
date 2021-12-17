@@ -5,8 +5,8 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.communication.DeviceException;
 import qz.communication.DeviceIO;
 import qz.communication.DeviceOptions;
@@ -21,7 +21,7 @@ import java.util.List;
 
 public class UsbUtilities {
 
-    private static final Logger log = LoggerFactory.getLogger(UsbUtilities.class);
+    private static final Logger log = LogManager.getLogger(UsbUtilities.class);
 
     public static Integer hexToInt(String hex) {
         if (hex == null || hex.isEmpty()) {

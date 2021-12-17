@@ -3,8 +3,8 @@ package qz.printer.status;
 import com.sun.jna.Structure;
 import com.sun.jna.platform.win32.*;
 import com.sun.jna.ptr.PointerByReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.printer.status.job.WmiJobStatusMap;
 import qz.printer.status.printer.NativePrinterStatus;
 import qz.printer.status.printer.WmiPrinterStatusMap;
@@ -13,7 +13,7 @@ import java.util.*;
 
 public class WmiPrinterStatusThread extends Thread {
 
-    private static final Logger log = LoggerFactory.getLogger(StatusMonitor.class);
+    private static final Logger log = LogManager.getLogger(StatusMonitor.class);
 
     private boolean closing = false;
     private final String printerName;

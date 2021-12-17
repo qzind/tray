@@ -96,11 +96,12 @@
         <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.dir}/${project.filename}.jar" duplicate="preserve">
             <fileset dir="${build.dir}/${project.filename}"/>
             <!-- Some root level files will cause jlink to fail, they need to be cleaned up -->
-            <fileset dir="${out.dir}/libs-temp" excludes="*.class,LICENSE,jetty-dir.css"/>
+            <fileset dir="${out.dir}/libs-temp" excludes="*.class,LICENSE,jetty-dir.css,about.html,Log4j-*"/>
             <manifest>
                 <attribute name="Application-Name" value="${project.name}"/>
                 <attribute name="Main-Class" value="qz.App"/>
                 <attribute name="Permissions" value="all-permissions"/>
+                <attribute name="Multi-Release" value="true"/>
             </manifest>
         </jar>
         <delete dir="${out.dir}/libs-temp" includeemptydirs="true" defaultexcludes="false"/>
@@ -156,10 +157,14 @@
         <!-- Remove files that can/did collide during unpacking -->
         <delete includeemptydirs="true" failonerror="false">
             <fileset dir="${out.dir}/libs-temp">
-                <include name="**/META-INF/**"/>
-                <exclude name="**/META-INF/maven/**"/>
                 <include name="LICENSE*"/>
                 <include name="README*"/>
+                <include name="**/META-INF/**"/>
+                <!-- Used by SecurityInfo.getMavenVersions() -->
+                <exclude name="**/META-INF/maven/**"/>
+                <!-- Required by log4j -->
+                <exclude name="**/META-INF/**/apache/logging/**"/>
+                <exclude name="**/META-INF/services/**"/>
             </fileset>
         </delete>
     </target>

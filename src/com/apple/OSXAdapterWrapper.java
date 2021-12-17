@@ -11,8 +11,8 @@
 package com.apple;
 
 import com.github.zafarkhaja.semver.Version;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.utils.MacUtilities;
 
@@ -27,7 +27,7 @@ import java.lang.reflect.Proxy;
  * @author Tres Finocchiaro
  */
 public class OSXAdapterWrapper implements InvocationHandler {
-    private static final Logger log = LoggerFactory.getLogger(OSXAdapterWrapper.class);
+    private static final Logger log = LogManager.getLogger(OSXAdapterWrapper.class);
     public static final boolean legacyMode = Constants.JAVA_VERSION.lessThan(Version.valueOf("9.0.0"));
 
     private Object target;

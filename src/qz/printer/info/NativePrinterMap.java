@@ -1,7 +1,7 @@
 package qz.printer.info;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativePrinter> {
-    private static final Logger log = LoggerFactory.getLogger(NativePrinterMap.class);
+    private static final Logger log = LogManager.getLogger(NativePrinterMap.class);
 
     private static NativePrinterMap instance;
 

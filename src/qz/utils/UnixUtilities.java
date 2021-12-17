@@ -12,14 +12,14 @@ package qz.utils;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.platform.unix.LibC;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Helper functions for both Linux and MacOS
  */
 public class UnixUtilities {
-    private static final Logger log = LoggerFactory.getLogger(UnixUtilities.class);
+    private static final Logger log = LogManager.getLogger(UnixUtilities.class);
     private static String uname;
     private static String linuxRelease;
     private static Integer pid;

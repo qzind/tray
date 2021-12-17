@@ -10,8 +10,8 @@ import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
 import qz.common.Constants;
@@ -41,7 +41,7 @@ import java.util.concurrent.TimeoutException;
 @WebSocket
 public class PrintSocketClient {
 
-    private static final Logger log = LoggerFactory.getLogger(PrintSocketClient.class);
+    private static final Logger log = LogManager.getLogger(PrintSocketClient.class);
 
     private final TrayManager trayManager = PrintSocketServer.getTrayManager();
     private static final Semaphore dialogAvailable = new Semaphore(1, true);

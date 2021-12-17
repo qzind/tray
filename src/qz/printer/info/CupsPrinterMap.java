@@ -1,7 +1,7 @@
 package qz.printer.info;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
@@ -15,7 +15,7 @@ import java.util.*;
 
 public class CupsPrinterMap extends NativePrinterMap {
     private static final String DEFAULT_CUPS_DRIVER = "TEXTONLY.ppd";
-    private static final Logger log = LoggerFactory.getLogger(CupsPrinterMap.class);
+    private static final Logger log = LogManager.getLogger(CupsPrinterMap.class);
     private Map<NativePrinter, List<PrinterResolution>> resolutionMap = new HashMap<>();
 
     public synchronized NativePrinterMap putAll(PrintService[] services) {

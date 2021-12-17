@@ -3,13 +3,13 @@ package qz.utils;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Method;
 
 public class GtkUtilities {
-    private static final Logger log = LoggerFactory.getLogger(GtkUtilities.class);
+    private static final Logger log = LogManager.getLogger(GtkUtilities.class);
 
     /**
      * Initializes Gtk2/3 and returns the desktop scaling factor, usually 1.0 or 2.0

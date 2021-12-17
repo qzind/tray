@@ -1,6 +1,6 @@
 package qz.printer.status;
 
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
 import qz.printer.status.job.CupsJobStatusMap;
 import qz.printer.status.job.NativeJobStatus;
 import qz.printer.status.job.WmiJobStatusMap;
@@ -14,7 +14,7 @@ public interface NativeStatus {
         NativeStatus getParent();
         Object getRawCode();
     }
-    
+
     NativeStatus getDefault(); //static
     String name();
     Level getLevel();

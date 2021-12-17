@@ -2,8 +2,8 @@ package qz.ui;
 
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.common.Constants;
 import qz.common.PropertyHelper;
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class SiteManagerDialog extends BasicDialog implements Runnable {
 
-    private static final Logger log = LoggerFactory.getLogger(SiteManagerDialog.class);
+    private static final Logger log = LogManager.getLogger(SiteManagerDialog.class);
 
     private static final String IMPORT_NEEDED = "The provided certificate \"%s\" is unrecognized and not yet trusted.\n"  +
             "Would you like to automatically copy it to \"%s\"?";

@@ -11,8 +11,8 @@
 package qz.installer.certificate.firefox.locator;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.installer.certificate.firefox.locator.AppAlias.Alias;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import static com.sun.jna.platform.win32.WinReg.HKEY_LOCAL_MACHINE;
 
 public class WindowsAppLocator extends AppLocator{
-    protected static final Logger log = LoggerFactory.getLogger(MacAppLocator.class);
+    protected static final Logger log = LogManager.getLogger(MacAppLocator.class);
 
     private static final String[] WIN32_PID_QUERY = {"wmic.exe", "process", "where", null, "get", "processid"};
     private static final int WIN32_PID_QUERY_INPUT_INDEX = 3;

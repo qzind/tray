@@ -10,8 +10,8 @@
 package qz.installer;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
@@ -26,7 +26,7 @@ import java.util.List;
 import static qz.common.Constants.PROPS_FILE;
 
 public class TaskKiller {
-    protected static final Logger log = LoggerFactory.getLogger(TaskKiller.class);
+    protected static final Logger log = LogManager.getLogger(TaskKiller.class);
     private static final String[] TRAY_PID_QUERY_POSIX = {"pgrep", "-f", PROPS_FILE + ".jar" };
     private static final String[] KILL_PID_CMD_POSIX = {"kill", "-9", ""/*pid placeholder*/};
 

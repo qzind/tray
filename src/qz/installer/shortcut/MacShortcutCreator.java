@@ -9,8 +9,8 @@
  */
 package qz.installer.shortcut;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -33,7 +33,7 @@ import java.nio.file.Paths;
  */
 class MacShortcutCreator extends ShortcutCreator {
 
-    private static final Logger log = LoggerFactory.getLogger(MacShortcutCreator.class);
+    private static final Logger log = LogManager.getLogger(MacShortcutCreator.class);
     private static String SHORTCUT_PATH = System.getProperty("user.home") + "/Desktop/" + Constants.ABOUT_TITLE;
 
     /**

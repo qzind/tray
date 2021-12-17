@@ -16,8 +16,8 @@ import org.apache.commons.io.FileUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,7 +27,7 @@ import java.util.Iterator;
  * A minimally intrusive JSON writer
  */
 public class JsonWriter {
-    protected static final Logger log = LoggerFactory.getLogger(JsonWriter.class);
+    protected static final Logger log = LogManager.getLogger(JsonWriter.class);
 
     public static boolean write(String path, String data, boolean overwrite, boolean delete) throws IOException, JSONException {
         File f = new File(path);

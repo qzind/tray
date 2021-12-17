@@ -11,8 +11,8 @@
 package qz.installer;
 
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.installer.certificate.*;
 import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
@@ -34,7 +34,7 @@ import static qz.utils.FileUtilities.*;
  * - Used by PrintSocketServer at startup to ensure SSL is functioning
  */
 public abstract class Installer {
-    protected static final Logger log = LoggerFactory.getLogger(Installer.class);
+    protected static final Logger log = LogManager.getLogger(Installer.class);
 
     // Silence prompts within our control
     public static boolean IS_SILENT =  "1".equals(System.getenv(DATA_DIR + "_silent"));

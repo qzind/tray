@@ -1,7 +1,7 @@
 package qz.auth;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import qz.utils.ConnectionUtilities;
 
@@ -16,7 +16,7 @@ import java.util.ArrayList;
  */
 public class CRL {
 
-    private static final Logger log = LoggerFactory.getLogger(CRL.class);
+    private static final Logger log = LogManager.getLogger(CRL.class);
 
     /** The URL to the QZ CRL. Should not be changed except for dev tests */
     public static final String CRL_URL = "https://crl.qz.io";

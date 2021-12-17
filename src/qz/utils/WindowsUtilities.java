@@ -13,8 +13,8 @@ import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Native;
 import com.sun.jna.platform.win32.*;
 import com.sun.jna.ptr.IntByReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 
 import java.awt.*;
@@ -34,7 +34,7 @@ import static java.nio.file.attribute.AclEntryPermission.*;
 import static java.nio.file.attribute.AclEntryFlag.*;
 
 public class WindowsUtilities {
-    protected static final Logger log = LoggerFactory.getLogger(WindowsUtilities.class);
+    protected static final Logger log = LogManager.getLogger(WindowsUtilities.class);
     private static String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
     private static Boolean isWow64;

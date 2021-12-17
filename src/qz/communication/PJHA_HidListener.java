@@ -1,8 +1,8 @@
 package qz.communication;
 
 import org.eclipse.jetty.websocket.api.Session;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import purejavahidapi.DeviceRemovalListener;
 import purejavahidapi.HidDevice;
 import qz.ws.PrintSocketClient;
@@ -12,7 +12,7 @@ import javax.usb.util.UsbUtil;
 
 public class PJHA_HidListener implements DeviceListener, DeviceRemovalListener {
 
-    private static final Logger log = LoggerFactory.getLogger(PJHA_HidListener.class);
+    private static final Logger log = LogManager.getLogger(PJHA_HidListener.class);
 
     private Session session;
     private HidDevice device;

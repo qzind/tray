@@ -1,12 +1,15 @@
 package qz;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.rolling.FixedWindowRollingPolicy;
-import org.apache.log4j.rolling.RollingFileAppender;
-import org.apache.log4j.rolling.SizeBasedTriggeringPolicy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.appender.RollingFileAppender;
+import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
+import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
+import org.apache.logging.log4j.core.filter.ThresholdFilter;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import qz.common.Constants;
 import qz.installer.Installer;
 import qz.installer.certificate.CertificateManager;
@@ -22,7 +25,7 @@ import java.security.cert.X509Certificate;
 import java.util.Properties;
 
 public class App {
-    private static final Logger log = LoggerFactory.getLogger(App.class);
+    private static final Logger log = LogManager.getLogger(App.class);
     private static Properties trayProperties = null;
 
     public static void main(String ... args) {
@@ -80,23 +83,23 @@ public class App {
     }
 
     private static void setupFileLogging() {
-        FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
-        rollingPolicy.setFileNamePattern(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log.%i");
-        rollingPolicy.setMaxIndex(Constants.LOG_ROTATIONS);
+        RollingFileAppender fileAppender = RollingFileAppender.newBuilder()
+                .setName("log-file")
+                .withAppend(true)
+                .setLayout(PatternLayout.newBuilder().withPattern("%d{ISO8601} [%p] %m%n").build())
+                .setFilter(ThresholdFilter.createFilter(Level.DEBUG, Filter.Result.ACCEPT, Filter.Result.DENY))
+                .withFileName(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log")
+                .withFilePattern(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log.%i")
+                .withStrategy(DefaultRolloverStrategy.newBuilder().withMax(String.valueOf(Constants.LOG_ROTATIONS)).build())
+                .withPolicy(SizeBasedTriggeringPolicy.createPolicy(String.valueOf(Constants.LOG_SIZE)))
+                .withImmediateFlush(true)
+                .build();
+        fileAppender.start();
 
-        SizeBasedTriggeringPolicy triggeringPolicy = new SizeBasedTriggeringPolicy(Constants.LOG_SIZE);
+        LoggerUtilities.getRootLogger().addAppender(fileAppender);
 
-        RollingFileAppender fileAppender = new RollingFileAppender();
-        fileAppender.setLayout(new PatternLayout("%d{ISO8601} [%p] %m%n"));
-        fileAppender.setThreshold(Level.DEBUG);
-        fileAppender.setFile(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log");
-        fileAppender.setRollingPolicy(rollingPolicy);
-        fileAppender.setTriggeringPolicy(triggeringPolicy);
-        fileAppender.setEncoding("UTF-8");
-
-        fileAppender.setImmediateFlush(true);
-        fileAppender.activateOptions();
-
-        org.apache.log4j.Logger.getRootLogger().addAppender(fileAppender);
+        //disable jetty logging
+        System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
+        System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
     }
 }

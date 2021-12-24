@@ -221,6 +221,8 @@ public class JLink {
         }
         // "jar:" URLs create transient zipfs dependency, see https://stackoverflow.com/a/57846672/3196753
         depList.add("jdk.zipfs");
+        // fix for https://github.com/qzind/tray/issues/894 solution from https://github.com/adoptium/adoptium-support/issues/397
+        depList.add("jdk.crypto.ec");
         return this;
     }
 

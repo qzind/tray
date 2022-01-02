@@ -28,9 +28,10 @@ public abstract class AppLocator {
     public ArrayList<String> getPids(ArrayList<String> processNames) {
         String[] response;
         ArrayList<String> pidList = new ArrayList<>();
-        // Find incorrect process name Firefox 79+  per https://github.com/qzind/tray/issues/701
+
         if(processNames.contains("firefox") && !(SystemUtilities.isWindows() || SystemUtilities.isMac())) {
-            processNames.add("MainThread");
+            processNames.add("MainThread"); // Workaround Firefox 79 https://github.com/qzind/tray/issues/701
+            processNames.add("GeckoMain");  // Workaround Firefox 94 https://bugzilla.mozilla.org/show_bug.cgi?id=1742606
         }
 
         if (processNames.size() == 0) return pidList;

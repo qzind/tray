@@ -314,6 +314,10 @@ public class PrintOptions {
         }
         if (!configOpts.isNull("printerTray")) {
             psOptions.printerTray = configOpts.optString("printerTray", null);
+            // Guard empty string value; will break pattern matching
+            if(psOptions.printerTray != null && psOptions.printerTray.trim().equals("")) {
+                psOptions.printerTray = null;
+            }
         }
         if (!configOpts.isNull("rasterize")) {
             try { psOptions.rasterize = configOpts.getBoolean("rasterize"); }

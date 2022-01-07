@@ -788,8 +788,8 @@ var qz = (function() {
                         config.rasterize = true;
                     }
                 }
-                if(_qz.tools.versionCompare(2, 1, 4) < 0) {
-                    if(config.forceRaw) {
+                if(_qz.tools.versionCompare(2, 2) < 0) {
+                    if(config.forceRaw !== 'undefined') {
                         config.altPrinting = config.forceRaw;
                         delete config.forceRaw;
                     }

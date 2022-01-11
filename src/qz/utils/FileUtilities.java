@@ -69,7 +69,7 @@ public class FileUtilities {
     public static boolean zipLogs() {
         String date = new SimpleDateFormat("yyyy-MM-dd_HHmm").format(new Date());
         String filename = Constants.DATA_DIR + "-" + date + ".zip";
-        Path destination = Paths.get(System.getProperty("user.home"), "Desktop", filename);
+        Path destination = getUserDesktop().resolve(filename);
 
         try {
             zipDirectory(USER_DIR, destination);
@@ -99,6 +99,20 @@ public class FileUtilities {
             }
         });
         outputStream.close();
+    }
+
+    /**
+     * Location where user Desktop is located
+     */
+    private static Path getUserDesktop() {
+        // OneDrive will override the default location on Windows
+        if(SystemUtilities.isWindows()) {
+            try {
+                return Paths.get(WindowsSpecialFolders.DESKTOP.getPath());
+            }
+            catch(Throwable ignore) {}
+        }
+        return Paths.get(System.getProperty("user.home"), "Desktop");
     }
 
     /**

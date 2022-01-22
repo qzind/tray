@@ -563,8 +563,11 @@ var qz = (function() {
             certHandler: function(resolve, reject) { reject(); },
             /** Called to create new promise (using {@link _qz.security.certHandler}) for certificate retrieval. */
             callCert: function() {
-                if (typeof _qz.security.certHandler.then === 'function' || _qz.security.certHandler.constructor.name === "AsyncFunction") {
+                if (_qz.security.certHandler.constructor.name === "Promise" || typeof _qz.security.certHandler.then === 'function') {
                     //already a promise
+                    return _qz.security.certHandler;
+                } else if (_qz.security.certHandler.constructor.name === "AsyncFunction") {
+                    //already callable as a promise
                     return _qz.security.certHandler();
                 } else {
                     //turn into a promise
@@ -576,11 +579,11 @@ var qz = (function() {
             signatureFactory: function() { return function(resolve) { resolve(); } },
             /** Called to create new promise (using {@link _qz.security.signatureFactory}) for signed calls. */
             callSign: function(toSign) {
-                if (typeof _qz.security.signatureFactory.then === 'function' || _qz.security.signatureFactory.constructor.name === "AsyncFunction") {
-                    //already a promise
+                if (_qz.security.signatureFactory.constructor.name === "AsyncFunction") {
+                    //use directly
                     return _qz.security.signatureFactory(toSign);
                 } else {
-                    //turn into a promise
+                    //use in a promise
                     return _qz.tools.promise(_qz.security.signatureFactory(toSign));
                 }
             },
@@ -2450,8 +2453,8 @@ var qz = (function() {
             /**
              * Set promise resolver for calls to acquire the site's certificate.
              *
-             * @param {Function|Promise<string>} promiseHandler Either a function that will be used as a promise resolver (of format <code>Function({function} resolve, {function}reject)</code>),
-             *     or the entire promise, either of which should return the public certificate via their respective <code>resolve</code> call.
+             * @param {Function|AsyncFunction|Promise<string>} promiseHandler Either a function that will be used as a promise resolver (of format <code>Function({function} resolve, {function}reject)</code>),
+             *     an async function, or a promise. Any of which should return the public certificate via their respective <code>resolve</code> call.
              *
              * @memberof qz.security
              */
@@ -2462,9 +2465,9 @@ var qz = (function() {
             /**
              * Set promise factory for calls to sign API calls.
              *
-             * @param {Function|Promise<string>} promiseFactory Either a function that accepts a string parameter of the data to be signed
+             * @param {Function|AsyncFunction} promiseFactory Either a function that accepts a string parameter of the data to be signed
              *     and returns a function to be used as a promise resolver (of format <code>Function({function} resolve, {function}reject)</code>),
-             *     or a promise that can take a string parameter of the data to be signed, either of which should return the signed contents of
+             *     or an async function that can take a string parameter of the data to be signed. Either of which should return the signed contents of
              *     the passed string parameter via their respective <code>resolve</code> call.
              *
              * @example

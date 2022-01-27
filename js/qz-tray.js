@@ -563,7 +563,7 @@ var qz = (function() {
             certHandler: function(resolve, reject) { reject(); },
             /** Called to create new promise (using {@link _qz.security.certHandler}) for certificate retrieval. */
             callCert: function() {
-                if (_qz.security.certHandler.constructor.name === "Promise" || typeof _qz.security.certHandler.then === 'function') {
+                if (typeof _qz.security.certHandler.then === 'function') {
                     //already a promise
                     return _qz.security.certHandler;
                 } else if (_qz.security.certHandler.constructor.name === "AsyncFunction") {

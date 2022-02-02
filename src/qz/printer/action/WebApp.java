@@ -297,9 +297,9 @@ public class WebApp extends Application {
 
                                     job.printPage(webView);
                                 }
-
-                                unlatch(null);
                             }
+
+                            unlatch(null);
                         }
                         catch(Exception e) {
                             unlatch(e);

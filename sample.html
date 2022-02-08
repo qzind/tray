@@ -1169,6 +1169,27 @@
                                             <textarea id="fileData" rows="5" style="resize:vertical" class="form-control"></textarea>
                                         </div>
                                         <div class="form-group">
+                                            <label>Data Type</label>
+                                            <div>
+                                                <label>
+                                                    <input type="radio" name="fileFlavor" id="fileFlavorPLN" value="plain" />
+                                                    Plain
+                                                </label>
+                                                <label>
+                                                    <input type="radio" name="fileFlavor" id="fileFlavorB64" value="base64" />
+                                                    Base64
+                                                </label>
+                                                <label>
+                                                    <input type="radio" name="fileFlavor" id="fileFlavorURL" value="file" />
+                                                    File
+                                                </label>
+                                                <label>
+                                                    <input type="radio" name="fileFlavor" id="fileFlavorHEX" value="hex" />
+                                                    Hexadecimal
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
                                             <label for="includePattern" class="tip" data-toggle="tooltip" title="File pattern to match when listening for file events (e.g. *.txt)">
                                                 Include File Pattern
                                             </label>
@@ -2341,6 +2362,7 @@
             sandbox: $("#fileSandbox").prop("checked"),
             shared: $("#fileShared").prop("checked"),
             append: $("#fileAppend").prop('checked'),
+            flavor: $("input[name='fileFlavor']:checked").val(),
             data: $("#fileData").val()
         };
 
@@ -2552,6 +2574,7 @@
     function resetFileOptions() {
         $("#fileLocation").val('');
         $("#fileData").val('');
+        $("#fileFlavorPLN").prop('checked', true);
         $("#fileShared").prop('checked', true);
         $("#fileSandbox").prop('checked', true);
         $("#fileAppend").prop('checked', false);

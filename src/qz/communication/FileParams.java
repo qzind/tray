@@ -3,6 +3,7 @@ package qz.communication;
 import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import qz.utils.ByteUtilities;
 import qz.utils.FileUtilities;
 
 import java.io.IOException;
@@ -18,7 +19,7 @@ import java.util.Locale;
 public class FileParams {
 
     public enum Flavor {
-        BASE64, FILE, PLAIN
+        BASE64, FILE, HEX, PLAIN
     }
 
     private Path path;
@@ -52,6 +53,8 @@ public class FileParams {
                 return Base64.decodeBase64(data);
             case FILE:
                 return FileUtilities.readRawFile(data);
+            case HEX:
+                return ByteUtilities.hexStringToByteArray(data.trim());
             case PLAIN:
             default:
                 return data.getBytes();

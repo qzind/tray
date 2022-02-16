@@ -219,12 +219,17 @@ public class FileUtilities {
     private static ArrayList<Map.Entry<Path,String>> whiteList;
 
     public static Path getAbsolutePath(JSONObject params, RequestState request, boolean allowRootDir) throws JSONException, IOException {
+        return getAbsolutePath(params, request, allowRootDir, false);
+    }
+
+    public static Path getAbsolutePath(JSONObject params, RequestState request, boolean allowRootDir, boolean createMissing) throws JSONException, IOException {
         FileParams fp = new FileParams(params);
         String commonName = request.isVerified()? escapeFileName(request.getCertName()):"UNTRUSTED";
 
         Path path = createAbsolutePath(fp, commonName);
         initializeRootFolder(fp, commonName);
 
+        // fixme: this is broken
         if (!isWhiteListed(path, allowRootDir, fp.isSandbox(), request.getCertUsed())) {
             throw new AccessDeniedException(path.toString());
         }
@@ -232,6 +237,21 @@ public class FileUtilities {
         if (!allowRootDir && !Files.isDirectory(path)) {
             if (!isGoodExtension(path)) {
                 throw new AccessDeniedException(path.toString());
+            }
+        }
+
+        if (createMissing) {
+            if (!SystemUtilities.isWindows()) {
+                Path resolve;
+                // Find existing parental directory
+                for(resolve = path.getParent(); !Files.exists(resolve); resolve = resolve.getParent()) {
+                    // do nothing
+                }
+                Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(resolve);
+                FileAttribute<Set<PosixFilePermission>> fileAttributes = PosixFilePermissions.asFileAttribute(permissions);
+                Files.createDirectories(path.getParent(), fileAttributes);
+            } else {
+                Files.createDirectories(path.getParent());
             }
         }
 
@@ -310,6 +330,7 @@ public class FileUtilities {
      * e.g. %APPDATA%/qz/data or $HOME/.qz/data, etc
      */
     public static boolean isWhiteListed(Path path, boolean allowRootDir, boolean sandbox, Certificate cert) {
+        // fixme: this is broken
         String commonName = cert.isTrusted()? escapeFileName(cert.getCommonName()):"UNTRUSTED";
         if (whiteList == null) {
             whiteList = new ArrayList<>();

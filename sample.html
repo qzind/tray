@@ -584,6 +584,10 @@
                                                 </label>
                                                 <input type="number" id="pPxlWidth" class="form-control pull-right" />
                                             </div>
+                                            <div class="form-group form-inline">
+                                                <label for="pPxlRange" class="tip" data-toggle="tooltip" title="Comma-separated ranges">Page Range(s)</label>
+                                                <input type="text" id="pPxlRange" class="form-control pull-right" />
+                                            </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group form-inline">
@@ -3061,7 +3065,8 @@
         if (onlyPixel) {
             return {
                 pageWidth: $("#pPxlWidth").val(),
-                pageHeight: $("#pPxlHeight").val()
+                pageHeight: $("#pPxlHeight").val(),
+                pageRanges: $("#pPxlRange").val()
             };
         } else {
             return {

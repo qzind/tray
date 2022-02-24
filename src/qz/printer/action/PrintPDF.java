@@ -2,6 +2,8 @@ package qz.printer.action;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.ssl.Base64;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.pdfbox.io.IOUtils;
 import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -13,8 +15,6 @@ import org.apache.pdfbox.printing.Scaling;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.printer.BookBundle;
 import qz.printer.PDFWrapper;
@@ -35,8 +35,11 @@ import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class PrintPDF extends PrintPixel implements PrintProcessor {
 
@@ -67,6 +70,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
+            HashSet<Integer> pagesToPrint = new HashSet<>();
 
             if (!data.isNull("options")) {
                 JSONObject dataOpt = data.getJSONObject("options");
@@ -76,6 +80,26 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
                 if (!dataOpt.isNull("pageHeight") && dataOpt.optDouble("pageHeight") > 0) {
                     docHeight = dataOpt.optDouble("pageHeight") * convert;
+                }
+
+                if (!dataOpt.isNull("pageRanges")) {
+                    String[] ranges = dataOpt.optString("pageRanges", "").split(",");
+                    for(String range : ranges) {
+                        String[] period = range.split("-");
+
+                        try {
+                            int start = Integer.parseInt(period[0]);
+                            pagesToPrint.add(start);
+
+                            if (period.length > 1) {
+                                int end = Integer.parseInt(period[period.length - 1]);
+                                pagesToPrint.addAll(IntStream.rangeClosed(start, end).boxed().collect(Collectors.toSet()));
+                            }
+                        }
+                        catch(NumberFormatException nfe) {
+                            log.warn("Unable to parse page range {}.", range);
+                        }
+                    }
                 }
             }
 
@@ -102,8 +126,20 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     }
                 }
 
+                if (pagesToPrint.isEmpty()) {
+                    pagesToPrint.addAll(IntStream.rangeClosed(1, doc.getNumberOfPages()).boxed().collect(Collectors.toSet()));
+                }
+
                 originals.add(doc);
-                printables.addAll(splitter.split(doc));
+
+                List<PDDocument> splitPages = splitter.split(doc);
+                originals.addAll(splitPages); //ensures non-ranged page will still get closed
+
+                for(int pg = 0; pg < splitPages.size(); pg++) {
+                    if (pagesToPrint.contains(pg + 1)) { //ranges are 1-indexed
+                        printables.add(splitPages.get(pg));
+                    }
+                }
             }
             catch(FileNotFoundException e) {
                 throw new UnsupportedOperationException("PDF file specified could not be found.", e);
@@ -260,9 +296,6 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
     @Override
     public void cleanup() {
-        for(PDDocument doc : printables) {
-            try { doc.close(); } catch(IOException ignore) {}
-        }
         for(PDDocument doc : originals) {
             try { doc.close(); } catch(IOException ignore) {}
         }

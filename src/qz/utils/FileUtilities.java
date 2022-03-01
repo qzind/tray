@@ -47,6 +47,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static qz.common.Constants.ALLOW_FILE;
+import static qz.common.Constants.FILEIO_STRICT;
 
 /**
  * Common static file i/o utilities
@@ -218,6 +219,27 @@ public class FileUtilities {
     private static HashMap<String,File> sharedFileMap = new HashMap<>();
     private static ArrayList<Map.Entry<Path,String>> whiteList;
 
+    /**
+     * Performs security checks before allowing File IO operations:
+     *    1. Is the request verified (was the signature OK?)?
+     *    2. Is the certificate valid?
+     *    3. Is the location whitelisted?
+     *    4. Is the file extension permitted
+     */
+    private static void checkFileRequest(Path path, FileParams fp, RequestState request, boolean allowRootDir) throws AccessDeniedException {
+        if(!request.isVerified() && FILEIO_STRICT) {
+            throw new AccessDeniedException("File requests is not verified");
+        } else if(request.getCertUsed() == null || !request.getCertUsed().isTrusted()) {
+            throw new AccessDeniedException("Certificate provided is not trusted");
+        } else if(!isWhiteListed(path, allowRootDir, fp.isSandbox(), request)) {
+            throw new AccessDeniedException("File operation is not in a permitted location");
+        } else if(!allowRootDir && !Files.isDirectory(path)) {
+            if (!isGoodExtension(path)) {
+                throw new AccessDeniedException(path.toString());
+            }
+        }
+    }
+
     public static Path getAbsolutePath(JSONObject params, RequestState request, boolean allowRootDir) throws JSONException, IOException {
         return getAbsolutePath(params, request, allowRootDir, false);
     }
@@ -227,10 +249,10 @@ public class FileUtilities {
         String commonName = request.isVerified()? escapeFileName(request.getCertName()):"UNTRUSTED";
 
         Path path = createAbsolutePath(fp, commonName);
+        checkFileRequest(path, fp, request, allowRootDir);
         initializeRootFolder(fp, commonName);
-
-        // fixme: this is broken
-        if (!isWhiteListed(path, allowRootDir, fp.isSandbox(), request.getCertUsed())) {
+        
+        if (!isWhiteListed(path, allowRootDir, fp.isSandbox(), request)) {
             throw new AccessDeniedException(path.toString());
         }
 
@@ -329,9 +351,8 @@ public class FileUtilities {
      * Currently hard-coded to the QZ data directory or anything provided by qz-tray.properties
      * e.g. %APPDATA%/qz/data or $HOME/.qz/data, etc
      */
-    public static boolean isWhiteListed(Path path, boolean allowRootDir, boolean sandbox, Certificate cert) {
-        // fixme: this is broken
-        String commonName = cert.isTrusted()? escapeFileName(cert.getCommonName()):"UNTRUSTED";
+    public static boolean isWhiteListed(Path path, boolean allowRootDir, boolean sandbox, RequestState request) {
+        String commonName = request.isVerified()? escapeFileName(request.getCertName()):"UNTRUSTED";
         if (whiteList == null) {
             whiteList = new ArrayList<>();
             //default sandbox locations. More can be added through the properties file

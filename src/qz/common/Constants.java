@@ -81,6 +81,8 @@ public class Constants {
     public static final String OVERRIDE_CERT = "override.crt";
     public static final String WHITELIST_CERT_DIR = "whitelist";
 
+    public static final boolean FILEIO_STRICT = false;
+
     public static final String SIGNING_PRIVATE_KEY = "private-key.pem";
     public static final String SIGNING_CERTIFICATE = "digital-certificate.txt";
 

@@ -10,11 +10,11 @@
 
 package qz.printer;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 import qz.printer.info.NativePrinter;
 import qz.printer.info.NativePrinterMap;
 import qz.utils.SystemUtilities;
@@ -34,8 +34,8 @@ public class PrintServiceMatcher {
     public static NativePrinterMap getNativePrinterList(boolean silent, boolean withAttributes) {
         NativePrinterMap printers = NativePrinterMap.getInstance();
         printers.putAll(PrintServiceLookup.lookupPrintServices(null, null));
-        if(!silent) log.debug("Found {} printers", printers.size());
-        if(withAttributes) printers.values().forEach(NativePrinter::getDriverAttributes);
+        if (withAttributes) { printers.values().forEach(NativePrinter::getDriverAttributes); }
+        if (!silent) { log.debug("Found {} printers", printers.size()); }
         return printers;
     }
 
@@ -137,7 +137,7 @@ public class PrintServiceMatcher {
 
         PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
 
-        for(NativePrinter printer : getNativePrinterList().values()) {
+        for(NativePrinter printer : getNativePrinterList(false, true).values()) {
             PrintService ps = printer.getPrintService().value();
             JSONObject jsonService = new JSONObject();
             jsonService.put("name", ps.getName());

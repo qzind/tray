@@ -13,7 +13,6 @@ package qz.common;
 import com.github.zafarkhaja.semver.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codehaus.jettison.json.JSONException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -208,8 +207,7 @@ public class TrayManager {
         // Slow to find printers the first time if a lot of printers are installed
         performIfIdle((int)TimeUnit.SECONDS.toMillis(10), evt -> {
             log.debug("IDLE: Performing first run of find printers");
-            try { PrintServiceMatcher.getPrintersJSON(false); }
-            catch(JSONException ignore) {}
+            PrintServiceMatcher.getNativePrinterList(false, true);
         });
         // Slow to start JavaFX the first time
         performIfIdle((int)TimeUnit.SECONDS.toMillis(60), evt -> {

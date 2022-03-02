@@ -202,7 +202,7 @@ public class TrayManager {
         idleTimers = new ArrayList<>();
 
         // Slow to find printers the first time if a lot of printers are installed
-        if (getPref(Constants.PREFS_IDLE_JFX, true)) {
+        if (getPref(Constants.PREFS_IDLE_PRINTERS, true)) {
             performIfIdle((int)TimeUnit.SECONDS.toMillis(10), evt -> {
                 log.debug("IDLE: Performing first run of find printers");
                 PrintServiceMatcher.getNativePrinterList(false, true);

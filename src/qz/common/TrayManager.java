@@ -202,20 +202,24 @@ public class TrayManager {
         idleTimers = new ArrayList<>();
 
         // Slow to find printers the first time if a lot of printers are installed
-        performIfIdle((int)TimeUnit.SECONDS.toMillis(10), evt -> {
-            log.debug("IDLE: Performing first run of find printers");
-            PrintServiceMatcher.getNativePrinterList(false, true);
-        });
+        if (prefs.getBoolean(Constants.PREFS_IDLE_PRINTERS, true)) {
+            performIfIdle((int)TimeUnit.SECONDS.toMillis(10), evt -> {
+                log.debug("IDLE: Performing first run of find printers");
+                PrintServiceMatcher.getNativePrinterList(false, true);
+            });
+        }
         // Slow to start JavaFX the first time
-        performIfIdle((int)TimeUnit.SECONDS.toMillis(60), evt -> {
-            log.debug("IDLE: Starting up JFX for HTML printing");
-            try {
-                WebApp.initialize();
-            }
-            catch(IOException e) {
-                log.error("Idle runner failed to preemptively start JavaFX service");
-            }
-        });
+        if (prefs.getBoolean(Constants.PREFS_IDLE_JFX, true)) {
+            performIfIdle((int)TimeUnit.SECONDS.toMillis(60), evt -> {
+                log.debug("IDLE: Starting up JFX for HTML printing");
+                try {
+                    WebApp.initialize();
+                }
+                catch(IOException e) {
+                    log.error("Idle runner failed to preemptively start JavaFX service");
+                }
+            });
+        }
     }
 
     /**

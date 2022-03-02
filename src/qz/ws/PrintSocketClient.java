@@ -244,7 +244,7 @@ public class PrintSocketClient {
                         sendError(session, UID, "Specified printer could not be found.");
                     }
                 } else {
-                    JSONArray services = PrintServiceMatcher.getPrintersJSON();
+                    JSONArray services = PrintServiceMatcher.getPrintersJSON(false);
                     JSONArray names = new JSONArray();
                     for(int i = 0; i < services.length(); i++) {
                         names.put(services.getJSONObject(i).getString("name"));
@@ -254,7 +254,7 @@ public class PrintSocketClient {
                 }
                 break;
             case PRINTERS_DETAIL:
-                sendResult(session, UID, PrintServiceMatcher.getPrintersJSON());
+                sendResult(session, UID, PrintServiceMatcher.getPrintersJSON(true));
                 break;
             case PRINTERS_START_LISTENING:
                 if (!connection.hasStatusListener()) {

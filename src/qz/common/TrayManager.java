@@ -208,7 +208,7 @@ public class TrayManager {
         // Slow to find printers the first time if a lot of printers are installed
         performIfIdle((int)TimeUnit.SECONDS.toMillis(10), evt -> {
             log.debug("IDLE: Performing first run of find printers");
-            try { PrintServiceMatcher.getPrintersJSON(); }
+            try { PrintServiceMatcher.getPrintersJSON(false); }
             catch(JSONException ignore) {}
         });
         // Slow to start JavaFX the first time

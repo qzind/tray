@@ -132,7 +132,7 @@ public class PrintServiceMatcher {
         return matchPrinter(printerSearch, false);
     }
 
-    public static JSONArray getPrintersJSON() throws JSONException {
+    public static JSONArray getPrintersJSON(boolean includeDetails) throws JSONException {
         JSONArray list = new JSONArray();
 
         PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
@@ -141,17 +141,20 @@ public class PrintServiceMatcher {
             PrintService ps = printer.getPrintService().value();
             JSONObject jsonService = new JSONObject();
             jsonService.put("name", ps.getName());
-            jsonService.put("driver", printer.getDriver().value());
-            jsonService.put("connection", printer.getConnection());
-            jsonService.put("default", ps == defaultService);
 
-            for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
-                if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
+            if (includeDetails) {
+                jsonService.put("driver", printer.getDriver().value());
+                jsonService.put("connection", printer.getConnection());
+                jsonService.put("default", ps == defaultService);
+
+                for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
+                    if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
+                }
+
+                PrinterResolution res = printer.getResolution().value();
+                int density = -1; if (res != null) { density = res.getFeedResolution(ResolutionSyntax.DPI); }
+                jsonService.put("density", density);
             }
-
-            PrinterResolution res = printer.getResolution().value();
-            int density = -1; if (res != null) { density = res.getFeedResolution(ResolutionSyntax.DPI); }
-            jsonService.put("density", density);
 
             list.put(jsonService);
         }

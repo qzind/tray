@@ -137,7 +137,7 @@ public class PrintServiceMatcher {
 
         PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
 
-        for(NativePrinter printer : getNativePrinterList(false, true).values()) {
+        for(NativePrinter printer : getNativePrinterList().values()) {
             PrintService ps = printer.getPrintService().value();
             JSONObject jsonService = new JSONObject();
             jsonService.put("name", ps.getName());

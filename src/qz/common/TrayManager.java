@@ -98,10 +98,10 @@ public class TrayManager {
         prefs = new PropertyHelper(FileUtilities.USER_DIR + File.separator + Constants.PREFS_FILE + ".properties");
 
         // Set strict certificate mode preference
-        Certificate.setTrustBuiltIn(!prefs.getBoolean(Constants.PREFS_STRICT_MODE, false));
+        Certificate.setTrustBuiltIn(!getPref(Constants.PREFS_STRICT_MODE, false));
 
         //headless if turned on by user or unsupported by environment
-        headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || GraphicsEnvironment.isHeadless();
+        headless = isHeadless || getPref(Constants.PREFS_HEADLESS, false) || GraphicsEnvironment.isHeadless();
         if (headless) {
             log.info("Running in headless mode");
         }
@@ -205,20 +205,24 @@ public class TrayManager {
         idleTimers = new ArrayList<>();
 
         // Slow to find printers the first time if a lot of printers are installed
-        performIfIdle((int)TimeUnit.SECONDS.toMillis(10), evt -> {
-            log.debug("IDLE: Performing first run of find printers");
-            PrintServiceMatcher.getNativePrinterList(false, true);
-        });
+        if (getPref(Constants.PREFS_IDLE_PRINTERS, true)) {
+            performIfIdle((int)TimeUnit.SECONDS.toMillis(10), evt -> {
+                log.debug("IDLE: Performing first run of find printers");
+                PrintServiceMatcher.getNativePrinterList(false, true);
+            });
+        }
         // Slow to start JavaFX the first time
-        performIfIdle((int)TimeUnit.SECONDS.toMillis(60), evt -> {
-            log.debug("IDLE: Starting up JFX for HTML printing");
-            try {
-                WebApp.initialize();
-            }
-            catch(IOException e) {
-                log.error("Idle runner failed to preemptively start JavaFX service");
-            }
-        });
+        if (getPref(Constants.PREFS_IDLE_JFX, true)) {
+            performIfIdle((int)TimeUnit.SECONDS.toMillis(60), evt -> {
+                log.debug("IDLE: Starting up JFX for HTML printing");
+                try {
+                    WebApp.initialize();
+                }
+                catch(IOException e) {
+                    log.error("Idle runner failed to preemptively start JavaFX service");
+                }
+            });
+        }
     }
 
     /**
@@ -272,14 +276,14 @@ public class TrayManager {
         JCheckBoxMenuItem notificationsItem = new JCheckBoxMenuItem("Show all notifications");
         notificationsItem.setToolTipText("Shows all connect/disconnect messages, useful for debugging purposes");
         notificationsItem.setMnemonic(KeyEvent.VK_S);
-        notificationsItem.setState(prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false));
+        notificationsItem.setState(getPref(Constants.PREFS_NOTIFICATIONS, false));
         notificationsItem.addActionListener(notificationsListener);
         diagnosticMenu.add(notificationsItem);
 
         JCheckBoxMenuItem monocleItem = new JCheckBoxMenuItem("Use Monocle for HTML");
         monocleItem.setToolTipText("Use monocle platform for HTML printing (restart required)");
         monocleItem.setMnemonic(KeyEvent.VK_U);
-        monocleItem.setState(prefs.getBoolean(Constants.PREFS_MONOCLE, true));
+        monocleItem.setState(getPref(Constants.PREFS_MONOCLE, true));
         if(!SystemUtilities.hasMonocle()) {
             log.warn("Monocle engine was not detected");
             monocleItem.setEnabled(false);
@@ -462,7 +466,7 @@ public class TrayManager {
 
     private final ActionListener exitListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
-            boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
+            boolean showAllNotifications = getPref(Constants.PREFS_NOTIFICATIONS, false);
             if (!showAllNotifications || confirmDialog.prompt("Exit " + name + "?")) { exit(0); }
         }
     };
@@ -649,7 +653,7 @@ public class TrayManager {
         if (!headless) {
             if (tray != null) {
                 SwingUtilities.invokeLater(() -> {
-                    boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
+                    boolean showAllNotifications = getPref(Constants.PREFS_NOTIFICATIONS, false);
                     if (showAllNotifications || level != TrayIcon.MessageType.INFO) {
                         tray.displayMessage(caption, text, level);
                     }
@@ -669,11 +673,18 @@ public class TrayManager {
     }
 
     public boolean isMonoclePreferred() {
-        return prefs.getBoolean(Constants.PREFS_MONOCLE, true);
+        return getPref(Constants.PREFS_MONOCLE, true);
     }
 
     public boolean isHeadless() {
         return headless;
+    }
+
+    /**
+     * Get boolean user pref: Searching "user", "app" and <code>System.getProperty(...)</code>.
+     */
+    private boolean getPref(String name, boolean defaultVal) {
+        return PrefsSearch.get(prefs, PrintSocketServer.getTrayProperties(), name, defaultVal + "").equalsIgnoreCase("true");
     }
 
     private void performIfIdle(int idleQualifier, ActionListener performer) {

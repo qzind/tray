@@ -61,6 +61,8 @@ public class Constants {
     public static final String PREFS_HEADLESS = "tray.headless";
     public static final String PREFS_MONOCLE = "tray.monocle";
     public static final String PREFS_STRICT_MODE = "tray.strictmode";
+    public static final String PREFS_IDLE_PRINTERS = "tray.idle.printers";
+    public static final String PREFS_IDLE_JFX = "tray.idle.javafx";
 
     public static final String ALLOW_SITES_TEXT = "Permanently allowed \"%s\" to access local resources";
     public static final String BLOCK_SITES_TEXT = "Permanently blocked \"%s\" from accessing local resources";

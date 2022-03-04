@@ -137,6 +137,8 @@ public class PrintServiceMatcher {
 
         PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
 
+        boolean mediaTrayCrawled = false;
+
         for(NativePrinter printer : getNativePrinterList().values()) {
             PrintService ps = printer.getPrintService().value();
             JSONObject jsonService = new JSONObject();
@@ -147,6 +149,10 @@ public class PrintServiceMatcher {
                 jsonService.put("connection", printer.getConnection());
                 jsonService.put("default", ps == defaultService);
 
+                if(!mediaTrayCrawled) {
+                    log.info("Gathering printer MediaTray information...");
+                    mediaTrayCrawled = true;
+                }
                 for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
                     if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
                 }

@@ -10,11 +10,11 @@
 
 package qz.printer;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 import qz.printer.info.NativePrinter;
 import qz.printer.info.NativePrinterMap;
 import qz.utils.SystemUtilities;
@@ -34,8 +34,8 @@ public class PrintServiceMatcher {
     public static NativePrinterMap getNativePrinterList(boolean silent, boolean withAttributes) {
         NativePrinterMap printers = NativePrinterMap.getInstance();
         printers.putAll(PrintServiceLookup.lookupPrintServices(null, null));
-        if(!silent) log.debug("Found {} printers", printers.size());
-        if(withAttributes) printers.values().forEach(NativePrinter::getDriverAttributes);
+        if (withAttributes) { printers.values().forEach(NativePrinter::getDriverAttributes); }
+        if (!silent) { log.debug("Found {} printers", printers.size()); }
         return printers;
     }
 
@@ -132,26 +132,35 @@ public class PrintServiceMatcher {
         return matchPrinter(printerSearch, false);
     }
 
-    public static JSONArray getPrintersJSON() throws JSONException {
+    public static JSONArray getPrintersJSON(boolean includeDetails) throws JSONException {
         JSONArray list = new JSONArray();
 
         PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
+
+        boolean mediaTrayCrawled = false;
 
         for(NativePrinter printer : getNativePrinterList().values()) {
             PrintService ps = printer.getPrintService().value();
             JSONObject jsonService = new JSONObject();
             jsonService.put("name", ps.getName());
-            jsonService.put("driver", printer.getDriver().value());
-            jsonService.put("connection", printer.getConnection());
-            jsonService.put("default", ps == defaultService);
 
-            for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
-                if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
+            if (includeDetails) {
+                jsonService.put("driver", printer.getDriver().value());
+                jsonService.put("connection", printer.getConnection());
+                jsonService.put("default", ps == defaultService);
+
+                if(!mediaTrayCrawled) {
+                    log.info("Gathering printer MediaTray information...");
+                    mediaTrayCrawled = true;
+                }
+                for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
+                    if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
+                }
+
+                PrinterResolution res = printer.getResolution().value();
+                int density = -1; if (res != null) { density = res.getFeedResolution(ResolutionSyntax.DPI); }
+                jsonService.put("density", density);
             }
-
-            PrinterResolution res = printer.getResolution().value();
-            int density = -1; if (res != null) { density = res.getFeedResolution(ResolutionSyntax.DPI); }
-            jsonService.put("density", density);
 
             list.put(jsonService);
         }

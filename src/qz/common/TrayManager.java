@@ -11,11 +11,11 @@
 package qz.common;
 
 import com.github.zafarkhaja.semver.Version;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
 import qz.installer.shortcut.ShortcutCreator;
@@ -24,7 +24,10 @@ import qz.printer.action.WebApp;
 import qz.ui.*;
 import qz.ui.component.IconCache;
 import qz.ui.tray.TrayType;
-import qz.utils.*;
+import qz.utils.FileUtilities;
+import qz.utils.MacUtilities;
+import qz.utils.ShellUtilities;
+import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
 

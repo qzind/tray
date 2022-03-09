@@ -12,10 +12,10 @@ import static com.sun.jna.platform.win32.WinReg.*;
 public class WindowsPrinterMap extends NativePrinterMap {
     private static final Logger log = LogManager.getLogger(WindowsPrinterMap.class);
 
-    public synchronized NativePrinterMap putAll(PrintService[] services) {
-        for (PrintService service : findMissing(services)) {
+    public synchronized NativePrinterMap putAll(PrintService... services) {
+        for(PrintService service : findMissing(services)) {
             String name = service.getName();
-            if(name.equals("PageManager PDF Writer")) {
+            if (name.equals("PageManager PDF Writer")) {
                 log.warn("Printer \"{}\" is blacklisted, removing", name); // Per https://github.com/qzind/tray/issues/599
                 continue;
             }

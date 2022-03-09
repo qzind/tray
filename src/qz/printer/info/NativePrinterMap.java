@@ -15,7 +15,8 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
 
     private static NativePrinterMap instance;
 
-    public abstract NativePrinterMap putAll(PrintService[] services);
+    public abstract NativePrinterMap putAll(PrintService... services);
+
     abstract void fillAttributes(NativePrinter printer);
 
     public static NativePrinterMap getInstance() {

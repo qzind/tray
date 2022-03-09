@@ -684,17 +684,24 @@ public class TrayManager {
     }
 
     private void performIfIdle(int idleQualifier, ActionListener performer) {
-        idleTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                performer.actionPerformed(null);
-            }
-        }, idleQualifier);
+        if (idleTimer != null) {
+            idleTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    performer.actionPerformed(null);
+                }
+            }, idleQualifier);
+        } else {
+            log.warn("Idle actions have already been cleared due to activity, task not scheduled.");
+        }
     }
 
     public void voidIdleActions() {
-        log.trace("Not idle, stopping any actions that haven't ran yet");
-        idleTimer.cancel();
+        if (idleTimer != null) {
+            log.trace("Not idle, stopping any actions that haven't ran yet");
+            idleTimer.cancel();
+            idleTimer = null;
+        }
     }
 
 }

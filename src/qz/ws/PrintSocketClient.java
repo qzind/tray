@@ -232,8 +232,8 @@ public class PrintSocketClient {
         //call appropriate methods
         switch(call) {
             case PRINTERS_GET_DEFAULT:
-                sendResult(session, UID, PrintServiceLookup.lookupDefaultPrintService() == null? null:
-                        PrintServiceLookup.lookupDefaultPrintService().getName());
+                sendResult(session, UID, PrintServiceMatcher.getDefaultPrinter() == null? null:
+                        PrintServiceMatcher.getDefaultPrinter().getName());
                 break;
             case PRINTERS_FIND:
                 if (params.has("query")) {

@@ -2,11 +2,9 @@ package qz.printer.info;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-import qz.printer.PrintServiceMatcher;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
-import javax.print.attribute.standard.PrinterName;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
@@ -17,7 +15,7 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
 
     private static NativePrinterMap instance;
 
-    public abstract NativePrinterMap putAll(PrintService[] services);
+    public abstract NativePrinterMap putAll(PrintService... services);
     abstract void fillAttributes(NativePrinter printer);
 
     public static NativePrinterMap getInstance() {

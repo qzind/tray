@@ -1,7 +1,7 @@
 package qz.printer.info;
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
@@ -144,15 +144,6 @@ public class NativePrinter {
     }
 
     public void setPrintService(PrintService printService) {
-        // Fetch resolution, if available
-        try {
-            Object resolution = printService.getDefaultAttributeValue(PrinterResolution.class);
-            if (resolution != null) {
-                this.resolution.set((PrinterResolution)resolution);
-            }
-        } catch(IllegalArgumentException e) {
-            log.warn("Unable to obtain PrinterResolution from {}", printService.getName(), e);
-        }
         this.printService.set(printService);
     }
 
@@ -166,8 +157,18 @@ public class NativePrinter {
 
     public PrinterProperty<PrinterResolution> getResolution() {
         if (!resolution.isSet()) {
-            getDriverAttributes(this);
+            // Fetch resolution, if available
+            try {
+                Object resolution = printService.value().getDefaultAttributeValue(PrinterResolution.class);
+                if (resolution != null) {
+                    this.resolution.set((PrinterResolution)resolution);
+                }
+            }
+            catch(IllegalArgumentException e) {
+                log.warn("Unable to obtain PrinterResolution from {}", printService.value().getName(), e);
+            }
         }
+
         return resolution;
     }
 

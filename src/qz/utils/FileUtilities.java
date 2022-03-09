@@ -226,7 +226,9 @@ public class FileUtilities {
      *    4. Is the file extension permitted
      */
     private static void checkFileRequest(Path path, FileParams fp, RequestState request, boolean allowRootDir) throws AccessDeniedException {
-        if(!request.isVerified() && Boolean.parseBoolean(App.getTrayProperties().getProperty("file.strict"))) {
+        if(Boolean.parseBoolean(App.getTrayProperties().getProperty("file.disable"))) {
+            throw new AccessDeniedException("File operations are disabled");
+        } else if(!request.isVerified() && Boolean.parseBoolean(App.getTrayProperties().getProperty("file.strict"))) {
             throw new AccessDeniedException("File requests is not verified");
         } else if(request.getCertUsed() == null || !request.getCertUsed().isTrusted()) {
             throw new AccessDeniedException("Certificate provided is not trusted");

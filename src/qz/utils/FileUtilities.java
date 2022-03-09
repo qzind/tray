@@ -47,7 +47,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static qz.common.Constants.ALLOW_FILE;
-import static qz.common.Constants.FILEIO_STRICT;
 
 /**
  * Common static file i/o utilities
@@ -227,7 +226,7 @@ public class FileUtilities {
      *    4. Is the file extension permitted
      */
     private static void checkFileRequest(Path path, FileParams fp, RequestState request, boolean allowRootDir) throws AccessDeniedException {
-        if(!request.isVerified() && FILEIO_STRICT) {
+        if(!request.isVerified() && Boolean.parseBoolean(App.getTrayProperties().getProperty("file.strict"))) {
             throw new AccessDeniedException("File requests is not verified");
         } else if(request.getCertUsed() == null || !request.getCertUsed().isTrusted()) {
             throw new AccessDeniedException("Certificate provided is not trusted");

@@ -36,6 +36,7 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -80,7 +81,7 @@ public class TrayManager {
     private Thread reloadThread;
 
     // Actions to run if idle after startup
-    private ArrayList<Timer> idleTimers;
+    private java.util.Timer idleTimer = new java.util.Timer();
 
     public TrayManager() {
         this(false);
@@ -199,8 +200,6 @@ public class TrayManager {
         }
 
         // Initialize idle actions
-        idleTimers = new ArrayList<>();
-
         // Slow to find printers the first time if a lot of printers are installed
         if (getPref(Constants.PREFS_IDLE_PRINTERS, true)) {
             performIfIdle((int)TimeUnit.SECONDS.toMillis(10), evt -> {
@@ -685,22 +684,17 @@ public class TrayManager {
     }
 
     private void performIfIdle(int idleQualifier, ActionListener performer) {
-        Timer timer = new Timer(idleQualifier, evt -> {
-            performer.actionPerformed(evt);
-            idleTimers.remove(evt.getSource());
-        });
-        timer.setRepeats(false);
-        timer.start();
-
-        idleTimers.add(timer);
+        idleTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                performer.actionPerformed(null);
+            }
+        }, idleQualifier);
     }
 
     public void voidIdleActions() {
-        if (idleTimers.size() > 0) {
-            log.trace("Not idle, stopping any actions that haven't ran yet");
-            idleTimers.forEach(Timer::stop);
-            idleTimers.clear();
-        }
+        log.trace("Not idle, stopping any actions that haven't ran yet");
+        idleTimer.cancel();
     }
 
 }

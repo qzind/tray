@@ -47,6 +47,17 @@ public class PrintServiceMatcher {
         return getNativePrinterList(false);
     }
 
+    public static NativePrinter getDefaultPrinter() {
+        PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
+
+        NativePrinterMap printers = NativePrinterMap.getInstance();
+        if (!printers.contains(defaultService)) {
+            printers.putAll(defaultService);
+        }
+
+        return printers.get(defaultService.getName());
+    }
+
     public static String findPrinterName(String query) throws JSONException {
         NativePrinter printer = PrintServiceMatcher.matchPrinter(query);
 
@@ -67,7 +78,13 @@ public class PrintServiceMatcher {
         NativePrinter begins = null;
         NativePrinter partial = null;
 
-        if(!silent) log.debug("Searching for PrintService matching {}", printerSearch);
+        if (!silent) { log.debug("Searching for PrintService matching {}", printerSearch); }
+
+        NativePrinter defaultPrinter = getDefaultPrinter();
+        if (printerSearch.equals(defaultPrinter.getName())) {
+            if (!silent) { log.debug("Matched default printer, skipping further search"); }
+            return defaultPrinter;
+        }
 
         printerSearch = printerSearch.toLowerCase(Locale.ENGLISH);
 

@@ -200,13 +200,6 @@ public class TrayManager {
         }
 
         // Initialize idle actions
-        // Slow to find printers the first time if a lot of printers are installed
-        if (getPref(Constants.PREFS_IDLE_PRINTERS, true)) {
-            performIfIdle((int)TimeUnit.SECONDS.toMillis(10), evt -> {
-                log.debug("IDLE: Performing first run of find printers");
-                PrintServiceMatcher.getNativePrinterList(false, true);
-            });
-        }
         // Slow to start JavaFX the first time
         if (getPref(Constants.PREFS_IDLE_JFX, true)) {
             performIfIdle((int)TimeUnit.SECONDS.toMillis(60), evt -> {
@@ -217,6 +210,14 @@ public class TrayManager {
                 catch(IOException e) {
                     log.error("Idle runner failed to preemptively start JavaFX service");
                 }
+            });
+        }
+        // Slow to find printers the first time if a lot of printers are installed
+        // Must run after JavaFX per https://github.com/qzind/tray/issues/924
+        if (getPref(Constants.PREFS_IDLE_PRINTERS, true)) {
+            performIfIdle((int)TimeUnit.SECONDS.toMillis(120), evt -> {
+                log.debug("IDLE: Performing first run of find printers");
+                PrintServiceMatcher.getNativePrinterList(false, true);
             });
         }
     }
@@ -684,17 +685,24 @@ public class TrayManager {
     }
 
     private void performIfIdle(int idleQualifier, ActionListener performer) {
-        idleTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                performer.actionPerformed(null);
-            }
-        }, idleQualifier);
+        if (idleTimer != null) {
+            idleTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    performer.actionPerformed(null);
+                }
+            }, idleQualifier);
+        } else {
+            log.warn("Idle actions have already been cleared due to activity, task not scheduled.");
+        }
     }
 
     public void voidIdleActions() {
-        log.trace("Not idle, stopping any actions that haven't ran yet");
-        idleTimer.cancel();
+        if (idleTimer != null) {
+            log.trace("Not idle, stopping any actions that haven't ran yet");
+            idleTimer.cancel();
+            idleTimer = null;
+        }
     }
 
 }

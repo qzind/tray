@@ -1,10 +1,11 @@
 package qz.printer.info;
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
+import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.PrinterName;
 import javax.print.attribute.standard.PrinterResolution;
 import java.util.Arrays;
@@ -144,15 +145,6 @@ public class NativePrinter {
     }
 
     public void setPrintService(PrintService printService) {
-        // Fetch resolution, if available
-        try {
-            Object resolution = printService.getDefaultAttributeValue(PrinterResolution.class);
-            if (resolution != null) {
-                this.resolution.set((PrinterResolution)resolution);
-            }
-        } catch(IllegalArgumentException e) {
-            log.warn("Unable to obtain PrinterResolution from {}", printService.getName(), e);
-        }
         this.printService.set(printService);
     }
 
@@ -166,8 +158,18 @@ public class NativePrinter {
 
     public PrinterProperty<PrinterResolution> getResolution() {
         if (!resolution.isSet()) {
-            getDriverAttributes(this);
+            // Fetch resolution, if available
+            try {
+                Object resolution = printService.value().getDefaultAttributeValue(PrinterResolution.class);
+                if (resolution != null) {
+                    this.resolution.set((PrinterResolution)resolution);
+                }
+            }
+            catch(IllegalArgumentException e) {
+                log.warn("Unable to obtain PrinterResolution from {}", printService.value().getName(), e);
+            }
         }
+
         return resolution;
     }
 
@@ -187,9 +189,16 @@ public class NativePrinter {
     }
 
     public static void getDriverAttributes(NativePrinter printer) {
+        // First, perform slow JDK operations, see issues #940, #932
+        printer.getPrintService().value().getSupportedAttributeValues(Media.class, null, null); // cached by JDK
+        printer.getResolution();
+
+        // Mark properties as "found" so we don't attempt to gather them again
         printer.driver.set();
         printer.resolution.set();
         printer.connection.set();
+
+        // Gather properties not exposed by the JDK
         NativePrinterMap.getInstance().fillAttributes(printer);
     }
 

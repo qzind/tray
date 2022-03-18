@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
+import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.PrinterName;
 import javax.print.attribute.standard.PrinterResolution;
 import java.util.Arrays;
@@ -188,9 +189,16 @@ public class NativePrinter {
     }
 
     public static void getDriverAttributes(NativePrinter printer) {
+        // First, perform slow JDK operations, see issues #940, #932
+        printer.getPrintService().value().getSupportedAttributeValues(Media.class, null, null); // cached by JDK
+        printer.getResolution();
+
+        // Mark properties as "found" so we don't attempt to gather them again
         printer.driver.set();
         printer.resolution.set();
         printer.connection.set();
+
+        // Gather properties not exposed by the JDK
         NativePrinterMap.getInstance().fillAttributes(printer);
     }
 

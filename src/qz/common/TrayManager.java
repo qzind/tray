@@ -11,9 +11,10 @@
 package qz.common;
 
 import com.github.zafarkhaja.semver.Version;
-import org.eclipse.jetty.server.Server;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jetty.server.Server;
+import qz.App;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
 import qz.installer.shortcut.ShortcutCreator;
@@ -34,6 +35,7 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -76,7 +78,7 @@ public class TrayManager {
     private Thread reloadThread;
 
     // Actions to run if idle after startup
-    private ArrayList<Timer> idleTimers;
+    private java.util.Timer idleTimer = new java.util.Timer();
 
     public TrayManager() {
         this(false);
@@ -91,10 +93,10 @@ public class TrayManager {
         prefs = new PropertyHelper(FileUtilities.USER_DIR + File.separator + Constants.PREFS_FILE + ".properties");
 
         // Set strict certificate mode preference
-        Certificate.setTrustBuiltIn(!prefs.getBoolean(Constants.PREFS_STRICT_MODE, false));
+        Certificate.setTrustBuiltIn(!getPref(Constants.PREFS_STRICT_MODE, false));
 
         //headless if turned on by user or unsupported by environment
-        headless = isHeadless || prefs.getBoolean(Constants.PREFS_HEADLESS, false) || GraphicsEnvironment.isHeadless();
+        headless = isHeadless || getPref(Constants.PREFS_HEADLESS, false) || GraphicsEnvironment.isHeadless();
         if (headless) {
             log.info("Running in headless mode");
         }
@@ -198,23 +200,26 @@ public class TrayManager {
         }
 
         // Initialize idle actions
-        idleTimers = new ArrayList<>();
-
-        // Slow to find printers the first time if a lot of printers are installed
-        performIfIdle((int)TimeUnit.SECONDS.toMillis(10), evt -> {
-            log.debug("IDLE: Performing first run of find printers");
-            PrintServiceMatcher.getNativePrinterList(false, true);
-        });
         // Slow to start JavaFX the first time
-        performIfIdle((int)TimeUnit.SECONDS.toMillis(60), evt -> {
-            log.debug("IDLE: Starting up JFX for HTML printing");
-            try {
-                WebApp.initialize();
-            }
-            catch(IOException e) {
-                log.error("Idle runner failed to preemptively start JavaFX service");
-            }
-        });
+        if (getPref(Constants.PREFS_IDLE_JFX, true)) {
+            performIfIdle((int)TimeUnit.SECONDS.toMillis(60), evt -> {
+                log.debug("IDLE: Starting up JFX for HTML printing");
+                try {
+                    WebApp.initialize();
+                }
+                catch(IOException e) {
+                    log.error("Idle runner failed to preemptively start JavaFX service");
+                }
+            });
+        }
+        // Slow to find printers the first time if a lot of printers are installed
+        // Must run after JavaFX per https://github.com/qzind/tray/issues/924
+        if (getPref(Constants.PREFS_IDLE_PRINTERS, true)) {
+            performIfIdle((int)TimeUnit.SECONDS.toMillis(120), evt -> {
+                log.debug("IDLE: Performing first run of find printers");
+                PrintServiceMatcher.getNativePrinterList(false, true);
+            });
+        }
     }
 
     /**
@@ -268,14 +273,14 @@ public class TrayManager {
         JCheckBoxMenuItem notificationsItem = new JCheckBoxMenuItem("Show all notifications");
         notificationsItem.setToolTipText("Shows all connect/disconnect messages, useful for debugging purposes");
         notificationsItem.setMnemonic(KeyEvent.VK_S);
-        notificationsItem.setState(prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false));
+        notificationsItem.setState(getPref(Constants.PREFS_NOTIFICATIONS, false));
         notificationsItem.addActionListener(notificationsListener);
         diagnosticMenu.add(notificationsItem);
 
         JCheckBoxMenuItem monocleItem = new JCheckBoxMenuItem("Use Monocle for HTML");
         monocleItem.setToolTipText("Use monocle platform for HTML printing (restart required)");
         monocleItem.setMnemonic(KeyEvent.VK_U);
-        monocleItem.setState(prefs.getBoolean(Constants.PREFS_MONOCLE, true));
+        monocleItem.setState(getPref(Constants.PREFS_MONOCLE, true));
         if(!SystemUtilities.hasMonocle()) {
             log.warn("Monocle engine was not detected");
             monocleItem.setEnabled(false);
@@ -458,7 +463,7 @@ public class TrayManager {
 
     private final ActionListener exitListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
-            boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
+            boolean showAllNotifications = getPref(Constants.PREFS_NOTIFICATIONS, false);
             if (!showAllNotifications || confirmDialog.prompt("Exit " + name + "?")) { exit(0); }
         }
     };
@@ -607,7 +612,7 @@ public class TrayManager {
         if (!headless) {
             if (tray != null) {
                 SwingUtilities.invokeLater(() -> {
-                    boolean showAllNotifications = prefs.getBoolean(Constants.PREFS_NOTIFICATIONS, false);
+                    boolean showAllNotifications = getPref(Constants.PREFS_NOTIFICATIONS, false);
                     if (showAllNotifications || level != TrayIcon.MessageType.INFO) {
                         tray.displayMessage(caption, text, level);
                     }
@@ -627,29 +632,38 @@ public class TrayManager {
     }
 
     public boolean isMonoclePreferred() {
-        return prefs.getBoolean(Constants.PREFS_MONOCLE, true);
+        return getPref(Constants.PREFS_MONOCLE, true);
     }
 
     public boolean isHeadless() {
         return headless;
     }
 
-    private void performIfIdle(int idleQualifier, ActionListener performer) {
-        Timer timer = new Timer(idleQualifier, evt -> {
-            performer.actionPerformed(evt);
-            idleTimers.remove(evt.getSource());
-        });
-        timer.setRepeats(false);
-        timer.start();
+    /**
+     * Get boolean user pref: Searching "user", "app" and <code>System.getProperty(...)</code>.
+     */
+    private boolean getPref(String name, boolean defaultVal) {
+        return "true".equalsIgnoreCase(PrefsSearch.get(prefs, App.getTrayProperties(), name, defaultVal + ""));
+    }
 
-        idleTimers.add(timer);
+    private void performIfIdle(int idleQualifier, ActionListener performer) {
+        if (idleTimer != null) {
+            idleTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    performer.actionPerformed(null);
+                }
+            }, idleQualifier);
+        } else {
+            log.warn("Idle actions have already been cleared due to activity, task not scheduled.");
+        }
     }
 
     public void voidIdleActions() {
-        if (idleTimers.size() > 0) {
+        if (idleTimer != null) {
             log.trace("Not idle, stopping any actions that haven't ran yet");
-            idleTimers.forEach(Timer::stop);
-            idleTimers.clear();
+            idleTimer.cancel();
+            idleTimer = null;
         }
     }
 

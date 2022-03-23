@@ -25,7 +25,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import qz.common.Constants;
-import qz.utils.LibUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -203,6 +202,7 @@ public class WebApp extends Application {
                     log.trace("Running a test snapshot to size the stage...");
                     try {
                         raster(new WebAppModel("<h1>startup</h1>", true, 0, 0, true, 2));
+                        log.trace("JFX initialized successfully");
                     }
                     catch(Throwable t) {
                         throw new IOException(t);

@@ -2,6 +2,8 @@ package qz.ws;
 
 import jssc.SerialPortException;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -10,8 +12,6 @@ import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
 import qz.common.Constants;
@@ -23,7 +23,6 @@ import qz.printer.status.StatusSession;
 import qz.utils.*;
 
 import javax.management.ListenerNotFoundException;
-import javax.print.PrintServiceLookup;
 import javax.usb.util.UsbUtil;
 import java.awt.*;
 import java.io.EOFException;
@@ -232,8 +231,8 @@ public class PrintSocketClient {
         //call appropriate methods
         switch(call) {
             case PRINTERS_GET_DEFAULT:
-                sendResult(session, UID, PrintServiceLookup.lookupDefaultPrintService() == null? null:
-                        PrintServiceLookup.lookupDefaultPrintService().getName());
+                sendResult(session, UID, PrintServiceMatcher.getDefaultPrinter() == null? null:
+                        PrintServiceMatcher.getDefaultPrinter().getName());
                 break;
             case PRINTERS_FIND:
                 if (params.has("query")) {
@@ -244,7 +243,7 @@ public class PrintSocketClient {
                         sendError(session, UID, "Specified printer could not be found.");
                     }
                 } else {
-                    JSONArray services = PrintServiceMatcher.getPrintersJSON();
+                    JSONArray services = PrintServiceMatcher.getPrintersJSON(false);
                     JSONArray names = new JSONArray();
                     for(int i = 0; i < services.length(); i++) {
                         names.put(services.getJSONObject(i).getString("name"));
@@ -254,7 +253,7 @@ public class PrintSocketClient {
                 }
                 break;
             case PRINTERS_DETAIL:
-                sendResult(session, UID, PrintServiceMatcher.getPrintersJSON());
+                sendResult(session, UID, PrintServiceMatcher.getPrintersJSON(true));
                 break;
             case PRINTERS_START_LISTENING:
                 if (!connection.hasStatusListener()) {

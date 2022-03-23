@@ -24,6 +24,7 @@ import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import qz.common.Constants;
 import qz.common.TrayManager;
@@ -161,9 +162,11 @@ public class PrintSocketServer {
                 ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
                 // Handle WebSocket connections
-                WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configure(context);
-                filter.addMapping(new ServletPathSpec("/"), (req, resp) -> new PrintSocketClient(server));
-                filter.getFactory().getPolicy().setMaxTextMessageSize(MAX_MESSAGE_SIZE);
+                WebSocketUpgradeFilter.configure(context);
+                NativeWebSocketServletContainerInitializer.configure(context, (ctx, container) -> {
+                    container.addMapping(new ServletPathSpec("/"), (req, resp) -> new PrintSocketClient(server));
+                    container.getPolicy().setMaxTextMessageSize(MAX_MESSAGE_SIZE);
+                });
 
                 // Handle HTTP landing page
                 ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet(certificateManager));

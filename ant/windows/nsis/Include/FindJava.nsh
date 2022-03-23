@@ -15,7 +15,8 @@ Var /GLOBAL java_major
 !define EXE "java.exe"
 
 !define ADOPT "SOFTWARE\Classes\AdoptOpenJDK.jarfile\shell\open\command"
-!define ECLIPSE "SOFTWARE\Classes\Eclipse Foundation.jarfile\shell\open\command"
+!define ECLIPSE "SOFTWARE\Classes\Eclipse Adoptium.jarfile\shell\open\command"
+!define ECLIPSE_OLD "SOFTWARE\Classes\Eclipse Foundation.jarfile\shell\open\command"
 
 !define JRE "Software\JavaSoft\Java Runtime Environment"
 !define JRE32 "Software\Wow6432Node\JavaSoft\Java Runtime Environment"
@@ -26,6 +27,15 @@ Var /GLOBAL java_major
 !macro _ReadEclipseKey
     ClearErrors
     ReadRegStr $0 HKLM "${ECLIPSE}" ""
+    StrCpy $0 "$0" "" 1 ; Remove first double-quote
+    ${IndexOf} $1 $0 "$\"" ; Find the index of second double-quote
+    StrCpy $0 "$0" $1 ; Get the string section up to the index
+    IfFileExists "$0" Found
+!macroend
+
+!macro _ReadEclipseOldKey
+    ClearErrors
+    ReadRegStr $0 HKLM "${ECLIPSE_OLD}" ""
     StrCpy $0 "$0" "" 1 ; Remove first double-quote
     ${IndexOf} $1 $0 "$\"" ; Find the index of second double-quote
     StrCpy $0 "$0" $1 ; Get the string section up to the index
@@ -79,6 +89,7 @@ Var /GLOBAL java_major
 
         ; Check registry
         !insertmacro _ReadEclipseKey
+        !insertmacro _ReadEclipseOldKey
         !insertmacro _ReadAdoptKey
         !insertmacro _ReadReg "${JRE}"
         !insertmacro _ReadReg "${JRE32}"

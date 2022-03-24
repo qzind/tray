@@ -95,13 +95,17 @@ public class TrayManager {
         // Set strict certificate mode preference
         Certificate.setTrustBuiltIn(!getPref(Constants.PREFS_STRICT_MODE, false));
 
-        //headless if turned on by user or unsupported by environment
+        // Set FileIO security
+        FileUtilities.setFileIoEnabled(!getPref(Constants.PREFS_FILEIO_ENABLED, true));
+        FileUtilities.setFileIoStrict(!getPref(Constants.PREFS_FILEIO_STRICT, false));
+
+        // Headless if turned on by user or unsupported by environment
         headless = isHeadless || getPref(Constants.PREFS_HEADLESS, false) || GraphicsEnvironment.isHeadless();
         if (headless) {
             log.info("Running in headless mode");
         }
 
-        // Setup the shortcut name so that the UI components can use it
+        // Set up the shortcut name so that the UI components can use it
         shortcutCreator = ShortcutCreator.getInstance();
 
         SystemUtilities.setSystemLookAndFeel();

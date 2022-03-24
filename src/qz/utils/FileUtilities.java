@@ -217,6 +217,16 @@ public class FileUtilities {
     private static HashMap<String,File> localFileMap = new HashMap<>();
     private static HashMap<String,File> sharedFileMap = new HashMap<>();
     private static ArrayList<Map.Entry<Path,String>> whiteList;
+    private static boolean FILE_IO_ENABLED = true;
+    private static boolean FILE_IO_STRICT = false;
+
+    public static void setFileIoEnabled(boolean enabled) {
+        FILE_IO_ENABLED = enabled;
+    }
+
+    public static void setFileIoStrict(boolean strict) {
+        FILE_IO_STRICT = strict;
+    }
 
     /**
      * Performs security checks before allowing File IO operations:
@@ -226,16 +236,9 @@ public class FileUtilities {
      *    4. Is the file extension permitted
      */
     private static void checkFileRequest(Path path, FileParams fp, RequestState request, boolean allowRootDir) throws AccessDeniedException {
-        Boolean disabled = false;
-        Boolean strict = false;
-        if (App.getTrayProperties() != null) {
-            disabled = Boolean.parseBoolean(App.getTrayProperties().getProperty("file.disable"));
-            strict = Boolean.parseBoolean(App.getTrayProperties().getProperty("file.strict"));
-        }
-
-        if(disabled) {
+        if(!FILE_IO_ENABLED) {
             throw new AccessDeniedException("File operations are disabled");
-        } else if(!request.isVerified() && strict) {
+        } else if(!request.isVerified() && FILE_IO_STRICT) {
             throw new AccessDeniedException("File requests is not verified");
         } else if(request.getCertUsed() == null || !request.getCertUsed().isTrusted()) {
             throw new AccessDeniedException("Certificate provided is not trusted");

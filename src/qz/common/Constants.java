@@ -64,6 +64,9 @@ public class Constants {
     public static final String PREFS_IDLE_PRINTERS = "tray.idle.printers";
     public static final String PREFS_IDLE_JFX = "tray.idle.javafx";
 
+    public static final String PREFS_FILEIO_ENABLED = "security.file.enabled";
+    public static final String PREFS_FILEIO_STRICT = "security.file.strict";
+
     public static final String ALLOW_SITES_TEXT = "Permanently allowed \"%s\" to access local resources";
     public static final String BLOCK_SITES_TEXT = "Permanently blocked \"%s\" from accessing local resources";
 

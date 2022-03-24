@@ -262,16 +262,6 @@ public class FileUtilities {
         Path path = createAbsolutePath(fp, commonName);
         checkFileRequest(path, fp, request, allowRootDir);
         initializeRootFolder(fp, commonName);
-        
-        if (!isWhiteListed(path, allowRootDir, fp.isSandbox(), request)) {
-            throw new AccessDeniedException(path.toString());
-        }
-
-        if (!allowRootDir && !Files.isDirectory(path)) {
-            if (!isGoodExtension(path)) {
-                throw new AccessDeniedException(path.toString());
-            }
-        }
 
         if (createMissing) {
             if (!SystemUtilities.isWindows()) {

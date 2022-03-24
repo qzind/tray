@@ -55,7 +55,7 @@ public class PrintServiceMatcher {
             printers.putAll(defaultService);
         }
 
-        return printers.get(defaultService.getName());
+        return printers.get(defaultService);
     }
 
     public static String findPrinterName(String query) throws JSONException {

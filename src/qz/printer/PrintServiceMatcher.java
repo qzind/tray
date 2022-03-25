@@ -180,7 +180,6 @@ public class PrintServiceMatcher {
                     }
                 }
                 for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
-                    if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
                     if (m instanceof MediaTray) {
                         if(togglePcl6Quirks && isGoodPcl6Tray(printer, (MediaTray)m)) {
                             jsonService.accumulate("trays", m.toString());
@@ -210,9 +209,10 @@ public class PrintServiceMatcher {
             Object o = m.invoke(ps, new Object[]{mediaTray});
             if (o instanceof Integer && (Integer)o < 1000) {
                 return true;
+            } else {
+                log.debug("Found suspected bad PCL6 printer tray \"{}\" from printer \"{}\", ignoring", mediaTray, ps.getName());
+                return false;
             }
-            log.debug("Found suspected bad PCL6 printer tray \"{}\" from printer \"{}\"', ignoring", mediaTray, ps.getName());
-            return false;
         }
         catch(ReflectiveOperationException ignore) {
             return true;

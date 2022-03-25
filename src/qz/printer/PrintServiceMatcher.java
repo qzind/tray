@@ -50,6 +50,10 @@ public class PrintServiceMatcher {
     public static NativePrinter getDefaultPrinter() {
         PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
 
+        if(defaultService == null) {
+            return null;
+        }
+
         NativePrinterMap printers = NativePrinterMap.getInstance();
         if (!printers.contains(defaultService)) {
             printers.putAll(defaultService);

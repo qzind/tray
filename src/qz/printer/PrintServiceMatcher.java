@@ -26,6 +26,7 @@ import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.MediaTray;
 import javax.print.attribute.standard.PrinterName;
 import javax.print.attribute.standard.PrinterResolution;
+import java.lang.reflect.Method;
 import java.util.Locale;
 
 public class PrintServiceMatcher {
@@ -170,8 +171,21 @@ public class PrintServiceMatcher {
                     log.info("Gathering printer MediaTray information...");
                     mediaTrayCrawled = true;
                 }
+
+                // HP and Ricoh have buggy drivers, remove bad trays
+                boolean togglePcl6Quirks = false;
+                if(SystemUtilities.isWindows()) {
+                    if (driverStartsWithWord(printer,"HP", "Ricoh") && driverMatchesWord(printer,"PCL6", "PCL 6")) {
+                        togglePcl6Quirks = true;
+                    }
+                }
                 for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
                     if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
+                    if (m instanceof MediaTray) {
+                        if(togglePcl6Quirks && isGoodPcl6Tray(printer, (MediaTray)m)) {
+                            jsonService.accumulate("trays", m.toString());
+                        }
+                    }
                 }
 
                 PrinterResolution res = printer.getResolution().value();
@@ -183,6 +197,56 @@ public class PrintServiceMatcher {
         }
 
         return list;
+    }
+
+    /**
+     * Returns true if the underlying tray id is less than 1000
+     * This should only be used in combination with known-buggy PCL6 drivers, such as HP, Ricoh
+     */
+    private static boolean isGoodPcl6Tray(NativePrinter printer, MediaTray mediaTray) {
+        PrintService ps = printer.getPrintService().value();
+        try {
+            Method m = ps.getClass().getMethod("findTrayID", MediaTray.class);
+            Object o = m.invoke(ps, new Object[]{mediaTray});
+            if (o instanceof Integer && (Integer)o < 1000) {
+                return true;
+            }
+            log.debug("Found suspected bad PCL6 printer tray \"{}\" from printer \"{}\"', ignoring", mediaTray, ps.getName());
+            return false;
+        }
+        catch(ReflectiveOperationException ignore) {
+            return true;
+        }
+    }
+
+    /**
+     * Simple pattern match to try to identify a driver starts with a particular word, usually the vendor name
+     */
+    private static boolean driverStartsWithWord(NativePrinter printer, String ... words) {
+        String driver = printer.getDriver().value();
+        for(String word : words) {
+            if (driver != null && word != null) {
+                if (driver.toLowerCase(Locale.ENGLISH).matches("^" + word.toLowerCase() + "\\b.*")) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Simple pattern match to try to identify a driver has a particular word in it, e.g. "PCL6"
+     */
+    private static boolean driverMatchesWord(NativePrinter printer, String ... words) {
+        String driver = printer.getDriver().value();
+        for(String word : words) {
+            if (driver != null && word != null) {
+                if(driver.toLowerCase(Locale.ENGLISH).matches(".*\\b" + word.toLowerCase(Locale.ENGLISH) + "\\b.*")) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
 }

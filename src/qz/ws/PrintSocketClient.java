@@ -565,7 +565,7 @@ public class PrintSocketClient {
             }
             case FILE_WRITE: {
                 FileParams fileParams = new FileParams(params);
-                Path absPath = FileUtilities.getAbsolutePath(params, request, false);
+                Path absPath = FileUtilities.getAbsolutePath(params, request, false, true);
 
                 Files.write(absPath, fileParams.getData(), StandardOpenOption.CREATE, fileParams.getAppendMode());
                 FileUtilities.inheritParentPermissions(absPath);

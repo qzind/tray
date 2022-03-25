@@ -55,7 +55,7 @@ public class PrintServiceMatcher {
             printers.putAll(defaultService);
         }
 
-        return printers.get(defaultService.getName());
+        return printers.get(defaultService);
     }
 
     public static String findPrinterName(String query) throws JSONException {
@@ -81,7 +81,7 @@ public class PrintServiceMatcher {
         if (!silent) { log.debug("Searching for PrintService matching {}", printerSearch); }
 
         NativePrinter defaultPrinter = getDefaultPrinter();
-        if (printerSearch.equals(defaultPrinter.getName())) {
+        if (defaultPrinter != null && printerSearch.equals(defaultPrinter.getName())) {
             if (!silent) { log.debug("Matched default printer, skipping further search"); }
             return defaultPrinter;
         }

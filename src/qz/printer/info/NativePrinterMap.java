@@ -71,4 +71,13 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
         }
         return false;
     }
+
+    public NativePrinter get(PrintService service) {
+        for (NativePrinter printer : values()) {
+            if (printer.getPrintService().equals(service)) {
+                return printer;
+            }
+        }
+        return null;
+    }
 }

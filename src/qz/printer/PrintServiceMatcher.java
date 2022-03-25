@@ -207,10 +207,14 @@ public class PrintServiceMatcher {
         try {
             Method m = ps.getClass().getMethod("findTrayID", MediaTray.class);
             Object o = m.invoke(ps, new Object[]{mediaTray});
-            if (o instanceof Integer && (Integer)o < 1000) {
+            int trayID = (Integer)o;
+            if (trayID < 1000) {
+                return true;
+            } else if (trayID == 1025 && driverStartsWithWord(printer,"Ricoh")) {
+                // 1025 = "Auto Tray Select"
                 return true;
             } else {
-                log.debug("Found suspected bad PCL6 printer tray \"{}\" from printer \"{}\", ignoring", mediaTray, ps.getName());
+                log.debug("Found suspected bad PCL6 printer tray \"{}\" id \"{}\" from printer \"{}\" driver \"{}\", ignoring", o, mediaTray, ps.getName(), printer.getDriver().value());
                 return false;
             }
         }

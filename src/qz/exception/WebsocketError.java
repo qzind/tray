@@ -27,7 +27,6 @@ public enum WebsocketError {
     SERIAL_PORT_OPEN_FAILED(SERIAL_ERROR, "Unable to open serial port [%s]", 22),
     SERIAL_PORT_ALREADY_OPEN(SERIAL_ERROR, "Serial port [%s] is already open.", 23),
 
-
     // Socket
     SOCKET_NOT_OPEN(SOCKET_ERROR, "Socket [%s] is not open.", 30),
     SOCKET_OPEN_FAILED(SOCKET_ERROR, "Unable to open socket [%s]", 32),
@@ -47,7 +46,6 @@ public enum WebsocketError {
     FILE_ALREADY_LISTENING(FILE_ERROR, "Already listening to path events", 54),
     FILE_NOT_LISTENING(FILE_ERROR, "Not already listening to path events", 55),
     FILE_PATH_NOT_READABLE(FILE_ERROR, "Path is not readable", 56),
-
     FILE_NOT_DIRECTORY(FILE_ERROR, "Path is not a directory", 58),
     FILE_EXCEPTION(FILE_ERROR, "FileIO exception occurred: %s: %s", 59),
 

@@ -7,11 +7,11 @@ public interface DeviceIO {
     String getProductId();
 
 
-    void open() throws DeviceException;
+    void open() throws UsbException;
 
     boolean isOpen();
 
-    void close() throws DeviceException;
+    void close() throws UsbException;
 
 
     void setStreaming(boolean streaming);
@@ -19,12 +19,12 @@ public interface DeviceIO {
     boolean isStreaming();
 
 
-    byte[] readData(int responseSize, Byte exchangeConfig) throws DeviceException;
+    byte[] readData(int responseSize, Byte exchangeConfig) throws UsbException;
 
-    void sendData(byte[] data, Byte exchangeConfig) throws DeviceException;
+    void sendData(byte[] data, Byte exchangeConfig) throws UsbException;
 
 
-    byte[] getFeatureReport(int responseSize, Byte reportId) throws DeviceException;
+    byte[] getFeatureReport(int responseSize, Byte reportId) throws UsbException;
 
-    void sendFeatureReport(byte[] data, Byte reportId) throws DeviceException;
+    void sendFeatureReport(byte[] data, Byte reportId) throws UsbException;
 }

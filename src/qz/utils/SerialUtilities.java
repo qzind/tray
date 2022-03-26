@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.communication.SerialIO;
 import qz.communication.SerialOptions;
+import qz.exception.WebsocketError;
 import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
 import qz.ws.StreamEvent;
@@ -228,7 +229,7 @@ public class SerialUtilities {
     public static void setupSerialPort(final Session session, String UID, SocketConnection connection, JSONObject params) throws JSONException {
         final String portName = params.getString("port");
         if (connection.getSerialPort(portName) != null) {
-            PrintSocketClient.sendError(session, UID, String.format("Serial port [%s] is already open.", portName));
+            PrintSocketClient.sendError(session, UID, WebsocketError.SERIAL_PORT_ALREADY_OPEN, portName);
             return;
         }
 
@@ -253,7 +254,7 @@ public class SerialUtilities {
 
                 PrintSocketClient.sendResult(session, UID, null);
             } else {
-                PrintSocketClient.sendError(session, UID, String.format("Unable to open serial port [%s]", portName));
+                PrintSocketClient.sendError(session, UID, WebsocketError.SERIAL_PORT_OPEN_FAILED, portName);
             }
         }
         catch(SerialPortException e) {

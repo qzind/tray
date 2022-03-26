@@ -7,9 +7,10 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.communication.DeviceException;
+import qz.communication.UsbException;
 import qz.communication.DeviceIO;
-import qz.communication.DeviceOptions;
+import qz.communication.UsbOptions;
+import qz.exception.WebsocketError;
 import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
 import qz.ws.StreamEvent;
@@ -42,12 +43,12 @@ public class UsbUtilities {
     }
 
 
-    public static List<UsbDevice> getUsbDevices(boolean includeHubs) throws DeviceException {
+    public static List<UsbDevice> getUsbDevices(boolean includeHubs) throws UsbException {
         try {
             return getUsbDevices(UsbHostManager.getUsbServices().getRootUsbHub(), includeHubs);
         }
-        catch(UsbException e) {
-            throw new DeviceException(e);
+        catch(javax.usb.UsbException e) {
+            throw new UsbException(e);
         }
     }
 
@@ -71,7 +72,7 @@ public class UsbUtilities {
         return devices;
     }
 
-    public static JSONArray getUsbDevicesJSON(boolean includeHubs) throws DeviceException, JSONException {
+    public static JSONArray getUsbDevicesJSON(boolean includeHubs) throws UsbException, JSONException {
         List<UsbDevice> devices = getUsbDevices(includeHubs);
         JSONArray deviceJSON = new JSONArray();
 
@@ -89,12 +90,12 @@ public class UsbUtilities {
         return deviceJSON;
     }
 
-    public static UsbDevice findDevice(Short vendorId, Short productId) throws DeviceException {
+    public static UsbDevice findDevice(Short vendorId, Short productId) throws UsbException {
         try {
             return findDevice(UsbHostManager.getUsbServices().getRootUsbHub(), vendorId, productId);
         }
-        catch(UsbException e) {
-            throw new DeviceException(e);
+        catch(javax.usb.UsbException e) {
+            throw new UsbException(e);
         }
     }
 
@@ -125,11 +126,11 @@ public class UsbUtilities {
         return null;
     }
 
-    public static List getDeviceInterfaces(Short vendorId, Short productId) throws DeviceException {
+    public static List getDeviceInterfaces(Short vendorId, Short productId) throws UsbException {
         return findDevice(vendorId, productId).getActiveUsbConfiguration().getUsbInterfaces();
     }
 
-    public static JSONArray getDeviceInterfacesJSON(DeviceOptions dOpts) throws DeviceException {
+    public static JSONArray getDeviceInterfacesJSON(UsbOptions dOpts) throws UsbException {
         JSONArray ifaceJSON = new JSONArray();
 
         List ifaces = getDeviceInterfaces(dOpts.getVendorId().shortValue(), dOpts.getProductId().shortValue());
@@ -143,7 +144,7 @@ public class UsbUtilities {
         return ifaceJSON;
     }
 
-    public static List getInterfaceEndpoints(Short vendorId, Short productId, Byte iface) throws DeviceException {
+    public static List getInterfaceEndpoints(Short vendorId, Short productId, Byte iface) throws UsbException {
         if (iface == null) {
             throw new IllegalArgumentException("Device interface cannot be null");
         }
@@ -151,7 +152,7 @@ public class UsbUtilities {
         return findDevice(vendorId, productId).getActiveUsbConfiguration().getUsbInterface(iface).getUsbEndpoints();
     }
 
-    public static JSONArray getInterfaceEndpointsJSON(DeviceOptions dOpts) throws DeviceException {
+    public static JSONArray getInterfaceEndpointsJSON(UsbOptions dOpts) throws UsbException {
         JSONArray endJSON = new JSONArray();
 
         List endpoints = getInterfaceEndpoints(dOpts.getVendorId().shortValue(), dOpts.getProductId().shortValue(), dOpts.getInterfaceId());
@@ -167,7 +168,7 @@ public class UsbUtilities {
 
 
     // shared by usb and hid streaming
-    public static void setupUsbStream(final Session session, String UID, SocketConnection connection, final DeviceOptions dOpts, final StreamEvent.Stream streamType) {
+    public static void setupUsbStream(final Session session, String UID, SocketConnection connection, final UsbOptions dOpts, final StreamEvent.Stream streamType) {
         final DeviceIO usb = connection.getDevice(dOpts);
 
         if (usb != null) {
@@ -201,7 +202,7 @@ public class UsbUtilities {
                             usb.setStreaming(false);
                             log.error("USB stream error", e);
                         }
-                        catch(DeviceException e) {
+                        catch(UsbException e) {
                             usb.setStreaming(false);
                             log.error("USB stream error", e);
 
@@ -214,10 +215,10 @@ public class UsbUtilities {
 
                 PrintSocketClient.sendResult(session, UID, null);
             } else {
-                PrintSocketClient.sendError(session, UID, String.format("USB Device [v:%s p:%s] is already streaming data.", dOpts.getVendorId(), dOpts.getProductId()));
+                PrintSocketClient.sendError(session, UID, WebsocketError.USB_ALREADY_STREAMING, dOpts.getVendorIdString(), dOpts.getProductIdString());
             }
         } else {
-            PrintSocketClient.sendError(session, UID, String.format("USB Device [v:%s p:%s] must be claimed first.", dOpts.getVendorId(), dOpts.getProductId()));
+            PrintSocketClient.sendError(session, UID, WebsocketError.USB_NOT_CLAIMED, dOpts.getVendorIdString(), dOpts.getProductIdString());
         }
     }
 

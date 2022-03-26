@@ -54,7 +54,7 @@ public class H4J_HidUtilities {
         return devicesJSON;
     }
 
-    public static HidDevice findDevice(DeviceOptions dOpts) {
+    public static HidDevice findDevice(UsbOptions dOpts) {
         if (dOpts.getVendorId() == null) {
             throw new IllegalArgumentException("Vendor ID cannot be null");
         }

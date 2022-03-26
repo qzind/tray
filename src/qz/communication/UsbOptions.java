@@ -4,7 +4,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.codehaus.jettison.json.JSONObject;
 import qz.utils.UsbUtilities;
 
-public class DeviceOptions {
+public class UsbOptions {
 
     public enum DeviceMode {
         HID,
@@ -24,6 +24,9 @@ public class DeviceOptions {
 
     private DeviceMode deviceMode;
 
+    private String vendorIdString;
+    private String productIdString;
+
     private Integer vendorId;
     private Integer productId;
 
@@ -37,11 +40,13 @@ public class DeviceOptions {
     private Integer usagePage;
     private String serial;
 
-    public DeviceOptions(JSONObject parameters, DeviceMode deviceMode) {
+    public UsbOptions(JSONObject parameters, DeviceMode deviceMode) {
         this.deviceMode = deviceMode;
 
-        vendorId = UsbUtilities.hexToInt(parameters.optString("vendorId"));
-        productId = UsbUtilities.hexToInt(parameters.optString("productId"));
+        vendorIdString = parameters.optString("vendorId");
+        vendorId = UsbUtilities.hexToInt(vendorIdString);
+        productIdString = parameters.optString("productId");
+        productId = UsbUtilities.hexToInt(productIdString);
 
         if (!parameters.isNull("interface")) {
             interfaceId = UsbUtilities.hexToByte(parameters.optString("interface"));
@@ -71,6 +76,14 @@ public class DeviceOptions {
         return productId;
     }
 
+    public String getVendorIdString() {
+        return vendorIdString;
+    }
+
+    public String getProductIdString() {
+        return productIdString;
+    }
+
     public Byte getInterfaceId() {
         return interfaceId;
     }
@@ -97,9 +110,9 @@ public class DeviceOptions {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || !(obj instanceof DeviceOptions)) { return false; }
+        if (obj == null || !(obj instanceof UsbOptions)) { return false; }
 
-        DeviceOptions that = (DeviceOptions)obj;
+        UsbOptions that = (UsbOptions)obj;
 
         if (this.getVendorId().equals(that.getVendorId()) && this.getProductId().equals(that.getProductId())) {
             if (deviceMode == DeviceMode.USB

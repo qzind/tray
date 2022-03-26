@@ -6,6 +6,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.communication.SocketIO;
+import qz.exception.WebsocketError;
 import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
 import qz.ws.StreamEvent;
@@ -24,7 +25,7 @@ public class SocketUtilities {
         final String location = String.format("%s:%s", host, port);
 
         if (connection.getNetworkSocket(location) != null) {
-            PrintSocketClient.sendError(session, UID, String.format("Socket [%s] is already open", location));
+            PrintSocketClient.sendError(session, UID, WebsocketError.SOCKET_ALREADY_OPEN, location);
             return;
         }
 
@@ -66,7 +67,7 @@ public class SocketUtilities {
 
                 PrintSocketClient.sendResult(session, UID, null);
             } else {
-                PrintSocketClient.sendError(session, UID, String.format("Unable to open socket [%s]", location));
+                PrintSocketClient.sendError(session, UID, WebsocketError.SOCKET_OPEN_FAILED, location);
             }
         }
         catch(IOException e) {

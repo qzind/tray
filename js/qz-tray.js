@@ -2114,6 +2114,15 @@ var qz = (function() {
                     if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
                         deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
                     }
+                } else {
+                    if (typeof deviceInfo.data === 'object') {
+                        if (deviceInfo.data.type.toUpperCase() !== "PLAIN"
+                            || typeof deviceInfo.data.data !== "string") {
+                            throw new Error(`Data format is not supported with connected QZ Tray version (${_qz.websocket.connection.version})`);
+                        }
+
+                        deviceInfo.data = deviceInfo.data.data;
+                    }
                 }
 
                 return _qz.websocket.dataPromise('hid.sendData', deviceInfo);

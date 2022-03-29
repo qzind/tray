@@ -1342,7 +1342,8 @@ var qz = (function() {
              *   @param {number} [options.margins.right=0]
              *   @param {number} [options.margins.bottom=0]
              *   @param {number} [options.margins.left=0]
-             *  @param {string} [options.orientation=null] Valid values <code>[portrait | landscape | reverse-landscape]</code>
+             *  @param {string} [options.orientation=null] Valid values <code>[portrait | landscape | reverse-landscape | null]</code>.
+             *                                             If set to <code>null</code>, orientation will be determined automatically.
              *  @param {number} [options.paperThickness=null]
              *  @param {string|number} [options.printerTray=null] Printer tray to pull from. The number N assumes string equivalent of 'Tray N'. Uses printer default if NULL.
              *  @param {boolean} [options.rasterize=false] Whether documents should be rasterized before printing.

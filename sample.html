@@ -2021,8 +2021,9 @@
             type: $("input[name='serialType']:checked").val(),
             data: $("#serialCmd").val()
         };
-        //allow some escape characters
-        serialData.data = serialData.data.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t");
+        //allow some escape characters (newlines, tabs, hex/unicode)
+        serialData.data = serialData.data.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t")
+            .replace(/\\[xu]([\dA-Fa-f]+)/g, (m, s1) => String.fromCharCode(parseInt(s1, 16)));
 
         qz.serial.sendData($("#serialPort").val(), serialData, options).catch(displayError);
     }

@@ -3088,7 +3088,7 @@
             stopBits: $("#serialStop").val(),
             parity: $("#serialParity").val(),
             flowControl: $("#serialFlow").val(),
-            encoding: $("#serialEncoding").val(),
+            encoding: $("#serialEncoding").val() || null,
             rx: {
                 start: $("#serialStart").val(),
                 end: $("#serialEnd").val() || null,

@@ -18,9 +18,10 @@ public class WmiPrinterStatusThread extends Thread {
     private boolean closing = false;
     private final String printerName;
     private final Winspool spool = Winspool.INSTANCE;
-    private int lastPrinterStatus = -1;
+    private int lastPrinterStatus = 0;
     private boolean wasOk = false;
     private boolean holdsJobs;
+    private int statusModifier = 0;
 
     private WinNT.HANDLE hChangeObject;
     private WinDef.DWORDByReference pdwChangeResult;
@@ -45,6 +46,7 @@ public class WmiPrinterStatusThread extends Thread {
             (int)WmiPrinterStatusMap.OUT_OF_MEMORY.getRawCode() |
             (int)WmiPrinterStatusMap.DOOR_OPEN.getRawCode() |
             (int)WmiPrinterStatusMap.SERVER_UNKNOWN.getRawCode() |
+            (int)WmiPrinterStatusMap.ATTRIBUTE_OFFLINE.getRawCode() |
             (int)WmiPrinterStatusMap.UNKNOWN_STATUS.getRawCode();
 
     Winspool.PRINTER_NOTIFY_OPTIONS listenOptions;
@@ -146,10 +148,30 @@ public class WmiPrinterStatusThread extends Thread {
 
     private void decodeJobStatus(Winspool.PRINTER_NOTIFY_INFO_DATA d) {
         if (d.Type == Winspool.PRINTER_NOTIFY_TYPE) {
+            //fixme this is a test, remove or cleanup
+            if (d.Field == Winspool.PRINTER_NOTIFY_FIELD_ATTRIBUTES) {
+                statusModifier = (d.NotifyData.adwData[0] & Winspool.PRINTER_ATTRIBUTE_WORK_OFFLINE) > 0 ? (int)WmiPrinterStatusMap.ATTRIBUTE_OFFLINE.getRawCode() : 0;
+                int newStatus = lastPrinterStatus - (lastPrinterStatus & (int)WmiPrinterStatusMap.ATTRIBUTE_OFFLINE.getRawCode()) + statusModifier;
+                log.warn("val {} = {}", newStatus, lastPrinterStatus);
+                if (newStatus != lastPrinterStatus) {
+                    Status[] statuses = NativeStatus.fromWmiPrinterStatus(newStatus, printerName);
+                    StatusMonitor.statusChanged(statuses);
+
+                    // If the printer was in an error state before and is not now, send an 'OK'
+                    boolean isOk = ((newStatus) & notOkMask) == 0;
+                    if (isOk && !wasOk) {
+                        // If the status is 0x00000000, fromWmiPrinterStatus returns 'OK'. We don't want to send a duplicate.
+                        if (newStatus != 0) StatusMonitor.statusChanged(new Status[]{new Status(NativePrinterStatus.OK, printerName, 0)});
+                    }
+                    wasOk = isOk;
+
+                    lastPrinterStatus = newStatus;
+                }
+            }
             // Printer Status Changed
             if (d.Field == Winspool.PRINTER_NOTIFY_FIELD_STATUS) {
-                if (d.NotifyData.adwData[0] != lastPrinterStatus) {
-                    Status[] statuses = NativeStatus.fromWmiPrinterStatus(d.NotifyData.adwData[0], printerName);
+                if (d.NotifyData.adwData[0] + statusModifier != lastPrinterStatus) {
+                    Status[] statuses = NativeStatus.fromWmiPrinterStatus(d.NotifyData.adwData[0] | statusModifier, printerName);
                     StatusMonitor.statusChanged(statuses);
 
                     // If the printer was in an error state before and is not now, send an 'OK'
@@ -160,7 +182,7 @@ public class WmiPrinterStatusThread extends Thread {
                     }
                     wasOk = isOk;
 
-                    lastPrinterStatus = d.NotifyData.adwData[0];
+                    lastPrinterStatus = d.NotifyData.adwData[0] | statusModifier;
                 }
             // Printer Attributes Changed
             } else if (d.Field == Winspool.PRINTER_NOTIFY_FIELD_ATTRIBUTES) {

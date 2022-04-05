@@ -606,6 +606,13 @@ var qz = (function() {
                 }
             },
 
+            /** Stub for rejecting with an Error from withing a Promise */
+            reject: function(error) {
+                return _qz.tools.promise(function(resolve, reject)) {
+                    reject(error);
+                }
+            },
+
             stringify: function(object) {
                 //old versions of prototype affect stringify
                 var pjson = Array.prototype.toJSON;
@@ -2118,7 +2125,7 @@ var qz = (function() {
                     if (typeof deviceInfo.data === 'object') {
                         if (deviceInfo.data.type.toUpperCase() !== "PLAIN"
                             || typeof deviceInfo.data.data !== "string") {
-                            throw new Error("Data format is not supported with connected QZ Tray version " + _qz.websocket.connection.version);
+                            _qz.tools.reject(new Error("Data format is not supported with connected QZ Tray version " + _qz.websocket.connection.version));
                         }
 
                         deviceInfo.data = deviceInfo.data.data;

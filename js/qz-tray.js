@@ -608,9 +608,9 @@ var qz = (function() {
 
             /** Stub for rejecting with an Error from withing a Promise */
             reject: function(error) {
-                return _qz.tools.promise(function(resolve, reject)) {
+                return _qz.tools.promise(function(resolve, reject) {
                     reject(error);
-                }
+                })
             },
 
             stringify: function(object) {

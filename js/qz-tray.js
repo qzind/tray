@@ -606,6 +606,13 @@ var qz = (function() {
                 }
             },
 
+            /** Stub for rejecting with an Error from withing a Promise */
+            reject: function(error) {
+                return _qz.tools.promise(function(resolve, reject) {
+                    reject(error);
+                });
+            },
+
             stringify: function(object) {
                 //old versions of prototype affect stringify
                 var pjson = Array.prototype.toJSON;
@@ -2114,6 +2121,15 @@ var qz = (function() {
 
                     if (deviceInfo.data.type && deviceInfo.data.type.toUpperCase() == "FILE") {
                         deviceInfo.data.data = _qz.tools.absolute(deviceInfo.data.data);
+                    }
+                } else {
+                    if (typeof deviceInfo.data === 'object') {
+                        if (deviceInfo.data.type.toUpperCase() !== "PLAIN"
+                            || typeof deviceInfo.data.data !== "string") {
+                            return _qz.tools.reject(new Error("Data format is not supported with connected QZ Tray version " + _qz.websocket.connection.version));
+                        }
+
+                        deviceInfo.data = deviceInfo.data.data;
                     }
                 }
 

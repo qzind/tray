@@ -596,6 +596,10 @@
                                                 </label>
                                                 <input type="number" id="pPxlHeight" class="form-control pull-right" />
                                             </div>
+                                            <div class="form-group form-inline">
+                                                <label for="pPxlTransparent">Ignore Transparency:</label>
+                                                <input type="checkbox" id="pPxlTransparent" class="pull-right" />
+                                            </div>
                                         </div>
                                     </div>
                                 </fieldset>
@@ -2514,6 +2518,8 @@
         //printer
         $("#pPxlWidth").val('');
         $("#pPxlHeight").val('');
+        $("#pPxlRange").val('');
+        $("#pPxlTransparent").prop('checked', false);
 
         //connection
         $("#connectionGroup").css('display', 'none');
@@ -3072,7 +3078,8 @@
             return {
                 pageWidth: $("#pPxlWidth").val(),
                 pageHeight: $("#pPxlHeight").val(),
-                pageRanges: $("#pPxlRange").val()
+                pageRanges: $("#pPxlRange").val(),
+                ignoreTransparency: $("#pPxlTransparent").prop('checked')
             };
         } else {
             return {

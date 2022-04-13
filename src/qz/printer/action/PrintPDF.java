@@ -83,9 +83,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     docHeight = dataOpt.optDouble("pageHeight") * convert;
                 }
 
-                if (!dataOpt.isNull("ignoreTransparency") && dataOpt.optBoolean("ignoreTransparency")) {
-                    ignoreTransparency = true;
-                }
+                ignoreTransparency = dataOpt.optBoolean("ignoreTransparency", false);
 
                 if (!dataOpt.isNull("pageRanges")) {
                     String[] ranges = dataOpt.optString("pageRanges", "").split(",");

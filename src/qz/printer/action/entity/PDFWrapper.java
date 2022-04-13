@@ -1,4 +1,4 @@
-package qz.printer;
+package qz.printer.action.entity;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -6,6 +6,7 @@ import org.apache.pdfbox.printing.PDFPrintable;
 import org.apache.pdfbox.printing.Scaling;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.printer.PrintOptions;
 import qz.utils.SystemUtilities;
 
 import javax.print.attribute.standard.OrientationRequested;

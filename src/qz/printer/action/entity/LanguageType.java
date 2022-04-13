@@ -7,7 +7,7 @@
  * the "LGPL 2.1 License".  A copy of this license should be distributed with
  * this software. http://www.gnu.org/licenses/lgpl-2.1.html
  */
-package qz.printer;
+package qz.printer.action.entity;
 
 import java.util.ArrayList;
 import java.util.Collections;

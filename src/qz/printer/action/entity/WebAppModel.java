@@ -1,4 +1,4 @@
-package qz.printer.action;
+package qz.printer.action.entity;
 
 public class WebAppModel {
 

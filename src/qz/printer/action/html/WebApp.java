@@ -1,4 +1,4 @@
-package qz.printer.action.entity;
+package qz.printer.action.html;
 
 import com.github.zafarkhaja.semver.Version;
 import com.sun.javafx.tk.TKPulseListener;

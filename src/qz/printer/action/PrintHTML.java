@@ -23,8 +23,8 @@ import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
-import qz.printer.action.entity.WebApp;
-import qz.printer.action.entity.WebAppModel;
+import qz.printer.action.html.WebApp;
+import qz.printer.action.html.WebAppModel;
 import qz.utils.PrintingUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;

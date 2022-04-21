@@ -1,4 +1,4 @@
-package qz.printer.action.entity;
+package qz.printer.action.pdf;
 
 import org.apache.pdfbox.contentstream.operator.MissingOperandException;
 import org.apache.pdfbox.contentstream.operator.Operator;

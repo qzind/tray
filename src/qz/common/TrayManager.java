@@ -19,7 +19,7 @@ import qz.auth.Certificate;
 import qz.auth.RequestState;
 import qz.installer.shortcut.ShortcutCreator;
 import qz.printer.PrintServiceMatcher;
-import qz.printer.action.entity.WebApp;
+import qz.printer.action.html.WebApp;
 import qz.ui.*;
 import qz.ui.component.IconCache;
 import qz.ui.tray.TrayType;

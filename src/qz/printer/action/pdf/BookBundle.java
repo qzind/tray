@@ -1,4 +1,4 @@
-package qz.printer.action.entity;
+package qz.printer.action.pdf;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -223,13 +223,18 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     rotatePage(doc, pd, pxlOpts.getRotation());
                 }
 
+                boolean landBased = pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT;
+
                 if (pxlOpts.getOrientation() == null) {
                     PDRectangle bounds = pd.getBBox();
                     if ((page.getImageableHeight() > page.getImageableWidth() && bounds.getWidth() > bounds.getHeight()) ^ (pd.getRotation() / 90) % 2 == 1) {
                         log.info("Adjusting orientation to print landscape PDF source");
                         page.setOrientation(PrintOptions.Orientation.LANDSCAPE.getAsOrientFormat());
+                        landBased = SystemUtilities.isMac();
                     }
-                } else if (pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
+                }
+
+                if (landBased) {
                     //flip imageable area dimensions when in landscape
                     Paper repap = page.getPaper();
                     repap.setImageableArea(repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());

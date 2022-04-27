@@ -202,12 +202,17 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             PageFormat page = job.getPageFormat(null);
             applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
 
+            log.trace("DBG::using page with orientation={} and paper=({},{})[{},{},{},{}]", page.getOrientation(), page.getPaper().getWidth(), page.getPaper().getHeight(),
+                      page.getPaper().getImageableX(), page.getPaper().getImageableY(), page.getPaper().getImageableWidth(), page.getPaper().getImageableHeight());
+
             //trick pdfbox into an alternate doc size if specified
             if (docWidth > 0 || docHeight > 0) {
                 Paper paper = page.getPaper();
 
                 if (docWidth <= 0) { docWidth = page.getImageableWidth(); }
                 if (docHeight <= 0) { docHeight = page.getImageableHeight(); }
+
+                log.trace("DBG::doc size specified, changing paper area to [{},{},{},{}]", paper.getImageableX(), paper.getImageableY(), docWidth, docHeight);
 
                 paper.setImageableArea(paper.getImageableX(), paper.getImageableY(), docWidth, docHeight);
                 page.setPaper(paper);
@@ -219,14 +224,21 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             }
 
             for(PDPage pd : doc.getPages()) {
+                log.trace("DGB::pdf rot={}, bbox={} mbox={}, mtx={}", pd.getRotation(), pd.getBBox(), pd.getMediaBox(), pd.getMatrix());
+
                 if (pxlOpts.getRotation() % 360 != 0) {
                     rotatePage(doc, pd, pxlOpts.getRotation());
                 }
 
+                log.trace("DBG::opts orientation={}", pxlOpts.getOrientation());
                 boolean landBased = pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT;
 
                 if (pxlOpts.getOrientation() == null) {
                     PDRectangle bounds = pd.getBBox();
+
+                    log.trace("DBG::page taller than wide? {}, bounds wider than tall? {}, pd page rotated? {}",
+                              page.getImageableHeight() > page.getImageableWidth(), bounds.getWidth() > bounds.getHeight(), (pd.getRotation() / 90) % 2);
+
                     if ((page.getImageableHeight() > page.getImageableWidth() && bounds.getWidth() > bounds.getHeight()) ^ (pd.getRotation() / 90) % 2 == 1) {
                         log.info("Adjusting orientation to print landscape PDF source");
                         page.setOrientation(PrintOptions.Orientation.LANDSCAPE.getAsOrientFormat());
@@ -239,6 +251,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     Paper repap = page.getPaper();
                     repap.setImageableArea(repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());
                     page.setPaper(repap);
+
+                    log.trace("DBG::performing landscape flip, now paper=[{},{},{},{}]",
+                              repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());
 
                     //reverse fix for OSX
                     if (SystemUtilities.isMac() && pxlOpts.getOrientation() == PrintOptions.Orientation.REVERSE_LANDSCAPE) {

@@ -1,4 +1,4 @@
-package qz.printer.action;
+package qz.printer.action.html;
 
 public class WebAppModel {
 

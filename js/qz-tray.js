@@ -1437,6 +1437,8 @@ var qz = (function() {
          *   @param {number} [data.options.pageHeight] Optional with <code>[html | pdf]</code> formats. Height of the rendering.
          *       Defaults to paper height for <code>[pdf]</code>, or auto sized for <code>[html]</code>.
          *   @param {string} [data.options.pageRanges] Optional with <code>[pdf]</code> formats. Comma-separated list of page ranges to include.
+         *   @param {boolean} [data.options.ignoreTransparency=false] Optional with <code>[pdf]</code> formats. Instructs transparent PDF elements to be ignored.
+         *       Transparent PDF elements are known to degrade performance and quality when printing.
          * @param {...*} [arguments] Additionally three more parameters can be specified:<p/>
          *     <code>{boolean} [resumeOnError=false]</code> Whether the chain should continue printing if it hits an error on one the the prints.<p/>
          *     <code>{string|Array<string>} [signature]</code> Pre-signed signature(s) of the JSON string for containing <code>call</code>, <code>params</code>, and <code>timestamp</code>.<p/>

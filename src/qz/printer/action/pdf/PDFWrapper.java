@@ -1,11 +1,13 @@
-package qz.printer;
+package qz.printer.action.pdf;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.printing.PDFPrintable;
 import org.apache.pdfbox.printing.Scaling;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.pdfbox.rendering.PDFRenderer;
+import qz.printer.PrintOptions;
 import qz.utils.SystemUtilities;
 
 import javax.print.attribute.standard.OrientationRequested;
@@ -24,14 +26,21 @@ public class PDFWrapper implements Printable {
 
     private PDFPrintable printable;
 
-    public PDFWrapper(PDDocument document, Scaling scaling, boolean showPageBorder, float dpi, boolean center, PrintOptions.Orientation orientation, RenderingHints hints) {
+    public PDFWrapper(PDDocument document, Scaling scaling, boolean showPageBorder, boolean ignoreTransparency, float dpi, boolean center, PrintOptions.Orientation orientation, RenderingHints hints) {
         this.document = document;
         this.scaling = scaling;
         if (orientation != null) {
             this.orientation = orientation.getAsOrientRequested();
         }
 
-        printable = new PDFPrintable(document, scaling, showPageBorder, dpi, center);
+        PDFRenderer renderer;
+        if (ignoreTransparency) {
+            renderer = new OpaquePDFRenderer(document);
+        } else {
+            renderer = new PDFRenderer(document);
+        }
+
+        printable = new PDFPrintable(document, scaling, showPageBorder, dpi, center, renderer);
         printable.setRenderingHints(hints);
     }
 

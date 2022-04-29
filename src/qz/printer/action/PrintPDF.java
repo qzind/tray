@@ -16,10 +16,10 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import qz.common.Constants;
-import qz.printer.BookBundle;
-import qz.printer.PDFWrapper;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.printer.action.pdf.BookBundle;
+import qz.printer.action.pdf.PDFWrapper;
 import qz.utils.ConnectionUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
@@ -51,6 +51,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
     private double docWidth = 0;
     private double docHeight = 0;
+    private boolean ignoreTransparency = false;
 
 
     public PrintPDF() {
@@ -81,6 +82,8 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 if (!dataOpt.isNull("pageHeight") && dataOpt.optDouble("pageHeight") > 0) {
                     docHeight = dataOpt.optDouble("pageHeight") * convert;
                 }
+
+                ignoreTransparency = dataOpt.optBoolean("ignoreTransparency", false);
 
                 if (!dataOpt.isNull("pageRanges")) {
                     String[] ranges = dataOpt.optString("pageRanges", "").split(",");
@@ -242,7 +245,11 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
             }
 
-            bundle.append(new PDFWrapper(doc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation(), hints), page, doc.getNumberOfPages());
+            PDFWrapper wrapper = new PDFWrapper(doc, scale, false, ignoreTransparency,
+                                                (float)(useDensity * pxlOpts.getUnits().as1Inch()),
+                                                false, pxlOpts.getOrientation(), hints);
+
+            bundle.append(wrapper, page, doc.getNumberOfPages());
         }
 
         if (pxlOpts.getSpoolSize() > 0 && bundle.getNumberOfPages() > pxlOpts.getSpoolSize()) {
@@ -305,5 +312,6 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         docWidth = 0;
         docHeight = 0;
+        ignoreTransparency = false;
     }
 }

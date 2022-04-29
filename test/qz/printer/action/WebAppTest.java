@@ -4,6 +4,8 @@ import javafx.print.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
+import qz.printer.action.html.WebApp;
+import qz.printer.action.html.WebAppModel;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

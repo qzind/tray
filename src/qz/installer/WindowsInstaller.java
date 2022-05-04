@@ -29,6 +29,7 @@ import static com.sun.jna.platform.win32.WinReg.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -70,7 +71,7 @@ public class WindowsInstaller extends Installer {
             String exe = destination + File.separator + PROPS_FILE+ ".exe";
             log.info("Creating launcher \"{}\" -> \"{}\"", lnk, exe);
             ShellLink.createLink(exe, lnk);
-        } catch(IOException | Win32Exception e) {
+        } catch(InvalidPathException | IOException | Win32Exception e) {
             log.warn("Could not create launcher", e);
         }
         return this;
@@ -105,7 +106,7 @@ public class WindowsInstaller extends Installer {
                     FileUtils.deleteQuietly(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE + ".lnk"));
                     FileUtils.deleteDirectory(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE));
                 }
-            } catch(IOException | Win32Exception ignore) {}
+            } catch(InvalidPathException | IOException | Win32Exception ignore) {}
         }
 
         // Cleanup firewall rules

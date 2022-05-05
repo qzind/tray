@@ -202,7 +202,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             PageFormat page = job.getPageFormat(null);
             applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
 
-            log.trace("DBG::using page with orientation={} and paper=({},{})[{},{},{},{}]", page.getOrientation(), page.getPaper().getWidth(), page.getPaper().getHeight(),
+            log.trace("DBG::using page=[{},{},{},{}]\n\twith orientation={} and paper=({},{})[{},{},{},{}]",
+                      page.getImageableX(), page.getImageableY(), page.getImageableWidth(), page.getImageableHeight(),
+                      page.getOrientation(), page.getPaper().getWidth(), page.getPaper().getHeight(),
                       page.getPaper().getImageableX(), page.getPaper().getImageableY(), page.getPaper().getImageableWidth(), page.getPaper().getImageableHeight());
 
             //trick pdfbox into an alternate doc size if specified
@@ -223,6 +225,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 attributes.remove(MediaPrintableArea.class);
             }
 
+            //check if page is supposed to be landscape to force that orientation on macos
+            boolean macWidePage = SystemUtilities.isMac() && page.getImageableHeight() < page.getImageableWidth();
+
             for(PDPage pd : doc.getPages()) {
                 log.trace("DGB::pdf rot={}, bbox={} mbox={}, mtx={}", pd.getRotation(), pd.getBBox(), pd.getMediaBox(), pd.getMatrix());
 
@@ -230,36 +235,46 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     rotatePage(doc, pd, pxlOpts.getRotation());
                 }
 
-                log.trace("DBG::opts orientation={}", pxlOpts.getOrientation());
-                boolean landBased = pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT;
-
                 if (pxlOpts.getOrientation() == null) {
                     PDRectangle bounds = pd.getBBox();
 
                     log.trace("DBG::page taller than wide? {}, bounds wider than tall? {}, pd page rotated? {}",
                               page.getImageableHeight() > page.getImageableWidth(), bounds.getWidth() > bounds.getHeight(), (pd.getRotation() / 90) % 2);
 
-                    if ((page.getImageableHeight() > page.getImageableWidth() && bounds.getWidth() > bounds.getHeight()) ^ (pd.getRotation() / 90) % 2 == 1) {
+                    //check if print document is oriented differently than the page
+                    boolean misoriented = page.getImageableHeight() > page.getImageableWidth() && bounds.getWidth() > bounds.getHeight();
+
+                    //adjustment is needed if expected orientations don't line up XOR the pdf document itself is rotated
+                    if ((misoriented || macWidePage) ^ (pd.getRotation() / 90) % 2 == 1) {
                         log.info("Adjusting orientation to print landscape PDF source");
                         page.setOrientation(PrintOptions.Orientation.LANDSCAPE.getAsOrientFormat());
-                        landBased = SystemUtilities.isMac();
                     }
                 }
 
-                if (landBased) {
-                    //flip imageable area dimensions when in landscape
+                if ((pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) || macWidePage) {
+                    //flip paper dimensions when in landscape
                     Paper repap = page.getPaper();
                     repap.setImageableArea(repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());
+                    if (macWidePage) {
+                        double pHeight = repap.getHeight();
+                        double pWidth = repap.getWidth();
+                        //noinspection SuspiciousNameCombination -- purposefully flipping values
+                        repap.setSize(pHeight, pWidth);
+                    }
                     page.setPaper(repap);
 
-                    log.trace("DBG::performing landscape flip, now paper=[{},{},{},{}]",
-                              repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());
+                    log.trace("DBG::performing landscape flip");
 
                     //reverse fix for OSX
                     if (SystemUtilities.isMac() && pxlOpts.getOrientation() == PrintOptions.Orientation.REVERSE_LANDSCAPE) {
                         pd.setRotation(pd.getRotation() + 180);
                     }
                 }
+
+                log.trace("DBG::final page=[{},{},{},{}]\n\twith orientation={} and paper=({},{})[{},{},{},{}]",
+                          page.getImageableX(), page.getImageableY(), page.getImageableWidth(), page.getImageableHeight(),
+                          page.getOrientation(), page.getPaper().getWidth(), page.getPaper().getHeight(),
+                          page.getPaper().getImageableX(), page.getPaper().getImageableY(), page.getPaper().getImageableWidth(), page.getPaper().getImageableHeight());
             }
 
             bundle.append(new PDFWrapper(doc, scale, false, (float)(useDensity * pxlOpts.getUnits().as1Inch()), false, pxlOpts.getOrientation(), hints), page, doc.getNumberOfPages());

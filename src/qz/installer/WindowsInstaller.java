@@ -84,7 +84,7 @@ public class WindowsInstaller extends Installer {
             log.info("Creating startup entry \"{}\" -> \"{}\"", lnk, exe);
             ShellLink link = ShellLink.createLink(exe, lnk);
             link.setCMDArgs("--honorautostart"); // honors auto-start preferences
-        } catch(IOException | Win32Exception e) {
+        } catch(InvalidPathException | IOException | Win32Exception e) {
             log.warn("Could not create startup launcher", e);
         }
         return this;

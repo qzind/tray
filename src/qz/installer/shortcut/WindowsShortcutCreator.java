@@ -38,7 +38,7 @@ public class WindowsShortcutCreator extends ShortcutCreator {
         try {
             ShellLink.createLink(getAppPath(), folderPath + File.separator + SHORTCUT_NAME);
         }
-        catch(IOException ex) {
+        catch(InvalidPathException | IOException ex) {
             log.warn("Error creating desktop shortcut", ex);
         }
     }

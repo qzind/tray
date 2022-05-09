@@ -11,7 +11,8 @@
 
 package qz.installer.shortcut;
 
-import mslinks.ShellLink;
+import mslinks.ShellLinkException;
+import mslinks.ShellLinkHelper;
 import qz.common.Constants;
 import qz.installer.WindowsSpecialFolders;
 import qz.utils.SystemUtilities;
@@ -36,9 +37,9 @@ public class WindowsShortcutCreator extends ShortcutCreator {
 
     private void createShortcut(String folderPath) {
         try {
-            ShellLink.createLink(getAppPath(), folderPath + File.separator + SHORTCUT_NAME);
+            ShellLinkHelper.createLink(getAppPath(), folderPath + File.separator + SHORTCUT_NAME);
         }
-        catch(InvalidPathException | IOException ex) {
+        catch(ShellLinkException | IOException ex) {
             log.warn("Error creating desktop shortcut", ex);
         }
     }

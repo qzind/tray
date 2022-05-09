@@ -12,6 +12,8 @@ package qz.installer;
 
 import com.sun.jna.platform.win32.*;
 import mslinks.ShellLink;
+import mslinks.ShellLinkException;
+import mslinks.ShellLinkHelper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -70,8 +72,8 @@ public class WindowsInstaller extends Installer {
             String lnk = loc + File.separator + ABOUT_TITLE + ".lnk";
             String exe = destination + File.separator + PROPS_FILE+ ".exe";
             log.info("Creating launcher \"{}\" -> \"{}\"", lnk, exe);
-            ShellLink.createLink(exe, lnk);
-        } catch(InvalidPathException | IOException | Win32Exception e) {
+            ShellLinkHelper.createLink(exe, lnk);
+        } catch(ShellLinkException | IOException | Win32Exception e) {
             log.warn("Could not create launcher", e);
         }
         return this;
@@ -82,9 +84,9 @@ public class WindowsInstaller extends Installer {
             String lnk = WindowsSpecialFolders.COMMON_STARTUP + File.separator + ABOUT_TITLE + ".lnk";
             String exe = destination + File.separator + PROPS_FILE+ ".exe";
             log.info("Creating startup entry \"{}\" -> \"{}\"", lnk, exe);
-            ShellLink link = ShellLink.createLink(exe, lnk);
+            ShellLink link = ShellLinkHelper.createLink(exe, lnk).getLink();
             link.setCMDArgs("--honorautostart"); // honors auto-start preferences
-        } catch(InvalidPathException | IOException | Win32Exception e) {
+        } catch(ShellLinkException | IOException | Win32Exception e) {
             log.warn("Could not create startup launcher", e);
         }
         return this;

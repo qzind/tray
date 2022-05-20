@@ -80,6 +80,7 @@ public class SerialUtilities {
                 log.trace("Parsed serial setting: DATABITS_7");
                 return SerialPort.DATABITS_7;
             case "8":
+            case "":
                 log.trace("Parsed serial setting: DATABITS_8");
                 return SerialPort.DATABITS_8;
             default:
@@ -210,7 +211,12 @@ public class SerialUtilities {
      */
     public static int parseBaudRate(String rate) {
         int baud = -1;
-        try { baud = Integer.decode(rate.trim()); } catch(NumberFormatException ignore) {}
+
+        if (rate.trim().isEmpty()) {
+            baud = SerialPort.BAUDRATE_9600;
+        } else {
+            try { baud = Integer.decode(rate.trim()); } catch(NumberFormatException ignore) {}
+        }
 
         if (baud == 0) {
             log.trace("Parsed serial setting: 0 (Auto)");

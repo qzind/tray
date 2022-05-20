@@ -2457,8 +2457,8 @@
     function resetRawOptions() {
         //config
         $("#rawSpoolSize").val(1);
-        $("#rawEncoding").val(null);
-        $("#rawSpoolEnd").val(null);
+        $("#rawEncoding").val("");
+        $("#rawSpoolEnd").val("");
         $("#rawForceRaw").prop('checked', false);
         $("#rawCopies").val(1);
 
@@ -2481,8 +2481,8 @@
         $("#pxlJobName").val("");
         $("#pxlLegacy").prop('checked', false);
         $("#pxlOrientation").val("");
-        $("#pxlPaperThickness").val(null);
-        $("#pxlPrinterTray").val(null);
+        $("#pxlPaperThickness").val("");
+        $("#pxlPrinterTray").val("");
         $("#pxlRasterize").prop('checked', false);
         $("#pxlRotation").val(0);
         $("#pxlSpoolSize").val("");
@@ -2543,7 +2543,7 @@
         $("#serialEnd").val('');
         $("#serialWidth").val('');
         $("#serialHeader").prop('checked', false);
-        $("#serialRespEncoding").val('');
+        $("#serialRespEncoding").val('UTF-8');
         $("#serialLenIndex").val('0');
         $("#serialLenLength").val('1');
         $("#serialLenEndianBig").prop('checked', true);
@@ -3101,7 +3101,7 @@
             stopBits: $("#serialStop").val(),
             parity: $("#serialParity").val(),
             flowControl: $("#serialFlow").val(),
-            encoding: $("#serialEncoding").val(),
+            encoding: $("#serialEncoding").val() || null,
             rx: {
                 start: $("#serialStart").val(),
                 end: $("#serialEnd").val() || null,

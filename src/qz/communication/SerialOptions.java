@@ -69,7 +69,7 @@ public class SerialOptions {
                 catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "flowControl", serialOpts.opt("flowControl")); }
             }
 
-            if (!serialOpts.isNull("encoding")) {
+            if (!serialOpts.isNull("encoding") && !serialOpts.optString("encoding").isEmpty()) {
                 try { portSettings.encoding = Charset.forName(serialOpts.getString("encoding")); }
                 catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "encoding", serialOpts.opt("encoding")); }
             }
@@ -179,7 +179,7 @@ public class SerialOptions {
                     }
                 }
 
-                if (!respOpts.isNull("encoding")) {
+                if (!respOpts.isNull("encoding") && !respOpts.optString("encoding").isEmpty()) {
                     try { responseFormat.encoding = Charset.forName(respOpts.getString("encoding")); }
                     catch(JSONException | IllegalArgumentException e) { LoggerUtilities.optionWarn(log, "charset", "encoding", respOpts.opt("encoding")); }
                 }

@@ -22,7 +22,7 @@ public class WmiPrinterStatusThread extends Thread {
     private boolean wasOk = false;
     private boolean holdsJobs;
     private int statusField;
-    private int offlineAttrField;
+    private int attributeField;
 
     private WinNT.HANDLE hChangeObject;
     private WinDef.DWORDByReference pdwChangeResult;
@@ -72,8 +72,8 @@ public class WmiPrinterStatusThread extends Thread {
         this.holdsJobs = holdsJobs;
 
         statusField = initialStatus;
-        offlineAttrField = convertAttribute(initialAttributes);
-        lastPrinterStatus = statusField | offlineAttrField;
+        attributeField = initialAttributes;
+        lastPrinterStatus = combineStatus(statusField, attributeField);
 
         listenOptions = new Winspool.PRINTER_NOTIFY_OPTIONS();
         listenOptions.Version = 2;
@@ -156,13 +156,13 @@ public class WmiPrinterStatusThread extends Thread {
             if (d.Field == Winspool.PRINTER_NOTIFY_FIELD_STATUS) { // Printer Status Changed
                 statusField = d.NotifyData.adwData[0];
             } else if (d.Field == Winspool.PRINTER_NOTIFY_FIELD_ATTRIBUTES) { // Printer Attributes Changed
-                offlineAttrField = convertAttribute(d.NotifyData.adwData[0]);
+                attributeField = d.NotifyData.adwData[0];
                 holdsJobs = (d.NotifyData.adwData[0] & Winspool.PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS) != 0;
             } else {
                 log.warn("Unknown event field {}", d.Field);
             }
 
-            int newStatus = statusField | offlineAttrField;
+            int newStatus = combineStatus(statusField, attributeField);
             if (newStatus != lastPrinterStatus) {
                 Status[] statuses = NativeStatus.fromWmiPrinterStatus(newStatus, printerName);
                 StatusMonitor.statusChanged(statuses);
@@ -185,18 +185,17 @@ public class WmiPrinterStatusThread extends Thread {
                 docNames.put(d.Id, d.NotifyData.Data.pBuf.getWideString(0));
             // Job Status Changed
             } else if (d.Field == Winspool.JOB_NOTIFY_FIELD_STATUS) {
-                ArrayList<Integer> statusList = pendingJobStatuses.get(d.Id);
-                if (statusList == null) {
-                    statusList = new ArrayList<>();
-                    pendingJobStatuses.put(d.Id, statusList);
-                }
+                //If there is no list for a given ID, create a new one and add it to the collection under said ID
+                ArrayList<Integer> statusList = pendingJobStatuses.computeIfAbsent(d.Id, k -> new ArrayList<>());
                 statusList.add(d.NotifyData.adwData[0]);
             }
         }
     }
 
-    private static int convertAttribute(int attribute) {
-        return (attribute & Winspool.PRINTER_ATTRIBUTE_WORK_OFFLINE) == 0 ? 0 : (int)WmiPrinterStatusMap.ATTRIBUTE_WORK_OFFLINE.getRawCode();
+    // Combine the status bitfield and the attribute bitfield to get the final status bitfield. WORK_OFFLINE is the only attribute that we use in statuses.
+    private static int combineStatus(int status, int attribute) {
+        attribute = (attribute & Winspool.PRINTER_ATTRIBUTE_WORK_OFFLINE) == 0 ? 0 : (int)WmiPrinterStatusMap.ATTRIBUTE_WORK_OFFLINE.getRawCode();
+        return status | attribute;
     }
 
     private void sendPendingStatuses() {
@@ -217,15 +216,14 @@ public class WmiPrinterStatusThread extends Thread {
             }
 
             for (int code: codes) {
-                int newStatusCode = code;
                 int oldStatusCode = lastJobStatusCodes.getOrDefault(jobId, 0);
 
                 // This only sets status flags if they are not in oldStatusCode
-                int statusToReport = newStatusCode & (~oldStatusCode);
+                int statusToReport = code & (~oldStatusCode);
                 if (statusToReport != 0) {
                     StatusMonitor.statusChanged(NativeStatus.fromWmiJobStatus(statusToReport, printerName, jobId, docNames.get(jobId)));
                 }
-                lastJobStatusCodes.put(jobId, newStatusCode);
+                lastJobStatusCodes.put(jobId, code);
             }
             i.remove();
 
@@ -272,10 +270,9 @@ public class WmiPrinterStatusThread extends Thread {
             WinNT.HANDLEByReference phPrinter = new WinNT.HANDLEByReference();
             Winspool.INSTANCE.OpenPrinter(printerInfo.pPrinterName, phPrinter, null);
             for(Winspool.JOB_INFO_1 info : WinspoolUtil.getJobInfo1(phPrinter)) {
-                statuses.addAll(Arrays.asList(NativeStatus.fromWmiJobStatus(info.Status, printerInfo.pPrinterName, info.JobId, info.pDocument)));
+                Collections.addAll(statuses, NativeStatus.fromWmiJobStatus(info.Status, printerInfo.pPrinterName, info.JobId, info.pDocument));
             }
-            int printerStatus = printerInfo.Status | convertAttribute(printerInfo.Attributes);
-            statuses.addAll(Arrays.asList(NativeStatus.fromWmiPrinterStatus(printerStatus, printerInfo.pPrinterName)));
+            Collections.addAll(statuses, NativeStatus.fromWmiPrinterStatus(combineStatus(printerInfo.Status, printerInfo.Attributes), printerInfo.pPrinterName));
         }
         return statuses;
     }

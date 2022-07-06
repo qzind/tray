@@ -35,7 +35,7 @@ public enum WmiPrinterStatusMap implements NativeStatus.NativeMap {
     DOOR_OPEN(NativePrinterStatus.DOOR_OPEN, 0x00400000),
     SERVER_UNKNOWN(NativePrinterStatus.SERVER_UNKNOWN, 0x00800000),
     POWER_SAVE(NativePrinterStatus.POWER_SAVE, 0x01000000),
-    ATTRIBUTE_OFFLINE(NativePrinterStatus.OFFLINE, 0x08000000),
+    ATTRIBUTE_WORK_OFFLINE(NativePrinterStatus.OFFLINE, 0x04000000),
     UNKNOWN_STATUS(NativePrinterStatus.UNKNOWN, 0x02000000);
 
     private static SortedMap<Integer,NativePrinterStatus> sortedLookupTable;

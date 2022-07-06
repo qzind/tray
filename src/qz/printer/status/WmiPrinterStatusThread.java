@@ -27,9 +27,9 @@ public class WmiPrinterStatusThread extends Thread {
     private WinNT.HANDLE hChangeObject;
     private WinDef.DWORDByReference pdwChangeResult;
 
-    private HashMap<Integer, String> docNames = new HashMap<>();
-    private HashMap<Integer, ArrayList<Integer>> pendingJobStatuses = new HashMap<>();
-    private HashMap<Integer, Integer> lastJobStatusCodes = new HashMap<>();
+    private final HashMap<Integer, String> docNames = new HashMap<>();
+    private final HashMap<Integer, ArrayList<Integer>> pendingJobStatuses = new HashMap<>();
+    private final HashMap<Integer, Integer> lastJobStatusCodes = new HashMap<>();
 
     // Printer status isn't very good about reporting recovered errors, we'll try to track them manually
     private static final int notOkMask =
@@ -133,6 +133,9 @@ public class WmiPrinterStatusThread extends Thread {
 
     private void ingestChange() {
         PointerByReference dataPointer = new PointerByReference();
+
+        //Many events fire with dataPointer == null. These are errors (which we could filter earlier) or strange wmi inner workings (which we cannot filter out)
+        //See https://stackoverflow.com/questions/16283827/findnextprinterchangenotification-returns-null-for-ppprinternotifyinfo
         if (spool.FindNextPrinterChangeNotification(hChangeObject, pdwChangeResult, statusOptions, dataPointer)) {
             if (dataPointer.getValue() != null) {
                 Winspool.PRINTER_NOTIFY_INFO data = Structure.newInstance(Winspool.PRINTER_NOTIFY_INFO.class, dataPointer.getValue());
@@ -143,8 +146,6 @@ public class WmiPrinterStatusThread extends Thread {
                 }
                 sendPendingStatuses();
                 Winspool.INSTANCE.FreePrinterNotifyInfo(data.getPointer());
-            } else {
-                //Fixme Why do we end up here so often, what causes dataPointer to be null?
             }
         } else {
             issueError();

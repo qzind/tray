@@ -195,7 +195,7 @@ public class WmiPrinterStatusThread extends Thread {
         }
     }
 
-    private int convertAttribute(int attribute) {
+    private static int convertAttribute(int attribute) {
         return (attribute & Winspool.PRINTER_ATTRIBUTE_WORK_OFFLINE) == 0 ? 0 : (int)WmiPrinterStatusMap.ATTRIBUTE_WORK_OFFLINE.getRawCode();
     }
 
@@ -274,7 +274,8 @@ public class WmiPrinterStatusThread extends Thread {
             for(Winspool.JOB_INFO_1 info : WinspoolUtil.getJobInfo1(phPrinter)) {
                 statuses.addAll(Arrays.asList(NativeStatus.fromWmiJobStatus(info.Status, printerInfo.pPrinterName, info.JobId, info.pDocument)));
             }
-            statuses.addAll(Arrays.asList(NativeStatus.fromWmiPrinterStatus(printerInfo.Status, printerInfo.pPrinterName)));
+            int printerStatus = printerInfo.Status | convertAttribute(printerInfo.Attributes);
+            statuses.addAll(Arrays.asList(NativeStatus.fromWmiPrinterStatus(printerStatus, printerInfo.pPrinterName)));
         }
         return statuses;
     }

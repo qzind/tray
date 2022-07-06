@@ -111,7 +111,7 @@ public class TrayManager {
         SystemUtilities.setSystemLookAndFeel();
         iconCache = new IconCache();
 
-        if (!headless && SystemTray.isSupported()) { // UI mode with tray
+        if (SystemUtilities.isSystemTraySupported(headless)) { // UI mode with tray
             switch(SystemUtilities.getOsType()) {
                 case WINDOWS:
                     tray = TrayType.JX.init();

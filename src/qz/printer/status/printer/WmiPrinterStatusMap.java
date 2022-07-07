@@ -35,7 +35,13 @@ public enum WmiPrinterStatusMap implements NativeStatus.NativeMap {
     DOOR_OPEN(NativePrinterStatus.DOOR_OPEN, 0x00400000),
     SERVER_UNKNOWN(NativePrinterStatus.SERVER_UNKNOWN, 0x00800000),
     POWER_SAVE(NativePrinterStatus.POWER_SAVE, 0x01000000),
+
+    /**
+     * For internal use only, not WMI values (change as needed)
+     */
+    // Used for mapping PRINTER_ATTRIBUTE_WORK_OFFLINE from printer attributes to printer status
     ATTRIBUTE_WORK_OFFLINE(NativePrinterStatus.OFFLINE, 0x04000000),
+    // "Unknown" placeholder for future/unmapped values
     UNKNOWN_STATUS(NativePrinterStatus.UNKNOWN, 0x02000000);
 
     private static SortedMap<Integer,NativePrinterStatus> sortedLookupTable;

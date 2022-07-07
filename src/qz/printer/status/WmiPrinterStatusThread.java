@@ -14,15 +14,16 @@ import java.util.*;
 public class WmiPrinterStatusThread extends Thread {
 
     private static final Logger log = LogManager.getLogger(StatusMonitor.class);
-
-    private boolean closing = false;
-    private final String printerName;
     private final Winspool spool = Winspool.INSTANCE;
-    private int lastPrinterStatus;
-    private boolean wasOk = false;
+
+    private String printerName;
     private boolean holdsJobs;
     private int statusField;
     private int attributeField;
+    private int lastPrinterStatus;
+
+    private boolean wasOk = false;
+    private boolean closing = false;
 
     private WinNT.HANDLE hChangeObject;
     private WinDef.DWORDByReference pdwChangeResult;
@@ -66,13 +67,12 @@ public class WmiPrinterStatusThread extends Thread {
         }
     }
 
-    public WmiPrinterStatusThread(String name, int initialStatus, int initialAttributes, boolean holdsJobs) {
-        super("Printer Status Monitor " + name);
-        printerName = name;
-        this.holdsJobs = holdsJobs;
-
-        statusField = initialStatus;
-        attributeField = initialAttributes;
+    public WmiPrinterStatusThread(Winspool.PRINTER_INFO_2 printerInfo2) {
+        super("Printer Status Monitor " + printerInfo2.pPrinterName);
+        printerName = printerInfo2.pPrinterName;
+        holdsJobs = (printerInfo2.Attributes & Winspool.PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS) > 0;
+        statusField = printerInfo2.Status;
+        attributeField = printerInfo2.Attributes;
         lastPrinterStatus = combineStatus(statusField, attributeField);
 
         listenOptions = new Winspool.PRINTER_NOTIFY_OPTIONS();
@@ -193,10 +193,17 @@ public class WmiPrinterStatusThread extends Thread {
         }
     }
 
-    // Combine the status bitfield and the attribute bitfield to get the final status bitfield. WORK_OFFLINE is the only attribute that we use in statuses.
-    private static int combineStatus(int status, int attribute) {
-        attribute = (attribute & Winspool.PRINTER_ATTRIBUTE_WORK_OFFLINE) == 0 ? 0 : (int)WmiPrinterStatusMap.ATTRIBUTE_WORK_OFFLINE.getRawCode();
-        return status | attribute;
+    /**
+     * Bitwise-safe combination of statusField and attributeField's PRINTER_ATTRIBUTE_WORK_OFFLINE.
+     *
+     * Due to PRINTER_ATTRIBUTE_WORK_OFFLINE's overlapping bitwise value, we must use a
+     * non-overlapping value, ATTRIBUTE_WORK_OFFLINE.
+     *
+     * See also: https://stackoverflow.com/questions/41437023
+     */
+    private static int combineStatus(int statusField, int attributeField) {
+        int workOfflineFlag = (attributeField & Winspool.PRINTER_ATTRIBUTE_WORK_OFFLINE) == 0 ? 0 : (int)WmiPrinterStatusMap.ATTRIBUTE_WORK_OFFLINE.getRawCode();
+        return statusField | workOfflineFlag;
     }
 
     private void sendPendingStatuses() {

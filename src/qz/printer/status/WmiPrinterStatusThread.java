@@ -134,9 +134,8 @@ public class WmiPrinterStatusThread extends Thread {
     private void ingestChange() {
         PointerByReference dataPointer = new PointerByReference();
 
-        //Many events fire with dataPointer == null. These are errors (which we could filter earlier) or strange wmi inner workings (which we cannot filter out)
-        //See https://stackoverflow.com/questions/16283827/findnextprinterchangenotification-returns-null-for-ppprinternotifyinfo
         if (spool.FindNextPrinterChangeNotification(hChangeObject, pdwChangeResult, statusOptions, dataPointer)) {
+            // Many events fire with dataPointer == null, see also https://stackoverflow.com/questions/16283827
             if (dataPointer.getValue() != null) {
                 Winspool.PRINTER_NOTIFY_INFO data = Structure.newInstance(Winspool.PRINTER_NOTIFY_INFO.class, dataPointer.getValue());
                 data.read();

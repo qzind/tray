@@ -133,7 +133,6 @@ public class WmiPrinterStatusThread extends Thread {
 
     private void ingestChange() {
         PointerByReference dataPointer = new PointerByReference();
-
         if (spool.FindNextPrinterChangeNotification(hChangeObject, pdwChangeResult, statusOptions, dataPointer)) {
             // Many events fire with dataPointer == null, see also https://stackoverflow.com/questions/16283827
             if (dataPointer.getValue() != null) {

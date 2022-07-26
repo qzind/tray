@@ -50,6 +50,7 @@ public class FirefoxCertificateInstaller {
     private static final Version MAC_POLICY_VERSION = Version.valueOf("63.0.0");
     private static final Version LINUX_POLICY_VERSION = Version.valueOf("65.0.0");
     public static final Version FIREFOX_RESTART_VERSION = Version.valueOf("60.0.0");
+
     public static final String LINUX_GLOBAL_POLICY_LOCATION = "/etc/firefox/policies/policies.json";
     public static final String LINUX_SNAP_CERT_LOCATION = "/etc/firefox/policies/" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION; // See https://github.com/mozilla/policy-templates/issues/936
     public static final String LINUX_GLOBAL_CERT_LOCATION = "/usr/lib/mozilla/certificates/" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION;

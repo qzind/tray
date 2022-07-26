@@ -29,6 +29,7 @@ import qz.utils.WindowsUtilities;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -49,9 +50,11 @@ public class FirefoxCertificateInstaller {
     private static final Version MAC_POLICY_VERSION = Version.valueOf("63.0.0");
     private static final Version LINUX_POLICY_VERSION = Version.valueOf("65.0.0");
     public static final Version FIREFOX_RESTART_VERSION = Version.valueOf("60.0.0");
-
+    public static final String LINUX_GLOBAL_POLICY_LOCATION = "/etc/firefox/policies/policies.json";
+    public static final String LINUX_SNAP_CERT_LOCATION = "/etc/firefox/policies/" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION; // See https://github.com/mozilla/policy-templates/issues/936
+    public static final String LINUX_GLOBAL_CERT_LOCATION = "/usr/lib/mozilla/certificates/" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION;
     private static String DISTRIBUTION_ENTERPRISE_ROOT_POLICY = "{ \"policies\": { \"Certificates\": { \"ImportEnterpriseRoots\": true } } }";
-    private static String DISTRIBUTION_INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION + "\"] } } }";
+    private static String DISTRIBUTION_INSTALL_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION + "\", \"" + LINUX_SNAP_CERT_LOCATION + "\" ] } } }";
     private static String DISTRIBUTION_REMOVE_CERT_POLICY = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"/opt/" + Constants.PROPS_FILE +  "/auth/root-ca.crt\"] } } }";
 
     public static final String DISTRIBUTION_POLICY_LOCATION = "distribution/policies.json";
@@ -180,23 +183,18 @@ public class FirefoxCertificateInstaller {
     public static boolean installDistributionPolicy(AppInfo app, X509Certificate cert) {
         Path jsonPath = app.getPath().resolve(SystemUtilities.isMac() ? DISTRIBUTION_MAC_POLICY_LOCATION:DISTRIBUTION_POLICY_LOCATION);
         String jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? DISTRIBUTION_ENTERPRISE_ROOT_POLICY:DISTRIBUTION_INSTALL_CERT_POLICY;
+
+        // Special handling for snaps
+        if(app.getPath().toString().startsWith("/snap")) {
+            log.info("Snap detected, installing policy file to global location instead: {}", LINUX_GLOBAL_POLICY_LOCATION);
+            jsonPath = Paths.get(LINUX_GLOBAL_POLICY_LOCATION);
+        }
+
         try {
             if(jsonPolicy.equals(DISTRIBUTION_INSTALL_CERT_POLICY)) {
                 // Linux lacks the concept of "enterprise roots", we'll write it to a known location instead
-                File certFile = new File("/usr/lib/mozilla/certificates", Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
-
-                // Make sure we can traverse and read
-                File certs = new File("/usr/lib/mozilla/certificates");
-                certs.mkdirs();
-                certs.setReadable(true, false);
-                certs.setExecutable(true, false);
-                File mozilla = certs.getParentFile();
-                mozilla.setReadable(true, false);
-                mozilla.setExecutable(true, false);
-
-                // Make sure we can read
-                CertificateManager.writeCert(cert, certFile);
-                certFile.setReadable(true, false);
+                writeCertFile(cert, LINUX_SNAP_CERT_LOCATION); // so that the snap can read from it
+                writeCertFile(cert, LINUX_GLOBAL_CERT_LOCATION); // default location for non-snaps
             }
 
             File jsonFile = jsonPath.toFile();
@@ -241,7 +239,16 @@ public class FirefoxCertificateInstaller {
     }
 
     public static boolean issueRestartWarning(ArrayList<Path> runningPaths, AppInfo appInfo) {
-        if (runningPaths.contains(appInfo.getExePath())) {
+        boolean firefoxIsRunning = runningPaths.contains(appInfo.getExePath());
+
+        // Edge case for detecting if snap is running, since we can't compare the exact path easily
+        for(Path runningPath : runningPaths) {
+            if(runningPath.startsWith("/snap/")) {
+                firefoxIsRunning = true;
+            }
+        }
+
+        if (firefoxIsRunning) {
             if (appInfo.getVersion().greaterThanOrEqualTo(FirefoxCertificateInstaller.FIREFOX_RESTART_VERSION)) {
                 try {
                     Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
@@ -253,5 +260,22 @@ public class FirefoxCertificateInstaller {
             }
         }
         return false;
+    }
+
+    private static void writeCertFile(X509Certificate cert, String location) throws IOException {
+        File certFile = new File(location);
+
+        // Make sure we can traverse and read
+        File certs = new File("/usr/lib/mozilla/certificates");
+        certs.mkdirs();
+        certs.setReadable(true, false);
+        certs.setExecutable(true, false);
+        File mozilla = certs.getParentFile();
+        mozilla.setReadable(true, false);
+        mozilla.setExecutable(true, false);
+
+        // Make sure we can read
+        CertificateManager.writeCert(cert, certFile);
+        certFile.setReadable(true, false);
     }
 }

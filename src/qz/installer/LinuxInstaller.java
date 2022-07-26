@@ -165,7 +165,6 @@ public class LinuxInstaller extends Installer {
         if (udev.exists()) {
             udev.delete();
         }
-
         return this;
     }
 

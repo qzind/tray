@@ -848,8 +848,6 @@ var qz = (function() {
                 });
             },
 
-
-
             /** Check if QZ version supports chosen algorithm */
             algorithm: function(quiet) {
                 //if not connected yet we will assume compatibility exists for the time being
@@ -2445,7 +2443,7 @@ var qz = (function() {
             },
 
             /**
-             * Obtains computer hostname
+             * Get computer hostname
              *
              * @param {string} [hostname] DEPRECATED Hostname to try to connect to when determining network interfaces, defaults to "google.com"
              * @param {number} [port] DEPRECATED Port to use with custom hostname, defaults to 443

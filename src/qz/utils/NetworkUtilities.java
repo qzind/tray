@@ -80,13 +80,13 @@ public class NetworkUtilities {
     }
 
     public static JSONObject getDeviceJSON(JSONObject params) throws JSONException {
-         Device primary = getInstance(params.optString("hostname", defaultHostname),
+        Device primary = getInstance(params.optString("hostname", defaultHostname),
                                                 params.optInt("port", defaultPort)).primaryDevice;
-         if(primary != null) {
-             return primary.toJSON();
-         } else {
-             Exception e = instance.primaryException;
-             return new JSONObject().put("error", "Unable to determine primary network device: " + e.getClass().getSimpleName() + " " + e.getMessage());
+        if(primary != null) {
+            return primary.toJSON();
+        } else {
+            Exception e = instance.primaryException;
+            return new JSONObject().put("error", "Unable to determine primary network device: " + e.getClass().getSimpleName() + " " + e.getMessage());
         }
     }
 

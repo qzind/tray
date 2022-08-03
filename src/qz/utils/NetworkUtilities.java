@@ -37,19 +37,28 @@ public class NetworkUtilities {
     private static String defaultHostname = "google.com";
     private static int defaultPort = 443;
 
+    private String hostname;
+    private int port;
+
     private ArrayList<Device> devices;
     private Device primaryDevice;
+    private Exception primaryException;
 
 
     private NetworkUtilities(String hostname, int port) {
-        try { primaryDevice = new Device(getPrimaryInetAddress(hostname, port), true); }
-        catch(SocketException ignore) {}
+        this.hostname = hostname;
+        this.port = port;
+        try {
+            primaryDevice = new Device(getPrimaryInetAddress(hostname, port), true);
+        } catch(Exception e) {
+            log.warn("Unable to determine primary network device", e);
+            primaryException = e;
+        }
     }
 
     public static NetworkUtilities getInstance(String hostname, int port) {
         if (instance == null) {
-            try { instance = new NetworkUtilities(hostname, port); }
-            catch(Exception e) { e.printStackTrace(); }
+            instance = new NetworkUtilities(hostname, port);
         }
 
         return instance;
@@ -71,13 +80,13 @@ public class NetworkUtilities {
     }
 
     public static JSONObject getDeviceJSON(JSONObject params) throws JSONException {
-        Device primary = getInstance(params.optString("hostname", defaultHostname),
-                                     params.optInt("port", defaultPort)).primaryDevice;
-
-        if (primary != null) {
-            return primary.toJSON();
-        } else {
-            return new JSONObject().put("error", "Unable to initialize network utilities");
+         Device primary = getInstance(params.optString("hostname", defaultHostname),
+                                                params.optInt("port", defaultPort)).primaryDevice;
+         if(primary != null) {
+             return primary.toJSON();
+         } else {
+             Exception e = instance.primaryException;
+             return new JSONObject().put("error", "Unable to determine primary network device: " + e.getClass().getSimpleName() + " " + e.getMessage());
         }
     }
 
@@ -99,19 +108,13 @@ public class NetworkUtilities {
         return devices;
     }
 
-    private static InetAddress getPrimaryInetAddress(String hostname, int port) {
+    private static InetAddress getPrimaryInetAddress(String hostname, int port) throws Exception {
         log.info("Initiating a temporary connection to \"{}:{}\" to determine main Network Interface", hostname, port);
 
-        try(Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(hostname, port));
+        Socket socket = new Socket();
+        socket.connect(new InetSocketAddress(hostname, port));
 
-            return socket.getLocalAddress();
-        }
-        catch(IOException e) {
-            log.warn("Could not fetch primary adapter", e);
-        }
-
-        return null;
+        return socket.getLocalAddress();
     }
 
     /**

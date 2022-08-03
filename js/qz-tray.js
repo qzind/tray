@@ -848,6 +848,8 @@ var qz = (function() {
                 });
             },
 
+
+
             /** Check if QZ version supports chosen algorithm */
             algorithm: function(quiet) {
                 //if not connected yet we will assume compatibility exists for the time being
@@ -2443,13 +2445,28 @@ var qz = (function() {
             },
 
             /**
+             * Obtains computer hostname
+             *
+             * @param {string} [hostname] DEPRECATED Hostname to try to connect to when determining network interfaces, defaults to "google.com"
+             * @param {number} [port] DEPRECATED Port to use with custom hostname, defaults to 443
              * @returns {Promise<string|Error>} Connected system's hostname.
              *
              * @memberof qz.networking
              * @since 2.2.2
              */
-            hostname: function() {
-                return _qz.websocket.dataPromise('networking.hostname');
+            hostname: function(hostname, port) {
+                // Wrap < 2.2.2
+                if (_qz.tools.versionCompare(2, 2, 2) < 0) {
+                    return _qz.tools.promise(function(resolve, reject) {
+                        return _qz.websocket.dataPromise('networking.device', { hostname: hostname, port: port }).then(function(device) {
+                            console.log("using compat")
+                            resolve(device.hostname);
+                        });
+                    });
+                } else {
+                    console.log("using native")
+                    return _qz.websocket.dataPromise('networking.hostname');
+                }
             },
 
             /**

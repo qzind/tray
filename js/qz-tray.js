@@ -2443,6 +2443,16 @@ var qz = (function() {
             },
 
             /**
+             * @returns {Promise<string|Error>} Connected system's hostname.
+             *
+             * @memberof qz.networking
+             * @since 2.2.2
+             */
+            hostname: function() {
+                return _qz.websocket.dataPromise('networking.hostname');
+            },
+
+            /**
              * @param {string} [hostname] Hostname to try to connect to when determining network interfaces, defaults to "google.com"
              * @param {number} [port] Port to use with custom hostname, defaults to 443
              * @returns {Promise<Array<Object>|Error>} Connected system's network information.

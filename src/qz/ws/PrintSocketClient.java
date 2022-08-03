@@ -598,6 +598,9 @@ public class PrintSocketClient {
             case NETWORKING_DEVICES:
                 sendResult(session, UID, NetworkUtilities.getDevicesJSON(params));
                 break;
+            case NETWORKING_HOSTNAME:
+                sendResult(session, UID, SystemUtilities.getHostName());
+                break;
             case GET_VERSION:
                 sendResult(session, UID, Constants.VERSION);
                 break;

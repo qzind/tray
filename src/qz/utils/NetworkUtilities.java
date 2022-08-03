@@ -37,17 +37,12 @@ public class NetworkUtilities {
     private static String defaultHostname = "google.com";
     private static int defaultPort = 443;
 
-    private String hostname;
-    private int port;
-
     private ArrayList<Device> devices;
     private Device primaryDevice;
     private Exception primaryException;
 
 
     private NetworkUtilities(String hostname, int port) {
-        this.hostname = hostname;
-        this.port = port;
         try {
             primaryDevice = new Device(getPrimaryInetAddress(hostname, port), true);
         } catch(Exception e) {

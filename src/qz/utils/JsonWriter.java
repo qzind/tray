@@ -41,7 +41,7 @@ public class JsonWriter {
             return true;
         }
 
-        JSONObject config = f.exists() ? new JSONObject(FileUtils.readFileToString(f, Charsets.UTF_8)) : new JSONObject();
+        JSONObject config = f.exists() && f.length() > 0 ? new JSONObject(FileUtils.readFileToString(f, Charsets.UTF_8)) : new JSONObject();
         JSONObject append = new JSONObject(data);
 
         if (!delete) {

@@ -1,5 +1,6 @@
 package qz.installer;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -133,6 +134,16 @@ public class LinuxInstaller extends Installer {
             ShellUtilities.execute("udevadm", "control", "--reload-rules");
         } catch(IOException e) {
             log.warn("Could not install udev rules, usb support may fail {}", UDEV_RULES, e);
+        }
+
+        // Cleanup incorrectly placed files
+        File badFirefoxJs = new File("/usr/bin/defaults/pref/" + PROPS_FILE + ".js");
+        File badFirefoxCfg = new File("/usr/bin/" + PROPS_FILE + ".cfg");
+
+        if(badFirefoxCfg.exists()) {
+            log.info("Removing incorrectly placed Firefox configuration {}, {}...", badFirefoxJs, badFirefoxCfg);
+            badFirefoxCfg.delete();
+            new File("/usr/bin/defaults").delete();
         }
 
         // Cleanup

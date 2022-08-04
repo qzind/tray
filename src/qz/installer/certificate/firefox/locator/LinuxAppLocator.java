@@ -31,9 +31,15 @@ public class LinuxAppLocator extends AppLocator {
                     log.info("Found {} {}: {}, investigating...", alias.getVendor(), alias.getName(true), path);
                     try {
                         File file = path.toFile().getCanonicalFile(); // fix symlinks
+                        if(file.getPath().endsWith("/snap")) {
+                            // Ubuntu 22.04+ ships Firefox as a snap
+                            // Snaps are read-only and are symlinks back to /usr/bin/snap
+                            // Reset the executable back to /snap/bin/firefox to get proper version information
+                            file = path.toFile();
+                        }
                         String contentType = Files.probeContentType(file.toPath());
                         if(file.getPath().endsWith(".sh")) {
-                            // Ubuntu likes to use .../firefox/firefox.sh, return .../firefox/firefox instead
+                            // Legacy Ubuntu likes to use .../firefox/firefox.sh, return .../firefox/firefox instead
                             log.info("Found an '.sh' file: {}, removing file extension: {}", file, file = new File(FilenameUtils.removeExtension(file.getPath())));
                         } else if(contentType != null && contentType.equals("application/x-shellscript")) {
                             // Debian and Arch like to place a stub script directly in /usr/bin/
@@ -68,10 +74,18 @@ public class LinuxAppLocator extends AppLocator {
                             log.info("Assuming {} {} is installed: {}", alias.getVendor(), alias.getName(true), file);
                         }
                         AppInfo appInfo = new AppInfo(alias, file.toPath());
+                        if(file.getPath().startsWith("/snap/")) {
+                            // Ubuntu 22.04+ uses snaps, fallback to a sane "path" value
+                            String snapPath = file.getPath(); // e.g. /snap/bin/firefox
+                            snapPath = snapPath.replaceFirst("/bin/", "/");
+                            snapPath += "/current";
+                            appInfo.setPath(Paths.get(snapPath));
+                        }
+
                         appList.add(appInfo);
 
                         // Call "--version" on executable to obtain version information
-                        Process p = Runtime.getRuntime().exec(new String[] {file.getCanonicalPath(), "--version" }, env);
+                        Process p = Runtime.getRuntime().exec(new String[] {file.getPath(), "--version" }, env);
                         BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
                         String version = reader.readLine();
                         reader.close();

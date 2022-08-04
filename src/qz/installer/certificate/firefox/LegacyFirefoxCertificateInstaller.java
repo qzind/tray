@@ -39,6 +39,9 @@ public class LegacyFirefoxCertificateInstaller {
 
     public static boolean installAutoConfigScript(AppInfo appInfo, String certData, String ... hostNames) {
         try {
+            if(appInfo.getPath().toString().equals("/usr/bin")) {
+                throw new Exception("Preventing install to root location");
+            }
             writePrefsFile(appInfo);
             writeParsedConfig(appInfo, certData, false, hostNames);
             return true;

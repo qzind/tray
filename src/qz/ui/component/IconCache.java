@@ -258,11 +258,6 @@ public class IconCache {
      *  - macOS 10.14+ dark mode support
      */
     public void fixTrayIcons(boolean darkTaskbar) {
-        // Fix the tray icon to look proper on Ubuntu
-        if (UnixUtilities.isUbuntu()) {
-            UbuntuUtilities.fixTrayIcons(this);
-        }
-
         // Handle mask-style tray icons
         if (SystemUtilities.prefersMaskTrayIcon()) {
             // Clone the mask icon

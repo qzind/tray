@@ -1,9 +1,12 @@
 package qz.utils;
 
+import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.common.Constants;
 
+import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -33,5 +36,20 @@ public class LinuxUtilities {
 
         String[] command = {foundElevator, "cp", source.toString(), destination.toString()};
         return ShellUtilities.execute(command);
+    }
+
+    /**
+     * Runs a shell command to determine if "Dark" desktop theme is enabled
+     * @return true if enabled, false if not
+     */
+    public static boolean isDarkMode() {
+        return !ShellUtilities.execute(new String[] { "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" }, new String[] { "dark" }, true, true).isEmpty();
+    }
+
+    public static double getScaleFactor() {
+        if (Constants.JAVA_VERSION.lessThan(Version.valueOf("11.0.0"))) {
+            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+        }
+        return GtkUtilities.getScaleFactor();
     }
 }

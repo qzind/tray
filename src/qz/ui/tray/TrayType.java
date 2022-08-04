@@ -1,6 +1,7 @@
 package qz.ui.tray;
 
 import org.jdesktop.swinghelper.tray.JXTrayIcon;
+import qz.ui.component.IconCache;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,14 +19,15 @@ public enum TrayType {
 
     private JXTrayIcon tray = null;
     private TaskbarTrayIcon taskbar = null;
+    private IconCache iconCache;
 
     public JXTrayIcon tray() { return tray; }
 
-    public TrayType init() {
-        return init(null);
+    public TrayType init(IconCache iconCache) {
+        return init(null, iconCache);
     }
 
-    public TrayType init(ActionListener exitListener) {
+    public TrayType init(ActionListener exitListener, IconCache iconCache) {
         switch (this) {
             case JX:
                 tray = new JXTrayIcon(blankImage()); break;
@@ -36,6 +38,7 @@ public enum TrayType {
             default:
                 taskbar = new TaskbarTrayIcon(blankImage(), exitListener);
         }
+        this.iconCache = iconCache;
         return this;
     }
 
@@ -46,6 +49,14 @@ public enum TrayType {
     public boolean isTray() { return tray != null; }
 
     public boolean getTaskbar() { return taskbar != null; }
+
+    public void setIcon(IconCache.Icon icon) {
+        if (isTray()) {
+            tray.setImage(iconCache.getImage(icon, tray.getSize()));
+        } else {
+            taskbar.setIconImages(iconCache.getImages(icon));
+        }
+    }
 
     public void setImage(Image image) {
         if (isTray()) {

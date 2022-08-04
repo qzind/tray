@@ -38,6 +38,8 @@ import java.util.ArrayList;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
+import static qz.ui.component.IconCache.Icon.*;
+
 /**
  * Manages the icons and actions associated with the TrayIcon
  *
@@ -111,18 +113,18 @@ public class TrayManager {
         SystemUtilities.setSystemLookAndFeel();
         iconCache = new IconCache();
 
-        if (!headless && SystemTray.isSupported()) { // UI mode with tray
+        if (SystemUtilities.isSystemTraySupported(headless)) { // UI mode with tray
             switch(SystemUtilities.getOsType()) {
                 case WINDOWS:
-                    tray = TrayType.JX.init();
+                    tray = TrayType.JX.init(iconCache);
                     // Undocumented HiDPI behavior
                     tray.setImageAutoSize(true);
                     break;
                 case MAC:
-                    tray = TrayType.CLASSIC.init();
+                    tray = TrayType.CLASSIC.init(iconCache);
                     break;
                 default:
-                    tray = TrayType.MODERN.init();
+                    tray = TrayType.MODERN.init(iconCache);
             }
 
             // OS-specific tray icon handling
@@ -131,7 +133,7 @@ public class TrayManager {
             }
 
             // Iterates over all images denoted by IconCache.getTypes() and caches them
-            tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
+            tray.setIcon(DANGER_ICON);
             tray.setToolTip(name);
 
             try {
@@ -142,8 +144,8 @@ public class TrayManager {
                 headless = true;
             }
         } else if (!headless) { // UI mode without tray
-            tray = TrayType.TASKBAR.init(exitListener);
-            tray.setImage(iconCache.getImage(IconCache.Icon.DANGER_ICON, tray.getSize()));
+            tray = TrayType.TASKBAR.init(exitListener, iconCache);
+            tray.setIcon(DANGER_ICON);
             tray.setToolTip(name);
             tray.showTaskbar();
         }
@@ -244,9 +246,9 @@ public class TrayManager {
 
         JMenu advancedMenu = new JMenu("Advanced");
         advancedMenu.setMnemonic(KeyEvent.VK_A);
-        advancedMenu.setIcon(iconCache.getIcon(IconCache.Icon.SETTINGS_ICON));
+        advancedMenu.setIcon(iconCache.getIcon(SETTINGS_ICON));
 
-        JMenuItem sitesItem = new JMenuItem("Site Manager...", iconCache.getIcon(IconCache.Icon.SAVED_ICON));
+        JMenuItem sitesItem = new JMenuItem("Site Manager...", iconCache.getIcon(SAVED_ICON));
         sitesItem.setMnemonic(KeyEvent.VK_M);
         sitesItem.addActionListener(savedListener);
         sitesDialog = new SiteManagerDialog(sitesItem, iconCache, prefs);
@@ -254,19 +256,19 @@ public class TrayManager {
 
         JMenuItem diagnosticMenu = new JMenu("Diagnostic");
 
-        JMenuItem browseApp = new JMenuItem("Browse App folder...", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
+        JMenuItem browseApp = new JMenuItem("Browse App folder...", iconCache.getIcon(FOLDER_ICON));
         browseApp.setToolTipText(SystemUtilities.getJarParentPath().toString());
         browseApp.setMnemonic(KeyEvent.VK_O);
         browseApp.addActionListener(e -> ShellUtilities.browseAppDirectory());
         diagnosticMenu.add(browseApp);
 
-        JMenuItem browseUser = new JMenuItem("Browse User folder...", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
+        JMenuItem browseUser = new JMenuItem("Browse User folder...", iconCache.getIcon(FOLDER_ICON));
         browseUser.setToolTipText(FileUtilities.USER_DIR.toString());
         browseUser.setMnemonic(KeyEvent.VK_U);
         browseUser.addActionListener(e -> ShellUtilities.browseDirectory(FileUtilities.USER_DIR));
         diagnosticMenu.add(browseUser);
 
-        JMenuItem browseShared = new JMenuItem("Browse Shared folder...", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
+        JMenuItem browseShared = new JMenuItem("Browse Shared folder...", iconCache.getIcon(FOLDER_ICON));
         browseShared.setToolTipText(FileUtilities.SHARED_DIR.toString());
         browseShared.setMnemonic(KeyEvent.VK_S);
         browseShared.addActionListener(e -> ShellUtilities.browseDirectory(FileUtilities.SHARED_DIR));
@@ -298,7 +300,7 @@ public class TrayManager {
 
         diagnosticMenu.add(new JSeparator());
 
-        JMenuItem logItem = new JMenuItem("View logs (live feed)...", iconCache.getIcon(IconCache.Icon.LOG_ICON));
+        JMenuItem logItem = new JMenuItem("View logs (live feed)...", iconCache.getIcon(LOG_ICON));
         logItem.setMnemonic(KeyEvent.VK_L);
         logItem.addActionListener(logListener);
         diagnosticMenu.add(logItem);
@@ -311,7 +313,7 @@ public class TrayManager {
         zipLogs.addActionListener(e -> FileUtilities.zipLogs());
         diagnosticMenu.add(zipLogs);
 
-        JMenuItem desktopItem = new JMenuItem("Create Desktop shortcut", iconCache.getIcon(IconCache.Icon.DESKTOP_ICON));
+        JMenuItem desktopItem = new JMenuItem("Create Desktop shortcut", iconCache.getIcon(DESKTOP_ICON));
         desktopItem.setMnemonic(KeyEvent.VK_D);
         desktopItem.addActionListener(desktopListener());
 
@@ -330,11 +332,11 @@ public class TrayManager {
         advancedMenu.add(new JSeparator());
         advancedMenu.add(anonymousItem);
 
-        JMenuItem reloadItem = new JMenuItem("Reload", iconCache.getIcon(IconCache.Icon.RELOAD_ICON));
+        JMenuItem reloadItem = new JMenuItem("Reload", iconCache.getIcon(RELOAD_ICON));
         reloadItem.setMnemonic(KeyEvent.VK_R);
         reloadItem.addActionListener(reloadListener);
 
-        JMenuItem aboutItem = new JMenuItem("About...", iconCache.getIcon(IconCache.Icon.ABOUT_ICON));
+        JMenuItem aboutItem = new JMenuItem("About...", iconCache.getIcon(ABOUT_ICON));
         aboutItem.setMnemonic(KeyEvent.VK_B);
         aboutItem.addActionListener(aboutListener);
         aboutDialog = new AboutDialog(aboutItem, iconCache);
@@ -357,7 +359,7 @@ public class TrayManager {
             startupItem.setToolTipText("Autostart has been disabled by the administrator");
         }
 
-        JMenuItem exitItem = new JMenuItem("Exit", iconCache.getIcon(IconCache.Icon.EXIT_ICON));
+        JMenuItem exitItem = new JMenuItem("Exit", iconCache.getIcon(EXIT_ICON));
         exitItem.addActionListener(exitListener);
 
         popup.add(advancedMenu);
@@ -558,9 +560,9 @@ public class TrayManager {
     public void setDefaultIcon() {
         // Workaround for JDK-8252015
         if(SystemUtilities.isMac() && Constants.MASK_TRAY_SUPPORTED && !MacUtilities.jdkSupportsTemplateIcon()) {
-            setIcon(IconCache.Icon.DEFAULT_ICON, () -> MacUtilities.toggleTemplateIcon(tray.tray()));
+            setIcon(DEFAULT_ICON, () -> MacUtilities.toggleTemplateIcon(tray.tray()));
         } else {
-            setIcon(IconCache.Icon.DEFAULT_ICON);
+            setIcon(DEFAULT_ICON);
         }
     }
 
@@ -571,7 +573,7 @@ public class TrayManager {
 
     /** Thread safe method for setting the danger icon */
     public void setDangerIcon() {
-        setIcon(IconCache.Icon.DANGER_ICON);
+        setIcon(DANGER_ICON);
     }
 
     /** Thread safe method for setting the warning status message */
@@ -581,7 +583,7 @@ public class TrayManager {
 
     /** Thread safe method for setting the warning icon */
     public void setWarningIcon() {
-        setIcon(IconCache.Icon.WARNING_ICON);
+        setIcon(WARNING_ICON);
     }
 
     /** Thread safe method for setting the specified icon */
@@ -598,7 +600,7 @@ public class TrayManager {
 
     public void refreshIcon(final Runnable whenDone) {
         SwingUtilities.invokeLater(() -> {
-            tray.setImage(iconCache.getImage(shownIcon, tray.getSize()));
+            tray.setIcon(shownIcon);
             if(whenDone != null) {
                 whenDone.run();
             }

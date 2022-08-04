@@ -36,6 +36,8 @@ import static java.nio.file.attribute.AclEntryFlag.*;
 public class WindowsUtilities {
     protected static final Logger log = LogManager.getLogger(WindowsUtilities.class);
     private static String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+    private static String TRAY_REG_CHEVRON_KEY = "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\TrayNotify";
+    private static String TRAY_REG_POLICY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
     private static Boolean isWow64;
     private static Integer pid;
@@ -58,6 +60,22 @@ public class WindowsUtilities {
             return regVal == 0;
         }
         return true;
+    }
+
+    /**
+     * Check known configurations which hide the Windows SystemTray area
+     */
+    public static boolean isHiddenSystemTray() {
+        // Windows 11 22H2+: Check chevron is visible (assume "1" if key is missing)
+        Integer chevronVisibility = getRegInt(HKEY_CURRENT_USER, TRAY_REG_CHEVRON_KEY, "SystemTrayChevronVisibility");
+        if(chevronVisibility == null) chevronVisibility = 1;
+
+        // Windows 2003+: Check user policy (assume "0" if key is missing)
+        Integer explorerPolicy = getRegInt(HKEY_CURRENT_USER, TRAY_REG_POLICY_KEY, "NoTrayItemsDisplay");
+        if(explorerPolicy == null) explorerPolicy = 0;
+
+        // Return true if either flag is set
+        return chevronVisibility == 0 || explorerPolicy == 1;
     }
 
     public static int getScaleFactor() {

@@ -729,4 +729,25 @@ public class SystemUtilities {
         }
         return false;
     }
+
+    /**
+     * Cross-platform SystemTray detector
+     */
+    public static boolean isSystemTraySupported(boolean headless) {
+        if(!headless) {
+            switch(getOsType()) {
+                case WINDOWS:
+                    if(WindowsUtilities.isHiddenSystemTray()) {
+                        return false;
+                    }
+                    break;
+                case MAC:
+                    break;
+                default:
+                    // TODO: Default to false for Linux?
+            }
+            return SystemTray.isSupported();
+        }
+        return false;
+    }
 }

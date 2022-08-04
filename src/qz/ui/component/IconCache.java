@@ -15,8 +15,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.utils.ColorUtilities;
 import qz.utils.SystemUtilities;
-import qz.utils.UbuntuUtilities;
-import qz.utils.UnixUtilities;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;

@@ -1,9 +1,6 @@
 package qz.ui.tray;
 
 import qz.common.Constants;
-import qz.utils.LinuxUtilities;
-import qz.utils.UbuntuUtilities;
-import qz.utils.UnixUtilities;
 
 import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;

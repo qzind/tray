@@ -2456,13 +2456,12 @@ var qz = (function() {
                 // Wrap < 2.2.2
                 if (_qz.tools.versionCompare(2, 2, 2) < 0) {
                     return _qz.tools.promise(function(resolve, reject) {
-                        return _qz.websocket.dataPromise('networking.device', { hostname: hostname, port: port }).then(function(device) {
-                            console.log("using compat")
+                        _qz.websocket.dataPromise('networking.device', { hostname: hostname, port: port }).then(function(device) {
+                            console.log(device);
                             resolve(device.hostname);
                         });
                     });
                 } else {
-                    console.log("using native")
                     return _qz.websocket.dataPromise('networking.hostname');
                 }
             },

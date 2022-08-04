@@ -586,14 +586,22 @@ public class PrintSocketClient {
                 break;
             }
             case NETWORKING_DEVICE_LEGACY:
-                JSONObject networkDevice = NetworkUtilities.getDeviceJSON(params);
-                JSONObject legacyDevice = new JSONObject();
-                legacyDevice.put("ipAddress", networkDevice.optString("ip", null));
-                legacyDevice.put("macAddress", networkDevice.optString("mac", null));
-                sendResult(session, UID, legacyDevice);
+                try {
+                    JSONObject networkDevice = NetworkUtilities.getDeviceJSON(params);
+                    JSONObject legacyDevice = new JSONObject();
+                    legacyDevice.put("ipAddress", networkDevice.optString("ip", null));
+                    legacyDevice.put("macAddress", networkDevice.optString("mac", null));
+                    sendResult(session, UID, legacyDevice);
+                } catch(IOException e) {
+                    sendError(session, UID, "Unable to determine primary network device: " + e.getClass().getSimpleName() + " " + e.getMessage());
+                }
                 break;
             case NETWORKING_DEVICE:
-                sendResult(session, UID, NetworkUtilities.getDeviceJSON(params));
+                try {
+                    sendResult(session, UID, NetworkUtilities.getDeviceJSON(params));
+                } catch(IOException e) {
+                    sendError(session, UID, "Unable to determine primary network device: " + e.getClass().getSimpleName() + " " + e.getMessage());
+                }
                 break;
             case NETWORKING_DEVICES:
                 sendResult(session, UID, NetworkUtilities.getDevicesJSON(params));

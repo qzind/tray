@@ -36,53 +36,51 @@ public class NetworkUtilities {
     // overridable in preferences, see "networking.hostname", "networking.port"
     private static String defaultHostname = "google.com";
     private static int defaultPort = 443;
+    private String hostname;
+    private int port;
 
     private ArrayList<Device> devices;
     private Device primaryDevice;
-    private Exception primaryException;
+    private IOException primaryException;
 
 
     private NetworkUtilities(String hostname, int port) {
         try {
+            this.hostname = hostname;
+            this.port = port;
             primaryDevice = new Device(getPrimaryInetAddress(hostname, port), true);
-        } catch(Exception e) {
+        } catch(IOException e) {
             log.warn("Unable to determine primary network device", e);
             primaryException = e;
         }
     }
 
     public static NetworkUtilities getInstance(String hostname, int port) {
-        if (instance == null) {
+        // New instance if host or port have changed
+        if(instance == null || !instance.hostname.equals(hostname) || instance.port != port) {
             instance = new NetworkUtilities(hostname, port);
         }
 
         return instance;
     }
 
-    public static JSONArray getDevicesJSON(JSONObject params) throws JSONException {
+    public static JSONArray getDevicesJSON(JSONObject params) throws JSONException, IOException {
         JSONArray network = new JSONArray();
 
-        try {
-            for(Device device : getInstance(params.optString("hostname", defaultHostname),
-                                            params.optInt("port", defaultPort)).gatherDevices()) {
-                network.put(device.toJSON());
-            }
-        }
-        catch(SocketException ignore) {
-            network.put(new JSONObject().put("error", "Unable to initialize network utilities"));
+        for(Device device : getInstance(params.optString("hostname", defaultHostname),
+                                        params.optInt("port", defaultPort)).gatherDevices()) {
+            network.put(device.toJSON());
         }
         return network;
     }
 
-    public static JSONObject getDeviceJSON(JSONObject params) throws JSONException {
+    public static JSONObject getDeviceJSON(JSONObject params) throws JSONException, IOException {
         Device primary = getInstance(params.optString("hostname", defaultHostname),
                                                 params.optInt("port", defaultPort)).primaryDevice;
         if(primary != null) {
             return primary.toJSON();
-        } else {
-            Exception e = instance.primaryException;
-            return new JSONObject().put("error", "Unable to determine primary network device: " + e.getClass().getSimpleName() + " " + e.getMessage());
         }
+        throw instance.primaryException;
     }
 
     private ArrayList<Device> gatherDevices() throws SocketException {
@@ -103,7 +101,7 @@ public class NetworkUtilities {
         return devices;
     }
 
-    private static InetAddress getPrimaryInetAddress(String hostname, int port) throws Exception {
+    private static InetAddress getPrimaryInetAddress(String hostname, int port) throws IOException {
         log.info("Initiating a temporary connection to \"{}:{}\" to determine main Network Interface", hostname, port);
 
         Socket socket = new Socket();

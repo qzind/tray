@@ -267,7 +267,7 @@ public class FirefoxCertificateInstaller {
         File certFile = new File(location);
 
         // Make sure we can traverse and read
-        File certs = new File("/usr/lib/mozilla/certificates");
+        File certs = new File(location).getParentFile();
         certs.mkdirs();
         certs.setReadable(true, false);
         certs.setExecutable(true, false);

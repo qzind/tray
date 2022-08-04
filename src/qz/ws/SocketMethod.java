@@ -51,6 +51,7 @@ public enum SocketMethod {
 
     NETWORKING_DEVICE("networking.device", true),
     NETWORKING_DEVICES("networking.devices", true),
+    NETWORKING_HOSTNAME("networking.hostname", true),
     NETWORKING_DEVICE_LEGACY("websocket.getNetworkInfo", true),
     GET_VERSION("getVersion", false),
 

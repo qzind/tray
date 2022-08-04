@@ -50,8 +50,7 @@ public class JLink {
         this.javaVendor = getJavaVendor(arch);
         this.targetPlatform = targetPlatform;
 
-        // jdeps and jlink require matching major JDK versions.  Download if needed.
-        if(Constants.JAVA_VERSION.getMajorVersion() != Integer.parseInt(JAVA_MAJOR)) {
+        if(needsDownload(SystemUtilities.getJavaVersion(JAVA_VERSION), Constants.JAVA_VERSION)) {
             log.warn("Java versions are incompatible, locating a suitable runtime for Java " + JAVA_MAJOR + "...");
             String hostArch = System.getProperty("os.arch");
             String hostJdk = downloadJdk(getJavaVendor(hostArch), null, hostArch, gcEngine);
@@ -81,6 +80,26 @@ public class JLink {
         new JLink(args.length > 0 ? args[0] : null,
                   args.length > 1 ? args[1] : null,
                   args.length > 2 ? args[2] : null);
+    }
+
+    /**
+     * Handle incompatibilities between JDKs, download a fresh one if needed
+     */
+    private static boolean needsDownload(Version want, Version installed) {
+        // jdeps and jlink historically require matching major JDK versions.  Download if needed.
+        boolean downloadJdk = installed.getMajorVersion() != want.getMajorVersion();
+
+        // Per JDK-8240734: Major versions checks aren't enough starting with 11.0.16+8
+        // see also https://github.com/adoptium/adoptium-support/issues/557
+        Version bad = SystemUtilities.getJavaVersion("11.0.16+8");
+        if(installed.greaterThanOrEqualTo(bad)) {
+            if(want.lessThan(bad)) {
+                // Force download
+                // Fixes "Hash of java.rmi differs from expected hash"
+                downloadJdk = true;
+            }
+        }
+        return downloadJdk;
     }
 
     private String getJavaVendor(String arch) {

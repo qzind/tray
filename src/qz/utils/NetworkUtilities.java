@@ -76,8 +76,9 @@ public class NetworkUtilities {
 
     public static JSONObject getDeviceJSON(JSONObject params) throws JSONException, IOException {
         Device primary = getInstance(params.optString("hostname", defaultHostname),
-                                                params.optInt("port", defaultPort)).primaryDevice;
-        if(primary != null) {
+                                     params.optInt("port", defaultPort)).primaryDevice;
+
+        if (primary != null) {
             return primary.toJSON();
         }
         throw instance.primaryException;

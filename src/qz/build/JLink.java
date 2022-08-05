@@ -28,7 +28,7 @@ public class JLink {
     private static final Logger log = LogManager.getLogger(JLink.class);
     private static final String JAVA_AMD64_VENDOR = "AdoptOpenJDK";
     private static final String JAVA_ARM64_VENDOR = "BellSoft";
-    private static final String JAVA_VERSION = "11.0.12+7";
+    private static final String JAVA_VERSION = "11.0.16+8";
     private static final String JAVA_MAJOR = JAVA_VERSION.split("\\.")[0];
     private static final String JAVA_MINOR = JAVA_VERSION.split("\\.")[1];
     private static final String JAVA_PATCH = JAVA_VERSION.split("\\.|\\+|-")[2];

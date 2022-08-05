@@ -167,6 +167,22 @@
                 <exclude name="**/META-INF/services/**"/>
             </fileset>
         </delete>
+
+        <!-- Merge META-INF/services from PDFBOX and TwelveMonkeys -->
+        <!-- find the TwelveMonkeys jar -->
+        <path id="imageio-jpeg.found">
+            <first>
+                <fileset dir="lib/imaging/">
+                    <include name="imageio-jpeg*.jar"/>
+                </fileset>
+            </first>
+        </path>
+        <pathconvert property="imageio-jpeg.path" refid="imageio-jpeg.found"/>
+        <!-- merge service entries for ImageReaderSpi -->
+        <concat destfile="${out.dir}/libs-temp/META-INF/services/javax.imageio.spi.ImageReaderSpi" fixlastline="true">
+            <zipentry zipfile="${pdfbox.path}" name="META-INF/services/javax.imageio.spi.ImageReaderSpi"/>
+            <zipentry zipfile="${imageio-jpeg.path}" name="META-INF/services/javax.imageio.spi.ImageReaderSpi"/>
+        </concat>
     </target>
 
     <!-- install override.crt for "community" branded builds -->

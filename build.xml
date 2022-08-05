@@ -84,6 +84,22 @@
         <!-- Apple: Extract, sign, repackage all nested native libs for notarization -->
         <antcall target="apple-installer.codesign-jars"/>
 
+        <!-- Merge META-INF/services from PDFBOX and TwelveMonkeys -->
+        <!-- find the TwelveMonkeys jar -->
+        <path id="imageio-jpeg.found">
+            <first>
+                <fileset dir="lib/imaging/">
+                    <include name="imageio-jpeg*.jar"/>
+                </fileset>
+            </first>
+        </path>
+        <pathconvert property="imageio-jpeg.path" refid="imageio-jpeg.found"/>
+        <!-- merge service entries for ImageReaderSpi -->
+        <concat destfile="${out.dir}/services/javax.imageio.spi.ImageReaderSpi" fixlastline="true">
+            <zipentry zipfile="${pdfbox.path}" name="META-INF/services/javax.imageio.spi.ImageReaderSpi"/>
+            <zipentry zipfile="${imageio-jpeg.path}" name="META-INF/services/javax.imageio.spi.ImageReaderSpi"/>
+        </concat>
+
         <echo level="info">Building Jar for Socket use</echo>
         <mkdir dir="${sign.lib.dir}"/>
         <jar compress="${jar.compress}" index="${jar.index}" destfile="${dist.dir}/${project.filename}.jar" duplicate="preserve">
@@ -94,6 +110,7 @@
                 <exclude name="**/jfxrt.jar"/>
                 <exclude name="**/jssc-*.jar" if="codesign.mac"/>
             </zipgroupfileset>
+            <zipfileset dir="${out.dir}/services" prefix="META-INF/services"/>
             <manifest>
                 <attribute name="Application-Name" value="${project.name}"/>
                 <attribute name="Main-Class" value="qz.ws.PrintSocketServer"/>

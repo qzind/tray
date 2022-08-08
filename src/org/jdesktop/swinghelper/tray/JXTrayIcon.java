@@ -177,7 +177,7 @@ public class JXTrayIcon extends TrayIcon {
             case WINDOWS:
                 if(Constants.JAVA_VERSION.getMajorVersion() >= 9) {
                     // JDK9+ required for HiDPI tray icons on Windows
-                    int winScale = WindowsUtilities.getScaleFactor();
+                    double winScale = WindowsUtilities.getScaleFactor();
 
                     // Handle undocumented HiDPI icon support
                     // Requires TrayIcon.setImageAutoSize(true);

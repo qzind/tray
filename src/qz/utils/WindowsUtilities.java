@@ -78,7 +78,7 @@ public class WindowsUtilities {
         return chevronVisibility == 0 || explorerPolicy == 1;
     }
 
-    public static int getScaleFactor() {
+    public static double getScaleFactor() {
         if (Constants.JAVA_VERSION.lessThan(Version.valueOf("9.0.0"))) {
             WinDef.HDC hdc = GDI32.INSTANCE.CreateCompatibleDC(null);
             if (hdc != null) {
@@ -86,11 +86,11 @@ public class WindowsUtilities {
                 int logical = GDI32.INSTANCE.GetDeviceCaps(hdc, 117 /* DESKTOPVERTRES */);
                 GDI32.INSTANCE.DeleteDC(hdc);
                 if (logical != 0 && logical/actual > 1) {
-                    return logical/actual;
+                    return (double)logical/actual;
                 }
             }
         }
-        return (int)(Toolkit.getDefaultToolkit().getScreenResolution() / 96.0);
+        return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0d;
     }
 
     // gracefully swallow InvocationTargetException

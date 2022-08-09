@@ -41,6 +41,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
 
             // Snap-specific cert stores
             "sql:" + System.getenv("HOME") + "/snap/chromium/current/.pki/nssdb",
+            "sql:" + System.getenv("HOME") + "/snap/brave/current/.pki/nssdb/",
             "sql:" + System.getenv("HOME") + "/snap/opera/current/.pki/nssdb/",
             "sql:" + System.getenv("HOME") + "/snap/opera-beta/current/.pki/nssdb/"
     };

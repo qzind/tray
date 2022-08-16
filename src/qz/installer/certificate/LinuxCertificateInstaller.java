@@ -41,6 +41,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
 
             // Snap-specific cert stores
             "sql:" + System.getenv("HOME") + "/snap/chromium/current/.pki/nssdb",
+            "sql:" + System.getenv("HOME") + "/snap/brave/current/.pki/nssdb/",
             "sql:" + System.getenv("HOME") + "/snap/opera/current/.pki/nssdb/",
             "sql:" + System.getenv("HOME") + "/snap/opera-beta/current/.pki/nssdb/"
     };
@@ -105,10 +106,13 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
         for(String nssdb : NSSDB_URLS) {
             String[] parts = nssdb.split(":", 2);
             if (parts.length > 1) {
-                new File(parts[1]).mkdirs();
-                if(!ShellUtilities.execute("certutil", "-d", nssdb, "-A", "-t", "TC", "-n", Constants.ABOUT_COMPANY, "-i", certFile.getPath())) {
-                    log.warn("Something went wrong creating {}. HTTPS will fail on browsers which depend on it.", nssdb);
-                    success = false;
+                File folder = new File(parts[1]);
+                // If .pki/nssdb doesn't exist yet, don't create it! Per https://github.com/qzind/tray/issues/1003
+                if(folder.exists() && folder.isDirectory()) {
+                    if (!ShellUtilities.execute("certutil", "-d", nssdb, "-A", "-t", "TC", "-n", Constants.ABOUT_COMPANY, "-i", certFile.getPath())) {
+                        log.warn("Something went wrong creating {}. HTTPS will fail on browsers which depend on it.", nssdb);
+                        success = false;
+                    }
                 }
             }
         }

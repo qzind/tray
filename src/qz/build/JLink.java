@@ -92,12 +92,11 @@ public class JLink {
         // Per JDK-8240734: Major versions checks aren't enough starting with 11.0.16+8
         // see also https://github.com/adoptium/adoptium-support/issues/557
         Version bad = SystemUtilities.getJavaVersion("11.0.16+8");
-        if(installed.greaterThanOrEqualTo(bad)) {
-            if(want.lessThan(bad)) {
+        if(want.greaterThanOrEqualTo(bad) && installed.lessThan(bad) ||
+                installed.greaterThanOrEqualTo(bad) && want.lessThan(bad)) {
                 // Force download
                 // Fixes "Hash of java.rmi differs from expected hash"
                 downloadJdk = true;
-            }
         }
         return downloadJdk;
     }

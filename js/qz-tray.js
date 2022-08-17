@@ -226,9 +226,6 @@ var qz = (function() {
                             _qz.websocket.pendingCalls[obj.uid] = obj.promise;
                         }
 
-                        //ensure we know how this was signed
-                        obj.signAlgorithm = _qz.security.signAlgorithm;
-
                         // track requesting monitor
                         obj.position = {
                             x: typeof screen !== 'undefined' ? ((screen.availWidth || screen.width) / 2) + (screen.left || screen.availLeft) : 0,
@@ -236,7 +233,7 @@ var qz = (function() {
                         };
 
                         try {
-                            if (obj.call != undefined && obj.signature == undefined) {
+                            if (obj.call != undefined && obj.signature == undefined && _qz.security.needsSigned(obj.call)) {
                                 var signObj = {
                                     call: obj.call,
                                     params: obj.params,
@@ -255,7 +252,8 @@ var qz = (function() {
                                     return _qz.security.callSign(hashed);
                                 }).then(function(signature) {
                                     _qz.log.trace("Signature for call", signature);
-                                    obj.signature = signature;
+                                    obj.signature = signature || "";
+                                    obj.signAlgorithm = _qz.security.signAlgorithm;
 
                                     _qz.signContent = undefined;
                                     _qz.websocket.connection.send(_qz.tools.stringify(obj));
@@ -589,7 +587,25 @@ var qz = (function() {
             },
 
             /** Signing algorithm used on signatures */
-            signAlgorithm: "SHA1"
+            signAlgorithm: "SHA1",
+
+            needsSigned: function(callName) {
+                const undialoged = [
+                    "printers.getStatus",
+                    "printers.stopListening",
+                    "usb.isClaimed",
+                    "usb.closeStream",
+                    "usb.releaseDevice",
+                    "hid.stopListening",
+                    "hid.isClaimed",
+                    "hid.closeStream",
+                    "hid.releaseDevice",
+                    "file.stopListening",
+                    "getVersion"
+                ];
+
+                return callName != null && undialoged.indexOf(callName) === -1;
+            }
         },
 
 

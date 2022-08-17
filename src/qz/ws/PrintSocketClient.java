@@ -110,8 +110,8 @@ public class PrintSocketClient {
 
         String UID = null;
         try {
-            log.debug("Message: {}", message);
-            JSONObject json = new JSONObject(message);
+            JSONObject json = cleanupMessage(new JSONObject(message));
+            log.debug("Message: {}", json);
             UID = json.optString("uid");
 
             Integer connectionPort = session.getRemoteAddress().getPort();
@@ -174,6 +174,19 @@ public class PrintSocketClient {
             log.error("Problem processing message", e);
             sendError(session, UID, e);
         }
+    }
+
+    private JSONObject cleanupMessage(JSONObject msg) {
+        msg.remove("promise"); //never needed java side
+
+        //remove unused properties from older js api's
+        SocketMethod call = SocketMethod.findFromCall(msg.optString("call"));
+        if (!call.isDialogShown()) {
+            msg.remove("signature");
+            msg.remove("signAlgorithm");
+        }
+
+        return msg;
     }
 
     private boolean validSignature(Certificate certificate, JSONObject message) throws JSONException {

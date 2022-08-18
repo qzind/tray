@@ -15,12 +15,19 @@ pushd "$DIR"
 echo "Running uninstall tasks..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
     "$DIR/../MacOS/${project.name}" uninstall
+    ROOT_DIR=$(cd "$(dirname "$0")/../.." && pwd)
+    if [[ "$ROOT_DIR" != *".app" ]]; then
+      echo -e "\nMalformed app directory. Uninstallation of ${project.name} failed.\n"
+      exit 1
+    fi
+
 else
     "$DIR/${project.filename}" uninstall
+    ROOT_DIR="$DIR"
 fi
 
 echo "Deleting files..."
-rm -rf "$DIR"
+rm -rf "$ROOT_DIR"
 echo -e "\nUninstall of ${project.name} complete.\n"
 
 popd &>/dev/null

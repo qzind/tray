@@ -19,7 +19,8 @@ public class LinuxUtilities {
     public static boolean elevatedFileCopy(Path source, Path destination) {
         // Don't prompt if it's not needed
         try {
-            FileUtils.copyFile(source.toFile(), destination.toFile());
+            // Note: preserveFileDate=false per https://github.com/qzind/tray/issues/1011
+            FileUtils.copyFile(source.toFile(), destination.toFile(), false);
             return true;
         } catch(IOException ignore) {}
         if(foundElevator == null) {

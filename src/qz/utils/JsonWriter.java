@@ -21,6 +21,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 
 /**
@@ -50,7 +51,7 @@ public class JsonWriter {
             remove(config, append);
         }
 
-        FileUtils.write(f, config.toString(2));
+        FileUtils.write(f, config.toString(2), StandardCharsets.UTF_8);
 
         return true;
     }
@@ -61,7 +62,7 @@ public class JsonWriter {
                 return false;
             }
 
-            String jsonData = FileUtils.readFileToString(path, Charsets.UTF_8);
+            String jsonData = FileUtils.readFileToString(path, StandardCharsets.UTF_8);
             JSONObject before = new JSONObject(jsonData);
             JSONObject after = new JSONObject(jsonData);
             merge(after, new JSONObject(data), true);

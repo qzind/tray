@@ -123,7 +123,8 @@ public abstract class Installer {
 
         // Delete the JDK blindly
         FileUtils.deleteDirectory(dest.resolve(JRE_LOCATION).toFile());
-        FileUtils.copyDirectory(src.toFile(), dest.toFile());
+        // Note: preserveFileDate=false per https://github.com/qzind/tray/issues/1011
+        FileUtils.copyDirectory(src.toFile(), dest.toFile(), false);
         FileUtilities.setPermissionsRecursively(dest, false);
 
         if(!SystemUtilities.isWindows()) {

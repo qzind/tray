@@ -28,7 +28,7 @@ public class JLink {
     private static final Logger log = LogManager.getLogger(JLink.class);
     private static final String JAVA_AMD64_VENDOR = "AdoptOpenJDK";
     private static final String JAVA_ARM64_VENDOR = "BellSoft";
-    private static final String JAVA_VERSION = "11.0.12+7";
+    private static final String JAVA_VERSION = "11.0.16+8";
     private static final String JAVA_MAJOR = JAVA_VERSION.split("\\.")[0];
     private static final String JAVA_MINOR = JAVA_VERSION.split("\\.")[1];
     private static final String JAVA_PATCH = JAVA_VERSION.split("\\.|\\+|-")[2];
@@ -92,12 +92,11 @@ public class JLink {
         // Per JDK-8240734: Major versions checks aren't enough starting with 11.0.16+8
         // see also https://github.com/adoptium/adoptium-support/issues/557
         Version bad = SystemUtilities.getJavaVersion("11.0.16+8");
-        if(installed.greaterThanOrEqualTo(bad)) {
-            if(want.lessThan(bad)) {
+        if(want.greaterThanOrEqualTo(bad) && installed.lessThan(bad) ||
+                installed.greaterThanOrEqualTo(bad) && want.lessThan(bad)) {
                 // Force download
                 // Fixes "Hash of java.rmi differs from expected hash"
                 downloadJdk = true;
-            }
         }
         return downloadJdk;
     }

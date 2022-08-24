@@ -634,7 +634,15 @@ var qz = (function() {
                 var pjson = Array.prototype.toJSON;
                 delete Array.prototype.toJSON;
 
-                var result = JSON.stringify(object);
+                function skipKeys(key, value) {
+                    if (key === "promise") {
+                        return undefined;
+                    }
+
+                    return value;
+                }
+
+                var result = JSON.stringify(object, skipKeys);
 
                 if (pjson) {
                     Array.prototype.toJSON = pjson;

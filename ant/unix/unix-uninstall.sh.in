@@ -14,13 +14,25 @@ pushd "$DIR"
 
 echo "Running uninstall tasks..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    "$DIR/../MacOS/${project.name}" uninstall
+    # Uninstall script is in "QZ Tray.app/Contents/Resources/uninstall"
+    # Calculate the path to "QZ Tray.app"
+    APP_DIR=$(cd "$(dirname "$0")/../.." && pwd)
+
+    if [[ "$APP_DIR" != *".app" ]]; then
+      echo -e "\nMalformed app directory. Uninstallation of ${project.name} failed.\n"
+      exit 1
+    fi
+    # Launcher script is in "QZ Tray.app/Contents/MacOS"
+    "$APP_DIR/Contents/MacOS/${project.name}" uninstall
 else
-    "$DIR/${project.filename}" uninstall
+    # Uninstall script is in root of app (e.g. "/opt/qz-tray")
+    APP_DIR="$DIR"
+    # Launcher script is adjacent to uninstall script
+    "$APP_DIR/${project.filename}" uninstall
 fi
 
 echo "Deleting files..."
-rm -rf "$DIR"
+rm -rf "$APP_DIR"
 echo -e "\nUninstall of ${project.name} complete.\n"
 
 popd &>/dev/null

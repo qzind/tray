@@ -12,6 +12,7 @@ import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.*;
+import org.usb4java.LoaderException;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
 import qz.common.Constants;
@@ -161,6 +162,10 @@ public class PrintSocketClient {
             }
 
             processMessage(session, json, connection, request);
+        }
+        catch(UnsatisfiedLinkError | LoaderException e) {
+            log.error("A component is missing or broken, preventing this feature from working", e);
+            sendError(session, UID, "Sorry, this feature is unavailable at this time");
         }
         catch(JSONException e) {
             log.error("Bad JSON: {}", e.getMessage());

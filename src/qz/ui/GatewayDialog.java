@@ -137,7 +137,7 @@ public class GatewayDialog extends JDialog implements Themeable {
                     return;
                 }
 
-                // fixme: For the love of god delete this, see https://github.com/qzind/tray/issues/1007
+                // FIXME: Handle race condition with MacOS Ventura; see also https://github.com/qzind/tray/issues/1007
                 if (SystemUtilities.isMac() && SystemUtilities.getOSVersion().getMajorVersion() == 13) {
                     try {
                         Thread.sleep(500);

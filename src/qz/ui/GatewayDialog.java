@@ -4,7 +4,6 @@ import qz.auth.RequestState;
 import qz.common.Constants;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
-import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
@@ -139,13 +138,11 @@ public class GatewayDialog extends JDialog implements Themeable {
                 }
 
                 // fixme: For the love of god delete this, see https://github.com/qzind/tray/issues/1007
-                if (SystemUtilities.isMac()) {
+                if (SystemUtilities.isMac() && SystemUtilities.getOSVersion().getMajorVersion() == 13) {
                     try {
                         Thread.sleep(500);
                     }
-                    catch(InterruptedException ex) {
-                        throw new RuntimeException(ex);
-                    }
+                    catch(InterruptedException ignore) {}
                 }
             }
             setVisible(false);

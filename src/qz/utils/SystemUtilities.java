@@ -469,8 +469,8 @@ public class SystemUtilities {
      * @return <code>true</code> if the operation is successful
      */
     public static void centerDialog(Dialog dialog, Point position) {
-        if (position == null || position.getX() == 0 || position.getY() == 0) {
-            log.debug("Invalid dialog position provided: {}, we'll center on the primary monitor instead", position);
+        if (position == null) {
+            log.debug("No dialog position provided, we'll center on the primary monitor instead");
             dialog.setLocationRelativeTo(null);
             return;
         }
@@ -484,16 +484,17 @@ public class SystemUtilities {
         }
 
         Rectangle rect = new Rectangle((int)(position.x * dpiScale), (int)(position.y * dpiScale), dialog.getWidth(), dialog.getHeight());
+        rect.translate(-dialog.getWidth() / 2, -dialog.getHeight() / 2);
         Point p = new Point((int)rect.getCenterX(), (int)rect.getCenterY());
         log.debug("Calculated dialog centered at: {}", p);
 
         if (!isWindowLocationValid(rect)) {
-            log.debug("Dialog position provided is out of bounds: {}, we'll center on the primary monitor instead", position);
+            log.debug("Dialog position provided is out of bounds: {}, we'll center on the primary monitor instead", p);
             dialog.setLocationRelativeTo(null);
             return;
         }
 
-        dialog.setLocation(p);
+        dialog.setLocation(rect.getLocation());
     }
 
     public static boolean isWindowLocationValid(Rectangle window) {

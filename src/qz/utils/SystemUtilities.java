@@ -498,11 +498,18 @@ public class SystemUtilities {
         dialog.setLocation(rect.getLocation());
     }
 
+    /**
+     * Validates if a given rectangle is within screen bounds
+     */
     public static boolean isWindowLocationValid(Rectangle window) {
+        if(GraphicsEnvironment.isHeadless()) {
+            return false;
+        }
+
         GraphicsDevice[] devices = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
         Area area = new Area();
-        for (GraphicsDevice gd : devices) {
-            for (GraphicsConfiguration gc :  gd.getConfigurations()) {
+        for(GraphicsDevice gd : devices) {
+            for(GraphicsConfiguration gc : gd.getConfigurations()) {
                 area.add(new Area(gc.getBounds()));
             }
         }

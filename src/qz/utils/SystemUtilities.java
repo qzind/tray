@@ -469,8 +469,9 @@ public class SystemUtilities {
      * @return <code>true</code> if the operation is successful
      */
     public static void centerDialog(Dialog dialog, Point position) {
-        if (position == null) {
-            log.debug("No dialog position provided, we'll center on the primary monitor instead");
+        // Assume 0,0 are bad coordinates
+        if (position == null || (position.getX() == 0 && position.getY() == 0)) {
+            log.debug("Invalid dialog position provided: {}, we'll center on first monitor instead", position);
             dialog.setLocationRelativeTo(null);
             return;
         }

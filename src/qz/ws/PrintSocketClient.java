@@ -144,7 +144,8 @@ public class PrintSocketClient {
             }
 
             //check request signature
-            if (request.hasCertificate()) {
+            SocketMethod call = SocketMethod.findFromCall(json.optString("call"));
+            if (request.hasCertificate() && call.isDialogShown()) {
                 if (json.optLong("timestamp") + Constants.VALID_SIGNING_PERIOD < System.currentTimeMillis()
                         || json.optLong("timestamp") - Constants.VALID_SIGNING_PERIOD > System.currentTimeMillis()) {
                     //bad timestamps use the expired certificate

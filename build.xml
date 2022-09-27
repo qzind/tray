@@ -208,6 +208,7 @@
         <echo level="info">Copying demo resource files to ${demo.dir}</echo>
 
         <!-- Create the demo folder -->
+        <delete dir="${demo.dir}" failonerror="false"/>
         <copy todir="${demo.dir}">
             <fileset file="sample.html"/>
             <fileset dir="${basedir}" includes="css/**"/>
@@ -218,16 +219,7 @@
             </fileset>
         </copy>
 
-        <!-- If deploying the sample.html to dist/demo, use "sample.html", otherwise use "index.<extension> -->
-        <property description="suppress-property-warning" name="sample.extension" value="html"/>
-        <condition property="sample.name" value="sample.html">
-            <equals arg1="${demo.dir}" arg2="${dist.dir}/demo"/>
-        </condition>
-        <condition property="sample.name" value="index.${sample.extension}">
-            <not>
-                <equals arg1="${demo.dir}" arg2="${dist.dir}/demo"/>
-            </not>
-        </condition>
+        <!-- Handle sample.html renaming -->
         <property description="suppress-property-warning" name="sample.name" value="sample.html"/>
         <move file="${demo.dir}/sample.html" tofile="${demo.dir}/${sample.name}"/>
     </target>

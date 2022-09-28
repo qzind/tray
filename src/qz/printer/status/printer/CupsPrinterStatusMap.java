@@ -68,6 +68,9 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     CUPS_INSECURE_FILTER(REASON, NativePrinterStatus.SERVER_UNKNOWN), // "cups-insecure-filter"
     CUPS_MISSING_FILTER(REASON, NativePrinterStatus.ERROR), // "cups-missing-filter"
 
+    // SNMP warning with no existing CUPS definition
+    SERVICE_NEEDED_WARNING(REASON, NativePrinterStatus.UNMAPPED), // "service-needed-warning"
+
     // Unmapped printer-state-reasons
     ALERT_REMOVAL_OF_BINARY_CHANGE_ENTRY(REASON, NativePrinterStatus.UNMAPPED), // alert-removal-of-binary-change-entry
     BANDER_ADDED(REASON, NativePrinterStatus.UNMAPPED), // bander-added

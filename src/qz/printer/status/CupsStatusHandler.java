@@ -116,7 +116,7 @@ public class CupsStatusHandler extends AbstractHandler {
 
     // fix for #1017
     // Removes redundant '-warning' '-report' from SNMP originated statuses, with some exceptions
-    public static String statusFix(String cupsString) {
+    private static String statusFix(String cupsString) {
         ArrayList exceptions = new ArrayList(Arrays.asList("offline-report", "cups-insecure-filter-warning", "cups-missing-filter-warning"));
         String[] badEnding = {"-warning","-report"};
         if (exceptions.contains(cupsString)) return cupsString;

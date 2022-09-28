@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 /**
@@ -64,6 +65,7 @@ public class CupsStatusHandler extends AbstractHandler {
                 int attrCount = cups.ippGetCount(jobStateReasonsAttr);
                 for (int i = 0;  i < attrCount; i++) {
                     String reason = cups.ippGetString(jobStateReasonsAttr, i, "");
+                    reason = statusFix(reason);
                     Status pending = NativeStatus.fromCupsJobStatus(reason, jobState, printer, jobId, jobName);
                     // If this status was one we didn't see last block, send it
                     if (!oldStatuses.contains(pending)) statuses.add(pending);
@@ -110,5 +112,16 @@ public class CupsStatusHandler extends AbstractHandler {
 
         cups.ippDelete(response);
         StatusMonitor.statusChanged(statuses.toArray(new Status[statuses.size()]));
+    }
+
+    // fix for #1017
+    // Removes redundant '-warning' '-report' from SNMP originated statuses, with some exceptions
+    public static String statusFix(String cupsString) {
+        ArrayList exceptions = new ArrayList(Arrays.asList("offline-report", "cups-insecure-filter-warning", "cups-missing-filter-warning"));
+        String[] badEnding = {"-warning","-report"};
+        if (exceptions.contains(cupsString)) return cupsString;
+        if (cupsString.endsWith(badEnding[0])) return cupsString.substring(0, cupsString.length() - badEnding[0].length());
+        if (cupsString.endsWith(badEnding[1])) return cupsString.substring(0, cupsString.length() - badEnding[1].length());
+        return cupsString;
     }
 }

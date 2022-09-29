@@ -3,6 +3,7 @@ package qz.printer.status.printer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.printer.status.NativeStatus;
+import qz.printer.status.Status;
 
 import java.util.*;
 
@@ -891,17 +892,6 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
             }
         }
         NativePrinterStatus status = sortedReasonLookupTable.get(code);
-
-        // Edge-case for snmp statuses
-        String sanitizeCode = snmpSanitize(code);
-        if(status == null && !code.equals(sanitizeCode)) {
-            status = sortedReasonLookupTable.get(sanitizeCode);
-        }
-
-        if(status == null && !code.equalsIgnoreCase("none")) {
-            // Don't warn for "none"
-            log.warn("Printer state-reason \"{}\" was not found", code);
-        }
         return status;
     }
 
@@ -916,6 +906,32 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
             }
         }
         return sortedStateLookupTable.getOrDefault(state, NativePrinterStatus.UNMAPPED);
+    }
+
+    public static Status createStatus(String reason, String state, String printer) {
+        NativePrinterStatus cupsPrinterStatus = matchReason(reason);
+
+        if(cupsPrinterStatus == null) {
+            String sanitizedReason = snmpSanitize(reason);
+            if (!reason.equals(sanitizedReason)) {
+                cupsPrinterStatus = sortedReasonLookupTable.get(sanitizedReason);
+                if (cupsPrinterStatus != null) reason = sanitizedReason;
+            }
+        }
+
+        if(cupsPrinterStatus == null && !reason.equalsIgnoreCase("none")) {
+            // Don't warn for "none"
+            log.warn("Printer state-reason \"{}\" was not found", reason);
+        }
+
+        if(cupsPrinterStatus == null) {
+            // Don't return the raw reason if we couldn't find it mapped, return state instead
+            return new Status(matchState(state), printer, state);
+        } else if(cupsPrinterStatus == NativePrinterStatus.UNMAPPED) {
+            // Still return the state, but let the user know what the unmapped state reason was
+            return new Status(matchState(state), printer, reason);
+        }
+        return new Status(cupsPrinterStatus, printer, reason);
     }
 
     @Override

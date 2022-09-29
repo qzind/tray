@@ -4,9 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.printer.status.NativeStatus;
 
-import java.util.Locale;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
 import static  qz.printer.status.printer.CupsPrinterStatusMap.CupsPrinterStatusType.*;
 
@@ -882,6 +880,8 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     }
 
     public static NativePrinterStatus matchReason(String code) {
+        // Bugfix for issue #1017
+        code = statusFix(code);
         // Initialize a sorted map to speed up lookups
         if(sortedReasonLookupTable == null) {
             sortedReasonLookupTable = new TreeMap<>();
@@ -920,5 +920,16 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     @Override
     public Object getRawCode() {
         return name().toLowerCase(Locale.ENGLISH).replace("_", "-");
+    }
+
+    // Bugfix for issue #1017
+    // Removes redundant '-warning' '-report' from SNMP originated statuses, with some exceptions
+    private static String statusFix(String cupsString) {
+        ArrayList exceptions = new ArrayList(Arrays.asList("offline-report", "cups-insecure-filter-warning", "cups-missing-filter-warning"));
+        String[] badEnding = {"-warning","-report"};
+        if (exceptions.contains(cupsString)) return cupsString;
+        if (cupsString.endsWith(badEnding[0])) return cupsString.substring(0, cupsString.length() - badEnding[0].length());
+        if (cupsString.endsWith(badEnding[1])) return cupsString.substring(0, cupsString.length() - badEnding[1].length());
+        return cupsString;
     }
 }

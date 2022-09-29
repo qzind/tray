@@ -863,6 +863,8 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     WRAPPER_WARMING_UP(REASON, NativePrinterStatus.UNMAPPED); // wrapper-warming-up
 
     private static final Logger log = LogManager.getLogger(CupsPrinterStatusMap.class);
+    private static final String[] SNMP_REDUNDANT_SUFFIXES = { "-warning", "-report" };
+    private static final ArrayList<String> SNMP_REDUNDANT_SUFFIX_EXCEPTIONS = getSnmpRedundantSuffixExceptions();
     public static SortedMap<String,NativePrinterStatus> sortedReasonLookupTable;
     public static SortedMap<String,NativePrinterStatus> sortedStateLookupTable;
 
@@ -880,8 +882,7 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     }
 
     public static NativePrinterStatus matchReason(String code) {
-        // Bugfix for issue #1017
-        code = statusFix(code);
+        code = sanitize(code);
         // Initialize a sorted map to speed up lookups
         if(sortedReasonLookupTable == null) {
             sortedReasonLookupTable = new TreeMap<>();
@@ -922,14 +923,34 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
         return name().toLowerCase(Locale.ENGLISH).replace("_", "-");
     }
 
-    // Bugfix for issue #1017
-    // Removes redundant '-warning' '-report' from SNMP originated statuses, with some exceptions
-    private static String statusFix(String cupsString) {
-        ArrayList exceptions = new ArrayList(Arrays.asList("offline-report", "cups-insecure-filter-warning", "cups-missing-filter-warning"));
-        String[] badEnding = {"-warning","-report"};
-        if (exceptions.contains(cupsString)) return cupsString;
-        if (cupsString.endsWith(badEnding[0])) return cupsString.substring(0, cupsString.length() - badEnding[0].length());
-        if (cupsString.endsWith(badEnding[1])) return cupsString.substring(0, cupsString.length() - badEnding[1].length());
+    /**
+     * Build a list of statuses that end in "-warning" or "-report" so they're not stripped by sanitize()
+     */
+    private static ArrayList<String> getSnmpRedundantSuffixExceptions() {
+        ArrayList<String> exceptions = new ArrayList<>();
+        for(CupsPrinterStatusMap entry : CupsPrinterStatusMap.values()) {
+            for(String suffix : SNMP_REDUNDANT_SUFFIXES) {
+                String rawCode = (String)entry.getRawCode();
+                if (rawCode.endsWith(suffix)) {
+                    exceptions.add(rawCode);
+                    continue;
+                }
+            }
+        }
+        return exceptions;
+    }
+
+    /**
+     * Removes redundant "-warning" or "-report" from SNMP-originated statuses
+     */
+    private static String sanitize(String cupsString) {
+        if(!SNMP_REDUNDANT_SUFFIX_EXCEPTIONS.contains(cupsString)) {
+            for(String suffix : SNMP_REDUNDANT_SUFFIXES) {
+                if (cupsString.endsWith(suffix)) {
+                    return cupsString.substring(0, cupsString.length() - suffix.length());
+                }
+            }
+        }
         return cupsString;
     }
 }

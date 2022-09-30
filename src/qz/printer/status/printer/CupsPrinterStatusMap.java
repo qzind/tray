@@ -911,6 +911,7 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     public static Status createStatus(String reason, String state, String printer) {
         NativePrinterStatus cupsPrinterStatus = matchReason(reason);
 
+        // Edge-case for snmp statuses
         if(cupsPrinterStatus == null) {
             String sanitizedReason = snmpSanitize(reason);
             if (!reason.equals(sanitizedReason)) {

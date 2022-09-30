@@ -22,6 +22,7 @@ import qz.common.TrayManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.Area;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
@@ -468,7 +469,8 @@ public class SystemUtilities {
      * @return <code>true</code> if the operation is successful
      */
     public static void centerDialog(Dialog dialog, Point position) {
-        if (position == null || position.getX() == 0 || position.getY() == 0) {
+        // Assume 0,0 are bad coordinates
+        if (position == null || (position.getX() == 0 && position.getY() == 0)) {
             log.debug("Invalid dialog position provided: {}, we'll center on first monitor instead", position);
             dialog.setLocationRelativeTo(null);
             return;
@@ -477,17 +479,41 @@ public class SystemUtilities {
         //adjust for dpi scaling
         double dpiScale = getWindowScaleFactor();
         if (dpiScale == 0) {
-            log.debug("Invalid window scale value: {}, we'll center on first monitor instead", dpiScale);
+            log.debug("Invalid window scale value: {}, we'll center on the primary monitor instead", dpiScale);
             dialog.setLocationRelativeTo(null);
             return;
         }
 
-        Point p = new Point((int)(position.getX() * dpiScale), (int)(position.getY() * dpiScale));
-
-        //account for own size when centering
-        p.translate((int)(-dialog.getWidth() / 2.0), (int)(-dialog.getHeight() / 2.0));
+        Rectangle rect = new Rectangle((int)(position.x * dpiScale), (int)(position.y * dpiScale), dialog.getWidth(), dialog.getHeight());
+        rect.translate(-dialog.getWidth() / 2, -dialog.getHeight() / 2);
+        Point p = new Point((int)rect.getCenterX(), (int)rect.getCenterY());
         log.debug("Calculated dialog centered at: {}", p);
-        dialog.setLocation(p);
+
+        if (!isWindowLocationValid(rect)) {
+            log.debug("Dialog position provided is out of bounds: {}, we'll center on the primary monitor instead", p);
+            dialog.setLocationRelativeTo(null);
+            return;
+        }
+
+        dialog.setLocation(rect.getLocation());
+    }
+
+    /**
+     * Validates if a given rectangle is within screen bounds
+     */
+    public static boolean isWindowLocationValid(Rectangle window) {
+        if(GraphicsEnvironment.isHeadless()) {
+            return false;
+        }
+
+        GraphicsDevice[] devices = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+        Area area = new Area();
+        for(GraphicsDevice gd : devices) {
+            for(GraphicsConfiguration gc : gd.getConfigurations()) {
+                area.add(new Area(gc.getBounds()));
+            }
+        }
+        return area.contains(window);
     }
 
     /**

@@ -88,7 +88,8 @@ if test -f "$DIR/runtime/bin/java" ; then
     if "$DIR/runtime/bin/java" -version &> /dev/null ; then
         echo -e "$SUCCESS Bundled Java version is OK"
     else
-        echo -e "$FAILURE Sorry, this version of $ABOUT_TITLE cannot be installed on this system."
+        echo -e "$FAILURE Sorry, this version of $ABOUT_TITLE cannot be installed on this system:\n"
+        file "$DIR/runtime/bin/java"
         exit 1
     fi
 fi

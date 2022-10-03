@@ -40,6 +40,9 @@ run_task () {
     fi
 }
 
+# Ensure java is installed and working before starting
+"./${project.filename}" --version
+
 # Make a temporary jar for preliminary installation steps
 run_task preinstall
 

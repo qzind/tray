@@ -61,6 +61,17 @@ public class WindowsUtilities {
         }
         return true;
     }
+    public static String getDisplayVersion() {
+        try {
+            String productName = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ProductName");
+            int major = WindowsUtilities.getRegInt(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "CurrentMajorVersionNumber");
+            int minor = WindowsUtilities.getRegInt(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "CurrentMinorVersionNumber");
+            String build = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "CurrentBuild");
+            int ubr = WindowsUtilities.getRegInt(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "UBR");
+            return String.format("%s %d.%d.%s.%d", productName, major, minor, build, ubr);
+        } catch(Exception ignore) {}
+        return "Unknown";
+    }
 
     /**
      * Check known configurations which hide the Windows SystemTray area

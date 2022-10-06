@@ -39,6 +39,8 @@ public class WindowsUtilities {
     private static String TRAY_REG_CHEVRON_KEY = "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\TrayNotify";
     private static String TRAY_REG_POLICY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
+    private static final int WINDOWS_10_BUILD_NUMBER = 10000;
+    private static final int RELEASE_ID_DEPRECATION_NUMBER = 2009;
     private static Boolean isWow64;
     private static Integer pid;
 
@@ -64,12 +66,27 @@ public class WindowsUtilities {
     public static String getDisplayVersion() {
         try {
             String productName = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ProductName");
-            int major = WindowsUtilities.getRegInt(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "CurrentMajorVersionNumber");
-            int minor = WindowsUtilities.getRegInt(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "CurrentMinorVersionNumber");
-            String build = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "CurrentBuild");
-            int ubr = WindowsUtilities.getRegInt(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "UBR");
-            return String.format("%s %d.%d.%s.%d", productName, major, minor, build, ubr);
-        } catch(Exception ignore) {}
+            WinNT.OSVERSIONINFO versionInfo = new WinNT.OSVERSIONINFO();
+            if (!Kernel32.INSTANCE.GetVersionEx(versionInfo)) throw new RuntimeException();
+
+            String versionString = productName + " " + versionInfo.dwMajorVersion + "." + versionInfo.dwMinorVersion + "." + versionInfo.dwBuildNumber;
+            if (versionInfo.dwBuildNumber.longValue() < WINDOWS_10_BUILD_NUMBER) {
+                // CSD is servicePack
+                versionString += " " + Native.toString(versionInfo.szCSDVersion);
+            } else {
+                int ubr = WindowsUtilities.getRegInt(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "UBR");
+                versionString += "." + ubr;
+                int releaseID = Integer.parseInt(WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId"));
+                if (releaseID < RELEASE_ID_DEPRECATION_NUMBER) {
+                    versionString += " Release: " + releaseID;
+                } else {
+                    versionString += " Version: " + WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion");
+                }
+            }
+            return versionString;
+        } catch(Exception e) {
+            log.warn("Couldn't get detailed OS version info " + e.getMessage());
+        }
         return "Unknown";
     }
 

@@ -24,7 +24,7 @@
         <!-- Launcher -->
         <antcall target="config-compile-sign">
             <param name="nsis.script.in" value="windows-launcher.nsi.in"/>
-            <param name="nsis.outfile" value="${dist.dir}/${project.filename}-${windows.target.arch}.exe"/>
+            <param name="nsis.outfile" value="${dist.dir}/${project.filename}.exe"/>
         </antcall>
 
         <!-- Debug Launcher -->
@@ -45,7 +45,7 @@
         <!-- Installer (bundles dist/ payload) -->
         <antcall target="config-compile-sign">
             <param name="nsis.script.in" value="windows-installer.nsi.in"/>
-            <param name="nsis.outfile" value="${out.dir}/${project.filename}${build.type}-${build.version}.exe"/>
+            <param name="nsis.outfile" value="${out.dir}/${project.filename}${build.type}-${build.version}-${windows.target.arch}.exe"/>
         </antcall>
     </target>
 

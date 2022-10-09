@@ -9,7 +9,7 @@
     ################################################################
     -->
 
-    <target name="build-pkg" depends="platform-detect,get-identity,add-certificates,get-version">
+    <target name="build-pkg" depends="get-identity,add-certificates,get-version,platform-detect">
         <echo level="info">Creating installer using pkgbuild</echo>
         <!--
         #####################################
@@ -23,9 +23,7 @@
         <condition property="apple.target.arch" value="arm64">
             <isset property="target.arch.aarch64"/>
         </condition>
-        <condition property="apple.target.arch" value="x86_64">
-            <isset property="target.arch.x86_64"/>
-        </condition>
+        <property name="apple.target.arch" value="x86_64" description="fallback value"/>
 
         <!-- Build app without sandboxing by default-->
         <property name="build.sandboxed" value="false"/>

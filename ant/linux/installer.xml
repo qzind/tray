@@ -1,9 +1,13 @@
 <project name="linux-installer" basedir="../../">
     <property file="ant/project.properties"/>
     <import file="${basedir}/ant/version.xml"/>
+    <import file="${basedir}/ant/platform-detect.xml"/>
 
-    <target name="build-run" depends="get-version">
+    <target name="build-run" depends="get-version,platform-detect">
         <echo level="info">Creating installer using makeself</echo>
+
+        <!-- Get the os-preferred name for the target architecture -->
+        <property name="linux.target.arch" value="${target.arch.aarch64}"/>
 
         <copy file="assets/branding/linux-icon.svg" tofile="${dist.dir}/${project.filename}.svg"/>
 
@@ -30,7 +34,7 @@
 
         <exec executable="makeself" failonerror="true">
             <arg value="${dist.dir}"/>
-            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.run"/>
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-${linux.target.arch}.run"/>
             <arg value="${project.name} Installer"/>
             <arg value="./install"/>
         </exec>

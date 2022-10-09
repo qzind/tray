@@ -7,7 +7,7 @@
         <echo level="info">Creating installer using makeself</echo>
 
         <!-- Get the os-preferred name for the target architecture -->
-        <property name="linux.target.arch" value="${target.arch.aarch64}"/>
+        <property name="linux.target.arch" value="${target.arch}"/>
 
         <copy file="assets/branding/linux-icon.svg" tofile="${dist.dir}/${project.filename}.svg"/>
 

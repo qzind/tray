@@ -1,6 +1,7 @@
 <project name="apple-installer" basedir="../../" xmlns:if="ant:if">
     <property file="ant/project.properties"/>
     <import file="${basedir}/ant/version.xml"/>
+    <import file="${basedir}/ant/platform-detect.xml"/>
 
     <!--
     ################################################################
@@ -71,13 +72,6 @@
         <copy file="${basedir}/ant/apple/${pkg.background}" tofile="${out.dir}/resources/background.tiff" failonerror="true"/>
 
         <!-- Create product definition plist that stipulates supported arch -->
-        <condition property="build.archdef" value="arm64">
-            <isset property="target.arch.aarch64"/>
-        </condition>
-        <condition property="build.archdef" value="x86_64">
-            <isset property="target.arch.x86_64"/>
-        </condition>
-
         <copy file="ant/apple/product-def.plist.in" tofile="${build.dir}/product-def.plist">
             <filterchain><expandproperties/></filterchain>
         </copy>

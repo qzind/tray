@@ -4,7 +4,7 @@
 <dict>
   <key>arch</key>
   <array>
-    <string>${build.archdef}</string>
+    <string>${target.arch}</string>
   </array>
 </dict>
 </plist>

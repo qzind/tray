@@ -4,7 +4,7 @@
 <dict>
   <key>arch</key>
   <array>
-    <string>${target.arch}</string>
+    <string>${apple.target.arch}</string>
   </array>
 </dict>
 </plist>

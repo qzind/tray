@@ -9,7 +9,7 @@
     ################################################################
     -->
 
-    <target name="build-pkg" depends="get-identity,add-certificates,get-version">
+    <target name="build-pkg" depends="platform-detect,get-identity,add-certificates,get-version">
         <echo level="info">Creating installer using pkgbuild</echo>
         <!--
         #####################################
@@ -18,6 +18,14 @@
         -->
 
         <mkdir dir="${build.dir}/scripts/payload"/>
+
+        <!-- Get the os-preferred name for the target architecture -->
+        <condition property="apple.target.arch" value="arm64">
+            <isset property="target.arch.aarch64"/>
+        </condition>
+        <condition property="apple.target.arch" value="x86_64">
+            <isset property="target.arch.x86_64"/>
+        </condition>
 
         <!-- Build app without sandboxing by default-->
         <property name="build.sandboxed" value="false"/>
@@ -59,7 +67,7 @@
             <arg value="--sign" if:true="${codesign.available}"/>
             <arg value="${codesign.activeid}" if:true="${codesign.available}"/>
 
-            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-${apple.target.arch}-unbranded.pkg"/>
         </exec>
 
         <!-- Branding for qz only -->
@@ -86,7 +94,7 @@
             <arg value="--timestamp"/>
 
             <arg value="--package"/>
-            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-${apple.target.arch}-unbranded.pkg"/>
 
             <arg value="--product"/>
             <arg value="${build.dir}/product-def.plist"/>
@@ -124,13 +132,13 @@
             <arg value="${build.dir}/product-def.plist"/>
 
             <arg value="--package-path"/>
-            <arg value="${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
+            <arg value="${project.filename}${build.type}-${build.version}-${apple.target.arch}-unbranded.pkg"/>
 
-            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.pkg"/>
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-${apple.target.arch}.pkg"/>
         </exec>
 
         <!-- Cleanup unbranded version -->
-        <delete file="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
+        <delete file="${out.dir}/${project.filename}${build.type}-${build.version}-${apple.target.arch}-unbranded.pkg"/>
     </target>
 
     <target name="build-dmg" depends="get-identity,add-certificates,get-version">

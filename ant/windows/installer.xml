@@ -1,9 +1,16 @@
 <project name="windows-installer" basedir="../../">
     <property file="ant/project.properties"/>
     <import file="${basedir}/ant/version.xml"/>
+    <import file="${basedir}/ant/platform-detect.xml"/>
     <property environment="env"/>
 
-    <target name="build-exe" depends="get-version">
+    <target name="build-exe" depends="get-version,platform-detect">
+        <!-- Get the os-preferred name for the target architecture -->
+        <condition property="windows.target.arch" value="arm64">
+            <isset property="target.arch.aarch64"/>
+        </condition>
+        <property name="windows.target.arch" value="x86_64" description="fallback value"/>
+
         <!-- Sign Libs and Runtime -->
         <fileset dir="${dist.dir}/" id="win.sign.found">
             <include name="**/*.dll"/>
@@ -17,7 +24,7 @@
         <!-- Launcher -->
         <antcall target="config-compile-sign">
             <param name="nsis.script.in" value="windows-launcher.nsi.in"/>
-            <param name="nsis.outfile" value="${dist.dir}/${project.filename}.exe"/>
+            <param name="nsis.outfile" value="${dist.dir}/${project.filename}-${windows.target.arch}.exe"/>
         </antcall>
 
         <!-- Debug Launcher -->

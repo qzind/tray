@@ -164,6 +164,13 @@ public class MacUtilities {
         return jdkSupportsTemplateIcon;
     }
 
+    public static String getDisplayVersion() {
+        String[] command = {"sw_vers"};
+        String output = ShellUtilities.executeRaw(command);
+        output = output.replaceAll("^.*[ ,\\t]+", "");
+        return output.replaceAll("\\n(.*?)\\t", "");
+    }
+
     public static void toggleTemplateIcon(TrayIcon icon) {
         // Check if icon has a menu
         if (icon.getPopupMenu() == null) {

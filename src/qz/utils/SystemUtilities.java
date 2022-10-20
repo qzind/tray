@@ -182,8 +182,8 @@ public class SystemUtilities {
         switch(OS_TYPE) {
             case WINDOWS:
                 return WindowsUtilities.getDisplayVersion();
-            //case MAC:
-            //    return MacUtilities.getDisplayVersion();
+            case MAC:
+                return MacUtilities.getDisplayVersion();
             //case LINUX:
             //    return LinuxUtilities.getDisplayVersion();
             //case SOLARIS:

@@ -40,7 +40,6 @@ public class WindowsUtilities {
     private static String TRAY_REG_POLICY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
     private static final int WINDOWS_10_BUILD_NUMBER = 10000;
-    private static final int RELEASE_ID_DEPRECATION_NUMBER = 2009;
     private static Boolean isWow64;
     private static Integer pid;
 
@@ -65,7 +64,7 @@ public class WindowsUtilities {
     }
     public static String getDisplayVersion() {
         try {
-            String productName = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ProductName");
+            String productName = getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ProductName");
             WinNT.OSVERSIONINFO versionInfo = new WinNT.OSVERSIONINFO();
             if (!Kernel32.INSTANCE.GetVersionEx(versionInfo)) throw new RuntimeException();
 
@@ -74,13 +73,13 @@ public class WindowsUtilities {
                 // CSD is servicePack
                 versionString += " " + Native.toString(versionInfo.szCSDVersion);
             } else {
-                int ubr = WindowsUtilities.getRegInt(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "UBR");
+                int ubr = getRegInt(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "UBR");
                 versionString += "." + ubr;
-                int releaseID = Integer.parseInt(WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId"));
-                if (releaseID < RELEASE_ID_DEPRECATION_NUMBER) {
-                    versionString += " Release: " + releaseID;
+                int releaseID = Integer.parseInt(getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId"));
+                if (Advapi32Util.registryKeyExists(HKEY_LOCAL_MACHINE, "DisplayVersion")) {
+                    versionString += " Version: " + getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion");
                 } else {
-                    versionString += " Version: " + WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion");
+                    versionString += " Release: " + releaseID;
                 }
             }
             return versionString;

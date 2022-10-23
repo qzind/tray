@@ -1,6 +1,7 @@
 <project name="apple-installer" basedir="../../" xmlns:if="ant:if">
     <property file="ant/project.properties"/>
     <import file="${basedir}/ant/version.xml"/>
+    <import file="${basedir}/ant/platform-detect.xml"/>
 
     <!--
     ################################################################
@@ -8,7 +9,7 @@
     ################################################################
     -->
 
-    <target name="build-pkg" depends="get-identity,add-certificates,get-version">
+    <target name="build-pkg" depends="get-identity,add-certificates,get-version,platform-detect">
         <echo level="info">Creating installer using pkgbuild</echo>
         <!--
         #####################################
@@ -17,6 +18,12 @@
         -->
 
         <mkdir dir="${build.dir}/scripts/payload"/>
+
+        <!-- Get the os-preferred name for the target architecture -->
+        <condition property="apple.target.arch" value="arm64">
+            <isset property="target.arch.aarch64"/>
+        </condition>
+        <property name="apple.target.arch" value="x86_64" description="fallback value"/>
 
         <!-- Build app without sandboxing by default-->
         <property name="build.sandboxed" value="false"/>
@@ -58,7 +65,7 @@
             <arg value="--sign" if:true="${codesign.available}"/>
             <arg value="${codesign.activeid}" if:true="${codesign.available}"/>
 
-            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-${apple.target.arch}-unbranded.pkg"/>
         </exec>
 
         <!-- Branding for qz only -->
@@ -71,13 +78,6 @@
         <copy file="${basedir}/ant/apple/${pkg.background}" tofile="${out.dir}/resources/background.tiff" failonerror="true"/>
 
         <!-- Create product definition plist that stipulates supported arch -->
-        <condition property="build.archdef" value="arm64">
-            <isset property="target.arch.aarch64"/>
-        </condition>
-        <condition property="build.archdef" value="x86_64">
-            <isset property="target.arch.x86_64"/>
-        </condition>
-
         <copy file="ant/apple/product-def.plist.in" tofile="${build.dir}/product-def.plist">
             <filterchain><expandproperties/></filterchain>
         </copy>
@@ -92,7 +92,7 @@
             <arg value="--timestamp"/>
 
             <arg value="--package"/>
-            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-${apple.target.arch}-unbranded.pkg"/>
 
             <arg value="--product"/>
             <arg value="${build.dir}/product-def.plist"/>
@@ -130,13 +130,13 @@
             <arg value="${build.dir}/product-def.plist"/>
 
             <arg value="--package-path"/>
-            <arg value="${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
+            <arg value="${project.filename}${build.type}-${build.version}-${apple.target.arch}-unbranded.pkg"/>
 
-            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}.pkg"/>
+            <arg value="${out.dir}/${project.filename}${build.type}-${build.version}-${apple.target.arch}.pkg"/>
         </exec>
 
         <!-- Cleanup unbranded version -->
-        <delete file="${out.dir}/${project.filename}${build.type}-${build.version}-unbranded.pkg"/>
+        <delete file="${out.dir}/${project.filename}${build.type}-${build.version}-${apple.target.arch}-unbranded.pkg"/>
     </target>
 
     <target name="build-dmg" depends="get-identity,add-certificates,get-version">

@@ -84,7 +84,12 @@ public class WindowsUtilities {
             }
             return versionString;
         } catch(Exception e) {
-            log.warn("Couldn't get detailed OS version info " + e.getMessage());
+            log.warn("Couldn't get detailed OS version info, using cli fallback {}", e.getMessage());
+        }
+        try {
+            return ShellUtilities.executeRaw(new String[] {"cmd", "/c", "ver"}).replaceAll("\\n", "");
+        } catch(Exception e) {
+            log.warn("Cli fallback failed {}", e.getMessage());
         }
         return "Unknown";
     }

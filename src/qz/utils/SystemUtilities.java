@@ -184,8 +184,8 @@ public class SystemUtilities {
                 return WindowsUtilities.getDisplayVersion();
             case MAC:
                 return MacUtilities.getDisplayVersion();
-            //case LINUX:
-            //    return LinuxUtilities.getDisplayVersion();
+            case LINUX:
+                return UnixUtilities.getDisplayVersion();
             //case SOLARIS:
             //    return "1";
         }

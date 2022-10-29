@@ -15,13 +15,20 @@ import com.sun.jna.platform.unix.LibC;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.FileNotFoundException;
+import java.nio.file.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Stream;
+
 /**
  * Helper functions for both Linux and MacOS
  */
 public class UnixUtilities {
     private static final Logger log = LogManager.getLogger(UnixUtilities.class);
     private static String uname;
-    private static String linuxRelease;
+    private static String unixRelease;
+    private static String unixVersion;
     private static Integer pid;
 
     static String getHostName() {
@@ -72,24 +79,62 @@ public class UnixUtilities {
     /**
      * Returns the output of {@code cat /etc/lsb-release} or equivalent
      *
-     * @return the output of the command or null if not running Linux
+     * @return the output of the command or null if no release file is found
      */
-    public static String getLinuxRelease() {
-        if (SystemUtilities.isLinux() && linuxRelease == null) {
-            String[] releases = {"/etc/lsb-release", "/etc/redhat-release"};
-            for(String release : releases) {
-                String result = ShellUtilities.execute(
-                        new String[] {"cat", release},
-                        null
-                );
-                if (!result.isEmpty()) {
-                    linuxRelease = result;
-                    break;
-                }
-            }
+    public static String getUnixRelease() {
+        if (SystemUtilities.isLinux() && unixRelease == null) {
+            try {
+                Map<String,String> map = getReleaseMap();
+                unixRelease = map.get("NAME");
+            } catch(Exception ignore) {} //todo cli fallback?
         }
+        return unixRelease;
+    }
 
-        return linuxRelease;
+    public static String getDisplayVersion() {
+        if (unixVersion != null) return unixVersion;
+        try {
+            unixVersion = UnixUtilities.getReleaseMap().get("VERSION");
+        }
+        catch(FileNotFoundException e) {
+            //todo fallback to cli?
+            unixVersion = "UNKNOWN";
+        }
+        return unixVersion;
+    }
+
+    private static Map<String, String> getReleaseMap() throws FileNotFoundException {
+        HashMap<String,String> map = new HashMap<>();
+        Path release = findReleaseFile();
+        String result = ShellUtilities.executeRaw(
+                new String[] {"cat", release.toString()}
+        );
+        String[] results = result.split("\n");
+        for (String line: results) {
+            String[] tokens = line.split("=", 2);
+            if (tokens.length != 2) continue;
+            map.put(tokens[0], tokens[1]);
+        }
+        return map;
+    }
+
+    private static Path findReleaseFile() throws FileNotFoundException {
+        // Search by name for the supported distros, as well as debian which is an outlier
+        String[] releases = {"/etc/lsb-release", "/etc/redhat-release", "/etc/debian_version"};
+        for(String release : releases) {
+            Path path = Paths.get(release);
+            if (Files.exists(path)) return path;
+        }
+        Stream<Path> s;
+        try {
+            s = Files.find(
+                    Paths.get("/etc/"),
+                    1,
+                    (path, basicFileAttributes) -> path.getFileName().toString().endsWith("-release")
+            );
+            return s.findFirst().get();
+        } catch(Exception ignore) {}
+        throw new FileNotFoundException("Could not find os-release file");
     }
 
     /**
@@ -112,10 +157,7 @@ public class UnixUtilities {
      * @return {@code true} if this OS is Fedora
      */
     public static boolean isFedora() {
-        if(!SystemUtilities.isLinux()) {
-            return false;
-        }
-        getLinuxRelease();
-        return linuxRelease != null && linuxRelease.contains("Fedora");
+        if(!SystemUtilities.isLinux()) return false;
+        return unixRelease != null && getUnixRelease().contains("Fedora");
     }
 }

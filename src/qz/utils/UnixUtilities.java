@@ -26,6 +26,8 @@ import java.util.stream.Stream;
  */
 public class UnixUtilities {
     private static final Logger log = LogManager.getLogger(UnixUtilities.class);
+    private static final String[] OS_NAME_KEYS = {"NAME", "DISTRIB_ID"};
+    private static final String[] OS_VERSION_KEYS = {"VERSION", "DISTRIB_RELEASE"};
     private static String uname;
     private static String unixRelease;
     private static String unixVersion;
@@ -81,11 +83,16 @@ public class UnixUtilities {
      *
      * @return the output of the command or null if no release file is found
      */
-    public static String getUnixRelease() {
+    public static String getOsName() {
         if (SystemUtilities.isLinux() && unixRelease == null) {
             try {
                 Map<String,String> map = getReleaseMap();
-                unixRelease = map.get("NAME");
+                for (String nameKey: OS_NAME_KEYS) {
+                    if (map.containsKey(nameKey)) {
+                        unixRelease = UnixUtilities.getReleaseMap().get(nameKey);
+                        break;
+                    }
+                }
             } catch(Exception ignore) {} //todo cli fallback?
         }
         return unixRelease;
@@ -94,7 +101,13 @@ public class UnixUtilities {
     public static String getDisplayVersion() {
         if (unixVersion != null) return unixVersion;
         try {
-            unixVersion = UnixUtilities.getReleaseMap().get("VERSION");
+            Map<String, String> map = getReleaseMap();
+            for (String versionKey: OS_VERSION_KEYS) {
+                if (map.containsKey(versionKey)) {
+                    unixVersion = UnixUtilities.getReleaseMap().get(versionKey);
+                    break;
+                }
+            }
         }
         catch(FileNotFoundException e) {
             //todo fallback to cli?
@@ -109,11 +122,12 @@ public class UnixUtilities {
         String result = ShellUtilities.executeRaw(
                 new String[] {"cat", release.toString()}
         );
+
         String[] results = result.split("\n");
         for (String line: results) {
             String[] tokens = line.split("=", 2);
             if (tokens.length != 2) continue;
-            map.put(tokens[0], tokens[1]);
+            map.put(tokens[0], tokens[1].replaceAll("\"", ""));
         }
         return map;
     }
@@ -130,7 +144,8 @@ public class UnixUtilities {
             s = Files.find(
                     Paths.get("/etc/"),
                     1,
-                    (path, basicFileAttributes) -> path.getFileName().toString().endsWith("-release")
+                    (path, basicFileAttributes) -> path.getFileName().toString().endsWith("-release"),
+                    FileVisitOption.FOLLOW_LINKS
             );
             return s.findFirst().get();
         } catch(Exception ignore) {}
@@ -158,6 +173,6 @@ public class UnixUtilities {
      */
     public static boolean isFedora() {
         if(!SystemUtilities.isLinux()) return false;
-        return unixRelease != null && getUnixRelease().contains("Fedora");
+        return unixRelease != null && getOsName().contains("Fedora");
     }
 }

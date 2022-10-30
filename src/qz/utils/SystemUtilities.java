@@ -192,6 +192,20 @@ public class SystemUtilities {
         return System.getProperty("os.version");
     }
 
+    public static String getOsDisplayName() {
+        switch(OS_TYPE) {
+            //case WINDOWS:
+            //    return WindowsUtilities.getDisplayVersion();
+            //case MAC:
+            //    return MacUtilities.getDisplayVersion();
+            case LINUX:
+                return UnixUtilities.getOsName();
+            //case SOLARIS:
+            //    return "1";
+        }
+        return System.getProperty("os.version");
+    }
+
     public static boolean isAdmin() {
         switch(OS_TYPE) {
             case WINDOWS:

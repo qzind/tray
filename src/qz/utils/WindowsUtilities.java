@@ -35,9 +35,9 @@ import static java.nio.file.attribute.AclEntryFlag.*;
 
 public class WindowsUtilities {
     protected static final Logger log = LogManager.getLogger(WindowsUtilities.class);
-    private static String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
-    private static String TRAY_REG_CHEVRON_KEY = "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\TrayNotify";
-    private static String TRAY_REG_POLICY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer";
+    private static final String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+    private static final String TRAY_REG_CHEVRON_KEY = "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\TrayNotify";
+    private static final String TRAY_REG_POLICY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
     private static final int WINDOWS_10_BUILD_NUMBER = 10000;
     private static Boolean isWow64;
@@ -87,7 +87,7 @@ public class WindowsUtilities {
             log.warn("Couldn't get detailed OS version info, using cli fallback {}", e.getMessage());
         }
         try {
-            return ShellUtilities.executeRaw(new String[] {"cmd", "/c", "ver"}).replaceAll("\\n", "");
+            return ShellUtilities.executeRaw(new String[] {"cmd.exe", "/c", "ver"}).replaceAll("\\n", "");
         } catch(Exception e) {
             log.warn("Cli fallback failed {}", e.getMessage());
         }

@@ -9,12 +9,26 @@ import qz.common.Constants;
 import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 public class LinuxUtilities {
     private static final Logger log = LogManager.getLogger(LinuxUtilities.class);
-
-    private static String foundElevator = null;
     private static final String[] KNOWN_ELEVATORS = {"pkexec", "gksu", "gksudo", "kdesudo" };
+
+    private static String FOUND_ELEVATOR = null;
+
+    private static String findElevator() throws IOException {
+        if(FOUND_ELEVATOR == null) {
+            for(String elevator : KNOWN_ELEVATORS) {
+                if (ShellUtilities.execute("which", elevator)) {
+                    FOUND_ELEVATOR = elevator;
+                    break;
+                }
+            }
+            throw new IOException("Can't find an installed utility " + Arrays.toString(KNOWN_ELEVATORS) + " to elevate permissions.");
+        }
+        return FOUND_ELEVATOR;
+    }
 
     public static boolean elevatedFileCopy(Path source, Path destination) {
         // Don't prompt if it's not needed
@@ -23,20 +37,14 @@ public class LinuxUtilities {
             FileUtils.copyFile(source.toFile(), destination.toFile(), false);
             return true;
         } catch(IOException ignore) {}
-        if(foundElevator == null) {
-            for(String elevator : KNOWN_ELEVATORS) {
-                if(ShellUtilities.execute("which", elevator)) {
-                    foundElevator = elevator;
-                }
-            }
-        }
-        if(foundElevator == null) {
-            log.error("Can't find an installed utility to elevate permissions.  You'll have to do this step manually.");
-            return false;
-        }
 
-        String[] command = {foundElevator, "cp", source.toString(), destination.toString()};
-        return ShellUtilities.execute(command);
+        try {
+            String[] command = {findElevator(), "cp", source.toString(), destination.toString()};
+            return ShellUtilities.execute(command);
+        } catch(IOException io) {
+            log.error("Copy failed.  You'll have do this manually.", io);
+        }
+        return false;
     }
 
     /**

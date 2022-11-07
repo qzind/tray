@@ -9,6 +9,7 @@ import qz.common.Constants;
 import qz.ui.component.EmLabel;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
+import qz.ws.PrintSocketServer;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -16,6 +17,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.font.TextAttribute;
+import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -63,7 +65,11 @@ public class AboutDialog extends BasicDialog implements Themeable {
 
         LinkLabel linkLibrary = new LinkLabel("Detailed library information");
         if(server != null && server.isRunning() && !server.isStopping()) {
-            linkLibrary.setLinkLocation(String.format("%s://%s:%s", server.getURI().getScheme(), AboutInfo.getPreferredHostname(), server.getURI().getPort()));
+            // Some OSs (e.g. FreeBSD) return null for server.getURI(), fallback to sane values
+            URI uri = server.getURI();
+            String scheme = uri == null ? "http" : uri.getScheme();
+            int port = uri == null ? PrintSocketServer.getInsecurePortInUse(): uri.getPort();
+            linkLibrary.setLinkLocation(String.format("%s://%s:%s", scheme, AboutInfo.getPreferredHostname(), port));
         }
         Box versionBox = Box.createHorizontalBox();
         versionBox.setAlignmentX(Component.LEFT_ALIGNMENT);

@@ -161,14 +161,13 @@ public class SystemUtilities {
     }
 
     public static Version getOSVersion() {
+        //todo switch case this
         if (osVersion == null) {
             String version = System.getProperty("os.version");
             // Windows is missing patch release, read it from registry
             if (isWindows()) {
-                String patch = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId");
-                if (patch != null) {
-                    version += "." + patch.trim();
-                }
+                osVersion = WindowsUtilities.getVersion();
+                return osVersion;
             }
             while (version.split("\\.").length < 3) {
                 version += ".0";

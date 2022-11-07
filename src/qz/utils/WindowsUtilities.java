@@ -65,6 +65,7 @@ public class WindowsUtilities {
 
     public static Version getVersion() {
         WinNT.OSVERSIONINFO versionInfo = new WinNT.OSVERSIONINFO();
+        // GetVersionEx is deprecated, but has no sane replacement. https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getversionexa
         if (!Kernel32.INSTANCE.GetVersionEx(versionInfo)) throw new RuntimeException();
 
         String build = "";
@@ -84,28 +85,25 @@ public class WindowsUtilities {
         try {
             // Product name is the 'real' name of the os, e.g. Windows 10 Home
             String productName = getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ProductName");
-            WinNT.OSVERSIONINFO versionInfo = new WinNT.OSVERSIONINFO();
-            // GetVersionEx is deprecated, but has no sane replacement. https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getversionexa
-            if (!Kernel32.INSTANCE.GetVersionEx(versionInfo)) throw new RuntimeException();
+            Version version = SystemUtilities.getOSVersion();
+            String extraInfo = "";
 
-            String versionString = productName + " " + versionInfo.dwMajorVersion + "." + versionInfo.dwMinorVersion + "." + versionInfo.dwBuildNumber;
-            if (versionInfo.dwBuildNumber.longValue() < WINDOWS_10_BUILD_NUMBER) {
+            if (version.getPatchVersion() < WINDOWS_10_BUILD_NUMBER) {
+                WinNT.OSVERSIONINFO versionInfo = new WinNT.OSVERSIONINFO();
+                Kernel32.INSTANCE.GetVersionEx(versionInfo);
                 // CSD is the servicePack string in long form e.g. Service Pack 3
-                versionString += " " + Native.toString(versionInfo.szCSDVersion);
+                extraInfo += " " + Native.toString(versionInfo.szCSDVersion);
             } else {
-                // UBR or "Update Build Revision" was introduced in win10/server 2016. It reflects the monthly rollup version number.
-                int ubr = getRegInt(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "UBR");
-                versionString += "." + ubr;
                 // ReleaseID was both introduced and retired for Windows 10. If 'DisplayVersion' exists, we can ignore ReleaseId, as it will be '2009' forever
                 int releaseID = Integer.parseInt(getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId"));
                 // DisplayVersion is the last 2 digits of the year, followed by H1 or H2 depending on the year-half. e.g. 22H2
                 if (Advapi32Util.registryValueExists(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion")) {
-                    versionString += " Version: " + getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion");
+                    extraInfo += " Version: " + getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion");
                 } else {
-                    versionString += " Release: " + releaseID;
+                    extraInfo += " Release: " + releaseID;
                 }
             }
-            return versionString;
+            return productName + " " + version.toString().replace("+", ".") + extraInfo;
         } catch(Exception e) {
             log.warn("Couldn't get detailed OS version info, using cli fallback {}", e.getMessage());
         }

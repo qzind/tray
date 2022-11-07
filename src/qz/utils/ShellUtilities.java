@@ -71,7 +71,7 @@ public class ShellUtilities {
             return MacUtilities.nativeFileCopy(source, dest);
         } else {
             // No reliable JNA method; Use pkexec/gksu/etc
-            return LinuxUtilities.elevatedFileCopy(source, dest);
+            return UnixUtilities.elevatedFileCopy(source, dest);
         }
     }
 

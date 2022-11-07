@@ -445,7 +445,7 @@ public class SystemUtilities {
             } else if (isWindows()) {
                 darkDesktop = WindowsUtilities.isDarkDesktop();
             } else {
-                darkDesktop = LinuxUtilities.isDarkMode();
+                darkDesktop = UnixUtilities.isDarkMode();
             }
         }
         return darkDesktop.booleanValue();
@@ -472,7 +472,7 @@ public class SystemUtilities {
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
             boolean darculaThemeNeeded = true;
-            if(!isMac() && (isUnix() && LinuxUtilities.isDarkMode())) {
+            if(!isMac() && (isUnix() && UnixUtilities.isDarkMode())) {
                 darculaThemeNeeded = false;
             }
             if(isDarkDesktop() && darculaThemeNeeded) {
@@ -536,8 +536,8 @@ public class SystemUtilities {
         if(isWindows()) {
             return 1;
         }
-        // Linux on JDK11 requires JNA calls to Gdk
-        return LinuxUtilities.getScaleFactor();
+        // Linux/Unix on JDK11 requires JNA calls to Gdk
+        return UnixUtilities.getScaleFactor();
     }
 
     /**
@@ -556,7 +556,7 @@ public class SystemUtilities {
             return WindowsUtilities.getScaleFactor() > 1;
         }
         // Fallback to a JNA Gdk technique
-        return LinuxUtilities.getScaleFactor() > 1;
+        return UnixUtilities.getScaleFactor() > 1;
     }
 
     /**

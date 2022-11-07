@@ -9,29 +9,38 @@
  */
 package qz.utils;
 
+import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.platform.unix.LibC;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.common.Constants;
 
+import java.awt.*;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.*;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * Helper functions for both Linux and MacOS
+ * Helper functions for both Linux and Unix
  */
 public class UnixUtilities {
     private static final Logger log = LogManager.getLogger(UnixUtilities.class);
     private static final String[] OS_NAME_KEYS = {"NAME", "DISTRIB_ID"};
     private static final String[] OS_VERSION_KEYS = {"VERSION", "DISTRIB_RELEASE"};
+    private static final String[] KNOWN_ELEVATORS = {"pkexec", "gksu", "gksudo", "kdesudo" };
+
     private static String uname;
     private static String unixRelease;
     private static String unixVersion;
     private static Integer pid;
+    private static String foundElevator;
 
     static String getHostName() {
         String hostName = null;
@@ -132,6 +141,19 @@ public class UnixUtilities {
         return map;
     }
 
+    private static String findElevator() throws IOException {
+        if(foundElevator == null) {
+            for(String elevator : KNOWN_ELEVATORS) {
+                if (ShellUtilities.execute("which", elevator)) {
+                    foundElevator = elevator;
+                    break;
+                }
+            }
+            throw new IOException("Can't find an installed utility " + Arrays.toString(KNOWN_ELEVATORS) + " to elevate permissions.");
+        }
+        return foundElevator;
+    }
+
     private static Path findReleaseFile() throws FileNotFoundException {
         // Search by name for the supported distros, as well as debian which is an outlier
         String[] releases = {"/etc/lsb-release", "/etc/redhat-release", "/etc/debian_version"};
@@ -150,6 +172,38 @@ public class UnixUtilities {
             return s.findFirst().get();
         } catch(Exception ignore) {}
         throw new FileNotFoundException("Could not find os-release file");
+    }
+
+    public static boolean elevatedFileCopy(Path source, Path destination) {
+        // Don't prompt if it's not needed
+        try {
+            // Note: preserveFileDate=false per https://github.com/qzind/tray/issues/1011
+            FileUtils.copyFile(source.toFile(), destination.toFile(), false);
+            return true;
+        } catch(IOException ignore) {}
+
+        try {
+            String[] command = {findElevator(), "cp", source.toString(), destination.toString()};
+            return ShellUtilities.execute(command);
+        } catch(IOException io) {
+            log.error("Copy failed.  You'll have do this manually.", io);
+        }
+        return false;
+    }
+
+    /**
+     * Runs a shell command to determine if "Dark" desktop theme is enabled
+     * @return true if enabled, false if not
+     */
+    public static boolean isDarkMode() {
+        return !ShellUtilities.execute(new String[] { "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" }, new String[] { "dark" }, true, true).isEmpty();
+    }
+
+    public static double getScaleFactor() {
+        if (Constants.JAVA_VERSION.lessThan(Version.valueOf("11.0.0"))) {
+            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+        }
+        return GtkUtilities.getScaleFactor();
     }
 
     /**

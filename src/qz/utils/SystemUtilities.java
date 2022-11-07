@@ -67,6 +67,7 @@ public class SystemUtilities {
     private static Boolean hasMonocle;
     private static String classProtocol;
     private static Version osVersion;
+    private static String osDisplayVersion;
     private static Path jarPath;
     private static Integer pid;
 
@@ -178,17 +179,22 @@ public class SystemUtilities {
     }
 
     public static String getOsDisplayVersion() {
+        if (osDisplayVersion != null) return osDisplayVersion;
         switch(OS_TYPE) {
             case WINDOWS:
-                return WindowsUtilities.getDisplayVersion();
+                osDisplayVersion = WindowsUtilities.getDisplayVersion();
+                break;
             case MAC:
-                return MacUtilities.getDisplayVersion();
+                osDisplayVersion = MacUtilities.getDisplayVersion();
+                break;
             case LINUX:
-                return UnixUtilities.getDisplayVersion();
+                osDisplayVersion = UnixUtilities.getDisplayVersion();
+                break;
             //case SOLARIS:
             //    return "1";
         }
-        return System.getProperty("os.version");
+        if (osDisplayVersion == null) osDisplayVersion = System.getProperty("os.version");
+        return osDisplayVersion;
     }
 
     public static String getOsDisplayName() {

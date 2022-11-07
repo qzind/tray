@@ -208,7 +208,7 @@ public class SystemUtilities {
             //case SOLARIS:
             //    return "1";
         }
-        return System.getProperty("os.version");
+        return System.getProperty("os.name");
     }
 
     public static boolean isAdmin() {

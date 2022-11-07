@@ -99,7 +99,7 @@ public class WindowsUtilities {
                 // ReleaseID was both introduced and retired for Windows 10. If 'DisplayVersion' exists, we can ignore ReleaseId, as it will be '2009' forever
                 int releaseID = Integer.parseInt(getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId"));
                 // DisplayVersion is the last 2 digits of the year, followed by H1 or H2 depending on the year-half. e.g. 22H2
-                if (Advapi32Util.registryKeyExists(HKEY_LOCAL_MACHINE, "DisplayVersion")) {
+                if (Advapi32Util.registryValueExists(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion")) {
                     versionString += " Version: " + getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion");
                 } else {
                     versionString += " Release: " + releaseID;

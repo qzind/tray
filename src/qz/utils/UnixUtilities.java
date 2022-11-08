@@ -35,7 +35,7 @@ public class UnixUtilities {
     private static final String[] OS_NAME_KEYS = {"NAME", "DISTRIB_ID"};
     private static final String[] OS_VERSION_KEYS = {"VERSION", "DISTRIB_RELEASE"};
     private static final String[] KNOWN_ELEVATORS = {"pkexec", "gksu", "gksudo", "kdesudo" };
-
+    private static final String[] OS_INFO_LOCATION = {"/etc/os-release", "/usr/lib/os-release", "/etc/lsb-release", "/etc/redhat-release"};
     private static String uname;
     private static String unixRelease;
     private static String unixVersion;
@@ -155,9 +155,8 @@ public class UnixUtilities {
     }
 
     private static Path findReleaseFile() throws FileNotFoundException {
-        // Search by name for the supported distros, as well as debian which is an outlier
-        String[] releases = {"/etc/lsb-release", "/etc/redhat-release", "/etc/debian_version"};
-        for(String release : releases) {
+        // Search by name for the supported distros, in order of preference
+        for(String release : OS_INFO_LOCATION) {
             Path path = Paths.get(release);
             if (Files.exists(path)) return path;
         }

@@ -35,7 +35,7 @@ public class UnixUtilities {
     private static final String[] OS_NAME_KEYS = {"NAME", "DISTRIB_ID"};
     private static final String[] OS_VERSION_KEYS = {"VERSION", "DISTRIB_RELEASE"};
     private static final String[] KNOWN_ELEVATORS = {"pkexec", "gksu", "gksudo", "kdesudo" };
-    private static final String[] OS_INFO_LOCATION = {"/etc/os-release", "/usr/lib/os-release", "/etc/lsb-release", "/etc/redhat-release"};
+    private static final String[] OS_RELEASE_FILES = {"/etc/os-release", "/usr/lib/os-release", "/etc/lsbg-release", "/etc/redhat-release"};
     private static String uname;
     private static String unixRelease;
     private static String unixVersion;
@@ -88,12 +88,10 @@ public class UnixUtilities {
     }
 
     /**
-     * Returns the output of {@code cat /etc/lsb-release} or equivalent
-     *
-     * @return the output of the command or null if no release file is found
+     * Returns the name of the OS, trying to obtain distro information if available
      */
-    public static String getOsName() {
-        if (SystemUtilities.isLinux() && unixRelease == null) {
+    public static String getOsDisplayName() {
+        if (unixRelease == null) {
             try {
                 Map<String,String> map = getReleaseMap();
                 for (String nameKey: OS_NAME_KEYS) {
@@ -102,37 +100,51 @@ public class UnixUtilities {
                         break;
                     }
                 }
-            } catch(Exception ignore) {}
+            } catch(FileNotFoundException e) {
+                log.warn("Could not find a suitable os-release file {}", Arrays.toString(OS_RELEASE_FILES));
+            }
+            if(unixRelease == null) {
+                log.warn("Could not find name key {} in files {}",  Arrays.toString(OS_NAME_KEYS), Arrays.toString(OS_RELEASE_FILES));
+                unixRelease = System.getProperty("os.name", "Unknown");
+            }
         }
         return unixRelease;
     }
 
-    public static String getDisplayVersion() {
-        if (unixVersion != null) return unixVersion;
-        try {
-            Map<String, String> map = getReleaseMap();
-            for (String versionKey: OS_VERSION_KEYS) {
-                if (map.containsKey(versionKey)) {
-                    unixVersion = UnixUtilities.getReleaseMap().get(versionKey);
-                    break;
+    /**
+     * The human-readable display version of the Linux/Unix OS
+     */
+    public static String getOsDisplayVersion() {
+        if (unixVersion == null) {
+            try {
+                Map<String,String> map = getReleaseMap();
+                for(String versionKey : OS_VERSION_KEYS) {
+                    if (map.containsKey(versionKey)) {
+                        unixVersion = UnixUtilities.getReleaseMap().get(versionKey);
+                        break;
+                    }
                 }
             }
-        }
-        catch(Exception ignore) {
-            try {
-                // if we cant get version info from a file, run the lsb_release command;
-                return ShellUtilities.executeRaw(
-                        new String[] {"lsb_release", "-ds"}
-                );
-            } catch(Exception ignore2) {}
-            unixVersion = "UNKNOWN";
+            catch(FileNotFoundException e) {
+                log.warn("Could not find a suitable os-release file {}", Arrays.toString(OS_RELEASE_FILES));
+            }
+            if(unixVersion == null) {
+                log.warn("Could not find version key {} in files {}",  Arrays.toString(OS_VERSION_KEYS), Arrays.toString(OS_RELEASE_FILES));
+                // If we can't get version info from a file, run the "lsb_release" command
+                String lsbRelease = ShellUtilities.executeRaw(new String[] {"lsb_release", "-ds"}).trim();
+                if(!lsbRelease.isEmpty()) {
+                    unixRelease = lsbRelease;
+                } else {
+                    unixRelease = System.getProperty("os.version", "0.0.0");
+                }
+            }
         }
         return unixVersion;
     }
 
     private static Map<String, String> getReleaseMap() throws FileNotFoundException {
         HashMap<String,String> map = new HashMap<>();
-        Path release = findReleaseFile();
+        Path release = findOsReleaseFile();
         String result = ShellUtilities.executeRaw(
                 new String[] {"cat", release.toString()}
         );
@@ -159,16 +171,16 @@ public class UnixUtilities {
         return foundElevator;
     }
 
-    private static Path findReleaseFile() throws FileNotFoundException {
+    private static Path findOsReleaseFile() throws FileNotFoundException {
         // Search by name for the supported distros, in order of preference
-        for(String release : OS_INFO_LOCATION) {
+        for(String release : OS_RELEASE_FILES) {
             Path path = Paths.get(release);
             if (Files.exists(path)) return path;
         }
-        // If that fails, try to find any *-release file
         Stream<Path> s;
         try {
             s = Files.find(
+                    // If that fails, try to find any *-release file
                     Paths.get("/etc/"),
                     1,
                     (path, basicFileAttributes) -> path.getFileName().toString().endsWith("-release"),
@@ -233,6 +245,6 @@ public class UnixUtilities {
      */
     public static boolean isFedora() {
         if(!SystemUtilities.isLinux()) return false;
-        return unixRelease != null && getOsName().contains("Fedora");
+        return unixRelease != null && getOsDisplayName().contains("Fedora");
     }
 }

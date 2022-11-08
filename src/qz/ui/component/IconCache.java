@@ -262,7 +262,7 @@ public class IconCache {
             for (String id : Icon.MASK_ICON.getIds()) {
                 BufferedImage clone = clone(images.get(id));
                 // Even on lite mode desktops, white tray icons were the norm until Windows 10 update 1903, (1903 is build 18362.X)
-                if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().lessThan(Version.valueOf("10.0.18362"))) {
+                if (SystemUtilities.isWindows() && SystemUtilities.getOsVersion().lessThan(Version.valueOf("10.0.18362"))) {
                     darkTaskbar = true;
                 }
                 if (darkTaskbar) {

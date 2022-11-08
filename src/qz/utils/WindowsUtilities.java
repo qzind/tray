@@ -63,7 +63,7 @@ public class WindowsUtilities {
         return true;
     }
 
-    public static Version getVersion() {
+    public static Version getOsVersion() {
         WinNT.OSVERSIONINFO versionInfo = new WinNT.OSVERSIONINFO();
         // GetVersionEx is deprecated, but has no sane replacement. https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getversionexa
         if (!Kernel32.INSTANCE.GetVersionEx(versionInfo)) throw new RuntimeException();
@@ -81,11 +81,11 @@ public class WindowsUtilities {
         ).setBuildMetadata(build);
     }
 
-    public static String getDisplayVersion() {
+    public static String getOsDisplayVersion() {
         try {
             // Product name is the 'real' name of the os, e.g. Windows 10 Home
             String productName = getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ProductName");
-            Version version = SystemUtilities.getOSVersion();
+            Version version = SystemUtilities.getOsVersion();
             String extraInfo = "";
 
             if (version.getPatchVersion() < WINDOWS_10_BUILD_NUMBER) {
@@ -109,9 +109,13 @@ public class WindowsUtilities {
         }
         try {
             // The ver command an internal command of cmd.exe. It must be executed through cmd
-            return ShellUtilities.executeRaw(new String[] {"cmd.exe", "/c", "ver"}).replaceAll("\\n", "");
+            String ver = ShellUtilities.executeRaw(new String[] {"cmd.exe", "/c", "ver"}).replaceAll("\\n", "");
+            if(!ver.trim().isEmpty()) {
+                return ver;
+            }
+            throw new Exception("Empty output received from \"ver\" command");
         } catch(Exception e) {
-            log.warn("Cli fallback failed {}", e.getMessage());
+            log.warn("CLI fallback failed {}", e.getMessage());
         }
         return "Unknown";
     }

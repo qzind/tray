@@ -164,7 +164,7 @@ public class MacUtilities {
         return jdkSupportsTemplateIcon;
     }
 
-    public static String getDisplayVersion() {
+    public static String getOsDisplayVersion() {
         String[] command = {"sw_vers"};
         String output = ShellUtilities.executeRaw(command);
         output = output.replaceAll("^.*[ ,\\t]+", "");
@@ -215,7 +215,7 @@ public class MacUtilities {
             FoundationUtil.runOnMainThreadAndWait(() -> {
                 FoundationUtil.invoke(statusItem, "setView:", FoundationUtil.NULL);
                 NativeLong target;
-                if (SystemUtilities.getOSVersion().greaterThanOrEqualTo(Version.forIntegers(10, 10))) {
+                if (SystemUtilities.getOsVersion().greaterThanOrEqualTo(Version.forIntegers(10, 10))) {
                     target = FoundationUtil.invoke(statusItem, "button");
                 } else {
                     target = statusItem;

@@ -10,6 +10,7 @@
 
 package qz.utils;
 
+import com.github.zafarkhaja.semver.ParseException;
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.ssl.Base64;
@@ -38,8 +39,6 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.TimeZone;
 
-import static com.sun.jna.platform.win32.WinReg.*;
-
 /**
  * Utility class for OS detection functions.
  *
@@ -67,6 +66,7 @@ public class SystemUtilities {
     private static Boolean hasMonocle;
     private static String classProtocol;
     private static Version osVersion;
+    private static String osName;
     private static String osDisplayVersion;
     private static Path jarPath;
     private static Integer pid;
@@ -161,52 +161,60 @@ public class SystemUtilities {
         return toISO(new Date());
     }
 
-    public static Version getOSVersion() {
-        if (osVersion != null) return osVersion;
-
-        if (isWindows()) {
-            osVersion = WindowsUtilities.getVersion();
-        } else {
-            String version = System.getProperty("os.version");
-            while(version.split("\\.").length < 3) {
-                version += ".0";
+    public static Version getOsVersion() {
+        if (osVersion == null) {
+            try {
+                switch(OS_TYPE) {
+                    case WINDOWS:
+                        // Windows is missing patch release, read it from registry
+                        osVersion = WindowsUtilities.getOsVersion();
+                        break;
+                    default:
+                        String version = System.getProperty("os.version", "0.0.0");
+                        while(version.split("\\.").length < 3) {
+                            version += ".0";
+                        }
+                        osVersion = Version.valueOf(version);
+                }
+            } catch(ParseException | IllegalArgumentException e) {
+                log.warn("Unable to parse OS version as a semantic version", e);
+                osVersion = Version.forIntegers(0, 0, 0);
             }
-            osVersion = Version.valueOf(version);
         }
         return osVersion;
     }
 
     public static String getOsDisplayVersion() {
-        if (osDisplayVersion != null) return osDisplayVersion;
-        switch(OS_TYPE) {
-            case WINDOWS:
-                osDisplayVersion = WindowsUtilities.getDisplayVersion();
-                break;
-            case MAC:
-                osDisplayVersion = MacUtilities.getDisplayVersion();
-                break;
-            case LINUX:
-                osDisplayVersion = UnixUtilities.getDisplayVersion();
-                break;
-            //case SOLARIS:
-            //    return "1";
+        if (osDisplayVersion == null) {
+            switch(OS_TYPE) {
+                case WINDOWS:
+                    osDisplayVersion = WindowsUtilities.getOsDisplayVersion();
+                    break;
+                case MAC:
+                    osDisplayVersion = MacUtilities.getOsDisplayVersion();
+                    break;
+                case LINUX:
+                    osDisplayVersion = UnixUtilities.getOsDisplayVersion();
+                    break;
+                default:
+                    osDisplayVersion = System.getProperty("os.version", "0.0.0");
+            }
         }
-        if (osDisplayVersion == null) osDisplayVersion = System.getProperty("os.version");
         return osDisplayVersion;
     }
 
     public static String getOsDisplayName() {
-        switch(OS_TYPE) {
-            //case WINDOWS:
-            //    return WindowsUtilities.getDisplayVersion();
-            //case MAC:
-            //    return MacUtilities.getDisplayVersion();
-            case LINUX:
-                return UnixUtilities.getOsName();
-            //case SOLARIS:
-            //    return "1";
+        if(osName == null) {
+            switch(OS_TYPE) {
+                case LINUX:
+                    // "Linux" is too generic, get the flavor (e.g. Ubuntu, Fedora)
+                    osName = UnixUtilities.getOsDisplayName();
+                    break;
+                default:
+                    osName = System.getProperty("os.name", "Unknown");
+            }
         }
-        return System.getProperty("os.name");
+        return osName;
     }
 
     public static boolean isAdmin() {
@@ -464,7 +472,7 @@ public class SystemUtilities {
             if (SystemUtilities.isMac()) {
                 // Assume a pid of -1 is a broken JNA
                 return getProcessId() != -1;
-            } else if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().getMajorVersion() >= 10) {
+            } else if (SystemUtilities.isWindows() && SystemUtilities.getOsVersion().getMajorVersion() >= 10) {
                 return true;
             }
         }

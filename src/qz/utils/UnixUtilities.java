@@ -35,7 +35,7 @@ public class UnixUtilities {
     private static final String[] OS_NAME_KEYS = {"NAME", "DISTRIB_ID"};
     private static final String[] OS_VERSION_KEYS = {"VERSION", "DISTRIB_RELEASE"};
     private static final String[] KNOWN_ELEVATORS = {"pkexec", "gksu", "gksudo", "kdesudo" };
-    private static final String[] OS_RELEASE_FILES = {"/etc/os-release", "/usr/lib/os-release", "/etc/lsb-release", "/etc/redhat-release"};
+    private static final String[] OS_RELEASE_FILES = {"/etc/os-release", "/usr/lib/os-release", "/etc/lsbg-release", "/etc/redhat-release"};
     private static String uname;
     private static String unixRelease;
     private static String unixVersion;
@@ -130,7 +130,13 @@ public class UnixUtilities {
             }
             if(unixVersion == null) {
                 log.warn("Could not find version key {} in files {}",  Arrays.toString(OS_VERSION_KEYS), Arrays.toString(OS_RELEASE_FILES));
-                unixRelease = System.getProperty("os.version", "0.0.0");
+                // If we can't get version info from a file, run the "lsb_release" command
+                String lsbRelease = ShellUtilities.executeRaw(new String[] {"lsb_release", "-ds"}).trim();
+                if(!lsbRelease.isEmpty()) {
+                    unixRelease = lsbRelease;
+                } else {
+                    unixRelease = System.getProperty("os.version", "0.0.0");
+                }
             }
         }
         return unixVersion;
@@ -174,12 +180,13 @@ public class UnixUtilities {
         Stream<Path> s;
         try {
             s = Files.find(
-                    // FIXME BROKEN!!!!!
+                    // If that fails, try to find any *-release file
                     Paths.get("/etc/"),
                     1,
                     (path, basicFileAttributes) -> path.getFileName().toString().endsWith("-release"),
                     FileVisitOption.FOLLOW_LINKS
             );
+            // If no element is found this will throw a NoSuchElementException
             return s.findFirst().get();
         } catch(Exception ignore) {}
         throw new FileNotFoundException("Could not find os-release file");

@@ -82,7 +82,8 @@ public class AboutInfo {
         long uptime = ManagementFactory.getRuntimeMXBean().getUptime();
 
         environment
-                .put("os", SystemUtilities.getOsType().toString().toLowerCase())
+                .put("os", SystemUtilities.getOsDisplayName())
+                .put("os version", SystemUtilities.getOsDisplayVersion())
                 .put("java", String.format("%s (%s)", Constants.JAVA_VERSION, SystemUtilities.getJreArch().toString().toLowerCase()))
                 .put("java (location)", System.getProperty("java.home"))
                 .put("java (vendor)", Constants.JAVA_VENDOR)

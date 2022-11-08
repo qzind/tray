@@ -10,6 +10,7 @@
 
 package qz.utils;
 
+import com.github.zafarkhaja.semver.ParseException;
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.ssl.Base64;
@@ -39,8 +40,6 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.TimeZone;
 
-import static com.sun.jna.platform.win32.WinReg.*;
-
 /**
  * Utility class for OS detection functions.
  *
@@ -68,6 +67,8 @@ public class SystemUtilities {
     private static Boolean hasMonocle;
     private static String classProtocol;
     private static Version osVersion;
+    private static String osName;
+    private static String osDisplayVersion;
     private static Path jarPath;
     private static Integer pid;
 
@@ -161,22 +162,69 @@ public class SystemUtilities {
         return toISO(new Date());
     }
 
-    public static Version getOSVersion() {
+    /**
+     * The semantic version of the OS (e.g. "1.2.3")
+     */
+    public static Version getOsVersion() {
         if (osVersion == null) {
-            String version = System.getProperty("os.version");
-            // Windows is missing patch release, read it from registry
-            if (isWindows()) {
-                String patch = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId");
-                if (patch != null) {
-                    version += "." + patch.trim();
+            try {
+                switch(OS_TYPE) {
+                    case WINDOWS:
+                        // Windows is missing patch release, read it from registry
+                        osVersion = WindowsUtilities.getOsVersion();
+                        break;
+                    default:
+                        String version = System.getProperty("os.version", "0.0.0");
+                        while(version.split("\\.").length < 3) {
+                            version += ".0";
+                        }
+                        osVersion = Version.valueOf(version);
                 }
+            } catch(ParseException | IllegalArgumentException e) {
+                log.warn("Unable to parse OS version as a semantic version", e);
+                osVersion = Version.forIntegers(0, 0, 0);
             }
-            while (version.split("\\.").length < 3) {
-                version += ".0";
-            }
-            osVersion = Version.valueOf(version);
         }
         return osVersion;
+    }
+
+    /**
+     * The human-readable display version of the OS (e.g. "22.04.1 LTS (Jammy Jellyfish)")
+     */
+    public static String getOsDisplayVersion() {
+        if (osDisplayVersion == null) {
+            switch(OS_TYPE) {
+                case WINDOWS:
+                    osDisplayVersion = WindowsUtilities.getOsDisplayVersion();
+                    break;
+                case MAC:
+                    osDisplayVersion = MacUtilities.getOsDisplayVersion();
+                    break;
+                case LINUX:
+                    osDisplayVersion = UnixUtilities.getOsDisplayVersion();
+                    break;
+                default:
+                    osDisplayVersion = System.getProperty("os.version", "0.0.0");
+            }
+        }
+        return osDisplayVersion;
+    }
+
+    /**
+     * The human-readable display name of the OS (e.g. "Windows 10" or "Ubuntu")
+     */
+    public static String getOsDisplayName() {
+        if(osName == null) {
+            switch(OS_TYPE) {
+                case LINUX:
+                    // "Linux" is too generic, get the flavor (e.g. Ubuntu, Fedora)
+                    osName = UnixUtilities.getOsDisplayName();
+                    break;
+                default:
+                    osName = System.getProperty("os.name", "Unknown");
+            }
+        }
+        return osName;
     }
 
     public static boolean isAdmin() {
@@ -418,7 +466,7 @@ public class SystemUtilities {
             } else if (isWindows()) {
                 darkDesktop = WindowsUtilities.isDarkDesktop();
             } else {
-                darkDesktop = LinuxUtilities.isDarkMode();
+                darkDesktop = UnixUtilities.isDarkMode();
             }
         }
         return darkDesktop.booleanValue();
@@ -434,7 +482,7 @@ public class SystemUtilities {
             if (SystemUtilities.isMac()) {
                 // Assume a pid of -1 is a broken JNA
                 return getProcessId() != -1;
-            } else if (SystemUtilities.isWindows() && SystemUtilities.getOSVersion().getMajorVersion() >= 10) {
+            } else if (SystemUtilities.isWindows() && SystemUtilities.getOsVersion().getMajorVersion() >= 10) {
                 return true;
             }
         }
@@ -445,7 +493,7 @@ public class SystemUtilities {
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
             boolean darculaThemeNeeded = true;
-            if(!isMac() && (isUnix() && LinuxUtilities.isDarkMode())) {
+            if(!isMac() && (isUnix() && UnixUtilities.isDarkMode())) {
                 darculaThemeNeeded = false;
             }
             if(isDarkDesktop() && darculaThemeNeeded) {
@@ -534,8 +582,8 @@ public class SystemUtilities {
         if(isWindows()) {
             return 1;
         }
-        // Linux on JDK11 requires JNA calls to Gdk
-        return LinuxUtilities.getScaleFactor();
+        // Linux/Unix on JDK11 requires JNA calls to Gdk
+        return UnixUtilities.getScaleFactor();
     }
 
     /**
@@ -554,7 +602,7 @@ public class SystemUtilities {
             return WindowsUtilities.getScaleFactor() > 1;
         }
         // Fallback to a JNA Gdk technique
-        return LinuxUtilities.getScaleFactor() > 1;
+        return UnixUtilities.getScaleFactor() > 1;
     }
 
     /**

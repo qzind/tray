@@ -61,7 +61,7 @@
         </path>
         <pathconvert property="pdfbox.path" refid="pdfbox.found"/>
 
-        <javac destdir="${build.dir}/${project.filename}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8">
+        <javac destdir="${build.dir}/${project.filename}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8" debug="true">
             <src path="${src.dir}"/>
             <classpath>
                 <!-- prefer bouncycastle from pdfbox over others -->

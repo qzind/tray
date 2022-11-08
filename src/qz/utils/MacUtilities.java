@@ -164,6 +164,36 @@ public class MacUtilities {
         return jdkSupportsTemplateIcon;
     }
 
+    /**
+     * The human-readable display version of the Mac
+     */
+    public static String getOsDisplayVersion() {
+        String displayVersion;
+        String[] command = {"sw_vers"};
+        String output = ShellUtilities.executeRaw(command);
+        if(!output.trim().isEmpty()) {
+            displayVersion = "";
+            String[] lines = output.split("\\n");
+            if (lines.length >= 3) {
+                for(int line = 0; line < 3; line++) {
+                    // Get value after ":", e.g. "ProductName:      macOS"
+                    String[] parts = lines[line].split(":", 2);
+                    if (parts.length > 1) {
+                        if (line < 2) {
+                            displayVersion += parts[1].trim() + " ";
+                        } else {
+                            displayVersion += "(" + parts[1].trim() + ")";
+                        }
+                    }
+                }
+            }
+        } else {
+            displayVersion = System.getProperty("os.version", "0.0.0");
+        }
+
+        return displayVersion;
+    }
+
     public static void toggleTemplateIcon(TrayIcon icon) {
         // Check if icon has a menu
         if (icon.getPopupMenu() == null) {
@@ -208,7 +238,7 @@ public class MacUtilities {
             FoundationUtil.runOnMainThreadAndWait(() -> {
                 FoundationUtil.invoke(statusItem, "setView:", FoundationUtil.NULL);
                 NativeLong target;
-                if (SystemUtilities.getOSVersion().greaterThanOrEqualTo(Version.forIntegers(10, 10))) {
+                if (SystemUtilities.getOsVersion().greaterThanOrEqualTo(Version.forIntegers(10, 10))) {
                     target = FoundationUtil.invoke(statusItem, "button");
                 } else {
                     target = statusItem;

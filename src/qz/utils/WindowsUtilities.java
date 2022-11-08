@@ -35,10 +35,11 @@ import static java.nio.file.attribute.AclEntryFlag.*;
 
 public class WindowsUtilities {
     protected static final Logger log = LogManager.getLogger(WindowsUtilities.class);
-    private static String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
-    private static String TRAY_REG_CHEVRON_KEY = "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\TrayNotify";
-    private static String TRAY_REG_POLICY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer";
+    private static final String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+    private static final String TRAY_REG_CHEVRON_KEY = "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\TrayNotify";
+    private static final String TRAY_REG_POLICY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
+    private static final int WINDOWS_10_BUILD_NUMBER = 10000;
     private static Boolean isWow64;
     private static Integer pid;
 
@@ -60,6 +61,66 @@ public class WindowsUtilities {
             return regVal == 0;
         }
         return true;
+    }
+
+    public static Version getOsVersion() {
+        WinNT.OSVERSIONINFO versionInfo = new WinNT.OSVERSIONINFO();
+        // GetVersionEx is deprecated, but has no sane replacement. https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-getversionexa
+        if (!Kernel32.INSTANCE.GetVersionEx(versionInfo)) throw new RuntimeException();
+
+        String build = "";
+        if (versionInfo.dwBuildNumber.longValue() >= WINDOWS_10_BUILD_NUMBER) {
+            // UBR or "Update Build Revision" was introduced in win10/server 2016. It reflects the monthly rollup version number.
+            build = getRegInt(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "UBR").toString();
+        }
+
+        return Version.forIntegers(
+                versionInfo.dwMajorVersion.intValue(),
+                versionInfo.dwMinorVersion.intValue(),
+                versionInfo.dwBuildNumber.intValue()
+        ).setBuildMetadata(build);
+    }
+
+    /**
+     * The human-readable display version of the Windows machine
+     */
+    public static String getOsDisplayVersion() {
+        try {
+            // Product name is the 'real' name of the os, e.g. Windows 10 Home
+            String productName = getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ProductName");
+            Version version = SystemUtilities.getOsVersion();
+            String extraInfo = "";
+
+            if (version.getPatchVersion() < WINDOWS_10_BUILD_NUMBER) {
+                WinNT.OSVERSIONINFO versionInfo = new WinNT.OSVERSIONINFO();
+                Kernel32.INSTANCE.GetVersionEx(versionInfo);
+                // CSD is the servicePack string in long form e.g. Service Pack 3
+                extraInfo += " " + Native.toString(versionInfo.szCSDVersion);
+            } else {
+                // ReleaseID was both introduced and retired for Windows 10. If 'DisplayVersion' exists, we can ignore ReleaseId, as it will be '2009' forever
+                int releaseID = Integer.parseInt(getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId"));
+                // DisplayVersion is the last 2 digits of the year, followed by H1 or H2 depending on the year-half. e.g. 22H2
+                if (Advapi32Util.registryValueExists(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion")) {
+                    extraInfo += " Version: " + getRegString(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion");
+                } else {
+                    extraInfo += " Release: " + releaseID;
+                }
+            }
+            return productName + " " + version.toString().replace("+", ".") + extraInfo;
+        } catch(Exception e) {
+            log.warn("Couldn't get detailed OS version info, using cli fallback {}", e.getMessage());
+        }
+        try {
+            // The ver command an internal command of cmd.exe. It must be executed through cmd
+            String ver = ShellUtilities.executeRaw(new String[] {"cmd.exe", "/c", "ver"}).replaceAll("\\n", "");
+            if(!ver.trim().isEmpty()) {
+                return ver;
+            }
+            throw new Exception("Empty output received from \"ver\" command");
+        } catch(Exception e) {
+            log.warn("CLI fallback failed {}", e.getMessage());
+        }
+        return "Unknown";
     }
 
     /**

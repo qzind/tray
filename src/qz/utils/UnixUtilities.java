@@ -102,7 +102,7 @@ public class UnixUtilities {
                         break;
                     }
                 }
-            } catch(Exception ignore) {} //todo cli fallback?
+            } catch(Exception ignore) {}
         }
         return unixRelease;
     }
@@ -118,8 +118,13 @@ public class UnixUtilities {
                 }
             }
         }
-        catch(FileNotFoundException e) {
-            //todo fallback to cli?
+        catch(Exception ignore) {
+            try {
+                // if we cant get version info from a file, run the lsb_release command;
+                return ShellUtilities.executeRaw(
+                        new String[] {"lsb_release", "-ds"}
+                );
+            } catch(Exception ignore2) {}
             unixVersion = "UNKNOWN";
         }
         return unixVersion;
@@ -160,6 +165,7 @@ public class UnixUtilities {
             Path path = Paths.get(release);
             if (Files.exists(path)) return path;
         }
+        // If that fails, try to find any *-release file
         Stream<Path> s;
         try {
             s = Files.find(
@@ -168,6 +174,7 @@ public class UnixUtilities {
                     (path, basicFileAttributes) -> path.getFileName().toString().endsWith("-release"),
                     FileVisitOption.FOLLOW_LINKS
             );
+            // If no element is found this will throw a NoSuchElementException
             return s.findFirst().get();
         } catch(Exception ignore) {}
         throw new FileNotFoundException("Could not find os-release file");

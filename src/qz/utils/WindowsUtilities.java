@@ -81,6 +81,9 @@ public class WindowsUtilities {
         ).setBuildMetadata(build);
     }
 
+    /**
+     * The human-readable display version of the Windows machine
+     */
     public static String getOsDisplayVersion() {
         try {
             // Product name is the 'real' name of the os, e.g. Windows 10 Home

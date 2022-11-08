@@ -161,6 +161,9 @@ public class SystemUtilities {
         return toISO(new Date());
     }
 
+    /**
+     * The semantic version of the OS (e.g. "1.2.3")
+     */
     public static Version getOsVersion() {
         if (osVersion == null) {
             try {
@@ -184,6 +187,9 @@ public class SystemUtilities {
         return osVersion;
     }
 
+    /**
+     * The human-readable display version of the OS (e.g. "22.04.1 LTS (Jammy Jellyfish)")
+     */
     public static String getOsDisplayVersion() {
         if (osDisplayVersion == null) {
             switch(OS_TYPE) {
@@ -203,6 +209,9 @@ public class SystemUtilities {
         return osDisplayVersion;
     }
 
+    /**
+     * The human-readable display name of the OS (e.g. "Windows 10" or "Ubuntu")
+     */
     public static String getOsDisplayName() {
         if(osName == null) {
             switch(OS_TYPE) {

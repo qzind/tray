@@ -133,9 +133,9 @@ public class UnixUtilities {
                 // If we can't get version info from a file, run the "lsb_release" command
                 String lsbRelease = ShellUtilities.executeRaw(new String[] {"lsb_release", "-ds"}).trim();
                 if(!lsbRelease.isEmpty()) {
-                    unixRelease = lsbRelease;
+                    unixVersion = lsbRelease;
                 } else {
-                    unixRelease = System.getProperty("os.version", "0.0.0");
+                    unixVersion = System.getProperty("os.version", "0.0.0");
                 }
             }
         }

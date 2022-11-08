@@ -82,6 +82,18 @@ else
     exit 1
 fi
 
+# Verify the bundled Java version actually works
+if test -f "$DIR/runtime/bin/java" ; then
+    echo "Verifying the bundled Java version can run on this platform..."
+    if "$DIR/runtime/bin/java" -version &> /dev/null ; then
+        echo -e "$SUCCESS Bundled Java version is OK"
+    else
+        echo -e "$FAILURE Sorry, this version of $ABOUT_TITLE cannot be installed on this system:\n"
+        file "$DIR/runtime/bin/java"
+        exit 1
+    fi
+fi
+
 # Make sure Java version is sufficient
 echo "Verifying the Java version is $JAVA_MIN+..."
 curver=$(java -version 2>&1 | grep -i version | awk -F"\"" '{ print $2 }' | awk -F"." '{ print $1 "." $2 }')

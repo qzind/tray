@@ -12,6 +12,7 @@
 !addincludedir "${basedir}/ant/windows/nsis/Include"
 !include FindJava.nsh
 !include StdUtils.nsh
+!include StrLoc.nsh
 
 Name "${project.name}"
 OutFile "${nsis.outfile}"
@@ -51,6 +52,13 @@ RequestExecutionLevel admin
     Pop $0
     ${If} "$0" == "0"
         Goto Resume
+    ${EndIf}
+
+    ; Handle scenario where Java is bundled but broken
+    ${StrLoc} $R1 "$java" "runtime\bin" ">" ; e.g. "nss1234.tmp\payload\runtime\bin\java.exe"
+    ${If} $R1 != ""
+        SetDetailsPrint both
+        Abort  "Sorry, this version of ${project.name} cannot be installed on this system."
     ${EndIf}
 
     ; Offer to download Java if missing and non-silent install

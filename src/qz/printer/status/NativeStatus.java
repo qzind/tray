@@ -71,16 +71,6 @@ public interface NativeStatus {
 
 
     static Status fromCupsPrinterStatus(String reason, String state, String printer) {
-        if (reason == null) { return null; }
-
-        NativePrinterStatus cupsPrinterStatus = CupsPrinterStatusMap.matchReason(reason);
-        if(cupsPrinterStatus == null) {
-            // Don't return the raw reason if we couldn't find it mapped, return state instead
-            return new Status(CupsPrinterStatusMap.matchState(state), printer, state);
-        } else if(cupsPrinterStatus == NativePrinterStatus.UNMAPPED) {
-            // Still return the state, but let the user know what the unmapped state reason was
-            return new Status(CupsPrinterStatusMap.matchState(state), printer, reason);
-        }
-        return new Status(cupsPrinterStatus, printer, reason);
+        return CupsPrinterStatusMap.createStatus(reason, state, printer);
     }
 }

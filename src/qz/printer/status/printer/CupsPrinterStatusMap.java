@@ -3,10 +3,9 @@ package qz.printer.status.printer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.printer.status.NativeStatus;
+import qz.printer.status.Status;
 
-import java.util.Locale;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
 import static  qz.printer.status.printer.CupsPrinterStatusMap.CupsPrinterStatusType.*;
 
@@ -67,6 +66,9 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     CUPS_MISSING_FILTER_ERROR(REASON, NativePrinterStatus.ERROR), // "cups-missing-filter-error"
     CUPS_INSECURE_FILTER(REASON, NativePrinterStatus.SERVER_UNKNOWN), // "cups-insecure-filter"
     CUPS_MISSING_FILTER(REASON, NativePrinterStatus.ERROR), // "cups-missing-filter"
+
+    // SNMP statuses with no existing CUPS definition
+    SERVICE_NEEDED(REASON, NativePrinterStatus.UNMAPPED), // "service-needed"
 
     // Unmapped printer-state-reasons
     ALERT_REMOVAL_OF_BINARY_CHANGE_ENTRY(REASON, NativePrinterStatus.UNMAPPED), // alert-removal-of-binary-change-entry
@@ -862,6 +864,7 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     WRAPPER_WARMING_UP(REASON, NativePrinterStatus.UNMAPPED); // wrapper-warming-up
 
     private static final Logger log = LogManager.getLogger(CupsPrinterStatusMap.class);
+    private static final String[] SNMP_REDUNDANT_SUFFIXES = { "-warning", "-report" };
     public static SortedMap<String,NativePrinterStatus> sortedReasonLookupTable;
     public static SortedMap<String,NativePrinterStatus> sortedStateLookupTable;
 
@@ -889,10 +892,6 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
             }
         }
         NativePrinterStatus status = sortedReasonLookupTable.get(code);
-        if(status == null && !code.equalsIgnoreCase("none")) {
-            // Don't warn for "none"
-            log.warn("Printer state-reason \"{}\" was not found", code);
-        }
         return status;
     }
 
@@ -909,6 +908,33 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
         return sortedStateLookupTable.getOrDefault(state, NativePrinterStatus.UNMAPPED);
     }
 
+    public static Status createStatus(String reason, String state, String printer) {
+        NativePrinterStatus cupsPrinterStatus = matchReason(reason);
+
+        // Edge-case for snmp statuses
+        if(cupsPrinterStatus == null) {
+            String sanitizedReason = snmpSanitize(reason);
+            if (!reason.equals(sanitizedReason)) {
+                cupsPrinterStatus = sortedReasonLookupTable.get(sanitizedReason);
+                if (cupsPrinterStatus != null) reason = sanitizedReason;
+            }
+        }
+
+        if(cupsPrinterStatus == null && !reason.equalsIgnoreCase("none")) {
+            // Don't warn for "none"
+            log.warn("Printer state-reason \"{}\" was not found", reason);
+        }
+
+        if(cupsPrinterStatus == null) {
+            // Don't return the raw reason if we couldn't find it mapped, return state instead
+            return new Status(matchState(state), printer, state);
+        } else if(cupsPrinterStatus == NativePrinterStatus.UNMAPPED) {
+            // Still return the state, but let the user know what the unmapped state reason was
+            return new Status(matchState(state), printer, reason);
+        }
+        return new Status(cupsPrinterStatus, printer, reason);
+    }
+
     @Override
     public NativePrinterStatus getParent() {
         return parent;
@@ -917,5 +943,17 @@ public enum CupsPrinterStatusMap implements NativeStatus.NativeMap {
     @Override
     public Object getRawCode() {
         return name().toLowerCase(Locale.ENGLISH).replace("_", "-");
+    }
+
+    /**
+     * Removes redundant "-warning" or "-report" from SNMP-originated statuses
+     */
+    public static String snmpSanitize(String cupsString) {
+        for(String suffix : SNMP_REDUNDANT_SUFFIXES) {
+            if (cupsString.endsWith(suffix)) {
+                return cupsString.substring(0, cupsString.length() - suffix.length());
+            }
+        }
+        return cupsString;
     }
 }

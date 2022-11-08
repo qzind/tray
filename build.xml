@@ -12,7 +12,7 @@
     <!-- Fixes some odd empty directory issues -->
     <defaultexcludes remove="**/.DS_Store"/>
 
-    <target name="distribute" depends="init,quick-clean,build-jar,override-authcert,include-assets,whitelist-certs">
+    <target name="distribute" depends="init,quick-clean,build-jar,override-authcert,build-demo,whitelist-certs">
         <echo level="info">Process complete</echo>
     </target>
 
@@ -194,7 +194,7 @@
     </target>
 
     <!-- install certs to "whitelist" directory for whitelabel builds -->
-    <target name="whitelist-certs" depends="include-assets" if="whitelist.use">
+    <target name="whitelist-certs" depends="build-demo" if="whitelist.use">
         <echo level="info">Copying certificate(s) to dist/whitelist: ${whitelist.use}</echo>
         <!-- See also: Constants.WHITELIST_CERT_DIR -->
 
@@ -203,11 +203,13 @@
         <copy file="${whitelist.use}" todir="${dist.dir}/whitelist" overwrite="true"/>
     </target>
 
-    <target name="include-assets" depends="init" unless="dist.minimal">
-        <echo level="info">Copying resource files to output</echo>
+    <target name="build-demo" depends="init" unless="dist.minimal">
+        <property description="suppress-property-warning" name="demo.dir" value="${dist.dir}/demo"/>
+        <echo level="info">Copying demo resource files to ${demo.dir}</echo>
 
         <!-- Create the demo folder -->
-        <copy todir="${dist.dir}/demo">
+        <delete dir="${demo.dir}" failonerror="false"/>
+        <copy todir="${demo.dir}">
             <fileset file="sample.html"/>
             <fileset dir="${basedir}" includes="css/**"/>
             <fileset dir="${basedir}" includes="fonts/**"/>
@@ -216,6 +218,14 @@
                 <exclude name="**/branding/"/>
             </fileset>
         </copy>
+
+        <!-- Handle sample.html renaming -->
+        <property description="suppress-property-warning" name="sample.name" value="sample.html"/>
+        <move file="${demo.dir}/sample.html" tofile="${demo.dir}/${sample.name}"/>
+    </target>
+
+    <target description="This task is deprecated" name="include-assets" depends="build-demo">
+        <echo level="warn">The "include-assets" task is deprecated, please use "build-demo" instead.</echo>
     </target>
 
     <target name="download-jre" unless="jre.skip">

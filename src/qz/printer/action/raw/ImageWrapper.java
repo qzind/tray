@@ -379,6 +379,18 @@ public class ImageWrapper {
 
                 getByteBuffer().append(new byte[] {27}).append(sbpl, charset);
                 break;
+            case PGL:
+                /**
+                 * TODO:
+                 * 1. Convert image to supported format (BMP, PNG, TIFF, PCX)
+                 * 2. Prepare image format for sending
+                 * 3. Append/prepend any necessary commands
+                 * 4. Handle any custom language-specific options (orientation, position, size, etc)
+                 */
+                throw new UnsupportedOperationException("Sorry, PGL is not yet supported");
+
+                // getByteBuffer().append(pgl, charset);
+                // break;
             default:
                 throw new InvalidRawImageException(languageType + " image conversion is not yet supported.");
         }

@@ -1,12 +1,12 @@
 package qz.utils;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.eclipse.jetty.websocket.api.exceptions.WebSocketException;
 import qz.communication.DeviceException;
 import qz.communication.DeviceIO;
 import qz.communication.DeviceOptions;

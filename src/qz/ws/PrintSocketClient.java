@@ -8,10 +8,10 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.*;
+import org.eclipse.jetty.websocket.api.exceptions.CloseException;
+import org.eclipse.jetty.websocket.api.exceptions.WebSocketException;
 import org.usb4java.LoaderException;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
@@ -29,6 +29,7 @@ import java.awt.*;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.Reader;
+import java.net.InetSocketAddress;
 import java.nio.file.*;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
@@ -57,11 +58,11 @@ public class PrintSocketClient {
 
     @OnWebSocketConnect
     public void onConnect(Session session) {
-        log.info("Connection opened from {} on socket port {}", session.getRemoteAddress(), session.getLocalAddress().getPort());
+        log.info("Connection opened from {} on socket port {}", session.getRemoteAddress(), ((InetSocketAddress)session.getLocalAddress()).getPort());
         trayManager.displayInfoMessage("Client connected");
 
         //new connections are unknown until they send a proper certificate
-        openConnections.put(session.getRemoteAddress().getPort(), new SocketConnection(Certificate.UNKNOWN));
+        openConnections.put(((InetSocketAddress)session.getRemoteAddress()).getPort(), new SocketConnection(Certificate.UNKNOWN));
     }
 
     @OnWebSocketClose
@@ -69,7 +70,7 @@ public class PrintSocketClient {
         log.info("Connection closed: {} - {}", closeCode, reason);
         trayManager.displayInfoMessage("Client disconnected");
 
-        Integer port = session.getRemoteAddress().getPort();
+        Integer port = ((InetSocketAddress)session.getRemoteAddress()).getPort();
         SocketConnection closed = openConnections.remove(port);
         if (closed != null) {
             try {
@@ -115,7 +116,7 @@ public class PrintSocketClient {
             log.debug("Message: {}", json);
             UID = json.optString("uid");
 
-            Integer connectionPort = session.getRemoteAddress().getPort();
+            Integer connectionPort = ((InetSocketAddress)session.getRemoteAddress()).getPort();
             SocketConnection connection = openConnections.get(connectionPort);
             RequestState request = new RequestState(connection.getCertificate(), json);
 
@@ -681,7 +682,7 @@ public class PrintSocketClient {
 
     private Point findDialogPosition(Session session, JSONObject positionData) {
         Point pos = new Point(0, 0);
-        if (session.getRemoteAddress().getAddress().isLoopbackAddress() && positionData != null
+        if (((InetSocketAddress)session.getRemoteAddress()).getAddress().isLoopbackAddress() && positionData != null
                 && !positionData.isNull("x") && !positionData.isNull("y")) {
             pos.move(positionData.optInt("x"), positionData.optInt("y"));
         }

@@ -82,6 +82,7 @@ public class ImageWrapper {
     private int xPos = 0;   // X coordinate used for EPL2, CPCL.  Irrelevant for ZPLII, ESC/POS, etc
     private int yPos = 0;   // Y coordinate used for EPL2, CPCL.  Irrelevant for ZPLII, ESC/POS, etc
     private String logoId = "";  // PGL only, the logo ID
+    private boolean igpDots = false; // PGL only, toggle IGP/PGL default resolution of 72dpi
     private int dotDensity = 32;  // Generally 32 = Single (normal) 33 = Double (higher res) for ESC/POS.  Irrelevant for all other languages.
 
     /**
@@ -207,6 +208,14 @@ public class ImageWrapper {
 
     public String getLogoId() {
         return logoId;
+    }
+
+    public void setIgpDots(boolean igpDots) {
+        this.igpDots = igpDots;
+    }
+
+    public boolean getIgpDots() {
+        return igpDots;
     }
 
     public int getxPos() {
@@ -394,12 +403,10 @@ public class ImageWrapper {
                     throw new InvalidRawImageException("Printronix graphics require a logoId");
                 }
 
-                // TODO: Make this configurable
-                // Toggle the printer's native resolution for graphics (default is 72dpi)
-                boolean dots = true;
-
+                // igpDots: true: Use IGP standard 72dpi graphics (removes ";DOTS" from raw command)
+                // igpDots: false: Use the printer's native resolution (appends ";DOTS" to raw command)
                 StringBuilder pgl = new StringBuilder("~LOGO;").append(logoId).append(";")
-                        .append(getHeight()).append(";").append(getWidth()).append(dots ? ";DOTS" : "").append("\n")
+                        .append(getHeight()).append(";").append(getWidth()).append(igpDots ? ";DOTS" : "").append("\n")
                         .append(getImageAsPGLDots())
                         .append("END").append("\n");
 

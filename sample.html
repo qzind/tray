@@ -1891,7 +1891,7 @@
                     "~CREATE;FORM-1;432\n",
                     "LOGO\n",
                     // Position of the logo on the form y=1, x=1
-                    "1;1;" + options.logoId + "\n",
+                    "1;1;" + opts.logoId + "\n",
                     "STOP\n",
                     "END\n",
                     "~PAPER;CUT 0;PAUSE 0;TEAR 0\n",
@@ -1899,7 +1899,7 @@
                     "~NORMAL\n",
                     "~DELETE FORM;FORM-1\n",
                     // Printronix must explicitly delete logos which have been uploaded
-                    "~DELETE LOGO;" + options.logoId + "\n"
+                    "~DELETE LOGO;" + opts.logoId + "\n"
                 ];
                 break;
             default:

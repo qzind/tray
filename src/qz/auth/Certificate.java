@@ -301,7 +301,7 @@ public class Certificate {
             // Second, handle local directory
             File localFile = FileUtilities.getFile(Constants.ALLOW_FILE, true);
             if (existsInAnyFile(previousFingerprint, localFile) && !isSaved(true)) {
-                FileUtilities.printLineToFile(Constants.ALLOW_FILE, data(), false);
+                FileUtilities.printLineToFile(Constants.ALLOW_FILE, data(), true);
             }
         }
     }

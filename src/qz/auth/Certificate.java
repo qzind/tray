@@ -288,9 +288,20 @@ public class Certificate {
             }
 
             // Add this certificate to the whitelist if the previous certificate was whitelisted
-            File allowed = FileUtilities.getFile(Constants.ALLOW_FILE, true);
-            if (existsInAnyFile(previousFingerprint, allowed) && !isSaved()) {
-                FileUtilities.printLineToFile(Constants.ALLOW_FILE, data());
+
+            // First, handle shared directory
+            File sharedFile = FileUtilities.getFile(Constants.ALLOW_FILE, false);
+            if (existsInAnyFile(previousFingerprint, sharedFile) && !isSaved(false)) {
+                if(!FileUtilities.printLineToFile(Constants.ALLOW_FILE, data(), false)) {
+                    // Fallback to local directory if shared is not writable
+                    FileUtilities.printLineToFile(Constants.ALLOW_FILE, data(), /* fallback */ true);
+                }
+            }
+
+            // Second, handle local directory
+            File localFile = FileUtilities.getFile(Constants.ALLOW_FILE, true);
+            if (existsInAnyFile(previousFingerprint, localFile) && !isSaved(true)) {
+                FileUtilities.printLineToFile(Constants.ALLOW_FILE, data(), false);
             }
         }
     }
@@ -350,11 +361,15 @@ public class Certificate {
         return false;
     }
 
+    /** Checks if the certificate has been added to the specified allow file */
+    public boolean isSaved(boolean local) {
+        File allowed = FileUtilities.getFile(Constants.ALLOW_FILE, local);
+        return existsInAnyFile(getFingerprint(), allowed);
+    }
+
     /** Checks if the certificate has been added to the allow file */
     public boolean isSaved() {
-        File allowed = FileUtilities.getFile(Constants.ALLOW_FILE, true);
-        File allowedShared = FileUtilities.getFile(Constants.ALLOW_FILE, false);
-        return existsInAnyFile(getFingerprint(), allowedShared, allowed);
+        return isSaved(false) || isSaved(true);
     }
 
     /** Checks if the certificate has been added to the local block file */

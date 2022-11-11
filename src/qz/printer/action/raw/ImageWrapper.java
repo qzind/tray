@@ -21,6 +21,7 @@ import qz.utils.ByteUtilities;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -80,6 +81,7 @@ public class ImageWrapper {
     private int imageQuantizationMethod = CHECK_LUMA;
     private int xPos = 0;   // X coordinate used for EPL2, CPCL.  Irrelevant for ZPLII, ESC/POS, etc
     private int yPos = 0;   // Y coordinate used for EPL2, CPCL.  Irrelevant for ZPLII, ESC/POS, etc
+    private String logoId = "";  // PGL only, the logo ID
     private int dotDensity = 32;  // Generally 32 = Single (normal) 33 = Double (higher res) for ESC/POS.  Irrelevant for all other languages.
 
     /**
@@ -197,6 +199,14 @@ public class ImageWrapper {
 
     public void setDotDensity(int dotDensity) {
         this.dotDensity = dotDensity;
+    }
+
+    public void setLogoId(String logoId) {
+        this.logoId = logoId;
+    }
+
+    public String getLogoId() {
+        return logoId;
     }
 
     public int getxPos() {
@@ -380,17 +390,21 @@ public class ImageWrapper {
                 getByteBuffer().append(new byte[] {27}).append(sbpl, charset);
                 break;
             case PGL:
-                /**
-                 * TODO:
-                 * 1. Convert image to supported format (BMP, PNG, TIFF, PCX)
-                 * 2. Prepare image format for sending
-                 * 3. Append/prepend any necessary commands
-                 * 4. Handle any custom language-specific options (orientation, position, size, etc)
-                 */
-                throw new UnsupportedOperationException("Sorry, PGL is not yet supported");
+                if(logoId.isEmpty()) {
+                    throw new InvalidRawImageException("Printronix graphics require a logoId");
+                }
 
-                // getByteBuffer().append(pgl, charset);
-                // break;
+                // TODO: Make this configurable
+                // Toggle the printer's native resolution for graphics (default is 72dpi)
+                boolean dots = true;
+
+                StringBuilder pgl = new StringBuilder("~LOGO;").append(logoId).append(";")
+                        .append(getHeight()).append(";").append(getWidth()).append(dots ? ";DOTS" : "").append("\n")
+                        .append(getImageAsPGLDots())
+                        .append("END");
+
+                getByteBuffer().append(pgl, charset);
+                break;
             default:
                 throw new InvalidRawImageException(languageType + " image conversion is not yet supported.");
         }
@@ -417,6 +431,71 @@ public class ImageWrapper {
      */
     private boolean[] getImageAsBooleanArray() {
         return imageAsBooleanArray;
+    }
+
+    /**
+     * Printronix format: (240x252 maximum size!)
+     *    [line];[black dots range];[more black dots range][newline]
+     * e.g
+     *    1;1-12;19-22;38-39
+     *
+     */
+    private String getImageAsPGLDots() {
+        StringBuilder pglDots = new StringBuilder();
+        int pixelIndex = 0;
+        for(int h = 1; h <= getHeight(); h++) {
+            StringBuilder line = new StringBuilder();
+
+            int start = -1;
+            int end = -1;
+
+            for(int w = 1; w <= getWidth(); w++) {
+                if(imageAsBooleanArray[pixelIndex]) {
+                    System.out.print(".");
+                    if(start == -1) {
+                        start = w;
+                    }
+                } else {
+                    System.out.print(" ");
+                    if(start != -1) {
+                        end = w - 1;
+                    }
+                }
+
+                // Handle trailing pixel
+                if(w == getWidth()) {
+                    end = w;
+                }
+
+                if(start != -1 && end != -1) {
+                    if(start == end) {
+                        // append a single dot
+                        line.append(start).append(";");
+                    } else {
+                        // append a range of dots
+                        line.append(start).append("-").append(end).append(";");
+                    }
+                    start = -1;
+                    end = -1;
+                }
+                pixelIndex++;
+            }
+            System.out.print("\n");
+            if(line.length() > 0) {
+                // Remove trailing ";"
+                if(line.charAt(line.length() -1) == ';') {
+                    line.replace(line.length() - 1, line.length(), "");
+                }
+                // Add line number
+                line.insert(0, h + ";");
+
+                // Add to final commands
+                pglDots.append(line).append("\n");
+            }
+
+        }
+
+        return pglDots.toString();
     }
 
     /**

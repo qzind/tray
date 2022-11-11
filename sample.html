@@ -1882,10 +1882,24 @@
                 ];
                 break;
             case 'PGL':
+                // Printronix must reference logos by ID
+                opts.logoId = 'LOGO-QZ-1';
+
                 printData = [
-                    // FIXME
+                    // Printronix logo should appear before form declarations
                     { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: opts },
-                    // FIXME
+                    "~CREATE;FORM-1;432\n",
+                    "LOGO\n",
+                    // Position of the logo on the form y=1, x=1
+                    "1;1;" + options.logoId + "\n",
+                    "STOP\n",
+                    "END\n",
+                    "~PAPER;CUT 0;PAUSE 0;TEAR 0\n",
+                    "~EXECUTE;FORM-1;1\n",
+                    "~NORMAL\n",
+                    "~DELETE FORM;FORM-1\n",
+                    // Printronix must explicitly delete logos which have been uploaded
+                    "~DELETE LOGO;" + options.logoId + "\n"
                 ];
                 break;
             default:

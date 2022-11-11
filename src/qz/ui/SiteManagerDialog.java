@@ -401,12 +401,14 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     private void removeCertificate(CertificateDisplay certDisplay, ContainerList<CertificateDisplay> list) {
         if (list.contains(certDisplay)) {
             String saveFile = (list == allowList ? Constants.ALLOW_FILE : Constants.BLOCK_FILE);
-            if(certDisplay != null && certDisplay.getCert() != null
-                    && FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data())) {
-                list.remove(certDisplay);
-            } else {
-                log.warn("Error removing {} from the list of {} sites", certDisplay, saveFile);
+            if(certDisplay != null && certDisplay.getCert() != null) {
+                boolean localOk = FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data(), true);
+                boolean sharedOk = FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data(), false);
+                if(localOk || sharedOk) {
+                    return;
+                }
             }
+            log.warn("Error removing {} from the list of {} sites", certDisplay, saveFile);
         }
     }
 

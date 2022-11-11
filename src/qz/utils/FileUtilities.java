@@ -718,9 +718,9 @@ public class FileUtilities {
         return ArgParser.ExitStatus.GENERAL_ERROR;
     }
 
-    public static synchronized boolean deleteFromFile(String fileName, String deleteLine) {
-        File file = getFile(fileName, true);
-        File temp = getFile(Constants.TEMP_FILE, true);
+    public static synchronized boolean deleteFromFile(String fileName, String deleteLine, boolean local) {
+        File file = getFile(fileName, local);
+        File temp = getFile(Constants.TEMP_FILE, local);
 
         try(BufferedReader br = new BufferedReader(new FileReader(file)); BufferedWriter bw = new BufferedWriter(new FileWriter(temp))) {
             String line;

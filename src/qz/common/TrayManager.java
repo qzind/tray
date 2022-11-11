@@ -415,7 +415,8 @@ public class TrayManager {
         if (checkBoxState) {
             blackList(Certificate.UNKNOWN);
         } else {
-            FileUtilities.deleteFromFile(Constants.BLOCK_FILE, Certificate.UNKNOWN.data());
+            FileUtilities.deleteFromFile(Constants.BLOCK_FILE, Certificate.UNKNOWN.data(), true);
+            FileUtilities.deleteFromFile(Constants.BLOCK_FILE, Certificate.UNKNOWN.data(), false);
         }
     };
 

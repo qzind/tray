@@ -401,7 +401,7 @@ public class ImageWrapper {
                 StringBuilder pgl = new StringBuilder("~LOGO;").append(logoId).append(";")
                         .append(getHeight()).append(";").append(getWidth()).append(dots ? ";DOTS" : "").append("\n")
                         .append(getImageAsPGLDots())
-                        .append("END");
+                        .append("END").append("\n");
 
                 getByteBuffer().append(pgl, charset);
                 break;

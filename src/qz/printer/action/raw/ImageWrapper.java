@@ -402,8 +402,14 @@ public class ImageWrapper {
                 if(logoId.isEmpty()) {
                     throw new InvalidRawImageException("Printronix graphics require a logoId");
                 }
+                if(igpDots) {
+                    // IGP images cannot exceed 240x252
+                    if(getWidth() > 240 || getHeight() > 252) {
+                        throw new InvalidRawImageException("IGP dots is enabled; Size values HL/VL cannot exceed 240x252");
+                    }
+                }
 
-                // igpDots: true: Use IGP standard 72dpi graphics (removes ";DOTS" from raw command)
+                // igpDots: true: Use IGP standard 60dpi/72dpi graphics (removes ";DOTS" from raw command)
                 // igpDots: false: Use the printer's native resolution (appends ";DOTS" to raw command)
                 StringBuilder pgl = new StringBuilder("~LOGO;").append(logoId).append(";")
                         .append(getHeight()).append(";").append(getWidth()).append(igpDots ? ";DOTS" : "").append("\n")
@@ -441,7 +447,7 @@ public class ImageWrapper {
     }
 
     /**
-     * Printronix format: (240x252 maximum size!)
+     * Printronix format
      *    [line];[black dots range];[more black dots range][newline]
      * e.g
      *    1;1-12;19-22;38-39

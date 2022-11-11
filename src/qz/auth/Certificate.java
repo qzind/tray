@@ -367,7 +367,7 @@ public class Certificate {
         return existsInAnyFile(getFingerprint(), allowed);
     }
 
-    /** Checks if the certificate has been added to the allow file */
+    /** Checks if the certificate has been added to any allow file */
     public boolean isSaved() {
         return isSaved(false) || isSaved(true);
     }

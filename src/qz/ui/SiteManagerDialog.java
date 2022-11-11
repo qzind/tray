@@ -405,6 +405,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                 boolean localOk = FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data(), true);
                 boolean sharedOk = FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data(), false);
                 if(localOk || sharedOk) {
+                    list.remove(certDisplay);
                     return;
                 }
             }

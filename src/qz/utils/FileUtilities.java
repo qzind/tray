@@ -584,7 +584,7 @@ public class FileUtilities {
     }
 
 
-    public static boolean printLineToFile(String fileName, String message, boolean local) {
+    public static synchronized boolean printLineToFile(String fileName, String message, boolean local) {
         File file = getFile(fileName, local);
         if (file == null) { return false; }
 
@@ -662,9 +662,9 @@ public class FileUtilities {
         return ArgParser.ExitStatus.GENERAL_ERROR;
     }
 
-    public static boolean deleteFromFile(String fileName, String deleteLine) {
-        File file = getFile(fileName, true);
-        File temp = getFile(Constants.TEMP_FILE, true);
+    public static synchronized boolean deleteFromFile(String fileName, String deleteLine, boolean local) {
+        File file = getFile(fileName, local);
+        File temp = getFile(Constants.TEMP_FILE, local);
 
         try(BufferedReader br = new BufferedReader(new FileReader(file)); BufferedWriter bw = new BufferedWriter(new FileWriter(temp))) {
             String line;
@@ -717,7 +717,7 @@ public class FileUtilities {
         }
     }
 
-    private static boolean writeAutoStartFile(String mode) throws IOException {
+    private static synchronized boolean writeAutoStartFile(String mode) throws IOException {
         Path autostartFile = Paths.get(USER_DIR.toString(), Constants.AUTOSTART_FILE);
         Files.write(autostartFile, mode.getBytes(), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
         return readAutoStartFile().equals(mode);
@@ -747,7 +747,7 @@ public class FileUtilities {
      *
      * Will look for resource relative to relativeClass package location.
      */
-    public static void configureAssetFile(String relativeAsset, File dest, HashMap<String, String> additionalMappings, Class relativeClass) throws IOException {
+    public static synchronized void configureAssetFile(String relativeAsset, File dest, HashMap<String, String> additionalMappings, Class relativeClass) throws IOException {
         // Static fields, parsed from qz.common.Constants
         List<Field> fields = new ArrayList<>();
         HashMap<String, String> allMappings = (HashMap<String, String>)additionalMappings.clone();

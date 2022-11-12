@@ -294,6 +294,10 @@ public class PrintRaw implements PrintProcessor {
         iw.setxPos(opt.optInt("x", 0));
         iw.setyPos(opt.optInt("y", 0));
 
+        // PGL only
+        iw.setLogoId(opt.optString("logoId", ""));
+        iw.setIgpDots(opt.optBoolean("igpDots", false));
+
         return iw;
     }
 

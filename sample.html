@@ -18,9 +18,11 @@
 <link rel="stylesheet" href="css/font-awesome.min.css" />
 <link rel="stylesheet" href="css/bootstrap.min.css" />
 <link rel="stylesheet" href="css/style.css" />
-
+<link rel="stylesheet" href="css/gh-fork-ribbon.min.css" />
 
 <body id="qz-page" role="document">
+<a class="github-fork-ribbon" href="https://github.com/qzind/tray" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
+
 <nav class="navbar navbar-default navbar-static-top" role="navigation">
     <div class="container">
         <div class="navbar-header">
@@ -157,32 +159,36 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label>Language</label>
+                            <label>Raw Language</label>
                             <div>
-                                <label>
-                                    <input type="radio" name="pLanguage" id="pLangEPL" value="EPL" />
+                                <label class="tip" data-toggle="tooltip" title="" data-original-title="Eltron Programming Language">
+                                    <input type="radio" name="pLanguage" id="pLangEPL" value="EPL" onclick="updateRawButtons()"/>
                                     EPL2
                                 </label>
-                                <label>
-                                    <input type="radio" name="pLanguage" id="pLangZPL" value="ZPL" />
+                                <label class="tip" data-toggle="tooltip" title="" data-original-title="Zebra Programming Language">
+                                    <input type="radio" name="pLanguage" id="pLangZPL" value="ZPL" onclick="updateRawButtons()"/>
                                     ZPLII
                                 </label>
-                                <br />
-                                <label>
-                                    <input type="radio" name="pLanguage" id="pLangESCPOS" value="ESCPOS" />
+                                <label class="tip" data-toggle="tooltip" title="" data-original-title="Epson Standard Code for POS Printers">
+                                    <input type="radio" name="pLanguage" id="pLangESCPOS" value="ESCPOS" onclick="updateRawButtons()"/>
                                     ESC/POS
                                 </label>
-                                <label>
-                                    <input type="radio" name="pLanguage" id="pLangEPCL" value="EPCL" />
+                                <br />
+                                <label class="tip" data-toggle="tooltip" title="" data-original-title="Eltron Printer Program Command Language">
+                                    <input type="radio" name="pLanguage" id="pLangEPCL" value="EPCL" onclick="updateRawButtons()"/>
                                     EPCL
                                 </label>
                                 <label>
-                                    <input type="radio" name="pLanguage" id="pLangEVOLIS" value="EVOLIS" />
+                                    <input type="radio" name="pLanguage" id="pLangEVOLIS" value="EVOLIS" onclick="updateRawButtons()"/>
                                     Evolis
                                 </label>
-                                <label>
-                                    <input type="radio" name="pLanguage" id="pLangSBPL" value="SBPL" />
+                                <label class="tip" data-toggle="tooltip" title="" data-original-title="SATO Barcode Printer Language">
+                                    <input type="radio" name="pLanguage" id="pLangSBPL" value="SBPL" onclick="updateRawButtons()"/>
                                     SBPL
+                                </label>
+                                <label class="tip" data-toggle="tooltip" title="" data-original-title="Printronix Graphics Language">
+                                    <input type="radio" name="pLanguage" id="pLangPGL" value="PGL" onclick="updateRawButtons()"/>
+                                    PGL
                                 </label>
                             </div>
                         </div>
@@ -195,6 +201,7 @@
                                 <button type="button" class="btn btn-default" onclick="printFile('fgl_sample.txt');">fgl_sample.txt</button>
                                 <button type="button" class="btn btn-default" onclick="printFile('epl_sample.txt');">epl_sample.txt</button>
                                 <button type="button" class="btn btn-default" onclick="printFile('sbpl_sample.txt');">sbpl_sample.txt</button>
+                                <button type="button" class="btn btn-default" onclick="printFile('pgl_sample.txt');">pgl_sample.txt</button>
                             </div>
                         </div>
                     </div>
@@ -202,12 +209,10 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <div>
-                                <label>Print Data</label>
+                                <label>Print Raw Data</label>
                             </div>
-                            <div class="btn-group">
+                            <div id="rawCommandsGroup" class="btn-group">
                                 <button type="button" class="btn btn-default" onclick="printCommand();">Commands</button>
-                                <button type="button" class="btn btn-default" onclick="printBase64();">Base64</button>
-                                <button type="button" class="btn btn-default" onclick="printXML();">XML</button>
                                 <button type="button" class="btn btn-default" onclick="printHex();">Hex</button>
                             </div>
                         </div>
@@ -215,10 +220,19 @@
                             <div>
                                 <label>Raster Print</label>
                             </div>
-                            <div class="btn-group">
+                            <div id="rawRasterGroup" class="btn-group">
                                 <button type="button" class="btn btn-default" onclick="printRawImage();">Image</button>
                                 <button type="button" class="btn btn-default" onclick="printRawPDF();">PDF</button>
                                 <button type="button" class="btn btn-default" onclick="printRawHTML();">HTML</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div>
+                                <label>Other Data Formats</label>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-default" onclick="printBase64();">Base64 (EPL)</button>
+                                <button type="button" class="btn btn-default" onclick="printXML();">XML (ZPL)</button>
                             </div>
                         </div>
                     </div>
@@ -1616,8 +1630,24 @@
                     '\x1BQ1\x1BZ'
                 ];
                 break;
+            case 'PGL':
+                printData = [
+                    '~CREATE;DATAMATRIX;144\n',
+                    'SCALE;DOT;300;300\n',
+                    'ALPHA\n',
+                    'POINT;50;100;16;9;*Printed using QZ Tray*\n',
+                    'STOP\n',
+                    'BARCODE\n',
+                    'DATAMATRIX;XD16;C20;R20;ECC200;ID5;150;150\n',
+                    '*0100000123000017*\n',
+                    'STOP\n',
+                    'END\n',
+                    '~EXECUTE;DATAMATRIX;1\n',
+                    '~NORMAL\n',
+                ];
+                break;
             default:
-                displayError("Sample page cannot print commands using this printer language");
+                displayError("Sample is missing plain commands for " + lang + " printer language");
                 return;
         }
 
@@ -1808,7 +1838,7 @@
                 ];
                 break;
             default:
-                displayError("Sample page cannot print hex commands using this printer language");
+                displayError("Sample is missing hex commands for " + lang + " printer language");
                 break;
         }
 
@@ -1850,8 +1880,30 @@
                     '\x1BQ1\x1BZ'
                 ];
                 break;
+            case 'PGL':
+                // Printronix must reference logos by ID
+                opts.logoId = 'LOGO-QZ-1';
+                opts.igpDots = false;
+
+                printData = [
+                    // Printronix logo should appear before form declarations
+                    { type: 'raw', format: 'image', data: 'assets/img/image_sample_bw.png', options: opts },
+                    "~CREATE;FORM-1;432\n",
+                    "LOGO\n",
+                    // Position of the logo on the form y=1, x=1
+                    "1;1;" + opts.logoId + "\n",
+                    "STOP\n",
+                    "END\n",
+                    "~PAPER;CUT 0;PAUSE 0;TEAR 0\n",
+                    "~EXECUTE;FORM-1;1\n",
+                    "~NORMAL\n",
+                    "~DELETE FORM;FORM-1\n",
+                    // Printronix must explicitly delete logos which have been uploaded
+                    "~DELETE LOGO;" + opts.logoId + "\n"
+                ];
+                break;
             default:
-                displayError("Cannot print images using this printer language");
+                displayError("Sample is missing image commands for " + lang + " printer language");
                 return;
         }
 
@@ -2569,6 +2621,27 @@
         // Dymo S100 - V:0x0922 P:0x8009, I:0x0 E:0x82
     }
 
+    // Copy raw radio-button text to command buttons
+    function updateRawButtons() {
+        var lang = $("input[name='pLanguage']:checked").parent('label').text().trim();
+
+        var appendLang = function(element, lang) {
+            var text = $(element).html();
+            var label = text.split("(")[0];
+            $(element).html(label + " (<strong>" + lang + "</strong>)");
+        }
+
+        $("#rawCommandsGroup").children()
+            .each(function() {
+                appendLang(this, lang);
+            });
+
+        $("#rawRasterGroup").children()
+            .each(function() {
+                appendLang(this, lang);
+            });
+    }
+
     function resetHidOptions() {
         $("#hidVendor").val('');
         $("#hidProduct").val('');
@@ -2613,6 +2686,7 @@
         resetUsbOptions();
         resetHidOptions();
         resetFileOptions();
+        updateRawButtons();
 
         startConnection();
 

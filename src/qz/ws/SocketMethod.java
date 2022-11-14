@@ -1,5 +1,7 @@
 package qz.ws;
 
+import qz.common.Constants;
+
 public enum SocketMethod {
     PRINTERS_GET_DEFAULT("printers.getDefault", true, "access connected printers"),
     PRINTERS_FIND("printers.find", true, "access connected printers"),
@@ -54,6 +56,11 @@ public enum SocketMethod {
     NETWORKING_HOSTNAME("networking.hostname", true),
     NETWORKING_DEVICE_LEGACY("websocket.getNetworkInfo", true),
     GET_VERSION("getVersion", false),
+
+    GUI_SHOW_MENU("gui.showMenu", true, "show " + Constants.ABOUT_TITLE + " menu"),
+    GUI_SHOW_SITES("gui.showSites", true, "show " + Constants.ABOUT_TITLE + " Site Manager"),
+    GUI_SHOW_ABOUT("gui.showAbout", true, "show " + Constants.ABOUT_TITLE + " About Dialog"),
+    GUI_SHOW_LOG("gui.showLog", true, "show " + Constants.ABOUT_TITLE + " Log Dialog"),
 
     WEBSOCKET_STOP("websocket.stop", false),
 

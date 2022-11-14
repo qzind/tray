@@ -59,9 +59,9 @@ public class TrayManager {
 
     private ConfirmDialog confirmDialog;
     private GatewayDialog gatewayDialog;
-    private AboutDialog aboutDialog;
-    private LogDialog logDialog;
-    private SiteManagerDialog sitesDialog;
+    public AboutDialog aboutDialog;
+    public LogDialog logDialog;
+    public SiteManagerDialog sitesDialog;
     private ArrayList<Component> componentList;
     private IconCache.Icon shownIcon;
 

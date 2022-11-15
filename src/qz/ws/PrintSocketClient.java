@@ -634,25 +634,22 @@ public class PrintSocketClient {
                 sendResult(session, UID, Constants.VERSION);
                 break;
             case GUI_SHOW_MENU:
-                if(trayManager != null) {
-                    // FIXME: PopupMenu needs component to set visible
-                }
-                break;
             case GUI_SHOW_SITES:
-                if(trayManager != null) {
-                    trayManager.sitesDialog.setVisible(true);
-                }
-                break;
             case GUI_SHOW_ABOUT:
-                if(trayManager != null) {
-                    trayManager.aboutDialog.setVisible(true);
-                }
-                break;
             case GUI_SHOW_LOG:
-                if(trayManager != null) {
-                    trayManager.logDialog.setVisible(true);
-                }
-                break;
+              if(trayManager != null) {
+                  Point position;
+                  if(call == SocketMethod.GUI_SHOW_MENU) {
+                      // Get exact mouse position for showing menu
+                      position = findDialogPosition(session, params);
+                  } else {
+                      position = findDialogPosition(session, json.optJSONObject("position"));
+                  }
+                  trayManager.displayComponent(call, position);
+              } else {
+                  log.warn("Cannot call \"{}\" when trayManager is null", call.getCallName());
+              }
+              break;
             case WEBSOCKET_STOP:
                 log.info("Another instance of {} is asking this to close", Constants.ABOUT_TITLE);
                 String challenge = json.optString("challenge", "");

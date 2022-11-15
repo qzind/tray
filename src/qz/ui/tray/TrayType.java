@@ -2,10 +2,14 @@ package qz.ui.tray;
 
 import org.jdesktop.swinghelper.tray.JXTrayIcon;
 import qz.ui.component.IconCache;
+import qz.utils.MacUtilities;
+import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 
 /**
  * Wrapper class to allow popup menu on a tray-less OS
@@ -102,6 +106,46 @@ public enum TrayType {
         if (getTaskbar()) {
             taskbar.setVisible(true);
             taskbar.setState(Frame.ICONIFIED);
+        }
+    }
+
+    /**
+     * A convenience for displaying the menu without a tray
+     */
+    public void showOrphaned(Point location) {
+        JDialog dialog = new JDialog();
+        dialog.setSize(new Dimension(1, 1));
+        dialog.getContentPane().setBackground(Color.white);
+        dialog.setUndecorated(true);
+        if(SystemUtilities.isMac()) {
+            dialog.add(tray.getPopupMenu());
+        } else {
+            dialog.add(tray != null ? tray.getJPopupMenu() : taskbar.getJPopupMenu());
+        }
+        dialog.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if(SystemUtilities.isMac()) {
+                    tray.getPopupMenu().show(dialog, 0, 0);
+                } else {
+                    tray.getJPopupMenu().show(dialog, 0, 0);
+                }
+                super.focusGained(e);
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                dialog.removeAll();
+                dialog.validate();
+                dialog.dispose();
+                super.focusLost(e);
+            }
+        });
+        dialog.setLocation(location);
+        dialog.setVisible(true);
+        dialog.requestFocus();
+        if(SystemUtilities.isMac()) {
+            MacUtilities.setFocus();
         }
     }
 }

@@ -90,6 +90,10 @@ public class TaskbarTrayIcon extends JFrame implements WindowListener {
         });
     }
 
+    public JPopupMenu getJPopupMenu() {
+        return popup;
+    }
+
     public void displayMessage(String caption, String text, TrayIcon.MessageType level) {
         int messageType;
         switch(level) {

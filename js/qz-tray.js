@@ -2661,8 +2661,13 @@ var qz = (function() {
              * Show the System Tray menu
              * @memberof qz.gui
              */
-            showMenu: function() {
-                return _qz.websocket.dataPromise('gui.showMenu');
+            showMenu: function(event) {
+                var position = event ? { x: event.screenX, y: event.screenY } : null;
+                if(position) {
+                    return _qz.websocket.dataPromise('gui.showMenu', position);
+                } else {
+                    _qz.log.warn("Menu requires a MouseEvent");
+                }
             },
 
             /**

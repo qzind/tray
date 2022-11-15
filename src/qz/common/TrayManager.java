@@ -26,12 +26,11 @@ import qz.ui.tray.TrayType;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
+import qz.ws.SocketMethod;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,9 +58,9 @@ public class TrayManager {
 
     private ConfirmDialog confirmDialog;
     private GatewayDialog gatewayDialog;
-    public AboutDialog aboutDialog;
-    public LogDialog logDialog;
-    public SiteManagerDialog sitesDialog;
+    private AboutDialog aboutDialog;
+    private LogDialog logDialog;
+    private SiteManagerDialog sitesDialog;
     private ArrayList<Component> componentList;
     private IconCache.Icon shownIcon;
 
@@ -627,6 +626,28 @@ public class TrayManager {
             }
         } else {
             log.info("{}: [{}] {}", caption, level, text);
+        }
+    }
+
+    public void displayComponent(SocketMethod method, Point location) {
+        switch(method) {
+            case GUI_SHOW_ABOUT:
+                SystemUtilities.centerDialog(aboutDialog, location);
+                aboutDialog.setVisible(true);
+                break;
+            case GUI_SHOW_LOG:
+                SystemUtilities.centerDialog(logDialog, location);
+                logDialog.setVisible(true);
+                break;
+            case GUI_SHOW_SITES:
+                SystemUtilities.centerDialog(sitesDialog, location);
+                sitesDialog.setVisible(true);
+                break;
+            case GUI_SHOW_MENU:
+                tray.showOrphaned(location);
+                break;
+            default:
+                throw new UnsupportedOperationException("Call \"" + method.getCallName() + "\" is not yet supported");
         }
     }
 

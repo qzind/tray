@@ -57,7 +57,7 @@ public enum SocketMethod {
     NETWORKING_DEVICE_LEGACY("websocket.getNetworkInfo", true),
     GET_VERSION("getVersion", false),
 
-    GUI_SHOW_MENU("gui.showMenu", true, "show " + Constants.ABOUT_TITLE + " menu"),
+    GUI_SHOW_MENU("gui.showMenu", false, "show " + Constants.ABOUT_TITLE + " menu"),
     GUI_SHOW_SITES("gui.showSites", true, "show " + Constants.ABOUT_TITLE + " Site Manager"),
     GUI_SHOW_ABOUT("gui.showAbout", true, "show " + Constants.ABOUT_TITLE + " About Dialog"),
     GUI_SHOW_LOG("gui.showLog", true, "show " + Constants.ABOUT_TITLE + " Log Dialog"),

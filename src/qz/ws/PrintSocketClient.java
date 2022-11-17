@@ -638,14 +638,7 @@ public class PrintSocketClient {
             case GUI_SHOW_ABOUT:
             case GUI_SHOW_LOG:
               if(trayManager != null) {
-                  Point position;
-                  if(call == SocketMethod.GUI_SHOW_MENU) {
-                      // Get exact mouse position for showing menu
-                      position = findDialogPosition(session, params);
-                  } else {
-                      position = findDialogPosition(session, json.optJSONObject("position"));
-                  }
-                  trayManager.displayComponent(call, position);
+                  trayManager.displayComponent(call, findDialogPosition(session, json.optJSONObject("position")));
               } else {
                   log.warn("Cannot call \"{}\" when trayManager is null", call.getCallName());
               }

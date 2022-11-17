@@ -517,11 +517,11 @@ public class SystemUtilities {
      * @param position The center point of a screen as calculated from a web browser at 96-dpi
      * @return <code>true</code> if the operation is successful
      */
-    public static void centerDialog(Dialog dialog, Point position) {
+    public static void centerWindow(Window window, Point position) {
         // Assume 0,0 are bad coordinates
         if (position == null || (position.getX() == 0 && position.getY() == 0)) {
             log.debug("Invalid dialog position provided: {}, we'll center on first monitor instead", position);
-            dialog.setLocationRelativeTo(null);
+            window.setLocationRelativeTo(null);
             return;
         }
 
@@ -529,22 +529,22 @@ public class SystemUtilities {
         double dpiScale = getWindowScaleFactor();
         if (dpiScale == 0) {
             log.debug("Invalid window scale value: {}, we'll center on the primary monitor instead", dpiScale);
-            dialog.setLocationRelativeTo(null);
+            window.setLocationRelativeTo(null);
             return;
         }
 
-        Rectangle rect = new Rectangle((int)(position.x * dpiScale), (int)(position.y * dpiScale), dialog.getWidth(), dialog.getHeight());
-        rect.translate(-dialog.getWidth() / 2, -dialog.getHeight() / 2);
+        Rectangle rect = new Rectangle((int)(position.x * dpiScale), (int)(position.y * dpiScale), window.getWidth(), window.getHeight());
+        rect.translate(-window.getWidth() / 2, -window.getHeight() / 2);
         Point p = new Point((int)rect.getCenterX(), (int)rect.getCenterY());
         log.debug("Calculated dialog centered at: {}", p);
 
         if (!isWindowLocationValid(rect)) {
             log.debug("Dialog position provided is out of bounds: {}, we'll center on the primary monitor instead", p);
-            dialog.setLocationRelativeTo(null);
+            window.setLocationRelativeTo(null);
             return;
         }
 
-        dialog.setLocation(rect.getLocation());
+        window.setLocation(rect.getLocation());
     }
 
     /**

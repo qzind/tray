@@ -2329,6 +2329,7 @@ var qz = (function() {
              * @param {Object} [params] Object containing file access parameters
              *  @param {boolean} [params.sandbox=true] If relative location from root is only available to the certificate's connection, otherwise all connections
              *  @param {boolean} [params.shared=true] If relative location from root is accessible to all users on the system, otherwise just the current user
+             *  @param {string} [params.flavor='plain'] Flavor of data format used, valid flavors are <code>[base64 | hex | plain]</code>.
              * @returns {Promise<String|Error>} String containing the file contents
              *
              * @memberof qz.file

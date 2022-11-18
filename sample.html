@@ -2415,7 +2415,8 @@
     function readFile() {
         var params = {
             sandbox: $("#fileSandbox").prop("checked"),
-            shared: $("#fileShared").prop("checked")
+            shared: $("#fileShared").prop("checked"),
+            flavor: $("input[name='fileFlavor']:checked").val()
         };
 
         qz.file.read($("#fileLocation").val(), params).then(function(data) {

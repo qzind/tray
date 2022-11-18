@@ -567,10 +567,11 @@ public class PrintSocketClient {
                 break;
             }
             case FILE_READ: {
+                FileParams fileParams = new FileParams(params);
                 Path absPath = FileUtilities.getAbsolutePath(params, request, false);
                 if (Files.exists(absPath)) {
                     if (Files.isReadable(absPath)) {
-                        sendResult(session, UID, new String(Files.readAllBytes(absPath)));
+                        sendResult(session, UID, fileParams.toString(Files.readAllBytes(absPath)));
                     } else {
                         log.error("Failed to read '{}' (not readable)", absPath);
                         sendError(session, UID, "Path is not readable");

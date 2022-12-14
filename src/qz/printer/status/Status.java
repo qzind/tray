@@ -19,6 +19,7 @@ public class Status {
 
     enum EventType {
         JOB,
+        JOB_DATA,
         PRINTER;
     }
 

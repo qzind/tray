@@ -10,7 +10,6 @@
  */
 package qz.printer.action;
 
-import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -74,12 +73,12 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
 
-            PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
+            PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.FILE);
 
             try {
                 BufferedImage bi;
-                if (flavor == PrintingUtilities.Flavor.BASE64) {
-                    bi = ImageIO.read(new ByteArrayInputStream(Base64.decodeBase64(data.getString("data"))));
+                if (flavor != PrintingUtilities.Flavor.FILE) {
+                    bi = ImageIO.read(new ByteArrayInputStream(flavor.read(data.getString("data"))));
                 } else {
                     bi = ImageIO.read(ConnectionUtilities.getInputStream(data.getString("data")));
                 }

@@ -1281,16 +1281,22 @@ var qz = (function() {
              * @see qz.printers.setPrinterCallbacks
              *
              * @param {null|string|Array<string>} printers Printer or list of printers to listen to, null listens to all.
+             * @param {Object|null} [options] Printer listener options
+             *  @param {null|boolean} [options.jobData=false] Flag indicating if raw spool file content should be return as well as status information (Windows only)
+             *  @param {null|number} [options.maxJobData=-1] Maximum number of bytes to returns for raw spooled file content (Windows only)
              *
              * @memberof qz.printers
              */
-            startListening: function(printers) {
+            startListening: function(printers, options) {
                 if (!Array.isArray(printers)) {
                     printers = [printers];
                 }
                 var params = {
                     printerNames: printers
                 };
+                if (options && options.jobData == true) params.jobData = true;
+                if (options && options.maxJobData) params.maxJobData = options.maxJobData;
+                if (options && options.flavor) params.flavor = options.flavor;
                 return _qz.websocket.dataPromise('printers.startListening', params);
             },
 

@@ -17,7 +17,15 @@ public class PrefsSearch {
         return get(user, app, name, null);
     }
 
+    public static String get(Properties app, String name, String defaultVal, boolean searchSystemProperties) {
+        return get(null, app, name, defaultVal, searchSystemProperties);
+    }
+
     public static String get(Properties user, Properties app, String name, String defaultVal, String... altNames) {
+        return get(user, app, name, defaultVal, true, altNames);
+    }
+
+    public static String get(Properties user, Properties app, String name, String defaultVal, boolean searchSystemProperties, String... altNames) {
         String returnVal;
 
         ArrayList<String> names = new ArrayList<>();
@@ -29,7 +37,7 @@ public class PrefsSearch {
 
         for(String n : names) {
             // First, honor System property
-            if ((returnVal = System.getProperty(n)) != null) {
+            if (searchSystemProperties && (returnVal = System.getProperty(n)) != null) {
                 log.info("Picked up system property {}={}", n, returnVal);
                 return returnVal;
             }

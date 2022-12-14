@@ -14,7 +14,6 @@ import com.sun.javafx.print.PrintHelper;
 import com.sun.javafx.print.Units;
 import javafx.print.*;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -76,11 +75,11 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             for(int i = 0; i < printData.length(); i++) {
                 JSONObject data = printData.getJSONObject(i);
 
-                PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
+                PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.FILE);
 
                 String source;
-                if (flavor == PrintingUtilities.Flavor.BASE64) {
-                    source = new String(Base64.decodeBase64(data.getString("data")), StandardCharsets.UTF_8);
+                if (flavor != PrintingUtilities.Flavor.FILE) {
+                    source = new String(flavor.read(data.getString("data")), StandardCharsets.UTF_8);
                 } else {
                     source = data.getString("data");
                 }

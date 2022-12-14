@@ -1,6 +1,7 @@
 package qz.utils;
 
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
+import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -15,6 +16,8 @@ import qz.printer.action.ProcessorFactory;
 import qz.ws.PrintSocketClient;
 
 import java.awt.print.PrinterAbortException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -35,8 +38,54 @@ public class PrintingUtilities {
         COMMAND, DIRECT, HTML, IMAGE, PDF
     }
 
+    /**
+     * TODO: Move this to a dedicated class
+     */
     public enum Flavor {
-        BASE64, FILE, HEX, PLAIN, XML
+        BASE64, FILE, HEX, PLAIN, XML;
+
+        // TODO: Refactor DeviceUtilities to use optString("flavor") instead of optString("type")
+        @Deprecated
+        public static Flavor parse(String value, Flavor fallbackIfEmpty) {
+            if(value != null && !value.isEmpty()) {
+                return Flavor.valueOf(value.toUpperCase(Locale.ENGLISH));
+            }
+            return fallbackIfEmpty;
+        }
+
+        public static Flavor parse(JSONObject json, Flavor fallbackIfEmpty) {
+            return parse(json.optString("flavor", ""), fallbackIfEmpty);
+        }
+
+        public String toString(byte[] bytes) {
+            return ByteUtilities.toString(this, bytes);
+        }
+
+        public byte[] read(String data) throws IOException {
+            return read(data, null);
+        }
+
+        public byte[] read(String data, String xmlTag) throws IOException {
+            switch(this) {
+                case BASE64:
+                    return Base64.decodeBase64(data);
+                case FILE:
+                    return FileUtilities.readRawFile(data);
+                case HEX:
+                    return ByteUtilities.hexStringToByteArray(data.trim());
+                case XML:
+                    try {
+                        // Assume base64 encoded string inside the specified XML tag
+                        return Base64.decodeBase64(FileUtilities.readXMLFile(data, xmlTag).getBytes(StandardCharsets.UTF_8));
+                    } catch(Exception e) {
+                        log.warn("An error occurred parsing data from XML", e);
+                        throw new IOException("Error parsing data from XML");
+                    }
+                case PLAIN:
+                default:
+                    return data.getBytes();
+            }
+        }
     }
 
 

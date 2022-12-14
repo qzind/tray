@@ -1,8 +1,6 @@
 package qz.utils;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.StringUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -11,7 +9,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -21,25 +18,6 @@ import java.nio.charset.StandardCharsets;
 public class DeviceUtilities {
 
     private static final Logger log = LogManager.getLogger(DeviceUtilities.class);
-
-
-    public enum DataType {
-        PLAIN, FILE, HEX, BASE64
-    }
-
-
-    public static DataType getDataType(JSONObject data) {
-        if (data != null && !data.isNull("type")) {
-            try {
-                return DataType.valueOf(data.getString("type"));
-            }
-            catch(JSONException e) {
-                log.warn("Cannot read {} as a value for data type, using default", data.opt("type"));
-            }
-        }
-
-        return DataType.PLAIN;
-    }
 
     /**
      * Pull data from a json object and convert it to bytes based on type
@@ -56,8 +34,12 @@ public class DeviceUtilities {
             metadata.put("type", "PLAIN");
         }
 
-        switch(getDataType(metadata)) {
+        // Flavor is called "type" in this API
+        PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(metadata.optString("type"), PrintingUtilities.Flavor.PLAIN);
+
+        switch(flavor) {
             case PLAIN:
+                // Special handling for raw bytes
                 if (metadata.optJSONArray("data") == null) {
                     bytesToSend = characterBytes(metadata.getString("data"), charset);
                 } else {
@@ -68,15 +50,8 @@ public class DeviceUtilities {
                     }
                 }
                 break;
-            case FILE:
-                bytesToSend = IOUtils.toByteArray(new URL(metadata.getString("data")));
-                break;
-            case HEX:
-                bytesToSend = ByteUtilities.hexStringToByteArray(metadata.getString("data"));
-                break;
-            case BASE64:
-                bytesToSend = Base64.decodeBase64(metadata.getString("data"));
-                break;
+            default:
+                bytesToSend = flavor.read(metadata.getString("data"));
         }
 
         return bytesToSend;

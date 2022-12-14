@@ -1143,21 +1143,19 @@
                                         </div>
                                     </div>
                                     <div class="form-group form-inline">
-                                        <label>
-                                            Job Data Type
-                                        </label>
-                                        <div class="btn-group pull-right" id="jobDataRadio" data-toggle="buttons">
-                                            <label id="jobDataPlain" class="btn btn-default active">
-                                                <input type="radio" name="jobDataRadio" value="Plain" class="toggle" autocomplete="off" checked>
-                                                Plain</label>
+                                        <label>Job Data Type</label>
+                                        <div>
+                                            <label>
+                                                <input type="radio" name="jobDataRadio" id="jobFlavorPLN" value="plain" />
+                                                Plain
                                             </label>
-                                            <label id="jobDataHex" class="btn btn-default">
-                                                <input type="radio" name="jobDataRadio" value="Hex" class="toggle" autocomplete="off">
-                                                Hex</label>
+                                            <label>
+                                                <input type="radio" name="jobDataRadio" id="jobFlavorB64" value="base64" />
+                                                Base64
                                             </label>
-                                            <label id="jobDataBase64" class="btn btn-default">
-                                                <input type="radio" name="jobDataRadio" value="XML" class="toggle" autocomplete="off">
-                                                Base64</label>
+                                            <label>
+                                                <input type="radio" name="jobDataRadio" id="jobFlavorHEX" value="hex" />
+                                                Hexadecimal
                                             </label>
                                         </div>
                                     </div>
@@ -2721,6 +2719,12 @@
         $("#fileLength").val('10');
     }
 
+    function resetPrinterStatusOptions() {
+        $("#jobData").prop('checked', false);
+        $("#maxJobData").val('');
+        $("#jobFlavorPLN").prop('checked', true);
+    }
+
 
     /// Page load ///
     $(document).ready(function() {
@@ -2733,6 +2737,7 @@
         resetUsbOptions();
         resetHidOptions();
         resetFileOptions();
+        resetPrinterStatusOptions();
         updateRawButtons();
 
         startConnection();

@@ -160,10 +160,6 @@ public class StatusMonitor {
         }
     }
 
-    public synchronized static boolean isListeningTo(String PrinterName) {
-        return clientPrinterConnections.containsKey(PrinterName) || clientPrinterConnections.containsKey(ALL_PRINTERS);
-    }
-
     public synchronized static void statusChanged(Status[] statuses) {
         HashSet<SocketConnection> connections = new HashSet<>();
         for (Status status : statuses) {

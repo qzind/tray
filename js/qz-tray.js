@@ -1284,6 +1284,7 @@ var qz = (function() {
              * @param {Object|null} [options] Printer listener options
              *  @param {null|boolean} [options.jobData=false] Flag indicating if raw spool file content should be return as well as status information (Windows only)
              *  @param {null|number} [options.maxJobData=-1] Maximum number of bytes to returns for raw spooled file content (Windows only)
+             *  @param {null|string} [options.flavor="plain"] Flavor of data format returned. Valid flavors are <code>[base64 | hex | plain*]</code> (Windows only)
              *
              * @memberof qz.printers
              */

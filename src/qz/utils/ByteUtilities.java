@@ -76,7 +76,7 @@ public class ByteUtilities {
             case PLAIN:
                 break;
             default:
-                log.warn("ByteUtilities.toString(...) does not support {}, defaulting to {}", PrintingUtilities.Flavor.FILE, PrintingUtilities.Flavor.PLAIN);
+                log.warn("ByteUtilities.toString(...) does not support {}, defaulting to {}", flavor, PrintingUtilities.Flavor.PLAIN);
         }
         return new String(bytes);
     }

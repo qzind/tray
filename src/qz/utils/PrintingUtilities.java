@@ -66,24 +66,24 @@ public class PrintingUtilities {
         }
 
         public byte[] read(String data, String xmlTag) throws IOException {
-            switch(this) {
-                case BASE64:
-                    return Base64.decodeBase64(data);
-                case FILE:
-                    return FileUtilities.readRawFile(data);
-                case HEX:
-                    return ByteUtilities.hexStringToByteArray(data.trim());
-                case XML:
-                    try {
-                        // Assume base64 encoded string inside the specified XML tag
-                        return Base64.decodeBase64(FileUtilities.readXMLFile(data, xmlTag).getBytes(StandardCharsets.UTF_8));
-                    } catch(Exception e) {
-                        log.warn("An error occurred parsing data from XML", e);
-                        throw new IOException("Error parsing data from XML");
-                    }
-                case PLAIN:
-                default:
-                    return data.getBytes();
+            try {
+                switch(this) {
+                    case BASE64:
+                        return Base64.decodeBase64(data);
+                    case FILE:
+                        return FileUtilities.readRawFile(data);
+                    case HEX:
+                        return ByteUtilities.hexStringToByteArray(data.trim());
+                    case XML:
+                            // Assume base64 encoded string inside the specified XML tag
+                            return Base64.decodeBase64(FileUtilities.readXMLFile(data, xmlTag).getBytes(StandardCharsets.UTF_8));
+                    case PLAIN:
+                    default:
+                        return data.getBytes();
+                }
+            } catch(Exception e) {
+                log.warn("An error occurred parsing data from " + this.name(), e);
+                throw new IOException("Error parsing data from " + this.name());
             }
         }
     }

@@ -26,9 +26,8 @@ import java.util.Locale;
 
 public class JLink {
     private static final Logger log = LogManager.getLogger(JLink.class);
-    private static final String JAVA_AMD64_VENDOR = "AdoptOpenJDK";
-    private static final String JAVA_ARM64_VENDOR = "BellSoft";
-    private static final String JAVA_VERSION = "11.0.16+8";
+    private static final String JAVA_VENDOR = "BellSoft";
+    private static final String JAVA_VERSION = "11.0.17+7";
     private static final String JAVA_MAJOR = JAVA_VERSION.split("\\.")[0];
     private static final String JAVA_MINOR = JAVA_VERSION.split("\\.")[1];
     private static final String JAVA_PATCH = JAVA_VERSION.split("\\.|\\+|-")[2];
@@ -47,13 +46,13 @@ public class JLink {
     private LinkedHashSet<String> depList;
 
     public JLink(String targetPlatform, String arch, String gcEngine) throws IOException {
-        this.javaVendor = getJavaVendor(arch);
+        this.javaVendor = JAVA_VENDOR;
         this.targetPlatform = targetPlatform;
 
         if(needsDownload(SystemUtilities.getJavaVersion(JAVA_VERSION), Constants.JAVA_VERSION)) {
             log.warn("Java versions are incompatible, locating a suitable runtime for Java " + JAVA_MAJOR + "...");
             String hostArch = System.getProperty("os.arch");
-            String hostJdk = downloadJdk(getJavaVendor(hostArch), null, hostArch, gcEngine);
+            String hostJdk = downloadJdk(JAVA_VENDOR, null, hostArch, gcEngine);
             calculateToolPaths(Paths.get(hostJdk));
         } else {
             calculateToolPaths(null);
@@ -99,19 +98,6 @@ public class JLink {
                 downloadJdk = true;
         }
         return downloadJdk;
-    }
-
-    private String getJavaVendor(String arch) {
-        String vendor;
-        switch(SystemUtilities.getJreArch(arch)) {
-            case AARCH64:
-                vendor = JAVA_ARM64_VENDOR;
-                break;
-            case X86_64:
-            default:
-                vendor = JAVA_AMD64_VENDOR;
-        }
-        return vendor;
     }
 
     /**

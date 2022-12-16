@@ -2,7 +2,7 @@ package qz.ui;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;
-import org.apache.logging.log4j.core.appender.OutputStreamAppender;
+import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import qz.ui.component.IconCache;
@@ -15,7 +15,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
-import java.io.OutputStream;
+import java.io.StringWriter;
 
 /**
  * Created by Tres on 2/26/2015.
@@ -30,7 +30,7 @@ public class LogDialog extends BasicDialog {
 
     private JButton clearButton;
 
-    private OutputStreamAppender logStream;
+    private WriterAppender logStream;
 
 
     public LogDialog(JMenuItem caller, IconCache iconCache) {
@@ -62,19 +62,20 @@ public class LogDialog extends BasicDialog {
         setResizable(true);
 
         // add new appender to Log4J just for text area
-        logStream = OutputStreamAppender.newBuilder()
+        logStream = WriterAppender.newBuilder()
                 .setName("ui-dialog")
                 .setLayout(PatternLayout.newBuilder().withPattern("[%p] %d{ISO8601} @ %c:%L%n\t%m%n").build())
                 .setFilter(ThresholdFilter.createFilter(Level.TRACE, Filter.Result.ACCEPT, Filter.Result.DENY))
-                .setTarget(new OutputStream() {
-            @Override
-            public void write(final int b) {
-                SwingUtilities.invokeLater(() -> {
-                    logArea.append(String.valueOf((char)b));
-                    logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
-                });
-            }
-                }).build();
+                .setTarget(new StringWriter() {
+                    @Override
+                    public void flush() {
+                        SwingUtilities.invokeLater(() -> {
+                            logArea.append(toString());
+                            logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
+                        });
+                    }
+                })
+                .build();
         logStream.start();
     }
 

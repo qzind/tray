@@ -2971,7 +2971,7 @@
             if(!streamEvent.data) {
                 // Most commonly a permissions issue reading C:\Windows\system32\spool\PRINTERS\<jobId>
                 // A custom spool location can be set using HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Print\Printers\DefaultSpoolDirectory
-                jobData = "&lt;No data received, this may be a permissions issue&gt;";
+                jobData = "&lt;No data received, this may be a permissions issue or the printer may not be configured to retain documents.&gt;";
                 dataLevel = "FATAL";
             } else {
                 // Only show the first 64 characters (for display purposes)

@@ -11,6 +11,7 @@ import qz.utils.FileUtilities;
 import qz.utils.LoggerUtilities;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -57,6 +58,7 @@ public class LogDialog extends BasicDialog {
         logArea.setEditable(false);
         logArea.setLineWrap(true);
         logArea.setWrapStyleWord(true);
+        logArea.setFont(new Font("", Font.PLAIN, 12)); //force fallback font for character support
 
         // TODO:  Fix button panel resizing issues
         clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);

@@ -2,7 +2,7 @@ package qz.ui;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;
-import org.apache.logging.log4j.core.appender.OutputStreamAppender;
+import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import qz.ui.component.IconCache;
@@ -11,11 +11,12 @@ import qz.utils.FileUtilities;
 import qz.utils.LoggerUtilities;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
-import java.io.OutputStream;
+import java.io.StringWriter;
 
 /**
  * Created by Tres on 2/26/2015.
@@ -30,7 +31,7 @@ public class LogDialog extends BasicDialog {
 
     private JButton clearButton;
 
-    private OutputStreamAppender logStream;
+    private WriterAppender logStream;
 
 
     public LogDialog(JMenuItem caller, IconCache iconCache) {
@@ -43,10 +44,21 @@ public class LogDialog extends BasicDialog {
         logDirLabel.setLinkLocation(new File(FileUtilities.USER_DIR + File.separator));
         setHeader(logDirLabel);
 
+        StringWriter writeTarget = new StringWriter() {
+            @Override
+            public void flush() {
+                SwingUtilities.invokeLater(() -> {
+                    logArea.append(toString());
+                    logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
+                });
+            }
+        };
+
         logArea = new JTextArea(ROWS, COLS);
         logArea.setEditable(false);
         logArea.setLineWrap(true);
         logArea.setWrapStyleWord(true);
+        logArea.setFont(new Font("", Font.PLAIN, 12)); //force fallback font for character support
 
         // TODO:  Fix button panel resizing issues
         clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);
@@ -54,6 +66,8 @@ public class LogDialog extends BasicDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
                 logArea.setText(null);
+
+                writeTarget.getBuffer().setLength(0);
             }
         });
 
@@ -62,19 +76,12 @@ public class LogDialog extends BasicDialog {
         setResizable(true);
 
         // add new appender to Log4J just for text area
-        logStream = OutputStreamAppender.newBuilder()
+        logStream = WriterAppender.newBuilder()
                 .setName("ui-dialog")
                 .setLayout(PatternLayout.newBuilder().withPattern("[%p] %d{ISO8601} @ %c:%L%n\t%m%n").build())
                 .setFilter(ThresholdFilter.createFilter(Level.TRACE, Filter.Result.ACCEPT, Filter.Result.DENY))
-                .setTarget(new OutputStream() {
-            @Override
-            public void write(final int b) {
-                SwingUtilities.invokeLater(() -> {
-                    logArea.append(String.valueOf((char)b));
-                    logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
-                });
-            }
-                }).build();
+                .setTarget(writeTarget)
+                .build();
         logStream.start();
     }
 

@@ -18,14 +18,15 @@ import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 
 import java.awt.*;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.*;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 import static com.sun.jna.platform.win32.WinReg.*;
 import static qz.utils.SystemUtilities.*;
@@ -36,12 +37,16 @@ import static java.nio.file.attribute.AclEntryFlag.*;
 public class WindowsUtilities {
     protected static final Logger log = LogManager.getLogger(WindowsUtilities.class);
     private static final String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+    private static final String SPOOLER_REG_KEY = "Software\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers";
     private static final String TRAY_REG_CHEVRON_KEY = "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\TrayNotify";
     private static final String TRAY_REG_POLICY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
     private static final int WINDOWS_10_BUILD_NUMBER = 10000;
     private static Boolean isWow64;
     private static Integer pid;
+    private static HashMap<String, Path> printerSpoolerLocations = new HashMap<>();
+
+    private static String defaultSpoolerLocation;
 
     public static boolean isDarkDesktop() {
         // 0 = Dark Theme.  -1/1 = Light Theme
@@ -152,6 +157,23 @@ public class WindowsUtilities {
             }
         }
         return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0d;
+    }
+
+    public static Path getSpoolerLocation(String printerName) throws FileNotFoundException {
+        // TODO: If the spooler restarts, the spooler location could change, detect spooler restart
+        if (printerSpoolerLocations.containsKey(printerName)) return printerSpoolerLocations.get(printerName);
+
+        String regValue = getRegString(HKEY_LOCAL_MACHINE, SPOOLER_REG_KEY + printerName, "SpoolDirectory");
+        if (regValue == null || regValue.isEmpty()) {
+            if (defaultSpoolerLocation == null || defaultSpoolerLocation.isEmpty()) {
+                defaultSpoolerLocation = getRegString(HKEY_LOCAL_MACHINE, SPOOLER_REG_KEY, "DefaultSpoolDirectory");
+            }
+            regValue = defaultSpoolerLocation;
+        }
+        Path spoolerLocation = Paths.get(regValue);
+        if (regValue == null || regValue.isEmpty() || !Files.isDirectory(spoolerLocation)) throw new FileNotFoundException("Failed to locate spooler output.");
+        printerSpoolerLocations.put(printerName, spoolerLocation);
+        return spoolerLocation;
     }
 
     // gracefully swallow InvocationTargetException

@@ -108,7 +108,7 @@ public class PrintRaw implements PrintProcessor {
             if (opt == null) { opt = new JSONObject(); }
 
             PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "COMMAND").toUpperCase(Locale.ENGLISH));
-            PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "PLAIN").toUpperCase(Locale.ENGLISH));
+            PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.PLAIN);
             PrintOptions.Raw rawOpts = options.getRawOptions();
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
 
@@ -129,22 +129,11 @@ public class PrintRaw implements PrintProcessor {
                     case COMMAND:
                     default:
                         switch(flavor) {
-                            case BASE64:
-                                commands.append(seekConversion(Base64.decodeBase64(cmd), rawOpts));
-                                break;
-                            case FILE:
-                                commands.append(seekConversion(FileUtilities.readRawFile(cmd), rawOpts));
-                                break;
-                            case HEX:
-                                commands.append(seekConversion(ByteUtilities.hexStringToByteArray(cmd), rawOpts));
-                                break;
-                            case XML:
-                                commands.append(seekConversion(Base64.decodeBase64(FileUtilities.readXMLFile(cmd, opt.optString("xmlTag"))), rawOpts));
-                                break;
                             case PLAIN:
-                            default:
                                 commands.append(getBytes(cmd, destEncoding));
                                 break;
+                            default:
+                                commands.append(seekConversion(flavor.read(cmd, opt.optString("xmlTag", null)), rawOpts));
                         }
                         break;
                 }
@@ -181,10 +170,14 @@ public class PrintRaw implements PrintProcessor {
             flavor = PrintingUtilities.Flavor.BASE64;
         }
 
-        if (flavor == PrintingUtilities.Flavor.BASE64) {
-            bi = ImageIO.read(new ByteArrayInputStream(seekConversion(Base64.decodeBase64(data), rawOpts)));
-        } else {
-            bi = ImageIO.read(ConnectionUtilities.getInputStream(data));
+        switch(flavor) {
+            case PLAIN:
+                // There's really no such thing as a 'PLAIN' image, assume it's a URL
+            case FILE:
+                bi = ImageIO.read(ConnectionUtilities.getInputStream(data));
+                break;
+            default:
+                bi = ImageIO.read(new ByteArrayInputStream(seekConversion(flavor.read(data), rawOpts)));
         }
 
         return getWrapper(bi, opt, pxlOpts);
@@ -193,10 +186,14 @@ public class PrintRaw implements PrintProcessor {
     private ImageWrapper getPdfWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         PDDocument doc;
 
-        if (flavor == PrintingUtilities.Flavor.BASE64) {
-            doc = PDDocument.load(new ByteArrayInputStream(seekConversion(Base64.decodeBase64(data), rawOpts)));
-        } else {
-            doc = PDDocument.load(ConnectionUtilities.getInputStream(data));
+        switch(flavor) {
+            case PLAIN:
+                // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
+            case FILE:
+                doc = PDDocument.load(ConnectionUtilities.getInputStream(data));
+                break;
+            default:
+                doc = PDDocument.load(new ByteArrayInputStream(seekConversion(flavor.read(data), rawOpts)));
         }
 
         double scale;
@@ -214,8 +211,12 @@ public class PrintRaw implements PrintProcessor {
     }
 
     private ImageWrapper getHtmlWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
-        if (flavor == PrintingUtilities.Flavor.BASE64) {
-            data = new String(seekConversion(Base64.decodeBase64(data), rawOpts), rawOpts.getDestEncoding());
+        switch(flavor) {
+            case FILE:
+                // Do nothing, we'll pass plainText=true to WebAppModel instead
+                break;
+            default:
+                data = new String(seekConversion(flavor.read(data), rawOpts), rawOpts.getDestEncoding());
         }
 
         double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());

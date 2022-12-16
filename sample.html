@@ -1108,7 +1108,7 @@
                                     <button type="button" class="btn btn-success" onclick="startPrintersListen($('#configPrinter').text())">
                                         Current Printer
                                     </button>
-                                    <button type="button" class="btn btn-default" onclick="getPrintersStatus()">Request current status</button>
+                                    <button type="button" class="btn btn-default" onclick="getPrintersStatus()">Request Current Status</button>
                                 </div>
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-warning" onclick="stopPrintersListen()">Stop Listening</button>
@@ -1121,22 +1121,58 @@
                 <div class="row" style="margin-top: 1em;">
                     <div class="col-md-12">
                         <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <h4 class="panel-title">Event Log</h4>
-                            </div>
-
                             <div class="panel-body">
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <pre id="printersLog"></pre>
+                                <fieldset>
+                                    <legend>Options</legend>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group form-inline">
+                                                <label class="tip" for="jobData" data-toggle="tooltip" title="Returns raw spool file content for printers configured to keep spooled documents (Windows only)">
+                                                    Include Raw Job Data
+                                                </label>
+                                                <input type="checkbox" id="jobData" class="pull-right"/>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 pull-right">
+                                            <div class="form-group form-inline">
+                                                <label class="tip" for="maxJobData" data-toggle="tooltip" title="Maximum size in bytes of spool file content to return (Windows only)">
+                                                Raw Job Data Size
+                                                </label>
+                                                <input type="number" id="maxJobData" class="pull-right"/>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <hr />
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <button type="button" class="btn btn-danger pull-right" onclick="clearPrintersLog();">Clear</button>
+                                    <div class="form-group form-inline">
+                                        <label>Job Data Type</label>
+                                        <div>
+                                            <label>
+                                                <input type="radio" name="jobDataRadio" id="jobFlavorPLN" value="plain" />
+                                                Plain
+                                            </label>
+                                            <label>
+                                                <input type="radio" name="jobDataRadio" id="jobFlavorB64" value="base64" />
+                                                Base64
+                                            </label>
+                                            <label>
+                                                <input type="radio" name="jobDataRadio" id="jobFlavorHEX" value="hex" />
+                                                Hexadecimal
+                                            </label>
+                                        </div>
                                     </div>
-                                </div>
+                                    <hr />
+                                    <legend>Event Log</legend>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <pre id="printersLog"></pre>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-12">
+
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-danger pull-right" onclick="clearPrintersLog();"><i class="fa fa-trash"></i> Clear</button>
+                                </fieldset>
                             </div>
                         </div>
                     </div>
@@ -2371,12 +2407,20 @@
 
     /// Status ///
     function startPrintersListen(printerName) {
+        var jobData = $("#jobData").prop("checked");
+        var jobDataFlavor = $('input[name="jobDataRadio"]:checked').val();
+        var maxJobData = $("#maxJobData").val();
         if (printerName === "NONE") {
             return displayMessage("Please search for a valid printer first", "alert-warning");
         }
         qz.printers.stopListening().then(function() {
             clearPrintersLog();
-            return qz.printers.startListening(printerName);
+            var params = {
+                jobData: jobData,
+                maxJobData: maxJobData,
+                flavor: jobDataFlavor
+            };
+            return qz.printers.startListening(printerName, params);
         }).then(function() {
             displayMessage("Started listening for " + (printerName ? printerName : "all") + " printer events");
         }).catch(displayError);
@@ -2675,6 +2719,12 @@
         $("#fileLength").val('10');
     }
 
+    function resetPrinterStatusOptions() {
+        $("#jobData").prop('checked', false);
+        $("#maxJobData").val('');
+        $("#jobFlavorPLN").prop('checked', true);
+    }
+
 
     /// Page load ///
     $(document).ready(function() {
@@ -2687,6 +2737,7 @@
         resetUsbOptions();
         resetHidOptions();
         resetFileOptions();
+        resetPrinterStatusOptions();
         updateRawButtons();
 
         startConnection();
@@ -2913,8 +2964,28 @@
     }
 
     function addPrintersLog(streamEvent) {
-        var icon = '<span class="fa ' + (streamEvent.eventType == 'JOB' ? 'fa-exchange' : 'fa-print') + '"></span>&nbsp;';
-        var msg = '<p class="' + (streamEvent.severity || "") + ' text-nowrap">' + icon + new Date().toString() + ": " + streamEvent.message + "</p>";
+        var msg;
+        if (streamEvent.eventType == "JOB_DATA") {
+            var jobData;
+            var dataLevel;
+            if(!streamEvent.data) {
+                // Most commonly a permissions issue reading C:\Windows\system32\spool\PRINTERS\<jobId>
+                // A custom spool location can be set using HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Print\Printers\DefaultSpoolDirectory
+                jobData = "&lt;No data received, this may be a permissions issue or the printer may not be configured to retain documents.&gt;";
+                dataLevel = "FATAL";
+            } else {
+                // Only show the first 64 characters (for display purposes)
+                var DISPLAY_LEN = 64;
+                jobData = streamEvent.data.substring(0, DISPLAY_LEN) + (streamEvent.data.length > DISPLAY_LEN ? "..." : "");
+                dataLevel = "INFO";
+            }
+            var icon = '<span class="fa fa-file-o"></span>&nbsp;';
+            msg = '<p class="' + dataLevel + '" text-nowrap">' + icon + new Date().toString() + ": JOB DATA: " + jobData + "</p>";
+
+        } else {
+            var icon = '<span class="fa ' + (streamEvent.eventType == 'JOB' ? 'fa-exchange' : 'fa-print') + '"></span>&nbsp;';
+            msg = '<p class="' + (streamEvent.severity || "") + ' text-nowrap">' + icon + new Date().toString() + ": " + streamEvent.message + "</p>";
+        }
         var $log = $("#printersLog");
         $log.html($log.html() + msg);
     }

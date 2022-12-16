@@ -46,7 +46,7 @@ public class PrintDirect extends PrintRaw {
             if (data == null) { continue; }
 
             prints.add(data.getString("data"));
-            flavors.add(PrintingUtilities.Flavor.valueOf(data.optString("flavor", "PLAIN").toUpperCase(Locale.ENGLISH)));
+            flavors.add(PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.PLAIN));
         }
     }
 

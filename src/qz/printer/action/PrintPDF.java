@@ -1,7 +1,6 @@
 package qz.printer.action;
 
 import com.github.zafarkhaja.semver.Version;
-import org.apache.commons.ssl.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.pdfbox.io.IOUtils;
@@ -106,12 +105,12 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
             }
 
-            PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.valueOf(data.optString("flavor", "FILE").toUpperCase(Locale.ENGLISH));
+            PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.FILE);
 
             try {
                 PDDocument doc;
-                if (flavor == PrintingUtilities.Flavor.BASE64) {
-                    doc = PDDocument.load(new ByteArrayInputStream(Base64.decodeBase64(data.getString("data"))));
+                if (flavor != PrintingUtilities.Flavor.FILE) {
+                    doc = PDDocument.load(new ByteArrayInputStream(flavor.read(data.getString("data"))));
                 } else {
                     doc = PDDocument.load(ConnectionUtilities.getInputStream(data.getString("data")));
                 }

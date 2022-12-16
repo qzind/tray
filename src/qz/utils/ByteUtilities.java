@@ -9,13 +9,13 @@
  */
 package qz.utils;
 
+import org.apache.commons.ssl.Base64;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 /**
  * Place for all raw static byte conversion functions.
@@ -26,6 +26,7 @@ import java.util.Locale;
  * @author Tres Finocchiaro
  */
 public class ByteUtilities {
+    private static final Logger log = LogManager.getLogger(ByteUtilities.class);
 
     public enum Endian {
         BIG, LITTLE
@@ -64,6 +65,20 @@ public class ByteUtilities {
         }
 
         return data;
+    }
+
+    public static String toString(PrintingUtilities.Flavor flavor, byte[] bytes) {
+        switch(flavor) {
+            case BASE64:
+                return Base64.encodeBase64String(bytes);
+            case HEX:
+                return ByteUtilities.bytesToHex(bytes);
+            case PLAIN:
+                break;
+            default:
+                log.warn("ByteUtilities.toString(...) does not support {}, defaulting to {}", flavor, PrintingUtilities.Flavor.PLAIN);
+        }
+        return new String(bytes);
     }
 
     public static String bytesToHex(byte[] bytes) {

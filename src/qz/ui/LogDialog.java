@@ -43,6 +43,16 @@ public class LogDialog extends BasicDialog {
         logDirLabel.setLinkLocation(new File(FileUtilities.USER_DIR + File.separator));
         setHeader(logDirLabel);
 
+        StringWriter writeTarget = new StringWriter() {
+            @Override
+            public void flush() {
+                SwingUtilities.invokeLater(() -> {
+                    logArea.append(toString());
+                    logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
+                });
+            }
+        };
+
         logArea = new JTextArea(ROWS, COLS);
         logArea.setEditable(false);
         logArea.setLineWrap(true);
@@ -54,6 +64,8 @@ public class LogDialog extends BasicDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
                 logArea.setText(null);
+
+                writeTarget.getBuffer().setLength(0);
             }
         });
 
@@ -66,15 +78,7 @@ public class LogDialog extends BasicDialog {
                 .setName("ui-dialog")
                 .setLayout(PatternLayout.newBuilder().withPattern("[%p] %d{ISO8601} @ %c:%L%n\t%m%n").build())
                 .setFilter(ThresholdFilter.createFilter(Level.TRACE, Filter.Result.ACCEPT, Filter.Result.DENY))
-                .setTarget(new StringWriter() {
-                    @Override
-                    public void flush() {
-                        SwingUtilities.invokeLater(() -> {
-                            logArea.append(toString());
-                            logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
-                        });
-                    }
-                })
+                .setTarget(writeTarget)
                 .build();
         logStream.start();
     }

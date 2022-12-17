@@ -1,5 +1,7 @@
 package qz.ui;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.ui.component.IconCache;
 
@@ -14,6 +16,8 @@ import java.util.Arrays;
  * A container for all the System Tray menu items
  */
 public class ControlDialog extends BasicDialog implements Themeable {
+    private static final Logger log = LogManager.getLogger(ControlDialog.class);
+
     public enum Category {
         STATUS,
         GENERAL,
@@ -24,9 +28,14 @@ public class ControlDialog extends BasicDialog implements Themeable {
     private boolean persistent = false;
 
     private JPanel statusPanel;
+    private JPanel statusLeftPanel;
+    private JPanel statusRightPanel;
     private JPanel generalPanel;
     private JPanel advancedPanel;
     private JPanel diagnosticPanel;
+
+    private JLabel runningIndicator;
+    private JLabel runningLabel;
 
     public ControlDialog(IconCache iconCache) {
         super(Constants.ABOUT_TITLE, iconCache);
@@ -60,17 +69,21 @@ public class ControlDialog extends BasicDialog implements Themeable {
             toAdd = button;
         } else if(component instanceof JSeparator){
             toAdd = (JSeparator)component;
+        } else if (component instanceof JComponent){
+            toAdd = (JComponent)component;
+        } else {
+            log.warn("Cannot add {}, not yet supported.", component.getClass().getSimpleName());
         }
         if(toAdd != null) {
             switch(category) {
+                case STATUS:
+                    statusRightPanel.add(toAdd);
+                    break;
                 case ADVANCED:
                     advancedPanel.add(toAdd);
                     break;
                 case DIAGNOSTIC:
                     diagnosticPanel.add(toAdd);
-                    break;
-                case STATUS:
-                    statusPanel.add(toAdd);
                     break;
                 case GENERAL:
                 default:
@@ -86,7 +99,29 @@ public class ControlDialog extends BasicDialog implements Themeable {
         mainPanel.setLayout(new BorderLayout());
         mainPanel.setBorder(createPaddedLineBorder(5, SwingConstants.SOUTH));
 
-        statusPanel = new JPanel(new FlowLayout());
+        statusLeftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        statusRightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+
+        statusPanel = new JPanel(new GridLayout(1, 3));
+
+        // Running indicator
+        runningIndicator = new JLabel("•");
+        runningIndicator.setFont(new Font("", Font.BOLD, 24));
+        runningIndicator.setForeground(Constants.STOPPED_COLOR);
+        runningIndicator.setBorder(new EmptyBorder(0, 2, 2, 2));
+        runningLabel = new JLabel("Stopped");
+        runningLabel.setBorder(new EmptyBorder(0, 0, 0, 4));
+        statusLeftPanel.add(runningIndicator);
+        statusLeftPanel.add(runningLabel);
+        statusPanel.add(statusLeftPanel);
+
+        // Version label
+        JLabel versionLabel = new JLabel(Constants.ABOUT_TITLE + " " + Constants.VERSION);
+        versionLabel.setFont(runningLabel.getFont());
+        statusPanel.add(versionLabel);
+
+        // Additional controls added with .add()
+        statusPanel.add(statusRightPanel);
 
         Font headingFont = new JLabel().getFont().deriveFont(16f).deriveFont(Font.BOLD);
 
@@ -168,6 +203,23 @@ public class ControlDialog extends BasicDialog implements Themeable {
     @Override
     public void refresh() {
         ThemeUtilities.refreshAll(this);
+    }
+
+    public void setRunningIndicator(IconCache.Icon icon) {
+        switch(icon) {
+            case WARNING_ICON:
+                runningIndicator.setForeground(Constants.PENDING_COLOR);
+                runningLabel.setText("Pending");
+                break;
+            case DANGER_ICON:
+                runningIndicator.setForeground(Constants.STOPPED_COLOR);
+                runningLabel.setText("Stopped");
+                break;
+            case DEFAULT_ICON:
+            default:
+                runningIndicator.setForeground(Constants.RUNNING_COLOR);
+                runningLabel.setText("Running");
+        }
     }
 
     /**

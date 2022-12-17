@@ -671,6 +671,7 @@ public class TrayManager {
     public void refreshIcon(final Runnable whenDone) {
         SwingUtilities.invokeLater(() -> {
             tray.setIcon(shownIcon);
+            controlDialog.setRunningIndicator(shownIcon);
             if(whenDone != null) {
                 whenDone.run();
             }

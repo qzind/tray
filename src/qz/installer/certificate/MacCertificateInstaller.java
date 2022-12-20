@@ -54,7 +54,7 @@ public class MacCertificateInstaller extends NativeCertificateInstaller {
     public List<String> find() {
         ArrayList<String> hashList = new ArrayList<>();
         try {
-            Process p = Runtime.getRuntime().exec(new String[] {"security", "find-certificate", "-e", Constants.ABOUT_EMAIL, "-Z", certStore});
+            Process p = Runtime.getRuntime().exec(new String[] {"security", "find-certificate", "-a", "-e", Constants.ABOUT_EMAIL, "-Z", certStore});
             BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line;
             while ((line = in.readLine()) != null) {

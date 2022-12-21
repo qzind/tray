@@ -32,7 +32,8 @@ public class JLink {
     private static final String JAVA_MINOR = JAVA_VERSION.split("\\.")[1];
     private static final String JAVA_PATCH = JAVA_VERSION.split("\\.|\\+|-")[2];
     private static final String JAVA_VERSION_FILE = JAVA_VERSION.replaceAll("\\+", "_");
-    private static final String JAVA_DEFAULT_GC_ENGINE = "hotspot";
+    private static final String JAVA_DEFAULT_GC_ENGINE = "hotspot"; // or "openj9"
+    private static final String JAVA_DEFAULT_GC_VERSION = "0.35.0"; // openj9 gc only
     private static final String JAVA_DEFAULT_ARCH = VendorArch.ADOPT_AMD64.use;
 
     private Path jarPath;
@@ -131,15 +132,16 @@ public class JLink {
 
         String fileExt;
         switch(VendorUrlPattern.getVendor(javaVendor)) {
-            case BELL:
-                fileExt = platform.equals("linux") ? "tar.gz" : "zip";
-                break;
             case ADOPT:
-            default:
+            case SEMERU:
                 fileExt = platform.equals("windows") ? "zip" : "tar.gz";
+                break;
+            case BELL:
+            default:
+                fileExt = platform.equals("linux") ? "tar.gz" : "zip";
         }
 
-        String url = VendorUrlPattern.format(javaVendor, arch, platform, gcEngine, JAVA_MAJOR, JAVA_VERSION, JAVA_VERSION_FILE, fileExt);
+        String url = VendorUrlPattern.format(javaVendor, arch, platform, gcEngine, JAVA_MAJOR, JAVA_VERSION, JAVA_VERSION_FILE, JAVA_DEFAULT_GC_VERSION, fileExt);
 
         // Saves to out e.g. "out/jlink/jdk-AdoptOpenjdk-amd64-platform-11_0_7"
         String extractedJdk = new Fetcher(String.format("jlink/jdk-%s-%s-%s-%s", javaVendor.toLowerCase(Locale.ENGLISH), arch, platform, JAVA_VERSION_FILE), url)

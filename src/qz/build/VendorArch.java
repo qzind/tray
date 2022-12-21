@@ -15,10 +15,12 @@ public enum VendorArch {
     // AMD64
     ADOPT_AMD64("x64", "amd64", "x86_64", "x64"),
     BELL_AMD64("amd64", "amd64", "x86_64", "x64"),
+    SEMERU_AMD64("x64", "amd64", "x86_64", "x64"),
 
     // ARM64
     ADOPT_AARCH64("aarch64", "aarch64", "arm64"),
-    BELL_AARCH64("aarch64", "aarch64", "arm64");
+    BELL_AARCH64("aarch64", "aarch64", "arm64"),
+    SEMERU_AARCH64("aarch64", "aarch64", "arm64");
 
     private static final Logger log = LogManager.getLogger(VendorArch.class);
 

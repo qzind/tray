@@ -14,6 +14,8 @@ public enum VendorOs {
 
     // MacOS
     ADOPT_MACOS("mac", "mac"),
+    SEMERU_MACOS("mac", "mac"),
+    MICROSOFT_MACOS("macOS", "mac"),
     BELL_MACOS("macos", "mac");
 
     // Windows

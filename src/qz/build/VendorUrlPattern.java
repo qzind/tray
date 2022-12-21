@@ -11,6 +11,7 @@ import java.util.Locale;
 public enum VendorUrlPattern {
     ADOPT("https://github.com/adoptium/temurin%s-binaries/releases/download/jdk-%s/OpenJDK%sU-jdk_%s_%s_%s_%s.%s"),
     SEMERU("https://github.com/ibmruntimes/semeru%s-binaries/releases/download/jdk-%s_%s-%s/ibm-semeru-open-jdk_%s_%s_%s_%s-%s.%s"),
+    MICROSOFT("https://aka.ms/download-jdk/microsoft-jdk-%s-%s-%s.%s"),
     BELL("https://download.bell-sw.com/java/%s/bellsoft-jdk%s-%s-%s.%s");
 
     private static final VendorUrlPattern DEFAULT_VENDOR = ADOPT;
@@ -40,6 +41,9 @@ public enum VendorUrlPattern {
                 return String.format(pattern.pattern, javaVersion, javaVersion, platform, arch, fileExt);
             case SEMERU:
                 return String.format(pattern.pattern, javaMajor, javaVersion, gcEngine, gcVer, arch, platform, javaVersionFormatted, gcEngine, gcVer, fileExt);
+            case MICROSOFT:
+                String javaShortened = javaVersionFormatted.split("_")[0];
+                return String.format(pattern.pattern, javaShortened, platform, arch, fileExt);
             case ADOPT:
             default:
                 return String.format(pattern.pattern, javaMajor, javaVersion, javaMajor, arch, platform, gcEngine, javaVersionFormatted, fileExt);

@@ -122,7 +122,7 @@ public class JLink {
         }
 
         arch = VendorArch.match(javaVendor, arch, JAVA_DEFAULT_ARCH);
-        platform = VendorOs.match(javaVendor, platform);
+        String platformUrl = VendorOs.match(javaVendor, platform);
 
 
         if(gcEngine == null) {
@@ -132,16 +132,14 @@ public class JLink {
 
         String fileExt;
         switch(VendorUrlPattern.getVendor(javaVendor)) {
-            case ADOPT:
-            case SEMERU:
-                fileExt = platform.equals("windows") ? "zip" : "tar.gz";
-                break;
             case BELL:
-            default:
                 fileExt = platform.equals("linux") ? "tar.gz" : "zip";
+                break;
+            default:
+                fileExt = platform.equals("windows") ? "zip" : "tar.gz";
         }
 
-        String url = VendorUrlPattern.format(javaVendor, arch, platform, gcEngine, JAVA_MAJOR, JAVA_VERSION, JAVA_VERSION_FILE, JAVA_DEFAULT_GC_VERSION, fileExt);
+        String url = VendorUrlPattern.format(javaVendor, arch, platformUrl, gcEngine, JAVA_MAJOR, JAVA_VERSION, JAVA_VERSION_FILE, JAVA_DEFAULT_GC_VERSION, fileExt);
 
         // Saves to out e.g. "out/jlink/jdk-AdoptOpenjdk-amd64-platform-11_0_7"
         String extractedJdk = new Fetcher(String.format("jlink/jdk-%s-%s-%s-%s", javaVendor.toLowerCase(Locale.ENGLISH), arch, platform, JAVA_VERSION_FILE), url)

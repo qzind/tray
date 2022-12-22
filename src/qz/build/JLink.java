@@ -12,8 +12,10 @@ package qz.build;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.build.jlink.Parsable;
 import qz.common.Constants;
 import qz.utils.*;
 
@@ -22,19 +24,13 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.Locale;
 
 public class JLink {
     private static final Logger log = LogManager.getLogger(JLink.class);
-    private static final String JAVA_VENDOR = "BellSoft";
+    public static final Vendor JAVA_VENDOR = Vendor.BELLSOFT;
     private static final String JAVA_VERSION = "11.0.17+7";
-    private static final String JAVA_MAJOR = JAVA_VERSION.split("\\.")[0];
-    private static final String JAVA_MINOR = JAVA_VERSION.split("\\.")[1];
-    private static final String JAVA_PATCH = JAVA_VERSION.split("\\.|\\+|-")[2];
-    private static final String JAVA_VERSION_FILE = JAVA_VERSION.replaceAll("\\+", "_");
     private static final String JAVA_DEFAULT_GC_ENGINE = "hotspot"; // or "openj9"
     private static final String JAVA_DEFAULT_GC_VERSION = "0.35.0"; // openj9 gc only
-    private static final String JAVA_DEFAULT_ARCH = VendorArch.ADOPT_AMD64.use;
 
     private Path jarPath;
     private Path jdepsPath;
@@ -42,25 +38,199 @@ public class JLink {
     private Path jmodsPath;
     private Path outPath;
     private Version jdepsVersion;
-    private String javaVendor;
-    private String targetPlatform;
+    private Platform hostPlatform;
+    private Platform targetPlatform;
+    private Arch hostArch;
+    private Arch targetArch;
+    private Vendor javaVendor;
+    private String gcEngine;
+    private String javaVersion;
+    private String gcVersion;
+
+    private Version javaSemver;
+
     private LinkedHashSet<String> depList;
 
-    public JLink(String targetPlatform, String arch, String gcEngine) throws IOException {
-        this.javaVendor = JAVA_VENDOR;
-        this.targetPlatform = targetPlatform;
+    /**
+     * TODO: Move this to a dedicated class
+     */
+    public enum Vendor implements Parsable {
+        ECLIPSE("Eclipse", "Adoptium", "adoptium", "temurin", "adoptopenjdk"),
+        BELLSOFT("BellSoft", "Liberica", "bellsoft", "liberica"),
+        IBM("IBM", "Semeru", "ibm", "semeru"),
+        MICROSOFT("Microsoft", "OpenJDK", "microsoft"),
+        AMAZON("Amazon", "Corretto", "amazon", "corretto");
 
-        if(needsDownload(SystemUtilities.getJavaVersion(JAVA_VERSION), Constants.JAVA_VERSION)) {
-            log.warn("Java versions are incompatible, locating a suitable runtime for Java " + JAVA_MAJOR + "...");
-            String hostArch = System.getProperty("os.arch");
-            String hostJdk = downloadJdk(JAVA_VENDOR, null, hostArch, gcEngine);
+        public String vendorName;
+        public String productName;
+        public final String[] matches;
+        Vendor(String vendorName, String productName, String ... matches) {
+            this.matches = matches;
+            this.vendorName = vendorName;
+            this.productName = productName;
+        }
+
+        public static Vendor parse(String value, Vendor fallback) {
+            return Parsable.parse(Vendor.class, value, fallback);
+        }
+
+        public static Vendor parse(String value) {
+            return Parsable.parse(Vendor.class, value);
+        }
+
+        @Override
+        public String value() {
+            return Parsable.value(this);
+        }
+
+        public String getVendorName() {
+            return vendorName;
+        }
+
+        public String getProductName() {
+            return productName;
+        }
+
+        public String getUrlArch(Arch arch) {
+            switch(arch) {
+                case AARCH64:
+                    // All vendors seem to use "aarch64" universally
+                    return "aarch64";
+                case AMD64:
+                    switch(this) {
+                        // BellSoft uses "amd64"
+                        case BELLSOFT:
+                            return "amd64";
+                    }
+                default:
+                    return "x64";
+            }
+        }
+
+        public String getUrlPlatform(Platform platform) {
+            switch(platform) {
+                case MAC:
+                    switch(this) {
+                        case BELLSOFT:
+                            return "macos";
+                        case MICROSOFT:
+                            return "macOS";
+                    }
+                default:
+                    return platform.value();
+            }
+        }
+
+        public String getUrlExtension(Platform platform) {
+            switch(this) {
+                case BELLSOFT:
+                    switch(platform) {
+                        case LINUX:
+                            return "tar.gz";
+                        default:
+                            // BellSoft uses "zip" for mac and windows platforms
+                            return "zip";
+                    }
+                default:
+                    switch(platform) {
+                        case WINDOWS:
+                            return "zip";
+                        default:
+                            return "tar.gz";
+                    }
+            }
+        }
+    }
+
+    /**
+     * Handling of architectures
+     */
+    public enum Arch implements Parsable {
+        AMD64("amd64", "x86_64", "x64"),
+        AARCH64("aarch64", "arm64");
+
+        public final String[] matches;
+        Arch(String ... matches) { this.matches = matches; }
+
+        public static Arch parse(String value, Arch fallback) {
+            return Parsable.parse(Arch.class, value, fallback);
+        }
+
+        public static Arch parse(String value) {
+            return Parsable.parse(Arch.class, value);
+        }
+
+        public static Arch getCurrentArch() {
+            return parse(System.getProperty("os.arch"));
+        }
+
+        @Override
+        public String value() {
+            return Parsable.value(this);
+        }
+    }
+
+    /**
+     * Handling of platform names as they would appear in a URL
+     * Values added must also be added to <code>ArgValue.JLINK --platform</code> values
+     */
+    public enum Platform implements Parsable {
+        MAC("mac"),
+        WINDOWS("windows"),
+        LINUX("linux");
+
+        public final String[] matches;
+        Platform(String ... matches) { this.matches = matches; }
+
+        public static Platform parse(String value, Platform fallback) {
+            return Parsable.parse(Platform.class, value, fallback);
+        }
+
+        public static Platform parse(String value) {
+            return Parsable.parse(Platform.class, value);
+        }
+
+        public static Platform getCurrentPlatform() {
+            switch(SystemUtilities.getOsType()) {
+                case MAC:
+                    return Platform.MAC;
+                case WINDOWS:
+                    return Platform.WINDOWS;
+                case LINUX:
+                default:
+                    return Platform.LINUX;
+            }
+        }
+
+        @Override
+        public String value() {
+            return Parsable.value(this);
+        }
+    }
+
+    public JLink(String targetPlatform, String targetArch, String javaVendor, String javaVersion, String gcEngine, String gcVersion) throws IOException {
+        this.hostPlatform = Platform.getCurrentPlatform();
+        this.hostArch = Arch.getCurrentArch();
+
+        this.targetPlatform = Platform.parse(targetPlatform, this.hostPlatform);
+        this.targetArch = Arch.parse(targetArch, this.hostArch);
+        this.javaVendor =  Vendor.parse(javaVendor, JAVA_VENDOR);
+        this.gcEngine = StringUtils.defaultIfBlank(gcEngine, JAVA_DEFAULT_GC_ENGINE);
+        this.javaVersion = StringUtils.defaultIfBlank(javaVersion, JAVA_VERSION);
+        this.gcVersion = StringUtils.defaultIfBlank(gcVersion, JAVA_DEFAULT_GC_VERSION);
+
+        this.javaSemver = SystemUtilities.getJavaVersion(this.javaVersion);
+
+        if(needsDownload(javaSemver, Constants.JAVA_VERSION)) {
+            log.warn("Java versions are incompatible, locating a suitable runtime for Java " + javaSemver.getMajorVersion() + "...");
+            String hostJdk = downloadJdk(this.hostArch, this.hostPlatform);
             calculateToolPaths(Paths.get(hostJdk));
         } else {
             calculateToolPaths(null);
         }
 
-        String extractedJdk = downloadJdk(javaVendor, targetPlatform, arch, gcEngine);
-        jmodsPath = Paths.get(extractedJdk, "jmods");
+        String targetJdk = downloadJdk(this.targetArch, this.targetPlatform);
+        jmodsPath = Paths.get(targetJdk, "jmods");
         log.info("Selecting jmods folder: {}", jmodsPath);
 
         calculateJarPath()
@@ -70,7 +240,7 @@ public class JLink {
     }
 
     public static void main(String ... args) throws IOException {
-        JLink jlink = new JLink(null, null, null).calculateJarPath();
+        JLink jlink = new JLink(null, null, null, null, null, null).calculateJarPath();
         System.out.println(jlink.jarPath);
         if(true) {
             System.exit(0);
@@ -79,7 +249,10 @@ public class JLink {
 
         new JLink(args.length > 0 ? args[0] : null,
                   args.length > 1 ? args[1] : null,
-                  args.length > 2 ? args[2] : null);
+                  args.length > 2 ? args[2] : null,
+                  args.length > 3 ? args[3] : null,
+                  args.length > 4 ? args[4] : null,
+                  args.length > 5 ? args[5] : null);
     }
 
     /**
@@ -104,52 +277,23 @@ public class JLink {
     /**
      * Download the JDK and return the path it was extracted to
      */
-    private static String downloadJdk(String javaVendor, String platform, String arch, String gcEngine) throws IOException {
-        if(platform == null) {
-            // Must match ArgValue.JLINK --platform values
-            switch(SystemUtilities.getOsType()) {
-                case MAC:
-                    platform = "mac";
-                    break;
-                case WINDOWS:
-                    platform = "windows";
-                    break;
-                default:
-                    platform = "linux";
-            }
+    private String downloadJdk(Arch arch, Platform platform) throws IOException {
+        // FIXME:  log.info("No platform specified, assuming '{}'", platform);
+        // FIXME:  log.info("No garbage collector specified, assuming '{}'", gcEngine);
 
-            log.info("No platform specified, assuming '{}'", platform);
-        }
+        String url = VendorUrlPattern.format(this.javaVendor, arch, platform, this.gcEngine, this.javaSemver, this.gcVersion);
 
-        arch = VendorArch.match(javaVendor, arch, JAVA_DEFAULT_ARCH);
-        String platformUrl = VendorOs.match(javaVendor, platform);
-
-
-        if(gcEngine == null) {
-            gcEngine = JAVA_DEFAULT_GC_ENGINE;
-            log.info("No garbage collector specified, assuming '{}'", gcEngine);
-        }
-
-        String fileExt;
-        switch(VendorUrlPattern.getVendor(javaVendor)) {
-            case BELL:
-                fileExt = platform.equals("linux") ? "tar.gz" : "zip";
-                break;
-            default:
-                fileExt = platform.equals("windows") ? "zip" : "tar.gz";
-        }
-
-        String url = VendorUrlPattern.format(javaVendor, arch, platformUrl, gcEngine, JAVA_MAJOR, JAVA_VERSION, JAVA_VERSION_FILE, JAVA_DEFAULT_GC_VERSION, fileExt);
+        String javaVersionUnderscore = javaSemver.toString().replaceAll("\\+", "_");
 
         // Saves to out e.g. "out/jlink/jdk-AdoptOpenjdk-amd64-platform-11_0_7"
-        String extractedJdk = new Fetcher(String.format("jlink/jdk-%s-%s-%s-%s", javaVendor.toLowerCase(Locale.ENGLISH), arch, platform, JAVA_VERSION_FILE), url)
+        String extractedJdk = new Fetcher(String.format("jlink/jdk-%s-%s-%s-%s", javaVendor.value(), arch.value(), platform.value(), javaVersionUnderscore), url)
                 .fetch()
                 .uncompress();
 
         // Get first subfolder, e.g. jdk-11.0.7+10
         for(File subfolder : new File(extractedJdk).listFiles(pathname -> pathname.isDirectory())) {
             extractedJdk = subfolder.getPath();
-            if(platform.equals("mac") && Paths.get(extractedJdk, "/Contents/Home").toFile().isDirectory()) {
+            if(platform == Platform.MAC && Paths.get(extractedJdk, "/Contents/Home").toFile().isDirectory()) {
                 extractedJdk += "/Contents/Home";
             }
             log.info("Selecting JDK home: {}", extractedJdk);
@@ -173,10 +317,12 @@ public class JLink {
     }
 
     private JLink calculateOutPath() {
-        if(targetPlatform.equals("mac")) {
-            outPath = jarPath.resolve("../Java.runtime/Contents/Home").normalize();
-        } else {
-            outPath = jarPath.resolve("../runtime").normalize();
+        switch(targetPlatform) {
+            case MAC:
+                outPath = jarPath.resolve("../Java.runtime/Contents/Home").normalize();
+                break;
+            default:
+                outPath = jarPath.resolve("../runtime").normalize();
         }
         log.info("Assuming output path: {}", outPath);
         return this;
@@ -231,7 +377,7 @@ public class JLink {
     }
 
     private JLink deployJre() throws IOException {
-        if(targetPlatform.equals("mac")) {
+        if(targetPlatform == Platform.MAC) {
             // Deploy Contents/MacOS/libjli.dylib
             Path macOS = Files.createDirectories(outPath.resolve("../MacOS").normalize());
             Path jliLib = macOS.resolve("libjli.dylib");
@@ -247,9 +393,10 @@ public class JLink {
             // Deploy Contents/Info.plist
             HashMap<String, String> fieldMap = new HashMap<>();
             fieldMap.put("%BUNDLE_ID%", MacUtilities.getBundleId() + ".jre"); // e.g. io.qz.qz-tray.jre
-            fieldMap.put("%BUNDLE_VERSION%", String.format("%s.%s.%s", JAVA_MAJOR, JAVA_MINOR, JAVA_PATCH));
+            fieldMap.put("%BUNDLE_VERSION%", String.format("%s.%s.%s", javaSemver.getMajorVersion(), javaSemver.getMinorVersion(), javaSemver.getPatchVersion()));
             fieldMap.put("%BUNDLE_VERSION_FULL%", JAVA_VERSION);
-            fieldMap.put("%BUNDLE_VENDOR%", javaVendor);
+            fieldMap.put("%BUNDLE_VENDOR%", javaVendor.getVendorName());
+            fieldMap.put("%BUNDLE_PRODUCT%", javaVendor.getProductName());
             log.info("Deploying {}/Info.plist", macOS.getParent());
             FileUtilities.configureAssetFile("assets/mac-runtime.plist.in", macOS.getParent().resolve("Info.plist"), fieldMap, JLink.class);
         }
@@ -270,13 +417,15 @@ public class JLink {
             // Remove all but java/javaw
             String[] keepFiles;
             String keepExt;
-            if(targetPlatform.equals("windows")) {
-                keepFiles = new String[]{ "java.exe", "javaw.exe" };
-                // Windows stores ".dll" files in bin
-                keepExt = ".dll";
-            } else {
-                keepFiles = new String[]{ "java" };
-                keepExt = null;
+            switch(targetPlatform) {
+                case WINDOWS:
+                    keepFiles = new String[]{ "java.exe", "javaw.exe" };
+                    // Windows stores ".dll" files in bin
+                    keepExt = ".dll";
+                    break;
+                default:
+                    keepFiles = new String[]{ "java" };
+                    keepExt = null;
             }
 
             Files.list(outPath.resolve("bin")).forEach(binFile -> {

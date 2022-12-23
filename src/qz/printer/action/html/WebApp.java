@@ -64,6 +64,11 @@ public class WebApp extends Application {
     private static IntPredicate printAction;
     private static final AtomicReference<Throwable> thrown = new AtomicReference<>();
 
+    // JDK-8283686: Printing WebView may results in empty page
+    private static final Version JDK_8283686_START = Version.valueOf(/* WebKit */ "609.1.0");
+    private static final Version JDK_8283686_END = Version.valueOf(/* WebKit */ "612.1.0");
+    private static final int JDK_8283686_VECTOR_FRAMES = 30;
+
 
     //listens for a Succeeded state to activate image capture
     private static ChangeListener<Worker.State> stateListener = (ov, oldState, newState) -> {
@@ -220,10 +225,12 @@ public class WebApp extends Application {
 
         webView = new WebView();
 
-        // Fix blank pages for WebKit > 609.1
+        // JDK-8283686: Printing WebView may results in empty page
         // See also https://github.com/qzind/tray/issues/778
-        if(getWebkitVersion() == null || getWebkitVersion().greaterThan(Version.forIntegers(609, 1, 0))) {
-            VECTOR_FRAMES = 30; // 30 pulses needed for vector graphics
+        if(getWebkitVersion() == null ||
+                (getWebkitVersion().greaterThan(JDK_8283686_START) &&
+                        getWebkitVersion().lessThan(JDK_8283686_END))) {
+            VECTOR_FRAMES = JDK_8283686_VECTOR_FRAMES; // Additional pulses needed for vector graphics
         }
 
         st.setScene(new Scene(webView));

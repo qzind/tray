@@ -110,17 +110,6 @@
         To package: We need javafx to download a javafx which matches "target.os" and "target.arch"
      -->
     <target name="get-javafx-versions" depends="platform-detect">
-        <condition property="host.fx.ver" value="${javafx.unstable.version}">
-            <not>
-                <equals arg1="${host.arch}" arg2="${javafx.arch}"/>
-            </not>
-        </condition>
-        <condition property="target.fx.ver" value="${javafx.unstable.version}">
-            <not>
-                <equals arg1="${target.arch}" arg2="${javafx.arch}"/>
-            </not>
-        </condition>
-
         <!-- Fallback to sane values -->
         <property name="host.fx.ver" value="${javafx.version}"/>
         <property name="target.fx.ver" value="${javafx.version}"/>

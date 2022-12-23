@@ -58,7 +58,7 @@ public class NSObject {
     }
 
     @Override
-    @SuppressWarnings("FinalizeDeclaration")
+    @SuppressWarnings({"FinalizeDeclaration","deprecation","removal"})
     protected void finalize() throws Throwable {
         release();
         super.finalize();

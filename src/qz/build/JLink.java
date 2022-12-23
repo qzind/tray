@@ -12,10 +12,12 @@ package qz.build;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.build.jlink.Parsable;
+import qz.build.jlink.Arch;
+import qz.build.jlink.Platform;
+import qz.build.jlink.Vendor;
+import qz.build.jlink.Url;
 import qz.common.Constants;
 import qz.utils.*;
 
@@ -28,7 +30,7 @@ import java.util.LinkedHashSet;
 public class JLink {
     private static final Logger log = LogManager.getLogger(JLink.class);
     public static final Vendor JAVA_VENDOR = Vendor.BELLSOFT;
-    private static final String JAVA_VERSION = "11.0.17+7";
+    private static final String JAVA_VERSION = "11.0.17+8";
     private static final String JAVA_DEFAULT_GC_ENGINE = "hotspot"; // or "openj9"
     private static final String JAVA_DEFAULT_GC_VERSION = "0.35.0"; // openj9 gc only
 
@@ -51,163 +53,6 @@ public class JLink {
 
     private LinkedHashSet<String> depList;
 
-    /**
-     * TODO: Move this to a dedicated class
-     */
-    public enum Vendor implements Parsable {
-        ECLIPSE("Eclipse", "Adoptium", "adoptium", "temurin", "adoptopenjdk"),
-        BELLSOFT("BellSoft", "Liberica", "bellsoft", "liberica"),
-        IBM("IBM", "Semeru", "ibm", "semeru"),
-        MICROSOFT("Microsoft", "OpenJDK", "microsoft"),
-        AMAZON("Amazon", "Corretto", "amazon", "corretto");
-
-        public String vendorName;
-        public String productName;
-        public final String[] matches;
-        Vendor(String vendorName, String productName, String ... matches) {
-            this.matches = matches;
-            this.vendorName = vendorName;
-            this.productName = productName;
-        }
-
-        public static Vendor parse(String value, Vendor fallback) {
-            return Parsable.parse(Vendor.class, value, fallback);
-        }
-
-        public static Vendor parse(String value) {
-            return Parsable.parse(Vendor.class, value);
-        }
-
-        @Override
-        public String value() {
-            return Parsable.value(this);
-        }
-
-        public String getVendorName() {
-            return vendorName;
-        }
-
-        public String getProductName() {
-            return productName;
-        }
-
-        public String getUrlArch(Arch arch) {
-            switch(arch) {
-                case AARCH64:
-                    // All vendors seem to use "aarch64" universally
-                    return "aarch64";
-                case AMD64:
-                    switch(this) {
-                        // BellSoft uses "amd64"
-                        case BELLSOFT:
-                            return "amd64";
-                    }
-                default:
-                    return "x64";
-            }
-        }
-
-        public String getUrlPlatform(Platform platform) {
-            switch(platform) {
-                case MAC:
-                    switch(this) {
-                        case BELLSOFT:
-                            return "macos";
-                        case MICROSOFT:
-                            return "macOS";
-                    }
-                default:
-                    return platform.value();
-            }
-        }
-
-        public String getUrlExtension(Platform platform) {
-            switch(this) {
-                case BELLSOFT:
-                    switch(platform) {
-                        case LINUX:
-                            return "tar.gz";
-                        default:
-                            // BellSoft uses "zip" for mac and windows platforms
-                            return "zip";
-                    }
-                default:
-                    switch(platform) {
-                        case WINDOWS:
-                            return "zip";
-                        default:
-                            return "tar.gz";
-                    }
-            }
-        }
-    }
-
-    /**
-     * Handling of architectures
-     */
-    public enum Arch implements Parsable {
-        AMD64("amd64", "x86_64", "x64"),
-        AARCH64("aarch64", "arm64");
-
-        public final String[] matches;
-        Arch(String ... matches) { this.matches = matches; }
-
-        public static Arch parse(String value, Arch fallback) {
-            return Parsable.parse(Arch.class, value, fallback);
-        }
-
-        public static Arch parse(String value) {
-            return Parsable.parse(Arch.class, value);
-        }
-
-        public static Arch getCurrentArch() {
-            return parse(System.getProperty("os.arch"));
-        }
-
-        @Override
-        public String value() {
-            return Parsable.value(this);
-        }
-    }
-
-    /**
-     * Handling of platform names as they would appear in a URL
-     * Values added must also be added to <code>ArgValue.JLINK --platform</code> values
-     */
-    public enum Platform implements Parsable {
-        MAC("mac"),
-        WINDOWS("windows"),
-        LINUX("linux");
-
-        public final String[] matches;
-        Platform(String ... matches) { this.matches = matches; }
-
-        public static Platform parse(String value, Platform fallback) {
-            return Parsable.parse(Platform.class, value, fallback);
-        }
-
-        public static Platform parse(String value) {
-            return Parsable.parse(Platform.class, value);
-        }
-
-        public static Platform getCurrentPlatform() {
-            switch(SystemUtilities.getOsType()) {
-                case MAC:
-                    return Platform.MAC;
-                case WINDOWS:
-                    return Platform.WINDOWS;
-                case LINUX:
-                default:
-                    return Platform.LINUX;
-            }
-        }
-
-        @Override
-        public String value() {
-            return Parsable.value(this);
-        }
-    }
-
     public JLink(String targetPlatform, String targetArch, String javaVendor, String javaVersion, String gcEngine, String gcVersion) throws IOException {
         this.hostPlatform = Platform.getCurrentPlatform();
         this.hostArch = Arch.getCurrentArch();
@@ -215,9 +60,9 @@ public class JLink {
         this.targetPlatform = Platform.parse(targetPlatform, this.hostPlatform);
         this.targetArch = Arch.parse(targetArch, this.hostArch);
         this.javaVendor =  Vendor.parse(javaVendor, JAVA_VENDOR);
-        this.gcEngine = StringUtils.defaultIfBlank(gcEngine, JAVA_DEFAULT_GC_ENGINE);
-        this.javaVersion = StringUtils.defaultIfBlank(javaVersion, JAVA_VERSION);
-        this.gcVersion = StringUtils.defaultIfBlank(gcVersion, JAVA_DEFAULT_GC_VERSION);
+        this.gcEngine = getParam("gcEngine", gcEngine, JAVA_DEFAULT_GC_ENGINE);
+        this.javaVersion = getParam("javaVersion", javaVersion, JAVA_VERSION);
+        this.gcVersion = getParam("gcVersion", gcVersion, JAVA_DEFAULT_GC_VERSION);
 
         this.javaSemver = SystemUtilities.getJavaVersion(this.javaVersion);
 
@@ -240,19 +85,7 @@ public class JLink {
     }
 
     public static void main(String ... args) throws IOException {
-        JLink jlink = new JLink(null, null, null, null, null, null).calculateJarPath();
-        System.out.println(jlink.jarPath);
-        if(true) {
-            System.exit(0);
-        }
-
-
-        new JLink(args.length > 0 ? args[0] : null,
-                  args.length > 1 ? args[1] : null,
-                  args.length > 2 ? args[2] : null,
-                  args.length > 3 ? args[3] : null,
-                  args.length > 4 ? args[4] : null,
-                  args.length > 5 ? args[5] : null);
+        new JLink(null, null, null, null, null, null).calculateJarPath();
     }
 
     /**
@@ -278,10 +111,7 @@ public class JLink {
      * Download the JDK and return the path it was extracted to
      */
     private String downloadJdk(Arch arch, Platform platform) throws IOException {
-        // FIXME:  log.info("No platform specified, assuming '{}'", platform);
-        // FIXME:  log.info("No garbage collector specified, assuming '{}'", gcEngine);
-
-        String url = VendorUrlPattern.format(this.javaVendor, arch, platform, this.gcEngine, this.javaSemver, this.gcVersion);
+        String url = new Url(this.javaVendor).format(arch, platform, this.gcEngine, this.javaSemver, this.gcVersion);
 
         String javaVersionUnderscore = javaSemver.toString().replaceAll("\\+", "_");
 
@@ -309,7 +139,7 @@ public class JLink {
         } else {
             // Detect out/dist/qz-tray.jar for IDE usage
             jarPath = SystemUtilities.getJarParentPath()
-                    .resolve("../../")
+                    .resolve("dist")
                     .resolve(Constants.PROPS_FILE + ".jar");
         }
         log.info("Assuming jar path: {}", jarPath);
@@ -449,4 +279,11 @@ public class JLink {
         throw new IOException("An error occurred deploying the jre.  Please check the logs for details.");
     }
 
+    public static String getParam(String paramName, String value, String fallback) {
+        if(value != null && !value.isEmpty() && !value.trim().isEmpty()) {
+            return value;
+        }
+        log.info("No {} specified, assuming '{}'", paramName, fallback);
+        return fallback;
+    }
 }

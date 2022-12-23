@@ -29,8 +29,8 @@ import java.util.LinkedHashSet;
 
 public class JLink {
     private static final Logger log = LogManager.getLogger(JLink.class);
-    public static final Vendor JAVA_VENDOR = Vendor.BELLSOFT;
-    private static final String JAVA_VERSION = "11.0.17+8";
+    public static final Vendor JAVA_DEFAULT_VENDOR = Vendor.BELLSOFT;
+    private static final String JAVA_DEFAULT_VERSION = "11.0.17+7";
     private static final String JAVA_DEFAULT_GC_ENGINE = "hotspot"; // or "openj9"
     private static final String JAVA_DEFAULT_GC_VERSION = "0.35.0"; // openj9 gc only
 
@@ -59,9 +59,9 @@ public class JLink {
 
         this.targetPlatform = Platform.parse(targetPlatform, this.hostPlatform);
         this.targetArch = Arch.parse(targetArch, this.hostArch);
-        this.javaVendor =  Vendor.parse(javaVendor, JAVA_VENDOR);
+        this.javaVendor =  Vendor.parse(javaVendor, JAVA_DEFAULT_VENDOR);
         this.gcEngine = getParam("gcEngine", gcEngine, JAVA_DEFAULT_GC_ENGINE);
-        this.javaVersion = getParam("javaVersion", javaVersion, JAVA_VERSION);
+        this.javaVersion = getParam("javaVersion", javaVersion, JAVA_DEFAULT_VERSION);
         this.gcVersion = getParam("gcVersion", gcVersion, JAVA_DEFAULT_GC_VERSION);
 
         this.javaSemver = SystemUtilities.getJavaVersion(this.javaVersion);
@@ -113,10 +113,8 @@ public class JLink {
     private String downloadJdk(Arch arch, Platform platform) throws IOException {
         String url = new Url(this.javaVendor).format(arch, platform, this.gcEngine, this.javaSemver, this.gcVersion);
 
-        String javaVersionUnderscore = javaSemver.toString().replaceAll("\\+", "_");
-
         // Saves to out e.g. "out/jlink/jdk-AdoptOpenjdk-amd64-platform-11_0_7"
-        String extractedJdk = new Fetcher(String.format("jlink/jdk-%s-%s-%s-%s", javaVendor.value(), arch.value(), platform.value(), javaVersionUnderscore), url)
+        String extractedJdk = new Fetcher(String.format("jlink/jdk-%s-%s-%s-%s", javaVendor.value(), arch.value(), platform.value(), javaSemver.toString().replaceAll("\\+", "_")), url)
                 .fetch()
                 .uncompress();
 
@@ -224,7 +222,7 @@ public class JLink {
             HashMap<String, String> fieldMap = new HashMap<>();
             fieldMap.put("%BUNDLE_ID%", MacUtilities.getBundleId() + ".jre"); // e.g. io.qz.qz-tray.jre
             fieldMap.put("%BUNDLE_VERSION%", String.format("%s.%s.%s", javaSemver.getMajorVersion(), javaSemver.getMinorVersion(), javaSemver.getPatchVersion()));
-            fieldMap.put("%BUNDLE_VERSION_FULL%", JAVA_VERSION);
+            fieldMap.put("%BUNDLE_VERSION_FULL%", JAVA_DEFAULT_VERSION);
             fieldMap.put("%BUNDLE_VENDOR%", javaVendor.getVendorName());
             fieldMap.put("%BUNDLE_PRODUCT%", javaVendor.getProductName());
             log.info("Deploying {}/Info.plist", macOS.getParent());

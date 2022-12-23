@@ -222,7 +222,7 @@ public class JLink {
             HashMap<String, String> fieldMap = new HashMap<>();
             fieldMap.put("%BUNDLE_ID%", MacUtilities.getBundleId() + ".jre"); // e.g. io.qz.qz-tray.jre
             fieldMap.put("%BUNDLE_VERSION%", String.format("%s.%s.%s", javaSemver.getMajorVersion(), javaSemver.getMinorVersion(), javaSemver.getPatchVersion()));
-            fieldMap.put("%BUNDLE_VERSION_FULL%", JAVA_DEFAULT_VERSION);
+            fieldMap.put("%BUNDLE_VERSION_FULL%", javaSemver.toString());
             fieldMap.put("%BUNDLE_VENDOR%", javaVendor.getVendorName());
             fieldMap.put("%BUNDLE_PRODUCT%", javaVendor.getProductName());
             log.info("Deploying {}/Info.plist", macOS.getParent());

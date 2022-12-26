@@ -140,13 +140,13 @@
         <loadresource property="host.fx.majver">
             <propertyresource name="host.fx.ver"/>
             <filterchain>
-                <replaceregex pattern="[-.].*" replace="" />
+                <replaceregex pattern="[-_.].*" replace="" />
             </filterchain>
         </loadresource>
         <loadresource property="target.fx.majver">
             <propertyresource name="target.fx.ver"/>
             <filterchain>
-                <replaceregex pattern="[-.].*" replace="" />
+                <replaceregex pattern="[-_.].*" replace="" />
             </filterchain>
         </loadresource>
         <property description="suppress property warning" name="target.fx.majver" value="something went wrong"/>

@@ -87,6 +87,10 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 if (!dataOpt.isNull("pageRanges")) {
                     String[] ranges = dataOpt.optString("pageRanges", "").split(",");
                     for(String range : ranges) {
+                        range = range.trim();
+                        if(range.isEmpty()) {
+                            continue;
+                        }
                         String[] period = range.split("-");
 
                         try {

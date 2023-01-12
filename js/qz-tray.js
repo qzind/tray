@@ -26,13 +26,7 @@ var qz = (function() {
 
     // from SHA implementation
     if (typeof String.prototype.utf8Encode == 'undefined') {
-        String.prototype.utf8Encode = function() { return unescape(encodeURIComponent(this)); };
-    }
-    if (typeof String.prototype.utf8Decode == 'undefined') {
-        String.prototype.utf8Decode = function() {
-            try { return decodeURIComponent(escape(this)); }
-            catch(e) { return this; } // invalid UTF-8? return as-is
-        };
+        String.prototype.utf8Encode = function() { return encodeURIComponent(this); };
     }
 
 ///// PRIVATE METHODS /////

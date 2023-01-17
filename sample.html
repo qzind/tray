@@ -1668,18 +1668,18 @@
                 break;
             case 'PGL':
                 printData = [
-                    '~CREATE;DATAMATRIX;144\n',
+                    '~CREATE;QZQRCODE;288\n',
                     'SCALE;DOT;300;300\n',
                     'ALPHA\n',
                     'POINT;50;100;16;9;*Printed using QZ Tray*\n',
                     'STOP\n',
                     'BARCODE\n',
-                    'DATAMATRIX;XD16;C20;R20;ECC200;ID5;150;150\n',
-                    '*0100000123000017*\n',
+                    'QRCODE;XD10;80;30\n',
+                    '*https://qz.io*\n',
                     'STOP\n',
                     'END\n',
-                    '~EXECUTE;DATAMATRIX;1\n',
-                    '~NORMAL\n',
+                    '~EXECUTE;QZQRCODE;1\n',
+                    '~NORMAL\n'
                 ];
                 break;
             default:

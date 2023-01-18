@@ -18,6 +18,7 @@ import qz.auth.RequestState;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.communication.*;
+import qz.exception.WebsocketError;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.status.StatusMonitor;
 import qz.printer.status.StatusSession;
@@ -36,6 +37,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
+
+import static qz.exception.WebsocketError.*;
 
 
 @WebSocket
@@ -99,7 +102,7 @@ public class PrintSocketClient {
         String message = IOUtils.toString(reader);
 
         if (message == null || message.isEmpty()) {
-            sendError(session, null, "Message is empty");
+            sendError(session, null, MESSAGE_EMPTY);
             return;
         }
         if (Constants.PROBE_REQUEST.equals(message)) {
@@ -137,7 +140,7 @@ public class PrintSocketClient {
                                       findDialogPosition(session, json.optJSONObject("position")))) {
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, "Connection blocked by client");
+                    sendError(session, UID, CONNECTION_BLOCKED);
                     session.disconnect();
                 }
 
@@ -174,7 +177,7 @@ public class PrintSocketClient {
         }
         catch(InvalidPathException | FileSystemException e) {
             log.error("FileIO exception occurred", e);
-            sendError(session, UID, String.format("FileIO exception occurred: %s: %s", e.getClass().getSimpleName(), e.getMessage()));
+            sendError(session, UID, FILE_EXCEPTION, e.getClass().getSimpleName(), e.getMessage());
         }
         catch(Exception e) {
             log.error("Problem processing message", e);
@@ -209,7 +212,7 @@ public class PrintSocketClient {
      * @param session WebSocket session
      * @param json    JSON received from web API
      */
-    private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, DeviceException, IOException, ListenerNotFoundException {
+    private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, UsbException, IOException, ListenerNotFoundException {
         String UID = json.optString("uid");
         SocketMethod call = SocketMethod.findFromCall(json.optString("call"));
         JSONObject params = json.optJSONObject("params");
@@ -228,14 +231,14 @@ public class PrintSocketClient {
             if (pr != null) {
                 prompt = String.format(prompt, pr.optString("name", pr.optString("file", pr.optString("host", "an undefined location"))));
             } else {
-                sendError(session, UID, "A printer must be specified before printing");
+                sendError(session, UID, PRINTER_NOT_SPECIFIED);
                 return;
             }
         }
 
         if (call.isDialogShown()
                 && !allowedFromDialog(request, prompt, findDialogPosition(session, json.optJSONObject("position")))) {
-            sendError(session, UID, "Request blocked");
+            sendError(session, UID, REQUEST_BLOCKED);
             return;
         }
 
@@ -244,7 +247,7 @@ public class PrintSocketClient {
         }
 
         // used in usb calls
-        DeviceOptions dOpts = new DeviceOptions(params, DeviceOptions.DeviceMode.parse(call.getCallName()));
+        UsbOptions dOpts = new UsbOptions(params, UsbOptions.DeviceMode.parse(call.getCallName()));
 
 
         //call appropriate methods
@@ -259,7 +262,7 @@ public class PrintSocketClient {
                     if (name != null) {
                         sendResult(session, UID, name);
                     } else {
-                        sendError(session, UID, "Specified printer could not be found.");
+                        sendError(session, UID, PRINTER_NOT_FOUND);
                     }
                 } else {
                     JSONArray services = PrintServiceMatcher.getPrintersJSON(false);
@@ -285,7 +288,7 @@ public class PrintSocketClient {
                 if (connection.hasStatusListener()) {
                     StatusMonitor.sendStatuses(connection);
                 } else {
-                    sendError(session, UID, "No printer listeners started for this client.");
+                    sendError(session, UID, PRINTER_NOT_LISTENING);
                 }
                 sendResult(session, UID, null);
                 break;
@@ -320,7 +323,7 @@ public class PrintSocketClient {
                     serial.sendData(params, opts);
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, String.format("Serial port [%s] must be opened first.", params.optString("port")));
+                    sendError(session, UID, SERIAL_PORT_NOT_OPEN, params.optString("port"));
                 }
                 break;
             }
@@ -331,7 +334,7 @@ public class PrintSocketClient {
                     connection.removeSerialPort(params.optString("port"));
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, String.format("Serial port [%s] is not open.", params.optString("port")));
+                    sendError(session, UID, SERIAL_PORT_NOT_OPEN, params.optString("port"));
                 }
                 break;
             }
@@ -346,7 +349,7 @@ public class PrintSocketClient {
                     socket.sendData(params);
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, String.format("Socket [%s] is not open.", location));
+                    sendError(session, UID, SOCKET_NOT_OPEN, location);
                 }
                 break;
             }
@@ -358,7 +361,7 @@ public class PrintSocketClient {
                     connection.removeNetworkSocket(location);
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, String.format("Socket [%s] is not open.", location));
+                    sendError(session, UID, SOCKET_NOT_OPEN, location);
                 }
                 break;
             }
@@ -388,7 +391,7 @@ public class PrintSocketClient {
                     }
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, "Already listening HID device events");
+                    sendError(session, UID, USB_ALREADY_LISTENING, call);
                 }
                 break;
             case HID_STOP_LISTENING:
@@ -396,7 +399,7 @@ public class PrintSocketClient {
                     connection.stopDeviceListening();
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, "Not already listening HID device events");
+                    sendError(session, UID, USB_NOT_LISTENING, call);
                 }
                 break;
 
@@ -421,10 +424,10 @@ public class PrintSocketClient {
                     if (device.isOpen()) {
                         sendResult(session, UID, null);
                     } else {
-                        sendError(session, UID, "Failed to open connection to device");
+                        sendError(session, UID, USB_CLAIM_FAILED, call);
                     }
                 } else {
-                    sendError(session, UID, String.format("USB Device [v:%s p:%s] is already claimed.", params.opt("vendorId"), params.opt("productId")));
+                    sendError(session, UID, USB_ALREADY_CLAIMED, call, params.optString("vendorId"), params.optString("productId"));
                 }
 
                 break;
@@ -448,7 +451,7 @@ public class PrintSocketClient {
 
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, String.format("USB Device [v:%s p:%s] must be claimed first.", params.opt("vendorId"), params.opt("productId")));
+                    sendError(session, UID, USB_NOT_CLAIMED, call, params.optString("vendorId"), params.optString("productId"));
                 }
 
                 break;
@@ -473,7 +476,7 @@ public class PrintSocketClient {
                     }
                     sendResult(session, UID, hex);
                 } else {
-                    sendError(session, UID, String.format("USB Device [v:%s p:%s] must be claimed first.", params.opt("vendorId"), params.opt("productId")));
+                    sendError(session, UID, USB_NOT_CLAIMED, call, params.optString("vendorId"), params.optString("productId"));
                 }
 
                 break;
@@ -491,7 +494,7 @@ public class PrintSocketClient {
                     usb.setStreaming(false);
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, String.format("USB Device [v:%s p:%s] is not streaming data.", params.opt("vendorId"), params.opt("productId")));
+                    sendError(session, UID,USB_NOT_STREAMING, call, params.optString("vendorId"), params.optString("productId"));
                 }
 
                 break;
@@ -505,7 +508,7 @@ public class PrintSocketClient {
 
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, String.format("USB Device [v:%s p:%s] is not claimed.", params.opt("vendorId"), params.opt("productId")));
+                    sendError(session, UID, USB_NOT_CLAIMED, call, params.optString("vendorId"), params.optString("productId"));
                 }
 
                 break;
@@ -522,7 +525,7 @@ public class PrintSocketClient {
                     FileUtilities.setupListener(fileIO);
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, "Already listening to path events");
+                    sendError(session, UID, FILE_ALREADY_LISTENING);
                 }
 
                 break;
@@ -541,7 +544,7 @@ public class PrintSocketClient {
                         connection.removeFileListener(absPath);
                         sendResult(session, UID, null);
                     } else {
-                        sendError(session, UID, "Not already listening to path events");
+                        sendError(session, UID, FILE_NOT_LISTENING);
                     }
                 }
 
@@ -557,11 +560,11 @@ public class PrintSocketClient {
                         sendResult(session, UID, new JSONArray(files));
                     } else {
                         log.error("Failed to list '{}' (not a directory)", absPath);
-                        sendError(session, UID, "Path is not a directory");
+                        sendError(session, UID, FILE_NOT_DIRECTORY);
                     }
                 } else {
                     log.error("Failed to list '{}' (does not exist)", absPath);
-                    sendError(session, UID, "Path does not exist");
+                    sendError(session, UID, FILE_PATH_NOT_EXIST);
                 }
 
                 break;
@@ -574,11 +577,11 @@ public class PrintSocketClient {
                         sendResult(session, UID, fileParams.toString(Files.readAllBytes(absPath)));
                     } else {
                         log.error("Failed to read '{}' (not readable)", absPath);
-                        sendError(session, UID, "Path is not readable");
+                        sendError(session, UID, FILE_PATH_NOT_READABLE);
                     }
                 } else {
                     log.error("Failed to read '{}' (does not exist)", absPath);
-                    sendError(session, UID, "Path does not exist");
+                    sendError(session, UID, FILE_PATH_NOT_EXIST);
                 }
 
                 break;
@@ -600,7 +603,7 @@ public class PrintSocketClient {
                     sendResult(session, UID, null);
                 } else {
                     log.error("Failed to remove '{}' (does not exist)", absPath);
-                    sendError(session, UID, "Path does not exist");
+                    sendError(session, UID, FILE_PATH_NOT_EXIST);
                 }
 
                 break;
@@ -649,7 +652,7 @@ public class PrintSocketClient {
                 break;
             case INVALID:
             default:
-                sendError(session, UID, "Invalid function call: " + json.optString("call", "NONE"));
+                sendError(session, UID, INVALID_FUNCTION_CALL, json.optString("call", "NONE"));
                 break;
         }
     }
@@ -717,13 +720,22 @@ public class PrintSocketClient {
      * @param messageUID ID of call from web API
      * @param ex         Exception to get error message from
      */
-    public static void sendError(Session session, String messageUID, Exception ex) {
-        String message = ex.getMessage();
-        if (message == null || message.isEmpty()) {
-            message = ex.getClass().getSimpleName();
+    public static void sendError(Session session, String messageUID, WebsocketError errorType, Exception ex) {
+        try {
+            log.error(errorType.format(ex));
+            JSONObject reply = new JSONObject();
+            reply.putOpt("uid", messageUID);
+            reply.put("errorId", errorType.getId());
+            reply.put("error", errorType.format(ex));
+            send(session, reply);
         }
+        catch(JSONException e) {
+            log.error("Send error failed", e);
+        }
+    }
 
-        sendError(session, messageUID, message);
+    public static void sendError(Session session, String messageUID, Exception ex) {
+        sendError(session, messageUID, UNHANDLED, ex);
     }
 
     /**
@@ -731,19 +743,43 @@ public class PrintSocketClient {
      *
      * @param session    WebSocket session
      * @param messageUID ID of call from web API
-     * @param errorMsg   Error from method call
+     * @param errorType   Preestablished WebSocketError matching Method Call
      */
-    public static void sendError(Session session, String messageUID, String errorMsg) {
+    public static void sendError(Session session, String messageUID, WebsocketError errorType, String ... args) {
         try {
+            log.warn(errorType.format(args));
             JSONObject reply = new JSONObject();
             reply.putOpt("uid", messageUID);
-            reply.put("error", errorMsg);
+            reply.put("errorId", errorType.getId());
+            reply.put("error", errorType.format(args));
             send(session, reply);
         }
         catch(JSONException e) {
             log.error("Send error failed", e);
         }
     }
+
+    /**
+     * Send JSON error reply to web API for call {@code messageUID}
+     *
+     * @param session    WebSocket session
+     * @param messageUID ID of call from web API
+     * @param errorType   Preestablished WebSocketError matching Method Call
+     */
+    public static void sendError(Session session, String messageUID, WebsocketError errorType, SocketMethod method, String ... args) {
+        try {
+            log.warn(errorType.format(args));
+            JSONObject reply = new JSONObject();
+            reply.putOpt("uid", messageUID);
+            reply.put("errorId", errorType.getId());
+            reply.put("error", errorType.format(method, args));
+            send(session, reply);
+        }
+        catch(JSONException e) {
+            log.error("Send error failed", e);
+        }
+    }
+
 
     /**
      * Send JSON data to web API, to be retrieved by callbacks.

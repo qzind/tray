@@ -9,6 +9,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
+import qz.exception.WebsocketError;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.printer.action.PrintProcessor;
@@ -203,12 +204,10 @@ public class PrintingUtilities {
             PrintSocketClient.sendResult(session, UID, null);
         }
         catch(PrinterAbortException e) {
-            log.warn("Printing cancelled");
-            PrintSocketClient.sendError(session, UID, "Printing cancelled");
+            PrintSocketClient.sendError(session, UID, WebsocketError.PRINTING_CANCELLED);
         }
         catch(Exception e) {
-            log.error("Failed to print", e);
-            PrintSocketClient.sendError(session, UID, e);
+            PrintSocketClient.sendError(session, UID, WebsocketError.PRINTING_FAILED, e);
         }
         finally {
             PrintingUtilities.releasePrintProcessor(processor);

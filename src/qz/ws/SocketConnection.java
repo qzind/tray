@@ -31,8 +31,8 @@ public class SocketConnection {
     // absolute path -> open file listener
     private final HashMap<Path,FileIO> openFiles = new HashMap<>();
 
-    // DeviceOptions -> open DeviceIO
-    private final HashMap<DeviceOptions,DeviceIO> openDevices = new HashMap<>();
+    // UsbOptions -> open DeviceIO
+    private final HashMap<UsbOptions,DeviceIO> openDevices = new HashMap<>();
 
 
     public SocketConnection(Certificate cert) {
@@ -129,19 +129,19 @@ public class SocketConnection {
     }
 
 
-    public void addDevice(DeviceOptions dOpts, DeviceIO io) {
+    public void addDevice(UsbOptions dOpts, DeviceIO io) {
         openDevices.put(dOpts, io);
     }
 
-    public DeviceIO getDevice(DeviceOptions dOpts) {
+    public DeviceIO getDevice(UsbOptions dOpts) {
         return openDevices.get(dOpts);
     }
 
-    public void removeDevice(DeviceOptions dOpts) {
+    public void removeDevice(UsbOptions dOpts) {
         openDevices.remove(dOpts);
     }
 
-    public synchronized void openDevice(DeviceIO device, DeviceOptions dOpts) throws DeviceException {
+    public synchronized void openDevice(DeviceIO device, UsbOptions dOpts) throws UsbException {
         device.open();
         if (device.isOpen()) {
             addDevice(dOpts, device);
@@ -151,7 +151,7 @@ public class SocketConnection {
     /**
      * Explicitly closes all open serial and usb connections setup through this object
      */
-    public synchronized void disconnect() throws SerialPortException, DeviceException, IOException {
+    public synchronized void disconnect() throws SerialPortException, UsbException, IOException {
         log.info("Closing all communication channels for {}", certificate.getCommonName());
 
         for(SerialIO sio : openSerialPorts.values()) {

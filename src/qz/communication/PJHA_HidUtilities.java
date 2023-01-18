@@ -32,7 +32,7 @@ public class PJHA_HidUtilities {
         return devicesJSON;
     }
 
-    public static HidDeviceInfo findDevice(DeviceOptions dOpts) {
+    public static HidDeviceInfo findDevice(UsbOptions dOpts) {
         if (dOpts.getVendorId() == null) {
             throw new IllegalArgumentException("Vendor ID cannot be null");
         }

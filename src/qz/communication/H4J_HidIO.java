@@ -11,13 +11,14 @@ public class H4J_HidIO implements DeviceIO {
     private boolean streaming;
 
 
-    public H4J_HidIO(DeviceOptions dOpts) throws DeviceException {
+    public H4J_HidIO(UsbOptions dOpts) throws UsbException {
         this(H4J_HidUtilities.findDevice(dOpts));
     }
 
-    public H4J_HidIO(HidDevice device) throws DeviceException {
+    public H4J_HidIO(HidDevice device) throws UsbException {
         if (device == null) {
-            throw new DeviceException("HID device could not be found");
+            // FIXME: This shouldn't generate a general exception up the stack, but it does
+            throw new UsbException("HID device could not be found");
         }
 
         this.device = device;
@@ -49,45 +50,45 @@ public class H4J_HidIO implements DeviceIO {
         return UsbUtil.toHexString(device.getProductId());
     }
 
-    public byte[] readData(int responseSize, Byte unused) throws DeviceException {
+    public byte[] readData(int responseSize, Byte unused) throws UsbException {
         byte[] response = new byte[responseSize];
 
         int read = device.read(response);
         if (read == -1) {
-            throw new DeviceException("Failed to read from device");
+            throw new UsbException("Failed to read from device");
         }
 
         return response;
     }
 
-    public void sendData(byte[] data, Byte reportId) throws DeviceException {
+    public void sendData(byte[] data, Byte reportId) throws UsbException {
         if (reportId == null) { reportId = (byte)0x00; }
 
         int wrote = device.write(data, data.length, reportId);
         if (wrote == -1) {
-            throw new DeviceException("Failed to write to device");
+            throw new UsbException("Failed to write to device");
         }
     }
 
-    public byte[] getFeatureReport(int responseSize, Byte reportId) throws DeviceException {
+    public byte[] getFeatureReport(int responseSize, Byte reportId) throws UsbException {
         if (reportId == null) { reportId = (byte)0x00; }
         byte[] response = new byte[responseSize];
 
         int read = device.getFeatureReport(response, reportId);
         if (read == -1) {
-            throw new DeviceException("Failed to read from device");
+            throw new UsbException("Failed to read from device");
         }
 
         return response;
 
     }
 
-    public void sendFeatureReport(byte[] data, Byte reportId) throws DeviceException {
+    public void sendFeatureReport(byte[] data, Byte reportId) throws UsbException {
         if (reportId == null) { reportId = (byte)0x00; }
 
         int wrote = device.sendFeatureReport(data, reportId);
         if (wrote == -1) {
-            throw new DeviceException("Failed to write to device");
+            throw new UsbException("Failed to write to device");
         }
     }
 

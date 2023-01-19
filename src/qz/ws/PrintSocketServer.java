@@ -13,29 +13,28 @@ package qz.ws;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import qz.App;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.installer.certificate.CertificateManager;
 
+import javax.servlet.DispatcherType;
 import javax.swing.*;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static qz.utils.ArgParser.ExitStatus.SUCCESS;
-import static qz.utils.ArgValue.STEAL;
 
 /**
  * Created by robert on 9/9/2014.
@@ -81,10 +80,11 @@ public class PrintSocketServer {
                 ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
                 // Handle WebSocket connections
-                WebSocketUpgradeFilter.configure(context);
-                NativeWebSocketServletContainerInitializer.configure(context, (ctx, container) -> {
-                    container.addMapping(new ServletPathSpec("/"), (req, resp) -> new PrintSocketClient(server));
-                    container.getPolicy().setMaxTextMessageSize(MAX_MESSAGE_SIZE);
+                context.addFilter(WebSocketUpgradeFilter.class, "/", EnumSet.of(DispatcherType.REQUEST));
+                JettyWebSocketServletContainerInitializer.configure(context, (ctx, container) -> {
+                    container.addMapping("/", (req, resp) -> new PrintSocketClient(server));
+                    container.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
+                    container.setIdleTimeout(Duration.ofMinutes(5));
                 });
 
                 // Handle HTTP landing page

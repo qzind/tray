@@ -62,7 +62,7 @@ public class CertificateManager {
     private static int DEFAULT_PASSWORD_BITS = 100;
 
     private boolean needsInstall;
-    private SslContextFactory sslContextFactory;
+    private SslContextFactory.Server sslContextFactory;
     private KeyPairWrapper sslKeyPair;
     private KeyPairWrapper caKeyPair;
 
@@ -192,7 +192,7 @@ public class CertificateManager {
         return password;
     }
 
-    public SslContextFactory configureSslContextFactory() {
+    public SslContextFactory.Server configureSslContextFactory() {
         sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStore(sslKeyPair.getKeyStore());
         sslContextFactory.setKeyStorePassword(sslKeyPair.getPasswordString());

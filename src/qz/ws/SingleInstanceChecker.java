@@ -10,6 +10,8 @@
 
 package qz.ws;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.CloseStatus;
@@ -17,8 +19,6 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.utils.ArgValue;
@@ -26,6 +26,7 @@ import qz.utils.SystemUtilities;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Properties;
 
 /**
@@ -65,8 +66,7 @@ public class SingleInstanceChecker {
                 client = new WebSocketClient();
                 client.start();
                 client.setConnectTimeout(TIMEOUT);
-                client.setAsyncWriteTimeout(TIMEOUT);
-                client.setMaxIdleTimeout(TIMEOUT);
+                client.setIdleTimeout(Duration.ofMillis(TIMEOUT));
                 client.setStopTimeout(TIMEOUT);
             }
 

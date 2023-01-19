@@ -240,10 +240,12 @@
         <echo level="info">Downloading and bundling the jre for ${target.os}</echo>
         <java jar="${dist.dir}/${project.filename}.jar" fork="true" failonerror="true">
             <arg value="jlink"/>
-            <arg value="--platform"/>
-            <arg value="${target.os}"/>
-            <arg value="--arch"/>
-            <arg value="${target.arch}"/>
+            <arg line="--platform ${target.os}"/>
+            <arg line="--arch ${target.arch}"/>
+            <arg line="--vendor ${jlink.java.vendor}"/>
+            <arg line="--version ${jlink.java.version}"/>
+            <arg line="--gc ${jlink.java.gc}"/>
+            <arg line="--gcversion ${jlink.java.gc.version}"/><!-- openj9 only -->
         </java>
     </target>
 

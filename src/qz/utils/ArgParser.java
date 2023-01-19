@@ -202,7 +202,14 @@ public class ArgParser {
         try {
             switch(argValue) {
                 case JLINK:
-                    new JLink(valueOf("--platform", "-p"), valueOf("--arch", "-a"), valueOf("--gc", "-g"));
+                    new JLink(
+                            valueOf("--platform", "-p"),
+                            valueOf("--arch", "-a"),
+                            valueOf("--vendor", "-e"),
+                            valueOf("--version", "-v"),
+                            valueOf("--gc", "-g"),
+                            valueOf("--gcversion", "-c")
+                    );
                     return SUCCESS;
                 default:
                     throw new UnsupportedOperationException("Build type " + argValue + " is not yet supported");

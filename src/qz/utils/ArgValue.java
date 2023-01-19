@@ -49,7 +49,7 @@ public enum ArgValue {
           "spawn"),
 
     // Build stubs
-    JLINK(BUILD, "Download, compress and bundle a Java Runtime", "jlink [--platform mac|windows|linux] [--arch x64|aarch64] [--gc hotspot|j9]",
+    JLINK(BUILD, "Download, compress and bundle a Java Runtime", "jlink [--platform mac|windows|linux] [--arch x64|aarch64] [--vendor bellsoft|eclipse|...] [--version ...] [--gc hotspot|openj9] [--gcversion ...]",
           "jlink");
 
     private ArgType argType;

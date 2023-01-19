@@ -7,13 +7,13 @@ jobs:
     runs-on: [ubuntu-latest]
     strategy:
       matrix:
-        java: [11, 16]
+        java: [11, 17]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
         with:
           java-version: ${{ matrix.java }}
-          distribution: 'temurin'
+          distribution: 'liberica'
       - run: sudo apt-get install nsis makeself
       - run: ant makeself
       - run: sudo out/qz-tray-*.run
@@ -24,13 +24,13 @@ jobs:
     runs-on: [macos-latest]
     strategy:
       matrix:
-        java: [11, 16]
+        java: [11, 17]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
         with:
           java-version: ${{ matrix.java }}
-          distribution: 'temurin'
+          distribution: 'liberica'
       - run: brew install nsis makeself
       - run: ant pkgbuild
       - run: echo "Setting CA trust settings to 'allow' (https://github.com/actions/runner-images/issues/4519)"
@@ -47,13 +47,13 @@ jobs:
     runs-on: [windows-latest]
     strategy:
       matrix:
-        java: [11, 16]
+        java: [11, 17]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
         with:
           java-version: ${{ matrix.java }}
-          distribution: 'temurin'
+          distribution: 'liberica'
       - run: choco install nsis
       - run: ant nsis
       - run: Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"

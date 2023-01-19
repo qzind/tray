@@ -23,18 +23,6 @@ var qz = (function() {
         };
     }
 
-
-    // from SHA implementation
-    if (typeof String.prototype.utf8Encode == 'undefined') {
-        String.prototype.utf8Encode = function() { return unescape(encodeURIComponent(this)); };
-    }
-    if (typeof String.prototype.utf8Decode == 'undefined') {
-        String.prototype.utf8Decode = function() {
-            try { return decodeURIComponent(escape(this)); }
-            catch(e) { return this; } // invalid UTF-8? return as-is
-        };
-    }
-
 ///// PRIVATE METHODS /////
 
     var _qz = {
@@ -896,7 +884,7 @@ var qz = (function() {
             //@formatter:off - keep this block compact
             hash: function(msg) {
                 // add trailing '1' bit (+ 0's padding) to string [§5.1.1]
-                msg = msg.utf8Encode() + String.fromCharCode(0x80);
+                msg = _qz.SHA._utf8Encode(msg) + String.fromCharCode(0x80);
 
                 // constants [§4.2.2]
                 var K = [
@@ -966,6 +954,20 @@ var qz = (function() {
             _maj: function(x, y, z) { return (x & y) ^ (x & z) ^ (y & z); },
             // note can't use toString(16) as it is implementation-dependant, and in IE returns signed numbers when used on full words
             _hexStr: function(n) { var s = "", v; for(var i = 7; i >= 0; i--) { v = (n >>> (i * 4)) & 0xf; s += v.toString(16); } return s; },
+            // implementation of deprecated unescape() based on https://cwestblog.com/2011/05/23/escape-unescape-deprecated/ (and comments)
+            _unescape: function(str) {
+                return str.replace(/%(u[\da-f]{4}|[\da-f]{2})/gi, function(seq) {
+                    if (seq.length - 1) {
+                        return String.fromCharCode(parseInt(seq.substring(seq.length - 3 ? 2 : 1), 16))
+                    } else {
+                        var code = seq.charCodeAt(0);
+                        return code < 256 ? "%" + (0 + code.toString(16)).slice(-2).toUpperCase() : "%u" + ("000" + code.toString(16)).slice(-4).toUpperCase()
+                    }
+                });
+            },
+            _utf8Encode: function(str) {
+                return _qz.SHA._unescape(encodeURIComponent(str));
+            }
             //@formatter:on
         },
     };

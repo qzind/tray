@@ -44,7 +44,7 @@ public interface Parsable<T extends Enum> {
                 }
             }
         }
-        log.warn("Could not parse {} as a valid {}} value", value, enumType.getSimpleName());
+        log.warn("Could not parse {} as a valid {} value", value, enumType.getSimpleName());
         return null;
     }
 

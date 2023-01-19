@@ -21,7 +21,7 @@ public class Url {
         VENDOR_URL_MAP.put(IBM, "https://github.com/ibmruntimes/semeru%s-binaries/releases/download/jdk-%s_%s-%s/ibm-semeru-open-jdk_%s_%s_%s_%s-%s.%s");
         VENDOR_URL_MAP.put(MICROSOFT, "https://aka.ms/download-jdk/microsoft-jdk-%s-%s-%s.%s");
         VENDOR_URL_MAP.put(AMAZON, "https://corretto.aws/downloads/resources/%s/amazon-corretto-%s-%s-%s.%s");
-        VENDOR_URL_MAP.put(AZUL, "https://cdn.azul.com/zulu/bin/zulu%s-ca-jdk%s-%s_%s.%s");
+        VENDOR_URL_MAP.put(AZUL, "https://cdn.azul.com/zulu%s/bin/zulu%s-ca-jdk%s-%s_%s.%s");
     }
 
     private static final Logger log = LogManager.getLogger(Url.class);
@@ -59,9 +59,9 @@ public class Url {
             case AMAZON:
                 return String.format(pattern.pattern, urlJavaVersion, urlJavaVersion, urlPlatform, urlArch, fileExt);
             case AZUL:
-                // WARNING: Azul uses special zuluVersion which can't be predetermined
-                // String zuluVersion = "11.60.19";
-                // return String.format(pattern.pattern, zuluVersion, urlJavaVersion, urlPlatform, urlArch, fileExt);
+                // Special handling of Linux aarch64
+                String embedded = platform == Platform.LINUX ? "-embedded" : "";
+                return String.format(pattern.pattern, embedded, gcVer, urlJavaVersion, urlPlatform, urlArch, fileExt);
             default:
                 throw new UnsupportedOperationException(String.format("URL pattern for '%s' (%s) is missing a format implementation.", vendor, pattern));
         }

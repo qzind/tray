@@ -21,7 +21,6 @@ import com.sun.jna.Pointer;
 import com.sun.jna.platform.mac.CoreFoundation;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
-import qz.printer.status.Cups;
 
 /**
  * The JNA library interface to access the Security library under MacOS.
@@ -32,35 +31,37 @@ public interface Security extends Library {
 
     Security INSTANCE = Native.load("Security", Security.class);
 
-    enum SecBase {
-        errSecSuccess(0, "No error."),
-        errSecUnimplemented(-4, "Function or operation not implemented."),
-        errSecIO(-36, "I/O error (bummers)"),
-        errSecOpWr(-49, "file already open with with write permission"),
-        errSecParam(-50, "One or more parameters passed to a function where not valid."),
-        errSecAllocate(-108, "Failed to allocate memory."),
-        errSecUserCanceled(-128, "User canceled the operation."),
-        errSecBadReq(-909, "Bad parameter or invalid state for operation."),
-        errSecInternalComponent(-2070,"Internal component failure"),
-        errSecNotAvailable(-25291, "No keychain is available. You may need to restart your computer."),
-        errSecDuplicateItem(-25299, "The specified item already exists in the keychain."),
-        errSecItemNotFound(-25300, "The specified item could not be found in the keychain."),
-        errSecInteractionNotAllowed(-25308, "User interaction is not allowed."),
-        errSecDecode (-26275, "Unable to decode the provided data."),
-        errSecAuthFailed(-25293, "The user name or passphrase you entered is not correct."),
-        UNKNOWN(-99999, "Code not mapped");
+    enum Status {
+        SUCCESS("errSecSuccess", 0, "No error."),
+        UNIMPLEMENTED("errSecUnimplemented", -4, "Function or operation not implemented."),
+        IO("errSecIO", -36, "I/O error (bummers)"),
+        OPWR("errSecOpWr", -49, "File already open with write permission"),
+        PARAM("errSecParam", -50, "One or more parameters passed to a function where not valid."),
+        ALLOCATE("errSecAllocate", -108, "Failed to allocate memory."),
+        USER_CANCELED("errSecUserCanceled", -128, "User canceled the operation."),
+        BAD_REQ("errSecBadReq", -909, "Bad parameter or invalid state for operation."),
+        INTERNAL_COMPONENT("errSecInternalComponent", -2070,"Internal component failure"),
+        NOT_AVAILABLE("errSecNotAvailable", -25291, "No keychain is available. You may need to restart your computer."),
+        DUPLICATE_ITEM("errSecDuplicateItem", -25299, "The specified item already exists in the keychain."),
+        ITEM_NOT_FOUND("errSecItemNotFound", -25300, "The specified item could not be found in the keychain."),
+        INTERACTION_NOT_ALLOWED("errSecInteractionNotAllowed", -25308, "User interaction is not allowed."),
+        DECODE ("errSecDecode", -26275, "Unable to decode the provided data."),
+        AUTH_FAILED("errSecAuthFailed", -25293, "The user name or passphrase you entered is not correct."),
+        UNKNOWN("unknown", -99999, "Code not mapped");
 
         int code;
+        String name;
         String message;
-        SecBase(int code, String message) {
+        Status(String name, int code, String message) {
+            this.name = name;
             this.code = code;
             this.message = message;
         }
 
-        public static SecBase parse(int code) {
-            for(SecBase secBase : SecBase.values()) {
-                if(code == secBase.code) {
-                    return secBase;
+        public static Status parse(int code) {
+            for(Status status : Status.values()) {
+                if(code == status.code) {
+                    return status;
                 }
             }
             return UNKNOWN;
@@ -68,7 +69,7 @@ public interface Security extends Library {
 
         @Override
         public String toString() {
-            return String.format("(%d) [%s] %s", this.code, this.name(), this.message);
+            return String.format("(%d) [%s] %s", this.code, name, this.message);
         }
     }
 

@@ -19,11 +19,10 @@ public class Security_Main_Temp {
         CFStringRef kSecClassCertificate = CFStringRef.createCFString("kSecClassCertificate");
         CFStringRef cfLabel = CFStringRef.createCFString("My Certificate");
         CFDataRef cfValueAsData = getCFDataCert(DER_ENCODED_CERT);
-        //CFStringRef cfValueAsString = CFStringRef.createCFString(DER_ENCODED_CERT);
         CFTypeRef cfValueAsCert = Security.INSTANCE.SecCertificateCreateWithData(null, cfValueAsData);
 
         CFStringRef summary = Security.INSTANCE.SecCertificateCopySubjectSummary(cfValueAsCert);
-        System.out.println(summary.stringValue());
+        System.out.println("SecCertificateCopySubjectSummary: " + summary.stringValue());
         summary.release();
 
         // Write to dictionary
@@ -33,11 +32,11 @@ public class Security_Main_Temp {
 
         // Call SecAddItem
         int retVal = Security.INSTANCE.SecItemAdd(dict.getPointer(), null);
-        Security.SecBase code = Security.SecBase.parse(retVal);
+        Security.Status code = Security.Status.parse(retVal);
 
         // Show output
         switch(code) {
-            case errSecSuccess:
+            case SUCCESS:
                 System.out.println(code);
                 break;
             default:
@@ -51,8 +50,7 @@ public class Security_Main_Temp {
 
         kSecClassCertificate.release();
         cfLabel.release();
-        // cfValueAsData.release();
-        //cfValueAsString.release();
+        cfValueAsData.release();
 
         dict.release();
         alloc.release();

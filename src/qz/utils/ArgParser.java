@@ -215,7 +215,7 @@ public class ArgParser {
                             valueOf("--version", "-v"),
                             valueOf("--gc", "-g"),
                             valueOf("--gcversion", "-c"),
-                            valueOf(true,"--targetjdk", "-j")
+                            valueOf(true, "--targetjdk", "-j")
                     );
                     return SUCCESS;
                 default:

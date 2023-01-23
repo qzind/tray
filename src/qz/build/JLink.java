@@ -81,8 +81,14 @@ public class JLink {
                 customVersion = customVersion.split("\"")[1];
             }
             Version customSemver = SystemUtilities.getJavaVersion(customVersion);
-            if(customSemver.getMajorVersion() != javaSemver.getMajorVersion()) {
-                log.error("Error: jlink version {}.0 does not match target java.base version {}.0", javaSemver.getMajorVersion(), customSemver.getMajorVersion());
+            if(needsDownload(javaSemver, customSemver)) {
+                // The "release" file doesn't have build info, so we can't auto-download :(
+                if(javaSemver.getMajorVersion() != customSemver.getMajorVersion()) {
+                    log.error("Error: jlink version {}.0 does not match target java.base version {}.0", javaSemver.getMajorVersion(), customSemver.getMajorVersion());
+                } else {
+                    // Handle edge-cases (e.g. JDK-8240734)
+                    log.error("Error: jlink version {} is incompatible with target java.base version {}", javaSemver.getMajorVersion(), customSemver.getMajorVersion());
+                }
                 System.exit(2);
             }
             this.targetJdk = Paths.get(targetJdk);

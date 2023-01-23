@@ -236,6 +236,7 @@
             <isset property="target.os.mac"/>
         </condition>
         <property description="target.os default" name="target.os" value="linux"/>
+        <property name="jlink.java.target" value="" description="fallback value"/>
 
         <echo level="info">Downloading and bundling the jre for ${target.os}</echo>
         <java jar="${dist.dir}/${project.filename}.jar" fork="true" failonerror="true">
@@ -246,6 +247,8 @@
             <arg line="--version ${jlink.java.version}"/>
             <arg line="--gc ${jlink.java.gc}"/>
             <arg line="--gcversion ${jlink.java.gc.version}"/><!-- openj9 only -->
+            <!-- If specified, takes precedence over the above values-->
+            <arg line="--targetjdk ${jlink.java.target}"/>
         </java>
     </target>
 

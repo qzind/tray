@@ -106,6 +106,13 @@ public class ArgParser {
     }
 
     /**
+     * Convenience for valueOf(false, ...);
+     */
+    private String valueOpt(String ... matches) throws MissingArgException {
+        return valueOf(true, matches);
+    }
+
+    /**
      * Gets the argument value immediately following a command
      * @throws MissingArgException
      */
@@ -215,7 +222,7 @@ public class ArgParser {
                             valueOf("--version", "-v"),
                             valueOf("--gc", "-g"),
                             valueOf("--gcversion", "-c"),
-                            valueOf(true, "--targetjdk", "-j")
+                            valueOpt("--targetjdk", "-j")
                     );
                     return SUCCESS;
                 default:

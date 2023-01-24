@@ -17,8 +17,10 @@ package org.dyorgio.jna.platform.mac;
 
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.NativeLibrary;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.mac.CoreFoundation;
+import com.sun.jna.platform.mac.CoreFoundation.CFStringRef;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
 
@@ -28,8 +30,12 @@ import com.sun.jna.ptr.PointerByReference;
  * @author lreimer
  */
 public interface Security extends Library {
-
     Security INSTANCE = Native.load("Security", Security.class);
+    NativeLibrary NATIVE_INSTANCE =  NativeLibrary.getInstance("Security");
+    CFStringRef kSecClass = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecClass").getPointer(0));
+    CFStringRef kSecAttrLabel = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecAttrLabel").getPointer(0));
+    CFStringRef kSecValueRef = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecValueRef").getPointer(0));
+    CFStringRef kSecClassCertificate = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecClassCertificate").getPointer(0));
 
     enum Status {
         SUCCESS("errSecSuccess", 0, "No error."),
@@ -267,5 +273,5 @@ public interface Security extends Library {
 
     CoreFoundation.CFTypeRef SecCertificateCreateWithData(Pointer allocator, CoreFoundation.CFDataRef data);
 
-    CoreFoundation.CFStringRef SecCertificateCopySubjectSummary(CoreFoundation.CFTypeRef certificate);
+    CFStringRef SecCertificateCopySubjectSummary(CoreFoundation.CFTypeRef certificate);
 }

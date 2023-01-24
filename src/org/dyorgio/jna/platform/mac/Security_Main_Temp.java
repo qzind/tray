@@ -1,34 +1,49 @@
 package org.dyorgio.jna.platform.mac;
 
 import com.sun.jna.Memory;
+import com.sun.jna.NativeLibrary;
+import com.sun.jna.NativeLong;
+import com.sun.jna.Pointer;
+import com.sun.jna.ptr.PointerByReference;
 import org.apache.commons.ssl.Base64;
+
+import java.util.Arrays;
 
 import static com.sun.jna.platform.mac.CoreFoundation.*;
 
 public class Security_Main_Temp {
+    static int a;
     public static void main(String ... args) {
         CFAllocatorRef alloc = INSTANCE.CFAllocatorGetDefault();
-        CFMutableDictionaryRef dict = INSTANCE.CFDictionaryCreateMutable(alloc, new CFIndex(2), null, null);
-
         // Keys
-        CFStringRef kSecClass = CFStringRef.createCFString("kSecClass");
-        CFStringRef kSecAttrLabel = CFStringRef.createCFString("kSecAttrLabel");
-        CFStringRef kSecValueRef = CFStringRef.createCFString("kSecValueRef");
-
-        // Values
-        CFStringRef kSecClassCertificate = CFStringRef.createCFString("kSecClassCertificate");
         CFStringRef cfLabel = CFStringRef.createCFString("My Certificate");
-        CFDataRef cfValueAsData = getCFDataCert(DER_ENCODED_CERT);
+        //CFDataRef cfValueAsData = getCFDataCert(DER_ENCODED_CERT);
+
+        byte[] certBytes = Base64.decodeBase64(CLEAN_CERT);
+        Memory nativeBytes = new Memory(certBytes.length);
+        nativeBytes.write(0, certBytes, 0, certBytes.length);
+
+        CFDataRef cfValueAsData = INSTANCE.CFDataCreate(alloc, nativeBytes, new CFIndex(nativeBytes.size()));
         CFTypeRef cfValueAsCert = Security.INSTANCE.SecCertificateCreateWithData(null, cfValueAsData);
 
         CFStringRef summary = Security.INSTANCE.SecCertificateCopySubjectSummary(cfValueAsCert);
         System.out.println("SecCertificateCopySubjectSummary: " + summary.stringValue());
         summary.release();
 
+        //NativeLibrary lib = NativeLibrary.getInstance("Security");
+        //Pointer paddr = ((NativeLibrary)(Security.INSTANCE)).getGlobalVariableAddress("kSecValueRef");
+        //System.out.println("~~~ " + paddr.getLong(0));
         // Write to dictionary
-        dict.setValue(kSecClass, kSecClassCertificate);
-        dict.setValue(kSecAttrLabel, cfLabel);
-        dict.setValue(kSecValueRef, cfValueAsCert);
+
+        int a;
+
+        CFMutableDictionaryRef dict = INSTANCE.CFDictionaryCreateMutable(alloc, new CFIndex(2), null, null);
+
+        CoreFoundation.INSTANCE.CFDictionaryAddValue(dict, Security.kSecClass, Security.kSecClassCertificate);
+        CoreFoundation.INSTANCE.CFDictionaryAddValue(dict, Security.kSecAttrLabel, cfLabel);
+        CoreFoundation.INSTANCE.CFDictionaryAddValue(dict, Security.kSecValueRef, cfValueAsCert);
+
+        System.out.println(CoreFoundation.INSTANCE.CFCopyDescription(dict).stringValue());
 
         // Call SecAddItem
         int retVal = Security.INSTANCE.SecItemAdd(dict.getPointer(), null);
@@ -43,12 +58,6 @@ public class Security_Main_Temp {
                 System.err.println(code);
         }
 
-        // Dispose
-        kSecClass.release();
-        kSecAttrLabel.release();
-        kSecValueRef.release();
-
-        kSecClassCertificate.release();
         cfLabel.release();
         cfValueAsData.release();
 
@@ -59,6 +68,7 @@ public class Security_Main_Temp {
     // Attempt to convert data bytes to CFDataRef
     private static CFDataRef getCFDataCert(String derEncodedData) {
         String certFixed = DER_ENCODED_CERT.split("-----")[2];
+        System.out.println(certFixed);
         byte[] certBytes = Base64.decodeBase64(certFixed);
         Memory nativeBytes = new Memory(certBytes.length);
         nativeBytes.write(0, certBytes, 0, certBytes.length);
@@ -88,6 +98,29 @@ public class Security_Main_Temp {
      *
      *         print("success")
      */
+    static String CLEAN_CERT = "MIIELzCCAxegAwIBAgIJALm151zCHDxiMA0GCSqGSIb3DQEBCwUAMIGsMQswCQYD" +
+            "VQQGEwJVUzELMAkGA1UECAwCTlkxEjAQBgNVBAcMCUNhbmFzdG90YTEbMBkGA1UE" +
+            "CgwSUVogSW5kdXN0cmllcywgTExDMRswGQYDVQQLDBJRWiBJbmR1c3RyaWVzLCBM" +
+            "TEMxGTAXBgNVBAMMEHF6aW5kdXN0cmllcy5jb20xJzAlBgkqhkiG9w0BCQEWGHN1" +
+            "cHBvcnRAcXppbmR1c3RyaWVzLmNvbTAgFw0xNTAzMDEyMzM4MjlaGA8yMTE1MDMw" +
+            "MjIzMzgyOVowgawxCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJOWTESMBAGA1UEBwwJ" +
+            "Q2FuYXN0b3RhMRswGQYDVQQKDBJRWiBJbmR1c3RyaWVzLCBMTEMxGzAZBgNVBAsM" +
+            "ElFaIEluZHVzdHJpZXMsIExMQzEZMBcGA1UEAwwQcXppbmR1c3RyaWVzLmNvbTEn" +
+            "MCUGCSqGSIb3DQEJARYYc3VwcG9ydEBxemluZHVzdHJpZXMuY29tMIIBIjANBgkq" +
+            "hkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuWsBa6uk+RM4OKBZTRfIIyqaaFD71FAS" +
+            "7kojAQ+ySMpYuqLjIVZuCh92o1FGBvyBKUFc6knAHw5749yhLCYLXhzWwiNW2ri1" +
+            "Jwx/d83Wnaw6qA3lt++u3tmiA8tsFtss0QZW0YBpFsIqhamvB3ypwu0bdUV/oH7g" +
+            "/s8TFR5LrDfnfxlLFYhTUVWuWzMqEFAGnFG3uw/QMWZnQgkGbx0LMcYzdqFb7/vz" +
+            "rTSHfjJsisUTWPjo7SBnAtNYCYaGj0YH5RFUdabnvoTdV2XpA5IPYa9Q597g/M0z" +
+            "icAjuaK614nKXDaAUCbjki8RL3OK9KY920zNFboq/jKG6rKW2t51ZQIDAQABo1Aw" +
+            "TjAdBgNVHQ4EFgQUA0XGTcD6jqkL2oMPQaVtEgZDqV4wHwYDVR0jBBgwFoAUA0XG" +
+            "TcD6jqkL2oMPQaVtEgZDqV4wDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOC" +
+            "AQEAijcT5QMVqrWWqpNEe1DidzQfSnKo17ZogHW+BfUbxv65JbDIntnk1XgtLTKB" +
+            "VAdIWUtGZbXxrp16NEsh96V2hjDIoiAaEpW+Cp6AHhIVgVh7Q9Knq9xZ1t6H8PL5" +
+            "QiYQKQgJ0HapdCxlPKBfUm/Mj1ppNl9mPFJwgHmzORexbxrzU/M5i2jlies+CXNq" +
+            "cvmF2l33QNHnLwpFGwYKs08pyHwUPp6+bfci6lRvavztgvnKroWWIRq9ZPlC0yVK" +
+            "FFemhbCd7ZVbrTo0NcWZM1PTAbvlOikV9eh3i1Vot+3dJ8F27KwUTtnV0B9Jrxum" +
+            "W9P3C48mvwTxYZJFOu0N9UBLLg==";
 
     static String DER_ENCODED_CERT = "-----BEGIN CERTIFICATE-----\n" +
             "MIIELzCCAxegAwIBAgIJALm151zCHDxiMA0GCSqGSIb3DQEBCwUAMIGsMQswCQYD\n" +

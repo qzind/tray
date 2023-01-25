@@ -36,6 +36,11 @@ public class MacInstaller extends Installer {
         return this;
     }
 
+    public Installer removeAppLauncher() {
+        // not needed; unregistered when "QZ Tray.app" is deleted
+        return this;
+    }
+
     public Installer addStartupEntry() {
         File dest = new File(LAUNCH_AGENT_PATH);
         HashMap<String, String> fieldMap = new HashMap<>();
@@ -57,6 +62,13 @@ public class MacInstaller extends Installer {
         return this;
     }
 
+    public Installer removeStartupEntry() {
+        // Remove startup entry
+        File dest = new File(LAUNCH_AGENT_PATH);
+        dest.delete();
+        return this;
+    }
+
     public void setDestination(String destination) {
         this.destination = destination;
     }
@@ -74,9 +86,7 @@ public class MacInstaller extends Installer {
         return this;
     }
     public Installer removeSystemSettings() {
-        // Remove startup entry
-        File dest = new File(LAUNCH_AGENT_PATH);
-        dest.delete();
+        // not yet needed
         return this;
     }
 

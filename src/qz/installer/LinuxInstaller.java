@@ -45,8 +45,18 @@ public class LinuxInstaller extends Installer {
         return this;
     }
 
+    public Installer removeAppLauncher() {
+        FileUtils.deleteQuietly(new File(APP_LAUNCHER));
+        return this;
+    }
+
     public Installer addStartupEntry() {
         addLauncher(STARTUP_LAUNCHER, false);
+        return this;
+    }
+
+    public Installer removeStartupEntry() {
+        FileUtils.deleteQuietly(new File(STARTUP_LAUNCHER));
         return this;
     }
 

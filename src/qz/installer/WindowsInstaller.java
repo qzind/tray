@@ -69,7 +69,7 @@ public class WindowsInstaller extends Installer {
 
     public Installer addAppLauncher() {
         try {
-            // Delete old 2.0 launcher
+            // Delete old 2.0 launcher in case a previous installer forgot to
             FileUtils.deleteQuietly(new File(COMMON_START_MENU + File.separator + "Programs" + File.separator + ABOUT_TITLE + ".lnk"));
             Path loc = Paths.get(COMMON_START_MENU.toString(), "Programs", ABOUT_TITLE);
             loc.toFile().mkdirs();
@@ -80,6 +80,11 @@ public class WindowsInstaller extends Installer {
         } catch(ShellLinkException | IOException | Win32Exception e) {
             log.warn("Could not create launcher", e);
         }
+        return this;
+    }
+
+    public Installer removeAppLauncher() {
+        removeLaunchers(START_MENU, COMMON_START_MENU, DESKTOP, PUBLIC_DESKTOP, RECENT);
         return this;
     }
 
@@ -95,16 +100,15 @@ public class WindowsInstaller extends Installer {
         }
         return this;
     }
-    public Installer removeSystemSettings() {
-        // Cleanup registry
-        WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + ABOUT_TITLE);
-        WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, "Software\\" + ABOUT_TITLE);
-        WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, DATA_DIR);
-        // Chrome protocol handler
-        WindowsUtilities.deleteRegData(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLWhitelist", String.format("%s://*", DATA_DIR));
 
+    public Installer removeStartupEntry() {
+        removeLaunchers(COMMON_STARTUP);
+        return this;
+    }
+
+    private void removeLaunchers(WindowsSpecialFolders ... folders) {
         // Cleanup launchers
-        for(WindowsSpecialFolders folder : new WindowsSpecialFolders[] { START_MENU, COMMON_START_MENU, DESKTOP, PUBLIC_DESKTOP, COMMON_STARTUP, RECENT }) {
+        for(WindowsSpecialFolders folder : folders) {
             try {
                 new File(folder + File.separator + ABOUT_TITLE + ".lnk").delete();
                 // Since 2.1, start menus use subfolder
@@ -114,6 +118,15 @@ public class WindowsInstaller extends Installer {
                 }
             } catch(InvalidPathException | IOException | Win32Exception ignore) {}
         }
+    }
+
+    public Installer removeSystemSettings() {
+        // Cleanup registry
+        WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + ABOUT_TITLE);
+        WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, "Software\\" + ABOUT_TITLE);
+        WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, DATA_DIR);
+        // Chrome protocol handler
+        WindowsUtilities.deleteRegData(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLWhitelist", String.format("%s://*", DATA_DIR));
 
         // Cleanup firewall rules
         ShellUtilities.execute("netsh.exe", "advfirewall", "firewall", "delete", "rule", String.format("name=%s", ABOUT_TITLE));

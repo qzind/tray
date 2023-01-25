@@ -46,7 +46,7 @@ public class LinuxInstaller extends Installer {
     }
 
     public Installer addStartupEntry() {
-        addLauncher(STARTUP_LAUNCHER, false);
+        addLauncher(STARTUP_LAUNCHER, true);
         return this;
     }
 

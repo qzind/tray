@@ -15,10 +15,7 @@
  */
 package org.dyorgio.jna.platform.mac;
 
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-import com.sun.jna.NativeLibrary;
-import com.sun.jna.Pointer;
+import com.sun.jna.*;
 import com.sun.jna.platform.mac.CoreFoundation;
 import com.sun.jna.platform.mac.CoreFoundation.CFStringRef;
 import com.sun.jna.ptr.IntByReference;
@@ -32,17 +29,20 @@ import com.sun.jna.ptr.PointerByReference;
 public interface Security extends Library {
     Security INSTANCE = Native.load("Security", Security.class);
     NativeLibrary NATIVE_INSTANCE =  NativeLibrary.getInstance("Security");
+
+    // String constants. These are needed as reference instead of value, especially kSecValueRef
     CFStringRef kSecClass = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecClass").getPointer(0));
     CFStringRef kSecAttrLabel = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecAttrLabel").getPointer(0));
     CFStringRef kSecValueRef = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecValueRef").getPointer(0));
     CFStringRef kSecClassCertificate = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecClassCertificate").getPointer(0));
-
+    CFStringRef kSecUseKeychain = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecUseKeychain").getPointer(0));
     enum Status {
         SUCCESS("errSecSuccess", 0, "No error."),
         UNIMPLEMENTED("errSecUnimplemented", -4, "Function or operation not implemented."),
         IO("errSecIO", -36, "I/O error (bummers)"),
         OPWR("errSecOpWr", -49, "File already open with write permission"),
         PARAM("errSecParam", -50, "One or more parameters passed to a function where not valid."),
+        WRITE_PERMISSION("wrPermErr", -61, "Write permissions error."),
         ALLOCATE("errSecAllocate", -108, "Failed to allocate memory."),
         USER_CANCELED("errSecUserCanceled", -128, "User canceled the operation."),
         BAD_REQ("errSecBadReq", -909, "Bad parameter or invalid state for operation."),
@@ -78,6 +78,8 @@ public interface Security extends Library {
             return String.format("(%d) [%s] %s", this.code, name, this.message);
         }
     }
+
+    int SecKeychainCopyDomainDefault(int domain, Pointer SecKeychainRef);
 
     /**
      * Returns one or more keychain items that match a search query, or copies attributes of specific keychain items.
@@ -271,7 +273,7 @@ public interface Security extends Library {
      */
     CoreFoundation.CFDataRef SecCertificateCopyData(CoreFoundation.CFDataRef certificate);
 
-    CoreFoundation.CFTypeRef SecCertificateCreateWithData(Pointer allocator, CoreFoundation.CFDataRef data);
+    CoreFoundation.CFTypeRef SecCertificateCreateWithData(CoreFoundation.CFAllocatorRef allocator, CoreFoundation.CFDataRef data);
 
     CFStringRef SecCertificateCopySubjectSummary(CoreFoundation.CFTypeRef certificate);
 }

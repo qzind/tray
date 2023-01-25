@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -54,13 +55,13 @@ public abstract class NativeCertificateInstaller {
      */
     public boolean install(X509Certificate cert) {
         try {
-            File certFile = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
+            Path certFile = Files.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
             JcaMiscPEMGenerator generator = new JcaMiscPEMGenerator(cert);
-            JcaPEMWriter writer = new JcaPEMWriter(new OutputStreamWriter(Files.newOutputStream(certFile.toPath(), StandardOpenOption.CREATE)));
+            JcaPEMWriter writer = new JcaPEMWriter(new OutputStreamWriter(Files.newOutputStream(certFile, StandardOpenOption.CREATE)));
             writer.writeObject(generator.generate());
             writer.close();
 
-            return install(certFile);
+            return install(certFile.toFile());
         } catch(IOException e) {
             log.warn("Could not install cert from temp file", e);
         }

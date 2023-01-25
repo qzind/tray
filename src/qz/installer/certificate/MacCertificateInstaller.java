@@ -20,6 +20,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,11 +37,18 @@ public class MacCertificateInstaller extends NativeCertificateInstaller {
     }
 
     public boolean add(File certFile) {
-        if (certStore.equals(USER_STORE)) {
-            // This will prompt the user
-            return ShellUtilities.execute("security", "add-trusted-cert", "-r", "trustRoot", "-k", certStore, certFile.getPath());
-        } else {
-            return ShellUtilities.execute("security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", certStore, certFile.getPath());
+        try {
+            String s = new String(Files.readAllBytes(certFile.toPath()), StandardCharsets.UTF_8);
+            MacCertificateNativeAccess.add(s, certStore);
+            return true;
+        } catch(Exception e) {
+            log.error("Failed to write cert to keystore with native access. Falling back to shell commands", e);
+            if (certStore.equals(USER_STORE)) {
+                // This will prompt the user
+                return ShellUtilities.execute("security", "add-trusted-cert", "-r", "trustRoot", "-k", certStore, certFile.getPath());
+            } else {
+                return ShellUtilities.execute("security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", certStore, certFile.getPath());
+            }
         }
     }
 

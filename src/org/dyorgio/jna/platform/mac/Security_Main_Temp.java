@@ -1,13 +1,10 @@
 package org.dyorgio.jna.platform.mac;
 
 import com.sun.jna.Memory;
-import com.sun.jna.NativeLibrary;
-import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
+import com.sun.jna.ptr.ByReference;
 import com.sun.jna.ptr.PointerByReference;
 import org.apache.commons.ssl.Base64;
-
-import java.util.Arrays;
 
 import static com.sun.jna.platform.mac.CoreFoundation.*;
 
@@ -34,19 +31,22 @@ public class Security_Main_Temp {
         //Pointer paddr = ((NativeLibrary)(Security.INSTANCE)).getGlobalVariableAddress("kSecValueRef");
         //System.out.println("~~~ " + paddr.getLong(0));
         // Write to dictionary
+        Memory keystoreRefData =  new Memory(8);
+        Security.INSTANCE.SecKeychainCopyDomainDefault(1, keystoreRefData.share(0));
+        CFTypeRef keystoreRef = new CFTypeRef(keystoreRefData.getPointer(0));
 
-        int a;
-
-        CFMutableDictionaryRef dict = INSTANCE.CFDictionaryCreateMutable(alloc, new CFIndex(2), null, null);
+        CFMutableDictionaryRef dict = INSTANCE.CFDictionaryCreateMutable(alloc, new CFIndex(4), null, null);
 
         CoreFoundation.INSTANCE.CFDictionaryAddValue(dict, Security.kSecClass, Security.kSecClassCertificate);
         CoreFoundation.INSTANCE.CFDictionaryAddValue(dict, Security.kSecAttrLabel, cfLabel);
         CoreFoundation.INSTANCE.CFDictionaryAddValue(dict, Security.kSecValueRef, cfValueAsCert);
+        CoreFoundation.INSTANCE.CFDictionaryAddValue(dict, Security.kSecUseKeychain, keystoreRef);
 
         System.out.println(CoreFoundation.INSTANCE.CFCopyDescription(dict).stringValue());
 
         // Call SecAddItem
         int retVal = Security.INSTANCE.SecItemAdd(dict.getPointer(), null);
+        System.out.println(retVal);
         Security.Status code = Security.Status.parse(retVal);
 
         // Show output

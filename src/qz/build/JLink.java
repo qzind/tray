@@ -12,6 +12,7 @@ package qz.build;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.build.jlink.Arch;
@@ -22,10 +23,12 @@ import qz.common.Constants;
 import qz.utils.*;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Properties;
 
 public class JLink {
     private static final Logger log = LogManager.getLogger(JLink.class);
@@ -49,11 +52,13 @@ public class JLink {
     private String javaVersion;
     private String gcVersion;
 
+    private Path targetJdk;
+
     private Version javaSemver;
 
     private LinkedHashSet<String> depList;
 
-    public JLink(String targetPlatform, String targetArch, String javaVendor, String javaVersion, String gcEngine, String gcVersion) throws IOException {
+    public JLink(String targetPlatform, String targetArch, String javaVendor, String javaVersion, String gcEngine, String gcVersion, String targetJdk) throws IOException {
         this.hostPlatform = Platform.getCurrentPlatform();
         this.hostArch = Arch.getCurrentArch();
 
@@ -66,7 +71,31 @@ public class JLink {
 
         this.javaSemver = SystemUtilities.getJavaVersion(this.javaVersion);
 
-        if(needsDownload(javaSemver, Constants.JAVA_VERSION)) {
+        // Optional: Provide the location of a custom JDK on the local filesystem
+        if(!StringUtils.isEmpty(targetJdk)) {
+            Path jdkPath = Paths.get(targetJdk);
+            Properties jdkProps = new Properties();
+            jdkProps.load(new FileInputStream(jdkPath.resolve("release").toFile()));
+            String customVersion = jdkProps.getProperty("JAVA_VERSION");
+            if(customVersion.contains("\"")) {
+                customVersion = customVersion.split("\"")[1];
+            }
+            Version customSemver = SystemUtilities.getJavaVersion(customVersion);
+            if(needsDownload(javaSemver, customSemver)) {
+                // The "release" file doesn't have build info, so we can't auto-download :(
+                if(javaSemver.getMajorVersion() != customSemver.getMajorVersion()) {
+                    log.error("Error: jlink version {}.0 does not match target java.base version {}.0", javaSemver.getMajorVersion(), customSemver.getMajorVersion());
+                } else {
+                    // Handle edge-cases (e.g. JDK-8240734)
+                    log.error("Error: jlink version {} is incompatible with target java.base version {}", javaSemver.getMajorVersion(), customSemver.getMajorVersion());
+                }
+                System.exit(2);
+            }
+            this.targetJdk = Paths.get(targetJdk);
+        }
+
+        // Determine if the version we're building with is compatible with the target version
+        if (needsDownload(javaSemver, Constants.JAVA_VERSION)) {
             log.warn("Java versions are incompatible, locating a suitable runtime for Java " + javaSemver.getMajorVersion() + "...");
             String hostJdk = downloadJdk(this.hostArch, this.hostPlatform);
             calculateToolPaths(Paths.get(hostJdk));
@@ -74,8 +103,14 @@ public class JLink {
             calculateToolPaths(null);
         }
 
-        String targetJdk = downloadJdk(this.targetArch, this.targetPlatform);
-        jmodsPath = Paths.get(targetJdk, "jmods");
+        if(this.targetJdk == null) {
+            targetJdk = downloadJdk(this.targetArch, this.targetPlatform);
+            jmodsPath = Paths.get(targetJdk, "jmods");
+        } else {
+            log.info("\"targetjdk\" was provided {}, skipping download", targetJdk);
+            jmodsPath = this.targetJdk.resolve("jmods");
+        }
+
         log.info("Selecting jmods folder: {}", jmodsPath);
 
         calculateJarPath()
@@ -85,7 +120,7 @@ public class JLink {
     }
 
     public static void main(String ... args) throws IOException {
-        new JLink(null, null, null, null, null, null).calculateJarPath();
+        new JLink(null, null, null, null, null, null, null).calculateJarPath();
     }
 
     /**

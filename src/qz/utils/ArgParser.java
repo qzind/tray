@@ -101,11 +101,22 @@ public class ArgParser {
         return hasFlag(argValueOption.getMatches());
     }
 
+    private String valueOf(String ... matches) throws MissingArgException {
+        return valueOf(false, matches);
+    }
+
+    /**
+     * Convenience for valueOf(false, ...);
+     */
+    private String valueOpt(String ... matches) throws MissingArgException {
+        return valueOf(true, matches);
+    }
+
     /**
      * Gets the argument value immediately following a command
      * @throws MissingArgException
      */
-    private String valueOf(String ... matches) throws MissingArgException {
+    private String valueOf(boolean optional, String ... matches) throws MissingArgException {
         for(String match : matches) {
             if (args.contains(match)) {
                 int index = args.indexOf(match) + 1;
@@ -115,7 +126,9 @@ public class ArgParser {
                         return val;
                     }
                 }
-                throw new MissingArgException();
+                if(!optional) {
+                    throw new MissingArgException();
+                }
             }
         }
         return null;
@@ -208,7 +221,8 @@ public class ArgParser {
                             valueOf("--vendor", "-e"),
                             valueOf("--version", "-v"),
                             valueOf("--gc", "-g"),
-                            valueOf("--gcversion", "-c")
+                            valueOf("--gcversion", "-c"),
+                            valueOpt("--targetjdk", "-j")
                     );
                     return SUCCESS;
                 default:

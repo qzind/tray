@@ -84,6 +84,10 @@ public class MacInstaller extends Installer {
      * Removes legacy (<= 2.0) startup entries
      */
     public Installer removeLegacyStartup() {
+        if(!hasVersion_2_0()) {
+            log.info("{} 2.0 was not found; skipping removal of legacy startup entries", ABOUT_TITLE);
+            return this;
+        }
         log.info("Removing startup entries for all users matching " + ABOUT_TITLE);
         String script = "tell application \"System Events\" to delete "
                 + "every login item where name is \"" + ABOUT_TITLE + "\""

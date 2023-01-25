@@ -51,6 +51,10 @@ public class WindowsInstaller extends Installer {
      * Cycles through registry keys removing legacy (<= 2.0) startup entries
      */
     public Installer removeLegacyStartup() {
+        if(!hasVersion_2_0()) {
+            log.info("{} 2.0 was not found; skipping removal of legacy startup entries", ABOUT_TITLE);
+            return this;
+        }
         log.info("Removing legacy startup entries for all users matching " + ABOUT_TITLE);
         for (String user : Advapi32Util.registryGetKeys(HKEY_USERS)) {
             WindowsUtilities.deleteRegValue(HKEY_USERS, user.trim() + "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", ABOUT_TITLE);

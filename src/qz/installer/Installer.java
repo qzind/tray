@@ -333,4 +333,14 @@ public abstract class Installer {
     public void spawn(String ... args) throws Exception {
         spawn(new ArrayList(Arrays.asList(args)));
     }
+
+    boolean hasVersion_2_0() {
+        // QZ Tray 2.1 removed the "auth" folder, this should be a valid test
+        try {
+            Path p = Paths.get(getDestination(), "auth");
+            return p.toFile().isDirectory();
+        }
+        catch(Exception ignore) {}
+        return false;
+    }
 }

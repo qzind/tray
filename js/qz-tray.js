@@ -138,13 +138,15 @@ var qz = (function() {
 
                                 if (config.keepAlive > 0) {
                                     var interval = setInterval(function() {
-                                        if (!_qz.tools.isActive()) {
+                                        if (!_qz.tools.isActive() || _qz.websocket.connection.interval !== interval) {
                                             clearInterval(interval);
                                             return;
                                         }
 
                                         _qz.websocket.connection.send("ping");
                                     }, config.keepAlive * 1000);
+
+                                    _qz.websocket.connection.interval = interval;
                                 }
                             }
                         };

@@ -120,7 +120,7 @@ public class PrintSocketServer {
             }
             catch(IOException | MultiException e) {
                 //order of getConnectors is the order we added them -> insecure first
-                if (server.getConnectors()[0].isFailed()) {
+                if (server.isFailed()) {
                     insecurePortIndex.incrementAndGet();
                 }
 
@@ -159,7 +159,7 @@ public class PrintSocketServer {
                     runningSecure.set(true);
                 }
                 catch(IOException | MultiException e) {
-                    if (server.getConnectors()[0].isFailed()) {
+                    if (server.isFailed()) {
                         securePortIndex.incrementAndGet();
                     }
 

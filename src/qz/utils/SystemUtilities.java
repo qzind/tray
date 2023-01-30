@@ -25,6 +25,7 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -648,7 +649,7 @@ public class SystemUtilities {
             byte[] decoded = Base64.decodeBase64(message);
             ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 2);
             buffer.put(decoded);
-            buffer.flip();//need flip
+            ((Buffer)buffer).flip();//need flip
             long salted = buffer.getLong(0); // only first byte matters
             long challenge = salted / 10L;
             return challenge == calculateChallenge();

@@ -77,10 +77,14 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
             try {
                 BufferedImage bi;
-                if (flavor != PrintingUtilities.Flavor.FILE) {
-                    bi = ImageIO.read(new ByteArrayInputStream(flavor.read(data.getString("data"))));
-                } else {
-                    bi = ImageIO.read(ConnectionUtilities.getInputStream(data.getString("data")));
+                switch(flavor) {
+                    case PLAIN:
+                        // There's really no such thing as a 'PLAIN' image, assume it's a URL
+                    case FILE:
+                        bi = ImageIO.read(ConnectionUtilities.getInputStream(data.getString("data")));
+                        break;
+                    default:
+                        bi = ImageIO.read(new ByteArrayInputStream(flavor.read(data.getString("data"))));
                 }
 
                 images.add(bi);

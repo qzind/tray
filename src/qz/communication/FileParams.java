@@ -1,7 +1,5 @@
 package qz.communication;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import qz.utils.ByteUtilities;
@@ -17,8 +15,6 @@ import java.nio.file.StandardOpenOption;
  * Created by Kyle on 2/28/2018.
  */
 public class FileParams {
-    private static final Logger log = LogManager.getLogger(FileParams.class);
-
     private Path path;
     private String data;
     private Flavor flavor;

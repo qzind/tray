@@ -17,6 +17,7 @@ import qz.ws.PrintSocketClient;
 
 import java.awt.print.PrinterAbortException;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Locale;
@@ -79,7 +80,8 @@ public class PrintingUtilities {
                             return Base64.decodeBase64(FileUtilities.readXMLFile(data, xmlTag).getBytes(StandardCharsets.UTF_8));
                     case PLAIN:
                     default:
-                        return data.getBytes();
+                        // Reading "plain" data is only supported through JSON/websocket, so we can safely assume it's always UTF8
+                        return data.getBytes(StandardCharsets.UTF_8);
                 }
             } catch(Exception e) {
                 log.warn("An error occurred parsing data from " + this.name(), e);

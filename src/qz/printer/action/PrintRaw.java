@@ -213,7 +213,8 @@ public class PrintRaw implements PrintProcessor {
     private ImageWrapper getHtmlWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         switch(flavor) {
             case FILE:
-                // Do nothing, we'll pass plainText=true to WebAppModel instead
+            case PLAIN:
+                // We'll toggle between 'plain' and 'file' when we construct WebAppModel
                 break;
             default:
                 data = new String(seekConversion(flavor.read(data), rawOpts), rawOpts.getDestEncoding());

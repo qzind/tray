@@ -78,10 +78,14 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                 PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.FILE);
 
                 String source;
-                if (flavor != PrintingUtilities.Flavor.FILE) {
-                    source = new String(flavor.read(data.getString("data")), StandardCharsets.UTF_8);
-                } else {
-                    source = data.getString("data");
+                switch(flavor) {
+                    case FILE:
+                    case PLAIN:
+                        // We'll toggle between 'plain' and 'file' when we construct WebAppModel
+                        source = data.getString("data");
+                        break;
+                    default:
+                        source = new String(flavor.read(data.getString("data")), StandardCharsets.UTF_8);
                 }
 
                 double pageZoom = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()) / 72.0;

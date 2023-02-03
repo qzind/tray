@@ -669,7 +669,7 @@ var qz = (function() {
                     if (data[i].constructor === Object) {
                         var absolute = false;
 
-                        if (data[i].data && data[i].data.search(/data:image\/\w+;base64,/) === 0) {
+                        if (data[i].data && data[i].data.search && data[i].data.search(/data:image\/\w+;base64,/) === 0) {
                             //upgrade from old base64 behavior
                             data[i].flavor = "base64";
                             data[i].data = data[i].data.replace(/^data:image\/\w+;base64,/, "");
@@ -767,12 +767,25 @@ var qz = (function() {
                 }
                 // Promise won't reject on throw; yet better than 'undefined'
                 throw new Error("A connection to QZ has not been established yet");
-            }
+            },
+
+            uint8ArrayToHex: function(uint8) {
+                return Array.from(uint8)
+                    .map(function(i) { return i.toString(16).padStart(2, '0'); })
+                    .join('');
+            },
         },
 
         compatible: {
             /** Converts message format to a previous version's */
             data: function(printData) {
+                // special handling for Uint8Array
+                for(var i = 0; i < printData.length; i++) {
+                    if (printData[i].constructor === Object && printData[i].data instanceof Uint8Array) {
+                        printData[i].data = _qz.tools.uint8ArrayToHex(printData[i].data);
+                    }
+                }
+
                 if (_qz.tools.isVersion(2, 0)) {
                     /*
                     2.0.x conversion

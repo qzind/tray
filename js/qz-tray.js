@@ -774,6 +774,38 @@ var qz = (function() {
                     .map(function(i) { return i.toString(16).padStart(2, '0'); })
                     .join('');
             },
+
+            uint8ArrayToBase64: function(uint8) {
+                /**
+                 * Adapted from Egor Nepomnyaschih's code under MIT Licence (C) 2020
+                 * see https://gist.github.com/enepomnyaschih/72c423f727d395eeaa09697058238727
+                 */
+                var map = [
+                    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U",
+                    "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p",
+                    "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "/"
+                ];
+
+                var result = '', i, l = uint8.length;
+                for (i = 2; i < l; i += 3) {
+                    result += map[uint8[i - 2] >> 2];
+                    result += map[((uint8[i - 2] & 0x03) << 4) | (uint8[i - 1] >> 4)];
+                    result += map[((uint8[i - 1] & 0x0F) << 2) | (uint8[i] >> 6)];
+                    result += map[uint8[i] & 0x3F];
+                }
+                if (i === l + 1) { // 1 octet yet to write
+                    result += map[uint8[i - 2] >> 2];
+                    result += map[(uint8[i - 2] & 0x03) << 4];
+                    result += "==";
+                }
+                if (i === l) { // 2 octets yet to write
+                    result += map[uint8[i - 2] >> 2];
+                    result += map[((uint8[i - 2] & 0x03) << 4) | (uint8[i - 1] >> 4)];
+                    result += map[(uint8[i - 1] & 0x0F) << 2];
+                    result += "=";
+                }
+                return result;
+            },
         },
 
         compatible: {
@@ -782,7 +814,19 @@ var qz = (function() {
                 // special handling for Uint8Array
                 for(var i = 0; i < printData.length; i++) {
                     if (printData[i].constructor === Object && printData[i].data instanceof Uint8Array) {
-                        printData[i].data = _qz.tools.uint8ArrayToHex(printData[i].data);
+                        if (printData[i].flavor) {
+                            var flavor = printData[i].flavor.toString().toUpperCase();
+                            switch(flavor) {
+                                case 'BASE64':
+                                    printData[i].data = _qz.tools.uint8ArrayToBase64(printData[i].data);
+                                    break;
+                                case 'HEX':
+                                    printData[i].data = _qz.tools.uint8ArrayToHex(printData[i].data);
+                                    break;
+                                default:
+                                    throw new Error("Uint8Array conversion to '" + flavor + "' is not supported.");
+                            }
+                        }
                     }
                 }
 

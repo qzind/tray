@@ -14,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.installer.certificate.CertificateManager;
+import qz.utils.StringUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -65,9 +66,16 @@ public class AboutInfo {
 
     private static JSONObject socket(CertificateManager certificateManager, String domain) throws JSONException {
         JSONObject socket = new JSONObject();
+        String sanitizeDomain = StringUtilities.escapeHtmlEntities(domain);
+
+        // Gracefully handle XSS per https://github.com/qzind/tray/issues/1099
+        if(sanitizeDomain.contains("&lt;") || sanitizeDomain.contains("&gt;")) {
+            log.warn("Something smells fishy about this domain: \"{}\", skipping", domain);
+            sanitizeDomain = "unknown";
+        }
 
         socket
-                .put("domain", domain)
+                .put("domain", sanitizeDomain)
                 .put("secureProtocol", "wss")
                 .put("securePort", certificateManager.isSslActive() ? PrintSocketServer.getSecurePortInUse() : "none")
                 .put("insecureProtocol", "ws")

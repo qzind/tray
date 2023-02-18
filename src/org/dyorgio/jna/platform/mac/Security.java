@@ -20,6 +20,8 @@ import com.sun.jna.platform.mac.CoreFoundation;
 import com.sun.jna.platform.mac.CoreFoundation.CFStringRef;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The JNA library interface to access the Security library under MacOS.
@@ -27,6 +29,7 @@ import com.sun.jna.ptr.PointerByReference;
  * @author lreimer
  */
 public interface Security extends Library {
+    Logger log = LogManager.getLogger(Security.class);
     Security INSTANCE = Native.load("Security", Security.class);
     NativeLibrary NATIVE_INSTANCE =  NativeLibrary.getInstance("Security");
 
@@ -53,6 +56,22 @@ public interface Security extends Library {
         INTERACTION_NOT_ALLOWED("errSecInteractionNotAllowed", -25308, "User interaction is not allowed."),
         DECODE ("errSecDecode", -26275, "Unable to decode the provided data."),
         AUTH_FAILED("errSecAuthFailed", -25293, "The user name or passphrase you entered is not correct."),
+        INVALID_SET("errAuthorizationInvalidSet", -60001, "The authorization rights are invalid."),
+        INVALID_REF("errAuthorizationInvalidRef", -60002, "The authorization reference is invalid."),
+        INVALID_TAG("errAuthorizationInvalidTag", -60003, "The authorization tag is invalid."),
+        INVALID_POINTER("errAuthorizationInvalidPointer", -60004, "The returned authorization is invalid."),
+        DENIED("errAuthorizationDenied", -60005, "The authorization was denied."),
+        CANCELED("errAuthorizationCanceled", -60006, "The authorization was canceled by the user."),
+        // INTERACTION_NOT_ALLOWED definition collision. added AUTH prefix
+        AUTH_INTERACTION_NOT_ALLOWED("errAuthorizationInteractionNotAllowed", -60007, "The authorization was denied since no user interaction was possible."),
+        INTERNAL("errAuthorizationInternal", -60008, "Unable to obtain authorization for this operation."),
+        EXTERNALIZE_NOT_ALLOWED("errAuthorizationExternalizeNotAllowed", -60009, "The authorization is not allowed to be converted to an external format."),
+        INTERNALIZE_NOT_ALLOWED("errAuthorizationInternalizeNotAllowed", -60010, "The authorization is not allowed to be created from an external format."),
+        INVALID_FLAGS("errAuthorizationInvalidFlags", -60011, "The provided option flag(s) are invalid for this authorization operation."),
+        TOOL_EXECUTE_FAILURE("errAuthorizationToolExecuteFailure", -60031, "The specified program could not be executed."),
+        TOOL_ENVIRONMENT_ERROR("errAuthorizationToolEnvironmentError", -60032, "An invalid status was returned during execution of a privileged tool."),
+        BAD_ADDRESS("errAuthorizationBadAddress", -60033, "The requested socket address is invalid (must be 0-1023 inclusive)."),
+
         UNKNOWN("unknown", -99999, "Code not mapped");
 
         int code;
@@ -70,6 +89,7 @@ public interface Security extends Library {
                     return status;
                 }
             }
+            log.warn("Unknown error code {}, falling back to [{}] {} code.", code, UNKNOWN.name, UNKNOWN.code);
             return UNKNOWN;
         }
 
@@ -80,6 +100,8 @@ public interface Security extends Library {
     }
 
     int SecKeychainCopyDomainDefault(int domain, Pointer SecKeychainRef);
+
+    int SecTrustSettingsSetTrustSettings(PointerType certRef, int domain, PointerType trustSettingsDictOrArray);
 
     /**
      * Returns one or more keychain items that match a search query, or copies attributes of specific keychain items.

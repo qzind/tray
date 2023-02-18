@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dyorgio.jna.platform.mac.Security;
 
+import static org.dyorgio.jna.platform.mac.Security.Status.SUCCESS;
 import static qz.common.Constants.ABOUT_TITLE;
 import static qz.installer.certificate.CoreFoundation.INSTANCE;
 
@@ -18,9 +19,10 @@ public class MacCertificateNativeAccess {
         CoreFoundation.CFStringRef cfLabel = CoreFoundation.CFStringRef.createCFString(ABOUT_TITLE + " Certificate");
 
         CoreFoundation.CFMutableDictionaryRef dict = INSTANCE.CFDictionaryCreateMutable(alloc, new CoreFoundation.CFIndex(3), null, null);
+        CoreFoundation.CFTypeRef certRef = getSecCertificateRef(cert);
         INSTANCE.CFDictionaryAddValue(dict, Security.kSecClass, Security.kSecClassCertificate);
         INSTANCE.CFDictionaryAddValue(dict, Security.kSecAttrLabel, cfLabel);
-        INSTANCE.CFDictionaryAddValue(dict, Security.kSecValueRef, getSecCertificateRef(cert));
+        INSTANCE.CFDictionaryAddValue(dict, Security.kSecValueRef, certRef);
 
         if (!certStore.equals(MacCertificateInstaller.USER_STORE)) {
             Memory keystoreRefData =  new Memory(8);
@@ -30,16 +32,20 @@ public class MacCertificateNativeAccess {
         }
 
         // Call SecAddItem
-        int retVal = Security.INSTANCE.SecItemAdd(dict.getPointer(), null);
-        Security.Status code = Security.Status.parse(retVal);
+        // todo: import the const for this
+        int trustRet = Security.INSTANCE.SecTrustSettingsSetTrustSettings(certRef, 1, null);
+        int addRet = Security.INSTANCE.SecItemAdd(dict.getPointer(), null);
+        Security.Status trustRetCode = Security.Status.parse(trustRet);
+        Security.Status addReturnCode = Security.Status.parse(addRet);
 
-        // Show output
-        switch(code) {
-            case SUCCESS:
-                System.out.println(code);
-                break;
-            default:
-                System.err.println(code);
+        INSTANCE.CFRelease(dict);
+        INSTANCE.CFRelease(cfLabel);
+        INSTANCE.CFRelease(certRef);
+
+        if (trustRetCode == SUCCESS && addReturnCode == SUCCESS) {
+            log.info("Cert added to keystore");
+        } else {
+            log.error("Failed to add cert to keystore. AddItem Code: {} + TrustSetting Code: {}", addReturnCode, trustRetCode);
         }
     }
 
@@ -51,7 +57,9 @@ public class MacCertificateNativeAccess {
         Memory nativeBytes = new Memory(certBytes.length);
         nativeBytes.write(0, certBytes, 0, certBytes.length);
         CoreFoundation.CFDataRef cfData = INSTANCE.CFDataCreate(alloc, nativeBytes, new CoreFoundation.CFIndex(nativeBytes.size()));
-        return Security.INSTANCE.SecCertificateCreateWithData(alloc, cfData);
+        CoreFoundation.CFTypeRef returnValue = Security.INSTANCE.SecCertificateCreateWithData(alloc, cfData);
+        INSTANCE.CFRelease(cfData);
+        return returnValue;
     }
 }
 

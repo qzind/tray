@@ -1,16 +1,18 @@
 package org.dyorgio.jna.platform.mac;
 
 import com.sun.jna.Memory;
-import com.sun.jna.Pointer;
-import com.sun.jna.ptr.ByReference;
-import com.sun.jna.ptr.PointerByReference;
 import org.apache.commons.ssl.Base64;
+import qz.installer.certificate.MacCertificateNativeAccess;
 
 import static com.sun.jna.platform.mac.CoreFoundation.*;
 
 public class Security_Main_Temp {
     static int a;
     public static void main(String ... args) {
+        MacCertificateNativeAccess nativeAccess = new MacCertificateNativeAccess();
+        nativeAccess.findIdsByEmail("","support@qz.io");
+    }
+    public static void oldMain () {
         CFAllocatorRef alloc = INSTANCE.CFAllocatorGetDefault();
         // Keys
         CFStringRef cfLabel = CFStringRef.createCFString("My Certificate");
@@ -45,7 +47,9 @@ public class Security_Main_Temp {
         System.out.println(CoreFoundation.INSTANCE.CFCopyDescription(dict).stringValue());
 
         // Call SecAddItem
-        int retVal = Security.INSTANCE.SecItemAdd(dict.getPointer(), null);
+        int retVal = Security.INSTANCE.SecTrustSettingsSetTrustSettings(cfValueAsCert, 1, null);
+        System.out.println(retVal);
+        retVal = Security.INSTANCE.SecItemAdd(dict.getPointer(), null);
         System.out.println(retVal);
         Security.Status code = Security.Status.parse(retVal);
 

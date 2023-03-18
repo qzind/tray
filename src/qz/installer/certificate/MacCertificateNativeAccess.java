@@ -7,6 +7,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dyorgio.jna.platform.mac.Security;
 
+import java.util.List;
+
 import static org.dyorgio.jna.platform.mac.Security.Status.SUCCESS;
 import static qz.common.Constants.ABOUT_TITLE;
 import static qz.installer.certificate.CoreFoundation.INSTANCE;
@@ -49,6 +51,49 @@ public class MacCertificateNativeAccess {
         }
     }
 
+    public static List<String> findIdsByEmail(String certStore, String email) {
+
+        CoreFoundation.CFStringRef cfLabel = CoreFoundation.CFStringRef.createCFString(email);
+
+        CoreFoundation.CFMutableDictionaryRef dict = INSTANCE.CFDictionaryCreateMutable(alloc, new CoreFoundation.CFIndex(3), null, null);
+
+        INSTANCE.CFDictionaryAddValue(dict, Security.kSecClass, Security.kSecClassCertificate);
+        INSTANCE.CFDictionaryAddValue(dict, Security.kSecMatchEmailAddressIfPresent, cfLabel);
+        INSTANCE.CFDictionaryAddValue(dict, Security.kSecMatchLimit, Security.kSecMatchLimitAll);
+
+        //CoreFoundation.CFMutableArrayRef cfPtrMutableArray = INSTANCE.CFArrayCreateMutable(null, new com.sun.jna.platform.mac.CoreFoundation.CFIndex(1), null);
+        //INSTANCE.CFArrayAppendValue(cfPtrMutableArray, keychain);{
+
+
+        System.out.println(org.dyorgio.jna.platform.mac.CoreFoundation.INSTANCE.CFCopyDescription(dict).stringValue());
+
+                    Memory pbr =  new Memory(8);
+        int findRet = Security.INSTANCE.SecItemCopyMatching(dict.getPointer(), pbr.share(0));
+
+        Security.Status findStatus = Security.Status.parse(findRet);
+
+        log.warn(findStatus);
+        if (INSTANCE.CFGetTypeID(pbr.getPointer(0)) == INSTANCE.CFArrayGetTypeID()) {
+            // multiple items returned as an array
+            //matchesFound = CFArrayGetCount(results);
+            log.warn("found");
+        }
+        else {
+            // single item returned as either a dictionary or an item reference
+            //matchesFound = (results) ? 1 : 0;
+            log.warn("none found");
+        }
+
+
+        //if (!certStore.equals(MacCertificateInstaller.USER_STORE)) {
+        //    Memory keystoreRefData =  new Memory(8);
+        //    Security.INSTANCE.SecKeychainCopyDomainDefault(1, keystoreRefData.share(0));
+        //    CoreFoundation.CFTypeRef keystoreRef = new CoreFoundation.CFTypeRef(keystoreRefData.getPointer(0));
+        //    INSTANCE.CFDictionaryAddValue(dict, Security.kSecUseKeychain, keystoreRef);
+        //}
+        return null;
+    }
+
 
     // Attempt to convert data bytes to CFDataRef
     private static CoreFoundation.CFTypeRef getSecCertificateRef (String derEncodedData) {
@@ -69,4 +114,26 @@ interface CoreFoundation extends com.sun.jna.platform.mac.CoreFoundation {
     CFBooleanRef kCFBooleanTrue = new CFBooleanRef(NATIVE_INSTANCE.getGlobalVariableAddress("kCFBooleanTrue").getPointer(0));
     void CFDictionaryAddValue(com.sun.jna.platform.mac.CoreFoundation.CFMutableDictionaryRef theDict, PointerType key, PointerType value);
     void CFDictionaryGetKeysAndValues(com.sun.jna.platform.mac.CoreFoundation.CFMutableDictionaryRef theDict, PointerByReference keys, Pointer[] values);
+    CFMutableArrayRef CFArrayCreateMutable(CFAllocatorRef allocator, CFIndex capacity, Pointer callBacks);
+    void CFArrayAppendValue(CFMutableArrayRef theArray, PointerType value);
+
+    public static class CFMutableArrayRef extends CFTypeRef {
+        public CFMutableArrayRef() {
+        }
+
+        public CFMutableArrayRef(Pointer p) {
+            super(p);
+            if (!this.isTypeID(com.sun.jna.platform.mac.CoreFoundation.ARRAY_TYPE_ID)) {
+                throw new ClassCastException("Unable to cast to CFArray. Type ID: " + this.getTypeID());
+            }
+        }
+
+        //public int getCount() {
+        //    return com.sun.jna.platform.mac.CoreFoundation.INSTANCE.CFArrayGetCount(this).intValue();
+        //}
+
+        //public Pointer getValueAtIndex(int idx) {
+        //    return com.sun.jna.platform.mac.CoreFoundation.INSTANCE.CFArrayGetValueAtIndex(this, new CFIndex((long)idx));
+        //}
+    }
 }

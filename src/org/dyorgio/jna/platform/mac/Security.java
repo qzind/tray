@@ -38,6 +38,9 @@ public interface Security extends Library {
     CFStringRef kSecAttrLabel = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecAttrLabel").getPointer(0));
     CFStringRef kSecValueRef = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecValueRef").getPointer(0));
     CFStringRef kSecClassCertificate = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecClassCertificate").getPointer(0));
+    CFStringRef kSecMatchEmailAddressIfPresent = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecMatchEmailAddressIfPresent").getPointer(0));
+    CFStringRef kSecMatchLimit = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecMatchLimit").getPointer(0));
+    CFStringRef kSecMatchLimitAll = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecMatchLimitAll").getPointer(0));
     CFStringRef kSecUseKeychain = new CFStringRef(NATIVE_INSTANCE.getGlobalVariableAddress("kSecUseKeychain").getPointer(0));
     enum Status {
         SUCCESS("errSecSuccess", 0, "No error."),
@@ -112,7 +115,7 @@ public interface Security extends Library {
      * @param result On return, a reference to the found items. The exact type of the result is based on the search attributes supplied in the query, as discussed below.
      * @return A result code. See Keychain Services Result Codes. Call SecCopyErrorMessageString (OS X only) to get a human-readable string explaining the result.
      */
-    int SecItemCopyMatching(Pointer query, PointerByReference result);
+    int SecItemCopyMatching(Pointer query, Pointer result);
 
     /**
      * Adds one or more items to a keychain.

@@ -28,20 +28,18 @@ public class PDFWrapper implements Printable {
     private Scaling scaling;
     private OrientationRequested orientation = OrientationRequested.PORTRAIT;
 
-    // FIXME: Make this configurable
-    private boolean useCustomerRenderer = true;
-
     private PDFPrintable printable;
 
-    public PDFWrapper(PDDocument document, Scaling scaling, boolean showPageBorder, boolean ignoreTransparency, float dpi, boolean center, PrintOptions.Orientation orientation, RenderingHints hints) {
+    public PDFWrapper(PDDocument document, Scaling scaling, boolean showPageBorder, boolean ignoreTransparency, boolean useAlternateFontRendering, float dpi, boolean center, PrintOptions.Orientation orientation, RenderingHints hints) {
         this.document = document;
         this.scaling = scaling;
         if (orientation != null) {
             this.orientation = orientation.getAsOrientRequested();
         }
 
+        // TODO: Combine workarounds into a single class
         PDFRenderer renderer;
-        if(useCustomerRenderer) {
+        if(useAlternateFontRendering) {
             renderer = new PDFRenderer(document) {
                 @Override
                 protected PageDrawer createPageDrawer(PageDrawerParameters parameters) throws IOException {
@@ -53,7 +51,6 @@ public class PDFWrapper implements Printable {
         } else {
             renderer = new PDFRenderer(document);
         }
-
         printable = new PDFPrintable(document, scaling, showPageBorder, dpi, center, renderer);
         printable.setRenderingHints(hints);
     }

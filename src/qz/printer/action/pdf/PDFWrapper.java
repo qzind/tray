@@ -7,10 +7,7 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.printing.PDFPrintable;
 import org.apache.pdfbox.printing.Scaling;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import org.apache.pdfbox.rendering.PageDrawer;
-import org.apache.pdfbox.rendering.PageDrawerParameters;
 import qz.printer.PrintOptions;
-import qz.printer.rendering.PdfFontPageDrawer;
 import qz.utils.SystemUtilities;
 
 import javax.print.attribute.standard.OrientationRequested;
@@ -18,7 +15,6 @@ import java.awt.*;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
-import java.io.IOException;
 
 public class PDFWrapper implements Printable {
 
@@ -37,20 +33,7 @@ public class PDFWrapper implements Printable {
             this.orientation = orientation.getAsOrientRequested();
         }
 
-        // TODO: Combine workarounds into a single class
-        PDFRenderer renderer;
-        if(useAlternateFontRendering) {
-            renderer = new PDFRenderer(document) {
-                @Override
-                protected PageDrawer createPageDrawer(PageDrawerParameters parameters) throws IOException {
-                    return new PdfFontPageDrawer(parameters);
-                }
-            };
-        } else if (ignoreTransparency) {
-            renderer = new OpaquePDFRenderer(document);
-        } else {
-            renderer = new PDFRenderer(document);
-        }
+        PDFRenderer renderer = new ParamPdfRenderer(document, useAlternateFontRendering, ignoreTransparency);
         printable = new PDFPrintable(document, scaling, showPageBorder, dpi, center, renderer);
         printable.setRenderingHints(hints);
     }

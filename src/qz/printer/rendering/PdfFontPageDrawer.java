@@ -28,8 +28,12 @@ public class PdfFontPageDrawer extends PageDrawer {
     private String fallbackFont = "helvetica"; //todo - definable parameter?
     private final Map<PDFont,Font> fonts = new HashMap<>();
 
-    public PdfFontPageDrawer(PageDrawerParameters parameters) throws IOException {
+    public PdfFontPageDrawer(PageDrawerParameters parameters, boolean ignoresTransparency) throws IOException {
         super(parameters);
+
+        if (ignoresTransparency) {
+            addOperator(new OpaqueDrawObject());
+        }
     }
 
     @Override
@@ -48,7 +52,6 @@ public class PdfFontPageDrawer extends PageDrawer {
         graphics.transform(at);
 
         graphics.setComposite(getGraphicsState().getNonStrokingJavaComposite());
-        //FIXME!! Private methods in PageDrawer - custom build for protected visibility
         graphics.setPaint(getNonStrokingPaint());
         setClip();
 

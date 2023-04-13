@@ -44,6 +44,7 @@ public class PdfFontPageDrawer extends PageDrawer {
         at.concatenate(font.getFontMatrix().createAffineTransform());
 
         Graphics2D graphics = getGraphics();
+        setClip();
 
         AffineTransform prevTx = graphics.getTransform();
         stretchNonEmbeddedFont(at, font, code, displacement);
@@ -53,7 +54,6 @@ public class PdfFontPageDrawer extends PageDrawer {
 
         graphics.setComposite(getGraphicsState().getNonStrokingJavaComposite());
         graphics.setPaint(getNonStrokingPaint());
-        setClip();
 
         Font prevFont = graphics.getFont();
         Font awtFont = getAwtFont(font);

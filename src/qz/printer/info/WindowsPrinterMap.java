@@ -15,6 +15,9 @@ public class WindowsPrinterMap extends NativePrinterMap {
     public synchronized NativePrinterMap putAll(PrintService... services) {
         for (PrintService service : findMissing(services)) {
             String name = service.getName();
+            if(isDebugPrinters()) {
+                log.debug("Creating {} object for printer: {}", NativePrinter.class.getSimpleName(), name);
+            }
             if(name.equals("PageManager PDF Writer")) {
                 log.warn("Printer \"{}\" is blacklisted, removing", name); // Per https://github.com/qzind/tray/issues/599
                 continue;
@@ -28,6 +31,9 @@ public class WindowsPrinterMap extends NativePrinterMap {
     }
 
     synchronized void fillAttributes(NativePrinter printer) {
+        if(isDebugPrinters()) {
+            log.debug("Getting driver attributes for printer: {}", printer.getName());
+        }
         String keyName = printer.getPrinterId().replaceAll("\\\\", ",");
         String key = "SYSTEM\\CurrentControlSet\\Control\\Print\\Printers\\" + keyName;
         String driver = WindowsUtilities.getRegString(HKEY_LOCAL_MACHINE, key, "Printer Driver");

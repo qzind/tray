@@ -21,6 +21,7 @@ import qz.auth.RequestState;
 import qz.installer.shortcut.ShortcutCreator;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.action.WebApp;
+import qz.printer.info.NativePrinterMap;
 import qz.ui.*;
 import qz.ui.component.IconCache;
 import qz.ui.tray.TrayType;
@@ -97,6 +98,9 @@ public class TrayManager {
 
         // Set strict certificate mode preference
         Certificate.setTrustBuiltIn(!getPref(Constants.PREFS_STRICT_MODE, false));
+
+        // Set verbose printer crawling preference
+        NativePrinterMap.setDebugPrinters(getPref(Constants.PREFS_DEBUG_PRINTERS, false));
 
         //headless if turned on by user or unsupported by environment
         headless = isHeadless || getPref(Constants.PREFS_HEADLESS, false) || GraphicsEnvironment.isHeadless();
@@ -277,6 +281,13 @@ public class TrayManager {
         notificationsItem.addActionListener(notificationsListener);
         diagnosticMenu.add(notificationsItem);
 
+        JCheckBoxMenuItem debugPrintersItem = new JCheckBoxMenuItem("Debug printer information");
+        debugPrintersItem.setToolTipText("Log detailed steps when crawling printer information");
+        debugPrintersItem.setMnemonic(KeyEvent.VK_P);
+        debugPrintersItem.setState(getPref(Constants.PREFS_DEBUG_PRINTERS, false));
+        debugPrintersItem.addActionListener(debugPrintersListener);
+        diagnosticMenu.add(debugPrintersItem);
+
         JCheckBoxMenuItem monocleItem = new JCheckBoxMenuItem("Use Monocle for HTML");
         monocleItem.setToolTipText("Use monocle platform for HTML printing (restart required)");
         monocleItem.setMnemonic(KeyEvent.VK_U);
@@ -373,6 +384,15 @@ public class TrayManager {
         @Override
         public void actionPerformed(ActionEvent e) {
             prefs.setProperty(Constants.PREFS_NOTIFICATIONS, ((JCheckBoxMenuItem)e.getSource()).getState());
+        }
+    };
+
+    private final ActionListener debugPrintersListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
+            prefs.setProperty(Constants.PREFS_DEBUG_PRINTERS, j.getState());
+            NativePrinterMap.setDebugPrinters(j.getState());
         }
     };
 

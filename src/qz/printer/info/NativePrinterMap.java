@@ -14,6 +14,7 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
     private static final Logger log = LogManager.getLogger(NativePrinterMap.class);
 
     private static NativePrinterMap instance;
+    private static boolean debugPrinters = false;
 
     public abstract NativePrinterMap putAll(PrintService... services);
     abstract void fillAttributes(NativePrinter printer);
@@ -76,5 +77,13 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
             }
         }
         return null;
+    }
+
+    public static void setDebugPrinters(boolean debugPrinters) {
+        NativePrinterMap.debugPrinters = debugPrinters;
+    }
+
+    public static boolean isDebugPrinters() {
+        return debugPrinters;
     }
 }

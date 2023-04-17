@@ -166,6 +166,9 @@ public class PrintServiceMatcher {
             jsonService.put("name", ps.getName());
 
             if (includeDetails) {
+                if(NativePrinterMap.isDebugPrinters()) {
+                    log.debug("Getting media attributes for printer: {}", printer.getName());
+                }
                 jsonService.put("driver", printer.getDriver().value());
                 jsonService.put("connection", printer.getConnection());
                 jsonService.put("default", ps == defaultService);

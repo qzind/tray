@@ -3,6 +3,7 @@ package qz.installer.certificate.firefox.locator;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
 import java.io.*;
@@ -38,10 +39,14 @@ public class LinuxAppLocator extends AppLocator {
                             file = path.toFile();
                         }
                         String contentType = Files.probeContentType(file.toPath());
+                        if(contentType == null) {
+                            // Fallback to commandline per https://bugs.openjdk.org/browse/JDK-8188228
+                            contentType = ShellUtilities.executeRaw("file", "--mime-type", "--brief", file.getPath()).trim();
+                        }
                         if(file.getPath().endsWith(".sh")) {
                             // Legacy Ubuntu likes to use .../firefox/firefox.sh, return .../firefox/firefox instead
                             log.info("Found an '.sh' file: {}, removing file extension: {}", file, file = new File(FilenameUtils.removeExtension(file.getPath())));
-                        } else if(contentType != null && contentType.equals("application/x-shellscript")) {
+                        } else if(contentType != null && contentType.endsWith("/x-shellscript")) {
                             // Debian and Arch like to place a stub script directly in /usr/bin/
                             // TODO: Split into a function; possibly recurse on search paths
                             log.info("{} bin was expected but script found...  Reading...", appAlias.name());

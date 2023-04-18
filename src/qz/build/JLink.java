@@ -92,15 +92,16 @@ public class JLink {
                 System.exit(2);
             }
             this.targetJdk = Paths.get(targetJdk);
-        }
-
-        // Determine if the version we're building with is compatible with the target version
-        if (needsDownload(javaSemver, Constants.JAVA_VERSION)) {
-            log.warn("Java versions are incompatible, locating a suitable runtime for Java " + javaSemver.getMajorVersion() + "...");
-            String hostJdk = downloadJdk(this.hostArch, this.hostPlatform);
-            calculateToolPaths(Paths.get(hostJdk));
+            calculateToolPaths(Paths.get(targetJdk));
         } else {
-            calculateToolPaths(null);
+            // Determine if the version we're building with is compatible with the target version
+            if (needsDownload(javaSemver, Constants.JAVA_VERSION)) {
+                log.warn("Java versions are incompatible, locating a suitable runtime for Java " + javaSemver.getMajorVersion() + "...");
+                String hostJdk = downloadJdk(this.hostArch, this.hostPlatform);
+                calculateToolPaths(Paths.get(hostJdk));
+            } else {
+                calculateToolPaths(null);
+            }
         }
 
         if(this.targetJdk == null) {

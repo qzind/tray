@@ -146,6 +146,18 @@ public class LinuxInstaller extends Installer {
             new File("/usr/bin/defaults").delete();
         }
 
+        // Cleanup incorrectly placed files
+        File badFirefoxPolicy = new File("/usr/bin/distribution/policies.json");
+        if(badFirefoxPolicy.exists()) {
+            log.info("Removing incorrectly placed Firefox policy {}", badFirefoxPolicy);
+            badFirefoxPolicy.delete();
+            // Delete the distribution folder too, as long as it's empty
+            File badPolicyFolder = badFirefoxPolicy.getParentFile();
+            if(badPolicyFolder.isDirectory() && badPolicyFolder.listFiles().length == 0) {
+                badPolicyFolder.delete();
+            }
+        }
+
         // Cleanup
         log.info("Cleaning up any remaining files...");
         new File(destination + File.separator + "install").delete();

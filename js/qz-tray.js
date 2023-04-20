@@ -765,9 +765,9 @@ var qz = (function() {
             },
 
             isActive: function() {
-                return _qz.websocket.connection != null
-                    && (_qz.websocket.connection.readyState === WebSocket.OPEN
-                        || _qz.websocket.connection.readyState === WebSocket.CONNECTING);
+                return !_qz.websocket.shutdown && _qz.websocket.connection != null
+                    && (_qz.websocket.connection.readyState === _qz.tools.ws.OPEN
+                        || _qz.websocket.connection.readyState === _qz.tools.ws.CONNECTING);
             },
 
             assertActive: function() {
@@ -1112,13 +1112,13 @@ var qz = (function() {
                     if (_qz.websocket.connection) {
                         const state = _qz.websocket.connection.readyState;
 
-                        if (state === WebSocket.OPEN) {
+                        if (state === _qz.tools.ws.OPEN) {
                             reject(new Error("An open connection with QZ Tray already exists"));
                             return;
-                        } else if (state === WebSocket.CONNECTING) {
+                        } else if (state === _qz.tools.ws.CONNECTING) {
                             reject(new Error("The current connection attempt has not returned yet"));
                             return;
-                        } else if (state === WebSocket.CLOSING) {
+                        } else if (state === _qz.tools.ws.CLOSING) {
                             reject(new Error("Waiting for previous disconnect request to complete"));
                             return;
                         }

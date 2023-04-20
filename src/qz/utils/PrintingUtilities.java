@@ -17,7 +17,6 @@ import qz.ws.PrintSocketClient;
 
 import java.awt.print.PrinterAbortException;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Locale;
@@ -90,29 +89,21 @@ public class PrintingUtilities {
         }
     }
 
-
-    public static Format getPrintFormat(JSONArray printData) throws JSONException {
-        convertVersion(printData);
-
-        //grab first data object to determine type for entire set
-        JSONObject data = printData.optJSONObject(0);
-
-        //Check for RAW type to coerce COMMAND format handling
-        Type type;
+    public static Type getPrintType(JSONObject data) {
         if (data == null) {
-            type = Type.RAW;
+            return Type.RAW;
         } else {
-            type = Type.valueOf(data.optString("type", "RAW").toUpperCase(Locale.ENGLISH));
+            return Type.valueOf(data.optString("type", "RAW").toUpperCase(Locale.ENGLISH));
         }
+    }
 
-        Format format;
+    public static Format getPrintFormat(Type type, JSONObject data) {
+        //Check for RAW type to coerce COMMAND format handling
         if (type == Type.RAW) {
-            format = Format.COMMAND;
+            return Format.COMMAND;
         } else {
-            format = Format.valueOf(data.optString("format", "COMMAND").toUpperCase(Locale.ENGLISH));
+            return Format.valueOf(data.optString("format", "COMMAND").toUpperCase(Locale.ENGLISH));
         }
-
-        return format;
     }
 
     public synchronized static PrintProcessor getPrintProcessor(Format format) {
@@ -190,13 +181,24 @@ public class PrintingUtilities {
      * @param params  Params of call from web API
      */
     public static void processPrintRequest(Session session, String UID, JSONObject params) throws JSONException {
-        Format format = getPrintFormat(params.getJSONArray("data"));
+        JSONArray printData = params.getJSONArray("data");
+        convertVersion(printData);
+
+        // grab first data object to determine type for entire set
+        JSONObject firstData = printData.optJSONObject(0);
+        Type type = getPrintType(firstData);
+        Format format = getPrintFormat(type, firstData);
+
         PrintProcessor processor = PrintingUtilities.getPrintProcessor(format);
         log.debug("Using {} to print", processor.getClass().getName());
 
         try {
             PrintOutput output = new PrintOutput(params.optJSONObject("printer"));
             PrintOptions options = new PrintOptions(params.optJSONObject("options"), output, format);
+
+            if(type != Type.RAW && !output.isSetService()) {
+                throw new Exception(String.format("%s cannot print to a raw %s", type, output.isSetFile() ? "file" : "host"));
+            }
 
             processor.parseData(params.getJSONArray("data"), options);
             processor.print(output, options);

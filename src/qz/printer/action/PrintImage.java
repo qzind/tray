@@ -16,6 +16,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
+import qz.common.TrayManager;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.ConnectionUtilities;
@@ -278,8 +279,13 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         int sWidth = image.getWidth(), sHeight = image.getHeight();
         int eWidth = (int)Math.floor((sWidth * cos) + (sHeight * sin)), eHeight = (int)Math.floor((sHeight * cos) + (sWidth * sin));
 
-        GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[0].getDefaultConfiguration();
-        BufferedImage result = gc.createCompatibleImage(eWidth, eHeight, Transparency.TRANSLUCENT);
+        BufferedImage result;
+        if(!GraphicsEnvironment.isHeadless()) {
+            GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()[0].getDefaultConfiguration();
+            result = gc.createCompatibleImage(eWidth, eHeight, Transparency.TRANSLUCENT);
+        } else {
+            result = new BufferedImage(eWidth, eHeight, Transparency.TRANSLUCENT);
+        }
 
         Graphics2D g2d = result.createGraphics();
         g2d.setRenderingHints(buildRenderingHints(dithering, interpolation));

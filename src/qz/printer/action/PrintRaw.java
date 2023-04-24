@@ -335,10 +335,13 @@ public class PrintRaw implements PrintProcessor {
                             if(tempFiles == null) {
                                 tempFiles = new ArrayList<>(pages.size());
                             }
-                            File tempFile = tempFiles.get(j);
-                            if(tempFile == null) {
-                                tempFile = tempFiles.set(j, File.createTempFile("qz_raw_", null));
+                            File tempFile;
+                            if(tempFiles.size() <= j) {
+                                tempFile = File.createTempFile("qz_raw_", null);
+                                tempFiles.add(j, tempFile);
                                 printToFile(tempFile, bab.getByteArray());
+                            } else {
+                                tempFile = tempFiles.get(j);
                             }
                             if(SystemUtilities.isWindows()) {
                                 // Placeholder only; not yet supported

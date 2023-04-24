@@ -356,23 +356,26 @@ public class PrintRaw implements PrintProcessor {
                     }
                 }
                 catch(IOException e) {
+                    cleanupTempFiles(rawOpts.isRetainTemp(), tempFiles);
                     throw new PrintException(e);
                 }
-                finally {
-                    if(tempFiles != null) {
-                        if (!rawOpts.isRetainTemp()) {
-                            for(File tempFile : tempFiles) {
-                                if(tempFile != null) {
-                                   if(!tempFile.delete()) {
-                                       tempFile.deleteOnExit();
-                                   }
-                                }
-                            }
-                        } else {
-                            log.warn("Temp file(s) retained: {}", Arrays.toString(tempFiles.toArray()));
+            }
+        }
+        cleanupTempFiles(rawOpts.isRetainTemp(), tempFiles);
+    }
+
+    private void cleanupTempFiles(boolean retainTemp, List<File> tempFiles) {
+        if(tempFiles != null) {
+            if (!retainTemp) {
+                for(File tempFile : tempFiles) {
+                    if(tempFile != null) {
+                        if(!tempFile.delete()) {
+                            tempFile.deleteOnExit();
                         }
                     }
                 }
+            } else {
+                log.warn("Temp file(s) retained: {}", Arrays.toString(tempFiles.toArray()));
             }
         }
     }

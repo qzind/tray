@@ -701,26 +701,28 @@ public class TrayManager {
     }
 
     public void displayComponent(SocketMethod method, Point location) {
-        switch(method) {
-            case GUI_SHOW_ABOUT:
-                SystemUtilities.centerWindow(aboutDialog, location);
-                aboutDialog.setVisible(true);
-                break;
-            case GUI_SHOW_LOG:
-                SystemUtilities.centerWindow(logDialog, location);
-                logDialog.setVisible(true);
-                break;
-            case GUI_SHOW_SITES:
-                SystemUtilities.centerWindow(sitesDialog, location);
-                sitesDialog.setVisible(true);
-                break;
-            case GUI_SHOW_MENU:
-                SystemUtilities.centerWindow(controlDialog, location);
-                controlDialog.setVisible(true);
-                break;
-            default:
-                throw new UnsupportedOperationException("Call \"" + method.getCallName() + "\" is not yet supported");
-        }
+        SwingUtilities.invokeLater(() -> {
+            switch(method) {
+                case GUI_SHOW_ABOUT:
+                    SystemUtilities.centerWindow(aboutDialog, location);
+                    aboutDialog.setVisible(true);
+                    break;
+                case GUI_SHOW_LOG:
+                    SystemUtilities.centerWindow(logDialog, location);
+                    logDialog.setVisible(true);
+                    break;
+                case GUI_SHOW_SITES:
+                    SystemUtilities.centerWindow(sitesDialog, location);
+                    sitesDialog.setVisible(true);
+                    break;
+                case GUI_SHOW_MENU:
+                    SystemUtilities.centerWindow(controlDialog, location);
+                    controlDialog.setVisible(true);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Call \"" + method.getCallName() + "\" is not yet supported");
+            }
+        });
     }
 
     public void singleInstanceCheck(java.util.List<Integer> insecurePorts, Integer insecurePortIndex) {

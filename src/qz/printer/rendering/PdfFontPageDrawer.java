@@ -32,7 +32,9 @@ public class PdfFontPageDrawer extends PageDrawer {
         super(parameters);
 
         if (ignoresTransparency) {
+            // Note:  These must match ParamPdfRenderer's OpaquePageDrawer
             addOperator(new OpaqueDrawObject());
+            addOperator(new OpaqueGraphicStateParameters());
         }
     }
 

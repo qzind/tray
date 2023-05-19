@@ -5,6 +5,7 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.rendering.PageDrawer;
 import org.apache.pdfbox.rendering.PageDrawerParameters;
 import qz.printer.rendering.OpaqueDrawObject;
+import qz.printer.rendering.OpaqueGraphicStateParameters;
 import qz.printer.rendering.PdfFontPageDrawer;
 
 import java.io.IOException;
@@ -37,7 +38,9 @@ public class ParamPdfRenderer extends PDFRenderer {
         public OpaquePageDrawer(PageDrawerParameters parameters) throws IOException {
             super(parameters);
 
+            // Note:  These must match PdfFontPageDrawer's ignoreTransparency condition
             addOperator(new OpaqueDrawObject());
+            addOperator(new OpaqueGraphicStateParameters());
         }
     }
 }

@@ -100,10 +100,21 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
         if(certType == SYSTEM) {
             File tempFile = null;
             try {
-                // pkcs11:id=%7C%5D%02%84%13%D4%CC%8A%9B%81%CE%17%1C%2E%29%1E%9C%48%63%42
-                // Extract system certificates to a temporary file
+                // The "trust" utility identifies certificates as URIs:
+
+                // Example:
+                //    pkcs11:id=%7C%5D%02%84%13%D4%CC%8A%9B%81%CE%17%1C%2E%29%1E%9C%48%63%42;type=cert
+                //
+                //     ... which is an encoded version of the cert's SubjectKeyIdentifier field
+                //
+                // Steps:
+                //   1. Extract all trusted certificates and look for a familiar email address
+                //   2. If found, construct and store a "trust" compatible URI as the nickname
+
+                // Temporary location for system certificates
                 tempFile = File.createTempFile("trust-extract-for-qz-", ".pem");
-                tempFile.delete(); // "trust extract" requires an empty file
+                // Delete before use: "trust extract" requires an empty file
+                tempFile.delete();
                 if(ShellUtilities.execute("trust", "extract", "--format", "pem-bundle", tempFile.getPath())) {
                     BufferedReader reader = new BufferedReader(new FileReader(tempFile));
                     String line;

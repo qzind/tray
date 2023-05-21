@@ -1,6 +1,7 @@
 package qz.installer;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -280,24 +281,60 @@ public class LinuxInstaller extends Installer {
             envp[i++] = String.format("%s=%s", key, env.get(key));
         }
 
-        // Determine if this environment likes sudo
-        String[] sudoCmd = { "sudo", "-E", "-u", sudoer, "nohup" };
-        String[] suCmd = { "su", sudoer, "-c", "nohup" };
-
-        ArrayList<String> argsList = new ArrayList<>();
-        if(ShellUtilities.execute("which", "sudo")) {
-            // Pass directly into sudo
-            argsList.addAll(Arrays.asList(sudoCmd));
-            argsList.addAll(args);
-        } else {
-            // Build and escape for su
-            argsList.addAll(Arrays.asList(suCmd));
-            argsList.addAll(Arrays.asList(StringUtils.join(args, "\" \"") + "\""));
-        }
+        // Concat "sudo|su", sudoer, "nohup", args
+        ArrayList<String> argsList = getSudo(sudoer, true, args);
 
         // Spawn
         log.info("Executing: {}", Arrays.toString(argsList.toArray()));
         Runtime.getRuntime().exec(argsList.toArray(new String[argsList.size()]), envp);
+    }
+
+    public ArrayList<String> getSudo(List<String> cmds) {
+        return getSudo(null, false, cmds);
+    }
+
+    public ArrayList<String> getSudo(boolean async, List<String> cmds) {
+        return getSudo(null, async, cmds);
+    }
+
+    public ArrayList<String> getSudo(String sudoer, boolean async, List<String> cmds) {
+        ArrayList<String> sudo = new ArrayList<>();
+        // TODO: Determine if there's a better way to determine if a system prefers "su" to "sudo"
+        if(ShellUtilities.execute("which", "sudo")) {
+            // Pass directly into "sudo"
+            log.info("Guessing that this system prefers \"sudo\" over \"su\".");
+            sudo.add("sudo");
+            if(!StringUtils.isEmpty(sudoer)) {
+                // Add calling user
+                sudo.add("-E"); // preserve environment
+                sudo.add("-u");
+                sudo.add(sudoer);
+            }
+            if(async) {
+                sudo.add("nohup");
+            }
+            if(cmds != null && cmds.size() > 0) {
+                // Add additional commands
+                sudo.addAll(cmds);
+            }
+        } else {
+            // Build and escape for "su"
+            log.info("Guessing that this system prefers \"su\" over \"sudo\".");
+            sudo.add("su");
+            if(!StringUtils.isEmpty(sudoer)) {
+                // Add calling user
+                sudo.add(sudoer);
+            }
+            sudo.add("-c");
+            if(async) {
+                sudo.add("nohup");
+            }
+            if(cmds != null && cmds.size() > 0) {
+                // Add additional commands
+                sudo.addAll(Arrays.asList(StringUtils.join(cmds, "\" \"") + "\""));
+            }
+        }
+        return sudo;
     }
 
 }

@@ -146,20 +146,6 @@ public class ExpiryTask extends TimerTask {
         return ExpiryState.VALID;
     }
 
-    private static boolean emailMatches(X509Certificate cert) {
-        try {
-            X500Name x500name = new JcaX509CertificateHolder(cert).getSubject();
-            String email = x500name.getRDNs(BCStyle.E)[0].getFirst().getValue().toString();
-            if (Constants.ABOUT_EMAIL.equals(email)) {
-                log.info("Email address {} found, assuming CertProvider is {}", Constants.ABOUT_EMAIL, CertProvider.INTERNAL);
-                return true;
-            }
-        }
-        catch(Exception ignore) {}
-        log.info("Email address {} was not found.  Assuming the certificate is manually installed, we won't try to renew it.", Constants.ABOUT_EMAIL);
-        return false;
-    }
-
     public void schedule() {
         schedule(DEFAULT_INITIAL_DELAY, DEFAULT_CHECK_FREQUENCY);
     }
@@ -183,7 +169,7 @@ public class ExpiryTask extends TimerTask {
 
     public static CertProvider findCertProvider(X509Certificate cert) {
         // Internal certs use CN=localhost, trust email instead
-        if (emailMatches(cert)) {
+        if (CertificateManager.emailMatches(cert)) {
             return CertProvider.INTERNAL;
         }
 

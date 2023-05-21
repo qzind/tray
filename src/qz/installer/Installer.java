@@ -47,7 +47,9 @@ public abstract class Installer {
 
     public abstract Installer removeLegacyStartup();
     public abstract Installer addAppLauncher();
+    public abstract Installer removeAppLauncher();
     public abstract Installer addStartupEntry();
+    public abstract Installer removeStartupEntry();
     public abstract Installer addSystemSettings();
     public abstract Installer removeSystemSettings();
     public abstract void spawn(List<String> args) throws Exception;
@@ -108,7 +110,9 @@ public abstract class Installer {
         TaskKiller.killAll();
         getInstance();
         log.info("Uninstalling from {}", instance.getDestination());
-        instance.removeSharedDirectory()
+        instance.removeStartupEntry()
+                .removeAppLauncher()
+                .removeSharedDirectory()
                 .removeSystemSettings()
                 .removeCerts();
     }
@@ -332,5 +336,15 @@ public abstract class Installer {
 
     public void spawn(String ... args) throws Exception {
         spawn(new ArrayList(Arrays.asList(args)));
+    }
+
+    boolean hasVersion_2_0() {
+        // QZ Tray 2.1 removed the "auth" folder, this should be a valid test
+        try {
+            Path p = Paths.get(getDestination(), "auth");
+            return p.toFile().isDirectory();
+        }
+        catch(Exception ignore) {}
+        return false;
     }
 }

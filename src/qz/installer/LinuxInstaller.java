@@ -45,8 +45,18 @@ public class LinuxInstaller extends Installer {
         return this;
     }
 
+    public Installer removeAppLauncher() {
+        FileUtils.deleteQuietly(new File(APP_LAUNCHER));
+        return this;
+    }
+
     public Installer addStartupEntry() {
         addLauncher(STARTUP_LAUNCHER, true);
+        return this;
+    }
+
+    public Installer removeStartupEntry() {
+        FileUtils.deleteQuietly(new File(STARTUP_LAUNCHER));
         return this;
     }
 
@@ -69,6 +79,10 @@ public class LinuxInstaller extends Installer {
     }
 
     public Installer removeLegacyStartup() {
+        if(!hasVersion_2_0()) {
+            log.info("{} 2.0 was not found; skipping removal of legacy startup entries", ABOUT_TITLE);
+            return this;
+        }
         log.info("Removing legacy autostart entries for all users matching {} or {}", ABOUT_TITLE, PROPS_FILE);
         // assume users are in /home
         String[] shortcutNames = {ABOUT_TITLE, PROPS_FILE};

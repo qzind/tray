@@ -20,7 +20,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class MacCertificateInstaller extends NativeCertificateInstaller {
@@ -35,24 +38,43 @@ public class MacCertificateInstaller extends NativeCertificateInstaller {
     }
 
     public boolean add(File certFile) {
-        if (certStore.equals(USER_STORE)) {
-            // This will prompt the user
-            return ShellUtilities.execute("security", "add-trusted-cert", "-r", "trustRoot", "-k", certStore, certFile.getPath());
-        } else {
-            return ShellUtilities.execute("security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", certStore, certFile.getPath());
+        try {
+            String s = new String(Files.readAllBytes(certFile.toPath()), StandardCharsets.UTF_8);
+            MacCertificateNativeAccess.add(s, certStore);
+            return true;
+        } catch(Exception e) {
+            log.error("Failed to write cert to keystore with native access. Falling back to shell commands", e);
+            if (certStore.equals(USER_STORE)) {
+                // This will prompt the user
+                return ShellUtilities.execute("security", "add-trusted-cert", "-r", "trustRoot", "-k", certStore, certFile.getPath());
+            } else {
+                return ShellUtilities.execute("security", "add-trusted-cert", "-d", "-r", "trustRoot", "-k", certStore, certFile.getPath());
+            }
         }
     }
 
     public boolean remove(List<String> idList) {
         boolean success = true;
         for (String certId : idList) {
-            success = success && ShellUtilities.execute("security", "delete-certificate", "-Z", certId, certStore);
+            try {
+                //String s = new String(Files.readAllBytes(certFile.toPath()), StandardCharsets.UTF_8);
+                //MacCertificateNativeAccess.remove(s, certStore);
+            }
+            catch(Exception e) {
+                log.error("Failed to remove cert from keystore with native access. Falling back to shell commands", e);
+                success = success && ShellUtilities.execute("security", "delete-certificate", "-Z", certId, certStore);
+            }
         }
         return success;
     }
 
     public List<String> find() {
         ArrayList<String> hashList = new ArrayList<>();
+        try {
+            return MacCertificateNativeAccess.findIdsByEmail(certStore, Constants.ABOUT_EMAIL);
+        } catch(Exception e) {
+            log.warn("Could not get certificate list using native, falling back to shell", e);
+        }
         try {
             Process p = Runtime.getRuntime().exec(new String[] {"security", "find-certificate", "-a", "-e", Constants.ABOUT_EMAIL, "-Z", certStore});
             BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -63,6 +85,7 @@ public class MacCertificateInstaller extends NativeCertificateInstaller {
                 }
             }
             in.close();
+            return hashList;
         } catch(IOException e) {
             log.warn("Could not get certificate list", e);
         }

@@ -17,8 +17,6 @@ import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
 import org.bouncycastle.util.encoders.Base64;
-import org.bouncycastle.util.encoders.Hex;
-import qz.auth.Certificate;
 import qz.auth.X509Constants;
 import qz.common.Constants;
 import qz.installer.Installer;
@@ -30,9 +28,6 @@ import qz.utils.UnixUtilities;
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -40,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static qz.installer.Installer.PrivilegeLevel.*;
-import static qz.utils.FileUtilities.SHARED_DIR;
 
 /**
  * @author Tres Finocchiaro
@@ -49,13 +43,14 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     private static final Logger log = LogManager.getLogger(LinuxCertificateInstaller.class);
     private static final String CA_CERTIFICATES = "/usr/local/share/ca-certificates/";
     private static final String CA_CERTIFICATE_NAME = Constants.PROPS_FILE + "-root.crt"; // e.g. qz-tray-root.crt
+    private static final String PK11_KIT_ID = "pkcs11:id=";
 
     private static String[] NSSDB_URLS = {
             // Conventional cert store
-            "sql:" + System.getenv("HOME") + "/.pki/nssdb",
+            "sql:" + System.getenv("HOME") + "/.pki/nssdb/",
 
             // Snap-specific cert stores
-            "sql:" + System.getenv("HOME") + "/snap/chromium/current/.pki/nssdb",
+            "sql:" + System.getenv("HOME") + "/snap/chromium/current/.pki/nssdb/",
             "sql:" + System.getenv("HOME") + "/snap/brave/current/.pki/nssdb/",
             "sql:" + System.getenv("HOME") + "/snap/opera/current/.pki/nssdb/",
             "sql:" + System.getenv("HOME") + "/snap/opera-beta/current/.pki/nssdb/"
@@ -82,7 +77,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     public boolean remove(List<String> idList) {
         boolean success = true;
         if(certType == SYSTEM) {
-            boolean first = distrustUsingUpdateCaCertificates();
+            boolean first = distrustUsingUpdateCaCertificates(idList);
             boolean second = distrustUsingTrustAnchor(idList);
             success = first || second;
         } else {
@@ -98,61 +93,8 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     public List<String> find() {
         ArrayList<String> nicknames = new ArrayList<>();
         if(certType == SYSTEM) {
-            File tempFile = null;
-            try {
-                // The "trust" utility identifies certificates as URIs:
-
-                // Example:
-                //    pkcs11:id=%7C%5D%02%84%13%D4%CC%8A%9B%81%CE%17%1C%2E%29%1E%9C%48%63%42;type=cert
-                //
-                //     ... which is an encoded version of the cert's SubjectKeyIdentifier field
-                //
-                // Steps:
-                //   1. Extract all trusted certificates and look for a familiar email address
-                //   2. If found, construct and store a "trust" compatible URI as the nickname
-
-                // Temporary location for system certificates
-                tempFile = File.createTempFile("trust-extract-for-qz-", ".pem");
-                // Delete before use: "trust extract" requires an empty file
-                tempFile.delete();
-                if(ShellUtilities.execute("trust", "extract", "--format", "pem-bundle", tempFile.getPath())) {
-                    BufferedReader reader = new BufferedReader(new FileReader(tempFile));
-                    String line;
-                    StringBuilder base64 = new StringBuilder();
-                    while ((line = reader.readLine()) != null) {
-                        if(line.startsWith(X509Constants.BEGIN_CERT)) {
-                            // Beginning of a new certificate
-                            base64.setLength(0);
-                        } else if(line.startsWith(X509Constants.END_CERT)) {
-                            // End of the existing certificate
-                            byte[] certBytes = Base64.decode(base64.toString());
-                            CertificateFactory factory = CertificateFactory.getInstance("X.509");
-                            X509Certificate cert = (X509Certificate)factory.generateCertificate(new ByteArrayInputStream(certBytes));
-                            if(CertificateManager.emailMatches(cert, true)) {
-                                byte[] extensionValue = cert.getExtensionValue(Extension.subjectKeyIdentifier.getId());
-                                byte[] octets = DEROctetString.getInstance(extensionValue).getOctets();
-                                SubjectKeyIdentifier subjectKeyIdentifier = SubjectKeyIdentifier.getInstance(octets);
-                                byte[] keyIdentifier = subjectKeyIdentifier.getKeyIdentifier();
-                                String hex = ByteUtilities.bytesToHex(keyIdentifier, true);
-                                String uri = "pkcs11:id=" + hex.replaceAll("(.{2})", "%$1") + ";type=cert";
-                                log.info("Found matching cert: {}", uri);
-
-                                nicknames.add(uri);
-                            }
-                        } else {
-                            base64.append(line);
-                        }
-                    }
-
-                    reader.close();
-                }
-            } catch(IOException | CertificateException e) {
-                log.warn("An error occurred finding preexisting certificates", e);
-            } finally {
-                if(tempFile != null && !tempFile.delete()) {
-                    tempFile.deleteOnExit();
-                }
-            }
+            nicknames = findUsingTrustAnchor();
+            nicknames.addAll(findUsingUsingUpdateCaCert());
         } else {
             try {
                 for(String nssdb : NSSDB_URLS) {
@@ -296,18 +238,27 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
         return false;
     }
 
-    private boolean distrustUsingUpdateCaCertificates() {
+    private boolean distrustUsingUpdateCaCertificates(List<String> paths) {
         if(hasUpdateCaCertificatesCommand()) {
-            File systemCertFile = new File(CA_CERTIFICATES, CA_CERTIFICATE_NAME);
-            if (systemCertFile.isFile() && systemCertFile.delete()) {
-                // Attempt "update-ca-certificates" (Debian)
+            boolean deleted = false;
+            for(String path : paths) {
+                // Process files only; not "trust anchor" URIs
+                if(!path.startsWith(PK11_KIT_ID)) {
+                    File certFile = new File(path);
+                    if (certFile.isFile() && certFile.delete()) {
+                        deleted = true;
+                    } else {
+                        log.warn("{} does not exist, skipping", certFile);
+                    }
+                }
+            }
+            // Attempt "update-ca-certificates" (Debian)
+            if(deleted) {
                 if (ShellUtilities.execute("update-ca-certificates")) {
                     return true;
                 } else {
                     log.warn("Something went wrong calling \"update-ca-certificates\" for the SYSTEM SSL certificate.");
                 }
-            } else {
-                log.warn("{} does not exist, skipping", systemCertFile);
             }
         } else {
             log.warn("Skipping SYSTEM SSL certificate removal using \"update-ca-certificates\", command missing or invalid");
@@ -318,7 +269,8 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     private boolean distrustUsingTrustAnchor(List<String> idList) {
         if(hasTrustAnchorCommand()) {
             for(String id : idList) {
-                if (!ShellUtilities.execute("trust", "anchor", "--remove", id)) {
+                // only remove by id
+                if (id.startsWith(PK11_KIT_ID) && !ShellUtilities.execute("trust", "anchor", "--remove", id)) {
                     log.warn("Something went wrong calling \"trust anchor\" for the SYSTEM SSL certificate.");
                 }
             }
@@ -326,6 +278,81 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
             log.warn("Skipping SYSTEM SSL certificate removal using \"trust anchor\", command missing or invalid");
         }
         return false;
+    }
+
+    /**
+     * Check for the presence of a QZ certificate in known locations (e.g. /usr/local/share/ca-certificates/
+     * and return the path if found
+     */
+    private ArrayList<String> findUsingUsingUpdateCaCert() {
+        ArrayList<String> found = new ArrayList<>();
+        File[] systemCertFiles = { new File(CA_CERTIFICATES, CA_CERTIFICATE_NAME) };
+        for(File file : systemCertFiles) {
+            if(file.isFile()) {
+                found.add(systemCertFiles.toString());
+            }
+        }
+        return found;
+    }
+
+    /**
+     * Find QZ installed certificates in the "trust anchor" by searching by email.
+     *
+     * The "trust" utility identifies certificates as URIs:
+     * Example:
+     *    pkcs11:id=%7C%5D%02%84%13%D4%CC%8A%9B%81%CE%17%1C%2E%29%1E%9C%48%63%42;type=cert
+     *    ... which is an encoded version of the cert's SubjectKeyIdentifier field
+     * To identify a match:
+     *    1. Extract all trusted certificates and look for a familiar email address
+     *    2. If found, construct and store a "trust" compatible URI as the nickname
+     */
+    private ArrayList<String> findUsingTrustAnchor() {
+        ArrayList<String> uris = new ArrayList<>();
+        File tempFile = null;
+        try {
+            // Temporary location for system certificates
+            tempFile = File.createTempFile("trust-extract-for-qz-", ".pem");
+            // Delete before use: "trust extract" requires an empty file
+            tempFile.delete();
+            if(ShellUtilities.execute("trust", "extract", "--format", "pem-bundle", tempFile.getPath())) {
+                BufferedReader reader = new BufferedReader(new FileReader(tempFile));
+                String line;
+                StringBuilder base64 = new StringBuilder();
+                while ((line = reader.readLine()) != null) {
+                    if(line.startsWith(X509Constants.BEGIN_CERT)) {
+                        // Beginning of a new certificate
+                        base64.setLength(0);
+                    } else if(line.startsWith(X509Constants.END_CERT)) {
+                        // End of the existing certificate
+                        byte[] certBytes = Base64.decode(base64.toString());
+                        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+                        X509Certificate cert = (X509Certificate)factory.generateCertificate(new ByteArrayInputStream(certBytes));
+                        if(CertificateManager.emailMatches(cert, true)) {
+                            byte[] extensionValue = cert.getExtensionValue(Extension.subjectKeyIdentifier.getId());
+                            byte[] octets = DEROctetString.getInstance(extensionValue).getOctets();
+                            SubjectKeyIdentifier subjectKeyIdentifier = SubjectKeyIdentifier.getInstance(octets);
+                            byte[] keyIdentifier = subjectKeyIdentifier.getKeyIdentifier();
+                            String hex = ByteUtilities.bytesToHex(keyIdentifier, true);
+                            String uri = PK11_KIT_ID + hex.replaceAll("(.{2})", "%$1") + ";type=cert";
+                            log.info("Found matching cert: {}", uri);
+
+                            uris.add(uri);
+                        }
+                    } else {
+                        base64.append(line);
+                    }
+                }
+
+                reader.close();
+            }
+        } catch(IOException | CertificateException e) {
+            log.warn("An error occurred finding preexisting \"trust anchor\" certificates", e);
+        } finally {
+            if(tempFile != null && !tempFile.delete()) {
+                tempFile.deleteOnExit();
+            }
+        }
+        return uris;
     }
 
     private boolean hasUpdateCaCertificatesCommand() {

@@ -248,7 +248,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
                     if (certFile.isFile() && certFile.delete()) {
                         deleted = true;
                     } else {
-                        log.warn("{} does not exist, skipping", certFile);
+                        log.warn("SYSTEM SSL certificate {} does not exist, skipping", certFile.getPath());
                     }
                 }
             }
@@ -289,7 +289,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
         File[] systemCertFiles = { new File(CA_CERTIFICATES, CA_CERTIFICATE_NAME) };
         for(File file : systemCertFiles) {
             if(file.isFile()) {
-                found.add(systemCertFiles.toString());
+                found.add(file.getPath());
             }
         }
         return found;

@@ -149,8 +149,8 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     }
 
     private boolean findCertutil() {
-        boolean installed;
-        if (installed = !ShellUtilities.execute("which", "certutil")) {
+        boolean installed = ShellUtilities.execute("which", "certutil");
+        if (!installed) {
             if (certType == SYSTEM && promptCertutil()) {
                 if(UnixUtilities.isUbuntu()) {
                     installed = ShellUtilities.execute("apt-get", "install", "-y", "libnss3-tools");

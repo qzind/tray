@@ -1,6 +1,5 @@
 package qz.installer;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,6 +30,12 @@ public class LinuxInstaller extends Installer {
     public static final String CHROME_POLICY = "{ \"URLWhitelist\": [\"" + DATA_DIR + "://*\"] }";
 
     private String destination = "/opt/" + PROPS_FILE;
+    private String sudoer;
+
+    public LinuxInstaller() {
+        super();
+        sudoer = getSudoer();
+    }
 
     public void setDestination(String destination) {
         this.destination = destination;
@@ -188,18 +193,114 @@ public class LinuxInstaller extends Installer {
      */
     public void spawn(List<String> args) throws Exception {
         if(!SystemUtilities.isAdmin()) {
+            // Not admin, just run as the existing user
             ShellUtilities.execute(args.toArray(new String[args.size()]));
             return;
         }
+
+        // Get user's environment from dbus, etc
+        HashMap<String, String> env = getUserEnv(sudoer);
+        if(env.size() == 0) {
+            throw new Exception("Unable to get dbus info; can't spawn instance");
+        }
+
+        // Prepare the environment
+        String[] envp = new String[env.size() + ShellUtilities.envp.length];
+        int i = 0;
+        // Keep existing env
+        for(String keep : ShellUtilities.envp) {
+            envp[i++] = keep;
+        }
+        for(String key :env.keySet()) {
+            envp[i++] = String.format("%s=%s", key, env.get(key));
+        }
+
+        // Concat "sudo|su", sudoer, "nohup", args
+        ArrayList<String> argsList = sudoCommand(sudoer, true, args);
+
+        // Spawn
+        log.info("Executing: {}", Arrays.toString(argsList.toArray()));
+        Runtime.getRuntime().exec(argsList.toArray(new String[argsList.size()]), envp);
+    }
+
+    /**
+     * Constructs a command to help running as another user using "sudo" or "su"
+     */
+    public static ArrayList<String> sudoCommand(String sudoer, boolean async, List<String> cmds) {
+        ArrayList<String> sudo = new ArrayList<>();
+        if(StringUtils.isEmpty(sudoer) || !userExists(sudoer)) {
+            throw new UnsupportedOperationException(String.format("Parameter [sudoer: %s] is empty or the provided user was not found", sudoer));
+        }
+        if(ShellUtilities.execute("which", "sudo") // check if sudo exists
+                || ShellUtilities.execute("sudo", "-u", sudoer, "-v")) { // check if user can login
+            // Pass directly into "sudo"
+            log.info("Guessing that this system prefers \"sudo\" over \"su\".");
+            sudo.add("sudo");
+
+            // Add calling user
+            sudo.add("-E"); // preserve environment
+            sudo.add("-u");
+            sudo.add(sudoer);
+
+            // Add "background" task support
+            if(async) {
+                sudo.add("nohup");
+            }
+            if(cmds != null && cmds.size() > 0) {
+                // Add additional commands
+                sudo.addAll(cmds);
+            }
+        } else {
+            // Build and escape for "su"
+            log.info("Guessing that this system prefers \"su\" over \"sudo\".");
+            sudo.add("su");
+
+            // Add calling user
+            sudo.add(sudoer);
+
+            sudo.add("-c");
+
+            // Add "background" task support
+            if(async) {
+                sudo.add("nohup");
+            }
+            if(cmds != null && cmds.size() > 0) {
+                // Add additional commands
+                sudo.addAll(Arrays.asList(StringUtils.join(cmds, "\" \"") + "\""));
+            }
+        }
+        return sudo;
+    }
+
+    /**
+     * Gets the most likely non-root user account that the installer is running from
+     */
+    private static String getSudoer() {
         String sudoer = ShellUtilities.executeRaw("logname").trim();
         if(sudoer.isEmpty() || SystemUtilities.isSolaris()) {
             sudoer = System.getenv("SUDO_USER");
         }
+        return sudoer;
+    }
 
-        if(sudoer != null && !sudoer.trim().isEmpty()) {
-            sudoer = sudoer.trim();
-        } else {
-            throw new Exception("Unable to get current user, can't spawn instance");
+    /**
+     * Uses two common POSIX techniques for testing if the provided user account exists
+     */
+    private static boolean userExists(String user) {
+        return ShellUtilities.execute("id", "-u", user) ||
+                ShellUtilities.execute("getent", "passwd", user);
+    }
+
+    /**
+     * Attempts to extract user environment variables from the dbus process to
+     * allow starting a graphical application as the current user.
+     *
+     * If this fails, items such as the user's desktop theme may not be known to Java
+     * at runtime resulting in the Swing L&F instead of the Gtk L&F.
+     */
+    private static HashMap<String, String> getUserEnv(String matchingUser) {
+        if(!SystemUtilities.isAdmin()) {
+           throw new UnsupportedOperationException("Administrative access is required");
         }
 
         String[] dbusMatches = { "ibus-daemon.*--panel", "dbus-daemon.*--config-file="};
@@ -251,10 +352,10 @@ public class LinuxInstaller extends Installer {
             }
 
             // Only add vars for the current user
-            if(sudoer.trim().equals(tempEnv.get("USER"))) {
+            if(matchingUser.trim().equals(tempEnv.get("USER"))) {
                 env.putAll(tempEnv);
             } else {
-                log.debug("Expected USER={} but got USER={}, skipping results for {}", sudoer, tempEnv.get("USER"), pid);
+                log.debug("Expected USER={} but got USER={}, skipping results for {}", matchingUser, tempEnv.get("USER"), pid);
             }
 
             // Use gtk theme
@@ -264,40 +365,7 @@ public class LinuxInstaller extends Installer {
                 }
             }
         }
-
-        if(env.size() == 0) {
-            throw new Exception("Unable to get dbus info; can't spawn instance");
-        }
-
-        // Prepare the environment
-        String[] envp = new String[env.size() + ShellUtilities.envp.length];
-        int i = 0;
-        // Keep existing env
-        for(String keep : ShellUtilities.envp) {
-            envp[i++] = keep;
-        }
-        for(String key :env.keySet()) {
-            envp[i++] = String.format("%s=%s", key, env.get(key));
-        }
-
-        // Determine if this environment likes sudo
-        String[] sudoCmd = { "sudo", "-E", "-u", sudoer, "nohup" };
-        String[] suCmd = { "su", sudoer, "-c", "nohup" };
-
-        ArrayList<String> argsList = new ArrayList<>();
-        if(ShellUtilities.execute("which", "sudo")) {
-            // Pass directly into sudo
-            argsList.addAll(Arrays.asList(sudoCmd));
-            argsList.addAll(args);
-        } else {
-            // Build and escape for su
-            argsList.addAll(Arrays.asList(suCmd));
-            argsList.addAll(Arrays.asList(StringUtils.join(args, "\" \"") + "\""));
-        }
-
-        // Spawn
-        log.info("Executing: {}", Arrays.toString(argsList.toArray()));
-        Runtime.getRuntime().exec(argsList.toArray(new String[argsList.size()]), envp);
+        return env;
     }
 
 }

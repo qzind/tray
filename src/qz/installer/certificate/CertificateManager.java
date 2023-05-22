@@ -11,8 +11,13 @@
 package qz.installer.certificate;
 
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.asn1.x500.AttributeTypeAndValue;
+import org.bouncycastle.asn1.x500.RDN;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
@@ -443,5 +448,30 @@ public class CertificateManager {
         properties.store(new FileOutputStream(propsFile), null);
         FileUtilities.inheritParentPermissions(propsFile.toPath());
         log.info("Successfully created SSL properties file: {}", propsFile);
+    }
+
+    public static boolean emailMatches(X509Certificate cert) {
+        return emailMatches(cert, false);
+    }
+
+    public static boolean emailMatches(X509Certificate cert, boolean quiet) {
+        try {
+            X500Name x500name = new JcaX509CertificateHolder(cert).getSubject();
+            RDN[] emailNames = x500name.getRDNs(BCStyle.E);
+            for(RDN emailName : emailNames) {
+                AttributeTypeAndValue first = emailName.getFirst();
+                if (first != null && first.getValue() != null && Constants.ABOUT_EMAIL.equals(first.getValue().toString())) {
+                    if(!quiet) {
+                        log.info("Email address {} found, assuming CertProvider is {}", Constants.ABOUT_EMAIL, ExpiryTask.CertProvider.INTERNAL);
+                    }
+                    return true;
+                }
+            }
+        }
+        catch(Exception ignore) {}
+        if(!quiet) {
+            log.info("Email address {} was not found.  Assuming the certificate is manually installed, we won't try to renew it.", Constants.ABOUT_EMAIL);
+        }
+        return false;
     }
 }

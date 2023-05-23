@@ -268,6 +268,9 @@ public abstract class Installer {
                         installer.install(caCert);
                         FirefoxCertificateInstaller.install(caCert, hostNames);
                     }
+                    if(!tempCert.delete()) {
+                        tempCert.deleteOnExit();
+                    }
                 }
             }
         }

@@ -477,6 +477,7 @@ public class TrayManager {
 
     public void exit(int returnCode) {
         prefs.save();
+        FileUtilities.cleanup();
         System.exit(returnCode);
     }
 

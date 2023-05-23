@@ -11,6 +11,7 @@
 package qz.utils;
 
 import com.apple.OSXAdapterWrapper;
+import org.apache.commons.io.FileUtils;
 import org.dyorgio.jna.platform.mac.*;
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.NativeLong;
@@ -274,12 +275,13 @@ public class MacUtilities {
     }
 
     public static boolean nativeFileCopy(Path source, Path destination) {
+        Path tempFile = null;
         try {
             // AppleScript's "duplicate" requires an existing destination
             if (!destination.toFile().isDirectory()) {
                 // To perform this in a single operation in AppleScript, the source and dest
                 // file names must match.  Copy to a temp directory first to retain desired name.
-                Path tempFile = Files.createTempDirectory("qz_cert_").resolve(destination.getFileName());
+                tempFile = Files.createTempDirectory("qz_cert_").resolve(destination.getFileName());
                 log.debug("Copying {} to {} to obtain the desired name", source, tempFile);
                 source = Files.copy(source, tempFile);
                 destination = destination.getParent();
@@ -291,6 +293,10 @@ public class MacUtilities {
                             "with replacing");
         } catch(Throwable t) {
             log.warn("Unable to perform native file copy using AppleScript", t);
+        } finally {
+            if(tempFile != null) {
+                FileUtils.deleteQuietly(tempFile.getParent().toFile());
+            }
         }
         return false;
     }

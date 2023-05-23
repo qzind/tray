@@ -32,6 +32,7 @@ public class App {
         ArgParser parser = new ArgParser(args);
         LibUtilities.getInstance().bind();
         if(parser.intercept()) {
+            FileUtilities.cleanup();
             System.exit(parser.getExitCode());
         }
         SingleInstanceChecker.stealWebsocket = parser.hasFlag(ArgValue.STEAL);
@@ -74,7 +75,7 @@ public class App {
         catch(Exception e) {
             log.error("Could not start tray manager", e);
         }
-
+        FileUtilities.cleanup();
         log.warn("The web socket server is no longer running");
     }
 

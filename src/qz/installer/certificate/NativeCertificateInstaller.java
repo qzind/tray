@@ -53,8 +53,9 @@ public abstract class NativeCertificateInstaller {
      * Install a certificate from memory
      */
     public boolean install(X509Certificate cert) {
+        File certFile = null;
         try {
-            File certFile = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
+            certFile = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
             JcaMiscPEMGenerator generator = new JcaMiscPEMGenerator(cert);
             JcaPEMWriter writer = new JcaPEMWriter(new OutputStreamWriter(Files.newOutputStream(certFile.toPath(), StandardOpenOption.CREATE)));
             writer.writeObject(generator.generate());
@@ -63,6 +64,10 @@ public abstract class NativeCertificateInstaller {
             return install(certFile);
         } catch(IOException e) {
             log.warn("Could not install cert from temp file", e);
+        } finally {
+            if(certFile != null && !certFile.delete()) {
+                certFile.deleteOnExit();
+            }
         }
         return false;
     }

@@ -10,6 +10,7 @@
 package qz.utils;
 
 import org.apache.commons.io.Charsets;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
@@ -848,9 +849,9 @@ public class FileUtilities {
         configureAssetFile(relativeAsset, dest.toFile(), additionalMappings, relativeClass);
     }
 
-    public static Path getTempDirectory() {
+    private static Path getTempDirectory() {
         try {
-            return Files.createTempDirectory(Constants.DATA_DIR);
+            return Files.createTempDirectory(Constants.DATA_DIR + "_data_");
         } catch(IOException e) {
             log.warn("We couldn't get a temp directory for writing.  This could cause some items to break");
         }
@@ -889,6 +890,12 @@ public class FileUtilities {
             });
         } catch (IOException e) {
             log.warn("An error occurred setting permissions: {}", toRecurse);
+        }
+    }
+
+    public static void cleanup() {
+        if(FileUtilities.TEMP_DIR != null) {
+            FileUtils.deleteQuietly(FileUtilities.TEMP_DIR.toFile());
         }
     }
 }

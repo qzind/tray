@@ -26,11 +26,6 @@ using System.Web.Services;
 // openssl pkcs12 -export -inkey private-key.pem -in digital-certificate.txt -out private-key.pfx
 private static X509KeyStorageFlags STORAGE_FLAGS = X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable;
 
-
-// To convert a .PEM PrivateKey:
-// openssl pkcs12 -export -inkey private-key.pem -in digital-certificate.txt -out private-key.pfx
-private static X509KeyStorageFlags STORAGE_FLAGS = X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable;
-
 public IActionResult Index(string request)
 {
     var KEY = "/path/to/private-key.pfx";

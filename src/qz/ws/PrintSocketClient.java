@@ -30,6 +30,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.*;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
@@ -84,7 +85,7 @@ public class PrintSocketClient {
 
     @OnWebSocketError
     public void onError(Session session, Throwable error) {
-        if (error instanceof EOFException) { return; }
+        if (error instanceof EOFException || error instanceof ClosedChannelException) { return; }
 
         if (error instanceof CloseException && error.getCause() instanceof TimeoutException) {
             log.error("Timeout error (Lost connection with client)", error);

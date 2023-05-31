@@ -158,7 +158,7 @@ public class GatewayDialog extends JDialog implements Themeable {
                 if(request.isSponsored()) {
                     // special case for sponsored certs
                     trustIcon = IconCache.Icon.TRUST_SPONSORED_ICON;
-                    iconToolTip = Constants.SPONSORED_CERT;
+                    iconToolTip = Constants.SPONSORED_TOOLTIP;
                 } else {
                     trustIcon = IconCache.Icon.TRUST_VERIFIED_ICON;
                 }

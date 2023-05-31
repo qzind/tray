@@ -62,6 +62,8 @@ public class Certificate {
 
     public static final String[] saveFields = new String[] {"fingerprint", "commonName", "organization", "validFrom", "validTo", "valid"};
 
+    public static final String SPONSORED_CN_PREFIX = "Sponsored:";
+
     // Valid date range allows UI to only show "Expired" text for valid certificates
     private static final Instant UNKNOWN_MIN = LocalDateTime.MIN.toInstant(ZoneOffset.UTC);
     private static final Instant UNKNOWN_MAX = LocalDateTime.MAX.toInstant(ZoneOffset.UTC);
@@ -70,6 +72,7 @@ public class Certificate {
     private static DateTimeFormatter dateParse = DateTimeFormatter.ofPattern("uuuu-MM-dd['T'][ ]HH:mm:ss[.n]['Z']"); //allow parsing of both ISO and custom formatted dates
 
     private X509Certificate theCertificate;
+    private boolean sponsored;
     private String fingerprint;
     private String commonName;
     private String organization;
@@ -196,6 +199,13 @@ public class Certificate {
             commonName = getSubjectX509Principal(theCertificate, BCStyle.CN);
             if(commonName.isEmpty()) {
                 throw new CertificateException("Common Name cannot be blank.");
+            }
+            // Remove "Sponsored: " from CN, we'll swap the trusted icon instead <3
+            if(commonName.startsWith(SPONSORED_CN_PREFIX)) {
+                commonName = commonName.split(SPONSORED_CN_PREFIX)[1].trim();
+                sponsored = true;
+            } else {
+                sponsored = false;
             }
             fingerprint = makeThumbPrint(theCertificate);
             organization = getSubjectX509Principal(theCertificate, BCStyle.O);
@@ -444,6 +454,10 @@ public class Certificate {
      */
     public boolean isTrusted() {
         return isValid() && !isExpired();
+    }
+
+    public boolean isSponsored() {
+        return sponsored;
     }
 
     public boolean isValid() {

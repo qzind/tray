@@ -98,7 +98,7 @@ public class CertificateTable extends DisplayTable implements Themeable {
         // First Column
         for(CertificateField field : CertificateField.values()) {
             if(field.equals(CertificateField.TRUSTED) && !Certificate.isTrustBuiltIn()) {
-                continue; // Remove "Trusted by" text; uncertain in strict mode
+                continue; // Remove "Verified by" text; uncertain in strict mode
             }
             model.addRow(new Object[] {field, field.getValue(cert)});
         }
@@ -140,7 +140,16 @@ public class CertificateTable extends DisplayTable implements Themeable {
             if (field == null) { return stylizeLabel(STATUS_NORMAL, label, isSelected); }
             switch(field) {
                 case TRUSTED:
-                    label.setText(cert.isValid()? Constants.TRUSTED_CERT:Constants.UNTRUSTED_CERT);
+                    if(cert.isValid()) {
+                        if(cert.isSponsored() && Certificate.isTrustBuiltIn()) {
+                            // isTrustBuiltIn: Assume only QZ sponsors
+                            label.setText(Constants.SPONSORED_CERT);
+                        } else {
+                            label.setText(Constants.TRUSTED_CERT);
+                        }
+                    } else {
+                        label.setText(Constants.UNTRUSTED_CERT);
+                    }
                     return stylizeLabel(!cert.isValid()? STATUS_WARNING:STATUS_TRUSTED, label, isSelected);
                 case VALID_FROM:
                     boolean futureExpiration = cert.getValidFromDate().isAfter(now);

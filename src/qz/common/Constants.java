@@ -51,6 +51,8 @@ public class Constants {
     public static final boolean ENABLE_DIAGNOSTICS = true; // Diagnostics menu (logs, etc)
 
     public static final String TRUSTED_CERT = String.format("Verified by %s", Constants.ABOUT_COMPANY);
+    public static final String SPONSORED_CERT = String.format("Sponsored by %s", Constants.ABOUT_COMPANY);
+    public static final String SPONSORED_TOOLTIP = "Sponsored organization";
     public static final String UNTRUSTED_CERT = "Untrusted website";
     public static final String NO_TRUST = "Cannot verify trust";
 

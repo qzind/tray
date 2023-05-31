@@ -457,7 +457,6 @@ public class Certificate {
     }
 
     public boolean isSponsored() {
-
         return sponsored;
     }
 

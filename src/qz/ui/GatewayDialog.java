@@ -174,7 +174,6 @@ public class GatewayDialog extends JDialog implements Themeable {
 
             verifiedLabel.setIcon(iconCache.getIcon(trustIcon));
             verifiedLabel.setToolTipText(iconToolTip);
-
             certInfoLabel.setForeground(detailColor);
         } else {
             descriptionLabel.setText(description);

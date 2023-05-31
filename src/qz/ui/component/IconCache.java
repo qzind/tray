@@ -63,6 +63,7 @@ public class IconCache {
         BLOCK_ICON("qz-block.png"),
         CANCEL_ICON("qz-cancel.png"),
         TRUST_VERIFIED_ICON("qz-trust-verified.png"),
+        TRUST_SPONSORED_ICON("qz-trust-sponsored.png"),
         TRUST_ISSUE_ICON("qz-trust-issue.png"),
         TRUST_MISSING_ICON("qz-trust-missing.png"),
         FIELD_ICON("qz-field.png"),

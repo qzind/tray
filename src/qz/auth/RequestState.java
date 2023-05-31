@@ -101,6 +101,10 @@ public class RequestState {
         return certUsed.isTrusted() && status == Validity.TRUSTED;
     }
 
+    public boolean isSponsored() {
+        return certUsed.isSponsored();
+    }
+
     public String getValidityInfo() {
         if (status == Validity.TRUSTED) {
             return Constants.TRUSTED_CERT;

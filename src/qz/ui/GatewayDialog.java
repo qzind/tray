@@ -151,10 +151,17 @@ public class GatewayDialog extends JDialog implements Themeable {
             certInfoLabel.setText("View request details");
 
             IconCache.Icon trustIcon;
+            String iconToolTip = null;
             Color detailColor = Constants.TRUSTED_COLOR;
             if (request.isVerified()) {
                 //cert and signature are good
-                trustIcon = IconCache.Icon.TRUST_VERIFIED_ICON;
+                if(request.isSponsored()) {
+                    // special case for sponsored certs
+                    trustIcon = IconCache.Icon.TRUST_SPONSORED_ICON;
+                    iconToolTip = Constants.SPONSORED_CERT;
+                } else {
+                    trustIcon = IconCache.Icon.TRUST_VERIFIED_ICON;
+                }
             } else if (request.getCertUsed().isValid()) {
                 //cert is good, but there is an issue with the signature
                 trustIcon = IconCache.Icon.TRUST_ISSUE_ICON;
@@ -166,6 +173,8 @@ public class GatewayDialog extends JDialog implements Themeable {
             }
 
             verifiedLabel.setIcon(iconCache.getIcon(trustIcon));
+            verifiedLabel.setToolTipText(iconToolTip);
+
             certInfoLabel.setForeground(detailColor);
         } else {
             descriptionLabel.setText(description);

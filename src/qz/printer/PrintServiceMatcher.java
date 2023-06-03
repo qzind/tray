@@ -30,6 +30,8 @@ import java.util.Locale;
 
 public class PrintServiceMatcher {
     private static final Logger log = LogManager.getLogger(PrintServiceMatcher.class);
+    private static boolean mediaTrayMessageShown = false;
+    private static boolean printerNamesShown = false;
 
     public static NativePrinterMap getNativePrinterList(boolean silent, boolean withAttributes) {
         NativePrinterMap printers = NativePrinterMap.getInstance();
@@ -158,8 +160,6 @@ public class PrintServiceMatcher {
 
         PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
 
-        boolean mediaTrayCrawled = false;
-
         for(NativePrinter printer : getNativePrinterList().values()) {
             PrintService ps = printer.getPrintService().value();
             JSONObject jsonService = new JSONObject();
@@ -170,10 +170,16 @@ public class PrintServiceMatcher {
                 jsonService.put("connection", printer.getConnection());
                 jsonService.put("default", ps == defaultService);
 
-                if (!mediaTrayCrawled) {
+                if (!mediaTrayMessageShown) {
                     log.info("Gathering printer MediaTray information...");
-                    mediaTrayCrawled = true;
+                    mediaTrayMessageShown = true;
                 }
+
+                // Drivers have a tendency to crash while looping over details, echo the printer name for troubleshooting
+                if(!printerNamesShown) {
+                    log.info("Gathering MediaTray information for {}...", jsonService.get("name"));
+                }
+
                 for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
                     if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
                 }
@@ -184,6 +190,10 @@ public class PrintServiceMatcher {
             }
 
             list.put(jsonService);
+        }
+
+        if(includeDetails) {
+            printerNamesShown = true;
         }
 
         return list;

@@ -2654,6 +2654,43 @@ var qz = (function() {
         },
 
         /**
+         * @namespace qz.gui
+         */
+        gui: {
+            /**
+             * Show the the actions/options menu
+             * @memberof qz.gui
+             */
+            showMenu: function(event) {
+                return _qz.websocket.dataPromise('gui.showMenu');
+            },
+
+            /**
+             * Show the About dialog
+             * @memberof qz.gui
+             */
+            showAbout: function() {
+                return _qz.websocket.dataPromise('gui.showAbout');
+            },
+
+            /**
+             * Show the Site Manager dialog
+             * @memberof qz.gui
+             */
+            showSites: function() {
+                return _qz.websocket.dataPromise('gui.showSites');
+            },
+
+            /**
+             * Show the Log dialog
+             * @memberof qz.gui
+             */
+            showLog: function() {
+                return _qz.websocket.dataPromise('gui.showLog');
+            }
+        },
+
+        /**
          * Calls related to compatibility adjustments
          * @namespace qz.api
          */

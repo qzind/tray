@@ -95,6 +95,10 @@ public class Constants {
     public static final Color TRUSTED_COLOR_LITE = Color.BLUE;
     public static final Color WARNING_COLOR_DARK = Color.decode("#EB6261");
     public static final Color TRUSTED_COLOR_DARK = Color.decode("#589DF6");
+    public static final Color RUNNING_COLOR = Color.decode("#00AD47");
+    public static final Color PENDING_COLOR = Color.decode("#B2B247");
+    public static final Color STOPPED_COLOR = Color.decode("#AE4745");
+
     public static Color WARNING_COLOR = WARNING_COLOR_LITE;
     public static Color TRUSTED_COLOR = TRUSTED_COLOR_LITE;
 

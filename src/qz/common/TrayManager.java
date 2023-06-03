@@ -26,12 +26,11 @@ import qz.ui.tray.TrayType;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
+import qz.ws.SocketMethod;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -62,6 +61,7 @@ public class TrayManager {
     private AboutDialog aboutDialog;
     private LogDialog logDialog;
     private SiteManagerDialog sitesDialog;
+    private ControlDialog controlDialog;
     private ArrayList<Component> componentList;
     private IconCache.Icon shownIcon;
 
@@ -254,6 +254,10 @@ public class TrayManager {
         sitesDialog = new SiteManagerDialog(sitesItem, iconCache, prefs);
         componentList.add(sitesDialog);
 
+        JMenuItem controlMenuItem = new JMenuItem("Control Menu...", iconCache.getIcon(SAVED_ICON));
+        controlMenuItem.setMnemonic(KeyEvent.VK_C);
+        controlMenuItem.addActionListener(controlMenuListener);
+
         JMenuItem diagnosticMenu = new JMenu("Diagnostic");
 
         JMenuItem browseApp = new JMenuItem("Browse App folder...", iconCache.getIcon(FOLDER_ICON));
@@ -328,6 +332,7 @@ public class TrayManager {
             advancedMenu.add(new JSeparator());
         }
         advancedMenu.add(sitesItem);
+        advancedMenu.add(controlMenuItem);
         advancedMenu.add(desktopItem);
         advancedMenu.add(new JSeparator());
         advancedMenu.add(anonymousItem);
@@ -369,26 +374,87 @@ public class TrayManager {
         popup.add(separator);
         popup.add(exitItem);
 
+        controlDialog = new ControlDialog(iconCache);
+        componentList.add(controlDialog);
+
+        // Status/control section
+        controlDialog.add(reloadItem, ControlDialog.Category.STATUS);
+        controlDialog.add(exitItem, "Shut down", ControlDialog.Category.STATUS);
+
+        // General section
+        controlDialog.add(aboutItem, ControlDialog.Category.GENERAL);
+        controlDialog.add(sitesItem, ControlDialog.Category.GENERAL);
+        controlDialog.add(logItem, ControlDialog.Category.GENERAL);
+
+        // Advanced section
+        controlDialog.add(startupItem, ControlDialog.Category.ADVANCED);
+        controlDialog.add(notificationsItem, ControlDialog.Category.ADVANCED);
+        controlDialog.add(monocleItem, ControlDialog.Category.ADVANCED);
+        controlDialog.add(anonymousItem, ControlDialog.Category.ADVANCED);
+        controlDialog.add(new JSeparator(), ControlDialog.Category.ADVANCED);
+        controlDialog.add(desktopItem, ControlDialog.Category.ADVANCED);
+
+        // Diagnostic section
+        controlDialog.add(zipLogs, ControlDialog.Category.DIAGNOSTIC);
+        controlDialog.add(new JSeparator(), ControlDialog.Category.DIAGNOSTIC);
+        controlDialog.add(browseApp, ControlDialog.Category.DIAGNOSTIC);
+        controlDialog.add(browseUser, ControlDialog.Category.DIAGNOSTIC);
+        controlDialog.add(browseShared, ControlDialog.Category.DIAGNOSTIC);
+
         if (tray != null) {
             tray.setJPopupMenu(popup);
-        }
+        } // FIXME REMOVE THIS COMMENT // else {
+            // Display and minimize
+            controlDialog.setPersistent(true);
+            controlDialog.setVisible(true);
+            controlDialog.setState(Frame.ICONIFIED);
+        // FIXME REMOVE THIS COMMENT // controlMenuDialog.setState(Frame.ICONIFIED);
+        // FIXME REMOVE THIS COMMENT // }
+
+
     }
 
+    private static boolean getCheckBoxState(ActionEvent e) {
+        Object o = e.getSource();
+        if(o instanceof JCheckBox) {
+            return ((JCheckBox)o).isSelected();
+        } else if(o instanceof JCheckBoxMenuItem) {
+            return ((JCheckBoxMenuItem)o).getState();
+        } else if(o instanceof CheckboxMenuItem) {
+            return ((CheckboxMenuItem)o).getState();
+        }
+        throw new UnsupportedOperationException("Cannot get checkbox state of " + o.getClass().getSimpleName());
+    }
+
+    private static void setCheckBoxState(ActionEvent e, boolean state) {
+        Object o = e.getSource();
+        if(o instanceof JCheckBox) {
+            ((JCheckBox)o).setSelected(state);
+            return;
+        } else if(o instanceof JCheckBoxMenuItem) {
+            ((JCheckBoxMenuItem)o).setState(state);
+            return;
+        } else if(o instanceof CheckboxMenuItem) {
+            ((CheckboxMenuItem)o).setState(state);
+            return;
+        }
+        throw new UnsupportedOperationException("Cannot get checkbox state of " + o.getClass().getSimpleName());
+    }
 
     private final ActionListener notificationsListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            prefs.setProperty(Constants.PREFS_NOTIFICATIONS, ((JCheckBoxMenuItem)e.getSource()).getState());
+            prefs.setProperty(Constants.PREFS_NOTIFICATIONS, getCheckBoxState(e));
         }
     };
 
     private final ActionListener monocleListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
-            prefs.setProperty(Constants.PREFS_MONOCLE, j.getState());
+            boolean state = getCheckBoxState(e);
+            prefs.setProperty(Constants.PREFS_MONOCLE, state);
             displayWarningMessage(String.format("A restart of %s is required to ensure this feature is %sabled.",
-                                                Constants.ABOUT_TITLE, j.getState()? "en":"dis"));
+                                                Constants.ABOUT_TITLE, state? "en":"dis"));
         }
     };
 
@@ -405,10 +471,7 @@ public class TrayManager {
     };
 
     private final ActionListener anonymousListener = e -> {
-        boolean checkBoxState = true;
-        if (e.getSource() instanceof JCheckBoxMenuItem) {
-            checkBoxState = ((JCheckBoxMenuItem)e.getSource()).getState();
-        }
+        boolean checkBoxState = getCheckBoxState(e);
 
         log.debug("Block unsigned: {}", checkBoxState);
 
@@ -429,17 +492,18 @@ public class TrayManager {
 
     private ActionListener startupListener() {
         return e -> {
-            JCheckBoxMenuItem source = (JCheckBoxMenuItem)e.getSource();
-            if (!source.getState() && !confirmDialog.prompt("Remove " + name + " from startup?")) {
-                source.setState(true);
+            if (!getCheckBoxState(e) && !confirmDialog.prompt("Remove " + name + " from startup?")) {
+                setCheckBoxState(e,true);
                 return;
             }
-            if (FileUtilities.setAutostart(source.getState())) {
-                displayInfoMessage("Successfully " + (source.getState() ? "enabled" : "disabled") + " autostart");
+
+            boolean state = getCheckBoxState(e);
+            if (FileUtilities.setAutostart(state)) {
+                displayInfoMessage("Successfully " + (state ? "enabled" : "disabled") + " autostart");
             } else {
-                displayErrorMessage("Error " + (source.getState() ? "enabling" : "disabling") + " autostart");
+                displayErrorMessage("Error " + (state ? "enabling" : "disabling") + " autostart");
             }
-            source.setState(FileUtilities.isAutostart());
+            setCheckBoxState(e, FileUtilities.isAutostart());
         };
     }
 
@@ -473,6 +537,11 @@ public class TrayManager {
             boolean showAllNotifications = getPref(Constants.PREFS_NOTIFICATIONS, false);
             if (!showAllNotifications || confirmDialog.prompt("Exit " + name + "?")) { exit(0); }
         }
+    };
+
+
+    private final ActionListener controlMenuListener = e -> {
+        controlDialog.setVisible(true);
     };
 
     public void exit(int returnCode) {
@@ -603,6 +672,7 @@ public class TrayManager {
     public void refreshIcon(final Runnable whenDone) {
         SwingUtilities.invokeLater(() -> {
             tray.setIcon(shownIcon);
+            controlDialog.setRunningIndicator(shownIcon);
             if(whenDone != null) {
                 whenDone.run();
             }
@@ -629,6 +699,31 @@ public class TrayManager {
         } else {
             log.info("{}: [{}] {}", caption, level, text);
         }
+    }
+
+    public void displayComponent(SocketMethod method, Point location) {
+        SwingUtilities.invokeLater(() -> {
+            switch(method) {
+                case GUI_SHOW_ABOUT:
+                    SystemUtilities.centerWindow(aboutDialog, location);
+                    aboutDialog.setVisible(true);
+                    break;
+                case GUI_SHOW_LOG:
+                    SystemUtilities.centerWindow(logDialog, location);
+                    logDialog.setVisible(true);
+                    break;
+                case GUI_SHOW_SITES:
+                    SystemUtilities.centerWindow(sitesDialog, location);
+                    sitesDialog.setVisible(true);
+                    break;
+                case GUI_SHOW_MENU:
+                    SystemUtilities.centerWindow(controlDialog, location);
+                    controlDialog.setVisible(true);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Call \"" + method.getCallName() + "\" is not yet supported");
+            }
+        });
     }
 
     public void singleInstanceCheck(java.util.List<Integer> insecurePorts, Integer insecurePortIndex) {

@@ -634,6 +634,16 @@ public class PrintSocketClient {
             case GET_VERSION:
                 sendResult(session, UID, Constants.VERSION);
                 break;
+            case GUI_SHOW_MENU:
+            case GUI_SHOW_SITES:
+            case GUI_SHOW_ABOUT:
+            case GUI_SHOW_LOG:
+              if(trayManager != null) {
+                  trayManager.displayComponent(call, findDialogPosition(session, json.optJSONObject("position")));
+              } else {
+                  log.warn("Cannot call \"{}\" when trayManager is null", call.getCallName());
+              }
+              break;
             case WEBSOCKET_STOP:
                 log.info("Another instance of {} is asking this to close", Constants.ABOUT_TITLE);
                 String challenge = json.optString("challenge", "");

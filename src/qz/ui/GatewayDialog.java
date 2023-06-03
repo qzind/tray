@@ -228,7 +228,7 @@ public class GatewayDialog extends JDialog implements Themeable {
         setDescription(description);
         setRequest(request);
         refreshComponents();
-        SystemUtilities.centerDialog(this, position);
+        SystemUtilities.centerWindow(this, position);
         setVisible(true);
 
         return isApproved();

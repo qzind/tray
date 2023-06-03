@@ -39,7 +39,7 @@ import java.util.Locale;
  */
 public class MacUtilities {
     private static final Logger log = LogManager.getLogger(MacUtilities.class);
-    private static Dialog aboutDialog;
+    private static Window aboutDialog;
     private static TrayManager trayManager;
     private static String bundleId;
     private static Boolean jdkSupportsTemplateIcon;
@@ -57,7 +57,7 @@ public class MacUtilities {
     /**
      * Adds a listener to register the Apple "About" dialog to call {@code setVisible()} on the specified Dialog
      */
-    public static void registerAboutDialog(Dialog aboutDialog) {
+    public static void registerAboutDialog(Window aboutDialog) {
         MacUtilities.aboutDialog = aboutDialog;
 
         try {

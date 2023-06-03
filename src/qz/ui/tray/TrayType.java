@@ -2,7 +2,6 @@ package qz.ui.tray;
 
 import org.jdesktop.swinghelper.tray.JXTrayIcon;
 import qz.ui.component.IconCache;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;

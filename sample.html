@@ -613,8 +613,12 @@
                                                 <input type="number" id="pPxlHeight" class="form-control pull-right" />
                                             </div>
                                             <div class="form-group form-inline">
-                                                <label for="pPxlTransparent">Ignore Transparency:</label>
+                                                <label for="pPxlTransparent">Ignore Transparency (PDF only):</label>
                                                 <input type="checkbox" id="pPxlTransparent" class="pull-right" />
+                                            </div>
+                                            <div class="form-group form-inline">
+                                                <label for="pPxlAltFontRendering">Alternate Font Rendering  (PDF only):</label>
+                                                <input type="checkbox" id="pPxlAltFontRendering" class="pull-right" />
                                             </div>
                                         </div>
                                     </div>
@@ -3231,7 +3235,8 @@
                 pageWidth: $("#pPxlWidth").val(),
                 pageHeight: $("#pPxlHeight").val(),
                 pageRanges: $("#pPxlRange").val(),
-                ignoreTransparency: $("#pPxlTransparent").prop('checked')
+                ignoreTransparency: $("#pPxlTransparent").prop('checked'),
+                altFontRendering: $("#pPxlAltFontRendering").prop('checked')
             };
         } else {
             return {

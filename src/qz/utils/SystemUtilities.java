@@ -20,6 +20,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.common.TrayManager;
+import qz.installer.Installer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -773,12 +774,26 @@ public class SystemUtilities {
     }
 
     private static long calculateChallenge() {
-        if(getJarPath() != null) {
-            if (getJarPath().toFile().exists()) {
-                return getJarPath().toFile().lastModified();
+        Path jarPath;
+        if(SystemUtilities.isJar()) {
+            jarPath = getJarPath();
+        } else {
+            // Running from IDE: Try to guess .jar location
+            if(SystemUtilities.isMac()) {
+                // 2.2+
+                jarPath = Paths.get(Installer.getInstance().getDestination(), "Contents", "Resources", Constants.PROPS_FILE + ".jar");
+                if(!jarPath.toFile().exists()) {
+                    // 2.1
+                    jarPath = Paths.get(Installer.getInstance().getDestination(), Constants.PROPS_FILE + ".jar");
+                }
+            } else {
+                jarPath = Paths.get(Installer.getInstance().getDestination(), Constants.PROPS_FILE + ".jar");
             }
         }
-        return -1L; // Fallback when running from IDE
+        if (jarPath.toFile().exists()) {
+            return jarPath.toFile().lastModified();
+        }
+        return -1L; // Fallback
     }
 
     /**

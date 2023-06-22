@@ -791,7 +791,7 @@ public class SystemUtilities {
             }
         }
         if (jarPath.toFile().exists()) {
-            return getJarPath().toFile().lastModified();
+            return jarPath.toFile().lastModified();
         }
         return -1L; // Fallback
     }

@@ -22,10 +22,9 @@ import qz.utils.SystemUtilities;
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 import javax.print.attribute.ResolutionSyntax;
-import javax.print.attribute.standard.Media;
-import javax.print.attribute.standard.MediaTray;
-import javax.print.attribute.standard.PrinterName;
-import javax.print.attribute.standard.PrinterResolution;
+import javax.print.attribute.standard.*;
+import java.awt.geom.Rectangle2D;
+import java.util.HashMap;
 import java.util.Locale;
 
 public class PrintServiceMatcher {
@@ -174,8 +173,36 @@ public class PrintServiceMatcher {
                     log.info("Gathering printer MediaTray information...");
                     mediaTrayCrawled = true;
                 }
+
+                HashMap<String, Rectangle2D> sizes = new HashMap<>();
+
                 for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
                     if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
+                    if (m instanceof MediaSizeName) {
+                        MediaSize mediaSize = MediaSize.getMediaSizeForName((MediaSizeName)m);
+                        if(mediaSize != null) {
+                            // Collect into a HashMap to avoid duplicates
+                            float widthIn = mediaSize.getX(MediaPrintableArea.INCH);
+                            float heightIn = mediaSize.getY(MediaPrintableArea.INCH);
+                            String keyIn = String.format("%sx%s in",widthIn, heightIn);
+                            Rectangle2D valueIn = new Rectangle2D.Float(0, 0, widthIn, heightIn);
+                            sizes.put(keyIn, valueIn);
+
+                            float widthMm = mediaSize.getX(MediaPrintableArea.MM);
+                            float heightMm = mediaSize.getY(MediaPrintableArea.MM);
+                            String keyMm = String.format("%sx%s mm", widthMm, heightMm);
+                            Rectangle2D valueMm = new Rectangle2D.Float(0, 0, widthMm, heightMm);
+                            sizes.put(keyMm, valueMm);
+                        }
+                    }
+                }
+
+                for(String key : sizes.keySet()) {
+                    JSONObject sizeEntry = new JSONObject();
+                    sizeEntry.put("units", key.endsWith("in") ? "in" : "mm");
+                    sizeEntry.put("width", sizes.get(key).getWidth());
+                    sizeEntry.put("height", sizes.get(key).getHeight());
+                    jsonService.accumulate("sizes", sizeEntry);
                 }
 
                 PrinterResolution res = printer.getResolution().value();

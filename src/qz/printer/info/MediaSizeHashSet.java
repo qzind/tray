@@ -8,13 +8,13 @@ import java.util.*;
 /**
  * A sortable <code>HashMap</code> for storing printer page sizes for both imperial (inches) and metric (millimeters)
  */
-public class MediaSizeHashSet extends HashSet<MediaSizeHashSet.Pair> {
-    public class Pair implements Comparable {
-        private DimensionFloat inches;
+public class MediaSizeHashSet extends HashSet<MediaSizeHashSet.UnitPair> {
+    public class UnitPair implements Comparable {
+        private DimensionFloat in;
         private DimensionFloat mm;
 
-        public Pair(MediaSize mediaSize) {
-            inches = new DimensionFloat(mediaSize.getX(MediaPrintableArea.INCH), mediaSize.getY(MediaPrintableArea.INCH));
+        public UnitPair(MediaSize mediaSize) {
+            in = new DimensionFloat(mediaSize.getX(MediaPrintableArea.INCH), mediaSize.getY(MediaPrintableArea.INCH));
             mm = new DimensionFloat(mediaSize.getX(MediaPrintableArea.MM), mediaSize.getY(MediaPrintableArea.MM));
         }
 
@@ -22,23 +22,29 @@ public class MediaSizeHashSet extends HashSet<MediaSizeHashSet.Pair> {
         public boolean equals(Object o) {
             if (this == o) {return true;}
             if (o == null || getClass() != o.getClass()) {return false;}
-            Pair that = (Pair)o;
-            return inches.width == that.inches.width && inches.height == that.inches.height;
+            UnitPair that = (UnitPair)o;
+            return in.width == that.in.width && in.height == that.in.height;
         }
 
         @Override
         public int compareTo(Object o) {
             if (this == o) {return 0;}
             if (o == null || getClass() != o.getClass()) {return -1;}
-            return Comparator.comparing((Pair p)-> p.inches.width)
-                    .thenComparing((Pair p)-> p.inches.height)
-                    .compare(this, (Pair)o);
+            return Comparator.comparing((UnitPair p)-> p.in.width)
+                    .thenComparing((UnitPair p)-> p.in.height)
+                    .compare(this, (UnitPair)o);
         }
 
-        public DimensionFloat getInches() {
-            return inches;
+        /**
+         * Get size as <code>DimensionFloat</code> in inches
+         */
+        public DimensionFloat getIn() {
+            return in;
         }
 
+        /**
+         * Get size as <code>DimensionFloat</code> in millimeters
+         */
         public DimensionFloat getMm() {
             return mm;
         }
@@ -71,7 +77,7 @@ public class MediaSizeHashSet extends HashSet<MediaSizeHashSet.Pair> {
     public boolean add(MediaSizeName mediaSizeName) {
         MediaSize mediaSize = MediaSize.getMediaSizeForName(mediaSizeName);
         if(mediaSize != null) {
-            return add(new Pair(mediaSize));
+            return add(new UnitPair(mediaSize));
         }
         return false;
     }

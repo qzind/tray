@@ -182,20 +182,20 @@ public class PrintServiceMatcher {
                     }
                 }
 
-                List<MediaSizeHashSet.Pair> sortedList = new ArrayList<>(sizes);
+                List<MediaSizeHashSet.UnitPair> sortedList = new ArrayList<>(sizes);
                 Collections.sort(sortedList);
 
-                for(MediaSizeHashSet.Pair pair : sortedList) {
-                    // Inches
-                    JSONObject inches = new JSONObject();
-                    inches.put("units", "in");
-                    inches.put("width", pair.getInches().getWidth());
-                    inches.put("height", pair.getInches().getHeight());
-                    jsonService.accumulate("sizes", inches);
+                for(MediaSizeHashSet.UnitPair pair : sortedList) {
+                    // First, list as inches
+                    JSONObject in = new JSONObject();
+                    in.put("units", "in");
+                    in.put("width", pair.getIn().getWidth());
+                    in.put("height", pair.getIn().getHeight());
+                    jsonService.accumulate("sizes", in);
                 }
 
-                for(MediaSizeHashSet.Pair pair : sortedList) {
-                    // Millimeters
+                for(MediaSizeHashSet.UnitPair pair : sortedList) {
+                    // Second, list as millimeters
                     JSONObject mm = new JSONObject();
                     mm.put("units", "mm");
                     mm.put("width", pair.getMm().getWidth());

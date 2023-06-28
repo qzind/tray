@@ -14,4 +14,4 @@ if ! ./"${project.name}" --version; then
     exit 1
 fi
 
-./"${project.name}" preinstall
+./"${project.name}" preinstall > "/tmp/${project.datadir}-install.log" 2>&1

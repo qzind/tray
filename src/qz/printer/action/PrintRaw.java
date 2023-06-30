@@ -146,7 +146,7 @@ public class PrintRaw implements PrintProcessor {
 
     private byte[] seekConversion(byte[] rawBytes, PrintOptions.Raw rawOpts) {
         if (rawOpts.getSrcEncoding() != null) {
-            if(rawOpts.getSrcEncoding().equals(rawOpts.getDestEncoding())) {
+            if(rawOpts.getSrcEncoding().equals(rawOpts.getDestEncoding()) || rawOpts.getDestEncoding() == null) {
                 log.warn("Provided srcEncoding and destEncoding are the same, skipping");
             } else {
                 try {
@@ -217,7 +217,7 @@ public class PrintRaw implements PrintProcessor {
                 // We'll toggle between 'plain' and 'file' when we construct WebAppModel
                 break;
             default:
-                data = new String(seekConversion(flavor.read(data), rawOpts), rawOpts.getDestEncoding());
+                data = new String(seekConversion(flavor.read(data), rawOpts), destEncoding);
         }
 
         double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());

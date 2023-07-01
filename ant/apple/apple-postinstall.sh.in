@@ -7,7 +7,7 @@ set -e
 DIR=$(cd "$(dirname "$0")" && pwd)
 pushd "$DIR/payload/${project.name}.app/Contents/MacOS/"
 
-./"${project.name}" install
+./"${project.name}" install >> "${install.log}" 2>&1
 popd
 
 # Use install target from pkgbuild, an undocumented feature; fallback on sane location
@@ -17,7 +17,7 @@ else
     pushd "/Applications/${project.name}.app/Contents/MacOS/"
 fi
 
-./"${project.name}" certgen
+./"${project.name}" certgen >> "${install.log}" 2>&1
 
 # Start qz by calling open on the .app as an ordinary user
 su "$USER" -c "open ../../" || true

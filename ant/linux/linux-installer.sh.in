@@ -20,12 +20,15 @@ mask=755
 
 echo -e "Starting install...\n"
 
+# Clear the log for writing
+> "${install.log}"
+
 run_task () {
     echo -e "Running $1 task..."
     if [ -n "$DEBUG" ]; then
         "./${project.filename}" $@ && ret_val=$? || ret_val=$?
     else
-        "./${project.filename}" $@ &> /dev/null && ret_val=$? || ret_val=$?
+        "./${project.filename}" $@ &>> "${install.log}" && ret_val=$? || ret_val=$?
     fi
 
     if [ $ret_val -eq 0 ]; then

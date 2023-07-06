@@ -812,18 +812,20 @@ var qz = (function() {
             /** Converts message format to a previous version's */
             data: function(printData) {
                 // special handling for Uint8Array
-                if (printData.constructor === Object && printData.data instanceof Uint8Array) {
-                    if (printData.flavor) {
-                        var flavor = printData.flavor.toString().toUpperCase();
-                        switch(flavor) {
-                            case 'BASE64':
-                                printData.data = _qz.tools.uint8ArrayToBase64(printData.data);
-                                break;
-                            case 'HEX':
-                                printData.data = _qz.tools.uint8ArrayToHex(printData.data);
-                                break;
-                            default:
-                                throw new Error("Uint8Array conversion to '" + flavor + "' is not supported.");
+                for(var i = 0; i < printData.length; i++) {
+                    if (printData[i].constructor === Object && printData[i].data instanceof Uint8Array) {
+                        if (printData[i].flavor) {
+                            var flavor = printData[i].flavor.toString().toUpperCase();
+                            switch(flavor) {
+                                case 'BASE64':
+                                    printData[i].data = _qz.tools.uint8ArrayToBase64(printData[i].data);
+                                    break;
+                                case 'HEX':
+                                    printData[i].data = _qz.tools.uint8ArrayToHex(printData[i].data);
+                                    break;
+                                default:
+                                    throw new Error("Uint8Array conversion to '" + flavor + "' is not supported.");
+                            }
                         }
                     }
                 }

@@ -46,7 +46,11 @@
 <div class="container" role="main">
 
     <div class="row">
-        <h1 id="title" class="page-header">QZ Tray v<span id="qz-version">0</span></h1>
+        <h1 id="title" class="page-header">QZ Tray v<span id="qz-version">0</span>
+            <a class="pull-right btn btn-primary btn" href="https://qz.io/download">
+                <i class="fa fa-download"></i> Download QZ Tray
+            </a>
+        </h1>
     </div>
 
     <div class="row spread">
@@ -1592,7 +1596,8 @@
         qz.printers.find().then(function(data) {
             var list = '';
             for(var i = 0; i < data.length; i++) {
-                list += "&nbsp; " + data[i] + "<br/>";
+                var button = '<button class="btn btn-default btn-xs" onclick="findPrinter(\'' + data[i] + '\', true)" data-dismiss="alert">Use This</button>'
+                list += "&nbsp; " + data[i] + "&nbsp;" + button + "<br/>";
             }
 
             displayMessage("<strong>Available printers:</strong><br/>" + list, null, 15000);

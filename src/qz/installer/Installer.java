@@ -49,7 +49,9 @@ public abstract class Installer {
     public abstract Installer addAppLauncher();
     public abstract Installer addStartupEntry();
     public abstract Installer addSystemSettings();
+    public abstract Installer addServiceRegistration(String user);
     public abstract Installer removeSystemSettings();
+    public abstract Installer removeServiceRegistration();
     public abstract void spawn(List<String> args) throws Exception;
 
     public abstract void setDestination(String destination);
@@ -93,7 +95,8 @@ public abstract class Installer {
     public static void install() throws Exception {
         getInstance();
         log.info("Installing to {}", instance.getDestination());
-        instance.removeLibs()
+        instance.removeServiceRegistration()
+                .removeLibs()
                 .deployApp()
                 .removeLegacyStartup()
                 .removeLegacyFiles()
@@ -110,6 +113,7 @@ public abstract class Installer {
         log.info("Uninstalling from {}", instance.getDestination());
         instance.removeSharedDirectory()
                 .removeSystemSettings()
+                .removeServiceRegistration()
                 .removeCerts();
     }
 
@@ -177,8 +181,8 @@ public abstract class Installer {
 
         // QZ Tray 2.0 files
         dirs.add("demo/js/3rdparty");
-        dirs.add("utils");
         dirs.add("auth");
+        files.add("utils/windows-cleanup.js");
         files.add("demo/js/qz-websocket.js");
         files.add("windows-icon.ico");
 

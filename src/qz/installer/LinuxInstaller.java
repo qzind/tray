@@ -368,4 +368,14 @@ public class LinuxInstaller extends Installer {
         return env;
     }
 
+    @Override
+    public Installer addServiceRegistration(String user) {
+        throw new UnsupportedOperationException("This feature is not yet supported on Linux");
+    }
+
+    @Override
+    public Installer removeServiceRegistration() {
+        return this; // no-op
+    }
+
 }

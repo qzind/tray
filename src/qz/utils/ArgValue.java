@@ -33,6 +33,8 @@ public enum ArgValue {
               "--honorautostart", "-A"),
     STEAL(OPTION, "Ask other running instance to stop so that this instance can take precedence.", null,
           "--steal", Constants.DATA_DIR + ":steal"),
+    WAIT(OPTION, "Wait for launcher to terminate (Windows only)", null,
+         "--wait"),
     HEADLESS(OPTION, "Force startup \"headless\" without graphical interface or interactive components.", null,
              "--headless"),
 
@@ -45,6 +47,8 @@ public enum ArgValue {
             "certgen"),
     UNINSTALL(INSTALLER, "Perform all uninstall tasks: Stop instances, delete files, unregister settings.", null,
               "uninstall"),
+    SERVICE(INSTALLER, "Installs as system service (Windows only).", "service [--user jdoe] [--remove]",
+            "service"),
     SPAWN(INSTALLER, "Spawn an instance of the specified program as the logged-in user, avoiding starting as the root user if possible.", "spawn [program params ...]",
           "spawn"),
 
@@ -122,7 +126,13 @@ public enum ArgValue {
         PFX(ArgValue.CERTGEN, "Path to a paired HTTPS private key and certificate in PKCS#12 format.",
             "--pfx", "--pkcs12"),
         PASS(ArgValue.CERTGEN, "Password for decoding private key.",
-             "--pass", "-p");
+             "--pass", "-p"),
+
+        // service
+        RUNAS(ArgValue.SERVICE, "Username to run the system service as (Windows only)",
+                "--runas", "--user", "-u"),
+        REMOVE(ArgValue.SERVICE, "Remove the system service as (Windows only)",
+               "--remove", "-r");
 
         ArgValue parent;
         String description;

@@ -381,6 +381,10 @@ button > .fa-caret-down {
     border-bottom: 1px dashed;
 }
 
+summary {
+    cursor: pointer;
+}
+
 code {
     color: #31708F;
     background-color: #D9EDF7;

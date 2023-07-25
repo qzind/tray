@@ -1596,7 +1596,7 @@
         qz.printers.find().then(function(data) {
             var list = '';
             for(var i = 0; i < data.length; i++) {
-                var button = '<button class="btn btn-default btn-xs" onclick="findPrinter(\'' + data[i] + '\', true)" data-dismiss="alert">Use This</button>'
+                var button = '<button class="btn btn-default btn-xs" onclick="findPrinter(\'' + data[i].replace(/\\/g, "\\\\") + '\', true)" data-dismiss="alert">Use This</button>'
                 list += "&nbsp; " + data[i] + "&nbsp;" + button + "<br/>";
             }
 

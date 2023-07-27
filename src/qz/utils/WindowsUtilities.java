@@ -451,4 +451,48 @@ public class WindowsUtilities {
         }
         return isWow64;
     }
+
+    public static boolean stopService(String serviceName) {
+        try {
+            W32ServiceManager serviceManager = new W32ServiceManager();
+            serviceManager.open(Winsvc.SC_MANAGER_ALL_ACCESS);
+            W32Service service = serviceManager.openService(serviceName, Winsvc.SC_MANAGER_ALL_ACCESS);
+            service.stopService();
+            service.close();
+            return true;
+        } catch(Throwable t) {
+            log.warn("Could not stop service {} using JNA, will fallback to command line.", serviceName);
+        }
+
+        // Start the newly registered service
+        return ShellUtilities.execute("net", "stop", Constants.PROPS_FILE);
+    }
+
+    public static boolean startService(String serviceName) {
+        try {
+            W32ServiceManager serviceManager = new W32ServiceManager();
+            serviceManager.open(Winsvc.SC_MANAGER_ALL_ACCESS);
+            W32Service service = serviceManager.openService(serviceName, Winsvc.SC_MANAGER_ALL_ACCESS);
+            service.startService();
+            service.close();
+            return true;
+        } catch(Throwable t) {
+            log.warn("Could not start service {} using JNA, will fallback to command line.", serviceName);
+        }
+
+        // Start the newly registered service
+        return ShellUtilities.execute("net", "start", Constants.PROPS_FILE);
+    }
+
+    public static boolean serviceExists(String serviceName) {
+        try {
+            W32ServiceManager serviceManager = new W32ServiceManager();
+            serviceManager.open(Winsvc.SC_MANAGER_ALL_ACCESS);
+            W32Service service = serviceManager.openService(serviceName, Winsvc.SC_MANAGER_ALL_ACCESS);
+            return true;
+        } catch(Win32Exception e) {
+            return false;
+        } catch(Throwable t) {}
+        return ShellUtilities.execute("sc", "query", serviceName);
+    }
 }

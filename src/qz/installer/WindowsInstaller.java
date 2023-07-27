@@ -18,9 +18,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.utils.ShellUtilities;
-import qz.utils.SystemUtilities;
-import qz.utils.WindowsUtilities;
+import qz.utils.*;
 import qz.ws.PrintSocketServer;
 
 import javax.swing.*;
@@ -203,5 +201,79 @@ public class WindowsInstaller extends Installer {
             log.warn("Spawning as user isn't implemented; starting process with elevation instead");
         }
         ShellUtilities.execute(args.toArray(new String[args.size()]));
+    }
+
+    @Override
+    public Installer addServiceRegistration(String user) {
+        log.warn("Registering system service: {}", PROPS_FILE);
+        if(!SystemUtilities.isAdmin()) {
+            throw new UnsupportedOperationException("Installing a service requires elevation");
+        }
+
+        if(WindowsUtilities.serviceExists(PROPS_FILE)) {
+            log.warn("System service is already registered, removing.");
+            removeServiceRegistration();
+        }
+
+        Path nssm = SystemUtilities.getJarParentPath().resolve("utils/nssm.exe");
+        Path qz = SystemUtilities.getJarParentPath().resolve(PROPS_FILE + ".exe");
+        String servicePath = String.format("\"" + qz.toString() + "\" %s %s %s",
+                                           ArgValue.WAIT.getMatches()[0],
+                                           ArgValue.STEAL.getMatches()[0],
+                                           ArgValue.HEADLESS.getMatches()[0]);
+
+        // Install the service
+        if(ShellUtilities.execute(nssm.toString(), "install", PROPS_FILE,
+                                  qz.toString(),
+                                  ArgValue.WAIT.getMatches()[0],
+                                  ArgValue.STEAL.getMatches()[0],
+                                  ArgValue.HEADLESS.getMatches()[0])) {
+            ShellUtilities.execute(nssm.toString(), "set", PROPS_FILE, "DisplayName", ABOUT_TITLE);
+            ShellUtilities.execute(nssm.toString(), "set", PROPS_FILE, "Description", ABOUT_DESCRIPTION);
+            ShellUtilities.execute(nssm.toString(), "set", PROPS_FILE, "DependOnService", "Spooler");
+            log.info("Successfully registered system service: {}", PROPS_FILE);
+            if(user != null && !user.trim().isEmpty()) {
+                log.info("Setting service to run as {}", user);
+                if(!ShellUtilities.execute(nssm.toString(), "set", "ObjectName", user)) {
+                    log.warn("Could not set service to run as {}, please configure manually.", user);
+                }
+            }
+            // Kill all running instances
+            TaskKiller.killAll();
+            // Instruct autostart to be ignored
+            FileUtilities.disableGlobalAutoStart();
+            log.info("Starting system service: {}", PROPS_FILE);
+            if(WindowsUtilities.startService(PROPS_FILE)) {
+                log.info("System system service started successfully.", PROPS_FILE);
+                return this;
+            }
+        }
+        throw new UnsupportedOperationException("An error occurred installing the service");
+    }
+
+    @Override
+    public Installer removeServiceRegistration() {
+        log.info("Removing system service: {}", PROPS_FILE);
+        if(!SystemUtilities.isAdmin()) {
+            throw new UnsupportedOperationException("Removing a service requires elevation");
+        }
+        
+        if(WindowsUtilities.serviceExists(PROPS_FILE)) {
+            WindowsUtilities.stopService(PROPS_FILE);
+            Path nssm = SystemUtilities.getJarParentPath().resolve("utils/nssm.exe");
+            if(ShellUtilities.execute(nssm.toString(), "remove", PROPS_FILE, "confirm")) {
+                // Old tutorials used "QZ Tray" as the service name
+                ShellUtilities.execute(nssm.toString(), "remove", ABOUT_TITLE, "confirm");
+                // Restore default autostart settings by deleting the preference file
+                FileUtils.deleteQuietly(FileUtilities.SHARED_DIR.resolve(AUTOSTART_FILE).toFile());
+                log.info("System service successfully removed: {}", PROPS_FILE);
+            } else {
+                log.error("An error occurred removing system service: {}", PROPS_FILE);
+            }
+        } else {
+            log.info("System service was not found, skipping.");
+        }
+
+        return this;
     }
 }

@@ -124,4 +124,14 @@ public class MacInstaller extends Installer {
             Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
         }
     }
+
+    @Override
+    public Installer addServiceRegistration(String user) {
+        throw new UnsupportedOperationException("This feature is not yet supported on macOS");
+    }
+
+    @Override
+    public Installer removeServiceRegistration() {
+        return this; // no-op
+    }
 }

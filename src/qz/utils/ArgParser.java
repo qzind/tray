@@ -195,6 +195,12 @@ public class ArgParser {
                 case UNINSTALL:
                     Installer.uninstall();
                     return SUCCESS;
+                case SERVICE:
+                    if(hasFlag(REMOVE)) {
+                        Installer.getInstance().removeServiceRegistration();
+                    } else {
+                        Installer.getInstance().addServiceRegistration(valueOf(RUNAS));
+                    }
                 case SPAWN:
                     args.remove(0); // first argument is "spawn", remove it
                     Installer.getInstance().spawn(args);

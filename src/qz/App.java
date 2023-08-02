@@ -90,7 +90,7 @@ public class App {
                 .setLayout(PatternLayout.newBuilder().withPattern("%d{ISO8601} [%p] %m%n").build())
                 .setFilter(ThresholdFilter.createFilter(Level.DEBUG, Filter.Result.ACCEPT, Filter.Result.DENY))
                 .withFileName(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log")
-                .withFilePattern(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log.%i")
+                .withFilePattern(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".%i.log")
                 .withStrategy(DefaultRolloverStrategy.newBuilder().withMax(String.valueOf(Constants.LOG_ROTATIONS)).build())
                 .withPolicy(SizeBasedTriggeringPolicy.createPolicy(String.valueOf(Constants.LOG_SIZE)))
                 .withImmediateFlush(true)

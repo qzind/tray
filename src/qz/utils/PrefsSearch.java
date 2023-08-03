@@ -21,6 +21,17 @@ public class PrefsSearch {
         return get(null, app, name, defaultVal, searchSystemProperties);
     }
 
+    public static int get(Properties app, String name, int defaultVal) {
+        try {
+            return Integer.parseInt(get(app, name, "", true));
+        } catch(NumberFormatException ignore) {}
+        return defaultVal;
+    }
+
+    public static boolean get(Properties app, String name, boolean defaultVal) {
+        return Boolean.parseBoolean(get(app, name, "" + defaultVal, true));
+    }
+
     public static String get(Properties user, Properties app, String name, String defaultVal, String... altNames) {
         return get(user, app, name, defaultVal, true, altNames);
     }

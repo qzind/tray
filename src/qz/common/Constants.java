@@ -28,8 +28,8 @@ public class Constants {
     public static final String[] PERSIST_PROPS = {"file.whitelist", "file.allow", "networking.hostname", "networking.port", STEAL_WEBSOCKET_PROPERTY };
     public static final String AUTOSTART_FILE = ".autostart";
     public static final String DATA_DIR = "qz";
-    public static final int LOG_SIZE = 524288;
-    public static final int LOG_ROTATIONS = 5;
+    public static final int DEFAULT_LOG_SIZE = 524288;
+    public static final int DEFAULT_LOG_ROTATIONS = 5;
 
     public static final int BORDER_PADDING = 10;
 

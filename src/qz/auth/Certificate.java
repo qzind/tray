@@ -37,8 +37,6 @@ public class Certificate {
 
     private static final Logger log = LogManager.getLogger(Certificate.class);
     private static final String QUIETLY_FAIL = "quiet";
-    public static final String OVERRIDE_CA_FLAG = "trustedRootCert";
-    public static final String OVERRIDE_CA_PROPERTY = "authcert.override";
 
     public enum Algorithm {
         SHA1("SHA1withRSA"),
@@ -142,13 +140,13 @@ public class Certificate {
     public static void scanAdditionalCAs() {
         ArrayList<Map.Entry<Path, String>> certPaths = new ArrayList<>();
         // First, look for "-DtrustedRootCert" command line property
-        certPaths.addAll(FileUtilities.parseDelimitedPaths(System.getProperty(OVERRIDE_CA_FLAG)));
+        certPaths.addAll(FileUtilities.parseDelimitedPaths(System.getProperty(Constants.PREFS_OVERRIDE_CA_CLI)));
 
         // Second, look for "override.crt" within App directory
         certPaths.add(new AbstractMap.SimpleEntry<>(SystemUtilities.getJarParentPath().resolve(Constants.OVERRIDE_CERT), QUIETLY_FAIL));
 
         // Third, look for "authcert.override" property in qz-tray.properties
-        certPaths.addAll(FileUtilities.parseDelimitedPaths(App.getTrayProperties(), OVERRIDE_CA_PROPERTY));
+        certPaths.addAll(FileUtilities.parseDelimitedPaths(App.getTrayProperties(), Constants.PREFS_OVERRIDE_CA));
 
         for(Map.Entry<Path, String> certPath : certPaths) {
             if(certPath.getKey() != null) {

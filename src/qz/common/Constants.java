@@ -69,6 +69,15 @@ public class Constants {
     public static final String PREFS_FILEIO_ENABLED = "security.file.enabled";
     public static final String PREFS_FILEIO_STRICT = "security.file.strict";
 
+    public static final String PREFS_LOG_DISABLE = "log.disable";
+    public static final String PREFS_LOG_ROTATE = "log.rotate";
+    public static final String PREFS_LOG_SIZE = "log.size";
+
+    public static final String PREFS_OVERRIDE_CA = "authcert.override";
+    public static final String PREFS_OVERRIDE_CA_CLI = "trustedRootCert";
+
+    public static final String PREFS_PRINTER_JOB_DATA = "printer.status.jobdata";
+
     public static final String ALLOW_SITES_TEXT = "Permanently allowed \"%s\" to access local resources";
     public static final String BLOCK_SITES_TEXT = "Permanently blocked \"%s\" from accessing local resources";
 

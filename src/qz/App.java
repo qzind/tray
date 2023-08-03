@@ -89,12 +89,12 @@ public class App {
         System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
 
         Properties app = CertificateManager.loadProperties();
-        if(PrefsSearch.get(app, "log.disable", false)) {
+        if(PrefsSearch.get(app, Constants.PREFS_LOG_DISABLE, false)) {
             return;
         }
 
-        int logSize = PrefsSearch.get(app, "log.size", Constants.DEFAULT_LOG_SIZE);
-        int logRotate = PrefsSearch.get(app, "log.rotate", Constants.DEFAULT_LOG_ROTATIONS);
+        int logSize = PrefsSearch.get(app, Constants.PREFS_LOG_SIZE, Constants.DEFAULT_LOG_SIZE);
+        int logRotate = PrefsSearch.get(app, Constants.PREFS_LOG_ROTATE, Constants.DEFAULT_LOG_ROTATIONS);
         RollingFileAppender fileAppender = RollingFileAppender.newBuilder()
                 .setName("log-file")
                 .withAppend(true)

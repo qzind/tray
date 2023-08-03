@@ -94,7 +94,7 @@ public class App {
         }
 
         int logSize = PrefsSearch.get(app, "log.size", Constants.DEFAULT_LOG_SIZE);
-        int logRotations = PrefsSearch.get(app, "log.rotations", Constants.DEFAULT_LOG_ROTATIONS);
+        int logRotate = PrefsSearch.get(app, "log.rotate", Constants.DEFAULT_LOG_ROTATIONS);
         RollingFileAppender fileAppender = RollingFileAppender.newBuilder()
                 .setName("log-file")
                 .withAppend(true)
@@ -102,7 +102,7 @@ public class App {
                 .setFilter(ThresholdFilter.createFilter(Level.DEBUG, Filter.Result.ACCEPT, Filter.Result.DENY))
                 .withFileName(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log")
                 .withFilePattern(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".%i.log")
-                .withStrategy(DefaultRolloverStrategy.newBuilder().withMax(String.valueOf(logRotations)).build())
+                .withStrategy(DefaultRolloverStrategy.newBuilder().withMax(String.valueOf(logRotate)).build())
                 .withPolicy(SizeBasedTriggeringPolicy.createPolicy(String.valueOf(logSize)))
                 .withImmediateFlush(true)
                 .build();

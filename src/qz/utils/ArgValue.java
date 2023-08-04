@@ -50,7 +50,36 @@ public enum ArgValue {
 
     // Build stubs
     JLINK(BUILD, "Download, compress and bundle a Java Runtime", "jlink [--platform mac|windows|linux] [--arch x64|aarch64] [--vendor bellsoft|eclipse|...] [--version ...] [--gc hotspot|openj9] [--gcversion ...]",
-          "jlink");
+          "jlink"),
+
+    // Parameter stubs
+    TRAY_NOTIFICATIONS(PREFERENCES, "Show verbose connect/disconnect notifications in the tray area", null,
+        "tray.notifications"),
+    TRAY_HEADLESS(PREFERENCES, "Start QZ Tray in headless (no user interface) mode", null,
+        "tray.headless"),
+    TRAY_MONOCLE(PREFERENCES, "Enable/disable the use of the Monocle for JavaFX/HTML rendering", null,
+        "tray.monocle"),
+    TRAY_STRICTMODE(PREFERENCES, "Enable/disable solely trusting certificates matching authcert.override", null,
+        "tray.strictmode"),
+    TRAY_IDLE_PRINTERS(PREFERENCES, "Enable/disable idle crawling of printers and their media information for faster initial results", null,
+        "tray.idle.printers"),
+    TRAY_IDLE_JAVAFX(PREFERENCES, "Enable/disable idle starting of JavaFX for better initial performance", null,
+        "tray.idle.javafx"),
+    SECURITY_FILE_ENABLED(PREFERENCES, "Enable/disable all File Communications features", null,
+        "security.file.enabled"),
+    SECURITY_FILE_STRICT(PREFERENCES, "Enable/disable signing requirements for File Communications features", null,
+        "security.file.strict"),
+    LOG_DISABLE(PREFERENCES, "Disable/enable logging features", null,
+        "log.disable"),
+    LOG_ROTATE(PREFERENCES, "Number of log files to retain when the size fills up", null,
+        "log.rotate"),
+    LOG_SIZE(PREFERENCES, "Maximum file size (in bytes) of a single log file", null,
+        "log.size"),
+    AUTHCERT_OVERRIDE(PREFERENCES, "Override the trusted root certificate in the software.", null,
+        "authcert.override"),
+    AUTHCERT_OVERRIDE_LEGACY(PREFERENCES, null, null, "trustedRootCert"),
+    PRINTER_STATUS_JOB_DATA(PREFERENCES, "Return all raw (binary) job data with job statuses (use with caution)", null,
+        "printer.status.jobdata");
 
     private ArgType argType;
     private String description;
@@ -63,6 +92,9 @@ public enum ArgValue {
         this.usage = usage;
         this.matches = matches;
     }
+
+    public String getMatch() { return matches[0]; }
+
     public String[] getMatches() {
         return matches;
     }
@@ -85,6 +117,7 @@ public enum ArgValue {
         OPTION,
         INSTALLER,
         BUILD,
+        PREFERENCES,
     }
 
     public static ArgValue[] filter(ArgType ... argTypes) {

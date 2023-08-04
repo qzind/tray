@@ -1,6 +1,7 @@
 package qz.common;
 
 import com.github.zafarkhaja.semver.Version;
+import qz.utils.ArgValue;
 import qz.utils.SystemUtilities;
 
 import java.awt.*;
@@ -59,24 +60,24 @@ public class Constants {
     public static final String PROBE_REQUEST = "getProgramName";
     public static final String PROBE_RESPONSE = ABOUT_TITLE;
 
-    public static final String PREFS_NOTIFICATIONS = "tray.notifications";
-    public static final String PREFS_HEADLESS = "tray.headless";
-    public static final String PREFS_MONOCLE = "tray.monocle";
-    public static final String PREFS_STRICT_MODE = "tray.strictmode";
-    public static final String PREFS_IDLE_PRINTERS = "tray.idle.printers";
-    public static final String PREFS_IDLE_JFX = "tray.idle.javafx";
+    public static final String PREFS_NOTIFICATIONS = ArgValue.TRAY_NOTIFICATIONS.getMatch();
+    public static final String PREFS_HEADLESS = ArgValue.TRAY_HEADLESS.getMatch();
+    public static final String PREFS_MONOCLE = ArgValue.TRAY_MONOCLE.getMatch();
+    public static final String PREFS_STRICT_MODE = ArgValue.TRAY_STRICTMODE.getMatch();
+    public static final String PREFS_IDLE_PRINTERS = ArgValue.TRAY_IDLE_PRINTERS.getMatch();
+    public static final String PREFS_IDLE_JFX = ArgValue.TRAY_IDLE_JAVAFX.getMatch();
 
-    public static final String PREFS_FILEIO_ENABLED = "security.file.enabled";
-    public static final String PREFS_FILEIO_STRICT = "security.file.strict";
+    public static final String PREFS_FILEIO_ENABLED = ArgValue.SECURITY_FILE_ENABLED.getMatch();
+    public static final String PREFS_FILEIO_STRICT = ArgValue.SECURITY_FILE_STRICT.getMatch();
 
-    public static final String PREFS_LOG_DISABLE = "log.disable";
-    public static final String PREFS_LOG_ROTATE = "log.rotate";
-    public static final String PREFS_LOG_SIZE = "log.size";
+    public static final String PREFS_LOG_DISABLE = ArgValue.LOG_DISABLE.getMatch();
+    public static final String PREFS_LOG_ROTATE = ArgValue.LOG_ROTATE.getMatch();
+    public static final String PREFS_LOG_SIZE = ArgValue.LOG_SIZE.getMatch();
 
-    public static final String PREFS_OVERRIDE_CA = "authcert.override";
-    public static final String PREFS_OVERRIDE_CA_CLI = "trustedRootCert";
+    public static final String PREFS_OVERRIDE_CA = ArgValue.AUTHCERT_OVERRIDE.getMatch();
+    public static final String PREFS_OVERRIDE_CA_CLI = ArgValue.AUTHCERT_OVERRIDE_LEGACY.getMatch();
 
-    public static final String PREFS_PRINTER_JOB_DATA = "printer.status.jobdata";
+    public static final String PREFS_PRINTER_JOB_DATA = ArgValue.PRINTER_STATUS_JOB_DATA.getMatch();
 
     public static final String ALLOW_SITES_TEXT = "Permanently allowed \"%s\" to access local resources";
     public static final String BLOCK_SITES_TEXT = "Permanently blocked \"%s\" from accessing local resources";

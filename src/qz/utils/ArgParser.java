@@ -22,6 +22,7 @@ import qz.installer.TaskKiller;
 import qz.installer.certificate.CertificateManager;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.List;
 
@@ -48,6 +49,7 @@ public class ArgParser {
     protected static final Logger log = LogManager.getLogger(ArgParser.class);
 
     private static final String USAGE_COMMAND = String.format("java -jar %s.jar", PROPS_FILE);
+    private static final String USAGE_COMMAND_PARAMETER = String.format("java -Dfoo.bar=<value> -jar %s.jar", PROPS_FILE);
     private static final int DESCRIPTION_COLUMN = 30;
     private static final int INDENT_SIZE = 2;
 
@@ -265,6 +267,15 @@ public class ArgParser {
                 // Show generic help
                 for(ArgValue.ArgType argType : ArgValue.ArgType.values()) {
                     System.out.println(String.format("%s%s", System.lineSeparator(), argType));
+                    switch(argType) {
+                        case PREFERENCES:
+                            System.out.println(String.format("  Preferences can be set via \"%s %s=%s\", command line via \"%s\" or via file using %s.properties" + System.lineSeparator(),
+                                                             SystemUtilities.isWindows() ? "set" : "export",
+                                                             "QZ_OPTS",
+                                                             "-Dfoo.bar=<value>",
+                                                             USAGE_COMMAND_PARAMETER,
+                                                             PROPS_FILE));
+                    }
                     for(ArgValue argValue : ArgValue.filter(argType)) {
                         printHelp(argValue);
                     }
@@ -376,6 +387,21 @@ public class ArgParser {
             return true;
         }
         return false;
+    }
+
+    private static ArrayList<String> collectPrefs() {
+        ArrayList<String> opts = new ArrayList<>();
+        for(Field f : Constants.class.getDeclaredFields()) {
+            if(f.getName().startsWith("PREFS_")) {
+                try {
+                    Object val = f.get(null);
+                    if (val instanceof String) {
+                        opts.add((String)val);
+                    }
+                } catch(Exception ignore) {}
+            }
+        }
+        return opts;
     }
 
     private static void printHelp(String[] commands, String description, String usage, int indent) {

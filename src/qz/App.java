@@ -84,6 +84,17 @@ public class App {
     }
 
     private static void setupFileLogging() {
+        //disable jetty logging
+        System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
+        System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
+
+        Properties app = CertificateManager.loadProperties();
+        if(PrefsSearch.get(app, Constants.PREFS_LOG_DISABLE, false)) {
+            return;
+        }
+
+        int logSize = PrefsSearch.get(app, Constants.PREFS_LOG_SIZE, Constants.DEFAULT_LOG_SIZE);
+        int logRotate = PrefsSearch.get(app, Constants.PREFS_LOG_ROTATE, Constants.DEFAULT_LOG_ROTATIONS);
         RollingFileAppender fileAppender = RollingFileAppender.newBuilder()
                 .setName("log-file")
                 .withAppend(true)
@@ -91,16 +102,12 @@ public class App {
                 .setFilter(ThresholdFilter.createFilter(Level.DEBUG, Filter.Result.ACCEPT, Filter.Result.DENY))
                 .withFileName(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log")
                 .withFilePattern(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".%i.log")
-                .withStrategy(DefaultRolloverStrategy.newBuilder().withMax(String.valueOf(Constants.LOG_ROTATIONS)).build())
-                .withPolicy(SizeBasedTriggeringPolicy.createPolicy(String.valueOf(Constants.LOG_SIZE)))
+                .withStrategy(DefaultRolloverStrategy.newBuilder().withMax(String.valueOf(logRotate)).build())
+                .withPolicy(SizeBasedTriggeringPolicy.createPolicy(String.valueOf(logSize)))
                 .withImmediateFlush(true)
                 .build();
         fileAppender.start();
 
         LoggerUtilities.getRootLogger().addAppender(fileAppender);
-
-        //disable jetty logging
-        System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
-        System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
     }
 }

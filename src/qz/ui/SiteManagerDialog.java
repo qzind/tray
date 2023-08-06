@@ -11,9 +11,7 @@ import qz.installer.certificate.CertificateChainBuilder;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.ui.component.*;
-import qz.utils.FileUtilities;
-import qz.utils.ShellUtilities;
-import qz.utils.SystemUtilities;
+import qz.utils.*;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -242,7 +240,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         readerThread = new Thread(this);
         threadRunning = new AtomicBoolean(false);
 
-        strictModeCheckBox = new JCheckBox(Constants.STRICT_MODE_LABEL, prefs.getBoolean(Constants.PREFS_STRICT_MODE, false));
+        strictModeCheckBox = new JCheckBox(Constants.STRICT_MODE_LABEL, PrefsSearch.getBoolean(ArgValue.SECURITY_FILE_STRICT, prefs));
         strictModeCheckBox.setToolTipText(Constants.STRICT_MODE_TOOLTIP);
         strictModeCheckBox.addActionListener(e -> {
             if (strictModeCheckBox.isSelected() && !new ConfirmDialog(null, "Please Confirm", iconCache).prompt(Constants.STRICT_MODE_CONFIRM)) {
@@ -250,7 +248,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                 return;
             }
             Certificate.setTrustBuiltIn(!strictModeCheckBox.isSelected());
-            prefs.setProperty(Constants.PREFS_STRICT_MODE, strictModeCheckBox.isSelected());
+            prefs.setProperty(ArgValue.SECURITY_FILE_STRICT, strictModeCheckBox.isSelected());
             certTable.refreshComponents();
         });
         refreshStrictModeCheckbox();

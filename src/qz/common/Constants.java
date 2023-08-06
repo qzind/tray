@@ -29,8 +29,6 @@ public class Constants {
     public static final String[] PERSIST_PROPS = {"file.whitelist", "file.allow", "networking.hostname", "networking.port", STEAL_WEBSOCKET_PROPERTY };
     public static final String AUTOSTART_FILE = ".autostart";
     public static final String DATA_DIR = "qz";
-    public static final int DEFAULT_LOG_SIZE = 524288;
-    public static final int DEFAULT_LOG_ROTATIONS = 5;
 
     public static final int BORDER_PADDING = 10;
 
@@ -59,25 +57,6 @@ public class Constants {
 
     public static final String PROBE_REQUEST = "getProgramName";
     public static final String PROBE_RESPONSE = ABOUT_TITLE;
-
-    public static final String PREFS_NOTIFICATIONS = ArgValue.TRAY_NOTIFICATIONS.getMatch();
-    public static final String PREFS_HEADLESS = ArgValue.TRAY_HEADLESS.getMatch();
-    public static final String PREFS_MONOCLE = ArgValue.TRAY_MONOCLE.getMatch();
-    public static final String PREFS_STRICT_MODE = ArgValue.TRAY_STRICTMODE.getMatch();
-    public static final String PREFS_IDLE_PRINTERS = ArgValue.TRAY_IDLE_PRINTERS.getMatch();
-    public static final String PREFS_IDLE_JFX = ArgValue.TRAY_IDLE_JAVAFX.getMatch();
-
-    public static final String PREFS_FILEIO_ENABLED = ArgValue.SECURITY_FILE_ENABLED.getMatch();
-    public static final String PREFS_FILEIO_STRICT = ArgValue.SECURITY_FILE_STRICT.getMatch();
-
-    public static final String PREFS_LOG_DISABLE = ArgValue.LOG_DISABLE.getMatch();
-    public static final String PREFS_LOG_ROTATE = ArgValue.LOG_ROTATE.getMatch();
-    public static final String PREFS_LOG_SIZE = ArgValue.LOG_SIZE.getMatch();
-
-    public static final String PREFS_OVERRIDE_CA = ArgValue.AUTHCERT_OVERRIDE.getMatch();
-    public static final String PREFS_OVERRIDE_CA_CLI = ArgValue.AUTHCERT_OVERRIDE_LEGACY.getMatch();
-
-    public static final String PREFS_PRINTER_JOB_DATA = ArgValue.PRINTER_STATUS_JOB_DATA.getMatch();
 
     public static final String ALLOW_SITES_TEXT = "Permanently allowed \"%s\" to access local resources";
     public static final String BLOCK_SITES_TEXT = "Permanently blocked \"%s\" from accessing local resources";

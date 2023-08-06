@@ -60,8 +60,7 @@ public class StatusSession {
         if (!SystemUtilities.isWindows()) {
             throw new UnsupportedOperationException("Job data listeners are only supported on Windows");
         }
-        String spoolFileMonitoring = PrefsSearch.get(App.getTrayProperties(), Constants.PREFS_PRINTER_JOB_DATA, "false", false );
-        if (!Boolean.parseBoolean(spoolFileMonitoring)) {
+        if (!PrefsSearch.getBoolean(ArgValue.PRINTER_STATUS_JOB_DATA, false, App.getTrayProperties())) {
             throw new UnsupportedOperationException("Job data listeners are currently disabled");
         }
         if (printerSpoolerMap.containsKey(printer)) {

@@ -9,87 +9,88 @@ import static qz.utils.ArgValue.ArgType.*;
 
 public enum ArgValue {
     // Informational
-    HELP(INFORMATION, "Display help information and exit.", null,
+    HELP(INFORMATION, "Display help information and exit.", null, null,
          "--help", "-h", "/?"),
-    VERSION(INFORMATION, "Display version information and exit.", null,
+    VERSION(INFORMATION, "Display version information and exit.", null, null,
             "--version", "-v"),
-    BUNDLEID(INFORMATION, "Display Apple bundle identifier and exit.", null,
+    BUNDLEID(INFORMATION, "Display Apple bundle identifier and exit.", null, null,
              "--bundleid", "-i"),
-    LIBINFO(INFORMATION, "Display detailed library version information and exit.", null,
+    LIBINFO(INFORMATION, "Display detailed library version information and exit.", null, null,
             "--libinfo", "-l"),
 
     // Actions
-    ALLOW(ACTION,String.format("Add the specified certificate to %s.dat.", Constants.ALLOW_FILE), "--allow cert.pem",
+    ALLOW(ACTION,String.format("Add the specified certificate to %s.dat.", Constants.ALLOW_FILE), "--allow cert.pem", null,
           "--allow", "--whitelist", "-a"),
-    BLOCK(ACTION, String.format("Add the specified certificate to %s.dat.", Constants.BLOCK_FILE), "--block cert.pem",
+    BLOCK(ACTION, String.format("Add the specified certificate to %s.dat.", Constants.BLOCK_FILE), "--block cert.pem", null,
           "--block", "--blacklist", "-b"),
-    FILE_ALLOW(ACTION, String.format("Add the specified file.allow entry to %s.properties for FileIO operations, sandboxed to a specified certificate if provided", Constants.PROPS_FILE), "--file-allow /my/file/path [--sandbox \"Company Name\"]",
+    FILE_ALLOW(ACTION, String.format("Add the specified file.allow entry to %s.properties for FileIO operations, sandboxed to a specified certificate if provided", Constants.PROPS_FILE), "--file-allow /my/file/path [--sandbox \"Company Name\"]",  null,
           "--file-allow"),
-    FILE_REMOVE(ACTION, String.format("Removes the specified file.allow entry from %s.properties for FileIO operations", Constants.PROPS_FILE), "--file-remove /my/file/path",
+    FILE_REMOVE(ACTION, String.format("Removes the specified file.allow entry from %s.properties for FileIO operations", Constants.PROPS_FILE), "--file-remove /my/file/path", null,
                "--file-remove"),
 
     // Options
-    AUTOSTART(OPTION,"Read and honor any autostart preferences before launching.", null,
+    AUTOSTART(OPTION,"Read and honor any autostart preferences before launching.", null, true,
               "--honorautostart", "-A"),
-    STEAL(OPTION, "Ask other running instance to stop so that this instance can take precedence.", null,
+    STEAL(OPTION, "Ask other running instance to stop so that this instance can take precedence.", null, false,
           "--steal", Constants.DATA_DIR + ":steal"),
-    HEADLESS(OPTION, "Force startup \"headless\" without graphical interface or interactive components.", null,
+    HEADLESS(OPTION, "Force startup \"headless\" without graphical interface or interactive components.", null, false,
              "--headless"),
 
     // Installer stubs
-    PREINSTALL(INSTALLER, "Perform critical pre-installation steps: Stop instances, all other special considerations.", null,
+    PREINSTALL(INSTALLER, "Perform critical pre-installation steps: Stop instances, all other special considerations.", null, null,
                "preinstall"),
-    INSTALL(INSTALLER, "Copy to the specified destination and preforms platform-specific registration.", "install --dest /my/install/location [--silent]",
+    INSTALL(INSTALLER, "Copy to the specified destination and preforms platform-specific registration.", "install --dest /my/install/location [--silent]", null,
             "install"),
-    CERTGEN(INSTALLER, "Performs certificate generation and registration for proper HTTPS support.", "certgen [--key key.pem --cert cert.pem] [--pfx cert.pfx --pass 12345] [--host \"list;of;hosts\"]",
+    CERTGEN(INSTALLER, "Performs certificate generation and registration for proper HTTPS support.", "certgen [--key key.pem --cert cert.pem] [--pfx cert.pfx --pass 12345] [--host \"list;of;hosts\"]", null,
             "certgen"),
-    UNINSTALL(INSTALLER, "Perform all uninstall tasks: Stop instances, delete files, unregister settings.", null,
+    UNINSTALL(INSTALLER, "Perform all uninstall tasks: Stop instances, delete files, unregister settings.", null, null,
               "uninstall"),
-    SPAWN(INSTALLER, "Spawn an instance of the specified program as the logged-in user, avoiding starting as the root user if possible.", "spawn [program params ...]",
+    SPAWN(INSTALLER, "Spawn an instance of the specified program as the logged-in user, avoiding starting as the root user if possible.", "spawn [program params ...]", null,
           "spawn"),
 
     // Build stubs
-    JLINK(BUILD, "Download, compress and bundle a Java Runtime", "jlink [--platform mac|windows|linux] [--arch x64|aarch64] [--vendor bellsoft|eclipse|...] [--version ...] [--gc hotspot|openj9] [--gcversion ...]",
+    JLINK(BUILD, "Download, compress and bundle a Java Runtime", "jlink [--platform mac|windows|linux] [--arch x64|aarch64] [--vendor bellsoft|eclipse|...] [--version ...] [--gc hotspot|openj9] [--gcversion ...]", null,
           "jlink"),
 
     // Parameter stubs
-    TRAY_NOTIFICATIONS(PREFERENCES, "Show verbose connect/disconnect notifications in the tray area", null,
+    TRAY_NOTIFICATIONS(PREFERENCES, "Show verbose connect/disconnect notifications in the tray area", null, false,
         "tray.notifications"),
-    TRAY_HEADLESS(PREFERENCES, "Start QZ Tray in headless (no user interface) mode", null,
+    TRAY_HEADLESS(PREFERENCES, "Start QZ Tray in headless (no user interface) mode", null, false,
         "tray.headless"),
-    TRAY_MONOCLE(PREFERENCES, "Enable/disable the use of the Monocle for JavaFX/HTML rendering", null,
+    TRAY_MONOCLE(PREFERENCES, "Enable/disable the use of the Monocle for JavaFX/HTML rendering", null, true,
         "tray.monocle"),
-    TRAY_STRICTMODE(PREFERENCES, "Enable/disable solely trusting certificates matching authcert.override", null,
+    TRAY_STRICTMODE(PREFERENCES, "Enable/disable solely trusting certificates matching authcert.override", null, false,
         "tray.strictmode"),
-    TRAY_IDLE_PRINTERS(PREFERENCES, "Enable/disable idle crawling of printers and their media information for faster initial results", null,
+    TRAY_IDLE_PRINTERS(PREFERENCES, "Enable/disable idle crawling of printers and their media information for faster initial results", null, true,
         "tray.idle.printers"),
-    TRAY_IDLE_JAVAFX(PREFERENCES, "Enable/disable idle starting of JavaFX for better initial performance", null,
+    TRAY_IDLE_JAVAFX(PREFERENCES, "Enable/disable idle starting of JavaFX for better initial performance", null, true,
         "tray.idle.javafx"),
-    SECURITY_FILE_ENABLED(PREFERENCES, "Enable/disable all File Communications features", null,
+    SECURITY_FILE_ENABLED(PREFERENCES, "Enable/disable all File Communications features", null, true,
         "security.file.enabled"),
-    SECURITY_FILE_STRICT(PREFERENCES, "Enable/disable signing requirements for File Communications features", null,
+    SECURITY_FILE_STRICT(PREFERENCES, "Enable/disable signing requirements for File Communications features", null, true,
         "security.file.strict"),
-    LOG_DISABLE(PREFERENCES, "Disable/enable logging features", null,
+    LOG_DISABLE(PREFERENCES, "Disable/enable logging features", null, false,
         "log.disable"),
-    LOG_ROTATE(PREFERENCES, "Number of log files to retain when the size fills up", null,
+    LOG_ROTATE(PREFERENCES, "Number of log files to retain when the size fills up", null, 5,
         "log.rotate"),
-    LOG_SIZE(PREFERENCES, "Maximum file size (in bytes) of a single log file", null,
+    LOG_SIZE(PREFERENCES, "Maximum file size (in bytes) of a single log file", null, 524288,
         "log.size"),
-    AUTHCERT_OVERRIDE(PREFERENCES, "Override the trusted root certificate in the software.", null,
-        "authcert.override"),
-    AUTHCERT_OVERRIDE_LEGACY(PREFERENCES, null, null, "trustedRootCert"),
-    PRINTER_STATUS_JOB_DATA(PREFERENCES, "Return all raw (binary) job data with job statuses (use with caution)", null,
+    AUTHCERT_OVERRIDE(PREFERENCES, "Override the trusted root certificate in the software.", null, null,
+        "authcert.override", "trustedRootCert"),
+    PRINTER_STATUS_JOB_DATA(PREFERENCES, "Return all raw (binary) job data with job statuses (use with caution)", null, false,
         "printer.status.jobdata");
 
     private ArgType argType;
     private String description;
     private String usage;
+    private Object defaultVal;
     private String[] matches;
 
-    ArgValue(ArgType argType, String description, String usage, String ... matches) {
+    ArgValue(ArgType argType, String description, String usage, Object defaultVal, String ... matches) {
         this.argType = argType;
         this.description = description;
         this.usage = usage;
+        this.defaultVal = defaultVal;
         this.matches = matches;
     }
 
@@ -109,6 +110,10 @@ public enum ArgValue {
 
     public ArgType getType() {
         return argType;
+    }
+
+    public Object getDefaultVal() {
+        return defaultVal;
     }
 
     public enum ArgType {

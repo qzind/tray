@@ -205,7 +205,7 @@ public class ArgParser {
                     throw new UnsupportedOperationException("Installation type " + argValue + " is not yet supported");
             }
         } catch(MissingArgException e) {
-            log.error("Valid usage:\n   {} {}", USAGE_COMMAND, argValue.getUsage());
+            log.error("Valid usage:{}   {} {}", System.lineSeparator(), USAGE_COMMAND, argValue.getUsage());
             return USAGE_ERROR;
         } catch(Exception e) {
             log.error("Installation step {} failed", argValue, e);
@@ -231,7 +231,7 @@ public class ArgParser {
                     throw new UnsupportedOperationException("Build type " + argValue + " is not yet supported");
             }
         } catch(MissingArgException e) {
-            log.error("Valid usage:\n   {} {}", USAGE_COMMAND, argValue.getUsage());
+            log.error("Valid usage:{}   {} {}", System.lineSeparator(), USAGE_COMMAND, argValue.getUsage());
             return USAGE_ERROR;
         } catch(Exception e) {
             log.error("Build step {} failed", argValue, e);
@@ -404,11 +404,29 @@ public class ArgParser {
         return opts;
     }
 
-    private static void printHelp(String[] commands, String description, String usage, int indent) {
+    private static void printHelp(String[] commands, String description, String usage, Object defaultVal, int indent) {
         String text = String.format("%s%s", StringUtils.leftPad("", indent), StringUtils.join(commands, ", "));
+
+        // Try to handle overflow
+        String[] overflow = null;
+        if((text.length() > 27 + indent) && text.contains(",")) {
+            String[] split = text.split(",");
+            text = split[0] + ",";
+            overflow = Arrays.copyOfRange(split, 1, split.length);
+        }
+
         if (description != null) {
             text = StringUtils.rightPad(text, DESCRIPTION_COLUMN) + description;
+            if(defaultVal != null) {
+               text += String.format(" [%s]", defaultVal);
+            }
+        }
 
+        if(overflow != null) {
+            for(int i = 0; i < overflow.length; i++) {
+                String ending = (i == overflow.length - 1) ? "" : ",";
+                text += System.lineSeparator() + StringUtils.leftPad("", indent + INDENT_SIZE)  + overflow[i].trim() + ending;
+            }
         }
         System.out.println(text);
         if (usage != null) {
@@ -417,10 +435,10 @@ public class ArgParser {
     }
 
     private static void printHelp(ArgValue argValue) {
-        printHelp(argValue.getMatches(), argValue.getDescription(), argValue.getUsage(), INDENT_SIZE);
+        printHelp(argValue.getMatches(), argValue.getDescription(), argValue.getUsage(), argValue.getDefaultVal(), INDENT_SIZE);
     }
 
     private static void printHelp(ArgValueOption argValueOption) {
-        printHelp(argValueOption.getMatches(), argValueOption.getDescription(), null, INDENT_SIZE);
+        printHelp(argValueOption.getMatches(), argValueOption.getDescription(), null, null, INDENT_SIZE);
     }
 }

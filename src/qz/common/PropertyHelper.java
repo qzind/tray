@@ -2,6 +2,7 @@ package qz.common;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.utils.ArgValue;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -53,8 +54,8 @@ public class PropertyHelper extends Properties {
         }
     }
 
-    public void setProperty(String key, boolean value) {
-        setProperty(key, "" + value);
+    public void setProperty(ArgValue arg, boolean value) {
+        setProperty(arg.getMatch(), "" + value);
     }
 
     public void load(File file) {

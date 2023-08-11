@@ -22,6 +22,7 @@ import qz.installer.TaskKiller;
 import qz.installer.certificate.CertificateManager;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.List;
 
@@ -48,6 +49,7 @@ public class ArgParser {
     protected static final Logger log = LogManager.getLogger(ArgParser.class);
 
     private static final String USAGE_COMMAND = String.format("java -jar %s.jar", PROPS_FILE);
+    private static final String USAGE_COMMAND_PARAMETER = String.format("java -Dfoo.bar=<value> -jar %s.jar", PROPS_FILE);
     private static final int DESCRIPTION_COLUMN = 30;
     private static final int INDENT_SIZE = 2;
 
@@ -203,7 +205,7 @@ public class ArgParser {
                     throw new UnsupportedOperationException("Installation type " + argValue + " is not yet supported");
             }
         } catch(MissingArgException e) {
-            log.error("Valid usage:\n   {} {}", USAGE_COMMAND, argValue.getUsage());
+            log.error("Valid usage:{}   {} {}", System.lineSeparator(), USAGE_COMMAND, argValue.getUsage());
             return USAGE_ERROR;
         } catch(Exception e) {
             log.error("Installation step {} failed", argValue, e);
@@ -229,7 +231,7 @@ public class ArgParser {
                     throw new UnsupportedOperationException("Build type " + argValue + " is not yet supported");
             }
         } catch(MissingArgException e) {
-            log.error("Valid usage:\n   {} {}", USAGE_COMMAND, argValue.getUsage());
+            log.error("Valid usage:{}   {} {}", System.lineSeparator(), USAGE_COMMAND, argValue.getUsage());
             return USAGE_ERROR;
         } catch(Exception e) {
             log.error("Build step {} failed", argValue, e);
@@ -265,6 +267,15 @@ public class ArgParser {
                 // Show generic help
                 for(ArgValue.ArgType argType : ArgValue.ArgType.values()) {
                     System.out.println(String.format("%s%s", System.lineSeparator(), argType));
+                    switch(argType) {
+                        case PREFERENCES:
+                            System.out.println(String.format("  Preferences can be set via \"%s %s=%s\", command line via \"%s\" or via file using %s.properties" + System.lineSeparator(),
+                                                             SystemUtilities.isWindows() ? "set" : "export",
+                                                             "QZ_OPTS",
+                                                             "-Dfoo.bar=<value>",
+                                                             USAGE_COMMAND_PARAMETER,
+                                                             PROPS_FILE));
+                    }
                     for(ArgValue argValue : ArgValue.filter(argType)) {
                         printHelp(argValue);
                     }
@@ -378,11 +389,44 @@ public class ArgParser {
         return false;
     }
 
-    private static void printHelp(String[] commands, String description, String usage, int indent) {
+    private static ArrayList<String> collectPrefs() {
+        ArrayList<String> opts = new ArrayList<>();
+        for(Field f : Constants.class.getDeclaredFields()) {
+            if(f.getName().startsWith("PREFS_")) {
+                try {
+                    Object val = f.get(null);
+                    if (val instanceof String) {
+                        opts.add((String)val);
+                    }
+                } catch(Exception ignore) {}
+            }
+        }
+        return opts;
+    }
+
+    private static void printHelp(String[] commands, String description, String usage, Object defaultVal, int indent) {
         String text = String.format("%s%s", StringUtils.leftPad("", indent), StringUtils.join(commands, ", "));
+
+        // Try to handle overflow
+        String[] overflow = null;
+        if((text.length() > 27 + indent) && text.contains(",")) {
+            String[] split = text.split(",");
+            text = split[0] + ",";
+            overflow = Arrays.copyOfRange(split, 1, split.length);
+        }
+
         if (description != null) {
             text = StringUtils.rightPad(text, DESCRIPTION_COLUMN) + description;
+            if(defaultVal != null) {
+               text += String.format(" [%s]", defaultVal);
+            }
+        }
 
+        if(overflow != null) {
+            for(int i = 0; i < overflow.length; i++) {
+                String ending = (i == overflow.length - 1) ? "" : ",";
+                text += System.lineSeparator() + StringUtils.leftPad("", indent + INDENT_SIZE)  + overflow[i].trim() + ending;
+            }
         }
         System.out.println(text);
         if (usage != null) {
@@ -391,10 +435,10 @@ public class ArgParser {
     }
 
     private static void printHelp(ArgValue argValue) {
-        printHelp(argValue.getMatches(), argValue.getDescription(), argValue.getUsage(), INDENT_SIZE);
+        printHelp(argValue.getMatches(), argValue.getDescription(), argValue.getUsage(), argValue.getDefaultVal(), INDENT_SIZE);
     }
 
     private static void printHelp(ArgValueOption argValueOption) {
-        printHelp(argValueOption.getMatches(), argValueOption.getDescription(), null, INDENT_SIZE);
+        printHelp(argValueOption.getMatches(), argValueOption.getDescription(), null, null, INDENT_SIZE);
     }
 }

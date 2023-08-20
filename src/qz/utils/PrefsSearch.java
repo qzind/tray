@@ -3,8 +3,12 @@ package qz.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.installer.certificate.CertificateManager;
+import qz.installer.certificate.KeyPairWrapper;
 
 import java.util.Properties;
+
+import static qz.installer.certificate.KeyPairWrapper.Type.CA;
+import static qz.installer.certificate.KeyPairWrapper.Type.SSL;
 
 /**
  * Convenience class for searching for preferences on a user, app and <code>System.getProperty(...)</code> level
@@ -19,7 +23,7 @@ public class PrefsSearch {
         // If none are provided, ensure we have some types of properties to iterate over
         if(propArray.length == 0) {
             if(appProps == null) {
-                appProps = CertificateManager.loadProperties();
+                appProps = CertificateManager.loadProperties(new KeyPairWrapper(SSL), new KeyPairWrapper(CA));
             }
             propArray = new Properties[]{ appProps };
         }

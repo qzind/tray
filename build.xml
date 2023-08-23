@@ -168,7 +168,7 @@
             </fileset>
         </delete>
 
-        <!-- Merge META-INF/services from PDFBOX and TwelveMonkeys -->
+        <!-- Merge META-INF/services from PDFBOX, jpeg2000 and TwelveMonkeys -->
         <!-- find the TwelveMonkeys jar -->
         <path id="imageio-jpeg.found">
             <first>
@@ -178,10 +178,22 @@
             </first>
         </path>
         <pathconvert property="imageio-jpeg.path" refid="imageio-jpeg.found"/>
+
+        <!-- find the jpeg2000 jar -->
+        <path id="imageio-jpeg2000.found">
+            <first>
+                <fileset dir="lib/imaging/">
+                    <include name="jai-imageio-jpeg2000*.jar"/>
+                </fileset>
+            </first>
+        </path>
+        <pathconvert property="imageio-jpeg2000.path" refid="imageio-jpeg2000.found"/>
+
         <!-- merge service entries for ImageReaderSpi -->
         <concat destfile="${out.dir}/libs-temp/META-INF/services/javax.imageio.spi.ImageReaderSpi" fixlastline="true">
             <zipentry zipfile="${pdfbox.path}" name="META-INF/services/javax.imageio.spi.ImageReaderSpi"/>
             <zipentry zipfile="${imageio-jpeg.path}" name="META-INF/services/javax.imageio.spi.ImageReaderSpi"/>
+            <zipentry zipfile="${imageio-jpeg2000.path}" name="META-INF/services/javax.imageio.spi.ImageReaderSpi"/>
         </concat>
     </target>
 

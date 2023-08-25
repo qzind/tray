@@ -136,8 +136,8 @@ public class WindowsInstaller extends Installer {
 
         // Firewall rules
         String ports = StringUtils.join(PrintSocketServer.SECURE_PORTS, ",") + "," + StringUtils.join(PrintSocketServer.INSECURE_PORTS, ",");
-        ShellUtilities.execute("netsh.exe", "advfirewall", "delete", "rule", String.format("name=\"%s\"", ABOUT_TITLE));
-        ShellUtilities.execute("netsh.exe", "advfirewall", "firewall", "add", "rule", String.format("name=\"%s\"", ABOUT_TITLE),
+        ShellUtilities.execute("netsh.exe", "advfirewall", "firewall", "delete", "rule", String.format("name=%s", ABOUT_TITLE));
+        ShellUtilities.execute("netsh.exe", "advfirewall", "firewall", "add", "rule", String.format("name=%s", ABOUT_TITLE),
                                "dir=in", "action=allow", "profile=any", String.format("localport=%s", ports), "localip=any", "protocol=tcp");
         return this;
     }

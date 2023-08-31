@@ -363,7 +363,11 @@ var qz = (function() {
 
                     _qz.security.callCert().then(sendCert).catch(function(error) {
                         _qz.log.warn("Failed to get certificate:", error);
-                        sendCert(null);
+                        if(_qz.security.rejectOnCertFailure) {
+                            return _qz.tools.reject(error);
+                        } else {
+                            sendCert(null);
+                        }
                     });
                 },
 
@@ -578,6 +582,8 @@ var qz = (function() {
 
             /** Signing algorithm used on signatures */
             signAlgorithm: "SHA1",
+
+            rejectOnCertFailure: false,
 
             needsSigned: function(callName) {
                 const undialoged = [
@@ -2595,11 +2601,15 @@ var qz = (function() {
              *
              * @param {Function|AsyncFunction|Promise<string>} promiseHandler Either a function that will be used as a promise resolver (of format <code>Function({function} resolve, {function}reject)</code>),
              *     an async function, or a promise. Any of which should return the public certificate via their respective <code>resolve</code> call.
-             *
+             * @param {Object} [options] Configuration options for the certificate resolver
+             *  @param {boolean} [options.rejectOnFailure=[false]] Overrides default behavior to call resolve with a blank certificate on failure.
              * @memberof qz.security
              */
-            setCertificatePromise: function(promiseHandler) {
+            setCertificatePromise: function(promiseHandler, options) {
                 _qz.security.certHandler = promiseHandler;
+                if(options && options.rejectOnFailure) {
+                    _qz.security.rejectOnCertFailure = options.rejectOnFailure;
+                }
             },
 
             /**

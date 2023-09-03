@@ -363,8 +363,9 @@ var qz = (function() {
 
                     _qz.security.callCert().then(sendCert).catch(function(error) {
                         _qz.log.warn("Failed to get certificate:", error);
-                        if(_qz.security.rejectOnCertFailure) {
-                            return _qz.tools.reject(error);
+
+                        if (_qz.security.rejectOnCertFailure) {
+                            openPromise.reject(error);
                         } else {
                             sendCert(null);
                         }

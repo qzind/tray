@@ -2608,9 +2608,7 @@ var qz = (function() {
              */
             setCertificatePromise: function(promiseHandler, options) {
                 _qz.security.certHandler = promiseHandler;
-                if(options && options.rejectOnFailure) {
-                    _qz.security.rejectOnCertFailure = options.rejectOnFailure;
-                }
+                _qz.security.rejectOnCertFailure = options && options.rejectOnFailure;
             },
 
             /**

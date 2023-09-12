@@ -1613,11 +1613,51 @@
                     "<li><strong>Density:</strong> " + data[i].density + "dpi</li>" +
                     "<li><strong>Connection:</strong> " + data[i].connection + "</li>" +
                     (data[i].trays ? "<li><strong>Trays:</strong> " + data[i].trays + "</li>" : "") +
+                    accumulateSizes(data[i]) +
                     "</ul></li>";
             }
 
             pinMessage("<strong>Printer details:</strong><br/><ul>" + list + "</ul>");
         }).catch(displayError);
+    }
+
+    function accumulateSizes(data) {
+        var html = "";
+        if(data.sizes) {
+            var html = "<li><details><summary><strong>Sizes:</strong> (" + data.sizes.length + ")</summary> ";
+            var sizes = data.sizes;
+            html += "<ul>";
+            for(var size in sizes) {
+                html += "<li><details><summary>" + sizes[size].name + "</summary><ul>";
+
+                var inch = sizes[size].in.width + " x " + sizes[size].in.height;
+                var mill = sizes[size].mm.width + " x " + sizes[size].mm.height;
+
+                var inchTrunc = truncate(sizes[size].in.width, 3) + "&nbsp;x&nbsp;" + truncate(sizes[size].in.height, 3);
+                var millTrunc = truncate(sizes[size].mm.width, 3) + "&nbsp;x&nbsp;" + truncate(sizes[size].mm.height, 3);
+
+                html += "<li style='text-overflow: ellipsis;' title='" + inch + "'><strong>in:</strong>&nbsp;" + inchTrunc + "</li>";
+                html += "<li style='text-overflow: ellipsis;' title='" + mill + "'><strong>mm:</strong>&nbsp;" + millTrunc + "</li>";
+
+                html += "</ul></details></li>";
+            }
+            html += "</ul></details></li>";
+        }
+        return html;
+    }
+
+    function truncate(val, length, ellipsis) {
+        var truncated;
+        if(isNaN(val)) {
+            truncated = val.substring(0, length);
+        } else {
+            var mult = Math.pow(10, length);
+            truncated = Math.floor(val * mult) / mult;
+        }
+        if(ellipsis === false) {
+            return truncated;
+        }
+        return val === truncated ? val : truncated + "&hellip;";
     }
 
 

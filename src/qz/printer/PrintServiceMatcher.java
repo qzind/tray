@@ -22,11 +22,8 @@ import qz.utils.SystemUtilities;
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 import javax.print.attribute.ResolutionSyntax;
-import javax.print.attribute.standard.Media;
-import javax.print.attribute.standard.MediaTray;
-import javax.print.attribute.standard.PrinterName;
-import javax.print.attribute.standard.PrinterResolution;
-import java.util.Locale;
+import javax.print.attribute.standard.*;
+import java.util.*;
 
 public class PrintServiceMatcher {
     private static final Logger log = LogManager.getLogger(PrintServiceMatcher.class);
@@ -174,8 +171,35 @@ public class PrintServiceMatcher {
                     log.info("Gathering printer MediaTray information...");
                     mediaTrayCrawled = true;
                 }
+
+                HashSet<String> uniqueSizes = new HashSet<>();
+
                 for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
                     if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
+                    if (m instanceof MediaSizeName) {
+                        if(uniqueSizes.add(m.toString())) {
+                            MediaSize mediaSize = MediaSize.getMediaSizeForName((MediaSizeName)m);
+                            if(mediaSize == null) {
+                                continue;
+                            }
+
+                            JSONObject sizes = new JSONObject();
+                            sizes.put("name", m.toString());
+
+                            JSONObject in = new JSONObject();
+                            in.put("width", mediaSize.getX(MediaPrintableArea.INCH));
+                            in.put("height", mediaSize.getY(MediaPrintableArea.INCH));
+                            sizes.put("in", in);
+
+                            JSONObject mm = new JSONObject();
+                            mm.put("width", mediaSize.getX(MediaPrintableArea.MM));
+                            mm.put("height", mediaSize.getY(MediaPrintableArea.MM));
+                            sizes.put("mm", mm);
+
+                            jsonService.accumulate("sizes", sizes);
+                        }
+
+                    }
                 }
 
                 PrinterResolution res = printer.getResolution().value();

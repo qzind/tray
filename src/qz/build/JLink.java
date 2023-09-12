@@ -147,7 +147,7 @@ public class JLink {
      * Download the JDK and return the path it was extracted to
      */
     private String downloadJdk(Arch arch, Platform platform) throws IOException {
-        String url = new Url(this.javaVendor).format(arch, platform, this.gcEngine, this.javaSemver, this.gcVersion);
+        String url = new Url(this.javaVendor).format(arch, platform, this.gcEngine, this.javaSemver, this.javaVersion, this.gcVersion);
 
         // Saves to out e.g. "out/jlink/jdk-AdoptOpenjdk-amd64-platform-11_0_7"
         String extractedJdk = new Fetcher(String.format("jlink/jdk-%s-%s-%s-%s", javaVendor.value(), arch.value(), platform.value(), javaSemver.toString().replaceAll("\\+", "_")), url)

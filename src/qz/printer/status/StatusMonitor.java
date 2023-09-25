@@ -150,11 +150,9 @@ public class StatusMonitor {
     }
 
     public synchronized static void closeListener(SocketConnection connection) {
-        for (Iterator<Map.Entry<String, List<SocketConnection>>> i = clientPrinterConnections.entrySet().iterator(); i.hasNext();) {
-            if (i.next().getValue().contains(connection)) {
-                i.remove();
-            }
-        }
+        clientPrinterConnections.entrySet().removeIf((Map.Entry<String, List<SocketConnection>> entry) -> (
+                entry.getValue().contains(connection)
+        ));
         if (clientPrinterConnections.isEmpty()) {
             if (isWindows()) {
                 closeNotificationThreads();
@@ -178,10 +176,8 @@ public class StatusMonitor {
     }
 
     public synchronized static void statusChanged(Status[] statuses) {
-        for (Status status : statuses) {
-            // Add statuses to the queue, statusEventDispatchThread will resolve these one at a time until the queue is empty
-            statusQueue.add(status);
-        }
+        // Add statuses to the queue, statusEventDispatchThread will resolve these one at a time until the queue is empty
+        Collections.addAll(statusQueue, statuses);
         if (!statusQueue.isEmpty()) {
             // If statusEventDispatchThread isn't already running, launch it
             launchStatusEventDispatchThread();

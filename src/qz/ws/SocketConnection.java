@@ -6,7 +6,6 @@ import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.communication.*;
 import qz.printer.status.StatusMonitor;
-import qz.printer.status.StatusSession;
 import qz.utils.FileWatcher;
 
 import java.io.IOException;
@@ -21,7 +20,6 @@ public class SocketConnection {
     private Certificate certificate;
 
     private DeviceListener deviceListener;
-    private StatusSession statusListener;
 
     // serial port -> open SerialIO
     private final HashMap<String,SerialIO> openSerialPorts = new HashMap<>();

@@ -89,24 +89,6 @@ public class SocketConnection {
         deviceListener = null;
     }
 
-    public synchronized boolean hasStatusListener() {
-        return statusListener != null;
-    }
-
-    public synchronized void startStatusListener(StatusSession listener) {
-        statusListener = listener;
-    }
-
-    public synchronized void stopStatusListener() {
-        StatusMonitor.closeListener(this);
-        statusListener = null;
-    }
-
-    public synchronized StatusSession getStatusListener() {
-        return statusListener;
-    }
-
-
     public void addFileListener(Path absolute, FileIO listener) {
         openFiles.put(absolute, listener);
     }
@@ -169,7 +151,7 @@ public class SocketConnection {
 
         removeAllFileListeners();
         stopDeviceListening();
-        stopStatusListener();
+        StatusMonitor.stopListening(this);
     }
 
 }

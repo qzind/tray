@@ -74,6 +74,11 @@ public class WebApp extends Application {
     private static ChangeListener<Worker.State> stateListener = (ov, oldState, newState) -> {
         log.trace("New state: {} > {}", oldState, newState);
 
+        // Cancelled should throw exception listener, but does not
+        // See https://github.com/qzind/tray/issues/1183
+        if (newState == Worker.State.CANCELLED) {
+            unlatch(new IOException("Page load was cancelled for an unknown reason"));
+        }
         if (newState == Worker.State.SUCCEEDED) {
             boolean hasBody = (boolean)webView.getEngine().executeScript("document.body != null");
             if (!hasBody) {

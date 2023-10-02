@@ -147,6 +147,8 @@ public class WebApp extends Application {
     //listens for load progress
     private static ChangeListener<Number> workDoneListener = (ov, oldWork, newWork) -> log.trace("Done: {} > {}", oldWork, newWork);
 
+    private static ChangeListener<String> msgListener = (ov, oldMsg, newMsg) -> log.trace("New status: {}", newMsg);
+
     //listens for failures
     private static ChangeListener<Throwable> exceptListener = (obs, oldExc, newExc) -> {
         if (newExc != null) { unlatch(newExc); }
@@ -247,6 +249,7 @@ public class WebApp extends Application {
         worker.stateProperty().addListener(stateListener);
         worker.workDoneProperty().addListener(workDoneListener);
         worker.exceptionProperty().addListener(exceptListener);
+        worker.messageProperty().addListener(msgListener);
 
         //prevents JavaFX from shutting down when hiding window
         Platform.setImplicitExit(false);

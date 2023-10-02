@@ -83,8 +83,8 @@ public class StatusMonitor {
     }
 
     public synchronized static boolean startListening(SocketConnection connection, Session session, JSONObject params) throws JSONException {
-        statusSessions.putIfAbsent(connection, new StatusSession(session));
         JSONArray printerNames = params.getJSONArray("printerNames");
+        statusSessions.putIfAbsent(connection, new StatusSession(session));
 
         if (printerNames.isNull(0)) {  //listen to all printers
             addClientPrinterConnection(ALL_PRINTERS, connection, params);

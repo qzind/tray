@@ -36,7 +36,7 @@ public class Url {
         pattern = VENDOR_URL_MAP.get(vendor);
     }
 
-    public String format(Arch arch, Platform platform, String gcEngine, Version javaSemver, String gcVer) throws UnsupportedEncodingException {
+    public String format(Arch arch, Platform platform, String gcEngine, Version javaSemver, String javaVersion, String gcVer) throws UnsupportedEncodingException {
         Url pattern = new Url(vendor);
         String urlArch = vendor.getUrlArch(arch);
         String fileExt = vendor.getUrlExtension(platform);
@@ -44,7 +44,7 @@ public class Url {
         String urlJavaVersion = vendor.getUrlJavaVersion(javaSemver);
 
         // Convert "+" to "%2B"
-        String urlJavaVersionEncode = URLEncoder.encode(javaSemver.toString(), "UTF-8");
+        String urlJavaVersionEncode = URLEncoder.encode(javaVersion, "UTF-8");
 
         int javaMajor = javaSemver.getMajorVersion();
         switch(vendor) {

@@ -164,19 +164,33 @@ public class PrintSocketClient {
                 }
             }
 
-            processMessage(session, json, connection, request);
-        }
-        catch(UnsatisfiedLinkError | LoaderException e) {
-            log.error("A component is missing or broken, preventing this feature from working", e);
-            sendError(session, UID, "Sorry, this feature is unavailable at this time");
+            //spawn thread to prevent long processes from blocking
+            final String tUID = UID;
+            new Thread(() -> {
+                try {
+                    processMessage(session, json, connection, request);
+                }
+                catch(UnsatisfiedLinkError | LoaderException e) {
+                    log.error("A component is missing or broken, preventing this feature from working", e);
+                    sendError(session, tUID, "Sorry, this feature is unavailable at this time");
+                }
+                catch(JSONException e) {
+                    log.error("Bad JSON: {}", e.getMessage());
+                    sendError(session, tUID, e);
+                }
+                catch(InvalidPathException | FileSystemException e) {
+                    log.error("FileIO exception occurred", e);
+                    sendError(session, tUID, String.format("FileIO exception occurred: %s: %s", e.getClass().getSimpleName(), e.getMessage()));
+                }
+                catch(Exception e) {
+                    log.error("Problem processing message", e);
+                    sendError(session, tUID, e);
+                }
+            }).start();
         }
         catch(JSONException e) {
             log.error("Bad JSON: {}", e.getMessage());
             sendError(session, UID, e);
-        }
-        catch(InvalidPathException | FileSystemException e) {
-            log.error("FileIO exception occurred", e);
-            sendError(session, UID, String.format("FileIO exception occurred: %s: %s", e.getClass().getSimpleName(), e.getMessage()));
         }
         catch(Exception e) {
             log.error("Problem processing message", e);

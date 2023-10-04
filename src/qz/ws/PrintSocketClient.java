@@ -20,10 +20,8 @@ import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.status.StatusMonitor;
-import qz.printer.status.StatusSession;
 import qz.utils.*;
 
-import javax.management.ListenerNotFoundException;
 import javax.usb.util.UsbUtil;
 import java.awt.*;
 import java.io.EOFException;
@@ -225,7 +223,7 @@ public class PrintSocketClient {
      * @param session WebSocket session
      * @param json    JSON received from web API
      */
-    private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, DeviceException, IOException, ListenerNotFoundException {
+    private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, DeviceException, IOException {
         String UID = json.optString("uid");
         SocketMethod call = SocketMethod.findFromCall(json.optString("call"));
         JSONObject params = json.optJSONObject("params");
@@ -291,14 +289,14 @@ public class PrintSocketClient {
                 sendResult(session, UID, PrintServiceMatcher.getPrintersJSON(true));
                 break;
             case PRINTERS_START_LISTENING:
-                if (!connection.hasStatusListener()) {
-                    connection.startStatusListener(new StatusSession(session));
+                if (StatusMonitor.startListening(connection, session, params)) {
+                    sendResult(session, UID, null);
+                } else {
+                    sendError(session, UID, "Listening failed.");
                 }
-                StatusMonitor.startListening(connection, params);
-                sendResult(session, UID, null);
                 break;
             case PRINTERS_GET_STATUS:
-                if (connection.hasStatusListener()) {
+                if (StatusMonitor.isListening(connection)) {
                     StatusMonitor.sendStatuses(connection);
                 } else {
                     sendError(session, UID, "No printer listeners started for this client.");
@@ -306,9 +304,7 @@ public class PrintSocketClient {
                 sendResult(session, UID, null);
                 break;
             case PRINTERS_STOP_LISTENING:
-                if (connection.hasStatusListener()) {
-                    connection.stopStatusListener();
-                }
+                StatusMonitor.stopListening(connection);
                 sendResult(session, UID, null);
                 break;
             case PRINT:

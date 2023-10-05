@@ -52,6 +52,8 @@ var qz = (function() {
         websocket: {
             /** The actual websocket object managing the connection. */
             connection: null,
+            /** Track if a connection attempt is being cancelled. */
+            shutdown: false,
 
             /** Default parameters used on new connections. Override values using options parameter on {@link qz.websocket.connect}. */
             connectConfig: {
@@ -75,6 +77,11 @@ var qz = (function() {
             setup: {
                 /** Loop through possible ports to open connection, sets web socket calls that will settle the promise. */
                 findConnection: function(config, resolve, reject) {
+                    if (_qz.websocket.shutdown) {
+                        reject(new Error("Connection attempt cancelled by user"));
+                        return;
+                    }
+
                     //force flag if missing ports
                     if (!config.port.secure.length) {
                         if (!config.port.insecure.length) {
@@ -90,6 +97,12 @@ var qz = (function() {
                     }
 
                     var deeper = function() {
+                        if (_qz.websocket.shutdown) {
+                            //connection attempt was cancelled, bail out
+                            reject(new Error("Connection attempt cancelled by user"));
+                            return;
+                        }
+
                         config.port.portIndex++;
 
                         if ((config.usingSecure && config.port.portIndex >= config.port.secure.length)
@@ -765,7 +778,9 @@ var qz = (function() {
             },
 
             isActive: function() {
-                return _qz.websocket.connection != null && _qz.websocket.connection.established;
+                return !_qz.websocket.shutdown && _qz.websocket.connection != null
+                    && (_qz.websocket.connection.readyState === _qz.tools.ws.OPEN
+                        || _qz.websocket.connection.readyState === _qz.tools.ws.CONNECTING);
             },
 
             assertActive: function() {
@@ -1164,12 +1179,19 @@ var qz = (function() {
              */
             connect: function(options) {
                 return _qz.tools.promise(function(resolve, reject) {
-                    if (_qz.tools.isActive()) {
-                        reject(new Error("An open connection with QZ Tray already exists"));
-                        return;
-                    } else if (_qz.websocket.connection != null) {
-                        reject(new Error("The current connection attempt has not returned yet"));
-                        return;
+                    if (_qz.websocket.connection) {
+                        const state = _qz.websocket.connection.readyState;
+
+                        if (state === _qz.tools.ws.OPEN) {
+                            reject(new Error("An open connection with QZ Tray already exists"));
+                            return;
+                        } else if (state === _qz.tools.ws.CONNECTING) {
+                            reject(new Error("The current connection attempt has not returned yet"));
+                            return;
+                        } else if (state === _qz.tools.ws.CLOSING) {
+                            reject(new Error("Waiting for previous disconnect request to complete"));
+                            return;
+                        }
                     }
 
                     if (!_qz.tools.ws) {
@@ -1197,6 +1219,7 @@ var qz = (function() {
                         options.host = [options.host];
                     }
 
+                    _qz.websocket.shutdown = false; //reset state for new connection attempt
                     var attempt = function(count) {
                         var tried = false;
                         var nextAttempt = function() {
@@ -1236,11 +1259,17 @@ var qz = (function() {
              */
             disconnect: function() {
                 return _qz.tools.promise(function(resolve, reject) {
-                    if (_qz.tools.isActive()) {
-                        _qz.websocket.connection.close();
-                        _qz.websocket.connection.promise = { resolve: resolve, reject: reject };
+                    if (_qz.websocket.connection != null) {
+                        if (_qz.tools.isActive()) {
+                            // handles closing both 'connecting' and 'connected' states
+                            _qz.websocket.shutdown = true;
+                            _qz.websocket.connection.promise = { resolve: resolve, reject: reject };
+                            _qz.websocket.connection.close();
+                        } else {
+                            reject(new Error("Current connection is still closing"));
+                        }
                     } else {
-                        reject(new Error("No open connection with QZ Tray"))
+                        reject(new Error("No open connection with QZ Tray"));
                     }
                 });
             },

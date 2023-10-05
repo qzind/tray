@@ -97,6 +97,12 @@ var qz = (function() {
                     }
 
                     var deeper = function() {
+                        if (_qz.websocket.shutdown) {
+                            //connection attempt was cancelled, bail out
+                            reject(new Error("Connection attempt cancelled by user"));
+                            return;
+                        }
+
                         config.port.portIndex++;
 
                         if ((config.usingSecure && config.port.portIndex >= config.port.secure.length)
@@ -1192,9 +1198,9 @@ var qz = (function() {
                     if (_qz.websocket.connection != null) {
                         if (_qz.tools.isActive()) {
                             // handles closing both 'connecting' and 'connected' states
-                            _qz.websocket.connection.close();
-                            _qz.websocket.connection.promise = { resolve: resolve, reject: reject };
                             _qz.websocket.shutdown = true;
+                            _qz.websocket.connection.promise = { resolve: resolve, reject: reject };
+                            _qz.websocket.connection.close();
                         } else {
                             reject(new Error("Current connection is still closing"));
                         }

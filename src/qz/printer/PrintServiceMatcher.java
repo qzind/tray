@@ -36,7 +36,7 @@ public class PrintServiceMatcher {
 
     public static NativePrinterMap getNativePrinterList(boolean silent, boolean withAttributes) {
         NativePrinterMap printers = NativePrinterMap.getInstance();
-        printers.putAll(lookupPrintServices());
+        printers.putAll(true, lookupPrintServices());
         if (withAttributes) { printers.values().forEach(NativePrinter::getDriverAttributes); }
         if (!silent) { log.debug("Found {} printers", printers.size()); }
         return printers;
@@ -70,7 +70,7 @@ public class PrintServiceMatcher {
         NativePrinterMap printers = NativePrinterMap.getInstance();
         if (!printers.contains(defaultService)) {
             // FIXME: Determine if this is this working correctly.  It seems to set the printers list = to [1] {defaultPrinter}
-            printers.putAll(defaultService);
+            printers.putAll(false, defaultService);
         }
 
         return printers.get(defaultService);

@@ -11,8 +11,9 @@ import javax.print.PrintServiceLookup;
  * See also <code>CachedPrintService</code>
  */
 public class CachedPrintServiceLookup {
-    private static final CachedObject<PrintService> cachedDefault = new CachedObject<>(CachedPrintServiceLookup::innerLookupDefaultPrintService);
-    private static final CachedObject<PrintService[]> cachedPrintServices = new CachedObject<>(CachedPrintServiceLookup::innerLookupPrintServices);
+    private static final CachedObject<PrintService> cachedDefault = new CachedObject<>(CachedPrintServiceLookup::wrapDefaultPrintService);
+    private static final CachedObject<PrintService[]> cachedPrintServices = new CachedObject<>(CachedPrintServiceLookup::wrapPrintServices);
+    private static CachedPrintService[] oldPrintServices = {};
 
     static {
         setLifespan(CachedObject.DEFAULT_LIFESPAN);
@@ -31,15 +32,32 @@ public class CachedPrintServiceLookup {
         return cachedPrintServices.get();
     }
 
-    private static PrintService innerLookupDefaultPrintService() {
+    private static PrintService wrapDefaultPrintService() {
+        PrintService javaxPrintService = PrintServiceLookup.lookupDefaultPrintService();
+        // If this CachedPrintService already exists, reuse it rather than wrapping a new one
+        CachedPrintService oldCachedPrintService = getMatch(oldPrintServices, javaxPrintService);
+        if (oldCachedPrintService != null) return oldCachedPrintService;
         return new CachedPrintService(PrintServiceLookup.lookupDefaultPrintService());
     }
 
-    private static PrintService[] innerLookupPrintServices() {
-        PrintService[] printServices = PrintServiceLookup.lookupPrintServices(null, null);
-        for (int i = 0; i < printServices.length; i++) {
-            printServices[i] = new CachedPrintService(printServices[i]);
+    private static CachedPrintService[] wrapPrintServices() {
+        PrintService[] javaxPrintServices = PrintServiceLookup.lookupPrintServices(null, null);
+        CachedPrintService[] cachedPrintServices = new CachedPrintService[javaxPrintServices.length];
+        for (int i = 0; i < javaxPrintServices.length; i++) {
+            // If this CachedPrintService already exists, reuse it rather than wrapping a new one
+            cachedPrintServices[i] = getMatch(oldPrintServices, javaxPrintServices[i]);
+            if (cachedPrintServices[i] == null) {
+                cachedPrintServices[i] = new CachedPrintService(javaxPrintServices[i]);
+            }
         }
-        return printServices;
+        oldPrintServices = cachedPrintServices;
+        return cachedPrintServices;
+    }
+
+    private static CachedPrintService getMatch(CachedPrintService[] array, PrintService javaxPrintService) {
+        for (CachedPrintService cps : array) {
+            if (cps.getJavaxPrintService() == javaxPrintService) return cps;
+        }
+        return null;
     }
 }

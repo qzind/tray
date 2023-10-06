@@ -20,7 +20,7 @@ import java.util.function.Supplier;
  * See also JDK-7001133
  */
 public class CachedPrintService implements PrintService {
-    private PrintService printService;
+    private final PrintService printService;
     private final long lifespan;
     private final CachedObject<String> cachedName;
     private final CachedObject<PrintServiceAttributeSet> cachedAttributeSet;
@@ -60,6 +60,10 @@ public class CachedPrintService implements PrintService {
     @Override
     public PrintServiceAttributeSet getAttributes() {
         return cachedAttributeSet.get();
+    }
+
+    public PrintService getJavaxPrintService() {
+        return printService;
     }
 
     @Override

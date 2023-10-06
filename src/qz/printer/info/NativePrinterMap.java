@@ -43,6 +43,10 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
         return null;
     }
 
+    /**
+     * WARNING: Despite the function's name, if <code>exhaustive</code> is true, it will treat the listing as exhaustive and remove
+     * any PrintServices that are not part of this HashMap.
+     */
     public ArrayList<PrintService> findMissing(boolean exhaustive, PrintService[] services) {
         ArrayList<PrintService> serviceList = new ArrayList<>(Arrays.asList(services)); // shrinking list drastically improves performance
 

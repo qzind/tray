@@ -29,8 +29,10 @@ import java.util.*;
 
 public class PrintServiceMatcher {
     private static final Logger log = LogManager.getLogger(PrintServiceMatcher.class);
-    //todo: include jdk version test for caching when JDK-7001133 is resolved
-    private static final boolean useCache = SystemUtilities.isMac();   // PrintService is slow, use a cache instead per JDK-7001133
+
+    // PrintService is slow in CUPS, use a cache instead per JDK-7001133
+    // TODO: Include JDK version test for caching when JDK-7001133 is fixed upstream
+    private static final boolean useCache = !SystemUtilities.isWindows();
 
     public static NativePrinterMap getNativePrinterList(boolean silent, boolean withAttributes) {
         NativePrinterMap printers = NativePrinterMap.getInstance();
@@ -67,7 +69,7 @@ public class PrintServiceMatcher {
 
         NativePrinterMap printers = NativePrinterMap.getInstance();
         if (!printers.contains(defaultService)) {
-            //todo: is this working correctly? it seems to set the printers list = to [1] {defaultPrinter}
+            // FIXME: Determine if this is this working correctly.  It seems to set the printers list = to [1] {defaultPrinter}
             printers.putAll(defaultService);
         }
 

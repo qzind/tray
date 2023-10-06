@@ -16,6 +16,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import qz.printer.info.CachedPrintService;
+import qz.printer.info.CachedPrintServiceLookup;
 import qz.printer.info.NativePrinter;
 import qz.printer.info.NativePrinterMap;
 import qz.utils.SystemUtilities;
@@ -40,13 +41,13 @@ public class PrintServiceMatcher {
     }
 
     private static PrintService[] lookupPrintServices() {
-        if (useCache) return CachedPrintService.lookupPrintServices();
-        return  PrintServiceLookup.lookupPrintServices(null, null);
+        return useCache ? CachedPrintServiceLookup.lookupPrintServices() :
+                PrintServiceLookup.lookupPrintServices(null, null);
     }
 
     private static PrintService lookupDefaultPrintService() {
-        if (useCache) return CachedPrintService.lookupDefaultPrintService();
-        return  PrintServiceLookup.lookupDefaultPrintService();
+        return useCache ? CachedPrintServiceLookup.lookupDefaultPrintService() :
+                PrintServiceLookup.lookupDefaultPrintService();
     }
 
     public static NativePrinterMap getNativePrinterList(boolean silent) {

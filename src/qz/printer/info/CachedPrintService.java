@@ -11,41 +11,30 @@ import javax.print.event.PrintServiceAttributeListener;
 import java.util.HashMap;
 import java.util.function.Supplier;
 
+/**
+ * <code>PrintService.getName()</code> is slow, and gets increasingly slower the more times it's called.
+ *
+ * By overriding and caching the <code>PrintService</code> attributes, we're able to help suppress/delay the
+ * performance loss of this bug.
+ *
+ * See also JDK-7001133
+ */
 public class CachedPrintService implements PrintService {
-    public PrintService innerPrintService;
-    // PrintService.getName() is slow, use a cache instead per JDK-7001133
-    // TODO: Remove this comment when upstream bug report is filed
-    private static final long lifespan = CachedObject.DEFAULT_LIFESPAN;
-    private static final CachedObject<PrintService> cachedDefault = new CachedObject<>(CachedPrintService::innerLookupDefaultPrintService, lifespan);
-    private static final CachedObject<PrintService[]> cachedPrintServices = new CachedObject<>(CachedPrintService::innerLookupPrintServices, lifespan);
+    private PrintService printService;
+    private final long lifespan;
     private final CachedObject<String> cachedName;
     private final CachedObject<PrintServiceAttributeSet> cachedAttributeSet;
     private final HashMap<Class<?>, CachedObject<?>> cachedAttributes = new HashMap<>();
 
-    public static PrintService lookupDefaultPrintService() {
-        return cachedDefault.get();
-    }
-
-    public static PrintService[] lookupPrintServices() {
-        return cachedPrintServices.get();
-    }
-
-    private static PrintService innerLookupDefaultPrintService() {
-        return new CachedPrintService(PrintServiceLookup.lookupDefaultPrintService());
-    }
-
-    private static PrintService[] innerLookupPrintServices() {
-        PrintService[] printServices = PrintServiceLookup.lookupPrintServices(null, null);
-        for (int i = 0; i < printServices.length; i++) {
-            printServices[i] = new CachedPrintService(printServices[i]);
-        }
-        return printServices;
+    public CachedPrintService(PrintService printService, long lifespan) {
+        this.printService = printService;
+        this.lifespan = lifespan;
+        cachedName = new CachedObject<>(this.printService::getName, lifespan);
+        cachedAttributeSet = new CachedObject<>(this.printService::getAttributes, lifespan);
     }
 
     public CachedPrintService(PrintService printService) {
-        innerPrintService = printService;
-        cachedName = new CachedObject<>(innerPrintService::getName, lifespan);
-        cachedAttributeSet = new CachedObject<>(innerPrintService::getAttributes, lifespan);
+        this(printService, CachedObject.DEFAULT_LIFESPAN);
     }
 
     @Override
@@ -55,17 +44,17 @@ public class CachedPrintService implements PrintService {
 
     @Override
     public DocPrintJob createPrintJob() {
-        return innerPrintService.createPrintJob();
+        return printService.createPrintJob();
     }
 
     @Override
     public void addPrintServiceAttributeListener(PrintServiceAttributeListener listener) {
-        innerPrintService.addPrintServiceAttributeListener(listener);
+        printService.addPrintServiceAttributeListener(listener);
     }
 
     @Override
     public void removePrintServiceAttributeListener(PrintServiceAttributeListener listener) {
-        innerPrintService.removePrintServiceAttributeListener(listener);
+        printService.removePrintServiceAttributeListener(listener);
     }
 
     @Override
@@ -76,7 +65,7 @@ public class CachedPrintService implements PrintService {
     @Override
     public <T extends PrintServiceAttribute> T getAttribute(Class<T> category) {
         if (!cachedAttributes.containsKey(category)) {
-            Supplier<T> supplier = () -> innerPrintService.getAttribute(category);
+            Supplier<T> supplier = () -> printService.getAttribute(category);
             CachedObject<T> cachedObject = new CachedObject<>(supplier, lifespan);
             cachedAttributes.put(category, cachedObject);
         }
@@ -85,46 +74,46 @@ public class CachedPrintService implements PrintService {
 
     @Override
     public DocFlavor[] getSupportedDocFlavors() {
-        return innerPrintService.getSupportedDocFlavors();
+        return printService.getSupportedDocFlavors();
     }
 
     @Override
     public boolean isDocFlavorSupported(DocFlavor flavor) {
-        return innerPrintService.isDocFlavorSupported(flavor);
+        return printService.isDocFlavorSupported(flavor);
     }
 
     @Override
     public Class<?>[] getSupportedAttributeCategories() {
-        return innerPrintService.getSupportedAttributeCategories();
+        return printService.getSupportedAttributeCategories();
     }
 
     @Override
     public boolean isAttributeCategorySupported(Class<? extends Attribute> category) {
-        return innerPrintService.isAttributeCategorySupported(category);
+        return printService.isAttributeCategorySupported(category);
     }
 
     @Override
     public Object getDefaultAttributeValue(Class<? extends Attribute> category) {
-        return innerPrintService.getDefaultAttributeValue(category);
+        return printService.getDefaultAttributeValue(category);
     }
 
     @Override
     public Object getSupportedAttributeValues(Class<? extends Attribute> category, DocFlavor flavor, AttributeSet attributes) {
-        return innerPrintService.getSupportedAttributeValues(category, flavor, attributes);
+        return printService.getSupportedAttributeValues(category, flavor, attributes);
     }
 
     @Override
     public boolean isAttributeValueSupported(Attribute attrval, DocFlavor flavor, AttributeSet attributes) {
-        return innerPrintService.isAttributeValueSupported(attrval, flavor, attributes);
+        return printService.isAttributeValueSupported(attrval, flavor, attributes);
     }
 
     @Override
     public AttributeSet getUnsupportedAttributes(DocFlavor flavor, AttributeSet attributes) {
-        return innerPrintService.getUnsupportedAttributes(flavor, attributes);
+        return printService.getUnsupportedAttributes(flavor, attributes);
     }
 
     @Override
     public ServiceUIFactory getServiceUIFactory() {
-        return innerPrintService.getServiceUIFactory();
+        return printService.getServiceUIFactory();
     }
 }

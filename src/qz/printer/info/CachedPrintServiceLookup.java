@@ -4,6 +4,7 @@ import qz.common.CachedObject;
 
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
+import java.util.Arrays;
 
 /**
  * PrintService[] cache to workaround JDK-7001133
@@ -11,8 +12,8 @@ import javax.print.PrintServiceLookup;
  * See also <code>CachedPrintService</code>
  */
 public class CachedPrintServiceLookup {
-    private static final CachedObject<PrintService> cachedDefault = new CachedObject<>(CachedPrintServiceLookup::wrapDefaultPrintService);
-    private static final CachedObject<PrintService[]> cachedPrintServices = new CachedObject<>(CachedPrintServiceLookup::wrapPrintServices);
+    private static final CachedObject<CachedPrintService> cachedDefault = new CachedObject<>(CachedPrintServiceLookup::wrapDefaultPrintService);
+    private static final CachedObject<CachedPrintService[]> cachedPrintServices = new CachedObject<>(CachedPrintServiceLookup::wrapPrintServices);
     private static CachedPrintService[] oldPrintServices = {};
 
     static {
@@ -32,12 +33,16 @@ public class CachedPrintServiceLookup {
         return cachedPrintServices.get();
     }
 
-    private static PrintService wrapDefaultPrintService() {
+    private static CachedPrintService wrapDefaultPrintService() {
         PrintService javaxPrintService = PrintServiceLookup.lookupDefaultPrintService();
         // If this CachedPrintService already exists, reuse it rather than wrapping a new one
         CachedPrintService oldCachedPrintService = getMatch(oldPrintServices, javaxPrintService);
         if (oldCachedPrintService != null) return oldCachedPrintService;
-        return new CachedPrintService(PrintServiceLookup.lookupDefaultPrintService());
+
+        // If it's not in our list, add it
+        oldPrintServices = Arrays.copyOf(oldPrintServices, oldPrintServices.length + 1);
+        oldPrintServices[oldPrintServices.length - 1] = new CachedPrintService(javaxPrintService);
+        return oldPrintServices[oldPrintServices.length - 1];
     }
 
     private static CachedPrintService[] wrapPrintServices() {

@@ -43,6 +43,7 @@ public class CachedObject<T> {
      *
      * @param supplier The function to pull new values from
      */
+    @SuppressWarnings("unused")
     public void registerSupplier(Supplier<T> supplier) {
         this.supplier = supplier;
     }

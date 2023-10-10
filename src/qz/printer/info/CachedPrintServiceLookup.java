@@ -14,7 +14,9 @@ import java.util.Arrays;
 public class CachedPrintServiceLookup {
     private static final CachedObject<CachedPrintService> cachedDefault = new CachedObject<>(CachedPrintServiceLookup::wrapDefaultPrintService);
     private static final CachedObject<CachedPrintService[]> cachedPrintServices = new CachedObject<>(CachedPrintServiceLookup::wrapPrintServices);
-    private static CachedPrintService[] oldPrintServices = {};
+
+    // Keep CachedPrintService object references between calls to supplier
+    private static CachedPrintService[] cachedPrintServicesCopy = {};
 
     static {
         setLifespan(CachedObject.DEFAULT_LIFESPAN);
@@ -36,13 +38,15 @@ public class CachedPrintServiceLookup {
     private static CachedPrintService wrapDefaultPrintService() {
         PrintService javaxPrintService = PrintServiceLookup.lookupDefaultPrintService();
         // If this CachedPrintService already exists, reuse it rather than wrapping a new one
-        CachedPrintService oldCachedPrintService = getMatch(oldPrintServices, javaxPrintService);
-        if (oldCachedPrintService != null) return oldCachedPrintService;
-
-        // If it's not in our list, add it
-        oldPrintServices = Arrays.copyOf(oldPrintServices, oldPrintServices.length + 1);
-        oldPrintServices[oldPrintServices.length - 1] = new CachedPrintService(javaxPrintService);
-        return oldPrintServices[oldPrintServices.length - 1];
+        CachedPrintService cachedPrintService = getMatch(cachedPrintServicesCopy, javaxPrintService);
+        if (cachedPrintService == null) {
+            // Wrap a new one
+            cachedPrintService = new CachedPrintService(javaxPrintService);
+            // Add it to the end of the array
+            cachedPrintServicesCopy = Arrays.copyOf(cachedPrintServicesCopy, cachedPrintServicesCopy.length + 1);
+            cachedPrintServicesCopy[cachedPrintServicesCopy.length - 1] = cachedPrintService;
+        }
+        return cachedPrintService;
     }
 
     private static CachedPrintService[] wrapPrintServices() {
@@ -50,18 +54,20 @@ public class CachedPrintServiceLookup {
         CachedPrintService[] cachedPrintServices = new CachedPrintService[javaxPrintServices.length];
         for (int i = 0; i < javaxPrintServices.length; i++) {
             // If this CachedPrintService already exists, reuse it rather than wrapping a new one
-            cachedPrintServices[i] = getMatch(oldPrintServices, javaxPrintServices[i]);
+            cachedPrintServices[i] = getMatch(cachedPrintServicesCopy, javaxPrintServices[i]);
             if (cachedPrintServices[i] == null) {
                 cachedPrintServices[i] = new CachedPrintService(javaxPrintServices[i]);
             }
         }
-        oldPrintServices = cachedPrintServices;
+        cachedPrintServicesCopy = cachedPrintServices;
         return cachedPrintServices;
     }
 
     private static CachedPrintService getMatch(CachedPrintService[] array, PrintService javaxPrintService) {
-        for (CachedPrintService cps : array) {
-            if (cps.getJavaxPrintService() == javaxPrintService) return cps;
+        if(array != null) {
+            for(CachedPrintService cps : array) {
+                if (cps.getJavaxPrintService() == javaxPrintService) return cps;
+            }
         }
         return null;
     }

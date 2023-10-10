@@ -15,7 +15,6 @@ import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import qz.printer.info.CachedPrintService;
 import qz.printer.info.CachedPrintServiceLookup;
 import qz.printer.info.NativePrinter;
 import qz.printer.info.NativePrinterMap;
@@ -32,7 +31,7 @@ public class PrintServiceMatcher {
 
     // PrintService is slow in CUPS, use a cache instead per JDK-7001133
     // TODO: Include JDK version test for caching when JDK-7001133 is fixed upstream
-    private static final boolean useCache = !SystemUtilities.isWindows();
+    private static final boolean useCache = SystemUtilities.isUnix();
 
     public static NativePrinterMap getNativePrinterList(boolean silent, boolean withAttributes) {
         NativePrinterMap printers = NativePrinterMap.getInstance();
@@ -69,7 +68,6 @@ public class PrintServiceMatcher {
 
         NativePrinterMap printers = NativePrinterMap.getInstance();
         if (!printers.contains(defaultService)) {
-            // FIXME: Determine if this is this working correctly.  It seems to set the printers list = to [1] {defaultPrinter}
             printers.putAll(false, defaultService);
         }
 

@@ -66,6 +66,10 @@ public class CachedPrintServiceLookup {
     private static CachedPrintService getMatch(CachedPrintService[] array, PrintService javaxPrintService) {
         if(array != null) {
             for(CachedPrintService cps : array) {
+                // Note: Order of operations can cause the defaultService pointer to differ if lookupDefaultPrintService()
+                // is called before lookupPrintServices(...) because the provider will invalidate on refreshServices() if
+                // "sun.java2d.print.polling" is set to "false". We're OK with this because worst case, we just
+                // call "lpstat" a second time.
                 if (cps.getJavaxPrintService() == javaxPrintService) return cps;
             }
         }

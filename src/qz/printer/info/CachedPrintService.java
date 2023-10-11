@@ -120,4 +120,14 @@ public class CachedPrintService implements PrintService {
     public ServiceUIFactory getServiceUIFactory() {
         return printService.getServiceUIFactory();
     }
+
+    public boolean equals(Object obj) {
+        return  (obj == this ||
+                (obj instanceof PrintService &&
+                        ((PrintService)obj).getName().equals(getName())));
+    }
+
+    public int hashCode() {
+        return this.getClass().hashCode()+getName().hashCode();
+    }
 }

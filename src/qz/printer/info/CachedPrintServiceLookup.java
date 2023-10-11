@@ -4,7 +4,6 @@ import qz.common.CachedObject;
 
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
-import java.util.Arrays;
 
 /**
  * PrintService[] cache to workaround JDK-7001133
@@ -42,9 +41,6 @@ public class CachedPrintServiceLookup {
         if (cachedPrintService == null) {
             // Wrap a new one
             cachedPrintService = new CachedPrintService(javaxPrintService);
-            // Add it to the end of the array
-            cachedPrintServicesCopy = Arrays.copyOf(cachedPrintServicesCopy, cachedPrintServicesCopy.length + 1);
-            cachedPrintServicesCopy[cachedPrintServicesCopy.length - 1] = cachedPrintService;
         }
         return cachedPrintService;
     }
@@ -60,6 +56,8 @@ public class CachedPrintServiceLookup {
             }
         }
         cachedPrintServicesCopy = cachedPrintServices;
+        // Immediately invalidate the defaultPrinter cache
+        cachedDefault.get(true);
         return cachedPrintServices;
     }
 

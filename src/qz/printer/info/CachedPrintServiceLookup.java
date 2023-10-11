@@ -22,13 +22,11 @@ public class CachedPrintServiceLookup {
     }
 
     public static PrintService lookupDefaultPrintService() {
-        return cachedDefault != null ? cachedDefault.get() : null;
+        return cachedDefault.get();
     }
 
     public static void setLifespan(long lifespan) {
-        if(cachedDefault != null) {
-            cachedDefault.setLifespan(lifespan);
-        }
+        cachedDefault.setLifespan(lifespan);
         cachedPrintServices.setLifespan(lifespan);
     }
 
@@ -38,7 +36,7 @@ public class CachedPrintServiceLookup {
 
     private static CachedPrintService wrapDefaultPrintService() {
         PrintService javaxPrintService = PrintServiceLookup.lookupDefaultPrintService();
-        // Skip using a CachedPrintService
+        // CachedObject's supplier returns null
         if(javaxPrintService == null) {
             return null;
         }
@@ -63,9 +61,8 @@ public class CachedPrintServiceLookup {
         }
         cachedPrintServicesCopy = cachedPrintServices;
         // Immediately invalidate the defaultPrinter cache
-        if(cachedDefault != null) {
-            cachedDefault.get(true);
-        }
+        cachedDefault.get(true);
+
         return cachedPrintServices;
     }
 

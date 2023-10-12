@@ -15,7 +15,7 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
 
     private static NativePrinterMap instance;
 
-    public abstract NativePrinterMap putAll(PrintService... services);
+    public abstract NativePrinterMap putAll(boolean exhaustive, PrintService... services);
 
     abstract void fillAttributes(NativePrinter printer);
 
@@ -43,13 +43,20 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
         return null;
     }
 
-    public ArrayList<PrintService> findMissing(PrintService[] services) {
+    /**
+     * WARNING: Despite the function's name, if <code>exhaustive</code> is true, it will treat the listing as exhaustive and remove
+     * any PrintServices that are not part of this HashMap.
+     */
+    public ArrayList<PrintService> findMissing(boolean exhaustive, PrintService[] services) {
         ArrayList<PrintService> serviceList = new ArrayList<>(Arrays.asList(services)); // shrinking list drastically improves performance
+
         for(NativePrinter printer : values()) {
             if (serviceList.contains(printer.getPrintService())) {
                 serviceList.remove(printer.getPrintService()); // existing match
             } else {
-                printer.setOutdated(true); // no matches, mark to be removed
+                if(exhaustive) {
+                    printer.setOutdated(true); // no matches, mark to be removed
+                }
             }
         }
 
@@ -59,6 +66,7 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
                 remove(entry.getKey());
             }
         }
+
         // any remaining services are new/missing
         return serviceList;
     }

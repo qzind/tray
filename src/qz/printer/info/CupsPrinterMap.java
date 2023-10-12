@@ -18,8 +18,8 @@ public class CupsPrinterMap extends NativePrinterMap {
     private static final Logger log = LogManager.getLogger(CupsPrinterMap.class);
     private Map<NativePrinter, List<PrinterResolution>> resolutionMap = new HashMap<>();
 
-    public synchronized NativePrinterMap putAll(PrintService... services) {
-        ArrayList<PrintService> missing = findMissing(services);
+    public synchronized NativePrinterMap putAll(boolean exhaustive, PrintService... services) {
+        ArrayList<PrintService> missing = findMissing(exhaustive, services);
         if (missing.isEmpty()) { return this; }
 
         String output = "\n" + ShellUtilities.executeRaw(new String[] {"lpstat", "-l", "-p"});

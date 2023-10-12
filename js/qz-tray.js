@@ -1399,6 +1399,25 @@ var qz = (function() {
             },
 
             /**
+             * @param {string|Object} [options] Name of todo:
+             *  @param {string} [options.printerName] todo
+             *  @param {number} [options.jobId] todo
+             *
+             * @returns {Promise<null|Error>} todo.
+             * @since 2.2.4
+             *
+             * @memberof qz.printers
+             */
+            clearQueue: function(options) {
+                if (typeof options !== 'object') {
+                    options = {
+                        printerName: options
+                    };
+                }
+                return _qz.websocket.dataPromise('printers.clearQueue', options);
+            },
+
+            /**
              * Stop listening for printer status actions.
              *
              * @returns {Promise<null|Error>}

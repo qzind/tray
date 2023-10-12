@@ -205,6 +205,30 @@ public class CupsUtils {
         cups.ippDelete(response);
     }
 
+    public static ArrayList<Integer> listJobs(String printerName) {
+        Pointer request = cups.ippNewRequest(IPP.GET_JOBS);
+
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_NAME, "requesting-user-name", CHARSET, USER);
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
+                          URIUtil.encodePath("ipp://localhost:" + IPP.PORT + "/printers/" + printerName));
+
+        Pointer response = doRequest(request, "/");
+        ArrayList<Integer> ret = parseJobIds(response);
+        cups.ippDelete(response);
+        return ret;
+    }
+
+    public static void cancelJob(int jobId) {
+        Pointer request = cups.ippNewRequest(IPP.CANCEL_JOB);
+
+        cups.ippAddString(request, IPP.TAG_OPERATION, IPP.TAG_URI, "printer-uri", CHARSET,
+                          URIUtil.encodePath("ipp://localhost:" + IPP.PORT));
+        cups.ippAddInteger(request, IPP.TAG_OPERATION, IPP.TAG_INTEGER, "job-id", jobId);
+        Pointer response = doRequest(request, "/");
+        cups.ippDelete(response);
+    }
+
+
     public synchronized static void freeIppObjs() {
         if (http != null) {
             endSubscription(subscriptionID);
@@ -214,15 +238,32 @@ public class CupsUtils {
         }
     }
 
+    static ArrayList<Integer> parseJobIds(Pointer response) {
+        ArrayList<Pointer> attributes = getAttributes(response);
+        ArrayList<Integer> ret = new ArrayList<>();
+        for (Pointer attribute : attributes) {
+            if (cups.ippGetName(attribute) != null && cups.ippGetName(attribute).equals("job-id")) {
+                ret.add(cups.ippGetInteger(attribute, 0));
+            }
+        }
+        return ret;
+    }
+
+    static ArrayList<Pointer> getAttributes(Pointer response) {
+        ArrayList<Pointer> attributes = new ArrayList<>();
+        Pointer attr = Cups.INSTANCE.ippFirstAttribute(response);
+        while(attr != Pointer.NULL) {
+            attributes.add(attr);
+            attr = Cups.INSTANCE.ippNextAttribute(response);
+        }
+        return attributes;
+    }
+
     @SuppressWarnings("unused")
     static void parseResponse(Pointer response) {
-        Pointer attr = Cups.INSTANCE.ippFirstAttribute(response);
-        while (true) {
-            if (attr == Pointer.NULL) {
-                break;
-            }
-            System.out.println(parseAttr(attr));
-            attr = Cups.INSTANCE.ippNextAttribute(response);
+        ArrayList<Pointer> attributes = getAttributes(response);
+        for (Pointer attribute : attributes) {
+            System.out.println(parseAttr(attribute));
         }
         System.out.println("------------------------");
     }
@@ -230,26 +271,26 @@ public class CupsUtils {
     static String parseAttr(Pointer attr){
         int valueTag = Cups.INSTANCE.ippGetValueTag(attr);
         int attrCount = Cups.INSTANCE.ippGetCount(attr);
-        String data = "";
+        StringBuilder data = new StringBuilder();
         String attrName = Cups.INSTANCE.ippGetName(attr);
         for (int i = 0; i < attrCount; i++) {
             if (valueTag == Cups.INSTANCE.ippTagValue("Integer")) {
-                data += Cups.INSTANCE.ippGetInteger(attr, i);
+                data.append(Cups.INSTANCE.ippGetInteger(attr, i));
             } else if (valueTag == Cups.INSTANCE.ippTagValue("Boolean")) {
-                data += (Cups.INSTANCE.ippGetInteger(attr, i) == 1);
+                data.append(Cups.INSTANCE.ippGetInteger(attr, i) == 1);
             } else if (valueTag == Cups.INSTANCE.ippTagValue("Enum")) {
-                data += Cups.INSTANCE.ippEnumString(attrName, Cups.INSTANCE.ippGetInteger(attr, i));
+                data.append(Cups.INSTANCE.ippEnumString(attrName, Cups.INSTANCE.ippGetInteger(attr, i)));
             } else {
-                data += Cups.INSTANCE.ippGetString(attr, i, "");
+                data.append(Cups.INSTANCE.ippGetString(attr, i, ""));
             }
             if (i + 1 < attrCount) {
-                data += ", ";
+                data.append(", ");
             }
         }
 
         if (attrName == null){
             return "------------------------";
         }
-        return String.format("%s: %d %s {%s}", attrName, attrCount, Cups.INSTANCE.ippTagString(valueTag), data);
+        return String.format("%s: %d %s {%s}", attrName, attrCount, Cups.INSTANCE.ippTagString(valueTag), data.toString());
     }
 }

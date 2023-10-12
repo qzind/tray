@@ -123,6 +123,7 @@
                             <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#askFileModal">Set To File</button>
                             <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#askHostModal">Set To Host</button>
                         </div>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="clearQueue($('#printerSearch').val());">Clear Queue</button>
                     </div>
                 </div>
             </div>
@@ -2082,6 +2083,9 @@
         qz.print(config, printData).catch(displayError);
     }
 
+    function clearQueue(printer) {
+        qz.printers.clearQueue(printer).catch(displayError);
+    }
 
     /// Pixel Printers ///
     function printHTML() {

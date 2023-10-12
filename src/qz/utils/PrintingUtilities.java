@@ -11,13 +11,17 @@ import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.printer.PrintServiceMatcher;
 import qz.printer.action.PrintProcessor;
 import qz.printer.action.ProcessorFactory;
+import qz.printer.info.NativePrinter;
+import qz.printer.status.CupsUtils;
 import qz.ws.PrintSocketClient;
 
 import java.awt.print.PrinterAbortException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -219,4 +223,22 @@ public class PrintingUtilities {
         }
     }
 
+    public static void cancelJobs(Session session, String UID, JSONObject params) {
+        try {
+            if (SystemUtilities.isWindows()) throw new UnsupportedOperationException("Don't do that.");
+            NativePrinter printer = PrintServiceMatcher.matchPrinter(params.getString("printerName"));
+
+            ArrayList<Integer> jobIds = CupsUtils.listJobs(printer.getPrinterId());
+            log.info("Deleting {} jobs", jobIds.size());
+            for (int jobId : jobIds) {
+                CupsUtils.cancelJob(jobId);
+            }
+            jobIds = CupsUtils.listJobs(printer.getPrinterId());
+            log.info("{} jobs left", jobIds.size());
+        }
+        catch(JSONException e) {
+            log.error("Failed to cancel jobs", e);
+            PrintSocketClient.sendError(session, UID, e);
+        }
+    }
 }

@@ -5,6 +5,7 @@ public enum SocketMethod {
     PRINTERS_FIND("printers.find", true, "access connected printers"),
     PRINTERS_DETAIL("printers.detail", true, "access connected printers"),
     PRINTERS_START_LISTENING("printers.startListening", true, "listen for printer status"),
+    PRINTERS_CLEAR_QUEUE("printers.clearQueue", true, "cancel all pending jobs for a given printer"),
     PRINTERS_GET_STATUS("printers.getStatus", false),
     PRINTERS_STOP_LISTENING("printers.stopListening", false),
     PRINT("print", true, "print to %s"),

@@ -31,6 +31,8 @@ public interface Cups extends Library {
         public static int CREATE_PRINTER_SUBSCRIPTION = INSTANCE.ippOpValue("Create-Printer-Subscription");
         public static int CREATE_JOB_SUBSCRIPTION = INSTANCE.ippOpValue("Create-Job-Subscription");
         public static int CANCEL_SUBSCRIPTION = INSTANCE.ippOpValue("Cancel-Subscription");
+        public static int GET_JOBS = INSTANCE.ippOpValue("Get-Jobs");
+        public static int CANCEL_JOB = INSTANCE.ippOpValue("Cancel-Job");
 
         public static final int OP_PRINT_JOB = 0x02;
         public static final int INT_ERROR = 0;

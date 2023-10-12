@@ -307,6 +307,10 @@ public class PrintSocketClient {
                 StatusMonitor.stopListening(connection);
                 sendResult(session, UID, null);
                 break;
+            case PRINTERS_CLEAR_QUEUE:
+                PrintingUtilities.cancelJobs(session, UID, params);
+                sendResult(session, UID, null);
+                break;
             case PRINT:
                 PrintingUtilities.processPrintRequest(session, UID, params);
                 break;

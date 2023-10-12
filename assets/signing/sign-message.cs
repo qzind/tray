@@ -58,6 +58,14 @@ public static string SignMessage(string request)
         byte[] hash = new SHA512CryptoServiceProvider().ComputeHash(data);  // Use SHA1CryptoServiceProvider for QZ Tray 2.0 and older
         string base64 = Convert.ToBase64String(cspStrong.SignHash(hash, CryptoConfig.MapNameToOID("SHA512"))); // Use "SHA1" for QZ Tray 2.0 and older
 	return base64;
+
+	/*
+         * // Or per https://stackoverflow.com/a/50104158/3196753
+	 * var cert = new X509Certificate2(KEY, PASS, STORAGE_FLAGS);
+         * var csp = cert.GetRSAPrivateKey();
+         * byte[] data = new ASCIIEncoding().GetBytes(request);
+         * return Convert.ToBase64String(csp.SignData(data, HashAlgorithmName.SHA512, RSASignaturePadding.Pkcs1)); // Use "SHA1" for QZ Tray 2.0 and older
+         */
     }
     catch(Exception ex)
     {

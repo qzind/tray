@@ -115,7 +115,7 @@ public class TrayManager {
         iconCache = new IconCache();
 
         if (SystemUtilities.isSystemTraySupported(headless)) { // UI mode with tray
-            switch(SystemUtilities.getOsType()) {
+            switch(SystemUtilities.getOs()) {
                 case WINDOWS:
                     tray = TrayType.JX.init(iconCache);
                     // Undocumented HiDPI behavior

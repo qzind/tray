@@ -34,7 +34,7 @@ public abstract class NativeCertificateInstaller {
     }
     public static NativeCertificateInstaller getInstance(Installer.PrivilegeLevel type) {
         if (instance == null) {
-            switch(SystemUtilities.getOsType()) {
+            switch(SystemUtilities.getOs()) {
                 case WINDOWS:
                     instance = new WindowsCertificateInstaller(type);
                     break;

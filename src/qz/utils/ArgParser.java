@@ -20,6 +20,7 @@ import qz.exception.MissingArgException;
 import qz.installer.Installer;
 import qz.installer.TaskKiller;
 import qz.installer.certificate.CertificateManager;
+import qz.build.provision.ProvisionBuilder;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -60,6 +61,13 @@ public class ArgParser {
     public ArgParser(String[] args) {
         this.exitStatus = SUCCESS;
         this.args = new ArrayList<>(Arrays.asList(args));
+
+        // Apple grossly allows adding weird flags
+        // This can be removed when it's removed from unix-launcher.sh.in
+        if(this.args.size() > 2 && this.args.get(0).startsWith("-NS")) {
+            this.args.remove(0);
+            this.args.remove(0);
+        }
     }
     public List<String> getArgs() {
         return args;
@@ -76,8 +84,10 @@ public class ArgParser {
      */
     private boolean hasFlag(String ... matches) {
         for(String match : matches) {
-            if (args.contains(match)) {
-                return true;
+            for(String arg : args) {
+                if(match.equals(arg)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -101,6 +111,22 @@ public class ArgParser {
 
     public boolean hasFlag(ArgValueOption argValueOption) {
         return hasFlag(argValueOption.getMatches());
+    }
+
+    /**
+     * Allows a pattern such as "--arg%d" to look for "--arg1", "--arg2" in succession
+     */
+    private String[] valuesOpt(String pattern) throws MissingArgException {
+        List<String> all = new LinkedList<>();
+        int argCounter = 0;
+        while(true) {
+            String found = valueOpt(String.format(pattern, ++argCounter));
+            if(found == null) {
+                break;
+            }
+            all.add(found);
+        }
+        return all.toArray(new String[all.size()]);
     }
 
     private String valueOf(String ... matches) throws MissingArgException {
@@ -128,6 +154,7 @@ public class ArgParser {
                         return val;
                     }
                 }
+                // FIXME: This doesn't fire when one might expect it to, but fixing it may cause regressions
                 if(!optional) {
                     throw new MissingArgException();
                 }
@@ -226,6 +253,30 @@ public class ArgParser {
                             valueOf("--gcversion", "-c"),
                             valueOpt("--targetjdk", "-j")
                     );
+                    return SUCCESS;
+                case PROVISION:
+                    ProvisionBuilder provisionBuilder;
+
+                    String jsonParam = valueOpt("--json");
+                    if(jsonParam != null) {
+                        // Process JSON provision file (overwrites existing provisions)
+                        provisionBuilder = new ProvisionBuilder(new File(jsonParam), valueOpt("--target-os"), valueOpt("--target-arch"));
+                        provisionBuilder.saveJson(true);
+                    } else {
+                        // Process single provision step (preserves existing provisions)
+                        provisionBuilder = new ProvisionBuilder(
+                                valueOf("--type"),
+                                valueOpt("--phase"),
+                                valueOpt("--os"),
+                                valueOpt("--arch"),
+                                valueOf("--data"),
+                                valueOpt("--args"),
+                                valueOpt("--description"),
+                                valuesOpt("--arg%d")
+                        );
+                        provisionBuilder.saveJson(false);
+                    }
+                    log.info("Successfully added provisioning step(s) {} to file '{}'", provisionBuilder.getJson(), ProvisionBuilder.BUILD_PROVISION_FILE);
                     return SUCCESS;
                 default:
                     throw new UnsupportedOperationException("Build type " + argValue + " is not yet supported");

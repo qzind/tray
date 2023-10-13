@@ -1,0 +1,117 @@
+
+[
+    {
+        "description": "[ERROR EXPECTED] missing 'type' and 'phase'",
+        "os": "*",
+        "data": "foo.bar=1"
+    },
+    {
+        "description": "[ERROR EXPECTED] invalid 'remover' id",
+        "type": "remover",
+        "os": "*",
+        "phase": "install",
+        "data": "bbb"
+    },
+    {
+        "description": "[ERROR EXPECTED] missing 'type'",
+        "os": "*",
+        "phase": "install",
+        "data": "this_file_does_not_exist"
+    },
+    {
+        "description": "[ERROR EXPECTED] 'data' file missing",
+        "type": "script",
+        "os": "*",
+        "phase": "install",
+        "data": "this_file_does_not_exist"
+    },
+    {
+        "description": "[ERROR EXPECTED] 'arch' is invalid",
+        "type": "property",
+        "os": "*",
+        "arch": "sparc",
+        "data": "bar.foo=2"
+    },
+    {
+        "description": "[ERROR EXPECTED] 'os' is invalid",
+        "type": "property",
+        "os": "quake",
+        "arch": "*",
+        "data": "bar.foo=2"
+    },
+    {
+        "description": "[WINDOWS SCRIPT] powershell at 'install'",
+        "type": "script",
+        "os": "windows",
+        "phase": "install",
+        "data": "script1.ps1"
+    },
+    {
+        "description": "[MAC SCRIPT] powershell at 'install'",
+        "type": "script",
+        "os": "mac",
+        "phase": "install",
+        "data": "script1.ps1"
+    },
+    {
+        "description": "[LINUX SCRIPT] python at 'startup'",
+        "type": "script",
+        "os": "linux",
+        "phase": "startup",
+        "data": "script4.py"
+    },
+    {
+        "description": "[LINUX & MAC SCRIPT] bash without extension at 'install'",
+        "type": "script",
+        "os": "linux|mac",
+        "phase": "install",
+        "data": "script2"
+    },
+    {
+        "description": "[ALL OS SCRIPT] with '.sh' extension at 'install'",
+        "type": "script",
+        "os": "*",
+        "phase": "install",
+        "data": "script3.sh"
+    },
+    {
+        "description": "[AARCH64 ONLY SCRIPT] with '.sh' extension at 'install'",
+        "type": "script",
+        "os": "*",
+        "arch": "aarch64",
+        "phase": "install",
+        "data": "script2"
+    },
+    {
+        "description": "[CERTIFICATE] at 'startup' (allowed.dat)",
+        "type": "cert",
+        "os": "*",
+        "data": "cert1.crt"
+    },
+    {
+        "description": "[PROPERTY] at 'certgen' (qz-tray.properties)",
+        "type": "property",
+        "os": "*",
+        "data": "log.size=2097152"
+    },
+    {
+        "description": "[PREFERENCE] at 'startup' (prefs.properties)",
+        "type": "preference",
+        "os": "*",
+        "data": "tray.notifications=true"
+    },
+    {
+        "description": "[REMOVER] at 'install' ('QZ Tray' rebranded 'Cherry Connect')",
+        "type": "remover",
+        "os": "*",
+        "phase": "install",
+        "data": "Cherry Connect,cc-util,cc"
+    },
+    {
+        "description": "[REMOVER] at 'install' QZ-branded version",
+        "type": "remover",
+        "os": "*",
+        "phase": "install",
+        "data": "qz"
+    }
+]

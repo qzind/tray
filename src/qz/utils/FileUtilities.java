@@ -33,6 +33,7 @@ import qz.communication.FileParams;
 import qz.exception.NullCommandException;
 import qz.installer.WindowsSpecialFolders;
 import qz.installer.certificate.CertificateManager;
+import qz.installer.provision.ProvisionInstaller;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -47,7 +48,7 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static qz.common.Constants.ALLOW_FILE;
+import static qz.common.Constants.*;
 
 /**
  * Common static file i/o utilities
@@ -887,6 +888,29 @@ public class FileUtilities {
                 }
                 path.toFile().setReadable(true, false);
                 path.toFile().setWritable(true, !worldWrite);
+            });
+        } catch (IOException e) {
+            log.warn("An error occurred setting permissions: {}", toRecurse);
+        }
+    }
+
+    public static void setExecutableRecursively(Path toRecurse, boolean ownerOnly) {
+        File folder = toRecurse.toFile();
+        if(SystemUtilities.isWindows() || !folder.exists() || !folder.isDirectory()) {
+            return;
+        }
+
+        // "provision.json" found, assume we're in the provisioning directory, only process scripts and installers
+        boolean isProvision = toRecurse.resolve(PROVISION_FILE).toFile().exists();
+
+        try (Stream<Path> paths = Files.walk(toRecurse)) {
+            paths.forEach((path)->{
+                if (path.toFile().isDirectory()) {
+                    // Executable bit in Unix allows listing files
+                    path.toFile().setExecutable(true, ownerOnly);
+                } else if(!isProvision || ProvisionInstaller.shouldBeExecutable(path)) {
+                    path.toFile().setExecutable(true, ownerOnly);
+                }
             });
         } catch (IOException e) {
             log.warn("An error occurred setting permissions: {}", toRecurse);

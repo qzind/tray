@@ -3,6 +3,7 @@ package qz.utils;
 import com.sun.jna.Platform;
 import javafx.application.Application;
 import org.usb4java.Loader;
+import qz.build.provision.params.Os;
 import qz.common.Constants;
 
 import java.io.IOException;
@@ -36,12 +37,12 @@ public class LibUtilities {
     private final Path basePath;
 
     // Common native file extensions, by platform
-    private static HashMap<SystemUtilities.OsType, String[]> extensionMap = new HashMap<>();
+    private static HashMap<Os, String[]> extensionMap = new HashMap<>();
     static {
-        extensionMap.put(SystemUtilities.OsType.WINDOWS, new String[]{ "dll" });
-        extensionMap.put(SystemUtilities.OsType.MAC, new String[]{ "jnilib", "dylib" });
-        extensionMap.put(SystemUtilities.OsType.LINUX, new String[]{ "so" });
-        extensionMap.put(SystemUtilities.OsType.UNKNOWN, new String[]{ "so" });
+        extensionMap.put(Os.WINDOWS, new String[]{ "dll" });
+        extensionMap.put(Os.MAC, new String[]{ "jnilib", "dylib" });
+        extensionMap.put(Os.LINUX, new String[]{ "so" });
+        extensionMap.put(Os.UNKNOWN, new String[]{ "so" });
     }
 
     public LibUtilities() {
@@ -78,7 +79,7 @@ public class LibUtilities {
      * Search recursively for a native library in the specified path
      */
     private static Path findNativeLib(String libName, Path basePath) {
-        String[] extensions = extensionMap.get(SystemUtilities.getOsType());
+        String[] extensions = extensionMap.get(SystemUtilities.getOs());
         String prefix = !SystemUtilities.isWindows() ? "lib" : "";
         List<Path> found = new ArrayList<>();
         try (Stream<Path> walkStream = Files.walk(basePath)) {
@@ -170,7 +171,7 @@ public class LibUtilities {
         // If running from the IDE, make sure we're not using the wrong libs
         URL url = Application.class.getResource("/" + Application.class.getName().replace('.', '/') + ".class");
         String graphicsJar = url.toString().replaceAll("file:/|jar:", "").replaceAll("!.*", "");
-        switch(SystemUtilities.getOsType()) {
+        switch(SystemUtilities.getOs()) {
             case WINDOWS:
                 return !graphicsJar.contains("windows");
             case MAC:

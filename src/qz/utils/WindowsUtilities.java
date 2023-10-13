@@ -15,6 +15,7 @@ import com.sun.jna.platform.win32.*;
 import com.sun.jna.ptr.IntByReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.build.provision.params.Arch;
 import qz.common.Constants;
 
 import java.awt.*;
@@ -449,7 +450,7 @@ public class WindowsUtilities {
         if(isWow64 == null) {
             isWow64 = false;
             if (SystemUtilities.isWindows()) {
-                if (SystemUtilities.getJreArch() != JreArch.X86_64) {
+                if (SystemUtilities.getArch() != Arch.X86_64) {
                     isWow64 = System.getenv("PROGRAMFILES(x86)") != null;
                 }
             }

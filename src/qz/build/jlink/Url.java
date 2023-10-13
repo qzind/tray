@@ -3,6 +3,7 @@ package qz.build.jlink;
 import com.github.zafarkhaja.semver.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.build.provision.params.Arch;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;

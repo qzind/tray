@@ -10,12 +10,14 @@ import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
 import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import qz.build.provision.params.Phase;
 import qz.common.Constants;
 import qz.installer.Installer;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.ExpiryTask;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.installer.certificate.NativeCertificateInstaller;
+import qz.installer.provision.ProvisionInstaller;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
@@ -65,6 +67,14 @@ public class App {
             if(caCert != null) {
                 NativeCertificateInstaller.getInstance().install(certManager.getKeyPair(KeyPairWrapper.Type.CA).getCert());
             }
+        }
+
+        // Invoke any provisioning steps that are phase=startup
+        try {
+            ProvisionInstaller provisionInstaller = new ProvisionInstaller(SystemUtilities.getJarParentPath().resolve(Constants.PROVISION_DIR));
+            provisionInstaller.invoke(Phase.STARTUP);
+        } catch(Exception e) {
+            log.warn("An error occurred provisioning \"phase\": \"startup\" entries", e);
         }
 
         try {

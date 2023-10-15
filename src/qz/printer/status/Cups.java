@@ -5,6 +5,7 @@ import com.sun.jna.*;
 /**
  * Created by kyle on 3/14/17.
  */
+@SuppressWarnings("unused")
 public interface Cups extends Library {
 
     Cups INSTANCE = Native.load("cups", Cups.class);

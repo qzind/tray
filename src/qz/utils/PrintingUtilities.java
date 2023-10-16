@@ -22,6 +22,8 @@ import qz.printer.action.PrintProcessor;
 import qz.printer.action.ProcessorFactory;
 import qz.printer.info.NativePrinter;
 import qz.printer.status.CupsUtils;
+import qz.printer.status.job.WmiJobStatusMap;
+import qz.printer.status.printer.WmiPrinterStatusMap;
 import qz.ws.PrintSocketClient;
 
 import java.awt.print.PrinterAbortException;
@@ -237,6 +239,8 @@ public class PrintingUtilities {
                 WinspoolEx.INSTANCE.OpenPrinter(printer.getName(), phPrinter, null);
                 Winspool.JOB_INFO_1[] jobs =  WinspoolUtil.getJobInfo1(phPrinter);
                 for (Winspool.JOB_INFO_1 job : jobs) {
+                    // skip retained jobs
+                    if ((job.Status & (int)WmiJobStatusMap.RETAINED.getRawCode()) != 0) continue;
                     log.warn("deleting job " + job.toString());
                     log.warn("result: " + WinspoolEx.INSTANCE.SetJob(phPrinter.getValue(), job.JobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE));
                     log.warn(Kernel32.INSTANCE.GetLastError());

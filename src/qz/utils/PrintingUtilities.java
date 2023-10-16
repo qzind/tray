@@ -1,9 +1,6 @@
 package qz.utils;
 
-import com.sun.jna.platform.win32.Kernel32;
-import com.sun.jna.platform.win32.WinNT;
-import com.sun.jna.platform.win32.Winspool;
-import com.sun.jna.platform.win32.WinspoolUtil;
+import com.sun.jna.platform.win32.*;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
@@ -232,10 +229,14 @@ public class PrintingUtilities {
     public static void cancelJobs(Session session, String UID, JSONObject params) {
         try {
             NativePrinter printer = PrintServiceMatcher.matchPrinter(params.getString("printerName"));
+
             if (SystemUtilities.isWindows()) {
                 WinNT.HANDLEByReference phPrinter = new WinNT.HANDLEByReference();
-                WinspoolEx.INSTANCE.OpenPrinter(printer.getName(), phPrinter, null);
+                if (!WinspoolEx.INSTANCE.OpenPrinter(printer.getName(), /*out*/ phPrinter, null)) {
+                   throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
+                }
                 Winspool.JOB_INFO_1[] jobs =  WinspoolUtil.getJobInfo1(phPrinter);
+
                 // skip retained jobs and complete jobs
                 int skipMask = (int)WmiJobStatusMap.RETAINED.getRawCode() | (int)WmiJobStatusMap.PRINTED.getRawCode();
                 int deletedCount = 0;
@@ -245,7 +246,8 @@ public class PrintingUtilities {
                     if (result) {
                         deletedCount++;
                     } else {
-                        log.warn("Job deletion error for job#{}, error code:{}", job.JobId, Kernel32.INSTANCE.GetLastError());
+                        Win32Exception e = new Win32Exception(Kernel32.INSTANCE.GetLastError());
+                        log.warn("Job deletion error for job#{}, error :{}", job.JobId, e);
                     }
                 }
                 log.info("Deleting {} jobs", deletedCount);
@@ -257,7 +259,7 @@ public class PrintingUtilities {
                 }
             }
         }
-        catch(JSONException e) {
+        catch(JSONException | Win32Exception e) {
             log.error("Failed to cancel jobs", e);
             PrintSocketClient.sendError(session, UID, e);
         }

@@ -247,7 +247,7 @@ public class PrintingUtilities {
                         deletedCount++;
                     } else {
                         Win32Exception e = new Win32Exception(Kernel32.INSTANCE.GetLastError());
-                        log.warn("Job deletion error for job#{}, error :{}", job.JobId, e);
+                        log.warn("Job deletion error for job#{}, {}", job.JobId, e);
                     }
                 }
                 log.info("Deleting {} jobs", deletedCount);

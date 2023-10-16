@@ -1,5 +1,10 @@
 package qz.utils;
 
+import com.sun.jna.Native;
+import com.sun.jna.platform.win32.Kernel32;
+import com.sun.jna.platform.win32.WinNT;
+import com.sun.jna.platform.win32.Winspool;
+import com.sun.jna.platform.win32.WinspoolUtil;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
@@ -9,6 +14,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
+import qz.communication.WinspoolEx;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.printer.PrintServiceMatcher;
@@ -225,16 +231,25 @@ public class PrintingUtilities {
 
     public static void cancelJobs(Session session, String UID, JSONObject params) {
         try {
-            if (SystemUtilities.isWindows()) throw new UnsupportedOperationException("Don't do that.");
             NativePrinter printer = PrintServiceMatcher.matchPrinter(params.getString("printerName"));
-
-            ArrayList<Integer> jobIds = CupsUtils.listJobs(printer.getPrinterId());
-            log.info("Deleting {} jobs", jobIds.size());
-            for (int jobId : jobIds) {
-                CupsUtils.cancelJob(jobId);
+            if (SystemUtilities.isWindows()) {
+                WinNT.HANDLEByReference phPrinter = new WinNT.HANDLEByReference();
+                WinspoolEx.INSTANCE.OpenPrinter(printer.getName(), phPrinter, null);
+                Winspool.JOB_INFO_1[] jobs =  WinspoolUtil.getJobInfo1(phPrinter);
+                for (Winspool.JOB_INFO_1 job : jobs) {
+                    log.warn("deleting job " + job.toString());
+                    log.warn("result: " + WinspoolEx.INSTANCE.SetJob(phPrinter, job.JobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE));
+                    log.warn(Kernel32.INSTANCE.GetLastError());
+                }
+            } else {
+                ArrayList<Integer> jobIds = CupsUtils.listJobs(printer.getPrinterId());
+                log.info("Deleting {} jobs", jobIds.size());
+                for(int jobId : jobIds) {
+                    CupsUtils.cancelJob(jobId);
+                }
+                jobIds = CupsUtils.listJobs(printer.getPrinterId());
+                log.info("{} jobs left", jobIds.size());
             }
-            jobIds = CupsUtils.listJobs(printer.getPrinterId());
-            log.info("{} jobs left", jobIds.size());
         }
         catch(JSONException e) {
             log.error("Failed to cancel jobs", e);

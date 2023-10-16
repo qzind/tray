@@ -2,6 +2,7 @@ package qz.communication;
 
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
+import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.platform.win32.Winspool;
 import com.sun.jna.win32.W32APIOptions;
 
@@ -20,5 +21,5 @@ public interface WinspoolEx extends Winspool {
     int JOB_CONTROL_RETAIN = 0x00000008; // Keep the print job in the print queue after it prints.
     int JOB_CONTROL_RELEASE = 0x00000009; // Release the print job, undoing the effect of a JOB_CONTROL_RETAIN action.
 
-    boolean SetJob(Pointer hPrinter, int JobId, int Level, Pointer pJob, int Command);
+    boolean SetJob(WinNT.HANDLEByReference hPrinter, int JobId, int Level, Pointer pJob, int Command);
 }

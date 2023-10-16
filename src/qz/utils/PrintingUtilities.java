@@ -1,6 +1,5 @@
 package qz.utils;
 
-import com.sun.jna.Native;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.platform.win32.Winspool;
@@ -23,7 +22,6 @@ import qz.printer.action.ProcessorFactory;
 import qz.printer.info.NativePrinter;
 import qz.printer.status.CupsUtils;
 import qz.printer.status.job.WmiJobStatusMap;
-import qz.printer.status.printer.WmiPrinterStatusMap;
 import qz.ws.PrintSocketClient;
 
 import java.awt.print.PrinterAbortException;
@@ -238,22 +236,25 @@ public class PrintingUtilities {
                 WinNT.HANDLEByReference phPrinter = new WinNT.HANDLEByReference();
                 WinspoolEx.INSTANCE.OpenPrinter(printer.getName(), phPrinter, null);
                 Winspool.JOB_INFO_1[] jobs =  WinspoolUtil.getJobInfo1(phPrinter);
+                // skip retained jobs and complete jobs
+                int skipMask = (int)WmiJobStatusMap.RETAINED.getRawCode() | (int)WmiJobStatusMap.PRINTED.getRawCode();
+                int deletedCount = 0;
                 for (Winspool.JOB_INFO_1 job : jobs) {
-                    // skip retained jobs
-                    if ((job.Status & (int)WmiJobStatusMap.RETAINED.getRawCode()) != 0) continue;
-                    if ((job.Status & (int)WmiJobStatusMap.PRINTED.getRawCode()) != 0) continue;
-                    log.warn("deleting job " + job.toString());
-                    log.warn("result: " + WinspoolEx.INSTANCE.SetJob(phPrinter.getValue(), job.JobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE));
-                    log.warn(Kernel32.INSTANCE.GetLastError());
+                    if ((job.Status & skipMask) != 0) continue;
+                    boolean result = WinspoolEx.INSTANCE.SetJob(phPrinter.getValue(), job.JobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE);
+                    if (result) {
+                        deletedCount++;
+                    } else {
+                        log.warn("Job deletion error for job#{}, error code:{}", job.JobId, Kernel32.INSTANCE.GetLastError());
+                    }
                 }
+                log.info("Deleting {} jobs", deletedCount);
             } else {
                 ArrayList<Integer> jobIds = CupsUtils.listJobs(printer.getPrinterId());
                 log.info("Deleting {} jobs", jobIds.size());
                 for(int jobId : jobIds) {
                     CupsUtils.cancelJob(jobId);
                 }
-                jobIds = CupsUtils.listJobs(printer.getPrinterId());
-                log.info("{} jobs left", jobIds.size());
             }
         }
         catch(JSONException e) {

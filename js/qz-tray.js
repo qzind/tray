@@ -1399,11 +1399,13 @@ var qz = (function() {
             },
 
             /**
-             * @param {string|Object} [options] Name of todo:
+             * Clear the queue of a specified printer or printers. Does not delete retained jobs.
+             *
+             * @param {string|Object} [options] Name of printer to clear
              *  @param {string} [options.printerName] todo
              *  @param {number} [options.jobId] todo
              *
-             * @returns {Promise<null|Error>} todo.
+             * @returns {Promise<null|Error>}
              * @since 2.2.4
              *
              * @memberof qz.printers

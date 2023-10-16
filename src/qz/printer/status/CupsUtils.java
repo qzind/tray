@@ -167,7 +167,7 @@ public class CupsUtils {
     }
 
     static void startSubscription(int rssPort) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> freeIppObjs()));
+        Runtime.getRuntime().addShutdownHook(new Thread(CupsUtils::freeIppObjs));
 
         String[] subscriptions = {"job-state-changed", "printer-state-changed"};
         Pointer request = cups.ippNewRequest(IPP.CREATE_JOB_SUBSCRIPTION);
@@ -227,7 +227,6 @@ public class CupsUtils {
         Pointer response = doRequest(request, "/");
         cups.ippDelete(response);
     }
-
 
     public synchronized static void freeIppObjs() {
         if (http != null) {
@@ -291,6 +290,6 @@ public class CupsUtils {
         if (attrName == null){
             return "------------------------";
         }
-        return String.format("%s: %d %s {%s}", attrName, attrCount, Cups.INSTANCE.ippTagString(valueTag), data.toString());
+        return String.format("%s: %d %s {%s}", attrName, attrCount, Cups.INSTANCE.ippTagString(valueTag), data);
     }
 }

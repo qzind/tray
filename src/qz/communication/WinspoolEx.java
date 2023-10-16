@@ -21,5 +21,5 @@ public interface WinspoolEx extends Winspool {
     int JOB_CONTROL_RETAIN = 0x00000008; // Keep the print job in the print queue after it prints.
     int JOB_CONTROL_RELEASE = 0x00000009; // Release the print job, undoing the effect of a JOB_CONTROL_RETAIN action.
 
-    boolean SetJob(WinNT.HANDLEByReference hPrinter, int JobId, int Level, Pointer pJob, int Command);
+    boolean SetJob(WinNT.HANDLE hPrinter, int JobId, int Level, Pointer pJob, int Command);
 }

@@ -238,7 +238,7 @@ public class PrintingUtilities {
                 Winspool.JOB_INFO_1[] jobs =  WinspoolUtil.getJobInfo1(phPrinter);
                 for (Winspool.JOB_INFO_1 job : jobs) {
                     log.warn("deleting job " + job.toString());
-                    log.warn("result: " + WinspoolEx.INSTANCE.SetJob(phPrinter, job.JobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE));
+                    log.warn("result: " + WinspoolEx.INSTANCE.SetJob(phPrinter.getValue(), job.JobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE));
                     log.warn(Kernel32.INSTANCE.GetLastError());
                 }
             } else {

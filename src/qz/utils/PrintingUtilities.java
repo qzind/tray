@@ -241,6 +241,7 @@ public class PrintingUtilities {
                 for (Winspool.JOB_INFO_1 job : jobs) {
                     // skip retained jobs
                     if ((job.Status & (int)WmiJobStatusMap.RETAINED.getRawCode()) != 0) continue;
+                    if ((job.Status & (int)WmiJobStatusMap.PRINTED.getRawCode()) != 0) continue;
                     log.warn("deleting job " + job.toString());
                     log.warn("result: " + WinspoolEx.INSTANCE.SetJob(phPrinter.getValue(), job.JobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE));
                     log.warn(Kernel32.INSTANCE.GetLastError());

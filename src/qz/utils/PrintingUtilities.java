@@ -244,6 +244,7 @@ public class PrintingUtilities {
                     String error = "Job# " + paramJobId + " is not part of the '" + printer.getName() + "' print queue";
                     log.error(error);
                     PrintSocketClient.sendError(session, UID, error);
+                    return;
                 }
             }
             log.info("Canceling {} jobs from {}", jobIds.size(), printer.getName());

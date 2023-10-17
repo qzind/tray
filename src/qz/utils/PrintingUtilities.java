@@ -229,39 +229,65 @@ public class PrintingUtilities {
     public static void cancelJobs(Session session, String UID, JSONObject params) {
         try {
             NativePrinter printer = PrintServiceMatcher.matchPrinter(params.getString("printerName"));
+            int paramJobId = params.optInt("JobId", -1);
+            ArrayList<Integer> jobIds = getActiveJobIds(printer);
 
-            if (SystemUtilities.isWindows()) {
-                WinNT.HANDLEByReference phPrinter = new WinNT.HANDLEByReference();
-                if (!WinspoolEx.INSTANCE.OpenPrinter(printer.getName(), /*out*/ phPrinter, null)) {
-                   throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
+            if (paramJobId >= 0) {
+                if (jobIds.contains(paramJobId)) {
+                    jobIds.clear();
+                    jobIds.add(paramJobId);
+                } else {
+                    String error = "Job# " + paramJobId + " is not part of the '" + printer.getName() + "' print queue";
+                    log.error(error);
+                    PrintSocketClient.sendError(session, UID, error);
                 }
-                Winspool.JOB_INFO_1[] jobs =  WinspoolUtil.getJobInfo1(phPrinter);
+            }
+            log.info("Canceling {} jobs from {}", jobIds.size(), printer.getName());
 
-                // skip retained jobs and complete jobs
-                int skipMask = (int)WmiJobStatusMap.RETAINED.getRawCode() | (int)WmiJobStatusMap.PRINTED.getRawCode();
-                int deletedCount = 0;
-                for (Winspool.JOB_INFO_1 job : jobs) {
-                    if ((job.Status & skipMask) != 0) continue;
-                    boolean result = WinspoolEx.INSTANCE.SetJob(phPrinter.getValue(), job.JobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE);
-                    if (result) {
-                        deletedCount++;
-                    } else {
-                        Win32Exception e = new Win32Exception(Kernel32.INSTANCE.GetLastError());
-                        log.warn("Job deletion error for job#{}, {}", job.JobId, e);
-                    }
-                }
-                log.info("Deleting {} jobs", deletedCount);
-            } else {
-                ArrayList<Integer> jobIds = CupsUtils.listJobs(printer.getPrinterId());
-                log.info("Deleting {} jobs", jobIds.size());
-                for(int jobId : jobIds) {
-                    CupsUtils.cancelJob(jobId);
-                }
+            for(int jobId : jobIds) {
+                cancelJobById(jobId, printer);
             }
         }
         catch(JSONException | Win32Exception e) {
             log.error("Failed to cancel jobs", e);
             PrintSocketClient.sendError(session, UID, e);
         }
+    }
+
+    private static void cancelJobById(int jobId, NativePrinter printer) {
+        if (SystemUtilities.isWindows()) {
+            WinNT.HANDLEByReference phPrinter = getWmiPrinter(printer);
+            if (!WinspoolEx.INSTANCE.SetJob(phPrinter.getValue(), jobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE)) {
+                Win32Exception e = new Win32Exception(Kernel32.INSTANCE.GetLastError());
+                log.warn("Job deletion error for job#{}, {}", jobId, e);
+            }
+        } else {
+            CupsUtils.cancelJob(jobId);
+        }
+    }
+
+    private static ArrayList<Integer> getActiveJobIds(NativePrinter printer) {
+        if (SystemUtilities.isWindows()) {
+            WinNT.HANDLEByReference phPrinter = getWmiPrinter(printer);
+            Winspool.JOB_INFO_1[] jobs = WinspoolUtil.getJobInfo1(phPrinter);
+            ArrayList<Integer> jobIds = new ArrayList<>();
+            // skip retained jobs and complete jobs
+            int skipMask = (int)WmiJobStatusMap.RETAINED.getRawCode() | (int)WmiJobStatusMap.PRINTED.getRawCode();
+            for(Winspool.JOB_INFO_1 job : jobs) {
+                if ((job.Status & skipMask) != 0) continue;
+                jobIds.add(job.JobId);
+            }
+            return jobIds;
+        } else {
+            return CupsUtils.listJobs(printer.getPrinterId());
+        }
+    }
+
+    private static WinNT.HANDLEByReference getWmiPrinter(NativePrinter printer) throws Win32Exception {
+        WinNT.HANDLEByReference phPrinter = new WinNT.HANDLEByReference();
+        if (!WinspoolEx.INSTANCE.OpenPrinter(printer.getName(), /*out*/ phPrinter, null)) {
+            throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
+        }
+        return phPrinter;
     }
 }

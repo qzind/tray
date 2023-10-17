@@ -21,6 +21,7 @@ import qz.printer.status.CupsUtils;
 import qz.printer.status.job.WmiJobStatusMap;
 import qz.ws.PrintSocketClient;
 
+import javax.print.PrintException;
 import java.awt.print.PrinterAbortException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -229,7 +230,10 @@ public class PrintingUtilities {
     public static void cancelJobs(Session session, String UID, JSONObject params) {
         try {
             NativePrinter printer = PrintServiceMatcher.matchPrinter(params.getString("printerName"));
-            int paramJobId = params.optInt("JobId", -1);
+            if (printer == null) {
+                throw new PrintException("Printer \"" + params.getString("printerName") + "\" not found");
+            }
+            int paramJobId = params.optInt("jobId", -1);
             ArrayList<Integer> jobIds = getActiveJobIds(printer);
 
             if (paramJobId >= 0) {
@@ -248,7 +252,7 @@ public class PrintingUtilities {
                 cancelJobById(jobId, printer);
             }
         }
-        catch(JSONException | Win32Exception e) {
+        catch(JSONException | Win32Exception | PrintException e) {
             log.error("Failed to cancel jobs", e);
             PrintSocketClient.sendError(session, UID, e);
         }

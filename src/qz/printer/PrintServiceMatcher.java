@@ -189,10 +189,12 @@ public class PrintServiceMatcher {
                     mediaTrayCrawled = true;
                 }
 
-                HashSet<String> uniqueSizes = new HashSet<>();
+                HashSet<String> uniqueSizes = new HashSet<>(); // prevents duplicates
+                JSONArray trays = new JSONArray();
+                JSONArray sizes = new JSONArray();
 
                 for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
-                    if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
+                    if (m instanceof MediaTray) { trays.put(m.toString()); }
                     if (m instanceof MediaSizeName) {
                         if(uniqueSizes.add(m.toString())) {
                             MediaSize mediaSize = MediaSize.getMediaSizeForName((MediaSizeName)m);
@@ -200,23 +202,30 @@ public class PrintServiceMatcher {
                                 continue;
                             }
 
-                            JSONObject sizes = new JSONObject();
-                            sizes.put("name", m.toString());
+                            JSONObject size = new JSONObject();
+                            size.put("name", m.toString());
 
                             JSONObject in = new JSONObject();
                             in.put("width", mediaSize.getX(MediaPrintableArea.INCH));
                             in.put("height", mediaSize.getY(MediaPrintableArea.INCH));
-                            sizes.put("in", in);
+                            size.put("in", in);
 
                             JSONObject mm = new JSONObject();
                             mm.put("width", mediaSize.getX(MediaPrintableArea.MM));
                             mm.put("height", mediaSize.getY(MediaPrintableArea.MM));
-                            sizes.put("mm", mm);
+                            size.put("mm", mm);
 
-                            jsonService.accumulate("sizes", sizes);
+                            sizes.put(size);
                         }
 
                     }
+                }
+
+                if(trays.length() > 0) {
+                    jsonService.put("trays", trays);
+                }
+                if(sizes.length() > 0) {
+                    jsonService.put("sizes", sizes);
                 }
 
                 PrinterResolution res = printer.getResolution().value();

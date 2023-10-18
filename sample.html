@@ -1624,17 +1624,17 @@
     function accumulateSizes(data) {
         var html = "";
         if(data.sizes) {
-            var html = "<li><details><summary><strong>Sizes:</strong> (" + data.sizes.length + ")</summary> ";
+            var html = "<li><details><summary><strong><u>Sizes:</u></strong> (" + data.sizes.length + ")</summary> ";
             var sizes = data.sizes;
             html += "<ul>";
-            for(var size in sizes) {
-                html += "<li><details><summary>" + sizes[size].name + "</summary><ul>";
+            for(var i = 0; i < sizes.length; i++) {
+                html += "<li><details><summary><u>" + sizes[i].name + "</u></summary><ul>";
 
-                var inch = sizes[size].in.width + " x " + sizes[size].in.height;
-                var mill = sizes[size].mm.width + " x " + sizes[size].mm.height;
+                var inch = sizes[i].in.width + " x " + sizes[i].in.height;
+                var mill = sizes[i].mm.width + " x " + sizes[i].mm.height;
 
-                var inchTrunc = truncate(sizes[size].in.width, 3) + "&nbsp;x&nbsp;" + truncate(sizes[size].in.height, 3);
-                var millTrunc = truncate(sizes[size].mm.width, 3) + "&nbsp;x&nbsp;" + truncate(sizes[size].mm.height, 3);
+                var inchTrunc = truncate(sizes[i].in.width, 3) + "&nbsp;x&nbsp;" + truncate(sizes[i].in.height, 3);
+                var millTrunc = truncate(sizes[i].mm.width, 3) + "&nbsp;x&nbsp;" + truncate(sizes[i].mm.height, 3);
 
                 html += "<li style='text-overflow: ellipsis;' title='" + inch + "'><strong>in:</strong>&nbsp;" + inchTrunc + "</li>";
                 html += "<li style='text-overflow: ellipsis;' title='" + mill + "'><strong>mm:</strong>&nbsp;" + millTrunc + "</li>";

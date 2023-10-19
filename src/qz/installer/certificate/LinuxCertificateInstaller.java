@@ -152,7 +152,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
         boolean installed = ShellUtilities.execute("which", "certutil");
         if (!installed) {
             if (certType == SYSTEM && promptCertutil()) {
-                if(UnixUtilities.isUbuntu()) {
+                if(UnixUtilities.isUbuntu() || UnixUtilities.isDebian()) {
                     installed = ShellUtilities.execute("apt-get", "install", "-y", "libnss3-tools");
                 } else if(UnixUtilities.isFedora()) {
                     installed =  ShellUtilities.execute("dnf", "install", "-y", "nss-tools");

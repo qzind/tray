@@ -94,6 +94,7 @@ public class App {
 
         int logSize = PrefsSearch.getInt(ArgValue.LOG_SIZE);
         int logRotate = PrefsSearch.getInt(ArgValue.LOG_ROTATE);
+        Installer.getInstance().removeLegacyLogs(logRotate);
         RollingFileAppender fileAppender = RollingFileAppender.newBuilder()
                 .setName("log-file")
                 .withAppend(true)

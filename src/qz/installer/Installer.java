@@ -171,17 +171,24 @@ public abstract class Installer {
     }
 
     public Installer removeLegacyLogs(int rolloverCount) {
-        // Cleanup old < 2.2.3 log file format
+        // Convert old < 2.2.3 log file format
         Path logLocation = USER_DIR;
+        int nextFile = 0;
         for(int i = 1; i <= rolloverCount; i++) {
             // Old: debug.log.1
-            File newFile = logLocation.resolve("debug." + i + ".log").toFile();
-            // New: debug.1.log
             File oldFile = logLocation.resolve("debug.log." + i).toFile();
-            // Only delete old if an adjacent new copy exists
-            if(oldFile.exists() && newFile.exists()) {
-                log.info("Cleaning up old log file {}", oldFile);
-                oldFile.delete();
+            if(oldFile.exists()) {
+                // Rename to new format
+                inner:
+                while(true) {
+                    // New: debug.1.log
+                    File newFile = logLocation.resolve("debug." + ++nextFile + ".log").toFile();
+                    if (!newFile.exists()) {
+                        oldFile.renameTo(newFile);
+                        log.info("Migrated log file {} to new location {}", oldFile, newFile);
+                        break inner;
+                    }
+                }
             }
         }
 

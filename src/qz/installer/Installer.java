@@ -170,7 +170,7 @@ public abstract class Installer {
         return this;
     }
 
-    public Installer removeLegacyLogs(int rolloverCount) {
+    public Installer cleanupLegacyLogs(int rolloverCount) {
         // Convert old < 2.2.3 log file format
         Path logLocation = USER_DIR;
         int nextFile = 0;

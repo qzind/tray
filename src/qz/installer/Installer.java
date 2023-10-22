@@ -173,23 +173,29 @@ public abstract class Installer {
     public Installer cleanupLegacyLogs(int rolloverCount) {
         // Convert old < 2.2.3 log file format
         Path logLocation = USER_DIR;
-        int nextFile = 0;
-        for(int i = 1; i <= rolloverCount; i++) {
+        int oldIndex = 0;
+        int newIndex = 0;
+        while(true) {
             // Old: debug.log.1
-            File oldFile = logLocation.resolve("debug.log." + i).toFile();
+            File oldFile = logLocation.resolve("debug.log." + oldIndex++).toFile();
             if(oldFile.exists()) {
                 // Rename to new format
                 inner:
                 while(true) {
                     // New: debug.1.log
-                    File newFile = logLocation.resolve("debug." + ++nextFile + ".log").toFile();
+                    File newFile = logLocation.resolve("debug." + ++newIndex + ".log").toFile();
                     if (!newFile.exists()) {
                         oldFile.renameTo(newFile);
                         log.info("Migrated log file {} to new location {}", oldFile, newFile);
                         break inner;
                     }
                 }
+                continue;
             }
+            // Loop at least as high as our rollover strategy in case there are human made gaps
+            if(oldIndex <= rolloverCount) continue;
+            break;
+
         }
 
         return this;

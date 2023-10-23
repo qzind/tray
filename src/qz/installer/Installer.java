@@ -174,31 +174,24 @@ public abstract class Installer {
         // Convert old < 2.2.3 log file format
         Path logLocation = USER_DIR;
         int oldIndex = 0;
-        int newIndex = 0;
-        while(true) {
+        File oldFile;
+        do {
             // Old: debug.log.1
-            File oldFile = logLocation.resolve("debug.log." + oldIndex++).toFile();
+            oldFile = logLocation.resolve("debug.log." + ++oldIndex).toFile();
             if(oldFile.exists()) {
-                // Rename to new format
-                inner:
-                while(true) {
-                    // New: debug.1.log
-                    File newFile = logLocation.resolve("debug." + ++newIndex + ".log").toFile();
-                    if (!newFile.exists()) {
-                        oldFile.renameTo(newFile);
-                        log.info("Migrated log file {} to new location {}", oldFile, newFile);
-                        break inner;
-                    }
-                }
-                continue;
+                // New: debug.1.log
+                File newFile = getNextLogFile(logLocation, 0);
+                oldFile.renameTo(newFile);
+                log.info("Migrated log file {} to new location {}", oldFile, newFile);
             }
-            // Loop at least as high as our rollover strategy in case there are human made gaps
-            if(oldIndex <= rolloverCount) continue;
-            break;
-
-        }
+        } while(oldFile.exists() || oldIndex <= rolloverCount);
 
         return this;
+    }
+
+    private File getNextLogFile(Path logLocation, int index) {
+        File newFile = logLocation.resolve("debug." + ++index + ".log").toFile();
+        return !newFile.exists() ? newFile : getNextLogFile(logLocation, index);
     }
 
     public Installer removeLegacyFiles() {

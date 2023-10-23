@@ -170,6 +170,30 @@ public abstract class Installer {
         return this;
     }
 
+    public Installer cleanupLegacyLogs(int rolloverCount) {
+        // Convert old < 2.2.3 log file format
+        Path logLocation = USER_DIR;
+        int oldIndex = 0;
+        int newIndex = 0;
+        File oldFile;
+        do {
+            // Old: debug.log.1
+            oldFile = logLocation.resolve("debug.log." + ++oldIndex).toFile();
+            if(oldFile.exists()) {
+                // New: debug.1.log
+                File newFile;
+                do {
+                    newFile = logLocation.resolve("debug." + ++newIndex + ".log").toFile();
+                } while(newFile.exists());
+
+                oldFile.renameTo(newFile);
+                log.info("Migrated log file {} to new location {}", oldFile, newFile);
+            }
+        } while(oldFile.exists() || oldIndex <= rolloverCount);
+
+        return this;
+    }
+
     public Installer removeLegacyFiles() {
         ArrayList<String> dirs = new ArrayList<>();
         ArrayList<String> files = new ArrayList<>();

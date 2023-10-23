@@ -183,7 +183,7 @@ public abstract class Installer {
                 // New: debug.1.log
                 File newFile;
                 do {
-                    newFile = oldFile.toPath().getParent().resolve("debug." + ++newIndex + ".log").toFile();
+                    newFile = logLocation.resolve("debug." + ++newIndex + ".log").toFile();
                 } while(newFile.exists());
 
                 oldFile.renameTo(newFile);

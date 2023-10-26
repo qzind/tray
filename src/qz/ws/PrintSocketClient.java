@@ -540,6 +540,8 @@ public class PrintSocketClient {
                 break;
             }
             case FILE_STOP_LISTENING: {
+                // Coerce to trusted state for unsigned request
+                request.setStatus(RequestState.Validity.TRUSTED);
                 if (params.isNull("path")) {
                     connection.removeAllFileListeners();
                     sendResult(session, UID, null);

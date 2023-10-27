@@ -135,6 +135,9 @@
             <equals arg1="aarch64" arg2="${target.arch}"/>
         </condition>
         <!-- Warning: Placeholder only! 32-bit builds are not supported -->
+        <condition property="target.arch.arm32">
+            <equals arg1="arm32" arg2="${target.arch}"/>
+        </condition>
         <condition property="target.arch.x86">
             <equals arg1="x86" arg2="${target.arch}"/>
         </condition>

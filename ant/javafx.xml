@@ -195,6 +195,13 @@
         </condition>
         <property name="fx.arch.fixed" value="${fx.arch}" description="fallback value"/>
 
+        <!-- Fix underscore when "monocle" is missing -->
+        <condition property="fx.url" value="${javafx.mirror}/${fx.majver}/openjfx-${fx.urlver}_${fx.os.fixed}-${fx.arch.fixed}_bin-sdk.zip">
+            <not>
+                <contains string="${fx.urlver}" substring="monocle"/>
+            </not>
+        </condition>
+
         <property name="fx.url" value="${javafx.mirror}/${fx.majver}/openjfx-${fx.urlver}-${fx.os.fixed}-${fx.arch.fixed}_bin-sdk.zip"/>
         <property name="fx.zip" value="${out.dir}/${fx.id}.zip"/>
 

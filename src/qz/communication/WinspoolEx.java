@@ -6,6 +6,9 @@ import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.platform.win32.Winspool;
 import com.sun.jna.win32.W32APIOptions;
 
+/**
+ * TODO: Remove when JNA 5.14.0+ is bundled
+ */
 @SuppressWarnings("unused")
 public interface WinspoolEx extends Winspool {
     WinspoolEx INSTANCE = Native.load("Winspool.drv", WinspoolEx.class, W32APIOptions.DEFAULT_OPTIONS);

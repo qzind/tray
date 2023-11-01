@@ -262,6 +262,7 @@ public class PrintingUtilities {
     private static void cancelJobById(int jobId, NativePrinter printer) {
         if (SystemUtilities.isWindows()) {
             WinNT.HANDLEByReference phPrinter = getWmiPrinter(printer);
+             // TODO: Change to "Winspool" when JNA 5.14.0+ is bundled
             if (!WinspoolEx.INSTANCE.SetJob(phPrinter.getValue(), jobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE)) {
                 Win32Exception e = new Win32Exception(Kernel32.INSTANCE.GetLastError());
                 log.warn("Job deletion error for job#{}, {}", jobId, e);
@@ -290,6 +291,7 @@ public class PrintingUtilities {
 
     private static WinNT.HANDLEByReference getWmiPrinter(NativePrinter printer) throws Win32Exception {
         WinNT.HANDLEByReference phPrinter = new WinNT.HANDLEByReference();
+        // TODO: Change to "Winspool" when JNA 5.14.0+ is bundled
         if (!WinspoolEx.INSTANCE.OpenPrinter(printer.getName(), /*out*/ phPrinter, null)) {
             throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
         }

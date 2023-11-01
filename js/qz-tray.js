@@ -1399,6 +1399,27 @@ var qz = (function() {
             },
 
             /**
+             * Clear the queue of a specified printer or printers. Does not delete retained jobs.
+             *
+             * @param {string|Object} [options] Name of printer to clear
+             *  @param {string} [options.printerName] Name of printer to clear
+             *  @param {number} [options.jobId] Cancel a job of a specific JobId instead of canceling all. Must include a printerName.
+             *
+             * @returns {Promise<null|Error>}
+             * @since 2.2.4
+             *
+             * @memberof qz.printers
+             */
+            clearQueue: function(options) {
+                if (typeof options !== 'object') {
+                    options = {
+                        printerName: options
+                    };
+                }
+                return _qz.websocket.dataPromise('printers.clearQueue', options);
+            },
+
+            /**
              * Stop listening for printer status actions.
              *
              * @returns {Promise<null|Error>}

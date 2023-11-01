@@ -1,5 +1,6 @@
 package qz.utils;
 
+import com.sun.jna.platform.win32.*;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
 import org.apache.commons.ssl.Base64;
 import org.codehaus.jettison.json.JSONArray;
@@ -9,15 +10,22 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
+import qz.communication.WinspoolEx;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.printer.PrintServiceMatcher;
 import qz.printer.action.PrintProcessor;
 import qz.printer.action.ProcessorFactory;
+import qz.printer.info.NativePrinter;
+import qz.printer.status.CupsUtils;
+import qz.printer.status.job.WmiJobStatusMap;
 import qz.ws.PrintSocketClient;
 
+import javax.print.PrintException;
 import java.awt.print.PrinterAbortException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -219,4 +227,74 @@ public class PrintingUtilities {
         }
     }
 
+    public static void cancelJobs(Session session, String UID, JSONObject params) {
+        try {
+            NativePrinter printer = PrintServiceMatcher.matchPrinter(params.getString("printerName"));
+            if (printer == null) {
+                throw new PrintException("Printer \"" + params.getString("printerName") + "\" not found");
+            }
+            int paramJobId = params.optInt("jobId", -1);
+            ArrayList<Integer> jobIds = getActiveJobIds(printer);
+
+            if (paramJobId >= 0) {
+                if (jobIds.contains(paramJobId)) {
+                    jobIds.clear();
+                    jobIds.add(paramJobId);
+                } else {
+                    String error = "Job# " + paramJobId + " is not part of the '" + printer.getName() + "' print queue";
+                    log.error(error);
+                    PrintSocketClient.sendError(session, UID, error);
+                    return;
+                }
+            }
+            log.info("Canceling {} jobs from {}", jobIds.size(), printer.getName());
+
+            for(int jobId : jobIds) {
+                cancelJobById(jobId, printer);
+            }
+        }
+        catch(JSONException | Win32Exception | PrintException e) {
+            log.error("Failed to cancel jobs", e);
+            PrintSocketClient.sendError(session, UID, e);
+        }
+    }
+
+    private static void cancelJobById(int jobId, NativePrinter printer) {
+        if (SystemUtilities.isWindows()) {
+            WinNT.HANDLEByReference phPrinter = getWmiPrinter(printer);
+             // TODO: Change to "Winspool" when JNA 5.14.0+ is bundled
+            if (!WinspoolEx.INSTANCE.SetJob(phPrinter.getValue(), jobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE)) {
+                Win32Exception e = new Win32Exception(Kernel32.INSTANCE.GetLastError());
+                log.warn("Job deletion error for job#{}, {}", jobId, e);
+            }
+        } else {
+            CupsUtils.cancelJob(jobId);
+        }
+    }
+
+    private static ArrayList<Integer> getActiveJobIds(NativePrinter printer) {
+        if (SystemUtilities.isWindows()) {
+            WinNT.HANDLEByReference phPrinter = getWmiPrinter(printer);
+            Winspool.JOB_INFO_1[] jobs = WinspoolUtil.getJobInfo1(phPrinter);
+            ArrayList<Integer> jobIds = new ArrayList<>();
+            // skip retained jobs and complete jobs
+            int skipMask = (int)WmiJobStatusMap.RETAINED.getRawCode() | (int)WmiJobStatusMap.PRINTED.getRawCode();
+            for(Winspool.JOB_INFO_1 job : jobs) {
+                if ((job.Status & skipMask) != 0) continue;
+                jobIds.add(job.JobId);
+            }
+            return jobIds;
+        } else {
+            return CupsUtils.listJobs(printer.getPrinterId());
+        }
+    }
+
+    private static WinNT.HANDLEByReference getWmiPrinter(NativePrinter printer) throws Win32Exception {
+        WinNT.HANDLEByReference phPrinter = new WinNT.HANDLEByReference();
+        // TODO: Change to "Winspool" when JNA 5.14.0+ is bundled
+        if (!WinspoolEx.INSTANCE.OpenPrinter(printer.getName(), /*out*/ phPrinter, null)) {
+            throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
+        }
+        return phPrinter;
+    }
 }

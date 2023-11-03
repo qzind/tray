@@ -71,7 +71,8 @@ public class Url {
         switch(arch) {
             // TODO: Remove when RISCV is offered as stable
             case RISCV64:
-                applyBetaPattern();
+                pattern.applyBetaPattern();
+                urlJavaVersion = urlJavaVersion.replace(".", "-").replace("_", "-");
             default:
                 // Do nothing
         }

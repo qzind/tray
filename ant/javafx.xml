@@ -191,6 +191,11 @@
                     <equals arg1="${fx.arch}" arg2="aarch64"/>
                     <equals arg1="${fx.os}" arg2="windows"/>
                 </and>
+                <and>
+                    <!-- TODO: Remove "riscv" to "x64" when linux riscv64 binaries become available -->
+                    <equals arg1="${fx.arch}" arg2="riscv64"/>
+                    <equals arg1="${fx.os}" arg2="linux"/>
+                </and>
             </or>
         </condition>
         <property name="fx.arch.fixed" value="${fx.arch}" description="fallback value"/>

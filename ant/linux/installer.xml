@@ -59,6 +59,8 @@
                 <!--arm32-->
                 <include name="**/linux-arm/*" if="target.arch.arm32"/> <!-- jna/hid4java/usb4java -->
                 <include name="**/linux_arm/*" if="target.arch.arm32"/> <!-- jssc -->
+                <!--riscv64-->
+                <include name="**/linux-riscv64/*" if="target.arch.riscv64"/> <!-- jna -->
             </fileset>
         </copy>
     </target>

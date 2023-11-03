@@ -134,6 +134,9 @@
         <condition property="target.arch.aarch64">
             <equals arg1="aarch64" arg2="${target.arch}"/>
         </condition>
+        <condition property="target.arch.riscv64">
+            <equals arg1="riscv64" arg2="${target.arch}"/>
+        </condition>
         <!-- Warning: Placeholder only! 32-bit builds are not supported -->
         <condition property="target.arch.arm32">
             <equals arg1="arm32" arg2="${target.arch}"/>

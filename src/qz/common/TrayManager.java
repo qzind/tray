@@ -182,7 +182,7 @@ public class TrayManager {
                             iconCache.fixTrayIcons(darkTaskbarMode);
                             refreshIcon(null);
                             SwingUtilities.invokeLater(() -> {
-                                SystemUtilities.setSystemLookAndFeel();
+                                SystemUtilities.setSystemLookAndFeel(headless);
                                 for(Component c : componentList) {
                                     SwingUtilities.updateComponentTreeUI(c);
                                     if (c instanceof Themeable) {

@@ -111,7 +111,7 @@ public class TrayManager {
         // Set up the shortcut name so that the UI components can use it
         shortcutCreator = ShortcutCreator.getInstance();
 
-        SystemUtilities.setSystemLookAndFeel();
+        SystemUtilities.setSystemLookAndFeel(headless);
         iconCache = new IconCache();
 
         if (SystemUtilities.isSystemTraySupported(headless)) { // UI mode with tray

@@ -491,7 +491,10 @@ public class SystemUtilities {
         return false;
     }
 
-    public static boolean setSystemLookAndFeel() {
+    public static boolean setSystemLookAndFeel(boolean headless) {
+        if(headless) {
+            return false;
+        }
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
             boolean darculaThemeNeeded = true;

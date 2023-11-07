@@ -1,7 +1,7 @@
 package qz.utils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.KeyPairWrapper;
 
@@ -14,7 +14,7 @@ import static qz.installer.certificate.KeyPairWrapper.Type.SSL;
  * Convenience class for searching for preferences on a user, app and <code>System.getProperty(...)</code> level
  */
 public class PrefsSearch {
-    protected static final Logger log = LoggerFactory.getLogger(PrefsSearch.class);
+    private static final Logger log = LogManager.getLogger(PrefsSearch.class);
     private static Properties appProps = null;
 
     private static String getProperty(String[] names, String defaultVal, boolean searchSystemProperties, Properties ... propArray) {

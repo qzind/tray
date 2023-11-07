@@ -1,14 +1,14 @@
 package qz.printer.rendering;
 
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.pdfbox.pdmodel.common.PDStream;
 import org.apache.pdfbox.pdmodel.font.*;
 import org.apache.pdfbox.rendering.PageDrawer;
 import org.apache.pdfbox.rendering.PageDrawerParameters;
 import org.apache.pdfbox.util.Matrix;
 import org.apache.pdfbox.util.Vector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
@@ -23,7 +23,7 @@ import java.util.Map;
 
 public class PdfFontPageDrawer extends PageDrawer {
 
-    private static final Logger log = LoggerFactory.getLogger(PdfFontPageDrawer.class);
+    private static final Logger log = LogManager.getLogger(PdfFontPageDrawer.class);
 
     private String fallbackFont = "helvetica"; //todo - definable parameter?
     private final Map<PDFont,Font> fonts = new HashMap<>();

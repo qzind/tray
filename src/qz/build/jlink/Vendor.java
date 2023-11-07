@@ -67,6 +67,8 @@ public enum Vendor implements Parsable {
                     case BELLSOFT:
                         return "amd64";
                 }
+            case RISCV64:
+                return "riscv64";
             default:
                 return "x64";
         }

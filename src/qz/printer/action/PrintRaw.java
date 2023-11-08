@@ -403,9 +403,9 @@ public class PrintRaw implements PrintProcessor {
     private void printToFile(File file, byte[] cmds, boolean locationRestricted) throws IOException {
         if(file == null) throw new IOException("No file specified");
 
-        if(!isAllowed(file)) {
-            log.error("Printing to file '{}' is not permitted.  Configure property '{}' or '{}' to modify this behavior.",
-                      file, ArgValue.SECURITY_PRINT_UNC.getMatch(), ArgValue.SECURITY_PRINT_FILE.getMatch());
+        if(locationRestricted && !PrefsSearch.getBoolean(ArgValue.SECURITY_PRINT_FILE)) {
+            log.error("Printing to file '{}' is not permitted.  Configure property '{}' to modify this behavior.",
+                      file, ArgValue.SECURITY_PRINT_FILE.getMatch());
             throw new IOException(String.format("Printing to file '%s' is not permitted", file));
         }
 
@@ -415,14 +415,6 @@ public class PrintRaw implements PrintProcessor {
         try(OutputStream out = new FileOutputStream(file)) {
             out.write(cmds);
         }
-    }
-
-    private boolean isAllowed(File file) {
-        return file.getPath().startsWith("\\\\") ?
-                // UNC Path
-                PrefsSearch.getBoolean(ArgValue.SECURITY_PRINT_UNC) :
-                // Regular file
-                PrefsSearch.getBoolean(ArgValue.SECURITY_PRINT_FILE);
     }
 
     /**

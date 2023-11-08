@@ -71,8 +71,6 @@ public enum ArgValue {
         "security.file.strict"),
     SECURITY_FILE_PROTOCOLS(PREFERENCES, "URL protocols allowed for print, serial, hid, etc", null, "http,https",
         "security.file.protocols"),
-    SECURITY_PRINT_UNC(PREFERENCES, "Enable/disable printing directly to UNC paths", null, false,
-        "security.print.unc"),
     SECURITY_PRINT_FILE(PREFERENCES, "Enable/disable printing directly to file paths", null, false,
         "security.print.file"),
     LOG_DISABLE(PREFERENCES, "Disable/enable logging features", null, false,

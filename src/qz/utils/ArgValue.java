@@ -72,7 +72,7 @@ public enum ArgValue {
     SECURITY_FILE_PROTOCOLS(PREFERENCES, "URL protocols allowed for print, serial, hid, etc", null, "http,https",
         "security.file.protocols"),
     SECURITY_PRINT_FILE(PREFERENCES, "Enable/disable printing directly to file paths", null, false,
-        "security.print.file"),
+        "security.print.tofile"),
     LOG_DISABLE(PREFERENCES, "Disable/enable logging features", null, false,
         "log.disable"),
     LOG_ROTATE(PREFERENCES, "Number of log files to retain when the size fills up", null, 5,

@@ -144,10 +144,13 @@ public class PrintSocketServer {
                 try {
                     // Bind the secure socket on the proper port number (i.e. 8181), add it as an additional connector
                     SslConnectionFactory sslConnection = new SslConnectionFactory(certManager.configureSslContextFactory(), HttpVersion.HTTP_1_1.asString());
+
+                    // Disable SNI checks for easier print-server testing (replicates Jetty 9.x behavior)
                     HttpConfiguration httpsConfig = new HttpConfiguration();
                     SecureRequestCustomizer customizer = new SecureRequestCustomizer();
                     customizer.setSniHostCheck(false);
                     httpsConfig.addCustomizer(customizer);
+
                     HttpConnectionFactory httpConnection = new HttpConnectionFactory(httpsConfig);
 
                     ServerConnector secureConnector = new ServerConnector(server, sslConnection, httpConnection);

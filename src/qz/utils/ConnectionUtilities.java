@@ -12,11 +12,15 @@ package qz.utils;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Paths;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -75,6 +79,18 @@ public final class ConnectionUtilities {
                     return true;
                 }
             }
+        }
+        // Allow exception for file: demo/assets
+        if(urlProtocol.trim().toLowerCase(Locale.ENGLISH).equals("file")) {
+            try {
+                // Sanitize manipulative URLs
+                url = Paths.get(url.toURI()).normalize().toUri().toURL();
+                if (url.getPath().matches(".*/demo/assets/.*|.*/tray/assets/.*")) {
+                    log.warn("Allowing printing from restricted protocol '{}:' for demo asset '{}'", urlProtocol, url);
+                    return true;
+                }
+            }
+            catch(URISyntaxException | MalformedURLException ignore) {}
         }
         return false;
     }

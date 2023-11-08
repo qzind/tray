@@ -17,7 +17,6 @@ import java.net.URLConnection;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -43,9 +42,9 @@ public final class ConnectionUtilities {
         try {
             URL url = new URL(urlString);
             if(protocolRestricted) {
-                String allowed = PrefsSearch.getString(ArgValue.SECURITY_FILE_PROTOCOLS);
+                String allowed = PrefsSearch.getString(ArgValue.SECURITY_DATA_PROTOCOLS);
                 if(!isAllowed(allowed, url)) {
-                    log.error("URL '{}' is not a valid http or https location.  Configure property '{}' to modify this behavior.", url, ArgValue.SECURITY_FILE_PROTOCOLS.getMatch());
+                    log.error("URL '{}' is not a valid http or https location.  Configure property '{}' to modify this behavior.", url, ArgValue.SECURITY_DATA_PROTOCOLS.getMatch());
                     throw new IOException(String.format("URL '%s' is not a valid [%s] location", url, allowed));
                 }
             }
@@ -66,7 +65,7 @@ public final class ConnectionUtilities {
         if(url == null) return false;
         String urlProtocol = url.getProtocol();
         if(urlProtocol == null || urlProtocol.trim().isEmpty()) return false;
-        allowed = ArgValue.SECURITY_FILE_PROTOCOLS.getDefaultVal() +
+        allowed = ArgValue.SECURITY_DATA_PROTOCOLS.getDefaultVal() +
                 (allowed == null || allowed.trim().isEmpty() ? "" : "," + allowed);
         String[] protocols = allowed.split(",");
         // Loop over http, https, etc

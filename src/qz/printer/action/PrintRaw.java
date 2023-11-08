@@ -403,9 +403,9 @@ public class PrintRaw implements PrintProcessor {
     private void printToFile(File file, byte[] cmds, boolean locationRestricted) throws IOException {
         if(file == null) throw new IOException("No file specified");
 
-        if(locationRestricted && !PrefsSearch.getBoolean(ArgValue.SECURITY_PRINT_FILE)) {
+        if(locationRestricted && !PrefsSearch.getBoolean(ArgValue.SECURITY_PRINT_TOFILE)) {
             log.error("Printing to file '{}' is not permitted.  Configure property '{}' to modify this behavior.",
-                      file, ArgValue.SECURITY_PRINT_FILE.getMatch());
+                      file, ArgValue.SECURITY_PRINT_TOFILE.getMatch());
             throw new IOException(String.format("Printing to file '%s' is not permitted", file));
         }
 

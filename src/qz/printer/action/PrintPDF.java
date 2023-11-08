@@ -118,7 +118,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     case PLAIN:
                         // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
                     case FILE:
-                        doc = PDDocument.load(ConnectionUtilities.getInputStream(data.getString("data")));
+                        doc = PDDocument.load(ConnectionUtilities.getInputStream(data.getString("data"), true));
                         break;
                     default:
                         doc = PDDocument.load(new ByteArrayInputStream(flavor.read(data.getString("data"))));

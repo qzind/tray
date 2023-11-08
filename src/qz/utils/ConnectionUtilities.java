@@ -39,9 +39,17 @@ public final class ConnectionUtilities {
      *
      * @param urlString an absolute URL giving location of resource to read.
      */
-    public static InputStream getInputStream(String urlString) throws IOException {
+    public static InputStream getInputStream(String urlString, boolean protocolRestricted) throws IOException {
         try {
-            URLConnection urlConn = new URL(urlString).openConnection();
+            URL url = new URL(urlString);
+            if(protocolRestricted) {
+                String allowed = PrefsSearch.getString(ArgValue.SECURITY_FILE_PROTOCOLS);
+                if(!isAllowed(allowed, url)) {
+                    log.error("URL '{}' is not a valid http or https location.  Configure property '{}' to modify this behavior.", url, ArgValue.SECURITY_FILE_PROTOCOLS.getMatch());
+                    throw new IOException(String.format("URL '%s' is not a valid [%s] location", url, allowed));
+                }
+            }
+            URLConnection urlConn = url.openConnection();
             for( String key : getRequestProperties().keySet()) {
                 urlConn.setRequestProperty(key, requestProps.get(key));
             }
@@ -52,6 +60,24 @@ public final class ConnectionUtilities {
             }
             throw e;
         }
+    }
+
+    private static boolean isAllowed(String allowed, URL url) {
+        if(url == null) return false;
+        String urlProtocol = url.getProtocol();
+        if(urlProtocol == null || urlProtocol.trim().isEmpty()) return false;
+        allowed = ArgValue.SECURITY_FILE_PROTOCOLS.getDefaultVal() +
+                (allowed == null || allowed.trim().isEmpty() ? "" : "," + allowed);
+        String[] protocols = allowed.split(",");
+        // Loop over http, https, etc
+        for(String protocol : protocols) {
+            if (url != null) {
+                if(urlProtocol.trim().equalsIgnoreCase(protocol.trim())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

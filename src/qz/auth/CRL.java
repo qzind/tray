@@ -38,7 +38,7 @@ public class CRL {
                 public void run() {
                     log.info("Loading CRL from {}", CRL_URL);
 
-                    try(BufferedReader br = new BufferedReader(new InputStreamReader(ConnectionUtilities.getInputStream(CRL_URL)))) {
+                    try(BufferedReader br = new BufferedReader(new InputStreamReader(ConnectionUtilities.getInputStream(CRL_URL, false)))) {
                         String line;
                         while((line = br.readLine()) != null) {
                             //Ignore empty and commented lines

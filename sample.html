@@ -22,7 +22,8 @@
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/gh-fork-ribbon.min.css" />
 
-<body id="qz-page" role="document"  ondrop="drop(event);" ondragover="drag(event, true);" ondragleave="drag(event, false);">
+<body id="qz-page" role="document"  ondrop="handleFileDrop(event);" ondragover="drag(event, true);" ondragleave="drag(event, false);">
+<input id="fileUpload" type="file"/>
 <a class="github-fork-ribbon" href="https://github.com/qzind/tray" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
 
 <nav class="navbar navbar-default navbar-static-top" role="navigation">
@@ -221,8 +222,9 @@
                             <div id="rawCommandsGroup" class="btn-group">
                                 <button type="button" class="btn btn-default" onclick="printCommand();">Commands</button>
                                 <button type="button" class="btn btn-default" onclick="printHex();">Hex</button>
+                                <button id="rawDropBtn" type="button" class="btn btn-primary" onclick="printFileDrop(event);" data-type="raw">Hidden</button>
                             </div>
-                            <button id="rawDropBtn" type="button" class="btn btn-primary" onclick="printDrop(event);">Print Dropped Item</button>
+                            <label for="fileUpload" type="button" class="btn btn-default"><i class="fa fa-folder-open-o"></i> Upload a file...</label>
                         </div>
                         <div class="form-group">
                             <div>
@@ -367,7 +369,8 @@
                             <button type="button" class="btn btn-default" onclick="printHTML();">Print HTML</button>
                             <button type="button" class="btn btn-default" onclick="printPDF();">Print PDF</button>
                             <button type="button" class="btn btn-default" onclick="printImage();">Print Image</button>
-                            <button id="pxlDropBtn" type="button" class="btn btn-primary" onclick="printDrop(event);">Print Dropped Item</button>
+                            <button id="pxlDropBtn" type="button" class="btn btn-primary" onclick="printFileDrop(event);" data-type="pixel"></button>
+                            <label for="fileUpload" type="button" class="btn btn-default upload-button"><i class="fa fa-folder-open-o"></i> Upload a file...</label>
                         </div>
                     </div>
                 </div>
@@ -2146,16 +2149,16 @@
         qz.print(config, printData).catch(displayError);
     }
 
-    function printDrop(evt) {
+    function printFileDrop(evt) {
         var button = evt.target || evt.srcElement;
 
         var config = getUpdatedConfig();
-        var opts = getUpdatedOptions(true);
 
-        var type = button.id.indexOf("pxl") !== -1 ? 'pixel' : 'raw';
-        var format = $(button).attr("data-format");
-        var flavor = $(button).attr("data-flavor");
-        var base64 = $(button).attr("data-base64").split("base64,")[1];
+        var type = $(button).attr('data-type');
+        var format = $(button).attr('data-format');
+        var flavor = $(button).attr('data-flavor');
+        var base64 = $(button).attr('data-base64').split('base64,')[1];
+        var opts = getUpdatedOptions(type === 'pixel');
 
         var printData = [
             { type: type, format: format, flavor: flavor, data: base64, options: opts }
@@ -2638,7 +2641,7 @@
         $("#rawForceRaw").prop('checked', false);
         $("#rawCopies").val(1);
 
-        //button
+        //file upload
         $("#rawDropBtn").hide();
 
         //printer
@@ -2694,7 +2697,7 @@
         $("#pxlBoundsActive").prop('checked', false);
         $("#pxlBoundsGroup").css('display', 'none');
 
-        //button
+        //file upload
         $("#pxlDropBtn").hide();
 
         //printer
@@ -2756,6 +2759,10 @@
         var lang = $("input[name='pLanguage']:checked").parent('label').text().trim();
 
         var appendLang = function(element, lang) {
+            // Skip formatting of file drop button if format = "command"
+            if($(element).attr("data-format") === "command") {
+                return;
+            }
             var text = $(element).html();
             var label = text.split("(")[0];
             $(element).html(label + " (<strong>" + lang + "</strong>)");
@@ -2834,9 +2841,9 @@
             }
         });
 
-        $("#fileButton").on('change', function(e) {
+        $("#fileUpload").on('change', function(e) {
             if (this.files && this.files[0]) {
-                $("#fileLocation").val(this.files[0]['name']);
+                handleFileDrop(this.files);
             }
         });
 
@@ -3407,16 +3414,36 @@
         });
     }
 
-    function drop(evt) {
-        evt.preventDefault();
-        var items = evt.dataTransfer.items;
-        var setupDropButton = function(format, name, data) {
+    function handleFileDrop(evt) {
+        var file;
+        var stayOnTab = false;
+
+        if(evt.dataTransfer && evt.dataTransfer.items) {
+            // Event from button
+            evt.preventDefault();
+
+            var item = evt.dataTransfer.items[0];
+            if(item.kind === "file") {
+                file = item.getAsFile();
+            } else {
+                displayError("Please drag a valid file");
+                return;
+            }
+        } else {
+            var files = evt;
+            // Event from file upload
+            file = files[0];
+            // Ensure we're on the right tab
+            stayOnTab = true;
+        }
+        
+        var setupDropButton = function(format, name, data, stayOnTab) {
             var tabHref;
             var buttonId;
             switch(format) {
                 case "pdf":
-                case "image":
                 case "html":
+                case "image":
                     buttonId = "#pxlDropBtn"
                     tabHref = "#pxlContent";
                     break;
@@ -3424,62 +3451,67 @@
                     buttonId = "#rawDropBtn"
                     tabHref = "#rawContent";
             }
-            // Select the appropriate tab
-            $(".nav-tabs a[href='" + tabHref + "']").tab('show');
+            
+            var button = $(buttonId);
+            if(stayOnTab) {
+                // File upload button can't change tabs
+                if($("#pxlContent").is(":visible") && format === "command") {
+                    displayError('File format "' + format + '" is not supported on this tab.');
+                    return;
+                }
+                if($("#rawContent").is(":visible") && format !== "command") {
+                    button = $("#rawDropBtn");
+                }
+            } else {
+                // Select the appropriate tab
+                $(".nav-tabs a[href='" + tabHref + "']").tab('show');
+            }
 
             // Show the appropriate button
-            var button = $(buttonId);
             button.attr("data-format", format);
             button.attr("data-flavor", "base64");
             button.attr("data-base64", data);
             button.html('Print dropped "' + name + '"');
             button.show();
+            updateRawButtons();
             button.fadeOut(300).fadeIn(500);
         }
 
-        if (items) {
-            // Use DataTransferItemList interface to access the file(s)
-            var item = items[0];  // Only process the first file
-            if (item.kind === "file") {
-                var file = item.getAsFile();
-                console.log("Dropped file:", file);
-                getBase64(file).then(function(base64) { 
-                    var name = file.name;
-                    var extension = name.substring(name.lastIndexOf('.') + 1, name.length) || '';
-                    switch(extension.toLowerCase()) {
-                        case 'pdf':
-                            setupDropButton("pdf", name, base64);
-                            break;
-                        case 'htm':
-                        case 'html':
-                            setupDropButton("html", name, base64);
-                            break;
-                        case 'png':
-                        case 'jpg':
-                        case 'jpeg':
-                        case 'gif':
-                        case 'bmp':
-                            setupDropButton("image", name, base64);
-                            break;
-                        // assume all others are "raw"
-                        default:
-                            setupDropButton("command", name, base64);
-                    }
-                }).catch(displayError);
-                
-            } else {
-                displayError("Please drag a valid file");
-            }
+        if (file) {
+            console.log("Dropped file:", file);
+            getBase64(file).then(function(base64) { 
+                var name = file.name;
+                var extension = name.substring(name.lastIndexOf('.') + 1, name.length) || '';
+                switch(extension.toLowerCase()) {
+                    case 'pdf':
+                        setupDropButton("pdf", name, base64, stayOnTab);
+                        break;
+                    case 'htm':
+                    case 'html':
+                        setupDropButton("html", name, base64, stayOnTab);
+                        break;
+                    case 'png':
+                    case 'jpg':
+                    case 'jpeg':
+                    case 'gif':
+                    case 'bmp':
+                        setupDropButton("image", name, base64, stayOnTab);
+                        break;
+                    // assume all others are "raw"
+                    default:
+                        setupDropButton("command", name, base64, stayOnTab);
+                }
+            }).catch(displayError); 
         }
-        document.getElementById("qz-page").classList.remove("drag-target"); 
+        $("#qz-page").removeClass("drag-target"); 
     }
 
     function drag(evt, entering) {
         evt.preventDefault();
         if(entering) {
-            document.getElementById("qz-page").classList.add("drag-target");
+            $("#qz-page").addClass("drag-target");
         } else {
-            document.getElementById("qz-page").classList.remove("drag-target");
+            $("#qz-page").removeClass("drag-target");
         }
     }
 </script>

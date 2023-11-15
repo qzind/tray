@@ -341,6 +341,10 @@ footer {
   );
 }
 
+input[type="file"] {
+    display: none;
+}
+
 button > .fa-caret-down {
     height: 100%;
     display: inline;

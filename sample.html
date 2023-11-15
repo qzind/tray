@@ -2841,6 +2841,12 @@
             }
         });
 
+        $("#fileButton").on('change', function(e) {
+            if (this.files && this.files[0]) {
+                $("#fileLocation").val(this.files[0]['name']);
+            }
+        });
+
         $("#fileUpload").on('change', function(e) {
             if (this.files && this.files[0]) {
                 handleFileDrop(this.files);

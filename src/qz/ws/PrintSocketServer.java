@@ -23,16 +23,15 @@ import qz.App;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.installer.certificate.CertificateManager;
+import qz.utils.ArgValue;
+import qz.utils.PrefsSearch;
 
 import javax.servlet.DispatcherType;
 import javax.swing.*;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -54,13 +53,20 @@ public class PrintSocketServer {
 
     private static TrayManager trayManager;
     private static Server server;
+    private static boolean httpsOnly;
+    private static boolean sniStrict;
+    private static String wssHost;
 
     public static void runServer(CertificateManager certManager, boolean headless) throws InterruptedException, InvocationTargetException {
         SwingUtilities.invokeAndWait(() -> {
             PrintSocketServer.setTrayManager(new TrayManager(headless));
         });
 
+        wssHost = PrefsSearch.getString(ArgValue.SECURITY_WSS_HOST, certManager.getProperties());
+        httpsOnly = PrefsSearch.getBoolean(ArgValue.SECURITY_WSS_HTTPSONLY, certManager.getProperties());
+        sniStrict = PrefsSearch.getBoolean(ArgValue.SECURITY_WSS_SNISTRICT, certManager.getProperties());
         server = findAvailableSecurePort(certManager);
+
         Connector secureConnector = null;
         if (server.getConnectors().length > 0 && !server.getConnectors()[0].isFailed()) {
             secureConnector = server.getConnectors()[0];
@@ -70,6 +76,9 @@ public class PrintSocketServer {
             try {
                 ServerConnector connector = new ServerConnector(server);
                 connector.setPort(getInsecurePortInUse());
+                if(httpsOnly) {
+                    // TODO: Help!  @akberenz, how do we use secure only?
+                }
                 if (secureConnector != null) {
                     //setup insecure connector before secure
                     server.setConnectors(new Connector[] {connector, secureConnector});
@@ -148,13 +157,13 @@ public class PrintSocketServer {
                     // Disable SNI checks for easier print-server testing (replicates Jetty 9.x behavior)
                     HttpConfiguration httpsConfig = new HttpConfiguration();
                     SecureRequestCustomizer customizer = new SecureRequestCustomizer();
-                    customizer.setSniHostCheck(false);
+                    customizer.setSniHostCheck(sniStrict);
                     httpsConfig.addCustomizer(customizer);
 
                     HttpConnectionFactory httpConnection = new HttpConnectionFactory(httpsConfig);
 
                     ServerConnector secureConnector = new ServerConnector(server, sslConnection, httpConnection);
-                    secureConnector.setHost(certManager.getProperties().getProperty("wss.host"));
+                    secureConnector.setHost(wssHost);
                     secureConnector.setPort(getSecurePortInUse());
                     server.setConnectors(new Connector[] {secureConnector});
 

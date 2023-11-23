@@ -29,6 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.installer.Installer;
+import qz.utils.ArgValue;
 import qz.utils.FileUtilities;
 import qz.utils.MacUtilities;
 import qz.utils.SystemUtilities;
@@ -60,10 +61,7 @@ public class CertificateManager {
 
     public static String DEFAULT_KEYSTORE_FORMAT = "PKCS12";
     public static String DEFAULT_KEYSTORE_EXTENSION = ".p12";
-
     public static String DEFAULT_CERTIFICATE_EXTENSION = ".crt";
-
-    private static String DEFAULT_HOST_SCOPE = "0.0.0.0";
     private static int DEFAULT_PASSWORD_BITS = 100;
 
     private boolean needsInstall;
@@ -331,7 +329,7 @@ public class CertificateManager {
         props.putIfAbsent(String.format("%s.alias", keyPair.propsPrefix()), keyPair.getAlias());
 
         if (keyPair.getType() == SSL) {
-            props.putIfAbsent(String.format("%s.host", keyPair.propsPrefix()), DEFAULT_HOST_SCOPE);
+            props.putIfAbsent(String.format("%s.host", keyPair.propsPrefix()), ArgValue.SECURITY_WSS_HOST.getDefaultVal());
         }
 
 

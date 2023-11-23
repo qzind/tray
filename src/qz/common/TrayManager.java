@@ -634,7 +634,7 @@ public class TrayManager {
 
     public void singleInstanceCheck(java.util.List<Integer> insecurePorts, Integer insecurePortIndex) {
         for(int port : insecurePorts) {
-            if (port != insecurePorts.get(insecurePortIndex)) {
+            if (insecurePortIndex == -1 || port != insecurePorts.get(insecurePortIndex)) {
                 new SingleInstanceChecker(this, port);
             }
         }

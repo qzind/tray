@@ -72,14 +72,18 @@ public class PrintSocketServer {
             secureConnector = server.getConnectors()[0];
         }
 
+        if (httpsOnly && secureConnector == null) {
+            log.error("Failed to start in https-only mode");
+            return;
+        }
+
         while(!running.get() && insecurePortIndex.get() < INSECURE_PORTS.size()) {
             try {
                 ServerConnector connector = new ServerConnector(server);
                 connector.setPort(getInsecurePortInUse());
                 if(httpsOnly) {
-                    // TODO: Help!  @akberenz, how do we use secure only?
-                }
-                if (secureConnector != null) {
+                    server.setConnectors(new Connector[] {secureConnector});
+                } else if (secureConnector != null) {
                     //setup insecure connector before secure
                     server.setConnectors(new Connector[] {connector, secureConnector});
                 } else {

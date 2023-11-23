@@ -53,11 +53,11 @@ public class SingleInstanceChecker {
     private WebSocketClient client;
 
 
-    public SingleInstanceChecker(TrayManager trayManager, int port) {
+    public SingleInstanceChecker(TrayManager trayManager, int port, boolean usingSecure) {
         this.trayManager = trayManager;
         log.debug("Checking for a running instance of {} on port {}", Constants.ABOUT_TITLE, port);
         autoCloseClient(AUTO_CLOSE);
-        connectTo("ws://localhost:" + port);
+        connectTo(String.format("%s//localhost:%d", (usingSecure ? "wss:" : "ws:"), port));
     }
 
     private void connectTo(String uri) {

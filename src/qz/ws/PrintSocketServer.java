@@ -128,7 +128,9 @@ public class PrintSocketServer {
                 running.set(true);
 
                 log.info("Server started on port(s) " + getPorts(server));
-                trayManager.setServer(server, httpsOnly ? -1 : insecurePortIndex.get());
+                int insecurePort = httpsOnly ? -1 : insecurePortIndex.get();
+                int securePort = secureConnector == null ? -1 : securePortIndex.get();
+                trayManager.setServer(server, insecurePort, securePort);
                 server.join();
             }
             catch(IOException | MultiException e) {

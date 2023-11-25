@@ -11,7 +11,6 @@ package qz.printer.action;
 
 import com.ibm.icu.text.ArabicShapingException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.ssl.Base64;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.rendering.PDFRenderer;
@@ -175,7 +174,7 @@ public class PrintRaw implements PrintProcessor {
             case PLAIN:
                 // There's really no such thing as a 'PLAIN' image, assume it's a URL
             case FILE:
-                bi = ImageIO.read(ConnectionUtilities.getInputStream(data));
+                bi = ImageIO.read(ConnectionUtilities.getInputStream(data, true));
                 break;
             default:
                 bi = ImageIO.read(new ByteArrayInputStream(seekConversion(flavor.read(data), rawOpts)));
@@ -191,7 +190,7 @@ public class PrintRaw implements PrintProcessor {
             case PLAIN:
                 // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
             case FILE:
-                doc = PDDocument.load(ConnectionUtilities.getInputStream(data));
+                doc = PDDocument.load(ConnectionUtilities.getInputStream(data, true));
                 break;
             default:
                 doc = PDDocument.load(new ByteArrayInputStream(seekConversion(flavor.read(data), rawOpts)));
@@ -329,7 +328,7 @@ public class PrintRaw implements PrintProcessor {
                     if (output.isSetHost()) {
                         printToHost(output.getHost(), output.getPort(), bab.getByteArray());
                     } else if (output.isSetFile()) {
-                        printToFile(output.getFile(), bab.getByteArray());
+                        printToFile(output.getFile(), bab.getByteArray(), true);
                     } else {
                         if (rawOpts.isForceRaw()) {
                             if(tempFiles == null) {
@@ -339,7 +338,7 @@ public class PrintRaw implements PrintProcessor {
                             if(tempFiles.size() <= j) {
                                 tempFile = File.createTempFile("qz_raw_", null);
                                 tempFiles.add(j, tempFile);
-                                printToFile(tempFile, bab.getByteArray());
+                                printToFile(tempFile, bab.getByteArray(), false);
                             } else {
                                 tempFile = tempFiles.get(j);
                             }
@@ -401,7 +400,15 @@ public class PrintRaw implements PrintProcessor {
      *
      * @param file File to be written
      */
-    private void printToFile(File file, byte[] cmds) throws IOException {
+    private void printToFile(File file, byte[] cmds, boolean locationRestricted) throws IOException {
+        if(file == null) throw new IOException("No file specified");
+
+        if(locationRestricted && !PrefsSearch.getBoolean(ArgValue.SECURITY_PRINT_TOFILE)) {
+            log.error("Printing to file '{}' is not permitted.  Configure property '{}' to modify this behavior.",
+                      file, ArgValue.SECURITY_PRINT_TOFILE.getMatch());
+            throw new IOException(String.format("Printing to file '%s' is not permitted", file));
+        }
+
         log.debug("Printing to file: {}", file.getName());
 
         //throws any exception and auto-closes stream

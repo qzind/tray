@@ -534,9 +534,10 @@ public class TrayManager {
         }
     }
 
-    public void setServer(Server server, int insecurePortIndex) {
+    public void setServer(Server server, int insecurePortInUse, int securePortInUse) {
         if (server != null && server.getConnectors().length > 0) {
-            singleInstanceCheck(PrintSocketServer.INSECURE_PORTS, insecurePortIndex);
+            singleInstanceCheck(PrintSocketServer.INSECURE_PORTS, insecurePortInUse, false);
+            singleInstanceCheck(PrintSocketServer.SECURE_PORTS, securePortInUse, true);
 
             displayInfoMessage("Server started on port(s) " + PrintSocketServer.getPorts(server));
 
@@ -632,10 +633,10 @@ public class TrayManager {
         }
     }
 
-    public void singleInstanceCheck(java.util.List<Integer> insecurePorts, Integer insecurePortIndex) {
-        for(int port : insecurePorts) {
-            if (port != insecurePorts.get(insecurePortIndex)) {
-                new SingleInstanceChecker(this, port);
+    public void singleInstanceCheck(java.util.List<Integer> ports, Integer portInUse, boolean usingSecure) {
+        for(int port : ports) {
+            if (portInUse == -1 || port != ports.get(portInUse)) {
+                new SingleInstanceChecker(this, port, usingSecure);
             }
         }
     }

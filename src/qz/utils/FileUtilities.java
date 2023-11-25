@@ -592,7 +592,7 @@ public class FileUtilities {
     }
 
     public static byte[] readRawFile(String url) throws IOException {
-        return readFile(new DataInputStream(ConnectionUtilities.getInputStream(url)));
+        return readFile(new DataInputStream(ConnectionUtilities.getInputStream(url, true)));
     }
 
     private static byte[] readFile(DataInputStream in) throws IOException {

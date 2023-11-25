@@ -74,10 +74,8 @@ public final class ConnectionUtilities {
         String[] protocols = allowed.split(",");
         // Loop over http, https, etc
         for(String protocol : protocols) {
-            if (url != null) {
-                if(urlProtocol.trim().equalsIgnoreCase(protocol.trim())) {
-                    return true;
-                }
+            if(urlProtocol.trim().equalsIgnoreCase(protocol.trim())) {
+                return true;
             }
         }
         // Allow exception for file: demo/assets

@@ -251,7 +251,11 @@ public class JLink {
                 Files.copy(jmodsPath.resolve("../../MacOS/libjli.dylib").normalize(), jliLib, StandardCopyOption.REPLACE_EXISTING);
             } catch(IOException ignore) {
                 // Fallback to flat format
-                Files.copy(jmodsPath.resolve("../lib/jli/libjli.dylib").normalize(), jliLib, StandardCopyOption.REPLACE_EXISTING);
+                String libjli = "../lib/jli/libjli.dylib";
+                if(javaSemver.getMajorVersion() >= 21) {
+                    libjli = "../lib/libjli.dylib";
+                }
+                Files.copy(jmodsPath.resolve(libjli).normalize(), jliLib, StandardCopyOption.REPLACE_EXISTING);
             }
 
             // Deploy Contents/Info.plist

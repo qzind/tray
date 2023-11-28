@@ -33,7 +33,6 @@ import qz.utils.ArgValue;
 import qz.utils.FileUtilities;
 import qz.utils.MacUtilities;
 import qz.utils.SystemUtilities;
-import sun.security.provider.SHA;
 
 import java.io.*;
 import java.math.BigInteger;

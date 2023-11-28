@@ -61,8 +61,8 @@ public class CertificateManager {
         // Skip shared location if running from IDE or build directory
         // Prevents corrupting the version installed per https://github.com/qzind/tray/issues/1200
         if(SystemUtilities.isJar() && SystemUtilities.isInstalled()) {
+            // Skip install location if running from sandbox (must remain sealed)
             if(!SystemUtilities.isMac() || !MacUtilities.isSandboxed()) {
-                // Sandboxed installations must remain sealed, don't write to them
                 SAVE_LOCATIONS.add(SystemUtilities.getJarParentPath());
             }
             SAVE_LOCATIONS.add(SHARED_DIR);

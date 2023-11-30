@@ -1,5 +1,6 @@
 <project name="linux-installer" basedir="../../">
     <property file="ant/project.properties"/>
+    <property file="ant/linux/linux.properties"/>
     <import file="${basedir}/ant/version.xml"/>
     <import file="${basedir}/ant/platform-detect.xml"/>
 

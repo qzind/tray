@@ -181,18 +181,9 @@ public class WebApp extends Application {
                     // Fallback for JDK11+
                     headless = true;
                 }
-                if (useMonocle && SystemUtilities.hasMonocle()) {
+                if (useMonocle) {
                     log.trace("Initializing monocle platform");
-                    System.setProperty("javafx.platform", "monocle");
-                    // Don't set glass.platform on Linux per https://github.com/qzind/tray/issues/702
-                    switch(SystemUtilities.getOsType()) {
-                        case WINDOWS:
-                        case MAC:
-                            System.setProperty("glass.platform", "Monocle");
-                            break;
-                        default:
-                            // don't set "glass.platform"
-                    }
+                    System.setProperty("glass.platform", "Headless");
 
                     //software rendering required headless environments
                     if (headless) {

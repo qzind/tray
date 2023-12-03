@@ -184,11 +184,6 @@ public class WebApp extends Application {
                 if (useMonocle) {
                     log.trace("Initializing monocle platform");
                     System.setProperty("glass.platform", "Headless");
-
-                    //software rendering required headless environments
-                    if (headless) {
-                        System.setProperty("prism.order", "sw");
-                    }
                 } else {
                     log.warn("Monocle platform will not be used");
                 }

@@ -288,10 +288,10 @@ public class TrayManager {
         monocleItem.setToolTipText("Use monocle platform for HTML printing (restart required)");
         monocleItem.setMnemonic(KeyEvent.VK_U);
         monocleItem.setState(getPref(TRAY_MONOCLE));
-        if(!SystemUtilities.hasMonocle()) {
-            log.warn("Monocle engine was not detected");
+        if(Constants.JAVA_VERSION.getMajorVersion() <= 8) {
+            log.warn("Monocle engine is not available for this Java version");
             monocleItem.setEnabled(false);
-            monocleItem.setToolTipText("Monocle HTML engine was not detected");
+            monocleItem.setToolTipText("Monocle HTML engine is not available.");
         }
         monocleItem.addActionListener(monocleListener);
 

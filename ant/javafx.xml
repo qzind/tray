@@ -207,6 +207,18 @@
             </not>
         </condition>
 
+        <!-- FIXME:
+             - Temporary Google Drive URL
+             - Linux x86_64 only
+             - Experimental "headless" build which no longer requires "monocle"
+        -->
+        <condition property="fx.url" value="https://drive.google.com/uc?export=download&amp;id=1DEHDHmY-96xJdFT3Wjf3y2zo0slQiaoL&amp;confirm=yes">
+            <and>
+                <equals arg1="${fx.arch}" arg2="x86_64"/>
+                <equals arg1="${fx.os}" arg2="linux"/>
+            </and>
+        </condition>
+
         <property name="fx.url" value="${javafx.mirror}/${fx.majver}/openjfx-${fx.urlver}-${fx.os.fixed}-${fx.arch.fixed}_bin-sdk.zip"/>
         <property name="fx.zip" value="${out.dir}/${fx.id}.zip"/>
 

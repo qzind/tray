@@ -3,6 +3,7 @@
 /**
  * @version 2.2.4-SNAPSHOT
  * @overview QZ Tray Connector
+ * @license CC0-1.0
  * <p/>
  * Connects a web client to the QZ Tray software.
  * Enables printing and device communication from javascript.

@@ -330,6 +330,21 @@ footer {
     border-radius: 0 6px 6px 6px;
 }
 
+.drag-target {
+    /* color: white; */
+  background: repeating-linear-gradient(
+    45deg,
+    #dbf0de,
+    #dbf0de 10px,
+    #a5d9ad 10px,
+    #a5d9ad 20px
+  );
+}
+
+input[type="file"] {
+    display: none;
+}
+
 button > .fa-caret-down {
     height: 100%;
     display: inline;
@@ -379,6 +394,10 @@ button > .fa-caret-down {
 
 .tip {
     border-bottom: 1px dashed;
+}
+
+summary {
+    cursor: pointer;
 }
 
 code {

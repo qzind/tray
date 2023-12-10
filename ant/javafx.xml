@@ -191,9 +191,21 @@
                     <equals arg1="${fx.arch}" arg2="aarch64"/>
                     <equals arg1="${fx.os}" arg2="windows"/>
                 </and>
+                <and>
+                    <!-- TODO: Remove "riscv" to "x64" when linux riscv64 binaries become available -->
+                    <equals arg1="${fx.arch}" arg2="riscv64"/>
+                    <equals arg1="${fx.os}" arg2="linux"/>
+                </and>
             </or>
         </condition>
         <property name="fx.arch.fixed" value="${fx.arch}" description="fallback value"/>
+
+        <!-- Fix underscore when "monocle" is missing -->
+        <condition property="fx.url" value="${javafx.mirror}/${fx.majver}/openjfx-${fx.urlver}_${fx.os.fixed}-${fx.arch.fixed}_bin-sdk.zip">
+            <not>
+                <contains string="${fx.urlver}" substring="monocle"/>
+            </not>
+        </condition>
 
         <property name="fx.url" value="${javafx.mirror}/${fx.majver}/openjfx-${fx.urlver}-${fx.os.fixed}-${fx.arch.fixed}_bin-sdk.zip"/>
         <property name="fx.zip" value="${out.dir}/${fx.id}.zip"/>

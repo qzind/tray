@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import qz.App;
+import qz.common.Constants;
 import qz.printer.status.job.WmiJobStatusMap;
 import qz.utils.*;
 import qz.ws.PrintSocketClient;
@@ -59,8 +60,7 @@ public class StatusSession {
         if (!SystemUtilities.isWindows()) {
             throw new UnsupportedOperationException("Job data listeners are only supported on Windows");
         }
-        String spoolFileMonitoring = PrefsSearch.get(App.getTrayProperties(), "printer.status.jobdata", "false", false );
-        if (!Boolean.parseBoolean(spoolFileMonitoring)) {
+        if (!PrefsSearch.getBoolean(ArgValue.PRINTER_STATUS_JOB_DATA, false, App.getTrayProperties())) {
             throw new UnsupportedOperationException("Job data listeners are currently disabled");
         }
         if (printerSpoolerMap.containsKey(printer)) {

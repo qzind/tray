@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import qz.printer.info.CachedPrintServiceLookup;
 import qz.printer.info.NativePrinter;
 import qz.printer.info.NativePrinterMap;
 import qz.utils.SystemUtilities;
@@ -22,23 +23,34 @@ import qz.utils.SystemUtilities;
 import javax.print.PrintService;
 import javax.print.PrintServiceLookup;
 import javax.print.attribute.ResolutionSyntax;
-import javax.print.attribute.standard.Media;
-import javax.print.attribute.standard.MediaTray;
-import javax.print.attribute.standard.PrinterName;
-import javax.print.attribute.standard.PrinterResolution;
-import java.util.Locale;
+import javax.print.attribute.standard.*;
+import java.util.*;
 
 public class PrintServiceMatcher {
     private static final Logger log = LogManager.getLogger(PrintServiceMatcher.class);
     private static boolean mediaTrayMessageShown = false;
     private static boolean printerNamesShown = false;
 
+    // PrintService is slow in CUPS, use a cache instead per JDK-7001133
+    // TODO: Include JDK version test for caching when JDK-7001133 is fixed upstream
+    private static final boolean useCache = SystemUtilities.isUnix();
+
     public static NativePrinterMap getNativePrinterList(boolean silent, boolean withAttributes) {
         NativePrinterMap printers = NativePrinterMap.getInstance();
-        printers.putAll(PrintServiceLookup.lookupPrintServices(null, null));
+        printers.putAll(true, lookupPrintServices());
         if (withAttributes) { printers.values().forEach(NativePrinter::getDriverAttributes); }
         if (!silent) { log.debug("Found {} printers", printers.size()); }
         return printers;
+    }
+
+    private static PrintService[] lookupPrintServices() {
+        return useCache ? CachedPrintServiceLookup.lookupPrintServices() :
+                PrintServiceLookup.lookupPrintServices(null, null);
+    }
+
+    private static PrintService lookupDefaultPrintService() {
+        return useCache ? CachedPrintServiceLookup.lookupDefaultPrintService() :
+                PrintServiceLookup.lookupDefaultPrintService();
     }
 
     public static NativePrinterMap getNativePrinterList(boolean silent) {
@@ -50,7 +62,7 @@ public class PrintServiceMatcher {
     }
 
     public static NativePrinter getDefaultPrinter() {
-        PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
+        PrintService defaultService = lookupDefaultPrintService();
 
         if(defaultService == null) {
             return null;
@@ -58,7 +70,7 @@ public class PrintServiceMatcher {
 
         NativePrinterMap printers = NativePrinterMap.getInstance();
         if (!printers.contains(defaultService)) {
-            printers.putAll(defaultService);
+            printers.putAll(false, defaultService);
         }
 
         return printers.get(defaultService);
@@ -86,6 +98,8 @@ public class PrintServiceMatcher {
 
         if (!silent) { log.debug("Searching for PrintService matching {}", printerSearch); }
 
+        // Fix for https://github.com/qzind/tray/issues/931
+        // This is more than an optimization, removal will lead to a regression
         NativePrinter defaultPrinter = getDefaultPrinter();
         if (defaultPrinter != null && printerSearch.equals(defaultPrinter.getName())) {
             if (!silent) { log.debug("Matched default printer, skipping further search"); }
@@ -158,7 +172,7 @@ public class PrintServiceMatcher {
     public static JSONArray getPrintersJSON(boolean includeDetails) throws JSONException {
         JSONArray list = new JSONArray();
 
-        PrintService defaultService = PrintServiceLookup.lookupDefaultPrintService();
+        PrintService defaultService = lookupDefaultPrintService();
 
         for(NativePrinter printer : getNativePrinterList().values()) {
             PrintService ps = printer.getPrintService().value();
@@ -180,8 +194,43 @@ public class PrintServiceMatcher {
                     log.info("Gathering MediaTray information for {}...", jsonService.get("name"));
                 }
 
+                HashSet<String> uniqueSizes = new HashSet<>(); // prevents duplicates
+                JSONArray trays = new JSONArray();
+                JSONArray sizes = new JSONArray();
+
                 for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
-                    if (m instanceof MediaTray) { jsonService.accumulate("trays", m.toString()); }
+                    if (m instanceof MediaTray) { trays.put(m.toString()); }
+                    if (m instanceof MediaSizeName) {
+                        if(uniqueSizes.add(m.toString())) {
+                            MediaSize mediaSize = MediaSize.getMediaSizeForName((MediaSizeName)m);
+                            if(mediaSize == null) {
+                                continue;
+                            }
+
+                            JSONObject size = new JSONObject();
+                            size.put("name", m.toString());
+
+                            JSONObject in = new JSONObject();
+                            in.put("width", mediaSize.getX(MediaPrintableArea.INCH));
+                            in.put("height", mediaSize.getY(MediaPrintableArea.INCH));
+                            size.put("in", in);
+
+                            JSONObject mm = new JSONObject();
+                            mm.put("width", mediaSize.getX(MediaPrintableArea.MM));
+                            mm.put("height", mediaSize.getY(MediaPrintableArea.MM));
+                            size.put("mm", mm);
+
+                            sizes.put(size);
+                        }
+
+                    }
+                }
+
+                if(trays.length() > 0) {
+                    jsonService.put("trays", trays);
+                }
+                if(sizes.length() > 0) {
+                    jsonService.put("sizes", sizes);
                 }
 
                 PrinterResolution res = printer.getResolution().value();

@@ -79,11 +79,16 @@ public class WindowsUtilities {
             build = getRegInt(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "UBR").toString();
         }
 
-        return Version.forIntegers(
+        Version osVersion = Version.forIntegers(
                 versionInfo.dwMajorVersion.intValue(),
                 versionInfo.dwMinorVersion.intValue(),
                 versionInfo.dwBuildNumber.intValue()
-        ).setBuildMetadata(build);
+        );
+
+        if(!build.trim().isEmpty()) {
+            osVersion.setBuildMetadata(build);
+        }
+        return osVersion;
     }
 
     /**

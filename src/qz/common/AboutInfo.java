@@ -14,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.installer.certificate.CertificateManager;
+import qz.utils.MacUtilities;
 import qz.utils.StringUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
@@ -96,7 +97,8 @@ public class AboutInfo {
                 .put("java (location)", System.getProperty("java.home"))
                 .put("java (vendor)", Constants.JAVA_VENDOR)
                 .put("uptime", DurationFormatUtils.formatDurationWords(uptime, true, false))
-                .put("uptimeMillis", uptime);
+                .put("uptimeMillis", uptime)
+                .put("sandbox", SystemUtilities.isMac() && MacUtilities.isSandboxed());
 
         return environment;
     }

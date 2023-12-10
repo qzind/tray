@@ -22,7 +22,8 @@
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/gh-fork-ribbon.min.css" />
 
-<body id="qz-page" role="document">
+<body id="qz-page" role="document"  ondrop="handleFileDrop(event);" ondragover="drag(event, true);" ondragleave="drag(event, false);">
+<input id="fileUpload" type="file"/>
 <a class="github-fork-ribbon" href="https://github.com/qzind/tray" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
 
 <nav class="navbar navbar-default navbar-static-top" role="navigation">
@@ -46,7 +47,11 @@
 <div class="container" role="main">
 
     <div class="row">
-        <h1 id="title" class="page-header">QZ Tray v<span id="qz-version">0</span></h1>
+        <h1 id="title" class="page-header">QZ Tray v<span id="qz-version">0</span>
+            <a class="pull-right btn btn-primary btn" target="_blank" href="https://qz.io/download">
+                <i class="fa fa-download"></i> Download QZ Tray
+            </a>
+        </h1>
     </div>
 
     <div class="row spread">
@@ -116,9 +121,9 @@
                     <div class="form-group">
                         <div class="btn-group" role="group">
                             <button type="button" class="btn btn-default btn-sm" onclick="setPrinter($('#printerSearch').val());">Set To Search</button>
-                            <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#askFileModal">Set To File</button>
                             <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#askHostModal">Set To Host</button>
                         </div>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="clearQueue($('#printerSearch').val());">Clear Queue</button>
                     </div>
                 </div>
             </div>
@@ -216,7 +221,9 @@
                             <div id="rawCommandsGroup" class="btn-group">
                                 <button type="button" class="btn btn-default" onclick="printCommand();">Commands</button>
                                 <button type="button" class="btn btn-default" onclick="printHex();">Hex</button>
+                                <button id="rawDropBtn" type="button" class="btn btn-primary" onclick="printFileDrop(event);" data-type="raw">Hidden</button>
                             </div>
+                            <label for="fileUpload" type="button" class="btn btn-default"><i class="fa fa-folder-open-o"></i> Upload a file...</label>
                         </div>
                         <div class="form-group">
                             <div>
@@ -361,6 +368,8 @@
                             <button type="button" class="btn btn-default" onclick="printHTML();">Print HTML</button>
                             <button type="button" class="btn btn-default" onclick="printPDF();">Print PDF</button>
                             <button type="button" class="btn btn-default" onclick="printImage();">Print Image</button>
+                            <button id="pxlDropBtn" type="button" class="btn btn-primary" onclick="printFileDrop(event);" data-type="pixel"></button>
+                            <label for="fileUpload" type="button" class="btn btn-default upload-button"><i class="fa fa-folder-open-o"></i> Upload a file...</label>
                         </div>
                     </div>
                 </div>
@@ -613,8 +622,12 @@
                                                 <input type="number" id="pPxlHeight" class="form-control pull-right" />
                                             </div>
                                             <div class="form-group form-inline">
-                                                <label for="pPxlTransparent">Ignore Transparency:</label>
+                                                <label for="pPxlTransparent">Ignore Transparency (PDF only):</label>
                                                 <input type="checkbox" id="pPxlTransparent" class="pull-right" />
+                                            </div>
+                                            <div class="form-group form-inline">
+                                                <label for="pPxlAltFontRendering">Alternate Font Rendering  (PDF only):</label>
+                                                <input type="checkbox" id="pPxlAltFontRendering" class="pull-right" />
                                             </div>
                                         </div>
                                     </div>
@@ -1138,7 +1151,7 @@
                                         <div class="col-md-6 pull-right">
                                             <div class="form-group form-inline">
                                                 <label class="tip" for="maxJobData" data-toggle="tooltip" title="Maximum size in bytes of spool file content to return (Windows only)">
-                                                Raw Job Data Size
+                                                    Raw Job Data Size
                                                 </label>
                                                 <input type="number" id="maxJobData" class="pull-right"/>
                                             </div>
@@ -1335,27 +1348,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <div class="modal fade" id="askFileModal" role="dialog">
-        <div class="modal-dialog modal-sm" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="askFile">File:</label>
-                        <input type="text" id="askFile" class="form-control" value="C:\tmp\example-file.txt" />
-                        <hr />
-                        <p><span class="text-danger" style="font-weight:bold;"><span class="fa fa-warning"></span> WARNING:</span> This feature has been deprecated.  Please configure a local raw <code>FILE:</code> printer, or use <code>File IO</code></a> instead.  For more
-                            information please see <a href="https://github.com/qzind/tray/issues/730">issue&nbsp;<code>#730</code>.</a></p>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="setPrintFile();">Set</button>
                 </div>
             </div>
         </div>
@@ -1588,7 +1580,8 @@
         qz.printers.find().then(function(data) {
             var list = '';
             for(var i = 0; i < data.length; i++) {
-                list += "&nbsp; " + data[i] + "<br/>";
+                var button = '<button class="btn btn-default btn-xs" onclick="findPrinter(\'' + data[i].replace(/\\/g, "\\\\") + '\', true)" data-dismiss="alert">Use This</button>'
+                list += "&nbsp; " + data[i] + "&nbsp;" + button + "<br/>";
             }
 
             displayMessage("<strong>Available printers:</strong><br/>" + list, null, 15000);
@@ -1604,11 +1597,51 @@
                     "<li><strong>Density:</strong> " + data[i].density + "dpi</li>" +
                     "<li><strong>Connection:</strong> " + data[i].connection + "</li>" +
                     (data[i].trays ? "<li><strong>Trays:</strong> " + data[i].trays + "</li>" : "") +
+                    accumulateSizes(data[i]) +
                     "</ul></li>";
             }
 
             pinMessage("<strong>Printer details:</strong><br/><ul>" + list + "</ul>");
         }).catch(displayError);
+    }
+
+    function accumulateSizes(data) {
+        var html = "";
+        if(data.sizes) {
+            var html = "<li><details><summary><strong><u>Sizes:</u></strong> (" + data.sizes.length + ")</summary> ";
+            var sizes = data.sizes;
+            html += "<ul>";
+            for(var i = 0; i < sizes.length; i++) {
+                html += "<li><details><summary><u>" + sizes[i].name + "</u></summary><ul>";
+
+                var inch = sizes[i].in.width + " x " + sizes[i].in.height;
+                var mill = sizes[i].mm.width + " x " + sizes[i].mm.height;
+
+                var inchTrunc = truncate(sizes[i].in.width, 3) + "&nbsp;x&nbsp;" + truncate(sizes[i].in.height, 3);
+                var millTrunc = truncate(sizes[i].mm.width, 3) + "&nbsp;x&nbsp;" + truncate(sizes[i].mm.height, 3);
+
+                html += "<li style='text-overflow: ellipsis;' title='" + inch + "'><strong>in:</strong>&nbsp;" + inchTrunc + "</li>";
+                html += "<li style='text-overflow: ellipsis;' title='" + mill + "'><strong>mm:</strong>&nbsp;" + millTrunc + "</li>";
+
+                html += "</ul></details></li>";
+            }
+            html += "</ul></details></li>";
+        }
+        return html;
+    }
+
+    function truncate(val, length, ellipsis) {
+        var truncated;
+        if(isNaN(val)) {
+            truncated = val.substring(0, length);
+        } else {
+            var mult = Math.pow(10, length);
+            truncated = Math.floor(val * mult) / mult;
+        }
+        if(ellipsis === false) {
+            return truncated;
+        }
+        return val === truncated ? val : truncated + "&hellip;";
     }
 
 
@@ -2033,6 +2066,9 @@
         qz.print(config, printData).catch(displayError);
     }
 
+    function clearQueue(printer) {
+        qz.printers.clearQueue(printer).catch(displayError);
+    }
 
     /// Pixel Printers ///
     function printHTML() {
@@ -2086,6 +2122,24 @@
             { type: 'pixel', format: 'image', flavor: 'file', data: 'assets/img/image_sample.png' }
             //also valid, as format and flavor will default to proper values:
 //             { type: 'pixel', data: 'assets/img/image_sample.png' }
+        ];
+
+        qz.print(config, printData).catch(displayError);
+    }
+
+    function printFileDrop(evt) {
+        var button = evt.target || evt.srcElement;
+
+        var config = getUpdatedConfig();
+
+        var type = $(button).attr('data-type');
+        var format = $(button).attr('data-format');
+        var flavor = $(button).attr('data-flavor');
+        var base64 = $(button).attr('data-base64').split('base64,')[1];
+        var opts = getUpdatedOptions(type === 'pixel');
+
+        var printData = [
+            { type: type, format: format, flavor: flavor, data: base64, options: opts }
         ];
 
         qz.print(config, printData).catch(displayError);
@@ -2565,6 +2619,9 @@
         $("#rawForceRaw").prop('checked', false);
         $("#rawCopies").val(1);
 
+        //file upload
+        $("#rawDropBtn").hide();
+
         //printer
         $("#pLangEPL").prop('checked', true);
         $("#pX").val('0');
@@ -2617,6 +2674,9 @@
         $("#pxlBoundHeight").val('');
         $("#pxlBoundsActive").prop('checked', false);
         $("#pxlBoundsGroup").css('display', 'none');
+
+        //file upload
+        $("#pxlDropBtn").hide();
 
         //printer
         $("#pPxlWidth").val('');
@@ -2677,6 +2737,10 @@
         var lang = $("input[name='pLanguage']:checked").parent('label').text().trim();
 
         var appendLang = function(element, lang) {
+            // Skip formatting of file drop button if format = "command"
+            if($(element).attr("data-format") === "command") {
+                return;
+            }
             var text = $(element).html();
             var label = text.split("(")[0];
             $(element).html(label + " (<strong>" + lang + "</strong>)");
@@ -2758,6 +2822,12 @@
         $("#fileButton").on('change', function(e) {
             if (this.files && this.files[0]) {
                 $("#fileLocation").val(this.files[0]['name']);
+            }
+        });
+
+        $("#fileUpload").on('change', function(e) {
+            if (this.files && this.files[0]) {
+                handleFileDrop(this.files);
             }
         });
 
@@ -2889,13 +2959,6 @@
             qzVersion = data;
         }).catch(displayError);
     }
-
-    $("#askFileModal").on("shown.bs.modal", function() {
-        $("#askFile").focus().select();
-    });
-    $("#askHostModal").on("shown.bs.modal", function() {
-        $("#askHost").focus().select();
-    });
 
     //make dirty when changed
     $("input").add("select").on('change', function() {
@@ -3231,7 +3294,8 @@
                 pageWidth: $("#pPxlWidth").val(),
                 pageHeight: $("#pPxlHeight").val(),
                 pageRanges: $("#pPxlRange").val(),
-                ignoreTransparency: $("#pPxlTransparent").prop('checked')
+                ignoreTransparency: $("#pPxlTransparent").prop('checked'),
+                altFontRendering: $("#pPxlAltFontRendering").prop('checked')
             };
         } else {
             return {
@@ -3282,11 +3346,6 @@
         return options;
     }
 
-    function setPrintFile() {
-        setPrinter({ file: $("#askFile").val() });
-        $("#askFileModal").modal('hide');
-    }
-
     function setPrintHost() {
         setPrinter({ host: $("#askHost").val(), port: $("#askPort").val() });
         $("#askHostModal").modal('hide');
@@ -3315,6 +3374,116 @@
                 printer = 'NONE';
             }
             $("#configPrinter").html(printer);
+        }
+    }
+
+    function getBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    function handleFileDrop(evt) {
+        var file;
+        var stayOnTab = false;
+
+        if(evt.dataTransfer && evt.dataTransfer.items) {
+            // Event from button
+            evt.preventDefault();
+
+            var item = evt.dataTransfer.items[0];
+            if(item.kind === "file") {
+                file = item.getAsFile();
+            } else {
+                displayError("Please drag a valid file");
+                return;
+            }
+        } else {
+            var files = evt;
+            // Event from file upload
+            file = files[0];
+            // Ensure we're on the right tab
+            stayOnTab = true;
+        }
+        
+        var setupDropButton = function(format, name, data, stayOnTab) {
+            var tabHref;
+            var buttonId;
+            switch(format) {
+                case "pdf":
+                case "html":
+                case "image":
+                    buttonId = "#pxlDropBtn"
+                    tabHref = "#pxlContent";
+                    break;
+                default:
+                    buttonId = "#rawDropBtn"
+                    tabHref = "#rawContent";
+            }
+            
+            var button = $(buttonId);
+            if(stayOnTab) {
+                // File upload button can't change tabs
+                if($("#pxlContent").is(":visible") && format === "command") {
+                    displayError('File format "' + format + '" is not supported on this tab.');
+                    return;
+                }
+                if($("#rawContent").is(":visible") && format !== "command") {
+                    button = $("#rawDropBtn");
+                }
+            } else {
+                // Select the appropriate tab
+                $(".nav-tabs a[href='" + tabHref + "']").tab('show');
+            }
+
+            // Show the appropriate button
+            button.attr("data-format", format);
+            button.attr("data-flavor", "base64");
+            button.attr("data-base64", data);
+            button.html('Print dropped "' + name + '"');
+            button.show();
+            updateRawButtons();
+            button.fadeOut(300).fadeIn(500);
+        }
+
+        if (file) {
+            console.log("Dropped file:", file);
+            getBase64(file).then(function(base64) { 
+                var name = file.name;
+                var extension = name.substring(name.lastIndexOf('.') + 1, name.length) || '';
+                switch(extension.toLowerCase()) {
+                    case 'pdf':
+                        setupDropButton("pdf", name, base64, stayOnTab);
+                        break;
+                    case 'htm':
+                    case 'html':
+                        setupDropButton("html", name, base64, stayOnTab);
+                        break;
+                    case 'png':
+                    case 'jpg':
+                    case 'jpeg':
+                    case 'gif':
+                    case 'bmp':
+                        setupDropButton("image", name, base64, stayOnTab);
+                        break;
+                    // assume all others are "raw"
+                    default:
+                        setupDropButton("command", name, base64, stayOnTab);
+                }
+            }).catch(displayError); 
+        }
+        $("#qz-page").removeClass("drag-target"); 
+    }
+
+    function drag(evt, entering) {
+        evt.preventDefault();
+        if(entering) {
+            $("#qz-page").addClass("drag-target");
+        } else {
+            $("#qz-page").removeClass("drag-target");
         }
     }
 </script>

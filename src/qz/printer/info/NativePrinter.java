@@ -57,10 +57,6 @@ public class NativePrinter {
 
         @Override
         public boolean equals(Object o) {
-            // PrintService.equals(...) is very slow in CUPS; use the pointer
-            if (SystemUtilities.isUnix() && value instanceof PrintService) {
-                return o == value;
-            }
             if (value != null) {
                 return value.equals(o);
             }
@@ -69,6 +65,7 @@ public class NativePrinter {
     }
 
     private final String printerId;
+
     private boolean outdated;
     private PrinterProperty<String> description;
     private PrinterProperty<PrintService> printService;

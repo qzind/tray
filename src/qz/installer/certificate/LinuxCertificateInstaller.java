@@ -152,7 +152,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
         boolean installed = ShellUtilities.execute("which", "certutil");
         if (!installed) {
             if (certType == SYSTEM && promptCertutil()) {
-                if(UnixUtilities.isUbuntu()) {
+                if(UnixUtilities.isUbuntu() || UnixUtilities.isDebian()) {
                     installed = ShellUtilities.execute("apt-get", "install", "-y", "libnss3-tools");
                 } else if(UnixUtilities.isFedora()) {
                     installed =  ShellUtilities.execute("dnf", "install", "-y", "nss-tools");
@@ -171,7 +171,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
             return true;
         }
         try {
-            SystemUtilities.setSystemLookAndFeel();
+            SystemUtilities.setSystemLookAndFeel(true);
             return JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(null, "A critical component, \"certutil\" wasn't found.  Attempt to fetch it now?");
         } catch(Throwable ignore) {}
         return true;

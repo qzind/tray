@@ -47,12 +47,28 @@ public enum Vendor implements Parsable {
             case AARCH64:
                 // All vendors seem to use "aarch64" universally
                 return "aarch64";
+            case ARM32:
+                switch(this) {
+                    case BELLSOFT:
+                        return "arm32-vfp-hflt";
+                    case AZUL:
+                        return "aarch32hf";
+                    case MICROSOFT:
+                    case IBM:
+                        throw new UnsupportedOperationException("Vendor does not provide builds for this architecture");
+                    case AMAZON:
+                    case ECLIPSE:
+                    default:
+                        return "arm";
+                }
             case AMD64:
                 switch(this) {
                     // BellSoft uses "amd64"
                     case BELLSOFT:
                         return "amd64";
                 }
+            case RISCV64:
+                return "riscv64";
             default:
                 return "x64";
         }

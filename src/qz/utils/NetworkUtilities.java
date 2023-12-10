@@ -29,6 +29,8 @@ public class NetworkUtilities {
 
     private static final Logger log = LogManager.getLogger(NetworkUtilities.class);
 
+    public static int SOCKET_TIMEOUT = 4 * 60 * 1000;
+
     private static NetworkUtilities instance;
     private static String systemName = SystemUtilities.getHostName();
     private static String userName = System.getProperty("user.name");
@@ -106,6 +108,7 @@ public class NetworkUtilities {
         log.info("Initiating a temporary connection to \"{}:{}\" to determine main Network Interface", hostname, port);
 
         Socket socket = new Socket();
+        socket.setSoTimeout(SOCKET_TIMEOUT);
         socket.connect(new InetSocketAddress(hostname, port));
 
         return socket.getLocalAddress();

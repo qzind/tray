@@ -74,6 +74,12 @@ public class WebApp extends Application {
     private static ChangeListener<Worker.State> stateListener = (ov, oldState, newState) -> {
         log.trace("New state: {} > {}", oldState, newState);
 
+        // Cancelled should probably throw exception listener, but does not
+        if (newState == Worker.State.CANCELLED) {
+            // This can happen for file downloads, e.g. "response-content-disposition=attachment"
+            // See https://github.com/qzind/tray/issues/1183
+            unlatch(new IOException("Page load was cancelled for an unknown reason"));
+        }
         if (newState == Worker.State.SUCCEEDED) {
             boolean hasBody = (boolean)webView.getEngine().executeScript("document.body != null");
             if (!hasBody) {
@@ -141,6 +147,8 @@ public class WebApp extends Application {
 
     //listens for load progress
     private static ChangeListener<Number> workDoneListener = (ov, oldWork, newWork) -> log.trace("Done: {} > {}", oldWork, newWork);
+
+    private static ChangeListener<String> msgListener = (ov, oldMsg, newMsg) -> log.trace("New status: {}", newMsg);
 
     //listens for failures
     private static ChangeListener<Throwable> exceptListener = (obs, oldExc, newExc) -> {
@@ -242,6 +250,7 @@ public class WebApp extends Application {
         worker.stateProperty().addListener(stateListener);
         worker.workDoneProperty().addListener(workDoneListener);
         worker.exceptionProperty().addListener(exceptListener);
+        worker.messageProperty().addListener(msgListener);
 
         //prevents JavaFX from shutting down when hiding window
         Platform.setImplicitExit(false);

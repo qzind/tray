@@ -84,23 +84,33 @@ public class App {
     }
 
     private static void setupFileLogging() {
+        //disable jetty logging
+        System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
+        System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
+
+        if(PrefsSearch.getBoolean(ArgValue.LOG_DISABLE)) {
+            return;
+        }
+
+        int logSize = PrefsSearch.getInt(ArgValue.LOG_SIZE);
+        int logRotate = PrefsSearch.getInt(ArgValue.LOG_ROTATE);
+        Installer.getInstance().cleanupLegacyLogs(Math.max(logRotate, 5));
         RollingFileAppender fileAppender = RollingFileAppender.newBuilder()
                 .setName("log-file")
                 .withAppend(true)
                 .setLayout(PatternLayout.newBuilder().withPattern("%d{ISO8601} [%p] %m%n").build())
                 .setFilter(ThresholdFilter.createFilter(Level.DEBUG, Filter.Result.ACCEPT, Filter.Result.DENY))
                 .withFileName(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log")
-                .withFilePattern(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".log.%i")
-                .withStrategy(DefaultRolloverStrategy.newBuilder().withMax(String.valueOf(Constants.LOG_ROTATIONS)).build())
-                .withPolicy(SizeBasedTriggeringPolicy.createPolicy(String.valueOf(Constants.LOG_SIZE)))
+                .withFilePattern(FileUtilities.USER_DIR + File.separator + Constants.LOG_FILE + ".%i.log")
+                .withStrategy(DefaultRolloverStrategy.newBuilder()
+                                      .withMax(String.valueOf(logRotate))
+                                      .withFileIndex("min")
+                                      .build())
+                .withPolicy(SizeBasedTriggeringPolicy.createPolicy(String.valueOf(logSize)))
                 .withImmediateFlush(true)
                 .build();
         fileAppender.start();
 
         LoggerUtilities.getRootLogger().addAppender(fileAppender);
-
-        //disable jetty logging
-        System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
-        System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
     }
 }

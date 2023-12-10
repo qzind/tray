@@ -5,7 +5,9 @@ package qz.build.jlink;
  */
 public enum Arch implements Parsable {
     AMD64("amd64", "x86_64", "x64"),
-    AARCH64("aarch64", "arm64");
+    AARCH64("aarch64", "arm64"),
+    ARM32("arm", "arm32", "arm32hf", "aarch32", "aarch32hf"),
+    RISCV64("riscv", "riscv64");
 
     public final String[] matches;
     Arch(String ... matches) { this.matches = matches; }

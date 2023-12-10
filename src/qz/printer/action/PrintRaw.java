@@ -11,7 +11,6 @@ package qz.printer.action;
 
 import com.ibm.icu.text.ArabicShapingException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.ssl.Base64;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.rendering.PDFRenderer;
@@ -47,6 +46,7 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -146,7 +146,7 @@ public class PrintRaw implements PrintProcessor {
 
     private byte[] seekConversion(byte[] rawBytes, PrintOptions.Raw rawOpts) {
         if (rawOpts.getSrcEncoding() != null) {
-            if(rawOpts.getSrcEncoding().equals(rawOpts.getDestEncoding())) {
+            if(rawOpts.getSrcEncoding().equals(rawOpts.getDestEncoding()) || rawOpts.getDestEncoding() == null) {
                 log.warn("Provided srcEncoding and destEncoding are the same, skipping");
             } else {
                 try {
@@ -174,7 +174,7 @@ public class PrintRaw implements PrintProcessor {
             case PLAIN:
                 // There's really no such thing as a 'PLAIN' image, assume it's a URL
             case FILE:
-                bi = ImageIO.read(ConnectionUtilities.getInputStream(data));
+                bi = ImageIO.read(ConnectionUtilities.getInputStream(data, true));
                 break;
             default:
                 bi = ImageIO.read(new ByteArrayInputStream(seekConversion(flavor.read(data), rawOpts)));
@@ -190,7 +190,7 @@ public class PrintRaw implements PrintProcessor {
             case PLAIN:
                 // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
             case FILE:
-                doc = PDDocument.load(ConnectionUtilities.getInputStream(data));
+                doc = PDDocument.load(ConnectionUtilities.getInputStream(data, true));
                 break;
             default:
                 doc = PDDocument.load(new ByteArrayInputStream(seekConversion(flavor.read(data), rawOpts)));
@@ -217,7 +217,7 @@ public class PrintRaw implements PrintProcessor {
                 // We'll toggle between 'plain' and 'file' when we construct WebAppModel
                 break;
             default:
-                data = new String(seekConversion(flavor.read(data), rawOpts), rawOpts.getDestEncoding());
+                data = new String(seekConversion(flavor.read(data), rawOpts), destEncoding);
         }
 
         double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
@@ -320,21 +320,34 @@ public class PrintRaw implements PrintProcessor {
             pages.add(commands);
         }
 
+        List<File> tempFiles = null;
         for(int i = 0; i < rawOpts.getCopies(); i++) {
-            for(ByteArrayBuilder bab : pages) {
+            for(int j = 0; j < pages.size(); j++) {
+                ByteArrayBuilder bab = pages.get(j);
                 try {
                     if (output.isSetHost()) {
                         printToHost(output.getHost(), output.getPort(), bab.getByteArray());
                     } else if (output.isSetFile()) {
-                        printToFile(output.getFile(), bab.getByteArray());
+                        printToFile(output.getFile(), bab.getByteArray(), true);
                     } else {
                         if (rawOpts.isForceRaw()) {
+                            if(tempFiles == null) {
+                                tempFiles = new ArrayList<>(pages.size());
+                            }
+                            File tempFile;
+                            if(tempFiles.size() <= j) {
+                                tempFile = File.createTempFile("qz_raw_", null);
+                                tempFiles.add(j, tempFile);
+                                printToFile(tempFile, bab.getByteArray(), false);
+                            } else {
+                                tempFile = tempFiles.get(j);
+                            }
                             if(SystemUtilities.isWindows()) {
                                 // Placeholder only; not yet supported
-                                printToBackend(output.getNativePrinter(), bab.getByteArray(), rawOpts.isRetainTemp(), Backend.WIN32_WMI);
+                                printToBackend(output.getNativePrinter(), tempFile, Backend.WIN32_WMI);
                             } else {
                                 // Try CUPS backend first, fallback to LPR
-                                printToBackend(output.getNativePrinter(), bab.getByteArray(), rawOpts.isRetainTemp(), Backend.CUPS_RSS, Backend.CUPS_LPR);
+                                printToBackend(output.getNativePrinter(), tempFile, Backend.CUPS_RSS, Backend.CUPS_LPR);
                             }
                         } else {
                             printToPrinter(output.getPrintService(), bab.getByteArray(), rawOpts);
@@ -342,8 +355,26 @@ public class PrintRaw implements PrintProcessor {
                     }
                 }
                 catch(IOException e) {
+                    cleanupTempFiles(rawOpts.isRetainTemp(), tempFiles);
                     throw new PrintException(e);
                 }
+            }
+        }
+        cleanupTempFiles(rawOpts.isRetainTemp(), tempFiles);
+    }
+
+    private void cleanupTempFiles(boolean retainTemp, List<File> tempFiles) {
+        if(tempFiles != null) {
+            if (!retainTemp) {
+                for(File tempFile : tempFiles) {
+                    if(tempFile != null) {
+                        if(!tempFile.delete()) {
+                            tempFile.deleteOnExit();
+                        }
+                    }
+                }
+            } else {
+                log.warn("Temp file(s) retained: {}", Arrays.toString(tempFiles.toArray()));
             }
         }
     }
@@ -369,7 +400,15 @@ public class PrintRaw implements PrintProcessor {
      *
      * @param file File to be written
      */
-    private void printToFile(File file, byte[] cmds) throws IOException {
+    private void printToFile(File file, byte[] cmds, boolean locationRestricted) throws IOException {
+        if(file == null) throw new IOException("No file specified");
+
+        if(locationRestricted && !PrefsSearch.getBoolean(ArgValue.SECURITY_PRINT_TOFILE)) {
+            log.error("Printing to file '{}' is not permitted.  Configure property '{}' to modify this behavior.",
+                      file, ArgValue.SECURITY_PRINT_TOFILE.getMatch());
+            throw new IOException(String.format("Printing to file '%s' is not permitted", file));
+        }
+
         log.debug("Printing to file: {}", file.getName());
 
         //throws any exception and auto-closes stream
@@ -447,44 +486,32 @@ public class PrintRaw implements PrintProcessor {
     /**
      * Direct/backend printing modes for forced raw printing
      */
-    public void printToBackend(NativePrinter printer, byte[] cmds, boolean retainTemp, Backend... backends) throws IOException, PrintException {
-        File tmp = File.createTempFile("qz_raw_", null);
+    public void printToBackend(NativePrinter printer, File tempFile, Backend... backends) throws IOException, PrintException {
         boolean success = false;
-        try {
-            printToFile(tmp, cmds);
-            for(Backend backend : backends) {
-                switch(backend) {
-                    case CUPS_LPR:
-                        // Use command line "lp" on Linux, BSD, Solaris, OSX, etc.
-                        String[] lpCmd = new String[] {"lp", "-d", printer.getPrinterId(), "-o", "raw", tmp.getAbsolutePath()};
-                        if (!(success = ShellUtilities.execute(lpCmd))) {
-                            log.debug(StringUtils.join(lpCmd, ' '));
-                        }
-                        break;
-                    case CUPS_RSS:
-                        // Submit job via cupsDoRequest(...) via JNA against localhost:631\
-                        success = CupsUtils.sendRawFile(printer, tmp);
-                        break;
-                    case WIN32_WMI:
-                    default:
-                        throw new UnsupportedOperationException("Raw backend \"" + backend + "\" is not yet supported.");
-                }
-                if(success) {
+
+        for(Backend backend : backends) {
+            switch(backend) {
+                case CUPS_LPR:
+                    // Use command line "lp" on Linux, BSD, Solaris, OSX, etc.
+                    String[] lpCmd = new String[] {"lp", "-d", printer.getPrinterId(), "-o", "raw", tempFile.getAbsolutePath()};
+                    if (!(success = ShellUtilities.execute(lpCmd))) {
+                        log.debug(StringUtils.join(lpCmd, ' '));
+                    }
                     break;
-                }
+                case CUPS_RSS:
+                    // Submit job via cupsDoRequest(...) via JNA against localhost:631\
+                    success = CupsUtils.sendRawFile(printer, tempFile);
+                    break;
+                case WIN32_WMI:
+                default:
+                    throw new UnsupportedOperationException("Raw backend \"" + backend + "\" is not yet supported.");
             }
-            if (!success) {
-                throw new PrintException("Forced raw printing failed");
+            if(success) {
+                break;
             }
         }
-        finally {
-            if(!retainTemp) {
-                if (!tmp.delete()) {
-                    tmp.deleteOnExit();
-                }
-            } else{
-                log.warn("Temp file retained: {}", tmp);
-            }
+        if (!success) {
+            throw new PrintException("Forced raw printing failed");
         }
     }
 

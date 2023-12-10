@@ -243,6 +243,19 @@ public class UnixUtilities {
         return uname != null && uname.contains("Ubuntu");
     }
 
+    /**
+     * Returns whether the output of {@code uname -a} shell command contains "Debian"
+     *
+     * @return {@code true} if this OS is Debian
+     */
+    public static boolean isDebian() {
+        if(!SystemUtilities.isLinux()) {
+            return false;
+        }
+        getUname();
+        return uname != null && uname.contains("Debian");
+    }
+
 
     /**
      * Returns whether the output of <code>cat /etc/redhat-release/code> shell command contains "Fedora"

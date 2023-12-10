@@ -3,15 +3,29 @@
 # Halt on first error
 set -e
 
+# Clear the log for writing
+> "${install.log}"
+
+# Log helper
+dbg () {
+    echo -e "[BASH] $(date -Iseconds)\n\t$1" >> "${install.log}" 2>&1
+}
+
 # Get working directory
+dbg "Calculating working directory..."
 DIR=$(cd "$(dirname "$0")" && pwd)
-pushd "$DIR/payload/${project.name}.app/Contents/MacOS/"
+dbg "Using working directory $DIR"
+dbg "Switching to payload directory $DIR/payload/${project.name}.app/Contents/MacOS/"
+pushd "$DIR/payload/${project.name}.app/Contents/MacOS/" >> "${install.log}" 2>&1
 
 # Offer to download Java if missing
-if ! ./"${project.name}" --version; then
+dbg "Checking for Java in payload directory..."
+if ! ./"${project.name}" --version >> "${install.log}" 2>&1; then
+    dbg "Java was not found"
     osascript -e "tell app \"Installer\" to display dialog \"Java is required.  Please install Java and try again.\""
     sudo -u "$USER" open "${java.download}"
     exit 1
 fi
 
-./"${project.name}" preinstall
+dbg "Java was found in payload directory, running preinstall"
+./"${project.name}" preinstall >> "${install.log}" 2>&1

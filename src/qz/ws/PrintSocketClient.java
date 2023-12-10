@@ -20,10 +20,8 @@ import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.status.StatusMonitor;
-import qz.printer.status.StatusSession;
 import qz.utils.*;
 
-import javax.management.ListenerNotFoundException;
 import javax.usb.util.UsbUtil;
 import java.awt.*;
 import java.io.EOFException;
@@ -164,19 +162,33 @@ public class PrintSocketClient {
                 }
             }
 
-            processMessage(session, json, connection, request);
-        }
-        catch(UnsatisfiedLinkError | LoaderException e) {
-            log.error("A component is missing or broken, preventing this feature from working", e);
-            sendError(session, UID, "Sorry, this feature is unavailable at this time");
+            //spawn thread to prevent long processes from blocking
+            final String tUID = UID;
+            new Thread(() -> {
+                try {
+                    processMessage(session, json, connection, request);
+                }
+                catch(UnsatisfiedLinkError | LoaderException e) {
+                    log.error("A component is missing or broken, preventing this feature from working", e);
+                    sendError(session, tUID, "Sorry, this feature is unavailable at this time");
+                }
+                catch(JSONException e) {
+                    log.error("Bad JSON: {}", e.getMessage());
+                    sendError(session, tUID, e);
+                }
+                catch(InvalidPathException | FileSystemException e) {
+                    log.error("FileIO exception occurred", e);
+                    sendError(session, tUID, String.format("FileIO exception occurred: %s: %s", e.getClass().getSimpleName(), e.getMessage()));
+                }
+                catch(Exception e) {
+                    log.error("Problem processing message", e);
+                    sendError(session, tUID, e);
+                }
+            }).start();
         }
         catch(JSONException e) {
             log.error("Bad JSON: {}", e.getMessage());
             sendError(session, UID, e);
-        }
-        catch(InvalidPathException | FileSystemException e) {
-            log.error("FileIO exception occurred", e);
-            sendError(session, UID, String.format("FileIO exception occurred: %s: %s", e.getClass().getSimpleName(), e.getMessage()));
         }
         catch(Exception e) {
             log.error("Problem processing message", e);
@@ -211,7 +223,7 @@ public class PrintSocketClient {
      * @param session WebSocket session
      * @param json    JSON received from web API
      */
-    private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, DeviceException, IOException, ListenerNotFoundException {
+    private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, DeviceException, IOException {
         String UID = json.optString("uid");
         SocketMethod call = SocketMethod.findFromCall(json.optString("call"));
         JSONObject params = json.optJSONObject("params");
@@ -277,14 +289,14 @@ public class PrintSocketClient {
                 sendResult(session, UID, PrintServiceMatcher.getPrintersJSON(true));
                 break;
             case PRINTERS_START_LISTENING:
-                if (!connection.hasStatusListener()) {
-                    connection.startStatusListener(new StatusSession(session));
+                if (StatusMonitor.startListening(connection, session, params)) {
+                    sendResult(session, UID, null);
+                } else {
+                    sendError(session, UID, "Listening failed.");
                 }
-                StatusMonitor.startListening(connection, params);
-                sendResult(session, UID, null);
                 break;
             case PRINTERS_GET_STATUS:
-                if (connection.hasStatusListener()) {
+                if (StatusMonitor.isListening(connection)) {
                     StatusMonitor.sendStatuses(connection);
                 } else {
                     sendError(session, UID, "No printer listeners started for this client.");
@@ -292,9 +304,11 @@ public class PrintSocketClient {
                 sendResult(session, UID, null);
                 break;
             case PRINTERS_STOP_LISTENING:
-                if (connection.hasStatusListener()) {
-                    connection.stopStatusListener();
-                }
+                StatusMonitor.stopListening(connection);
+                sendResult(session, UID, null);
+                break;
+            case PRINTERS_CLEAR_QUEUE:
+                PrintingUtilities.cancelJobs(session, UID, params);
                 sendResult(session, UID, null);
                 break;
             case PRINT:
@@ -530,6 +544,8 @@ public class PrintSocketClient {
                 break;
             }
             case FILE_STOP_LISTENING: {
+                // Coerce to trusted state for unsigned request
+                request.setStatus(RequestState.Validity.TRUSTED);
                 if (params.isNull("path")) {
                     connection.removeAllFileListeners();
                     sendResult(session, UID, null);

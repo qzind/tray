@@ -269,6 +269,18 @@
     </target>
 
     <target name="add-certificates" depends="get-identity">
+        <!-- Remove expired certificates -->
+        <exec executable="security">
+            <arg value="delete-certificate"/>
+            <arg value="-Z"/>
+            <arg value="A69020D49B47383064ADD5779911822850235953"/>
+        </exec>
+        <exec executable="security">
+            <arg value="delete-certificate"/>
+            <arg value="-Z"/>
+            <arg value="6FD7892971854384AF40FAD1E0E6C56A992BC5EE"/>
+        </exec>
+
         <exec executable="security">
             <arg value="add-certificates"/>
             <arg value="${basedir}/ant/apple/certs/apple-packager.cer"/>

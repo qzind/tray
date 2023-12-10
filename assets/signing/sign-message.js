@@ -28,8 +28,8 @@
  *
  * Steps:
  *
- *     1. Include jsrsasign 8.0.4 into your web page
- *        <script src="https://cdn.rawgit.com/kjur/jsrsasign/c057d3447b194fa0a3fdcea110579454898e093d/jsrsasign-all-min.js"></script>
+ *     1. Include jsrsasign 10.9.0 into your web page
+ *        <script src="https://www.unpkg.com/jsrsasign@10.9.0"></script>
  *
  *     2. Update the privateKey below with contents from private-key.pem
  *
@@ -37,6 +37,9 @@
  *        <script src="path/to/sign-message.js"></script>
  *
  *     4. Remove or comment out any other references to "setSignaturePromise"
+ *
+ *     5. IMPORTANT: Before deploying to production, copy "jsrsasign-all-min.js"
+ *        to the web server.  Don't trust the CDN above to be available.
  */
 var privateKey = "-----BEGIN PRIVATE KEY-----\n" +
    "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC0z9FeMynsC8+u\n" +

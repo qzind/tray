@@ -14,6 +14,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
@@ -53,17 +57,27 @@ public class SingleInstanceChecker {
     private WebSocketClient client;
 
 
-    public SingleInstanceChecker(TrayManager trayManager, int port) {
+    public SingleInstanceChecker(TrayManager trayManager, int port, boolean usingSecure) {
         this.trayManager = trayManager;
         log.debug("Checking for a running instance of {} on port {}", Constants.ABOUT_TITLE, port);
         autoCloseClient(AUTO_CLOSE);
-        connectTo("ws://localhost:" + port);
+        String uri = String.format("%s//localhost:%d", (usingSecure ? "wss:" : "ws:"), port);
+        connectTo(uri, usingSecure);
     }
 
-    private void connectTo(String uri) {
+    private void connectTo(String uri, boolean usingSecure) {
         try {
             if (client == null) {
-                client = new WebSocketClient();
+                if(usingSecure) {
+                    // Self-signed certs won't be trusted, create "trustAll" connector
+                    SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(true);
+                    ClientConnector clientConnector = new ClientConnector();
+                    clientConnector.setSslContextFactory(sslContextFactory);
+                    HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
+                    client = new WebSocketClient(httpClient);
+                } else {
+                    client = new WebSocketClient();
+                }
                 client.start();
                 client.setConnectTimeout(TIMEOUT);
                 client.setIdleTimeout(Duration.ofMillis(TIMEOUT));

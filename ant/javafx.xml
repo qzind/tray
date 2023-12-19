@@ -223,7 +223,7 @@
         </condition>
         <property description="fallback value" name="headless.patch" value="314"/>
 
-        <property name="headless.base" value="https://download2.gluonhq.com/openjfx/forks/johanvos/headless"/>
+        <property name="headless.base" value="https://download2.gluonhq.com/openjfx/forks/johan/headless"/>
 
         <condition property="fx.url" value="${headless.base}/openjfx-${headless.version}+${headless.patch}_headless_${fx.os}-${fx.arch}_bin-sdk.zip">
             <equals arg1="${fx.arch}" arg2="x86_64"/>

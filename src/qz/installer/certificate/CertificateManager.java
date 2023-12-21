@@ -409,9 +409,15 @@ public class CertificateManager {
 
     public static Properties loadKeyPair(KeyPairWrapper keyPair, Path parent, Properties existing) throws Exception {
         Properties props;
+
         if (existing == null) {
-            props = new Properties();
-            props.load(new FileInputStream(new File(parent.toFile(), Constants.PROPS_FILE + ".properties")));
+            FileInputStream fis = null;
+            try {
+                props = new Properties();
+                props.load(fis = new FileInputStream(new File(parent.toFile(), Constants.PROPS_FILE + ".properties")));
+            } finally {
+                if(fis != null) fis.close();
+            }
         } else {
             props = existing;
         }

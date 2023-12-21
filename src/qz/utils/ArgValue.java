@@ -51,6 +51,8 @@ public enum ArgValue {
     // Build stubs
     JLINK(BUILD, "Download, compress and bundle a Java Runtime", "jlink [--platform mac|windows|linux] [--arch x64|aarch64] [--vendor bellsoft|eclipse|...] [--version ...] [--gc hotspot|openj9] [--gcversion ...]", null,
           "jlink"),
+    PROVISION(BUILD, "Provision/bundle addition settings or resources into this installer", "provision --json file.json [--target-os windows --target-arch x86_64]", null,
+            "provision"),
 
     // Parameter stubs
     TRAY_NOTIFICATIONS(PREFERENCES, "Show verbose connect/disconnect notifications in the tray area", null, false,

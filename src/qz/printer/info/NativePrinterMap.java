@@ -21,7 +21,7 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
 
     public static NativePrinterMap getInstance() {
         if (instance == null) {
-            switch(SystemUtilities.getOsType()) {
+            switch(SystemUtilities.getOs()) {
                 case WINDOWS:
                     instance = new WindowsPrinterMap();
                     break;

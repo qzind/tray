@@ -13,7 +13,7 @@ import java.util.Properties;
  * Created by Tres on 12/16/2015.
  */
 public class PropertyHelper extends Properties {
-    private static final Logger log = LogManager.getLogger(TrayManager.class);
+    private static final Logger log = LogManager.getLogger(PropertyHelper.class);
     private String file;
 
     /**

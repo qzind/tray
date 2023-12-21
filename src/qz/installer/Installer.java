@@ -14,8 +14,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
+import qz.build.provision.params.Phase;
 import qz.installer.certificate.*;
 import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
+import qz.installer.provision.ProvisionInstaller;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
@@ -59,7 +61,7 @@ public abstract class Installer {
 
     public static Installer getInstance() {
         if(instance == null) {
-            switch(SystemUtilities.getOsType()) {
+            switch(SystemUtilities.getOs()) {
                 case WINDOWS:
                     instance = new WindowsInstaller();
                     break;
@@ -94,13 +96,15 @@ public abstract class Installer {
         getInstance();
         log.info("Installing to {}", instance.getDestination());
         instance.removeLibs()
+                .removeProvisioning()
                 .deployApp()
                 .removeLegacyStartup()
                 .removeLegacyFiles()
                 .addSharedDirectory()
                 .addAppLauncher()
                 .addStartupEntry()
-                .addSystemSettings();
+                .addSystemSettings()
+                .invokeProvisioning(Phase.INSTALL);
     }
 
     public static void uninstall() {
@@ -110,7 +114,8 @@ public abstract class Installer {
         log.info("Uninstalling from {}", instance.getDestination());
         instance.removeSharedDirectory()
                 .removeSystemSettings()
-                .removeCerts();
+                .removeCerts()
+                .invokeProvisioning(Phase.UNINSTALL);
     }
 
     public Installer deployApp() throws IOException {
@@ -126,7 +131,10 @@ public abstract class Installer {
         // Note: preserveFileDate=false per https://github.com/qzind/tray/issues/1011
         FileUtils.copyDirectory(src.toFile(), dest.toFile(), false);
         FileUtilities.setPermissionsRecursively(dest, false);
-
+        // Fix permissions for provisioned files
+        FileUtilities.setExecutableRecursively(SystemUtilities.isMac() ?
+                                                       dest.resolve("Contents/Resources").resolve(PROVISION_DIR) :
+                                                       dest.resolve(PROVISION_DIR), false);
         if(!SystemUtilities.isWindows()) {
             setExecutable(SystemUtilities.isMac() ? "Contents/Resources/uninstall" : "uninstall");
             setExecutable(SystemUtilities.isMac() ? "Contents/MacOS/" + ABOUT_TITLE : PROPS_FILE);
@@ -302,18 +310,24 @@ public abstract class Installer {
             log.error("Something went wrong obtaining the certificate.  HTTPS will fail.", e);
         }
 
+        // Add provisioning steps that come after certgen
+        if(SystemUtilities.isAdmin()) {
+            invokeProvisioning(Phase.CERTGEN);
+        }
+
         return certificateManager;
     }
 
     /**
      * Remove matching certs from user|system, then Firefox
      */
-    public void removeCerts() {
+    public Installer removeCerts() {
         // System certs
         NativeCertificateInstaller instance = NativeCertificateInstaller.getInstance();
         instance.remove(instance.find());
         // Firefox certs
         FirefoxCertificateInstaller.uninstall();
+        return this;
     }
 
     /**
@@ -336,6 +350,31 @@ public abstract class Installer {
             }
         }
         return instance;
+    }
+
+    public Installer invokeProvisioning(Phase phase) {
+        try {
+            Path provisionPath = SystemUtilities.isMac() ?
+                    Paths.get(getDestination()).resolve("Contents/Resources").resolve(PROVISION_DIR) :
+                    Paths.get(getDestination()).resolve(PROVISION_DIR);
+            ProvisionInstaller provisionInstaller = new ProvisionInstaller(provisionPath);
+            provisionInstaller.invoke(phase);
+        } catch(Exception e) {
+            log.warn("An error occurred deleting provisioning directory \"phase\": \"{}\" entries", phase, e);
+        }
+        return this;
+    }
+
+    public Installer removeProvisioning() {
+        try {
+            Path provisionPath = SystemUtilities.isMac() ?
+                    Paths.get(getDestination()).resolve("Contents/Resources").resolve(PROVISION_DIR) :
+                    Paths.get(getDestination()).resolve(PROVISION_DIR);
+            FileUtils.deleteDirectory(provisionPath.toFile());
+        } catch(Exception e) {
+            log.warn("An error occurred removing provision directory",  e);
+        }
+        return this;
     }
 
     public static Properties persistProperties(File oldFile, Properties newProps) {

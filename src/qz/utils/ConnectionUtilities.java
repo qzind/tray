@@ -191,15 +191,16 @@ public final class ConnectionUtilities {
     }
 
     private static String getArch() {
-        switch(SystemUtilities.getJreArch()) {
+        switch(SystemUtilities.getArch()) {
             case X86:
             case X86_64:
                 return "x86";
             case AARCH64:
                 return "arm";
-            case RISCV:
+            case RISCV32:
+            case RISCV64:
                 return "riscv";
-            case PPC:
+            case PPC64:
                 return "ppc";
             default:
                 return "unknown";
@@ -213,13 +214,14 @@ public final class ConnectionUtilities {
             return bitness;
         }
         // fallback on some sane, hard-coded values
-        switch(SystemUtilities.getJreArch()) {
-            case ARM:
+        switch(SystemUtilities.getArch()) {
+            case ARM32:
+            case RISCV32:
             case X86:
                 return "32";
             case X86_64:
-            case RISCV:
-            case PPC:
+            case RISCV64:
+            case PPC64:
             default:
                 return "64";
         }
@@ -278,7 +280,7 @@ public final class ConnectionUtilities {
 
     private static String getUserAgentArch() {
         String arch;
-        switch (SystemUtilities.getJreArch()) {
+        switch (SystemUtilities.getArch()) {
             case X86:
                 arch = "x86";
                 break;
@@ -289,7 +291,7 @@ public final class ConnectionUtilities {
                 arch = SystemUtilities.OS_ARCH;
         }
 
-        switch(SystemUtilities.getOsType()) {
+        switch(SystemUtilities.getOs()) {
             case LINUX:
                 return "Linux " + arch;
             case WINDOWS:

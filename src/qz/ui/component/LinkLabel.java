@@ -6,6 +6,8 @@ import qz.common.Constants;
 import qz.ui.Themeable;
 import qz.utils.ShellUtilities;
 
+import javax.accessibility.AccessibleContext;
+import javax.accessibility.AccessibleRole;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -75,6 +77,7 @@ public class LinkLabel extends EmLabel implements Themeable {
         Map<TextAttribute,Object> attributes = new HashMap<>(getFont().getAttributes());
         attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
         setFont(getFont().deriveFont(attributes));
+        setFocusable(true);
 
         actionListeners = new ArrayList<>();
 
@@ -121,4 +124,18 @@ public class LinkLabel extends EmLabel implements Themeable {
         actionListeners.remove(action);
     }
 
+    @Override
+    public AccessibleContext getAccessibleContext() {
+        if (accessibleContext == null) {
+            accessibleContext = new AccessibleLinkLabel();
+        }
+        return accessibleContext;
+    }
+
+    protected class AccessibleLinkLabel extends AccessibleJLabel {
+        @Override
+        public AccessibleRole getAccessibleRole() {
+            return AccessibleRole.HYPERLINK;
+        }
+    }
 }

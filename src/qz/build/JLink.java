@@ -233,6 +233,8 @@ public class JLink {
                 depList.add(item);
             }
         }
+        // the jdk.accessibility package is used if JAB is enabled; JDeps misses this, leading to a missing class runtime error. see #1234
+        if (targetPlatform == Platform.WINDOWS) depList.add("jdk.accessibility");
         // "jar:" URLs create transient zipfs dependency, see https://stackoverflow.com/a/57846672/3196753
         depList.add("jdk.zipfs");
         // fix for https://github.com/qzind/tray/issues/894 solution from https://github.com/adoptium/adoptium-support/issues/397
@@ -283,7 +285,8 @@ public class JLink {
             String keepExt;
             switch(targetPlatform) {
                 case WINDOWS:
-                    keepFiles = new String[]{ "java.exe", "javaw.exe" };
+                    // Jabswitch is a tool for enabling and disabling accessibility support on windows
+                    keepFiles = new String[]{ "java.exe", "javaw.exe", "jabswitch.exe"};
                     // Windows stores ".dll" files in bin
                     keepExt = ".dll";
                     break;

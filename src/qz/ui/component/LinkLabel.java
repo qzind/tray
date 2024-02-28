@@ -8,11 +8,9 @@ import qz.utils.ShellUtilities;
 
 import javax.accessibility.AccessibleContext;
 import javax.accessibility.AccessibleRole;
+import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
 import java.awt.font.TextAttribute;
 import java.io.File;
 import java.net.MalformedURLException;
@@ -72,7 +70,6 @@ public class LinkLabel extends EmLabel implements Themeable {
         addActionListener(ae -> ShellUtilities.browseDirectory(filePath.isDirectory()? filePath.getPath():filePath.getParent()));
     }
 
-
     private void initialize() {
         Map<TextAttribute,Object> attributes = new HashMap<>(getFont().getAttributes());
         attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
@@ -80,6 +77,17 @@ public class LinkLabel extends EmLabel implements Themeable {
         setFocusable(true);
 
         actionListeners = new ArrayList<>();
+
+        this.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("released SPACE"), "pressed");
+        this.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke("pressed ENTER"), "pressed");
+        this.getActionMap().put("pressed", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                for(ActionListener actionListener : actionListeners) {
+                    actionListener.actionPerformed(new ActionEvent(e.getSource(), e.getID(), "keyClicked"));
+                }
+            }
+        });
 
         addMouseListener(new MouseListener() {
             @Override

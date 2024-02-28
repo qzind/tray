@@ -233,7 +233,7 @@ public class JLink {
         }
         switch(targetPlatform) {
             case WINDOWS:
-                // Java accessibility bridge dependency, see https://github.com/adoptium/adoptium-support/issues/1234
+                // Java accessibility bridge dependency, see https://github.com/qzind/tray/issues/1234
                 depList.add("jdk.accessibility");
             default:
                 // "jar:" URLs create transient zipfs dependency, see https://stackoverflow.com/a/57846672/3196753

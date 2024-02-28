@@ -6,6 +6,8 @@ import qz.common.Constants;
 import qz.ui.Themeable;
 import qz.utils.ShellUtilities;
 
+import javax.accessibility.AccessibleContext;
+import javax.accessibility.AccessibleRole;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.font.TextAttribute;
@@ -80,5 +82,18 @@ public class LinkLabel extends JButton implements Themeable {
         setBorder(null);
         setOpaque(false);
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    }
+
+    public AccessibleContext getAccessibleContext() {
+        if (accessibleContext == null) {
+            accessibleContext = new AccessibleLinkLabel();
+        }
+        return accessibleContext;
+    }
+
+    protected class AccessibleLinkLabel extends AccessibleJButton {
+        public AccessibleRole getAccessibleRole() {
+            return AccessibleRole.HYPERLINK;
+        }
     }
 }

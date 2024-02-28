@@ -26,9 +26,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Properties;
+import java.util.*;
 
 public class JLink {
     private static final Logger log = LogManager.getLogger(JLink.class);
@@ -233,12 +231,16 @@ public class JLink {
                 depList.add(item);
             }
         }
-        // the jdk.accessibility package is used if JAB is enabled; JDeps misses this, leading to a missing class runtime error. see #1234
-        if (targetPlatform == Platform.WINDOWS) depList.add("jdk.accessibility");
-        // "jar:" URLs create transient zipfs dependency, see https://stackoverflow.com/a/57846672/3196753
-        depList.add("jdk.zipfs");
-        // fix for https://github.com/qzind/tray/issues/894 solution from https://github.com/adoptium/adoptium-support/issues/397
-        depList.add("jdk.crypto.ec");
+        switch(targetPlatform) {
+            case WINDOWS:
+                // Java accessibility bridge dependency, see https://github.com/adoptium/adoptium-support/issues/1234
+                depList.add("jdk.accessibility");
+            default:
+                // "jar:" URLs create transient zipfs dependency, see https://stackoverflow.com/a/57846672/3196753
+                depList.add("jdk.zipfs");
+                // fix for https://github.com/qzind/tray/issues/894 solution from https://github.com/adoptium/adoptium-support/issues/397
+                depList.add("jdk.crypto.ec");
+        }
         return this;
     }
 
@@ -281,17 +283,22 @@ public class JLink {
             log.info("Successfully deployed a jre to {}", outPath);
 
             // Remove all but java/javaw
-            String[] keepFiles;
+            List<String> keepFiles = new ArrayList<>();
+            //String[] keepFiles;
             String keepExt;
             switch(targetPlatform) {
                 case WINDOWS:
-                    // Jabswitch is a tool for enabling and disabling accessibility support on windows
-                    keepFiles = new String[]{ "java.exe", "javaw.exe", "jabswitch.exe"};
+                    keepFiles.add("java.exe");
+                    keepFiles.add("javaw.exe");
+                    if(depList.contains("jdk.accessibility")) {
+                        // Java accessibility bridge switching tool
+                        keepFiles.add("jabswitch.exe");
+                    }
                     // Windows stores ".dll" files in bin
                     keepExt = ".dll";
                     break;
                 default:
-                    keepFiles = new String[]{ "java" };
+                    keepFiles.add("java");
                     keepExt = null;
             }
 

@@ -5,6 +5,8 @@ import org.apache.logging.log4j.Logger;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.KeyPairWrapper;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import static qz.installer.certificate.KeyPairWrapper.Type.CA;
@@ -88,6 +90,22 @@ public class PrefsSearch {
 
     public static int getInt(ArgValue argValue, Properties ... propsArray) {
         return getInt(argValue, true, propsArray);
+    }
+
+    public static Integer[] getIntegerArray(ArgValue argValue, Properties ... propsArray) {
+        List<Integer> parsed = new ArrayList<>();
+        String unparsed = getString(argValue, propsArray);
+        try {
+            if (unparsed != null && !unparsed.isEmpty()) {
+                String[] split = unparsed.split(",");
+                for(String item : split) {
+                    parsed.add(Integer.parseInt(item));
+                }
+            }
+        } catch(NumberFormatException nfe) {
+            log.warn("Failed parsing {} as {}", unparsed, argValue, nfe);
+        }
+        return parsed.toArray(new Integer[parsed.size()]);
     }
 
     public static boolean getBoolean(ArgValue argValue, Properties ... propsArray) {

@@ -1474,7 +1474,7 @@ var qz = (function() {
              *   @param {number} [options.bounds.y=0] Distance from top for bounding box starting corner
              *   @param {number} [options.bounds.width=0] Width of bounding box
              *   @param {number} [options.bounds.height=0] Height of bounding box
-             *  @param {string} [options.colorType='color'] Valid values <code>[color | grayscale | blackwhite]</code>
+             *  @param {string} [options.colorType='color'] Valid values <code>[color | grayscale | blackwhite | default]</code>
              *  @param {number} [options.copies=1] Number of copies to be printed.
              *  @param {number|Array<number>|Object|Array<Object>|string} [options.density=0] Pixel density (DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *      If provided as an array, uses the first supported density found (or the first entry if none found).

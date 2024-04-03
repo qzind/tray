@@ -37,7 +37,7 @@ public abstract class PrintPixel {
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();
 
         //apply general attributes
-        if (pxlOpts.getColorType() != null) {
+        if (pxlOpts.getColorType().getAsChromaticity() != null) {
             attributes.add(pxlOpts.getColorType().getAsChromaticity());
         }
         attributes.add(pxlOpts.getDuplex());

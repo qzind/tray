@@ -734,7 +734,8 @@ public class PrintOptions {
         COLOR(Chromaticity.COLOR),
         GREYSCALE(Chromaticity.MONOCHROME),
         GRAYSCALE(Chromaticity.MONOCHROME),
-        BLACKWHITE(Chromaticity.MONOCHROME);
+        BLACKWHITE(Chromaticity.MONOCHROME),
+        DEFAULT(null);
 
         private final Chromaticity chromatic;
 

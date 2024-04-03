@@ -192,7 +192,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             settings.setJobName(pxlOpts.getJobName(Constants.HTML_PRINT));
             settings.setPrintQuality(PrintQuality.HIGH);
 
-            if (pxlOpts.getColorType() != null) {
+            if (pxlOpts.getColorType().getAsChromaticity() != null) {
                 settings.setPrintColor(getColor(pxlOpts));
             }
             if (pxlOpts.getDuplex() == Sides.DUPLEX || pxlOpts.getDuplex() == Sides.TWO_SIDED_LONG_EDGE) {

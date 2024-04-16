@@ -856,9 +856,9 @@ var qz = (function() {
                 if(_qz.tools.versionCompare(2, 2, 4) < 0) {
                     for(var i = 0; i < printData.length; i++) {
                         if (printData[i].constructor === Object) {
-                            // Allow dotDensity "double" fallback behavior for newly added "legacy-double", etc.
+                            // Allow dotDensity "double" fallback behavior for newly added "double-legacy", etc.
                             if (printData[i].options && typeof printData[i].options.dotDensity === 'string') {
-                                printData[i].options.dotDensity = printData[i].options.dotDensity.toLowerCase().replace("legacy-", "");
+                                printData[i].options.dotDensity = printData[i].options.dotDensity.toLowerCase().replace("-legacy", "");
                             }
                         }
                     }

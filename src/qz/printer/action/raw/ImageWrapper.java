@@ -85,6 +85,8 @@ public class ImageWrapper {
     private boolean igpDots = false; // PGL only, toggle IGP/PGL default resolution of 72dpi
     private int dotDensity = 32;  // Generally 32 = Single (normal) 33 = Double (higher res) for ESC/POS.  Irrelevant for all other languages.
 
+    private boolean legacyMode = false; // Use newlines for ESC/POS spacing; simulates <=2.0.11 behavior
+
     /**
      * Creates a new
      * <code>ImageWrapper</code> from a
@@ -199,7 +201,8 @@ public class ImageWrapper {
     }
 
     public void setDotDensity(int dotDensity) {
-        this.dotDensity = dotDensity;
+        this.legacyMode = dotDensity < 0;
+        this.dotDensity = Math.abs(dotDensity);
     }
 
     public void setLogoId(String logoId) {
@@ -584,9 +587,6 @@ public class ImageWrapper {
      * @param builder the ByteArrayBuilder to use
      */
     private void appendEpsonSlices(ByteArrayBuilder builder) {
-        // Use newlines for spacing; simulate <=2.0.11 behavior
-        // FIXME: Make this configurable
-        boolean legacyMode = true;
         // set line height to the size of each chunk we will be sending
         int segmentHeight = dotDensity > 1 ? 24 : (dotDensity == 1 ? 8 : 16); // height will be handled explicitly below if striping
         // Impact printers (U220, etc) benefit from double-pass striping (odd/even) for higher quality (dotDensity = 1)

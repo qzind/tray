@@ -853,6 +853,17 @@ var qz = (function() {
                     }
                 }
 
+                if(_qz.tools.versionCompare(2, 2, 4) < 0) {
+                    for(var i = 0; i < printData.length; i++) {
+                        if (printData[i].constructor === Object) {
+                            // Allow dotDensity "double" fallback behavior for newly added "legacy-double", etc.
+                            if (printData[i].options && typeof printData[i].options.dotDensity === 'string') {
+                                printData[i].options.dotDensity = printData[i].options.dotDensity.toLowerCase().replace("legacy-", "");
+                            }
+                        }
+                    }
+                }
+
                 if (_qz.tools.isVersion(2, 0)) {
                     /*
                     2.0.x conversion

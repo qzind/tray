@@ -43,7 +43,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 public class PrintHTML extends PrintImage implements PrintProcessor {
 
@@ -192,7 +191,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             settings.setJobName(pxlOpts.getJobName(Constants.HTML_PRINT));
             settings.setPrintQuality(PrintQuality.HIGH);
 
-            if (pxlOpts.getColorType().getAsChromaticity() != null) {
+            if (pxlOpts.getColorType() != PrintOptions.ColorType.DEFAULT) {
                 settings.setPrintColor(getColor(pxlOpts));
             }
             if (pxlOpts.getDuplex() == Sides.DUPLEX || pxlOpts.getDuplex() == Sides.TWO_SIDED_LONG_EDGE) {

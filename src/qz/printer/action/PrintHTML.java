@@ -191,6 +191,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             settings.setJobName(pxlOpts.getJobName(Constants.HTML_PRINT));
             settings.setPrintQuality(PrintQuality.HIGH);
 
+            // If colortype is default, leave printColor blank. The system's printer settings will be used instead.
             if (pxlOpts.getColorType() != PrintOptions.ColorType.DEFAULT) {
                 settings.setPrintColor(getColor(pxlOpts));
             }

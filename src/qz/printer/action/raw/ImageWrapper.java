@@ -85,6 +85,8 @@ public class ImageWrapper {
     private boolean igpDots = false; // PGL only, toggle IGP/PGL default resolution of 72dpi
     private int dotDensity = 32;  // Generally 32 = Single (normal) 33 = Double (higher res) for ESC/POS.  Irrelevant for all other languages.
 
+    private boolean legacyMode = false; // Use newlines for ESC/POS spacing; simulates <=2.0.11 behavior
+
     /**
      * Creates a new
      * <code>ImageWrapper</code> from a
@@ -199,7 +201,8 @@ public class ImageWrapper {
     }
 
     public void setDotDensity(int dotDensity) {
-        this.dotDensity = dotDensity;
+        this.legacyMode = dotDensity < 0;
+        this.dotDensity = Math.abs(dotDensity);
     }
 
     public void setLogoId(String logoId) {
@@ -590,6 +593,11 @@ public class ImageWrapper {
         boolean stripe = dotDensity == 1;
         int bytesNeeded = (dotDensity <= 1 || stripe)? 1:3;
 
+        if(legacyMode) {
+            // Temporarily set line spacing to 24 dots
+            builder.append(new byte[] { 0x1B, 0x33, 24});
+        }
+
         int offset = 0; // keep track of chunk offset currently being written
         boolean zeroPass = true; // track if this segment get rewritten with 1 pixel offset, always true if not striping
 
@@ -631,10 +639,20 @@ public class ImageWrapper {
 
                 zeroPass = !zeroPass;
             } else {
-                //shift down for next segment
-                builder.append(new byte[] {0x1B, 0x4A, (byte)segmentHeight});
+                if(legacyMode) {
+                    // render a newline to bump the print head down
+                    builder.append(new byte[] {10});
+                } else {
+                    //shift down for next segment
+                    builder.append(new byte[] {0x1B, 0x4A, (byte)segmentHeight});
+                }
                 offset += 8 * bytesNeeded;
             }
+        }
+
+        if(legacyMode) {
+            // Restore line spacing to 30 dots
+            builder.append(new byte[] { 0x1B, 0x33, 30});
         }
     }
 

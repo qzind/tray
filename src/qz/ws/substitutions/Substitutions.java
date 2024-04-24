@@ -22,7 +22,10 @@ import java.util.Map;
 public class Substitutions {
     protected static final Logger log = LogManager.getLogger(Substitutions.class);
 
-    private static final Path DEFAULT_SUBSTITUTIONS_PATH = FileUtilities.SHARED_DIR.resolve("substitutions.json");
+    public static final String FILE_NAME = "substitutions.json";
+
+    private static final Path DEFAULT_SUBSTITUTIONS_PATH = FileUtilities.SHARED_DIR.resolve(FILE_NAME);
+
     // Subkeys that are restricted for writing
     private static boolean restrictSubstitutions = true;
     private static HashMap<String, Type> restricted = new HashMap<>();

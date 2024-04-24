@@ -21,7 +21,6 @@ import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.status.StatusMonitor;
 import qz.utils.*;
-import qz.ws.substitutions.Substitutions;
 
 import javax.usb.util.UsbUtil;
 import java.awt.*;
@@ -45,7 +44,7 @@ public class PrintSocketClient {
     private static final Logger log = LogManager.getLogger(PrintSocketClient.class);
 
     private final TrayManager trayManager = PrintSocketServer.getTrayManager();
-    private static Substitutions substitutions = Substitutions.init();
+
     private static final Semaphore dialogAvailable = new Semaphore(1, true);
 
     //websocket port -> Connection

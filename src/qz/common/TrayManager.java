@@ -26,6 +26,7 @@ import qz.ui.tray.TrayType;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
+import qz.ws.substitutions.Substitutions;
 
 import javax.swing.*;
 import java.awt.*;
@@ -57,6 +58,9 @@ public class TrayManager {
 
     // Custom swing pop-up menu
     private TrayType tray;
+
+    // Substitutions reference
+    private Substitutions substitutions;
 
     private ConfirmDialog confirmDialog;
     private GatewayDialog gatewayDialog;
@@ -97,6 +101,9 @@ public class TrayManager {
 
         // Set strict certificate mode preference
         Certificate.setTrustBuiltIn(!getPref(TRAY_STRICTMODE));
+
+        // Configure JSON substitutions
+        substitutions = Substitutions.init();
 
         // Set FileIO security
         FileUtilities.setFileIoEnabled(getPref(SECURITY_FILE_ENABLED));
@@ -542,6 +549,7 @@ public class TrayManager {
             displayInfoMessage("Server started on port(s) " + PrintSocketServer.getPorts(server));
 
             if (!headless) {
+                aboutDialog.setSubstitutions(substitutions);
                 aboutDialog.setServer(server);
                 setDefaultIcon();
             }

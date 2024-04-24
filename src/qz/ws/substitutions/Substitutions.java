@@ -1,23 +1,34 @@
 package qz.ws.substitutions;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+
 public class Substitutions {
     protected static final Logger log = LogManager.getLogger(Substitutions.class);
-    private static boolean restrictSubstitutions = true;
-    private ArrayList<JSONObject> matches;
-    private ArrayList<JSONObject> replaces;
 
-    private static class SubstitutionException extends JSONException {
-        public SubstitutionException(String message) {
-            super(message);
-        }
+    // Subkeys that are restricted for writing
+    private static boolean restrictSubstitutions = true;
+    private static HashMap<String, Type> restricted = new HashMap<>();
+    static {
+        restricted.put("copies", Type.OPTIONS);
+        restricted.put("data", Type.DATA);
+    }
+    private ArrayList<JSONObject> matches, replaces;
+
+    public Substitutions(InputStream in) throws IOException, JSONException {
+        this(IOUtils.toString(in, StandardCharsets.UTF_8));
     }
 
     public Substitutions(String serialized) throws JSONException {
@@ -25,7 +36,6 @@ public class Substitutions {
         replaces = new ArrayList<>();
 
         JSONArray instructions = new JSONArray(serialized);
-        System.out.println(serialized);
         for(int i = 0; i < instructions.length(); i++) {
             JSONObject step = instructions.optJSONObject(i);
             if(step != null) {
@@ -47,15 +57,20 @@ public class Substitutions {
         }
     }
 
-    public void replace(JSONObject base) throws JSONException {
+    public JSONObject replace(InputStream in) throws IOException, JSONException {
+        return replace(new JSONObject(IOUtils.toString(in, StandardCharsets.UTF_8)));
+    }
+
+    public JSONObject replace(JSONObject base) throws JSONException {
         for(int i = 0; i < matches.size(); i++) {
             if (find(base, matches.get(i))) {
-                System.out.println(" [YES MATCH]");
+                log.debug("Matched JSON substitution rule: for: {}, use: {}", matches.get(i), replaces.get(i));
                 replace(base, replaces.get(i));
             } else {
-                System.out.println(" [NO MATCH]");
+                log.debug("Unable to match substitution rule: for: {}, use: {}", matches.get(i), replaces.get(i));
             }
         }
+        return base;
     }
 
     public static boolean isPrimitive(Object o) {
@@ -66,49 +81,30 @@ public class Substitutions {
     }
 
     public static void replace(JSONObject base, JSONObject replace) throws JSONException {
-        JSONObject baseParams = base.optJSONObject("params");
-        JSONObject replaceParams = replace.optJSONObject("params");
-        if(baseParams == null) {
+        JSONObject jsonBase = base.optJSONObject("params");
+        JSONObject jsonReplace = replace.optJSONObject("params");
+        if(jsonBase == null) {
             // skip, invalid base format for replacement
             return;
         }
-        if(replaceParams == null) {
+        if(jsonReplace == null) {
             throw new SubstitutionException("Replacement JSON is missing \"params\": and is malformed");
         }
 
         // Second pass of sanitization before we replace
-        for(Iterator it = replaceParams.keys(); it.hasNext();) {
-            RootKey root = RootKey.parse(it.next());
-            if(root != null && root.isReplaceAllowed()) {
+        for(Iterator it = jsonReplace.keys(); it.hasNext();) {
+            Type type = Type.parse(it.next());
+            if(type != null && !type.isReadOnly()) {
                 // Good, let's make sure there are no exceptions
                 if(restrictSubstitutions) {
-                    switch(root) {
+                    switch(type) {
                         // Special handling for arrays
                         case DATA:
-                            JSONArray data = (JSONArray)replaceParams.get(root.getKey());
-                            ArrayList<Object> toRemove = new ArrayList();
-                            for(int i = 0; i < data.length(); i++) {
-                                JSONObject jsonObject;
-                                if ((jsonObject = data.optJSONObject(i)) != null) {
-                                    for(RestrictedKey restricted : root.getRestrictedSubkeys()) {
-                                        if (jsonObject.has(restricted.getSubkey())) {
-                                            log.warn("Use of {}: [{}:] is restricted, removing", root.getKey(), restricted.getSubkey());
-                                            toRemove.add(jsonObject);
-                                        }
-                                    }
-                                }
-                            }
-                            for(Object o : toRemove) {
-                                data.remove(o);
-                            }
+                            JSONArray jsonArray = jsonReplace.optJSONArray(type.getKey());
+                            removeRestrictedSubkeys(jsonArray, type);
                             break;
                         default:
-                            for(RestrictedKey restricted : root.getRestrictedSubkeys()) {
-                                if (replaceParams.has(restricted.getSubkey())) {
-                                    log.warn("Use of {}: [{}:] is restricted, removing", root.getKey(), restricted.getSubkey());
-                                    replaceParams.remove(restricted.getSubkey());
-                                }
-                            }
+                            removeRestrictedSubkeys(jsonReplace, type);
                     }
                 }
             }
@@ -116,13 +112,47 @@ public class Substitutions {
         find(base, replace, true);
     }
 
+    private static void removeRestrictedSubkeys(JSONObject jsonObject, Type type) {
+        if(jsonObject == null) {
+            return;
+        }
+        for(Map.Entry<String, Type> entry : restricted.entrySet()) {
+            if (type == entry.getValue()) {
+                JSONObject toCheck = jsonObject.optJSONObject(type.getKey());
+                if(toCheck != null && toCheck.has(entry.getKey())) {
+                    log.warn("Use of { \"{}\": { \"{}\": ... } } is restricted, removing", type.getKey(), entry.getKey());
+                    jsonObject.remove(entry.getKey());
+                }
+            }
+        }
+    }
+    private static void removeRestrictedSubkeys(JSONArray jsonArray, Type type) {
+        if(jsonArray == null) {
+            return;
+        }
+        ArrayList<Object> toRemove = new ArrayList();
+        for(int i = 0; i < jsonArray.length(); i++) {
+            JSONObject jsonObject;
+            if ((jsonObject = jsonArray.optJSONObject(i)) != null) {
+                for(Map.Entry<String, Type> entry : restricted.entrySet()) {
+                    if (jsonObject.has(entry.getKey()) && type == entry.getValue()) {
+                        log.warn("Use of { \"{}\": { \"{}\": ... } } is restricted, removing", type.getKey(), entry.getKey());
+                        toRemove.add(jsonObject);
+                    }
+                }
+            }
+        }
+        for(Object o : toRemove) {
+            jsonArray.remove(o);
+        }
+    }
+
     public static void sanitize(JSONObject match) throws JSONException {
         // "options" ~= "config"
-        System.out.println("BEFORE: " + match);
         Object cache;
 
 
-        for(RootKey key : RootKey.values()) {
+        for(Type key : Type.values()) {
             // Sanitize alts/aliases
             for(String alt : key.getAlts()) {
                 if ((cache = match.optJSONObject(alt)) != null) {
@@ -165,8 +195,6 @@ public class Substitutions {
                 }
             }
         }
-
-        System.out.println("AFTER:  " + match);
     }
 
     private static boolean find(Object base, Object match) throws JSONException {
@@ -225,5 +253,9 @@ public class Substitutions {
             // Treat as primitives
             return match.equals(base);
         }
+    }
+
+    public static void setRestrictSubstitutions(boolean restrictSubstitutions) {
+        Substitutions.restrictSubstitutions = restrictSubstitutions;
     }
 }

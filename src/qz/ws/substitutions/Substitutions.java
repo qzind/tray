@@ -6,10 +6,14 @@ import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import qz.utils.FileUtilities;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -18,6 +22,7 @@ import java.util.Map;
 public class Substitutions {
     protected static final Logger log = LogManager.getLogger(Substitutions.class);
 
+    private static final Path DEFAULT_SUBSTITUTIONS_PATH = FileUtilities.SHARED_DIR.resolve("substitutions.json");
     // Subkeys that are restricted for writing
     private static boolean restrictSubstitutions = true;
     private static HashMap<String, Type> restricted = new HashMap<>();
@@ -26,6 +31,10 @@ public class Substitutions {
         restricted.put("data", Type.DATA);
     }
     private ArrayList<JSONObject> matches, replaces;
+
+    public Substitutions(Path path) throws IOException, JSONException {
+        this(new FileInputStream(path.toFile()));
+    }
 
     public Substitutions(InputStream in) throws IOException, JSONException {
         this(IOUtils.toString(in, StandardCharsets.UTF_8));
@@ -98,8 +107,8 @@ public class Substitutions {
                 // Good, let's make sure there are no exceptions
                 if(restrictSubstitutions) {
                     switch(type) {
-                        // Special handling for arrays
                         case DATA:
+                            // Special handling for arrays
                             JSONArray jsonArray = jsonReplace.optJSONArray(type.getKey());
                             removeRestrictedSubkeys(jsonArray, type);
                             break;
@@ -257,5 +266,20 @@ public class Substitutions {
 
     public static void setRestrictSubstitutions(boolean restrictSubstitutions) {
         Substitutions.restrictSubstitutions = restrictSubstitutions;
+    }
+
+    public static Substitutions init() {
+        return init(DEFAULT_SUBSTITUTIONS_PATH);
+    }
+    public static Substitutions init(Path path) {
+        Substitutions substitutions = null;
+        try {
+            substitutions = new Substitutions(path);
+        } catch(JSONException e) {
+            log.warn("Unable to parse substitutions file, skipping", e);
+        } catch(IOException e) {
+            log.info("Substitutions file missing, skipping: {}", e.getMessage());
+        }
+        return substitutions;
     }
 }

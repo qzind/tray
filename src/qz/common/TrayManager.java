@@ -102,7 +102,7 @@ public class TrayManager {
         // Set strict certificate mode preference
         Certificate.setTrustBuiltIn(!getPref(TRAY_STRICTMODE));
 
-        // Configure JSON substitutions
+        // Configure JSON
         substitutions = Substitutions.init();
 
         // Set FileIO security

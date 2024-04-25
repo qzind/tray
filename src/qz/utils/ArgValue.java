@@ -71,6 +71,10 @@ public enum ArgValue {
         "security.file.enabled"),
     SECURITY_FILE_STRICT(PREFERENCES, "Enable/disable signing requirements for File Communications features", null, true,
         "security.file.strict"),
+
+    SECURITY_SUBSTITUTIONS_RESTRICT(PREFERENCES, "Enable/disable JSON substitution restrictions such as copies, data blobs", null, true,
+        "security.substitutions.restrict"),
+
     SECURITY_DATA_PROTOCOLS(PREFERENCES, "URL protocols allowed for print, serial, hid, etc", null, "http,https",
         "security.data.protocols"),
     SECURITY_PRINT_TOFILE(PREFERENCES, "Enable/disable printing directly to file paths", null, false,

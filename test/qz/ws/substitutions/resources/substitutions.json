@@ -3,8 +3,8 @@
     "use":{
       "config": {
         "size": {
-          "width": "100",
-          "height": "150"
+          "width": 100,
+          "height": 150
         },
         "units": "mm"
       }
@@ -12,9 +12,10 @@
     "for": {
       "config": {
         "size": {
-          "width": "4",
-          "height": "6"
-        }
+          "width": 4,
+          "height": 6
+        },
+        "units": "in"
       }
     }
   },
@@ -30,8 +31,8 @@
     "use": {
       "data": {
         "options": {
-          "pageWidth": "8.5",
-          "pageHeight": "14"
+          "pageWidth": 8.5,
+          "pageHeight": 14
         }
       }
     },
@@ -54,6 +55,15 @@
       "config": {
         "copies": 1
       }
+    }
+  },
+  {
+    "use": {
+      "printer": "PDFwriter"
+    },
+    "for": {
+      "caseSensitive": true,
+      "printer": "xps document writer"
     }
   },
   {

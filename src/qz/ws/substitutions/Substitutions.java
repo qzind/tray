@@ -9,20 +9,17 @@ import org.codehaus.jettison.json.JSONObject;
 import qz.utils.FileUtilities;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public class Substitutions {
     protected static final Logger log = LogManager.getLogger(Substitutions.class);
 
     public static final String FILE_NAME = "substitutions.json";
+
 
     private static final Path DEFAULT_SUBSTITUTIONS_PATH = FileUtilities.SHARED_DIR.resolve(FILE_NAME);
 
@@ -34,6 +31,7 @@ public class Substitutions {
         restricted.put("data", Type.DATA);
     }
     private ArrayList<JSONObject> matches, replaces;
+    private ArrayList<Boolean> matchCase;
 
     public Substitutions(Path path) throws IOException, JSONException {
         this(new FileInputStream(path.toFile()));
@@ -45,6 +43,7 @@ public class Substitutions {
 
     public Substitutions(String serialized) throws JSONException {
         matches = new ArrayList<>();
+        matchCase = new ArrayList<>();
         replaces = new ArrayList<>();
 
         JSONArray instructions = new JSONArray(serialized);
@@ -59,11 +58,14 @@ public class Substitutions {
 
                 JSONObject match = step.optJSONObject("for");
                 if(match != null) {
+                    this.matchCase.add(match.optBoolean("caseSensitive", false));
+                    match.remove("caseSensitive");
                     sanitize(match);
                     this.matches.add(match);
                 }
             }
         }
+
         if(matches.size() != replaces.size()) {
             throw new SubstitutionException("Mismatched instructions; Each \"use\" must have a matching \"for\".");
         }
@@ -75,11 +77,17 @@ public class Substitutions {
 
     public JSONObject replace(JSONObject base) throws JSONException {
         for(int i = 0; i < matches.size(); i++) {
-            if (find(base, matches.get(i))) {
-                log.debug("Matched JSON substitution rule: for: {}, use: {}", matches.get(i), replaces.get(i));
+            if (find(base, matches.get(i), matchCase.get(i))) {
+                log.debug("Matched {}JSON substitution rule: for: {}, use: {}",
+                          matchCase.get(i) ? "case-sensitive " : "",
+                          matches.get(i),
+                          replaces.get(i));
                 replace(base, replaces.get(i));
             } else {
-                log.debug("Unable to match substitution rule: for: {}, use: {}", matches.get(i), replaces.get(i));
+                log.debug("Unable to match {}JSON substitution rule: for: {}, use: {}",
+                          matchCase.get(i) ? "case-sensitive " : "",
+                          matches.get(i),
+                          replaces.get(i));
             }
         }
         return base;
@@ -121,7 +129,7 @@ public class Substitutions {
                 }
             }
         }
-        find(base, replace, true);
+        find(base, replace, false, true);
     }
 
     private static void removeRestrictedSubkeys(JSONObject jsonObject, Type type) {
@@ -209,10 +217,10 @@ public class Substitutions {
         }
     }
 
-    private static boolean find(Object base, Object match) throws JSONException {
-        return find(base, match, false);
+    private static boolean find(Object base, Object match, boolean caseSensitive) throws JSONException {
+        return find(base, match, caseSensitive, false);
     }
-    private static boolean find(Object base, Object match, boolean replace) throws JSONException {
+    private static boolean find(Object base, Object match, boolean caseSensitive, boolean replace) throws JSONException {
         if(base instanceof JSONObject) {
             if(match instanceof JSONObject) {
                 JSONObject jsonMatch = (JSONObject)match;
@@ -229,7 +237,7 @@ public class Substitutions {
                             // Overwrite value, don't recurse
                             jsonBase.put(next.toString(), newMatch);
                             continue;
-                        } else if(find(newBase, newMatch, replace)) {
+                        } else if(find(newBase, newMatch, caseSensitive, replace)) {
                             continue;
                         }
                     } else if(replace) {
@@ -251,7 +259,7 @@ public class Substitutions {
                     Object newMatch = matchArray.get(i);
                     for(int j = 0; j < baseArray.length(); j++) {
                         Object newBase = baseArray.get(j);
-                        if(find(newBase, newMatch, replace)) {
+                        if(find(newBase, newMatch, caseSensitive, replace)) {
                             continue match;
                         }
                     }
@@ -263,7 +271,16 @@ public class Substitutions {
             }
         } else {
             // Treat as primitives
-            return match.equals(base);
+            if(!match.getClass().getName().equals("java.lang.String") && match.getClass().equals(base.getClass())) {
+                // Same type
+                return match.equals(base);
+            } else {
+                // Dissimilar types (e.g. "width": "8.5" versus "width": 8.5), cast both to String
+                if(caseSensitive) {
+                    return match.toString().equals(base.toString());
+                }
+                return match.toString().equalsIgnoreCase(base.toString());
+            }
         }
     }
 

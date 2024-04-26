@@ -47,6 +47,14 @@
   },
   {
     "use": {
+      "query": "pdf"
+    },
+    "for": {
+      "query": "zzz"
+    }
+  },
+  {
+    "use": {
       "config": {
         "copies": 3
       }

@@ -3,7 +3,8 @@ package qz.ws.substitutions;
 public enum Type {
     OPTIONS("options", "config"),
     PRINTER("printer"),
-    DATA("data");
+    DATA("data"),
+    QUERY("query");
 
     private String key;
     private boolean readOnly;

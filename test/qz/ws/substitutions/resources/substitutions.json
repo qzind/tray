@@ -21,7 +21,7 @@
   },
   {
     "use": {
-      "printer": "XPS Document Writer"
+      "printer": "PDF"
     },
     "for": {
       "printer": "PDFwriter"

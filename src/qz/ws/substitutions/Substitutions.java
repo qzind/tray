@@ -32,6 +32,7 @@ public class Substitutions {
     }
     private ArrayList<JSONObject> matches, replaces;
     private ArrayList<Boolean> matchCase;
+    private static Substitutions INSTANCE;
 
     public Substitutions(Path path) throws IOException, JSONException {
         this(new FileInputStream(path.toFile()));
@@ -288,18 +289,40 @@ public class Substitutions {
         Substitutions.restrictSubstitutions = restrictSubstitutions;
     }
 
-    public static Substitutions init() {
-        return init(DEFAULT_SUBSTITUTIONS_PATH);
+    /**
+     * Returns a new instance of the <code>Substitutions</code> object from the default
+     * <code>substitutions.json</code> file at <code>DEFAULT_SUBSTITUTIONS_PATH</code>,
+     * or <code>null</code> if an error occurred.
+     */
+    public static Substitutions newInstance() {
+        return newInstance(DEFAULT_SUBSTITUTIONS_PATH);
     }
-    public static Substitutions init(Path path) {
+
+    /**
+     * Returns a new instance of the <code>Substitutions</code> object from the provided
+     * <code>json</code> substitutions file, or <code>null</code> if an error occurred.
+     */
+    public static Substitutions newInstance(Path path) {
         Substitutions substitutions = null;
         try {
             substitutions = new Substitutions(path);
+            log.info("Successfully parsed new substitutions file.");
         } catch(JSONException e) {
             log.warn("Unable to parse substitutions file, skipping", e);
         } catch(IOException e) {
             log.info("Substitutions file missing, skipping: {}", e.getMessage());
         }
         return substitutions;
+    }
+
+    public static Substitutions getInstance() {
+        return getInstance(false);
+    }
+
+    public static Substitutions getInstance(boolean forceRefresh) {
+        if(INSTANCE == null || forceRefresh) {
+            INSTANCE = Substitutions.newInstance();
+        }
+        return INSTANCE;
     }
 }

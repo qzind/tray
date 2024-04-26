@@ -25,7 +25,11 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by Tres on 2/26/2015.
@@ -43,8 +47,6 @@ public class AboutDialog extends BasicDialog implements Themeable {
     private JToolBar headerBar;
     private Border dropBorder;
 
-    private Substitutions substitutions;
-
     // Use <html> allows word wrapping on a standard JLabel
     static class TextWrapLabel extends JLabel {
         TextWrapLabel(String text) {
@@ -57,10 +59,6 @@ public class AboutDialog extends BasicDialog implements Themeable {
 
         //noinspection ConstantConditions - white label support
         limitedDisplay = Constants.VERSION_CHECK_URL.isEmpty();
-    }
-
-    public void setSubstitutions(Substitutions substitutions) {
-        this.substitutions = substitutions;
     }
 
     public void setServer(Server server) {
@@ -185,7 +183,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
         JButton refreshButton = new JButton("", getIcon(IconCache.Icon.RELOAD_ICON));
         refreshButton.setOpaque(false);
         refreshButton.addActionListener(e -> {
-            refreshSubstitutions();
+            Substitutions.getInstance(true);
             refreshHeader();
         });
 
@@ -224,13 +222,17 @@ public class AboutDialog extends BasicDialog implements Themeable {
                 List<File> droppedFiles = (List<File>)dropped;
                 for (File file : droppedFiles) {
                     if(file.getName().equals(Substitutions.FILE_NAME)) {
+                        blinkDropBorder(true);
                         log.info("File drop accepted: {}", file);
                         Path source = file.toPath();
                         Path dest = FileUtilities.SHARED_DIR.resolve(file.getName());
-                        Files.copy(source, dest);
+                        Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
                         FileUtilities.inheritParentPermissions(dest);
-                        refreshSubstitutions();
+                        Substitutions.getInstance(true);
                         refreshHeader();
+                        break;
+                    } else {
+                        blinkDropBorder(false);
                         break;
                     }
                 }
@@ -272,14 +274,29 @@ public class AboutDialog extends BasicDialog implements Themeable {
         }
     }
 
-    private void refreshSubstitutions() {
-        substitutions = Substitutions.init();
+    private void blinkDropBorder(boolean success) {
+        Color borderColor = success ? Color.GREEN : Constants.WARNING_COLOR;
+        dropBorder = BorderFactory.createDashedBorder(borderColor, 3, 5, 5, true);
+        AtomicBoolean toggled = new AtomicBoolean(true);
+        int blinkCount = 3;
+        int blinkDelay = 100; // ms
+        for(int i = 0; i < blinkCount * 2; i++) {
+            Timer timer = new Timer("blink" + i);
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    SwingUtilities.invokeLater(() -> {
+                        contentPanel.setBorder(toggled.getAndSet(!toggled.get())? dropBorder:null);
+                    });
+                }
+            }, i * blinkDelay);
+        }
     }
 
     private void refreshHeader() {
         headerBar.setBackground(SystemUtilities.isDarkDesktop() ?
                                         Constants.TRUSTED_COLOR.darker().darker() : Constants.TRUSTED_COLOR_DARK);
-        headerBar.setVisible(substitutions != null);
+        headerBar.setVisible(Substitutions.getInstance() != null);
         pack();
     }
 

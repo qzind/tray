@@ -21,6 +21,7 @@ import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.status.StatusMonitor;
 import qz.utils.*;
+import qz.ws.substitutions.Substitutions;
 
 import javax.usb.util.UsbUtil;
 import java.awt.*;
@@ -225,6 +226,12 @@ public class PrintSocketClient {
      * @param json    JSON received from web API
      */
     private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, DeviceException, IOException {
+        // perform client-side substitutions
+        Substitutions substitutions = Substitutions.getInstance();
+        if(substitutions != null) {
+            json = substitutions.replace(json);
+        }
+
         String UID = json.optString("uid");
         SocketMethod call = SocketMethod.findFromCall(json.optString("call"));
         JSONObject params = json.optJSONObject("params");

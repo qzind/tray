@@ -296,7 +296,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
     private void refreshHeader() {
         headerBar.setBackground(SystemUtilities.isDarkDesktop() ?
                                         Constants.TRUSTED_COLOR.darker().darker() : Constants.TRUSTED_COLOR_DARK);
-        headerBar.setVisible(Substitutions.getInstance() != null);
+        headerBar.setVisible(Substitutions.areActive());
         pack();
     }
 

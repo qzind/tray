@@ -44,6 +44,7 @@ public class App {
         log.info(Constants.ABOUT_TITLE + " vendor: {}", Constants.ABOUT_COMPANY);
         log.info("Java version: {}", Constants.JAVA_VERSION.toString());
         log.info("Java vendor: {}", Constants.JAVA_VENDOR);
+        Substitutions.setEnabled(PrefsSearch.getBoolean(ArgValue.SECURITY_SUBSTITUTIONS_ENABLE));
         Substitutions.setRestrictSubstitutions(PrefsSearch.getBoolean(ArgValue.SECURITY_SUBSTITUTIONS_RESTRICT));
 
         CertificateManager certManager = null;

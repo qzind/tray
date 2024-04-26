@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import qz.utils.ArgValue;
 import qz.utils.FileUtilities;
 
 import java.io.FileInputStream;
@@ -22,6 +23,9 @@ public class Substitutions {
 
 
     private static final Path DEFAULT_SUBSTITUTIONS_PATH = FileUtilities.SHARED_DIR.resolve(FILE_NAME);
+
+    // Global toggle (should match ArgValue.SECURITY_SUBSTITUTIONS_ENABLE)
+    private static boolean enabled = true;
 
     // Subkeys that are restricted for writing
     private static boolean restrictSubstitutions = true;
@@ -285,6 +289,10 @@ public class Substitutions {
         }
     }
 
+    public static void setEnabled(boolean enabled) {
+        Substitutions.enabled = enabled;
+    }
+
     public static void setRestrictSubstitutions(boolean restrictSubstitutions) {
         Substitutions.restrictSubstitutions = restrictSubstitutions;
     }
@@ -322,7 +330,14 @@ public class Substitutions {
     public static Substitutions getInstance(boolean forceRefresh) {
         if(INSTANCE == null || forceRefresh) {
             INSTANCE = Substitutions.newInstance();
+            if(!enabled) {
+                log.warn("Substitution file was found, but substitutions are currently disabled via \"{}=false\"", ArgValue.SECURITY_SUBSTITUTIONS_ENABLE.getMatch());
+            }
         }
         return INSTANCE;
+    }
+
+    public static boolean areActive() {
+        return Substitutions.getInstance() != null && enabled;
     }
 }

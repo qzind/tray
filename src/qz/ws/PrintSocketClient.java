@@ -227,9 +227,11 @@ public class PrintSocketClient {
      */
     private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, DeviceException, IOException {
         // perform client-side substitutions
-        Substitutions substitutions = Substitutions.getInstance();
-        if(substitutions != null) {
-            json = substitutions.replace(json);
+        if(Substitutions.areActive()) {
+            Substitutions substitutions = Substitutions.getInstance();
+            if (substitutions != null) {
+                json = substitutions.replace(json);
+            }
         }
 
         String UID = json.optString("uid");

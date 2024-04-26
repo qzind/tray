@@ -1,6 +1,7 @@
 package qz.utils;
 
 import qz.common.Constants;
+import qz.ws.substitutions.Substitutions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,7 +73,10 @@ public enum ArgValue {
     SECURITY_FILE_STRICT(PREFERENCES, "Enable/disable signing requirements for File Communications features", null, true,
         "security.file.strict"),
 
-    SECURITY_SUBSTITUTIONS_RESTRICT(PREFERENCES, "Enable/disable JSON substitution restrictions such as copies, data blobs", null, true,
+    SECURITY_SUBSTITUTIONS_ENABLE(PREFERENCES, "Enable/disable client-side JSON data substitutions via \"" + Substitutions.FILE_NAME + "\" file", null, true,
+        "security.substitutions.allow"),
+
+    SECURITY_SUBSTITUTIONS_RESTRICT(PREFERENCES, "Enable/disable JSON substitution restrictions such as \"copies\":, \"data\": { \"data\": ... } blobs", null, true,
         "security.substitutions.restrict"),
 
     SECURITY_DATA_PROTOCOLS(PREFERENCES, "URL protocols allowed for print, serial, hid, etc", null, "http,https",

@@ -27,12 +27,12 @@ public class Substitutions {
     // Global toggle (should match ArgValue.SECURITY_SUBSTITUTIONS_ENABLE)
     private static boolean enabled = true;
 
-    // Subkeys that are restricted for writing
-    private static boolean restrictSubstitutions = true;
-    private static HashMap<String, Type> restricted = new HashMap<>();
+    // Subkeys that are restricted for writing because they can materially impact the content
+    private static boolean strict = true;
+    private static HashMap<String, Type> parlous = new HashMap<>();
     static {
-        restricted.put("copies", Type.OPTIONS);
-        restricted.put("data", Type.DATA);
+        parlous.put("copies", Type.OPTIONS);
+        parlous.put("data", Type.DATA);
     }
     private ArrayList<JSONObject> matches, replaces;
     private ArrayList<Boolean> matchCase;
@@ -121,7 +121,7 @@ public class Substitutions {
             Type type = Type.parse(it.next());
             if(type != null && !type.isReadOnly()) {
                 // Good, let's make sure there are no exceptions
-                if(restrictSubstitutions) {
+                if(strict) {
                     switch(type) {
                         case DATA:
                             // Special handling for arrays
@@ -141,7 +141,7 @@ public class Substitutions {
         if(jsonObject == null) {
             return;
         }
-        for(Map.Entry<String, Type> entry : restricted.entrySet()) {
+        for(Map.Entry<String, Type> entry : parlous.entrySet()) {
             if (type == entry.getValue()) {
                 JSONObject toCheck = jsonObject.optJSONObject(type.getKey());
                 if(toCheck != null && toCheck.has(entry.getKey())) {
@@ -159,7 +159,7 @@ public class Substitutions {
         for(int i = 0; i < jsonArray.length(); i++) {
             JSONObject jsonObject;
             if ((jsonObject = jsonArray.optJSONObject(i)) != null) {
-                for(Map.Entry<String, Type> entry : restricted.entrySet()) {
+                for(Map.Entry<String, Type> entry : parlous.entrySet()) {
                     if (jsonObject.has(entry.getKey()) && type == entry.getValue()) {
                         log.warn("Use of { \"{}\": { \"{}\": ... } } is restricted, removing", type.getKey(), entry.getKey());
                         toRemove.add(jsonObject);
@@ -293,8 +293,8 @@ public class Substitutions {
         Substitutions.enabled = enabled;
     }
 
-    public static void setRestrictSubstitutions(boolean restrictSubstitutions) {
-        Substitutions.restrictSubstitutions = restrictSubstitutions;
+    public static void setStrict(boolean strict) {
+        Substitutions.strict = strict;
     }
 
     /**

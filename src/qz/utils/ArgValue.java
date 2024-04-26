@@ -76,8 +76,8 @@ public enum ArgValue {
     SECURITY_SUBSTITUTIONS_ENABLE(PREFERENCES, "Enable/disable client-side JSON data substitutions via \"" + Substitutions.FILE_NAME + "\" file", null, true,
         "security.substitutions.allow"),
 
-    SECURITY_SUBSTITUTIONS_RESTRICT(PREFERENCES, "Enable/disable JSON substitution restrictions such as \"copies\":, \"data\": { \"data\": ... } blobs", null, true,
-        "security.substitutions.restrict"),
+    SECURITY_SUBSTITUTIONS_STRICT(PREFERENCES, "Enable restrictions for materially changing JSON substitutions such as \"copies\":, \"data\": { \"data\": ... } blobs", null, true,
+        "security.substitutions.strict"),
 
     SECURITY_DATA_PROTOCOLS(PREFERENCES, "URL protocols allowed for print, serial, hid, etc", null, "http,https",
         "security.data.protocols"),

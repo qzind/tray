@@ -3,6 +3,7 @@ package qz.printer;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import qz.printer.info.NativePrinter;
+import qz.printer.info.NativePrinterMap;
 import qz.utils.FileUtilities;
 
 import javax.print.PrintService;
@@ -59,6 +60,15 @@ public class PrintOutput {
 
     public PrintService getPrintService() {
         return printer.getPrintService().value();
+    }
+
+    public void refreshPrintService() {
+        String name = printer.getName();
+        NativePrinterMap.getInstance().remove(name);
+        printer = PrintServiceMatcher.matchPrinter(name);
+        if (printer == null) {
+            throw new IllegalArgumentException("Cannot find printer with name \"" + name + "\"");
+        }
     }
 
     public NativePrinter getNativePrinter() {

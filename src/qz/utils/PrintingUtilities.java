@@ -23,6 +23,7 @@ import qz.ws.PrintSocketClient;
 
 import javax.print.PrintException;
 import java.awt.print.PrinterAbortException;
+import java.awt.print.PrinterException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -209,7 +210,15 @@ public class PrintingUtilities {
             }
 
             processor.parseData(params.getJSONArray("data"), options);
-            processor.print(output, options);
+
+            try {
+                processor.print(output, options);
+            } catch (PrinterException e) {
+                // https://github.com/qzind/tray/issues/1259
+                log.info("Print Failed, retrying with a new PrintService");
+                output.refreshPrintService();
+                processor.print(output, options);
+            }
             log.info("Printing complete");
 
             PrintSocketClient.sendResult(session, UID, null);

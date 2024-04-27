@@ -83,8 +83,8 @@ public class PrintingUtilities {
                     case HEX:
                         return ByteUtilities.hexStringToByteArray(data.trim());
                     case XML:
-                        // Assume base64 encoded string inside the specified XML tag
-                        return Base64.decodeBase64(FileUtilities.readXMLFile(data, xmlTag).getBytes(StandardCharsets.UTF_8));
+                            // Assume base64 encoded string inside the specified XML tag
+                            return Base64.decodeBase64(FileUtilities.readXMLFile(data, xmlTag).getBytes(StandardCharsets.UTF_8));
                     case PLAIN:
                     default:
                         // Reading "plain" data is only supported through JSON/websocket, so we can safely assume it's always UTF8
@@ -262,7 +262,7 @@ public class PrintingUtilities {
     private static void cancelJobById(int jobId, NativePrinter printer) {
         if (SystemUtilities.isWindows()) {
             WinNT.HANDLEByReference phPrinter = getWmiPrinter(printer);
-            // TODO: Change to "Winspool" when JNA 5.14.0+ is bundled
+             // TODO: Change to "Winspool" when JNA 5.14.0+ is bundled
             if (!WinspoolEx.INSTANCE.SetJob(phPrinter.getValue(), jobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE)) {
                 Win32Exception e = new Win32Exception(Kernel32.INSTANCE.GetLastError());
                 log.warn("Job deletion error for job#{}, {}", jobId, e);

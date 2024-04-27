@@ -23,7 +23,6 @@ import qz.ws.PrintSocketClient;
 
 import javax.print.PrintException;
 import java.awt.print.PrinterAbortException;
-import java.awt.print.PrinterException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -33,7 +32,6 @@ import java.util.Locale;
 public class PrintingUtilities {
 
     private static final Logger log = LogManager.getLogger(PrintingUtilities.class);
-    private static final String PRINT_SERVICE_MESSAGE = "PrintService is no longer available.";
 
     private static GenericKeyedObjectPool<Format,PrintProcessor> processorPool;
 
@@ -85,8 +83,8 @@ public class PrintingUtilities {
                     case HEX:
                         return ByteUtilities.hexStringToByteArray(data.trim());
                     case XML:
-                            // Assume base64 encoded string inside the specified XML tag
-                            return Base64.decodeBase64(FileUtilities.readXMLFile(data, xmlTag).getBytes(StandardCharsets.UTF_8));
+                        // Assume base64 encoded string inside the specified XML tag
+                        return Base64.decodeBase64(FileUtilities.readXMLFile(data, xmlTag).getBytes(StandardCharsets.UTF_8));
                     case PLAIN:
                     default:
                         // Reading "plain" data is only supported through JSON/websocket, so we can safely assume it's always UTF8
@@ -211,17 +209,7 @@ public class PrintingUtilities {
             }
 
             processor.parseData(params.getJSONArray("data"), options);
-
-            try {
-                processor.print(output, options);
-            } catch (PrinterException e) {
-                // e.getMessage() can be null, do not reverse this comparison
-                if (!PRINT_SERVICE_MESSAGE.equals(e.getMessage())) throw e;
-                // https://github.com/qzind/tray/issues/1259
-                log.info("Print Failed, retrying with a new PrintService");
-                output.refreshPrintService();
-                processor.print(output, options);
-            }
+            processor.print(output, options);
             log.info("Printing complete");
 
             PrintSocketClient.sendResult(session, UID, null);
@@ -274,7 +262,7 @@ public class PrintingUtilities {
     private static void cancelJobById(int jobId, NativePrinter printer) {
         if (SystemUtilities.isWindows()) {
             WinNT.HANDLEByReference phPrinter = getWmiPrinter(printer);
-             // TODO: Change to "Winspool" when JNA 5.14.0+ is bundled
+            // TODO: Change to "Winspool" when JNA 5.14.0+ is bundled
             if (!WinspoolEx.INSTANCE.SetJob(phPrinter.getValue(), jobId, 0, null, WinspoolEx.JOB_CONTROL_DELETE)) {
                 Win32Exception e = new Win32Exception(Kernel32.INSTANCE.GetLastError());
                 log.warn("Job deletion error for job#{}, {}", jobId, e);

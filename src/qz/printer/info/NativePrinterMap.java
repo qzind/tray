@@ -51,7 +51,12 @@ public abstract class NativePrinterMap extends ConcurrentHashMap<String, NativeP
         ArrayList<PrintService> serviceList = new ArrayList<>(Arrays.asList(services)); // shrinking list drastically improves performance
 
         for(NativePrinter printer : values()) {
-            if (serviceList.contains(printer.getPrintService())) {
+            int index = serviceList.indexOf(printer.getPrintService());
+            if (index >= 0) {
+                // Java's `PrintService.equals(o)` method uses getName().equals(). This causes issues if a stale PrintService has been replaced
+                // by a new PrintService of the same name. For that reason, we always refresh the PrintService reference in NativePrinter.
+                // See: https://github.com/qzind/tray/issues/1259
+                printer.setPrintService(serviceList.get(index));
                 serviceList.remove(printer.getPrintService()); // existing match
             } else {
                 if(exhaustive) {

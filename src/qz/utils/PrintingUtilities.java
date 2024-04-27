@@ -33,6 +33,7 @@ import java.util.Locale;
 public class PrintingUtilities {
 
     private static final Logger log = LogManager.getLogger(PrintingUtilities.class);
+    private static final String PRINT_SERVICE_MESSAGE = "PrintService is no longer available.";
 
     private static GenericKeyedObjectPool<Format,PrintProcessor> processorPool;
 
@@ -214,6 +215,8 @@ public class PrintingUtilities {
             try {
                 processor.print(output, options);
             } catch (PrinterException e) {
+                // e.getMessage() can be null, do not reverse this comparison
+                if (!PRINT_SERVICE_MESSAGE.equals(e.getMessage())) throw e;
                 // https://github.com/qzind/tray/issues/1259
                 log.info("Print Failed, retrying with a new PrintService");
                 output.refreshPrintService();

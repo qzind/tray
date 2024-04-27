@@ -177,6 +177,7 @@ public class Substitutions {
         Object cache;
 
 
+        JSONObject nested = new JSONObject();
         for(Type key : Type.values()) {
             // Sanitize alts/aliases
             for(String alt : key.getAlts()) {
@@ -189,7 +190,6 @@ public class Substitutions {
 
             // Special handling for nesting of "printer", "options", "data" within "params"
             if((cache = match.opt(key.getKey())) != null) {
-                JSONObject nested = new JSONObject();
                 switch(key) {
                     case PRINTER:
                         JSONObject name = new JSONObject();
@@ -199,10 +199,11 @@ public class Substitutions {
                     default:
                         nested.put(key.getKey(), cache);
                 }
-
-                match.put("params", nested);
                 match.remove(key.getKey());
             }
+        }
+        if(nested.length() > 0) {
+            match.put("params", nested);
         }
 
         // Special handling for "data" being provided as an object instead of an array

@@ -7,6 +7,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import qz.utils.ArgValue;
+import qz.utils.ByteUtilities;
 import qz.utils.FileUtilities;
 
 import java.io.FileInputStream;
@@ -277,16 +278,17 @@ public class Substitutions {
             }
         } else {
             // Treat as primitives
-            if(!match.getClass().getName().equals("java.lang.String") && match.getClass().equals(base.getClass())) {
-                // Same type
-                return match.equals(base);
-            } else {
-                // Dissimilar types (e.g. "width": "8.5" versus "width": 8.5), cast both to String
-                if(caseSensitive) {
-                    return match.toString().equals(base.toString());
-                }
-                return match.toString().equalsIgnoreCase(base.toString());
+            if(match instanceof Number) {
+                return ByteUtilities.numberEquals(match, base);
             }
+            if(base instanceof Number) {
+                return ByteUtilities.numberEquals(base, match);
+            }
+            // Fallback: Cast both to String
+            if(caseSensitive) {
+                return match.toString().equals(base.toString());
+            }
+            return match.toString().equalsIgnoreCase(base.toString());
         }
     }
 

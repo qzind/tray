@@ -272,4 +272,21 @@ public class ByteUtilities {
         return matches;
     }
 
+    public static boolean numberEquals(Object val1, Object val2) {
+        try {
+            if(val1 == null) {
+                return val2 == null;
+            } else if(val1.getClass().getName() == val2.getClass().getName()) {
+                return val1.equals(val2);
+            } else if(val1 instanceof Long) {
+                return val1.equals(Long.parseLong(val2.toString()));
+            } else {
+                return Double.parseDouble(val1.toString()) == Double.parseDouble(val2.toString());
+            }
+        } catch(NumberFormatException nfe) {
+            log.warn("Cannot not compare [{} = '{}'].  Reason: {} {}", val1, val2, nfe.getClass().getName(), nfe.getMessage());
+        }
+        return false;
+    }
+
 }

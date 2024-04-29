@@ -58,6 +58,7 @@ public class TrayManager {
 
     // Custom swing pop-up menu
     private TrayType tray;
+
     private ConfirmDialog confirmDialog;
     private GatewayDialog gatewayDialog;
     private AboutDialog aboutDialog;

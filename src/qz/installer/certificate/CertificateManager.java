@@ -357,9 +357,11 @@ public class CertificateManager {
             // Last, fallback on a directory we won't ever see again :/
             locs.add(TEMP_DIR);
         } else {
-            // Same as above, but with suffixes added (usually "ssl")
+            // Same as above, but with suffixes added (usually "ssl"), skipping the install location
             for(Path saveLocation : SAVE_LOCATIONS) {
-                locs.add(Paths.get(saveLocation.toString(), suffixes));
+                if(!saveLocation.equals(SystemUtilities.getJarParentPath())) {
+                    locs.add(Paths.get(saveLocation.toString(), suffixes));
+                }
             }
             // Last, fallback on a directory we won't ever see again :/
             locs.add(Paths.get(TEMP_DIR.toString(), suffixes));

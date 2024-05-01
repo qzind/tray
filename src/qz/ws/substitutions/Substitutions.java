@@ -258,6 +258,7 @@ public class Substitutions {
                 return false; // mismatched types
             }
         } else if (base instanceof JSONArray) {
+            boolean found = false;
             if(match instanceof JSONArray) {
                 JSONArray matchArray = (JSONArray)match;
                 JSONArray baseArray = (JSONArray)base;
@@ -267,22 +268,19 @@ public class Substitutions {
                     for(int j = 0; j < baseArray.length(); j++) {
                         Object newBase = baseArray.get(j);
                         if(find(newBase, newMatch, caseSensitive, replace)) {
-                            continue match;
+                            found = true;
+                            if(!replace) {
+                                continue match;
+                            }
                         }
                     }
-                    return false;
                 }
-                return true; // assume found
-            } else {
-                return false;
             }
+            return found;
         } else {
             // Treat as primitives
-            if(match instanceof Number) {
+            if(match instanceof Number || base instanceof Number) {
                 return ByteUtilities.numberEquals(match, base);
-            }
-            if(base instanceof Number) {
-                return ByteUtilities.numberEquals(base, match);
             }
             // Fallback: Cast both to String
             if(caseSensitive) {

@@ -43,7 +43,17 @@
           "ignoreTransparency": false,
           "altFontRendering": false
         }
-      }
+      },
+      {
+        "type": "pixel",
+        "format": "image",
+        "flavor": "file",
+        "data": "https://demo.qz.io/assets/img/image_sample.png",
+      },
+      "^XA\n",
+      "^FO50,50^ADN,36,20^FDPRINTED WITH QZ 2.2.4-SNAPSHOT\n",
+      "^FS\n",
+      "^XZ\n"
     ]
   },
   "signature": "",
@@ -54,4 +64,4 @@
     "y": 462.5
   },
   "signAlgorithm": "SHA512"
-}"
+}

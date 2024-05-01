@@ -85,5 +85,25 @@
         "data": "https://demo.qz.io/assets/pdf_sample.pdf"
       }
     }
+  },
+  {
+    "use": {
+      "printer": "ZDesigner"
+    },
+    "for": {
+      "data": [ "^XA\n" ]
+    }
+  },
+  {
+    "use": {
+      "data": {
+        "type": "PIXEL"
+      }
+    },
+    "for": {
+      "data": {
+        "type": "pixel"
+      }
+    }
   }
 ]

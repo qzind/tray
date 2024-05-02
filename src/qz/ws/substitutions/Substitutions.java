@@ -65,10 +65,10 @@ public class Substitutions {
     public JSONObject replace(JSONObject base) throws JSONException {
         for(Rule rule : rules) {
             if (find(base, rule.match, rule.caseSensitive)) {
-                log.debug("Matched JSON substitution rule: {}", rule);
+                log.debug("Matched {}JSON substitution rule: {}", rule.caseSensitive ? "case-sensitive " : "", rule);
                 replace(base, rule.replace);
             } else {
-                log.debug("Unable to match JSON substitution rule: {}", rule);
+                log.debug("Unable to match {}JSON substitution rule: {}", rule.caseSensitive ? "case-sensitive " : "", rule);
             }
         }
         return base;
@@ -345,7 +345,7 @@ public class Substitutions {
 
         @Override
         public String toString() {
-            return caseSensitive ? "case-sensitive " : "" + "for: " + match + ", use: " + replace;
+            return  "for: " + match + ", use: " + replace;
         }
     }
 }

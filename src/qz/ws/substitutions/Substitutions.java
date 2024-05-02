@@ -10,10 +10,10 @@ import qz.utils.ArgValue;
 import qz.utils.ByteUtilities;
 import qz.utils.FileUtilities;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -30,17 +30,16 @@ public class Substitutions {
 
     // Subkeys that are restricted for writing because they can materially impact the content
     private static boolean strict = true;
-    private static HashMap<String, Type> parlous = new HashMap<>();
+    private static final HashMap<Type, String[]> parlous = new HashMap<>();
     static {
-        parlous.put("copies", Type.OPTIONS);
-        parlous.put("data", Type.DATA);
+        parlous.put(Type.OPTIONS, new String[] {"copies"});
+        parlous.put(Type.DATA, new String[] {"data"});
     }
-    private ArrayList<JSONObject> matches, replaces;
-    private ArrayList<Boolean> matchCase;
+    private final ArrayList<Rule> rules;
     private static Substitutions INSTANCE;
 
     public Substitutions(Path path) throws IOException, JSONException {
-        this(new FileInputStream(path.toFile()));
+        this(Files.newInputStream(path.toFile().toPath()));
     }
 
     public Substitutions(InputStream in) throws IOException, JSONException {
@@ -48,32 +47,14 @@ public class Substitutions {
     }
 
     public Substitutions(String serialized) throws JSONException {
-        matches = new ArrayList<>();
-        matchCase = new ArrayList<>();
-        replaces = new ArrayList<>();
+        rules = new ArrayList<>();
 
         JSONArray instructions = new JSONArray(serialized);
         for(int i = 0; i < instructions.length(); i++) {
             JSONObject step = instructions.optJSONObject(i);
             if(step != null) {
-                JSONObject replace = step.optJSONObject("use");
-                if(replace != null) {
-                    sanitize(replace);
-                    this.replaces.add(replace);
-                }
-
-                JSONObject match = step.optJSONObject("for");
-                if(match != null) {
-                    this.matchCase.add(match.optBoolean("caseSensitive", false));
-                    match.remove("caseSensitive");
-                    sanitize(match);
-                    this.matches.add(match);
-                }
+                rules.add(new Rule(step));
             }
-        }
-
-        if(matches.size() != replaces.size()) {
-            throw new SubstitutionException("Mismatched instructions; Each \"use\" must have a matching \"for\".");
         }
     }
 
@@ -82,18 +63,12 @@ public class Substitutions {
     }
 
     public JSONObject replace(JSONObject base) throws JSONException {
-        for(int i = 0; i < matches.size(); i++) {
-            if (find(base, matches.get(i), matchCase.get(i))) {
-                log.debug("Matched {}JSON substitution rule: for: {}, use: {}",
-                          matchCase.get(i) ? "case-sensitive " : "",
-                          matches.get(i),
-                          replaces.get(i));
-                replace(base, replaces.get(i));
+        for(Rule rule : rules) {
+            if (find(base, rule.match, rule.caseSensitive)) {
+                log.debug("Matched JSON substitution rule: {}", rule);
+                replace(base, rule.replace);
             } else {
-                log.debug("Unable to match {}JSON substitution rule: for: {}, use: {}",
-                          matchCase.get(i) ? "case-sensitive " : "",
-                          matches.get(i),
-                          replaces.get(i));
+                log.debug("Unable to match JSON substitution rule: {}", rule);
             }
         }
         return base;
@@ -117,21 +92,20 @@ public class Substitutions {
             throw new SubstitutionException("Replacement JSON is missing \"params\": and is malformed");
         }
 
-        // Second pass of sanitization before we replace
-        for(Iterator it = jsonReplace.keys(); it.hasNext();) {
-            Type type = Type.parse(it.next());
-            if(type != null && !type.isReadOnly()) {
+        if (strict) {
+            // Second pass of sanitization before we replace
+            for(Iterator it = jsonReplace.keys(); it.hasNext(); ) {
+                Type type = Type.parse(it.next());
+                if(type == null || type.isReadOnly()) continue;
                 // Good, let's make sure there are no exceptions
-                if(strict) {
-                    switch(type) {
-                        case DATA:
-                            // Special handling for arrays
-                            JSONArray jsonArray = jsonReplace.optJSONArray(type.getKey());
-                            removeRestrictedSubkeys(jsonArray, type);
-                            break;
-                        default:
-                            removeRestrictedSubkeys(jsonReplace, type);
-                    }
+                switch(type) {
+                    case DATA:
+                        // Special handling for arrays
+                        JSONArray jsonArray = jsonReplace.optJSONArray(type.getKey());
+                        removeRestrictedSubkeys(jsonArray, type);
+                        break;
+                    default:
+                        removeRestrictedSubkeys(jsonReplace, type);
                 }
             }
         }
@@ -142,27 +116,32 @@ public class Substitutions {
         if(jsonObject == null) {
             return;
         }
-        for(Map.Entry<String, Type> entry : parlous.entrySet()) {
-            if (type == entry.getValue()) {
-                JSONObject toCheck = jsonObject.optJSONObject(type.getKey());
-                if(toCheck != null && toCheck.has(entry.getKey())) {
-                    log.warn("Use of { \"{}\": { \"{}\": ... } } is restricted, removing", type.getKey(), entry.getKey());
-                    jsonObject.remove(entry.getKey());
-                }
+
+        String[] parlousFieldNames = parlous.get(type);
+        if(parlousFieldNames == null) return;
+
+        for (String parlousFieldName : parlousFieldNames) {
+            JSONObject toCheck = jsonObject.optJSONObject(type.getKey());
+            if (toCheck != null && toCheck.has(parlousFieldName)) {
+                log.warn("Use of { \"{}\": { \"{}\": ... } } is restricted, removing", type.getKey(), parlousFieldName);
+                jsonObject.remove(parlousFieldName);
             }
         }
     }
+
     private static void removeRestrictedSubkeys(JSONArray jsonArray, Type type) {
         if(jsonArray == null) {
             return;
         }
-        ArrayList<Object> toRemove = new ArrayList();
+
+        ArrayList<Object> toRemove = new ArrayList<>();
         for(int i = 0; i < jsonArray.length(); i++) {
             JSONObject jsonObject;
             if ((jsonObject = jsonArray.optJSONObject(i)) != null) {
-                for(Map.Entry<String, Type> entry : parlous.entrySet()) {
-                    if (jsonObject.has(entry.getKey()) && type == entry.getValue()) {
-                        log.warn("Use of { \"{}\": { \"{}\": ... } } is restricted, removing", type.getKey(), entry.getKey());
+                String[] parlousFieldNames = parlous.get(type);
+                for (String parlousFieldName : parlousFieldNames) {
+                    if (jsonObject.has(parlousFieldName)) {
+                        log.warn("Use of { \"{}\": { \"{}\": ... } } is restricted, removing", type.getKey(), parlousFieldName);
                         toRemove.add(jsonObject);
                     }
                 }
@@ -177,10 +156,9 @@ public class Substitutions {
         // "options" ~= "config"
         Object cache;
 
-
         JSONObject nested = new JSONObject();
         for(Type key : Type.values()) {
-            // Sanitize alts/aliases
+            // If any alts/aliases key are used, switch them out for the standard key
             for(String alt : key.getAlts()) {
                 if ((cache = match.optJSONObject(alt)) != null) {
                     match.put(key.getKey(), cache);
@@ -213,7 +191,7 @@ public class Substitutions {
                 JSONObject params = (JSONObject)cache;
                 if((cache = params.opt("data")) != null) {
                     if (cache instanceof JSONArray) {
-                        // correct
+                        // If "data" is already an array, skip
                     } else {
                         JSONArray wrapped = new JSONArray();
                         wrapped.put(cache);
@@ -233,23 +211,23 @@ public class Substitutions {
                 JSONObject jsonMatch = (JSONObject)match;
                 JSONObject jsonBase = (JSONObject)base;
                 for(Iterator it = jsonMatch.keys(); it.hasNext(); ) {
-                    Object next = it.next();
-                    Object newMatch = jsonMatch.get(next.toString());
+                    String nextKey = it.next().toString();
+                    Object newMatch = jsonMatch.get(nextKey);
 
                     // Check if the key exists, recurse if needed
-                    if(jsonBase.has(next.toString())) {
-                        Object newBase = jsonBase.get(next.toString());
+                    if(jsonBase.has(nextKey)) {
+                        Object newBase = jsonBase.get(nextKey);
 
                         if(replace && isPrimitive(newMatch)) {
                             // Overwrite value, don't recurse
-                            jsonBase.put(next.toString(), newMatch);
+                            jsonBase.put(nextKey, newMatch);
                             continue;
                         } else if(find(newBase, newMatch, caseSensitive, replace)) {
                             continue;
                         }
                     } else if(replace) {
                         // Key doesn't exist, so we'll merge it in
-                        jsonBase.put(next.toString(), newMatch);
+                        jsonBase.put(nextKey, newMatch);
                     }
                     return false; // wasn't found
                 }
@@ -262,7 +240,6 @@ public class Substitutions {
             if(match instanceof JSONArray) {
                 JSONArray matchArray = (JSONArray)match;
                 JSONArray baseArray = (JSONArray)base;
-                match:
                 for(int i = 0; i < matchArray.length(); i++) {
                     Object newMatch = matchArray.get(i);
                     for(int j = 0; j < baseArray.length(); j++) {
@@ -270,7 +247,7 @@ public class Substitutions {
                         if(find(newBase, newMatch, caseSensitive, replace)) {
                             found = true;
                             if(!replace) {
-                                continue match;
+                                return true;
                             }
                         }
                     }
@@ -340,5 +317,35 @@ public class Substitutions {
 
     public static boolean areActive() {
         return Substitutions.getInstance() != null && enabled;
+    }
+
+    private class Rule {
+        private boolean caseSensitive;
+        private JSONObject match, replace;
+
+        Rule(JSONObject json) throws JSONException {
+            JSONObject replaceJSON = json.optJSONObject("use");
+            if(replaceJSON != null) {
+                sanitize(replaceJSON);
+                replace = replaceJSON;
+            }
+
+            JSONObject matchJSON = json.optJSONObject("for");
+            if(matchJSON != null) {
+                caseSensitive = matchJSON.optBoolean("caseSensitive", false);
+                matchJSON.remove("caseSensitive");
+                sanitize(matchJSON);
+                match = matchJSON;
+            }
+
+            if(match == null || replace == null) {
+                throw new SubstitutionException("Mismatched instructions; Each \"use\" must have a matching \"for\".");
+            }
+        }
+
+        @Override
+        public String toString() {
+            return caseSensitive ? "case-sensitive " : "" + "for: " + match + ", use: " + replace;
+        }
     }
 }

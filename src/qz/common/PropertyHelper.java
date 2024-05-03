@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Properties;
 /**
  * Created by Tres on 12/16/2015.
@@ -91,5 +92,9 @@ public class PropertyHelper extends Properties {
             }
         }
         return success;
+    }
+
+    public synchronized Object setProperty(Map.Entry<String, String> pair) {
+        return super.setProperty(pair.getKey(), pair.getValue());
     }
 }

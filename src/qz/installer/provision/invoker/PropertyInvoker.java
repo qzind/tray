@@ -8,7 +8,8 @@ import qz.utils.SystemUtilities;
 
 import java.io.File;
 import java.util.AbstractMap;
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PropertyInvoker implements Invokable {
     private Step step;
@@ -20,10 +21,10 @@ public class PropertyInvoker implements Invokable {
     }
 
     public boolean invoke() {
-        ArrayList<AbstractMap.SimpleEntry<String,String>> pairs = parsePropertyPairs(step);
+        HashMap<String, String> pairs = parsePropertyPairs(step);
         if (!pairs.isEmpty()) {
-            for(AbstractMap.SimpleEntry<String,String> pair : pairs) {
-                properties.setProperty(pair.getKey(), pair.getValue());
+            for(Map.Entry<String, String> pair : pairs.entrySet()) {
+                properties.setProperty(pair);
             }
             if (properties.save()) {
                 log.info("Successfully provisioned '{}' '{}'", pairs.size(), step.getType());
@@ -52,14 +53,18 @@ public class PropertyInvoker implements Invokable {
         return new PropertyHelper(FileUtilities.USER_DIR + File.separator + Constants.PREFS_FILE + ".properties");
     }
 
-    public static ArrayList<AbstractMap.SimpleEntry<String,String>> parsePropertyPairs(Step step) {
-        ArrayList<AbstractMap.SimpleEntry<String,String>> pairs = new ArrayList<>();
+    public static HashMap<String, String> parsePropertyPairs(Step step) {
+        HashMap<String, String> pairs = new HashMap<>();
         if(step.getData() != null && !step.getData().trim().isEmpty()) {
             String[] props = step.getData().split("\\|");
             for(String prop : props) {
                 AbstractMap.SimpleEntry<String,String> pair = parsePropertyPair(step, prop);
                 if (pair != null) {
-                    pairs.add(pair);
+                    if(pairs.get(pair.getKey()) != null) {
+                        log.warn("Property {} already exists, replacing [before: {}, after: {}] ",
+                                 pair.getKey(), pairs.get(pair.getKey()), pair.getValue());
+                    }
+                    pairs.put(pair.getKey(), pair.getValue());
                 }
             }
         } else {

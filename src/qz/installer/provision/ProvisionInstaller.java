@@ -27,8 +27,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import static qz.common.Constants.*;
@@ -142,21 +142,22 @@ public class ProvisionInstaller {
     public void setCustomPorts(Installer installer) {
         for(Step step : steps) {
             if(step.getType() == Type.PROPERTY) {
-               for(AbstractMap.SimpleEntry<String,String> pair : PropertyInvoker.parsePropertyPairs(step)) {
-                    if(pair.getKey().equals(ArgValue.WEBSOCKET_SECURE_PORTS.getMatch())) {
-                        List<Integer> securePorts = PrefsSearch.parseIntegerArray(pair.getValue());
-                        if(!securePorts.isEmpty()) {
-                            installer.setSecurePorts(securePorts);
-                            log.info("Picked up custom secure ports from {}: [{}]", PROVISION_FILE, StringUtils.join(securePorts, ","));
-                        }
-                    } else if(pair.getKey().equals(ArgValue.WEBSOCKET_INSECURE_PORTS.getMatch())) {
-                       List<Integer> insecurePorts = PrefsSearch.parseIntegerArray(pair.getValue());
-                       if(!insecurePorts.isEmpty()) {
-                           installer.setInsecurePorts(insecurePorts);
-                           log.info("Picked up custom insecure ports from {}: [{}]", PROVISION_FILE, StringUtils.join(insecurePorts, ","));
-                       }
+                HashMap<String, String> pairs = PropertyInvoker.parsePropertyPairs(step);
+                String foundPorts;
+                if((foundPorts = pairs.get(ArgValue.WEBSOCKET_SECURE_PORTS.getMatch())) != null) {
+                    List<Integer> securePorts = PrefsSearch.parseIntegerArray(foundPorts);
+                    if(!securePorts.isEmpty()) {
+                        installer.setSecurePorts(securePorts);
+                        log.info("Picked up custom secure ports from {}: [{}]", PROVISION_FILE, StringUtils.join(securePorts, ","));
                     }
-               }
+                }
+                if((foundPorts = pairs.get(ArgValue.WEBSOCKET_INSECURE_PORTS.getMatch())) != null) {
+                    List<Integer> insecurePorts = PrefsSearch.parseIntegerArray(foundPorts);
+                    if(!insecurePorts.isEmpty()) {
+                        installer.setSecurePorts(insecurePorts);
+                        log.info("Picked up custom insecure ports from {}: [{}]", PROVISION_FILE, StringUtils.join(insecurePorts, ","));
+                    }
+                }
             }
         }
     }

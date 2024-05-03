@@ -148,8 +148,7 @@ public class WindowsInstaller extends Installer {
         WindowsUtilities.addNumberedRegValue(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLWhitelist", String.format("%s://*", DATA_DIR));
 
         // Firewall rules
-        // FIXME: This breaks Windows Installers!!
-        String ports = StringUtils.join(PrintSocketServer.securePorts, ",") + "," + StringUtils.join(PrintSocketServer.insecurePorts, ",");
+        String ports = StringUtils.join(getSecurePorts(), ",") + "," + StringUtils.join(getInsecurePorts(), ",");
         ShellUtilities.execute("netsh.exe", "advfirewall", "firewall", "delete", "rule", String.format("name=%s", ABOUT_TITLE));
         ShellUtilities.execute("netsh.exe", "advfirewall", "firewall", "add", "rule", String.format("name=%s", ABOUT_TITLE),
                                "dir=in", "action=allow", "profile=any", String.format("localport=%s", ports), "localip=any", "protocol=tcp");

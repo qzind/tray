@@ -93,19 +93,23 @@ public class PrefsSearch {
     }
 
     public static Integer[] getIntegerArray(ArgValue argValue, Properties ... propsArray) {
+        List<Integer> parsed = parseIntegerArray(getString(argValue, propsArray));
+        return parsed.toArray(new Integer[parsed.size()]);
+    }
+
+    public static List<Integer> parseIntegerArray(String commaSeparated) {
         List<Integer> parsed = new ArrayList<>();
-        String unparsed = getString(argValue, propsArray);
         try {
-            if (unparsed != null && !unparsed.isEmpty()) {
-                String[] split = unparsed.split(",");
+            if (commaSeparated != null && !commaSeparated.isEmpty()) {
+                String[] split = commaSeparated.split(",");
                 for(String item : split) {
                     parsed.add(Integer.parseInt(item));
                 }
             }
         } catch(NumberFormatException nfe) {
-            log.warn("Failed parsing {} as {}", unparsed, argValue, nfe);
+            log.warn("Failed parsing {} as a valid integer array", commaSeparated, nfe);
         }
-        return parsed.toArray(new Integer[parsed.size()]);
+        return parsed;
     }
 
     public static boolean getBoolean(ArgValue argValue, Properties ... propsArray) {

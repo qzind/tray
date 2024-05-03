@@ -20,27 +20,16 @@ public class PropertyInvoker implements Invokable {
     }
 
     public boolean invoke() {
-        if(step.getData() != null && !step.getData().trim().isEmpty()) {
-            String[] props = step.getData().split("\\|");
-            ArrayList<AbstractMap.SimpleEntry<String,String>> pairs = new ArrayList<>();
-            for(String prop : props) {
-                AbstractMap.SimpleEntry<String,String> pair = parsePropertyPair(step, prop);
-                if (pair != null) {
-                    pairs.add(pair);
-                }
+        ArrayList<AbstractMap.SimpleEntry<String,String>> pairs = parsePropertyPairs(step);
+        if (!pairs.isEmpty()) {
+            for(AbstractMap.SimpleEntry<String,String> pair : pairs) {
+                properties.setProperty(pair.getKey(), pair.getValue());
             }
-            if (!pairs.isEmpty()) {
-                for(AbstractMap.SimpleEntry<String,String> pair : pairs) {
-                    properties.setProperty(pair.getKey(), pair.getValue());
-                }
-                if (properties.save()) {
-                    log.info("Successfully provisioned '{}' '{}'", pairs.size(), step.getType());
-                    return true;
-                }
-                log.error("An error occurred saving properties '{}' to file", step.getData());
+            if (properties.save()) {
+                log.info("Successfully provisioned '{}' '{}'", pairs.size(), step.getType());
+                return true;
             }
-        } else {
-            log.error("Skipping Step '{}', Data is null or empty", step.getType());
+            log.error("An error occurred saving properties '{}' to file", step.getData());
         }
         return false;
     }
@@ -61,6 +50,22 @@ public class PropertyInvoker implements Invokable {
 
     public static PropertyHelper getPreferences(Step step) {
         return new PropertyHelper(FileUtilities.USER_DIR + File.separator + Constants.PREFS_FILE + ".properties");
+    }
+
+    public static ArrayList<AbstractMap.SimpleEntry<String,String>> parsePropertyPairs(Step step) {
+        ArrayList<AbstractMap.SimpleEntry<String,String>> pairs = new ArrayList<>();
+        if(step.getData() != null && !step.getData().trim().isEmpty()) {
+            String[] props = step.getData().split("\\|");
+            for(String prop : props) {
+                AbstractMap.SimpleEntry<String,String> pair = parsePropertyPair(step, prop);
+                if (pair != null) {
+                    pairs.add(pair);
+                }
+            }
+        } else {
+            log.error("Skipping Step '{}', Data is null or empty", step.getType());
+        }
+        return pairs;
     }
 
 

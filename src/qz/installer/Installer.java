@@ -42,6 +42,9 @@ public abstract class Installer {
     public static boolean IS_SILENT =  "1".equals(System.getenv(DATA_DIR + "_silent"));
     public static String JRE_LOCATION = SystemUtilities.isMac() ? "Contents/PlugIns/Java.runtime/Contents/Home" : "runtime";
 
+    private List<Integer> securePorts = Arrays.asList(DEFAULT_WSS_PORTS);
+    private List<Integer> insecurePorts = Arrays.asList(DEFAULT_WSS_PORTS);
+
     public enum PrivilegeLevel {
         USER,
         SYSTEM
@@ -103,8 +106,8 @@ public abstract class Installer {
                 .addSharedDirectory()
                 .addAppLauncher()
                 .addStartupEntry()
-                .addSystemSettings()
-                .invokeProvisioning(Phase.INSTALL);
+                .invokeProvisioning(Phase.INSTALL)
+                .addSystemSettings();
     }
 
     public static void uninstall() {
@@ -359,8 +362,16 @@ public abstract class Installer {
                     Paths.get(getDestination()).resolve(PROVISION_DIR);
             ProvisionInstaller provisionInstaller = new ProvisionInstaller(provisionPath);
             provisionInstaller.invoke(phase);
+
+            // Special case for custom websocket ports
+            switch(phase) {
+                case INSTALL:
+                case UNINSTALL:
+                    provisionInstaller.setCustomPorts(this);
+                    break;
+            }
         } catch(Exception e) {
-            log.warn("An error occurred deleting provisioning directory \"phase\": \"{}\" entries", phase, e);
+            log.warn("An error occurred invoking provision \"phase\": \"{}\"", phase, e);
         }
         return this;
     }
@@ -375,6 +386,22 @@ public abstract class Installer {
             log.warn("An error occurred removing provision directory",  e);
         }
         return this;
+    }
+
+    public void setSecurePorts(List<Integer> securePorts) {
+            this.securePorts = securePorts;
+    }
+
+    public void setInsecurePorts(List<Integer> insecurePorts) {
+        this.insecurePorts = insecurePorts;
+    }
+
+    public List<Integer> getSecurePorts() {
+        return securePorts;
+    }
+
+    public List<Integer> getInsecurePorts() {
+        return insecurePorts;
     }
 
     public static Properties persistProperties(File oldFile, Properties newProps) {

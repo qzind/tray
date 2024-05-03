@@ -364,11 +364,8 @@ public abstract class Installer {
             provisionInstaller.invoke(phase);
 
             // Special case for custom websocket ports
-            switch(phase) {
-                case INSTALL:
-                case UNINSTALL:
+            if(phase == Phase.INSTALL) {
                     provisionInstaller.setCustomPorts(this);
-                    break;
             }
         } catch(Exception e) {
             log.warn("An error occurred invoking provision \"phase\": \"{}\"", phase, e);

@@ -136,30 +136,8 @@ public class ProvisionInstaller {
         return invoker.invoke();
     }
 
-    /**
-     * Loops through steps searching for a property which sets a custom websocket ports
-     */
-    public void setCustomPorts(Installer installer) {
-        for(Step step : steps) {
-            if(step.getType() == Type.PROPERTY) {
-                HashMap<String, String> pairs = PropertyInvoker.parsePropertyPairs(step);
-                String foundPorts;
-                if((foundPorts = pairs.get(ArgValue.WEBSOCKET_SECURE_PORTS.getMatch())) != null) {
-                    List<Integer> securePorts = PrefsSearch.parseIntegerArray(foundPorts);
-                    if(!securePorts.isEmpty()) {
-                        installer.setSecurePorts(securePorts);
-                        log.info("Picked up custom secure ports from {}: [{}]", PROVISION_FILE, StringUtils.join(securePorts, ","));
-                    }
-                }
-                if((foundPorts = pairs.get(ArgValue.WEBSOCKET_INSECURE_PORTS.getMatch())) != null) {
-                    List<Integer> insecurePorts = PrefsSearch.parseIntegerArray(foundPorts);
-                    if(!insecurePorts.isEmpty()) {
-                        installer.setSecurePorts(insecurePorts);
-                        log.info("Picked up custom insecure ports from {}: [{}]", PROVISION_FILE, StringUtils.join(insecurePorts, ","));
-                    }
-                }
-            }
-        }
+    public ArrayList<Step> getSteps() {
+        return steps;
     }
 
     private static ArrayList<Step> parse(JSONArray jsonArray, Object relativeObject) throws JSONException {

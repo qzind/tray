@@ -20,6 +20,7 @@ import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.installer.provision.ProvisionInstaller;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
+import qz.ws.WebsocketPorts;
 
 import java.io.*;
 import java.nio.file.*;
@@ -42,8 +43,7 @@ public abstract class Installer {
     public static boolean IS_SILENT =  "1".equals(System.getenv(DATA_DIR + "_silent"));
     public static String JRE_LOCATION = SystemUtilities.isMac() ? "Contents/PlugIns/Java.runtime/Contents/Home" : "runtime";
 
-    private List<Integer> securePorts = Arrays.asList(DEFAULT_WSS_PORTS);
-    private List<Integer> insecurePorts = Arrays.asList(DEFAULT_WSS_PORTS);
+    WebsocketPorts websocketPorts;
 
     public enum PrivilegeLevel {
         USER,
@@ -365,7 +365,7 @@ public abstract class Installer {
 
             // Special case for custom websocket ports
             if(phase == Phase.INSTALL) {
-                    provisionInstaller.setCustomPorts(this);
+                    websocketPorts = WebsocketPorts.parseFromSteps(provisionInstaller.getSteps());
             }
         } catch(Exception e) {
             log.warn("An error occurred invoking provision \"phase\": \"{}\"", phase, e);
@@ -383,22 +383,6 @@ public abstract class Installer {
             log.warn("An error occurred removing provision directory",  e);
         }
         return this;
-    }
-
-    public void setSecurePorts(List<Integer> securePorts) {
-            this.securePorts = securePorts;
-    }
-
-    public void setInsecurePorts(List<Integer> insecurePorts) {
-        this.insecurePorts = insecurePorts;
-    }
-
-    public List<Integer> getSecurePorts() {
-        return securePorts;
-    }
-
-    public List<Integer> getInsecurePorts() {
-        return insecurePorts;
     }
 
     public static Properties persistProperties(File oldFile, Properties newProps) {

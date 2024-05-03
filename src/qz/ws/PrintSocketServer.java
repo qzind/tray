@@ -20,7 +20,6 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import qz.App;
-import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.installer.certificate.CertificateManager;
 import qz.utils.ArgValue;
@@ -33,7 +32,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by robert on 9/9/2014.
@@ -44,13 +42,9 @@ public class PrintSocketServer {
     private static final Logger log = LogManager.getLogger(PrintSocketServer.class);
 
     private static final int MAX_MESSAGE_SIZE = Integer.MAX_VALUE;
-    public static List<Integer> securePorts;
-    public static List<Integer> insecurePorts;
-
-    private static final AtomicInteger securePortIndex = new AtomicInteger(0);
-    private static final AtomicInteger insecurePortIndex = new AtomicInteger(0);
     private static final AtomicBoolean running = new AtomicBoolean(false);
 
+    private static WebsocketPorts websocketPorts;
     private static TrayManager trayManager;
     private static Server server;
     private static boolean httpsOnly;
@@ -65,7 +59,7 @@ public class PrintSocketServer {
         wssHost = PrefsSearch.getString(ArgValue.SECURITY_WSS_HOST, certManager.getProperties());
         httpsOnly = PrefsSearch.getBoolean(ArgValue.SECURITY_WSS_HTTPSONLY, certManager.getProperties());
         sniStrict = PrefsSearch.getBoolean(ArgValue.SECURITY_WSS_SNISTRICT, certManager.getProperties());
-        parseWebSocketPorts();
+        websocketPorts = WebsocketPorts.parseFromProperties();
 
         server = findAvailableSecurePort(certManager);
 
@@ -79,10 +73,10 @@ public class PrintSocketServer {
             return;
         }
 
-        while(!running.get() && insecurePortIndex.get() < insecurePorts.size()) {
+        while(!running.get() && websocketPorts.insecureBoundsCheck()) {
             try {
                 ServerConnector connector = new ServerConnector(server);
-                connector.setPort(getInsecurePortInUse());
+                connector.setPort(websocketPorts.getInsecurePort());
                 if(httpsOnly) {
                     server.setConnectors(new Connector[] {secureConnector});
                 } else if (secureConnector != null) {
@@ -117,8 +111,7 @@ public class PrintSocketServer {
                     try {
                         trayManager.setDangerIcon();
                         running.set(false);
-                        securePortIndex.set(0);
-                        insecurePortIndex.set(0);
+                        websocketPorts.resetIndices();
                         server.stop();
                     }
                     catch(Exception e) {
@@ -130,15 +123,15 @@ public class PrintSocketServer {
                 running.set(true);
 
                 log.info("Server started on port(s) " + getPorts(server));
-                int insecurePort = httpsOnly ? -1 : insecurePortIndex.get();
-                int securePort = secureConnector == null ? -1 : securePortIndex.get();
-                trayManager.setServer(server, insecurePort, securePort);
+                websocketPorts.setHttpsOnly(httpsOnly);
+                websocketPorts.setHttpOnly(secureConnector == null);
+                trayManager.setServer(server, websocketPorts);
                 server.join();
             }
             catch(IOException | MultiException e) {
                 //order of getConnectors is the order we added them -> insecure first
                 if (server.isFailed()) {
-                    insecurePortIndex.incrementAndGet();
+                    websocketPorts.nextInsecureIndex();
                 }
 
                 //explicitly stop the server, because if only 1 port has an exception the other will still be opened
@@ -157,7 +150,7 @@ public class PrintSocketServer {
 
         if (certManager != null) {
             final AtomicBoolean runningSecure = new AtomicBoolean(false);
-            while(!runningSecure.get() && securePortIndex.get() < securePorts.size()) {
+            while(!runningSecure.get() && websocketPorts.secureBoundsCheck()) {
                 try {
                     // Bind the secure socket on the proper port number (i.e. 8181), add it as an additional connector
                     SslConnectionFactory sslConnection = new SslConnectionFactory(certManager.configureSslContextFactory(), HttpVersion.HTTP_1_1.asString());
@@ -172,11 +165,11 @@ public class PrintSocketServer {
 
                     ServerConnector secureConnector = new ServerConnector(server, sslConnection, httpConnection);
                     secureConnector.setHost(wssHost);
-                    secureConnector.setPort(getSecurePortInUse());
+                    secureConnector.setPort(websocketPorts.getSecurePort());
                     server.setConnectors(new Connector[] {secureConnector});
 
                     server.start();
-                    log.trace("Established secure WebSocket on port {}", getSecurePortInUse());
+                    log.trace("Established secure WebSocket on port {}", websocketPorts.getSecurePort());
 
                     //only starting to test port availability; insecure port will actually start
                     server.stop();
@@ -184,7 +177,7 @@ public class PrintSocketServer {
                 }
                 catch(IOException | MultiException e) {
                     if (server.isFailed()) {
-                        securePortIndex.incrementAndGet();
+                        websocketPorts.nextSecureIndex();
                     }
 
                     try { server.stop(); }catch(Exception stopEx) { stopEx.printStackTrace(); }
@@ -225,37 +218,9 @@ public class PrintSocketServer {
         App.main(args);
     }
 
-    /**
-     * Parses WebSocket ports from preferences or fallback to defaults is a problem is found
-     */
-    public static void parseWebSocketPorts() {
-        Integer[] secure = PrefsSearch.getIntegerArray(ArgValue.WEBSOCKET_SECURE_PORTS);
-        Integer[] insecure = PrefsSearch.getIntegerArray(ArgValue.WEBSOCKET_INSECURE_PORTS);
-        boolean fallback = false;
-        if(secure.length == 0 || insecure.length == 0) {
-            log.warn("One or more WebSocket ports is empty, falling back to defaults");
-            fallback = true;
-        }
-        if(secure.length != insecure.length) {
-            log.warn("Secure ({}) and insecure ({}) WebSocket port counts mismatch, falling back to defaults", secure, insecure);
-            fallback = true;
-        }
-        if(fallback) {
-            log.warn("Falling back to default WebSocket ports: ({}), ({})", secure, insecure);
-            secure = Constants.DEFAULT_WSS_PORTS;
-            insecure = Constants.DEFAULT_WS_PORTS;
-        }
 
-        securePorts = Collections.unmodifiableList(Arrays.asList(secure));
-        insecurePorts = Collections.unmodifiableList(Arrays.asList(insecure));
-    }
-
-    public static int getSecurePortInUse() {
-        return securePorts.get(securePortIndex.get());
-    }
-
-    public static int getInsecurePortInUse() {
-        return insecurePorts.get(insecurePortIndex.get());
+    public static WebsocketPorts getWebsocketPorts() {
+        return websocketPorts;
     }
 
     /**

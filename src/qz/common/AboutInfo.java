@@ -18,6 +18,7 @@ import qz.utils.MacUtilities;
 import qz.utils.StringUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
+import qz.ws.WebsocketPorts;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -68,6 +69,7 @@ public class AboutInfo {
     private static JSONObject socket(CertificateManager certificateManager, String domain) throws JSONException {
         JSONObject socket = new JSONObject();
         String sanitizeDomain = StringUtilities.escapeHtmlEntities(domain);
+        WebsocketPorts websocketPorts = PrintSocketServer.getWebsocketPorts();
 
         // Gracefully handle XSS per https://github.com/qzind/tray/issues/1099
         if(sanitizeDomain.contains("&lt;") || sanitizeDomain.contains("&gt;")) {
@@ -78,9 +80,9 @@ public class AboutInfo {
         socket
                 .put("domain", sanitizeDomain)
                 .put("secureProtocol", "wss")
-                .put("securePort", certificateManager.isSslActive() ? PrintSocketServer.getSecurePortInUse() : "none")
+                .put("securePort", certificateManager.isSslActive() ? websocketPorts.getSecurePort() : "none")
                 .put("insecureProtocol", "ws")
-                .put("insecurePort", PrintSocketServer.getInsecurePortInUse());
+                .put("insecurePort", websocketPorts.getInsecurePort());
 
         return socket;
     }

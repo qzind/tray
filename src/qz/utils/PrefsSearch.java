@@ -92,9 +92,8 @@ public class PrefsSearch {
         return getInt(argValue, true, propsArray);
     }
 
-    public static Integer[] getIntegerArray(ArgValue argValue, Properties ... propsArray) {
-        List<Integer> parsed = parseIntegerArray(getString(argValue, propsArray));
-        return parsed.toArray(new Integer[parsed.size()]);
+    public static List<Integer> getIntegerArray(ArgValue argValue, Properties ... propsArray) {
+        return parseIntegerArray(getString(argValue, propsArray));
     }
 
     public static List<Integer> parseIntegerArray(String commaSeparated) {

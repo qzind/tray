@@ -8,7 +8,8 @@ import qz.utils.SystemUtilities;
 
 import java.io.File;
 import java.util.AbstractMap;
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PropertyInvoker implements Invokable {
     private Step step;
@@ -20,27 +21,16 @@ public class PropertyInvoker implements Invokable {
     }
 
     public boolean invoke() {
-        if(step.getData() != null && !step.getData().trim().isEmpty()) {
-            String[] props = step.getData().split("\\|");
-            ArrayList<AbstractMap.SimpleEntry<String,String>> pairs = new ArrayList<>();
-            for(String prop : props) {
-                AbstractMap.SimpleEntry<String,String> pair = parsePropertyPair(step, prop);
-                if (pair != null) {
-                    pairs.add(pair);
-                }
+        HashMap<String, String> pairs = parsePropertyPairs(step);
+        if (!pairs.isEmpty()) {
+            for(Map.Entry<String, String> pair : pairs.entrySet()) {
+                properties.setProperty(pair);
             }
-            if (!pairs.isEmpty()) {
-                for(AbstractMap.SimpleEntry<String,String> pair : pairs) {
-                    properties.setProperty(pair.getKey(), pair.getValue());
-                }
-                if (properties.save()) {
-                    log.info("Successfully provisioned '{}' '{}'", pairs.size(), step.getType());
-                    return true;
-                }
-                log.error("An error occurred saving properties '{}' to file", step.getData());
+            if (properties.save()) {
+                log.info("Successfully provisioned '{}' '{}'", pairs.size(), step.getType());
+                return true;
             }
-        } else {
-            log.error("Skipping Step '{}', Data is null or empty", step.getType());
+            log.error("An error occurred saving properties '{}' to file", step.getData());
         }
         return false;
     }
@@ -61,6 +51,26 @@ public class PropertyInvoker implements Invokable {
 
     public static PropertyHelper getPreferences(Step step) {
         return new PropertyHelper(FileUtilities.USER_DIR + File.separator + Constants.PREFS_FILE + ".properties");
+    }
+
+    public static HashMap<String, String> parsePropertyPairs(Step step) {
+        HashMap<String, String> pairs = new HashMap<>();
+        if(step.getData() != null && !step.getData().trim().isEmpty()) {
+            String[] props = step.getData().split("\\|");
+            for(String prop : props) {
+                AbstractMap.SimpleEntry<String,String> pair = parsePropertyPair(step, prop);
+                if (pair != null) {
+                    if(pairs.get(pair.getKey()) != null) {
+                        log.warn("Property {} already exists, replacing [before: {}, after: {}] ",
+                                 pair.getKey(), pairs.get(pair.getKey()), pair.getValue());
+                    }
+                    pairs.put(pair.getKey(), pair.getValue());
+                }
+            }
+        } else {
+            log.error("Skipping Step '{}', Data is null or empty", step.getType());
+        }
+        return pairs;
     }
 
 

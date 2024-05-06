@@ -166,7 +166,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
             // Some OSs (e.g. FreeBSD) return null for server.getURI(), fallback to sane values
             URI uri = server.getURI();
             String scheme = uri == null ? "http" : uri.getScheme();
-            int port = uri == null ? PrintSocketServer.getInsecurePortInUse(): uri.getPort();
+            int port = uri == null ? PrintSocketServer.getWebsocketPorts().getInsecurePort(): uri.getPort();
             linkLibrary.setLinkLocation(String.format("%s://%s:%s", scheme, AboutInfo.getPreferredHostname(), port));
         }
         return linkLibrary;

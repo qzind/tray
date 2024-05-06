@@ -20,6 +20,7 @@ import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.installer.provision.ProvisionInstaller;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
+import qz.ws.WebsocketPorts;
 
 import java.io.*;
 import java.nio.file.*;
@@ -41,6 +42,8 @@ public abstract class Installer {
     // Silence prompts within our control
     public static boolean IS_SILENT =  "1".equals(System.getenv(DATA_DIR + "_silent"));
     public static String JRE_LOCATION = SystemUtilities.isMac() ? "Contents/PlugIns/Java.runtime/Contents/Home" : "runtime";
+
+    WebsocketPorts websocketPorts;
 
     public enum PrivilegeLevel {
         USER,
@@ -103,8 +106,8 @@ public abstract class Installer {
                 .addSharedDirectory()
                 .addAppLauncher()
                 .addStartupEntry()
-                .addSystemSettings()
-                .invokeProvisioning(Phase.INSTALL);
+                .invokeProvisioning(Phase.INSTALL)
+                .addSystemSettings();
     }
 
     public static void uninstall() {
@@ -362,8 +365,13 @@ public abstract class Installer {
                     Paths.get(getDestination()).resolve(PROVISION_DIR);
             ProvisionInstaller provisionInstaller = new ProvisionInstaller(provisionPath);
             provisionInstaller.invoke(phase);
+
+            // Special case for custom websocket ports
+            if(phase == Phase.INSTALL) {
+                    websocketPorts = WebsocketPorts.parseFromSteps(provisionInstaller.getSteps());
+            }
         } catch(Exception e) {
-            log.warn("An error occurred deleting provisioning directory \"phase\": \"{}\" entries", phase, e);
+            log.warn("An error occurred invoking provision \"phase\": \"{}\"", phase, e);
         }
         return this;
     }

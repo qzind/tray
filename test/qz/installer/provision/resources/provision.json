@@ -92,6 +92,18 @@
         "description": "[PROPERTY] at 'certgen' (qz-tray.properties)",
         "type": "property",
         "os": "*",
+        "data": "websocket.secure.ports=9191,9292,9393,9494"
+    },
+    {
+        "description": "[PROPERTY] at 'certgen' (qz-tray.properties)",
+        "type": "property",
+        "os": "*",
+        "data": "websocket.insecure.ports=9192,9293,9394,9495"
+    },
+    {
+        "description": "[PROPERTY] at 'certgen' (qz-tray.properties)",
+        "type": "property",
+        "os": "*",
         "data": "log.size=2097152"
     },
     {

@@ -1,5 +1,6 @@
 package qz.utils;
 
+import org.apache.commons.lang3.StringUtils;
 import qz.common.Constants;
 import qz.ws.substitutions.Substitutions;
 
@@ -88,6 +89,10 @@ public enum ArgValue {
                            "security.wss.httpsonly"),
     SECURITY_WSS_HOST(PREFERENCES, "Influences which physical adapter to bind to by setting the host parameter for http/websocket listening", null, "0.0.0.0",
                            "security.wss.host"),
+    WEBSOCKET_SECURE_PORTS(PREFERENCES, "Comma separated list of secure websocket (wss://) ports to use", null, StringUtils.join(Constants.DEFAULT_WSS_PORTS, ","),
+                           "websocket.secure.ports"),
+    WEBSOCKET_INSECURE_PORTS(PREFERENCES, "Comma separated list of insecure websocket (ws://) ports to use", null, StringUtils.join(Constants.DEFAULT_WS_PORTS, ","),
+                           "websocket.insecure.ports"),
     LOG_DISABLE(PREFERENCES, "Disable/enable logging features", null, false,
         "log.disable"),
     LOG_ROTATE(PREFERENCES, "Number of log files to retain when the size fills up", null, 5,

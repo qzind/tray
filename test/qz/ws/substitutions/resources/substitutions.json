@@ -1,0 +1,109 @@
+[
+  {
+    "use":{
+      "config": {
+        "size": {
+          "width": 100,
+          "height": 150
+        },
+        "units": "mm"
+      }
+    },
+    "for": {
+      "config": {
+        "size": {
+          "width": 4,
+          "height": 6
+        },
+        "units": "in"
+      }
+    }
+  },
+  {
+    "use": {
+      "printer": "PDF"
+    },
+    "for": {
+      "printer": "PDFwriter"
+    }
+  },
+  {
+    "use": {
+      "data": {
+        "options": {
+          "pageWidth": 8.5,
+          "pageHeight": 14
+        }
+      }
+    },
+    "for": {
+      "data": {
+        "options": {
+          "pageWidth": "8.5",
+          "pageHeight": "11"
+        }
+      }
+    }
+  },
+  {
+    "use": {
+      "query": "pdf"
+    },
+    "for": {
+      "query": "zzz"
+    }
+  },
+  {
+    "use": {
+      "config": {
+        "copies": 3
+      }
+    },
+    "for": {
+      "config": {
+        "copies": 1
+      }
+    }
+  },
+  {
+    "use": {
+      "printer": "PDFwriter"
+    },
+    "for": {
+      "caseSensitive": true,
+      "printer": "xps document writer"
+    }
+  },
+  {
+    "use": {
+      "data": {
+        "data": "https://yahoo.com"
+      }
+    },
+    "for": {
+      "data": {
+        "data": "https://demo.qz.io/assets/pdf_sample.pdf"
+      }
+    }
+  },
+  {
+    "use": {
+      "printer": "ZDesigner"
+    },
+    "for": {
+      "data": [ "^XA\n" ]
+    }
+  },
+  {
+    "use": {
+      "data": {
+        "type": "PIXEL"
+      }
+    },
+    "for": {
+      "data": {
+        "type": "pixel"
+      }
+    }
+  }
+]

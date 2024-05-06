@@ -11,6 +11,7 @@
 
 package qz.installer.shortcut;
 
+import com.sun.jna.platform.win32.Win32Exception;
 import mslinks.ShellLinkException;
 import mslinks.ShellLinkHelper;
 import qz.common.Constants;
@@ -32,7 +33,12 @@ public class WindowsShortcutCreator extends ShortcutCreator {
     }
 
     public boolean canAutoStart() {
-        return Files.exists(Paths.get(WindowsSpecialFolders.COMMON_STARTUP.toString(), SHORTCUT_NAME));
+        try {
+            return Files.exists(Paths.get(WindowsSpecialFolders.COMMON_STARTUP.toString(), SHORTCUT_NAME));
+        } catch(Win32Exception e) {
+            log.warn("An exception occurred locating the startup folder; autostart cannot be determined.", e);
+        }
+        return false;
     }
 
     private void createShortcut(String folderPath) {

@@ -51,7 +51,7 @@ public class ArgParser {
 
     private static final String USAGE_COMMAND = String.format("java -jar %s.jar", PROPS_FILE);
     private static final String USAGE_COMMAND_PARAMETER = String.format("java -Dfoo.bar=<value> -jar %s.jar", PROPS_FILE);
-    private static final int DESCRIPTION_COLUMN = 30;
+    private static final int DESCRIPTION_COLUMN = 35;
     private static final int INDENT_SIZE = 2;
 
     private List<String> args;

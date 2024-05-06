@@ -27,6 +27,7 @@ import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
 import qz.ws.WebsocketPorts;
+import qz.ws.substitutions.Substitutions;
 
 import javax.swing.*;
 import java.awt.*;
@@ -98,6 +99,9 @@ public class TrayManager {
 
         // Set strict certificate mode preference
         Certificate.setTrustBuiltIn(!getPref(TRAY_STRICTMODE));
+
+        // Configures JSON websocket messages
+        Substitutions.getInstance();
 
         // Set FileIO security
         FileUtilities.setFileIoEnabled(getPref(SECURITY_FILE_ENABLED));

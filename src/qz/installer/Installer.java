@@ -217,6 +217,9 @@ public abstract class Installer {
         files.add("demo/js/qz-websocket.js");
         files.add("windows-icon.ico");
 
+        // QZ Tray 2.2.3-SNAPSHOT accidentally wrote certs in the wrong place
+        dirs.add("ssl");
+
         // QZ Tray 2.1 files
         if(SystemUtilities.isMac()) {
             // Moved to macOS Application Bundle standard https://developer.apple.com/go/?id=bundle-structure

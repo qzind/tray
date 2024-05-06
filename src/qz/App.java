@@ -21,6 +21,7 @@ import qz.installer.provision.ProvisionInstaller;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
+import qz.ws.substitutions.Substitutions;
 
 import java.io.File;
 import java.security.cert.X509Certificate;
@@ -43,6 +44,8 @@ public class App {
         log.info(Constants.ABOUT_TITLE + " vendor: {}", Constants.ABOUT_COMPANY);
         log.info("Java version: {}", Constants.JAVA_VERSION.toString());
         log.info("Java vendor: {}", Constants.JAVA_VENDOR);
+        Substitutions.setEnabled(PrefsSearch.getBoolean(ArgValue.SECURITY_SUBSTITUTIONS_ENABLE));
+        Substitutions.setStrict(PrefsSearch.getBoolean(ArgValue.SECURITY_SUBSTITUTIONS_STRICT));
 
         CertificateManager certManager = null;
         try {

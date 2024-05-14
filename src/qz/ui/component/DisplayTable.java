@@ -1,5 +1,8 @@
 package qz.ui.component;
 
+import qz.utils.SystemUtilities;
+import qz.utils.UnixUtilities;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -55,8 +58,9 @@ public class DisplayTable extends JTable {
             model.addRow(new Object[columns]);
         }
 
-        int normalWidth = (int)getPreferredScrollableViewportSize().getWidth();
-        int autoHeight = (int)getPreferredSize().getHeight();
+        double scaleFactor = SystemUtilities.isLinux() ? UnixUtilities.getScaleFactor() : 1;
+        int normalWidth = (int)(getPreferredScrollableViewportSize().getWidth() * scaleFactor);
+        int autoHeight = (int)(getPreferredSize().getHeight() * scaleFactor);
         setPreferredScrollableViewportSize(new Dimension(normalWidth, autoHeight));
         setFillsViewportHeight(true);
         refreshComponents();

@@ -169,12 +169,11 @@ public class IconCache {
         // Stash scaled 2x, 3x versions if missing
         int maxScale = 3;
         for(Icon i : Icon.values()) {
+            // Assume single-resource icons are lonely and want scaled instances
             if (i.fileNames.length != 1) {
                 continue;
             }
             for(int scale = 2; scale <= maxScale; scale++) {
-                // Assume single-resource icons are lonely and want scaled instances
-
                 BufferedImage bi = images.get(i.getId());
                 // Assume square icon (filename is derived from width only)
                 String id = i.getId();

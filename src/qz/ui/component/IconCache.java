@@ -166,7 +166,7 @@ public class IconCache {
                 images.put(id, bi);
             }
         }
-        // Stash scaled 2x, 3x, 4x versions if missing
+        // Stash scaled 2x, 3x versions if missing
         int maxScale = 3;
         for(Icon i : Icon.values()) {
             if (i.fileNames.length != 1) {

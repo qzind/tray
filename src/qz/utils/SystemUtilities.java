@@ -520,23 +520,23 @@ public class SystemUtilities {
      * @return Logical dpi scale as dpi/96
      */
     private static double getWindowScaleFactor(boolean forceRefresh) {
-        if(!forceRefresh && windowScaleFactor != -1) {
-            return windowScaleFactor;
+        if(windowScaleFactor == -1 || forceRefresh) {
+            // MacOS is always 1
+            if (isMac()) {
+                return windowScaleFactor = 1;
+            }
+            // Windows/Linux on JDK8 honors scaling
+            if (Constants.JAVA_VERSION.lessThan(Version.valueOf("11.0.0"))) {
+                return windowScaleFactor = Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+            }
+            // Windows on JDK11 is always 1
+            if (isWindows()) {
+                return windowScaleFactor = 1;
+            }
+            // Linux/Unix on JDK11 requires JNA calls to Gdk
+            return windowScaleFactor = UnixUtilities.getScaleFactor();
         }
-        // MacOS is always 1
-        if (isMac()) {
-            return 1;
-        }
-        // Windows/Linux on JDK8 honors scaling
-        if (Constants.JAVA_VERSION.lessThan(Version.valueOf("11.0.0"))) {
-            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
-        }
-        // Windows on JDK11 is always 1
-        if(isWindows()) {
-            return 1;
-        }
-        // Linux/Unix on JDK11 requires JNA calls to Gdk
-        return UnixUtilities.getScaleFactor();
+        return windowScaleFactor;
     }
 
     public static double getWindowScaleFactor() {

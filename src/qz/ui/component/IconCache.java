@@ -166,28 +166,30 @@ public class IconCache {
                 images.put(id, bi);
             }
         }
-        // Stash scaled 2x, 3x versions if missing
+        // Stash scaled 2x, 3x, 4x versions if missing
         int maxScale = 3;
         for(Icon i : Icon.values()) {
+            if (i.fileNames.length != 1) {
+                continue;
+            }
             for(int scale = 2; scale <= maxScale; scale++) {
                 // Assume single-resource icons are lonely and want scaled instances
-                if (i.fileNames.length == 1) {
-                    BufferedImage bi = images.get(i.getId());
-                    // Assume square icon (filename is derived from width only)
-                    String id = i.getId();
-                    int loc = id.lastIndexOf(".");
-                    if(loc == -1) {
-                        continue;
-                    }
-                    String name = id.substring(0, loc);
-                    String ext = id.substring(loc + 1);
-                    String newSize = String.format("%s-%s.%s", name,  bi.getWidth() * scale, ext);
-                    if (!images.containsKey(newSize)) {
-                        i.addId(newSize);
-                        BufferedImage newBi = clone(bi, scale);
-                        imageIcons.put(newSize, new ImageIcon(newBi));
-                        images.put(newSize, newBi);
-                    }
+
+                BufferedImage bi = images.get(i.getId());
+                // Assume square icon (filename is derived from width only)
+                String id = i.getId();
+                int loc = id.lastIndexOf(".");
+                if(loc == -1) {
+                    continue;
+                }
+                String name = id.substring(0, loc);
+                String ext = id.substring(loc + 1);
+                String newSize = String.format("%s-%s.%s", name,  bi.getWidth() * scale, ext);
+                if (!images.containsKey(newSize)) {
+                    i.addId(newSize);
+                    BufferedImage newBi = clone(bi, scale);
+                    imageIcons.put(newSize, new ImageIcon(newBi));
+                    images.put(newSize, newBi);
                 }
             }
         }

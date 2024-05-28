@@ -75,7 +75,7 @@ public class IconCache {
         BANNER_ICON("qz-banner.png");
 
         private boolean padded = false;
-        final String[] fileNames;
+        private String[] fileNames;
 
         /**
          * Default constructor
@@ -133,6 +133,11 @@ public class IconCache {
         }
 
         public String[] getIds() { return fileNames; }
+
+        private void addId(String id) {
+            fileNames = Arrays.copyOf(fileNames, fileNames.length + 1);
+            fileNames[fileNames.length - 1] = id;
+        }
     }
 
     private final HashMap<String,ImageIcon> imageIcons;
@@ -161,6 +166,32 @@ public class IconCache {
                 images.put(id, bi);
             }
         }
+        // Stash scaled 2x, 3x versions if missing
+        int maxScale = 3;
+        for(Icon i : Icon.values()) {
+            // Assume single-resource icons are lonely and want scaled instances
+            if (i.fileNames.length != 1) {
+                continue;
+            }
+            for(int scale = 2; scale <= maxScale; scale++) {
+                BufferedImage bi = images.get(i.getId());
+                // Assume square icon (filename is derived from width only)
+                String id = i.getId();
+                int loc = id.lastIndexOf(".");
+                if(loc == -1) {
+                    continue;
+                }
+                String name = id.substring(0, loc);
+                String ext = id.substring(loc + 1);
+                String newSize = String.format("%s-%s.%s", name,  bi.getWidth() * scale, ext);
+                if (!images.containsKey(newSize)) {
+                    i.addId(newSize);
+                    BufferedImage newBi = clone(bi, scale);
+                    imageIcons.put(newSize, new ImageIcon(newBi));
+                    images.put(newSize, newBi);
+                }
+            }
+        }
     }
 
     /**
@@ -170,10 +201,20 @@ public class IconCache {
      * @return the ImageIcon in the cache
      */
     public ImageIcon getIcon(Icon i) {
-        return imageIcons.get(i.getId());
+        return SystemUtilities.getWindowScaleFactor() != 1 ?
+                getIcon(i, true) : imageIcons.get(i.getId());
     }
 
-    public ImageIcon getIcon(String id) {
+    private ImageIcon getIcon(Icon i, boolean inferScale) {
+        if(!inferScale) {
+            return imageIcons.get(i.getId());
+        }
+        ImageIcon baseIcon = imageIcons.get(i.getId());
+        Dimension scaled = SystemUtilities.scaleWindowDimension(baseIcon.getIconWidth(), baseIcon.getIconHeight());
+        return imageIcons.get(i.getId(scaled));
+    }
+
+    private ImageIcon getIcon(String id) {
         return imageIcons.get(id);
     }
 
@@ -287,7 +328,11 @@ public class IconCache {
     }
 
     public static BufferedImage clone(BufferedImage src) {
-        Image tmp = src.getScaledInstance(src.getWidth(), src.getHeight(), src.getType());
+        return clone(src, 1);
+    }
+
+    public static BufferedImage clone(BufferedImage src, int scaleFactor) {
+        Image tmp = src.getScaledInstance(src.getWidth() * scaleFactor, src.getHeight() * scaleFactor, src.getType());
         BufferedImage dest = new BufferedImage(tmp.getWidth(null), tmp.getHeight(null), BufferedImage.TYPE_INT_ARGB);
         Graphics g = dest.createGraphics();
         g.drawImage(tmp, 0, 0, null);

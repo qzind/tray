@@ -55,6 +55,8 @@ public class SystemUtilities {
     private static final Os OS_TYPE = Os.bestMatch(OS_NAME);
     private static final Arch JRE_ARCH = Arch.bestMatch(OS_ARCH);
     private static final Logger log = LogManager.getLogger(TrayManager.class);
+
+    private static double windowScaleFactor = -1;
     private static final Locale defaultLocale = Locale.getDefault();
 
     static {
@@ -473,7 +475,7 @@ public class SystemUtilities {
         }
 
         //adjust for dpi scaling
-        double dpiScale = getWindowScaleFactor();
+        double dpiScale = getWindowScaleFactor(true);
         if (dpiScale == 0) {
             log.debug("Invalid window scale value: {}, we'll center on the primary monitor instead", dpiScale);
             dialog.setLocationRelativeTo(null);
@@ -517,21 +519,40 @@ public class SystemUtilities {
      * See issues #284, #448
      * @return Logical dpi scale as dpi/96
      */
+    private static double getWindowScaleFactor(boolean forceRefresh) {
+        if(windowScaleFactor == -1 || forceRefresh) {
+            // MacOS is always 1
+            if (isMac()) {
+                return windowScaleFactor = 1;
+            }
+            // Windows/Linux on JDK8 honors scaling
+            if (Constants.JAVA_VERSION.lessThan(Version.valueOf("11.0.0"))) {
+                return windowScaleFactor = Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
+            }
+            // Windows on JDK11 is always 1
+            if (isWindows()) {
+                return windowScaleFactor = 1;
+            }
+            // Linux/Unix on JDK11 requires JNA calls to Gdk
+            return windowScaleFactor = UnixUtilities.getScaleFactor();
+        }
+        return windowScaleFactor;
+    }
+
     public static double getWindowScaleFactor() {
-        // MacOS is always 1
-        if (isMac()) {
-            return 1;
-        }
-        // Windows/Linux on JDK8 honors scaling
-        if (Constants.JAVA_VERSION.lessThan(Version.valueOf("11.0.0"))) {
-            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
-        }
-        // Windows on JDK11 is always 1
-        if(isWindows()) {
-            return 1;
-        }
-        // Linux/Unix on JDK11 requires JNA calls to Gdk
-        return UnixUtilities.getScaleFactor();
+        return getWindowScaleFactor(false);
+    }
+
+    public static Dimension scaleWindowDimension(Dimension orig) {
+        return scaleWindowDimension(orig.getWidth(), orig.getHeight());
+    }
+
+    public static Dimension scaleWindowDimension(double width, double height) {
+        double scaleFactor = getWindowScaleFactor();
+        return new Dimension(
+                (int)(width * scaleFactor),
+                (int)(height * scaleFactor)
+        );
     }
 
     /**

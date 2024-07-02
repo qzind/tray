@@ -242,34 +242,11 @@
     </target>
 
     <target name="check-provision">
-        <!-- Check for base64 -->
-        <condition property="provision.message" value="Found provision base64 calling 'provision --base64 [...]'">
-            <isset property="provision.base64"/>
-        </condition>
-        <condition property="provision.format" value="--base64">
-            <isset property="provision.base64"/>
-        </condition>
-        <condition property="provision.data" value="${provision.base64}">
-            <isset property="provision.base64"/>
-        </condition>
-
-        <!-- Check for provisioning file -->
         <available file="${provision.file}" property="provision.file.exists"/>
         <condition property="provision.message" value="Found provision file '${provision.file}' calling 'provision --json [...]'">
             <isset property="provision.file.exists"/>
         </condition>
         <property description="Fallback value" name="provision.message" value="Skipping provisioning, '${provision.file}' does not exist."/>
-        <property description="Fallback value" name="provision.format" value="--json"/>
-        <property description="Fallback value" name="provision.data" value="${provision.file}"/>
-
-        <!-- Trigger provision target -->
-        <condition property="provision.needed" value="true">
-            <or>
-                <isset property="provision.base64"/>
-                <isset property="provision.file.exists"/>
-            </or>
-        </condition>
-
         <echo level="info">${provision.message}</echo>
     </target>
 
@@ -277,11 +254,11 @@
         <delete dir="${provision.dir}" includeemptydirs="true" defaultexcludes="false"/>
     </target>
 
-    <target name="provision" depends="check-provision,clean-provision" if="provision.needed">
+    <target name="provision" depends="check-provision,clean-provision" if="provision.file.exists">
         <java jar="${dist.dir}/${project.filename}.jar" fork="true" failonerror="true">
             <arg value="provision"/>
-            <arg value="${provision.format}"/>
-            <arg value="${provision.data}"/>
+            <arg value="--json"/>
+            <arg value="${provision.file}"/>
             <arg value="--target-os"/>
             <arg value="${target.os}"/>
             <arg value="--target-arch"/>

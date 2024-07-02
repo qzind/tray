@@ -11,7 +11,6 @@
 package qz.utils;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.ssl.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.build.JLink;
@@ -24,7 +23,6 @@ import qz.installer.certificate.CertificateManager;
 import qz.build.provision.ProvisionBuilder;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.List;
@@ -258,21 +256,11 @@ public class ArgParser {
                     return SUCCESS;
                 case PROVISION:
                     ProvisionBuilder provisionBuilder;
-                    String param;
-                    if((param = valueOpt("--base64")) != null) {
+
+                    String jsonParam = valueOpt("--json");
+                    if(jsonParam != null) {
                         // Process JSON provision file (overwrites existing provisions)
-                        File tempFile = File.createTempFile("provision", ".json");
-                        log.info("Writing provisioning file from base64 {}", tempFile);
-                        log.info(param);
-                        byte[] decoded = Base64.decodeBase64(param);
-                        try(FileOutputStream outputStream = new FileOutputStream(tempFile)) {
-                            outputStream.write(decoded);
-                            provisionBuilder = new ProvisionBuilder(tempFile, valueOpt("--target-os"), valueOpt("--target-arch"));
-                            provisionBuilder.saveJson(true);
-                        }
-                    } else if((param = valueOpt("--json")) != null) {
-                        // Process JSON provision file (overwrites existing provisions)
-                        provisionBuilder = new ProvisionBuilder(new File(param), valueOpt("--target-os"), valueOpt("--target-arch"));
+                        provisionBuilder = new ProvisionBuilder(new File(jsonParam), valueOpt("--target-os"), valueOpt("--target-arch"));
                         provisionBuilder.saveJson(true);
                     } else {
                         // Process single provision step (preserves existing provisions)

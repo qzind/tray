@@ -89,14 +89,23 @@
         "data": "cert1.crt"
     },
     {
-        "description": "[PROPERTY] at 'certgen' (qz-tray.properties)",
+        "description": "[PROPERTY] at wrong phase (qz-tray.properties)",
         "type": "property",
+        "phase": "startup",
+        "os": "*",
+        "data": "foo=bar"
+    },
+    {
+        "description": "[PROPERTY] at 'install' (qz-tray.properties)",
+        "type": "property",
+        "phase": "install",
         "os": "*",
         "data": "websocket.secure.ports=9191,9292,9393,9494"
     },
     {
         "description": "[PROPERTY] at 'certgen' (qz-tray.properties)",
         "type": "property",
+        "phase": "install",
         "os": "*",
         "data": "websocket.insecure.ports=9192,9293,9394,9495"
     },

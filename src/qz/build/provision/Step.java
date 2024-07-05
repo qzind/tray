@@ -223,7 +223,7 @@ public class Step {
                 .enforcePhase(Type.CERT, Phase.STARTUP)
                 .enforcePhase(Type.SOFTWARE, Phase.INSTALL)
                 .enforcePhase(Type.REMOVER, Phase.INSTALL)
-                .enforcePhase(Type.PROPERTY, Phase.CERTGEN)
+                .enforcePhase(Type.PROPERTY, Phase.CERTGEN, Phase.INSTALL)
                 .validateRemover();
     }
 
@@ -283,15 +283,21 @@ public class Step {
         return this;
     }
 
-    private Step enforcePhase(Type matchType, Phase requiredPhase) {
+    private Step enforcePhase(Type matchType, Phase ... requiredPhases) {
+        if(requiredPhases.length == 0) {
+            throw new UnsupportedOperationException("At least one Phase must be specified");
+        }
         if(type == matchType) {
-            if(phase == null) {
-                phase = requiredPhase;
-                log.debug("Phase is null, defaulting to '{}' based on Type '{}'", phase, type);
-            } else if (phase != requiredPhase) {
-                log.debug("Phase '{}' is unsupported for Type '{}', defaulting to '{}'", phase, type,
-                         phase = requiredPhase);
+            for(Phase requiredPhase : requiredPhases) {
+                if (phase == null) {
+                    phase = requiredPhase;
+                    log.debug("Phase is null, defaulting to '{}' based on Type '{}'", phase, type);
+                    return this;
+                } else if (phase == requiredPhase) {
+                    return this;
+                }
             }
+            log.debug("Phase '{}' is unsupported for Type '{}', defaulting to '{}'", phase, type, phase = requiredPhases[0]);
         }
         return this;
     }

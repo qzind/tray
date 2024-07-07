@@ -122,12 +122,10 @@ public class ProvisionBuilder {
                 HashMap<String, String> pairs = PropertyInvoker.parsePropertyPairs(step);
                 if(pairs.get(ArgValue.WEBSOCKET_SECURE_PORTS.getMatch()) != null ||
                         pairs.get(ArgValue.WEBSOCKET_INSECURE_PORTS.getMatch()) != null) {
-
+                    // Clone to install step
+                    jsonSteps.put(step.cloneTo(Phase.INSTALL).toJSON());
                 }
-                // Clone to install step
-                jsonSteps.put(step.cloneTo(Phase.INSTALL).toJSON());
             }
-
         } else {
             log.error("[SKIPPED] Resources could not be saved '{}'", step);
         }

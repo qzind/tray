@@ -306,4 +306,9 @@ public class Step {
         String formatted = String.format(message, args);
         return new UnsupportedOperationException(formatted);
     }
+    Step cloneTo(Phase phase) {
+       return relativePath != null ?
+                    new Step(relativePath, description, type, os, arch, phase, data, args) :
+                    new Step(relativeClass, description, type, os, arch, phase, data, args);
+    }
 }

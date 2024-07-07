@@ -9,10 +9,13 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import qz.build.provision.params.Arch;
 import qz.build.provision.params.Os;
+import qz.build.provision.params.Phase;
 import qz.build.provision.params.Type;
 import qz.build.provision.params.types.Script;
 import qz.build.provision.params.types.Software;
 import qz.common.Constants;
+import qz.installer.provision.invoker.PropertyInvoker;
+import qz.utils.ArgValue;
 import qz.utils.SystemUtilities;
 
 import java.io.File;
@@ -20,6 +23,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+
+import static qz.common.Constants.PROVISION_FILE;
 
 public class ProvisionBuilder {
     protected static final Logger log = LogManager.getLogger(ProvisionBuilder.class);
@@ -111,6 +117,17 @@ public class ProvisionBuilder {
         if(copyResource(step)) {
             log.info("[SUCCESS] Step successfully processed '{}'", step);
             jsonSteps.put(step.toJSON());
+            // Special case for custom websocket ports
+            if(step.getType() == Type.PROPERTY && step.getPhase() == Phase.CERTGEN) {
+                HashMap<String, String> pairs = PropertyInvoker.parsePropertyPairs(step);
+                if(pairs.get(ArgValue.WEBSOCKET_SECURE_PORTS.getMatch()) != null ||
+                        pairs.get(ArgValue.WEBSOCKET_INSECURE_PORTS.getMatch()) != null) {
+
+                }
+                // Clone to install step
+                jsonSteps.put(step.cloneTo(Phase.INSTALL).toJSON());
+            }
+
         } else {
             log.error("[SKIPPED] Resources could not be saved '{}'", step);
         }

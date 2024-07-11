@@ -261,6 +261,13 @@ var qz = (function() {
 
                                     _qz.signContent = undefined;
                                     _qz.websocket.connection.send(_qz.tools.stringify(obj));
+                                }).catch(function(err) {
+                                    _qz.log.error("Signing failed", err);
+
+                                    if (obj.promise != undefined) {
+                                        obj.promise.reject(new Error("Failed to sign request"));
+                                        delete _qz.websocket.pendingCalls[obj.uid];
+                                    }
                                 });
                             } else {
                                 _qz.log.trace("Signature for call", obj.signature);

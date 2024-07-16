@@ -143,9 +143,9 @@ public class WebsocketPorts {
             fallback = true;
         }
         if(fallback) {
-            log.warn("Falling back to default WebSocket ports: ({}), ({})", secure, insecure);
             secure = Arrays.asList(Constants.DEFAULT_WSS_PORTS);
             insecure = Arrays.asList(Constants.DEFAULT_WS_PORTS);
+            log.warn("Falling back to default WebSocket ports: ({}), ({})", secure, insecure);
         }
 
         return new WebsocketPorts(Collections.unmodifiableList(secure), Collections.unmodifiableList(insecure));

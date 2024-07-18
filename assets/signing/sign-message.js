@@ -29,7 +29,7 @@
  * Steps:
  *
  *     1. Include jsrsasign 10.9.0 into your web page
- *        <script src="https://www.unpkg.com/jsrsasign@10.9.0"></script>
+ *        <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/11.1.0/jsrsasign-all-min.js"></script>
  *
  *     2. Update the privateKey below with contents from private-key.pem
  *

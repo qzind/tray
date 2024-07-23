@@ -62,8 +62,10 @@ public class SocketIO {
             }
         }
         while(dataIn.available() > 0);
-
-        return new String(ArrayUtils.toPrimitive(fullResponse.toArray(new Byte[0])), encoding);
+        if(fullResponse.size() > 0) {
+            return new String(ArrayUtils.toPrimitive(fullResponse.toArray(new Byte[0])), encoding);
+        }
+        return null;
     }
 
     public void close() throws IOException {

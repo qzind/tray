@@ -31,7 +31,7 @@ public class DisplayTable extends JTable {
 
         // Fix Linux row height
         int origHeight = getRowHeight();
-        if(SystemUtilities.getWindowScaleFactor() != 1) {
+        if(SystemUtilities.getWindowScaleFactor() > 1) {
             setRowHeight((int)(origHeight * SystemUtilities.getWindowScaleFactor()));
         }
 

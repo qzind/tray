@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.2.4
+ * @version 2.2.5-SNAPSHOT
  * @overview QZ Tray Connector
  * @license LGPL-2.1-only
  * <p/>
@@ -27,7 +27,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
-        VERSION: "2.2.4",                              //must match @version above
+        VERSION: "2.2.5-SNAPSHOT",                              //must match @version above
         DEBUG: false,
 
         log: {

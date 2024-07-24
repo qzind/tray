@@ -30,9 +30,12 @@ public class SocketUtilities {
 
         //TODO - move to dedicated options class?
         Charset encoding = StandardCharsets.UTF_8;
-        if (!params.isNull("encoding")) {
-            try { encoding = Charset.forName(params.getString("encoding")); }
-            catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "encoding", params.opt("encoding")); }
+        if (!params.isNull("options")) {
+            JSONObject options = params.getJSONObject("options");
+
+            if (!options.isNull("encoding")) {
+                encoding = Charset.forName(options.getString("encoding"));
+            }
         }
 
         try {

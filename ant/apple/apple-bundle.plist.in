@@ -20,7 +20,7 @@
                 <key>CFBundleURLSchemes</key>
                 <array><string>${vendor.name}</string></array>
             </dict>
-        </array>        
+        </array>
     <key>LSArchitecturePriority</key>
     <array>
         <string>${apple.target.arch}</string>

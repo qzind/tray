@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.cert.CertificateEncodingException;
@@ -46,6 +47,7 @@ public class AboutInfo {
             about.put("environment", environment());
             about.put("ssl", ssl(certificateManager));
             about.put("libraries", libraries());
+            about.put("charsets", charsets());
         }
         catch(JSONException | GeneralSecurityException e) {
             log.error("Failed to write JSON data", e);
@@ -151,6 +153,19 @@ public class AboutInfo {
         }
 
         return libraries;
+    }
+
+    private static JSONObject charsets() throws JSONException {
+        JSONObject charsets = new JSONObject();
+
+        SortedMap<String,Charset> avail = Charset.availableCharsets();
+        ArrayList<String> names = new ArrayList<>();
+        for(Map.Entry<String,Charset> entry : avail.entrySet()) {
+            names.add(entry.getValue().name());
+        }
+
+        charsets.put("charsets", Arrays.toString(names.toArray()));
+        return charsets;
     }
 
     public static String getPreferredHostname() {

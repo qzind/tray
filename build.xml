@@ -169,6 +169,33 @@
             </fileset>
         </delete>
 
+        <!-- Merge META-INF/services from TCVN-3, icu4j-charset-slim -->
+        <!-- find the icu4j-charset-slim jar -->
+        <path id="icu4j-slim.found">
+            <first>
+                <fileset dir="lib/charsets/">
+                    <include name="icu4j-charset-*.jar"/>
+                </fileset>
+            </first>
+        </path>
+        <pathconvert property="icu4j-slim.path" refid="icu4j-slim.found"/>
+
+        <!-- find the TCVN-3 jar -->
+        <path id="tcvn-3.found">
+            <first>
+                <fileset dir="lib/charsets/">
+                    <include name="TCVN-3*.jar"/>
+                </fileset>
+            </first>
+        </path>
+        <pathconvert property="tcvn-3.path" refid="tcvn-3.found"/>
+
+        <!-- merge service entries for CharsetProvider -->
+        <concat destfile="${out.dir}/libs-temp/META-INF/services/java.nio.charset.spi.CharsetProvider" fixlastline="true">
+            <zipentry zipfile="${icu4j-slim.path}" name="META-INF/services/java.nio.charset.spi.CharsetProvider"/>
+            <zipentry zipfile="${tcvn-3.path}" name="META-INF/services/java.nio.charset.spi.CharsetProvider"/>
+        </concat>
+
         <!-- Merge META-INF/services from PDFBOX, jpeg2000 and TwelveMonkeys -->
         <!-- find the TwelveMonkeys jar -->
         <path id="imageio-jpeg.found">

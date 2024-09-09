@@ -60,6 +60,7 @@ public class Certificate {
         // List of fields needed to construct a new cert.
         public static final Field[] saveFields = new Field[] {FINGERPRINT, COMMON_NAME, ORGANIZATION, VALID_FROM, VALID_TO, VALID};
         public static final Field[] displayFields = new Field[] {ORGANIZATION, COMMON_NAME, TRUSTED, VALID_FROM, VALID_TO, FINGERPRINT};
+
         Field(String description) {
             this.description = description;
         }

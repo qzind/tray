@@ -32,6 +32,7 @@ public class Certificate {
 
     private static final Logger log = LogManager.getLogger(Certificate.class);
     private static final String QUIETLY_FAIL = "quiet";
+    private static final String NOT_PROVIDED = "Not Provided";
 
     public enum Algorithm {
         SHA1("SHA1withRSA"),
@@ -445,9 +446,9 @@ public class Certificate {
             case TRUSTED:
                 return String.valueOf(isTrusted());
             case VALID_FROM:
-                return getValidFrom((TimeZone)optArg) + " " + ((TimeZone)optArg).getDisplayName(false, TimeZone.SHORT);
+                return getValidFrom((TimeZone)optArg);
             case VALID_TO:
-                return getValidTo((TimeZone)optArg) + " " + ((TimeZone)optArg).getDisplayName(false, TimeZone.SHORT);
+                return getValidTo((TimeZone)optArg);
             case FINGERPRINT:
                 return getFingerprint();
             case VALID:
@@ -477,7 +478,7 @@ public class Certificate {
         if (validFrom.isAfter(UNKNOWN_MIN)) {
             return formatDate(validFrom, timeZone);
         } else {
-            return "Not Provided";
+            return NOT_PROVIDED;
         }
     }
 
@@ -489,19 +490,22 @@ public class Certificate {
         if (validTo.isBefore(UNKNOWN_MAX)) {
             return formatDate(validTo, timeZone);
         } else {
-            return "Not Provided";
+            return NOT_PROVIDED;
         }
     }
 
     private String formatDate(Instant date, TimeZone timeZone) {
         ZoneId zoneId;
+        String timeZoneString;
         if (timeZone == null) {
             zoneId = ZoneOffset.UTC;
+            timeZoneString = ""; // If no timezone was included, don't append a timezone ID.
         } else {
             zoneId = timeZone.toZoneId();
+            timeZoneString = " " + timeZone.getDisplayName(false, TimeZone.SHORT);
         }
-        
-        return dateFormat.format(date.atZone(zoneId));
+
+        return dateFormat.format(date.atZone(zoneId)) + timeZoneString;
     }
 
     public Instant getValidFromDate() {

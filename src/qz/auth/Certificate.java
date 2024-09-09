@@ -493,7 +493,7 @@ public class Certificate {
         }
     }
 
-    public String formatDate(Instant date, TimeZone timeZone) {
+    private String formatDate(Instant date, TimeZone timeZone) {
         ZoneId zoneId;
         if (timeZone == null) {
             zoneId = ZoneOffset.UTC;

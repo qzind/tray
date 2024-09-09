@@ -22,7 +22,8 @@ public class CertificateTable extends DisplayTable implements Themeable {
     private static final TimeZone UTC_TIME_ZONE = TimeZone.getTimeZone("UTC");
     private Instant warn;
     private Instant now;
-    private boolean useLocalTimezone = false;
+    private boolean useLocalTimezoneValidTo = false;
+    private boolean useLocalTimezoneValidFrom = false;
 
     public CertificateTable(IconCache iconCache) {
         super(iconCache);
@@ -40,11 +41,14 @@ public class CertificateTable extends DisplayTable implements Themeable {
                 // Only trigger after the cell is click AND highlighted. This make copying text easier.
                 if (row == lastRow && col == lastCol) {
                     Certificate.Field rowKey = (Certificate.Field)target.getValueAt(row, 0);
-                    if (rowKey == Certificate.Field.VALID_TO || rowKey == Certificate.Field.VALID_FROM) {
-                        useLocalTimezone = !useLocalTimezone;
+                    if (rowKey == Certificate.Field.VALID_TO) {
+                        useLocalTimezoneValidTo = !useLocalTimezoneValidTo;
                         refreshComponents();
-                        row = -1;
-                        col = -1;
+                        changeSelection(row, col, false, false);
+                    } else if (rowKey == Certificate.Field.VALID_FROM) {
+                        useLocalTimezoneValidFrom = !useLocalTimezoneValidFrom;
+                        refreshComponents();
+                        changeSelection(row, col, false, false);
                     }
                 }
                 lastRow = row;
@@ -77,10 +81,19 @@ public class CertificateTable extends DisplayTable implements Themeable {
 
         // First Column
         for(Certificate.Field field : Certificate.Field.displayFields) {
-            if(field.equals(Certificate.Field.TRUSTED) && !Certificate.isTrustBuiltIn()) {
-                continue; // Remove "Verified by" text; uncertain in strict mode
+            TimeZone timeZone = null;
+            switch(field){
+                case TRUSTED:
+                    if (!Certificate.isTrustBuiltIn()) continue; // Remove "Verified by" text; uncertain in strict mode
+                case VALID_TO:
+                    timeZone = useLocalTimezoneValidTo ? TimeZone.getDefault() : UTC_TIME_ZONE;
+                    break;
+                case VALID_FROM:
+                    timeZone = useLocalTimezoneValidFrom ? TimeZone.getDefault() : UTC_TIME_ZONE;
+                    break;
+                default:
+                    break;
             }
-            TimeZone timeZone = useLocalTimezone ? TimeZone.getDefault() : UTC_TIME_ZONE;
             model.addRow(new Object[] {field, cert.get(field, timeZone)});
         }
 

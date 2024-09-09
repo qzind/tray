@@ -18,7 +18,8 @@ import java.util.TimeZone;
  */
 public class CertificateTable extends DisplayTable implements Themeable {
     private Certificate cert;
-    private final TimeZone utcTimeZone = TimeZone.getTimeZone("UTC");
+
+    private static final TimeZone utcTimeZone = TimeZone.getTimeZone("UTC");
     private Instant warn;
     private Instant now;
     private boolean useLocalTimezone = false;

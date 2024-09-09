@@ -7,74 +7,53 @@ import qz.ui.Themeable;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.TimeZone;
 
 /**
  * Created by Tres on 2/22/2015.
  * Displays Certificate information in a JTable
  */
 public class CertificateTable extends DisplayTable implements Themeable {
-
-    /**
-     * Certificate fields to be displayed (and the corresponding function to Reflect upon)
-     */
-    enum CertificateField {
-        ORGANIZATION("Organization", "getOrganization"),
-        COMMON_NAME("Common Name", "getCommonName"),
-        TRUSTED("Trusted", "isTrusted"),
-        VALID_FROM("Valid From", "getValidFrom"),
-        VALID_TO("Valid To", "getValidTo"),
-        FINGERPRINT("Fingerprint", "getFingerprint");
-
-        String description;
-        String callBack;
-
-        CertificateField(String description, String callBack) {
-            this.description = description;
-            this.callBack = callBack;
-        }
-
-        /**
-         * Returns the <code>String</code> value associated with this certificate field
-         *
-         * @return Certificate field such as "commonName"
-         */
-        public String getValue(Certificate cert) {
-            if (cert == null) {
-                return "";
-            }
-
-            Reflect reflect = Reflect.on(cert).call(callBack);
-            Object value = reflect == null? null:reflect.get();
-            if (value == null) {
-                return "";
-            }
-            return value.toString();
-        }
-
-        @Override
-        public String toString() {
-            return description;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        public static int size() {
-            return values().length;
-        }
-    }
-
-    private Certificate cert;
-
+    private static Certificate cert;
+    private static final TimeZone utcTimeZone = TimeZone.getTimeZone("UTC");
     private Instant warn;
     private Instant now;
+    private boolean useLocalTimezone = false;
 
     public CertificateTable(IconCache iconCache) {
         super(iconCache);
         setDefaultRenderer(Object.class, new CertificateTableCellRenderer());
+        addMouseListener(new MouseAdapter() {
+            int lastRow = -1;
+            int lastCol = -1;
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                super.mousePressed(e);
+                JTable target = (JTable)e.getSource();
+                int row = target.getSelectedRow();
+                int col = target.getSelectedColumn();
+                // Only trigger after the cell is click AND highlighted. This make copying text easier.
+                if (row == lastRow && col == lastCol) {
+                    Certificate.Field rowKey = (Certificate.Field)target.getValueAt(row, 0);
+                    if (rowKey == Certificate.Field.VALID_TO || rowKey == Certificate.Field.VALID_FROM) {
+                        useLocalTimezone = !useLocalTimezone;
+                        refreshComponents();
+                        row = -1;
+                        col = -1;
+                    }
+                }
+                lastRow = row;
+                lastCol = col;
+            }
+
+            public void mouseClicked(MouseEvent e) {
+            }
+        });
+
     }
 
     public void setCertificate(Certificate cert) {
@@ -96,11 +75,12 @@ public class CertificateTable extends DisplayTable implements Themeable {
         removeRows();
 
         // First Column
-        for(CertificateField field : CertificateField.values()) {
-            if(field.equals(CertificateField.TRUSTED) && !Certificate.isTrustBuiltIn()) {
+        for(Certificate.Field field : Certificate.Field.displayFields) {
+            if(field.equals(Certificate.Field.TRUSTED) && !Certificate.isTrustBuiltIn()) {
                 continue; // Remove "Verified by" text; uncertain in strict mode
             }
-            model.addRow(new Object[] {field, field.getValue(cert)});
+            TimeZone timeZone = useLocalTimezone ? TimeZone.getDefault() : utcTimeZone;
+            model.addRow(new Object[] {field, cert.get(field, timeZone)});
         }
 
         repaint();
@@ -113,9 +93,8 @@ public class CertificateTable extends DisplayTable implements Themeable {
     }
 
     public void autoSize() {
-        super.autoSize(CertificateField.size(), 2);
+        super.autoSize(Certificate.Field.displayFields.length, 2);
     }
-
 
     /** Custom cell renderer for JTable to allow colors and styles not directly available in a JTable */
     private class CertificateTableCellRenderer extends StyledTableCellRenderer {
@@ -125,8 +104,23 @@ public class CertificateTable extends DisplayTable implements Themeable {
             JLabel label = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
 
             // First Column
-            if (value instanceof CertificateField) {
-                label = stylizeLabel(STATUS_NORMAL, label, isSelected);
+            if (value instanceof Certificate.Field) {
+                switch((Certificate.Field)value) {
+                    case VALID_FROM:
+                        boolean futureExpiration = cert.getValidFromDate().isAfter(now);
+                        label = stylizeLabel(futureExpiration? STATUS_WARNING:STATUS_NORMAL, label, isSelected, "future inception");
+                        break;
+                    case VALID_TO:
+                        boolean expiresSoon = cert.getValidToDate().isBefore(warn);
+                        boolean expired = cert.getValidToDate().isBefore(now);
+                        String reason = expired? "expired":(expiresSoon? "expires soon":null);
+
+                        label = stylizeLabel(expiresSoon || expired? STATUS_WARNING:STATUS_NORMAL, label, isSelected, reason);
+                        break;
+                    default:
+                        label = stylizeLabel(STATUS_NORMAL, label, isSelected);
+                        break;
+                }
                 if (iconCache != null) {
                     label.setIcon(iconCache.getIcon(IconCache.Icon.FIELD_ICON));
                 }
@@ -136,7 +130,7 @@ public class CertificateTable extends DisplayTable implements Themeable {
             // Second Column
             if (cert == null || col < 1) { return stylizeLabel(STATUS_NORMAL, label, isSelected); }
 
-            CertificateField field = (CertificateField)table.getValueAt(row, col - 1);
+            Certificate.Field field = (Certificate.Field)table.getValueAt(row, col - 1);
             if (field == null) { return stylizeLabel(STATUS_NORMAL, label, isSelected); }
             switch(field) {
                 case TRUSTED:
@@ -153,17 +147,14 @@ public class CertificateTable extends DisplayTable implements Themeable {
                     return stylizeLabel(!cert.isValid()? STATUS_WARNING:STATUS_TRUSTED, label, isSelected);
                 case VALID_FROM:
                     boolean futureExpiration = cert.getValidFromDate().isAfter(now);
-                    return stylizeLabel(futureExpiration? STATUS_WARNING:STATUS_NORMAL, label, isSelected, "future inception");
+                    return stylizeLabel(futureExpiration? STATUS_WARNING:STATUS_NORMAL, label, isSelected);
                 case VALID_TO:
                     boolean expiresSoon = cert.getValidToDate().isBefore(warn);
                     boolean expired = cert.getValidToDate().isBefore(now);
-                    String reason = expired? "expired":(expiresSoon? "expires soon":null);
-                    return stylizeLabel(expiresSoon || expired? STATUS_WARNING:STATUS_NORMAL, label, isSelected, reason);
+                    return stylizeLabel(expiresSoon || expired? STATUS_WARNING:STATUS_NORMAL, label, isSelected);
                 default:
                     return stylizeLabel(STATUS_NORMAL, label, isSelected);
             }
         }
-
     }
-
 }

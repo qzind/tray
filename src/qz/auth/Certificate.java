@@ -20,10 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.*;
 import java.security.cert.*;
-import java.time.DateTimeException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -48,6 +45,38 @@ public class Certificate {
         }
     }
 
+    public enum Field {
+        ORGANIZATION("Organization"),
+        COMMON_NAME("Common Name"),
+        TRUSTED("Trusted"),
+        VALID_FROM("Valid From"),
+        VALID_TO("Valid To"),
+        FINGERPRINT("Fingerprint"),
+        VALID("Valid");
+
+        String description;
+
+        // List of fields needed to construct a new cert.
+        public static final Field[] saveFields = new Field[] {FINGERPRINT, COMMON_NAME, ORGANIZATION, VALID_FROM, VALID_TO, VALID};
+        public static final Field[] displayFields = new Field[] {ORGANIZATION, COMMON_NAME, TRUSTED, VALID_FROM, VALID_TO, FINGERPRINT};
+        Field(String description) {
+            this.description = description;
+        }
+
+        @Override
+        public String toString() {
+            return description;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public static int size() {
+            return values().length;
+        }
+    }
+
     public static ArrayList<Certificate> rootCAs = new ArrayList<>();
     public static Certificate builtIn;
     private static CertPathValidator validator;
@@ -55,8 +84,6 @@ public class Certificate {
     private static boolean trustBuiltIn = false;
     // id-at-description used for storing renewal information
     private static ASN1ObjectIdentifier RENEWAL_OF = new ASN1ObjectIdentifier("2.5.4.13");
-
-    public static final String[] saveFields = new String[] {"fingerprint", "commonName", "organization", "validFrom", "validTo", "valid"};
 
     public static final String SPONSORED_CN_PREFIX = "Sponsored:";
 
@@ -85,13 +112,13 @@ public class Certificate {
     public static final Certificate UNKNOWN;
 
     static {
-        HashMap<String,String> map = new HashMap<>();
-        map.put("fingerprint", "UNKNOWN REQUEST");
-        map.put("commonName", "An anonymous request");
-        map.put("organization", "Unknown");
-        map.put("validFrom", UNKNOWN_MIN.toString());
-        map.put("validTo", UNKNOWN_MAX.toString());
-        map.put("valid", "false");
+        HashMap<Field,String> map = new HashMap<>();
+        map.put(Field.FINGERPRINT, "UNKNOWN REQUEST");
+        map.put(Field.COMMON_NAME, "An anonymous request");
+        map.put(Field.ORGANIZATION, "Unknown");
+        map.put(Field.VALID_FROM, UNKNOWN_MIN.toString());
+        map.put(Field.VALID_TO, UNKNOWN_MAX.toString());
+        map.put(Field.VALID, "false");
         UNKNOWN = Certificate.loadCertificate(map);
     }
 
@@ -315,16 +342,16 @@ public class Certificate {
     /**
      * Used to rebuild a certificate for the 'Saved Sites' screen without having to decrypt the certificates again
      */
-    public static Certificate loadCertificate(HashMap<String,String> data) {
+    public static Certificate loadCertificate(HashMap<Field,String> data) {
         Certificate cert = new Certificate();
 
-        cert.fingerprint = data.get("fingerprint");
-        cert.commonName = data.get("commonName");
-        cert.organization = data.get("organization");
+        cert.fingerprint = data.get(Field.FINGERPRINT);
+        cert.commonName = data.get(Field.COMMON_NAME);
+        cert.organization = data.get(Field.ORGANIZATION);
 
         try {
-            cert.validFrom = Instant.from(LocalDateTime.from(dateParse.parse(data.get("validFrom"))).atZone(ZoneOffset.UTC));
-            cert.validTo = Instant.from(LocalDateTime.from(dateParse.parse(data.get("validTo"))).atZone(ZoneOffset.UTC));
+            cert.validFrom = Instant.from(LocalDateTime.from(dateParse.parse(data.get(Field.VALID_FROM))).atZone(ZoneOffset.UTC));
+            cert.validTo = Instant.from(LocalDateTime.from(dateParse.parse(data.get(Field.VALID_TO))).atZone(ZoneOffset.UTC));
         }
         catch(DateTimeException e) {
             cert.validFrom = UNKNOWN_MIN;
@@ -333,7 +360,7 @@ public class Certificate {
             log.warn("Unable to parse certificate date: {}", e.getMessage());
         }
 
-        cert.valid = Boolean.parseBoolean(data.get("valid"));
+        cert.valid = Boolean.parseBoolean(data.get(Field.VALID));
 
         return cert;
     }
@@ -405,6 +432,30 @@ public class Certificate {
         return false;
     }
 
+    public String get(Field field) {
+        return get(field, null);
+    }
+
+    public String get(Field field, Object optArg) {
+        switch(field) {
+            case ORGANIZATION:
+                return getOrganization();
+            case COMMON_NAME:
+                return getCommonName();
+            case TRUSTED:
+                return String.valueOf(isTrusted());
+            case VALID_FROM:
+                return getValidFrom((TimeZone)optArg) + " " + ((TimeZone)optArg).getDisplayName(false, TimeZone.SHORT);
+            case VALID_TO:
+                return getValidTo((TimeZone)optArg) + " " + ((TimeZone)optArg).getDisplayName(false, TimeZone.SHORT);
+            case FINGERPRINT:
+                return getFingerprint();
+            case VALID:
+                return String.valueOf(isValid());
+            default:
+                return null;
+        }
+    }
 
     public String getFingerprint() {
         return fingerprint;
@@ -419,16 +470,31 @@ public class Certificate {
     }
 
     public String getValidFrom() {
-        if (validFrom.isAfter(UNKNOWN_MIN)) {
-            return dateFormat.format(validFrom.atZone(ZoneOffset.UTC));
-        } else {
-            return "Not Provided";
-        }
+        return formatDate(validFrom, null);
+    }
+
+    public String getValidFrom(TimeZone timeZone) {
+        return formatDate(validFrom, timeZone);
     }
 
     public String getValidTo() {
-        if (validTo.isBefore(UNKNOWN_MAX)) {
-            return dateFormat.format(validTo.atZone(ZoneOffset.UTC));
+        return formatDate(validTo, null);
+    }
+
+    public String getValidTo(TimeZone timeZone) {
+        return formatDate(validTo, timeZone);
+    }
+
+    public String formatDate(Instant date, TimeZone timeZone) {
+        ZoneId zoneId;
+        if (timeZone == null) {
+            zoneId = ZoneOffset.UTC;
+        } else {
+            zoneId = timeZone.toZoneId();
+        }
+
+        if (date.isBefore(UNKNOWN_MAX)) {
+            return dateFormat.format(date.atZone(zoneId));
         } else {
             return "Not Provided";
         }

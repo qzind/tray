@@ -554,10 +554,10 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                 if (line.startsWith("#")) { continue; } //treat these lines as comments
                 String[] data = line.split("\\t");
 
-                if (data.length == Certificate.saveFields.length) {
-                    HashMap<String,String> dataMap = new HashMap<>();
+                if (data.length == Certificate.Field.saveFields.length) {
+                    HashMap<Certificate.Field,String> dataMap = new HashMap<>();
                     for(int i = 0; i < data.length; i++) {
-                        dataMap.put(Certificate.saveFields[i], data[i]);
+                        dataMap.put(Certificate.Field.saveFields[i], data[i]);
                     }
 
                     CertificateDisplay certificate = new CertificateDisplay(Certificate.loadCertificate(dataMap), local);

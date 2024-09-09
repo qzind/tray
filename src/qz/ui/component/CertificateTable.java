@@ -19,7 +19,7 @@ import java.util.TimeZone;
 public class CertificateTable extends DisplayTable implements Themeable {
     private Certificate cert;
 
-    private static final TimeZone utcTimeZone = TimeZone.getTimeZone("UTC");
+    private static final TimeZone UTC_TIME_ZONE = TimeZone.getTimeZone("UTC");
     private Instant warn;
     private Instant now;
     private boolean useLocalTimezone = false;
@@ -80,7 +80,7 @@ public class CertificateTable extends DisplayTable implements Themeable {
             if(field.equals(Certificate.Field.TRUSTED) && !Certificate.isTrustBuiltIn()) {
                 continue; // Remove "Verified by" text; uncertain in strict mode
             }
-            TimeZone timeZone = useLocalTimezone ? TimeZone.getDefault() : utcTimeZone;
+            TimeZone timeZone = useLocalTimezone ? TimeZone.getDefault() : UTC_TIME_ZONE;
             model.addRow(new Object[] {field, cert.get(field, timeZone)});
         }
 

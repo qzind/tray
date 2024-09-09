@@ -495,7 +495,7 @@ public class Certificate {
         }
     }
 
-    private String formatDate(Instant date, TimeZone timeZone) {
+    private static String formatDate(Instant date, TimeZone timeZone) {
         ZoneId zoneId;
         String timeZoneString;
         if (timeZone == null) {

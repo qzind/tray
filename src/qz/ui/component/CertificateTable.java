@@ -85,6 +85,7 @@ public class CertificateTable extends DisplayTable implements Themeable {
             switch(field){
                 case TRUSTED:
                     if (!Certificate.isTrustBuiltIn()) continue; // Remove "Verified by" text; uncertain in strict mode
+                    break;
                 case VALID_TO:
                     timeZone = useLocalTimezoneValidTo ? TimeZone.getDefault() : UTC_TIME_ZONE;
                     break;

@@ -470,19 +470,27 @@ public class Certificate {
     }
 
     public String getValidFrom() {
-        return formatDate(validFrom, null);
+        return getValidFrom(null);
     }
 
     public String getValidFrom(TimeZone timeZone) {
-        return formatDate(validFrom, timeZone);
+        if (validFrom.isAfter(UNKNOWN_MIN)) {
+            return formatDate(validFrom, timeZone);
+        } else {
+            return "Not Provided";
+        }
     }
 
     public String getValidTo() {
-        return formatDate(validTo, null);
+        return getValidTo(null);
     }
 
     public String getValidTo(TimeZone timeZone) {
-        return formatDate(validTo, timeZone);
+        if (validTo.isBefore(UNKNOWN_MAX)) {
+            return formatDate(validTo, timeZone);
+        } else {
+            return "Not Provided";
+        }
     }
 
     public String formatDate(Instant date, TimeZone timeZone) {
@@ -492,12 +500,8 @@ public class Certificate {
         } else {
             zoneId = timeZone.toZoneId();
         }
-
-        if (date.isBefore(UNKNOWN_MAX)) {
-            return dateFormat.format(date.atZone(zoneId));
-        } else {
-            return "Not Provided";
-        }
+        
+        return dateFormat.format(date.atZone(zoneId));
     }
 
     public Instant getValidFromDate() {

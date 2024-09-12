@@ -1,6 +1,5 @@
 package qz.ui.component;
 
-import org.joor.Reflect;
 import qz.auth.Certificate;
 import qz.common.Constants;
 import qz.ui.Themeable;
@@ -14,7 +13,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAccessor;
 import java.util.TimeZone;
 import java.util.function.Function;
 
@@ -50,14 +48,15 @@ public class CertificateTable extends DisplayTable implements Themeable {
         }
 
         public String getValue(Certificate cert, TimeZone timeZone) {
+            String certFieldValue = getter.apply(cert).toString();
             switch(this) {
                 case VALID_FROM:
                 case VALID_TO:
-                    TemporalAccessor parsedDate = dateParse.parse(getter.apply(cert).toString()); // parse date string from cert
-                    ZonedDateTime utcTime = LocalDateTime.from(parsedDate).atZone(ZoneOffset.UTC); // shift the timezone
-                    return dateParse.format(Instant.from(utcTime).atZone(timeZone.toZoneId())) + " " + timeZone.getDisplayName(false, TimeZone.SHORT);
+                    ZonedDateTime utcTime = LocalDateTime.from(dateParse.parse(certFieldValue)).atZone(ZoneOffset.UTC); // Parse the date string as UTC (Z/GMT)
+                    ZonedDateTime zonedTime = Instant.from(utcTime).atZone(timeZone.toZoneId()); // Shift to the new timezone
+                    return dateParse.format(zonedTime) + " " + timeZone.getDisplayName(false, TimeZone.SHORT); // Append a short timezone name e.g. "EST"
                 default:
-                    return getter.apply(cert).toString();
+                    return certFieldValue;
             }
         }
 

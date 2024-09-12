@@ -52,6 +52,7 @@ public class CertificateTable extends DisplayTable implements Themeable {
             switch(this) {
                 case VALID_FROM:
                 case VALID_TO:
+                    if (certFieldValue.equals("Not Provided")) return certFieldValue;
                     ZonedDateTime utcTime = LocalDateTime.from(dateParse.parse(certFieldValue)).atZone(ZoneOffset.UTC); // Parse the date string as UTC (Z/GMT)
                     ZonedDateTime zonedTime = Instant.from(utcTime).atZone(timeZone.toZoneId()); // Shift to the new timezone
                     return dateParse.format(zonedTime) + " " + timeZone.getDisplayName(false, TimeZone.SHORT); // Append a short timezone name e.g. "EST"

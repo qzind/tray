@@ -77,8 +77,6 @@ public class CertificateTable extends DisplayTable implements Themeable {
 
     public CertificateTable(IconCache iconCache) {
         super(iconCache);
-
-
         setDefaultRenderer(Object.class, new CertificateTableCellRenderer());
         addMouseListener(new MouseAdapter() {
             int lastRow = -1;
@@ -105,9 +103,6 @@ public class CertificateTable extends DisplayTable implements Themeable {
                 }
                 lastRow = row;
                 lastCol = col;
-            }
-
-            public void mouseClicked(MouseEvent e) {
             }
         });
 

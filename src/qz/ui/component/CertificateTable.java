@@ -7,10 +7,7 @@ import qz.ui.Themeable;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.TimeZone;
 import java.util.function.Function;
@@ -59,7 +56,7 @@ public class CertificateTable extends DisplayTable implements Themeable {
                             ZonedDateTime zonedTime = Instant.from(utcTime).atZone(timeZone.toZoneId());
                             // Append a short timezone name e.g. "EST"
                             return DATE_PARSE.format(zonedTime) + " " + timeZone.getDisplayName(false, TimeZone.SHORT);
-                        } catch (Exception ignore) {}
+                        } catch (DateTimeException ignore) {}
                     }
                     // fallthrough
                 default:

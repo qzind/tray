@@ -555,7 +555,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                 String[] data = line.split("\\t");
 
                 if (data.length == Certificate.saveFields.length) {
-                    HashMap<String, String> dataMap = new HashMap<>();
+                    HashMap<String,String> dataMap = new HashMap<>();
                     for(int i = 0; i < data.length; i++) {
                         dataMap.put(Certificate.saveFields[i], data[i]);
                     }

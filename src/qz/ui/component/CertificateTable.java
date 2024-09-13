@@ -11,10 +11,11 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.TimeZone;
 import java.util.function.Function;
+
+import static qz.auth.Certificate.*;
 
 /**
  * Created by Tres on 2/22/2015.
@@ -23,13 +24,10 @@ import java.util.function.Function;
 public class CertificateTable extends DisplayTable implements Themeable {
     private Certificate cert;
 
-    private static final TimeZone UTC_TIME_ZONE = TimeZone.getTimeZone("UTC");
-    private static DateTimeFormatter dateParse = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
+    private static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone("UTC");
+    private static final TimeZone ALTERNATE_TIME_ZONE = TimeZone.getDefault();
     private Instant warn;
     private Instant now;
-    private boolean useLocalTimezoneValidTo = false;
-    private boolean useLocalTimezoneValidFrom = false;
 
     enum CertificateField {
         ORGANIZATION("Organization", (Certificate cert) -> cert.getOrganization()),
@@ -41,21 +39,29 @@ public class CertificateTable extends DisplayTable implements Themeable {
 
         String description;
         Function<Certificate, Object> getter;
+        TimeZone timeZone = DEFAULT_TIME_ZONE; // Date fields only
 
         CertificateField(String description, Function<Certificate, Object> getter) {
             this.description = description;
             this.getter = getter;
         }
 
-        public String getValue(Certificate cert, TimeZone timeZone) {
+        public String getValue(Certificate cert) {
             String certFieldValue = getter.apply(cert).toString();
             switch(this) {
                 case VALID_FROM:
                 case VALID_TO:
-                    if (certFieldValue.equals("Not Provided")) return certFieldValue;
-                    ZonedDateTime utcTime = LocalDateTime.from(dateParse.parse(certFieldValue)).atZone(ZoneOffset.UTC); // Parse the date string as UTC (Z/GMT)
-                    ZonedDateTime zonedTime = Instant.from(utcTime).atZone(timeZone.toZoneId()); // Shift to the new timezone
-                    return dateParse.format(zonedTime) + " " + timeZone.getDisplayName(false, TimeZone.SHORT); // Append a short timezone name e.g. "EST"
+                    if (!certFieldValue.equals("Not Provided")) {
+                        try {
+                            // Parse the date string as UTC (Z/GMT)
+                            ZonedDateTime utcTime = LocalDateTime.from(DATE_PARSE.parse(certFieldValue)).atZone(ZoneOffset.UTC);
+                            // Shift to the new timezone
+                            ZonedDateTime zonedTime = Instant.from(utcTime).atZone(timeZone.toZoneId());
+                            // Append a short timezone name e.g. "EST"
+                            return DATE_PARSE.format(zonedTime) + " " + timeZone.getDisplayName(false, TimeZone.SHORT);
+                        } catch (Exception ignore) {}
+                    }
+                    // fallthrough
                 default:
                     return certFieldValue;
             }
@@ -73,36 +79,44 @@ public class CertificateTable extends DisplayTable implements Themeable {
         public static int size() {
             return values().length;
         }
+
+        public void toggleTimeZone() {
+            switch(this) {
+                case VALID_TO:
+                case VALID_FROM:
+                    this.timeZone = (timeZone == DEFAULT_TIME_ZONE? ALTERNATE_TIME_ZONE:DEFAULT_TIME_ZONE);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("TimeZone is only supported for date fields");
+            }
+        }
     }
 
     public CertificateTable(IconCache iconCache) {
         super(iconCache);
         setDefaultRenderer(Object.class, new CertificateTableCellRenderer());
         addMouseListener(new MouseAdapter() {
-            int lastRow = -1;
-            int lastCol = -1;
+            Point loc = new Point(-1, -1);
 
             @Override
             public void mousePressed(MouseEvent e) {
                 super.mousePressed(e);
                 JTable target = (JTable)e.getSource();
-                int row = target.getSelectedRow();
-                int col = target.getSelectedColumn();
-                // Only trigger after the cell is click AND highlighted. This make copying text easier.
-                if (row == lastRow && col == lastCol) {
-                    CertificateField rowKey = (CertificateField)target.getValueAt(row, 0);
-                    if (rowKey == CertificateField.VALID_TO) {
-                        useLocalTimezoneValidTo = !useLocalTimezoneValidTo;
-                        refreshComponents();
-                        changeSelection(row, col, false, false);
-                    } else if (rowKey == CertificateField.VALID_FROM) {
-                        useLocalTimezoneValidFrom = !useLocalTimezoneValidFrom;
-                        refreshComponents();
-                        changeSelection(row, col, false, false);
+                int x = target.getSelectedColumn();
+                int y = target.getSelectedRow();
+                // Only trigger after the cell is click AND highlighted.
+                if (loc.distance(x, y) == 0) {
+                    CertificateField rowKey = (CertificateField)target.getValueAt(y, 0);
+                    switch(rowKey) {
+                        case VALID_FROM:
+                        case VALID_TO:
+                            rowKey.toggleTimeZone();
+                            refreshComponents();
+                            changeSelection(y, x, false, false);
+                            break;
                     }
                 }
-                lastRow = row;
-                lastCol = col;
+                loc.setLocation(x, y);
             }
         });
 
@@ -128,21 +142,10 @@ public class CertificateTable extends DisplayTable implements Themeable {
 
         // First Column
         for(CertificateField field : CertificateField.values()) {
-            TimeZone timeZone = null;
-            switch(field){
-                case TRUSTED:
-                    if (!Certificate.isTrustBuiltIn()) continue; // Remove "Verified by" text; uncertain in strict mode
-                    break;
-                case VALID_TO:
-                    timeZone = useLocalTimezoneValidTo ? TimeZone.getDefault() : UTC_TIME_ZONE;
-                    break;
-                case VALID_FROM:
-                    timeZone = useLocalTimezoneValidFrom ? TimeZone.getDefault() : UTC_TIME_ZONE;
-                    break;
-                default:
-                    break;
+            if(field.equals(CertificateField.TRUSTED) && !Certificate.isTrustBuiltIn()) {
+                continue; // Remove "Verified by" text; uncertain in strict mode
             }
-            model.addRow(new Object[] {field, field.getValue(cert, timeZone)});
+            model.addRow(new Object[] {field, field.getValue(cert)});
         }
 
         repaint();

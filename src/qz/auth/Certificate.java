@@ -63,9 +63,8 @@ public class Certificate {
     // Valid date range allows UI to only show "Expired" text for valid certificates
     private static final Instant UNKNOWN_MIN = LocalDateTime.MIN.toInstant(ZoneOffset.UTC);
     private static final Instant UNKNOWN_MAX = LocalDateTime.MAX.toInstant(ZoneOffset.UTC);
-
-    private static DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static DateTimeFormatter dateParse = DateTimeFormatter.ofPattern("uuuu-MM-dd['T'][ ]HH:mm:ss[.n]['Z']"); //allow parsing of both ISO and custom formatted dates
+    public static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    public static final DateTimeFormatter DATE_PARSE = DateTimeFormatter.ofPattern("uuuu-MM-dd['T'][ ]HH:mm:ss[.n]['Z']"); //allow parsing of both ISO and custom formatted dates
 
     private X509Certificate theCertificate;
     private boolean sponsored;
@@ -323,8 +322,8 @@ public class Certificate {
         cert.organization = data.get("organization");
 
         try {
-            cert.validFrom = Instant.from(LocalDateTime.from(dateParse.parse(data.get("validFrom"))).atZone(ZoneOffset.UTC));
-            cert.validTo = Instant.from(LocalDateTime.from(dateParse.parse(data.get("validTo"))).atZone(ZoneOffset.UTC));
+            cert.validFrom = Instant.from(LocalDateTime.from(DATE_PARSE.parse(data.get("validFrom"))).atZone(ZoneOffset.UTC));
+            cert.validTo = Instant.from(LocalDateTime.from(DATE_PARSE.parse(data.get("validTo"))).atZone(ZoneOffset.UTC));
         }
         catch(DateTimeException e) {
             cert.validFrom = UNKNOWN_MIN;
@@ -420,7 +419,7 @@ public class Certificate {
 
     public String getValidFrom() {
         if (validFrom.isAfter(UNKNOWN_MIN)) {
-            return dateFormat.format(validFrom.atZone(ZoneOffset.UTC));
+            return DATE_FORMAT.format(validFrom.atZone(ZoneOffset.UTC));
         } else {
             return "Not Provided";
         }
@@ -428,7 +427,7 @@ public class Certificate {
 
     public String getValidTo() {
         if (validTo.isBefore(UNKNOWN_MAX)) {
-            return dateFormat.format(validTo.atZone(ZoneOffset.UTC));
+            return DATE_FORMAT.format(validTo.atZone(ZoneOffset.UTC));
         } else {
             return "Not Provided";
         }

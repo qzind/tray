@@ -16,7 +16,6 @@ import org.codehaus.jettison.json.JSONObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
-import qz.common.TrayManager;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.ConnectionUtilities;
@@ -26,7 +25,9 @@ import qz.utils.SystemUtilities;
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
+import javax.print.attribute.ResolutionSyntax;
 import javax.print.attribute.standard.OrientationRequested;
+import javax.print.attribute.standard.PrinterResolution;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
@@ -39,7 +40,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 
 /**
@@ -105,22 +105,36 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         log.debug("Parsed {} images for printing", images.size());
     }
 
-    private List<BufferedImage> breakupOverPages(BufferedImage img, PageFormat page) {
+    private List<BufferedImage> breakupOverPages(BufferedImage img, PageFormat page, PrintRequestAttributeSet attributes) {
         List<BufferedImage> splits = new ArrayList<>();
 
         Rectangle printBounds = new Rectangle(0, 0, (int)page.getImageableWidth(), (int)page.getImageableHeight());
+        PrinterResolution res = (PrinterResolution)attributes.get(PrinterResolution.class);
+        float dpi = res.getFeedResolution(1) / (float)ResolutionSyntax.DPI;
+        float upscale = dpi / 72f; //allows us to split the image at the actual dpi instead of 72
 
-        int columnsNeed = (int)Math.ceil(img.getWidth() / page.getImageableWidth());
-        int rowsNeed = (int)Math.ceil(img.getHeight() / page.getImageableHeight());
-        log.trace("Image to be printed across {} pages", columnsNeed * rowsNeed);
+        //printing uses 72dpi, convert so we can check split size correctly
+        int useWidth = (int)((img.getWidth() / dpi) * 72);
+        int useHeight = (int)((img.getHeight() / dpi) * 72);
 
-        for(int row = 0; row < rowsNeed; row++) {
-            for(int col = 0; col < columnsNeed; col++) {
-                Rectangle clip = new Rectangle((col * printBounds.width), (row * printBounds.height), printBounds.width, printBounds.height);
-                if (clip.x + clip.width > img.getWidth()) { clip.width = img.getWidth() - clip.x; }
-                if (clip.y + clip.height > img.getHeight()) { clip.height = img.getHeight() - clip.y; }
+        int columnsNeed = (int)Math.ceil(useWidth / page.getImageableWidth());
+        int rowsNeed = (int)Math.ceil(useHeight / page.getImageableHeight());
 
-                splits.add(img.getSubimage(clip.x, clip.y, clip.width, clip.height));
+        if (columnsNeed == 1 && rowsNeed == 1) {
+            log.trace("Unscaled image does not need spit");
+            splits.add(img);
+        } else {
+            log.trace("Image to be printed across {} pages", columnsNeed * rowsNeed);
+            for(int row = 0; row < rowsNeed; row++) {
+                for(int col = 0; col < columnsNeed; col++) {
+                    Rectangle clip = new Rectangle((col * (int)(printBounds.width * upscale)), (row * (int)(printBounds.height * upscale)),
+                                                   (int)(printBounds.width * upscale), (int)(printBounds.height * upscale));
+
+                    if (clip.x + clip.width > img.getWidth()) { clip.width = img.getWidth() - clip.x; }
+                    if (clip.y + clip.height > img.getHeight()) { clip.height = img.getHeight() - clip.y; }
+
+                    splits.add(img.getSubimage(clip.x, clip.y, clip.width, clip.height));
+                }
             }
         }
 
@@ -157,7 +171,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
             //breakup large images to print across pages as needed
             List<BufferedImage> split = new ArrayList<>();
             for(BufferedImage bi : images) {
-                split.addAll(breakupOverPages(bi, page));
+                split.addAll(breakupOverPages(bi, page, attributes));
             }
             images = split;
         }

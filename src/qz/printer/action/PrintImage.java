@@ -111,10 +111,10 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         Rectangle printBounds = new Rectangle(0, 0, (int)page.getImageableWidth(), (int)page.getImageableHeight());
         PrinterResolution res = (PrinterResolution)attributes.get(PrinterResolution.class);
         float dpi = res.getFeedResolution(1) / (float)ResolutionSyntax.DPI;
-        float upscale = dpi / 72f; //allows us to split the image at the actual dpi instead of 72
+        float cdpi = res.getCrossFeedResolution(1) / (float)ResolutionSyntax.DPI;
 
         //printing uses 72dpi, convert so we can check split size correctly
-        int useWidth = (int)((img.getWidth() / dpi) * 72);
+        int useWidth = (int)((img.getWidth() / cdpi) * 72);
         int useHeight = (int)((img.getHeight() / dpi) * 72);
 
         int columnsNeed = (int)Math.ceil(useWidth / page.getImageableWidth());
@@ -125,10 +125,14 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
             splits.add(img);
         } else {
             log.trace("Image to be printed across {} pages", columnsNeed * rowsNeed);
+            //allows us to split the image at the actual dpi instead of 72
+            float upscale = dpi / 72f;
+            float c_upscale = cdpi / 72f;
+
             for(int row = 0; row < rowsNeed; row++) {
                 for(int col = 0; col < columnsNeed; col++) {
-                    Rectangle clip = new Rectangle((col * (int)(printBounds.width * upscale)), (row * (int)(printBounds.height * upscale)),
-                                                   (int)(printBounds.width * upscale), (int)(printBounds.height * upscale));
+                    Rectangle clip = new Rectangle((col * (int)(printBounds.width * c_upscale)), (row * (int)(printBounds.height * upscale)),
+                                                   (int)(printBounds.width * c_upscale), (int)(printBounds.height * upscale));
 
                     if (clip.x + clip.width > img.getWidth()) { clip.width = img.getWidth() - clip.x; }
                     if (clip.y + clip.height > img.getHeight()) { clip.height = img.getHeight() - clip.y; }

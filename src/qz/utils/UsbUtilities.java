@@ -16,6 +16,7 @@ import qz.ws.StreamEvent;
 
 import javax.usb.*;
 import javax.usb.util.UsbUtil;
+import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -219,9 +220,16 @@ public class UsbUtilities {
                             usb.setStreaming(false);
                             log.error("USB stream error", e);
 
-                            StreamEvent eventErr = new StreamEvent(streamType, StreamEvent.Type.ERROR).withException(e)
-                                    .withData("vendorId", usb.getVendorId()).withData("productId", usb.getProductId());
-                            PrintSocketClient.sendStream(session, eventErr);
+                            try {
+                                StreamEvent eventErr = new StreamEvent(streamType, StreamEvent.Type.ERROR).withException(e)
+                                                                                                          .withData("vendorId", usb.getVendorId()).withData("productId", usb.getProductId());
+                                PrintSocketClient.sendStream(session, eventErr);
+                            }
+                            catch(ClosedChannelException ignore) {} //already closed, just failed to send error msg
+                        }
+                        catch(ClosedChannelException cce) {
+                            usb.setStreaming(false);
+                            log.error("Stream is closed, could not send message");
                         }
                     }
                 }.start();

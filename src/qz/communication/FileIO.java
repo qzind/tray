@@ -9,6 +9,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import qz.ws.PrintSocketClient;
 import qz.ws.StreamEvent;
 
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.util.ArrayList;
@@ -133,7 +134,7 @@ public class FileIO {
         this.wk = wk;
     }
 
-    public void fileChanged(String fileName, String type, String fileData) {
+    public void fileChanged(String fileName, String type, String fileData) throws ClosedChannelException {
         StreamEvent evt = new StreamEvent(StreamEvent.Stream.FILE, StreamEvent.Type.ACTION)
                 .withData("file", getOriginalPath().resolve(fileName))
                 .withData("eventType", type);
@@ -145,7 +146,7 @@ public class FileIO {
         PrintSocketClient.sendStream(session, evt);
     }
 
-    public void sendError(String message) {
+    public void sendError(String message) throws ClosedChannelException {
         StreamEvent eventErr = new StreamEvent(StreamEvent.Stream.FILE, StreamEvent.Type.ERROR)
                 .withData("message", message);
         PrintSocketClient.sendStream(session, eventErr);

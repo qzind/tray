@@ -11,6 +11,7 @@ import qz.ws.PrintSocketClient;
 import qz.ws.StreamEvent;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -48,7 +49,7 @@ public class StatusSession {
         this.session = session;
     }
 
-    public void statusChanged(Status status) {
+    public void statusChanged(Status status) throws ClosedChannelException {
         PrintSocketClient.sendStream(session, createStatusStream(status));
         // If this statusSession has printers flagged to return jobData, issue a jobData event after any 'retained' job events
         if (status.getCode() == WmiJobStatusMap.RETAINED.getParent() && isDataPrinter(status.getPrinter())) {

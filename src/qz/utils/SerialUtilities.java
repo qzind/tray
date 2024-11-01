@@ -15,6 +15,7 @@ import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
 import qz.ws.StreamEvent;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -259,10 +260,16 @@ public class SerialUtilities {
                     String output = serial.processSerialEvent(spe);
 
                     if (output != null) {
-                        log.debug("Received serial output: {}", output);
-                        StreamEvent event = new StreamEvent(StreamEvent.Stream.SERIAL, StreamEvent.Type.RECEIVE)
-                                .withData("portName", portName).withData("output", output);
-                        PrintSocketClient.sendStream(session, event);
+                        try {
+                            log.debug("Received serial output: {}", output);
+                            StreamEvent event = new StreamEvent(StreamEvent.Stream.SERIAL, StreamEvent.Type.RECEIVE)
+                                    .withData("portName", portName).withData("output", output);
+                            PrintSocketClient.sendStream(session, event);
+                        }
+                        catch(ClosedChannelException cce) {
+                            log.error("Stream is closed, could not send message");
+                            connection.removeSerialPort(params.optString("port"));
+                        }
                     }
                 });
 

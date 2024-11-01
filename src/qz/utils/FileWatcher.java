@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.util.ArrayList;
@@ -46,6 +47,10 @@ public class FileWatcher {
                     }
                     wk.reset();
                 }
+                catch(ClosedChannelException cce) {
+                    log.error("Stream is closed, could not send message");
+                    alive = false;
+                }
                 catch(InterruptedException | ClosedWatchServiceException closed) {
                     log.error("File WatchService ending");
                     alive = false;
@@ -69,7 +74,7 @@ public class FileWatcher {
     }
 
 
-    private synchronized static void fileChanged(Path path, String fileName, String type) {
+    private synchronized static void fileChanged(Path path, String fileName, String type) throws ClosedChannelException {
         Path filePath = path.resolve(fileName);
         for(FileIO fio : fileIOs) {
             if (!fio.isMatch(fileName)) continue;

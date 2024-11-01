@@ -11,6 +11,7 @@ import qz.ws.SocketConnection;
 import qz.ws.StreamEvent;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -59,9 +60,14 @@ public class SocketUtilities {
                         }
                     }
                     catch(IOException e) {
-                        StreamEvent eventErr = new StreamEvent(StreamEvent.Stream.SOCKET, StreamEvent.Type.ERROR)
-                                .withData("host", host).withData("port", port).withException(e);
-                        PrintSocketClient.sendStream(session, eventErr);
+                        try {
+                            StreamEvent eventErr = new StreamEvent(StreamEvent.Stream.SOCKET, StreamEvent.Type.ERROR)
+                                    .withData("host", host).withData("port", port).withException(e);
+                            PrintSocketClient.sendStream(session, eventErr);
+                        }
+                        catch(ClosedChannelException cce) {
+                            log.error("Stream is closed, could not send message");
+                        }
                     }
 
                     try { Thread.sleep(100); } catch(Exception ignore) {}

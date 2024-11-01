@@ -15,6 +15,7 @@ import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.*;
 
 import static qz.utils.SystemUtilities.isWindows;
@@ -138,13 +139,18 @@ public class StatusMonitor {
         }
 
         for (Status status : statuses) {
-            if (sendForAllPrinters) {
-                statusSessions.get(connection).statusChanged(status);
-            } else {
-                connections = clientPrinterConnections.get(status.getPrinter());
-                if ((connections != null) && connections.contains(connection)) {
+            try {
+                if (sendForAllPrinters) {
                     statusSessions.get(connection).statusChanged(status);
+                } else {
+                    connections = clientPrinterConnections.get(status.getPrinter());
+                    if ((connections != null) && connections.contains(connection)) {
+                        statusSessions.get(connection).statusChanged(status);
+                    }
                 }
+            } catch(ClosedChannelException cce) {
+                log.error("Stream is closed, could not send message");
+                connections.remove(connection);
             }
         }
     }
@@ -204,9 +210,17 @@ public class StatusMonitor {
             // And find every client that subscribed to all printers
             listeningConnections.addAll(clientPrinterConnections.get(ALL_PRINTERS));
         }
-        for (SocketConnection connection : listeningConnections) {
-            statusSessions.get(connection).statusChanged(status);
+
+        for(SocketConnection connection : listeningConnections) {
+            try {
+                statusSessions.get(connection).statusChanged(status);
+            }
+            catch(ClosedChannelException cce) {
+                log.error("Stream is closed, could not send message");
+                listeningConnections.remove(connection);
+            }
         }
+
         return true;
     }
 

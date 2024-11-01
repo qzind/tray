@@ -733,7 +733,7 @@ public class PrintSocketClient {
             reply.put("result", returnValue);
             send(session, reply);
         }
-        catch(JSONException e) {
+        catch(JSONException | ClosedChannelException e) {
             log.error("Send result failed", e);
         }
     }
@@ -768,7 +768,7 @@ public class PrintSocketClient {
             reply.put("error", errorMsg);
             send(session, reply);
         }
-        catch(JSONException e) {
+        catch(JSONException | ClosedChannelException e) {
             log.error("Send error failed", e);
         }
     }
@@ -780,7 +780,7 @@ public class PrintSocketClient {
      * @param session WebSocket session
      * @param event   StreamEvent with data to send down to web API
      */
-    public static void sendStream(Session session, StreamEvent event) {
+    public static void sendStream(Session session, StreamEvent event) throws ClosedChannelException {
         try {
             JSONObject stream = new JSONObject();
             stream.put("type", event.getStreamType());
@@ -798,9 +798,12 @@ public class PrintSocketClient {
      * @param session WebSocket session
      * @param reply   JSON Object of reply to web API
      */
-    private static synchronized void send(Session session, JSONObject reply) throws WebSocketException {
+    private static synchronized void send(Session session, JSONObject reply) throws WebSocketException, ClosedChannelException {
         try {
             session.getRemote().sendString(reply.toString());
+        }
+        catch(ClosedChannelException cce) {
+            throw new ClosedChannelException();
         }
         catch(IOException e) {
             log.error("Could not send message", e);

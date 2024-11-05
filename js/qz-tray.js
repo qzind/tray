@@ -963,15 +963,13 @@ var qz = (function() {
             /** Check if QZ version supports chosen algorithm */
             algorithm: function(quiet) {
                 //if not connected yet we will assume compatibility exists for the time being
-                if (_qz.tools.isActive()) {
-                    //guard race condition for pending connections
-                    if( _qz.websocket.connection && _qz.websocket.connection.semver) {
-                        if (_qz.tools.isVersion(2, 0)) {
-                            if (!quiet) {
-                                _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
-                            }
-                            return false;
+                //check semver to guard race condition for pending connections
+                if (_qz.tools.isActive() && _qz.websocket.connection.semver) {
+                    if (_qz.tools.isVersion(2, 0)) {
+                        if (!quiet) {
+                            _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
                         }
+                        return false;
                     }
                 }
 

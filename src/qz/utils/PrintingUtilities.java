@@ -18,7 +18,6 @@ import qz.printer.action.PrintProcessor;
 import qz.printer.action.ProcessorFactory;
 import qz.printer.info.NativePrinter;
 import qz.printer.status.CupsUtils;
-import qz.printer.status.job.WmiJobStatusMap;
 import qz.ws.PrintSocketClient;
 
 import javax.print.PrintException;
@@ -277,10 +276,9 @@ public class PrintingUtilities {
             WinNT.HANDLEByReference phPrinter = getWmiPrinter(printer);
             Winspool.JOB_INFO_1[] jobs = WinspoolUtil.getJobInfo1(phPrinter);
             ArrayList<Integer> jobIds = new ArrayList<>();
-            // skip retained jobs and complete jobs
-            int skipMask = (int)WmiJobStatusMap.RETAINED.getRawCode() | (int)WmiJobStatusMap.PRINTED.getRawCode();
+            // Blindly add all jobs despite Microsoft's API claiming otherwise
+            // See also: https://github.com/qzind/tray/issues/1305
             for(Winspool.JOB_INFO_1 job : jobs) {
-                if ((job.Status & skipMask) != 0) continue;
                 jobIds.add(job.JobId);
             }
             return jobIds;

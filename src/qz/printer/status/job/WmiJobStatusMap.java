@@ -22,7 +22,7 @@ public enum WmiJobStatusMap implements NativeStatus.NativeMap {
     BLOCKED_DEVQ(NativeJobStatus.ABORTED, 0x00000200), // The driver cannot print the job
     RESTART(NativeJobStatus.RESTART, 0x00000800), // Job has been restarted
     COMPLETE(NativeJobStatus.SENT, 0x00001000), // Windows XP and later: Job is sent to the printer, but the job may not be printed yet
-    RETAINED(NativeJobStatus.RETAINED, 0x00002000), // Windows Vista and later: Job has been retained in the print queue and cannot be deleted
+    RETAINED(NativeJobStatus.RETAINED, 0x00002000), // Windows Vista and later: Job has been retained in the print queue and cannot be deleted (Edit: it actually can https://github.com/qzind/tray/issues/1305)
     RENDERING_LOCALLY(NativeJobStatus.RENDERING_LOCALLY, 0x00004000), // Job rendering locally on the client
     USER_INTERVENTION(NativeJobStatus.USER_INTERVENTION, 0x40000000); // Printer has an error that requires the user to do something
 

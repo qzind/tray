@@ -799,7 +799,7 @@ public class PrintSocketClient {
             if(listener != null) {
                 listener.close();
             } else {
-                log.warn("A device listener was not provided; it may not have closed properly");
+                log.error("Channel was closed before stream could be sent, but no close handler is configured.");
             }
         }
     }
@@ -808,11 +808,11 @@ public class PrintSocketClient {
         try {
             sendStream(session, event);
         } catch(ClosedChannelException e) {
+            log.error("Stream is closed, could not send message");
             if(closeHandler != null) {
-                log.error("Stream is closed, could not send message");
                 closeHandler.run();
             } else {
-                log.error("Channel was closed before stream could be sent, but no handler was setup to catch this.");
+                log.error("Channel was closed before stream could be sent, but no close handler is configured.");
             }
         }
     }

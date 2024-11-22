@@ -47,12 +47,11 @@ public class FileWatcher {
                     }
                     wk.reset();
                 }
-                catch(ClosedChannelException cce) {
-                    log.error("Stream is closed, could not send message");
-                    alive = false;
-                }
-                catch(InterruptedException | ClosedWatchServiceException closed) {
+                catch(ClosedChannelException | InterruptedException | ClosedWatchServiceException closed) {
                     log.error("File WatchService ending");
+                    if(closed instanceof ClosedChannelException) {
+                        log.error("Stream is closed, could not send message");
+                    }
                     alive = false;
                 }
             }

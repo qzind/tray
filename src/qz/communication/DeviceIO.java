@@ -1,6 +1,6 @@
 package qz.communication;
 
-public interface DeviceIO {
+public interface DeviceIO extends DeviceListener {
 
     String getVendorId();
 
@@ -11,8 +11,7 @@ public interface DeviceIO {
 
     boolean isOpen();
 
-    void close() throws DeviceException;
-
+    void close();
 
     void setStreaming(boolean streaming);
 

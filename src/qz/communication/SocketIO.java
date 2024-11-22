@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.utils.DeviceUtilities;
 import qz.utils.NetworkUtilities;
+import qz.ws.SocketConnection;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -15,7 +16,7 @@ import java.net.Socket;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 
-public class SocketIO {
+public class SocketIO implements DeviceListener {
 
     private static final Logger log = LogManager.getLogger(SocketIO.class);
 
@@ -27,10 +28,13 @@ public class SocketIO {
     private DataOutputStream dataOut;
     private DataInputStream dataIn;
 
-    public SocketIO(String host, int port, Charset encoding) {
+    private SocketConnection websocket;
+
+    public SocketIO(String host, int port, Charset encoding, SocketConnection websocket) {
         this.host = host;
         this.port = port;
         this.encoding = encoding;
+        this.websocket = websocket;
     }
 
     public boolean open() throws IOException {
@@ -68,9 +72,21 @@ public class SocketIO {
         return null;
     }
 
-    public void close() throws IOException {
-        dataOut.close();
-        socket.close();
+    @Override
+    public void close() {
+        // Remove orphaned listeners
+        websocket.removeNetworkSocket(String.format("%s:%s", host, port));
+
+        try {
+            dataOut.close();
+        } catch(IOException e) {
+            log.warn("Could not close socket output stream", e);
+        }
+        try {
+            socket.close();
+        } catch(IOException e) {
+            log.warn("Could not close socket", e);
+        }
     }
 
     public String getHost() {

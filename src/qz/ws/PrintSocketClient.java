@@ -431,12 +431,12 @@ public class PrintSocketClient {
                 if (connection.getDevice(dOpts) == null) {
                     DeviceIO device;
                     if (call == SocketMethod.USB_CLAIM_DEVICE) {
-                        device = new UsbIO(dOpts);
+                        device = new UsbIO(dOpts, connection);
                     } else {
                         if (SystemUtilities.isWindows()) {
-                            device = new PJHA_HidIO(dOpts);
+                            device = new PJHA_HidIO(dOpts, connection);
                         } else {
-                            device = new H4J_HidIO(dOpts);
+                            device = new H4J_HidIO(dOpts, connection);
                         }
                     }
 
@@ -527,7 +527,6 @@ public class PrintSocketClient {
                 DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
                     usb.close();
-                    connection.removeDevice(dOpts);
 
                     sendResult(session, UID, null);
                 } else {
@@ -786,9 +785,34 @@ public class PrintSocketClient {
             stream.put("type", event.getStreamType());
             stream.put("event", event.toJSON());
             send(session, stream);
-        }
-        catch(JSONException e) {
+        } catch(JSONException e) {
             log.error("Send stream failed", e);
+        }
+    }
+
+    public static void sendStream(Session session, StreamEvent event, DeviceListener listener) {
+        try {
+            sendStream(session, event);
+        } catch(ClosedChannelException e) {
+            log.error("Stream is closed, could not send message");
+            if(listener != null) {
+                listener.close();
+            } else {
+                log.warn("A device listener was not provided; it may not have closed properly");
+            }
+        }
+    }
+
+    public static void sendStream(Session session, StreamEvent event, Runnable closeHandler) {
+        try {
+            sendStream(session, event);
+        } catch(ClosedChannelException e) {
+            if(closeHandler != null) {
+                log.error("Stream is closed, could not send message");
+                closeHandler.run();
+            } else {
+                log.error("Channel was closed before stream could be sent, but no handler was setup to catch this.");
+            }
         }
     }
 

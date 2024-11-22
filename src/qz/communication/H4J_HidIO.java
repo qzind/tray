@@ -1,21 +1,27 @@
 package qz.communication;
 
 import org.hid4java.HidDevice;
+import qz.ws.SocketConnection;
 
 import javax.usb.util.UsbUtil;
 
-public class H4J_HidIO implements DeviceIO {
+public class H4J_HidIO implements DeviceIO, DeviceListener {
 
     private HidDevice device;
 
     private boolean streaming;
 
+    private DeviceOptions dOpts;
+    private SocketConnection websocket;
 
-    public H4J_HidIO(DeviceOptions dOpts) throws DeviceException {
-        this(H4J_HidUtilities.findDevice(dOpts));
+
+    public H4J_HidIO(DeviceOptions dOpts, SocketConnection websocket) throws DeviceException {
+        this(H4J_HidUtilities.findDevice(dOpts), dOpts, websocket);
     }
 
-    public H4J_HidIO(HidDevice device) throws DeviceException {
+    private H4J_HidIO(HidDevice device, DeviceOptions dOpts, SocketConnection websocket) throws DeviceException {
+        this.dOpts = dOpts;
+        this.websocket = websocket;
         if (device == null) {
             throw new DeviceException("HID device could not be found");
         }
@@ -30,7 +36,7 @@ public class H4J_HidIO implements DeviceIO {
     }
 
     public boolean isOpen() {
-        return device.isOpen();
+        return !device.isClosed();
     }
 
     public void setStreaming(boolean active) {
@@ -92,6 +98,8 @@ public class H4J_HidIO implements DeviceIO {
     }
 
     public void close() {
+        // Remove orphaned listeners
+        websocket.removeDevice(dOpts);
         if (isOpen()) {
             device.close();
         }

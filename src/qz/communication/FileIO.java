@@ -14,7 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.util.ArrayList;
 
-public class FileIO {
+public class FileIO implements DeviceListener {
     public static final String SANDBOX_DATA_SUFFIX = "sandbox";
     public static final String GLOBAL_DATA_SUFFIX = "shared";
     public static final int FILE_LISTENER_DEFAULT_LINES = 10;
@@ -153,6 +153,7 @@ public class FileIO {
     }
 
 
+    @Override
     public void close() {
         if (wk != null) {
             wk.cancel();

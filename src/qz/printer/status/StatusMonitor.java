@@ -133,24 +133,21 @@ public class StatusMonitor {
         boolean sendForAllPrinters = false;
         ArrayList<Status> statuses = isWindows() ? WmiPrinterStatusThread.getAllStatuses(): CupsUtils.getAllStatuses();
 
-        List<SocketConnection> connections = clientPrinterConnections.get(ALL_PRINTERS);
-        if (connections != null) {
-            sendForAllPrinters = connections.contains(connection);
+        // First check if we're listening on all printers for this connection
+        List<SocketConnection> allPrinters = clientPrinterConnections.get(ALL_PRINTERS);
+        if (allPrinters != null) {
+            sendForAllPrinters = allPrinters.contains(connection);
         }
 
         for (Status status : statuses) {
-            try {
-                if (sendForAllPrinters) {
-                    statusSessions.get(connection).statusChanged(status);
-                } else {
-                    connections = clientPrinterConnections.get(status.getPrinter());
-                    if ((connections != null) && connections.contains(connection)) {
-                        statusSessions.get(connection).statusChanged(status);
-                    }
+            if (sendForAllPrinters) {
+                statusSessions.get(connection).statusChanged(status, () -> allPrinters.remove(connection));
+            } else {
+                // Only send the status of the printers requested
+                final List<SocketConnection> thisPrinter = clientPrinterConnections.get(status.getPrinter());
+                if ((thisPrinter != null) && thisPrinter.contains(connection)) {
+                    statusSessions.get(connection).statusChanged(status, () -> thisPrinter.remove(connection));
                 }
-            } catch(ClosedChannelException cce) {
-                log.error("Stream is closed, could not send message");
-                connections.remove(connection);
             }
         }
     }
@@ -212,13 +209,7 @@ public class StatusMonitor {
         }
 
         for(SocketConnection connection : listeningConnections) {
-            try {
-                statusSessions.get(connection).statusChanged(status);
-            }
-            catch(ClosedChannelException cce) {
-                log.error("Stream is closed, could not send message");
-                listeningConnections.remove(connection);
-            }
+            statusSessions.get(connection).statusChanged(status, () -> listeningConnections.remove(connection));
         }
 
         return true;

@@ -12,7 +12,6 @@ import qz.ws.PrintSocketClient;
 import qz.ws.StreamEvent;
 
 import javax.usb.util.UsbUtil;
-import java.nio.channels.ClosedChannelException;
 
 public class H4J_HidListener implements DeviceListener, HidServicesListener {
 
@@ -30,14 +29,8 @@ public class H4J_HidListener implements DeviceListener, HidServicesListener {
 
     @Override
     public void hidFailure(HidServicesEvent hidServicesEvent) {
-        try {
-            log.debug("Device failure: {}", hidServicesEvent.getHidDevice().getProduct());
-            PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Failure"));
-        }
-        catch(ClosedChannelException cce) {
-            log.error("Stream is closed, could not send message");
-            this.close();
-        }
+        log.debug("Device failure: {}", hidServicesEvent.getHidDevice().getProduct());
+        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Failure"), this);
     }
 
     @Override
@@ -49,37 +42,19 @@ public class H4J_HidListener implements DeviceListener, HidServicesListener {
             hex.put(UsbUtil.toHexString(b));
         }
 
-        try {
-            PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Data Received", hex));
-        }
-        catch(ClosedChannelException cce) {
-            log.error("Stream is closed, could not send message");
-            this.close();
-        }
+        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Data Received", hex), this);
     }
 
     @Override
     public void hidDeviceDetached(HidServicesEvent hidServicesEvent) {
-        try {
-            log.debug("Device detached: {}", hidServicesEvent.getHidDevice().getProduct());
-            PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Detached"));
-        }
-        catch(ClosedChannelException cce) {
-            log.error("Stream is closed, could not send message");
-            this.close();
-        }
+        log.debug("Device detached: {}", hidServicesEvent.getHidDevice().getProduct());
+        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Detached"), this);
     }
 
     @Override
     public void hidDeviceAttached(HidServicesEvent hidServicesEvent) {
-        try {
-            log.debug("Device attached: {}", hidServicesEvent.getHidDevice().getProduct());
-            PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Attached"));
-        }
-        catch(ClosedChannelException cce) {
-            log.error("Stream is closed, could not send message");
-            this.close();
-        }
+        log.debug("Device attached: {}", hidServicesEvent.getHidDevice().getProduct());
+        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Attached"), this);
     }
 
     private StreamEvent createStreamAction(HidDevice device, String action) {

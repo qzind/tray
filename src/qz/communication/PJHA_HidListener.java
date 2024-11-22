@@ -9,7 +9,6 @@ import qz.ws.PrintSocketClient;
 import qz.ws.StreamEvent;
 
 import javax.usb.util.UsbUtil;
-import java.nio.channels.ClosedChannelException;
 
 public class PJHA_HidListener implements DeviceListener, DeviceRemovalListener {
 
@@ -45,13 +44,7 @@ public class PJHA_HidListener implements DeviceListener, DeviceRemovalListener {
 
     @Override
     public void onDeviceRemoval(HidDevice device) {
-        try {
-            log.debug("Device detached: {}", device.getHidDeviceInfo().getProductString());
-            PrintSocketClient.sendStream(session, createStreamAction(device, "Device Detached"));
-        }
-        catch(ClosedChannelException cce) {
-            log.error("Stream is closed, could not send message");
-            this.close();
-        }
+        log.debug("Device detached: {}", device.getHidDeviceInfo().getProductString());
+        PrintSocketClient.sendStream(session, createStreamAction(device, "Device Detached"), this);
     }
 }

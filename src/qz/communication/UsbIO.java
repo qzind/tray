@@ -133,6 +133,7 @@ public class UsbIO implements DeviceIO {
         }
     }
 
+    @Override
     public void close() {
         streaming = false;
         // Remove orphaned listeners

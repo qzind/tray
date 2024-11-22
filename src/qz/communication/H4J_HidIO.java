@@ -97,6 +97,7 @@ public class H4J_HidIO implements DeviceIO, DeviceListener {
         }
     }
 
+    @Override
     public void close() {
         // Remove orphaned listeners
         websocket.removeDevice(dOpts);

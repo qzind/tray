@@ -263,6 +263,7 @@ public class SerialIO implements DeviceListener {
      *
      * @throws SerialPortException If the port fails to close.
      */
+    @Override
     public void close() {
         // Remove orphaned listeners
         websocket.removeSerialPort(portName);

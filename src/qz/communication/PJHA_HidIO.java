@@ -133,6 +133,7 @@ public class PJHA_HidIO implements DeviceIO {
 
     }
 
+    @Override
     public void close() {
         // Remove orphaned listeners
         websocket.removeDevice(dOpts);

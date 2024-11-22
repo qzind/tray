@@ -785,7 +785,8 @@ public class PrintSocketClient {
             stream.put("type", event.getStreamType());
             stream.put("event", event.toJSON());
             send(session, stream);
-        } catch(JSONException e) {
+        }
+        catch(JSONException e) {
             log.error("Send stream failed", e);
         }
     }

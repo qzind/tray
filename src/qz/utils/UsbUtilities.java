@@ -220,7 +220,7 @@ public class UsbUtilities {
                             log.error("USB stream error", e);
 
                             StreamEvent eventErr = new StreamEvent(streamType, StreamEvent.Type.ERROR).withException(e)
-                                                                                                      .withData("vendorId", usb.getVendorId()).withData("productId", usb.getProductId());
+                                    .withData("vendorId", usb.getVendorId()).withData("productId", usb.getProductId());
                             PrintSocketClient.sendStream(session, eventErr, (Runnable)() -> {} /** No-op prevents re-throw **/);
                         }
                     }

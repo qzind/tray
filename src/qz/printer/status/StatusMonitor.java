@@ -144,7 +144,7 @@ public class StatusMonitor {
                 statusSessions.get(connection).statusChanged(status, () -> allPrinters.remove(connection));
             } else {
                 // Only send the status of the printers requested
-                final List<SocketConnection> thisPrinter = clientPrinterConnections.get(status.getPrinter());
+                List<SocketConnection> thisPrinter = clientPrinterConnections.get(status.getPrinter());
                 if ((thisPrinter != null) && thisPrinter.contains(connection)) {
                     statusSessions.get(connection).statusChanged(status, () -> thisPrinter.remove(connection));
                 }
@@ -208,9 +208,8 @@ public class StatusMonitor {
             listeningConnections.addAll(clientPrinterConnections.get(ALL_PRINTERS));
         }
 
-        for(SocketConnection connection : listeningConnections) {
+        for(SocketConnection connection : listeningConnections)
             statusSessions.get(connection).statusChanged(status, () -> listeningConnections.remove(connection));
-        }
 
         return true;
     }

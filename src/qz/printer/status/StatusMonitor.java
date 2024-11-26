@@ -209,7 +209,7 @@ public class StatusMonitor {
         }
 
         // Notify each client subscription
-        for(SocketConnection connection : listeningConnections) {
+        for (SocketConnection connection : listeningConnections) {
             statusSessions.get(connection).statusChanged(status, () -> stopListening(connection));
         }
 

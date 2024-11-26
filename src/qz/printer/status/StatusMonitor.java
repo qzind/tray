@@ -134,19 +134,19 @@ public class StatusMonitor {
         ArrayList<Status> statuses = isWindows() ? WmiPrinterStatusThread.getAllStatuses(): CupsUtils.getAllStatuses();
 
         // First check if we're listening on all printers for this connection
-        List<SocketConnection> allPrinters = clientPrinterConnections.get(ALL_PRINTERS);
-        if (allPrinters != null) {
-            sendForAllPrinters = allPrinters.contains(connection);
+        List<SocketConnection> connections = clientPrinterConnections.get(ALL_PRINTERS);
+        if (connections != null) {
+            sendForAllPrinters = connections.contains(connection);
         }
 
         for (Status status : statuses) {
             if (sendForAllPrinters) {
-                statusSessions.get(connection).statusChanged(status, () -> allPrinters.remove(connection));
+                statusSessions.get(connection).statusChanged(status, () -> stopListening(connection));
             } else {
                 // Only send the status of the printers requested
-                List<SocketConnection> thisPrinter = clientPrinterConnections.get(status.getPrinter());
-                if ((thisPrinter != null) && thisPrinter.contains(connection)) {
-                    statusSessions.get(connection).statusChanged(status, () -> thisPrinter.remove(connection));
+                connections = clientPrinterConnections.get(status.getPrinter());
+                if ((connections != null) && connections.contains(connection)) {
+                    statusSessions.get(connection).statusChanged(status, () -> stopListening(connection));
                 }
             }
         }
@@ -210,7 +210,7 @@ public class StatusMonitor {
 
         // Notify each client subscription
         for(SocketConnection connection : listeningConnections) {
-            statusSessions.get(connection).statusChanged(status, () -> statusSessions.remove(connection));
+            statusSessions.get(connection).statusChanged(status, () -> stopListening(connection));
         }
 
         return true;

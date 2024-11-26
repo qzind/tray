@@ -208,8 +208,10 @@ public class StatusMonitor {
             listeningConnections.addAll(clientPrinterConnections.get(ALL_PRINTERS));
         }
 
-        for(SocketConnection connection : listeningConnections)
-            statusSessions.get(connection).statusChanged(status, () -> listeningConnections.remove(connection));
+        // Notify each client subscription
+        for(SocketConnection connection : listeningConnections) {
+            statusSessions.get(connection).statusChanged(status, () -> statusSessions.remove(connection));
+        }
 
         return true;
     }

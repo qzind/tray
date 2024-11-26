@@ -2,6 +2,7 @@ package qz.communication;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.utils.UsbUtilities;
 import qz.ws.SocketConnection;
 
 import javax.usb.*;
@@ -20,6 +21,7 @@ public class UsbIO implements DeviceIO {
     public UsbIO(DeviceOptions dOpts, SocketConnection websocket) throws DeviceException {
         this.dOpts = dOpts;
         this.websocket = websocket;
+        UsbDevice device = UsbUtilities.findDevice(dOpts.getVendorId().shortValue(), dOpts.getProductId().shortValue());
         if (device == null) {
             throw new DeviceException("USB device could not be found");
         }

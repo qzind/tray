@@ -827,10 +827,12 @@ public class PrintSocketClient {
         try {
             session.getRemote().sendString(reply.toString());
         }
-        catch(ClosedChannelException cce) {
-            throw new ClosedChannelException();
-        }
         catch(IOException e) {
+            if(e instanceof ClosedChannelException) {
+                throw (ClosedChannelException)e;
+            } else if(e.getCause() instanceof ClosedChannelException) {
+                throw (ClosedChannelException)e.getCause();
+            }
             log.error("Could not send message", e);
         }
     }

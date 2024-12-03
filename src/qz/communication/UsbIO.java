@@ -137,8 +137,8 @@ public class UsbIO implements DeviceIO {
 
     @Override
     public void close() {
-        streaming = false;
-        // Remove orphaned listeners
+        setStreaming(false);
+        // Remove orphaned reference
         websocket.removeDevice(dOpts);
         if (iface.isClaimed()) {
             try {

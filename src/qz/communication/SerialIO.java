@@ -265,7 +265,7 @@ public class SerialIO implements DeviceListener {
      */
     @Override
     public void close() {
-        // Remove orphaned listeners
+        // Remove orphaned reference
         websocket.removeSerialPort(portName);
 
         if (!isOpen()) {

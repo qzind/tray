@@ -135,7 +135,8 @@ public class PJHA_HidIO implements DeviceIO {
 
     @Override
     public void close() {
-        // Remove orphaned listeners
+        setStreaming(false);
+        // Remove orphaned reference
         websocket.removeDevice(dOpts);
         if (isOpen()) {
             try {
@@ -147,7 +148,6 @@ public class PJHA_HidIO implements DeviceIO {
             }
         }
 
-        streaming = false;
         device = null;
     }
 

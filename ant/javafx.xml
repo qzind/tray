@@ -207,6 +207,28 @@
             </not>
         </condition>
 
+        <!-- FIXME:
+             - Temporary johan mirror URL
+             - x86_64 only
+             - Experimental "headless" build which no longer requires "monocle"
+        -->
+
+        <property name="headless.version" value="22"/>
+        <!-- FIXME: Ideally, these should all match -->
+        <condition property="headless.patch" value="312">
+            <equals arg1="${fx.os}" arg2="linux"/>
+        </condition>
+        <condition property="headless.patch" value="313">
+            <equals arg1="${fx.os}" arg2="mac"/>
+        </condition>
+        <property description="fallback value" name="headless.patch" value="314"/>
+
+        <property name="headless.base" value="https://download2.gluonhq.com/openjfx/forks/johan/headless"/>
+
+        <condition property="fx.url" value="${headless.base}/openjfx-${headless.version}+${headless.patch}_headless_${fx.os}-${fx.arch}_bin-sdk.zip">
+            <equals arg1="${fx.arch}" arg2="x86_64"/>
+        </condition>
+
         <property name="fx.url" value="${javafx.mirror}/${fx.majver}/openjfx-${fx.urlver}-${fx.os.fixed}-${fx.arch.fixed}_bin-sdk.zip"/>
         <property name="fx.zip" value="${out.dir}/${fx.id}.zip"/>
 

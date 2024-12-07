@@ -3,7 +3,7 @@
     <option name="MAIN_CLASS_NAME" value="qz.App" />
     <module name="tray" />
     <option name="PROGRAM_PARAMETERS" value="--steal" />
-    <option name="VM_PARAMETERS" value="--add-opens java.desktop/sun.lwawt.macosx=ALL-UNNAMED --add-opens java.desktop/java.awt=ALL-UNNAMED --add-exports java.desktop/com.apple.laf=ALL-UNNAMED --add-exports java.desktop/sun.swing=ALL-UNNAMED" />
+    <option name="VM_PARAMETERS" value="--add-opens java.desktop/sun.lwawt.macosx=ALL-UNNAMED --add-opens java.desktop/java.awt=ALL-UNNAMED --add-exports java.desktop/com.apple.laf=ALL-UNNAMED --add-exports java.desktop/sun.swing=ALL-UNNAMED -Dapple.awt.enableTemplateImages=true" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

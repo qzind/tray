@@ -1,8 +1,9 @@
 'use strict';
 
 /**
- * @version 2.2.4-SNAPSHOT
+ * @version 2.2.5-SNAPSHOT
  * @overview QZ Tray Connector
+ * @license LGPL-2.1-only
  * <p/>
  * Connects a web client to the QZ Tray software.
  * Enables printing and device communication from javascript.
@@ -26,7 +27,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
-        VERSION: "2.2.4-SNAPSHOT",                              //must match @version above
+        VERSION: "2.2.5-SNAPSHOT",                              //must match @version above
         DEBUG: false,
 
         log: {
@@ -260,6 +261,13 @@ var qz = (function() {
 
                                     _qz.signContent = undefined;
                                     _qz.websocket.connection.send(_qz.tools.stringify(obj));
+                                }).catch(function(err) {
+                                    _qz.log.error("Signing failed", err);
+
+                                    if (obj.promise != undefined) {
+                                        obj.promise.reject(new Error("Failed to sign request"));
+                                        delete _qz.websocket.pendingCalls[obj.uid];
+                                    }
                                 });
                             } else {
                                 _qz.log.trace("Signature for call", obj.signature);
@@ -852,6 +860,17 @@ var qz = (function() {
                     }
                 }
 
+                if(_qz.tools.versionCompare(2, 2, 4) < 0) {
+                    for(var i = 0; i < printData.length; i++) {
+                        if (printData[i].constructor === Object) {
+                            // dotDensity: "double-legacy|single-legacy" since 2.2.4.  Fallback to "double|single"
+                            if (printData[i].options && typeof printData[i].options.dotDensity === 'string') {
+                                printData[i].options.dotDensity = printData[i].options.dotDensity.toLowerCase().replace("-legacy", "");
+                            }
+                        }
+                    }
+                }
+
                 if (_qz.tools.isVersion(2, 0)) {
                     /*
                     2.0.x conversion
@@ -944,7 +963,8 @@ var qz = (function() {
             /** Check if QZ version supports chosen algorithm */
             algorithm: function(quiet) {
                 //if not connected yet we will assume compatibility exists for the time being
-                if (_qz.tools.isActive()) {
+                //check semver to guard race condition for pending connections
+                if (_qz.tools.isActive() && _qz.websocket.connection.semver) {
                     if (_qz.tools.isVersion(2, 0)) {
                         if (!quiet) {
                             _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
@@ -1473,7 +1493,7 @@ var qz = (function() {
              *   @param {number} [options.bounds.y=0] Distance from top for bounding box starting corner
              *   @param {number} [options.bounds.width=0] Width of bounding box
              *   @param {number} [options.bounds.height=0] Height of bounding box
-             *  @param {string} [options.colorType='color'] Valid values <code>[color | grayscale | blackwhite]</code>
+             *  @param {string} [options.colorType='color'] Valid values <code>[color | grayscale | blackwhite | default]</code>
              *  @param {number} [options.copies=1] Number of copies to be printed.
              *  @param {number|Array<number>|Object|Array<Object>|string} [options.density=0] Pixel density (DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *      If provided as an array, uses the first supported density found (or the first entry if none found).

@@ -285,6 +285,9 @@ public class PrintRaw implements PrintProcessor {
                     case "single": density = 32; break;
                     case "double": density = 33; break;
                     case "triple": density = 39; break;
+                    // negative: legacy mode
+                    case "single-legacy": density = -32; break;
+                    case "double-legacy": density = -33; break;
                 }
             } else {
                 density = 32; //default

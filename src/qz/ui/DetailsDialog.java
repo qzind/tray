@@ -31,12 +31,18 @@ public class DetailsDialog extends JPanel {
 
         requestTable = new RequestTable(iconCache);
         reqScrollPane = new JScrollPane(requestTable);
+        requestTable.getAccessibleContext().setAccessibleName(requestLabel.getText() + " Details");
+        requestTable.getAccessibleContext().setAccessibleDescription("Signing details about this request.");
+        requestLabel.setLabelFor(requestTable);
 
         certLabel = new JLabel("Certificate");
         certLabel.setAlignmentX(CENTER_ALIGNMENT);
 
         certTable = new CertificateTable(iconCache);
         certScrollPane = new JScrollPane(certTable);
+        certTable.getAccessibleContext().setAccessibleName(certLabel.getText() + " Details");
+        certTable.getAccessibleContext().setAccessibleDescription("Certificate details about this request.");
+        certLabel.setLabelFor(certTable);
 
         add(requestLabel);
         add(reqScrollPane);

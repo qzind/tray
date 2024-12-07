@@ -1,6 +1,8 @@
 package qz.utils;
 
+import org.apache.commons.lang3.StringUtils;
 import qz.common.Constants;
+import qz.ws.substitutions.Substitutions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +53,8 @@ public enum ArgValue {
     // Build stubs
     JLINK(BUILD, "Download, compress and bundle a Java Runtime", "jlink [--platform mac|windows|linux] [--arch x64|aarch64] [--vendor bellsoft|eclipse|...] [--version ...] [--gc hotspot|openj9] [--gcversion ...]", null,
           "jlink"),
+    PROVISION(BUILD, "Provision/bundle addition settings or resources into this installer", "provision --json file.json [--target-os windows --target-arch x86_64]", null,
+            "provision"),
 
     // Parameter stubs
     TRAY_NOTIFICATIONS(PREFERENCES, "Show verbose connect/disconnect notifications in the tray area", null, false,
@@ -69,6 +73,12 @@ public enum ArgValue {
         "security.file.enabled"),
     SECURITY_FILE_STRICT(PREFERENCES, "Enable/disable signing requirements for File Communications features", null, true,
         "security.file.strict"),
+
+    SECURITY_SUBSTITUTIONS_ENABLE(PREFERENCES, "Enable/disable client-side JSON data substitutions via \"" + Substitutions.FILE_NAME + "\" file", null, true,
+        "security.substitutions.enable"),
+    SECURITY_SUBSTITUTIONS_STRICT(PREFERENCES, "Enable/disable restrictions for materially changing JSON substitutions such as \"copies\":, \"data\": { \"data\": ... } blobs", null, true,
+        "security.substitutions.strict"),
+
     SECURITY_DATA_PROTOCOLS(PREFERENCES, "URL protocols allowed for print, serial, hid, etc", null, "http,https",
         "security.data.protocols"),
     SECURITY_PRINT_TOFILE(PREFERENCES, "Enable/disable printing directly to file paths", null, false,
@@ -79,6 +89,10 @@ public enum ArgValue {
                            "security.wss.httpsonly"),
     SECURITY_WSS_HOST(PREFERENCES, "Influences which physical adapter to bind to by setting the host parameter for http/websocket listening", null, "0.0.0.0",
                            "security.wss.host"),
+    WEBSOCKET_SECURE_PORTS(PREFERENCES, "Comma separated list of secure websocket (wss://) ports to use", null, StringUtils.join(Constants.DEFAULT_WSS_PORTS, ","),
+                           "websocket.secure.ports"),
+    WEBSOCKET_INSECURE_PORTS(PREFERENCES, "Comma separated list of insecure websocket (ws://) ports to use", null, StringUtils.join(Constants.DEFAULT_WS_PORTS, ","),
+                           "websocket.insecure.ports"),
     LOG_DISABLE(PREFERENCES, "Disable/enable logging features", null, false,
         "log.disable"),
     LOG_ROTATE(PREFERENCES, "Number of log files to retain when the size fills up", null, 5,

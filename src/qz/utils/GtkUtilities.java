@@ -31,7 +31,7 @@ public class GtkUtilities {
         } catch(Throwable t) {
             log.warn("An error occurred initializing the Gtk library", t);
         }
-        return 0;
+        return 1;
     }
 
     private static GTK getGtkInstance() {
@@ -88,7 +88,7 @@ public class GtkUtilities {
             Pointer screen = gtk3.gdk_display_get_default_screen(display);
             return gtk3.gdk_screen_get_monitor_scale_factor(screen, 0);
         }
-        return 0;
+        return 1;
     }
 
     /**

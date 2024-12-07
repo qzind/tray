@@ -40,6 +40,7 @@ public class LogDialog extends BasicDialog {
     }
 
     public void initComponents() {
+        int defaultFontSize = new JLabel().getFont().getSize();
         LinkLabel logDirLabel = new LinkLabel(FileUtilities.USER_DIR + File.separator);
         logDirLabel.setLinkLocation(new File(FileUtilities.USER_DIR + File.separator));
         setHeader(logDirLabel);
@@ -58,7 +59,7 @@ public class LogDialog extends BasicDialog {
         logArea.setEditable(false);
         logArea.setLineWrap(true);
         logArea.setWrapStyleWord(true);
-        logArea.setFont(new Font("", Font.PLAIN, 12)); //force fallback font for character support
+        logArea.setFont(new Font("", Font.PLAIN, defaultFontSize)); //force fallback font for character support
 
         // TODO:  Fix button panel resizing issues
         clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);

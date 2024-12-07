@@ -9,13 +9,14 @@ import org.apache.logging.log4j.Logger;
 import qz.common.ByteArrayBuilder;
 import qz.utils.ByteUtilities;
 import qz.utils.DeviceUtilities;
+import qz.ws.SocketConnection;
 
 import java.io.IOException;
 
 /**
  * @author Tres
  */
-public class SerialIO {
+public class SerialIO implements DeviceListener {
 
     private static final Logger log = LogManager.getLogger(SerialIO.class);
 
@@ -28,14 +29,17 @@ public class SerialIO {
 
     private ByteArrayBuilder data = new ByteArrayBuilder();
 
+    private SocketConnection websocket;
+
 
     /**
      * Controller for serial communications
      *
      * @param portName Port name to open, such as "COM1" or "/dev/tty0/"
      */
-    public SerialIO(String portName) {
+    public SerialIO(String portName, SocketConnection websocket) {
         this.portName = portName;
+        this.websocket = websocket;
     }
 
     /**
@@ -257,26 +261,31 @@ public class SerialIO {
     /**
      * Closes the serial port, if open.
      *
-     * @return Boolean indicating success.
      * @throws SerialPortException If the port fails to close.
      */
-    public boolean close() throws SerialPortException {
+    @Override
+    public void close() {
+        // Remove orphaned reference
+        websocket.removeSerialPort(portName);
+
         if (!isOpen()) {
             log.warn("Serial port [{}] is not open.", portName);
-            return false;
         }
 
-        boolean closed = port.closePort();
-        if (closed) {
-            log.info("Serial port [{}] closed successfully.", portName);
-        } else {
+        try {
+            boolean closed = port.closePort();
+            if (closed) {
+                log.info("Serial port [{}] closed successfully.", portName);
+            } else {
+                // Handle ambiguity in JSSCs API
+                throw new SerialPortException(portName, "closePort", "Port not closed");
+            }
+        } catch(SerialPortException e) {
             log.warn("Serial port [{}] was not closed properly.", portName);
         }
 
         port = null;
         portName = null;
-
-        return closed;
     }
 
     private Integer min(Integer a, Integer b) {

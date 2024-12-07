@@ -7,6 +7,7 @@ import purejavahidapi.HidDeviceInfo;
 import purejavahidapi.InputReportListener;
 import purejavahidapi.PureJavaHidApi;
 import qz.utils.SystemUtilities;
+import qz.ws.SocketConnection;
 
 import javax.usb.util.UsbUtil;
 import java.io.IOException;
@@ -22,13 +23,16 @@ public class PJHA_HidIO implements DeviceIO {
     private static final int BUFFER_SIZE = 32;
     private Vector<byte[]> dataBuffer;
     private boolean streaming;
+    private DeviceOptions dOpts;
+    private SocketConnection websocket;
 
-
-    public PJHA_HidIO(DeviceOptions dOpts) throws DeviceException {
-        this(PJHA_HidUtilities.findDevice(dOpts));
+    public PJHA_HidIO(DeviceOptions dOpts, SocketConnection websocket) throws DeviceException {
+        this(PJHA_HidUtilities.findDevice(dOpts), dOpts, websocket);
     }
 
-    public PJHA_HidIO(HidDeviceInfo deviceInfo) throws DeviceException {
+    private PJHA_HidIO(HidDeviceInfo deviceInfo, DeviceOptions dOpts, SocketConnection websocket) throws DeviceException {
+        this.dOpts = dOpts;
+        this.websocket = websocket;
         if (deviceInfo == null) {
             throw new DeviceException("HID device could not be found");
         }
@@ -129,7 +133,11 @@ public class PJHA_HidIO implements DeviceIO {
 
     }
 
+    @Override
     public void close() {
+        setStreaming(false);
+        // Remove orphaned reference
+        websocket.removeDevice(dOpts);
         if (isOpen()) {
             try {
                 device.setInputReportListener(null);
@@ -140,7 +148,6 @@ public class PJHA_HidIO implements DeviceIO {
             }
         }
 
-        streaming = false;
         device = null;
     }
 

@@ -45,6 +45,6 @@ public class PJHA_HidListener implements DeviceListener, DeviceRemovalListener {
     @Override
     public void onDeviceRemoval(HidDevice device) {
         log.debug("Device detached: {}", device.getHidDeviceInfo().getProductString());
-        PrintSocketClient.sendStream(session, createStreamAction(device, "Device Detached"));
+        PrintSocketClient.sendStream(session, createStreamAction(device, "Device Detached"), this);
     }
 }

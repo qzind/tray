@@ -4,7 +4,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import qz.App;
-import qz.common.Constants;
 import qz.printer.status.job.WmiJobStatusMap;
 import qz.utils.*;
 import qz.ws.PrintSocketClient;
@@ -48,11 +47,11 @@ public class StatusSession {
         this.session = session;
     }
 
-    public void statusChanged(Status status) {
-        PrintSocketClient.sendStream(session, createStatusStream(status));
+    public void statusChanged(Status status, Runnable closeHandler) {
+        PrintSocketClient.sendStream(session, createStatusStream(status), closeHandler);
         // If this statusSession has printers flagged to return jobData, issue a jobData event after any 'retained' job events
         if (status.getCode() == WmiJobStatusMap.RETAINED.getParent() && isDataPrinter(status.getPrinter())) {
-            PrintSocketClient.sendStream(session, createJobDataStream(status));
+            PrintSocketClient.sendStream(session, createJobDataStream(status), closeHandler);
         }
     }
 

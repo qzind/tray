@@ -14,15 +14,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.installer.certificate.CertificateManager;
+import qz.utils.MacUtilities;
 import qz.utils.StringUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
+import qz.ws.WebsocketPorts;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.cert.CertificateEncodingException;
@@ -44,6 +47,7 @@ public class AboutInfo {
             about.put("environment", environment());
             about.put("ssl", ssl(certificateManager));
             about.put("libraries", libraries());
+            about.put("charsets", charsets());
         }
         catch(JSONException | GeneralSecurityException e) {
             log.error("Failed to write JSON data", e);
@@ -67,6 +71,7 @@ public class AboutInfo {
     private static JSONObject socket(CertificateManager certificateManager, String domain) throws JSONException {
         JSONObject socket = new JSONObject();
         String sanitizeDomain = StringUtilities.escapeHtmlEntities(domain);
+        WebsocketPorts websocketPorts = PrintSocketServer.getWebsocketPorts();
 
         // Gracefully handle XSS per https://github.com/qzind/tray/issues/1099
         if(sanitizeDomain.contains("&lt;") || sanitizeDomain.contains("&gt;")) {
@@ -77,9 +82,9 @@ public class AboutInfo {
         socket
                 .put("domain", sanitizeDomain)
                 .put("secureProtocol", "wss")
-                .put("securePort", certificateManager.isSslActive() ? PrintSocketServer.getSecurePortInUse() : "none")
+                .put("securePort", certificateManager.isSslActive() ? websocketPorts.getSecurePort() : "none")
                 .put("insecureProtocol", "ws")
-                .put("insecurePort", PrintSocketServer.getInsecurePortInUse());
+                .put("insecurePort", websocketPorts.getInsecurePort());
 
         return socket;
     }
@@ -92,11 +97,12 @@ public class AboutInfo {
         environment
                 .put("os", SystemUtilities.getOsDisplayName())
                 .put("os version", SystemUtilities.getOsDisplayVersion())
-                .put("java", String.format("%s (%s)", Constants.JAVA_VERSION, SystemUtilities.getJreArch().toString().toLowerCase()))
+                .put("java", String.format("%s (%s)", Constants.JAVA_VERSION, SystemUtilities.getArch().toString().toLowerCase()))
                 .put("java (location)", System.getProperty("java.home"))
                 .put("java (vendor)", Constants.JAVA_VENDOR)
                 .put("uptime", DurationFormatUtils.formatDurationWords(uptime, true, false))
-                .put("uptimeMillis", uptime);
+                .put("uptimeMillis", uptime)
+                .put("sandbox", SystemUtilities.isMac() && MacUtilities.isSandboxed());
 
         return environment;
     }
@@ -147,6 +153,19 @@ public class AboutInfo {
         }
 
         return libraries;
+    }
+
+    private static JSONObject charsets() throws JSONException {
+        JSONObject charsets = new JSONObject();
+
+        SortedMap<String,Charset> avail = Charset.availableCharsets();
+        ArrayList<String> names = new ArrayList<>();
+        for(Map.Entry<String,Charset> entry : avail.entrySet()) {
+            names.add(entry.getValue().name());
+        }
+
+        charsets.put("charsets", Arrays.toString(names.toArray()));
+        return charsets;
     }
 
     public static String getPreferredHostname() {

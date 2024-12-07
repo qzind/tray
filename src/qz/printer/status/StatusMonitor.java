@@ -15,6 +15,7 @@ import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.*;
 
 import static qz.utils.SystemUtilities.isWindows;
@@ -132,6 +133,7 @@ public class StatusMonitor {
         boolean sendForAllPrinters = false;
         ArrayList<Status> statuses = isWindows() ? WmiPrinterStatusThread.getAllStatuses(): CupsUtils.getAllStatuses();
 
+        // First check if we're listening on all printers for this connection
         List<SocketConnection> connections = clientPrinterConnections.get(ALL_PRINTERS);
         if (connections != null) {
             sendForAllPrinters = connections.contains(connection);
@@ -139,11 +141,12 @@ public class StatusMonitor {
 
         for (Status status : statuses) {
             if (sendForAllPrinters) {
-                statusSessions.get(connection).statusChanged(status);
+                statusSessions.get(connection).statusChanged(status, () -> stopListening(connection));
             } else {
+                // Only send the status of the printers requested
                 connections = clientPrinterConnections.get(status.getPrinter());
                 if ((connections != null) && connections.contains(connection)) {
-                    statusSessions.get(connection).statusChanged(status);
+                    statusSessions.get(connection).statusChanged(status, () -> stopListening(connection));
                 }
             }
         }
@@ -204,9 +207,12 @@ public class StatusMonitor {
             // And find every client that subscribed to all printers
             listeningConnections.addAll(clientPrinterConnections.get(ALL_PRINTERS));
         }
+
+        // Notify each client subscription
         for (SocketConnection connection : listeningConnections) {
-            statusSessions.get(connection).statusChanged(status);
+            statusSessions.get(connection).statusChanged(status, () -> stopListening(connection));
         }
+
         return true;
     }
 

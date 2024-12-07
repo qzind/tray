@@ -21,6 +21,7 @@ import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.status.StatusMonitor;
 import qz.utils.*;
+import qz.ws.substitutions.Substitutions;
 
 import javax.usb.util.UsbUtil;
 import java.awt.*;
@@ -44,6 +45,7 @@ public class PrintSocketClient {
     private static final Logger log = LogManager.getLogger(PrintSocketClient.class);
 
     private final TrayManager trayManager = PrintSocketServer.getTrayManager();
+
     private static final Semaphore dialogAvailable = new Semaphore(1, true);
 
     //websocket port -> Connection
@@ -224,6 +226,14 @@ public class PrintSocketClient {
      * @param json    JSON received from web API
      */
     private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, DeviceException, IOException {
+        // perform client-side substitutions
+        if(Substitutions.areActive()) {
+            Substitutions substitutions = Substitutions.getInstance();
+            if (substitutions != null) {
+                json = substitutions.replace(json);
+            }
+        }
+
         String UID = json.optString("uid");
         SocketMethod call = SocketMethod.findFromCall(json.optString("call"));
         JSONObject params = json.optJSONObject("params");
@@ -421,12 +431,12 @@ public class PrintSocketClient {
                 if (connection.getDevice(dOpts) == null) {
                     DeviceIO device;
                     if (call == SocketMethod.USB_CLAIM_DEVICE) {
-                        device = new UsbIO(dOpts);
+                        device = new UsbIO(dOpts, connection);
                     } else {
                         if (SystemUtilities.isWindows()) {
-                            device = new PJHA_HidIO(dOpts);
+                            device = new PJHA_HidIO(dOpts, connection);
                         } else {
-                            device = new H4J_HidIO(dOpts);
+                            device = new H4J_HidIO(dOpts, connection);
                         }
                     }
 
@@ -517,7 +527,6 @@ public class PrintSocketClient {
                 DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
                     usb.close();
-                    connection.removeDevice(dOpts);
 
                     sendResult(session, UID, null);
                 } else {
@@ -723,7 +732,7 @@ public class PrintSocketClient {
             reply.put("result", returnValue);
             send(session, reply);
         }
-        catch(JSONException e) {
+        catch(JSONException | ClosedChannelException e) {
             log.error("Send result failed", e);
         }
     }
@@ -758,7 +767,7 @@ public class PrintSocketClient {
             reply.put("error", errorMsg);
             send(session, reply);
         }
-        catch(JSONException e) {
+        catch(JSONException | ClosedChannelException e) {
             log.error("Send error failed", e);
         }
     }
@@ -770,7 +779,7 @@ public class PrintSocketClient {
      * @param session WebSocket session
      * @param event   StreamEvent with data to send down to web API
      */
-    public static void sendStream(Session session, StreamEvent event) {
+    public static void sendStream(Session session, StreamEvent event) throws ClosedChannelException {
         try {
             JSONObject stream = new JSONObject();
             stream.put("type", event.getStreamType());
@@ -782,17 +791,48 @@ public class PrintSocketClient {
         }
     }
 
+    public static void sendStream(Session session, StreamEvent event, DeviceListener listener) {
+        try {
+            sendStream(session, event);
+        } catch(ClosedChannelException e) {
+            log.error("Stream is closed, could not send message");
+            if(listener != null) {
+                listener.close();
+            } else {
+                log.error("Channel was closed before stream could be sent, but no close handler is configured.");
+            }
+        }
+    }
+
+    public static void sendStream(Session session, StreamEvent event, Runnable closeHandler) {
+        try {
+            sendStream(session, event);
+        } catch(ClosedChannelException e) {
+            log.error("Stream is closed, could not send message");
+            if(closeHandler != null) {
+                closeHandler.run();
+            } else {
+                log.error("Channel was closed before stream could be sent, but no close handler is configured.");
+            }
+        }
+    }
+
     /**
      * Raw send method for replies
      *
      * @param session WebSocket session
      * @param reply   JSON Object of reply to web API
      */
-    private static synchronized void send(Session session, JSONObject reply) throws WebSocketException {
+    private static synchronized void send(Session session, JSONObject reply) throws WebSocketException, ClosedChannelException {
         try {
             session.getRemote().sendString(reply.toString());
         }
         catch(IOException e) {
+            if(e instanceof ClosedChannelException) {
+                throw (ClosedChannelException)e;
+            } else if(e.getCause() instanceof ClosedChannelException) {
+                throw (ClosedChannelException)e.getCause();
+            }
             log.error("Could not send message", e);
         }
     }

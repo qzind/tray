@@ -1,21 +1,27 @@
 package qz.communication;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.utils.UsbUtilities;
+import qz.ws.SocketConnection;
 
 import javax.usb.*;
 import javax.usb.util.UsbUtil;
 
 public class UsbIO implements DeviceIO {
-
+    private static final Logger log = LogManager.getLogger(UsbIO.class);
     private UsbDevice device;
     private UsbInterface iface;
 
     private boolean streaming;
 
+    private DeviceOptions dOpts;
+    private SocketConnection websocket;
 
-    public UsbIO(DeviceOptions dOpts) throws DeviceException {
+    public UsbIO(DeviceOptions dOpts, SocketConnection websocket) throws DeviceException {
+        this.dOpts = dOpts;
+        this.websocket = websocket;
         UsbDevice device = UsbUtilities.findDevice(dOpts.getVendorId().shortValue(), dOpts.getProductId().shortValue());
-
         if (device == null) {
             throw new DeviceException("USB device could not be found");
         }
@@ -129,16 +135,19 @@ public class UsbIO implements DeviceIO {
         }
     }
 
-    public void close() throws DeviceException {
+    @Override
+    public void close() {
+        setStreaming(false);
+        // Remove orphaned reference
+        websocket.removeDevice(dOpts);
         if (iface.isClaimed()) {
             try {
                 iface.release();
             }
             catch(UsbException e) {
-                throw new DeviceException(e);
+                log.error("Unable to close USB device", e);
             }
         }
-        streaming = false;
     }
 
 }

@@ -1,17 +1,18 @@
 <project name="host-info" default="platform-detect" basedir="..">
     <property file="ant/project.properties"/>
+    <property file="ant/ivy-deps.properties"/>
     <!--
         Detects and echos host and target information
 
         String:
-        - host.os, host.arch, host.libext, host.libprefix
-        - target.os, target.arch, target.libext, target.libprefix
+        - host.os, host.arch, host.libext, host.libprefix, target.javafx.platform
+        - target.os, target.arch, target.libext, target.libprefix, target.javafx.platform
 
         Booleans:
         - host.${host.arch}=true, host.${host.os}=true
         - target.${target.arch}=true, target.${target.os}=true
     -->
-    <target name="platform-detect" depends="get-target-os,get-target-arch,get-libext">
+    <target name="platform-detect" depends="get-target-os,get-target-arch,get-libext,get-javafx-platform">
         <!-- Echo host information -->
         <antcall target="echo-platform">
             <param name="title" value="Host"/>
@@ -19,6 +20,7 @@
             <param name="prefix.os" value="${host.os}"/>
             <param name="prefix.arch" value="${host.arch}"/>
             <param name="prefix.libext" value="${host.libext}"/>
+            <param name="prefix.javafx" value="${host.javafx.platform}"/>
         </antcall>
         <!-- Echo target information -->
         <antcall target="echo-platform">
@@ -27,6 +29,7 @@
             <param name="prefix.os" value="${target.os}"/>
             <param name="prefix.arch" value="${target.arch}"/>
             <param name="prefix.libext" value="${target.libext}"/>
+            <param name="prefix.javafx" value="${target.javafx.platform}"/>
         </antcall>
     </target>
     <target name="echo-platform">
@@ -52,6 +55,7 @@
             ${prefix}.os: &quot;${prefix.os}&quot;
             ${prefix}.arch: &quot;${prefix.arch}&quot;
             ${prefix}.libext: &quot;${prefix.libext}&quot;
+            ${prefix}.javafx.platform: &quot;${prefix.javafx}&quot;
             ${os.echo}: true
             ${arch.echo}: true
         </echo>
@@ -250,5 +254,70 @@
             <os family="mac"/>
         </condition>
         <property name="host.os" value="linux" description="fallback value"/>
+    </target>
+
+    <!-- Calculate host.javafx.platform, target.javafx.platform for ivy, ant -->
+    <target name="get-javafx-platform">
+        <!-- Target suffix is "-monocle", unless disabled -->
+        <condition property="target.javafx.suffix" value="-monocle">
+            <and>
+                <istrue value="${javafx.monocle}"/>
+                <!-- FIXME REMOVE WHEN SUPQZ-18 IS RESOLVED -->
+                <not>
+                    <and>
+                        <isset property="target.os.linux"/>
+                        <isset property="target.arch.x86_64"/>
+                    </and>
+                </not>
+                <!-- FIXME REMOVE WHEN SUPQZ-18 IS RESOLVED -->
+            </and>
+        </condition>
+        <property description="fallback value" name="target.javafx.suffix" value=""/>
+
+        <!-- Target arch is "-${target.arch}", unless Intel -->
+        <condition property="target.javafx.arch" value="">
+            <isset property="target.arch.x86_64"/>
+        </condition>
+        <property description="fallback value" name="target.javafx.arch" value="-${target.arch}"/>
+
+        <!-- Target os ${host.os}, unless Windows -->
+        <condition property="target.javafx.os" value="win">
+            <isset property="target.os.windows"/>
+        </condition>
+        <property name="target.javafx.os" value="${target.os}"/>
+
+        <!-- Create target javafx.platform (e.g. "linux-aarch64-monocle") -->
+        <property name="target.javafx.platform" value="${target.javafx.os}${target.javafx.arch}${target.javafx.suffix}"/>
+
+        <!-- Host suffix is "-monocle", unless disabled -->
+        <condition property="host.javafx.suffix" value="-monocle">
+            <and>
+                <istrue value="${javafx.monocle}"/>
+                <!-- FIXME REMOVE WHEN SUPQZ-18 IS RESOLVED -->
+                <not>
+                    <and>
+                        <isset property="host.os.linux"/>
+                        <isset property="host.arch.x86_64"/>
+                    </and>
+                </not>
+                <!-- FIXME REMOVE WHEN SUPQZ-18 IS RESOLVED -->
+            </and>
+        </condition>
+        <property description="fallback value" name="host.javafx.suffix" value=""/>
+
+        <!-- Host arch is "-${host.arch}", unless Intel -->
+        <condition property="host.javafx.arch" value="">
+            <isset property="host.arch.x86_64"/>
+        </condition>
+        <property description="fallback value" name="host.javafx.arch" value="-${host.arch}"/>
+
+        <!-- Host os ${host.os}, unless Windows -->
+        <condition property="host.javafx.os" value="win">
+            <isset property="host.os.windows"/>
+        </condition>
+        <property name="host.javafx.os" value="${host.os}"/>
+
+        <!-- Create host javafx.platform (e.g. "linux-aarch64-monocle") -->
+        <property name="host.javafx.platform" value="${host.javafx.os}${host.javafx.arch}${host.javafx.suffix}"/>
     </target>
 </project>

@@ -1,7 +1,7 @@
 package qz.build.jlink;
 
 import com.github.zafarkhaja.semver.Version;
-import qz.build.JLink;
+import qz.build.provision.params.Arch;
 
 /**
  * Handling of java vendors
@@ -61,15 +61,28 @@ public enum Vendor implements Parsable {
                     default:
                         return "arm";
                 }
-            case AMD64:
+            case RISCV64:
+                return "riscv64";
+            case X86:
+                switch(this) {
+                    case AZUL:
+                        return "i686";
+                    case BELLSOFT:
+                        return "i586";
+                    case ECLIPSE:
+                    case IBM:
+                        return "x86-32";
+                    case AMAZON:
+                    default:
+                        return "x86";
+                }
+            case X86_64:
+            default:
                 switch(this) {
                     // BellSoft uses "amd64"
                     case BELLSOFT:
                         return "amd64";
                 }
-            case RISCV64:
-                return "riscv64";
-            default:
                 return "x64";
         }
     }

@@ -19,7 +19,6 @@
 
 package org.jdesktop.swinghelper.tray;
 
-import com.github.zafarkhaja.semver.Version;
 import qz.common.Constants;
 import qz.utils.MacUtilities;
 import qz.utils.SystemUtilities;
@@ -162,7 +161,7 @@ public class JXTrayIcon extends TrayIcon {
     @Override
     public Dimension getSize() {
         Dimension iconSize = new Dimension(super.getSize());
-        switch(SystemUtilities.getOsType()) {
+        switch(SystemUtilities.getOs()) {
             // macOS icons are slightly smaller than the size reported
             case MAC:
                 // Handle retina display

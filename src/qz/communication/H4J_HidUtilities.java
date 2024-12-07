@@ -7,26 +7,16 @@ import org.codehaus.jettison.json.JSONObject;
 import org.hid4java.HidDevice;
 import org.hid4java.HidManager;
 import org.hid4java.HidServices;
-import qz.utils.SystemUtilities;
 
 import javax.usb.util.UsbUtil;
 import java.util.HashSet;
 import java.util.List;
 
 public class H4J_HidUtilities {
-
-    private static HidServices service = HidManager.getHidServices();
-
+    private static final HidServices service = HidManager.getHidServices();
 
     public static List<HidDevice> getHidDevices() {
-        List<HidDevice> devices = service.getAttachedHidDevices();
-
-        // FIXME: Prevent hard crash on OSX
-        // Per upstream Mac bug https://github.com/gary-rowe/hid4java/issues/37
-        if (SystemUtilities.isMac()) {
-            service.shutdown();
-        }
-        return devices;
+        return service.getAttachedHidDevices();
     }
 
     public static JSONArray getHidDevicesJSON() throws JSONException {
@@ -72,5 +62,4 @@ public class H4J_HidUtilities {
 
         return null;
     }
-
 }

@@ -185,7 +185,7 @@ public class WebApp extends Application {
                     log.trace("Initializing monocle platform");
                     System.setProperty("javafx.platform", "monocle");
                     // Don't set glass.platform on Linux per https://github.com/qzind/tray/issues/702
-                    switch(SystemUtilities.getOsType()) {
+                    switch(SystemUtilities.getOs()) {
                         case WINDOWS:
                         case MAC:
                             System.setProperty("glass.platform", "Monocle");

@@ -1,7 +1,6 @@
 package qz.common;
 
 import com.github.zafarkhaja.semver.Version;
-import qz.utils.ArgValue;
 import qz.utils.SystemUtilities;
 
 import java.awt.*;
@@ -15,7 +14,7 @@ public class Constants {
     public static final String HEXES = "0123456789ABCDEF";
     public static final char[] HEXES_ARRAY = HEXES.toCharArray();
     public static final int BYTE_BUFFER_SIZE = 8192;
-    public static final Version VERSION = Version.valueOf("2.2.4-SNAPSHOT");
+    public static final Version VERSION = Version.valueOf("2.2.5-SNAPSHOT");
     public static final Version JAVA_VERSION = SystemUtilities.getJavaVersion();
     public static final String JAVA_VENDOR = System.getProperty("java.vendor");
 
@@ -74,6 +73,8 @@ public class Constants {
 
     public static final String OVERRIDE_CERT = "override.crt";
     public static final String WHITELIST_CERT_DIR = "whitelist";
+    public static final String PROVISION_DIR = "provision";
+    public static final String PROVISION_FILE = "provision.json";
 
     public static final String SIGNING_PRIVATE_KEY = "private-key.pem";
     public static final String SIGNING_CERTIFICATE = "digital-certificate.txt";
@@ -96,7 +97,7 @@ public class Constants {
     public static final String PDF_PRINT = ABOUT_TITLE + " PDF Print";
     public static final String HTML_PRINT = ABOUT_TITLE + " HTML Print";
 
-    public static final Integer[] WSS_PORTS = {8181, 8282, 8383, 8484};
-    public static final Integer[] WS_PORTS = {8182, 8283, 8384, 8485};
+    public static final Integer[] DEFAULT_WSS_PORTS = {8181, 8282, 8383, 8484};
+    public static final Integer[] DEFAULT_WS_PORTS = {8182, 8283, 8384, 8485};
     public static final Integer[] CUPS_RSS_PORTS = {8586, 8687, 8788, 8889};
 }

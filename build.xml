@@ -42,8 +42,9 @@
         <delete includeemptydirs="true" defaultexcludes="false" failonerror="false">
             <fileset dir="${out.dir}">
                 <include name="**/**"/>
-                <exclude name="**/jlink/**"/>
-                <exclude name="**/javafx-*/**"/>
+                <exclude name="**/jlink/jdk-**/**"/>
+                <exclude name="**/javafx-**/**"/>
+                <exclude name="**/dist/provision/**"/>
             </fileset>
         </delete>
     </target>
@@ -168,6 +169,33 @@
             </fileset>
         </delete>
 
+        <!-- Merge META-INF/services from TCVN-3, icu4j-charset-slim -->
+        <!-- find the icu4j-charset-slim jar -->
+        <path id="icu4j-slim.found">
+            <first>
+                <fileset dir="lib/charsets/">
+                    <include name="icu4j-charset-*.jar"/>
+                </fileset>
+            </first>
+        </path>
+        <pathconvert property="icu4j-slim.path" refid="icu4j-slim.found"/>
+
+        <!-- find the TCVN-3 jar -->
+        <path id="tcvn-3.found">
+            <first>
+                <fileset dir="lib/charsets/">
+                    <include name="TCVN-3*.jar"/>
+                </fileset>
+            </first>
+        </path>
+        <pathconvert property="tcvn-3.path" refid="tcvn-3.found"/>
+
+        <!-- merge service entries for CharsetProvider -->
+        <concat destfile="${out.dir}/libs-temp/META-INF/services/java.nio.charset.spi.CharsetProvider" fixlastline="true">
+            <zipentry zipfile="${icu4j-slim.path}" name="META-INF/services/java.nio.charset.spi.CharsetProvider"/>
+            <zipentry zipfile="${tcvn-3.path}" name="META-INF/services/java.nio.charset.spi.CharsetProvider"/>
+        </concat>
+
         <!-- Merge META-INF/services from PDFBOX, jpeg2000 and TwelveMonkeys -->
         <!-- find the TwelveMonkeys jar -->
         <path id="imageio-jpeg.found">
@@ -240,6 +268,31 @@
         <echo level="warn">The "include-assets" task is deprecated, please use "build-demo" instead.</echo>
     </target>
 
+    <target name="check-provision">
+        <available file="${provision.file}" property="provision.file.exists"/>
+        <condition property="provision.message" value="Found provision file '${provision.file}' calling 'provision --json [...]'">
+            <isset property="provision.file.exists"/>
+        </condition>
+        <property description="Fallback value" name="provision.message" value="Skipping provisioning, '${provision.file}' does not exist."/>
+        <echo level="info">${provision.message}</echo>
+    </target>
+
+    <target name="clean-provision" depends="check-provision" unless="skip.clean.provision">
+        <delete dir="${provision.dir}" includeemptydirs="true" defaultexcludes="false"/>
+    </target>
+
+    <target name="provision" depends="check-provision,clean-provision" if="provision.file.exists">
+        <java jar="${dist.dir}/${project.filename}.jar" fork="true" failonerror="true">
+            <arg value="provision"/>
+            <arg value="--json"/>
+            <arg value="${provision.file}"/>
+            <arg value="--target-os"/>
+            <arg value="${target.os}"/>
+            <arg value="--target-arch"/>
+            <arg value="${target.arch}"/>
+        </java>
+    </target>
+
     <target name="download-jre" unless="jre.skip">
         <condition property="target.os" value="windows">
             <isset property="target.os.windows"/>
@@ -264,10 +317,10 @@
         </java>
     </target>
 
-    <target name="nsis" depends="get-target-arch,target-os-windows,distribute,download-jre,build-exe"/>
-    <target name="pkgbuild" depends="get-target-arch,target-os-mac,distribute,download-jre,build-pkg"/>
-    <target name="dmg" depends="get-target-arch,target-os-mac,distribute,download-jre,build-dmg"/>
-    <target name="makeself" depends="get-target-arch,target-os-linux,distribute,download-jre,build-run"/>
+    <target name="nsis" depends="get-target-arch,target-os-windows,distribute,provision,download-jre,build-exe"/>
+    <target name="pkgbuild" depends="get-target-arch,target-os-mac,distribute,provision,download-jre,build-pkg"/>
+    <target name="dmg" depends="get-target-arch,target-os-mac,distribute,provision,download-jre,build-dmg"/>
+    <target name="makeself" depends="get-target-arch,target-os-linux,distribute,provision,download-jre,build-run"/>
 
 
 </project>

@@ -30,13 +30,16 @@ public class SocketUtilities {
 
         //TODO - move to dedicated options class?
         Charset encoding = StandardCharsets.UTF_8;
-        if (!params.isNull("encoding")) {
-            try { encoding = Charset.forName(params.getString("encoding")); }
-            catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "encoding", params.opt("encoding")); }
+        if (!params.isNull("options")) {
+            JSONObject options = params.getJSONObject("options");
+
+            if (!options.isNull("encoding")) {
+                encoding = Charset.forName(options.getString("encoding"));
+            }
         }
 
         try {
-            final SocketIO socket = new SocketIO(host, port, encoding);
+            final SocketIO socket = new SocketIO(host, port, encoding, connection);
 
             if (socket.open()) {
                 connection.addNetworkSocket(location, socket);
@@ -51,14 +54,14 @@ public class SocketUtilities {
 
                             if (response != null) {
                                 log.debug("Received socket response: {}", response);
-                                PrintSocketClient.sendStream(session, event.withData("response", response));
+                                PrintSocketClient.sendStream(session, event.withData("response", response), socket);
                             }
                         }
                     }
                     catch(IOException e) {
                         StreamEvent eventErr = new StreamEvent(StreamEvent.Stream.SOCKET, StreamEvent.Type.ERROR)
                                 .withData("host", host).withData("port", port).withException(e);
-                        PrintSocketClient.sendStream(session, eventErr);
+                        PrintSocketClient.sendStream(session, eventErr, socket);
                     }
 
                     try { Thread.sleep(100); } catch(Exception ignore) {}

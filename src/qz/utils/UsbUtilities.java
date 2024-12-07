@@ -206,22 +206,22 @@ public class UsbUtilities {
                                     hex.put(UsbUtil.toHexString(b));
                                 }
 
-                                PrintSocketClient.sendStream(session, event.withData("output", hex));
+                                PrintSocketClient.sendStream(session, event.withData("output", hex), usb);
 
                                 try { Thread.sleep(interval); } catch(Exception ignore) {}
                             }
                         }
-                        catch(WebSocketException e) {
-                            usb.setStreaming(false);
-                            log.error("USB stream error", e);
-                        }
-                        catch(DeviceException e) {
+                        catch(WebSocketException | DeviceException e) {
+                            // Calling usb.close() can cause a hard-crash on macOS
                             usb.setStreaming(false);
                             log.error("USB stream error", e);
 
-                            StreamEvent eventErr = new StreamEvent(streamType, StreamEvent.Type.ERROR).withException(e)
-                                    .withData("vendorId", usb.getVendorId()).withData("productId", usb.getProductId());
-                            PrintSocketClient.sendStream(session, eventErr);
+                            if(session.isOpen()) {
+                                StreamEvent eventErr = new StreamEvent(streamType, StreamEvent.Type.ERROR).withException(e)
+                                        .withData("vendorId", usb.getVendorId()).withData("productId", usb.getProductId());
+                                PrintSocketClient.sendStream(session, eventErr, (Runnable)() -> {
+                                } /** No-op prevents re-throw **/);
+                            }
                         }
                     }
                 }.start();

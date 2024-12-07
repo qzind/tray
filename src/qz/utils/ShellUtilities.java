@@ -18,10 +18,7 @@ import java.awt.*;
 import java.io.*;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Utility class for managing all {@code Runtime.exec(...)} functions.
@@ -32,26 +29,25 @@ public class ShellUtilities {
 
     private static final Logger log = LogManager.getLogger(ShellUtilities.class);
 
+    // Display envp values in errors and console logs
+    private static boolean debugEnvp = false;
+
     // Shell environment overrides.  null = don't override
-    public static String[] envp = null;
+    private static Map<String, String> env = new HashMap<>(System.getenv());
+    @Deprecated /* TODO: Make private, use getEnvp() instead */
+    public static String[] envp = getEnvp();
 
     // Make sure all shell calls are LANG=en_US.UTF-8
     static {
-        if (!SystemUtilities.isWindows()) {
-            // Cache existing; permit named overrides w/o full clobber
-            Map<String,String> env = new HashMap<>(System.getenv());
-            if (SystemUtilities.isMac()) {
+        switch(SystemUtilities.getOs()) {
+            case WINDOWS:
+                break;
+            case MAC:
                 // Enable LANG overrides
-                env.put("SOFTWARE", "");
-            }
-            // Functional equivalent of "export LANG=en_US.UTF-8"
-            env.put("LANG", "C");
-            String[] envp = new String[env.size()];
-            int i = 0;
-            for(Map.Entry<String,String> o : env.entrySet())
-                envp[i++] = o.getKey() + "=" + o.getValue();
-
-            ShellUtilities.envp = envp;
+                addEnvp("SOFTWARE", "");
+            default:
+                // Functional equivalent of "export LANG=en_US.UTF-8"
+                addEnvp("LANG", "C");
         }
     }
 
@@ -94,14 +90,15 @@ public class ShellUtilities {
             Process p = Runtime.getRuntime().exec(commandArray, envp);
             // Consume output to prevent deadlock
             while (p.getInputStream().read() != -1) {}
+            while (p.getErrorStream().read() != -1) {}
             p.waitFor();
             return p.exitValue() == 0;
         }
         catch(InterruptedException ex) {
-            log.warn("InterruptedException waiting for a return value: {} envp: {}", Arrays.toString(commandArray), Arrays.toString(envp), ex);
+            log.warn("InterruptedException waiting for a return value: {} envp: {}", Arrays.toString(commandArray), envpToString(), ex);
         }
         catch(IOException ex) {
-            log.error("IOException executing: {} envp: {}", Arrays.toString(commandArray), Arrays.toString(envp), ex);
+            log.error("IOException executing: {} envp: {}", Arrays.toString(commandArray), envpToString(), ex);
         }
 
         return false;
@@ -156,7 +153,7 @@ public class ShellUtilities {
             }
         }
         catch(IOException ex) {
-            log.error("IOException executing: {} envp: {}", Arrays.toString(commandArray), Arrays.toString(envp), ex);
+            log.error("IOException executing: {} envp: {}", Arrays.toString(commandArray), envpToString(), ex);
         }
         finally {
             if (stdInput != null) {
@@ -199,7 +196,7 @@ public class ShellUtilities {
         }
         catch(IOException ex) {
             if(!silent) {
-                log.error("IOException executing: {} envp: {}", Arrays.toString(commandArray), Arrays.toString(envp), ex);
+                log.error("IOException executing: {} envp: {}", Arrays.toString(commandArray), envpToString(), ex);
             }
         }
         finally {
@@ -276,5 +273,41 @@ public class ShellUtilities {
                 ShellUtilities.execute("xdg-open", directory.getPath());
             }
         }
+    }
+
+    /**
+     * Provides fast envp manipulation for starting processes with additional environmental variables
+     *
+     * @param paired Pairs of values, e.g. { "FOO", "BAR" } where the environment will set FOO=BAR
+     * @return
+     */
+    public static synchronized String[] addEnvp(Object ... paired) {
+        if(paired.length % 2 != 0) {
+            throw new UnsupportedOperationException("Values must be provided in pairs");
+        }
+
+        for(int i = 0; i < paired.length / 2; i++) {
+            env.put(paired[2 * i].toString(), paired[2 * i + 1].toString());
+        }
+        envp = null;
+        return getEnvp();
+    }
+
+    public static synchronized String[] getEnvp() {
+        if(envp == null) {
+            String[] temp = new String[env.size()];
+            int i = 0;
+            for(Map.Entry<String,String> o : env.entrySet())
+                temp[i++] = o.getKey() + "=" + o.getValue();
+            envp = temp;
+        }
+        return envp;
+    }
+
+    public static String envpToString() {
+        if(debugEnvp) {
+            return Arrays.toString(envp);
+        }
+        return "(suppressed)";
     }
 }

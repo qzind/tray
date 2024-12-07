@@ -8,6 +8,7 @@
     <Loggers>
     <!-- Packages -->
         <Logger name="qz" level="trace"/>
+        <Logger name="qz.build.provision" level="info"/>
     <!-- Default -->
         <Root level="warn">
             <AppenderRef ref="console"/>

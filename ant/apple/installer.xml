@@ -199,6 +199,21 @@
             <fileset dir="${dist.dir}/demo" includes="**"/>
         </copy>
 
+        <!-- Provision files -->
+        <delete dir="${bundle.dir}/Contents/Resources/provision" failonerror="false"/>
+        <copy todir="${bundle.dir}/Contents/Resources/provision" failonerror="false">
+            <fileset dir="${provision.dir}" includes="**"/>
+        </copy>
+        <chmod perm="a+x" type="file" verbose="true">
+            <fileset dir="${bundle.dir}/Contents/Resources/" casesensitive="false">
+                <!-- Must iterate on parent directory in case "provision" is missing -->
+                <include name="provision/*"/>
+                <exclude name="provision/*.crt"/>
+                <exclude name="provision/*.txt"/>
+                <exclude name="provision/*.json"/>
+            </fileset>
+        </chmod>
+
         <!-- Java runtime -->
         <copy todir="${bundle.dir}/Contents/PlugIns/Java.runtime">
             <fileset dir="${dist.dir}/Java.runtime" includes="**"/>

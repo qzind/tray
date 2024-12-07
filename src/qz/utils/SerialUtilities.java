@@ -249,7 +249,7 @@ public class SerialUtilities {
 
         try {
             SerialOptions props = new SerialOptions(params.optJSONObject("options"), true);
-            final SerialIO serial = new SerialIO(portName);
+            final SerialIO serial = new SerialIO(portName, connection);
 
             if (serial.open(props)) {
                 connection.addSerialPort(portName, serial);
@@ -262,7 +262,7 @@ public class SerialUtilities {
                         log.debug("Received serial output: {}", output);
                         StreamEvent event = new StreamEvent(StreamEvent.Stream.SERIAL, StreamEvent.Type.RECEIVE)
                                 .withData("portName", portName).withData("output", output);
-                        PrintSocketClient.sendStream(session, event);
+                        PrintSocketClient.sendStream(session, event, serial);
                     }
                 });
 

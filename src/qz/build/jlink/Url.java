@@ -3,6 +3,7 @@ package qz.build.jlink;
 import com.github.zafarkhaja.semver.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.build.provision.params.Arch;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -36,26 +37,6 @@ public class Url {
         pattern = VENDOR_URL_MAP.get(vendor);
     }
 
-    /**
-     * Fix URLs for beta/alpha/nightly release
-     */
-    public void applyBetaPattern() {
-        switch(vendor) {
-            case ECLIPSE:
-                /*
-                    BEFORE: jdk-21.0.1+12/
-                    AFTER:  jdk-21.0.1+12-ea-beta/
-
-                    BEFORE: OpenJDK21U-jdk_riscv64_linux_hotspot_21-0-1-12.tar.gz
-                    AFTER:  OpenJDK21U-jdk_riscv64_linux_hotspot_ea_21-0-1-12.tar.gz
-                 */
-                pattern = pattern.replaceAll("%s/OpenJDK%sU-jdk_%s_%s_%s", "%s-ea-beta/OpenJDK%sU-jdk_%s_%s_%s_ea");
-                break;
-            default:
-                throw new UnsupportedOperationException("Vendor " + vendor + " is missing a configuration beta URLs");
-        }
-    }
-
     public String format(Arch arch, Platform platform, String gcEngine, Version javaSemver, String javaVersion, String gcVer) throws UnsupportedEncodingException {
         Url pattern = new Url(vendor);
         String urlArch = vendor.getUrlArch(arch);
@@ -67,15 +48,6 @@ public class Url {
         String urlJavaVersionEncode = URLEncoder.encode(javaVersion, "UTF-8");
 
         int javaMajor = javaSemver.getMajorVersion();
-
-        switch(arch) {
-            // TODO: Remove when RISCV is offered as stable
-            case RISCV64:
-                pattern.applyBetaPattern();
-                urlJavaVersion = urlJavaVersion.replace(".", "-").replace("_", "-");
-            default:
-                // Do nothing
-        }
 
         switch(vendor) {
             case BELLSOFT:

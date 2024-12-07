@@ -52,10 +52,22 @@ import static qz.installer.certificate.KeyPairWrapper.Type.*;
  * Stores and maintains reading and writing of certificate related files
  */
 public class CertificateManager {
+    static List<Path> SAVE_LOCATIONS = new ArrayList<>();
     static {
         // Workaround for JDK-8266929
         // See also https://github.com/qzind/tray/issues/814
         SystemUtilities.clearAlgorithms();
+
+        // Skip shared location if running from IDE or build directory
+        // Prevents corrupting the version installed per https://github.com/qzind/tray/issues/1200
+        if(SystemUtilities.isJar() && SystemUtilities.isInstalled()) {
+            // Skip install location if running from sandbox (must remain sealed)
+            if(!SystemUtilities.isMac() || !MacUtilities.isSandboxed()) {
+                SAVE_LOCATIONS.add(SystemUtilities.getJarParentPath());
+            }
+            SAVE_LOCATIONS.add(SHARED_DIR);
+        }
+        SAVE_LOCATIONS.add(USER_DIR);
     }
     private static final Logger log = LogManager.getLogger(CertificateManager.class);
 
@@ -336,42 +348,27 @@ public class CertificateManager {
         return props;
     }
 
-    public static File getWritableLocation(String ... subDirs) throws IOException {
+    public static File getWritableLocation(String ... suffixes) throws IOException {
         // Get an array of preferred directories
         ArrayList<Path> locs = new ArrayList<>();
 
-        // Sandbox is only supported on macOS currently
-        boolean sandboxed = false;
-        if(SystemUtilities.isMac()) {
-             sandboxed = MacUtilities.isSandboxed();
-             //todo move to about security table or delete
-             log.debug("Running in a sandbox: {}", sandboxed);
-        }
-
-        // Sandboxed installations must remain sealed, don't write to them
-        if (subDirs.length == 0 && !sandboxed) {
-            // Assume root directory is next to jar (e.g. qz-tray.properties)
-            Path appPath = SystemUtilities.getJarParentPath();
-            // Handle null path, such as running from IDE
-            if(appPath != null) {
-                locs.add(appPath);
-            }
-            // Fallback on a directory we can normally write to
-            locs.add(SHARED_DIR);
-            locs.add(USER_DIR);
+        if (suffixes.length == 0) {
+            locs.addAll(SAVE_LOCATIONS);
             // Last, fallback on a directory we won't ever see again :/
             locs.add(TEMP_DIR);
         } else {
-            // Assume non-root directories are for ssl (e.g. certs, keystores)
-            locs.add(Paths.get(SHARED_DIR.toString(), subDirs));
-            // Fallback on a directory we can normally write to
-            locs.add(Paths.get(USER_DIR.toString(), subDirs));
+            // Same as above, but with suffixes added (usually "ssl"), skipping the install location
+            for(Path saveLocation : SAVE_LOCATIONS) {
+                if(!saveLocation.equals(SystemUtilities.getJarParentPath())) {
+                    locs.add(Paths.get(saveLocation.toString(), suffixes));
+                }
+            }
             // Last, fallback on a directory we won't ever see again :/
-            locs.add(Paths.get(TEMP_DIR.toString(), subDirs));
+            locs.add(Paths.get(TEMP_DIR.toString(), suffixes));
         }
 
         // Find a suitable write location
-        File path = null;
+        File path;
         for(Path loc : locs) {
             if (loc == null) continue;
             boolean isPreferred = locs.indexOf(loc) == 0;
@@ -392,20 +389,20 @@ public class CertificateManager {
 
     public static Properties loadProperties(KeyPairWrapper... keyPairs) {
         log.info("Try to find SSL properties file...");
-        Path[] locations = {SystemUtilities.getJarParentPath(), SHARED_DIR, USER_DIR};
+
 
         Properties props = null;
-        for(Path location : locations) {
-            if (location == null) continue;
+        for(Path loc : SAVE_LOCATIONS) {
+            if (loc == null) continue;
             try {
                 for(KeyPairWrapper keyPair : keyPairs) {
-                    props = loadKeyPair(keyPair, location, props);
+                    props = loadKeyPair(keyPair, loc, props);
                 }
                 // We've loaded without Exception, return
-                log.info("Found {}/{}.properties", location, Constants.PROPS_FILE);
+                log.info("Found {}/{}.properties", loc, Constants.PROPS_FILE);
                 return props;
             } catch(Exception ignore) {
-                log.warn("Properties couldn't be loaded at {}, trying fallback...", location, ignore);
+                log.warn("Properties couldn't be loaded at {}, trying fallback...", loc, ignore);
             }
         }
         log.info("Could not get SSL properties from file.");
@@ -414,9 +411,15 @@ public class CertificateManager {
 
     public static Properties loadKeyPair(KeyPairWrapper keyPair, Path parent, Properties existing) throws Exception {
         Properties props;
+
         if (existing == null) {
-            props = new Properties();
-            props.load(new FileInputStream(new File(parent.toFile(), Constants.PROPS_FILE + ".properties")));
+            FileInputStream fis = null;
+            try {
+                props = new Properties();
+                props.load(fis = new FileInputStream(new File(parent.toFile(), Constants.PROPS_FILE + ".properties")));
+            } finally {
+                if(fis != null) fis.close();
+            }
         } else {
             props = existing;
         }

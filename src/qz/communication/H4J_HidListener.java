@@ -30,7 +30,7 @@ public class H4J_HidListener implements DeviceListener, HidServicesListener {
     @Override
     public void hidFailure(HidServicesEvent hidServicesEvent) {
         log.debug("Device failure: {}", hidServicesEvent.getHidDevice().getProduct());
-        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Failure"));
+        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Failure"), this);
     }
 
     @Override
@@ -42,19 +42,19 @@ public class H4J_HidListener implements DeviceListener, HidServicesListener {
             hex.put(UsbUtil.toHexString(b));
         }
 
-        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Data Received", hex));
+        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Data Received", hex), this);
     }
 
     @Override
     public void hidDeviceDetached(HidServicesEvent hidServicesEvent) {
         log.debug("Device detached: {}", hidServicesEvent.getHidDevice().getProduct());
-        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Detached"));
+        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Detached"), this);
     }
 
     @Override
     public void hidDeviceAttached(HidServicesEvent hidServicesEvent) {
         log.debug("Device attached: {}", hidServicesEvent.getHidDevice().getProduct());
-        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Attached"));
+        PrintSocketClient.sendStream(session, createStreamAction(hidServicesEvent.getHidDevice(), "Device Attached"), this);
     }
 
     private StreamEvent createStreamAction(HidDevice device, String action) {

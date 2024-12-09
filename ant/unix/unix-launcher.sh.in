@@ -119,6 +119,8 @@ else
     LAUNCH_OPTS="$LAUNCH_OPTS ${launch.jigsaw}"
     if [[ "$OSTYPE" == "darwin"* ]]; then
         LAUNCH_OPTS="$LAUNCH_OPTS ${apple.launch.jigsaw}"
+    else
+        LAUNCH_OPTS="$LAUNCH_OPTS ${linux.launch.jigsaw}"
     fi
 fi
 

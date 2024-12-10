@@ -17,7 +17,7 @@ jobs:
       - run: sudo apt-get install nsis makeself
       - run: ant makeself
       - run: unset JAVA_HOME
-      - run: sudo out/qz-tray-*.run
+      - run: sudo -E out/qz-tray-*.run
       - run: /opt/qz-tray/qz-tray --version
       - run: ant nsis
 

@@ -181,25 +181,31 @@ public class WebApp extends Application {
                     // Fallback for JDK11+
                     headless = true;
                 }
-                if (useMonocle && SystemUtilities.hasMonocle()) {
-                    log.trace("Initializing monocle platform");
-                    System.setProperty("javafx.platform", "monocle");
-                    // Don't set glass.platform on Linux per https://github.com/qzind/tray/issues/702
-                    switch(SystemUtilities.getOs()) {
-                        case WINDOWS:
-                        case MAC:
-                            System.setProperty("glass.platform", "Monocle");
-                            break;
-                        default:
-                            // don't set "glass.platform"
-                    }
+                if (useMonocle) {
+                    if(SystemUtilities.hasMonocle()) {
+                        // Legacy "Monocle" mode
+                        System.setProperty("javafx.platform", "monocle");
+                        // Don't set glass.platform on Linux per https://github.com/qzind/tray/issues/702
+                        switch(SystemUtilities.getOs()) {
+                            case WINDOWS:
+                            case MAC:
+                                System.setProperty("glass.platform", "Monocle");
+                                break;
+                            default:
+                                // don't set "glass.platform"
+                        }
 
-                    //software rendering required headless environments
-                    if (headless) {
-                        System.setProperty("prism.order", "sw");
+                        //software rendering required headless environments
+                        if (headless) {
+                            System.setProperty("prism.order", "sw");
+                        }
+                    } else {
+                        // Assume newer "Headless" mode is available
+                        System.setProperty("glass.platform", "Headless");
                     }
+                    log.trace("Initializing {} glass.platform", SystemUtilities.hasMonocle() ? "monocle" : "headless");
                 } else {
-                    log.warn("Monocle platform will not be used");
+                    log.warn("{} glass.platform will not be used", SystemUtilities.hasMonocle() ? "Monocle" : "Headless");
                 }
             }
 

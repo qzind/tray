@@ -222,7 +222,8 @@ public class WebAppTest {
     }
 
     private static PrinterJob buildVectorJob(String name) throws Throwable {
-        Printer defaultPrinter = Printer.getDefaultPrinter();
+        // Get "PDF" printer
+        Printer defaultPrinter = Printer.getAllPrinters().stream().filter(printer -> printer.getName().contains("PDF")).findFirst().get();
         PrinterJob job = PrinterJob.createPrinterJob(defaultPrinter);
 
         // All this to remove margins

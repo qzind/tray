@@ -70,6 +70,7 @@ public class SystemUtilities {
 
     private static Boolean darkDesktop;
     private static Boolean darkTaskbar;
+    @Deprecated
     private static Boolean hasMonocle;
     private static String classProtocol;
     private static Version osVersion;
@@ -655,6 +656,7 @@ public class SystemUtilities {
         return false;
     }
 
+    @Deprecated
     public static boolean hasMonocle() {
         if(hasMonocle == null) {
             try {

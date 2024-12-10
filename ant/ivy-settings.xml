@@ -1,0 +1,28 @@
+<ivysettings>
+    <settings defaultResolver="default"/>
+
+    <!-- These "magic lines" are pulled from: https://ant.apache.org/ivy/history/latest-milestone/tutorial/defaultconf.html -->
+    <include url="${ivy.default.settings.dir}/ivysettings-public.xml"/>
+    <include url="${ivy.default.settings.dir}/ivysettings-shared.xml"/>
+    <include url="${ivy.default.settings.dir}/ivysettings-local.xml"/>
+    <include url="${ivy.default.settings.dir}/ivysettings-main-chain.xml"/>
+    <include url="${ivy.default.settings.dir}/ivysettings-default-chain.xml"/>
+    <resolvers>
+        <!-- Custom Repos here -->
+        <ibiblio name="gluonhq" m2compatible="true" root="https://nexus.gluonhq.com/nexus/content/repositories/releases/"/>
+    </resolvers>
+    <chain name="default" returnFirst="true" checkmodified="true" changingPattern=".*SNAPSHOT">
+        <!-- These two are magic lines from the default conf -->
+        <resolver ref="local"/>
+        <resolver ref="main" />
+
+        <!-- Custom Repos here -->
+        <resolver ref="gluonhq" />
+    </chain>
+    <modules>
+        <module organisation="org.openjfx" name=".*" resolver="gluonhq"/>
+    </modules>
+</ivysettings>
+
+
+

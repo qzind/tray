@@ -11,28 +11,15 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="JQuery" level="application" />
-    <orderEntry type="library" name="bootstrap" level="application" />
-    <orderEntry type="library" name="bootstrap-select" level="application" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="file://$MODULE_DIR$/lib/printing" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-        <jarDirectory url="file://$MODULE_DIR$/lib/printing" recursive="false" />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="file://$MODULE_DIR$/lib" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-        <jarDirectory url="file://$MODULE_DIR$/lib" recursive="true" />
-      </library>
-    </orderEntry>
+     <orderEntry type="module-library">
+          <library>
+            <CLASSES>
+              <root url="file://$MODULE_DIR$/deps" />
+            </CLASSES>
+            <JAVADOC />
+            <SOURCES />
+            <jarDirectory url="file://$MODULE_DIR$/deps" recursive="true" />
+          </library>
+        </orderEntry>
   </component>
 </module>

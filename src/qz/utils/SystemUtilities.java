@@ -69,9 +69,9 @@ public class SystemUtilities {
     }
 
     private static Boolean darkDesktop;
+    private static Boolean darkTaskbar;
     @Deprecated
     private static Boolean hasMonocle;
-    private static Boolean darkTaskbar;
     private static String classProtocol;
     private static Version osVersion;
     private static String osName;

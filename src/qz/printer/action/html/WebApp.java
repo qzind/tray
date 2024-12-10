@@ -203,9 +203,9 @@ public class WebApp extends Application {
                         // Assume newer "Headless" mode is available
                         System.setProperty("glass.platform", "Headless");
                     }
-                    log.trace("Initializing {} platform", useMonocle ? "monocle" : "headless");
+                    log.trace("Initializing {} glass.platform", SystemUtilities.hasMonocle() ? "monocle" : "headless");
                 } else {
-                    log.warn("Monocle platform will not be used");
+                    log.warn("{} glass.platform will not be used", SystemUtilities.hasMonocle() ? "Monocle" : "Headless");
                 }
             }
 

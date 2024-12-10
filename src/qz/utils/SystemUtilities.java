@@ -69,6 +69,8 @@ public class SystemUtilities {
     }
 
     private static Boolean darkDesktop;
+    @Deprecated
+    private static Boolean hasMonocle;
     private static Boolean darkTaskbar;
     private static String classProtocol;
     private static Version osVersion;
@@ -652,6 +654,19 @@ public class SystemUtilities {
             }
         }
         return false;
+    }
+
+    @Deprecated
+    public static boolean hasMonocle() {
+        if(hasMonocle == null) {
+            try {
+                Class.forName("com.sun.glass.ui.monocle.MonoclePlatformFactory");
+                hasMonocle = true;
+            } catch (ClassNotFoundException | UnsupportedClassVersionError e) {
+                hasMonocle = false;
+            }
+        }
+        return hasMonocle;
     }
 
     public static final Version[] JDK_8266929_VERSIONS = {

@@ -27,7 +27,7 @@ public class LinuxInstaller extends Installer {
     public static final String APP_LAUNCHER = APP_DIR + SHORTCUT_NAME;
     public static final String UDEV_RULES = "/lib/udev/rules.d/99-udev-override.rules";
     public static final String[] CHROME_POLICY_DIRS = {"/etc/chromium/policies/managed", "/etc/opt/chrome/policies/managed" };
-    public static final String CHROME_POLICY = "{ \"URLWhitelist\": [\"" + DATA_DIR + "://*\"] }";
+    public static final String CHROME_POLICY = "{ \"URLAllowlist\": [\"" + DATA_DIR + "://*\"] }";
 
     private String destination = "/opt/" + PROPS_FILE;
     private String sudoer;

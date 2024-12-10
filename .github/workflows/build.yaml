@@ -16,8 +16,9 @@ jobs:
           distribution: 'liberica'
       - run: sudo apt-get install nsis makeself
       - run: ant makeself
+      - run: unset JAVA_HOME
       - run: sudo out/qz-tray-*.run
-      - run: JAVA_HOME= /opt/qz-tray/qz-tray --version
+      - run: /opt/qz-tray/qz-tray --version
       - run: ant nsis
 
   macos:
@@ -33,13 +34,14 @@ jobs:
           distribution: 'liberica'
       - run: brew install nsis makeself
       - run: ant pkgbuild
+      - run: unset JAVA_HOME
       - run: echo "Setting CA trust settings to 'allow' (https://github.com/actions/runner-images/issues/4519)"
       - run: security authorizationdb read com.apple.trust-settings.admin > /tmp/trust-settings-backup.xml
       - run: sudo security authorizationdb write com.apple.trust-settings.admin allow
-      - run: sudo installer -pkg out/qz-tray-*.pkg -target /
+      - sudo -E installer -pkg out/qz-tray-*.pkg -target /
       - run: echo "Restoring CA trust settings back to default"
       - run: sudo security authorizationdb write com.apple.trust-settings.admin < /tmp/trust-settings-backup.xml
-      - run: "JAVA_HOME= '/Applications/QZ Tray.app/Contents/MacOS/QZ Tray' --version"
+      - run: "'/Applications/QZ Tray.app/Contents/MacOS/QZ Tray' --version"
       - run: ant makeself
       - run: ant nsis
 
@@ -56,5 +58,6 @@ jobs:
           distribution: 'liberica'
       - run: choco install nsis
       - run: ant nsis
+      - run: Remove-Item Env:\JAVA_HOME
       - run: Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
-      - run: "env:JAVA_HOME = ''; &'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"
+      - run: "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"

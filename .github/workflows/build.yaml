@@ -17,7 +17,7 @@ jobs:
       - run: sudo apt-get install nsis makeself
       - run: ant makeself
       - run: sudo out/qz-tray-*.run
-      - run: /opt/qz-tray/qz-tray --version
+      - run: JAVA_HOME= /opt/qz-tray/qz-tray --version
       - run: ant nsis
 
   macos:
@@ -39,7 +39,7 @@ jobs:
       - run: sudo installer -pkg out/qz-tray-*.pkg -target /
       - run: echo "Restoring CA trust settings back to default"
       - run: sudo security authorizationdb write com.apple.trust-settings.admin < /tmp/trust-settings-backup.xml
-      - run: "'/Applications/QZ Tray.app/Contents/MacOS/QZ Tray' --version"
+      - run: "JAVA_HOME= '/Applications/QZ Tray.app/Contents/MacOS/QZ Tray' --version"
       - run: ant makeself
       - run: ant nsis
 
@@ -57,4 +57,4 @@ jobs:
       - run: choco install nsis
       - run: ant nsis
       - run: Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
-      - run: "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"
+      - run: "env:JAVA_HOME = ''; &'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"

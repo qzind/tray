@@ -8,5 +8,6 @@
       <item index="3" class="java.lang.String" itemvalue="org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage" />
     </list>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" project-jdk-name="liberica-11" project-jdk-type="JavaSDK" />
+  <!-- FIXME: Revert to JDK21 -->
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" project-jdk-name="liberica-23" project-jdk-type="JavaSDK" />
 </project>

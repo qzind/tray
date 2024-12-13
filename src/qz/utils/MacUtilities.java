@@ -26,6 +26,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -66,6 +67,28 @@ public class MacUtilities {
         catch(Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Configure macOS to intercept URIs when app is running
+     * See also: https://github.com/qzind/tray/issues/850
+     */
+    public static void registerUriHandler() {
+        Desktop.getDesktop().setOpenURIHandler(e -> {
+            // TODO: Filter for "qz:launch"
+            URI uri = e.getURI();
+            log.warn("Scheme: {}, Host: {}, Path: {}, ", uri.getScheme(), uri.getHost(), uri.getPath());
+            //if(uri.getScheme().equals(Constants.DATA_DIR)) {
+            //if(uri.getScheme().equals()) {
+            ShellUtilities.execute("/usr/bin/open",
+                                   // Open a new instance of the application even if one is already running.
+                                   "-n",
+                                   // Opens the specified application.
+                                   "-a", Constants.ABOUT_TITLE,
+                                   // All remaining arguments are passed to the opened application in the argv parameter to main().
+                                   // These arguments are not opened or interpreted by the open tool.
+                                   "--args", ArgValue.STEAL.getMatch());
+        });
     }
 
     /**
@@ -113,7 +136,7 @@ public class MacUtilities {
     }
 
     /**
-     * Runs a shell command to determine if "Dark" desktop theme is enabled
+     * Runs a shell command to determine if "Dark" top theme is enabled
      * @return true if enabled, false if not
      */
     public static boolean isDarkDesktop() {

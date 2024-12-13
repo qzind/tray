@@ -136,7 +136,7 @@ public class MacUtilities {
     }
 
     /**
-     * Runs a shell command to determine if "Dark" top theme is enabled
+     * Runs a shell command to determine if "Dark" desktop theme is enabled
      * @return true if enabled, false if not
      */
     public static boolean isDarkDesktop() {

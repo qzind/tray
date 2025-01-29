@@ -61,7 +61,7 @@ public final class ConnectionUtilities {
 
     /**
      * Checks <code>urlString</code> for restricted protocol throws IOException if not permitted
-     * returns Path if permitted
+     * returns URL if permitted
      *
      * @param urlString
      * @return a URL

@@ -1,5 +1,7 @@
 package qz.printer.rendering;
 
+import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
+import org.apache.pdfbox.contentstream.PDFStreamEngine;
 import org.apache.pdfbox.contentstream.operator.MissingOperandException;
 import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.operator.graphics.GraphicsOperatorProcessor;
@@ -16,7 +18,9 @@ import java.util.List;
 // override draw object to remove any calls to show transparency
 public class OpaqueDrawObject extends GraphicsOperatorProcessor {
 
-    public OpaqueDrawObject() { }
+    public OpaqueDrawObject(PDFGraphicsStreamEngine context) {
+        super(context);
+    }
 
     public void process(Operator operator, List<COSBase> operands) throws IOException {
         if (operands.isEmpty()) {
@@ -25,26 +29,26 @@ public class OpaqueDrawObject extends GraphicsOperatorProcessor {
             COSBase base0 = operands.get(0);
             if (base0 instanceof COSName) {
                 COSName objectName = (COSName)base0;
-                PDXObject xobject = context.getResources().getXObject(objectName);
+                PDXObject xobject = getGraphicsContext().getResources().getXObject(objectName);
 
                 if (xobject == null) {
                     throw new MissingResourceException("Missing XObject: " + objectName.getName());
                 } else {
                     if (xobject instanceof PDImageXObject) {
                         PDImageXObject image = (PDImageXObject)xobject;
-                        context.drawImage(image);
+                        getGraphicsContext().drawImage(image);
                     } else if (xobject instanceof PDFormXObject) {
                         try {
-                            context.increaseLevel();
-                            if (context.getLevel() <= 25) {
+                            getGraphicsContext().increaseLevel();
+                            if (getGraphicsContext().getLevel() <= 25) {
                                 PDFormXObject form = (PDFormXObject)xobject;
-                                context.showForm(form);
+                                getGraphicsContext().showForm(form);
                             }
 
                             //LOG.error("recursion is too deep, skipping form XObject");
                         }
                         finally {
-                            context.decreaseLevel();
+                            getGraphicsContext().decreaseLevel();
                         }
                     }
 

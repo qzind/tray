@@ -11,6 +11,9 @@ package qz.printer.action;
 
 import com.ibm.icu.text.ArabicShapingException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.rendering.PDFRenderer;
@@ -190,10 +193,18 @@ public class PrintRaw implements PrintProcessor {
             case PLAIN:
                 // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
             case FILE:
-                doc = PDDocument.load(ConnectionUtilities.getInputStream(data, true));
+                doc = Loader.loadPDF(
+                        new RandomAccessReadBuffer(
+                                ConnectionUtilities.protocolRestricted(data).openStream()
+                        )
+                );
                 break;
             default:
-                doc = PDDocument.load(new ByteArrayInputStream(seekConversion(flavor.read(data), rawOpts)));
+                doc = Loader.loadPDF(
+                        new RandomAccessReadBuffer(
+                                seekConversion(flavor.read(data), rawOpts)
+                        )
+                );
         }
 
         double scale;

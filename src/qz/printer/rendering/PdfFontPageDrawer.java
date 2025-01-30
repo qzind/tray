@@ -33,9 +33,8 @@ public class PdfFontPageDrawer extends PageDrawer {
 
         if (ignoresTransparency) {
             // Note:  These must match ParamPdfRenderer's OpaquePageDrawer
-            // TODO: These will throw NPE: Fix for PDFBOX 3.x
-            addOperator(new OpaqueDrawObject(null));
-            addOperator(new OpaqueGraphicStateParameters(null));
+            addOperator(new OpaqueDrawObject(this));
+            addOperator(new OpaqueGraphicStateParameters(this));
         }
     }
 

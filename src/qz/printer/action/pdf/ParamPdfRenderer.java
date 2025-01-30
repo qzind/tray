@@ -39,9 +39,8 @@ public class ParamPdfRenderer extends PDFRenderer {
             super(parameters);
 
             // Note:  These must match PdfFontPageDrawer's ignoreTransparency condition
-            // TODO: These will throw NPE: Fix for PDFBOX 3.x
-            addOperator(new OpaqueDrawObject(null));
-            addOperator(new OpaqueGraphicStateParameters(null));
+            addOperator(new OpaqueDrawObject(this));
+            addOperator(new OpaqueGraphicStateParameters(this));
         }
     }
 }

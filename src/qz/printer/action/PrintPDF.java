@@ -20,6 +20,7 @@ import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.printer.action.pdf.BookBundle;
+import qz.printer.action.pdf.FuturePdf;
 import qz.printer.action.pdf.PDFWrapper;
 import qz.utils.ConnectionUtilities;
 import qz.utils.PrintingUtilities;
@@ -116,6 +117,13 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
             try {
                 PDDocument doc;
+
+                if (options.getPixelOptions().isStream()) {
+                    doc = new FuturePdf(data.getString("data"));
+                    printables.add(doc);
+                    continue; //no further doc processing, as it doesn't exist yet
+                }
+
                 switch(flavor) {
                     case PLAIN:
                         // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
@@ -222,6 +230,19 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         for(PDDocument doc : printables) {
             PageFormat page = job.getPageFormat(null);
             applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
+
+            if (doc instanceof FuturePdf) {
+                FuturePdf future = (FuturePdf)doc;
+                future.buildFutureWrapper(scale, ignoreTransparency, altFontRendering,
+                                          (float)(useDensity * pxlOpts.getUnits().as1Inch()),
+                                          pxlOpts.getOrientation(), hints);
+
+                bundle.flagForStreaming(true);
+                //fixme - book bundle short-circuits based on total pages, how to bypass ?
+                bundle.append(future.getFutureWrapper(), page, 5);
+
+                continue; //no further doc processing, as it doesn't exist yet
+            }
 
             //trick pdfbox into an alternate doc size if specified
             if (docWidth > 0 || docHeight > 0) {

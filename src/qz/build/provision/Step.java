@@ -311,4 +311,8 @@ public class Step {
                     new Step(relativePath, description, type, os, arch, phase, data, args) :
                     new Step(relativeClass, description, type, os, arch, phase, data, args);
     }
+
+    public Step clone() {
+        return cloneTo(this.phase);
+    }
 }

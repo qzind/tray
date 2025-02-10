@@ -112,6 +112,9 @@ public class ProvisionInstaller {
 
         Invokable invoker;
         switch(step.getType()) {
+            case CA:
+                invoker = new CaInvoker(step, PropertyInvoker.getProperties(step));
+                break;
             case CERT:
                 invoker = new CertInvoker(step);
                 break;

@@ -220,6 +220,7 @@ public class Step {
                 .validateOs()
                 .validateArch()
                 .enforcePhase(Type.PREFERENCE, Phase.STARTUP)
+                .enforcePhase(Type.CA, Phase.CERTGEN)
                 .enforcePhase(Type.CERT, Phase.STARTUP)
                 .enforcePhase(Type.SOFTWARE, Phase.INSTALL)
                 .enforcePhase(Type.REMOVER, Phase.INSTALL)

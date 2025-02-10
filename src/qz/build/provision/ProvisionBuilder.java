@@ -136,6 +136,7 @@ public class ProvisionBuilder {
      */
     public boolean copyResource(Step step) throws IOException {
         switch(step.getType()) {
+            case CA:
             case CERT:
             case SCRIPT:
             case SOFTWARE:

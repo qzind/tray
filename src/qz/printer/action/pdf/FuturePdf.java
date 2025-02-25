@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qz.printer.PrintOptions;
 import qz.utils.ConnectionUtilities;
-import qz.utils.LoggerUtilities;
 
 import java.awt.*;
 import java.awt.print.PageFormat;
@@ -27,10 +26,8 @@ public class FuturePdf extends PDDocument {
         this.futureDocument = futureDoc;
     }
 
-    public void buildFutureWrapper(Scaling scale, boolean ignoreTransparency, boolean altFontRendering,
-                                            float dpi, PrintOptions.Orientation orientation, RenderingHints hints) {
-        futureWrapper = new FutureWrapper(this.futureDocument, scale, ignoreTransparency,
-                                               altFontRendering, dpi, orientation, hints);
+    public void buildFutureWrapper(PdfParams pdfParams) {
+        futureWrapper = new FutureWrapper(this.futureDocument, pdfParams);
     }
 
     public FutureWrapper getFutureWrapper() {
@@ -43,26 +40,14 @@ public class FuturePdf extends PDDocument {
         private static final Logger log = LoggerFactory.getLogger(FutureWrapper.class);
 
         private String futureDocument;
-        private Scaling scaling;
-        private boolean ignTransp;
-        private boolean altFont;
-        private float dpi;
-        private PrintOptions.Orientation orient;
-        private RenderingHints hints;
-
+        private PdfParams pdfParams;
         private PDDocument presentDocument;
         private PDFWrapper realWrapper;
 
 
-        FutureWrapper(String futureDoc, Scaling scale, boolean ignoreTransparency, boolean altFontRendering,
-                      float dpi, PrintOptions.Orientation orientation, RenderingHints hints) {
+        FutureWrapper(String futureDoc, PdfParams pdfParams) {
             this.futureDocument = futureDoc;
-            this.scaling = scale;
-            this.ignTransp = ignoreTransparency;
-            this.altFont = altFontRendering;
-            this.dpi = dpi;
-            this.orient = orientation;
-            this.hints = hints;
+            this.pdfParams = pdfParams;
         }
 
         public void bringToPresent() throws IOException {
@@ -70,8 +55,7 @@ public class FuturePdf extends PDDocument {
                 log.trace("Loading document for use");
                 //TODO - include various processing handled for non streamed documents ??
                 presentDocument = Loader.loadPDF(new RandomAccessReadBuffer(ConnectionUtilities.protocolRestricted(this.futureDocument).openStream()));
-                realWrapper = new PDFWrapper(presentDocument, scaling, false, ignTransp, altFont,
-                                                  dpi, false, orient, hints);
+                realWrapper = new PDFWrapper(presentDocument, pdfParams);
             }
         }
 

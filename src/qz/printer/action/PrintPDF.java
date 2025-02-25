@@ -217,10 +217,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
             }
 
-            PDFWrapper wrapper = new PDFWrapper(doc, scale, false,
-                                                pdfParams,
-                                                false, pxlOpts.getOrientation(), hints);
-
+            PDFWrapper wrapper = new PDFWrapper(doc, scale, false,  pdfParams, false, pxlOpts.getOrientation(), hints);
             bundle.append(wrapper, page, doc.getNumberOfPages());
         }
 

@@ -54,10 +54,8 @@ public class PdfParams {
         double density = pxlOpts.getDensity();
 
         if (!pxlOpts.isRasterize()) {
-            if (density > 0) {
-                // clear density for vector prints (applied via print attributes instead)
-                return 0;
-            }
+            // clear density for vector prints (applied via print attributes instead)
+            return 0;
         }
         return (float)(density * pxlOpts.getUnits().as1Inch());
     }

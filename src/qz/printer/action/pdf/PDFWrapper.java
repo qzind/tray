@@ -26,15 +26,15 @@ public class PDFWrapper implements Printable {
 
     private PDFPrintable printable;
 
-    public PDFWrapper(PDDocument document, Scaling scaling, boolean showPageBorder, boolean ignoreTransparency, boolean useAlternateFontRendering, float dpi, boolean center, PrintOptions.Orientation orientation, RenderingHints hints) {
+    public PDFWrapper(PDDocument document, Scaling scaling, boolean showPageBorder, PdfParams pdfParams, boolean center, PrintOptions.Orientation orientation, RenderingHints hints) {
         this.document = document;
         this.scaling = scaling;
         if (orientation != null) {
             this.orientation = orientation.getAsOrientRequested();
         }
 
-        PDFRenderer renderer = new ParamPdfRenderer(document, useAlternateFontRendering, ignoreTransparency);
-        printable = new PDFPrintable(document, scaling, showPageBorder, dpi, center, renderer);
+        PDFRenderer renderer = new ParamPdfRenderer(document, pdfParams);
+        printable = new PDFPrintable(document, scaling, showPageBorder, pdfParams.getDpi(), center, renderer);
         printable.setRenderingHints(hints);
     }
 

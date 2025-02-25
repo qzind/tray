@@ -467,6 +467,7 @@ var qz = (function() {
                 rotation: 0,
                 scaleContent: true,
                 size: null,
+                stream: false,
                 units: 'in',
 
                 forceRaw: false,
@@ -1533,6 +1534,7 @@ var qz = (function() {
              *  @param {Object} [options.spool=null] Advanced spooling options.
              *   @param {number} [options.spool.size=null] Number of pages per spool.  Default is no limit.  If <code>spool.end</code> is provided, defaults to <code>1</code>
              *   @param {string} [options.spool.end=null] Raw only: Character(s) denoting end of a page to control spooling.
+             *  @param {boolean} [options.stream=false] Currently PDF only. If documents should be loaded on demand.
              *
              * @memberof qz.configs
              */

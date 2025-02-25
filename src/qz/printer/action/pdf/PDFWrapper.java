@@ -7,7 +7,6 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.printing.PDFPrintable;
 import org.apache.pdfbox.printing.Scaling;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import qz.printer.PrintOptions;
 import qz.utils.SystemUtilities;
 
 import javax.print.attribute.standard.OrientationRequested;
@@ -19,22 +18,17 @@ import java.awt.print.PrinterException;
 public class PDFWrapper implements Printable {
 
     private static final Logger log = LogManager.getLogger(PDFWrapper.class);
-
     private PDDocument document;
-    private Scaling scaling;
-    private OrientationRequested orientation = OrientationRequested.PORTRAIT;
+    private PdfParams pdfParams;
 
     private PDFPrintable printable;
 
-    public PDFWrapper(PDDocument document, Scaling scaling, boolean showPageBorder, PdfParams pdfParams, boolean center, PrintOptions.Orientation orientation, RenderingHints hints) {
+    public PDFWrapper(PDDocument document, boolean showPageBorder, PdfParams pdfParams, boolean center, RenderingHints hints) {
         this.document = document;
-        this.scaling = scaling;
-        if (orientation != null) {
-            this.orientation = orientation.getAsOrientRequested();
-        }
+        this.pdfParams = pdfParams;
 
         PDFRenderer renderer = new ParamPdfRenderer(document, pdfParams);
-        printable = new PDFPrintable(document, scaling, showPageBorder, pdfParams.getDpi(), center, renderer);
+        printable = new PDFPrintable(document, pdfParams.getScaling(), showPageBorder, pdfParams.getDpi(), center, renderer);
         printable.setRenderingHints(hints);
     }
 
@@ -47,7 +41,7 @@ public class PDFWrapper implements Printable {
         graphics.drawString(" ", 0, 0);
 
         //reverse fix for OSX
-        if (SystemUtilities.isMac() && orientation == OrientationRequested.REVERSE_LANDSCAPE) {
+        if (SystemUtilities.isMac() && pdfParams.isOrientationRequested(OrientationRequested.REVERSE_LANDSCAPE)) {
             adjustPrintForOrientation(graphics, pageFormat, pageIndex);
         }
 
@@ -68,7 +62,7 @@ public class PDFWrapper implements Printable {
         //adjust across page to account for wrong origin corner
         double leftAdjust, topAdjust;
 
-        if (scaling != Scaling.ACTUAL_SIZE) {
+        if (pdfParams.getScaling() != Scaling.ACTUAL_SIZE) {
             if ((docWidth / docHeight) >= (format.getImageableWidth() / format.getImageableHeight())) {
                 leftAdjust = 0;
                 topAdjust = format.getImageableHeight() - (docHeight / (docWidth / format.getImageableWidth()));

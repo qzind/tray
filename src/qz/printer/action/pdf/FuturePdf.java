@@ -26,8 +26,8 @@ public class FuturePdf extends PDDocument {
         this.futureDocument = futureDoc;
     }
 
-    public void buildFutureWrapper(Scaling scale, PdfParams pdfParams, PrintOptions.Orientation orientation, RenderingHints hints) {
-        futureWrapper = new FutureWrapper(this.futureDocument, scale, pdfParams, orientation, hints);
+    public void buildFutureWrapper(PdfParams pdfParams, RenderingHints hints) {
+        futureWrapper = new FutureWrapper(this.futureDocument, pdfParams, hints);
     }
 
     public FutureWrapper getFutureWrapper() {
@@ -40,19 +40,16 @@ public class FuturePdf extends PDDocument {
         private static final Logger log = LoggerFactory.getLogger(FutureWrapper.class);
 
         private String futureDocument;
-        private Scaling scaling;
         private PdfParams pdfParams;
-        private PrintOptions.Orientation orient;
         private RenderingHints hints;
 
         private PDDocument presentDocument;
         private PDFWrapper realWrapper;
 
 
-        FutureWrapper(String futureDoc, Scaling scale, PdfParams pdfParams, PrintOptions.Orientation orientation, RenderingHints hints) {
+        FutureWrapper(String futureDoc, PdfParams pdfParams, RenderingHints hints) {
             this.futureDocument = futureDoc;
-            this.scaling = scale;
-            this.orient = orientation;
+            this.pdfParams = pdfParams;
             this.hints = hints;
         }
 
@@ -61,7 +58,7 @@ public class FuturePdf extends PDDocument {
                 log.trace("Loading document for use");
                 //TODO - include various processing handled for non streamed documents ??
                 presentDocument = Loader.loadPDF(new RandomAccessReadBuffer(ConnectionUtilities.protocolRestricted(this.futureDocument).openStream()));
-                realWrapper = new PDFWrapper(presentDocument, scaling, false, pdfParams, false, orient, hints);
+                realWrapper = new PDFWrapper(presentDocument,false, pdfParams, false, hints);
             }
         }
 

@@ -5,9 +5,11 @@ import org.apache.logging.log4j.Logger;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.printing.Scaling;
 import org.codehaus.jettison.json.JSONObject;
 import qz.printer.PrintOptions;
 
+import javax.print.attribute.standard.OrientationRequested;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -21,11 +23,13 @@ public class PdfParams {
     private boolean altFontRendering;
     private double convert;
     private float dpi;
+    private Scaling scaling;
     HashSet<Integer> pageRange;
 
     public PdfParams(JSONObject params, PrintOptions options) {
         this.options = options;
         convert = 72.0 / options.getPixelOptions().getUnits().as1Inch();
+        scaling = options.getPixelOptions().isScaleContent() ? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE;
 
         if(params != null) {
             docWidth = params.optDouble("pageWidth", 0) * convert;
@@ -134,6 +138,22 @@ public class PdfParams {
 
     public float getDpi() {
         return dpi;
+    }
+
+    public Scaling getScaling() {
+        return scaling;
+    }
+
+    public void setScaling(Scaling scaling) {
+        this.scaling = scaling;
+    }
+
+    public PrintOptions.Orientation getOrientation() {
+        return options.getPixelOptions().getOrientation();
+    }
+
+    public boolean isOrientationRequested(OrientationRequested match) {
+        return getOrientation() == null ? false : getOrientation().getAsOrientRequested() == match;
     }
 
 }

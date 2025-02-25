@@ -149,7 +149,6 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         job.setPrintService(output.getPrintService());
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
 
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, job.getPageFormat(null), (Media[])output.getPrintService().getSupportedAttributeValues(Media.class, null, null));
 
@@ -169,7 +168,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
             if (doc instanceof FuturePdf) {
                 FuturePdf future = (FuturePdf)doc;
-                future.buildFutureWrapper(scale, pdfParams, pxlOpts.getOrientation(), hints);
+                future.buildFutureWrapper(pdfParams, hints);
 
                 bundle.flagForStreaming(true);
                 //fixme - book bundle short-circuits based on total pages, how to bypass ?
@@ -187,7 +186,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                                        pdfParams.getDocHeight(page.getImageableHeight()));
                 page.setPaper(paper);
 
-                scale = Scaling.SCALE_TO_FIT; //to get custom size we need to force scaling
+                pdfParams.setScaling(Scaling.SCALE_TO_FIT); //to get custom size we need to force scaling
 
                 //pdf uses imageable area from Paper, so this can be safely removed
                 attributes.remove(MediaPrintableArea.class);
@@ -217,7 +216,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
             }
 
-            PDFWrapper wrapper = new PDFWrapper(doc, scale, false,  pdfParams, false, pxlOpts.getOrientation(), hints);
+            PDFWrapper wrapper = new PDFWrapper(doc,false,  pdfParams, false, hints);
             bundle.append(wrapper, page, doc.getNumberOfPages());
         }
 

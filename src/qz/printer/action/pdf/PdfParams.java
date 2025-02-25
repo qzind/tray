@@ -55,13 +55,11 @@ public class PdfParams {
      */
     private static float calculateDpi(PrintOptions options) {
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        double density = pxlOpts.getDensity();
-
         if (!pxlOpts.isRasterize()) {
             // clear density for vector prints (applied via print attributes instead)
             return 0;
         }
-        return (float)(density * pxlOpts.getUnits().as1Inch());
+        return (float)(pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
     }
 
     private static HashSet<Integer> parsePageRange(JSONObject params) {

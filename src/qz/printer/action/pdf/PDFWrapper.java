@@ -23,13 +23,13 @@ public class PDFWrapper implements Printable {
 
     private PDFPrintable printable;
 
-    public PDFWrapper(PDDocument document, boolean showPageBorder, PdfParams pdfParams, boolean center, RenderingHints hints) {
+    public PDFWrapper(PDDocument document, PdfParams pdfParams) {
         this.document = document;
         this.pdfParams = pdfParams;
 
         PDFRenderer renderer = new ParamPdfRenderer(document, pdfParams);
-        printable = new PDFPrintable(document, pdfParams.getScaling(), showPageBorder, pdfParams.getDpi(), center, renderer);
-        printable.setRenderingHints(hints);
+        printable = new PDFPrintable(document, pdfParams.getScaling(), pdfParams.isShowPageBorder(), pdfParams.getDpi(), pdfParams.isCenter(), renderer);
+        printable.setRenderingHints(pdfParams.getRenderingHints());
     }
 
 

@@ -26,8 +26,8 @@ public class FuturePdf extends PDDocument {
         this.futureDocument = futureDoc;
     }
 
-    public void buildFutureWrapper(PdfParams pdfParams, RenderingHints hints) {
-        futureWrapper = new FutureWrapper(this.futureDocument, pdfParams, hints);
+    public void buildFutureWrapper(PdfParams pdfParams) {
+        futureWrapper = new FutureWrapper(this.futureDocument, pdfParams);
     }
 
     public FutureWrapper getFutureWrapper() {
@@ -41,16 +41,13 @@ public class FuturePdf extends PDDocument {
 
         private String futureDocument;
         private PdfParams pdfParams;
-        private RenderingHints hints;
-
         private PDDocument presentDocument;
         private PDFWrapper realWrapper;
 
 
-        FutureWrapper(String futureDoc, PdfParams pdfParams, RenderingHints hints) {
+        FutureWrapper(String futureDoc, PdfParams pdfParams) {
             this.futureDocument = futureDoc;
             this.pdfParams = pdfParams;
-            this.hints = hints;
         }
 
         public void bringToPresent() throws IOException {
@@ -58,7 +55,7 @@ public class FuturePdf extends PDDocument {
                 log.trace("Loading document for use");
                 //TODO - include various processing handled for non streamed documents ??
                 presentDocument = Loader.loadPDF(new RandomAccessReadBuffer(ConnectionUtilities.protocolRestricted(this.futureDocument).openStream()));
-                realWrapper = new PDFWrapper(presentDocument,false, pdfParams, false, hints);
+                realWrapper = new PDFWrapper(presentDocument, pdfParams);
             }
         }
 

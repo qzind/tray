@@ -10,6 +10,7 @@ import org.codehaus.jettison.json.JSONObject;
 import qz.printer.PrintOptions;
 
 import javax.print.attribute.standard.OrientationRequested;
+import java.awt.*;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -17,19 +18,26 @@ import java.util.stream.IntStream;
 public class PdfParams {
     private static final Logger log = LogManager.getLogger(PdfParams.class);
     private PrintOptions options;
+    private boolean showPageBorder;
+    private boolean center;
     private double docWidth;
     private double docHeight;
     private boolean ignoreTransparency;
     private boolean altFontRendering;
     private double convert;
     private float dpi;
+    private RenderingHints renderingHints;
     private Scaling scaling;
     HashSet<Integer> pageRange;
 
-    public PdfParams(JSONObject params, PrintOptions options) {
+    public PdfParams(JSONObject params, PrintOptions options, RenderingHints renderingHints) {
+        this.showPageBorder = false;
+        this.center = false;
         this.options = options;
+        this.renderingHints = renderingHints;
         convert = 72.0 / options.getPixelOptions().getUnits().as1Inch();
         scaling = options.getPixelOptions().isScaleContent() ? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE;
+
 
         if(params != null) {
             docWidth = params.optDouble("pageWidth", 0) * convert;
@@ -114,6 +122,14 @@ public class PdfParams {
         return docHeight > 0 ? docHeight : defaultVal;
     }
 
+    public boolean isShowPageBorder() {
+        return showPageBorder;
+    }
+
+    public boolean isCenter() {
+        return center;
+    }
+
     public boolean isIgnoreTransparency() {
         return ignoreTransparency;
     }
@@ -138,12 +154,16 @@ public class PdfParams {
         return dpi;
     }
 
+    public void setScaling(Scaling scaling) {
+        this.scaling = scaling;
+    }
+
     public Scaling getScaling() {
         return scaling;
     }
 
-    public void setScaling(Scaling scaling) {
-        this.scaling = scaling;
+    public RenderingHints getRenderingHints() {
+        return renderingHints;
     }
 
     public PrintOptions.Orientation getOrientation() {

@@ -161,7 +161,7 @@ public abstract class PrintPixel {
         return imgToPrint;
     }
 
-    protected static Map<RenderingHints.Key,Object> buildRenderingHints(Object dithering, Object interpolation) {
+    public static Map<RenderingHints.Key,Object> buildRenderingHints(Object dithering, Object interpolation) {
         Map<RenderingHints.Key,Object> rhMap = new HashMap<>();
         rhMap.put(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
         rhMap.put(RenderingHints.KEY_DITHERING, dithering);

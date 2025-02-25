@@ -64,11 +64,12 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
+        RenderingHints renderingHints = new RenderingHints(buildRenderingHints(pxlOpts.getDithering(), pxlOpts.getInterpolation()));
 
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
 
-            pdfParams = new PdfParams(data.optJSONObject("options"), options);
+            pdfParams = new PdfParams(data.optJSONObject("options"), options, renderingHints);
 
             PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.FILE);
 
@@ -158,8 +159,6 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             attributes.clear();
         }
 
-        RenderingHints hints = new RenderingHints(buildRenderingHints(pxlOpts.getDithering(), pxlOpts.getInterpolation()));
-
         BookBundle bundle = new BookBundle();
 
         for(PDDocument doc : printables) {
@@ -168,7 +167,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
             if (doc instanceof FuturePdf) {
                 FuturePdf future = (FuturePdf)doc;
-                future.buildFutureWrapper(pdfParams, hints);
+                future.buildFutureWrapper(pdfParams);
 
                 bundle.flagForStreaming(true);
                 //fixme - book bundle short-circuits based on total pages, how to bypass ?
@@ -216,7 +215,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
             }
 
-            PDFWrapper wrapper = new PDFWrapper(doc,false,  pdfParams, false, hints);
+            PDFWrapper wrapper = new PDFWrapper(doc, pdfParams);
             bundle.append(wrapper, page, doc.getNumberOfPages());
         }
 

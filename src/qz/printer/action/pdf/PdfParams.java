@@ -20,24 +20,24 @@ public class PdfParams {
     private PrintOptions options;
     private boolean showPageBorder;
     private boolean center;
+    private double convert;
+    private Scaling scaling;
+    private RenderingHints renderingHints;
     private double docWidth;
     private double docHeight;
     private boolean ignoreTransparency;
     private boolean altFontRendering;
-    private double convert;
-    private float dpi;
-    private RenderingHints renderingHints;
-    private Scaling scaling;
     HashSet<Integer> pageRange;
+    private float dpi;
+
 
     public PdfParams(JSONObject params, PrintOptions options, RenderingHints renderingHints) {
-        this.showPageBorder = false;
-        this.center = false;
         this.options = options;
+        showPageBorder = false;
+        center = false;
         this.renderingHints = renderingHints;
         convert = 72.0 / options.getPixelOptions().getUnits().as1Inch();
         scaling = options.getPixelOptions().isScaleContent() ? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE;
-
 
         if(params != null) {
             docWidth = params.optDouble("pageWidth", 0) * convert;

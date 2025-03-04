@@ -50,13 +50,13 @@
 
         <!-- Apache Commons -->
         <dependency name="commons-codec" org="commons-codec" conf="*->default"
-                    rev="1.15">
+                    rev="1.18.0">
         </dependency>
         <dependency name="commons-io" org="commons-io" conf="*->default"
-                    rev="2.11.0">
+                    rev="2.18.0">
         </dependency>
         <dependency name="commons-pool2" org="org.apache.commons" conf="*->default"
-                    rev="2.11.1">
+                    rev="2.12.1">
         </dependency>
         <dependency name="not-going-to-be-commons-ssl" org="com.narupley" conf="*->default"
                     rev="0.3.20">

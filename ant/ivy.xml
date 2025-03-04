@@ -18,16 +18,16 @@
         </dependency>
 
         <dependency name="jakarta.websocket-api" org="jakarta.websocket" conf="*->default"
-                    rev="2.1.1">
+                    rev="${websocket-api.version}">
             <!-- FIXME: Skip, currently 1.1 needs testing -->
             <exclude name="*"/>
         </dependency>
         <dependency name="javax.websocket-api" org="javax.websocket" conf="*->default"
-                    rev="1.1"/>
+                    rev="${websocket-api.version}"/>
         <!-- FIXME: Replace with jakarta above? -->
 
         <dependency name="jetty-servlet-api" org="org.eclipse.jetty.toolchain" conf="*->default"
-                    rev="4.0.6"/>
+                    rev="${servlet-api.version}"/>
 
         <!-- Jetty -->
         <dependency name="jetty-client" org="org.eclipse.jetty" conf="*->default" rev="${jetty.version}"/>
@@ -50,24 +50,24 @@
 
         <!-- Apache Commons -->
         <dependency name="commons-codec" org="commons-codec" conf="*->default"
-                    rev="1.18.0">
+                    rev="${commons-codec.version}">
         </dependency>
         <dependency name="commons-io" org="commons-io" conf="*->default"
-                    rev="2.18.0">
+                    rev="${commons-io.version}">
         </dependency>
         <dependency name="commons-pool2" org="org.apache.commons" conf="*->default"
-                    rev="2.12.1">
+                    rev="${commons-pool2.version}">
         </dependency>
         <dependency name="not-going-to-be-commons-ssl" org="com.narupley" conf="*->default"
-                    rev="0.3.20">
+                    rev="${commons-ssl.version}">
             <exclude name="bcprov-jdk15on"/>
         </dependency>
 
         <!-- Communications -->
-        <dependency name="usb-api" org="javax.usb" conf="*->default"  rev="1.0.2"/>
+        <dependency name="usb-api" org="javax.usb" conf="*->default"  rev="${usb-api.version}"/>
         <dependency name="usb4java" org="org.usb4java" conf="*->default" rev="${usb4java.version}"/>
         <dependency name="usb4java-javax" org="org.usb4java" conf="*->default" rev="${usb4java.version}"/>
-        <dependency name="libusb4java" org="org.usb4java" rev="1.2.0">
+        <dependency name="libusb4java" org="org.usb4java" rev="${libusb4java.version}">
             <artifact name="libusb4java" type="jar" m:classifier="linux-arm"/>
             <artifact name="libusb4java" type="jar" m:classifier="linux-x86_64"/>
             <artifact name="libusb4java" type="jar" m:classifier="linux-x86"/>
@@ -89,13 +89,13 @@
         </dependency>
         <dependency name="jssc" org="io.github.java-native" conf="*->default" rev="${jssc.version}"/>
         <!-- Theming -->
-        <dependency name="darcula-bobbylight" org="com.bulenkov.darcula" conf="*->default" rev="0.0.0">
+        <dependency name="darcula-bobbylight" org="com.bulenkov.darcula" conf="*->default" rev="${darcula.version}">
             <!-- Skip, missing -->
             <exclude name="*"/>
         </dependency>
 
         <!-- Windows Installer -->
-        <dependency name="mslinks" org="mslinks" conf="*->default" rev="1.1.0">
+        <dependency name="mslinks" org="mslinks" conf="*->default" rev="${mslinks.version}">
             <!-- Skip, missing -->
             <exclude name="*"/>
         </dependency>

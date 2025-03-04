@@ -126,6 +126,8 @@
                 <include name="**/win32-aarch64/*" if="target.arch.aarch64"/> <!-- jna/hid4java -->
                 <include name="**/windows-aarch64/*" if="target.arch.aarch64"/> <!-- usb4java -->
                 <include name="**/windows_arm64/*" if="target.arch.aarch64"/> <!-- jssc -->
+                <!--javafx-->
+                <include name="*.dll"/>
             </fileset>
         </copy>
     </target>

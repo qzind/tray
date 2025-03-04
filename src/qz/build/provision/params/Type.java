@@ -6,6 +6,7 @@ public enum Type {
     SCRIPT,
     SOFTWARE,
     REMOVER, // QZ Tray remover
+    CA,
     CERT,
     PROPERTY,
     PREFERENCE;

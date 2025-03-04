@@ -265,7 +265,10 @@ public class PrintRaw implements PrintProcessor {
         return getWrapper(bi, opt, pxlOpts);
     }
 
-    private ImageWrapper getWrapper(BufferedImage img, JSONObject opt, PrintOptions.Pixel pxlOpts) {
+    private ImageWrapper getWrapper(BufferedImage img, JSONObject opt, PrintOptions.Pixel pxlOpts) throws IOException {
+        if(img == null) {
+            throw new IOException("Image provided is empty or null and cannot be converted.");
+        }
         // Rotate image using orientation or rotation before sending to ImageWrapper
         if (pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
             img = PrintImage.rotate(img, pxlOpts.getOrientation().getDegreesRot(), pxlOpts.getDithering(), pxlOpts.getInterpolation());

@@ -134,5 +134,11 @@
         "os": "*",
         "phase": "install",
         "data": "qz"
+    },
+    {
+        "description": "[CA] at 'install'",
+        "type": "ca",
+        "os": "*",
+        "data": "selfsigned1.crt"
     }
 ]

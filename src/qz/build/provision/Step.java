@@ -220,6 +220,7 @@ public class Step {
                 .validateOs()
                 .validateArch()
                 .enforcePhase(Type.PREFERENCE, Phase.STARTUP)
+                .enforcePhase(Type.CA, Phase.CERTGEN)
                 .enforcePhase(Type.CERT, Phase.STARTUP)
                 .enforcePhase(Type.SOFTWARE, Phase.INSTALL)
                 .enforcePhase(Type.REMOVER, Phase.INSTALL)
@@ -310,5 +311,9 @@ public class Step {
        return relativePath != null ?
                     new Step(relativePath, description, type, os, arch, phase, data, args) :
                     new Step(relativeClass, description, type, os, arch, phase, data, args);
+    }
+
+    public Step clone() {
+        return cloneTo(this.phase);
     }
 }

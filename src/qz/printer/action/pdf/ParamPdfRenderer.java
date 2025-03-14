@@ -12,21 +12,18 @@ import java.io.IOException;
 
 public class ParamPdfRenderer extends PDFRenderer {
 
-    private boolean useAlternateFontRendering;
-    private boolean ignoreTransparency;
+    private PdfParams pdfParams;
 
-    public ParamPdfRenderer(PDDocument document, boolean useAlternateFontRendering, boolean ignoreTransparency) {
+    public ParamPdfRenderer(PDDocument document, PdfParams pdfParams) {
         super(document);
-
-        this.useAlternateFontRendering = useAlternateFontRendering;
-        this.ignoreTransparency = ignoreTransparency;
+        this.pdfParams = pdfParams;
     }
 
     @Override
     protected PageDrawer createPageDrawer(PageDrawerParameters parameters) throws IOException {
-        if (useAlternateFontRendering) {
-            return new PdfFontPageDrawer(parameters, ignoreTransparency);
-        } else if(ignoreTransparency) {
+        if (pdfParams.isAltFontRendering()) {
+            return new PdfFontPageDrawer(parameters, pdfParams.isIgnoreTransparency());
+        } else if(pdfParams.isIgnoreTransparency()) {
             return new OpaquePageDrawer(parameters);
         }
         // Fallback to default PageDrawer

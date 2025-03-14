@@ -22,6 +22,7 @@ import qz.printer.PrintOutput;
 import qz.printer.action.pdf.BookBundle;
 import qz.printer.action.pdf.FuturePdf;
 import qz.printer.action.pdf.PDFWrapper;
+import qz.printer.action.pdf.PdfParams;
 import qz.utils.ConnectionUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
@@ -37,23 +38,17 @@ import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.*;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class PrintPDF extends PrintPixel implements PrintProcessor {
 
     private static final Logger log = LogManager.getLogger(PrintPDF.class);
 
-    private List<PDDocument> originals;
-    private List<PDDocument> printables;
-    private Splitter splitter = new Splitter();
+    private final List<PDDocument> originals;
+    private final List<PDDocument> printables;
+    private final Splitter splitter = new Splitter();
 
-    private double docWidth = 0;
-    private double docHeight = 0;
-    private boolean ignoreTransparency = false;
-    private boolean altFontRendering = false;
+    private PdfParams pdfParams;
 
 
     public PrintPDF() {
@@ -69,49 +64,12 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        double convert = 72.0 / pxlOpts.getUnits().as1Inch();
+        RenderingHints renderingHints = new RenderingHints(buildRenderingHints(pxlOpts.getDithering(), pxlOpts.getInterpolation()));
 
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
-            HashSet<Integer> pagesToPrint = new HashSet<>();
 
-            if (!data.isNull("options")) {
-                JSONObject dataOpt = data.getJSONObject("options");
-
-                if (!dataOpt.isNull("pageWidth") && dataOpt.optDouble("pageWidth") > 0) {
-                    docWidth = dataOpt.optDouble("pageWidth") * convert;
-                }
-                if (!dataOpt.isNull("pageHeight") && dataOpt.optDouble("pageHeight") > 0) {
-                    docHeight = dataOpt.optDouble("pageHeight") * convert;
-                }
-
-                ignoreTransparency = dataOpt.optBoolean("ignoreTransparency", false);
-                altFontRendering = dataOpt.optBoolean("altFontRendering", false);
-
-                if (!dataOpt.isNull("pageRanges")) {
-                    String[] ranges = dataOpt.optString("pageRanges", "").split(",");
-                    for(String range : ranges) {
-                        range = range.trim();
-                        if(range.isEmpty()) {
-                            continue;
-                        }
-                        String[] period = range.split("-");
-
-                        try {
-                            int start = Integer.parseInt(period[0]);
-                            pagesToPrint.add(start);
-
-                            if (period.length > 1) {
-                                int end = Integer.parseInt(period[period.length - 1]);
-                                pagesToPrint.addAll(IntStream.rangeClosed(start, end).boxed().collect(Collectors.toSet()));
-                            }
-                        }
-                        catch(NumberFormatException nfe) {
-                            log.warn("Unable to parse page range {}.", range);
-                        }
-                    }
-                }
-            }
+            pdfParams = new PdfParams(data.optJSONObject("options"), options, renderingHints);
 
             PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.FILE);
 
@@ -143,29 +101,19 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
 
                 if (pxlOpts.getBounds() != null) {
-                    PrintOptions.Bounds bnd = pxlOpts.getBounds();
-
                     for(PDPage page : doc.getPages()) {
-                        PDRectangle box = new PDRectangle(
-                                (float)(bnd.getX() * convert),
-                                page.getMediaBox().getUpperRightY() - (float)((bnd.getHeight() + bnd.getY()) * convert),
-                                (float)(bnd.getWidth() * convert),
-                                (float)(bnd.getHeight() * convert));
-                        page.setMediaBox(box);
+                        page.setMediaBox(pdfParams.calculateMediaBox(page));
                     }
                 }
 
-                if (pagesToPrint.isEmpty()) {
-                    pagesToPrint.addAll(IntStream.rangeClosed(1, doc.getNumberOfPages()).boxed().collect(Collectors.toSet()));
-                }
-
+                pdfParams.setPageRange(doc);
                 originals.add(doc);
 
                 List<PDDocument> splitPages = splitter.split(doc);
                 originals.addAll(splitPages); //ensures non-ranged page will still get closed
 
                 for(int pg = 0; pg < splitPages.size(); pg++) {
-                    if (pagesToPrint.contains(pg + 1)) { //ranges are 1-indexed
+                    if (pdfParams.getPageRange().contains(pg + 1)) { //ranges are 1-indexed
                         printables.add(splitPages.get(pg));
                     }
                 }
@@ -202,7 +150,6 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         job.setPrintService(output.getPrintService());
 
         PrintOptions.Pixel pxlOpts = options.getPixelOptions();
-        Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
 
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, job.getPageFormat(null), (Media[])output.getPrintService().getSupportedAttributeValues(Media.class, null, null));
 
@@ -210,19 +157,6 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         if (SystemUtilities.isMac() && Constants.JAVA_VERSION.compareWithBuildsTo(Version.valueOf("1.8.0+202")) < 0) {
             log.warn("MacOS and Java < 1.8.0u202 cannot use attributes with PDF prints, disabling");
             attributes.clear();
-        }
-
-        RenderingHints hints = new RenderingHints(buildRenderingHints(pxlOpts.getDithering(), pxlOpts.getInterpolation()));
-        double useDensity = pxlOpts.getDensity();
-
-        if (!pxlOpts.isRasterize()) {
-            if (pxlOpts.getDensity() > 0) {
-                // clear density for vector prints (applied via print attributes instead)
-                useDensity = 0;
-            } else if (SystemUtilities.isMac() && Constants.JAVA_VERSION.compareWithBuildsTo(Version.valueOf("1.8.0+121")) < 0) {
-                log.warn("OSX systems cannot print vector PDF's, forcing raster to prevent crash.");
-                useDensity = options.getDefaultOptions().getDensity();
-            }
         }
 
         BookBundle bundle = new BookBundle();
@@ -233,9 +167,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
             if (doc instanceof FuturePdf) {
                 FuturePdf future = (FuturePdf)doc;
-                future.buildFutureWrapper(scale, ignoreTransparency, altFontRendering,
-                                          (float)(useDensity * pxlOpts.getUnits().as1Inch()),
-                                          pxlOpts.getOrientation(), hints);
+                future.buildFutureWrapper(pdfParams);
 
                 bundle.flagForStreaming(true);
                 //fixme - book bundle short-circuits based on total pages, how to bypass ?
@@ -245,16 +177,15 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             }
 
             //trick pdfbox into an alternate doc size if specified
-            if (docWidth > 0 || docHeight > 0) {
+            if (pdfParams.isCustomSize()) {
                 Paper paper = page.getPaper();
-
-                if (docWidth <= 0) { docWidth = page.getImageableWidth(); }
-                if (docHeight <= 0) { docHeight = page.getImageableHeight(); }
-
-                paper.setImageableArea(paper.getImageableX(), paper.getImageableY(), docWidth, docHeight);
+                paper.setImageableArea(paper.getImageableX(),
+                                       paper.getImageableY(),
+                                       pdfParams.getDocWidth(page.getImageableWidth()),
+                                       pdfParams.getDocHeight(page.getImageableHeight()));
                 page.setPaper(paper);
 
-                scale = Scaling.SCALE_TO_FIT; //to get custom size we need to force scaling
+                pdfParams.setScaling(Scaling.SCALE_TO_FIT); //to get custom size we need to force scaling
 
                 //pdf uses imageable area from Paper, so this can be safely removed
                 attributes.remove(MediaPrintableArea.class);
@@ -284,10 +215,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                 }
             }
 
-            PDFWrapper wrapper = new PDFWrapper(doc, scale, false, ignoreTransparency, altFontRendering,
-                                                (float)(useDensity * pxlOpts.getUnits().as1Inch()),
-                                                false, pxlOpts.getOrientation(), hints);
-
+            PDFWrapper wrapper = new PDFWrapper(doc, pdfParams);
             bundle.append(wrapper, page, doc.getNumberOfPages());
         }
 
@@ -348,10 +276,5 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         originals.clear();
         printables.clear();
-
-        docWidth = 0;
-        docHeight = 0;
-        ignoreTransparency = false;
-        altFontRendering = false;
     }
 }

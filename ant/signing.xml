@@ -1,4 +1,7 @@
-<project name="signing-helpers" basedir="../">
+<project name="signing-helpers" basedir="../"
+         xmlns:if="ant:if"
+         xmlns:unless="ant:unless"
+>
     <property file="ant/project.properties"/>
 
     <!-- Custom code-signing properties -->
@@ -7,37 +10,53 @@
     <!-- Fallback code-signing properties -->
     <property file="ant/private/private.properties"/>
 
+    <target name="find-jsign">
+        <!-- Locate jsign -->
+        <path id="jsign.found">
+            <first>
+                <fileset dir="${basedir}/ant/lib/">
+                    <include name="jsign*.jar"/>
+                </fileset>
+            </first>
+        </path>
+        <pathconvert property="jsign.path" refid="jsign.found"/>
+    </target>
+
+    <target name="jsign" depends="find-jsign">
+        <echo level="info" if:set="signing.tsaurl">Signing with timestamp:</echo>
+        <echo level="info" unless:set="signing.tsaurl">Signing without timestamp:</echo>
+        <java jar="${jsign.path}" fork="true" failonerror="true">
+            <arg value="--name"/>
+            <arg value="${project.name}"/>
+            <arg value="--url"/>
+            <arg value="${vendor.website}"/>
+            <arg value="--replace"/>
+            <arg value="--keystore"/>
+            <arg value="${signing.keystore}"/>
+            <arg value="--alias"/>
+            <arg value="${signing.alias}"/>
+            <arg value="--storepass"/>
+            <arg value="${signing.storepass}"/>
+            <arg if:set="signing.alg" value="--alg"/>
+            <arg if:set="signing.alg" value="${signing.alg}"/>
+            <arg if:set="signing.alias" value="--alias"/>
+            <arg if:set="signing.alias" value="${signing.alias}"/>
+            <arg if:set="signing.certfile" value="--certfile"/>
+            <arg if:set="signing.certfile" value="${signing.certfile}"/>
+            <arg if:set="signing.keypass" value="--keypass"/>
+            <arg if:set="signing.keypass" value="${signing.keypass}"/>
+            <arg if:set="signing.storetype" value="--storetype"/>
+            <arg if:set="signing.storetype" value="${signing.storetype}"/>
+            <arg if:set="signing.tsaurl" value="--tsaurl"/>
+            <arg if:set="signing.tsaurl" value="${signing.tsaurl}"/>
+            <arg line="&quot;${jsign.file}&quot;"/>
+        </java>
+    </target>
+
     <target name="sign-jar">
-        <antcall target="sign-jar-tsa">
-            <param name="sign.jar.file" value="${sign.jar.file}"/>
+        <antcall target="jsign">
+            <param name="jsign.file" value="${sign.jar.file}"/>
         </antcall>
-        <antcall target="sign-jar-self">
-            <param name="sign.jar.file" value="${sign.jar.file}"/>
-        </antcall>
-    </target>
-
-    <target name="sign-jar-tsa" if="signing.tsaurl">
-        <echo level="info">Signing jar with timestamp: ${sign.jar.file}</echo>
-        <signjar jar="${sign.jar.file}"
-                 signedjar="${sign.jar.file}"
-                 alias="${signing.alias}"
-                 storepass="${signing.storepass}"
-                 keystore="${signing.keystore}"
-                 keypass="${signing.keypass}"
-                 tsaurl="${signing.tsaurl}"
-        />
-    </target>
-
-    <target name="sign-jar-self" unless="signing.tsaurl">
-        <echo level="info">Self-signing jar without timestamp: ${sign.jar.file}</echo>
-        <tsa-warning/>
-        <signjar jar="${sign.jar.file}"
-                 signedjar="${sign.jar.file}"
-                 alias="${signing.alias}"
-                 storepass="${signing.storepass}"
-                 keystore="${signing.keystore}"
-                 keypass="${signing.keypass}"
-        />
     </target>
 
     <macrodef name="tsa-warning">

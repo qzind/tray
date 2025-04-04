@@ -21,6 +21,7 @@
         <antcall target="sign-win">
             <param name="sign.win.file" value="${win.sign.separated}"/>
         </antcall>
+        <!-- TODO: Why not add double-quotes here? -->
 
         <!-- Launcher -->
         <antcall target="config-compile-sign">
@@ -94,19 +95,12 @@
     <!-- Exe signing -->
     <import file="${basedir}/ant/signing.xml"/>
     <target name="sign-win">
-        <antcall target="sign-win-tsa">
-            <param name="sign.win.file" value="${sign.win.file}"/>
-        </antcall>
-        <antcall target="sign-win-self">
-            <param name="sign.win.file" value="${sign.win.file}"/>
+        <!-- Self-sign -->
+        <antcall target="sign-file-self">
+            <param name="sign.file" value="${sign.win.file}"/>
         </antcall>
 
-        <!-- Handle property name via backwards-compatible shim (for cherry-pick) -->
-        <condition property="sign.win.file" value="${sign.exe.file}">
-            <isset property="sign.exe.file"/>
-        </condition>
-
-        <!-- Honor "hsm.storetype" -->
+        <!-- EV-sign using HSM -->
         <antcall target="sign-file-hsm">
             <param name="sign.file" value="${sign.win.file}"/>
         </antcall>
@@ -126,51 +120,5 @@
                 <include name="**/windows_arm64/*" if="target.arch.aarch64"/> <!-- jssc -->
             </fileset>
         </copy>
-    </target>
-
-    <!-- Exe signing with timestamp -->
-    <target name="sign-win-tsa" if="signing.tsaurl" depends="find-jsign">
-        <property description="suppress property warning" name="signing.tsaurl" value="something went wrong"/>
-        <echo level="info">Signing with timestamp:</echo>
-        <java jar="${jsign.path}" fork="true" failonerror="true">
-            <arg value="--name"/>
-            <arg value="${project.name}"/>
-            <arg value="--url"/>
-            <arg value="${vendor.website}"/>
-            <arg value="--replace"/>
-            <arg value="--keystore"/>
-            <arg value="${signing.keystore}"/>
-            <arg value="--alias"/>
-            <arg value="${signing.alias}"/>
-            <arg value="--storepass"/>
-            <arg value="${signing.storepass}"/>
-            <arg value="--keypass"/>
-            <arg value="${signing.keypass}"/>
-            <arg value="--tsaurl"/>
-            <arg value="${signing.tsaurl}"/>
-            <arg line="&quot;${sign.win.file}&quot;"/>
-        </java>
-    </target>
-
-    <!-- Exe signing without timestamp -->
-    <target name="sign-win-self" unless="signing.tsaurl" depends="find-jsign">
-        <echo level="info">Signing without timestamp:</echo>
-        <tsa-warning/>
-        <java jar="${jsign.path}" fork="true" failonerror="true">
-            <arg value="--name"/>
-            <arg value="${project.name}"/>
-            <arg value="--url"/>
-            <arg value="${vendor.website}"/>
-            <arg value="--replace"/>
-            <arg value="--keystore"/>
-            <arg value="${signing.keystore}"/>
-            <arg value="--alias"/>
-            <arg value="${signing.alias}"/>
-            <arg value="--storepass"/>
-            <arg value="${signing.storepass}"/>
-            <arg value="--keypass"/>
-            <arg value="${signing.keypass}"/>
-            <arg line="&quot;${sign.win.file}&quot;"/>
-        </java>
     </target>
 </project>

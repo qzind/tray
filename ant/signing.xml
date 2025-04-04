@@ -61,37 +61,26 @@
         </java>
     </target>
 
-    <target name="sign-jar">
-        <antcall target="sign-jar-tsa">
-            <param name="sign.jar.file" value="${sign.jar.file}"/>
-        </antcall>
-        <antcall target="sign-jar-self">
-            <param name="sign.jar.file" value="${sign.jar.file}"/>
-        </antcall>
-    </target>
-
-    <target name="sign-jar-tsa" if="signing.tsaurl">
-        <echo level="info">Signing jar with timestamp: ${sign.jar.file}</echo>
-        <signjar jar="${sign.jar.file}"
-                 signedjar="${sign.jar.file}"
-                 alias="${signing.alias}"
-                 storepass="${signing.storepass}"
-                 keystore="${signing.keystore}"
-                 keypass="${signing.keypass}"
-                 tsaurl="${signing.tsaurl}"
-        />
-    </target>
-
-    <target name="sign-jar-self" unless="signing.tsaurl">
-        <echo level="info">Self-signing jar without timestamp: ${sign.jar.file}</echo>
+    <!-- File signing via arbitrary key without timestamp -->
+    <target name="sign-file-self" unless="hsm.storetype" depends="find-jsign,find-self-keystore">
+        <echo level="info">Signing without timestamp:</echo>
         <tsa-warning/>
-        <signjar jar="${sign.jar.file}"
-                 signedjar="${sign.jar.file}"
-                 alias="${signing.alias}"
-                 storepass="${signing.storepass}"
-                 keystore="${signing.keystore}"
-                 keypass="${signing.keypass}"
-        />
+        <java jar="${jsign.path}" fork="true" failonerror="true">
+            <arg value="--name"/>
+            <arg value="${project.name}"/>
+            <arg value="--url"/>
+            <arg value="${vendor.website}"/>
+            <arg value="--replace"/>
+            <arg value="--keystore"/>
+            <arg value="${signing.keystore}"/>
+            <arg value="--alias"/>
+            <arg value="${signing.alias}"/>
+            <arg value="--storepass"/>
+            <arg value="${signing.storepass}"/>
+            <arg value="--keypass"/>
+            <arg value="${signing.keypass}"/>
+            <arg line="&quot;${sign.file}&quot;"/>
+        </java>
     </target>
 
     <macrodef name="tsa-warning">
@@ -102,4 +91,27 @@
             </echo>
         </sequential>
     </macrodef>
+
+    <target name="find-self-keystore">
+        <available file="${signing.keystore}" property="keystore.exists"/>
+        <antcall target="generate-self-keystore"/>
+    </target>
+
+    <target name="generate-self-keystore" unless="keystore.exists">
+        <genkey
+                alias="${signing.alias}"
+                keyalg="RSA"
+                keysize="2048"
+                keystore="${signing.keystore}"
+                storepass="${signing.storepass}"
+                validity="3650"
+                verbose="true">
+            <dname>
+                <param name="CN" value="${vendor.company} (self-signed)"/>
+                <param name="OU" value="${project.name}"/>
+                <param name="O"  value="${vendor.website}"/>
+                <param name="C"  value="US"/>
+            </dname>
+        </genkey>
+    </target>
 </project>

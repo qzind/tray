@@ -7,6 +7,60 @@
     <!-- Fallback code-signing properties -->
     <property file="ant/private/private.properties"/>
 
+    <!-- Locate first jsign-x.x.x.jar sorted name desc -->
+    <target name="find-jsign">
+        <sort id="jsign.sorted">
+            <fileset dir="${basedir}/ant/lib/">
+                <include name="jsign*.jar"/>
+            </fileset>
+            <reverse xmlns="antlib:org.apache.tools.ant.types.resources.comparators"/>
+        </sort>
+        <first id="jsign.first">
+            <resources refid="jsign.sorted"/>
+        </first>
+        <pathconvert property="jsign.path" refid="jsign.first">
+            <identitymapper/>
+        </pathconvert>
+
+        <echo message="Found jsign: ${jsign.path}"/>
+    </target>
+
+    <!-- File signing via hsm with timestamp -->
+    <target name="sign-file-hsm" if="hsm.storetype" depends="find-jsign">
+        <property description="suppress property warning" name="sign.file" value="something went wrong"/>
+
+        <!-- Handle quoting via backwards-compatible shim (for cherry-pick) -->
+        <condition property="sign.file.quoted" value="&quot;${sign.file}&quot;">
+            <contains string="${sign.file}" substring="&quot;"/>
+        </condition>
+        <property description="fallback value" name="sign.file.quoted" value="${sign.file}"/>
+
+        <property description="suppress property warning" name="hsm.storetype" value="something went wrong"/>
+        <echo level="info">Signing with hsm: ${hsm.keystore}</echo>
+        <java jar="${jsign.path}" fork="true" failonerror="true">
+            <arg value="--name"/>
+            <arg value="${project.name}"/>
+            <arg value="--url"/>
+            <arg value="${vendor.website}"/>
+            <arg value="--replace"/>
+            <arg value="--alg"/>
+            <arg value="${hsm.algorithm}"/>
+            <arg value="--storetype"/>
+            <arg value="${hsm.storetype}"/>
+            <arg value="--keystore"/>
+            <arg value="${hsm.keystore}"/>
+            <arg value="--alias"/>
+            <arg value="${hsm.alias}"/>
+            <arg value="--storepass"/>
+            <arg value="${hsm.storepass}"/>
+            <arg value="--tsaurl"/>
+            <arg value="${hsm.tsaurl}"/>
+            <arg value="--certfile"/>
+            <arg value="${hsm.certfile}"/>
+            <arg line="${sign.file.quoted}"/>
+        </java>
+    </target>
+
     <target name="sign-jar">
         <antcall target="sign-jar-tsa">
             <param name="sign.jar.file" value="${sign.jar.file}"/>

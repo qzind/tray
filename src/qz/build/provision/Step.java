@@ -22,7 +22,7 @@ public class Step {
 
     String description;
     Type type;
-    List<String> args; // Type.SCRIPT or Type.INSTALLER only
+    List<String> args; // Type.SCRIPT or Type.INSTALLER or Type.CONF only
     HashSet<Os> os;
     HashSet<Arch> arch;
     Phase phase;
@@ -159,7 +159,7 @@ public class Step {
 
         // Handle installer args
         List<String> args = new LinkedList<>();
-        if(type == Type.SOFTWARE) {
+        if(type == Type.SOFTWARE || type == Type.CONF) {
             // Handle space-delimited args
             args = Software.parseArgs(jsonStep.optString("args", ""));
             // Handle standalone single args (won't break on whitespace)
@@ -167,11 +167,27 @@ public class Step {
             int argCounter = 0;
             while(true) {
                 String singleArg = jsonStep.optString(String.format("arg%d", ++argCounter), "");
-                if(!singleArg.trim().isEmpty()) {
+                if (!singleArg.trim().isEmpty()) {
                     args.add(singleArg.trim());
                 }
                 // stop searching if the next incremental arg (e.g. "arg2") isn't found
                 break;
+            }
+        }
+
+        // Mandate "args" as the CONF path
+        if(type == Type.CONF) {
+            // Honor "path" first, if provided
+            String path = jsonStep.optString("path", "");
+            if(!path.isEmpty()) {
+                args.add(0, path);
+            }
+
+            // Keep only the first value
+            if(args.size() > 0) {
+                args = args.subList(0, 1);
+            } else {
+                throw formatted("Conf path value cannot be blank.");
             }
         }
 
@@ -222,6 +238,7 @@ public class Step {
                 .enforcePhase(Type.PREFERENCE, Phase.STARTUP)
                 .enforcePhase(Type.CA, Phase.CERTGEN)
                 .enforcePhase(Type.CERT, Phase.STARTUP)
+                .enforcePhase(Type.CONF, Phase.CERTGEN)
                 .enforcePhase(Type.SOFTWARE, Phase.INSTALL)
                 .enforcePhase(Type.REMOVER, Phase.INSTALL)
                 .enforcePhase(Type.PROPERTY, Phase.CERTGEN, Phase.INSTALL)

@@ -72,18 +72,6 @@
         </antcall>
     </target>
 
-    <target name="find-jsign">
-        <!-- Locate jsign -->
-        <path id="jsign.found">
-            <first>
-                <fileset dir="${basedir}/ant/lib/">
-                    <include name="jsign*.jar"/>
-                </fileset>
-            </first>
-        </path>
-        <pathconvert property="jsign.path" refid="jsign.found"/>
-    </target>
-
     <target name="find-nsisbin" depends="nsisbin-from-unix,nsisbin-from-32,nsisbin-from-64"/>
 
     <!-- Linux makensis -->
@@ -111,6 +99,16 @@
         </antcall>
         <antcall target="sign-win-self">
             <param name="sign.win.file" value="${sign.win.file}"/>
+        </antcall>
+
+        <!-- Handle property name via backwards-compatible shim (for cherry-pick) -->
+        <condition property="sign.win.file" value="${sign.exe.file}">
+            <isset property="sign.exe.file"/>
+        </condition>
+
+        <!-- Honor "hsm.storetype" -->
+        <antcall target="sign-file-hsm">
+            <param name="sign.file" value="${sign.win.file}"/>
         </antcall>
     </target>
 

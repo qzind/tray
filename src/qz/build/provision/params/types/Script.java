@@ -1,5 +1,6 @@
 package qz.build.provision.params.types;
 
+import org.apache.commons.io.FilenameUtils;
 import qz.build.provision.params.EnumParser;
 
 import java.nio.file.Path;
@@ -13,14 +14,8 @@ public enum Script {
     RB;
 
     public static Script parse(String input) {
-        if(input != null) {
-            if(input.contains(".")) {
-                String extension = input.substring(input.lastIndexOf(".") + 1);
-                return EnumParser.parse(Script.class, extension);
-            } else {
-                // If no file extension, assume a shell script
-                return SH;
-            }
+        if(input != null && !input.isEmpty()) {
+            return EnumParser.parse(Script.class, FilenameUtils.getExtension(input), SH);
         }
         return null;
     }

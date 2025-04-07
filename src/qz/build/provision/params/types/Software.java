@@ -1,5 +1,6 @@
 package qz.build.provision.params.types;
 
+import org.apache.commons.io.FilenameUtils;
 import qz.build.provision.params.EnumParser;
 import qz.build.provision.params.Os;
 
@@ -15,7 +16,7 @@ public enum Software {
     UNKNOWN;
 
     public static Software parse(String input) {
-        return EnumParser.parse(Software.class, input, UNKNOWN);
+        return EnumParser.parse(Software.class, FilenameUtils.getExtension(input), UNKNOWN);
     }
 
     public static Software parse(Path path) {

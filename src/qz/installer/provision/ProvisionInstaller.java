@@ -118,6 +118,9 @@ public class ProvisionInstaller {
             case CERT:
                 invoker = new CertInvoker(step);
                 break;
+            case CONF:
+                invoker = new ConfInvoker(step);
+                break;
             case SCRIPT:
                 invoker = new ScriptInvoker(step);
                 break;

@@ -15,10 +15,8 @@ import org.apache.logging.log4j.Logger;
 import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
-import qz.utils.WindowsUtilities;
 import qz.ws.PrintSocketServer;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,6 +35,13 @@ public class TaskKiller {
      * Kills all QZ Tray processes, being careful not to kill itself
      */
     public static boolean killAll() {
+        // TODO:
+        // 1. Calculate the path to jcmd
+        // 2. List all Java processes using jcmd -l
+        // 3. Filter Java processes matching "qz-tray.jar"
+        // 4. Filter Java processes matching "PrintSocketClient" (IntelliJ)
+        // 5. Kill all matching processes
+
         boolean success = true;
 
         ArrayList<String> javaProcs;
@@ -85,13 +90,6 @@ public class TaskKiller {
                     killCmd[killCmd.length - 1] = parts[0].trim();
                     success = success && ShellUtilities.execute(killCmd);
                 }
-            }
-        }
-
-        if(WindowsUtilities.isWindowsXP()) {
-            File f = new File("TempWmicBatchFile.bat");
-            if(f.exists()) {
-                f.deleteOnExit();
             }
         }
 

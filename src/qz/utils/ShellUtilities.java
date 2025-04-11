@@ -182,10 +182,6 @@ public class ShellUtilities {
         InputStreamReader in = null;
         try {
             Process p = Runtime.getRuntime().exec(commandArray, envp);
-            if(SystemUtilities.isWindows() && commandArray.length > 0 && commandArray[0].startsWith("wmic")) {
-                // Fix deadlock on old Windows versions https://stackoverflow.com/a/13367685/3196753
-                p.getOutputStream().close();
-            }
             in = new InputStreamReader(p.getInputStream(), Charsets.UTF_8);
             StringBuilder out = new StringBuilder();
             int c;

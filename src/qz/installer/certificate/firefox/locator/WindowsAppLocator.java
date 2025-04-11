@@ -58,7 +58,10 @@ public class WindowsAppLocator extends AppLocator{
 
     @Override
     public ArrayList<String> getPids(ArrayList<String> processNames) {
-        ArrayList<String> javaPids = new ArrayList<>();
+        ArrayList<String> pidList = new ArrayList<>();
+
+        if (processNames.isEmpty()) return pidList;
+
         Tlhelp32.PROCESSENTRY32 pe32 = new Tlhelp32.PROCESSENTRY32();
         pe32.dwSize = new WinNT.DWORD(pe32.size());
 
@@ -66,26 +69,26 @@ public class WindowsAppLocator extends AppLocator{
         WinNT.HANDLE hSnapshot = Kernel32.INSTANCE.CreateToolhelp32Snapshot(Tlhelp32.TH32CS_SNAPPROCESS, new WinNT.DWORD(0));
         if (hSnapshot.equals(WinNT.INVALID_HANDLE_VALUE)) {
             log.warn("Process snapshot has invalid handle");
-            return javaPids;
+            return pidList;
         }
 
         if (Kernel32.INSTANCE.Process32First(hSnapshot, pe32)) {
             do {
                 String processName = Native.toString(pe32.szExeFile);
                 if(processNames.contains(processName.toLowerCase(Locale.ENGLISH))) {
-                    javaPids.add(pe32.th32ProcessID.toString());
+                    pidList.add(pe32.th32ProcessID.toString());
                 }
             } while (Kernel32.INSTANCE.Process32Next(hSnapshot, pe32));
         }
 
         Kernel32.INSTANCE.CloseHandle(hSnapshot);
-        return javaPids;
+        return pidList;
     }
 
 
     @Override
     public ArrayList<Path> getPidPaths(ArrayList<String> pids) {
-        ArrayList<Path> paths = new ArrayList<>();
+        ArrayList<Path> pathList = new ArrayList<>();
 
         for(String pid : pids) {
             WinNT.HANDLE hProcess = Kernel32.INSTANCE.OpenProcess(WinNT.PROCESS_QUERY_INFORMATION | WinNT.PROCESS_VM_READ, false, Integer.parseInt(pid));
@@ -104,11 +107,11 @@ public class WindowsAppLocator extends AppLocator{
             }
 
             Kernel32.INSTANCE.CloseHandle(hProcess);
-            paths.add(Paths.get(Native.WCHAR_SIZE == 1 ?
+            pathList.add(Paths.get(Native.WCHAR_SIZE == 1 ?
                                         buffer.getString(0) :
                                         buffer.getWideString(0)));
         }
-        return paths;
+        return pathList;
     }
 
     /**

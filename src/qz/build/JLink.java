@@ -294,6 +294,7 @@ public class JLink {
                 case WINDOWS:
                     keepFiles.add("java.exe");
                     keepFiles.add("javaw.exe");
+                    keepFiles.add("jcmd.exe");
                     if(depList.contains("jdk.accessibility")) {
                         // Java accessibility bridge switching tool
                         keepFiles.add("jabswitch.exe");
@@ -303,6 +304,7 @@ public class JLink {
                     break;
                 default:
                     keepFiles.add("java");
+                    keepFiles.add("jcmd");
                     keepExt = null;
             }
 

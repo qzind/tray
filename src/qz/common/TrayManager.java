@@ -96,6 +96,7 @@ public class TrayManager {
         name = Constants.ABOUT_TITLE + " " + Constants.VERSION;
 
         prefs = new PropertyHelper(FileUtilities.USER_DIR + File.separator + Constants.PREFS_FILE + ".properties");
+        prefs.remove(SECURITY_FILE_STRICT.getMatch()); // per https://github.com/qzind/tray/issues/1337
 
         // Set strict certificate mode preference
         Certificate.setTrustBuiltIn(!getPref(TRAY_STRICTMODE));

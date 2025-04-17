@@ -57,6 +57,7 @@ public class TaskKiller {
         String[] killPid = new String[KILL_PID_CMD.length + 1];
         for (Integer pid : pids) {
             killPid[killPid.length - 1] = pid.toString();
+            log.debug("Found {} running as PID {}, calling '{}'", Constants.ABOUT_TITLE, pid, Arrays.toString(killPid));
             success = success && ShellUtilities.execute(killPid);
         }
 

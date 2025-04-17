@@ -65,13 +65,14 @@ public class TaskKiller {
     private static Path getJcmdPath() throws IOException {
         Path jcmd;
         if(SystemUtilities.isWindows()) {
-            jcmd = SystemUtilities.getJarParentPath().resolve("/runtime/bin/jcmd.exe");
+            jcmd = SystemUtilities.getJarParentPath().resolve("runtime/bin/jcmd.exe");
         } else if (SystemUtilities.isMac()) {
             jcmd = SystemUtilities.getJarParentPath().resolve("../PlugIns/Java.runtime/Contents/Home/bin/jcmd");
         } else {
-            jcmd = SystemUtilities.getJarParentPath().resolve("/runtime/bin/jcmd");
+            jcmd = SystemUtilities.getJarParentPath().resolve("runtime/bin/jcmd");
         }
         if(!jcmd.toFile().exists()) {
+            log.error("Could not find find {}", jcmd);
             throw new IOException("Could not find jcmd, we can't use it for detecting running instances");
         }
         return jcmd;

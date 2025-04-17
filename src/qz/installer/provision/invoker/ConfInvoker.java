@@ -13,19 +13,22 @@ public class ConfInvoker extends PropertyInvoker {
 
     public static String calculateConfPath(Step step) {
         String relativePath = step.getArgs().get(0);
+        String loc;
         if(SystemUtilities.isMac()) {
-            return SystemUtilities.getJarParentPath().
+            loc = SystemUtilities.getJarParentPath().
                     resolve("../PlugIns/Java.runtime/Contents/Home/conf").
                     resolve(relativePath).
                     normalize()
                     .toString();
         } else {
-            return SystemUtilities.getJarParentPath()
+            loc = SystemUtilities.getJarParentPath()
                     .resolve("runtime/conf")
                     .resolve(relativePath)
                     .normalize()
                     .toString();
         }
+        log.debug("ConfInvoker: Using conf location: {}", loc);
+        return loc;
     }
 
     @Override

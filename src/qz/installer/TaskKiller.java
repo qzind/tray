@@ -12,11 +12,14 @@ package qz.installer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.common.Constants;
 import qz.installer.certificate.firefox.locator.AppLocator;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,74 +28,90 @@ import static qz.common.Constants.PROPS_FILE;
 
 public class TaskKiller {
     protected static final Logger log = LogManager.getLogger(TaskKiller.class);
-    private static final String[] TRAY_PID_QUERY_POSIX = {"pgrep", "-f", PROPS_FILE + ".jar" };
-    private static final String[] KILL_PID_CMD_POSIX = {"kill", "-9", ""/*pid placeholder*/};
-
-    private static final String[] TRAY_PID_QUERY_WIN32 = {"wmic.exe", "process", "where", "CommandLine like '%" + PROPS_FILE + ".jar" + "%'", "get", "processid" };
-    private static final String[] KILL_PID_CMD_WIN32 = {"taskkill.exe", "/F", "/PID", "" /*pid placeholder*/ };
+    private static final String[] JAR_NAMES = { PROPS_FILE + ".jar" };
+    private static final String[] KILL_PID_CMD_POSIX = { "kill", "-9" };
+    private static final String[] KILL_PID_CMD_WIN32 = { "taskkill.exe", "/F", "/PID" };
+    private static final String[] KILL_PID_CMD = SystemUtilities.isWindows() ? KILL_PID_CMD_WIN32 : KILL_PID_CMD_POSIX;
 
     /**
      * Kills all QZ Tray processes, being careful not to kill itself
      */
     public static boolean killAll() {
-        // TODO:
-        // 1. Calculate the path to jcmd
-        // 2. List all Java processes using jcmd -l
-        // 3. Filter Java processes matching "qz-tray.jar"
-        // 4. Filter Java processes matching "PrintSocketClient" (IntelliJ)
-        // 5. Kill all matching processes
-
         boolean success = true;
 
-        ArrayList<String> javaProcs;
-        String[] trayProcs;
-        int selfProc = SystemUtilities.getProcessId();
-        String[] killCmd;
         // Disable service until reboot
         if(SystemUtilities.isMac()) {
             ShellUtilities.execute("/bin/launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
         }
-        if(SystemUtilities.isWindows()) {
-            // Windows may be running under javaw.exe (normal) or java.exe (terminal)
-            javaProcs = AppLocator.getInstance().getPids("java.exe", "javaw.exe");
-            trayProcs = ShellUtilities.executeRaw(TRAY_PID_QUERY_WIN32).split("\\s*\\r?\\n");
-            killCmd = KILL_PID_CMD_WIN32;
-        } else {
-            javaProcs = AppLocator.getInstance().getPids( "java");
-            trayProcs = ShellUtilities.executeRaw(TRAY_PID_QUERY_POSIX).split("\\s*\\r?\\n");
-            killCmd = KILL_PID_CMD_POSIX;
-        }
-        if (!javaProcs.isEmpty()) {
-            // Find intersections of java and qz-tray.jar
-            List<String> intersections = new ArrayList<>(Arrays.asList(trayProcs));
-            intersections.retainAll(javaProcs);
 
-            // Remove any instances created by this installer
-            intersections.remove("" + selfProc);
-
-            // Kill whatever's left
-            for (String pid : intersections) {
-                // isNumeric() needed for Windows; filters whitespace, headers
-                if(StringUtils.isNumeric(pid)) {
-                    // Set last command to the pid
-                    killCmd[killCmd.length -1] = pid;
-                    success = success && ShellUtilities.execute(killCmd);
-                }
-            }
+        // Get the matching PIDs
+        ArrayList<Integer> pids;
+        try {
+            pids = findTrayPids();
+        } catch(IOException e) {
+            log.error("Failed to retrieve PIDs for {}", Constants.ABOUT_TITLE, e);
+            return false;
         }
 
-        // Use jcmd to kill class processes too, such as through the IDE
-        if(SystemUtilities.isJDK()) {
-            String[] procs = ShellUtilities.executeRaw("jcmd", "-l").split("\\r?\\n");
-            for(String proc : procs) {
-                String[] parts = proc.split(" ", 1);
-                if (parts.length >= 2 && parts[1].contains(PrintSocketServer.class.getCanonicalName())) {
-                    killCmd[killCmd.length - 1] = parts[0].trim();
-                    success = success && ShellUtilities.execute(killCmd);
-                }
-            }
+        // Kill each PID
+        String[] killPid = new String[KILL_PID_CMD.length + 1];
+        for (Integer pid : pids) {
+            killPid[killPid.length - 1] = pid.toString();
+            success = success && ShellUtilities.execute(killPid);
         }
 
         return success;
+    }
+
+    private static Path getJcmdPath() throws IOException {
+        Path jcmd;
+        if(SystemUtilities.isWindows()) {
+            jcmd = SystemUtilities.getJarParentPath().resolve("/runtime/bin/jcmd.exe");
+        } else if (SystemUtilities.isMac()) {
+            jcmd = SystemUtilities.getJarParentPath().resolve("../PlugIns/Java.runtime/Contents/Home/bin/jcmd");
+        } else {
+            jcmd = SystemUtilities.getJarParentPath().resolve("../PlugIns/Java.runtime/Contents/Home/bin/jcmd");
+        }
+        if(!jcmd.toFile().exists()) {
+            throw new IOException("Could not find jcmd, we can't stop running instances");
+        }
+        return jcmd;
+    }
+
+
+    /**
+     * Uses jcmd to fetch all PIDs that match this product
+     */
+    private static ArrayList<Integer> findTrayPids() throws IOException {
+        ArrayList<Integer> foundProcs = new ArrayList<>();
+
+        String[] stdout = ShellUtilities.executeRaw(getJcmdPath().toString(), "-l").split("\\r?\\n");
+        if(stdout == null || stdout.length == 0) {
+            throw new IOException("Error calling '" + getJcmdPath() + "' -l");
+        }
+        for(String line : stdout) {
+            // e.g. "35446 C:\Program Files\QZ Tray\qz-tray.jar"
+            String[] parts = line.split(" ", 1);
+            if (parts.length >= 2) {
+                Integer proc = Integer.parseInt(parts[0]);
+                String command = parts[1];
+                // Handle running from IDE such as IntelliJ
+                if(command.contains(PrintSocketServer.class.getCanonicalName())) {
+                    foundProcs.add(proc);
+                    continue;
+                }
+                // Handle "qz-tray.jar"
+                for(String jarName : JAR_NAMES) {
+                    if(command.contains(jarName));
+                    foundProcs.add(proc);
+                    break; // continue parent loop
+                }
+            }
+        }
+
+        // Careful not to kill ourselves ;)
+        foundProcs.remove(SystemUtilities.getProcessId());
+
+        return foundProcs;
     }
 }

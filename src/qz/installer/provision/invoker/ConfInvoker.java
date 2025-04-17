@@ -27,7 +27,7 @@ public class ConfInvoker extends PropertyInvoker {
                     .normalize()
                     .toString();
         }
-        log.debug("ConfInvoker: Using conf location: {}", loc);
+        log.info("ConfInvoker: Using conf location: {}", loc);
         return loc;
     }
 

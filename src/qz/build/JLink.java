@@ -236,6 +236,8 @@ public class JLink {
                 // Java accessibility bridge dependency, see https://github.com/qzind/tray/issues/1234
                 depList.add("jdk.accessibility");
             default:
+                // Adds "bin/jcmd"
+                depList.add("jdk.jcmd");
                 // "jar:" URLs create transient zipfs dependency, see https://stackoverflow.com/a/57846672/3196753
                 depList.add("jdk.zipfs");
                 // fix for https://github.com/qzind/tray/issues/894 solution from https://github.com/adoptium/adoptium-support/issues/397

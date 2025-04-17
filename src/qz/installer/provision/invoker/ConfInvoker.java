@@ -15,7 +15,7 @@ public class ConfInvoker extends PropertyInvoker {
         String relativePath = step.getArgs().get(0);
         if(SystemUtilities.isMac()) {
             return SystemUtilities.getJarParentPath().
-                    resolve("Java.runtime/Contents/Home/conf").
+                    resolve("../Java.runtime/Contents/Home/conf").
                     resolve(relativePath).
                     normalize()
                     .toString();

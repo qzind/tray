@@ -71,7 +71,7 @@ public class TaskKiller {
             jcmd = SystemUtilities.getJarParentPath().resolve("runtime/bin/jcmd");
         }
         if(!jcmd.toFile().exists()) {
-            log.error("Could not find find {}", jcmd);
+            log.error("Could not find {}", jcmd);
             throw new IOException("Could not find jcmd, we can't use it for detecting running instances");
         }
         return jcmd;

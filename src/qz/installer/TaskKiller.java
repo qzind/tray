@@ -12,22 +12,22 @@ package qz.installer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.common.Constants;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
-import qz.ws.PrintSocketServer;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 
 import static qz.common.Constants.PROPS_FILE;
 
 public class TaskKiller {
     protected static final Logger log = LogManager.getLogger(TaskKiller.class);
-    private static final String[] JAR_NAMES = { PROPS_FILE + ".jar" };
+    private static final String[] JAR_NAMES = {
+            PROPS_FILE + ".jar",
+            "qz.App", // v2.2.0...
+            "qz.ws.PrintSocketServer" // v2.0.0...v2.1.6
+    };
     private static final String[] KILL_PID_CMD_POSIX = { "kill", "-9" };
     private static final String[] KILL_PID_CMD_WIN32 = { "taskkill.exe", "/F", "/PID" };
     private static final String[] KILL_PID_CMD = SystemUtilities.isWindows() ? KILL_PID_CMD_WIN32 : KILL_PID_CMD_POSIX;
@@ -55,7 +55,6 @@ public class TaskKiller {
         System.arraycopy(KILL_PID_CMD, 0, killPid, 0, KILL_PID_CMD.length);
         for (Integer pid : pids) {
             killPid[killPid.length - 1] = pid.toString();
-            log.debug("Found {} running as PID {}, calling '{}'", Constants.ABOUT_TITLE, pid, Arrays.toString(killPid));
             success = success && ShellUtilities.execute(killPid);
         }
 
@@ -84,9 +83,11 @@ public class TaskKiller {
         for(String jarName : JAR_NAMES) {
             String[] pids = ShellUtilities.executeRaw("pgrep", "-f", jarName).split("\\s*\\r?\\n");
             for(String pid : pids) {
-                if (StringUtils.isNumeric(pid)) {
-                    foundPids.add(Integer.parseInt(pid));
+                if (!StringUtils.isNumeric(pid.trim())) {
+                    log.warn("Found PID value '{}' that does not appear to be a number", pid);
+                    continue;
                 }
+                foundPids.add(Integer.parseInt(pid));
             }
         }
 
@@ -103,7 +104,7 @@ public class TaskKiller {
     private static HashSet<Integer> findPidsJcmd() {
         HashSet<Integer> foundPids = new HashSet<>();
 
-        String[] stdout = {};
+        String[] stdout;
         try {
             stdout = ShellUtilities.executeRaw(getJcmdPath().toString(), "-l").split("\\r?\\n");
             if(stdout == null || stdout.length == 0) {
@@ -116,21 +117,24 @@ public class TaskKiller {
 
         for(String line : stdout) {
             // e.g. "35446 C:\Program Files\QZ Tray\qz-tray.jar"
-            String[] parts = line.split(" ", 1);
-            if (parts.length >= 2 && StringUtils.isNumeric(parts[0])) {
-                Integer proc = Integer.parseInt(parts[0]);
-                String command = parts[1];
-                // Handle running from IDE such as IntelliJ
-                if(command.contains(PrintSocketServer.class.getCanonicalName())) {
-                    foundPids.add(proc);
+            String[] parts = line.split(" ", 2);
+            if (parts.length == 2) {
+                String pidString = parts[0].trim();
+                if(!StringUtils.isNumeric(pidString)) {
+                    log.warn("Found PID value '{}' that does not appear to be a number", pidString);
                     continue;
                 }
-                // Handle "qz-tray.jar"
+                Integer pid = Integer.parseInt(pidString);
+                String args = parts[1];
+
                 for(String jarName : JAR_NAMES) {
-                    if(command.contains(jarName));
-                    foundPids.add(proc);
-                    break; // continue parent loop
+                    if(args.contains(jarName)) {
+                        foundPids.add(pid);
+                        break; // continue parent loop
+                    }
                 }
+            } else {
+                log.warn("Found erroneous output, skipping", line);
             }
         }
 

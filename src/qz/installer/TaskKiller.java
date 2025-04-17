@@ -46,7 +46,7 @@ public class TaskKiller {
         // Use jcmd to get all java processes
         HashSet<Integer> pids = findPidsJcmd();
         if(!SystemUtilities.isWindows()) {
-            // Fallback to pgrep (See liberica/QZ-23)
+            // Fallback to pgrep, needed for macOS (See JDK-8319589, JDK-8197387)
             pids.addAll(findPidsPgrep());
         }
 

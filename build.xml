@@ -273,7 +273,7 @@
         </copy>
 
         <!-- Handle sample.html renaming -->
-        <property description="suppress property warning" name="sample.name" value="sample.html"/>
+        <property description="suppress-property-warning" name="sample.name" value="sample.html"/>
         <move file="${demo.dir}/sample.html" tofile="${demo.dir}/${sample.name}"/>
     </target>
 
@@ -282,7 +282,7 @@
     </target>
 
     <target name="check-provision" if="provision.file">
-        <property description="suppress-property-warning" name="provision.file" value=""/>
+        <property description="suppress property warning" name="provision.file" value=""/>
         <available file="${provision.file}" property="provision.file.exists"/>
         <fail message="Provision file was provided but not found: '${provision.file}'" unless="provision.file.exists"/>
         <echo level="info">Found provision file '${provision.file}' calling 'provision --json [...]'</echo>

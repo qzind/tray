@@ -8,6 +8,7 @@ public enum Type {
     REMOVER, // QZ Tray remover
     CA,
     CERT,
+    CONF,
     PROPERTY,
     PREFERENCE;
 

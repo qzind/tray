@@ -140,5 +140,12 @@
         "type": "ca",
         "os": "*",
         "data": "selfsigned1.crt"
+    },
+    {
+        "description": "[CONF] at 'install'",
+        "type": "conf",
+        "os": "*",
+        "data": "java.net.useSystemProxies=true",
+        "path": "net.properties"
     }
 ]

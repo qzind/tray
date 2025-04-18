@@ -50,6 +50,9 @@ public class TaskKiller {
             pids.addAll(findPidsPgrep());
         }
 
+        // Careful not to kill ourselves ;)
+        pids.remove(SystemUtilities.getProcessId());
+
         // Kill each PID
         String[] killPid = new String[KILL_PID_CMD.length + 1];
         System.arraycopy(KILL_PID_CMD, 0, killPid, 0, KILL_PID_CMD.length);
@@ -81,23 +84,22 @@ public class TaskKiller {
         HashSet<Integer> foundPids = new HashSet<>();
 
         for(String jarName : JAR_NAMES) {
-            String[] pids = ShellUtilities.executeRaw("pgrep", "-f", jarName).split("\\s*\\r?\\n");
-            for(String pid : pids) {
-                pid = pid.trim();
-                if(pid.isEmpty()) {
+            String stdout = ShellUtilities.executeRaw("pgrep", "-f", jarName);
+            String[] lines = stdout.split("\\s*\\r?\\n");
+            for(String line : lines) {
+                if(line.trim().isEmpty()) {
                     // Don't try to process blank lines
                     continue;
                 }
-                if (!StringUtils.isNumeric(pid)) {
-                    log.warn("Found PID value '{}' that does not appear to be a number", pid);
-                    continue;
+
+                int pid = parsePid(line);
+                if (pid >= 0) {
+                    foundPids.add(pid);
+                } else {
+                    log.warn("Could not parse PID value.  Full line: '{}', Full output: '{}'", line, stdout);
                 }
-                foundPids.add(Integer.parseInt(pid));
             }
         }
-
-        // Careful not to kill ourselves ;)
-        foundPids.remove(SystemUtilities.getProcessId());
 
         return foundPids;
     }
@@ -109,9 +111,10 @@ public class TaskKiller {
     private static HashSet<Integer> findPidsJcmd() {
         HashSet<Integer> foundPids = new HashSet<>();
 
+        String stdout;
         String[] lines;
         try {
-            String stdout = ShellUtilities.executeRaw(getJcmdPath().toString(), "-l");
+            stdout = ShellUtilities.executeRaw(getJcmdPath().toString(), "-l");
             if(stdout == null) {
                log.error("Error calling '{}' {}", getJcmdPath(), "-l");
                return foundPids;
@@ -123,35 +126,59 @@ public class TaskKiller {
         }
 
         for(String line : lines) {
-            if(line.trim().isEmpty()) {
+            if (line.trim().isEmpty()) {
                 // Don't try to process blank lines
                 continue;
             }
             // e.g. "35446 C:\Program Files\QZ Tray\qz-tray.jar"
             String[] parts = line.split(" ", 2);
-            if (parts.length == 2) {
-                String pidString = parts[0].trim();
-                if(!StringUtils.isNumeric(pidString)) {
-                    log.warn("Found PID value '{}' that does not appear to be a number", pidString);
+            int pid = parsePid(parts);
+            if (pid >= 0) {
+                String args = parseArgs(parts);
+                if (args == null) {
+                    log.warn("Found PID value '{}' but no args to match.  Full line: '{}', Full output: '{}'", pid, line, stdout);
                     continue;
                 }
-                Integer pid = Integer.parseInt(pidString);
-                String args = parts[1];
-
                 for(String jarName : JAR_NAMES) {
-                    if(args.contains(jarName)) {
+                    if (args.contains(jarName)) {
                         foundPids.add(pid);
                         break; // continue parent loop
                     }
                 }
             } else {
-                log.warn("Found erroneous output: '{}', skipping", line);
+                log.warn("Could not parse PID value.  Full line: '{}', Full output: '{}'", line, stdout);
             }
         }
 
-        // Careful not to kill ourselves ;)
-        foundPids.remove(SystemUtilities.getProcessId());
-
         return foundPids;
+    }
+
+    // Returns the second index of a String[], trimmed
+    private static String parseArgs(String[] input) {
+        if(input != null) {
+            if(input.length == 2) {
+                return input[1].trim();
+            }
+        }
+        return null;
+    }
+
+    // Parses an int value form the first index of a String[], returning -1 if something went wrong
+    private static int parsePid(String[] input) {
+        if(input != null) {
+            if(input.length == 2) {
+                return parsePid(input[0]);
+            }
+        }
+        return -1;
+    }
+
+    // Parses an int value form the provided string, returning -1 if something went wrong
+    private static int parsePid(String input) {
+        String pidString = input.trim();
+        if(StringUtils.isNumeric(pidString)) {
+            return Integer.parseInt(pidString);
+        }
+        return -1;
     }
 }

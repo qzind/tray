@@ -83,7 +83,12 @@ public class TaskKiller {
         for(String jarName : JAR_NAMES) {
             String[] pids = ShellUtilities.executeRaw("pgrep", "-f", jarName).split("\\s*\\r?\\n");
             for(String pid : pids) {
-                if (!StringUtils.isNumeric(pid.trim())) {
+                pid = pid.trim();
+                if(pid.isEmpty()) {
+                    // Don't try to process blank lines
+                    continue;
+                }
+                if (!StringUtils.isNumeric(pid)) {
                     log.warn("Found PID value '{}' that does not appear to be a number", pid);
                     continue;
                 }
@@ -104,18 +109,24 @@ public class TaskKiller {
     private static HashSet<Integer> findPidsJcmd() {
         HashSet<Integer> foundPids = new HashSet<>();
 
-        String[] stdout;
+        String[] lines;
         try {
-            stdout = ShellUtilities.executeRaw(getJcmdPath().toString(), "-l").split("\\r?\\n");
-            if(stdout == null || stdout.length == 0) {
+            String stdout = ShellUtilities.executeRaw(getJcmdPath().toString(), "-l");
+            if(stdout == null) {
                log.error("Error calling '{}' {}", getJcmdPath(), "-l");
+               return foundPids;
             }
+            lines = stdout.split("\\r?\\n");
         } catch(Exception e) {
             log.error(e);
             return foundPids;
         }
 
-        for(String line : stdout) {
+        for(String line : lines) {
+            if(line.trim().isEmpty()) {
+                // Don't try to process blank lines
+                continue;
+            }
             // e.g. "35446 C:\Program Files\QZ Tray\qz-tray.jar"
             String[] parts = line.split(" ", 2);
             if (parts.length == 2) {
@@ -134,7 +145,7 @@ public class TaskKiller {
                     }
                 }
             } else {
-                log.warn("Found erroneous output, skipping", line);
+                log.warn("Found erroneous output: '{}', skipping", line);
             }
         }
 

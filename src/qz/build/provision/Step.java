@@ -167,7 +167,7 @@ public class Step {
             int argCounter = 0;
             while(true) {
                 String singleArg = jsonStep.optString(String.format("arg%d", ++argCounter), "");
-                if (!singleArg.trim().isEmpty()) {
+                if(!singleArg.trim().isEmpty()) {
                     args.add(singleArg.trim());
                 }
                 // stop searching if the next incremental arg (e.g. "arg2") isn't found

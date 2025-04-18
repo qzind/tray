@@ -258,6 +258,7 @@
             <arg value="--entitlement"/>
             <arg value="${build.dir}/apple-entitlements.plist"/>
             <arg value="${bundle.dir}/Contents/PlugIns/Java.runtime/Contents/Home/bin/java"/>
+            <arg value="${bundle.dir}/Contents/PlugIns/Java.runtime/Contents/Home/bin/jcmd"/>
             <arg value="${bundle.dir}/Contents/PlugIns/Java.runtime"/>
         </exec>
         <exec executable="codesign" failonerror="true">

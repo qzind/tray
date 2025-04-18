@@ -18,6 +18,7 @@ public abstract class AppLocator {
     public abstract ArrayList<AppInfo> locate(AppAlias appAlias);
     public abstract ArrayList<Path> getPidPaths(ArrayList<String> pids);
 
+    @SuppressWarnings("unused")
     public ArrayList<String> getPids(String ... processNames) {
         return getPids(new ArrayList<>(Arrays.asList(processNames)));
     }

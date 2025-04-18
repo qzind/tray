@@ -10,31 +10,28 @@
 
 package qz.installer.certificate.firefox.locator;
 
-import org.apache.commons.lang3.StringUtils;
+import com.sun.jna.Memory;
+import com.sun.jna.Native;
+import com.sun.jna.Pointer;
+import com.sun.jna.platform.win32.Kernel32;
+import com.sun.jna.platform.win32.Psapi;
+import com.sun.jna.platform.win32.Tlhelp32;
+import com.sun.jna.platform.win32.WinNT;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.installer.certificate.firefox.locator.AppAlias.Alias;
-import qz.utils.ShellUtilities;
-import qz.utils.SystemUtilities;
 import qz.utils.WindowsUtilities;
 
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Locale;
 
 import static com.sun.jna.platform.win32.WinReg.HKEY_LOCAL_MACHINE;
 
 public class WindowsAppLocator extends AppLocator{
     protected static final Logger log = LogManager.getLogger(MacAppLocator.class);
-
-    private static final String[] WIN32_PID_QUERY = {"wmic.exe", "process", "where", null, "get", "processid"};
-    private static final int WIN32_PID_QUERY_INPUT_INDEX = 3;
-
-    private static final String[] WIN32_PATH_QUERY = {"wmic.exe", "process", "where", null, "get", "ExecutablePath"};
-    private static final int WIN32_PATH_QUERY_INPUT_INDEX = 3;
 
     private static String REG_TEMPLATE = "Software\\%s%s\\%s%s";
 
@@ -65,42 +62,54 @@ public class WindowsAppLocator extends AppLocator{
 
         if (processNames.isEmpty()) return pidList;
 
-        WIN32_PID_QUERY[WIN32_PID_QUERY_INPUT_INDEX] = "(Name='" + String.join("' OR Name='", processNames) + "')";
-        String[] response = ShellUtilities.executeRaw(WIN32_PID_QUERY).split("[\\r\\n]+");
+        Tlhelp32.PROCESSENTRY32 pe32 = new Tlhelp32.PROCESSENTRY32();
+        pe32.dwSize = new WinNT.DWORD(pe32.size());
 
-        // Add all found pids
-        for(String line : response) {
-            String pid = line.trim();
-            if(StringUtils.isNumeric(pid.trim())) {
-                pidList.add(pid);
-            }
+        // Fetch a snapshot of all processes
+        WinNT.HANDLE hSnapshot = Kernel32.INSTANCE.CreateToolhelp32Snapshot(Tlhelp32.TH32CS_SNAPPROCESS, new WinNT.DWORD(0));
+        if (hSnapshot.equals(WinNT.INVALID_HANDLE_VALUE)) {
+            log.warn("Process snapshot has invalid handle");
+            return pidList;
         }
 
-        if(WindowsUtilities.isWindowsXP()) {
-            // Cleanup XP crumbs per https://stackoverflow.com/q/12391655/3196753
-            File f = new File("TempWmicBatchFile.bat");
-            if(f.exists()) {
-                f.deleteOnExit();
-            }
+        if (Kernel32.INSTANCE.Process32First(hSnapshot, pe32)) {
+            do {
+                String processName = Native.toString(pe32.szExeFile);
+                if(processNames.contains(processName.toLowerCase(Locale.ENGLISH))) {
+                    pidList.add(pe32.th32ProcessID.toString());
+                }
+            } while (Kernel32.INSTANCE.Process32Next(hSnapshot, pe32));
         }
 
+        Kernel32.INSTANCE.CloseHandle(hSnapshot);
         return pidList;
     }
+
 
     @Override
     public ArrayList<Path> getPidPaths(ArrayList<String> pids) {
         ArrayList<Path> pathList = new ArrayList<>();
 
         for(String pid : pids) {
-            WIN32_PATH_QUERY[WIN32_PATH_QUERY_INPUT_INDEX] = "ProcessId=" + pid;
-            String[] response = ShellUtilities.executeRaw(WIN32_PATH_QUERY).split("\\s*\\r?\\n");
-            if (response.length > 1) {
-                try {
-                    pathList.add(Paths.get(response[1]).toRealPath());
-                } catch(IOException e) {
-                    log.warn("Could not locate process " + pid);
-                }
+            WinNT.HANDLE hProcess = Kernel32.INSTANCE.OpenProcess(WinNT.PROCESS_QUERY_INFORMATION | WinNT.PROCESS_VM_READ, false, Integer.parseInt(pid));
+            if (hProcess == null) {
+                log.warn("Handle for PID {} is missing, skipping.", pid);
+                continue;
             }
+
+            int bufferSize = WinNT.MAX_PATH;
+            Pointer buffer = new Memory(bufferSize * Native.WCHAR_SIZE);
+
+            if (Psapi.INSTANCE.GetModuleFileNameEx(hProcess, null, buffer, bufferSize) == 0) {
+                log.warn("Full path to PID {} is empty, skipping.", pid);
+                Kernel32.INSTANCE.CloseHandle(hProcess);
+                continue;
+            }
+
+            Kernel32.INSTANCE.CloseHandle(hProcess);
+            pathList.add(Paths.get(Native.WCHAR_SIZE == 1 ?
+                                        buffer.getString(0) :
+                                        buffer.getWideString(0)));
         }
         return pathList;
     }

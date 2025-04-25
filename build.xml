@@ -119,6 +119,10 @@
             </manifest>
         </jar>
         <delete dir="${out.dir}/libs-temp" includeemptydirs="true" defaultexcludes="false"/>
+
+        <antcall target="sign-jar">
+            <param name="sign.file" value="${dist.dir}/${project.filename}.jar"/>
+        </antcall>
     </target>
 
     <target name="externalize-libs" if="separate.static.libs" depends="copy-dylibs,copy-dlls,copy-solibs">

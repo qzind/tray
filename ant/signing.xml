@@ -52,23 +52,6 @@
     </target>
 
     <!-- Jar signing via hsm with timestamp -->
-    <target name="sign-jar-hsm-bak" if="hsm.storetype" depends="find-jsign">
-        <exec executable="jarsigner" failonerror="true">
-            <arg value="-J-cp"/><arg value="-J${jsign.path}"/>
-            <arg value="-J--add-modules"/><arg value="-Jjava.sql"/>
-            <arg value="-providerClass"/><arg value="net.jsign.jca.JsignJcaProvider"/>
-            <arg value="-providerArg"/><arg value="${hsm.keystore}"/>
-            <arg value="-keystore"/><arg value="NONE"/>
-            <arg value="-sigalg"/><arg value="SHA256withRSA"/>
-            <arg value="-storetype"/><arg value="${hsm.storetype}"/>
-            <arg value="-storepass"/><arg value="${hsm.storepass}"/>
-            <arg value="-tsa"/><arg value="${hsm.tsaurl}"/>
-            <arg value="-certchain"/><arg value="${hsm.certfile}"/>
-            <arg value="${sign.file}"/><arg value="${hsm.alias}"/>
-        </exec>
-    </target>
-
-    <!-- Jar signing via hsm with timestamp -->
     <target name="sign-jar-hsm" if="hsm.storetype" depends="find-jsign">
         <signjar providerclass="net.jsign.jca.JsignJcaProvider"
                  providerarg="${hsm.keystore}"

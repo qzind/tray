@@ -51,26 +51,6 @@
         </antcall>
     </target>
 
-    <!-- Jar signing via hsm with timestamp -->
-    <target name="sign-jar-hsm" if="hsm.storetype" depends="find-jsign">
-        <signjar providerclass="net.jsign.jca.JsignJcaProvider"
-                 providerarg="${hsm.keystore}"
-                 alias="${hsm.alias}"
-                 storepass="${hsm.storepass}"
-                 storetype="${hsm.storetype}"
-                 keystore="NONE"
-                 sigalg="SHA256withRSA"
-                 digestalg="SHA256"
-                 tsaurl="${hsm.tsaurl}"
-                 jar="${sign.file}"
-                 signedjar="${sign.file}">
-            <!-- special args needed by jsign -->
-            <arg value="-J-cp"/><arg value="-J${jsign.path}"/>
-            <arg value="-J--add-modules"/><arg value="-Jjava.sql"/>
-            <arg value="-certchain"/><arg file="${hsm.certfile}"/>
-        </signjar>
-    </target>
-
     <!-- File signing via hsm with timestamp -->
     <target name="sign-file-hsm" if="hsm.storetype" depends="find-jsign">
         <echo level="info">Signing with hsm: ${hsm.keystore}</echo>
@@ -98,17 +78,24 @@
         </java>
     </target>
 
-    <!-- Jar signing via arbitrary key without timestamp -->
-    <target name="sign-jar-self" unless="hsm.storetype" depends="find-jsign,find-keystore-self">
-        <signjar jar="${sign.file}"
-                 signedjar="${sign.file}"
-                 alias="${signing.alias}"
-                 storepass="${signing.storepass}"
-                 keystore="${signing.keystore}"
-                 keypass="${signing.keypass}"
-                 digestalg="SHA256"
+    <!-- Jar signing via hsm with timestamp -->
+    <target name="sign-jar-hsm" if="hsm.storetype" depends="find-jsign">
+        <signjar providerclass="net.jsign.jca.JsignJcaProvider"
+                 providerarg="${hsm.keystore}"
+                 alias="${hsm.alias}"
+                 storepass="${hsm.storepass}"
+                 storetype="${hsm.storetype}"
+                 keystore="NONE"
                  sigalg="SHA256withRSA"
-        />
+                 digestalg="SHA256"
+                 tsaurl="${hsm.tsaurl}"
+                 jar="${sign.file}"
+                 signedjar="${sign.file}">
+            <!-- special args needed by jsign -->
+            <arg value="-J-cp"/><arg value="-J${jsign.path}"/>
+            <arg value="-J--add-modules"/><arg value="-Jjava.sql"/>
+            <arg value="-certchain"/><arg file="${hsm.certfile}"/>
+        </signjar>
     </target>
 
     <!-- File signing via arbitrary key without timestamp -->
@@ -131,6 +118,19 @@
             <arg value="${signing.keypass}"/>
             <arg line="${sign.file}"/>
         </java>
+    </target>
+
+    <!-- Jar signing via arbitrary key without timestamp -->
+    <target name="sign-jar-self" unless="hsm.storetype" depends="find-jsign,find-keystore-self">
+        <signjar jar="${sign.file}"
+                 signedjar="${sign.file}"
+                 alias="${signing.alias}"
+                 storepass="${signing.storepass}"
+                 keystore="${signing.keystore}"
+                 keypass="${signing.keypass}"
+                 digestalg="SHA256"
+                 sigalg="SHA256withRSA"
+        />
     </target>
 
     <target name="find-keystore-self">

@@ -79,15 +79,15 @@
     </target>
 
     <!-- Jar signing via hsm with timestamp -->
-    <target name="sign-jar-hsm" if="hsm.storetype" depends="find-jsign">
+    <target name="sign-jar-hsm" if="hsm.storetype" depends="find-jsign,get-jar-alg">
         <signjar providerclass="net.jsign.jca.JsignJcaProvider"
                  providerarg="${hsm.keystore}"
                  alias="${hsm.alias}"
                  storepass="${hsm.storepass}"
                  storetype="${hsm.storetype}"
                  keystore="NONE"
-                 sigalg="SHA256withRSA"
-                 digestalg="SHA256"
+                 sigalg="${jar.sigalg}"
+                 digestalg="${jar.digestalg}"
                  tsaurl="${hsm.tsaurl}"
                  jar="${sign.file}"
                  signedjar="${sign.file}">
@@ -108,6 +108,8 @@
             <arg value="--url"/>
             <arg value="${vendor.website}"/>
             <arg value="--replace"/>
+            <arg value="--alg"/>
+            <arg value="${signing.algorithm}"/>
             <arg value="--keystore"/>
             <arg value="${signing.keystore}"/>
             <arg value="--alias"/>
@@ -121,16 +123,43 @@
     </target>
 
     <!-- Jar signing via arbitrary key without timestamp -->
-    <target name="sign-jar-self" unless="hsm.storetype" depends="find-jsign,find-keystore-self">
-        <signjar jar="${sign.file}"
-                 signedjar="${sign.file}"
-                 alias="${signing.alias}"
+    <target name="sign-jar-self" unless="hsm.storetype" depends="find-jsign,find-keystore-self,get-jar-alg">
+        <signjar alias="${signing.alias}"
                  storepass="${signing.storepass}"
                  keystore="${signing.keystore}"
                  keypass="${signing.keypass}"
-                 digestalg="SHA256"
-                 sigalg="SHA256withRSA"
+                 sigalg="${jar.sigalg}"
+                 digestalg="${jar.digestalg}"
+                 jar="${sign.file}"
+                 signedjar="${sign.file}"
         />
+    </target>
+
+    <!-- Maps jsign algorithm to jarsigner algorithm -->
+    <target name="get-jar-alg">
+        <!-- Populate from hsm.algorithm or signing.algorithm -->
+        <condition property="jar.algorithm" value="${hsm.algorithm}">
+            <isset property="${hsm.algorithm}"/>
+        </condition>
+        <property name="jar.algorithm" value="${signing.algorithm}" description="fallback value"/>
+
+        <!-- Convert "SHA-256" to "SHA256", etc -->
+        <loadresource property="convert.algorithm">
+            <propertyresource name="jar.algorithm"/>
+            <filterchain>
+                <tokenfilter>
+                    <filetokenizer/>
+                    <replacestring from="-" to=""/>
+                </tokenfilter>
+            </filterchain>
+        </loadresource>
+        <property name="convert.algorithm" value="something went wrong" description="fallback value"/>
+
+        <!-- e.g. "SHA256withRSA" -->
+        <property description="Signature Algorithm" name="jar.sigalg" value="${convert.algorithm}withRSA"/>
+
+        <!-- e.g. "SHA256" -->
+        <property description="Digest Algorithm" name="jar.digestalg" value="${convert.algorithm}"/>
     </target>
 
     <target name="find-keystore-self">

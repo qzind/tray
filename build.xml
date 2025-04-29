@@ -17,32 +17,6 @@
     </target>
 
     <target name="init">
-        <condition property="codesign.windows" value="true">
-            <and>
-                <isset property="target.os.windows"/>
-                <isset property="signing.tsaurl"/>
-            </and>
-        </condition>
-        <condition property="codesign.linux" value="true">
-            <and>
-                <isset property="target.os.linux"/>
-                <isset property="signing.tsaurl"/>
-            </and>
-        </condition>
-
-        <!-- Handle codesign.mac backwards-compatible shim (for cherry-pick) -->
-        <condition property="codesign.mac" value="true">
-            <and>
-                <or>
-                    <isset property="target.os.mac"/>
-                    <isset property="target.platform.mac"/>
-                </or>
-                <or>
-                    <isset property="signing.tsaurl"/>
-                    <isset property="hsm.storetype"/>
-                </or>
-            </and>
-        </condition>
         <echo message="Building ${project.filename} using JDK ${ant.java.version}"/>
     </target>
 
@@ -119,6 +93,10 @@
             </manifest>
         </jar>
         <delete dir="${out.dir}/libs-temp" includeemptydirs="true" defaultexcludes="false"/>
+
+        <antcall target="sign-jar">
+            <param name="sign.file" value="${dist.dir}/${project.filename}.jar"/>
+        </antcall>
     </target>
 
     <target name="externalize-libs" if="separate.static.libs" depends="copy-dylibs,copy-dlls,copy-solibs">

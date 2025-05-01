@@ -10,7 +10,6 @@
 
 package qz.utils;
 
-import com.apple.OSXAdapterWrapper;
 import org.apache.commons.io.FileUtils;
 import org.dyorgio.jna.platform.mac.*;
 import com.github.zafarkhaja.semver.Version;
@@ -19,13 +18,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.common.TrayManager;
+import qz.ui.AboutDialog;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,44 +41,31 @@ import java.util.Locale;
  */
 public class MacUtilities {
     private static final Logger log = LogManager.getLogger(MacUtilities.class);
-    private static Dialog aboutDialog;
-    private static TrayManager trayManager;
     private static String bundleId;
     private static Boolean jdkSupportsTemplateIcon;
     private static boolean templateIconForced = false;
     private static boolean sandboxed = System.getenv("APP_SANDBOX_CONTAINER_ID") != null;
 
-    public static void showAboutDialog() {
-        if (aboutDialog != null) { aboutDialog.setVisible(true); }
-    }
-
-    public static void showExitPrompt() {
-        if (trayManager != null) { trayManager.exit(0); }
-    }
-
     /**
      * Adds a listener to register the Apple "About" dialog to call {@code setVisible()} on the specified Dialog
      */
     public static void registerAboutDialog(Dialog aboutDialog) {
-        MacUtilities.aboutDialog = aboutDialog;
-
-        try {
-            OSXAdapterWrapper.setAboutHandler(MacUtilities.class, MacUtilities.class.getDeclaredMethod("showAboutDialog"));
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
+        Desktop.getDesktop().setAboutHandler(e -> {
+            if (aboutDialog != null) {
+                aboutDialog.setVisible(true);
+            } else {
+                log.warn("Ignoring request to show {} because it's null", AboutDialog.class.getSimpleName());
+            }
+        });
     }
 
-    /**
-     * Configure macOS to intercept URIs when app is running
-     * See also: https://github.com/qzind/tray/issues/850
-     */
-    public static void registerUriHandler() {
+    public static void registerUrlHandler() {
         Desktop.getDesktop().setOpenURIHandler(e -> {
+            // TODO: Not working.  Why?
             // TODO: Filter for "qz:launch"
             URI uri = e.getURI();
             log.warn("Scheme: {}, Host: {}, Path: {}, ", uri.getScheme(), uri.getHost(), uri.getPath());
+
             //if(uri.getScheme().equals(Constants.DATA_DIR)) {
             //if(uri.getScheme().equals()) {
             ShellUtilities.execute("/usr/bin/open",
@@ -124,15 +112,15 @@ public class MacUtilities {
     /**
      * Adds a listener to register the Apple "Quit" to call {@code trayManager.exit(0)}
      */
-    public static void registerQuitHandler(TrayManager trayManager) {
-        MacUtilities.trayManager = trayManager;
-
-        try {
-            OSXAdapterWrapper.setQuitHandler(MacUtilities.class, MacUtilities.class.getDeclaredMethod("showExitPrompt"));
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
+    public static void registerQuitHandler(final TrayManager trayManager) {
+        Desktop.getDesktop().setQuitHandler((e, response) -> {
+            if (trayManager != null) {
+                trayManager.exit(0);
+            } else {
+                log.warn("{} is null, maybe we're running headless? Falling back to System.exit() instead.", TrayManager.class.getSimpleName());
+                System.exit(0);
+            }
+        });
     }
 
     /**
@@ -149,25 +137,9 @@ public class MacUtilities {
     }
 
     public static int getScaleFactor() {
-        // Java 9+ per JDK-8172962
-        if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("9.0.0"))) {
-            GraphicsDevice graphicsDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-            GraphicsConfiguration graphicsConfig = graphicsDevice.getDefaultConfiguration();
-            return (int)graphicsConfig.getDefaultTransform().getScaleX();
-        }
-        // Java 7, 8
-        try {
-            // Use reflection to avoid compile errors on non-macOS environments
-            Object screen = Class.forName("sun.awt.CGraphicsDevice").cast(GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice());
-            Method getScaleFactor = screen.getClass().getDeclaredMethod("getScaleFactor");
-            Object obj = getScaleFactor.invoke(screen);
-            if (obj instanceof Integer) {
-                return ((Integer)obj).intValue();
-            }
-        } catch (Exception e) {
-            log.warn("Unable to determine screen scale factor.  Defaulting to 1.", e);
-        }
-        return 1;
+        GraphicsDevice graphicsDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        GraphicsConfiguration graphicsConfig = graphicsDevice.getDefaultConfiguration();
+        return (int)graphicsConfig.getDefaultTransform().getScaleX();
     }
 
     /**

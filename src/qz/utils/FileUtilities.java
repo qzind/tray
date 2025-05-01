@@ -241,7 +241,7 @@ public class FileUtilities {
         if(!FILE_IO_ENABLED) {
             throw new AccessDeniedException("File operations are disabled");
         } else if(!request.isVerified() && FILE_IO_STRICT) {
-            throw new AccessDeniedException("File requests is not verified");
+            throw new AccessDeniedException("File request is not verified");
         } else if(request.getCertUsed() == null || !request.getCertUsed().isTrusted()) {
             throw new AccessDeniedException("Certificate provided is not trusted");
         } else if(!isWhiteListed(path, allowRootDir, fp.isSandbox(), request)) {

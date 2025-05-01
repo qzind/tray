@@ -17,6 +17,10 @@ import java.util.ArrayList;
 public class FileIO implements DeviceListener {
     public static final String SANDBOX_DATA_SUFFIX = "sandbox";
     public static final String GLOBAL_DATA_SUFFIX = "shared";
+
+    // Pesky breadcrumb files that only the OS cares about
+    public static final String[] DEFAULT_EXCLUSIONS = { ".DS_Store", "Thumbs.db" };
+
     public static final int FILE_LISTENER_DEFAULT_LINES = 10;
 
     public enum ReadType {
@@ -88,6 +92,12 @@ public class FileIO implements DeviceListener {
         }
 
         if(match) {
+            // Never match on DEFAULT_EXCLUSIONS
+            for(String exclusion : DEFAULT_EXCLUSIONS) {
+                if (FilenameUtils.wildcardMatch(fileName, exclusion, IOCase.INSENSITIVE)) {
+                    return false;
+                }
+            }
             for(String exclusion : exclusions) {
                 if (FilenameUtils.wildcardMatch(fileName, exclusion, caseSensitivity)) {
                     match = false;

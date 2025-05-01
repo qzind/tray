@@ -350,7 +350,7 @@ public class TrayManager {
         componentList.add(aboutDialog);
 
         if (SystemUtilities.isMac()) {
-            MacUtilities.registerUrlHandler();
+            MacUtilities.registerUriHandler();
             MacUtilities.registerAboutDialog(aboutDialog);
             MacUtilities.registerQuitHandler(this);
         }

@@ -38,7 +38,7 @@ public class StatusMonitor {
     public synchronized static boolean launchNotificationThreads() {
         ArrayList<String> printerNameList = new ArrayList<>();
 
-        Winspool.PRINTER_INFO_2[] printers = WinspoolUtil.getPrinterInfo2();
+        Winspool.PRINTER_INFO_2[] printers = WinspoolUtil.getAllPrinterInfo2();
         for (Winspool.PRINTER_INFO_2 printer : printers) {
             printerNameList.add(printer.pPrinterName);
             if (!notificationThreadCollection.containsKey(printer.pPrinterName)) {

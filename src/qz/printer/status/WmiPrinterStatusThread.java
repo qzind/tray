@@ -254,7 +254,7 @@ public class WmiPrinterStatusThread extends Thread {
 
     public static ArrayList<Status> getAllStatuses() {
         ArrayList<Status> statuses = new ArrayList<>();
-        Winspool.PRINTER_INFO_2[] wmiPrinters = WinspoolUtil.getPrinterInfo2();
+        Winspool.PRINTER_INFO_2[] wmiPrinters = WinspoolUtil.getAllPrinterInfo2();
         for(Winspool.PRINTER_INFO_2 printerInfo2 : wmiPrinters) {
             WinNT.HANDLEByReference phPrinter = new WinNT.HANDLEByReference();
             Winspool.INSTANCE.OpenPrinter(printerInfo2.pPrinterName, phPrinter, null);

@@ -15,6 +15,7 @@ import java.util.*;
 
 public class CupsPrinterMap extends NativePrinterMap {
     private static final String DEFAULT_CUPS_DRIVER = "TEXTONLY.ppd";
+    private static final String AIRPRINT_DRIVER = "AirPrint";
     private static final Logger log = LogManager.getLogger(CupsPrinterMap.class);
     private Map<NativePrinter, List<PrinterResolution>> resolutionMap = new HashMap<>();
 
@@ -164,8 +165,15 @@ public class CupsPrinterMap extends NativePrinterMap {
                         if(additionalRes != null) {
                             addResolution(printer, additionalRes);
                         }
-                    } else if(line.contains("*PCFileName:")) {
-                        // Parse driver name
+                    } else if(line.contains("*APAirPrint:")) {
+                        // Detect AirPrint driver
+                        String[] split = line.split("\\*APAirPrint:");
+                        String value = split[split.length - 1].replace("\"", "").trim();
+                        if(Boolean.parseBoolean(value)) {
+                            printer.setDriver(AIRPRINT_DRIVER);
+                        }
+                    } else if(printer.getDriver().isNull() && line.contains("*PCFileName:")) {
+                        // Parse driver name if not found through other means
                         String[] split = line.split("\\*PCFileName:");
                         printer.setDriver(split[split.length - 1].replace("\"", "").trim());
                     }

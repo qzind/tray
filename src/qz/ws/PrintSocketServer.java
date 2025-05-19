@@ -100,6 +100,7 @@ public class PrintSocketServer {
                             request.getHeader("Access-Control-Request-Private-Network").equals("true")) {
                         response.setHeader("Access-Control-Allow-Private-Network", "true");
                     }
+                    filterChain.doFilter(request, response);
                 }), "/*", null);
 
                 // Handle WebSocket connections

@@ -14,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.MultiException;
@@ -25,7 +26,9 @@ import qz.installer.certificate.CertificateManager;
 import qz.utils.ArgValue;
 import qz.utils.PrefsSearch;
 
-import javax.servlet.DispatcherType;
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.swing.*;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -87,6 +90,17 @@ public class PrintSocketServer {
                 }
 
                 ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+
+                // Allow private-network access
+                context.addFilter(new FilterHolder((servletRequest, servletResponse, filterChain) -> {
+                    HttpServletResponse response = (HttpServletResponse)servletResponse;
+                    HttpServletRequest request = (HttpServletRequest)servletRequest;
+                    response.setHeader("Access-Control-Allow-Origin", "*");
+                    if(request.getHeader("Access-Control-Request-Private-Network") != null &&
+                            request.getHeader("Access-Control-Request-Private-Network").equals("true")) {
+                        response.setHeader("Access-Control-Allow-Private-Network", "true");
+                    }
+                }), "/*", null);
 
                 // Handle WebSocket connections
                 context.addFilter(WebSocketUpgradeFilter.class, "/", EnumSet.of(DispatcherType.REQUEST));

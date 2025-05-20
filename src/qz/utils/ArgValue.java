@@ -89,6 +89,8 @@ public enum ArgValue {
                            "security.wss.httpsonly"),
     SECURITY_WSS_HOST(PREFERENCES, "Influences which physical adapter to bind to by setting the host parameter for http/websocket listening", null, "0.0.0.0",
                            "security.wss.host"),
+    SECURITY_WSS_ALLOWORIGIN(PREFERENCES, "Override 'Access-Control-Allow-Origin: *' HTTP response header for fine-grained control of incoming HTTP connections", null, "*",
+                             "security.wss.alloworigin"),
     WEBSOCKET_SECURE_PORTS(PREFERENCES, "Comma separated list of secure websocket (wss://) ports to use", null, StringUtils.join(Constants.DEFAULT_WSS_PORTS, ","),
                            "websocket.secure.ports"),
     WEBSOCKET_INSECURE_PORTS(PREFERENCES, "Comma separated list of insecure websocket (ws://) ports to use", null, StringUtils.join(Constants.DEFAULT_WS_PORTS, ","),

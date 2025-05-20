@@ -14,7 +14,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.MultiException;
@@ -27,8 +26,6 @@ import qz.utils.ArgValue;
 import qz.utils.PrefsSearch;
 
 import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.swing.*;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -53,6 +50,7 @@ public class PrintSocketServer {
     private static boolean httpsOnly;
     private static boolean sniStrict;
     private static String wssHost;
+    private static String wssAllowOrigin;
 
     public static void runServer(CertificateManager certManager, boolean headless) throws InterruptedException, InvocationTargetException {
         SwingUtilities.invokeAndWait(() -> {
@@ -60,6 +58,7 @@ public class PrintSocketServer {
         });
 
         wssHost = PrefsSearch.getString(ArgValue.SECURITY_WSS_HOST, certManager.getProperties());
+        wssAllowOrigin = PrefsSearch.getString(ArgValue.SECURITY_WSS_ALLOWORIGIN, certManager.getProperties());
         httpsOnly = PrefsSearch.getBoolean(ArgValue.SECURITY_WSS_HTTPSONLY, certManager.getProperties());
         sniStrict = PrefsSearch.getBoolean(ArgValue.SECURITY_WSS_SNISTRICT, certManager.getProperties());
         websocketPorts = WebsocketPorts.parseFromProperties();
@@ -92,27 +91,18 @@ public class PrintSocketServer {
                 ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
                 // Allow private-network access
-                context.addFilter(new FilterHolder((servletRequest, servletResponse, filterChain) -> {
-                    HttpServletResponse response = (HttpServletResponse)servletResponse;
-                    HttpServletRequest request = (HttpServletRequest)servletRequest;
-                    response.setHeader("Access-Control-Allow-Origin", "*");
-                    if(request.getHeader("Access-Control-Request-Private-Network") != null &&
-                            request.getHeader("Access-Control-Request-Private-Network").equals("true")) {
-                        response.setHeader("Access-Control-Allow-Private-Network", "true");
-                    }
-                    filterChain.doFilter(request, response);
-                }), "/*", null);
+                context.addFilter(HttpAboutServlet.originFilter(wssAllowOrigin), "/*", null);
 
                 // Handle WebSocket connections
                 context.addFilter(WebSocketUpgradeFilter.class, "/", EnumSet.of(DispatcherType.REQUEST));
                 JettyWebSocketServletContainerInitializer.configure(context, (ctx, container) -> {
-                    container.addMapping("/", (req, resp) -> new PrintSocketClient(server));
+                    container.addMapping("/*", (req, resp) -> PrintSocketClient.originFilterUpgrade(req, resp, server, wssAllowOrigin));
                     container.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
                     container.setIdleTimeout(Duration.ofMinutes(5));
                 });
 
                 // Handle HTTP landing page
-                ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet(certManager));
+                ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet(certManager, wssAllowOrigin));
                 httpServlet.setInitParameter("resourceBase", "/");
 
                 context.addServlet(httpServlet, "/");

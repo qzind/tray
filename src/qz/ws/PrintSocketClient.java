@@ -25,6 +25,7 @@ import qz.printer.status.StatusMonitor;
 import qz.utils.*;
 import qz.ws.substitutions.Substitutions;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.usb.util.UsbUtil;
 import java.awt.*;
 import java.io.EOFException;
@@ -848,7 +849,11 @@ public class PrintSocketClient {
         if(!allowOrigin.equals("*")) {
             String origin = req.getHeader("Origin");
             if(!allowOrigin.equals(origin)) {
-                log.error("Connection-supplied origin value '{}' does not match {}: '{}'; WebSocket connection will fail", origin, ArgValue.SECURITY_WSS_ALLOWORIGIN.getMatch(), allowOrigin);
+                String message = String.format("Connection-supplied origin value '%s' does not match %s: '%s'; WebSocket connection will fail", origin, ArgValue.SECURITY_WSS_ALLOWORIGIN.getMatch(), allowOrigin);
+                log.error(message);
+                try {
+                    resp.sendError(HttpServletResponse.SC_FORBIDDEN, message);
+                } catch(IOException ignore) {}
                 return null;
             }
         }

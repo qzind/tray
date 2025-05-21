@@ -6,6 +6,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jetty.servlet.FilterHolder;
 import qz.common.AboutInfo;
 import qz.installer.certificate.CertificateManager;
 
@@ -23,15 +24,17 @@ public class HttpAboutServlet extends DefaultServlet {
 
     private static final int JSON_INDENT = 2;
     private CertificateManager certificateManager;
+    private String allowOrigin;
 
-    public HttpAboutServlet(CertificateManager certificateManager) {
+    public HttpAboutServlet(CertificateManager certificateManager, String allowOrigin) {
         this.certificateManager = certificateManager;
+        this.allowOrigin = allowOrigin;
     }
 
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Origin", allowOrigin);
         if ("application/json".equals(request.getHeader("Accept")) || "/json".equals(request.getServletPath())) {
             generateJsonResponse(request, response);
         } else if ("application/x-x509-ca-cert".equals(request.getHeader("Accept")) || request.getServletPath().startsWith("/cert/")) {
@@ -167,6 +170,24 @@ public class HttpAboutServlet extends DefaultServlet {
 
     private String contentRow(String key, String value) {
         return "<tr><td>" + key + "</td> <td>" + value + "</td></tr>";
+    }
+
+    /**
+     * Support for preflight header filters per https://wicg.github.io/private-network-access/
+     * - Origin filter
+     * - Private-network check
+     */
+    public static FilterHolder originFilter(String allowOrigin) {
+        return new FilterHolder((servletRequest, servletResponse, filterChain) -> {
+            HttpServletResponse response = (HttpServletResponse)servletResponse;
+            HttpServletRequest request = (HttpServletRequest)servletRequest;
+            response.setHeader("Access-Control-Allow-Origin", allowOrigin);
+            if("true".equals(request.getHeader("Access-Control-Request-Private-Network"))) {
+                // Only add header if it was specified by the browser
+                response.setHeader("Access-Control-Allow-Private-Network", "true");
+            }
+            filterChain.doFilter(request, response);
+        });
     }
 
 }

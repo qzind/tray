@@ -1,6 +1,6 @@
 {
     "name": "qz-tray",
-    "version": "2.2.5",
+    "version": "2.2.6-SNAPSHOT",
     "description": "Connects a web client to the QZ Tray software.  Enables printing and device communication from javascript. ",
     "main": "qz-tray.js",
     "browser": {

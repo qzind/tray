@@ -9,8 +9,7 @@
         <delete dir="${jsdoc.tmp}"/>
         <mkdir dir="${jsdoc.tmp}"/>
 
-        <delete dir="${jsdoc.tmp}/api"/>
-        <echo level="info">Creating api docs to ${jsdoc.tmp}</echo>
+        <echo level="info">Copying jsdoc assets docs to ${jsdoc.tmp}</echo>
 
         <copy todir="${jsdoc.tmp}">
             <fileset file="${basedir}/js/qz-tray.js"/>
@@ -22,6 +21,13 @@
             <isset property="env.TEMPLATE_DIR"/>
         </condition>
         <property description="suppress-property-warning" name="jsdoc.template" value=""/>
+
+        <!-- Handle JSDOC_OUT_DIR if provided -->
+        <condition property="jsdoc.out" value="${env.JSDOC_OUT_DIR}">
+            <isset property="env.JSDOC_OUT_DIR"/>
+        </condition>
+        <property description="suppress-property-warning" name="jsdoc.out" value="${jsdoc.tmp}/api"/>
+        <delete dir="${jsdoc.out}"/>
 
         <!-- Fix GitHub links -->
         <replace file="${jsdoc.tmp}/README.md">
@@ -36,19 +42,12 @@
             <arg value="--readme"/>
             <arg value="${jsdoc.tmp}/README.md"/>
             <arg value="--destination"/>
-            <arg value="${jsdoc.tmp}/api"/>
+            <arg value="${jsdoc.out}"/>
             <arg line="${jsdoc.template}"/>
         </exec>
 
-        <!-- Name tarball based on JSDOC_OUT_DIR, if provided -->
-        <property name="jsdoc.tarball.temp" value="${jsdoc.tmp}/jsdoc.tar"/>
-        <condition property="jsdoc.tarball" value="${env.JSDOC_OUT_DIR}.tar.gz">
-            <isset property="env.JSDOC_OUT_DIR"/>
-        </condition>
-        <property description="suppress-property-warning" name="jsdoc.tarball" value="${jsdoc.tmp}/jsdoc.tar.gz"/>
-
-        <tar destfile="${jsdoc.tarball.temp}" basedir="${jsdoc.tmp}/api"/>
-        <gzip destfile="${jsdoc.tarball}" src="${jsdoc.tarball.temp}"/>
-        <delete file="${jsdoc.tarball.temp}"/>
+        <tar destfile="${jsdoc.out}.tar" basedir="${jsdoc.out}"/>
+        <gzip destfile="${jsdoc.out}.tar.gz" src="${jsdoc.out}.tar"/>
+        <delete file="${jsdoc.out}.tar"/>
     </target>
 </project>

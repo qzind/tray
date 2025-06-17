@@ -40,9 +40,9 @@
             <arg line="${jsdoc.template}"/>
         </exec>
 
-        <!-- Save tarball to JSDOC_OUT_DIR if provided -->
+        <!-- Name tarball based on JSDOC_OUT_DIR, if provided -->
         <property name="jsdoc.tarball.temp" value="${jsdoc.tmp}/jsdoc.tar"/>
-        <condition property="jsdoc.tarball" value="${env.JSDOC_OUT_DIR}">
+        <condition property="jsdoc.tarball" value="${env.JSDOC_OUT_DIR}.tar.gz">
             <isset property="env.JSDOC_OUT_DIR"/>
         </condition>
         <property description="suppress-property-warning" name="jsdoc.tarball" value="${jsdoc.tmp}/jsdoc.tar.gz"/>

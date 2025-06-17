@@ -1,0 +1,54 @@
+<project name="jsdoc" default="build-jsdoc" basedir="..">
+    <property environment="env"/>
+    <import file="${basedir}/build.xml"/>
+
+    <target name="build-jsdoc" depends="init">
+
+        <!-- Working directory for jsdoc api -->
+        <property name="jsdoc.tmp" value="${java.io.tmpdir}/jsdoc"/>
+        <delete dir="${jsdoc.tmp}"/>
+        <mkdir dir="${jsdoc.tmp}"/>
+
+        <delete dir="${jsdoc.tmp}/api"/>
+        <echo level="info">Creating api docs to ${jsdoc.tmp}</echo>
+
+        <copy todir="${jsdoc.tmp}">
+            <fileset file="${basedir}/js/qz-tray.js"/>
+            <fileset file="README.md"/>
+        </copy>
+
+        <!-- Allow templates via TEMPLATE_DIR if provided -->
+        <condition property="jsdoc.template" value="--template &quot;${env.TEMPLATE_DIR}&quot;">
+            <isset property="env.TEMPLATE_DIR"/>
+        </condition>
+        <property description="suppress-property-warning" name="jsdoc.template" value=""/>
+
+        <!-- Fix GitHub links -->
+        <replace file="${jsdoc.tmp}/README.md">
+            <replacefilter token="../../" value="https://github.com/qzind/tray/"/>
+        </replace>
+        <replace file="${jsdoc.tmp}/README.md">
+            <replacefilter token="https://github.com/qzind/tray/wiki/" value="../../docs/"/>
+        </replace>
+
+        <exec executable="jsdoc" failonerror="true">
+            <arg value="${jsdoc.tmp}/qz-tray.js"/>
+            <arg value="--readme"/>
+            <arg value="${jsdoc.tmp}/README.md"/>
+            <arg value="--destination"/>
+            <arg value="${jsdoc.tmp}/api"/>
+            <arg line="${jsdoc.template}"/>
+        </exec>
+
+        <!-- Save tarball to JSDOC_OUT_DIR if provided -->
+        <property name="jsdoc.tarball.temp" value="${jsdoc.tmp}/jsdoc.tar"/>
+        <condition property="jsdoc.tarball" value="${env.JSDOC_OUT_DIR}">
+            <isset property="env.JSDOC_OUT_DIR"/>
+        </condition>
+        <property description="suppress-property-warning" name="jsdoc.tarball" value="${jsdoc.tmp}/jsdoc.tar.gz"/>
+
+        <tar destfile="${jsdoc.tarball.temp}" basedir="${jsdoc.tmp}/api"/>
+        <gzip destfile="${jsdoc.tarball}" src="${jsdoc.tarball.temp}"/>
+        <delete file="${jsdoc.tarball.temp}"/>
+    </target>
+</project>

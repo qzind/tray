@@ -22,7 +22,7 @@ import java.util.*;
 
 public class Ipp {
     private static final Logger log = LogManager.getLogger(Ipp.class);
-    private static HashMap<SocketConnection, HashMap<UUID, IppServer>> servers = new HashMap<>();
+    private static final HashMap<SocketConnection, HashMap<UUID, IppServer>> servers = new HashMap<>();
 
 //"printer":{"name":"PDFwriter","uri":"ipps:\/\/192.168.1.16:631\/printers\/PDFWriter","info":"PDFwriter", "serverUuid":"44184659-809b-4411-a05e-7a7d18bc00c9"},
 //"options":{"bounds":null,"colorType":"color","copies":1,"density":0,"duplex":false,"fallbackDensity":null,"interpolation":"bicubic","jobName":null,"legacy":false,"margins":0,"orientation":null,"paperThickness":null,"printerTray":null,"rasterize":false,"rotation":0,"scaleContent":true,"size":{"width":4,"height":6},"units":"in","forceRaw":false,"encoding":null,"spool":null,"ipp":{"CUPS_FLIP_LONG_EDGE_BLAH":true}},
@@ -52,7 +52,7 @@ public class Ipp {
         IppPrinter ippPrinter = new IppPrinter(requestedUri.toString());
 
         // todo: match this to PrintServiceMatcher.getPrintersJSON syntax
-        if (!ippServer.uname.equals("") && !ippServer.pass.equals("")) {
+        if (!ippServer.uname.isEmpty() && !ippServer.pass.isEmpty()) {
             cupsClient.basicAuth(ippServer.uname, ippServer.pass);
         }
 
@@ -83,12 +83,12 @@ public class Ipp {
         //cupsClient.setUserName(server.uname);
 
         // todo: match this to PrintServiceMatcher.getPrintersJSON syntax
-        if (!ippServer.uname.equals("") && !ippServer.pass.equals("")) {
+        if (!ippServer.uname.isEmpty() && !ippServer.pass.isEmpty()) {
             cupsClient.basicAuth(ippServer.uname, ippServer.pass);
         }
 
         // If there is no query, list all printers
-        if (query.equals("")) {
+        if (query.isEmpty()) {
             JSONArray names = new JSONArray();
             for(IppPrinter p: cupsClient.getPrinters()) {
                 names.put(p.getName());
@@ -108,7 +108,7 @@ public class Ipp {
         }
     }
 
-    public static String addServer(SocketConnection connection, JSONObject params) throws MalformedURLException, URISyntaxException {
+    public static String addServer(SocketConnection connection, JSONObject params) throws URISyntaxException {
         String serverUriString = params.optString("url", "");
         URI uri = URI.create(serverUriString);
         // Todo: we could ditch query and ref fields from the uri? idk if they are ever helpful here, or just a danger

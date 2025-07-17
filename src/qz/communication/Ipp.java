@@ -35,13 +35,21 @@ public class Ipp {
         JSONObject options = params.optJSONObject("options");
 
         UUID uuid = UUID.fromString(printer.getString("serverUuid"));
-        String uri = printer.optString("uri");
+        URI requestedUri = URI.create(printer.optString("uri"));
 
         IppClient ippClient = new IppClient();
         IppServer ippServer = servers.get(connection).get(uuid);
         CupsClient cupsClient = new CupsClient(ippServer.serverUri, ippClient);
-        //todo: check to make sure the server uuid lines up with the beginning of the uri, this would also be a good time to raise a prompt
-        IppPrinter ippPrinter = new IppPrinter(uri);
+
+        // requestedUri is user provided, we must make sure it belongs to the claimed server
+        if(!ippServer.serverUri.getScheme().equals(requestedUri.getScheme()) ||
+            !ippServer.serverUri.getAuthority().equals(requestedUri.getAuthority())) {
+            throw new UnknownHostException(ippServer.serverUri + " Is not a printer of the server " + requestedUri);
+        }
+
+        //todo: this would also be a good time to raise a prompt
+
+        IppPrinter ippPrinter = new IppPrinter(requestedUri.toString());
 
         // todo: match this to PrintServiceMatcher.getPrintersJSON syntax
         if (!ippServer.uname.equals("") && !ippServer.pass.equals("")) {
@@ -103,20 +111,9 @@ public class Ipp {
     public static String addServer(SocketConnection connection, JSONObject params) throws MalformedURLException, URISyntaxException {
         String serverUriString = params.optString("url", "");
         URI uri = URI.create(serverUriString);
-
-        //todo: this had an issue where it didn't accept IPP as a protocol. I would really like to use url
-        //
-        //// Make a URL first, that should help us normalize small things like 'HTTP' and 'http'
-        //URL serverUrl = new URL(serverUriString);
-        //// Todo: we could ditch query and ref. idk if they are ever helpful here, or just a danger
-        //URI uri = new URI(serverUrl.getProtocol(),
-        //                  serverUrl.getUserInfo(),
-        //                  serverUrl.getHost(),
-        //                  serverUrl.getPort(),
-        //                  serverUrl.getPath(),
-        //                  serverUrl.getQuery(),
-        //                  serverUrl.getRef()
-        //);
+        // Todo: we could ditch query and ref fields from the uri? idk if they are ever helpful here, or just a danger
+        // more URL specific logic would be smart here, we should make sure things like filepaths get regected. The URL class didnt work, it wouldn't
+        // accept ipp:// as a scheme, nor was there any sane way to add it. Maybe there is something in apache commons.
 
         // Todo: whitelist blacklist check?
 

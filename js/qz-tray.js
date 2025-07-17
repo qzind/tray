@@ -1369,6 +1369,23 @@ var qz = (function() {
                 return _qz.websocket.dataPromise('printers.find', { query: query }, signature, signingTimestamp);
             },
 
+
+            findRemote: function(server, query) {
+                return _qz.websocket.dataPromise('printers.findRemote', {server: server, query: query});
+            },
+
+            addServer: function(options) {
+                return _qz.websocket
+                    .dataPromise('printers.addServer', options)
+                    .then(
+                        function(resultString) {
+                            return { uuid: resultString,
+                            test: "test" };
+                        });
+                
+                // var dataPromise = _qz.websocket.dataPromise('printers.addServer', options);
+            },
+
             /**
              * Provides a list, with additional information, for each printer available to QZ.
              *

@@ -335,11 +335,7 @@ public class PrintSocketClient {
                 sendResult(session, UID, null);
                 break;
             case PRINT:
-                if (params.optJSONObject("printer").has("serverUuid")) {
-                    Ipp.print(session, UID, connection, params);
-                } else {
-                    PrintingUtilities.processPrintRequest(session, UID, params);
-                }
+                PrintingUtilities.processPrintRequest(session, UID, params);
                 break;
 
             case SERIAL_FIND_PORTS:

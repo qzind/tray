@@ -22,7 +22,7 @@ import java.util.*;
 
 public class Ipp {
     private static final Logger log = LogManager.getLogger(Ipp.class);
-    private static final HashMap<SocketConnection, HashMap<UUID, IppServer>> servers = new HashMap<>();
+    private static final HashMap<SocketConnection, HashMap<UUID,ServerEntry>> servers = new HashMap<>();
 
 //"printer":{"name":"PDFwriter","uri":"ipps:\/\/192.168.1.16:631\/printers\/PDFWriter","info":"PDFwriter", "serverUuid":"44184659-809b-4411-a05e-7a7d18bc00c9"},
 //"options":{"bounds":null,"colorType":"color","copies":1,"density":0,"duplex":false,"fallbackDensity":null,"interpolation":"bicubic","jobName":null,"legacy":false,"margins":0,"orientation":null,"paperThickness":null,"printerTray":null,"rasterize":false,"rotation":0,"scaleContent":true,"size":{"width":4,"height":6},"units":"in","forceRaw":false,"encoding":null,"spool":null,"ipp":{"CUPS_FLIP_LONG_EDGE_BLAH":true}},
@@ -38,13 +38,13 @@ public class Ipp {
         URI requestedUri = URI.create(printer.optString("uri"));
 
         IppClient ippClient = new IppClient();
-        IppServer ippServer = servers.get(connection).get(uuid);
-        CupsClient cupsClient = new CupsClient(ippServer.serverUri, ippClient);
+        ServerEntry serverEntry = servers.get(connection).get(uuid);
+        CupsClient cupsClient = new CupsClient(serverEntry.serverUri, ippClient);
 
         // requestedUri is user provided, we must make sure it belongs to the claimed server
-        if(!ippServer.serverUri.getScheme().equals(requestedUri.getScheme()) ||
-            !ippServer.serverUri.getAuthority().equals(requestedUri.getAuthority())) {
-            throw new UnknownHostException(ippServer.serverUri + " Is not a printer of the server " + requestedUri);
+        if(!serverEntry.serverUri.getScheme().equals(requestedUri.getScheme()) ||
+            !serverEntry.serverUri.getAuthority().equals(requestedUri.getAuthority())) {
+            throw new UnknownHostException(serverEntry.serverUri + " Is not a printer of the server " + requestedUri);
         }
 
         //todo: this would also be a good time to raise a prompt
@@ -52,8 +52,8 @@ public class Ipp {
         IppPrinter ippPrinter = new IppPrinter(requestedUri.toString());
 
         // todo: match this to PrintServiceMatcher.getPrintersJSON syntax
-        if (!ippServer.uname.isEmpty() && !ippServer.pass.isEmpty()) {
-            cupsClient.basicAuth(ippServer.uname, ippServer.pass);
+        if (!serverEntry.uname.isEmpty() && !serverEntry.pass.isEmpty()) {
+            cupsClient.basicAuth(serverEntry.uname, serverEntry.pass);
         }
 
         // todo: for testing, assume all data is just plaintext. There are a lot of things to discuss about filetype and format.
@@ -75,16 +75,16 @@ public class Ipp {
         String serverUuid = server.getString("uuid");
         UUID uuid = UUID.fromString(serverUuid);
 
-        IppServer ippServer = servers.get(connection).get(uuid);
-        if (ippServer == null) throw new JSONException("Unknown Server");
+        ServerEntry serverEntry = servers.get(connection).get(uuid);
+        if (serverEntry == null) throw new JSONException("Unknown Server");
 
         IppClient ippClient = new IppClient();
-        CupsClient cupsClient = new CupsClient(ippServer.serverUri, ippClient);
+        CupsClient cupsClient = new CupsClient(serverEntry.serverUri, ippClient);
         //cupsClient.setUserName(server.uname);
 
         // todo: match this to PrintServiceMatcher.getPrintersJSON syntax
-        if (!ippServer.uname.isEmpty() && !ippServer.pass.isEmpty()) {
-            cupsClient.basicAuth(ippServer.uname, ippServer.pass);
+        if (!serverEntry.uname.isEmpty() && !serverEntry.pass.isEmpty()) {
+            cupsClient.basicAuth(serverEntry.uname, serverEntry.pass);
         }
 
         // If there is no query, list all printers
@@ -117,14 +117,14 @@ public class Ipp {
 
         // Todo: whitelist blacklist check?
 
-        IppServer server = new IppServer(uri, params.optString("username", ""), params.optString("password", ""));
+        ServerEntry server = new ServerEntry(uri, params.optString("username", ""), params.optString("password", ""));
         if (!servers.containsKey(connection)) {
             servers.put(connection, new HashMap<>());
         }
 
         // If we already have this server, just do a reverse lookup and give them the old UUID
         if (servers.get(connection).containsValue(server)) {
-            for (Map.Entry<UUID,IppServer> entry : servers.get(connection).entrySet()) {
+            for (Map.Entry<UUID,ServerEntry> entry : servers.get(connection).entrySet()) {
                 if (entry.getValue().equals(server)) {
                     return entry.getKey().toString();
                 }
@@ -137,12 +137,12 @@ public class Ipp {
         return serverId.toString();
     }
 
-    private static class IppServer {
+    public static class ServerEntry {
         public final URI serverUri;
         public final String uname;
         public final String pass;
 
-        IppServer(URI serverUri, String uname, String pass) {
+        ServerEntry(URI serverUri, String uname, String pass) {
             this.serverUri = serverUri;
             this.uname = uname;
             this.pass = pass;
@@ -151,8 +151,8 @@ public class Ipp {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof IppServer)) return false;
-            IppServer that = (IppServer)o;
+            if (!(o instanceof ServerEntry)) return false;
+            ServerEntry that = (ServerEntry)o;
             return serverUri.equals(that.serverUri) &&
                     uname.equals(that.uname) &&
                     pass.equals(that.pass);

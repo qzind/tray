@@ -42,7 +42,7 @@ public class PrintingUtilities {
     }
 
     public enum Format {
-        COMMAND, DIRECT, HTML, IMAGE, PDF
+        COMMAND, DIRECT, HTML, IMAGE, IPP, PDF
     }
 
     /**

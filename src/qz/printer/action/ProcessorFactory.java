@@ -15,6 +15,7 @@ public class ProcessorFactory implements KeyedPooledObjectFactory<PrintingUtilit
             case IMAGE: processor = new PrintImage(); break;
             case PDF: processor = new PrintPDF(); break;
             case DIRECT: processor = new PrintDirect(); break;
+            case IPP: processor = new PrintIPP(); break;
             case COMMAND: default: processor = new PrintRaw(); break;
         }
 

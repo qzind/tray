@@ -10,6 +10,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
+import qz.communication.Ipp;
 import qz.communication.WinspoolEx;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
@@ -195,6 +196,7 @@ public class PrintingUtilities {
         JSONObject firstData = printData.optJSONObject(0);
         Type type = getPrintType(firstData);
         Format format = getPrintFormat(type, firstData);
+        if (params.optJSONObject("printer").has("serverUuid")) format = Format.IPP;
 
         PrintProcessor processor = PrintingUtilities.getPrintProcessor(format);
         log.debug("Using {} to print", processor.getClass().getName());
@@ -202,6 +204,10 @@ public class PrintingUtilities {
         try {
             PrintOutput output = new PrintOutput(params.optJSONObject("printer"));
             PrintOptions options = new PrintOptions(params.optJSONObject("options"), output, format);
+
+            if (output.isRemoteIpp()) {
+                output.setServer(Ipp.getServerEntry(session, output.getServerUuid()));
+            }
 
             if(type != Type.RAW && !output.isSetService()) {
                 throw new Exception(String.format("%s cannot print to a raw %s", type, output.isSetFile() ? "file" : "host"));

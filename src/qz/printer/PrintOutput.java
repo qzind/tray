@@ -2,13 +2,16 @@ package qz.printer;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import qz.communication.Ipp;
 import qz.printer.info.NativePrinter;
 import qz.utils.FileUtilities;
 
 import javax.print.PrintService;
 import javax.print.attribute.standard.Media;
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Paths;
+import java.util.UUID;
 
 public class PrintOutput {
 
@@ -17,6 +20,9 @@ public class PrintOutput {
     private File file = null;
 
     private String host = null;
+    private UUID serverUuid = null;
+    private URI printerUri = null;
+    private Ipp.ServerEntry server;
     private int port = -1;
 
 
@@ -28,6 +34,12 @@ public class PrintOutput {
             if (printer == null) {
                 throw new IllegalArgumentException("Cannot find printer with name \"" + configPrinter.getString("name") + "\"");
             }
+        }
+
+        if (configPrinter.has("serverUuid")) {
+            serverUuid = UUID.fromString(configPrinter.getString("serverUuid"));
+            //todo basic error handeling. make this error helpful
+            printerUri = URI.create(configPrinter.getString("uri"));
         }
 
         if (configPrinter.has("file")) {
@@ -77,8 +89,20 @@ public class PrintOutput {
         return host != null;
     }
 
+    public boolean isRemoteIpp() {
+        return serverUuid != null;
+    }
+
     public String getHost() {
         return host;
+    }
+
+    public UUID getServerUuid() {
+        return serverUuid;
+    }
+
+    public URI getPrinterUri() {
+        return printerUri;
     }
 
     public int getPort() {
@@ -89,4 +113,11 @@ public class PrintOutput {
         return (Media[])getPrintService().getSupportedAttributeValues(Media.class, null, null);
     }
 
+    public Ipp.ServerEntry getServer() {
+        return server;
+    }
+
+    public void setServer(Ipp.ServerEntry server) {
+        this.server = server;
+    }
 }

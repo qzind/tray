@@ -297,12 +297,12 @@ public class PrintSocketClient {
                 }
                 break;
             case PRINTERS_FIND_REMOTE:
-                sendResult(session, UID, Ipp.find(connection, params));
+                sendResult(session, UID, Ipp.find(session, params));
                 break;
             case PRINTERS_ADD_SERVER:
                 String returnVal = "";
                 try {
-                    returnVal = Ipp.addServer(connection, params);
+                    returnVal = Ipp.addServer(session, params);
                 } catch(URISyntaxException e) {
                     sendError(session, UID, "Invalid server URL syntax");
                 }

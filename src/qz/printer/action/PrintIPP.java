@@ -18,9 +18,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 
 public class PrintIPP implements PrintProcessor{
     private JSONArray data;
@@ -30,13 +28,12 @@ public class PrintIPP implements PrintProcessor{
     }
 
     @Override
-    public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
+    public void parseData(JSONArray printData, PrintOptions options) throws UnsupportedOperationException {
         data = printData;
     }
 
     @Override
     public void print(PrintOutput output, PrintOptions options) throws PrintException, PrinterException {
-        UUID uuid = output.getServerUuid();
         URI requestedUri = output.getPrinterUri();
 
         IppClient ippClient = new IppClient();

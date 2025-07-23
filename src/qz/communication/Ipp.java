@@ -11,7 +11,6 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
-import qz.ws.SocketConnection;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

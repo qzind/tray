@@ -26,14 +26,17 @@ import qz.printer.action.html.WebApp;
 import qz.printer.action.html.WebAppModel;
 import qz.utils.PrintingUtilities;
 
+import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.Copies;
 import javax.print.attribute.standard.CopiesSupported;
 import javax.print.attribute.standard.Sides;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -274,12 +277,24 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             try {
                 if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
                     for(WebAppModel model : models) {
+                        BufferedImage bi;
+                        WebApp.initialize();
+                        bi = WebApp.raster(model);
+                        File outputfile = new File("output.png");
+                        ImageIO.write(bi, "png", outputfile);
+
                         WebApp.print(job, model);
                     }
                 } else {
                     settings.setCopies(1); //manually handle copies if they are not supported
                     for(int i = 0; i < pxlOpts.getCopies(); i++) {
                         for(WebAppModel model : models) {
+                            BufferedImage bi;
+                            WebApp.initialize();
+                            bi = WebApp.raster(model);
+                            File outputfile = new File("output.png");
+                            ImageIO.write(bi, "png", outputfile);
+
                             WebApp.print(job, model);
                         }
                     }

@@ -11,6 +11,8 @@ import qz.utils.FileWatcher;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class SocketConnection {
 
@@ -31,6 +33,8 @@ public class SocketConnection {
 
     // DeviceOptions -> open DeviceIO
     private final HashMap<DeviceOptions,DeviceIO> openDevices = new HashMap<>();
+
+    private final HashMap<UUID, Ipp.ServerEntry> ippServers = new HashMap<>();
 
 
     public SocketConnection(Certificate cert) {
@@ -56,6 +60,27 @@ public class SocketConnection {
 
     public void removeSerialPort(String port) {
         openSerialPorts.remove(port);
+    }
+
+    public void addServerEntry(UUID uuid, Ipp.ServerEntry serverEntry) {
+        ippServers.put(uuid, serverEntry);
+    }
+
+    public Ipp.ServerEntry getServerEntry(UUID uuid) {
+        return ippServers.get(uuid);
+    }
+
+    public UUID getUuid(Ipp.ServerEntry serverEntry) {
+        for (Map.Entry<UUID,Ipp.ServerEntry> entry : ippServers.entrySet()) {
+            if (entry.getValue().equals(serverEntry)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+    public void removeServerEntry(UUID uuid) {
+        ippServers.remove(uuid);
     }
 
 

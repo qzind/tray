@@ -32,6 +32,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.*;
 import java.security.cert.CertificateException;
@@ -297,6 +298,18 @@ public class PrintSocketClient {
 
                     sendResult(session, UID, names);
                 }
+                break;
+            case PRINTERS_FIND_REMOTE:
+                sendResult(session, UID, Ipp.find(session, params));
+                break;
+            case PRINTERS_ADD_SERVER:
+                String returnVal = "";
+                try {
+                    returnVal = Ipp.addServer(session, params);
+                } catch(URISyntaxException e) {
+                    sendError(session, UID, "Invalid server URL syntax");
+                }
+                sendResult(session, UID, returnVal);
                 break;
             case PRINTERS_DETAIL:
                 sendResult(session, UID, PrintServiceMatcher.getPrintersJSON(true));

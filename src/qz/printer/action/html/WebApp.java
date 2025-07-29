@@ -20,12 +20,12 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ToolBar;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
@@ -47,6 +47,7 @@ import qz.common.Constants;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -386,22 +387,41 @@ public class WebApp extends Application {
             webPreview.prefWidthProperty().bind(webContainer.widthProperty());
             webPreview.prefHeightProperty().bind(webContainer.heightProperty());
 
-            BorderPane borderPane = new BorderPane();
+            final BorderPane borderPane = new BorderPane();
             borderPane.setTop(topRuler);
             borderPane.setLeft(leftRuler);
             borderPane.setCenter(webContainer);
 
-            Label info = new Label("hello world");
-            //todo big no on this color. possibly use a generic color to avoid white label constant?
-            info.setBackground(Background.fill(Color.web("#80FF80", .5)));
-            info.setPadding(new Insets(5));
-            StackPane guiLayer = new StackPane(borderPane, info);
+            final Label info = new Label("Resize me!");
+            HBox spring = new HBox();
+            HBox.setHgrow(spring, Priority.ALWAYS);
+            final Button cancel = new Button("Cancel");
+            final Button done = new Button("Done");
 
-            StackPane.setAlignment(info, Pos.BOTTOM_RIGHT);
-            StackPane.setMargin(info, new Insets(20));
+            done.setAlignment(Pos.CENTER_RIGHT);
 
-            Scene scene = new Scene(guiLayer);
-            previewStage.setTitle("Print Preview - " + settings.getJobName());
+            final ToolBar toolBar = new ToolBar(
+                    info,
+                    spring, //for spacing
+                    cancel,
+                    done
+            );
+
+            final BorderPane toolbarPane = new BorderPane();
+            toolbarPane.setTop(toolBar);
+            toolbarPane.setCenter(borderPane);
+
+            //final Label info = new Label("hello world");
+            ////todo big no on this color. possibly use a generic color to avoid white label constant?
+            //info.setBackground(Background.fill(Color.web("#80FF80", .5)));
+            //info.setPadding(new Insets(5));
+            //StackPane guiLayer = new StackPane(toolbarPane, info);
+
+            //StackPane.setAlignment(info, Pos.BOTTOM_RIGHT);
+            //StackPane.setMargin(info, new Insets(20));
+
+            Scene scene = new Scene(toolbarPane);
+            previewStage.setTitle("HTML Preview - " + settings.getJobName());
             previewStage.setScene(scene);
             previewStage.sizeToScene();
             previewStage.show();
@@ -409,12 +429,31 @@ public class WebApp extends Application {
 
             previewStage.widthProperty().addListener((obs, oldVal, newVal) -> {
                 double newWidth = scene.getWidth();
+                StringBuilder sb = new StringBuilder();
+                sb.append("(")
+                        .append(String.format("%.2g", (scene.getWidth() - thickness) / dpi))
+                        .append(" x ")
+                        .append(String.format("%.2g", (scene.getHeight() - thickness - toolBar.getHeight()) / dpi))
+                        .append(" in)");
+
+                info.setText(sb.toString());
+
                 topRuler.setWidth(newWidth);
                 drawTopRuler(topRuler, thickness, newWidth, dpi);
             });
 
             previewStage.heightProperty().addListener((obs, oldVal, newVal) -> {
                 double newHeight = scene.getHeight() - thickness; //the top ruler cuts this ruler off
+                StringBuilder sb = new StringBuilder();
+                sb.append("(")
+                        .append(String.format("%.2g", (scene.getWidth() - thickness) / dpi))
+                        .append(" x ")
+                        .append(String.format("%.2g", (scene.getHeight() - thickness - toolBar.getHeight()) / dpi))
+                        .append(" in)");
+
+                info.setText(sb.toString());
+
+
                 leftRuler.setHeight(newHeight);
                 drawLeftRuler(leftRuler, thickness, newHeight, dpi);
             });

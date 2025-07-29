@@ -215,7 +215,7 @@ public class TrayManager {
         // Initialize idle actions
         // Slow to start JavaFX the first time
         if (getPref(TRAY_IDLE_JAVAFX)) {
-            performIfIdle((int)TimeUnit.SECONDS.toMillis(60), evt -> {
+            performIfIdle((int)TimeUnit.SECONDS.toMillis(6), evt -> {
                 log.debug("IDLE: Starting up JFX for HTML printing");
                 try {
                     WebApp.initialize();

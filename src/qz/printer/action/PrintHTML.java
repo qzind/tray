@@ -277,25 +277,19 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             try {
                 if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
                     for(WebAppModel model : models) {
-                        BufferedImage bi;
-                        WebApp.initialize();
-                        bi = WebApp.raster(model);
-                        File outputfile = new File("output.png");
-                        ImageIO.write(bi, "png", outputfile);
+                        //WebApp.initialize();
+                        WebApp.openPreview(model, settings);
 
-                        WebApp.print(job, model);
+                        //WebApp.print(job, model);
                     }
                 } else {
                     settings.setCopies(1); //manually handle copies if they are not supported
                     for(int i = 0; i < pxlOpts.getCopies(); i++) {
                         for(WebAppModel model : models) {
-                            BufferedImage bi;
-                            WebApp.initialize();
-                            bi = WebApp.raster(model);
-                            File outputfile = new File("output.png");
-                            ImageIO.write(bi, "png", outputfile);
+                            //WebApp.initialize();
+                            WebApp.openPreview(model, settings);
 
-                            WebApp.print(job, model);
+                            //WebApp.print(job, model);
                         }
                     }
                 }

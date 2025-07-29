@@ -1,6 +1,7 @@
 package qz.printer.action.html;
 
 import com.github.zafarkhaja.semver.Version;
+import com.sun.javafx.tk.FontLoader;
 import com.sun.javafx.tk.TKPulseListener;
 import com.sun.javafx.tk.Toolkit;
 import javafx.animation.AnimationTimer;
@@ -9,10 +10,28 @@ import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.print.JobSettings;
 import javafx.print.PageLayout;
 import javafx.print.PrinterJob;
+import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Label;
+import javafx.scene.image.WritableImage;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Transform;
 import javafx.scene.transform.Translate;
@@ -28,6 +47,7 @@ import qz.common.Constants;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -335,6 +355,126 @@ public class WebApp extends Application {
         captureLatch.await(); //released when unlatch is called
 
         if (thrown.get() != null) { throw thrown.get(); }
+    }
+
+    public static synchronized void openPreview(final WebAppModel model, JobSettings settings) throws IOException {
+        //ensure JavaFX has started before we run
+        if (startupLatch.getCount() > 0) {
+            throw new IOException("JavaFX has not been started");
+        }
+
+        Platform.runLater(() -> {
+            final Stage previewStage = new Stage(stage.getStyle());
+            final WebView webPreview = new WebView();
+
+            if (model.isPlainText()) {
+                webPreview.getEngine().loadContent(model.getSource(), "text/html");
+            } else {
+                webPreview.getEngine().load(model.getSource());
+            }
+
+            int thickness = 20;
+            double dpi = 72;
+
+            Canvas leftRuler = new Canvas(thickness, 400);
+            Canvas topRuler = new Canvas(400, thickness);
+
+            drawLeftRuler(leftRuler, thickness, leftRuler.getHeight(), dpi);
+            drawTopRuler(topRuler, thickness, topRuler.getWidth(), dpi);
+
+            StackPane webContainer = new StackPane(webPreview);
+            webPreview.prefWidthProperty().bind(webContainer.widthProperty());
+            webPreview.prefHeightProperty().bind(webContainer.heightProperty());
+
+            BorderPane borderPane = new BorderPane();
+            borderPane.setTop(topRuler);
+            borderPane.setLeft(leftRuler);
+            borderPane.setCenter(webContainer);
+
+            Label info = new Label("hello world");
+            //todo big no on this color. possibly use a generic color to avoid white label constant?
+            info.setBackground(Background.fill(Color.web("#80FF80", .5)));
+            info.setPadding(new Insets(5));
+            StackPane guiLayer = new StackPane(borderPane, info);
+
+            StackPane.setAlignment(info, Pos.BOTTOM_RIGHT);
+            StackPane.setMargin(info, new Insets(20));
+
+            Scene scene = new Scene(guiLayer);
+            previewStage.setTitle("Print Preview - " + settings.getJobName());
+            previewStage.setScene(scene);
+            previewStage.sizeToScene();
+            previewStage.show();
+            previewStage.toFront();
+
+            previewStage.widthProperty().addListener((obs, oldVal, newVal) -> {
+                double newWidth = scene.getWidth();
+                topRuler.setWidth(newWidth);
+                drawTopRuler(topRuler, thickness, newWidth, dpi);
+            });
+
+            previewStage.heightProperty().addListener((obs, oldVal, newVal) -> {
+                double newHeight = scene.getHeight() - thickness; //the top ruler cuts this ruler off
+                leftRuler.setHeight(newHeight);
+                drawLeftRuler(leftRuler, thickness, newHeight, dpi);
+            });
+
+            scene.setOnKeyPressed(event -> {
+                System.out.println("Key pressed: " + event.getCode());
+            });
+        });
+    }
+
+    private static void drawLeftRuler(Canvas canvas, int thickness, double height, double dpi) {
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.clearRect(0, 0, thickness, height);
+        gc.setStroke(Color.BLACK);
+        gc.setLineWidth(1);
+        Font font = Font.font("Arial", FontWeight.LIGHT, 8);
+        gc.setFont(font);
+
+        double spacing = dpi / 8;
+        for (int i = 1; i * spacing < height; i++) {
+            double lineHeight = thickness * 0.2;
+            if (i % 4 == 0) lineHeight += thickness * 0.3;
+            if (i % 8 == 0) {
+                Text helper = new Text(String.valueOf(i / 8));
+                helper.setFont(font);
+                double textWidth = Math.ceil(helper.getLayoutBounds().getWidth());
+
+                gc.save();
+                gc.translate(0, i * spacing);
+                gc.rotate(-90);
+                gc.strokeText(String.valueOf(i / 8), -textWidth / 2, thickness - 2);
+                gc.restore();
+            }
+            gc.strokeLine(0, i * spacing, lineHeight, i * spacing);
+        }
+    }
+
+    private static void drawTopRuler(Canvas canvas, int thickness, double width, double dpi) {
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.clearRect(0, 0, width, thickness);
+        gc.setStroke(Color.BLACK);
+        gc.setFill(Color.GRAY);
+        gc.fillRect(0,0, thickness, thickness);
+        gc.setLineWidth(1);
+        Font font = Font.font("Arial", FontWeight.LIGHT, 8);
+        gc.setFont(font);
+
+        double spacing = dpi / 8;
+        for (int i = 1; i * spacing < width; i++) {
+            double lineHeight = thickness * 0.2;
+            if (i % 4 == 0) lineHeight += thickness * 0.3;
+            if (i % 8 == 0) {
+                Text helper = new Text(String.valueOf(i / 8));
+                helper.setFont(font);
+                double textWidth = Math.ceil(helper.getLayoutBounds().getWidth());
+                gc.strokeText(String.valueOf(i / 8),
+                              thickness + i * spacing - (textWidth / 2), thickness - 2);
+            }
+            gc.strokeLine(thickness + i * spacing, 0, thickness + i * spacing, lineHeight);
+        }
     }
 
     public static synchronized BufferedImage raster(final WebAppModel model) throws Throwable {

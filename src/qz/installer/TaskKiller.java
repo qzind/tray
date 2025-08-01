@@ -50,6 +50,7 @@ public class TaskKiller {
             // Fallback to pgrep, needed for macOS (See JDK-8319589, JDK-8197387)
             pids.addAll(findPidsPgrep());
         } else if(WindowsUtilities.isSystemAccount()) {
+            // Fallback to powershell, needed for Windows
             pids.addAll(findPidsPwsh());
         }
 
@@ -84,7 +85,7 @@ public class TaskKiller {
     }
 
 
-    static final String[] PWSH_QUERY = { "powershell.exe", "-Command", "(Get-CimInstance Win32_Process -Filter \"Name = 'java.exe' OR Name = 'javaw.exe'\").Where({$_.CommandLine -like '*%s*'}).ProcessId" };
+    static final String[] PWSH_QUERY = { "powershell.exe", "-Command", "\"(Get-CimInstance Win32_Process -Filter \\\"Name = 'java.exe' OR Name = 'javaw.exe'\\\").Where({$_.CommandLine -like '*%s*'}).ProcessId\"" };
 
     /**
      * Leverage powershell.exe when run as SYSTEM to workaround https://github.com/qzind/tray/issues/1360

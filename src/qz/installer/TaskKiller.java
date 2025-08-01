@@ -84,7 +84,7 @@ public class TaskKiller {
     }
 
 
-    static final String PWSH_QUERY = "powershell.exe -Command \"(Get-CimInstance Win32_Process -Filter \\\"Name = 'java.exe' OR Name = 'javaw.exe'\\\").Where({$_.CommandLine -like '*%s*'}).ProcessId\"";
+    static final String[] PWSH_QUERY = { "powershell.exe", "-Command", "(Get-CimInstance Win32_Process -Filter \"Name = 'java.exe' OR Name = 'javaw.exe'\").Where({$_.CommandLine -like '*%s*'}).ProcessId" };
 
     /**
      * Leverage powershell.exe when run as SYSTEM to workaround https://github.com/qzind/tray/issues/1360
@@ -94,7 +94,11 @@ public class TaskKiller {
         HashSet<Integer> foundPids = new HashSet<>();
 
         for(String jarName : JAR_NAMES) {
-            String stdout = ShellUtilities.executeRaw(String.format(PWSH_QUERY, jarName));
+            String[] pwshQuery = PWSH_QUERY.clone();
+            int lastIndex = pwshQuery.length - 1;
+            // Format the last element to contain the jarName
+            pwshQuery[lastIndex] = String.format(pwshQuery[lastIndex], jarName);
+            String stdout = ShellUtilities.executeRaw(pwshQuery);
             String[] lines = stdout.split("\\s*\\r?\\n");
             for(String line : lines) {
                 if(line.trim().isEmpty()) {

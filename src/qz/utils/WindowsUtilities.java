@@ -459,6 +459,9 @@ public class WindowsUtilities {
     }
     public static boolean isSystemAccount() {
         String whoami = SystemUtilities.whoami();
-        return "system".equalsIgnoreCase(whoami) || "nt authority\\system".equalsIgnoreCase(whoami);
+        return "system".equalsIgnoreCase(whoami) ||
+                "nt authority\\system".equalsIgnoreCase(whoami) ||
+                // Special handling for session-less logins
+                (getHostName() + "$").equalsIgnoreCase(whoami);
     }
 }

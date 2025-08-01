@@ -457,4 +457,8 @@ public class WindowsUtilities {
         }
         return isWow64;
     }
+    public static boolean isSystemAccount() {
+        String whoami = SystemUtilities.whoami();
+        return "system".equalsIgnoreCase(whoami) || "nt authority\\system".equalsIgnoreCase(whoami);
+    }
 }

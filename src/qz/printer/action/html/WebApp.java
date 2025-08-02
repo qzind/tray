@@ -1,7 +1,6 @@
 package qz.printer.action.html;
 
 import com.github.zafarkhaja.semver.Version;
-import com.sun.javafx.tk.FontLoader;
 import com.sun.javafx.tk.TKPulseListener;
 import com.sun.javafx.tk.Toolkit;
 import javafx.animation.AnimationTimer;
@@ -11,23 +10,21 @@ import javafx.beans.value.ChangeListener;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.EventHandler;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.print.JobSettings;
 import javafx.print.PageLayout;
 import javafx.print.PrinterJob;
-import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.control.ToolBar;
-import javafx.scene.image.WritableImage;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -47,11 +44,10 @@ import qz.common.Constants;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
-import javax.swing.*;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.text.DecimalFormat;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -393,6 +389,13 @@ public class WebApp extends Application {
             borderPane.setCenter(webContainer);
 
             final Label info = new Label("Resize me!");
+            final TextField widthField = new TextField();
+            final TextField heightField = new TextField();
+            final Label unit = new Label("in");
+
+            widthField.setPrefColumnCount(3);
+            heightField.setPrefColumnCount(3);
+
             HBox spring = new HBox();
             HBox.setHgrow(spring, Priority.ALWAYS);
             final Button cancel = new Button("Cancel");
@@ -402,6 +405,9 @@ public class WebApp extends Application {
 
             final ToolBar toolBar = new ToolBar(
                     info,
+                    widthField,
+                    heightField,
+                    unit,
                     spring, //for spacing
                     cancel,
                     done
@@ -425,34 +431,83 @@ public class WebApp extends Application {
             previewStage.setScene(scene);
             previewStage.sizeToScene();
             previewStage.show();
-            previewStage.toFront();
 
-            previewStage.widthProperty().addListener((obs, oldVal, newVal) -> {
-                double newWidth = scene.getWidth();
-                StringBuilder sb = new StringBuilder();
-                sb.append("(")
-                        .append(String.format("%.2g", (scene.getWidth() - thickness) / dpi))
-                        .append(" x ")
-                        .append(String.format("%.2g", (scene.getHeight() - thickness - toolBar.getHeight()) / dpi))
-                        .append(" in)");
+            Platform.runLater(() -> {
+                previewStage.toFront();
+                info.requestFocus();
+            });
 
-                info.setText(sb.toString());
+            widthField.focusedProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue) return; //we just gained focus, we don't need to parse any input yet
+
+                double newWidth = parseInput(widthField.getText());
+                if (newWidth > 0) {
+                    log.warn("changing width");
+                    // The stage size and scene size are not the same. I think this is due to the window border. I could not find a more direct approach.
+                    double fudgeFactor = previewStage.getWidth() - scene.getWidth();
+                    previewStage.setWidth(newWidth * dpi + thickness + fudgeFactor);
+                } else {
+                    DecimalFormat nf = new DecimalFormat("#.##");
+                    widthField.setText(nf.format((scene.getWidth() - thickness) / dpi));
+                }
+            });
+
+            heightField.focusedProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue) return; //we just gained focus, we don't need to parse any input yet
+
+                double newHeight = parseInput(heightField.getText());
+                if (newHeight > 0) {
+                    log.warn("changing width");
+                    // The stage size and scene size are not the same. I think this is due to the window border. I could not find a more direct approach.
+                    double fudgeFactor = previewStage.getHeight() - scene.getHeight();
+                    previewStage.setHeight(newHeight * dpi + thickness + toolBar.getHeight() + fudgeFactor);
+                } else {
+                    DecimalFormat nf = new DecimalFormat("#.##");
+                    heightField.setText(nf.format((scene.getHeight() - thickness - toolBar.getHeight()) / dpi));
+                }
+            });
+
+            widthField.setOnKeyPressed(keyEvent -> {
+                if (keyEvent.getCode() == KeyCode.ENTER) {
+                    info.requestFocus();
+                }
+                if (keyEvent.getCode() == KeyCode.ESCAPE) {
+                    DecimalFormat nf = new DecimalFormat("#.##");
+                    widthField.setText(nf.format((scene.getWidth() - thickness) / dpi));
+                    info.requestFocus();
+                }
+            });
+
+            heightField.setOnKeyPressed(keyEvent -> {
+                if (keyEvent.getCode() == KeyCode.ENTER) {
+                    info.requestFocus();
+                }
+                if (keyEvent.getCode() == KeyCode.ESCAPE) {
+                    DecimalFormat nf = new DecimalFormat("#.##");
+                    heightField.setText(nf.format((scene.getHeight() - thickness - toolBar.getHeight()) / dpi));
+                    info.requestFocus();
+                }
+            });
+
+            scene.widthProperty().addListener((obs, oldVal, newVal) -> {
+                double newWidth = (double)newVal;
+
+                DecimalFormat nf = new DecimalFormat("#.##");
+                widthField.setText(nf.format((newWidth - thickness) / dpi));
+                heightField.setText(nf.format((scene.getHeight() - thickness - toolBar.getHeight()) / dpi));
+                info.setText("Current: ");
 
                 topRuler.setWidth(newWidth);
                 drawTopRuler(topRuler, thickness, newWidth, dpi);
             });
 
-            previewStage.heightProperty().addListener((obs, oldVal, newVal) -> {
+            scene.heightProperty().addListener((obs, oldVal, newVal) -> {
                 double newHeight = scene.getHeight() - thickness; //the top ruler cuts this ruler off
-                StringBuilder sb = new StringBuilder();
-                sb.append("(")
-                        .append(String.format("%.2g", (scene.getWidth() - thickness) / dpi))
-                        .append(" x ")
-                        .append(String.format("%.2g", (scene.getHeight() - thickness - toolBar.getHeight()) / dpi))
-                        .append(" in)");
 
-                info.setText(sb.toString());
-
+                DecimalFormat nf = new DecimalFormat("#.##");
+                info.setText("Current: ");
+                widthField.setText(nf.format((scene.getWidth() - thickness) / dpi));
+                heightField.setText(nf.format((newHeight - toolBar.getHeight()) / dpi));
 
                 leftRuler.setHeight(newHeight);
                 drawLeftRuler(leftRuler, thickness, newHeight, dpi);
@@ -462,6 +517,14 @@ public class WebApp extends Application {
                 System.out.println("Key pressed: " + event.getCode());
             });
         });
+    }
+
+    private static double parseInput(String value) {
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     private static void drawLeftRuler(Canvas canvas, int thickness, double height, double dpi) {

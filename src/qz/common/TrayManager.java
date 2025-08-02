@@ -290,6 +290,12 @@ public class TrayManager {
         notificationsItem.addActionListener(notificationsListener);
         diagnosticMenu.add(notificationsItem);
 
+        JCheckBoxMenuItem previewItem = new JCheckBoxMenuItem("Preview HTML Prints");
+        previewItem.setToolTipText("Preview all HTML prints and optionally resize the content.");
+        previewItem.setMnemonic(KeyEvent.VK_P);
+        previewItem.setState(getPref(TRAY_PREVIEW));
+        diagnosticMenu.add(previewItem);
+
         JCheckBoxMenuItem monocleItem = new JCheckBoxMenuItem("Use Monocle for HTML");
         monocleItem.setToolTipText("Use monocle platform for HTML printing (restart required)");
         monocleItem.setMnemonic(KeyEvent.VK_U);

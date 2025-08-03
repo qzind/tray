@@ -25,24 +25,20 @@ public class BasicDialog extends JDialog implements Themeable {
     private JPanel buttonPanel;
     private JButton closeButton;
 
-    private IconCache iconCache;
-
     private int stockButtonCount = 0;
 
-    public BasicDialog(JMenuItem caller, IconCache iconCache) {
+    public BasicDialog(JMenuItem caller) {
         super((Frame)null, caller.getText().replaceAll("\\.+", ""), true);
-        this.iconCache = iconCache;
         initBasicComponents();
     }
 
-    public BasicDialog(Frame owner, String title, IconCache iconCache) {
+    public BasicDialog(Frame owner, String title) {
         super(owner, title, true);
-        this.iconCache = iconCache;
         initBasicComponents();
     }
 
     public void initBasicComponents() {
-        setIconImages(iconCache.getImages(IconCache.Icon.TASK_BAR_ICON));
+        setIconImages(IconCache.getInstance().getImages(IconCache.Icon.TASK_BAR_ICON));
         mainPanel = new JPanel();
         mainPanel.setBorder(new EmptyBorder(Constants.BORDER_PADDING, Constants.BORDER_PADDING, Constants.BORDER_PADDING, Constants.BORDER_PADDING));
 
@@ -126,7 +122,7 @@ public class BasicDialog extends JDialog implements Themeable {
     }
 
     public JButton addPanelButton(String title, IconCache.Icon icon, int mnemonic) {
-        return addPanelButton(title, iconCache == null? null:iconCache.getIcon(icon), mnemonic);
+        return addPanelButton(title, IconCache.getInstance().getIcon(icon), mnemonic);
     }
 
     public JButton addPanelButton(String title, Icon icon, int mnemonic) {
@@ -158,17 +154,11 @@ public class BasicDialog extends JDialog implements Themeable {
     }
 
     public BufferedImage getImage(IconCache.Icon icon) {
-        if (iconCache != null) {
-            return iconCache.getImage(icon);
-        }
-        return null;
+        return IconCache.getInstance().getImage(icon);
     }
 
     public ImageIcon getIcon(IconCache.Icon icon) {
-        if (iconCache != null) {
-            return iconCache.getIcon(icon);
-        }
-        return null;
+        return IconCache.getInstance().getIcon(icon);
     }
 
     @Override

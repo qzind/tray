@@ -29,7 +29,7 @@ public class DetailsDialog extends JPanel {
         requestLabel = new JLabel("Request");
         requestLabel.setAlignmentX(CENTER_ALIGNMENT);
 
-        requestTable = new RequestTable(iconCache);
+        requestTable = new RequestTable();
         reqScrollPane = new JScrollPane(requestTable);
         requestTable.getAccessibleContext().setAccessibleName(requestLabel.getText() + " Details");
         requestTable.getAccessibleContext().setAccessibleDescription("Signing details about this request.");
@@ -38,7 +38,7 @@ public class DetailsDialog extends JPanel {
         certLabel = new JLabel("Certificate");
         certLabel.setAlignmentX(CENTER_ALIGNMENT);
 
-        certTable = new CertificateTable(iconCache);
+        certTable = new CertificateTable();
         certScrollPane = new JScrollPane(certTable);
         certTable.getAccessibleContext().setAccessibleName(certLabel.getText() + " Details");
         certTable.getAccessibleContext().setAccessibleDescription("Certificate details about this request.");

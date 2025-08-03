@@ -60,7 +60,6 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     private ContainerList<CertificateDisplay> blockList;
 
     private CertificateTable certTable;
-    private IconCache iconCache;
     private PropertyHelper prefs;
 
     private JButton addButton;
@@ -74,11 +73,10 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     private long blockTick = -1;
 
 
-    public SiteManagerDialog(JMenuItem caller, IconCache iconCache, PropertyHelper prefs) {
-        super(caller, iconCache);
-        this.iconCache = iconCache;
+    public SiteManagerDialog(JMenuItem caller, PropertyHelper prefs) {
+        super(caller);
         this.prefs = prefs;
-        certTable = new CertificateTable(iconCache);
+        certTable = new CertificateTable();
         initComponents();
     }
 
@@ -151,7 +149,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         addButton = new JButton("+");
         Font addFont = addButton.getFont();
         JPopupMenu addMenu = new JPopupMenu();
-        JMenuItem browseItem = new JMenuItem("Browse...", iconCache.getIcon(IconCache.Icon.FOLDER_ICON));
+        JMenuItem browseItem = new JMenuItem("Browse...", IconCache.getInstance().getIcon(IconCache.Icon.FOLDER_ICON));
         browseItem.setToolTipText("Browse for a certificate to import.");
         browseItem.setMnemonic(KeyEvent.VK_B);
         browseItem.addActionListener(e -> {
@@ -169,7 +167,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             fileDialog.setVisible(true);
             addCertificates(fileDialog.getFiles(), getSelectedList(), true);
         });
-        JMenuItem createNewItem = new JMenuItem("Create New...", iconCache.getIcon(IconCache.Icon.SETTINGS_ICON));
+        JMenuItem createNewItem = new JMenuItem("Create New...", IconCache.getInstance().getIcon(IconCache.Icon.SETTINGS_ICON));
         createNewItem.setToolTipText("Developers only: Create and import a new demo keypair for signing.");
         createNewItem.setMnemonic(KeyEvent.VK_N);
         createNewItem.addActionListener(e -> {
@@ -243,7 +241,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         strictModeCheckBox = new JCheckBox(Constants.STRICT_MODE_LABEL, PrefsSearch.getBoolean(ArgValue.TRAY_STRICTMODE, prefs));
         strictModeCheckBox.setToolTipText(Constants.STRICT_MODE_TOOLTIP);
         strictModeCheckBox.addActionListener(e -> {
-            if (strictModeCheckBox.isSelected() && !new ConfirmDialog(null, "Please Confirm", iconCache).prompt(Constants.STRICT_MODE_CONFIRM)) {
+            if (strictModeCheckBox.isSelected() && !new ConfirmDialog(null, "Please Confirm").prompt(Constants.STRICT_MODE_CONFIRM)) {
                 strictModeCheckBox.setSelected(false);
                 return;
             }

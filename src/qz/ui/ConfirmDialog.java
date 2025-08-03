@@ -24,22 +24,19 @@ public class ConfirmDialog extends JDialog {
 
     private JPanel mainPanel;
 
-    private final IconCache iconCache;
-
     private boolean approved;
 
-    public ConfirmDialog(Frame owner, String title, IconCache iconCache) {
+    public ConfirmDialog(Frame owner, String title) {
         super(owner, title, true);
-        this.iconCache = iconCache;
         this.approved = false;
-        this.setIconImages(iconCache.getImages(IconCache.Icon.TASK_BAR_ICON));
+        this.setIconImages(IconCache.getInstance().getImages(IconCache.Icon.TASK_BAR_ICON));
         initComponents();
     }
 
     private void initComponents() {
         descriptionPanel = new JPanel();
         messageLabel = new JLabel();
-        questionLabel = new JLabel(iconCache.getIcon(IconCache.Icon.QUESTION_ICON));
+        questionLabel = new JLabel(IconCache.getInstance().getIcon(IconCache.Icon.QUESTION_ICON));
 
         descriptionPanel.add(questionLabel);
         descriptionPanel.add(messageLabel);
@@ -47,9 +44,9 @@ public class ConfirmDialog extends JDialog {
         messageLabel.setText("Are you sure?");
 
         optionsPanel = new JPanel();
-        yesButton = new JButton("OK", iconCache.getIcon(IconCache.Icon.ALLOW_ICON));
+        yesButton = new JButton("OK", IconCache.getInstance().getIcon(IconCache.Icon.ALLOW_ICON));
         yesButton.setMnemonic(KeyEvent.VK_K);
-        noButton = new JButton("Cancel", iconCache.getIcon(IconCache.Icon.CANCEL_ICON));
+        noButton = new JButton("Cancel", IconCache.getInstance().getIcon(IconCache.Icon.CANCEL_ICON));
         noButton.setMnemonic(KeyEvent.VK_C);
         yesButton.addActionListener(buttonAction);
         noButton.addActionListener(buttonAction);

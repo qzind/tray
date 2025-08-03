@@ -21,6 +21,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToolBar;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
@@ -41,6 +43,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import qz.common.Constants;
+import qz.ui.component.IconCache;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -398,9 +401,11 @@ public class WebApp extends Application {
 
             HBox spring = new HBox();
             HBox.setHgrow(spring, Priority.ALWAYS);
-            final Button cancel = new Button("Cancel");
-            final Button done = new Button("Done");
 
+            ImageView cancelIcon = new ImageView(SwingFXUtils.toFXImage(IconCache.getInstance().getImage(IconCache.Icon.CANCEL_ICON), null));
+            ImageView doneIcon = new ImageView(SwingFXUtils.toFXImage(IconCache.getInstance().getImage(IconCache.Icon.ALLOW_ICON), null));
+            final Button cancel = new Button("Cancel", cancelIcon);
+            final Button done = new Button("Done", doneIcon);
             done.setAlignment(Pos.CENTER_RIGHT);
 
             final ToolBar toolBar = new ToolBar(

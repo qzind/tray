@@ -1,7 +1,6 @@
 package qz.printer.action.html;
 
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
@@ -37,7 +36,7 @@ public class PreviewHTML {
         MM("mm", 72 / (inToCm * 10), 10, 10, "#.#"),
         PX("px", 1, 5, 50, "#");
 
-        String label;
+        final String label;
         public final DecimalFormat unitFormat;
         public final double dpu, unitsPerLabel;
         public final int divisions;
@@ -61,8 +60,6 @@ public class PreviewHTML {
             return label;
         }
     }
-
-
 
     private static final Logger log = LogManager.getLogger(PreviewHTML.class);
 
@@ -93,7 +90,7 @@ public class PreviewHTML {
     private double topRulerWidth;
     private double leftRulerHeight;
 
-    private static double inToCm = 2.54;
+    private static final double inToCm = 2.54;
 
     public PreviewHTML(final WebAppModel model, JobSettings settings, Stage previewStage, Paper paper) {
         this.model = model;
@@ -143,7 +140,7 @@ public class PreviewHTML {
                         UNIT.MM.toString(),
                         UNIT.PX.toString()
                 );
-        final ComboBox unit = new ComboBox(options);
+        final ComboBox<String> unit = new ComboBox<>(options);
         unit.setValue(UNIT.IN.toString());
 
         widthField.setPrefColumnCount(3);
@@ -183,8 +180,9 @@ public class PreviewHTML {
 
         // Listeners
 
-        unit.valueProperty().addListener((ChangeListener<String>)(ov, t, unitString) -> {
+        unit.valueProperty().addListener((ov, t, unitString) -> {
             UNIT newUnit = UNIT.fromString(unitString);
+            if (newUnit == null) return;
             dpu = newUnit.dpu;
             unitsPerLabel = (int)newUnit.unitsPerLabel;
             divisions = newUnit.divisions;
@@ -201,7 +199,6 @@ public class PreviewHTML {
 
             double newWidth = parseInput(widthField.getText());
             if (newWidth > 0) {
-                log.warn("changing width");
                 // The stage size and scene size are not the same. I think this is due to the window border. I could not find a more direct approach.
                 double fudgeFactor = previewStage.getWidth() - scene.getWidth();
                 previewStage.setWidth(newWidth * dpu + thickness + fudgeFactor);
@@ -215,7 +212,6 @@ public class PreviewHTML {
 
             double newHeight = parseInput(heightField.getText());
             if (newHeight > 0) {
-                log.warn("changing height");
                 // The stage size and scene size are not the same. I think this is due to the window border. I could not find a more direct approach.
                 double fudgeFactor = previewStage.getHeight() - scene.getHeight();
                 previewStage.setHeight(newHeight * dpu + thickness + toolBar.getHeight() + fudgeFactor);
@@ -292,14 +288,15 @@ public class PreviewHTML {
         gc.clearRect(0, 0, thickness, leftRulerHeight);
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(1);
-        Font font = Font.font("Arial", FontWeight.LIGHT, 8);
+        Font font = Font.font("SansSerif", FontWeight.BOLD, 10);
         gc.setFont(font);
 
         double spacing = dpu * unitsPerLabel / divisions;
         for (int i = 1; i * spacing < leftRulerHeight; i++) {
-            double lineHeight = thickness * 0.2;
-            if (i % (divisions / 2) == 0) lineHeight += thickness * 0.2;
+            double tickLength = thickness * 0.2;
+            if (i % (divisions / 2) == 0) tickLength += thickness * 0.3;
             if (i % divisions == 0) {
+                tickLength -= thickness * 0.1;
                 Text helper = new Text(legendFormat.format(i * unitsPerLabel / divisions));
                 helper.setFont(font);
                 double textWidth = Math.ceil(helper.getLayoutBounds().getWidth());
@@ -307,10 +304,11 @@ public class PreviewHTML {
                 gc.save();
                 gc.translate(0, i * spacing);
                 gc.rotate(-90);
-                gc.strokeText(legendFormat.format(i * unitsPerLabel / divisions), -textWidth / 2, thickness - 2);
+                gc.setFill(Color.BLACK);
+                gc.fillText(legendFormat.format(i * unitsPerLabel / divisions), -textWidth / 2, thickness - 2);
                 gc.restore();
             }
-            gc.strokeLine(0, i * spacing, lineHeight, i * spacing);
+            gc.strokeLine(0, i * spacing, tickLength, i * spacing);
         }
     }
 
@@ -323,21 +321,24 @@ public class PreviewHTML {
         gc.setFill(Color.GRAY);
         gc.fillRect(0,0, thickness, thickness);
         gc.setLineWidth(1);
-        Font font = Font.font("Arial", FontWeight.LIGHT, 8);
+        Font font = Font.font("SansSerif", FontWeight.BOLD, 10);
         gc.setFont(font);
 
         double spacing = dpu * unitsPerLabel / divisions;
         for (int i = 1; i * spacing < topRulerWidth; i++) {
-            double lineHeight = thickness * 0.2;
-            if (i % (divisions / 2) == 0) lineHeight += thickness * 0.2;
+            double tickLength = thickness * 0.2;
+            if (i % (divisions / 2) == 0) tickLength += thickness * 0.3;
             if (i % divisions == 0) {
+                tickLength -= thickness * 0.1;
                 Text helper = new Text(legendFormat.format(i * unitsPerLabel / divisions));
                 helper.setFont(font);
                 double textWidth = Math.ceil(helper.getLayoutBounds().getWidth());
-                gc.strokeText(legendFormat.format(i * unitsPerLabel / divisions),
+
+                gc.setFill(Color.BLACK);
+                gc.fillText(legendFormat.format(i * unitsPerLabel / divisions),
                               thickness + i * spacing - (textWidth / 2), thickness - 2);
             }
-            gc.strokeLine(thickness + i * spacing, 0, thickness + i * spacing, lineHeight);
+            gc.strokeLine(thickness + i * spacing, 0, thickness + i * spacing, tickLength);
         }
     }
 }

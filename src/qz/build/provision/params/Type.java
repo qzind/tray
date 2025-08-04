@@ -5,6 +5,7 @@ import java.util.Locale;
 public enum Type {
     SCRIPT,
     SOFTWARE,
+    RESOURCE,
     REMOVER, // QZ Tray remover
     CA,
     CERT,

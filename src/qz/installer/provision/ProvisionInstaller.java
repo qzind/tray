@@ -2,7 +2,6 @@ package qz.installer.provision;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
@@ -11,14 +10,10 @@ import org.codehaus.jettison.json.JSONObject;
 import qz.build.provision.Step;
 import qz.build.provision.params.Os;
 import qz.build.provision.params.Phase;
-import qz.build.provision.params.Type;
 import qz.build.provision.params.types.Script;
 import qz.build.provision.params.types.Software;
 import qz.common.Constants;
-import qz.installer.Installer;
 import qz.installer.provision.invoker.*;
-import qz.utils.ArgValue;
-import qz.utils.PrefsSearch;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
@@ -28,8 +23,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 import static qz.common.Constants.*;
 import static qz.utils.FileUtilities.*;
@@ -129,6 +122,9 @@ public class ProvisionInstaller {
                 break;
             case REMOVER:
                 invoker = new RemoverInvoker(step);
+                break;
+            case RESOURCE:
+                invoker = new ResourceInvoker(step);
                 break;
             case PREFERENCE:
                 invoker = new PropertyInvoker(step, PropertyInvoker.getPreferences(step));

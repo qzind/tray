@@ -1,16 +1,19 @@
 package qz.printer.action.html;
 
+import com.sun.javafx.print.Units;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Pos;
 import javafx.print.JobSettings;
+import javafx.print.Paper;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ToolBar;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
@@ -30,6 +33,39 @@ import qz.ui.component.IconCache;
 import java.text.DecimalFormat;
 
 public class PreviewHTML {
+    enum UNIT {
+        IN("in", 72, 8, 1, "#.##"),
+        CM("cm", 72 / inToCm, 10, 1, "#.#"),
+        MM("mm", 72 / (inToCm * 10), 10, 10, "#.#"),
+        PX("px", 1, 5, 50, "#");
+
+        String label;
+        public final DecimalFormat unitFormat;
+        public final double dpu, unitsPerLabel;
+        public final int divisions;
+        UNIT(String label, double dpu, int divisions, double unitsPerLabel, String formatString) {
+            this.label = label;
+            this.dpu = dpu;
+            this.divisions = divisions;
+            this.unitsPerLabel = unitsPerLabel;
+            unitFormat = new DecimalFormat(formatString);
+        }
+
+        static UNIT fromString(String value) {
+            for (UNIT u : UNIT.values()) {
+                if (value.equals(u.toString())) return u;
+            }
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
+
+
     private static final Logger log = LogManager.getLogger(PreviewHTML.class);
 
     private final WebAppModel model;
@@ -37,16 +73,53 @@ public class PreviewHTML {
     private final Stage previewStage;
 
     private final WebView webPreview = new WebView();
+    private TextField widthField;
+    private TextField heightField;
+    private Canvas leftRuler;
+    private Canvas topRuler;
+    private Scene scene;
+    private ToolBar toolBar;
 
     private int thickness = 20;
-    private double dpi = 72;
 
-    public PreviewHTML(final WebAppModel model, JobSettings settings, Stage previewStage) {
+    //private Units unit = Units.INCH;
+    //private String unitFormat = "#.##";
+    private DecimalFormat unitFormat = UNIT.IN.unitFormat;
+    private double dpu = 72;
+    private double divisions = 8;
+    private int increment = 1;
+
+    private double contentWidth;
+    private double contentHeight;
+    private double topRulerWidth;
+    private double leftRulerHeight;
+
+    //private Units unit = Units.MM;
+    //private String unitFormat = "#.#";
+    //private double dpu = 72 / (inToCm * 10);
+    //private double divisions = 10;
+    //private int increment = 10;
+
+    //private Units unit = Units.CM;
+    //private String unitFormat = "#.#";
+    //private double dpu = 72 / (inToCm);
+    //private double divisions = 10;
+    //private int increment = 1;
+
+    //private Units unit = Units.POINT;
+    //private String unitFormat = "#";
+    //private double dpu = 1;
+    //private double divisions = 5;
+    //private int increment = 50;
+
+    private static double inToCm = 2.54;
+
+    public PreviewHTML(final WebAppModel model, JobSettings settings, Stage previewStage, Paper paper) {
         this.model = model;
         this.settings = settings;
         this.previewStage = previewStage;
 
-        initialize(400, 400);
+        initialize(paper.getWidth(), paper.getHeight());
 
         Platform.runLater(() -> {
             previewStage.toFront();
@@ -54,18 +127,19 @@ public class PreviewHTML {
         });
     }
 
-    private void initialize(double height, double width) {
+    private void initialize(double width, double height) {
         if (model.isPlainText()) {
             webPreview.getEngine().loadContent(model.getSource(), "text/html");
         } else {
             webPreview.getEngine().load(model.getSource());
         }
+        //webPreview.setZoom(0.5);
 
-        Canvas leftRuler = new Canvas(thickness, height);
-        Canvas topRuler = new Canvas(width, thickness);
+        leftRuler = new Canvas(thickness, height);
+        topRuler = new Canvas(width + thickness, thickness);
 
-        drawLeftRuler(leftRuler, thickness, leftRuler.getHeight(), dpi);
-        drawTopRuler(topRuler, thickness, topRuler.getWidth(), dpi);
+        drawLeftRuler(leftRuler, thickness, leftRuler.getHeight());
+        drawTopRuler(topRuler, thickness, topRuler.getWidth());
 
         StackPane webContainer = new StackPane(webPreview);
         webPreview.prefWidthProperty().bind(webContainer.widthProperty());
@@ -77,9 +151,17 @@ public class PreviewHTML {
         borderPane.setCenter(webContainer);
 
         final Label info = new Label("Resize me!");
-        final TextField widthField = new TextField();
-        final TextField heightField = new TextField();
-        final Label unit = new Label("in");
+        widthField = new TextField();
+        heightField = new TextField();
+        ObservableList<String> options =
+                FXCollections.observableArrayList(
+                        UNIT.IN.toString(),
+                        UNIT.CM.toString(),
+                        UNIT.MM.toString(),
+                        UNIT.PX.toString()
+                );
+        final ComboBox unit = new ComboBox(options);
+        unit.setValue(UNIT.IN.toString());
 
         widthField.setPrefColumnCount(3);
         heightField.setPrefColumnCount(3);
@@ -90,10 +172,10 @@ public class PreviewHTML {
         ImageView cancelIcon = new ImageView(SwingFXUtils.toFXImage(IconCache.getInstance().getImage(IconCache.Icon.CANCEL_ICON), null));
         ImageView doneIcon = new ImageView(SwingFXUtils.toFXImage(IconCache.getInstance().getImage(IconCache.Icon.ALLOW_ICON), null));
         final Button cancel = new Button("Cancel", cancelIcon);
-        final Button done = new Button("Done", doneIcon);
+        final Button done = new Button("Print", doneIcon);
         done.setAlignment(Pos.CENTER_RIGHT);
 
-        final ToolBar toolBar = new ToolBar(
+        toolBar = new ToolBar(
                 info,
                 widthField,
                 heightField,
@@ -107,13 +189,27 @@ public class PreviewHTML {
         toolbarPane.setTop(toolBar);
         toolbarPane.setCenter(borderPane);
 
-        Scene scene = new Scene(toolbarPane);
+        scene = new Scene(toolbarPane);
         previewStage.setTitle("HTML Preview - " + settings.getJobName());
         previewStage.setScene(scene);
         previewStage.sizeToScene();
         previewStage.show();
 
+        updateSizeLabels(scene.getWidth(), scene.getHeight() - thickness);
+
         // Listeners
+
+        unit.valueProperty().addListener((ChangeListener<String>)(ov, t, unitString) -> {
+            UNIT newUnit = UNIT.fromString(unitString);
+            dpu = newUnit.dpu;
+            increment = (int)newUnit.unitsPerLabel;
+            divisions = newUnit.divisions;
+            unitFormat = newUnit.unitFormat;
+
+            updateSizeLabels(scene.getWidth(), scene.getHeight() - thickness);
+            drawTopRuler(topRuler, thickness, scene.getWidth());
+            drawLeftRuler(leftRuler, thickness, scene.getHeight() - thickness);
+        });
 
         widthField.focusedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) return; //we just gained focus, we don't need to parse any input yet
@@ -123,10 +219,9 @@ public class PreviewHTML {
                 log.warn("changing width");
                 // The stage size and scene size are not the same. I think this is due to the window border. I could not find a more direct approach.
                 double fudgeFactor = previewStage.getWidth() - scene.getWidth();
-                previewStage.setWidth(newWidth * dpi + thickness + fudgeFactor);
+                previewStage.setWidth(newWidth * dpu + thickness + fudgeFactor);
             } else {
-                DecimalFormat nf = new DecimalFormat("#.##");
-                widthField.setText(nf.format((scene.getWidth() - thickness) / dpi));
+                widthField.setText(unitFormat.format((scene.getWidth() - thickness) / dpu));
             }
         });
 
@@ -138,10 +233,9 @@ public class PreviewHTML {
                 log.warn("changing height");
                 // The stage size and scene size are not the same. I think this is due to the window border. I could not find a more direct approach.
                 double fudgeFactor = previewStage.getHeight() - scene.getHeight();
-                previewStage.setHeight(newHeight * dpi + thickness + toolBar.getHeight() + fudgeFactor);
+                previewStage.setHeight(newHeight * dpu + thickness + toolBar.getHeight() + fudgeFactor);
             } else {
-                DecimalFormat nf = new DecimalFormat("#.##");
-                heightField.setText(nf.format((scene.getHeight() - thickness - toolBar.getHeight()) / dpi));
+                heightField.setText(unitFormat.format((scene.getHeight() - thickness - toolBar.getHeight()) / dpu));
             }
         });
 
@@ -150,8 +244,7 @@ public class PreviewHTML {
                 info.requestFocus();
             }
             if (keyEvent.getCode() == KeyCode.ESCAPE) {
-                DecimalFormat nf = new DecimalFormat("#.##");
-                widthField.setText(nf.format((scene.getWidth() - thickness) / dpi));
+                widthField.setText(unitFormat.format((scene.getWidth() - thickness) / dpu));
                 info.requestFocus();
             }
         });
@@ -161,8 +254,7 @@ public class PreviewHTML {
                 info.requestFocus();
             }
             if (keyEvent.getCode() == KeyCode.ESCAPE) {
-                DecimalFormat nf = new DecimalFormat("#.##");
-                heightField.setText(nf.format((scene.getHeight() - thickness - toolBar.getHeight()) / dpi));
+                heightField.setText(unitFormat.format((scene.getHeight() - thickness - toolBar.getHeight()) / dpu));
                 info.requestFocus();
             }
         });
@@ -170,26 +262,27 @@ public class PreviewHTML {
         scene.widthProperty().addListener((obs, oldVal, newVal) -> {
             double newWidth = (double)newVal;
 
-            DecimalFormat nf = new DecimalFormat("#.##");
-            widthField.setText(nf.format((newWidth - thickness) / dpi));
-            heightField.setText(nf.format((scene.getHeight() - thickness - toolBar.getHeight()) / dpi));
             info.setText("Current: ");
+            updateSizeLabels(newWidth, scene.getHeight());
 
             topRuler.setWidth(newWidth);
-            drawTopRuler(topRuler, thickness, newWidth, dpi);
+            drawTopRuler(topRuler, thickness, newWidth);
         });
 
         scene.heightProperty().addListener((obs, oldVal, newVal) -> {
-            double newHeight = scene.getHeight() - thickness; //the top ruler cuts this ruler off
+            double newHeight = (double)newVal - thickness; //the top ruler cuts this ruler off
 
-            DecimalFormat nf = new DecimalFormat("#.##");
             info.setText("Current: ");
-            widthField.setText(nf.format((scene.getWidth() - thickness) / dpi));
-            heightField.setText(nf.format((newHeight - toolBar.getHeight()) / dpi));
+            updateSizeLabels(scene.getWidth(), newHeight);
 
             leftRuler.setHeight(newHeight);
-            drawLeftRuler(leftRuler, thickness, newHeight, dpi);
+            drawLeftRuler(leftRuler, thickness, newHeight);
         });
+    }
+
+    private void updateSizeLabels(double width, double height) {
+        widthField.setText(unitFormat.format((width - thickness) / dpu));
+        heightField.setText(unitFormat.format((height - toolBar.getHeight()) / dpu));
     }
 
     private static double parseInput(String value) {
@@ -200,7 +293,7 @@ public class PreviewHTML {
         }
     }
 
-    private static void drawLeftRuler(Canvas canvas, int thickness, double height, double dpi) {
+    private void drawLeftRuler(Canvas canvas, int thickness, double height) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.clearRect(0, 0, thickness, height);
         gc.setStroke(Color.BLACK);
@@ -208,26 +301,26 @@ public class PreviewHTML {
         Font font = Font.font("Arial", FontWeight.LIGHT, 8);
         gc.setFont(font);
 
-        double spacing = dpi / 8;
+        double spacing = dpu * increment / divisions;
         for (int i = 1; i * spacing < height; i++) {
             double lineHeight = thickness * 0.2;
-            if (i % 4 == 0) lineHeight += thickness * 0.3;
-            if (i % 8 == 0) {
-                Text helper = new Text(String.valueOf(i / 8));
+            if (i % (divisions / 2) == 0) lineHeight += thickness * 0.2;
+            if (i % divisions == 0) {
+                Text helper = new Text(String.valueOf(i * increment / (int)divisions));
                 helper.setFont(font);
                 double textWidth = Math.ceil(helper.getLayoutBounds().getWidth());
 
                 gc.save();
                 gc.translate(0, i * spacing);
                 gc.rotate(-90);
-                gc.strokeText(String.valueOf(i / 8), -textWidth / 2, thickness - 2);
+                gc.strokeText(String.valueOf(i * increment/ (int)divisions), -textWidth / 2, thickness - 2);
                 gc.restore();
             }
             gc.strokeLine(0, i * spacing, lineHeight, i * spacing);
         }
     }
 
-    private static void drawTopRuler(Canvas canvas, int thickness, double width, double dpi) {
+    private void drawTopRuler(Canvas canvas, int thickness, double width) {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.clearRect(0, 0, width, thickness);
         gc.setStroke(Color.BLACK);
@@ -237,15 +330,15 @@ public class PreviewHTML {
         Font font = Font.font("Arial", FontWeight.LIGHT, 8);
         gc.setFont(font);
 
-        double spacing = dpi / 8;
+        double spacing = dpu * increment / divisions;
         for (int i = 1; i * spacing < width; i++) {
             double lineHeight = thickness * 0.2;
-            if (i % 4 == 0) lineHeight += thickness * 0.3;
-            if (i % 8 == 0) {
-                Text helper = new Text(String.valueOf(i / 8));
+            if (i % (divisions / 2) == 0) lineHeight += thickness * 0.2;
+            if (i % divisions == 0) {
+                Text helper = new Text(String.valueOf(i * increment / (int)divisions));
                 helper.setFont(font);
                 double textWidth = Math.ceil(helper.getLayoutBounds().getWidth());
-                gc.strokeText(String.valueOf(i / 8),
+                gc.strokeText(String.valueOf(i * increment / (int)divisions),
                               thickness + i * spacing - (textWidth / 2), thickness - 2);
             }
             gc.strokeLine(thickness + i * spacing, 0, thickness + i * spacing, lineHeight);

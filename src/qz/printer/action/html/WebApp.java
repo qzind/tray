@@ -13,6 +13,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.print.JobSettings;
 import javafx.print.PageLayout;
+import javafx.print.Paper;
 import javafx.print.PrinterJob;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -357,14 +358,14 @@ public class WebApp extends Application {
         if (thrown.get() != null) { throw thrown.get(); }
     }
 
-    public static synchronized void openPreview(final WebAppModel model, JobSettings settings) throws IOException {
+    public static synchronized void openPreview(final WebAppModel model, JobSettings settings, Paper paper) throws IOException {
         //ensure JavaFX has started before we run
         if (startupLatch.getCount() > 0) {
             throw new IOException("JavaFX has not been started");
         }
 
         Platform.runLater(() -> {
-            new PreviewHTML(model, settings, new Stage(stage.getStyle()));
+            new PreviewHTML(model, settings, new Stage(stage.getStyle()), paper);
         });
     }
 

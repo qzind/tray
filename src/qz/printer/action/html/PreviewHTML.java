@@ -76,7 +76,7 @@ public class PreviewHTML {
     private ToolBar toolBar;
 
     private int thickness = 20;
-    DecimalFormat legendFormat = new DecimalFormat("#.#");
+    private final DecimalFormat legendFormat = new DecimalFormat("#.#");
 
     private DecimalFormat unitFormat = UNIT.IN.unitFormat;
     private double dpu = UNIT.IN.dpu;

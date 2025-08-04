@@ -14,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
+import qz.utils.WindowsUtilities;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -48,6 +49,9 @@ public class TaskKiller {
         if(!SystemUtilities.isWindows()) {
             // Fallback to pgrep, needed for macOS (See JDK-8319589, JDK-8197387)
             pids.addAll(findPidsPgrep());
+        } else if(WindowsUtilities.isSystemAccount()) {
+            // Fallback to powershell, needed for Windows
+            pids.addAll(findPidsPwsh());
         }
 
         // Careful not to kill ourselves ;)
@@ -80,6 +84,45 @@ public class TaskKiller {
         return jcmd;
     }
 
+
+    static final String[] PWSH_QUERY = { "powershell.exe", "-Command", "\"(Get-CimInstance Win32_Process -Filter \\\"Name = 'java.exe' OR Name = 'javaw.exe'\\\").Where({$_.CommandLine -like '*%s*'}).ProcessId\"" };
+
+    /**
+     * Leverage powershell.exe when run as SYSTEM to workaround https://github.com/qzind/tray/issues/1360
+     * TODO: Remove when jcmd is patched to work as SYSTEM account
+     */
+    private static HashSet<Integer> findPidsPwsh() {
+        HashSet<Integer> foundPids = new HashSet<>();
+
+        for(String jarName : JAR_NAMES) {
+            String[] pwshQuery = PWSH_QUERY.clone();
+            int lastIndex = pwshQuery.length - 1;
+            // Format the last element to contain the jarName
+            pwshQuery[lastIndex] = String.format(pwshQuery[lastIndex], jarName);
+            String stdout = ShellUtilities.executeRaw(pwshQuery);
+            String[] lines = stdout.split("\\s*\\r?\\n");
+            for(String line : lines) {
+                if(line.trim().isEmpty()) {
+                    // Don't try to process blank lines
+                    continue;
+                }
+
+                int pid = parsePid(line);
+                if (pid >= 0) {
+                    foundPids.add(pid);
+                } else {
+                    log.warn("Could not parse PID value.  Full line: '{}', Full output: '{}'", line, stdout);
+                }
+            }
+        }
+
+        return foundPids;
+    }
+
+    /**
+     * Use pgrep to fetch all PIDs to workaround https://github.com/openjdk/jdk/pull/25824
+     * TODO: Remove when jcmd is patched to work properly on macOS
+     */
     private static HashSet<Integer> findPidsPgrep() {
         HashSet<Integer> foundPids = new HashSet<>();
 

@@ -153,6 +153,6 @@
         "type": "software",
         "os": "windows",
         "data": "DCDSetup1.5.0.17.exe",
-        "args": "/s /f1\"installshield_sample.iss\""
+        "args": "/S /v/qn"
     }
 ]

@@ -286,15 +286,29 @@ public class ProvisionBuilder {
         return value;
     }
 
+    /**
+     * Clones the provided step into a new step that performs a prerequisite task.
+     *
+     * This is "magic" in the sense that it's highly specific to <code>Type</code>
+     * <code>Os</code> and <code>Step.args</code>.
+     *
+     * For example:
+     *
+     *   Older InstallShield installers supported the <code>/f1</code> parameter which
+     *   implies an answer file of which we need to bundle for a successful deployment.
+     */
     private void inferAdditionalSteps(Step orig) throws JSONException, IOException {
         // Infer resource step for InstallShield .iss answer files
-        if(Os.WINDOWS.matches(orig.getOs())) {
+        if(orig.getType() == Type.SOFTWARE && Os.WINDOWS.matches(orig.getOs())) {
             String[] patterns = { "/f1", "-f1" };
             int index = argPrefixIndex(orig, patterns);
             if(index > 0) {
                 String resource = argPrefixValue(orig, index, patterns);
                 if(resource != null) {
+                    // Clone to copy the Phase, Os and Description
                     Step step = orig.clone();
+
+                    // Swap Type, clear args and update the data
                     step.setType(Type.RESOURCE);
                     step.setArgs(new ArrayList<>());
                     step.setData(resource);

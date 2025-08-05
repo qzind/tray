@@ -31,7 +31,7 @@ import java.text.DecimalFormat;
 
 public class PreviewHTML {
     enum UNIT {
-        IN("in", 72, 8, 1, "#.##"),
+        IN("in", 96, 8, 1, "#.##"),
         CM("cm", 72 / inToCm, 10, 1, "#.#"),
         MM("mm", 72 / (inToCm * 10), 10, 10, "#.#"),
         PX("px", 1, 5, 50, "#");
@@ -92,12 +92,12 @@ public class PreviewHTML {
 
     private static final double inToCm = 2.54;
 
-    public PreviewHTML(final WebAppModel model, JobSettings settings, Stage previewStage, Paper paper) {
+    public PreviewHTML(final WebAppModel model, JobSettings settings, Stage parent, Paper paper) {
         this.model = model;
         this.settings = settings;
-        this.previewStage = previewStage;
+        this.previewStage = new Stage(parent.getStyle());
 
-        initialize(paper.getWidth(), paper.getHeight());
+        initialize(model.getWebWidth(), model.getWebHeight());
 
         Platform.runLater(() -> {
             previewStage.toFront();

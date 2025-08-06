@@ -278,7 +278,13 @@ public class PrintRaw implements PrintProcessor {
 
         ImageWrapper iw = new ImageWrapper(img, LanguageType.getType(opt.optString("language")));
         iw.setCharset(Charset.forName(destEncoding));
-        iw.setImageEncoding(PrintOptions.ImageEncoding.valueOf(opt.optString("imageEncoding")));
+
+        // Set image encoding
+        try {
+            iw.setImageEncoding(PrintOptions.ImageEncoding.valueOf(opt.optString("imageEncoding")));
+        } catch (IllegalArgumentException e) {
+            iw.setImageEncoding(PrintOptions.ImageEncoding.ESC_STAR);
+        }
 
         //ESC/POS only
         int density = opt.optInt("dotDensity", -1);

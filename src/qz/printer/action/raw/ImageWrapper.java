@@ -16,12 +16,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.ByteArrayBuilder;
 import qz.exception.InvalidRawImageException;
+import qz.printer.PrintOptions.ImageEncoding;
+import qz.printer.action.raw.encoder.*;
 import qz.utils.ByteUtilities;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -84,6 +85,7 @@ public class ImageWrapper {
     private String logoId = "";  // PGL only, the logo ID
     private boolean igpDots = false; // PGL only, toggle IGP/PGL default resolution of 72dpi
     private int dotDensity = 32;  // Generally 32 = Single (normal) 33 = Double (higher res) for ESC/POS.  Irrelevant for all other languages.
+    private ImageEncoding imageEncoding = ImageEncoding.ESC_STAR;
 
     private boolean legacyMode = false; // Use newlines for ESC/POS spacing; simulates <=2.0.11 behavior
 
@@ -203,6 +205,10 @@ public class ImageWrapper {
     public void setDotDensity(int dotDensity) {
         this.legacyMode = dotDensity < 0;
         this.dotDensity = Math.abs(dotDensity);
+    }
+
+    public void setImageEncoding(ImageEncoding imageEncoding) {
+        this.imageEncoding = imageEncoding;
     }
 
     public void setLogoId(String logoId) {
@@ -335,7 +341,13 @@ public class ImageWrapper {
 
         switch(languageType) {
             case ESCP:
-                appendEpsonSlices(getByteBuffer());
+                if (imageEncoding == ImageEncoding.GS_V_0) {
+                    getByteBuffer().append(new GsV0Encoder().encode(bufferedImage));
+                } else if (imageEncoding == ImageEncoding.GS_L) {
+                    getByteBuffer().append(new GsLEncoder().encode(bufferedImage));
+                } else {
+                    appendEpsonSlices(getByteBuffer());
+                }
                 break;
             case ZPL:
                 String zplHexAsString = ByteUtilities.getHexString(getImageAsIntArray());

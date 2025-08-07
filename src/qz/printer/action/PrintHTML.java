@@ -71,7 +71,8 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
         try {
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
             if (!pxlOpts.isLegacy()) {
-                WebApp.initialize();
+                //todo what was this for?
+                //WebApp.initialize();
             }
 
             for(int i = 0; i < printData.length(); i++) {
@@ -154,14 +155,14 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
         } else if (options.getPixelOptions().isRasterize()) {
             //grab a snapshot of the pages for PrintImage instead of printing directly
             for(WebAppModel model : models) {
-                try { images.add(WebApp.raster(model)); }
+                try { images.add(new WebApp().raster(model)); }
                 catch(Throwable t) {
                     if (model.getZoom() > 1 && t instanceof IllegalArgumentException) {
                         //probably a unrecognized image loader error, try at default zoom
                         try {
                             log.warn("Capture failed with increased zoom, attempting with default value");
                             model.setZoom(1);
-                            images.add(WebApp.raster(model));
+                            images.add(new WebApp().raster(model));
                         }
                         catch(Throwable tt) {
                             throw new PrinterException(tt.getMessage());
@@ -277,19 +278,19 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             try {
                 if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
                     for(WebAppModel model : models) {
-                        //WebApp.initialize();
-                        WebApp.openPreview(model, settings, paper);
+                        //WebApp.openPreview(model, settings, paper);
 
-                        //WebApp.print(job, model);
+                        WebApp webApp = new WebApp();
+                        webApp.print(job, model);
                     }
                 } else {
                     settings.setCopies(1); //manually handle copies if they are not supported
                     for(int i = 0; i < pxlOpts.getCopies(); i++) {
                         for(WebAppModel model : models) {
-                            //WebApp.initialize();
-                            WebApp.openPreview(model, settings, paper);
+                            //WebApp.openPreview(model, settings, paper);
 
-                            //WebApp.print(job, model);
+                            WebApp webApp = new WebApp();
+                            webApp.print(job, model);
                         }
                     }
                 }

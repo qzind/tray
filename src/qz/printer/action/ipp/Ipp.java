@@ -141,15 +141,12 @@ public class Ipp {
 
     public static Object findRemote(Session session, String uuidString, String query) throws PrinterException, JSONException {
         HashMap<UUID,ServerEntry> serverEntrySet = servers.get(session);
-        if(serverEntrySet == null) {
-           throw new PrinterException("No EntrySet found"); // FIXME: Improve wording
-        }
+        if(serverEntrySet == null) throw new PrinterException("A server must be added before attempting to find a printer");
 
         UUID uuid = UUID.fromString(uuidString);
         ServerEntry serverEntry = serverEntrySet.get(uuid);
-        if (serverEntry == null) {
-            throw new PrinterException("No ServerEntry found"); // FIXME: Improve wording
-        }
+        // The client has sent us a UUID for a server that doesn't exist. This could occur if a server is used from an earlier connection.
+        if (serverEntry == null) throw new PrinterException("Server object is invalid or from a different connection");
 
         IppClient ippClient = new IppClient();
         CupsClient cupsClient = new CupsClient(serverEntry.serverUri, ippClient);

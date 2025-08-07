@@ -10,7 +10,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
-import qz.communication.Ipp;
+import qz.printer.action.ipp.Ipp;
 import qz.communication.WinspoolEx;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;

@@ -2,7 +2,7 @@ package qz.printer;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import qz.communication.Ipp;
+import qz.printer.action.ipp.Ipp;
 import qz.printer.info.NativePrinter;
 import qz.utils.FileUtilities;
 

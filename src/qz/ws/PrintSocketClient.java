@@ -19,6 +19,7 @@ import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
+import qz.printer.action.ipp.Ipp;
 import qz.printer.status.StatusMonitor;
 import qz.utils.*;
 import qz.ws.substitutions.Substitutions;
@@ -183,6 +184,10 @@ public class PrintSocketClient {
                     log.error("FileIO exception occurred", e);
                     sendError(session, tUID, String.format("FileIO exception occurred: %s: %s", e.getClass().getSimpleName(), e.getMessage()));
                 }
+                catch(URISyntaxException e) {
+                    log.error("Invalid URI syntax", e);
+                    sendError(session, tUID, String.format("Invalid URI syntax: %s: %s", e.getClass().getSimpleName(), e.getMessage()));
+                }
                 catch(Exception e) {
                     log.error("Problem processing message", e);
                     sendError(session, tUID, e);
@@ -226,7 +231,7 @@ public class PrintSocketClient {
      * @param session WebSocket session
      * @param json    JSON received from web API
      */
-    private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, DeviceException, IOException {
+    private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, DeviceException, IOException, URISyntaxException {
         // perform client-side substitutions
         if(Substitutions.areActive()) {
             Substitutions substitutions = Substitutions.getInstance();
@@ -300,13 +305,7 @@ public class PrintSocketClient {
                 sendResult(session, UID, Ipp.find(session, params));
                 break;
             case PRINTERS_ADD_SERVER:
-                String returnVal = "";
-                try {
-                    returnVal = Ipp.addServer(session, params);
-                } catch(URISyntaxException e) {
-                    sendError(session, UID, "Invalid server URL syntax");
-                }
-                sendResult(session, UID, returnVal);
+                sendResult(session, UID, Ipp.addServer(session, params));
                 break;
             case PRINTERS_DETAIL:
                 sendResult(session, UID, PrintServiceMatcher.getPrintersJSON(true));

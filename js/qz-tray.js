@@ -1369,21 +1369,37 @@ var qz = (function() {
                 return _qz.websocket.dataPromise('printers.find', { query: query }, signature, signingTimestamp);
             },
 
-
+            /**
+             * @param {Object} [server] Server object returned from qz.printers.addServer(...)
+             * @param {string} [query] Search for a specific printer. All printers are returned if not provided.
+             *
+             * @returns {Promise<Array<Object>|Object|Error>} The matched printer object if <code>query</code> is provided.
+             *                                                Otherwise an array of printer objects names found on the remote system.
+             *
+             * @since 2.2.6
+             * @see qz.printers.addServer
+             *
+             * @memberof qz.printers
+             */
             findRemote: function(server, query) {
-                return _qz.websocket.dataPromise('printers.findRemote', {server: server, query: query});
+                return _qz.websocket.dataPromise('printers.findRemote', { server: server, query: query });
             },
 
+            /**
+             * @param {Object} [options]
+             *  @param {string} [options.uri=null] Address of the remote ipp server.  Defaults to localhost if not provided.
+             *  @param {string} [options.username=null] Username for ipp connection
+             *  @param {string} [options.password=null] Password for ipp connection
+             *
+             *
+             * @returns {Promise<Object<{type: string, uuid: string, uri: string}>|Error>} Remote server connection info
+             *
+             * @since 2.2.6
+             *
+             * @memberof qz.printers
+             */
             addServer: function(options) {
-                return _qz.websocket
-                    .dataPromise('printers.addServer', options)
-                    .then(
-                        function(resultString) {
-                            return { uuid: resultString,
-                            test: "test" };
-                        });
-                
-                // var dataPromise = _qz.websocket.dataPromise('printers.addServer', options);
+                return _qz.websocket.dataPromise('printers.addServer', options);
             },
 
             /**

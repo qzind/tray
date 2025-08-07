@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.communication.*;
+import qz.printer.action.ipp.Ipp;
 import qz.printer.status.StatusMonitor;
 import qz.utils.FileWatcher;
 
@@ -34,8 +35,6 @@ public class SocketConnection {
     // DeviceOptions -> open DeviceIO
     private final HashMap<DeviceOptions,DeviceIO> openDevices = new HashMap<>();
 
-    private final HashMap<UUID, Ipp.ServerEntry> ippServers = new HashMap<>();
-
 
     public SocketConnection(Certificate cert) {
         certificate = cert;
@@ -61,28 +60,6 @@ public class SocketConnection {
     public void removeSerialPort(String port) {
         openSerialPorts.remove(port);
     }
-
-    public void addServerEntry(UUID uuid, Ipp.ServerEntry serverEntry) {
-        ippServers.put(uuid, serverEntry);
-    }
-
-    public Ipp.ServerEntry getServerEntry(UUID uuid) {
-        return ippServers.get(uuid);
-    }
-
-    public UUID getUuid(Ipp.ServerEntry serverEntry) {
-        for (Map.Entry<UUID,Ipp.ServerEntry> entry : ippServers.entrySet()) {
-            if (entry.getValue().equals(serverEntry)) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-
-    public void removeServerEntry(UUID uuid) {
-        ippServers.remove(uuid);
-    }
-
 
     public void addNetworkSocket(String location, SocketIO io) {
         openNetworkSockets.put(location, io);

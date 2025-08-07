@@ -7,7 +7,7 @@ import de.gmuth.ipp.client.IppJob;
 import de.gmuth.ipp.client.IppPrinter;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
-import qz.communication.Ipp;
+import qz.printer.action.ipp.Ipp;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.PrintingUtilities;

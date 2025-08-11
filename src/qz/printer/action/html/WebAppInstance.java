@@ -133,22 +133,24 @@ public class WebAppInstance {
         if (newExc != null) { unlatch(newExc); }
     };
 
-    public WebAppInstance(Stage st) {
-        webView = new WebView();
+    public WebAppInstance(final Stage st) {
+        Platform.runLater(() -> {
+            webView = new WebView();
 
-        st.setScene(new Scene(webView));
-        renderStage = st;
-        renderStage.setWidth(1);
-        renderStage.setHeight(1);
+            st.setScene(new Scene(webView));
+            renderStage = st;
+            renderStage.setWidth(1);
+            renderStage.setHeight(1);
 
-        Worker<Void> worker = webView.getEngine().getLoadWorker();
-        worker.stateProperty().addListener(stateListener);
-        worker.workDoneProperty().addListener(workDoneListener);
-        worker.exceptionProperty().addListener(exceptListener);
-        worker.messageProperty().addListener(msgListener);
+            Worker<Void> worker = webView.getEngine().getLoadWorker();
+            worker.stateProperty().addListener(stateListener);
+            worker.workDoneProperty().addListener(workDoneListener);
+            worker.exceptionProperty().addListener(exceptListener);
+            worker.messageProperty().addListener(msgListener);
 
-        //prevents JavaFX from shutting down when hiding window
-        Platform.setImplicitExit(false);
+            //prevents JavaFX from shutting down when hiding window
+            Platform.setImplicitExit(false);
+        });
     }
 
     /**

@@ -3,6 +3,7 @@ package qz.printer.action.html;
 import com.github.zafarkhaja.semver.Version;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.print.PrinterJob;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
@@ -11,6 +12,7 @@ import qz.common.Constants;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -43,12 +45,12 @@ public class WebApp extends Application {
 
     /** Called by JavaFX thread */
     public WebApp() {
-        instance = this;
     }
 
     /** Starts JavaFX thread if not already running */
     public static synchronized void initialize() throws IOException {
         if (instance == null) {
+            instance = new WebApp();
             startupLatch = new CountDownLatch(1);
             // For JDK8 compat
             headless = false;
@@ -99,7 +101,7 @@ public class WebApp extends Application {
                 } else {
                     log.trace("Running a test snapshot to size the stage...");
                     try {
-                        raster(new WebAppModel("<h1>startup</h1>", true, 0, 0, true, 2));
+                        createWebAppInstance().raster(new WebAppModel("<h1>startup</h1>", true, 0, 0, true, 2));
                         log.trace("JFX initialized successfully");
                     }
                     catch(Throwable t) {
@@ -113,7 +115,6 @@ public class WebApp extends Application {
 
     @Override
     public void start(Stage st) throws Exception {
-        startupLatch.countDown();
         log.debug("Started JavaFX");
 
         // JDK-8283686: Printing WebView may results in empty page
@@ -130,6 +131,21 @@ public class WebApp extends Application {
 
         //prevents JavaFX from shutting down when hiding window
         Platform.setImplicitExit(false);
+
+        startupLatch.countDown();
+    }
+
+    public static WebAppInstance createWebAppInstance() {
+        if (instance == null) new WebApp();
+        return new WebAppInstance(stage);
+    }
+
+    public static BufferedImage raster(final WebAppModel model) throws Throwable {
+        return new WebAppInstance(stage).raster(model);
+    }
+
+    public static void print(final PrinterJob job, final WebAppModel model) throws Throwable {
+        new WebAppInstance(stage).print(job, model);
     }
 
     public static Version getWebkitVersion() {

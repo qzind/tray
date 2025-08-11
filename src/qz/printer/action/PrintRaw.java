@@ -233,7 +233,7 @@ public class PrintRaw implements PrintProcessor {
         WebAppModel model = new WebAppModel(data, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, false, pageZoom);
 
         try {
-            bi = new WebApp().raster(model);
+            bi = WebApp.raster(model);
 
             // down scale back from web density
             double scaleFactor = opt.optDouble("pageWidth", 0) / bi.getWidth();
@@ -249,7 +249,7 @@ public class PrintRaw implements PrintProcessor {
                 try {
                     log.warn("Capture failed with increased zoom, attempting with default value");
                     model.setZoom(1);
-                    bi = new WebApp().raster(model);
+                    bi = WebApp.raster(model);
                 }
                 catch(Throwable tt) {
                     log.error("Failed to capture html raster");

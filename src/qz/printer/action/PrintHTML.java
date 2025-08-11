@@ -155,14 +155,14 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
         } else if (options.getPixelOptions().isRasterize()) {
             //grab a snapshot of the pages for PrintImage instead of printing directly
             for(WebAppModel model : models) {
-                try { images.add(new WebApp().raster(model)); }
+                try { images.add(WebApp.raster(model)); }
                 catch(Throwable t) {
                     if (model.getZoom() > 1 && t instanceof IllegalArgumentException) {
                         //probably a unrecognized image loader error, try at default zoom
                         try {
                             log.warn("Capture failed with increased zoom, attempting with default value");
                             model.setZoom(1);
-                            images.add(new WebApp().raster(model));
+                            images.add(WebApp.raster(model));
                         }
                         catch(Throwable tt) {
                             throw new PrinterException(tt.getMessage());
@@ -280,8 +280,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                     for(WebAppModel model : models) {
                         //WebApp.openPreview(model, settings, paper);
 
-                        WebApp webApp = new WebApp();
-                        webApp.print(job, model);
+                        WebApp.createWebAppInstance().print(job, model);
                     }
                 } else {
                     settings.setCopies(1); //manually handle copies if they are not supported
@@ -289,8 +288,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                         for(WebAppModel model : models) {
                             //WebApp.openPreview(model, settings, paper);
 
-                            WebApp webApp = new WebApp();
-                            webApp.print(job, model);
+                            WebApp.createWebAppInstance().print(job, model);
                         }
                     }
                 }

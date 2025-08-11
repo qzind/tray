@@ -82,7 +82,7 @@ public class UnixUtilities {
         if (SystemUtilities.isUnix() && uname == null) {
             uname = ShellUtilities.execute(
                     new String[] {"uname", "-a"},
-                    null
+                    (String[])null
             );
         }
 

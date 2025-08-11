@@ -11,8 +11,6 @@ import qz.build.provision.params.Arch;
 import qz.build.provision.params.Os;
 import qz.build.provision.params.Phase;
 import qz.build.provision.params.Type;
-import qz.build.provision.params.types.Script;
-import qz.build.provision.params.types.Software;
 import qz.common.Constants;
 import qz.installer.provision.invoker.PropertyInvoker;
 import qz.utils.ArgValue;
@@ -23,9 +21,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
-
-import static qz.common.Constants.PROVISION_FILE;
 
 public class ProvisionBuilder {
     protected static final Logger log = LogManager.getLogger(ProvisionBuilder.class);
@@ -114,6 +111,9 @@ public class ProvisionBuilder {
             return;
         }
 
+        // Inject any special inferences (such as inferring resources from args)
+        inferAdditionalSteps(step);
+
         if(copyResource(step)) {
             log.info("[SUCCESS] Step successfully processed '{}'", step);
             jsonSteps.put(step.toJSON());
@@ -139,6 +139,7 @@ public class ProvisionBuilder {
             case CA:
             case CERT:
             case SCRIPT:
+            case RESOURCE:
             case SOFTWARE:
                 boolean isRelative = !Paths.get(step.getData()).isAbsolute();
                 File src;
@@ -245,5 +246,83 @@ public class ProvisionBuilder {
     private static IOException formatted(String message, Object ... args) {
         String formatted = String.format(message, args);
         return new IOException(formatted);
+    }
+
+    /**
+     * Returns the first index of the specified arg prefix pattern(s)
+     *
+     * e.g. if pattern is "/f1", it will return 1 from args { "/s", "/f1C:\foo" }
+     */
+    private int argPrefixIndex(Step step, String ... prefixes) {
+        for(int i = 0; i < step.args.size() ; i++){
+            for(String prefix : prefixes) {
+                if (step.args.get(i).toLowerCase().startsWith(prefix.toLowerCase())) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Returns the "value" of the specified arg prefix pattern(s)
+     *
+     * e.g. if pattern is "/f1", it will return "C:\foo" from args { "/s", "/f1C:\foo" }
+     *
+     */
+    private String argPrefixValue(Step step, int index, String ... prefixes) {
+        String arg = step.args.get(index);
+        String value = null;
+        for(String prefix : prefixes) {
+            if (arg.toLowerCase().startsWith(prefix.toLowerCase())) {
+                value = arg.substring(prefix.length());
+                if((value.startsWith("\"") && value.endsWith("\"")) ||
+                        (value.startsWith("'") && value.endsWith("'"))) {
+                    // Remove surrounding quotes
+                    value = value.substring(1, value.length() - 1);
+                }
+            }
+        }
+        return value;
+    }
+
+    /**
+     * Clones the provided step into a new step that performs a prerequisite task.
+     *
+     * This is "magic" in the sense that it's highly specific to <code>Type</code>
+     * <code>Os</code> and <code>Step.args</code>.
+     *
+     * For example:
+     *
+     *   Older InstallShield installers supported the <code>/f1</code> parameter which
+     *   implies an answer file of which we need to bundle for a successful deployment.
+     */
+    private void inferAdditionalSteps(Step orig) throws JSONException, IOException {
+        // Infer resource step for InstallShield .iss answer files
+        if(orig.getType() == Type.SOFTWARE && Os.WINDOWS.matches(orig.getOs())) {
+            String[] patterns = { "/f1", "-f1" };
+            int index = argPrefixIndex(orig, patterns);
+            if(index > 0) {
+                String resource = argPrefixValue(orig, index, patterns);
+                if(resource != null) {
+                    // Clone to copy the Phase, Os and Description
+                    Step step = orig.clone();
+
+                    // Swap Type, clear args and update the data
+                    step.setType(Type.RESOURCE);
+                    step.setArgs(new ArrayList<>());
+                    step.setData(resource);
+
+                    if(copyResource(step)) {
+                        File resourceFile = new File(resource);
+                        jsonSteps.put(step.toJSON());
+                        orig.getArgs().set(index, String.format("/f1\"%s\"", resourceFile.getName()));
+                        log.info("[SUCCESS] Step successfully inferred and appended '{}'", step);
+                    }  else {
+                        log.error("[SKIPPED] Resources could not be saved '{}'", step);
+                    }
+                }
+            }
+        }
     }
 }

@@ -280,7 +280,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                     for(WebAppModel model : models) {
                         //WebApp.openPreview(model, settings, paper);
 
-                        WebApp.createWebAppInstance().print(job, model);
+                        WebApp.print(job, model);
                     }
                 } else {
                     settings.setCopies(1); //manually handle copies if they are not supported
@@ -288,7 +288,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                         for(WebAppModel model : models) {
                             //WebApp.openPreview(model, settings, paper);
 
-                            WebApp.createWebAppInstance().print(job, model);
+                            WebApp.print(job, model);
                         }
                     }
                 }

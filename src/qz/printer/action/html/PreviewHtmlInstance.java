@@ -21,7 +21,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
-import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,7 +28,7 @@ import qz.ui.component.IconCache;
 
 import java.text.DecimalFormat;
 
-public class PreviewHTML {
+class PreviewHtmlInstance extends AbstractHtmlInstance {
     enum UNIT {
         IN("in", 96, 8, 1, "#.##"),
         CM("cm", 72 / inToCm, 10, 1, "#.#"),
@@ -61,13 +60,11 @@ public class PreviewHTML {
         }
     }
 
-    private static final Logger log = LogManager.getLogger(PreviewHTML.class);
+    private static final Logger log = LogManager.getLogger(PreviewHtmlInstance.class);
 
-    private final WebAppModel model;
+    private WebAppModel model;
     private final JobSettings settings;
-    private final Stage previewStage;
 
-    private final WebView webPreview = new WebView();
     private TextField widthField;
     private TextField heightField;
     private Canvas leftRuler;
@@ -92,24 +89,28 @@ public class PreviewHTML {
 
     private static final double inToCm = 2.54;
 
-    public PreviewHTML(final WebAppModel model, JobSettings settings, Stage parent, Paper paper) {
+    public PreviewHtmlInstance(Stage stage) {
+        //todo
+        renderStage = new Stage(stage.getStyle());
+        settings = null;
+    }
+
+    public void show(WebAppModel model) {
         this.model = model;
-        this.settings = settings;
-        this.previewStage = new Stage(parent.getStyle());
 
         initialize(model.getWebWidth(), model.getWebHeight());
 
         Platform.runLater(() -> {
-            previewStage.toFront();
-            webPreview.requestFocus();
+            renderStage.toFront();
+            webView.requestFocus();
         });
     }
 
     private void initialize(double width, double height) {
         if (model.isPlainText()) {
-            webPreview.getEngine().loadContent(model.getSource(), "text/html");
+            webView.getEngine().loadContent(model.getSource(), "text/html");
         } else {
-            webPreview.getEngine().load(model.getSource());
+            webView.getEngine().load(model.getSource());
         }
         //webPreview.setZoom(0.5);
 
@@ -121,9 +122,9 @@ public class PreviewHTML {
         drawLeftRuler();
         drawTopRuler();
 
-        StackPane webContainer = new StackPane(webPreview);
-        webPreview.prefWidthProperty().bind(webContainer.widthProperty());
-        webPreview.prefHeightProperty().bind(webContainer.heightProperty());
+        StackPane webContainer = new StackPane(webView);
+        webView.prefWidthProperty().bind(webContainer.widthProperty());
+        webView.prefHeightProperty().bind(webContainer.heightProperty());
 
         final BorderPane borderPane = new BorderPane();
         borderPane.setTop(topRuler);
@@ -170,10 +171,10 @@ public class PreviewHTML {
         toolbarPane.setCenter(borderPane);
 
         scene = new Scene(toolbarPane);
-        previewStage.setTitle("HTML Preview - " + settings.getJobName());
-        previewStage.setScene(scene);
-        previewStage.sizeToScene();
-        previewStage.show();
+        renderStage.setTitle("HTML Preview"); //- " + settings.getJobName());
+        renderStage.setScene(scene);
+        renderStage.sizeToScene();
+        renderStage.show();
 
         calculateDimensions(scene.getWidth(), scene.getHeight());
         updateSizeLabels();
@@ -200,8 +201,8 @@ public class PreviewHTML {
             double newWidth = parseInput(widthField.getText());
             if (newWidth > 0) {
                 // The stage size and scene size are not the same. I think this is due to the window border. I could not find a more direct approach.
-                double fudgeFactor = previewStage.getWidth() - scene.getWidth();
-                previewStage.setWidth(newWidth * dpu + thickness + fudgeFactor);
+                double fudgeFactor = renderStage.getWidth() - scene.getWidth();
+                renderStage.setWidth(newWidth * dpu + thickness + fudgeFactor);
             } else {
                 widthField.setText(reportedWidth);
             }
@@ -213,8 +214,8 @@ public class PreviewHTML {
             double newHeight = parseInput(heightField.getText());
             if (newHeight > 0) {
                 // The stage size and scene size are not the same. I think this is due to the window border. I could not find a more direct approach.
-                double fudgeFactor = previewStage.getHeight() - scene.getHeight();
-                previewStage.setHeight(newHeight * dpu + thickness + toolBar.getHeight() + fudgeFactor);
+                double fudgeFactor = renderStage.getHeight() - scene.getHeight();
+                renderStage.setHeight(newHeight * dpu + thickness + toolBar.getHeight() + fudgeFactor);
             } else {
                 heightField.setText(reportedHeight);
             }
@@ -336,7 +337,7 @@ public class PreviewHTML {
 
                 gc.setFill(Color.BLACK);
                 gc.fillText(legendFormat.format(i * unitsPerLabel / divisions),
-                              thickness + i * spacing - (textWidth / 2), thickness - 2);
+                            thickness + i * spacing - (textWidth / 2), thickness - 2);
             }
             gc.strokeLine(thickness + i * spacing, 0, thickness + i * spacing, tickLength);
         }

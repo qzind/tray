@@ -135,17 +135,18 @@ public class WebApp extends Application {
         startupLatch.countDown();
     }
 
-    public static WebAppInstance createWebAppInstance() {
+    public static PrintHtmlInstance createWebAppInstance() {
         if (instance == null) new WebApp();
-        return new WebAppInstance(stage);
+        return new PrintHtmlInstance(stage);
     }
 
     public static BufferedImage raster(final WebAppModel model) throws Throwable {
-        return new WebAppInstance(stage).raster(model);
+        return new PrintHtmlInstance(stage).raster(model);
     }
 
     public static void print(final PrinterJob job, final WebAppModel model) throws Throwable {
-        new WebAppInstance(stage).print(job, model);
+        new PreviewHtmlInstance(stage).show(model);
+        //new PrintHtmlInstance(stage).print(job, model);
     }
 
     public static Version getWebkitVersion() {

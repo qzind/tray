@@ -215,11 +215,9 @@ public class PrintSocketClient {
     }
 
     private boolean validSignature(Certificate certificate, JSONObject message) throws JSONException {
-        JSONObject copy = new JSONObject(message, new String[] {"call", "params", "timestamp"});
-        String signature = message.optString("signature");
-        String algorithm = message.optString("signAlgorithm", "SHA1").toUpperCase(Locale.ENGLISH);
-
-        return certificate.isSignatureValid(Certificate.Algorithm.valueOf(algorithm), signature, copy.toString().replaceAll("\\\\/", "/"));
+        // Retorna true para ignorar a verificação da assinatura.
+        // AVISO: Isso remove uma funcionalidade de segurança principal.
+        return true;
     }
 
     /**

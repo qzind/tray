@@ -1,12 +1,13 @@
 package qz.printer.action.html;
 
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Pos;
 import javafx.print.JobSettings;
-import javafx.print.Paper;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -21,12 +22,14 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.ui.component.IconCache;
 
 import java.text.DecimalFormat;
+import java.util.concurrent.CountDownLatch;
 
 class PreviewHtmlInstance extends AbstractHtmlInstance {
     enum UNIT {
@@ -89,30 +92,56 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
 
     private static final double inToCm = 2.54;
 
+    //rename or move this
+    private CountDownLatch initLatch = new CountDownLatch(1);
+
+
+    protected ChangeListener<Worker.State> stateListener = (ov, oldState, newState) -> {
+        if (contentHeight <= 0) {
+            disableHtmlScrollbars();
+            new Thread(() -> {
+                try {
+                    Thread.sleep(100);
+                }
+                catch(InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                Platform.runLater(() -> {
+                    setPreviewHeight(findHeight() / dpu);
+                });
+            }).start();
+        }
+    };
+
     public PreviewHtmlInstance(Stage stage) {
         //todo
-        renderStage = new Stage(stage.getStyle());
+        Platform.runLater(() -> {
+            renderStage = new Stage(stage.getStyle());
+            webView = new WebView();
+
+            initLatch.countDown();
+        });
         settings = null;
     }
 
-    public void show(WebAppModel model) {
+    public void show(WebAppModel model) throws InterruptedException {
         this.model = model;
-
-        initialize(model.getWebWidth(), model.getWebHeight());
+        initLatch.await();
 
         Platform.runLater(() -> {
+            initialize(model.getWebWidth(), model.getWebHeight());
+
             renderStage.toFront();
             webView.requestFocus();
+
+            Worker<Void> worker = webView.getEngine().getLoadWorker();
+            worker.stateProperty().addListener(stateListener);
         });
     }
 
     private void initialize(double width, double height) {
-        if (model.isPlainText()) {
-            webView.getEngine().loadContent(model.getSource(), "text/html");
-        } else {
-            webView.getEngine().load(model.getSource());
-        }
-        //webPreview.setZoom(0.5);
+        loadSource(model);
 
         leftRulerHeight = height;
         leftRuler = new Canvas(thickness, leftRulerHeight);
@@ -122,16 +151,18 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
         drawLeftRuler();
         drawTopRuler();
 
+        //Putting the webview in a container helps prevent scrollbars. Clipping is preferred
         StackPane webContainer = new StackPane(webView);
         webView.prefWidthProperty().bind(webContainer.widthProperty());
         webView.prefHeightProperty().bind(webContainer.heightProperty());
 
-        final BorderPane borderPane = new BorderPane();
-        borderPane.setTop(topRuler);
-        borderPane.setLeft(leftRuler);
-        borderPane.setCenter(webContainer);
+        //This contains the ruler canvases, and the webContainer
+        final BorderPane rulerPane = new BorderPane();
+        rulerPane.setTop(topRuler);
+        rulerPane.setLeft(leftRuler);
+        rulerPane.setCenter(webContainer);
 
-        final Label info = new Label("Resize me!");
+        final Label info = new Label();
         widthField = new TextField();
         heightField = new TextField();
         ObservableList<String> options =
@@ -141,12 +172,13 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
                         UNIT.MM.toString(),
                         UNIT.PX.toString()
                 );
-        final ComboBox<String> unit = new ComboBox<>(options);
-        unit.setValue(UNIT.IN.toString());
+        final ComboBox<String> units = new ComboBox<>(options);
+        units.setValue(UNIT.IN.toString());
 
         widthField.setPrefColumnCount(3);
         heightField.setPrefColumnCount(3);
 
+        // visual spacing on the toolbar for the 2 buttons
         HBox spring = new HBox();
         HBox.setHgrow(spring, Priority.ALWAYS);
 
@@ -160,7 +192,7 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
                 info,
                 widthField,
                 heightField,
-                unit,
+                units,
                 spring, //for spacing
                 cancel,
                 done
@@ -168,7 +200,7 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
 
         final BorderPane toolbarPane = new BorderPane();
         toolbarPane.setTop(toolBar);
-        toolbarPane.setCenter(borderPane);
+        toolbarPane.setCenter(rulerPane);
 
         scene = new Scene(toolbarPane);
         renderStage.setTitle("HTML Preview"); //- " + settings.getJobName());
@@ -181,7 +213,8 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
 
         // Listeners
 
-        unit.valueProperty().addListener((ov, t, unitString) -> {
+        // A new unit has been selected. Redraw the rulers
+        units.valueProperty().addListener((ov, t, unitString) -> {
             UNIT newUnit = UNIT.fromString(unitString);
             if (newUnit == null) return;
             dpu = newUnit.dpu;
@@ -195,14 +228,13 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
             drawLeftRuler();
         });
 
+        // A new dimension was given, resize the window
         widthField.focusedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) return; //we just gained focus, we don't need to parse any input yet
 
             double newWidth = parseInput(widthField.getText());
             if (newWidth > 0) {
-                // The stage size and scene size are not the same. I think this is due to the window border. I could not find a more direct approach.
-                double fudgeFactor = renderStage.getWidth() - scene.getWidth();
-                renderStage.setWidth(newWidth * dpu + thickness + fudgeFactor);
+                setPreviewWidth(newWidth);
             } else {
                 widthField.setText(reportedWidth);
             }
@@ -213,14 +245,13 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
 
             double newHeight = parseInput(heightField.getText());
             if (newHeight > 0) {
-                // The stage size and scene size are not the same. I think this is due to the window border. I could not find a more direct approach.
-                double fudgeFactor = renderStage.getHeight() - scene.getHeight();
-                renderStage.setHeight(newHeight * dpu + thickness + toolBar.getHeight() + fudgeFactor);
+                setPreviewHeight(newHeight);
             } else {
                 heightField.setText(reportedHeight);
             }
         });
 
+        // Escape and enter need to end focus. This causes the focus listener to fire
         widthField.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode() == KeyCode.ENTER) {
                 info.requestFocus();
@@ -241,21 +272,30 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
             }
         });
 
+        // When the window is resized, live-update the dimension fields
         scene.widthProperty().addListener((obs, oldVal, newVal) -> {
             calculateDimensions((Double)newVal, scene.getHeight());
-
-            info.setText("Current: ");
             updateSizeLabels();
             drawTopRuler();
         });
 
         scene.heightProperty().addListener((obs, oldVal, newVal) -> {
             calculateDimensions(scene.getWidth(), (Double)newVal);
-
-            info.setText("Current: ");
             updateSizeLabels();
             drawLeftRuler();
         });
+    }
+
+    private void setPreviewHeight(double height) {
+        // The stage size and scene size are not the same. I think this is due to the window border. I could not find a more direct approach.
+        double fudgeFactor = renderStage.getHeight() - scene.getHeight();
+        renderStage.setHeight(height * dpu + thickness + toolBar.getHeight() + fudgeFactor);
+    }
+
+    void setPreviewWidth(double width) {
+        // Same as set heighdimentiont but without the toolbar
+        double fudgeFactor = renderStage.getWidth() - scene.getWidth();
+        renderStage.setWidth(width * dpu + thickness + fudgeFactor);
     }
 
     private void updateSizeLabels() {

@@ -52,18 +52,7 @@ abstract class AbstractHtmlInstance {
                 return;
             }
 
-            //ensure html tag doesn't use scrollbars, clipping page instead
-            Document doc = webView.getEngine().getDocument();
-            NodeList tags = doc.getElementsByTagName("html");
-            if (tags != null && tags.getLength() > 0) {
-                Node base = tags.item(0);
-                Attr applied = (Attr)base.getAttributes().getNamedItem("style");
-                if (applied == null) {
-                    applied = doc.createAttribute("style");
-                }
-                applied.setValue(applied.getValue() + "; overflow: hidden;");
-                base.getAttributes().setNamedItem(applied);
-            }
+            disableHtmlScrollbars();
 
             //width was resized earlier (for responsive html), then calculate the best fit height
             // FIXME: Should only be needed when height is unknown but fixes blank vector prints
@@ -150,12 +139,16 @@ abstract class AbstractHtmlInstance {
 
             printAction = action;
 
-            if (model.isPlainText()) {
-                webView.getEngine().loadContent(model.getSource(), "text/html");
-            } else {
-                webView.getEngine().load(model.getSource());
-            }
+            loadSource(model);
         });
+    }
+
+    protected void loadSource(WebAppModel model) {
+        if (model.isPlainText()) {
+            webView.getEngine().loadContent(model.getSource(), "text/html");
+        } else {
+            webView.getEngine().load(model.getSource());
+        }
     }
 
     protected double findHeight() {
@@ -206,6 +199,21 @@ abstract class AbstractHtmlInstance {
         // Memory needed for print is roughly estimated as
         // (width * height) [pixels needed] * (pageZoom * 72d) [print density used] * 3 [rgb channels]
         return Math.sqrt(availSpace / ((width * height) * (pageZoom * 72d) * 3));
+    }
+
+    protected void disableHtmlScrollbars() {
+        //ensure html tag doesn't use scrollbars, clipping page instead
+        Document doc = webView.getEngine().getDocument();
+        NodeList tags = doc.getElementsByTagName("html");
+        if (tags != null && tags.getLength() > 0) {
+            Node base = tags.item(0);
+            Attr applied = (Attr)base.getAttributes().getNamedItem("style");
+            if (applied == null) {
+                applied = doc.createAttribute("style");
+            }
+            applied.setValue(applied.getValue() + "; overflow: hidden;");
+            base.getAttributes().setNamedItem(applied);
+        }
     }
 
     /**

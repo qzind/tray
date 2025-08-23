@@ -46,26 +46,10 @@ abstract class AbstractHtmlInstance {
             unlatch(new IOException("Page load was cancelled for an unknown reason"));
         }
         if (newState == Worker.State.SUCCEEDED) {
-            boolean hasBody = (boolean)webView.getEngine().executeScript("document.body != null");
-            if (!hasBody) {
-                log.warn("Loaded page has no body - likely a redirect, skipping state");
-                return;
-            }
+            if (!hasBody()) return;
+            disableHtmlScrollbars();
 
-            //ensure html tag doesn't use scrollbars, clipping page instead
-            Document doc = webView.getEngine().getDocument();
-            NodeList tags = doc.getElementsByTagName("html");
-            if (tags != null && tags.getLength() > 0) {
-                Node base = tags.item(0);
-                Attr applied = (Attr)base.getAttributes().getNamedItem("style");
-                if (applied == null) {
-                    applied = doc.createAttribute("style");
-                }
-                applied.setValue(applied.getValue() + "; overflow: hidden;");
-                base.getAttributes().setNamedItem(applied);
-            }
-
-            //width was resized earlier (for responsive html), then calculate the best fit height
+            // width was resized earlier (for responsive html), then calculate the best fit height
             // FIXME: Should only be needed when height is unknown but fixes blank vector prints
             double fittedHeight = findHeight();
             boolean heightNeeded = pageHeight <= 0;
@@ -73,6 +57,7 @@ abstract class AbstractHtmlInstance {
             if (heightNeeded) {
                 pageHeight = fittedHeight;
             }
+            pageHeight = (pageHeight <= 0) ? findHeight() : pageHeight;
 
             // find and set page zoom for increased quality
             double usableZoom = calculateSupportedZoom(pageWidth, pageHeight);
@@ -97,16 +82,7 @@ abstract class AbstractHtmlInstance {
 
             autosize(webView);
 
-            Platform.runLater(() -> new AnimationTimer() {
-                int frames = 0;
-
-                @Override
-                public void handle(long l) {
-                    if (printAction.test(++frames)) {
-                        stop();
-                    }
-                }
-            }.start());
+            firePrintAction();
         }
     };
 
@@ -120,6 +96,12 @@ abstract class AbstractHtmlInstance {
         if (newExc != null) { unlatch(newExc); }
     };
 
+    protected void initStateListeners(Worker<Void> worker) {
+        worker.stateProperty().addListener(stateListener);
+        worker.workDoneProperty().addListener(workDoneListener);
+        worker.exceptionProperty().addListener(exceptListener);
+        worker.messageProperty().addListener(msgListener);
+    }
 
     /**
      * Prints the loaded source specified in the passed {@code model}.
@@ -150,12 +132,16 @@ abstract class AbstractHtmlInstance {
 
             printAction = action;
 
-            if (model.isPlainText()) {
-                webView.getEngine().loadContent(model.getSource(), "text/html");
-            } else {
-                webView.getEngine().load(model.getSource());
-            }
+            loadSource(model);
         });
+    }
+
+    protected void loadSource(WebAppModel model) {
+        if (model.isPlainText()) {
+            webView.getEngine().loadContent(model.getSource(), "text/html");
+        } else {
+            webView.getEngine().load(model.getSource());
+        }
     }
 
     protected double findHeight() {
@@ -167,6 +153,19 @@ abstract class AbstractHtmlInstance {
         webView.setMinSize(toWidth, toHeight);
         webView.setPrefSize(toWidth, toHeight);
         webView.setMaxSize(toWidth, toHeight);
+    }
+
+    protected void firePrintAction() {
+        Platform.runLater(() -> new AnimationTimer() {
+            int frames = 0;
+
+            @Override
+            public void handle(long l) {
+                if (printAction.test(++frames)) {
+                    stop();
+                }
+            }
+        }.start());
     }
 
     /**
@@ -206,6 +205,29 @@ abstract class AbstractHtmlInstance {
         // Memory needed for print is roughly estimated as
         // (width * height) [pixels needed] * (pageZoom * 72d) [print density used] * 3 [rgb channels]
         return Math.sqrt(availSpace / ((width * height) * (pageZoom * 72d) * 3));
+    }
+
+    protected void disableHtmlScrollbars() {
+        //ensure html tag doesn't use scrollbars, clipping page instead
+        Document doc = webView.getEngine().getDocument();
+        NodeList tags = doc.getElementsByTagName("html");
+        if (tags != null && tags.getLength() > 0) {
+            Node base = tags.item(0);
+            Attr applied = (Attr)base.getAttributes().getNamedItem("style");
+            if (applied == null) {
+                applied = doc.createAttribute("style");
+            }
+            applied.setValue(applied.getValue() + "; overflow: hidden;");
+            base.getAttributes().setNamedItem(applied);
+        }
+    }
+
+    protected boolean hasBody() {
+        boolean hasBody = (boolean)webView.getEngine().executeScript("document.body != null");
+        if (!hasBody) {
+            log.warn("Loaded page has no body - likely a redirect, skipping state");
+        }
+        return hasBody;
     }
 
     /**

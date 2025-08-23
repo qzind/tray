@@ -35,12 +35,7 @@ class PrintHtmlInstance extends AbstractHtmlInstance {
             renderStage.setWidth(1);
             renderStage.setHeight(1);
 
-            Worker<Void> worker = webView.getEngine().getLoadWorker();
-            worker.stateProperty().addListener(stateListener);
-            worker.workDoneProperty().addListener(workDoneListener);
-            worker.exceptionProperty().addListener(exceptListener);
-            worker.messageProperty().addListener(msgListener);
-
+            initStateListeners(webView.getEngine().getLoadWorker());
             //prevents JavaFX from shutting down when hiding window
             Platform.setImplicitExit(false);
         });

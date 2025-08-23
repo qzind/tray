@@ -95,26 +95,30 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
     //rename or move this
     private CountDownLatch initLatch = new CountDownLatch(1);
 
-
-    protected ChangeListener<Worker.State> stateListener = (ov, oldState, newState) -> {
-        if (contentHeight <= 0) {
-            disableHtmlScrollbars();
-            new Thread(() -> {
-                try {
-                    Thread.sleep(100);
-                }
-                catch(InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-
-                Platform.runLater(() -> {
-                    setPreviewHeight(findHeight() / dpu);
-                });
-            }).start();
-        }
-    };
-
     public PreviewHtmlInstance(Stage stage) {
+        stateListener = (ov, oldState, newState) -> {
+            if (true) {
+
+                if (!hasBody()) return;
+
+                if (contentHeight <= 0) {
+                    disableHtmlScrollbars();
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(100);
+                        }
+                        catch(InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                        Platform.runLater(() -> {
+                            setPreviewHeight(findHeight() / dpu);
+                        });
+                    }).start();
+                }
+            }
+        };
+
         //todo
         Platform.runLater(() -> {
             renderStage = new Stage(stage.getStyle());
@@ -135,8 +139,7 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
             renderStage.toFront();
             webView.requestFocus();
 
-            Worker<Void> worker = webView.getEngine().getLoadWorker();
-            worker.stateProperty().addListener(stateListener);
+            initStateListeners(webView.getEngine().getLoadWorker());
         });
     }
 

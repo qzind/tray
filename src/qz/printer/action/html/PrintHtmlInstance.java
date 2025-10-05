@@ -2,14 +2,9 @@ package qz.printer.action.html;
 
 import com.sun.javafx.tk.TKPulseListener;
 import com.sun.javafx.tk.Toolkit;
-import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
-import javafx.print.JobSettings;
 import javafx.print.PageLayout;
-import javafx.print.Paper;
 import javafx.print.PrinterJob;
 import javafx.scene.Scene;
 import javafx.scene.shape.Rectangle;
@@ -20,17 +15,10 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.IntPredicate;
 
 class PrintHtmlInstance extends AbstractHtmlInstance {
     private static final Logger log = LogManager.getLogger(PrintHtmlInstance.class);
@@ -129,17 +117,6 @@ class PrintHtmlInstance extends AbstractHtmlInstance {
         captureLatch.await(); //released when unlatch is called
 
         if (thrown.get() != null) { throw thrown.get(); }
-    }
-
-    public synchronized void openPreview(final WebAppModel model, JobSettings settings, Paper paper) throws IOException {
-        ////ensure JavaFX has started before we run
-        //if (startupLatch.getCount() > 0) {
-        //    throw new IOException("JavaFX has not been started");
-        //}
-        //
-        //Platform.runLater(() -> {
-        //    new PreviewHTML(model, settings, new Stage(stage.getStyle()), paper);
-        //});
     }
 
     public synchronized BufferedImage raster(final WebAppModel model) throws Throwable {

@@ -1,34 +1,25 @@
 package qz.printer.action.html;
 
-import com.sun.javafx.geom.Rectangle;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
-import javafx.event.EventHandler;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import javafx.stage.WindowEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.ui.component.IconCache;
 
 import java.awt.*;
@@ -37,13 +28,15 @@ import java.text.DecimalFormat;
 import java.util.function.Consumer;
 
 public class PreviewWindow {
+    private static final Logger log = LogManager.getLogger(PreviewWindow.class);
+
     private Consumer<Rectangle2D.Double> onPrint = ignore -> {};
     private Runnable onCancel = () -> {};
 
     private Stage stage;
     private Node content;
-    private Canvas topRuler;
-    private Canvas leftRuler;
+    private Ruler topRuler;
+    private Ruler leftRuler;
     private Label info;
     private TextField widthField;
     private TextField heightField;
@@ -56,23 +49,19 @@ public class PreviewWindow {
     private double contentHeight;
     private String reportedWidth;
     private String reportedHeight;
-    private double topRulerWidth;
-    private double leftRulerHeight;
 
     // Ruler fields
     private static double thickness = 20;
-    private final DecimalFormat legendFormat = new DecimalFormat("#.#");
     private DecimalFormat unitFormat = UNIT.IN.unitFormat;
     private double dpu = UNIT.IN.dpu;
-    private double divisions = UNIT.IN.divisions;
-    private double unitsPerLabel = UNIT.IN.unitsPerLabel;
+    private ScrollPane scrollPane;
+    private BorderPane rulerPane ;
 
     public PreviewWindow(StageStyle style, Node content) {
         this.content = content;
         stage = new Stage(style);
         initUiElements();
         registerTextFieldListeners();
-        registerSizelisteners();
     }
 
     public void show() {
@@ -81,31 +70,38 @@ public class PreviewWindow {
     }
 
     private void initUiElements() {
-        topRuler = new Canvas();
-        leftRuler = new Canvas();
-
+        //todo default units? probably look at the print request
+        topRuler = new Ruler(20.0, UNIT.IN, false);
+        leftRuler = new Ruler(20.0, UNIT.IN, true);
 
         //This contains the ruler canvases, and the content
-        final BorderPane rulerPane = new BorderPane();
-        //Web views do not like being smaller than 1 pixel
-        rulerPane.setMinHeight(topRulerWidth + 1);
+        scrollPane = new ScrollPane();
+        scrollPane.setFitToHeight(true);
+        scrollPane.setFitToWidth(true);
+
+        rulerPane = new BorderPane();
         rulerPane.setTop(topRuler);
         rulerPane.setLeft(leftRuler);
 
         if (content instanceof WebView) {
             WebView webContent = (WebView)content;
+            webContent.setMouseTransparent(true);
             //Putting a webview in a container helps prevent scrollbars. Clipping is preferred
             //Omitting this also breaks the option to 'find height' via js injection
             StackPane webContainer = new StackPane(webContent);
-            webContent.prefWidthProperty().bind(webContainer.widthProperty());
-            webContent.prefHeightProperty().bind(webContainer.heightProperty());
+            webContainer.setBackground(new Background(new BackgroundFill(Color.GRAY, null, null)));
+            webContainer.setAlignment(webContainer, Pos.TOP_LEFT);
+            webContainer.setAlignment(Pos.TOP_LEFT);
+
             rulerPane.setCenter(webContainer);
         } else {
             rulerPane.setCenter(content);
         }
 
+        scrollPane.setContent(rulerPane);
+
         /// toolbar ///
-        info = new Label("WxH");
+        info = new Label("Dimensions WxH");
 
         widthField = new TextField();
         heightField = new TextField();
@@ -131,7 +127,6 @@ public class PreviewWindow {
         final Button cancel = new Button("Cancel", cancelIcon);
         final Button done = new Button("Print", doneIcon);
 
-        cancel.setCancelButton(true);
         cancel.setOnAction(actionEvent -> {
             onCancel.run();
             stage.close();
@@ -156,7 +151,7 @@ public class PreviewWindow {
 
         final BorderPane toolbarPane = new BorderPane();
         toolbarPane.setTop(toolBar);
-        toolbarPane.setCenter(rulerPane);
+        toolbarPane.setCenter(scrollPane);
 
         scene = new Scene(toolbarPane);
         stage.setScene(scene);
@@ -178,14 +173,14 @@ public class PreviewWindow {
             UNIT newUnit = UNIT.fromString(unitString);
             if (newUnit == null) return;
             dpu = newUnit.dpu;
-            unitsPerLabel = (int)newUnit.unitsPerLabel;
-            divisions = newUnit.divisions;
             unitFormat = newUnit.unitFormat;
 
-            calculateDimensions(scene.getWidth(), scene.getHeight());
-            updateSizeLabels();
-            drawTopRuler();
-            drawLeftRuler();
+            topRuler.setUnit(newUnit);
+            topRuler.draw();
+            leftRuler.setUnit(newUnit);
+            leftRuler.draw();
+
+            setDimensions(contentWidth, contentHeight);
         });
 
         // A new dimension was given, resize the window
@@ -233,117 +228,47 @@ public class PreviewWindow {
         });
     }
 
-    private void registerSizelisteners() {
-        // When the window is resized, live-update the dimension fields
-        scene.widthProperty().addListener((obs, oldVal, newVal) -> {
-            calculateDimensions((Double)newVal, scene.getHeight());
-            updateSizeLabels();
-            drawTopRuler();
-            scaleContent();
-        });
-
-        scene.heightProperty().addListener((obs, oldVal, newVal) -> {
-            calculateDimensions(scene.getWidth(), (Double)newVal);
-            updateSizeLabels();
-            drawLeftRuler();
-            scaleContent();
-        });
-    }
-
     public void setPreviewHeight(double height) {
-        // The stage size and scene size are not the same. I think this is due to the window border. I could not find a more direct approach.
-        double fudgeFactor = stage.getHeight() - scene.getHeight();
-        stage.setHeight(height + thickness + toolBar.getHeight() + fudgeFactor);
+        content.maxHeight(height);
+        content.minHeight(height);
+        content.prefHeight(height);
+
+        if (content instanceof WebView) {
+            WebView webContent = (WebView)content;
+            webContent.setMinHeight(height);
+            webContent.setMaxHeight(height);
+            webContent.setPrefHeight(height);
+        }
+
+        setDimensions(contentWidth, height);
     }
 
     void setPreviewWidth(double width) {
-        // Same as set height but without the toolbar
-        double fudgeFactor = stage.getWidth() - scene.getWidth();
-        stage.setWidth(width + thickness + fudgeFactor);
+        content.maxWidth(width);
+        content.minWidth(width);
+        content.prefWidth(width);
+
+        //todo: test this with other content types
+        if (content instanceof WebView) {
+            WebView webContent = (WebView)content;
+            webContent.setMinWidth(width);
+            webContent.setMaxWidth(width);
+            webContent.setPrefWidth(width);
+        }
+
+        setDimensions(width, contentHeight);
     }
 
-    private void updateSizeLabels() {
-        widthField.setText(reportedWidth);
-        heightField.setText(reportedHeight);
-    }
-
-    private void scaleContent() {
-        content.maxWidth(contentWidth);
-        content.maxHeight(contentHeight);
-    }
-
-    private void calculateDimensions(double width, double height) {
-        contentWidth = width - thickness;
-        contentHeight = height - thickness - toolBar.getHeight();
-
-        topRulerWidth = contentWidth + thickness;
-        leftRulerHeight = contentHeight;
+    private void setDimensions(double width, double height) {
+        //todo this method is no longer needed
+        contentWidth = width;
+        contentHeight = height;
 
         reportedWidth = unitFormat.format(contentWidth / dpu);
         reportedHeight = unitFormat.format(contentHeight / dpu);
-    }
 
-    private void drawLeftRuler() {
-        leftRuler.setHeight(leftRulerHeight);
-        leftRuler.setWidth(thickness);
-
-        GraphicsContext gc = leftRuler.getGraphicsContext2D();
-        gc.clearRect(0, 0, thickness, leftRulerHeight);
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(1);
-        Font font = Font.font("SansSerif", FontWeight.BOLD, 10);
-        gc.setFont(font);
-
-        double spacing = dpu * unitsPerLabel / divisions;
-        for (int i = 1; i * spacing < leftRulerHeight; i++) {
-            double tickLength = thickness * 0.2;
-            if (i % (divisions / 2) == 0) tickLength += thickness * 0.3;
-            if (i % divisions == 0) {
-                tickLength -= thickness * 0.1;
-                Text helper = new Text(legendFormat.format(i * unitsPerLabel / divisions));
-                helper.setFont(font);
-                double textWidth = Math.ceil(helper.getLayoutBounds().getWidth());
-
-                gc.save();
-                gc.translate(0, i * spacing);
-                gc.rotate(-90);
-                gc.setFill(Color.BLACK);
-                gc.fillText(legendFormat.format(i * unitsPerLabel / divisions), -textWidth / 2, thickness - 2);
-                gc.restore();
-            }
-            gc.strokeLine(0, i * spacing, tickLength, i * spacing);
-        }
-    }
-
-    private void drawTopRuler() {
-        topRuler.setHeight(thickness);
-        topRuler.setWidth(topRulerWidth);
-
-        GraphicsContext gc = topRuler.getGraphicsContext2D();
-        gc.clearRect(0, 0, topRulerWidth, thickness);
-        gc.setStroke(Color.BLACK);
-        gc.setFill(Color.GRAY);
-        gc.fillRect(0,0, thickness, thickness);
-        gc.setLineWidth(1);
-        Font font = Font.font("SansSerif", FontWeight.BOLD, 10);
-        gc.setFont(font);
-
-        double spacing = dpu * unitsPerLabel / divisions;
-        for (int i = 1; i * spacing < topRulerWidth; i++) {
-            double tickLength = thickness * 0.2;
-            if (i % (divisions / 2) == 0) tickLength += thickness * 0.3;
-            if (i % divisions == 0) {
-                tickLength -= thickness * 0.1;
-                Text helper = new Text(legendFormat.format(i * unitsPerLabel / divisions));
-                helper.setFont(font);
-                double textWidth = Math.ceil(helper.getLayoutBounds().getWidth());
-
-                gc.setFill(Color.BLACK);
-                gc.fillText(legendFormat.format(i * unitsPerLabel / divisions),
-                            thickness + i * spacing - (textWidth / 2), thickness - 2);
-            }
-            gc.strokeLine(thickness + i * spacing, 0, thickness + i * spacing, tickLength);
-        }
+        widthField.setText(reportedWidth);
+        heightField.setText(reportedHeight);
     }
 
     private static double parseInput(String value) {

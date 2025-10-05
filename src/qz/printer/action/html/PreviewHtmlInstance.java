@@ -9,7 +9,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.function.UnaryOperator;
 
 class PreviewHtmlInstance extends AbstractHtmlInstance {
     private static final Logger log = LogManager.getLogger(PreviewHtmlInstance.class);
@@ -79,6 +78,8 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
             preview.setOnCancel(() -> {
                 log.warn("Print preview canceled");
             });
+            preview.setPreviewWidth(width);
+            preview.setPreviewHeight(height);
             preview.show();
         });
     }

@@ -26,37 +26,44 @@ public class Ruler extends Canvas {
         heightProperty().addListener(evt -> draw());
     }
 
+    private double getLength() {
+        return isVertical ? getHeight() : getWidth();
+    }
+
     public void draw() {
-        double width = getWidth();
-        double height = getHeight();
+        double length = getLength();
 
         GraphicsContext gc = getGraphicsContext2D();
         gc.setTransform(new Affine());
-        gc.clearRect(0, 0, width, height);
+        gc.clearRect(0, 0, getWidth(), getHeight());
 
         gc.setStroke(Color.BLACK);
 
-        double length;
         if (isVertical) {
             gc.rotate(-90);
-            length = -height;
         } else {
             gc.setFill(Color.GRAY);
             gc.fillRect(0, 0, thickness, thickness);
             gc.translate(thickness, 0); //here, we fill the notch, and the start of the ruler is 'x = 0'
-            length = width - thickness;
+            length -= thickness;
         }
 
-        gc.setFill(Color.WHITESMOKE);
-        gc.fillRect(0,0, length, thickness);
         gc.setLineWidth(1);
         Font font = Font.font("SansSerif", FontWeight.BOLD, 10);
         gc.setFont(font);
 
-        int direction = isVertical ? -1 : 1; //the vertical line goes 'backwards'
+        gc.setFill(Color.WHITESMOKE);
+        int direction; //the vertical line goes 'backwards'
+        if (isVertical) {
+            direction = -1;
+            gc.fillRect(-length,0, length, thickness);
+        } else {
+            direction = 1;
+            gc.fillRect(0,0, length, thickness);
+        }
         double spacing = (unit.dpu * unit.unitsPerLabel / unit.divisions) * direction;
 
-        for (int i = 1; Math.abs(i * spacing) < Math.abs(length); i++) {
+        for (int i = 1; Math.abs(i * spacing) < length; i++) {
             double tickLength = thickness * 0.2;
             if (i % (unit.divisions / 2) == 0) tickLength += thickness * 0.3;
             if (i % unit.divisions == 0) {

@@ -3,11 +3,8 @@ package qz.printer.action.html;
 import com.sun.javafx.tk.TKPulseListener;
 import com.sun.javafx.tk.Toolkit;
 import javafx.application.Platform;
-import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
-import javafx.print.JobSettings;
 import javafx.print.PageLayout;
-import javafx.print.Paper;
 import javafx.print.PrinterJob;
 import javafx.scene.Scene;
 import javafx.scene.shape.Rectangle;
@@ -120,17 +117,6 @@ class PrintHtmlInstance extends AbstractHtmlInstance {
         captureLatch.await(); //released when unlatch is called
 
         if (thrown.get() != null) { throw thrown.get(); }
-    }
-
-    public synchronized void openPreview(final WebAppModel model, JobSettings settings, Paper paper) throws IOException {
-        ////ensure JavaFX has started before we run
-        //if (startupLatch.getCount() > 0) {
-        //    throw new IOException("JavaFX has not been started");
-        //}
-        //
-        //Platform.runLater(() -> {
-        //    new PreviewHTML(model, settings, new Stage(stage.getStyle()), paper);
-        //});
     }
 
     public synchronized BufferedImage raster(final WebAppModel model) throws Throwable {

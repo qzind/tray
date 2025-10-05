@@ -16,6 +16,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.web.WebView;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import org.apache.logging.log4j.LogManager;
@@ -51,11 +52,9 @@ public class PreviewWindow {
     private String reportedHeight;
 
     // Ruler fields
-    private static double thickness = 20;
+    private static final double thickness = 20;
     private DecimalFormat unitFormat = UNIT.IN.unitFormat;
     private double dpu = UNIT.IN.dpu;
-    private ScrollPane scrollPane;
-    private BorderPane rulerPane ;
 
     public PreviewWindow(StageStyle style, Node content) {
         this.content = content;
@@ -66,20 +65,25 @@ public class PreviewWindow {
 
     public void show() {
         stage.show();
+
+        javafx.geometry.Rectangle2D vb = Screen.getPrimary().getVisualBounds();
+        stage.setWidth(vb.getWidth() * 0.60);
+        stage.setHeight(vb.getHeight() * 0.60);
+
         info.requestFocus(); // This is to remove focus from whatever textfield starts with focus
     }
 
     private void initUiElements() {
         //todo default units? probably look at the print request
-        topRuler = new Ruler(20.0, UNIT.IN, false);
-        leftRuler = new Ruler(20.0, UNIT.IN, true);
+        topRuler = new Ruler(thickness, UNIT.IN, false);
+        leftRuler = new Ruler(thickness, UNIT.IN, true);
 
         //This contains the ruler canvases, and the content
-        scrollPane = new ScrollPane();
+        ScrollPane scrollPane = new ScrollPane();
         scrollPane.setFitToHeight(true);
         scrollPane.setFitToWidth(true);
 
-        rulerPane = new BorderPane();
+        BorderPane rulerPane = new BorderPane();
         rulerPane.setTop(topRuler);
         rulerPane.setLeft(leftRuler);
 
@@ -135,9 +139,7 @@ public class PreviewWindow {
             onPrint.accept(getDimensions());
             stage.close();
         });
-        stage.setOnCloseRequest(evt -> {
-            onCancel.run();
-        });
+        stage.setOnCloseRequest(evt -> onCancel.run());
 
         toolBar = new ToolBar(
                 info,

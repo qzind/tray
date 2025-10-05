@@ -2,10 +2,12 @@ package qz.printer.action.html;
 
 import javafx.application.Platform;
 import javafx.concurrent.Worker;
+import javafx.print.PrinterJob;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.printer.PrintOptions;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -13,6 +15,7 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
     private static final Logger log = LogManager.getLogger(PreviewHtmlInstance.class);
 
     private WebAppModel model;
+    private PrintOptions options;
     private PreviewWindow preview;
     //rename or move this
     private CountDownLatch initLatch = new CountDownLatch(1);
@@ -50,8 +53,9 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
         });
     }
 
-    public void show(WebAppModel model) throws InterruptedException {
+    public void show(PrinterJob job, WebAppModel model, PrintOptions options) throws InterruptedException {
         this.model = model;
+        this.options = options;
         initLatch.await();
 
         load(model, frames -> {
@@ -74,6 +78,7 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
             preview.setOnCancel(() -> log.warn("Print preview canceled"));
             preview.setPreviewWidth(width);
             preview.setPreviewHeight(height);
+            preview.setUnit(options.getPixelOptions().getUnits());
             preview.show();
         });
     }

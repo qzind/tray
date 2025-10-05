@@ -25,6 +25,7 @@ import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
+import qz.printer.PrintOptions;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -462,6 +463,14 @@ public class WebApp extends Application {
 
         captureLatch.countDown();
         stage.hide();
+    }
+
+    /**
+     * Compatibility overload for preview integration.
+     * Current behavior delegates to existing vector print flow.
+     */
+    public static synchronized void print(final PrinterJob job, final WebAppModel model, PrintOptions options) throws Throwable {
+        print(job, model);
     }
 
     public static Version getWebkitVersion() {

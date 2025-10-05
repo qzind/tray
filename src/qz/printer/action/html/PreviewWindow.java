@@ -21,6 +21,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.printer.PrintOptions;
 import qz.ui.component.IconCache;
 
 import java.awt.*;
@@ -173,16 +174,7 @@ public class PreviewWindow {
         // A new unit has been selected. Redraw the rulers
         units.valueProperty().addListener((ov, t, unitString) -> {
             UNIT newUnit = UNIT.fromString(unitString);
-            if (newUnit == null) return;
-            dpu = newUnit.dpu;
-            unitFormat = newUnit.unitFormat;
-
-            topRuler.setUnit(newUnit);
-            topRuler.draw();
-            leftRuler.setUnit(newUnit);
-            leftRuler.draw();
-
-            setDimensions(contentWidth, contentHeight);
+            setUnit(newUnit);
         });
 
         // A new dimension was given, resize the window
@@ -289,6 +281,34 @@ public class PreviewWindow {
 
     public void setOnCancel(Runnable onCancel) {
         this.onCancel = onCancel;
+    }
+
+    public void setUnit(PrintOptions.Unit newUnit) {
+        switch(newUnit) {
+            case INCH:
+                setUnit(UNIT.IN);
+                return;
+            case CM:
+                setUnit(UNIT.CM);
+                return;
+            case MM:
+                setUnit(UNIT.MM);
+        }
+    }
+
+    public void setUnit(UNIT newUnit) {
+        if (newUnit == null) return;
+        dpu = newUnit.dpu;
+        unitFormat = newUnit.unitFormat;
+
+        topRuler.setUnit(newUnit);
+        topRuler.draw();
+        leftRuler.setUnit(newUnit);
+        leftRuler.draw();
+
+        units.setValue(newUnit.toString());
+
+        setDimensions(contentWidth, contentHeight);
     }
 
     enum UNIT {

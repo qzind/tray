@@ -9,6 +9,7 @@ import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
+import qz.printer.PrintOptions;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -144,8 +145,8 @@ public class WebApp extends Application {
         return new PrintHtmlInstance(stage).raster(model);
     }
 
-    public static void print(final PrinterJob job, final WebAppModel model) throws Throwable {
-        new PreviewHtmlInstance(stage).show(model);
+    public static void print(final PrinterJob job, final WebAppModel model, PrintOptions options) throws Throwable {
+        new PreviewHtmlInstance(stage).show(job, model, options);
         //new PrintHtmlInstance(stage).print(job, model);
     }
 

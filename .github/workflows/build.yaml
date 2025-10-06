@@ -33,12 +33,7 @@ jobs:
           distribution: 'liberica'
       - run: brew install nsis makeself
       - run: ant pkgbuild
-      - run: echo "Setting CA trust settings to 'allow' (https://github.com/actions/runner-images/issues/4519)"
-      - run: security authorizationdb read com.apple.trust-settings.admin > /tmp/trust-settings-backup.xml
-      - run: sudo security authorizationdb write com.apple.trust-settings.admin allow
       - run: sudo installer -pkg out/qz-tray-*.pkg -target /
-      - run: echo "Restoring CA trust settings back to default"
-      - run: sudo security authorizationdb write com.apple.trust-settings.admin < /tmp/trust-settings-backup.xml
       - run: "'/Applications/QZ Tray.app/Contents/MacOS/QZ Tray' --version"
       - run: ant makeself
       - run: ant nsis

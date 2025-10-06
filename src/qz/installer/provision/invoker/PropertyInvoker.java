@@ -74,7 +74,7 @@ public class PropertyInvoker implements Invokable {
     }
 
 
-    private static AbstractMap.SimpleEntry<String, String> parsePropertyPair(Step step, String prop) {
+    public static AbstractMap.SimpleEntry<String, String> parsePropertyPair(Step step, String prop) {
         if(prop.contains("=")) {
             String[] pair = prop.split("=", 2);
             if (!pair[0].trim().isEmpty()) {
@@ -91,5 +91,9 @@ public class PropertyInvoker implements Invokable {
         }
 
         return null;
+    }
+
+    public Step getStep() {
+        return step;
     }
 }

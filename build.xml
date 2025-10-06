@@ -26,19 +26,6 @@
     </target>
 
     <target name="init">
-        <condition property="codesign.windows" value="true">
-            <and>
-                <isset property="target.os.windows"/>
-                <isset property="signing.tsaurl"/>
-            </and>
-        </condition>
-        <condition property="codesign.linux" value="true">
-            <and>
-                <isset property="target.os.linux"/>
-                <isset property="signing.tsaurl"/>
-            </and>
-        </condition>
-
         <echo message="Building ${project.filename} using JDK ${ant.java.version}"/>
     </target>
 
@@ -107,6 +94,10 @@
             </manifest>
         </jar>
         <delete dir="${out.dir}/libs-temp" includeemptydirs="true" defaultexcludes="false"/>
+
+        <antcall target="sign-jar">
+            <param name="sign.file" value="${dist.dir}/${project.filename}.jar"/>
+        </antcall>
     </target>
 
     <target name="externalize-libs" if="separate.static.libs" depends="copy-dylibs,copy-dlls,copy-solibs">
@@ -272,13 +263,11 @@
         <echo level="warn">The "include-assets" task is deprecated, please use "build-demo" instead.</echo>
     </target>
 
-    <target name="check-provision">
+    <target name="check-provision" if="provision.file">
+        <property description="suppress property warning" name="provision.file" value=""/>
         <available file="${provision.file}" property="provision.file.exists"/>
-        <condition property="provision.message" value="Found provision file '${provision.file}' calling 'provision --json [...]'">
-            <isset property="provision.file.exists"/>
-        </condition>
-        <property description="Fallback value" name="provision.message" value="Skipping provisioning, '${provision.file}' does not exist."/>
-        <echo level="info">${provision.message}</echo>
+        <fail message="Provision file was provided but not found: '${provision.file}'" unless="provision.file.exists"/>
+        <echo level="info">Found provision file '${provision.file}' calling 'provision --json [...]'</echo>
     </target>
 
     <target name="clean-provision" depends="check-provision" unless="skip.clean.provision">

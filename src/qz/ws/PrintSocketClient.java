@@ -12,6 +12,8 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
 import org.eclipse.jetty.websocket.api.exceptions.CloseException;
 import org.eclipse.jetty.websocket.api.exceptions.WebSocketException;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
 import org.usb4java.LoaderException;
 import qz.auth.Certificate;
 import qz.auth.RequestState;
@@ -23,6 +25,7 @@ import qz.printer.status.StatusMonitor;
 import qz.utils.*;
 import qz.ws.substitutions.Substitutions;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.usb.util.UsbUtil;
 import java.awt.*;
 import java.io.EOFException;
@@ -837,4 +840,23 @@ public class PrintSocketClient {
         }
     }
 
+    /**
+     * Simulate preflight headers origin filter
+     *
+     * TODO: Revisit when specification is updated to include WebSockets https://wicg.github.io/private-network-access/#integration-websockets
+     */
+    public static PrintSocketClient originFilterUpgrade(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp, Server server, String allowOrigin) {
+        if(!allowOrigin.equals("*")) {
+            String origin = req.getHeader("Origin");
+            if(!allowOrigin.equals(origin)) {
+                String message = String.format("Connection-supplied origin value '%s' does not match %s: '%s'; WebSocket connection will fail", origin, ArgValue.SECURITY_WSS_ALLOWORIGIN.getMatch(), allowOrigin);
+                log.error(message);
+                try {
+                    resp.sendError(HttpServletResponse.SC_FORBIDDEN, message);
+                } catch(IOException ignore) {}
+                return null;
+            }
+        }
+        return new PrintSocketClient(server);
+    }
 }

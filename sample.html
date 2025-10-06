@@ -3403,6 +3403,8 @@
             // Event from button
             evt.preventDefault();
 
+            $("#qz-page").removeClass("drag-target");
+
             var item = evt.dataTransfer.items[0];
             if(item.kind === "file") {
                 file = item.getAsFile();
@@ -3484,7 +3486,6 @@
                 }
             }).catch(displayError); 
         }
-        $("#qz-page").removeClass("drag-target"); 
     }
 
     function drag(evt, entering) {

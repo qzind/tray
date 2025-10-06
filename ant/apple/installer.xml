@@ -258,6 +258,7 @@
             <arg value="--entitlement"/>
             <arg value="${build.dir}/apple-entitlements.plist"/>
             <arg value="${bundle.dir}/Contents/PlugIns/Java.runtime/Contents/Home/bin/java"/>
+            <arg value="${bundle.dir}/Contents/PlugIns/Java.runtime/Contents/Home/bin/jcmd"/>
             <arg value="${bundle.dir}/Contents/PlugIns/Java.runtime"/>
         </exec>
         <exec executable="codesign" failonerror="true">
@@ -294,6 +295,11 @@
             <arg value="delete-certificate"/>
             <arg value="-Z"/>
             <arg value="6FD7892971854384AF40FAD1E0E6C56A992BC5EE"/>
+        </exec>
+        <exec executable="security">
+            <arg value="delete-certificate"/>
+            <arg value="-Z"/>
+            <arg value="F7F10838412D9187042EE1EB018794094AFA189A"/>
         </exec>
 
         <exec executable="security">

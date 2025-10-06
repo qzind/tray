@@ -7,37 +7,182 @@
     <!-- Fallback code-signing properties -->
     <property file="ant/private/private.properties"/>
 
+    <!-- Locate first jsign-x.x.x.jar sorted name desc -->
+    <target name="find-jsign">
+        <sort id="jsign.sorted">
+            <fileset dir="${basedir}/ant/lib/">
+                <include name="jsign*.jar"/>
+            </fileset>
+            <reverse xmlns="antlib:org.apache.tools.ant.types.resources.comparators"/>
+        </sort>
+        <first id="jsign.first">
+            <resources refid="jsign.sorted"/>
+        </first>
+        <pathconvert property="jsign.path" refid="jsign.first">
+            <identitymapper/>
+        </pathconvert>
+
+        <echo message="Found jsign: ${jsign.path}"/>
+    </target>
+
+    <!-- File signing -->
+    <target name="sign-file">
+        <!-- Self-sign -->
+        <antcall target="sign-file-self">
+            <param name="sign.file" value="${sign.file}"/>
+        </antcall>
+
+        <!-- EV-sign using HSM -->
+        <antcall target="sign-file-hsm">
+            <param name="sign.file" value="${sign.file}"/>
+        </antcall>
+    </target>
+
+    <!-- Jar signing -->
     <target name="sign-jar">
-        <antcall target="sign-jar-tsa">
-            <param name="sign.jar.file" value="${sign.jar.file}"/>
-        </antcall>
+        <!-- Self-sign -->
         <antcall target="sign-jar-self">
-            <param name="sign.jar.file" value="${sign.jar.file}"/>
+            <param name="sign.file" value="${sign.file}"/>
+        </antcall>
+
+        <!-- EV-sign using HSM -->
+        <antcall target="sign-jar-hsm">
+            <param name="sign.file" value="${sign.file}"/>
         </antcall>
     </target>
 
-    <target name="sign-jar-tsa" if="signing.tsaurl">
-        <echo level="info">Signing jar with timestamp: ${sign.jar.file}</echo>
-        <signjar jar="${sign.jar.file}"
-                 signedjar="${sign.jar.file}"
-                 alias="${signing.alias}"
+    <!-- File signing via hsm with timestamp -->
+    <target name="sign-file-hsm" if="hsm.storetype" depends="find-jsign">
+        <echo level="info">Signing with hsm: ${hsm.keystore}</echo>
+        <java jar="${jsign.path}" fork="true" failonerror="true">
+            <arg value="--name"/>
+            <arg value="${project.name}"/>
+            <arg value="--url"/>
+            <arg value="${vendor.website}"/>
+            <arg value="--replace"/>
+            <arg value="--alg"/>
+            <arg value="${hsm.algorithm}"/>
+            <arg value="--storetype"/>
+            <arg value="${hsm.storetype}"/>
+            <arg value="--keystore"/>
+            <arg value="${hsm.keystore}"/>
+            <arg value="--alias"/>
+            <arg value="${hsm.alias}"/>
+            <arg value="--storepass"/>
+            <arg value="${hsm.storepass}"/>
+            <arg value="--tsaurl"/>
+            <arg value="${hsm.tsaurl}"/>
+            <arg value="--certfile"/>
+            <arg value="${hsm.certfile}"/>
+            <arg line="${sign.file}"/>
+        </java>
+    </target>
+
+    <!-- Jar signing via hsm with timestamp -->
+    <target name="sign-jar-hsm" if="hsm.storetype" depends="find-jsign,get-jar-alg">
+        <signjar providerclass="net.jsign.jca.JsignJcaProvider"
+                 providerarg="${hsm.keystore}"
+                 alias="${hsm.alias}"
+                 storepass="${hsm.storepass}"
+                 storetype="${hsm.storetype}"
+                 keystore="NONE"
+                 sigalg="${jar.sigalg}"
+                 digestalg="${jar.digestalg}"
+                 tsaurl="${hsm.tsaurl}"
+                 jar="${sign.file}"
+                 signedjar="${sign.file}">
+            <!-- special args needed by jsign -->
+            <arg value="-J-cp"/><arg value="-J${jsign.path}"/>
+            <arg value="-J--add-modules"/><arg value="-Jjava.sql"/>
+            <arg value="-certchain"/><arg file="${hsm.certfile}"/>
+        </signjar>
+    </target>
+
+    <!-- File signing via arbitrary key without timestamp -->
+    <target name="sign-file-self" unless="hsm.storetype" depends="find-jsign,find-keystore-self">
+        <echo level="info">Signing without timestamp:</echo>
+        <tsa-warning/>
+        <java jar="${jsign.path}" fork="true" failonerror="true">
+            <arg value="--name"/>
+            <arg value="${project.name}"/>
+            <arg value="--url"/>
+            <arg value="${vendor.website}"/>
+            <arg value="--replace"/>
+            <arg value="--alg"/>
+            <arg value="${signing.algorithm}"/>
+            <arg value="--keystore"/>
+            <arg value="${signing.keystore}"/>
+            <arg value="--alias"/>
+            <arg value="${signing.alias}"/>
+            <arg value="--storepass"/>
+            <arg value="${signing.storepass}"/>
+            <arg value="--keypass"/>
+            <arg value="${signing.keypass}"/>
+            <arg line="${sign.file}"/>
+        </java>
+    </target>
+
+    <!-- Jar signing via arbitrary key without timestamp -->
+    <target name="sign-jar-self" unless="hsm.storetype" depends="find-jsign,find-keystore-self,get-jar-alg">
+        <signjar alias="${signing.alias}"
                  storepass="${signing.storepass}"
                  keystore="${signing.keystore}"
                  keypass="${signing.keypass}"
-                 tsaurl="${signing.tsaurl}"
+                 sigalg="${jar.sigalg}"
+                 digestalg="${jar.digestalg}"
+                 jar="${sign.file}"
+                 signedjar="${sign.file}"
         />
     </target>
 
-    <target name="sign-jar-self" unless="signing.tsaurl">
-        <echo level="info">Self-signing jar without timestamp: ${sign.jar.file}</echo>
-        <tsa-warning/>
-        <signjar jar="${sign.jar.file}"
-                 signedjar="${sign.jar.file}"
-                 alias="${signing.alias}"
-                 storepass="${signing.storepass}"
-                 keystore="${signing.keystore}"
-                 keypass="${signing.keypass}"
-        />
+    <!-- Maps jsign algorithm to jarsigner algorithm -->
+    <target name="get-jar-alg">
+        <!-- Populate from hsm.algorithm or signing.algorithm -->
+        <condition property="jar.algorithm" value="${hsm.algorithm}">
+            <isset property="${hsm.algorithm}"/>
+        </condition>
+        <property name="jar.algorithm" value="${signing.algorithm}" description="fallback value"/>
+
+        <!-- Convert "SHA-256" to "SHA256", etc -->
+        <loadresource property="convert.algorithm">
+            <propertyresource name="jar.algorithm"/>
+            <filterchain>
+                <tokenfilter>
+                    <filetokenizer/>
+                    <replacestring from="-" to=""/>
+                </tokenfilter>
+            </filterchain>
+        </loadresource>
+        <property name="convert.algorithm" value="something went wrong" description="fallback value"/>
+
+        <!-- e.g. "SHA256withRSA" -->
+        <property description="Signature Algorithm" name="jar.sigalg" value="${convert.algorithm}withRSA"/>
+
+        <!-- e.g. "SHA256" -->
+        <property description="Digest Algorithm" name="jar.digestalg" value="${convert.algorithm}"/>
+    </target>
+
+    <target name="find-keystore-self">
+        <available file="${signing.keystore}" property="keystore.exists"/>
+        <antcall target="generate-keystore-self"/>
+    </target>
+
+    <target name="generate-keystore-self" unless="keystore.exists">
+        <genkey
+                alias="${signing.alias}"
+                keyalg="RSA"
+                keysize="2048"
+                keystore="${signing.keystore}"
+                storepass="${signing.storepass}"
+                validity="3650"
+                verbose="true">
+            <dname>
+                <param name="CN" value="${vendor.company} (self-signed)"/>
+                <param name="OU" value="${project.name}"/>
+                <param name="O"  value="${vendor.website}"/>
+                <param name="C"  value="US"/>
+            </dname>
+        </genkey>
     </target>
 
     <macrodef name="tsa-warning">

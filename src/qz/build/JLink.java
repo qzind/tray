@@ -236,6 +236,8 @@ public class JLink {
                 // Java accessibility bridge dependency, see https://github.com/qzind/tray/issues/1234
                 depList.add("jdk.accessibility");
             default:
+                // Adds "bin/jcmd"
+                depList.add("jdk.jcmd");
                 // "jar:" URLs create transient zipfs dependency, see https://stackoverflow.com/a/57846672/3196753
                 depList.add("jdk.zipfs");
                 // fix for https://github.com/qzind/tray/issues/894 solution from https://github.com/adoptium/adoptium-support/issues/397
@@ -294,6 +296,7 @@ public class JLink {
                 case WINDOWS:
                     keepFiles.add("java.exe");
                     keepFiles.add("javaw.exe");
+                    keepFiles.add("jcmd.exe");
                     if(depList.contains("jdk.accessibility")) {
                         // Java accessibility bridge switching tool
                         keepFiles.add("jabswitch.exe");
@@ -303,6 +306,7 @@ public class JLink {
                     break;
                 default:
                     keepFiles.add("java");
+                    keepFiles.add("jcmd");
                     keepExt = null;
             }
 

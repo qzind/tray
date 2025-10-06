@@ -140,5 +140,19 @@
         "type": "ca",
         "os": "*",
         "data": "selfsigned1.crt"
+    },
+    {
+        "description": "[CONF] at 'install'",
+        "type": "conf",
+        "os": "*",
+        "data": "java.net.useSystemProxies=true",
+        "path": "net.properties"
+    },
+    {
+        "description": "[SOFTWARE] at 'install'",
+        "type": "software",
+        "os": "windows",
+        "data": "DCDSetup1.5.0.17.exe",
+        "args": "/S /v/qn"
     }
 ]

@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.2.5-SNAPSHOT
+ * @version 2.2.6-SNAPSHOT
  * @overview QZ Tray Connector
  * @license LGPL-2.1-only
  * <p/>
@@ -27,7 +27,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
-        VERSION: "2.2.5-SNAPSHOT",                              //must match @version above
+        VERSION: "2.2.6-SNAPSHOT",                              //must match @version above
         DEBUG: false,
 
         log: {
@@ -765,17 +765,19 @@ var qz = (function() {
             versionCompare: function(major, minor, patch, build) {
                 if (_qz.tools.assertActive()) {
                     var semver = _qz.websocket.connection.semver;
-                    if (semver[0] != major) {
-                        return semver[0] - major;
-                    }
-                    if (minor != undefined && semver[1] != minor) {
-                        return semver[1] - minor;
-                    }
-                    if (patch != undefined && semver[2] != patch) {
-                        return semver[2] - patch;
-                    }
-                    if (build != undefined && semver.length > 3 && semver[3] != build) {
-                        return Number.isInteger(semver[3]) && Number.isInteger(build) ? semver[3] - build : semver[3].toString().localeCompare(build.toString());
+                    if(Array.isArray(semver)) {
+                        if (major != undefined && semver.length > 0 && semver[0] != major) {
+                            return semver[0] - major;
+                        }
+                        if (minor != undefined && semver.length > 1 && semver[1] != minor) {
+                            return semver[1] - minor;
+                        }
+                        if (patch != undefined && semver.length > 2 && semver[2] != patch) {
+                            return semver[2] - patch;
+                        }
+                        if (build != undefined && semver.length > 3 && semver[3] != build) {
+                            return Number.isInteger(semver[3]) && Number.isInteger(build) ? semver[3] - build : semver[3].toString().localeCompare(build.toString());
+                        }
                     }
                     return 0;
                 }

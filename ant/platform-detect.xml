@@ -258,7 +258,7 @@
 
     <!-- Calculate host.javafx.platform, target.javafx.platform for ivy, ant -->
     <target name="get-javafx-platform">
-        <!-- TODO: JavaFX does not offer Windows ARM64 binaries; fallback to Intel (default/unqualified arch suffix); remove when SUPQZ-11 is resolved -->
+        <!-- TODO: JavaFX does not offer Windows ARM64 or Linux RISC-V binaries; fallback to Intel (default/unqualified arch suffix); remove when SUPQZ-11 is resolved -->
         <condition property="target.javafx.arch" value="">
             <and>
                 <isset property="target.os.windows"/>
@@ -269,6 +269,18 @@
             <and>
                 <isset property="host.os.windows"/>
                 <isset property="host.arch.aarch64"/>
+            </and>
+        </condition>
+        <condition property="target.javafx.arch" value="">
+            <and>
+                <isset property="target.os.linux"/>
+                <isset property="target.arch.riscv64"/>
+            </and>
+        </condition>
+        <condition property="host.javafx.arch" value="">
+            <and>
+                <isset property="host.os.linux"/>
+                <isset property="host.arch.riscv64"/>
             </and>
         </condition>
 

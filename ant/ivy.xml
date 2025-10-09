@@ -2,7 +2,7 @@
     <info organisation="io.qz" module="qz-tray"/>
     <dependencies>
         <!-- Core -->
-        <dependency name="jna-platform"  org="net.java.dev.jna"  conf="*->default" rev="${jna.version}"/>
+        <dependency name="jna-platform" org="net.java.dev.jna" conf="*->default" rev="${jna.version}"/>
         <dependency name="jna" org="net.java.dev.jna" conf="*->default" rev="${jna.version}"/>
         <dependency name="bcprov-jdk18on" org="org.bouncycastle" conf="*->default" rev="${bouncycastle.version}"/>
         <dependency name="bcpkix-jdk18on" org="org.bouncycastle" conf="*->default" rev="${bouncycastle.version}"/>
@@ -64,7 +64,7 @@
         </dependency>
 
         <!-- Communications -->
-        <dependency name="usb-api" org="javax.usb" conf="*->default"  rev="${usb-api.version}"/>
+        <dependency name="usb-api" org="javax.usb" conf="*->default" rev="${usb-api.version}"/>
         <dependency name="usb4java" org="org.usb4java" conf="*->default" rev="${usb4java.version}"/>
         <dependency name="usb4java-javax" org="org.usb4java" conf="*->default" rev="${usb4java.version}"/>
         <dependency name="libusb4java" org="org.usb4java" rev="${libusb4java.version}">
@@ -116,7 +116,7 @@
         <dependency name="imageio-jpeg" org="com.twelvemonkeys.imageio" conf="*->default" rev="${twelvemonkeys.version}"/>
         <dependency name="imageio-metadata" org="com.twelvemonkeys.imageio" conf="*->default" rev="${twelvemonkeys.version}"/>
 
-        <dependency name="jai-imageio-core" org="com.github.jai-imageio" conf="*->default"  rev="${jaiimageio.version}"/>
+        <dependency name="jai-imageio-core" org="com.github.jai-imageio" conf="*->default" rev="${jaiimageio.version}"/>
         <dependency name="jai-imageio-jpeg2000" org="com.github.jai-imageio" conf="*->default" rev="${jaiimageio.version}"/>
 
         <!-- Logging -->

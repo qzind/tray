@@ -120,16 +120,17 @@
         <dependency name="jai-imageio-jpeg2000" org="com.github.jai-imageio" conf="*->default" rev="${jaiimageio.version}"/>
 
         <!-- Logging -->
-        <dependency name="log4j-core"  org="org.apache.logging.log4j"  conf="*->default"  rev="${log4j.version}"/>
-        <dependency name="log4j-api"  org="org.apache.logging.log4j" conf="*->default" rev="${log4j.version}"/>
+        <dependency name="log4j-core" org="org.apache.logging.log4j" conf="*->default" rev="${log4j.version}"/>
+        <dependency name="log4j-api" org="org.apache.logging.log4j" conf="*->default" rev="${log4j.version}"/>
 
         <!-- Printing -->
-        <dependency name="pdfbox"  org="org.apache.pdfbox"  conf="*->default"  rev="${pdfbox.version}">
+        <dependency name="pdfbox" org="org.apache.pdfbox" conf="*->default" rev="${pdfbox.version}">
             <exclude name="log4j-core"/>
             <exclude name="log4j-api"/>
             <exclude name="commons-httpclient"/>
             <exclude name="bcprov-jdk15on"/>
         </dependency>
+        <dependency name="jbig2-imageio" org="org.apache.pdfbox" conf="*->default" rev="${jbig2.version}"/>
 
         <!-- javafx -->
         <dependency name="javafx-controls" org="org.openjfx" conf="*->default" rev="${javafx.version}"/>

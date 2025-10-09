@@ -1,0 +1,6 @@
+<ivy-module version="2.0" xmlns:m="antlib:org.apache.ivy.ant">
+    <info organisation="io.qz" module="qz-tray-ant"/>
+    <dependencies>
+        <dependency name="jsign"  org="net.jsign"  conf="*->default" rev="${jsign.version}"/>
+    </dependencies>
+</ivy-module>

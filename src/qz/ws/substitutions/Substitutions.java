@@ -215,7 +215,7 @@ public class Substitutions {
                     Object newMatch = jsonMatch.get(nextKey);
 
                     // Check if the key exists, recurse if needed
-                    if(jsonBase.has(nextKey)) {
+                    if(jsonBase.has(nextKey) && !jsonBase.isNull(nextKey)) {
                         Object newBase = jsonBase.get(nextKey);
 
                         if(replace && isPrimitive(newMatch)) {
@@ -226,8 +226,9 @@ public class Substitutions {
                             continue;
                         }
                     } else if(replace) {
-                        // Key doesn't exist, so we'll merge it in
+                        // Key doesn't exist, or it's null so we'll merge it in
                         jsonBase.put(nextKey, newMatch);
+                        continue;
                     }
                     return false; // wasn't found
                 }

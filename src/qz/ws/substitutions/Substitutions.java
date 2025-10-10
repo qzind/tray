@@ -228,6 +228,7 @@ public class Substitutions {
                     } else if(replace) {
                         // Key doesn't exist, or it's null so we'll merge it in
                         jsonBase.put(nextKey, newMatch);
+                        continue;
                     }
                     return false; // wasn't found
                 }

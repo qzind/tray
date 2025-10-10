@@ -102,7 +102,7 @@ public class CertificateTable extends DisplayTable implements Themeable {
                 int x = target.getSelectedColumn();
                 int y = target.getSelectedRow();
                 // Only trigger after the cell is click AND highlighted.
-                if (loc.distance(x, y) == 0) {
+                if (x > 0 && y > 0 && loc.distance(x, y) == 0) {
                     CertificateField rowKey = (CertificateField)target.getValueAt(y, 0);
                     switch(rowKey) {
                         case VALID_FROM:

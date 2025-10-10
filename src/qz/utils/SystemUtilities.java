@@ -448,7 +448,7 @@ public class SystemUtilities {
                 darculaThemeNeeded = false;
             }
             if(isDarkDesktop() && darculaThemeNeeded) {
-                UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
+                UIManager.setLookAndFeel("com.formdev.flatlaf.FlatDarculaLaf");
             } else {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             }

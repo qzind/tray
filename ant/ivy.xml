@@ -88,11 +88,9 @@
             <exclude name="*"/>
         </dependency>
         <dependency name="jssc" org="io.github.java-native" conf="*->default" rev="${jssc.version}"/>
+
         <!-- Theming -->
-        <dependency name="darcula-bobbylight" org="com.bulenkov.darcula" conf="*->default" rev="${darcula.version}">
-            <!-- Skip, missing -->
-            <exclude name="*"/>
-        </dependency>
+        <dependency name="flatlaf" org="com.formdev" conf="*->default" rev="${flatlaf.version}"/>
 
         <!-- Windows Installer -->
         <dependency name="mslinks" org="mslinks" conf="*->default" rev="${mslinks.version}">

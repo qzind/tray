@@ -54,7 +54,7 @@
     <!-- File signing via hsm with timestamp -->
     <target name="sign-file-hsm" if="hsm.storetype" depends="find-jsign">
         <echo level="info">Signing with hsm: ${hsm.keystore}</echo>
-        <java jar="${jsign.path}" fork="true" failonerror="true">
+        <java jar="${jsign.path}" fork="true" failonerror="${sign.failonerror}">
             <arg value="--name"/>
             <arg value="${project.name}"/>
             <arg value="--url"/>
@@ -102,7 +102,7 @@
     <target name="sign-file-self" unless="hsm.storetype" depends="find-jsign,find-keystore-self">
         <echo level="info">Signing without timestamp:</echo>
         <tsa-warning/>
-        <java jar="${jsign.path}" fork="true" failonerror="true">
+        <java jar="${jsign.path}" fork="true" failonerror="${sign.failonerror}">
             <arg value="--name"/>
             <arg value="${project.name}"/>
             <arg value="--url"/>

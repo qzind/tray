@@ -17,10 +17,10 @@
         <resolver ref="main" />
 
         <!-- Custom Repos here -->
-        <resolver ref="gluonhq" />
+        <!-- <resolver ref="gluonhq" /> -->
     </chain>
     <modules>
-        <module organisation="org.openjfx" name=".*" resolver="gluonhq"/>
+        <!-- <module organisation="org.openjfx" name=".*" resolver="gluonhq"/> -->
     </modules>
 </ivysettings>
 

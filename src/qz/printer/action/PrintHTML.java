@@ -274,16 +274,13 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             try {
                 if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
                     for(WebAppModel model : models) {
-                        //WebApp.openPreview(model, settings, paper);
-
+                        //todo: how do we end up with n-models? we need to test this
                         WebApp.print(job, model, options);
                     }
                 } else {
                     settings.setCopies(1); //manually handle copies if they are not supported
                     for(int i = 0; i < pxlOpts.getCopies(); i++) {
                         for(WebAppModel model : models) {
-                            //WebApp.openPreview(model, settings, paper);
-
                             WebApp.print(job, model, options);
                         }
                     }
@@ -291,7 +288,6 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             }
             catch(Throwable t) {
                 job.cancelJob();
-                log.error(t.getStackTrace());
                 throw new PrinterException(t.getMessage());
             }
 

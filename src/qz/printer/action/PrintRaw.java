@@ -233,6 +233,7 @@ public class PrintRaw implements PrintProcessor {
         WebAppModel model = new WebAppModel(data, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, false, pageZoom);
 
         try {
+            WebApp.initialize(); //starts if not already started
             bi = WebApp.raster(model);
 
             // down scale back from web density

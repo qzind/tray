@@ -10,6 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
+import qz.utils.ArgValue;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -136,6 +137,7 @@ public class WebApp extends Application {
         startupLatch.countDown();
     }
 
+    //todo: this is only used to make a raster, probably private this and use it directly in raster, or just roll it into the raster method
     public static PrintHtmlInstance createWebAppInstance() {
         if (instance == null) new WebApp();
         return new PrintHtmlInstance(stage);
@@ -146,13 +148,23 @@ public class WebApp extends Application {
     }
 
     public static void print(final PrinterJob job, final WebAppModel model, PrintOptions options) throws Throwable {
-        new PreviewHtmlInstance(stage).show(job, model, options);
-        //new PrintHtmlInstance(stage).print(job, model);
+        if (PrintSocketServer.getTrayManager().getPref(ArgValue.TRAY_PREVIEW)) {
+            //todo: maybe simplify this, eg. combine show and await
+            PreviewHtmlInstance previewHtmlInstance = new PreviewHtmlInstance(stage);
+            previewHtmlInstance.show(job, model, options);
+            previewHtmlInstance.await(); // hold the print processor until the preview is accepted/closed
+            if (!previewHtmlInstance.isCanceled()) {
+                new PrintHtmlInstance(stage).print(job, model);
+            }
+        } else {
+            new PrintHtmlInstance(stage).print(job, model);
+        }
     }
 
     public static Version getWebkitVersion() {
         if(webkitVersion == null) {
             WebView webView = new WebView();
+            // todo: this is impossible I think? I don't believe a constructor can return null.
             if(webView != null) {
                 String userAgent = webView.getEngine().getUserAgent();
                 String[] parts = userAgent.split("WebKit/");

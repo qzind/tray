@@ -95,7 +95,7 @@ public class PreviewWindow {
             //Omitting this also breaks the option to 'find height' via js injection
             StackPane webContainer = new StackPane(webContent);
             webContainer.setBackground(new Background(new BackgroundFill(Color.GRAY, null, null)));
-            webContainer.setAlignment(webContainer, Pos.TOP_LEFT);
+            StackPane.setAlignment(webContainer, Pos.TOP_LEFT);
             webContainer.setAlignment(Pos.TOP_LEFT);
 
             rulerPane.setCenter(webContainer);
@@ -255,6 +255,7 @@ public class PreviewWindow {
 
     private void setDimensions(double width, double height) {
         //todo this method is no longer needed
+        //content width and height should probably be replaced by model.width/height
         contentWidth = width;
         contentHeight = height;
 
@@ -312,6 +313,7 @@ public class PreviewWindow {
     }
 
     enum UNIT {
+        //todo: delete this and make it use PrintOptions.UNIT
         //todo 72/96 needs to be cleared up. should pixel be 72 or 96, also 72 should be pulled from somewhere
         IN("in", 96, 8, 1, "#.##"),
         CM("cm", 96 / inToCm, 10, 1, "#.#"),

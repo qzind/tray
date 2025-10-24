@@ -26,17 +26,14 @@ import qz.printer.action.html.WebApp;
 import qz.printer.action.html.WebAppModel;
 import qz.utils.PrintingUtilities;
 
-import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.Copies;
 import javax.print.attribute.standard.CopiesSupported;
 import javax.print.attribute.standard.Sides;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -71,8 +68,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
         try {
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
             if (!pxlOpts.isLegacy()) {
-                //todo what was this for?
-                //WebApp.initialize();
+                WebApp.initialize();
             }
 
             for(int i = 0; i < printData.length(); i++) {

@@ -17,8 +17,11 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
     private WebAppModel model;
     private PrintOptions options;
     private PreviewWindow preview;
+    private boolean canceled = false;
+
     //rename or move this
     private CountDownLatch initLatch = new CountDownLatch(1);
+    private CountDownLatch completionLatch = new CountDownLatch(1);
 
     public PreviewHtmlInstance(Stage stage) {
         stateListener = (ov, oldState, newState) -> {
@@ -54,6 +57,7 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
     }
 
     public void show(PrinterJob job, WebAppModel model, PrintOptions options) throws InterruptedException {
+        // todo, set up title, possible use jobname in title
         this.model = model;
         this.options = options;
         initLatch.await();
@@ -72,14 +76,28 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
         Platform.runLater(() -> {
             preview = new PreviewWindow(renderStage.getStyle(), webView);
             preview.setOnPrint(rectangle -> {
-                log.warn(rectangle.getWidth());
-                log.warn(rectangle.getHeight());
+                //todo wrong place to do this. it should probably happen back in webapp, or at least via a method call from webapp e.g. instance.resizeModel(model)
+                //unify webapp conversion
+                model.setWidth(rectangle.getWidth() * (72d / 96d));
+                model.setHeight(rectangle.getHeight() * (72d / 96d));
+                completionLatch.countDown();
             });
-            preview.setOnCancel(() -> log.warn("Print preview canceled"));
+            preview.setOnCancel(() -> {
+                canceled = true;
+                completionLatch.countDown();
+            });
             preview.setPreviewWidth(width);
             preview.setPreviewHeight(height);
             preview.setUnit(options.getPixelOptions().getUnits());
             preview.show();
         });
+    }
+
+    public void await() throws InterruptedException {
+        completionLatch.await();
+    }
+
+    public boolean isCanceled() {
+        return canceled;
     }
 }

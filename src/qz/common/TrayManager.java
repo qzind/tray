@@ -211,7 +211,7 @@ public class TrayManager {
         // Initialize idle actions
         // Slow to start JavaFX the first time
         if (getPref(TRAY_IDLE_JAVAFX)) {
-            performIfIdle((int)TimeUnit.SECONDS.toMillis(6), evt -> {
+            performIfIdle((int)TimeUnit.SECONDS.toMillis(60), evt -> {
                 log.debug("IDLE: Starting up JFX for HTML printing");
                 try {
                     WebApp.initialize();
@@ -291,6 +291,7 @@ public class TrayManager {
         previewItem.setMnemonic(KeyEvent.VK_P);
         previewItem.setState(getPref(TRAY_PREVIEW));
         diagnosticMenu.add(previewItem);
+        previewItem.addActionListener(previewListener);
 
         JCheckBoxMenuItem monocleItem = new JCheckBoxMenuItem("Use Monocle for HTML");
         monocleItem.setToolTipText("Use monocle platform for HTML printing (restart required)");
@@ -388,6 +389,15 @@ public class TrayManager {
         @Override
         public void actionPerformed(ActionEvent e) {
             prefs.setProperty(TRAY_NOTIFICATIONS, ((JCheckBoxMenuItem)e.getSource()).getState());
+        }
+    };
+
+    private final ActionListener previewListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
+            prefs.setProperty(TRAY_PREVIEW, j.getState());
+            //todo warn about monocle/headless
         }
     };
 
@@ -662,7 +672,7 @@ public class TrayManager {
     /**
      * Get boolean user pref: Searching "user", "app" and <code>System.getProperty(...)</code>.
      */
-    private boolean getPref(ArgValue argValue) {
+    public boolean getPref(ArgValue argValue) {
         return PrefsSearch.getBoolean(argValue, prefs, App.getTrayProperties());
     }
 

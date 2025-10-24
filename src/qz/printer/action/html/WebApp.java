@@ -8,9 +8,11 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.App;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.utils.ArgValue;
+import qz.utils.PrefsSearch;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -148,7 +150,7 @@ public class WebApp extends Application {
     }
 
     public static void print(final PrinterJob job, final WebAppModel model, PrintOptions options) throws Throwable {
-        if (PrintSocketServer.getTrayManager().getPref(ArgValue.TRAY_PREVIEW)) {
+        if (PrefsSearch.getBoolean(ArgValue.TRAY_PREVIEW, App.getTrayProperties())) {
             //todo: maybe simplify this, eg. combine show and await
             PreviewHtmlInstance previewHtmlInstance = new PreviewHtmlInstance(stage);
             previewHtmlInstance.show(job, model, options);

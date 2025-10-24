@@ -127,6 +127,7 @@ public class PreviewWindow {
         HBox spring = new HBox();
         HBox.setHgrow(spring, Priority.ALWAYS);
 
+        //todo: this is awful
         ImageView cancelIcon = new ImageView(SwingFXUtils.toFXImage(IconCache.getInstance().getImage(IconCache.Icon.CANCEL_ICON), null));
         ImageView doneIcon = new ImageView(SwingFXUtils.toFXImage(IconCache.getInstance().getImage(IconCache.Icon.ALLOW_ICON), null));
         final Button cancel = new Button("Cancel", cancelIcon);

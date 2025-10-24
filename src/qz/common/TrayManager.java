@@ -54,6 +54,9 @@ public class TrayManager {
 
     private boolean headless;
 
+    // The cached icons
+    private final IconCache iconCache;
+
     // Custom swing pop-up menu
     private TrayType tray;
 
@@ -114,6 +117,8 @@ public class TrayManager {
         // Set up the shortcut name so that the UI components can use it
         shortcutCreator = ShortcutCreator.getInstance();
 
+        iconCache = IconCache.getInstance();
+
         SystemUtilities.setSystemLookAndFeel(headless);
 
         if (SystemUtilities.isSystemTraySupported(headless)) { // UI mode with tray
@@ -132,7 +137,7 @@ public class TrayManager {
 
             // OS-specific tray icon handling
             if (SystemTray.isSupported()) {
-                IconCache.getInstance().fixTrayIcons(SystemUtilities.isDarkTaskbar());
+                iconCache.fixTrayIcons(SystemUtilities.isDarkTaskbar());
             }
 
             // Iterates over all images denoted by IconCache.getTypes() and caches them
@@ -181,7 +186,7 @@ public class TrayManager {
                                 darkTaskbarMode != SystemUtilities.isDarkTaskbar(true)) {
                             darkDesktopMode = SystemUtilities.isDarkDesktop();
                             darkTaskbarMode = SystemUtilities.isDarkTaskbar();
-                            IconCache.getInstance().fixTrayIcons(darkTaskbarMode);
+                            iconCache.fixTrayIcons(darkTaskbarMode);
                             refreshIcon(null);
                             SwingUtilities.invokeLater(() -> {
                                 SystemUtilities.setSystemLookAndFeel(headless);
@@ -249,9 +254,9 @@ public class TrayManager {
 
         JMenu advancedMenu = new JMenu("Advanced");
         advancedMenu.setMnemonic(KeyEvent.VK_A);
-        advancedMenu.setIcon(IconCache.getInstance().getIcon(SETTINGS_ICON));
+        advancedMenu.setIcon(iconCache.getIcon(SETTINGS_ICON));
 
-        JMenuItem sitesItem = new JMenuItem("Site Manager...", IconCache.getInstance().getIcon(SAVED_ICON));
+        JMenuItem sitesItem = new JMenuItem("Site Manager...", iconCache.getIcon(SAVED_ICON));
         sitesItem.setMnemonic(KeyEvent.VK_M);
         sitesItem.addActionListener(savedListener);
         sitesDialog = new SiteManagerDialog(sitesItem, prefs);
@@ -259,19 +264,19 @@ public class TrayManager {
 
         JMenuItem diagnosticMenu = new JMenu("Diagnostic");
 
-        JMenuItem browseApp = new JMenuItem("Browse App folder...", IconCache.getInstance().getIcon(FOLDER_ICON));
+        JMenuItem browseApp = new JMenuItem("Browse App folder...", iconCache.getIcon(FOLDER_ICON));
         browseApp.setToolTipText(SystemUtilities.getJarParentPath().toString());
         browseApp.setMnemonic(KeyEvent.VK_O);
         browseApp.addActionListener(e -> ShellUtilities.browseAppDirectory());
         diagnosticMenu.add(browseApp);
 
-        JMenuItem browseUser = new JMenuItem("Browse User folder...", IconCache.getInstance().getIcon(FOLDER_ICON));
+        JMenuItem browseUser = new JMenuItem("Browse User folder...", iconCache.getIcon(FOLDER_ICON));
         browseUser.setToolTipText(FileUtilities.USER_DIR.toString());
         browseUser.setMnemonic(KeyEvent.VK_U);
         browseUser.addActionListener(e -> ShellUtilities.browseDirectory(FileUtilities.USER_DIR));
         diagnosticMenu.add(browseUser);
 
-        JMenuItem browseShared = new JMenuItem("Browse Shared folder...", IconCache.getInstance().getIcon(FOLDER_ICON));
+        JMenuItem browseShared = new JMenuItem("Browse Shared folder...", iconCache.getIcon(FOLDER_ICON));
         browseShared.setToolTipText(FileUtilities.SHARED_DIR.toString());
         browseShared.setMnemonic(KeyEvent.VK_S);
         browseShared.addActionListener(e -> ShellUtilities.browseDirectory(FileUtilities.SHARED_DIR));
@@ -310,7 +315,7 @@ public class TrayManager {
 
         diagnosticMenu.add(new JSeparator());
 
-        JMenuItem logItem = new JMenuItem("View logs (live feed)...", IconCache.getInstance().getIcon(LOG_ICON));
+        JMenuItem logItem = new JMenuItem("View logs (live feed)...", iconCache.getIcon(LOG_ICON));
         logItem.setMnemonic(KeyEvent.VK_L);
         logItem.addActionListener(logListener);
         diagnosticMenu.add(logItem);
@@ -323,7 +328,7 @@ public class TrayManager {
         zipLogs.addActionListener(e -> FileUtilities.zipLogs());
         diagnosticMenu.add(zipLogs);
 
-        JMenuItem desktopItem = new JMenuItem("Create Desktop shortcut", IconCache.getInstance().getIcon(DESKTOP_ICON));
+        JMenuItem desktopItem = new JMenuItem("Create Desktop shortcut", iconCache.getIcon(DESKTOP_ICON));
         desktopItem.setMnemonic(KeyEvent.VK_D);
         desktopItem.addActionListener(desktopListener());
 
@@ -342,11 +347,11 @@ public class TrayManager {
         advancedMenu.add(new JSeparator());
         advancedMenu.add(anonymousItem);
 
-        JMenuItem reloadItem = new JMenuItem("Reload", IconCache.getInstance().getIcon(RELOAD_ICON));
+        JMenuItem reloadItem = new JMenuItem("Reload", iconCache.getIcon(RELOAD_ICON));
         reloadItem.setMnemonic(KeyEvent.VK_R);
         reloadItem.addActionListener(reloadListener);
 
-        JMenuItem aboutItem = new JMenuItem("About...", IconCache.getInstance().getIcon(ABOUT_ICON));
+        JMenuItem aboutItem = new JMenuItem("About...", iconCache.getIcon(ABOUT_ICON));
         aboutItem.setMnemonic(KeyEvent.VK_B);
         aboutItem.addActionListener(aboutListener);
         aboutDialog = new AboutDialog(aboutItem);
@@ -369,7 +374,7 @@ public class TrayManager {
             startupItem.setToolTipText("Autostart has been disabled by the administrator");
         }
 
-        JMenuItem exitItem = new JMenuItem("Exit", IconCache.getInstance().getIcon(EXIT_ICON));
+        JMenuItem exitItem = new JMenuItem("Exit", iconCache.getIcon(EXIT_ICON));
         exitItem.addActionListener(exitListener);
 
         popup.add(advancedMenu);
@@ -672,7 +677,7 @@ public class TrayManager {
     /**
      * Get boolean user pref: Searching "user", "app" and <code>System.getProperty(...)</code>.
      */
-    public boolean getPref(ArgValue argValue) {
+    private boolean getPref(ArgValue argValue) {
         return PrefsSearch.getBoolean(argValue, prefs, App.getTrayProperties());
     }
 

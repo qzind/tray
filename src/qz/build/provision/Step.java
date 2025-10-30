@@ -192,7 +192,7 @@ public class Step {
             }
         }
 
-        HashSet<Os> os = new HashSet<>();
+        HashSet<Os> os = null;
         if(jsonStep.has("os")) {
             // Do not tolerate bad os values
             String osString = jsonStep.optString("os");
@@ -202,7 +202,7 @@ public class Step {
             }
         }
 
-        HashSet<Arch> arch = new HashSet<>();
+        HashSet<Arch> arch = null;
         if(jsonStep.has("arch")) {
             // Do not tolerate bad arch values
             String archString = jsonStep.optString("arch");

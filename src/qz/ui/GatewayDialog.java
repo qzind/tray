@@ -35,19 +35,16 @@ public class GatewayDialog extends JDialog implements Themeable {
 
     private JPanel mainPanel;
 
-    private final IconCache iconCache;
-
     private String description;
     private RequestState request;
     private boolean approved;
     private boolean persistent;
 
-    public GatewayDialog(Frame owner, String title, IconCache iconCache) {
+    public GatewayDialog(Frame owner, String title) {
         super(owner, title, true);
-        this.iconCache = iconCache;
         this.description = "";
         this.approved = false;
-        this.setIconImages(iconCache.getImages(IconCache.Icon.TASK_BAR_ICON));
+        this.setIconImages(IconCache.getInstance().getImages(IconCache.Icon.TASK_BAR_ICON));
         initComponents();
         refreshComponents();
     }
@@ -63,14 +60,14 @@ public class GatewayDialog extends JDialog implements Themeable {
         descriptionPanel.setBorder(new EmptyBorder(3, 3, 3, 3));
 
         optionsPanel = new JPanel();
-        allowButton = new JButton("Allow", iconCache.getIcon(IconCache.Icon.ALLOW_ICON));
+        allowButton = new JButton("Allow", IconCache.getInstance().getIcon(IconCache.Icon.ALLOW_ICON));
         allowButton.setMnemonic(KeyEvent.VK_A);
-        blockButton = new JButton("Block", iconCache.getIcon(IconCache.Icon.BLOCK_ICON));
+        blockButton = new JButton("Block", IconCache.getInstance().getIcon(IconCache.Icon.BLOCK_ICON));
         blockButton.setMnemonic(KeyEvent.VK_B);
         allowButton.addActionListener(buttonAction);
         blockButton.addActionListener(buttonAction);
 
-        detailsDialog = new DetailsDialog(iconCache);
+        detailsDialog = new DetailsDialog(IconCache.getInstance());
         certInfoLabel = new LinkLabel();
         certInfoLabel.setAlignmentX(LEFT_ALIGNMENT);
         certInfoLabel.addActionListener(e -> {
@@ -129,7 +126,7 @@ public class GatewayDialog extends JDialog implements Themeable {
 
             // Require confirmation for permanent block
             if (!approved && persistent) {
-                ConfirmDialog confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
+                ConfirmDialog confirmDialog = new ConfirmDialog(null, "Please Confirm");
                 String message = Constants.BLOCK_SITES_TEXT.replace(" blocked ", " block ") + "?";
                 message = String.format(message, request.hasCertificate()? request.getCertName():"");
                 if (!confirmDialog.prompt(message)) {
@@ -172,7 +169,7 @@ public class GatewayDialog extends JDialog implements Themeable {
                 detailColor = Constants.WARNING_COLOR;
             }
 
-            verifiedLabel.setIcon(iconCache.getIcon(trustIcon));
+            verifiedLabel.setIcon(IconCache.getInstance().getIcon(trustIcon));
             verifiedLabel.setToolTipText(iconToolTip);
             certInfoLabel.setForeground(detailColor);
         } else {

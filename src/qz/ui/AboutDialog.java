@@ -54,8 +54,8 @@ public class AboutDialog extends BasicDialog implements Themeable {
         }
     }
 
-    public AboutDialog(JMenuItem menuItem, IconCache iconCache) {
-        super(menuItem, iconCache);
+    public AboutDialog(JMenuItem menuItem) {
+        super(menuItem);
 
         //noinspection ConstantConditions - white label support
         limitedDisplay = Constants.VERSION_CHECK_URL.isEmpty();

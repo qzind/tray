@@ -12,13 +12,9 @@ public class DisplayTable extends JTable {
 
     protected DefaultTableModel model;
 
-    protected IconCache iconCache;
-
-    public DisplayTable(IconCache iconCache) {
+    public DisplayTable() {
         super();
         initComponents();
-
-        this.iconCache = iconCache;
     }
 
     private void initComponents() {

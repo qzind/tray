@@ -45,8 +45,8 @@ public class RequestTable extends DisplayTable implements Themeable {
 
     private RequestState request;
 
-    public RequestTable(IconCache iconCache) {
-        super(iconCache);
+    public RequestTable() {
+        super();
         setDefaultRenderer(Object.class, new RequestTableCellRenderer());
     }
 
@@ -93,9 +93,7 @@ public class RequestTable extends DisplayTable implements Themeable {
             // First Column
             if (value instanceof RequestField) {
                 label = stylizeLabel(STATUS_NORMAL, label, isSelected);
-                if (iconCache != null) {
-                    label.setIcon(iconCache.getIcon(IconCache.Icon.FIELD_ICON));
-                }
+                label.setIcon(IconCache.getInstance().getIcon(IconCache.Icon.FIELD_ICON));
                 return label;
             }
 

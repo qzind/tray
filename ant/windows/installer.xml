@@ -1,5 +1,6 @@
 <project name="windows-installer" basedir="../../">
     <property file="ant/project.properties"/>
+    <property file="ant/windows/windows.properties"/>
     <import file="${basedir}/ant/version.xml"/>
     <import file="${basedir}/ant/platform-detect.xml"/>
     <import file="${basedir}/ant/signing.xml"/>

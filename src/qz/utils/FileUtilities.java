@@ -943,7 +943,7 @@ public class FileUtilities {
             if(hasExtension) {
                 newName = String.format("%s-%s.%s", FilenameUtils.removeExtension(name), ++i, FilenameUtils.getExtension(name));
             } else {
-                newName = String.format("%s-%s",name, ++i);
+                newName = String.format("%s-%s", name, ++i);
             }
 
             result = parent.resolve(newName).toFile();

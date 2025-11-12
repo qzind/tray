@@ -9,8 +9,10 @@
  */
 package qz.utils;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
@@ -42,6 +44,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Stream;
@@ -921,5 +926,29 @@ public class FileUtilities {
         if(FileUtilities.TEMP_DIR != null) {
             FileUtils.deleteQuietly(FileUtilities.TEMP_DIR.toFile());
         }
+    }
+
+    /**
+     * Increments a file name within the parent directory looking for one that doesn't exist
+     */
+    public static File incrementFileName(File desired) throws IOException {
+        int i = 0;
+        boolean hasExtension = !FilenameUtils.getExtension(desired.getName()).isEmpty();
+        Path parent = desired.getParentFile().toPath();
+
+        File result = desired.getCanonicalFile();
+        while(result.exists()) {
+            String name = result.getName();
+            String newName;
+            if(hasExtension) {
+                newName = String.format("%s-%s.%s", FilenameUtils.removeExtension(name), ++i, FilenameUtils.getExtension(name));
+            } else {
+                newName = String.format("%s-%s", name, ++i);
+            }
+
+            result = parent.resolve(newName).toFile();
+        }
+
+        return result;
     }
 }

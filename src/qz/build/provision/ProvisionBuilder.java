@@ -14,6 +14,7 @@ import qz.build.provision.params.Type;
 import qz.common.Constants;
 import qz.installer.provision.invoker.PropertyInvoker;
 import qz.utils.ArgValue;
+import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
 import java.io.File;
@@ -158,25 +159,21 @@ public class ProvisionBuilder {
                     throw formatted("Resource name conflicts with provision file '%s' '%s'", fileName, step);
                 }
                 File dest = BUILD_PROVISION_FOLDER.resolve(fileName).toFile();
-                int i = 0;
-                // Avoid conflicting file names
-                String name = dest.getName();
 
-                // Avoid resource clobbering when being invoked by command line or providing certificates.
-                // Otherwise, assume the intent is to re-use the same resource (e.g. "my_script.sh", etc)
-                if(ingestFile == null || step.getType() == Type.CERT) {
-                    while(dest.exists()) {
-                        // Append "filename-1.txt" until there's no longer a conflict
-                        if (name.contains(".")) {
-                            dest = BUILD_PROVISION_FOLDER.resolve(String.format("%s-%s.%s", FilenameUtils.removeExtension(name), ++i,
-                                                                                FilenameUtils.getExtension(name))).toFile();
-                        } else {
-                            dest = BUILD_PROVISION_FOLDER.resolve(String.format("%-%", name, ++i)).toFile();
-                        }
+                // Handle file already existing
+                if(dest.exists()) {
+                    if (FileUtils.contentEquals(src, dest)) {
+                        // Same file, no copy needed!
+                    } else {
+                        // Copy using a unique name
+                        dest = FileUtilities.incrementFileName(dest);
+                        FileUtils.copyFile(src, dest);
                     }
+                } else {
+                    // Copy using provided name
+                    FileUtils.copyFile(src, dest);
                 }
 
-                FileUtils.copyFile(src, dest);
                 if(dest.exists()) {
                     step.setData(BUILD_PROVISION_FOLDER.relativize(dest.toPath()).toString());
                 } else {

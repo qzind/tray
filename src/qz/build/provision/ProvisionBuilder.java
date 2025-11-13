@@ -328,7 +328,7 @@ public class ProvisionBuilder {
 
     /**
      * Case-insensitive File.exists() function for Provisioning features that need to account for
-     * case-insensitive filesystems such as macOS or Linux
+     * case-insensitive filesystems such as macOS or Windows
      *
      * Note: This function is only intended to be used as a safeguard and only against the File's parent directory.
      * - Traversal of all case-insensitive parent directories within a path is not (yet) supported.

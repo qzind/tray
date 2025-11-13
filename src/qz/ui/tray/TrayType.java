@@ -19,15 +19,14 @@ public enum TrayType {
 
     private JXTrayIcon tray = null;
     private TaskbarTrayIcon taskbar = null;
-    private IconCache iconCache;
 
     public JXTrayIcon tray() { return tray; }
 
-    public TrayType init(IconCache iconCache) {
-        return init(null, iconCache);
+    public TrayType init() {
+        return init(null);
     }
 
-    public TrayType init(ActionListener exitListener, IconCache iconCache) {
+    public TrayType init(ActionListener exitListener) {
         switch (this) {
             case JX:
                 tray = new JXTrayIcon(blankImage()); break;
@@ -38,7 +37,6 @@ public enum TrayType {
             default:
                 taskbar = new TaskbarTrayIcon(blankImage(), exitListener);
         }
-        this.iconCache = iconCache;
         return this;
     }
 
@@ -52,9 +50,9 @@ public enum TrayType {
 
     public void setIcon(IconCache.Icon icon) {
         if (isTray()) {
-            tray.setImage(iconCache.getImage(icon, tray.getSize()));
+            tray.setImage(IconCache.getInstance().getImage(icon, tray.getSize()));
         } else {
-            taskbar.setIconImages(iconCache.getImages(icon));
+            taskbar.setIconImages(IconCache.getInstance().getImages(icon));
         }
     }
 

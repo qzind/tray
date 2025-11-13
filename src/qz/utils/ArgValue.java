@@ -63,6 +63,8 @@ public enum ArgValue {
         "tray.headless"),
     TRAY_MONOCLE(PREFERENCES, "Enable/disable the use of the Monocle for JavaFX/HTML rendering", null, true,
         "tray.monocle"),
+    TRAY_PREVIEW(PREFERENCES, "Enable/disable previews for JavaFX/HTML printing", null, false,
+        "tray.preview"),
     TRAY_STRICTMODE(PREFERENCES, "Enable/disable solely trusting certificates matching authcert.override", null, false,
         "tray.strictmode"),
     TRAY_IDLE_PRINTERS(PREFERENCES, "Enable/disable idle crawling of printers and their media information for faster initial results", null, true,

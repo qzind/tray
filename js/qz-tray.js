@@ -874,7 +874,6 @@ var qz = (function() {
                         .catch(function(err) {
                             // catch-and-release
                             if(err instanceof TypeError) {
-                                console.error(err);
                                 resolve({ description: "Granted via assumption (permission not found)", name: name, state: "granted" });
                             } else {
                                 throw err;

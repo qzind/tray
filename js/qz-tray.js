@@ -838,6 +838,52 @@ var qz = (function() {
                 }
                 return result;
             },
+
+            /** Generic browser permission handler **/
+            checkPermission: function(name) {
+                return _qz.tools.promise(function(resolve, reject) {
+                    if(navigator && navigator.permissions) {
+                        navigator.permissions.query({ name: name})
+                        .then(function(result) {
+                            switch(result.state) {
+                                case "granted":
+                                    resolve({ description: "Granted via Permissions API", name: name, state: result.state });
+                                    break;
+                                case "prompt":
+                                    var self = this;
+                                    // FIXME: Chrome 142 returns incorrect state for file: URLs
+                                    // FIXME: See https://github.com/WICG/local-network-access/issues/69#issuecomment-3536722087
+                                    if(name === 'local-network-access' && location && location.protocol) {
+                                        switch(location.protocol) {
+                                            case "file:":
+                                                self({ state: "granted" });
+                                                return;
+                                            default:
+                                                // do nothing
+                                        }
+                                    }
+                                    result.onchange = function() {
+                                        self(result); // recurse
+                                    }
+                                    break;
+                                case "denied": // fallthrough
+                                default:
+                                    reject({ description: "Denied via Permissions API", name: name, state: result.state });
+                                    break;
+                            }
+                        })
+                        .catch(function(err) {
+                            // catch-and-release
+                            if(err instanceof TypeError) {
+                                console.error(err);
+                                resolve({ description: "Granted via assumption (permission not found)", name: name, state: "granted" });
+                            } else {
+                                throw err;
+                            }
+                        });
+                    }
+                });
+            },
         },
 
         compatible: {
@@ -1192,6 +1238,11 @@ var qz = (function() {
              * @memberof qz.websocket
              */
             connect: function(options) {
+                // start wrapped
+                return _qz.tools.checkPermission('local-network-access').then(function(status) {
+                _qz.log.info(status);
+
+                // TODO: indent this eventually
                 return _qz.tools.promise(function(resolve, reject) {
                     if (_qz.websocket.connection) {
                         const state = _qz.websocket.connection.readyState;
@@ -1261,6 +1312,9 @@ var qz = (function() {
                     };
 
                     attempt(0);
+                });
+
+                // end wrapped
                 });
             },
 

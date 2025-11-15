@@ -844,8 +844,7 @@ var qz = (function() {
                 return _qz.tools.promise(function(resolve, reject) {
                     if(navigator && navigator.permissions) {
                         navigator.permissions.query({ name: name})
-                        .then(function(result) {
-                            var _self = this;
+                        .then(function handler(result) {
                             switch(result.state) {
                                 case "granted":
                                     resolve({ description: "Granted via Permissions API", name: name, state: result.state });
@@ -856,14 +855,14 @@ var qz = (function() {
                                     if(name === 'local-network-access' && location && location.protocol) {
                                         switch(location.protocol) {
                                             case "file:":
-                                                _self({ state: "granted" });
+                                                handler({ state: "granted" });
                                                 return;
                                             default:
                                                 // do nothing
                                         }
                                     }
                                     result.onchange = function() {
-                                        _self(result); // recurse
+                                        handler(result); // recurse
                                     }
                                     break;
                                 case "denied": // fallthrough

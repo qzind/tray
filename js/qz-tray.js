@@ -845,25 +845,25 @@ var qz = (function() {
                     if(navigator && navigator.permissions) {
                         navigator.permissions.query({ name: name})
                         .then(function(result) {
+                            var _self = this;
                             switch(result.state) {
                                 case "granted":
                                     resolve({ description: "Granted via Permissions API", name: name, state: result.state });
                                     break;
                                 case "prompt":
-                                    var self = this;
                                     // FIXME: Chrome 142 returns incorrect state for file: URLs
                                     // FIXME: See https://github.com/WICG/local-network-access/issues/69#issuecomment-3536722087
                                     if(name === 'local-network-access' && location && location.protocol) {
                                         switch(location.protocol) {
                                             case "file:":
-                                                self({ state: "granted" });
+                                                _self({ state: "granted" });
                                                 return;
                                             default:
                                                 // do nothing
                                         }
                                     }
                                     result.onchange = function() {
-                                        self(result); // recurse
+                                        _self(result); // recurse
                                     }
                                     break;
                                 case "denied": // fallthrough

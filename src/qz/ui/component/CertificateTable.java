@@ -89,8 +89,8 @@ public class CertificateTable extends DisplayTable implements Themeable {
         }
     }
 
-    public CertificateTable(IconCache iconCache) {
-        super(iconCache);
+    public CertificateTable() {
+        super();
         setDefaultRenderer(Object.class, new CertificateTableCellRenderer());
         addMouseListener(new MouseAdapter() {
             Point loc = new Point(-1, -1);
@@ -183,9 +183,7 @@ public class CertificateTable extends DisplayTable implements Themeable {
                         label = stylizeLabel(STATUS_NORMAL, label, isSelected);
                         break;
                 }
-                if (iconCache != null) {
-                    label.setIcon(iconCache.getIcon(IconCache.Icon.FIELD_ICON));
-                }
+                label.setIcon(IconCache.getInstance().getIcon(IconCache.Icon.FIELD_ICON));
                 return label;
             }
 

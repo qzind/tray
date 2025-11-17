@@ -117,21 +117,22 @@ public class TrayManager {
         // Set up the shortcut name so that the UI components can use it
         shortcutCreator = ShortcutCreator.getInstance();
 
+        iconCache = IconCache.getInstance();
+
         SystemUtilities.setSystemLookAndFeel(headless);
-        iconCache = new IconCache();
 
         if (SystemUtilities.isSystemTraySupported(headless)) { // UI mode with tray
             switch(SystemUtilities.getOs()) {
                 case WINDOWS:
-                    tray = TrayType.JX.init(iconCache);
+                    tray = TrayType.JX.init();
                     // Undocumented HiDPI behavior
                     tray.setImageAutoSize(true);
                     break;
                 case MAC:
-                    tray = TrayType.CLASSIC.init(iconCache);
+                    tray = TrayType.CLASSIC.init();
                     break;
                 default:
-                    tray = TrayType.MODERN.init(iconCache);
+                    tray = TrayType.MODERN.init();
             }
 
             // OS-specific tray icon handling
@@ -151,7 +152,7 @@ public class TrayManager {
                 headless = true;
             }
         } else if (!headless) { // UI mode without tray
-            tray = TrayType.TASKBAR.init(exitListener, iconCache);
+            tray = TrayType.TASKBAR.init(exitListener);
             tray.setIcon(DANGER_ICON);
             tray.setToolTip(name);
             tray.showTaskbar();
@@ -167,11 +168,11 @@ public class TrayManager {
             componentList = new ArrayList<>();
 
             // The allow/block dialog
-            gatewayDialog = new GatewayDialog(null, "Action Required", iconCache);
+            gatewayDialog = new GatewayDialog(null, "Action Required");
             componentList.add(gatewayDialog);
 
             // The ok/cancel dialog
-            confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
+            confirmDialog = new ConfirmDialog(null, "Please Confirm");
             componentList.add(confirmDialog);
 
             // Detect theme changes
@@ -258,7 +259,7 @@ public class TrayManager {
         JMenuItem sitesItem = new JMenuItem("Site Manager...", iconCache.getIcon(SAVED_ICON));
         sitesItem.setMnemonic(KeyEvent.VK_M);
         sitesItem.addActionListener(savedListener);
-        sitesDialog = new SiteManagerDialog(sitesItem, iconCache, prefs);
+        sitesDialog = new SiteManagerDialog(sitesItem, prefs);
         componentList.add(sitesDialog);
 
         JMenuItem diagnosticMenu = new JMenu("Diagnostic");
@@ -290,6 +291,13 @@ public class TrayManager {
         notificationsItem.addActionListener(notificationsListener);
         diagnosticMenu.add(notificationsItem);
 
+        JCheckBoxMenuItem previewItem = new JCheckBoxMenuItem("Preview HTML Prints");
+        previewItem.setToolTipText("Preview all HTML prints and optionally resize the content.");
+        previewItem.setMnemonic(KeyEvent.VK_P);
+        previewItem.setState(getPref(TRAY_PREVIEW));
+        diagnosticMenu.add(previewItem);
+        previewItem.addActionListener(previewListener);
+
         JCheckBoxMenuItem monocleItem = new JCheckBoxMenuItem("Use Monocle for HTML");
         monocleItem.setToolTipText("Use monocle platform for HTML printing (restart required)");
         monocleItem.setMnemonic(KeyEvent.VK_U);
@@ -311,7 +319,7 @@ public class TrayManager {
         logItem.setMnemonic(KeyEvent.VK_L);
         logItem.addActionListener(logListener);
         diagnosticMenu.add(logItem);
-        logDialog = new LogDialog(logItem, iconCache);
+        logDialog = new LogDialog(logItem);
         componentList.add(logDialog);
 
         JMenuItem zipLogs = new JMenuItem("Zip logs (to Desktop)");
@@ -346,7 +354,7 @@ public class TrayManager {
         JMenuItem aboutItem = new JMenuItem("About...", iconCache.getIcon(ABOUT_ICON));
         aboutItem.setMnemonic(KeyEvent.VK_B);
         aboutItem.addActionListener(aboutListener);
-        aboutDialog = new AboutDialog(aboutItem, iconCache);
+        aboutDialog = new AboutDialog(aboutItem);
         componentList.add(aboutDialog);
 
         if (SystemUtilities.isMac()) {
@@ -386,6 +394,15 @@ public class TrayManager {
         @Override
         public void actionPerformed(ActionEvent e) {
             prefs.setProperty(TRAY_NOTIFICATIONS, ((JCheckBoxMenuItem)e.getSource()).getState());
+        }
+    };
+
+    private final ActionListener previewListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
+            prefs.setProperty(TRAY_PREVIEW, j.getState());
+            //todo warn about monocle/headless
         }
     };
 

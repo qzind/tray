@@ -30,6 +30,8 @@ import java.util.List;
  */
 public class IconCache {
 
+    private static IconCache instance;
+
     private static final Logger log = LogManager.getLogger(IconCache.class);
 
     // Internal Jar path containing the images
@@ -144,11 +146,19 @@ public class IconCache {
     private final HashMap<String,BufferedImage> images;
     private static final Color TRANSPARENT = new Color(0,0,0,0);
 
+
+    public static IconCache getInstance() {
+        if (instance == null) {
+            instance = new IconCache();
+        }
+        return instance;
+    }
+
     /**
      * Default constructor.
      * Builds a cache of Image and ImageIcon resources by iterating through all IconCache.Icon types
      */
-    public IconCache() {
+    private IconCache() {
         imageIcons = new HashMap<>();
         images = new HashMap<>();
         buildIconCache();

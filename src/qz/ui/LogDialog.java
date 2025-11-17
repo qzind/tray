@@ -34,8 +34,8 @@ public class LogDialog extends BasicDialog {
     private WriterAppender logStream;
 
 
-    public LogDialog(JMenuItem caller, IconCache iconCache) {
-        super(caller, iconCache);
+    public LogDialog(JMenuItem caller) {
+        super(caller);
         initComponents();
     }
 

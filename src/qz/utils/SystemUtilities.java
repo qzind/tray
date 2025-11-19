@@ -30,6 +30,8 @@ import java.awt.geom.Area;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -808,5 +810,23 @@ public class SystemUtilities {
             return SystemTray.isSupported();
         }
         return false;
+    }
+
+    public static String parseRootDomain(String urlString) {
+        try {
+            // 1. Parse the URL string
+            URL url = new URL(urlString);
+            String host = url.getHost(); // This returns "subdomain.example.com"
+
+            // 2. Split the host by the dot (.)
+            String[] parts = host.split("\\.");
+
+            // 3. Check if the host has enough parts (e.g., at least 'example' and 'com')
+            if (parts.length >= 2) {
+                return parts[parts.length - 2] + "." + parts[parts.length - 1];
+            }
+        } catch (MalformedURLException ignore) {}
+
+        return null;
     }
 }

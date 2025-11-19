@@ -18,6 +18,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.codehaus.jettison.json.JSONException;
+import qz.common.Constants;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 import qz.utils.WindowsUtilities;
@@ -31,6 +33,7 @@ import static com.sun.jna.platform.win32.WinReg.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -146,8 +149,17 @@ public class WindowsInstaller extends Installer {
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "DisplayVersion", VERSION.toString());
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "EstimatedSize", FileUtils.sizeOfDirectoryAsBigInteger(new File(destination)).intValue() / 1024);
 
-        // Chrome protocol handler
-        WindowsUtilities.addNumberedRegValue(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLAllowlist", String.format("%s://*", DATA_DIR));
+        // TODO: Move this to platform-independent install step
+        try {
+            // Chrome protocol handler (e.g. "qz://*")
+            ChromiumPolicyInstaller.install(PrivilegeLevel.SYSTEM, "URLAllowlist", String.format("%s://*", DATA_DIR));
+            // LocalNetworkAccess (e.g. [*.]qz.io)
+            // FIXME: Read in more root domains via provisioning
+            String[] lnaUrls = { "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL) };
+            ChromiumPolicyInstaller.install(PrivilegeLevel.SYSTEM, "LocalNetworkAccessAllowedForUrls", lnaUrls);
+        } catch(JSONException | IOException e) {
+            log.warn("An error occurred installing the Chromium Policy", e);
+        }
 
         // Firewall rules
         ShellUtilities.execute("netsh.exe", "advfirewall", "firewall", "delete", "rule", String.format("name=%s", ABOUT_TITLE));

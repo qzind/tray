@@ -1,6 +1,8 @@
 package qz.ui;
 
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
@@ -49,7 +51,17 @@ public class LogDialog extends BasicDialog {
             @Override
             public void flush() {
                 SwingUtilities.invokeLater(() -> {
-                    logArea.append(toString());
+                    StringBuffer buf = getBuffer();
+                    int lines = 0;
+                    for (int i = buf.lastIndexOf("\n"); i != -1; i = buf.lastIndexOf("\n", i - 1)) {
+                        lines++;
+                        if (lines > 200) {
+                            buf.delete(0, i + 1); // i + 1 here. We are using an index, but we want the target \n to be deleted too
+                            break;
+                        }
+                    }
+
+                    logArea.setText(buf.toString());
                     logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
                 });
             }

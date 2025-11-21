@@ -13,6 +13,7 @@ import qz.utils.FileUtilities;
 import qz.utils.LoggerUtilities;
 
 import javax.swing.*;
+import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -52,16 +53,8 @@ public class LogDialog extends BasicDialog {
             public void flush() {
                 SwingUtilities.invokeLater(() -> {
                     StringBuffer buf = getBuffer();
-                    int lines = 0;
-                    for (int i = buf.lastIndexOf("\n"); i != -1; i = buf.lastIndexOf("\n", i - 1)) {
-                        lines++;
-                        if (lines > 200) {
-                            buf.delete(0, i + 1); // i + 1 here. We are using an index, but we want the target \n to be deleted too
-                            break;
-                        }
-                    }
-
-                    logArea.setText(buf.toString());
+                    logArea.append(buf.toString());
+                    buf.setLength(0);
                     logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
                 });
             }
@@ -72,6 +65,24 @@ public class LogDialog extends BasicDialog {
         logArea.setLineWrap(true);
         logArea.setWrapStyleWord(true);
         logArea.setFont(new Font("", Font.PLAIN, defaultFontSize)); //force fallback font for character support
+
+        //log truncation
+        AbstractDocument doc = (AbstractDocument)logArea.getDocument();
+        doc.setDocumentFilter(new DocumentFilter() {
+              @Override
+              public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+                  super.insertString(fb, offset, string, attr);
+
+                  // calls to fb bypass this filter, avoiding recursion
+                  Document doc = fb.getDocument();
+                  Element map = doc.getDefaultRootElement();
+                  int lines = map.getElementCount();
+                  if (lines > 200) {
+                      int i = map.getElement(lines - 200).getStartOffset();
+                      fb.remove(0, i);
+                  }
+              }
+        });
 
         // TODO:  Fix button panel resizing issues
         clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);

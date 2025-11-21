@@ -64,15 +64,14 @@ public class LogDialog extends BasicDialog {
         logArea.setFont(new Font("", Font.PLAIN, defaultFontSize)); //force fallback font for character support
 
         //log truncation
-        AbstractDocument doc = (AbstractDocument)logArea.getDocument();
-        doc.setDocumentFilter(new DocumentFilter() {
+        AbstractDocument logDoc = (AbstractDocument)logArea.getDocument();
+        logDoc.setDocumentFilter(new DocumentFilter() {
               @Override
               public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
                   super.insertString(fb, offset, string, attr);
 
                   // calls to fb bypass this filter, avoiding recursion
-                  Document doc = fb.getDocument();
-                  Element map = doc.getDefaultRootElement();
+                  Element map = fb.getDocument().getDefaultRootElement();
                   int lines = map.getElementCount();
                   if (lines > 200) {
                       int i = map.getElement(lines - 200).getStartOffset();

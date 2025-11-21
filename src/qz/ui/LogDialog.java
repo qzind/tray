@@ -50,9 +50,8 @@ public class LogDialog extends BasicDialog {
             @Override
             public void flush() {
                 SwingUtilities.invokeLater(() -> {
-                    StringBuffer buf = getBuffer();
-                    logArea.append(buf.toString());
-                    buf.setLength(0);
+                    logArea.append(toString());
+                    getBuffer().setLength(0);
                     logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
                 });
             }

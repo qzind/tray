@@ -42,16 +42,95 @@ public class LogDialog extends BasicDialog {
     public void initComponents() {
         int defaultFontSize = new JLabel().getFont().getSize();
 
-        JToolBar header = new JToolBar();
-        header.setFloatable(false);
-        header.setLayout(new GridBagLayout());
-
         JPanel maxLines = new JPanel();
         JTextField linesField = new JTextField("" + maxLogLines, 4);
         maxLines.setLayout(new BoxLayout(maxLines, BoxLayout.X_AXIS));
         maxLines.add(new JLabel("Max Lines:"));
         maxLines.add(linesField);
 
+        LinkLabel logDirLabel = new LinkLabel(FileUtilities.USER_DIR + File.separator);
+        logDirLabel.setLinkLocation(new File(FileUtilities.USER_DIR + File.separator));
+
+        JCheckBox autoScrollBox = new JCheckBox("Auto-Scroll", true);
+
+        JToolBar header = createHeader(maxLines, logDirLabel, autoScrollBox);
+        setHeader(header);
+
+        configureMaxLines(linesField);
+
+        logArea = new JTextPane();
+        logArea.setEditable(false);
+        logArea.setPreferredSize(new Dimension(-1, 100));
+        logArea.setFont(new Font("", Font.PLAIN, defaultFontSize)); //force fallback font for character support
+
+        DefaultCaret caret = (DefaultCaret) logArea.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE); // the default caret does some autoscroll stuff, we don't want that
+
+        writeTarget = createWriteTarget(autoScrollBox);
+
+        // TODO:  Fix button panel resizing issues
+        clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);
+        clearButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                logArea.setText(null);
+
+                writeTarget.getBuffer().setLength(0);
+            }
+        });
+
+        logPane = new JScrollPane(logArea);
+        setContent(logPane, true);
+        setResizable(true);
+
+        scrollToEnd = new AdjustmentListener() {
+            @Override
+            public void adjustmentValueChanged(AdjustmentEvent e) {
+                SwingUtilities.invokeLater(() -> {
+                    logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
+                });
+                logPane.getVerticalScrollBar().removeAdjustmentListener(scrollToEnd); //fire once
+            }
+        };
+
+        // add new appender to Log4J just for text area
+        logStream = WriterAppender.newBuilder()
+                .setName("ui-dialog")
+                .setLayout(PatternLayout.newBuilder().withPattern("[%p] %d{ISO8601} @ %c:%L%n\t%m%n").build())
+                .setFilter(ThresholdFilter.createFilter(Level.TRACE, Filter.Result.ACCEPT, Filter.Result.DENY))
+                .setTarget(writeTarget)
+                .build();
+        logStream.start();
+    }
+
+    private JToolBar createHeader(JPanel maxLines, LinkLabel logDirLabel, JCheckBox autoScrollBox) {
+        JToolBar header = new JToolBar();
+        header.setFloatable(false);
+        header.setLayout(new GridBagLayout());
+
+        GridBagConstraints gbc = new GridBagConstraints();
+
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.WEST;
+        header.add(maxLines, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.anchor = GridBagConstraints.CENTER;
+        header.add(logDirLabel, gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.EAST;
+        header.add(autoScrollBox, gbc);
+        return header;
+    }
+
+    private void configureMaxLines(JTextField linesField) {
         KeyStroke esc = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
         KeyStroke ent = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
 
@@ -81,43 +160,10 @@ public class LogDialog extends BasicDialog {
                 truncateLogs();
             }
         });
+    }
 
-        LinkLabel logDirLabel = new LinkLabel(FileUtilities.USER_DIR + File.separator);
-        logDirLabel.setLinkLocation(new File(FileUtilities.USER_DIR + File.separator));
-
-        JCheckBox autoScrollBox = new JCheckBox("Auto-Scroll", true);
-
-        GridBagConstraints gbc = new GridBagConstraints();
-
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.WEST;
-        header.add(maxLines, gbc);
-
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.anchor = GridBagConstraints.CENTER;
-        header.add(logDirLabel, gbc);
-
-        gbc.gridx = 2;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.EAST;
-        header.add(autoScrollBox, gbc);
-
-        setHeader(header);
-
-        logArea = new JTextPane();
-        logArea.setEditable(false);
-        logArea.setPreferredSize(new Dimension(-1, 100));
-        logArea.setFont(new Font("", Font.PLAIN, defaultFontSize)); //force fallback font for character support
-
-        DefaultCaret caret = (DefaultCaret) logArea.getCaret();
-        caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE); // the default caret does some autoscroll stuff, we don't want that
-
-        writeTarget = new StringWriter() {
+    private StringWriter createWriteTarget(JCheckBox autoScrollBox) {
+        return new StringWriter() {
             @Override
             public void flush() {
                 LogStyler.appendStyledText(logArea.getStyledDocument(), toString().stripTrailing());
@@ -129,40 +175,6 @@ public class LogDialog extends BasicDialog {
                 }
             }
         };
-
-        // TODO:  Fix button panel resizing issues
-        clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);
-        clearButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                logArea.setText(null);
-
-                writeTarget.getBuffer().setLength(0);
-            }
-        });
-
-        logPane = new JScrollPane(logArea);
-        setContent(logPane, true);
-        setResizable(true);
-
-        scrollToEnd = new AdjustmentListener() {
-            @Override
-            public void adjustmentValueChanged(AdjustmentEvent e) {
-                SwingUtilities.invokeLater(() -> {
-                    logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
-                });
-                logPane.getVerticalScrollBar().removeAdjustmentListener(scrollToEnd);
-            }
-        };
-
-        // add new appender to Log4J just for text area
-        logStream = WriterAppender.newBuilder()
-                .setName("ui-dialog")
-                .setLayout(PatternLayout.newBuilder().withPattern("[%p] %d{ISO8601} @ %c:%L%n\t%m%n").build())
-                .setFilter(ThresholdFilter.createFilter(Level.TRACE, Filter.Result.ACCEPT, Filter.Result.DENY))
-                .setTarget(writeTarget)
-                .build();
-        logStream.start();
     }
 
     private void truncateLogs() {

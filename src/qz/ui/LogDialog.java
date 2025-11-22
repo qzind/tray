@@ -13,9 +13,7 @@ import qz.utils.LoggerUtilities;
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.io.File;
 import java.io.StringWriter;
 
@@ -26,8 +24,6 @@ public class LogDialog extends BasicDialog {
 
     private JScrollPane logPane;
     private JTextPane logArea;
-
-    private static final Logger log = LogManager.getLogger(LogDialog.class);
 
     private JButton clearButton;
 

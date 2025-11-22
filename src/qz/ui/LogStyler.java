@@ -73,7 +73,7 @@ public class LogStyler {
             if (group == TokenGroup.WHOLE_STRING) continue;
 
             int startIndex = offset + tokens.start(group.ordinal());
-            int endIndex = offset + tokens.end(group.ordinal());
+            int endIndex = offset + tokens.end(group.ordinal()) + 1;
             String token = tokens.group(group.ordinal());
 
             if (group == TokenGroup.LEVEL) {

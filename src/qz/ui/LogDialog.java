@@ -1,13 +1,10 @@
 package qz.ui;
 
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.core.layout.PatternLayout;
-import qz.common.TrayManager;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
 import qz.utils.FileUtilities;
@@ -26,8 +23,6 @@ import java.io.StringWriter;
 public class LogDialog extends BasicDialog {
     private JScrollPane logPane;
     private WrappingTextPane logArea;
-
-    private JButton clearButton;
 
     private WriterAppender logStream;
     private StringWriter writeTarget;
@@ -71,7 +66,7 @@ public class LogDialog extends BasicDialog {
         writeTarget = createWriteTarget(autoScrollBox);
 
         // TODO:  Fix button panel resizing issues
-        clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);
+        JButton clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);
         clearButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -103,33 +98,6 @@ public class LogDialog extends BasicDialog {
                 .setTarget(writeTarget)
                 .build();
         logStream.start();
-    }
-
-    private JToolBar createHeader(JPanel maxLines, LinkLabel logDirLabel, JCheckBox autoScrollBox) {
-        JToolBar header = new JToolBar();
-        header.setFloatable(false);
-        header.setLayout(new GridBagLayout());
-
-        GridBagConstraints gbc = new GridBagConstraints();
-
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.WEST;
-        header.add(maxLines, gbc);
-
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.anchor = GridBagConstraints.CENTER;
-        header.add(logDirLabel, gbc);
-
-        gbc.gridx = 2;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.anchor = GridBagConstraints.EAST;
-        header.add(autoScrollBox, gbc);
-        return header;
     }
 
     private void configureMaxLines(JTextField linesField) {

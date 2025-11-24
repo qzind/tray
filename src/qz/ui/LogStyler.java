@@ -44,62 +44,68 @@ public class LogStyler {
             levelColorMap.put(Level.TRACE, DEFAULT);
         }
 
-        final SimpleAttributeSet lightTheme;
-        final SimpleAttributeSet darkTheme;
-        final SimpleAttributeSet lightThemeBold;
-        final SimpleAttributeSet darkThemeBold;
-        final SimpleAttributeSet lightThemeItalic;
-        final SimpleAttributeSet darkThemeItalic;
+        enum AttributeFlag {
+            LIGHT   (0b0000),
+            DARK    (0b0001),
+            BOLD    (0b0010),
+            ITALIC  (0b0100),
+            LENGTH  (0b1000);
+
+            private final int flag;
+
+            AttributeFlag(int flag) {
+                this.flag = flag;
+            }
+
+            public int get() {
+                return flag;
+            }
+        }
+
+        final SimpleAttributeSet[] attributeArray = new SimpleAttributeSet[AttributeFlag.LENGTH.get()];
+
+        public SimpleAttributeSet getAttributeSet(int flags) {
+            SimpleAttributeSet attributeSet = attributeArray[flags];
+            if (attributeSet == null) {
+                attributeSet = attributeArray[flags] = new SimpleAttributeSet();
+                if (flags >= AttributeFlag.ITALIC.get()) {
+                    flags -= AttributeFlag.ITALIC.get();
+                    StyleConstants.setItalic(attributeSet, true);
+                }
+                if (flags >= AttributeFlag.BOLD.get()) {
+                    flags -= AttributeFlag.BOLD.get();
+                    StyleConstants.setBold(attributeSet, true);
+                }
+                if (flags >= AttributeFlag.DARK.get()) {
+                    StyleConstants.setForeground(attributeSet, darkThemeColor);
+                } else {
+                    StyleConstants.setForeground(attributeSet, lightThemeColor);
+                }
+            }
+            return attributeSet;
+        }
+
+        final Color lightThemeColor;
+        final Color darkThemeColor;
 
         LogColor(Color lightThemeColor, Color darkThemeColor) {
-            lightThemeBold = new SimpleAttributeSet();
-            StyleConstants.setBold(lightThemeBold, true);
-            lightThemeItalic = new SimpleAttributeSet();
-            StyleConstants.setItalic(lightThemeItalic, true);
-            if(lightThemeColor != null) {
-                lightTheme = new SimpleAttributeSet();
-                StyleConstants.setForeground(lightTheme, lightThemeColor);
-                StyleConstants.setForeground(lightThemeBold, lightThemeColor);
-                StyleConstants.setForeground(lightThemeItalic, lightThemeColor);
-            } else {
-                lightTheme =  null;
-            }
-            darkThemeBold = new SimpleAttributeSet();
-            StyleConstants.setBold(darkThemeBold, true);
-            darkThemeItalic = new SimpleAttributeSet();
-            StyleConstants.setItalic(darkThemeItalic, true);
-            if(darkThemeColor != null) {
-                darkTheme = new SimpleAttributeSet();
-                StyleConstants.setForeground(darkTheme, darkThemeColor);
-                StyleConstants.setForeground(darkThemeBold, darkThemeColor);
-                StyleConstants.setForeground(darkThemeItalic, darkThemeColor);
-            } else {
-                darkTheme = null;
-            }
+            this.lightThemeColor = lightThemeColor;
+            this.darkThemeColor = darkThemeColor;
         }
 
-        public SimpleAttributeSet getThemeColor(boolean bold, boolean italic) {
-            if (bold) {
-                return SystemUtilities.isDarkDesktop() ? darkThemeBold : lightThemeBold;
-            } else if(italic) {
-                return SystemUtilities.isDarkDesktop() ? darkThemeItalic : lightThemeItalic;
-            } else {
-                return SystemUtilities.isDarkDesktop() ? darkTheme : lightTheme;
-            }
-        }
-
-        public static SimpleAttributeSet getAttributeSet(TokenGroup tokenGroup, String matchedString) {
+        public static SimpleAttributeSet lookupAttributeSet(TokenGroup tokenGroup, String matchedString) {
+            int darkFlag = SystemUtilities.isDarkDesktop() ? AttributeFlag.DARK.get() : AttributeFlag.LIGHT.get();
             switch(tokenGroup) {
                 case LEVEL:
                     for(Map.Entry<Level, LogColor> mapEntry : levelColorMap.entrySet()) {
                         if(matchedString.contains(mapEntry.getKey().name())) {
-                            return mapEntry.getValue().getThemeColor(true /* all levels are bold */, false);
+                            return mapEntry.getValue().getAttributeSet(darkFlag | AttributeFlag.BOLD.get());
                         }
                     }
                 case STACKTRACE:
-                    return tokenColorMap.getOrDefault(tokenGroup, DEFAULT).getThemeColor(false, true /* all stacktrace italics */);
+                    return tokenColorMap.getOrDefault(tokenGroup, DEFAULT).getAttributeSet(darkFlag | AttributeFlag.ITALIC.get());
                 default:
-                    return tokenColorMap.getOrDefault(tokenGroup, DEFAULT).getThemeColor(false, false);
+                    return tokenColorMap.getOrDefault(tokenGroup, DEFAULT).getAttributeSet(darkFlag);
             }
         }
     }
@@ -139,7 +145,7 @@ public class LogStyler {
             for(TokenGroup tokenGroup : TokenGroup.FIRST_LINE) {
                 Matcher tokens = tokenGroup.getPattern().matcher(firstLine);
                 if (tokens.find()) {
-                    SimpleAttributeSet attr = LogColor.getAttributeSet(tokenGroup, tokens.group(1));
+                    SimpleAttributeSet attr = LogColor.lookupAttributeSet(tokenGroup, tokens.group(1));
                     if(attr == null) continue;
                     int startIndex = offset + tokens.start(1);
                     int endIndex = offset + tokens.end(1);
@@ -153,7 +159,7 @@ public class LogStyler {
                 Matcher tokens = tokenGroup.getPattern().matcher(message);
 
                 if (tokens.find()) {
-                    SimpleAttributeSet attr = LogColor.getAttributeSet(tokenGroup, tokens.group(1));
+                    SimpleAttributeSet attr = LogColor.lookupAttributeSet(tokenGroup, tokens.group(1));
                     if(attr == null) continue;
                     switch(tokenGroup) {
                         case STACKTRACE:

@@ -47,47 +47,49 @@ public class LogStyler {
         }
 
         enum AttributeFlag {
-            LIGHT   (0b0000),
-            DARK    (0b0001),
-            BOLD    (0b0010),
-            ITALIC  (0b0100),
-            LENGTH  (0b1000);
+            DARK(0b0001, StyleConstants.Foreground),
+            BOLD(0b0010, StyleConstants.Bold),
+            ITALIC(0b0100, StyleConstants.Italic);
+            public static final int MAX_LENGTH = (0b1000);
 
             private final int flag;
+            public final Object attributeKey;
 
-            AttributeFlag(int flag) {
+            AttributeFlag(int flag, Object attributeKey) {
                 this.flag = flag;
+                this.attributeKey = attributeKey;
             }
 
             public int get() {
                 return flag;
             }
+
+            public boolean isIn(int flags) {
+                return (flag & flags) > 0;
+            }
         }
 
-        final SimpleAttributeSet[] attributeArray = new SimpleAttributeSet[AttributeFlag.LENGTH.get()];
+        final SimpleAttributeSet[] attributeArray = new SimpleAttributeSet[AttributeFlag.MAX_LENGTH];
 
         public SimpleAttributeSet getAttributeSet() {
             return getAttributeSet(0);
         }
 
         public SimpleAttributeSet getAttributeSet(int flags) {
-            flags |= SystemUtilities.isDarkDesktop() ? AttributeFlag.DARK.get() : AttributeFlag.LIGHT.get();
+            if (SystemUtilities.isDarkDesktop()) flags |= AttributeFlag.DARK.get();
 
             SimpleAttributeSet attributeSet = attributeArray[flags];
             if (attributeSet == null) {
-                attributeSet = attributeArray[flags] = new SimpleAttributeSet();
-                if (flags >= AttributeFlag.ITALIC.get()) {
-                    flags -= AttributeFlag.ITALIC.get();
-                    StyleConstants.setItalic(attributeSet, true);
-                }
-                if (flags >= AttributeFlag.BOLD.get()) {
-                    flags -= AttributeFlag.BOLD.get();
-                    StyleConstants.setBold(attributeSet, true);
-                }
-                if (flags >= AttributeFlag.DARK.get()) {
-                    if(darkThemeColor != null) StyleConstants.setForeground(attributeSet, darkThemeColor);
-                } else {
-                    if(lightThemeColor != null) StyleConstants.setForeground(attributeSet, lightThemeColor);
+                attributeArray[flags] = attributeSet = new SimpleAttributeSet();
+                for(AttributeFlag attrFlag : AttributeFlag.values()) {
+                    switch(attrFlag) {
+                        case DARK: // Color is either dark or light, it cannot be neither
+                            attributeSet.addAttribute(attrFlag.attributeKey, attrFlag.isIn(flags) ? darkThemeColor : lightThemeColor);
+                            break;
+                        default:
+                            if (attrFlag.isIn(flags)) attributeSet.addAttribute(attrFlag.attributeKey, true);
+                            break;
+                    }
                 }
             }
             return attributeSet;

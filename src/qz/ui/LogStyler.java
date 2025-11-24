@@ -145,10 +145,18 @@ public class LogStyler {
             offset += firstLine.length();
             for(TokenGroup tokenGroup : TokenGroup.MESSAGE_LINES) {
                 Matcher tokens = tokenGroup.getPattern().matcher(message);
+
                 if (tokens.find()) {
-                    // TODO: Match more than the first line?
                     SimpleAttributeSet attr = LogColor.getAttributeSet(tokenGroup, tokens.group(1));
                     if(attr == null) continue;
+                    switch(tokenGroup) {
+                        case STACKTRACE:
+                            // colorize entire message block
+                            doc.setCharacterAttributes(offset, message.length(), attr, false);
+                            return;
+                        default:
+                    }
+
                     int startIndex = offset + tokens.start(1);
                     int endIndex = offset + tokens.end(1);
                     doc.setCharacterAttributes(startIndex, endIndex - startIndex, attr, false);

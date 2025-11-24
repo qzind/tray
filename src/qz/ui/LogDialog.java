@@ -44,30 +44,30 @@ public class LogDialog extends BasicDialog {
     public void initComponents() {
         int defaultFontSize = new JLabel().getFont().getSize();
 
-        JPanel maxLines = new JPanel();
-        JTextField linesField = new JTextField("" + maxLogLines, 4);
-        maxLines.setLayout(new BoxLayout(maxLines, BoxLayout.X_AXIS));
-        maxLines.add(new JLabel("Max Lines:"));
-        maxLines.add(linesField);
-
         LinkLabel logDirLabel = new LinkLabel(FileUtilities.USER_DIR + File.separator);
         logDirLabel.setLinkLocation(new File(FileUtilities.USER_DIR + File.separator));
 
-        JCheckBox autoScrollBox = new JCheckBox("Auto-Scroll", true);
-
-        JToolBar header = createHeader(maxLines, logDirLabel, autoScrollBox);
-        setHeader(header);
-
-        configureMaxLines(linesField);
+        setHeader(logDirLabel);
 
         logArea = new JTextPane();
         logArea.setEditable(false);
-        logArea.setPreferredSize(new Dimension(-1, 100));
+        logArea.setPreferredSize(new Dimension(800, 400));
+
         logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, defaultFontSize)); //force fallback font for character support
 
         DefaultCaret caret = (DefaultCaret) logArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE); // the default caret does some autoscroll stuff, we don't want that
 
+        JLabel maxLinesLabel = new JLabel("Max Lines:");
+        JTextField maxLinesField = new JTextField("" + maxLogLines, 4);
+        maxLinesField.setHorizontalAlignment(SwingConstants.RIGHT);
+        maxLinesLabel.setLabelFor(maxLinesField);
+        JCheckBox autoScrollBox = new JCheckBox("Auto-Scroll", true);
+        addPanelComponent(maxLinesLabel);
+        addPanelComponent(maxLinesField);
+        addPanelComponent(autoScrollBox);
+        addPanelComponent(new JSeparator());
+        configureMaxLines(maxLinesField);
         writeTarget = createWriteTarget(autoScrollBox);
 
         // TODO:  Fix button panel resizing issues

@@ -43,24 +43,46 @@ public class LogStyler {
             levelColorMap.put(Level.ALL, DEFAULT);
         }
 
-        final Color lightThemeColor;
-        final Color darkThemeColor;
+        private static class AttributePack {
+            final SimpleAttributeSet lightTheme;
+            final SimpleAttributeSet darkTheme;
+            final SimpleAttributeSet lightBoldTheme;
+            final SimpleAttributeSet darkBoldTheme;
+
+            private AttributePack() {
+                this.lightTheme = new SimpleAttributeSet();
+                this.darkTheme = new SimpleAttributeSet();
+                this.lightBoldTheme = new SimpleAttributeSet();
+                this.darkBoldTheme = new SimpleAttributeSet();
+                StyleConstants.setBold(lightBoldTheme, true);
+                StyleConstants.setBold(darkBoldTheme, true);
+            }
+        }
+
+        final AttributePack attributePack;
 
         LogColor(Color lightThemeColor, Color darkThemeColor) {
-            this.lightThemeColor = lightThemeColor;
-            this.darkThemeColor = darkThemeColor;
+            attributePack = new AttributePack();
+            StyleConstants.setForeground(attributePack.lightTheme, lightThemeColor);
+            StyleConstants.setForeground(attributePack.darkTheme, darkThemeColor);
+            StyleConstants.setForeground(attributePack.lightBoldTheme, lightThemeColor);
+            StyleConstants.setForeground(attributePack.darkBoldTheme, darkThemeColor);
         }
 
-        public Color getThemeColor() {
-            return SystemUtilities.isDarkDesktop() ? darkThemeColor : lightThemeColor;
+        public SimpleAttributeSet getThemeColor(Boolean bold) {
+            if (bold) {
+                return SystemUtilities.isDarkDesktop() ? attributePack.darkBoldTheme : attributePack.lightBoldTheme;
+            } else {
+                return SystemUtilities.isDarkDesktop()? attributePack.darkTheme : attributePack.lightTheme;
+            }
         }
 
-        public static LogColor lookup(Level level) {
-            return levelColorMap.get(level);
+        public static SimpleAttributeSet lookup(Level level) {
+            return levelColorMap.get(level).getThemeColor(true);
         }
 
-        public static LogColor lookup(TokenGroup tokenGroup) {
-            return tokenColorMap.get(tokenGroup);
+        public static SimpleAttributeSet lookup(TokenGroup tokenGroup) {
+            return tokenColorMap.get(tokenGroup).getThemeColor(false);
         }
     }
 
@@ -84,17 +106,14 @@ public class LogStyler {
             return pattern;
         }
 
-        public void configureAttributeSet(SimpleAttributeSet attributeSet, String matchString) {
+        public SimpleAttributeSet getAttributeSet(String matchString) {
             switch(this) {
                 case LEVEL:
-                    if (matchString.length() < 3) return; // should never happen, regex failure guard
+                    if (matchString.length() < 3) return null; // should never happen, regex failure guard
                     matchString = matchString.substring(1, matchString.length() -1); // lose the '[ ]' from the match
-                    StyleConstants.setBold(attributeSet, true);
-                    StyleConstants.setForeground(attributeSet, LogColor.lookup(Level.getLevel(matchString)).getThemeColor());
-                    break;
+                    return LogColor.lookup(Level.getLevel(matchString));
                 default:
-                    StyleConstants.setBold(attributeSet, false);
-                    StyleConstants.setForeground(attributeSet, LogColor.lookup(this).getThemeColor());
+                    return LogColor.lookup(this);
             }
         }
     }
@@ -104,7 +123,6 @@ public class LogStyler {
             int offset = doc.getLength();
             append(doc, text);
             String logLine = text.substring(0, text.indexOf('\n'));
-            SimpleAttributeSet attr = new SimpleAttributeSet();
 
             for(TokenGroup tokenGroup : TokenGroup.values()) {
                 if (tokenGroup.getPattern() == null) continue;
@@ -112,7 +130,7 @@ public class LogStyler {
                 if (tokens.find()) {
                     int startIndex = offset + tokens.start(1);
                     int endIndex = offset + tokens.end(1) + 1;
-                    tokenGroup.configureAttributeSet(attr, tokens.group(1));
+                    SimpleAttributeSet attr = tokenGroup.getAttributeSet(tokens.group(1));
                     doc.setCharacterAttributes(startIndex, endIndex - startIndex, attr, false);
                 }
             }

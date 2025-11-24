@@ -15,6 +15,8 @@ public class WrappingTextPane extends JTextPane {
     // regex of where valid breaks can occur.
     private static final Pattern BREAK_PATTERN = Pattern.compile("[\\s,{}:]");
 
+    private SmartGlyphView glyphView = null;
+
     public WrappingTextPane() {
         setEditorKit(new StyledEditorKit() {
             private final ViewFactory defaultFactory = super.getViewFactory();
@@ -24,7 +26,7 @@ public class WrappingTextPane extends JTextPane {
                 return elem -> {
                     String kind = elem.getName();
                     if (AbstractDocument.ContentElementName.equals(kind)) {
-                        return new SmartGlyphView(elem);
+                        return glyphView = new SmartGlyphView(elem);
                     }
                     return defaultFactory.create(elem);
                 };
@@ -37,7 +39,13 @@ public class WrappingTextPane extends JTextPane {
         return true;
     }
 
+    public void setWrapping(boolean wrappingEnabled) {
+        this.glyphView.setWrappingEnabled(wrappingEnabled);
+    }
+
     private static class SmartGlyphView extends GlyphView {
+        private boolean wrappingEnabled = true;
+
         SmartGlyphView(Element elem) {
             super(elem);
         }
@@ -122,6 +130,11 @@ public class WrappingTextPane extends JTextPane {
             } catch (BadLocationException ignored) {
             }
             return -1;
+        }
+
+        public void setWrappingEnabled(boolean wrappingEnabled) {
+            // FIXME: NO-OP!
+            this.wrappingEnabled = wrappingEnabled;
         }
     }
 }

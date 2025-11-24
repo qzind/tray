@@ -94,8 +94,8 @@ public class LogDialog extends BasicDialog {
 
         wrapCheckBox.addActionListener(e -> {
             JCheckBox caller = (JCheckBox)e.getSource();
-            //logArea.setWrapping(caller.isSelected()); // FIXME
-            append("");
+            logArea.setWrapping(caller.isSelected());
+            //append("");  // TODO: Is this still needed?
         });
 
         // add new appender to Log4J just for text area

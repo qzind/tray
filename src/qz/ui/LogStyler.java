@@ -84,7 +84,8 @@ public class LogStyler {
                 for(AttributeFlag attrFlag : AttributeFlag.values()) {
                     switch(attrFlag) {
                         case DARK: // Color is either dark or light, it cannot be neither
-                            attributeSet.addAttribute(attrFlag.attributeKey, attrFlag.isIn(flags) ? darkThemeColor : lightThemeColor);
+                            Color themeColor = attrFlag.isIn(flags) ? darkThemeColor : lightThemeColor;
+                            if (themeColor != null) attributeSet.addAttribute(attrFlag.attributeKey, themeColor);
                             break;
                         default:
                             if (attrFlag.isIn(flags)) attributeSet.addAttribute(attrFlag.attributeKey, true);

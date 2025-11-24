@@ -168,12 +168,7 @@ public class LogDialog extends BasicDialog {
         return new StringWriter() {
             @Override
             public void flush() {
-                try {
-                    LogStyler.appendStyledText(logArea.getStyledDocument(), toString());
-                } catch(BadLocationException ignore) {
-                    // Fallback to plain text
-                    LogDialog.this.append(toString());
-                }
+                LogDialog.this.append(toString());
                 getBuffer().setLength(0);
 
                 truncateLogs();
@@ -212,8 +207,7 @@ public class LogDialog extends BasicDialog {
 
     public void append(String text) {
         try {
-            Document doc = logArea.getDocument();
-            doc.insertString(doc.getLength(), text, null);
+            LogStyler.appendStyledText(logArea.getStyledDocument(), text);
         } catch(BadLocationException ignore) {}
     }
 

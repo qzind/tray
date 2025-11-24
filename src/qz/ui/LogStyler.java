@@ -8,6 +8,7 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import java.awt.*;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -30,6 +31,8 @@ public class LogStyler {
             tokenColorMap.put(TokenGroup.TIMESTAMP, GREEN);
             tokenColorMap.put(TokenGroup.CLASS, PURPLE);
             tokenColorMap.put(TokenGroup.LINE_NUMBER, PURPLE);
+            tokenColorMap.put(TokenGroup.WINDOW_CLOSED, GRAY);
+            tokenColorMap.put(TokenGroup.STACKTRACE, RED);
         }
 
         private static final Map<Level, LogColor> levelColorMap = new HashMap<>();
@@ -103,9 +106,14 @@ public class LogStyler {
         LEVEL       (Pattern.compile("(\\[[A-Z]+])\\s+")),
         TIMESTAMP   (Pattern.compile("([0-9T:.,-]+)\\s+@\\s+")),
         CLASS       (Pattern.compile("@\\s+([\\w.$]+):\\d+")),
-        LINE_NUMBER (Pattern.compile(":(\\d+)$"));
+        LINE_NUMBER (Pattern.compile(":(\\d+)$")),
+        WINDOW_CLOSED(Pattern.compile("\n\t(\\([\\w\\s]+\\))\n")),
+        STACKTRACE(Pattern.compile("\t(at .*)\n"));
 
         private final Pattern pattern;
+
+        private static final TokenGroup[] FIRST_LINE = new TokenGroup[] { LEVEL, TIMESTAMP, CLASS, LINE_NUMBER };
+        private static final TokenGroup[] MESSAGE_LINES = new TokenGroup[] { WINDOW_CLOSED, STACKTRACE };
 
         TokenGroup(Pattern pattern) {
             this.pattern = pattern;
@@ -114,17 +122,16 @@ public class LogStyler {
         public Pattern getPattern() {
             return pattern;
         }
-    }
+     }
 
     public static void appendStyledText(StyledDocument doc, String text) throws BadLocationException {
         synchronized(doc) {
             int offset = doc.getLength();
             doc.insertString(doc.getLength(), text, null);
-            String logLine = text.substring(0, text.indexOf('\n'));
+            String firstLine = text.substring(0, text.indexOf('\n'));
 
-            for(TokenGroup tokenGroup : TokenGroup.values()) {
-                if (tokenGroup.getPattern() == null) continue;
-                Matcher tokens = tokenGroup.getPattern().matcher(logLine);
+            for(TokenGroup tokenGroup : TokenGroup.FIRST_LINE) {
+                Matcher tokens = tokenGroup.getPattern().matcher(firstLine);
                 if (tokens.find()) {
                     SimpleAttributeSet attr = LogColor.getAttributeSet(tokenGroup, tokens.group(1));
                     if(attr == null) continue;
@@ -133,6 +140,21 @@ public class LogStyler {
                     doc.setCharacterAttributes(startIndex, endIndex - startIndex, attr, false);
                 }
             }
+
+            String message = text.substring(firstLine.length());
+            offset += firstLine.length();
+            for(TokenGroup tokenGroup : TokenGroup.MESSAGE_LINES) {
+                Matcher tokens = tokenGroup.getPattern().matcher(message);
+                if (tokens.find()) {
+                    // TODO: Match more than the first line?
+                    SimpleAttributeSet attr = LogColor.getAttributeSet(tokenGroup, tokens.group(1));
+                    if(attr == null) continue;
+                    int startIndex = offset + tokens.start(1);
+                    int endIndex = offset + tokens.end(1);
+                    doc.setCharacterAttributes(startIndex, endIndex - startIndex, attr, false);
+                }
+            }
+
         }
     }
 }

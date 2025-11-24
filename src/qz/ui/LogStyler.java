@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static qz.ui.LogStyler.LogColor.AttributeFlag.*;
+
 public class LogStyler {
     public enum LogColor {
         /* Colors from IntelliJ --> Settings --> Editor --> Color Scheme --> Java */
@@ -64,7 +66,13 @@ public class LogStyler {
 
         final SimpleAttributeSet[] attributeArray = new SimpleAttributeSet[AttributeFlag.LENGTH.get()];
 
+        public SimpleAttributeSet getAttributeSet() {
+            return getAttributeSet(0);
+        }
+
         public SimpleAttributeSet getAttributeSet(int flags) {
+            flags |= SystemUtilities.isDarkDesktop() ? AttributeFlag.DARK.get() : AttributeFlag.LIGHT.get();
+
             SimpleAttributeSet attributeSet = attributeArray[flags];
             if (attributeSet == null) {
                 attributeSet = attributeArray[flags] = new SimpleAttributeSet();
@@ -77,9 +85,9 @@ public class LogStyler {
                     StyleConstants.setBold(attributeSet, true);
                 }
                 if (flags >= AttributeFlag.DARK.get()) {
-                    StyleConstants.setForeground(attributeSet, darkThemeColor);
+                    if(darkThemeColor != null) StyleConstants.setForeground(attributeSet, darkThemeColor);
                 } else {
-                    StyleConstants.setForeground(attributeSet, lightThemeColor);
+                    if(lightThemeColor != null) StyleConstants.setForeground(attributeSet, lightThemeColor);
                 }
             }
             return attributeSet;
@@ -93,19 +101,16 @@ public class LogStyler {
             this.darkThemeColor = darkThemeColor;
         }
 
-        public static SimpleAttributeSet lookupAttributeSet(TokenGroup tokenGroup, String matchedString) {
-            int darkFlag = SystemUtilities.isDarkDesktop() ? AttributeFlag.DARK.get() : AttributeFlag.LIGHT.get();
+        public static LogColor lookup(TokenGroup tokenGroup, String matchedString) {
             switch(tokenGroup) {
                 case LEVEL:
                     for(Map.Entry<Level, LogColor> mapEntry : levelColorMap.entrySet()) {
                         if(matchedString.contains(mapEntry.getKey().name())) {
-                            return mapEntry.getValue().getAttributeSet(darkFlag | AttributeFlag.BOLD.get());
+                            return mapEntry.getValue();
                         }
                     }
-                case STACKTRACE:
-                    return tokenColorMap.getOrDefault(tokenGroup, DEFAULT).getAttributeSet(darkFlag | AttributeFlag.ITALIC.get());
                 default:
-                    return tokenColorMap.getOrDefault(tokenGroup, DEFAULT).getAttributeSet(darkFlag);
+                    return tokenColorMap.getOrDefault(tokenGroup, DEFAULT);
             }
         }
     }
@@ -145,8 +150,16 @@ public class LogStyler {
             for(TokenGroup tokenGroup : TokenGroup.FIRST_LINE) {
                 Matcher tokens = tokenGroup.getPattern().matcher(firstLine);
                 if (tokens.find()) {
-                    SimpleAttributeSet attr = LogColor.lookupAttributeSet(tokenGroup, tokens.group(1));
-                    if(attr == null) continue;
+                    LogColor logColor = LogColor.lookup(tokenGroup, tokens.group(1));
+                    SimpleAttributeSet attr;
+                    switch(tokenGroup) {
+                        case LEVEL:
+                            attr = logColor.getAttributeSet(BOLD.get());
+                            break;
+                        default:
+                            attr = logColor.getAttributeSet();
+                    }
+
                     int startIndex = offset + tokens.start(1);
                     int endIndex = offset + tokens.end(1);
                     doc.setCharacterAttributes(startIndex, endIndex - startIndex, attr, false);
@@ -159,19 +172,18 @@ public class LogStyler {
                 Matcher tokens = tokenGroup.getPattern().matcher(message);
 
                 if (tokens.find()) {
-                    SimpleAttributeSet attr = LogColor.lookupAttributeSet(tokenGroup, tokens.group(1));
-                    if(attr == null) continue;
+                    LogColor logColor = LogColor.lookup(tokenGroup, tokens.group(1));
                     switch(tokenGroup) {
                         case STACKTRACE:
                             // colorize entire message block
-                            doc.setCharacterAttributes(offset, message.length(), attr, false);
+                            doc.setCharacterAttributes(offset, message.length(), logColor.getAttributeSet(ITALIC.get()), false);
                             return;
                         default:
                     }
 
                     int startIndex = offset + tokens.start(1);
                     int endIndex = offset + tokens.end(1);
-                    doc.setCharacterAttributes(startIndex, endIndex - startIndex, attr, false);
+                    doc.setCharacterAttributes(startIndex, endIndex - startIndex, logColor.getAttributeSet(), false);
                 }
             }
 

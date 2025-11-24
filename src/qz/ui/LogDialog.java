@@ -25,7 +25,7 @@ import java.io.StringWriter;
  */
 public class LogDialog extends BasicDialog {
     private JScrollPane logPane;
-    private JTextPane logArea;
+    private WrappingTextPane logArea;
 
     private JButton clearButton;
 
@@ -49,7 +49,7 @@ public class LogDialog extends BasicDialog {
 
         setHeader(logDirLabel);
 
-        logArea = new JTextPane();
+        logArea = new WrappingTextPane();
         logArea.setEditable(false);
         logArea.setPreferredSize(new Dimension(800, 400));
 

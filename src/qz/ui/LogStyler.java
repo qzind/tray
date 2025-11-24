@@ -8,7 +8,6 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import java.awt.*;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -49,35 +48,41 @@ public class LogStyler {
         final SimpleAttributeSet darkTheme;
         final SimpleAttributeSet lightThemeBold;
         final SimpleAttributeSet darkThemeBold;
+        final SimpleAttributeSet lightThemeItalic;
+        final SimpleAttributeSet darkThemeItalic;
 
         LogColor(Color lightThemeColor, Color darkThemeColor) {
+            lightThemeBold = new SimpleAttributeSet();
+            StyleConstants.setBold(lightThemeBold, true);
+            lightThemeItalic = new SimpleAttributeSet();
+            StyleConstants.setItalic(lightThemeItalic, true);
             if(lightThemeColor != null) {
                 lightTheme = new SimpleAttributeSet();
-                lightThemeBold = new SimpleAttributeSet();
                 StyleConstants.setForeground(lightTheme, lightThemeColor);
                 StyleConstants.setForeground(lightThemeBold, lightThemeColor);
-                StyleConstants.setBold(lightThemeBold, true);
+                StyleConstants.setForeground(lightThemeItalic, lightThemeColor);
             } else {
                 lightTheme =  null;
-                lightThemeBold = new SimpleAttributeSet();
-                StyleConstants.setBold(lightThemeBold, true);
             }
+            darkThemeBold = new SimpleAttributeSet();
+            StyleConstants.setBold(darkThemeBold, true);
+            darkThemeItalic = new SimpleAttributeSet();
+            StyleConstants.setItalic(darkThemeItalic, true);
             if(darkThemeColor != null) {
                 darkTheme = new SimpleAttributeSet();
-                darkThemeBold = new SimpleAttributeSet();
                 StyleConstants.setForeground(darkTheme, darkThemeColor);
                 StyleConstants.setForeground(darkThemeBold, darkThemeColor);
-                StyleConstants.setBold(darkThemeBold, true);
+                StyleConstants.setForeground(darkThemeItalic, darkThemeColor);
             } else {
                 darkTheme = null;
-                darkThemeBold = new SimpleAttributeSet();
-                StyleConstants.setBold(darkThemeBold, true);
             }
         }
 
-        public SimpleAttributeSet getThemeColor(Boolean bold) {
+        public SimpleAttributeSet getThemeColor(boolean bold, boolean italic) {
             if (bold) {
                 return SystemUtilities.isDarkDesktop() ? darkThemeBold : lightThemeBold;
+            } else if(italic) {
+                return SystemUtilities.isDarkDesktop() ? darkThemeItalic : lightThemeItalic;
             } else {
                 return SystemUtilities.isDarkDesktop() ? darkTheme : lightTheme;
             }
@@ -88,12 +93,13 @@ public class LogStyler {
                 case LEVEL:
                     for(Map.Entry<Level, LogColor> mapEntry : levelColorMap.entrySet()) {
                         if(matchedString.contains(mapEntry.getKey().name())) {
-                            return mapEntry.getValue().getThemeColor(true /* all levels are bold */);
+                            return mapEntry.getValue().getThemeColor(true /* all levels are bold */, false);
                         }
                     }
+                case STACKTRACE:
+                    return tokenColorMap.getOrDefault(tokenGroup, DEFAULT).getThemeColor(false, true /* all stacktrace italics */);
                 default:
-                    return tokenColorMap.getOrDefault(tokenGroup, DEFAULT).getThemeColor(false);
-
+                    return tokenColorMap.getOrDefault(tokenGroup, DEFAULT).getThemeColor(false, false);
             }
         }
     }

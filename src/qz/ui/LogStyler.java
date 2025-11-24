@@ -1,5 +1,9 @@
 package qz.ui;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.logging.log4j.Level;
+import qz.utils.SystemUtilities;
+
 import javax.swing.text.BadLocationException;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
@@ -11,79 +15,115 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class LogStyler {
-    // Don't try to include a LogManager.logger here, are you crazy?
-    static Pattern LOG_PATTERN = Pattern.compile(
-        "^" +
-        "(\\[[A-Z]+])\\s+" +            // group 1: LEVEL
-        "([0-9T:.,-]+)\\s+@\\s+" +      // group 2: TIMESTAMP
-        "([\\w.$]+):" +                 // group 3: CLASS
-        "(\\d+)" +                      // group 4: LINE
-        "(?:\\s+(.*))?" +               // group 5: MSG
-        "$"
-    );
+    public enum LevelColor {
+        GRAY(new Color(0x575757), new Color(0x888888)),
+        BLUE(new Color(0x0000ff), new Color(0x589dff)),
+        GREEN(new Color(0x2e7d32), new Color(0x47c44d), TokenGroup.TIMESTAMP),
+        AMBER(new Color(0x805613), new Color(0xf9a825)),
+        RED(new Color(0xff0000), new Color(0xeb6261)),
+        PURPLE(new Color(0x9c27b0), new Color(0xce33e8), TokenGroup.CLASS),
+        INDIGO(new Color(0x3f51b5), new Color(0x7589ff), TokenGroup.LINE),
+        DEFAULT(null, null, TokenGroup.MSG);
 
-    //public enum LogColors {
-    //    GRAY(Color.GRAY),
-    //    GREEN(Color.GREEN),
-    //    DARK_GREEN(Color.decode("#51A687")),
-    //    MAGENTA(Color.MAGENTA),
-    //    BLUE(Color.BLUE),
-    //    BLACK(Color.BLACK);
-    //
-    //    Color color;
-    //    LogColors(Color c) {
-    //        color = c;
-    //    }
-    //}
+        // Logging Levels have special handling
+        private static final Map<Level, LevelColor> levelColorMap = new HashMap<>();
+        static {
+            levelColorMap.put(Level.OFF, DEFAULT);
+            levelColorMap.put(Level.FATAL,RED);
+            levelColorMap.put(Level.ERROR, RED);
+            levelColorMap.put(Level.WARN, AMBER);
+            levelColorMap.put(Level.INFO, GREEN);
+            levelColorMap.put(Level.DEBUG, BLUE);
+            levelColorMap.put(Level.TRACE, GRAY);
+            levelColorMap.put(Level.ALL, DEFAULT);
+        }
 
-    public static Color defaultColor = Color.gray;
+        final SimpleAttributeSet lightAttributeSet;
+        final SimpleAttributeSet darkAttributeSet;
+        final TokenGroup[] tokenGroups;
 
-    private static final Map<String, Color> LEVEL_COLORS = new HashMap<>();
-    static {
-        LEVEL_COLORS.put("[TRACE]",     new Color(0x888888)); // gray
-        LEVEL_COLORS.put("[DEBUG]",     new Color(0x1565C0)); // blue
-        LEVEL_COLORS.put("[INFO]",      new Color(0x2E7D32)); // green
-        LEVEL_COLORS.put("[WARN]",      new Color(0xF9A825)); // amber
-        LEVEL_COLORS.put("[ERROR]",     new Color(0xC62828)); // red
-        LEVEL_COLORS.put("[FATAL]",     new Color(0xB71C1C)); // dark red
-        LEVEL_COLORS.put("TIMESTAMP",   new Color(0x51A687)); // dark green
-        LEVEL_COLORS.put("CLASS",       new Color(0x9C27B0)); // purple
-        LEVEL_COLORS.put("LINE",        new Color(0x3F51B5)); // indigo/blue
-        LEVEL_COLORS.put("MSG",         defaultColor); // black
+        LevelColor(Color lightThemeColor, Color darkThemeColor, TokenGroup ... tokenGroups) {
+            if(lightThemeColor != null) {
+                this.lightAttributeSet = new SimpleAttributeSet();
+                StyleConstants.setForeground(lightAttributeSet, lightThemeColor);
+            } else {
+                this.lightAttributeSet = null;
+            }
+            if(darkThemeColor != null) {
+                this.darkAttributeSet = new SimpleAttributeSet();
+                StyleConstants.setForeground(darkAttributeSet, darkThemeColor);
+            } else {
+                this.darkAttributeSet = null;
+            }
+            this.tokenGroups = tokenGroups;
+        }
+
+        public SimpleAttributeSet getAttributeSet() {
+            return SystemUtilities.isDarkDesktop() ? darkAttributeSet : lightAttributeSet;
+        }
+
+        public static SimpleAttributeSet getAttributeSet(TokenGroup tokenGroup, String matchedString) {
+            switch(tokenGroup) {
+                case LEVEL: // parse from levelColorMap
+                    for(Map.Entry<Level, LevelColor> mapEntry : levelColorMap.entrySet()) {
+                        if(matchedString.contains(mapEntry.getKey().name())) {
+                            SimpleAttributeSet set = (SimpleAttributeSet)mapEntry.getValue().getAttributeSet().clone();
+                            StyleConstants.setBold(set, true);
+                            return set;
+                        }
+                    }
+                default:
+                    for(LevelColor levelColor : values()) {
+                        if(ArrayUtils.contains(levelColor.tokenGroups, tokenGroup)) {
+                            return levelColor.getAttributeSet();
+                        }
+                    }
+            }
+
+            return DEFAULT.getAttributeSet();
+        }
     }
 
+    /**
+     * Ordered log patterns
+     *   e.g. [DEBUG] 2025-11-22T14:58:25,875 @ qz.auth.Certificate:224
+     */
     public enum TokenGroup {
-        WHOLE_STRING,
-        LEVEL,
-        TIMESTAMP,
-        CLASS,
-        LINE,
-        MSG
+        LEVEL    (Pattern.compile("(\\[[A-Z]+])\\s+")),
+        TIMESTAMP(Pattern.compile("([0-9T:.,-]+)\\s+@\\s+")),
+        CLASS    (Pattern.compile("@\\s+([\\w.$]+):\\d+")),
+        LINE     (Pattern.compile(":(\\d+)$")) ,
+        MSG      (null),
+        WHOLE_STRING(null);
+
+        private final Pattern pattern;
+
+        TokenGroup(Pattern pattern) {
+            this.pattern = pattern;
+        }
+
+        public Pattern getPattern() {
+            return pattern;
+        }
     }
 
     public static void appendStyledText(StyledDocument doc, String text) {
-        Matcher tokens = LOG_PATTERN.matcher(text);
         int offset = doc.getLength();
         append(doc, text);
-        if (!tokens.matches()) return;
+        String logLine = text.substring(0, text.indexOf('\n'));
 
-        SimpleAttributeSet attrs = new SimpleAttributeSet();
-
-        for (TokenGroup group : TokenGroup.values()) {
-            if (group == TokenGroup.WHOLE_STRING) continue;
-
-            int startIndex = offset + tokens.start(group.ordinal());
-            int endIndex = offset + tokens.end(group.ordinal()) + 1;
-            String token = tokens.group(group.ordinal());
-
-            if (group == TokenGroup.LEVEL) {
-                StyleConstants.setForeground(attrs, LEVEL_COLORS.getOrDefault(token, defaultColor));
-                StyleConstants.setBold(attrs, true);
-            } else {
-                StyleConstants.setForeground(attrs, LEVEL_COLORS.getOrDefault(group.name(), defaultColor));
-                StyleConstants.setBold(attrs, false);
+        for(TokenGroup tokenGroup : TokenGroup.values()) {
+            if(tokenGroup.getPattern() == null) continue;
+            Matcher tokens = tokenGroup.getPattern().matcher(logLine);
+            if(tokens.find()) {
+                int startIndex = offset + tokens.start(1);
+                int endIndex = offset + tokens.end(1) + 1;
+                String matchedString = tokens.group(1);
+                SimpleAttributeSet attr = LevelColor.getAttributeSet(tokenGroup, matchedString);
+                if (attr != null) {
+                    doc.setCharacterAttributes(startIndex, endIndex - startIndex, attr, false);
+                }
             }
-            doc.setCharacterAttributes(startIndex, endIndex - startIndex, attrs, false);
         }
     }
 

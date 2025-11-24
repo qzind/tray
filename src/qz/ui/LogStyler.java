@@ -24,14 +24,14 @@ public class LogStyler {
         INDIGO(new Color(0x3f51b5), new Color(0x7589ff)),
         DEFAULT(Color.black, Color.white);
 
-        private static final Map<TokenGroup,LogColor> tokenColorMap = new HashMap<>();
+        private static final Map<TokenGroup, LogColor> tokenColorMap = new HashMap<>();
         static {
             tokenColorMap.put(TokenGroup.TIMESTAMP, GREEN);
             tokenColorMap.put(TokenGroup.CLASS, PURPLE);
             tokenColorMap.put(TokenGroup.LINE_NUMBER, INDIGO);
         }
 
-        private static final Map<Level,LogColor> levelColorMap = new HashMap<>();
+        private static final Map<Level, LogColor> levelColorMap = new HashMap<>();
         static {
             levelColorMap.put(Level.OFF, DEFAULT);
             levelColorMap.put(Level.FATAL, RED);
@@ -113,9 +113,7 @@ public class LogStyler {
                     int startIndex = offset + tokens.start(1);
                     int endIndex = offset + tokens.end(1) + 1;
                     tokenGroup.configureAttributeSet(attr, tokens.group(1));
-                    if (attr != null) {
-                        doc.setCharacterAttributes(startIndex, endIndex - startIndex, attr, false);
-                    }
+                    doc.setCharacterAttributes(startIndex, endIndex - startIndex, attr, false);
                 }
             }
         }

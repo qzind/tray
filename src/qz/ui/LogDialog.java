@@ -58,9 +58,11 @@ public class LogDialog extends BasicDialog {
         maxLinesField.setHorizontalAlignment(SwingConstants.RIGHT);
         maxLinesLabel.setLabelFor(maxLinesField);
         JCheckBox autoScrollBox = new JCheckBox("Auto-Scroll", true);
+        JCheckBox wrapCheckBox = new JCheckBox("Wrap Text", true);
         addPanelComponent(maxLinesLabel);
         addPanelComponent(maxLinesField);
         addPanelComponent(autoScrollBox);
+        addPanelComponent(wrapCheckBox);
         addPanelComponent(new JSeparator());
         configureMaxLines(maxLinesField);
         writeTarget = createWriteTarget(autoScrollBox);
@@ -89,6 +91,12 @@ public class LogDialog extends BasicDialog {
                 logPane.getVerticalScrollBar().removeAdjustmentListener(scrollToEnd); //fire once
             }
         };
+
+        wrapCheckBox.addActionListener(e -> {
+            JCheckBox caller = (JCheckBox)e.getSource();
+            //logArea.setWrapping(caller.isSelected()); // FIXME
+            append("");
+        });
 
         // add new appender to Log4J just for text area
         logStream = WriterAppender.newBuilder()
@@ -175,7 +183,14 @@ public class LogDialog extends BasicDialog {
 
     public void append(String text) {
         try {
-            LogStyler.appendStyledText(logArea.getStyledDocument(), text);
+            if(text == null || text.isEmpty()) {
+                Document doc = logArea.getDocument();
+                int len = doc.getLength();
+                doc.insertString(len, " ", new SimpleAttributeSet());
+                doc.remove(len, 1);
+            } else {
+                LogStyler.appendStyledText(logArea.getStyledDocument(), text);
+            }
         } catch(BadLocationException ignore) {}
     }
 

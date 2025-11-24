@@ -46,11 +46,14 @@ public class LogStyler {
             levelColorMap.put(Level.TRACE, DEFAULT);
         }
 
+        /**
+         *  An efficient bitwise-aware and bitwise-indexed attribute array
+         */
         enum AttributeFlag {
-            DARK(0b0001, StyleConstants.Foreground),
-            BOLD(0b0010, StyleConstants.Bold),
-            ITALIC(0b0100, StyleConstants.Italic);
-            public static final int MAX_LENGTH = (0b1000);
+            // These must increment by powers of 2
+            DARK(0x01, StyleConstants.Foreground),
+            BOLD(0x02, StyleConstants.Bold),
+            ITALIC(0x04, StyleConstants.Italic);
 
             private final int flag;
             public final Object attributeKey;
@@ -69,7 +72,7 @@ public class LogStyler {
             }
         }
 
-        final SimpleAttributeSet[] attributeArray = new SimpleAttributeSet[AttributeFlag.MAX_LENGTH];
+        final SimpleAttributeSet[] attributeArray = new SimpleAttributeSet[(int)Math.pow(2, AttributeFlag.values().length)];
 
         public SimpleAttributeSet getAttributeSet() {
             return getAttributeSet(0);
@@ -123,10 +126,10 @@ public class LogStyler {
      *   e.g. [DEBUG] 2025-11-22T14:58:25,875 @ qz.auth.Certificate:224
      */
     public enum TokenGroup {
-        LEVEL       (Pattern.compile("(\\[[A-Z]+])\\s+")),
-        TIMESTAMP   (Pattern.compile("([0-9T:.,-]+)\\s+@\\s+")),
-        CLASS       (Pattern.compile("@\\s+([\\w.$]+):\\d+")),
-        LINE_NUMBER (Pattern.compile(":(\\d+)$")),
+        LEVEL(Pattern.compile("(\\[[A-Z]+])\\s+")),
+        TIMESTAMP(Pattern.compile("([0-9T:.,-]+)\\s+@\\s+")),
+        CLASS(Pattern.compile("@\\s+([\\w.$]+):\\d+")),
+        LINE_NUMBER(Pattern.compile(":(\\d+)$")),
         WINDOW_CLOSED(Pattern.compile("\n\t(\\([\\w\\s]+\\))\n")),
         STACKTRACE(Pattern.compile("\t(at .*)\n"));
 
@@ -189,7 +192,6 @@ public class LogStyler {
                     doc.setCharacterAttributes(startIndex, endIndex - startIndex, logColor.getAttributeSet(), false);
                 }
             }
-
         }
     }
 }

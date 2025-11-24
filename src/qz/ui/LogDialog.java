@@ -1,10 +1,13 @@
 package qz.ui;
 
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import qz.common.TrayManager;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
 import qz.utils.FileUtilities;
@@ -21,7 +24,6 @@ import java.io.StringWriter;
  * Created by Tres on 2/26/2015.
  */
 public class LogDialog extends BasicDialog {
-
     private JScrollPane logPane;
     private JTextPane logArea;
 
@@ -61,7 +63,7 @@ public class LogDialog extends BasicDialog {
         logArea = new JTextPane();
         logArea.setEditable(false);
         logArea.setPreferredSize(new Dimension(-1, 100));
-        logArea.setFont(new Font("", Font.PLAIN, defaultFontSize)); //force fallback font for character support
+        logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, defaultFontSize)); //force fallback font for character support
 
         DefaultCaret caret = (DefaultCaret) logArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE); // the default caret does some autoscroll stuff, we don't want that
@@ -166,7 +168,12 @@ public class LogDialog extends BasicDialog {
         return new StringWriter() {
             @Override
             public void flush() {
-                LogStyler.appendStyledText(logArea.getStyledDocument(), toString().stripTrailing());
+                try {
+                    LogStyler.appendStyledText(logArea.getStyledDocument(), toString());
+                } catch(BadLocationException ignore) {
+                    // Fallback to plain text
+                    LogDialog.this.append(toString());
+                }
                 getBuffer().setLength(0);
 
                 truncateLogs();
@@ -181,7 +188,9 @@ public class LogDialog extends BasicDialog {
         StyledDocument doc = logArea.getStyledDocument();
         Element map = doc.getDefaultRootElement();
         int lines = map.getElementCount();
-        int max = Math.max(1, maxLogLines);
+
+        // Account for trailing newline by adding one
+        int max = maxLogLines + 1;
         if (lines > max) {
             int i = map.getElement(lines - max).getStartOffset();
             try {
@@ -201,18 +210,20 @@ public class LogDialog extends BasicDialog {
         field.setText("" + maxLogLines);
     }
 
+    public void append(String text) {
+        try {
+            Document doc = logArea.getDocument();
+            doc.insertString(doc.getLength(), text, null);
+        } catch(BadLocationException ignore) {}
+    }
+
     @Override
     public void setVisible(boolean visible) {
         if (visible) {
             LoggerUtilities.getRootLogger().addAppender(logStream);
             this.rootPane.requestFocus();
         } else {
-            String message = "\n\n\t(Log window was closed)\n\n\n";
-            try {
-                //todo maybe append? It may get trimmed
-                StyledDocument doc = (StyledDocument) logArea.getDocument();
-                doc.insertString(doc.getLength(), message, null);
-            } catch (BadLocationException ignore) { }
+            append("\n\n\t(Log window was closed)\n\n\n");
             LoggerUtilities.getRootLogger().removeAppender(logStream);
         }
 

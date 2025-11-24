@@ -15,74 +15,83 @@ import java.util.regex.Pattern;
 
 public class LogStyler {
     public enum LogColor {
-        GRAY(new Color(0x575757), new Color(0x888888)),
-        BLUE(new Color(0x0000ff), new Color(0x589dff)),
-        GREEN(new Color(0x2e7d32), new Color(0x47c44d)),
-        AMBER(new Color(0x805613), new Color(0xf9a825)),
-        RED(new Color(0xff0000), new Color(0xeb6261)),
-        PURPLE(new Color(0x9c27b0), new Color(0xce33e8)),
-        INDIGO(new Color(0x3f51b5), new Color(0x7589ff)),
-        DEFAULT(Color.black, Color.white);
+        /* Colors from IntelliJ --> Settings --> Editor --> Color Scheme --> Java */
+        GRAY(new Color(0x8c8c8c), new Color(0x7a7e95)),
+        TEAL(new Color(0x007e8a), new Color(0x16baac)),
+        BLUE(new Color(0x00627a), new Color(0x56a8f5)),
+        GREEN(new Color(0x067d17), new Color(0x6aab73)),
+        AMBER(new Color(0x9e880d), new Color(0xb3ae60)),
+        RED(new Color(0xff0000), new Color(0xfa6675)),
+        PURPLE(new Color(0x851691), new Color(0xc77dbb)),
+        DEFAULT(null, null);
 
         private static final Map<TokenGroup, LogColor> tokenColorMap = new HashMap<>();
         static {
             tokenColorMap.put(TokenGroup.TIMESTAMP, GREEN);
             tokenColorMap.put(TokenGroup.CLASS, PURPLE);
-            tokenColorMap.put(TokenGroup.LINE_NUMBER, INDIGO);
+            tokenColorMap.put(TokenGroup.LINE_NUMBER, PURPLE);
         }
 
         private static final Map<Level, LogColor> levelColorMap = new HashMap<>();
         static {
-            levelColorMap.put(Level.OFF, DEFAULT);
+            levelColorMap.put(Level.INFO, TEAL);
+            levelColorMap.put(Level.WARN, AMBER);
             levelColorMap.put(Level.FATAL, RED);
             levelColorMap.put(Level.ERROR, RED);
-            levelColorMap.put(Level.WARN, AMBER);
-            levelColorMap.put(Level.INFO, GREEN);
             levelColorMap.put(Level.DEBUG, BLUE);
-            levelColorMap.put(Level.TRACE, GRAY);
-            levelColorMap.put(Level.ALL, DEFAULT);
+            levelColorMap.put(Level.TRACE, DEFAULT);
         }
 
-        private static class AttributePack {
-            final SimpleAttributeSet lightTheme;
-            final SimpleAttributeSet darkTheme;
-            final SimpleAttributeSet lightBoldTheme;
-            final SimpleAttributeSet darkBoldTheme;
-
-            private AttributePack() {
-                this.lightTheme = new SimpleAttributeSet();
-                this.darkTheme = new SimpleAttributeSet();
-                this.lightBoldTheme = new SimpleAttributeSet();
-                this.darkBoldTheme = new SimpleAttributeSet();
-                StyleConstants.setBold(lightBoldTheme, true);
-                StyleConstants.setBold(darkBoldTheme, true);
-            }
-        }
-
-        final AttributePack attributePack;
+        final SimpleAttributeSet lightTheme;
+        final SimpleAttributeSet darkTheme;
+        final SimpleAttributeSet lightThemeBold;
+        final SimpleAttributeSet darkThemeBold;
 
         LogColor(Color lightThemeColor, Color darkThemeColor) {
-            attributePack = new AttributePack();
-            StyleConstants.setForeground(attributePack.lightTheme, lightThemeColor);
-            StyleConstants.setForeground(attributePack.darkTheme, darkThemeColor);
-            StyleConstants.setForeground(attributePack.lightBoldTheme, lightThemeColor);
-            StyleConstants.setForeground(attributePack.darkBoldTheme, darkThemeColor);
+            if(lightThemeColor != null) {
+                lightTheme = new SimpleAttributeSet();
+                lightThemeBold = new SimpleAttributeSet();
+                StyleConstants.setForeground(lightTheme, lightThemeColor);
+                StyleConstants.setForeground(lightThemeBold, lightThemeColor);
+                StyleConstants.setBold(lightThemeBold, true);
+            } else {
+                lightTheme =  null;
+                lightThemeBold = new SimpleAttributeSet();
+                StyleConstants.setBold(lightThemeBold, true);
+            }
+            if(darkThemeColor != null) {
+                darkTheme = new SimpleAttributeSet();
+                darkThemeBold = new SimpleAttributeSet();
+                StyleConstants.setForeground(darkTheme, darkThemeColor);
+                StyleConstants.setForeground(darkThemeBold, darkThemeColor);
+                StyleConstants.setBold(darkThemeBold, true);
+            } else {
+                darkTheme = null;
+                darkThemeBold = new SimpleAttributeSet();
+                StyleConstants.setBold(darkThemeBold, true);
+            }
         }
 
         public SimpleAttributeSet getThemeColor(Boolean bold) {
             if (bold) {
-                return SystemUtilities.isDarkDesktop() ? attributePack.darkBoldTheme : attributePack.lightBoldTheme;
+                return SystemUtilities.isDarkDesktop() ? darkThemeBold : lightThemeBold;
             } else {
-                return SystemUtilities.isDarkDesktop()? attributePack.darkTheme : attributePack.lightTheme;
+                return SystemUtilities.isDarkDesktop() ? darkTheme : lightTheme;
             }
         }
 
-        public static SimpleAttributeSet lookup(Level level) {
-            return levelColorMap.get(level).getThemeColor(true);
-        }
+        public static SimpleAttributeSet getAttributeSet(TokenGroup tokenGroup, String matchedString) {
+            switch(tokenGroup) {
+                case LEVEL:
+                    for(Map.Entry<Level, LogColor> mapEntry : levelColorMap.entrySet()) {
+                        if(matchedString.contains(mapEntry.getKey().name())) {
+                            return mapEntry.getValue().getThemeColor(true /* all levels are bold */);
+                        }
+                    }
+                default:
+                    return tokenColorMap.getOrDefault(tokenGroup, DEFAULT).getThemeColor(false);
 
-        public static SimpleAttributeSet lookup(TokenGroup tokenGroup) {
-            return tokenColorMap.get(tokenGroup).getThemeColor(false);
+            }
         }
     }
 
@@ -105,44 +114,25 @@ public class LogStyler {
         public Pattern getPattern() {
             return pattern;
         }
-
-        public SimpleAttributeSet getAttributeSet(String matchString) {
-            switch(this) {
-                case LEVEL:
-                    if (matchString.length() < 3) return null; // should never happen, regex failure guard
-                    matchString = matchString.substring(1, matchString.length() -1); // lose the '[ ]' from the match
-                    return LogColor.lookup(Level.getLevel(matchString));
-                default:
-                    return LogColor.lookup(this);
-            }
-        }
     }
 
-    public static void appendStyledText(StyledDocument doc, String text) {
+    public static void appendStyledText(StyledDocument doc, String text) throws BadLocationException {
         synchronized(doc) {
             int offset = doc.getLength();
-            append(doc, text);
+            doc.insertString(doc.getLength(), text, null);
             String logLine = text.substring(0, text.indexOf('\n'));
 
             for(TokenGroup tokenGroup : TokenGroup.values()) {
                 if (tokenGroup.getPattern() == null) continue;
                 Matcher tokens = tokenGroup.getPattern().matcher(logLine);
                 if (tokens.find()) {
+                    SimpleAttributeSet attr = LogColor.getAttributeSet(tokenGroup, tokens.group(1));
+                    if(attr == null) continue;
                     int startIndex = offset + tokens.start(1);
-                    int endIndex = offset + tokens.end(1) + 1;
-                    SimpleAttributeSet attr = tokenGroup.getAttributeSet(tokens.group(1));
+                    int endIndex = offset + tokens.end(1);
                     doc.setCharacterAttributes(startIndex, endIndex - startIndex, attr, false);
                 }
             }
         }
-    }
-
-    public static void append(StyledDocument doc, String text) {
-        try {
-            // logs usually end in \n, we leave it out and prefer to insert it when a new log is appended
-            if (doc.getLength() > 0) doc.insertString(doc.getLength(), "\n", null);
-            doc.insertString(doc.getLength(), text, null);
-        }
-        catch(BadLocationException ignore) {}
     }
 }

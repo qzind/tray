@@ -21,8 +21,8 @@ import java.io.StringWriter;
  * Created by Tres on 2/26/2015.
  */
 public class LogDialog extends BasicDialog {
-    private final int ROWS = 20;
-    private final int COLS = 80;
+    private final int ROWS = 24;
+    private final int COLS = 100;
 
     private JScrollPane logPane;
     private LineWrapTextPane logArea;
@@ -214,4 +214,16 @@ public class LogDialog extends BasicDialog {
         super.setVisible(visible);
     }
 
+    @Override
+    public void refresh() {
+        try {
+            Document doc = logArea.getDocument();
+            String[] lines = doc.getText(0, doc.getLength()).split("\\r?\\n");
+            doc.remove(0, doc.getLength());
+            for(String line : lines) {
+               append(line + "\n");
+            }
+        } catch(BadLocationException ignore) {}
+        super.refresh();
+    }
 }

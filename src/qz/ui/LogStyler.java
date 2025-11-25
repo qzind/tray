@@ -133,7 +133,7 @@ public class LogStyler {
      *   e.g. [DEBUG] 2025-11-22T14:58:25,875 @ qz.auth.Certificate:224
      */
     public enum TokenGroup {
-        LEVEL(Pattern.compile("(\\[[A-Z]+])\\s+")),
+        LEVEL(Pattern.compile("^(\\[[A-Z]+])\\s+")),
         TIMESTAMP(Pattern.compile("([0-9T:.,-]+)\\s+@\\s+")),
         CLASS(Pattern.compile("@\\s+([\\w.$]+):\\d+")),
         LINE_NUMBER(Pattern.compile(":(\\d+)$")),
@@ -161,24 +161,28 @@ public class LogStyler {
         synchronized(doc) {
             int offset = doc.getLength();
             doc.insertString(doc.getLength(), text, null);
-            String firstLine = text.substring(0, text.indexOf('\n'));
 
-            for(TokenGroup tokenGroup : TokenGroup.FIRST_LINE) {
-                Matcher tokens = tokenGroup.getPattern().matcher(firstLine);
-                if (tokens.find()) {
-                    LogColor logColor = LogColor.lookup(tokenGroup, tokens.group(1));
-                    SimpleAttributeSet attr;
-                    switch(tokenGroup) {
-                        case LEVEL:
-                            attr = logColor.getAttributeSet(BOLD.get());
-                            break;
-                        default:
-                            attr = logColor.getAttributeSet();
+            String firstLine = "";
+            Matcher firstLineMatcher = TokenGroup.LEVEL.getPattern().matcher(text);
+            if(firstLineMatcher.find()) {
+                firstLine = text.substring(0, text.indexOf('\n'));
+                for(TokenGroup tokenGroup : TokenGroup.FIRST_LINE) {
+                    Matcher tokens = tokenGroup.getPattern().matcher(firstLine);
+                    if (tokens.find()) {
+                        LogColor logColor = LogColor.lookup(tokenGroup, tokens.group(1));
+                        SimpleAttributeSet attr;
+                        switch(tokenGroup) {
+                            case LEVEL:
+                                attr = logColor.getAttributeSet(BOLD.get());
+                                break;
+                            default:
+                                attr = logColor.getAttributeSet();
+                        }
+
+                        int startIndex = offset + tokens.start(1);
+                        int endIndex = offset + tokens.end(1);
+                        doc.setCharacterAttributes(startIndex, endIndex - startIndex, attr, false);
                     }
-
-                    int startIndex = offset + tokens.start(1);
-                    int endIndex = offset + tokens.end(1);
-                    doc.setCharacterAttributes(startIndex, endIndex - startIndex, attr, false);
                 }
             }
 

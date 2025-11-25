@@ -26,9 +26,9 @@ public class LogStyler {
         AMBER(new Color(0xe07e3d), new Color(0xcf8e6d)),
         RED(new Color(0xff0000), new Color(0xfa6675)),
         PURPLE(new Color(0x851691), new Color(0xc77dbb)),
-        GREEN_MUTED(new Color(0x3b5e19), new Color(0xa4baa7)),
-        AMBER_MUTED(new Color(0xe07e3d), new Color(0xba9582)),
-        PURPLE_MUTED(new Color(0x851691), new Color(0xba97b4)),
+        GREEN_MUTED(GREEN.lightThemeColor.darker(), new Color(0xa4baa7)),
+        AMBER_MUTED(AMBER.lightThemeColor.darker(), new Color(0xba9582)),
+        PURPLE_MUTED(PURPLE.lightThemeColor.darker(), new Color(0xba97b4)),
         DEFAULT(null, null);
 
         private static final Map<TokenGroup, LogColor> tokenColorMap = new HashMap<>();

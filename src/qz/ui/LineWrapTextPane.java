@@ -3,8 +3,9 @@ package qz.ui;
 import javax.swing.*;
 import javax.swing.plaf.TextUI;
 import javax.swing.text.*;
-import java.util.regex.Pattern;
+import java.awt.*;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * JTextPane only wraps on whitespace, and never breaks words, regardless of length.
@@ -17,7 +18,6 @@ public class LineWrapTextPane extends JTextPane {
     private static final int MAX_BREAK_DISTANCE = 10;
     // regex of where valid breaks can occur
     private static final Pattern BREAK_PATTERN = Pattern.compile("[\\s,{}:]");
-    LineWrapGlyphView glyphView;
 
     private boolean wrappingEnabled = true;
 
@@ -32,7 +32,7 @@ public class LineWrapTextPane extends JTextPane {
                 return elem -> {
                     String kind = elem.getName();
                     if (AbstractDocument.ContentElementName.equals(kind)) {
-                        return glyphView = new LineWrapGlyphView(elem);
+                        return new LineWrapGlyphView(elem);
                     }
                     return defaultFactory.create(elem);
                 };
@@ -101,10 +101,14 @@ public class LineWrapTextPane extends JTextPane {
                 // Wrapping OFF: never break this view horizontally
                 return View.BadBreakWeight;
             }
-            // Wrapping ON: use the normal break weight from super
+            if (axis == View.X_AXIS) {
+                // Important: tell FlowView we are happy to be broken horizontally.
+                // This forces it to call breakView() on us instead of just shoving
+                // entire styled chunks to the next line.
+                return View.GoodBreakWeight;
+            }
             return super.getBreakWeight(axis, pos, len);
         }
-
 
         @Override
         public View breakView(int axis, int p0, float pos, float len) {
@@ -112,7 +116,6 @@ public class LineWrapTextPane extends JTextPane {
                 // Wrapping OFF: don’t split
                 return this;
             }
-
             if (axis != View.X_AXIS) {
                 // If it isn't about the x-axis, we don't care, pass it to super
                 return super.breakView(axis, p0, pos, len);
@@ -133,17 +136,19 @@ public class LineWrapTextPane extends JTextPane {
             }
 
             if (p0 == getStartOffset() && p1 == getEndOffset()) {
-                // no need to cut it up
+                // No need to cut it up
                 return this;
             }
 
-            // the line is sliced into a fragment, and the remainder is run through again
+            // the line is sliced into a fragment, and the remainder will be
+            // laid out on the next line by FlowView.
             return createFragment(p0, p1);
         }
 
         /**
-         * Return the las regex BREAK_PATTERN match index if it is MAX_BREAK_DISTANCE chars left of the right edge.
-         * If none is found, the last char index is returned instead.
+         * Return the last regex BREAK_PATTERN match index if it is within
+         * MAX_BREAK_DISTANCE chars of the right edge (p1). If none is found,
+         * the last char index p1 is returned instead.
          */
         private int findPreferredBreak(int p0, int p1) {
             try {
@@ -159,14 +164,14 @@ public class LineWrapTextPane extends JTextPane {
                 int lastMatchIdx = -1;
                 Matcher m = BREAK_PATTERN.matcher(text);
                 while (m.find()) {
-                    lastMatchIdx = m.end() - 1; // find the last match
+                    lastMatchIdx = m.end() - 1; // last match within window
                 }
 
                 if (lastMatchIdx != -1) {
-                    return start + lastMatchIdx + 1; // break after the last match
+                    return start + lastMatchIdx + 1; // break AFTER last match
                 }
             } catch (BadLocationException ignore) {}
-            // if nothing is found, just break on the last char
+            // if nothing is found, just break at painter's end
             return p1;
         }
     }

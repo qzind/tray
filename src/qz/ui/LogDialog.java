@@ -249,7 +249,7 @@ public class LogDialog extends BasicDialog {
                 logPane.getVerticalScrollBar().addAdjustmentListener(scrollToEnd);
             }
         } else {
-            append("\n\n\t(Log window was closed)\n\n\n");
+            append("\tLog window was closed\n");
             LoggerUtilities.getRootLogger().removeAppender(logStream);
         }
 

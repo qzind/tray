@@ -137,7 +137,7 @@ public class LogStyler {
         TIMESTAMP(Pattern.compile("([0-9T:.,-]+)\\s+@\\s+")),
         CLASS(Pattern.compile("@\\s+([\\w.$]+):\\d+")),
         LINE_NUMBER(Pattern.compile(":(\\d+)$")),
-        WINDOW_CLOSED(Pattern.compile("\n\t(\\([\\w\\s]+\\))\n")),
+        WINDOW_CLOSED(Pattern.compile("^\t(Log window was closed)")),
         STACKTRACE(Pattern.compile("\t(at .*)\n")),
         JSON_KEY(Pattern.compile("(\"[^\"]*\")\\s*:(?=\\s*[^:\\s])")),
         JSON_STRING(Pattern.compile("(?::\\s*|\\[\\s*|,\\s*)(\"(?>[^\"\\\\]+|\\\\.)*\")(?!\\s*:)")),
@@ -164,7 +164,7 @@ public class LogStyler {
 
             String firstLine = "";
             Matcher firstLineMatcher = TokenGroup.LEVEL.getPattern().matcher(text);
-            if(firstLineMatcher.find()) {
+            if(firstLineMatcher.find() && firstLineMatcher.groupCount() > 0) {
                 firstLine = text.substring(0, text.indexOf('\n'));
                 for(TokenGroup tokenGroup : TokenGroup.FIRST_LINE) {
                     Matcher tokens = tokenGroup.getPattern().matcher(firstLine);
@@ -191,9 +191,12 @@ public class LogStyler {
             for(TokenGroup tokenGroup : TokenGroup.MESSAGE_LINES) {
                 Matcher tokens = tokenGroup.getPattern().matcher(message);
 
-                while (tokens.find()) {
+                while (tokens.find() && tokens.groupCount() > 0) {
                     LogColor logColor = LogColor.lookup(tokenGroup, tokens.group(1));
                     switch(tokenGroup) {
+                        case WINDOW_CLOSED:
+                            doc.setCharacterAttributes(offset, message.length(), logColor.getAttributeSet(BOLD.get()), false);
+                            return;
                         case STACKTRACE:
                             // colorize entire message block
                             doc.setCharacterAttributes(offset, message.length(), logColor.getAttributeSet(ITALIC.get()), false);

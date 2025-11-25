@@ -22,7 +22,7 @@ import java.io.StringWriter;
  */
 public class LogDialog extends BasicDialog {
     private JScrollPane logPane;
-    private WrappingTextPane logArea;
+    private LineWrapTextPane logArea;
 
     private WriterAppender logStream;
     private StringWriter writeTarget;
@@ -44,7 +44,7 @@ public class LogDialog extends BasicDialog {
 
         setHeader(logDirLabel);
 
-        logArea = new WrappingTextPane();
+        logArea = new LineWrapTextPane();
         logArea.setEditable(false);
         logArea.setPreferredSize(new Dimension(800, 400));
 
@@ -95,7 +95,6 @@ public class LogDialog extends BasicDialog {
         wrapCheckBox.addActionListener(e -> {
             JCheckBox caller = (JCheckBox)e.getSource();
             logArea.setWrapping(caller.isSelected());
-            //append("");  // TODO: Is this still needed?
         });
 
         // add new appender to Log4J just for text area

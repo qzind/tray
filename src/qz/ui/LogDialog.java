@@ -21,6 +21,9 @@ import java.io.StringWriter;
  * Created by Tres on 2/26/2015.
  */
 public class LogDialog extends BasicDialog {
+    private final int ROWS = 20;
+    private final int COLS = 80;
+
     private JScrollPane logPane;
     private LineWrapTextPane logArea;
 
@@ -46,9 +49,10 @@ public class LogDialog extends BasicDialog {
 
         logArea = new LineWrapTextPane();
         logArea.setEditable(false);
-        logArea.setPreferredSize(new Dimension(800, 400));
 
         logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, defaultFontSize)); //force fallback font for character support
+        FontMetrics fm = logArea.getFontMetrics(logArea.getFont());
+        logArea.setPreferredSize(new Dimension(fm.charWidth('m') * COLS, fm.getHeight() * ROWS));
 
         DefaultCaret caret = (DefaultCaret) logArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE); // the default caret does some autoscroll stuff, we don't want that

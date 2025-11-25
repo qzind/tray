@@ -188,7 +188,6 @@ public class LogStyler {
                 Matcher tokens = tokenGroup.getPattern().matcher(message);
 
                 while (tokens.find()) {
-                    System.out.println("matched " + tokenGroup.name() + " to " + tokens.group(1));
                     LogColor logColor = LogColor.lookup(tokenGroup, tokens.group(1));
                     switch(tokenGroup) {
                         case STACKTRACE:

@@ -140,8 +140,8 @@ public class LogStyler {
         WINDOW_CLOSED(Pattern.compile("\n\t(\\([\\w\\s]+\\))\n")),
         STACKTRACE(Pattern.compile("\t(at .*)\n")),
         JSON_KEY(Pattern.compile("(\"[^\"]*\")\\s*:(?=\\s*[^:\\s])")),
-        JSON_STRING(Pattern.compile(":\\s*(\\\"(?>[^\\\"\\\\]+|\\\\.)*\\\")")),
-        JSON_LITERAL(Pattern.compile(":\\s*(true|false|null|-?\\d+(?:\\.\\d+)?)(?=\\s*(?:[,}\\]]|$))"));
+        JSON_STRING(Pattern.compile("(?::\\s*|\\[\\s*|,\\s*)(\"(?>[^\"\\\\]+|\\\\.)*\")(?!\\s*:)")),
+        JSON_LITERAL(Pattern.compile("(?::\\s*|\\[\\s*)(true|false|null|-?\\d+(?:\\.\\d+)?)(?=\\s*(?:[,}\\]]|$))"));
 
         private final Pattern pattern;
 

@@ -22,11 +22,13 @@ public class LogStyler {
         TEAL(new Color(0x007e8a), new Color(0x16baac)),
         BLUE(new Color(0x00627a), new Color(0x56a8f5)),
         GREEN(new Color(0x067d17), new Color(0x6aab73)),
-        OLIVE(new Color(0x3b5e19), new Color(0x739156)),
         YELLOW(new Color(0x9e880d), new Color(0xb3ae60)),
         AMBER(new Color(0xe07e3d), new Color(0xcf8e6d)),
         RED(new Color(0xff0000), new Color(0xfa6675)),
         PURPLE(new Color(0x851691), new Color(0xc77dbb)),
+        GREEN_MUTED(new Color(0x3b5e19), new Color(0xa4baa7)),
+        AMBER_MUTED(new Color(0xe07e3d), new Color(0xba9582)),
+        PURPLE_MUTED(new Color(0x851691), new Color(0xba97b4)),
         DEFAULT(null, null);
 
         private static final Map<TokenGroup, LogColor> tokenColorMap = new HashMap<>();
@@ -36,9 +38,9 @@ public class LogStyler {
             tokenColorMap.put(TokenGroup.LINE_NUMBER, PURPLE);
             tokenColorMap.put(TokenGroup.WINDOW_CLOSED, GRAY);
             tokenColorMap.put(TokenGroup.STACKTRACE, RED);
-            tokenColorMap.put(TokenGroup.JSON_KEY, PURPLE);
-            tokenColorMap.put(TokenGroup.JSON_LITERAL, AMBER);
-            tokenColorMap.put(TokenGroup.JSON_STRING, OLIVE);
+            tokenColorMap.put(TokenGroup.JSON_KEY, PURPLE_MUTED);
+            tokenColorMap.put(TokenGroup.JSON_LITERAL, AMBER_MUTED);
+            tokenColorMap.put(TokenGroup.JSON_STRING, GREEN_MUTED);
         }
 
         private static final Map<Level, LogColor> levelColorMap = new HashMap<>();

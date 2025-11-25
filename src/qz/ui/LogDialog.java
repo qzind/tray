@@ -99,6 +99,10 @@ public class LogDialog extends BasicDialog {
         wrapCheckBox.addActionListener(e -> {
             JCheckBox caller = (JCheckBox)e.getSource();
             logArea.setWrapping(caller.isSelected());
+
+            if (autoScrollBox.isSelected()) {
+                logPane.getVerticalScrollBar().addAdjustmentListener(scrollToEnd);
+            }
         });
 
         // add new appender to Log4J just for text area

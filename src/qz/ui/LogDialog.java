@@ -5,10 +5,13 @@ import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import qz.common.PropertyHelper;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
+import qz.utils.ArgValue;
 import qz.utils.FileUtilities;
 import qz.utils.LoggerUtilities;
+import qz.utils.PrefsSearch;
 
 import javax.swing.*;
 import javax.swing.text.*;
@@ -23,19 +26,23 @@ import java.io.StringWriter;
 public class LogDialog extends BasicDialog {
     private final int ROWS = 24;
     private final int COLS = 100;
+    private final int DEFAULT_LOG_LINES = 500;
+
+    private final PropertyHelper prefs;
 
     private JScrollPane logPane;
+    private JCheckBox scrollCheckBox;
     private LineWrapTextPane logArea;
 
     private WriterAppender logStream;
     private StringWriter writeTarget;
 
     private AdjustmentListener scrollToEnd;
+    private int logLines = DEFAULT_LOG_LINES;
 
-    private int maxLogLines = 500;
-
-    public LogDialog(JMenuItem caller, IconCache iconCache) {
+    public LogDialog(JMenuItem caller, IconCache iconCache, PropertyHelper prefs) {
         super(caller, iconCache);
+        this.prefs = prefs;
         initComponents();
     }
 
@@ -58,18 +65,22 @@ public class LogDialog extends BasicDialog {
         caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE); // the default caret does some autoscroll stuff, we don't want that
 
         JLabel maxLinesLabel = new JLabel("Max Lines:");
-        JTextField maxLinesField = new JTextField("" + maxLogLines, 4);
+        JTextField maxLinesField = new JTextField(4);
+        maxLinesField.setText(PrefsSearch.getString(ArgValue.TRAY_LOG_LINES, prefs));
         maxLinesField.setHorizontalAlignment(SwingConstants.RIGHT);
         maxLinesLabel.setLabelFor(maxLinesField);
-        JCheckBox autoScrollBox = new JCheckBox("Auto-Scroll", true);
-        JCheckBox wrapCheckBox = new JCheckBox("Wrap Text", true);
+        scrollCheckBox = new JCheckBox("Auto-Scroll");
+        scrollCheckBox.setSelected(PrefsSearch.getBoolean(ArgValue.TRAY_LOG_SCROLL));
+
+        JCheckBox wrapCheckBox = new JCheckBox("Wrap Text");
+        scrollCheckBox.setSelected(PrefsSearch.getBoolean(ArgValue.TRAY_LOG_WRAP));
         addPanelComponent(maxLinesLabel);
         addPanelComponent(maxLinesField);
-        addPanelComponent(autoScrollBox);
+        addPanelComponent(scrollCheckBox);
         addPanelComponent(wrapCheckBox);
         addPanelComponent(new JSeparator());
         configureMaxLines(maxLinesField);
-        writeTarget = createWriteTarget(autoScrollBox);
+        writeTarget = createWriteTarget();
 
         // TODO:  Fix button panel resizing issues
         JButton clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);
@@ -86,23 +97,35 @@ public class LogDialog extends BasicDialog {
         setContent(logPane, true);
         setResizable(true);
 
-        scrollToEnd = new AdjustmentListener() {
-            @Override
-            public void adjustmentValueChanged(AdjustmentEvent e) {
-                SwingUtilities.invokeLater(() -> {
-                    logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
-                });
-                logPane.getVerticalScrollBar().removeAdjustmentListener(scrollToEnd); //fire once
-            }
+        /*
+         * Hacky "scroll-to-end" trick
+         *  1. Adds a listener to the vertical scroll bar which fires when new content is added
+         *  2. Immediately removes this listener so we don't recurse
+         *  3. Sets the scrollbar to the max value, simulating auto-scroll
+         *
+         * TODO: Eventually replace this with proper cursor support
+         */
+        scrollToEnd = e -> {
+            logPane.getVerticalScrollBar().removeAdjustmentListener(scrollToEnd); //fire once
+            SwingUtilities.invokeLater(() -> {
+                logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
+            });
         };
 
         wrapCheckBox.addActionListener(e -> {
             JCheckBox caller = (JCheckBox)e.getSource();
             logArea.setWrapping(caller.isSelected());
+            prefs.setProperty(ArgValue.TRAY_LOG_WRAP, caller.isSelected());
 
-            if (autoScrollBox.isSelected()) {
+            if (scrollCheckBox.isSelected()) {
                 logPane.getVerticalScrollBar().addAdjustmentListener(scrollToEnd);
             }
+        });
+
+        scrollCheckBox.addActionListener(e -> {
+            // See also
+            JCheckBox caller = (JCheckBox)e.getSource();
+            prefs.setProperty(ArgValue.TRAY_LOG_SCROLL, caller.isSelected());
         });
 
         // add new appender to Log4J just for text area
@@ -123,7 +146,7 @@ public class LogDialog extends BasicDialog {
         linesField.getActionMap().put("textCancel", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                linesField.setText("" + maxLogLines);
+                linesField.setText("" + DEFAULT_LOG_LINES);
                 linesField.getRootPane().requestFocus();
                 // don't pass the event upwards. esc closes the window if this field isn't focused
             }
@@ -142,12 +165,13 @@ public class LogDialog extends BasicDialog {
             @Override
             public void focusLost(FocusEvent e) {
                 parseMaxLines(linesField);
+                prefs.setProperty(ArgValue.TRAY_LOG_LINES, logLines);
                 truncateLogs();
             }
         });
     }
 
-    private StringWriter createWriteTarget(JCheckBox autoScrollBox) {
+    private StringWriter createWriteTarget() {
         return new StringWriter() {
             @Override
             public void flush() {
@@ -155,7 +179,7 @@ public class LogDialog extends BasicDialog {
                 getBuffer().setLength(0);
 
                 truncateLogs();
-                if (autoScrollBox.isSelected()) {
+                if (scrollCheckBox.isSelected()) { // FIXME: Not EDT-safe!
                     logPane.getVerticalScrollBar().addAdjustmentListener(scrollToEnd);
                 }
             }
@@ -168,7 +192,7 @@ public class LogDialog extends BasicDialog {
         int lines = map.getElementCount();
 
         // Account for trailing newline by adding one
-        int max = maxLogLines + 1;
+        int max = DEFAULT_LOG_LINES + 1;
         if (lines > max) {
             int i = map.getElement(lines - max).getStartOffset();
             try {
@@ -183,9 +207,9 @@ public class LogDialog extends BasicDialog {
     private void parseMaxLines(JTextField field) {
         try {
             int i = Integer.parseInt(field.getText().trim());
-            if (i > 0) maxLogLines = i;
+            if (i > 0) logLines = i;
         } catch (Exception ignore) {} // bad number or not a number
-        field.setText("" + maxLogLines);
+        field.setText("" + logLines);
     }
 
     public void append(String text) {

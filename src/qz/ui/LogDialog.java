@@ -5,6 +5,7 @@ import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import qz.common.Constants;
 import qz.common.PropertyHelper;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
@@ -26,7 +27,6 @@ import java.io.StringWriter;
 public class LogDialog extends BasicDialog {
     private final int ROWS = 24;
     private final int COLS = 100;
-    private final int DEFAULT_LOG_LINES = 500;
 
     private final PropertyHelper prefs;
 
@@ -38,7 +38,7 @@ public class LogDialog extends BasicDialog {
     private StringWriter writeTarget;
 
     private AdjustmentListener scrollToEnd;
-    private int logLines = DEFAULT_LOG_LINES;
+    private int logLines;
 
     public LogDialog(JMenuItem caller, IconCache iconCache, PropertyHelper prefs) {
         super(caller, iconCache);
@@ -66,8 +66,9 @@ public class LogDialog extends BasicDialog {
 
         JLabel maxLinesLabel = new JLabel("Max Lines:");
         JTextField maxLinesField = new JTextField(4);
-        maxLinesField.setText(PrefsSearch.getString(ArgValue.TRAY_LOG_LINES, prefs));
-        parseMaxLines(maxLinesField);
+        logLines = PrefsSearch.getInt(ArgValue.TRAY_LOG_LINES, prefs);
+        maxLinesField.setText("" + logLines);
+
         maxLinesField.setHorizontalAlignment(SwingConstants.RIGHT);
         maxLinesLabel.setLabelFor(maxLinesField);
 
@@ -143,35 +144,49 @@ public class LogDialog extends BasicDialog {
         logStream.start();
     }
 
-    private void configureMaxLines(JTextField linesField) {
+    private void configureMaxLines(JTextField maxLinesField) {
         KeyStroke esc = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
         KeyStroke ent = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
 
-        linesField.getInputMap(JComponent.WHEN_FOCUSED).put(esc, "textCancel");
-        linesField.getActionMap().put("textCancel", new AbstractAction() {
+        maxLinesField.getInputMap(JComponent.WHEN_FOCUSED).put(esc, "textCancel");
+        maxLinesField.getActionMap().put("textCancel", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                linesField.setText("" + logLines);
-                linesField.getRootPane().requestFocus();
+                maxLinesField.setText("" + logLines);
+                maxLinesField.getRootPane().requestFocus();
                 // don't pass the event upwards. esc closes the window if this field isn't focused
             }
         });
 
-        linesField.getInputMap(JComponent.WHEN_FOCUSED).put(ent, "textAccept");
-        linesField.getActionMap().put("textAccept", new AbstractAction() {
+        maxLinesField.getInputMap(JComponent.WHEN_FOCUSED).put(ent, "textAccept");
+        maxLinesField.getActionMap().put("textAccept", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                linesField.getRootPane().requestFocus();
+                maxLinesField.getRootPane().requestFocus();
                 // if we intentionally lose focus, the focusLost listener will fire
             }
         });
 
-        linesField.addFocusListener(new FocusAdapter() {
+        maxLinesField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusLost(FocusEvent e) {
-                parseMaxLines(linesField);
-                prefs.setProperty(ArgValue.TRAY_LOG_LINES, logLines);
-                truncateLogs();
+                JTextField caller = (JTextField)e.getSource();
+                try {
+                    int logLines = Integer.parseInt(caller.getText() == null ? "0" : caller.getText().trim());
+                    if (logLines > 0) {
+                        LogDialog.this.logLines = logLines;
+                        caller.setText("" + logLines);
+                        prefs.setProperty(ArgValue.TRAY_LOG_LINES, logLines);
+                        caller.setForeground(UIManager.getDefaults().getColor("TextField.foreground"));
+                        caller.setToolTipText(null);
+                        truncateLogs();
+                        return;
+                    }
+                } catch (NumberFormatException ignore) {}
+
+                // Issue NFE warning
+                caller.setForeground(Constants.WARNING_COLOR);
+                caller.setToolTipText("Invalid value");
             }
         });
     }
@@ -210,14 +225,6 @@ public class LogDialog extends BasicDialog {
                 throw new RuntimeException(e);
             }
         }
-    }
-
-    private void parseMaxLines(JTextField field) {
-        try {
-            int parsedMax = Integer.parseInt(field.getText().trim());
-            if (parsedMax > 0) logLines = parsedMax;
-        } catch (Exception ignore) {} // bad number or not a number
-        field.setText("" + logLines);
     }
 
     public void append(String text) {

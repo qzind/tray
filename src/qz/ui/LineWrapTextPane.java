@@ -85,7 +85,7 @@ public class LineWrapTextPane extends JTextPane {
         @Override
         public float getMinimumSpan(int axis) {
             if (axis == View.X_AXIS) {
-                if (LineWrapTextPane.this.wrappingEnabled) {
+                if (wrappingEnabled) {
                     // If wrapping is on, our minimum width is very small
                     return 0f;
                 } else {
@@ -97,7 +97,7 @@ public class LineWrapTextPane extends JTextPane {
 
         @Override
         public int getBreakWeight(int axis, float pos, float len) {
-            if (!LineWrapTextPane.this.wrappingEnabled && axis == View.X_AXIS) {
+            if (!wrappingEnabled && axis == View.X_AXIS) {
                 // Wrapping OFF: never break this view horizontally
                 return View.BadBreakWeight;
             }
@@ -108,7 +108,7 @@ public class LineWrapTextPane extends JTextPane {
 
         @Override
         public View breakView(int axis, int p0, float pos, float len) {
-            if (!LineWrapTextPane.this.wrappingEnabled && axis == View.X_AXIS) {
+            if (!wrappingEnabled && axis == View.X_AXIS) {
                 // Wrapping OFF: don’t split
                 return this;
             }

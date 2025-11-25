@@ -67,19 +67,24 @@ public class LogDialog extends BasicDialog {
         JLabel maxLinesLabel = new JLabel("Max Lines:");
         JTextField maxLinesField = new JTextField(4);
         maxLinesField.setText(PrefsSearch.getString(ArgValue.TRAY_LOG_LINES, prefs));
+        parseMaxLines(maxLinesField);
         maxLinesField.setHorizontalAlignment(SwingConstants.RIGHT);
         maxLinesLabel.setLabelFor(maxLinesField);
+
         scrollCheckBox = new JCheckBox("Auto-Scroll");
         scrollCheckBox.setSelected(PrefsSearch.getBoolean(ArgValue.TRAY_LOG_SCROLL));
 
         JCheckBox wrapCheckBox = new JCheckBox("Wrap Text");
-        scrollCheckBox.setSelected(PrefsSearch.getBoolean(ArgValue.TRAY_LOG_WRAP));
+        wrapCheckBox.setSelected(PrefsSearch.getBoolean(ArgValue.TRAY_LOG_WRAP));
+        logArea.setWrapping(PrefsSearch.getBoolean(ArgValue.TRAY_LOG_WRAP));
+
         addPanelComponent(maxLinesLabel);
         addPanelComponent(maxLinesField);
         addPanelComponent(scrollCheckBox);
         addPanelComponent(wrapCheckBox);
         addPanelComponent(new JSeparator());
         configureMaxLines(maxLinesField);
+
         writeTarget = createWriteTarget();
 
         // TODO:  Fix button panel resizing issues
@@ -146,7 +151,7 @@ public class LogDialog extends BasicDialog {
         linesField.getActionMap().put("textCancel", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                linesField.setText("" + DEFAULT_LOG_LINES);
+                linesField.setText("" + logLines);
                 linesField.getRootPane().requestFocus();
                 // don't pass the event upwards. esc closes the window if this field isn't focused
             }
@@ -175,13 +180,16 @@ public class LogDialog extends BasicDialog {
         return new StringWriter() {
             @Override
             public void flush() {
-                LogDialog.this.append(toString());
+                final String logString = getBuffer().toString();
                 getBuffer().setLength(0);
 
-                truncateLogs();
-                if (scrollCheckBox.isSelected()) { // FIXME: Not EDT-safe!
-                    logPane.getVerticalScrollBar().addAdjustmentListener(scrollToEnd);
-                }
+                SwingUtilities.invokeLater(() -> {
+                    LogDialog.this.append(logString);
+                    truncateLogs();
+                    if (scrollCheckBox.isSelected()) {
+                        logPane.getVerticalScrollBar().addAdjustmentListener(scrollToEnd);
+                    }
+                });
             }
         };
     }
@@ -192,7 +200,7 @@ public class LogDialog extends BasicDialog {
         int lines = map.getElementCount();
 
         // Account for trailing newline by adding one
-        int max = DEFAULT_LOG_LINES + 1;
+        int max = logLines + 1;
         if (lines > max) {
             int i = map.getElement(lines - max).getStartOffset();
             try {
@@ -206,8 +214,8 @@ public class LogDialog extends BasicDialog {
 
     private void parseMaxLines(JTextField field) {
         try {
-            int i = Integer.parseInt(field.getText().trim());
-            if (i > 0) logLines = i;
+            int parsedMax = Integer.parseInt(field.getText().trim());
+            if (parsedMax > 0) logLines = parsedMax;
         } catch (Exception ignore) {} // bad number or not a number
         field.setText("" + logLines);
     }
@@ -230,6 +238,9 @@ public class LogDialog extends BasicDialog {
         if (visible) {
             LoggerUtilities.getRootLogger().addAppender(logStream);
             this.rootPane.requestFocus();
+            if (scrollCheckBox.isSelected()) {
+                logPane.getVerticalScrollBar().addAdjustmentListener(scrollToEnd);
+            }
         } else {
             append("\n\n\t(Log window was closed)\n\n\n");
             LoggerUtilities.getRootLogger().removeAppender(logStream);

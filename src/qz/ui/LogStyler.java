@@ -22,7 +22,8 @@ public class LogStyler {
         TEAL(new Color(0x007e8a), new Color(0x16baac)),
         BLUE(new Color(0x00627a), new Color(0x56a8f5)),
         GREEN(new Color(0x067d17), new Color(0x6aab73)),
-        AMBER(new Color(0x9e880d), new Color(0xb3ae60)),
+        YELLOW(new Color(0x9e880d), new Color(0xb3ae60)),
+        AMBER(new Color(0xff7e3d), new Color(0xcf8e6d)),
         RED(new Color(0xff0000), new Color(0xfa6675)),
         PURPLE(new Color(0x851691), new Color(0xc77dbb)),
         DEFAULT(null, null);
@@ -34,6 +35,9 @@ public class LogStyler {
             tokenColorMap.put(TokenGroup.LINE_NUMBER, PURPLE);
             tokenColorMap.put(TokenGroup.WINDOW_CLOSED, GRAY);
             tokenColorMap.put(TokenGroup.STACKTRACE, RED);
+            tokenColorMap.put(TokenGroup.JSON_KEY, PURPLE);
+            tokenColorMap.put(TokenGroup.JSON_LITERAL, AMBER);
+            tokenColorMap.put(TokenGroup.JSON_STRING, GREEN);
         }
 
         private static final Map<Level, LogColor> levelColorMap = new HashMap<>();
@@ -131,12 +135,15 @@ public class LogStyler {
         CLASS(Pattern.compile("@\\s+([\\w.$]+):\\d+")),
         LINE_NUMBER(Pattern.compile(":(\\d+)$")),
         WINDOW_CLOSED(Pattern.compile("\n\t(\\([\\w\\s]+\\))\n")),
-        STACKTRACE(Pattern.compile("\t(at .*)\n"));
+        STACKTRACE(Pattern.compile("\t(at .*)\n")),
+        JSON_KEY(Pattern.compile("\"([^\"]*)\"\\s*:(?=\\s*[^:\\s])")),
+        JSON_STRING(Pattern.compile(":\\s*\"([^\"]*)\"")),
+        JSON_LITERAL(Pattern.compile(":(?:\\s*)(true|false|null|-?\\d+(?:\\.\\d+)?)\\b"));
 
         private final Pattern pattern;
 
         private static final TokenGroup[] FIRST_LINE = new TokenGroup[] { LEVEL, TIMESTAMP, CLASS, LINE_NUMBER };
-        private static final TokenGroup[] MESSAGE_LINES = new TokenGroup[] { WINDOW_CLOSED, STACKTRACE };
+        private static final TokenGroup[] MESSAGE_LINES = new TokenGroup[] { WINDOW_CLOSED, STACKTRACE, JSON_KEY, JSON_STRING, JSON_LITERAL };
 
         TokenGroup(Pattern pattern) {
             this.pattern = pattern;
@@ -177,7 +184,8 @@ public class LogStyler {
             for(TokenGroup tokenGroup : TokenGroup.MESSAGE_LINES) {
                 Matcher tokens = tokenGroup.getPattern().matcher(message);
 
-                if (tokens.find()) {
+                while (tokens.find()) {
+                    System.out.println("matched " + tokenGroup.name() + " to " + tokens.group(1));
                     LogColor logColor = LogColor.lookup(tokenGroup, tokens.group(1));
                     switch(tokenGroup) {
                         case STACKTRACE:

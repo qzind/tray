@@ -17,6 +17,7 @@ import qz.utils.PrefsSearch;
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.*;
 import java.io.File;
 import java.io.StringWriter;
@@ -60,6 +61,25 @@ public class LogDialog extends BasicDialog {
         logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, defaultFontSize)); //force fallback font for character support
         FontMetrics fm = logArea.getFontMetrics(logArea.getFont());
         logArea.setPreferredSize(new Dimension(fm.charWidth('m') * COLS, fm.getHeight() * ROWS));
+
+        JPopupMenu popup = new JPopupMenu();
+        JMenuItem copyItem = new JMenuItem("Copy", getIcon(IconCache.Icon.COPY_ICON));
+        copyItem.addActionListener(e -> {
+            logArea.copy();
+        });
+        JMenuItem copyAllItem = new JMenuItem("Copy All", getIcon(IconCache.Icon.COPY_ICON));
+        copyAllItem.addActionListener(e -> {
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(logArea.getText()), null);
+        });
+        JMenuItem clearItem = new JMenuItem("Clear All", getIcon(IconCache.Icon.DELETE_ICON));
+        clearItem.addActionListener(e -> {
+            logArea.setText(null);
+            writeTarget.getBuffer().setLength(0);
+        });
+        popup.add(copyItem);
+        popup.add(copyAllItem);
+        popup.add(clearItem);
+        logArea.setComponentPopupMenu(popup);
 
         DefaultCaret caret = (DefaultCaret) logArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE); // the default caret does some autoscroll stuff, we don't want that

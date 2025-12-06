@@ -77,7 +77,8 @@ public class LogDialog extends BasicDialog {
         logArea.setLineWrap(true);
         logArea.setWrapStyleWord(true);
         logArea.setFont(new Font("", Font.PLAIN, defaultFontSize)); //force fallback font for character support
-        ((DefaultCaret)logArea.getCaret()).setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
+        DefaultCaret caret = (DefaultCaret) logArea.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE); // the default caret does some autoscroll stuff, we don't want that
 
         // TODO:  Fix button panel resizing issues
         clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);

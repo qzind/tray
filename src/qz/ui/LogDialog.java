@@ -17,6 +17,7 @@ import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.AdjustmentListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.StringWriter;
@@ -37,6 +38,8 @@ public class LogDialog extends BasicDialog {
 
     private WriterAppender logStream;
 
+    private AdjustmentListener scrollToEnd;
+
 
     public LogDialog(JMenuItem caller, IconCache iconCache) {
         super(caller, iconCache);
@@ -56,7 +59,6 @@ public class LogDialog extends BasicDialog {
                 getBuffer().setLength(0);
                 SwingUtilities.invokeLater(() -> {
                     logArea.append(logString);
-                    logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
                 });
             }
         };
@@ -72,10 +74,13 @@ public class LogDialog extends BasicDialog {
             @Override
             public void insertUpdate(DocumentEvent e) {
                 SwingUtilities.invokeLater(() -> {
-                    while(logArea.getLineCount() > MAX_LINES) {
-                        try {
+                    try {
+                        while(logArea.getLineCount() > MAX_LINES) {
                             logArea.replaceRange(null, 0, logArea.getLineEndOffset(0));
-                        } catch(BadLocationException ignore) {}
+                        }
+                    } catch(BadLocationException ignore) {}
+                    if(logArea.getSelectionStart() == logArea.getSelectionEnd()) {
+                        logPane.getVerticalScrollBar().addAdjustmentListener(scrollToEnd);
                     }
                 });
             }
@@ -101,6 +106,21 @@ public class LogDialog extends BasicDialog {
         logPane = new JScrollPane(logArea);
         setContent(logPane, true);
         setResizable(true);
+
+        /*
+         * Hacky "scroll-to-end" trick
+         *  1. Adds a listener to the vertical scroll bar which fires when new content is added
+         *  2. Immediately removes this listener so we don't recurse
+         *  3. Sets the scrollbar to the max value, simulating auto-scroll
+         *
+         * TODO: Eventually replace this with proper cursor support
+         */
+        scrollToEnd = e -> {
+            logPane.getVerticalScrollBar().removeAdjustmentListener(scrollToEnd); //fire once
+            SwingUtilities.invokeLater(() -> {
+                logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
+            });
+        };
 
         // add new appender to Log4J just for text area
         logStream = WriterAppender.newBuilder()

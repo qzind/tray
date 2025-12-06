@@ -14,6 +14,7 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -59,6 +60,14 @@ public class LogDialog extends BasicDialog {
                 getBuffer().setLength(0);
                 SwingUtilities.invokeLater(() -> {
                     logArea.append(logString);
+
+                    // Limit window to MAX_LINES per #1384
+                    try {
+                        while(logArea.getLineCount() > MAX_LINES) {
+                            logArea.replaceRange(null, 0, logArea.getLineEndOffset(0));
+                        }
+                    } catch (BadLocationException ignore) {}
+                    logPane.getVerticalScrollBar().addAdjustmentListener(scrollToEnd);
                 });
             }
         };
@@ -68,29 +77,7 @@ public class LogDialog extends BasicDialog {
         logArea.setLineWrap(true);
         logArea.setWrapStyleWord(true);
         logArea.setFont(new Font("", Font.PLAIN, defaultFontSize)); //force fallback font for character support
-
-        // Limit window to MAX_LINES per #1384
-        logArea.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                SwingUtilities.invokeLater(() -> {
-                    try {
-                        while(logArea.getLineCount() > MAX_LINES) {
-                            logArea.replaceRange(null, 0, logArea.getLineEndOffset(0));
-                        }
-                    } catch(BadLocationException ignore) {}
-                    if(logArea.getSelectionStart() == logArea.getSelectionEnd()) {
-                        logPane.getVerticalScrollBar().addAdjustmentListener(scrollToEnd);
-                    }
-                });
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {}
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {}
-        });
+        ((DefaultCaret)logArea.getCaret()).setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
 
         // TODO:  Fix button panel resizing issues
         clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);

@@ -11,6 +11,9 @@ import qz.utils.FileUtilities;
 import qz.utils.LoggerUtilities;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -25,6 +28,7 @@ public class LogDialog extends BasicDialog {
 
     private final int ROWS = 20;
     private final int COLS = 80;
+    private final int MAX_LINES = 500;
 
     private JScrollPane logPane;
     private JTextArea logArea;
@@ -48,8 +52,10 @@ public class LogDialog extends BasicDialog {
         StringWriter writeTarget = new StringWriter() {
             @Override
             public void flush() {
+                final String logString = getBuffer().toString();
+                getBuffer().setLength(0);
                 SwingUtilities.invokeLater(() -> {
-                    logArea.append(toString());
+                    logArea.append(logString);
                     logPane.getVerticalScrollBar().setValue(logPane.getVerticalScrollBar().getMaximum());
                 });
             }
@@ -60,6 +66,26 @@ public class LogDialog extends BasicDialog {
         logArea.setLineWrap(true);
         logArea.setWrapStyleWord(true);
         logArea.setFont(new Font("", Font.PLAIN, defaultFontSize)); //force fallback font for character support
+
+        // Limit window to MAX_LINES per #1384
+        logArea.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                SwingUtilities.invokeLater(() -> {
+                    while(logArea.getLineCount() > MAX_LINES) {
+                        try {
+                            logArea.replaceRange(null, 0, logArea.getLineEndOffset(0));
+                        } catch(BadLocationException ignore) {}
+                    }
+                });
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {}
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {}
+        });
 
         // TODO:  Fix button panel resizing issues
         clearButton = addPanelButton("Clear", IconCache.Icon.DELETE_ICON, KeyEvent.VK_L);
@@ -89,7 +115,6 @@ public class LogDialog extends BasicDialog {
     @Override
     public void setVisible(boolean visible) {
         if (visible) {
-            logArea.setText(null);
             LoggerUtilities.getRootLogger().addAppender(logStream);
         } else {
             LoggerUtilities.getRootLogger().removeAppender(logStream);

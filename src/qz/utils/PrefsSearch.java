@@ -70,7 +70,7 @@ public class PrefsSearch {
      * Typed ArgValue implementations
      */
     public static String getString(ArgValue argValue, boolean searchSystemProperties, Properties ... propsArray) {
-        return getProperty(argValue.getMatches(), (String)argValue.getDefaultVal(), searchSystemProperties, propsArray);
+        return getProperty(argValue.getMatches(), argValue.getDefaultValAsString(), searchSystemProperties, propsArray);
     }
 
     public static int getInt(ArgValue argValue, boolean searchSystemProperties, Properties ... propsArray) {

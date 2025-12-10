@@ -1476,19 +1476,10 @@
     }
 
     function startConnection(config) {
-        // Connect to a print-server instance, if specified
-        if ($('#connectionHost').hasClass("dirty")) {
-            var host = $('#connectionHost').val().trim();
-            config ||= {};
-            config.host = host;
-        }
-
-        // Allow secure/insecure port override
-        if ($('#connectionUsingSecure').hasClass("dirty")) {
-            var usingSecure = $("#connectionUsingSecure").prop('checked');
-            config ||= {};
-            config.usingSecure = usingSecure;
-        }
+        // Connect to a print-server instance and/or override secure port handling
+        config ||= {};
+        config.host = includedValue($('#connectionHost'));
+        config.usingSecure = isChecked($('#connectionUsingSecure'));
 
         if (!qz.websocket.isActive()) {
             updateState('Waiting', 'default');

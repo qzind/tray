@@ -608,7 +608,7 @@ public class FileUtilities {
         }
         in.close();
 
-        return cmds.getByteArray();
+        return cmds.toByteArray();
     }
 
 

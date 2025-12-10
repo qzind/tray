@@ -88,20 +88,20 @@ public class SerialIO implements DeviceListener {
                     //process as line delimited
 
                     // check for CR AND NL
-                    Integer endIdx = ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\r', '\n'});
+                    Integer endIdx = ByteUtilities.firstMatchingIndex(data.toByteArray(), new byte[] {'\r', '\n'});
                     int delimSize = 2;
 
                     // check for CR OR NL
                     if(endIdx == null) {
                         endIdx = min(
-                                ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\r'}),
-                                ByteUtilities.firstMatchingIndex(data.getByteArray(), new byte[] {'\n'}));
+                                ByteUtilities.firstMatchingIndex(data.toByteArray(), new byte[] {'\r'}),
+                                ByteUtilities.firstMatchingIndex(data.toByteArray(), new byte[] {'\n'}));
                         delimSize = 1;
                     }
                     if (endIdx != null) {
                         log.trace("Reading newline-delimited response");
                         byte[] output = new byte[endIdx];
-                        System.arraycopy(data.getByteArray(), 0, output, 0, endIdx);
+                        System.arraycopy(data.toByteArray(), 0, output, 0, endIdx);
                         String buffer = new String(output, format.getEncoding());
 
                         if (!buffer.isEmpty()) {
@@ -113,7 +113,7 @@ public class SerialIO implements DeviceListener {
                     }
                 } else if (format.getBoundStart() != null && format.getBoundStart().length > 0) {
                     //process as formatted response
-                    Integer startIdx = ByteUtilities.firstMatchingIndex(data.getByteArray(), format.getBoundStart());
+                    Integer startIdx = ByteUtilities.firstMatchingIndex(data.toByteArray(), format.getBoundStart());
 
                     if (startIdx != null) {
                         int startOffset = startIdx + format.getBoundStart().length;
@@ -123,7 +123,7 @@ public class SerialIO implements DeviceListener {
 
                         if (format.getBoundEnd() != null && format.getBoundEnd().length > 0) {
                             //process as bounded response
-                            Integer boundEnd = ByteUtilities.firstMatchingIndex(data.getByteArray(), format.getBoundEnd(), startIdx);
+                            Integer boundEnd = ByteUtilities.firstMatchingIndex(data.toByteArray(), format.getBoundEnd(), startIdx);
 
                             if (boundEnd != null) {
                                 log.trace("Reading bounded response");
@@ -148,7 +148,7 @@ public class SerialIO implements DeviceListener {
                             if (data.getLength() > startOffset + lengthParam.getIndex() + lengthParam.getLength()) { //ensure there's length bytes to read
                                 log.trace("Reading dynamic formatted response");
 
-                                int expectedLength = ByteUtilities.parseBytes(data.getByteArray(), startOffset + lengthParam.getIndex(), lengthParam.getLength(), lengthParam.getEndian());
+                                int expectedLength = ByteUtilities.parseBytes(data.toByteArray(), startOffset + lengthParam.getIndex(), lengthParam.getLength(), lengthParam.getEndian());
                                 log.trace("Found length byte, expecting {} bytes", expectedLength);
 
                                 startOffset += lengthParam.getIndex() + lengthParam.getLength(); // don't include the length byte(s) in the response
@@ -185,7 +185,7 @@ public class SerialIO implements DeviceListener {
                             }
 
                             byte[] responseData = new byte[copyLength];
-                            System.arraycopy(data.getByteArray(), startOffset, responseData, 0, copyLength);
+                            System.arraycopy(data.toByteArray(), startOffset, responseData, 0, copyLength);
 
                             response = new String(responseData, format.getEncoding());
                             data.clearRange(startIdx, endIdx);
@@ -197,7 +197,7 @@ public class SerialIO implements DeviceListener {
                         log.trace("Reading fixed length response");
 
                         byte[] output = new byte[format.getFixedWidth()];
-                        System.arraycopy(data.getByteArray(), 0, output, 0, format.getFixedWidth());
+                        System.arraycopy(data.toByteArray(), 0, output, 0, format.getFixedWidth());
 
                         response = StringUtils.newStringUtf8(output);
                         data.clearRange(0, format.getFixedWidth());
@@ -206,7 +206,7 @@ public class SerialIO implements DeviceListener {
                     //no processing, return raw
                     log.trace("Reading raw response");
 
-                    response = new String(data.getByteArray(), format.getEncoding());
+                    response = new String(data.toByteArray(), format.getEncoding());
                     data.clear();
                 }
 

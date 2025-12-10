@@ -13,38 +13,39 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static qz.printer.action.raw.ImageConverterType.*;
+
 /**
  * Enum for print languages, such as ZPL, EPL, etc.
- *
- * @author tfino
  */
 public enum LanguageType {
+    ZPL(MONO, false, true, 203, "ZPL", "ZPL2", "ZPLII", "ZEBRA"),
+    EPL(MONO, true, true, 203, "EPL", "EPL2", "EPLII"),
+    CPCL(MONO, false, true, 203),
+    ESCPOS(MONO, false, false, 180, "ESC/POS"),
+    ESCP(MONO, false, false, 180, "ESCP", "ESCP2", "ESC/P", "ESC/P2"),
+    EVOLIS(COLOR, false, false, 300),
+    SBPL(MONO, false, true, 203, "SATO"),
+    PGL(MONO, false, false, 203, "IGP/PGL", "PRINTRONIX"),
+    UNKNOWN(MONO, false, false, 72);
 
-    ZPL(false, true, 203, "ZPL", "ZPL2", "ZPLII", "ZEBRA"),
-    EPL(true, true, 203, "EPL", "EPL2", "EPLII"),
-    CPCL(false, true, 203),
-    ESCP(false, false, 180, "ESCP", "ESCP2", "ESCPOS", "ESC", "ESC/P", "ESC/P2", "ESCP/P2", "ESC/POS", "ESC\\P", "EPSON"),
-    EVOLIS(false, false, 300),
-    SBPL(false, true, 203, "SATO"),
-    PGL(false, false, 203, "IGP/PGL", "PRINTRONIX"),
-    UNKNOWN(false, false, 72);
+    private final boolean imgOutputInvert;
+    private final boolean imgWidthValidated;
+    private final double defaultDensity;
+    private final ImageConverterType converterType;
+    private final List<String> altNames;
 
-
-    private boolean imgOutputInvert = false;
-    private boolean imgWidthValidated = false;
-    private double defaultDensity = 72;
-    private List<String> altNames;
-
-    LanguageType(boolean imgOutputInvert, boolean imgWidthValidated, double defaultDensity, String... altNames) {
+    LanguageType(ImageConverterType converterType, boolean imgOutputInvert, boolean imgWidthValidated, double defaultDensity, String... altNames) {
         this.imgOutputInvert = imgOutputInvert;
         this.imgWidthValidated = imgWidthValidated;
         this.defaultDensity = defaultDensity;
+        this.converterType = converterType;
 
         this.altNames = new ArrayList<>();
         Collections.addAll(this.altNames, altNames);
     }
 
-    public static LanguageType getType(String type) {
+    public static LanguageType parse(String type) {
         for(LanguageType lang : LanguageType.values()) {
             if (lang.name().equalsIgnoreCase(type) || lang.altNames.contains(type)) {
                 return lang;
@@ -54,9 +55,8 @@ public enum LanguageType {
         return UNKNOWN;
     }
 
-
     /**
-     * Returns whether or not this {@code LanguageType}
+     * Returns whether this {@code LanguageType}
      * inverts the black and white pixels before sending to the printer.
      *
      * @return {@code true} if language type flips black and white pixels
@@ -66,7 +66,7 @@ public enum LanguageType {
     }
 
     /**
-     * Returns whether or not the specified {@code LanguageType} requires
+     * Returns whether the specified {@code LanguageType} requires
      * the image width to be validated prior to processing output.  This
      * is required for image formats that normally require the image width to
      * be a multiple of 8
@@ -79,6 +79,10 @@ public enum LanguageType {
 
     public double getDefaultDensity() {
         return defaultDensity;
+    }
+
+    public ImageConverterType getConverterType() {
+        return converterType;
     }
 
 }

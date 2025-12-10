@@ -16,6 +16,7 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,14 +30,14 @@ import java.util.List;
 @SuppressWarnings("UnusedDeclaration") //Library class
 public final class ByteArrayBuilder {
 
-    private List<Byte> buffer;
-
+    private final List<Byte> buffer;
+    private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
     /**
-     * Creates a new <code>ByteArrayBuilder</code> and sets initial capacity to 10
+     * Creates a new <code>ByteArrayBuilder</code> and sets initial capacity to 16
      */
     public ByteArrayBuilder() {
-        this(null);
+        this(16);
     }
 
     /**
@@ -50,7 +51,7 @@ public final class ByteArrayBuilder {
     }
 
     /**
-     * Creates a new <code>ByteArrayBuilder</code>, sets initial capacity to 10
+     * Creates a new <code>ByteArrayBuilder</code>, sets initial capacity to 16
      * and appends <code>initialContents</code>
      *
      * @param initialContents the initial contents of the ByteArrayBuilder
@@ -67,7 +68,7 @@ public final class ByteArrayBuilder {
      * @param initialCapacity the initial capacity of the <code>ByteArrayBuilder</code>
      */
     public ByteArrayBuilder(byte[] initialContents, int initialCapacity) {
-        buffer = new ArrayList<>(initialCapacity);
+        this.buffer = new ArrayList<>(initialCapacity);
         if (initialContents != null) {
             append(initialContents);
         }
@@ -86,7 +87,7 @@ public final class ByteArrayBuilder {
      * @param startIndex Starting index, inclusive
      * @param endIndex   Ending index, exclusive
      */
-    public final void clearRange(int startIndex, int endIndex) {
+    public void clearRange(int startIndex, int endIndex) {
         buffer.subList(startIndex, endIndex).clear();
     }
 
@@ -106,17 +107,15 @@ public final class ByteArrayBuilder {
      * @param bytes the byte array to append
      * @return this <code>ByteArrayBuilder</code>
      */
-    public final ByteArrayBuilder append(byte[] bytes) {
+    public ByteArrayBuilder append(byte[] bytes) {
         for(byte b : bytes) {
             buffer.add(b);
         }
         return this;
     }
 
-    public final ByteArrayBuilder append(List<Byte> bytes) {
-        for(byte b : bytes) {
-            buffer.add(b);
-        }
+    public ByteArrayBuilder append(List<Byte> bytes) {
+        buffer.addAll(bytes);
         return this;
     }
 
@@ -128,8 +127,16 @@ public final class ByteArrayBuilder {
      * @param charset the Charset of the String
      * @return this <code>ByteArrayBuilder</code>
      */
-    public final ByteArrayBuilder append(String string, Charset charset) throws UnsupportedEncodingException {
-        return append(string.getBytes(charset.name()));
+    public ByteArrayBuilder append(String string, Charset charset) throws UnsupportedEncodingException {
+        return append(string.getBytes(charset));
+    }
+
+    public ByteArrayBuilder append(String string) throws UnsupportedEncodingException {
+        return append(string.getBytes(DEFAULT_CHARSET));
+    }
+
+    public ByteArrayBuilder append(Integer number) throws UnsupportedEncodingException {
+        return append(String.valueOf(number), DEFAULT_CHARSET);
     }
 
     /**
@@ -140,8 +147,44 @@ public final class ByteArrayBuilder {
      * @param charset       the Charset of the StringBuilder
      * @return this <code>ByteArrayBuilder</code>
      */
-    public final ByteArrayBuilder append(StringBuilder stringBuilder, Charset charset) throws UnsupportedEncodingException {
+    public ByteArrayBuilder append(StringBuilder stringBuilder, Charset charset) throws UnsupportedEncodingException {
         return append(stringBuilder.toString(), charset);
+    }
+
+    public ByteArrayBuilder append(StringBuilder stringBuilder) throws UnsupportedEncodingException {
+        return append(stringBuilder.toString(), DEFAULT_CHARSET);
+    }
+
+    public ByteArrayBuilder append(Charset charset, Object ... items) throws UnsupportedEncodingException {
+        for(Object item : items) {
+            if(item instanceof String) {
+                append((String)item, charset);
+            } else if(item instanceof Integer) {
+                append((Integer)item);
+            } else if(item instanceof StringBuilder) {
+                append((StringBuilder)item, charset);
+            } else if(item instanceof Byte) {
+                buffer.add((Byte)item);
+            } else if(item instanceof byte[]) {
+                append((byte[])item);
+            } else if(item instanceof List) {
+                List<?> list = (List<?>)item;
+                for(Object o : list) {
+                    if(o instanceof Byte) {
+                        buffer.add((Byte)o);
+                    } else {
+                        throw new UnsupportedOperationException("Can't append unknown type " + o.getClass().getName());
+                    }
+                }
+            } else {
+                throw new UnsupportedOperationException("Can't append unknown type " + item.getClass().getName());
+            }
+        }
+        return this;
+    }
+
+    public ByteArrayBuilder append(Object ... items) throws UnsupportedEncodingException {
+       return append(DEFAULT_CHARSET, items);
     }
 
     /**
@@ -150,7 +193,7 @@ public final class ByteArrayBuilder {
      *
      * @return The contents of this <code>ByteArrayBuilder</code> as a single <code>byte</code> array
      */
-    public byte[] getByteArray() {
-        return ArrayUtils.toPrimitive(buffer.toArray(new Byte[buffer.size()]));
+    public byte[] toByteArray() {
+        return ArrayUtils.toPrimitive(buffer.toArray(new Byte[0]));
     }
 }

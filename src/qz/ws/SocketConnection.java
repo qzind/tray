@@ -5,12 +5,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.communication.*;
+import qz.printer.action.ipp.Ipp;
 import qz.printer.status.StatusMonitor;
 import qz.utils.FileWatcher;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class SocketConnection {
 
@@ -57,7 +60,6 @@ public class SocketConnection {
     public void removeSerialPort(String port) {
         openSerialPorts.remove(port);
     }
-
 
     public void addNetworkSocket(String location, SocketIO io) {
         openNetworkSockets.put(location, io);

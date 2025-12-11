@@ -169,9 +169,10 @@ public class Step {
                 String singleArg = jsonStep.optString(String.format("arg%d", ++argCounter), "");
                 if(!singleArg.trim().isEmpty()) {
                     args.add(singleArg.trim());
+                } else {
+                    // stop searching if the next incremental arg (e.g. "arg2") isn't found
+                    break;
                 }
-                // stop searching if the next incremental arg (e.g. "arg2") isn't found
-                break;
             }
         }
 
@@ -276,16 +277,18 @@ public class Step {
 
     private Step validateOs() {
         if(os == null) {
-            if(type == Type.SOFTWARE) {
-                // Software must default to a sane operating system
-                os = Software.parse(data).defaultOs();
-            } else {
-                os = new HashSet<>();
-            }
+            os = new HashSet<>();
         }
+
         if(os.size() == 0) {
-            os.add(Os.ALL);
-            log.debug("Os list is null, assuming '{}'", Os.ALL);
+            switch(type) {
+                case SOFTWARE:
+                    os.addAll(Software.parse(data).defaultOs());
+                    break;
+                default:
+                    os.add(Os.ALL);
+            }
+            log.debug("Os list is empty, assuming '{}'", os);
         }
         return this;
     }
@@ -296,7 +299,7 @@ public class Step {
         }
         if(arch.size() == 0) {
             arch.add(Arch.ALL);
-            log.debug("Arch list is null, assuming '{}'", Arch.ALL);
+            log.debug("Arch list is empty, assuming '{}'", Arch.ALL);
         }
         return this;
     }

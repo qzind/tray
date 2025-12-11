@@ -47,7 +47,7 @@ public class BasicDialog extends JDialog implements Themeable {
         mainPanel.setBorder(new EmptyBorder(Constants.BORDER_PADDING, Constants.BORDER_PADDING, Constants.BORDER_PADDING, Constants.BORDER_PADDING));
 
         headerComponent = new JLabel();
-        headerComponent.setBorder(new EmptyBorder(0, 0, Constants.BORDER_PADDING, Constants.BORDER_PADDING));
+        headerComponent.setBorder(new EmptyBorder(0, 0, Constants.BORDER_PADDING, 0));
         mainPanel.add(headerComponent, BorderLayout.PAGE_START);
 
         buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));

@@ -59,6 +59,14 @@ public class PropertyHelper extends Properties {
         setProperty(arg.getMatch(), "" + value);
     }
 
+    public void setProperty(ArgValue arg, int value) {
+        setProperty(arg.getMatch(), "" + value);
+    }
+
+    public void setProperty(ArgValue arg, String value) {
+        setProperty(arg.getMatch(), value);
+    }
+
     public void load(File file) {
         load(file == null ? null : file.getAbsolutePath());
     }

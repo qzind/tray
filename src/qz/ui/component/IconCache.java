@@ -57,6 +57,7 @@ public class IconCache {
         LOG_ICON("qz-log.png"),
         FOLDER_ICON("qz-folder.png"),
         SETTINGS_ICON("qz-settings.png"),
+        COPY_ICON("qz-copy.png"),
 
         // Dialog icons
         ALLOW_ICON("qz-allow.png"),

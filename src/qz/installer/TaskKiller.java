@@ -49,8 +49,8 @@ public class TaskKiller {
         if(!SystemUtilities.isWindows()) {
             // Fallback to pgrep, needed for macOS (See JDK-8319589, JDK-8197387)
             pids.addAll(findPidsPgrep());
-        } else if(WindowsUtilities.isSystemAccount()) {
-            // Fallback to powershell, needed for Windows
+        } else {
+            // Fallback to powershell, needed for Windows, see #1360
             pids.addAll(findPidsPwsh());
         }
 

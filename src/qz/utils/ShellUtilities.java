@@ -72,22 +72,32 @@ public class ShellUtilities {
     }
 
     public static boolean execute(String... commandArray) {
-        return execute(commandArray, false);
+        return execute(commandArray, null, false);
+    }
+
+    public static boolean execute(String[] commandArray, boolean silent) {
+        return execute(commandArray, null, silent);
+    }
+
+    public static boolean execute(String[] commandArray, File workingDir) {
+        return execute(commandArray, workingDir, false);
     }
 
     /**
      * Executes a synchronous shell command and returns true if the {@code Process.exitValue()} is {@code 0}.
      *
      * @param commandArray array of command pieces to supply to the shell environment to e executed as a single command
+     * @param workingDir working directory to start the process from
+     * @param silent Specify whether to suppress the command from the log files
      * @return {@code true} if {@code Process.exitValue()} is {@code 0}, otherwise {@code false}.
      */
-    public static boolean execute(String[] commandArray, boolean silent) {
+    public static boolean execute(String[] commandArray, File workingDir, boolean silent) {
         if (!silent) {
             log.debug("Executing: {}", Arrays.toString(commandArray));
         }
         try {
             // Create and execute our new process
-            Process p = Runtime.getRuntime().exec(commandArray, envp);
+            Process p = Runtime.getRuntime().exec(commandArray, envp, workingDir);
             // Consume output to prevent deadlock
             while (p.getInputStream().read() != -1) {}
             while (p.getErrorStream().read() != -1) {}

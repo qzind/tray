@@ -25,7 +25,7 @@ public class SoftwareInvoker extends InvokableResource {
         }
         Software installer = Software.parse(step.getData());
         ArrayList<String> command = getInstallCommand(installer, step.getArgs(), payload);
-        boolean success = ShellUtilities.execute(command.toArray(new String[command.size()]));
+        boolean success = ShellUtilities.execute(command.toArray(new String[command.size()]), payload.getParentFile());
         if(!success) {
             log.error("An error occurred invoking [{}]", step.getData());
         }

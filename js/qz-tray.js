@@ -2856,7 +2856,9 @@ var qz = (function() {
         define(qz);
     } else if (typeof exports === 'object') {
         module.exports = qz;
-    } else {
+    } else if (typeof window === 'object') {
         window.qz = qz;
+    } else {
+        self.qz = qz;
     }
 })();

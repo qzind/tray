@@ -311,7 +311,7 @@ public class TrayManager {
         logItem.setMnemonic(KeyEvent.VK_L);
         logItem.addActionListener(logListener);
         diagnosticMenu.add(logItem);
-        logDialog = new LogDialog(logItem, iconCache);
+        logDialog = new LogDialog(logItem, iconCache, prefs);
         componentList.add(logDialog);
 
         JMenuItem zipLogs = new JMenuItem("Zip logs (to Desktop)");

@@ -16,7 +16,11 @@ jobs:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
       - run: sudo apt-get install makeself
-      - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
+      - if: ${{ matrix.arch == 'riscv64' }}
+        run: |
+          # TODO: remove after migrating to JDK21+
+          export ANT_OPTS="-Djlink.java.version=21.0.7+9"
+      - run: ant $ANT_OPTS -Dtarget.arch=${{ matrix.arch }} makeself
       - uses: actions/upload-artifact@v4
         with:
           name: qz-tray-linux-${{ matrix.arch }}

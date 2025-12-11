@@ -82,7 +82,7 @@
                         <label for="connectionHost">Connect to host:</label>
                         <input type="text" id="connectionHost" value="localhost" class="form-control" />
                         <div class="form-group form-inline">
-                            <label for="connectionUsingSecure" data-toggle="tooltip" title="HTTPS Only: When disabled, allows secure pages to connect to insecure locations.">
+                            <label for="connectionUsingSecure" data-toggle="tooltip" title="Allows secure pages to connect to insecure locations and vice-versa.">
                                 Secure
                             </label>
                             <input checked type="checkbox" id="connectionUsingSecure" class="pull-right"/>
@@ -1476,18 +1476,10 @@
     }
 
     function startConnection(config) {
-        var host = $('#connectionHost').val().trim();
-        var usingSecure = $("#connectionUsingSecure").prop('checked');
-
-        // Connect to a print-server instance, if specified
-        if (host != "" && host != 'localhost') {
-            if (config) {
-                config.host = host;
-                config.usingSecure = usingSecure;
-            } else {
-                config = { host: host, usingSecure: usingSecure };
-            }
-        }
+        // Connect to a print-server instance and/or override secure port handling
+        config ||= {};
+        config.host = includedValue($('#connectionHost'));
+        config.usingSecure = isChecked($('#connectionUsingSecure'));
 
         if (!qz.websocket.isActive()) {
             updateState('Waiting', 'default');
@@ -2613,7 +2605,6 @@
 
         var secureOpt = $("#connectionUsingSecure");
         if (location.protocol !== 'https:') {
-            secureOpt.prop('disabled', true);
             secureOpt.prop('checked', false);
         } else {
             secureOpt.prop('disabled', false);

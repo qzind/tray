@@ -16,11 +16,6 @@ jobs:
           distribution: 'liberica'
       - run: sudo apt-get install nsis makeself
       - run: ant makeself
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: qz-tray-linux-jdk${{ matrix.java }}
-          path: out/qz-tray-*.run
       - run: sudo out/qz-tray-*.run
       - run: /opt/qz-tray/qz-tray --version
       - run: ant nsis
@@ -38,11 +33,6 @@ jobs:
           distribution: 'liberica'
       - run: brew install nsis makeself
       - run: ant pkgbuild
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: qz-tray-macos-jdk${{ matrix.java }}
-          path: out/qz-tray-*.pkg
       - run: sudo installer -pkg out/qz-tray-*.pkg -target /
       - run: "'/Applications/QZ Tray.app/Contents/MacOS/QZ Tray' --version"
       - run: ant makeself
@@ -61,10 +51,34 @@ jobs:
           distribution: 'liberica'
       - run: choco install nsis
       - run: ant nsis
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: qz-tray-windows-jdk${{ matrix.java }}
-          path: out/qz-tray-*.exe
       - run: Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
       - run: "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"
+
+  upload-artifacts:
+    runs-on: [macos-latest]
+    strategy:
+      matrix:
+        target: [macos, windows, linux]
+        arch: [x86_64, aarch64, riscv64]
+        exclude:
+          - target: pkgbuild
+            arch: riscv64
+          - target: nsis
+            arch: riscv64
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          java-version: 11
+          distribution: 'liberica'
+      - if: ${{ matrix.target == 'macos' }}
+        run: ant pkgbuild
+      - if: ${{ matrix.target == 'windows' }}
+        run: ant nsis
+      - if: ${{ matrix.target == 'linux' }}
+        run: ant makeself
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qz-tray-${ matrix.target }-${ matrix.arch }
+          path: out/qz-tray-*.*
+

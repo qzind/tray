@@ -20,7 +20,7 @@ jobs:
         run: |
           # TODO: remove after migrating to JDK21+
           export ANT_OPTS="-Djlink.java.version=21.0.7+9"
-      - run: ant $ANT_OPTS -Dtarget.arch=${{ matrix.arch }} makeself
+      - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
       - uses: actions/upload-artifact@v4
         with:
           name: qz-tray-linux-${{ matrix.arch }}

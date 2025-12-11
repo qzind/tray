@@ -19,7 +19,7 @@ jobs:
       - if: ${{ matrix.arch == 'riscv64' }}
         run: |
           # TODO: remove after migrating to JDK21+
-          export ANT_OPTS="-Djlink.java.version=21.0.7+9"
+          export ANT_ARGS="-Djlink.java.version=21.0.7+9"
       - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
       - uses: actions/upload-artifact@v4
         with:

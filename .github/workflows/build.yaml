@@ -72,7 +72,7 @@ jobs:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
       - run: choco install nsis
-      - run: ant -Dtarget.arch=${{ matrix.arch }} nsis
+      - run: ant -- -Dtarget.arch=${{ matrix.arch }} nsis
       - uses: actions/upload-artifact@v4
         with:
           name: qz-tray-windows-${{ matrix.arch }}

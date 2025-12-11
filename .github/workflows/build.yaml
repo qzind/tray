@@ -61,9 +61,9 @@ jobs:
         target: [macos, windows, linux]
         arch: [x86_64, aarch64, riscv64]
         exclude:
-          - target: pkgbuild
+          - target: macos
             arch: riscv64
-          - target: nsis
+          - target: windows
             arch: riscv64
     steps:
       - uses: actions/checkout@v3

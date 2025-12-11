@@ -14,15 +14,19 @@ import qz.build.provision.params.Type;
 import qz.common.Constants;
 import qz.installer.provision.invoker.PropertyInvoker;
 import qz.utils.ArgValue;
+import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 
 public class ProvisionBuilder {
     protected static final Logger log = LogManager.getLogger(ProvisionBuilder.class);
@@ -158,25 +162,21 @@ public class ProvisionBuilder {
                     throw formatted("Resource name conflicts with provision file '%s' '%s'", fileName, step);
                 }
                 File dest = BUILD_PROVISION_FOLDER.resolve(fileName).toFile();
-                int i = 0;
-                // Avoid conflicting file names
-                String name = dest.getName();
 
-                // Avoid resource clobbering when being invoked by command line or providing certificates.
-                // Otherwise, assume the intent is to re-use the same resource (e.g. "my_script.sh", etc)
-                if(ingestFile == null || step.getType() == Type.CERT) {
-                    while(dest.exists()) {
-                        // Append "filename-1.txt" until there's no longer a conflict
-                        if (name.contains(".")) {
-                            dest = BUILD_PROVISION_FOLDER.resolve(String.format("%s-%s.%s", FilenameUtils.removeExtension(name), ++i,
-                                                                                FilenameUtils.getExtension(name))).toFile();
-                        } else {
-                            dest = BUILD_PROVISION_FOLDER.resolve(String.format("%-%", name, ++i)).toFile();
-                        }
+                // Handle file already existing
+                if(existsIgnoreCase(dest)) {
+                    if (FileUtils.contentEquals(src, dest)) {
+                        // Same file, no copy needed!
+                    } else {
+                        // Copy using a unique name
+                        dest = incrementFileName(dest);
+                        FileUtils.copyFile(src, dest);
                     }
+                } else {
+                    // Copy using provided name
+                    FileUtils.copyFile(src, dest);
                 }
 
-                FileUtils.copyFile(src, dest);
                 if(dest.exists()) {
                     step.setData(BUILD_PROVISION_FOLDER.relativize(dest.toPath()).toString());
                 } else {
@@ -324,5 +324,62 @@ public class ProvisionBuilder {
                 }
             }
         }
+    }
+
+    /**
+     * Case-insensitive File.exists() function for Provisioning features that need to account for
+     * case-insensitive filesystems such as macOS or Windows
+     *
+     * Note: This function is only intended to be used as a safeguard and only against the File's parent directory.
+     * - Traversal of all case-insensitive parent directories within a path is not (yet) supported.
+     * - This is NOT bulletproof; We don't know the target machine's Locale! Edge-case filenames WILL slip through
+     */
+    private static boolean existsIgnoreCase(File file) throws IOException {
+        if(file == null) {
+            throw new IOException("File cannot be null");
+        }
+
+        Path filePath = file.toPath();
+        Path parentPath = filePath.getParent();
+
+        if(parentPath == null) {
+            throw new IOException("Parent folder cannot be null");
+        }
+
+        // DirectoryStreams are lazy loaded; use Path over File for traversing for performance reasons
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(parentPath)) {
+            for (Path entry : stream) {
+                String nameLower = file.getName().toLowerCase(Locale.ENGLISH);
+                String entryLower = entry.toFile().getName().toLowerCase(Locale.ENGLISH);
+                if(nameLower.equals(entryLower)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Increments a file name within the parent directory looking for one that doesn't exist (case-insensitive)
+     */
+    private static File incrementFileName(File desired) throws IOException {
+        int i = 0;
+        boolean hasExtension = !FilenameUtils.getExtension(desired.getName()).isEmpty();
+        Path parent = desired.getParentFile().toPath();
+
+        File result = desired.getCanonicalFile();
+        while(existsIgnoreCase(result)) {
+            String name = result.getName();
+            String newName;
+            if(hasExtension) {
+                newName = String.format("%s-%s.%s", FilenameUtils.removeExtension(name), ++i, FilenameUtils.getExtension(name));
+            } else {
+                newName = String.format("%s-%s", name, ++i);
+            }
+
+            result = parent.resolve(newName).toFile();
+        }
+
+        return result;
     }
 }

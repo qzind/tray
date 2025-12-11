@@ -8,41 +8,59 @@ jobs:
     strategy:
       matrix:
         java: [25]
+        arch: [x86_64, aarch64, riscv64]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-java@v3
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
-      - run: sudo apt-get install nsis makeself
-      - run: ant makeself
-      - run: sudo out/qz-tray-*.run
-      - run: /opt/qz-tray/qz-tray --version
-      - run: ant nsis
+      - run: sudo apt-get install makeself
+      - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qz-tray-linux-${{ matrix.arch }}
+          path: out/qz-tray-*.run
+      - if: ${{ matrix.arch == 'x86_64' }}
+        run: |
+          # Only run tests on same arch
+          sudo out/qz-tray-*.run
+          /opt/qz-tray/qz-tray --version
+          sudo apt-get install nsis
+          ant nsis
 
   macos:
     runs-on: [macos-latest]
     strategy:
       matrix:
         java: [25]
+        arch: [x86_64, aarch64]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-java@v3
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
-      - run: brew install nsis makeself
-      - run: ant pkgbuild
-      - run: sudo installer -pkg out/qz-tray-*.pkg -target /
-      - run: "'/Applications/QZ Tray.app/Contents/MacOS/QZ Tray' --version"
-      - run: ant makeself
-      - run: ant nsis
+      - run: ant -Dtarget.arch=${{ matrix.arch }} pkgbuild
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qz-tray-macos-${{ matrix.arch }}
+          path: out/qz-tray-*.pkg
+      - if: ${{ matrix.arch == 'aarch64' }}
+        run: |
+          # Only run tests on same arch
+          sudo installer -pkg out/qz-tray-*.pkg -target /
+          "/Applications/QZ Tray.app/Contents/MacOS/QZ Tray" --version
+          brew install nsis makeself
+          ant makeself
+          ant nsis
 
   windows:
     runs-on: [windows-latest]
     strategy:
       matrix:
         java: [25]
+        arch: [x86_64, aarch64]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-java@v3
@@ -50,6 +68,15 @@ jobs:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
       - run: choco install nsis
-      - run: ant nsis
-      - run: Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
-      - run: "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"
+      - run: ant "-Dtarget.arch=${{ matrix.arch }}" nsis
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qz-tray-windows-${{ matrix.arch }}
+          path: out/qz-tray-*.exe
+      - if: ${{ matrix.arch == 'x86_64' }}
+        run: |
+          # Only run tests on same arch
+          Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
+          "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"
+
+

@@ -16,14 +16,14 @@ jobs:
           distribution: 'liberica'
       - run: sudo apt-get install nsis makeself
       - run: ant makeself
-      - run: sudo out/qz-tray-*.run
-      - run: /opt/qz-tray/qz-tray --version
-      - run: ant nsis
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: qz-tray-linux-jdk${{ matrix.java }}
           path: out/qz-tray-*.run
+      - run: sudo out/qz-tray-*.run
+      - run: /opt/qz-tray/qz-tray --version
+      - run: ant nsis
 
   macos:
     runs-on: [macos-latest]
@@ -38,15 +38,15 @@ jobs:
           distribution: 'liberica'
       - run: brew install nsis makeself
       - run: ant pkgbuild
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: qz-tray-macos-jdk${{ matrix.java }}
+          path: out/qz-tray-*.pkg
       - run: sudo installer -pkg out/qz-tray-*.pkg -target /
       - run: "'/Applications/QZ Tray.app/Contents/MacOS/QZ Tray' --version"
       - run: ant makeself
       - run: ant nsis
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-         name: qz-tray-macos-jdk${{ matrix.java }}
-         path: out/qz-tray-*.pkg
 
   windows:
     runs-on: [windows-latest]
@@ -61,10 +61,10 @@ jobs:
           distribution: 'liberica'
       - run: choco install nsis
       - run: ant nsis
-      - run: Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
-      - run: "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: qz-tray-windows-jdk${{ matrix.java }}
           path: out/qz-tray-*.exe
+      - run: Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
+      - run: "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"

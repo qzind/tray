@@ -107,7 +107,7 @@ public class PrintRaw implements PrintProcessor {
             JSONObject opt = data.optJSONObject("options");
             if (opt == null) { opt = new JSONObject(); }
 
-            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "COMMAND").toUpperCase(Locale.ENGLISH));
+            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", PrintingUtilities.Format.COMMAND.name()).toUpperCase(Locale.ENGLISH));
             PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.PLAIN);
             PrintOptions.Raw rawOpts = options.getRawOptions();
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
@@ -115,19 +115,10 @@ public class PrintRaw implements PrintProcessor {
             destEncoding = rawOpts.getDestEncoding();
             if (destEncoding == null || destEncoding.isEmpty()) { destEncoding = Charset.defaultCharset().name(); }
 
+            BufferedImage bi;
             try {
                 switch(format) {
-                    case HTML:
-                        getHtmlWrapper(cmd, opt, flavor, rawOpts, pxlOpts).appendTo(commands);
-                        break;
-                    case IMAGE:
-                        getImageWrapper(cmd, opt, flavor, rawOpts, pxlOpts).appendTo(commands);
-                        break;
-                    case PDF:
-                        getPdfWrapper(cmd, opt, flavor, rawOpts, pxlOpts).appendTo(commands);
-                        break;
                     case COMMAND:
-                    default:
                         switch(flavor) {
                             case PLAIN:
                                 commands.append(getBytes(cmd, destEncoding));
@@ -135,8 +126,20 @@ public class PrintRaw implements PrintProcessor {
                             default:
                                 commands.append(seekConversion(flavor.read(cmd, opt.optString("xmlTag", null)), rawOpts));
                         }
+                        return;
+                    case HTML:
+                        bi = getHtmlBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
                         break;
+                    case IMAGE:
+                        bi = getImageBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
+                        break;
+                    case PDF:
+                        bi = getPdfBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
+                        break;
+                    default:
+                        throw new Exception(); // deliberately throw
                 }
+                getImageConverter(bi, opt, pxlOpts).appendTo(commands);
             }
             catch(Exception e) {
                 throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s into a raw %s command: %s", flavor, data.getString("data"), format, e.getLocalizedMessage()), e);
@@ -161,7 +164,7 @@ public class PrintRaw implements PrintProcessor {
         return rawBytes;
     }
 
-    private ImageConverter getImageWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
+    private BufferedImage getImageBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         BufferedImage bi;
         // 2.0 compat
         if (data.startsWith("data:image/") && data.contains(";base64,")) {
@@ -180,10 +183,10 @@ public class PrintRaw implements PrintProcessor {
                 bi = ImageIO.read(new ByteArrayInputStream(seekConversion(flavor.read(data), rawOpts)));
         }
 
-        return getWrapper(bi, opt, pxlOpts);
+        return bi;
     }
 
-    private ImageConverter getPdfWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
+    private BufferedImage getPdfBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         PDDocument doc;
 
         switch(flavor) {
@@ -206,11 +209,10 @@ public class PrintRaw implements PrintProcessor {
         }
         if (scale <= 0) { scale = 1.0; }
 
-        BufferedImage bi = new PDFRenderer(doc).renderImage(0, (float)scale);
-        return getWrapper(bi, opt, pxlOpts);
+        return new PDFRenderer(doc).renderImage(0, (float)scale);
     }
 
-    private ImageConverter getHtmlWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
+    private BufferedImage getHtmlBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         switch(flavor) {
             case FILE:
             case PLAIN:
@@ -262,10 +264,10 @@ public class PrintRaw implements PrintProcessor {
             }
         }
 
-        return getWrapper(bi, opt, pxlOpts);
+        return bi;
     }
 
-    private ImageConverter getWrapper(BufferedImage img, JSONObject opt, PrintOptions.Pixel pxlOpts) throws IOException {
+    private ImageConverter getImageConverter(BufferedImage img, JSONObject opt, PrintOptions.Pixel pxlOpts) throws IOException {
         if(img == null) {
             throw new IOException("Image provided is empty or null and cannot be converted.");
         }

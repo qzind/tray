@@ -95,12 +95,6 @@ public class PrintOptions {
             rawOptions.retainTemp = configOpts.optBoolean("retainTemp", false);
         }
 
-        if (!configOpts.isNull("imageEncoding")) {
-            String imageEncoding = configOpts.optString("imageEncoding", String.valueOf(ImageEncoding.ESC_STAR));
-            rawOptions.imageEncoding = ImageEncoding.valueOf(imageEncoding);
-        }
-
-
         //check for pixel options
         if (!configOpts.isNull("units")) {
             switch(configOpts.optString("units")) {
@@ -428,8 +422,6 @@ public class PrintOptions {
         private int copies = 1;                 //Job copies
         private String jobName = null;          //Job name
         private boolean retainTemp = false;     //Retain any temporary files
-        private ImageEncoding imageEncoding = ImageEncoding.ESC_STAR; //Image encoding
-
 
         public boolean isForceRaw() {
             return forceRaw;
@@ -459,10 +451,6 @@ public class PrintOptions {
 
         public String getJobName(String defaultVal) {
             return jobName == null || jobName.isEmpty()? defaultVal:jobName;
-        }
-
-        public ImageEncoding getImageEncoding() {
-            return imageEncoding;
         }
     }
 
@@ -757,12 +745,5 @@ public class PrintOptions {
         public Chromaticity getAsChromaticity() {
             return chromatic;
         }
-    }
-
-    /** Raw image encoding option */
-    public enum ImageEncoding {
-        ESC_STAR,
-        GS_V_0,
-        GS_L
     }
 }

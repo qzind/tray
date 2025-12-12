@@ -33,50 +33,21 @@ public final class ByteArrayBuilder {
     private final List<Byte> buffer;
     private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
-    /**
-     * Creates a new <code>ByteArrayBuilder</code> and sets initial capacity to 16
-     */
     public ByteArrayBuilder() {
-        this(16);
+        this(0);
     }
 
-    /**
-     * Creates a new <code>ByteArrayBuilder</code> and sets initial capacity to
-     * <code>initialCapacity</code>
-     *
-     * @param initialCapacity the initial capacity of the <code>ByteArrayBuilder</code>
-     */
     public ByteArrayBuilder(int initialCapacity) {
-        this(null, initialCapacity);
-    }
-
-    /**
-     * Creates a new <code>ByteArrayBuilder</code>, sets initial capacity to 16
-     * and appends <code>initialContents</code>
-     *
-     * @param initialContents the initial contents of the ByteArrayBuilder
-     */
-    public ByteArrayBuilder(byte[] initialContents) {
-        this(initialContents, 16);
-    }
-
-    /**
-     * Creates a new <code>ByteArrayBuilder</code>, sets initial capacity to
-     * <code>initialContents</code> and appends <code>initialContents</code>
-     *
-     * @param initialContents the initial contents of the <code>ByteArrayBuilder</code>
-     * @param initialCapacity the initial capacity of the <code>ByteArrayBuilder</code>
-     */
-    public ByteArrayBuilder(byte[] initialContents, int initialCapacity) {
         this.buffer = new ArrayList<>(initialCapacity);
+    }
+
+    public ByteArrayBuilder(byte[] initialContents) {
+        this(initialContents == null ? 0 : initialContents.length);
         if (initialContents != null) {
             append(initialContents);
         }
     }
 
-    /**
-     * Empties the <code>ByteArrayBuilder</code>
-     */
     public void clear() {
         buffer.clear();
     }

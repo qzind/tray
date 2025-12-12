@@ -11,6 +11,7 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import org.apache.pdfbox.printing.Scaling;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -28,6 +29,7 @@ import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.MediaPrintableArea;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.Paper;
 import java.awt.print.PrinterException;
@@ -161,6 +163,32 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         }
 
         log.debug("Parsed {} files for printing", printables.size());
+    }
+
+    public static BufferedImage createBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
+        PDDocument doc;
+
+        switch(flavor) {
+            case PLAIN:
+                // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
+            case FILE:
+                doc = PDDocument.load(ConnectionUtilities.getInputStream(data, true));
+                break;
+            default:
+                doc = PDDocument.load(new ByteArrayInputStream(PrintRaw.seekConversion(flavor.read(data), rawOpts)));
+        }
+
+        double scale;
+        PDRectangle rect = doc.getPage(0).getBBox();
+        double pw = opt.optDouble("pageWidth", 0), ph = opt.optDouble("pageHeight", 0);
+        if (ph <= 0 || (pw > 0 && (rect.getWidth() / rect.getHeight()) >= (pw / ph))) {
+            scale = pw / rect.getWidth();
+        } else {
+            scale = ph / rect.getHeight();
+        }
+        if (scale <= 0) { scale = 1.0; }
+
+        return new PDFRenderer(doc).renderImage(0, (float)scale);
     }
 
     @Override

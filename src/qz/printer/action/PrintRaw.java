@@ -128,13 +128,13 @@ public class PrintRaw implements PrintProcessor {
                         }
                         return;
                     case HTML:
-                        bi = getHtmlBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
+                        bi = PrintHTML.createBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
                         break;
                     case IMAGE:
-                        bi = getImageBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
+                        bi = PrintImage.createBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
                         break;
                     case PDF:
-                        bi = getPdfBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
+                        bi = PrintPDF.createBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
                         break;
                     default:
                         throw new Exception(); // deliberately throw
@@ -147,7 +147,7 @@ public class PrintRaw implements PrintProcessor {
         }
     }
 
-    private byte[] seekConversion(byte[] rawBytes, PrintOptions.Raw rawOpts) {
+    public static byte[] seekConversion(byte[] rawBytes, PrintOptions.Raw rawOpts) {
         if (rawOpts.getSrcEncoding() != null) {
             if(rawOpts.getSrcEncoding().equals(rawOpts.getDestEncoding()) || rawOpts.getDestEncoding() == null) {
                 log.warn("Provided srcEncoding and destEncoding are the same, skipping");
@@ -162,109 +162,6 @@ public class PrintRaw implements PrintProcessor {
             }
         }
         return rawBytes;
-    }
-
-    private BufferedImage getImageBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
-        BufferedImage bi;
-        // 2.0 compat
-        if (data.startsWith("data:image/") && data.contains(";base64,")) {
-            String[] parts = data.split(";base64,");
-            data = parts[parts.length - 1];
-            flavor = PrintingUtilities.Flavor.BASE64;
-        }
-
-        switch(flavor) {
-            case PLAIN:
-                // There's really no such thing as a 'PLAIN' image, assume it's a URL
-            case FILE:
-                bi = ImageIO.read(ConnectionUtilities.getInputStream(data, true));
-                break;
-            default:
-                bi = ImageIO.read(new ByteArrayInputStream(seekConversion(flavor.read(data), rawOpts)));
-        }
-
-        return bi;
-    }
-
-    private BufferedImage getPdfBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
-        PDDocument doc;
-
-        switch(flavor) {
-            case PLAIN:
-                // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
-            case FILE:
-                doc = PDDocument.load(ConnectionUtilities.getInputStream(data, true));
-                break;
-            default:
-                doc = PDDocument.load(new ByteArrayInputStream(seekConversion(flavor.read(data), rawOpts)));
-        }
-
-        double scale;
-        PDRectangle rect = doc.getPage(0).getBBox();
-        double pw = opt.optDouble("pageWidth", 0), ph = opt.optDouble("pageHeight", 0);
-        if (ph <= 0 || (pw > 0 && (rect.getWidth() / rect.getHeight()) >= (pw / ph))) {
-            scale = pw / rect.getWidth();
-        } else {
-            scale = ph / rect.getHeight();
-        }
-        if (scale <= 0) { scale = 1.0; }
-
-        return new PDFRenderer(doc).renderImage(0, (float)scale);
-    }
-
-    private BufferedImage getHtmlBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
-        switch(flavor) {
-            case FILE:
-            case PLAIN:
-                // We'll toggle between 'plain' and 'file' when we construct WebAppModel
-                break;
-            default:
-                data = new String(seekConversion(flavor.read(data), rawOpts), destEncoding);
-        }
-
-        double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
-        if (density <= 1) {
-            density = LanguageType.parse(opt.optString("language")).getDefaultDensity();
-        }
-        double pageZoom = density / 72.0;
-
-        double pageWidth = opt.optInt("pageWidth") / density * 72;
-        double pageHeight = opt.optInt("pageHeight") / density * 72;
-
-        BufferedImage bi;
-        WebAppModel model = new WebAppModel(data, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, false, pageZoom);
-
-        try {
-            WebApp.initialize(); //starts if not already started
-            bi = WebApp.raster(model);
-
-            // down scale back from web density
-            double scaleFactor = opt.optDouble("pageWidth", 0) / bi.getWidth();
-            BufferedImage scaled = new BufferedImage((int)(bi.getWidth() * scaleFactor), (int)(bi.getHeight() * scaleFactor), BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2d = scaled.createGraphics();
-            g2d.drawImage(bi, 0, 0, (int)(bi.getWidth() * scaleFactor), (int)(bi.getHeight() * scaleFactor), null);
-            g2d.dispose();
-            bi = scaled;
-        }
-        catch(Throwable t) {
-            if (model.getZoom() > 1 && t instanceof IllegalArgumentException) {
-                //probably a unrecognized image loader error, try at default zoom
-                try {
-                    log.warn("Capture failed with increased zoom, attempting with default value");
-                    model.setZoom(1);
-                    bi = WebApp.raster(model);
-                }
-                catch(Throwable tt) {
-                    log.error("Failed to capture html raster");
-                    throw new IOException(tt);
-                }
-            } else {
-                log.error("Failed to capture html raster");
-                throw new IOException(t);
-            }
-        }
-
-        return bi;
     }
 
     private ImageConverter getImageConverter(BufferedImage img, JSONObject opt, PrintOptions.Pixel pxlOpts) throws IOException {

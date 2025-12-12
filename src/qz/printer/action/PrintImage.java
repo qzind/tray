@@ -338,4 +338,25 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         manualReverse = false;
     }
 
+    public static BufferedImage createBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
+        BufferedImage bi;
+        // 2.0 compat
+        if (data.startsWith("data:image/") && data.contains(";base64,")) {
+            String[] parts = data.split(";base64,");
+            data = parts[parts.length - 1];
+            flavor = PrintingUtilities.Flavor.BASE64;
+        }
+
+        switch(flavor) {
+            case PLAIN:
+                // There's really no such thing as a 'PLAIN' image, assume it's a URL
+            case FILE:
+                bi = ImageIO.read(ConnectionUtilities.getInputStream(data, true));
+                break;
+            default:
+                bi = ImageIO.read(new ByteArrayInputStream(PrintRaw.seekConversion(flavor.read(data), rawOpts)));
+        }
+
+        return bi;
+    }
 }

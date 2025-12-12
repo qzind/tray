@@ -24,6 +24,7 @@ import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.printer.action.html.WebApp;
 import qz.printer.action.html.WebAppModel;
+import qz.printer.action.raw.LanguageType;
 import qz.utils.PrintingUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
@@ -32,6 +33,7 @@ import javax.print.attribute.standard.CopiesSupported;
 import javax.print.attribute.standard.Sides;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.io.IOException;
@@ -39,6 +41,7 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,7 +54,6 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
     private List<WebAppModel> models;
 
     private JLabel legacyLabel = null;
-
 
     public PrintHTML() {
         super();
@@ -410,5 +412,65 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             default:
                 return PrintColor.MONOCHROME;
         }
+    }
+
+    public static BufferedImage createBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
+        switch(flavor) {
+            case FILE:
+            case PLAIN:
+                // We'll toggle between 'plain' and 'file' when we construct WebAppModel
+                break;
+            default:
+                // FIXME: This should be cleaner!
+                String destEncoding = rawOpts.getDestEncoding();
+                if(destEncoding == null) {
+                    destEncoding = Charset.defaultCharset().name();
+                }
+                data = new String(PrintRaw.seekConversion(flavor.read(data), rawOpts), destEncoding);
+        }
+
+        double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
+        if (density <= 1) {
+            density = LanguageType.parse(opt.optString("language")).getDefaultDensity();
+        }
+        double pageZoom = density / 72.0;
+
+        double pageWidth = opt.optInt("pageWidth") / density * 72;
+        double pageHeight = opt.optInt("pageHeight") / density * 72;
+
+        BufferedImage bi;
+        WebAppModel model = new WebAppModel(data, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, false, pageZoom);
+
+        try {
+            WebApp.initialize(); //starts if not already started
+            bi = WebApp.raster(model);
+
+            // down scale back from web density
+            double scaleFactor = opt.optDouble("pageWidth", 0) / bi.getWidth();
+            BufferedImage scaled = new BufferedImage((int)(bi.getWidth() * scaleFactor), (int)(bi.getHeight() * scaleFactor), BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = scaled.createGraphics();
+            g2d.drawImage(bi, 0, 0, (int)(bi.getWidth() * scaleFactor), (int)(bi.getHeight() * scaleFactor), null);
+            g2d.dispose();
+            bi = scaled;
+        }
+        catch(Throwable t) {
+            if (model.getZoom() > 1 && t instanceof IllegalArgumentException) {
+                //probably a unrecognized image loader error, try at default zoom
+                try {
+                    log.warn("Capture failed with increased zoom, attempting with default value");
+                    model.setZoom(1);
+                    bi = WebApp.raster(model);
+                }
+                catch(Throwable tt) {
+                    log.error("Failed to capture html raster");
+                    throw new IOException(tt);
+                }
+            } else {
+                log.error("Failed to capture html raster");
+                throw new IOException(t);
+            }
+        }
+
+        return bi;
     }
 }

@@ -25,7 +25,6 @@ import java.util.BitSet;
  * @author Antoni Ten Monro's
  * @author Oleg Morozov
  */
-
 public abstract class MonoImageConverter extends ImageConverter {
     public enum Quantization {
         BLACK, // color value must be the exact value of black
@@ -42,10 +41,11 @@ public abstract class MonoImageConverter extends ImageConverter {
             return BLACK;
         }
     }
+
     private static final Logger log = LogManager.getLogger(MonoImageConverter.class);
 
     private BitSet imageAsBitSet; // pixels stored as 1/0 (black/white) array
-    private int[] imageAsIntArray; // packs every eight zero's to a full byte, in decimal
+    private byte[] imageAsByteArray; // packs every eight zero's to a full byte, in decimal
     private Quantization quantization;
     private int threshold;
 
@@ -54,7 +54,7 @@ public abstract class MonoImageConverter extends ImageConverter {
         super.setBufferedImage(validateWidth(getLanguageType(), bufferedImage));
         log.info("Initializing black & white pixels...");
         this.imageAsBitSet = generateBlackPixels(getBufferedImage(), getLanguageType(), quantization, threshold);
-        this.imageAsIntArray = convertToIntArray(this.imageAsBitSet);
+        this.imageAsByteArray = ByteUtilities.toByteArray(this.imageAsBitSet);
     }
 
     /**
@@ -116,24 +116,12 @@ public abstract class MonoImageConverter extends ImageConverter {
         }
     }
 
-    public static int[] convertToIntArray(BitSet bitSet) {
-        log.info("Packing bits...");
-        int[] intArray = new int[bitSet.size() / 8];
-        // Convert every eight zero's to a full byte, in decimal
-        for(int i = 0; i < intArray.length; i++) {
-            for(int k = 0; k < 8; k++) {
-                intArray[i] += (bitSet.get(8 * i + k)? 1:0) << 7 - k;
-            }
-        }
-        return intArray;
-    }
-
     public BitSet getImageAsBitSet() {
         return imageAsBitSet;
     }
 
-    public byte[] toBytes() {
-        return ByteUtilities.toByteArray(imageAsIntArray);
+    public byte[] getBytes() {
+        return imageAsByteArray;
     }
 
     public int getThreshold() {
@@ -141,7 +129,7 @@ public abstract class MonoImageConverter extends ImageConverter {
     }
 
     public String convertImageToHexString() {
-        return ByteUtilities.getHexString(imageAsIntArray);
+        return ByteUtilities.getHexString(imageAsByteArray);
     }
 
     /**

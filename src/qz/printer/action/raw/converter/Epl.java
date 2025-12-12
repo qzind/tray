@@ -23,6 +23,6 @@ public class Epl extends MonoImageConverter {
         int w = getWidth() / 8;
         int h = getHeight();
 
-        return byteBuffer.append("GW", x, ",", y, ",", w, ",", h, ",", toBytes(), "\n");
+        return byteBuffer.append("GW", x, ",", y, ",", w, ",", h, ",", getBytes(), "\n");
     }
 }

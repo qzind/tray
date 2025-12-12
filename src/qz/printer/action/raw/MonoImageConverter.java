@@ -116,7 +116,7 @@ public abstract class MonoImageConverter extends ImageConverter {
         }
     }
 
-    private static int[] convertToIntArray(BitSet bitSet) {
+    public static int[] convertToIntArray(BitSet bitSet) {
         log.info("Packing bits...");
         int[] intArray = new int[bitSet.size() / 8];
         // Convert every eight zero's to a full byte, in decimal
@@ -130,6 +130,24 @@ public abstract class MonoImageConverter extends ImageConverter {
 
     public BitSet getImageAsBitSet() {
         return imageAsBitSet;
+    }
+
+    public byte[] toBytes() {
+        return toBytes(imageAsIntArray);
+    }
+
+    public static byte[] toBytes(int[] intArray) {
+        log.info("Generating byte array...");
+        byte[] bytes = new byte[intArray.length];
+        for(int i = 0; i < intArray.length; i++) {
+            bytes[i] = (byte)intArray[i];
+        }
+
+        return bytes;
+    }
+
+    public static byte[] toBytes(BitSet bitSet) {
+        return toBytes(convertToIntArray(bitSet));
     }
 
     public int getThreshold() {

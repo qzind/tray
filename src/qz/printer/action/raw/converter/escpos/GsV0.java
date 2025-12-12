@@ -2,6 +2,7 @@ package qz.printer.action.raw.converter.escpos;
 
 import qz.common.ByteArrayBuilder;
 import qz.printer.action.raw.ByteAppender;
+import qz.printer.action.raw.MonoImageConverter;
 import qz.printer.action.raw.converter.EscPos;
 
 import java.io.UnsupportedEncodingException;
@@ -45,7 +46,7 @@ public class GsV0 implements ByteAppender {
         int bytesPerRow = (width + 7) / 8; // Round up to the nearest byte
 
         // Calculate command parameters
-        byte[] imageData = slice.toByteArray();
+        byte[] imageData = MonoImageConverter.toBytes(slice);
         int xL = bytesPerRow & 0xFF;
         int xH = (bytesPerRow >> 8) & 0xFF;
         int yL = height & 0xFF;

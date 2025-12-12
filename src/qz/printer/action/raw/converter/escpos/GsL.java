@@ -4,6 +4,7 @@ import qz.common.ByteArrayBuilder;
 import qz.printer.action.raw.ByteAppender;
 import qz.printer.action.raw.MonoImageConverter;
 import qz.printer.action.raw.converter.EscPos;
+import qz.utils.ByteUtilities;
 
 import java.io.UnsupportedEncodingException;
 import java.util.BitSet;
@@ -45,7 +46,7 @@ public class GsL implements ByteAppender {
      */
     private static void appendStoreCommandTo(ByteArrayBuilder byteBuffer, int width, int height, BitSet slice) throws UnsupportedEncodingException {
         // Calculate command parameters
-        byte[] imageData = MonoImageConverter.toBytes(slice);
+        byte[] imageData = ByteUtilities.toByteArray(slice);
         int dataLength = imageData.length + 10; // 10 bytes for parameters
         int pL = dataLength & 0xFF;
         int pH = (dataLength >> 8) & 0xFF;

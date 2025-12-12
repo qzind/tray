@@ -291,4 +291,30 @@ public class ByteUtilities {
         return false;
     }
 
+    public static int[] toIntArray(BitSet bitSet) {
+        log.info("Packing bits...");
+        int[] intArray = new int[bitSet.size() / 8];
+        // Convert every eight zero's to a full byte, in decimal
+        for(int i = 0; i < intArray.length; i++) {
+            for(int k = 0; k < 8; k++) {
+                intArray[i] += (bitSet.get(8 * i + k)? 1:0) << 7 - k;
+            }
+        }
+        return intArray;
+    }
+
+    public static byte[] toByteArray(BitSet bitSet) {
+        return toByteArray(toIntArray(bitSet));
+    }
+
+    public static byte[] toByteArray(int[] intArray) {
+        log.info("Generating byte array...");
+        byte[] bytes = new byte[intArray.length];
+        for(int i = 0; i < intArray.length; i++) {
+            bytes[i] = (byte)intArray[i];
+        }
+
+        return bytes;
+    }
+
 }

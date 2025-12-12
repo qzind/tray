@@ -133,21 +133,7 @@ public abstract class MonoImageConverter extends ImageConverter {
     }
 
     public byte[] toBytes() {
-        return toBytes(imageAsIntArray);
-    }
-
-    public static byte[] toBytes(int[] intArray) {
-        log.info("Generating byte array...");
-        byte[] bytes = new byte[intArray.length];
-        for(int i = 0; i < intArray.length; i++) {
-            bytes[i] = (byte)intArray[i];
-        }
-
-        return bytes;
-    }
-
-    public static byte[] toBytes(BitSet bitSet) {
-        return toBytes(convertToIntArray(bitSet));
+        return ByteUtilities.toByteArray(imageAsIntArray);
     }
 
     public int getThreshold() {

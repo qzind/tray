@@ -119,50 +119,24 @@ public final class ByteArrayBuilder {
         return this;
     }
 
-    /**
-     * Convenience method for append(byte[]) combined with a StringBuffer of specified
-     * charset
-     *
-     * @param string  the String to append
-     * @param charset the Charset of the String
-     * @return this <code>ByteArrayBuilder</code>
-     */
-    public ByteArrayBuilder append(String string, Charset charset) throws UnsupportedEncodingException {
-        return append(string.getBytes(charset));
-    }
-
-    public ByteArrayBuilder append(String string) throws UnsupportedEncodingException {
-        return append(string.getBytes(DEFAULT_CHARSET));
-    }
-
     public ByteArrayBuilder append(Integer number) throws UnsupportedEncodingException {
         return append(String.valueOf(number), DEFAULT_CHARSET);
     }
 
-    /**
-     * Convenience method for append(byte[]) combined with a String of specified
-     * charset
-     *
-     * @param stringBuilder the StringBuilder to append
-     * @param charset       the Charset of the StringBuilder
-     * @return this <code>ByteArrayBuilder</code>
-     */
-    public ByteArrayBuilder append(StringBuilder stringBuilder, Charset charset) throws UnsupportedEncodingException {
-        return append(stringBuilder.toString(), charset);
+    public ByteArrayBuilder append(CharSequence charSequence, Charset charset) throws UnsupportedEncodingException {
+        return append(charSequence.toString().getBytes(charset));
     }
 
-    public ByteArrayBuilder append(StringBuilder stringBuilder) throws UnsupportedEncodingException {
-        return append(stringBuilder.toString(), DEFAULT_CHARSET);
+    public ByteArrayBuilder append(CharSequence charSequence) throws UnsupportedEncodingException {
+        return append(charSequence.toString(), DEFAULT_CHARSET);
     }
 
     public ByteArrayBuilder append(Charset charset, Object ... items) throws UnsupportedEncodingException {
         for(Object item : items) {
-            if(item instanceof String) {
-                append((String)item, charset);
+            if(item instanceof CharSequence) {
+                append((CharSequence)item, charset);
             } else if(item instanceof Integer) {
                 append((Integer)item);
-            } else if(item instanceof StringBuilder) {
-                append((StringBuilder)item, charset);
             } else if(item instanceof Byte) {
                 buffer.add((Byte)item);
             } else if(item instanceof byte[]) {

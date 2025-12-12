@@ -9,40 +9,61 @@
  */
 package qz.printer.action.raw;
 
+import qz.printer.action.raw.converter.*;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import static qz.printer.action.raw.ImageConverterType.*;
+import java.util.function.Supplier;
 
 /**
  * Enum for print languages, such as ZPL, EPL, etc.
  */
 public enum LanguageType {
-    ZPL(MONO, false, true, 203, "ZPL", "ZPL2", "ZPLII", "ZEBRA"),
-    EPL(MONO, true, true, 203, "EPL", "EPL2", "EPLII"),
-    CPCL(MONO, false, true, 203),
-    ESCPOS(MONO, false, false, 180, "ESC/POS"),
-    ESCP(MONO, false, false, 180, "ESCP", "ESCP2", "ESC/P", "ESC/P2"),
-    EVOLIS(COLOR, false, false, 300),
-    SBPL(MONO, false, true, 203, "SATO"),
-    PGL(MONO, false, false, 203, "IGP/PGL", "PRINTRONIX"),
-    UNKNOWN(MONO, false, false, 72);
+    CPCL(Cpcl::new, false, true, 203, "COMTEC"),
+    CPL(null /* TODO */, 203, "COGNITIVE"),
+    DPL(null /* TODO */, 300, "DATAMAX"),
+    EPL(Epl::new, true, true, 203, "ELTRON", "EPL", "EPL2", "EPLII"),
+    ESCP(null /* TODO */, 180, "ESC/P2", "ESC/P", "ESCP2"),
+    ESCPOS(EscPos::new, 180, "ESC/POS"),
+    EVOLIS(Evolis::new, 300),
+    FGL(null /* TODO */, 203, "BOCA"),
+    JSCRIPT(null /* TODO */, 300, "CAB"),
+    LP(null /* TODO */, 203, "LABELPOINT", "LPII"),
+    PGL(Pgl::new, 203, "IGP/PGL", "PRINTRONIX"),
+    SBPL(Sbpl::new, false, true, 203, "SATO"),
+    STAR(null /* TODO */, 203),
+    ZPL(Zpl::new, false, true, 203, "ZEBRA", "ZPL", "ZPL2", "ZPLII"),
+    UNKNOWN(null, 72);
 
+    private final Supplier<ImageConverter> supplier;
     private final boolean imgOutputInvert;
     private final boolean imgWidthValidated;
     private final double defaultDensity;
-    private final ImageConverterType converterType;
     private final List<String> altNames;
 
-    LanguageType(ImageConverterType converterType, boolean imgOutputInvert, boolean imgWidthValidated, double defaultDensity, String... altNames) {
+    LanguageType(Supplier<ImageConverter> supplier, double defaultDensity, String ... altNames) {
+        this(supplier, false, false, defaultDensity, altNames);
+    }
+
+    LanguageType(Supplier<ImageConverter> supplier, boolean imgOutputInvert, boolean imgWidthValidated, double defaultDensity, String... altNames) {
+        this.supplier = supplier;
         this.imgOutputInvert = imgOutputInvert;
         this.imgWidthValidated = imgWidthValidated;
         this.defaultDensity = defaultDensity;
-        this.converterType = converterType;
-
         this.altNames = new ArrayList<>();
         Collections.addAll(this.altNames, altNames);
+    }
+
+    public ImageConverter newInstance() {
+        if(supplier != null) {
+            ImageConverter converter = supplier.get();
+            if (converter != null) {
+                converter.setLanguageType(this);
+                return converter;
+            }
+        }
+        throw new UnsupportedOperationException("ImageConverter missing for LanguageType: " + this);
     }
 
     public static LanguageType parse(String type) {
@@ -79,10 +100,6 @@ public enum LanguageType {
 
     public double getDefaultDensity() {
         return defaultDensity;
-    }
-
-    public ImageConverterType getConverterType() {
-        return converterType;
     }
 
 }

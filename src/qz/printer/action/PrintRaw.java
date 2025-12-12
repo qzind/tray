@@ -24,14 +24,11 @@ import qz.common.Constants;
 import qz.exception.NullCommandException;
 import qz.exception.NullPrintServiceException;
 import qz.printer.action.raw.ImageConverter;
-import qz.printer.action.raw.color.ColorImageConverter;
-import qz.printer.action.raw.mono.MonoImageConverter;
 import qz.printer.action.raw.LanguageType;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.printer.action.html.WebApp;
 import qz.printer.action.html.WebAppModel;
-import qz.printer.action.raw.mono.Quantization;
 import qz.printer.info.NativePrinter;
 import qz.printer.status.CupsUtils;
 import qz.utils.*;
@@ -121,13 +118,13 @@ public class PrintRaw implements PrintProcessor {
             try {
                 switch(format) {
                     case HTML:
-                        commands.append(getHtmlWrapper(cmd, opt, flavor, rawOpts, pxlOpts).getImageCommand(opt));
+                        getHtmlWrapper(cmd, opt, flavor, rawOpts, pxlOpts).appendTo(commands);
                         break;
                     case IMAGE:
-                        commands.append(getImageWrapper(cmd, opt, flavor, rawOpts, pxlOpts).getImageCommand(opt));
+                        getImageWrapper(cmd, opt, flavor, rawOpts, pxlOpts).appendTo(commands);
                         break;
                     case PDF:
-                        commands.append(getPdfWrapper(cmd, opt, flavor, rawOpts, pxlOpts).getImageCommand(opt));
+                        getPdfWrapper(cmd, opt, flavor, rawOpts, pxlOpts).appendTo(commands);
                         break;
                     case COMMAND:
                     default:
@@ -279,18 +276,10 @@ public class PrintRaw implements PrintProcessor {
             img = PrintImage.rotate(img, pxlOpts.getRotation(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
         }
 
-        LanguageType languageType = LanguageType.parse(opt.optString("language"));
-        switch(languageType.getConverterType()) {
-            case MONO:
-                Quantization quantization = Quantization.parse(opt.optString("quantization", Quantization.BLACK.toString()));
-                int threshold = opt.optInt("threshold", 127);
-                return new MonoImageConverter(img, languageType, quantization, threshold);
-            case COLOR:
-                return new ColorImageConverter(img, languageType);
-            case GRAYSCALE:
-            default:
-                throw new UnsupportedOperationException("Could not get image converter for "  + languageType);
-        }
+        ImageConverter converter = LanguageType.parse(opt.optString("language")).newInstance();
+        converter.setParams(opt);
+        converter.setBufferedImage(img);
+        return converter;
     }
 
     @Override

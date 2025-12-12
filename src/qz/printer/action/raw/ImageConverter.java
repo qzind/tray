@@ -1,12 +1,48 @@
 package qz.printer.action.raw;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
-import qz.exception.InvalidRawImageException;
+import qz.common.ByteArrayBuilder;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.awt.image.BufferedImage;
 
-public interface ImageConverter {
-    byte[] getImageCommand(JSONObject opt) throws InvalidRawImageException, IOException;
-    ImageConverterType getImageType();
+/**
+ * Abstract class for converting a <code>BufferedImage</code> into a raw/pcl-specific byte array
+ */
+public abstract class ImageConverter implements ByteAppender {
+    private static final Logger log = LogManager.getLogger(ImageConverter.class);
+
+    private BufferedImage bufferedImage;
+    private LanguageType languageType;
+
+    /**
+     * JSON parameter processor
+     */
+    abstract public void setParams(JSONObject params);
+
+    public void setBufferedImage(BufferedImage bufferedImage) {
+        this.bufferedImage = bufferedImage;
+        log.info("Loaded BufferedImage: {}x{}", getWidth(), getHeight());
+    }
+
+    public void setLanguageType(LanguageType languageType) {
+        this.languageType = languageType;
+    }
+
+    public BufferedImage getBufferedImage() {
+        return bufferedImage;
+    }
+
+    public LanguageType getLanguageType() {
+        return languageType;
+    }
+
+    public int getWidth() {
+        return bufferedImage.getWidth();
+    }
+
+    public int getHeight() {
+        return bufferedImage.getHeight();
+    }
 }

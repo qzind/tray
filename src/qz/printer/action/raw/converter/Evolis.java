@@ -1,16 +1,15 @@
-package qz.printer.action.raw.encoder;
+package qz.printer.action.raw.converter;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import qz.common.ByteArrayBuilder;
 import qz.exception.InvalidRawImageException;
-import qz.printer.action.raw.color.ColorImageConverter;
 import qz.printer.action.raw.ImageConverter;
 import qz.printer.action.raw.LanguageType;
-import qz.printer.action.raw.mono.MonoImageConverter;
-import qz.printer.action.raw.mono.Quantization;
+import qz.printer.action.raw.MonoImageConverter;
 import qz.utils.ConnectionUtilities;
 
 import javax.imageio.ImageIO;
@@ -21,46 +20,42 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 
-public class EvolisEncoder implements ImageEncoder {
-    private static final Logger log = LogManager.getLogger(EvolisEncoder.class);
+public class Evolis extends ImageConverter {
+    private static final Logger log = LogManager.getLogger(Evolis.class);
 
-    private final int precision;
-    private final Object overlay;
-    private final ByteArrayBuilder byteBuffer;
+    private int precision;
+    private Object overlay;
 
-    public EvolisEncoder(int precision, Object overlay) {
-        this.precision = precision;
-        this.overlay = overlay;
-        this.byteBuffer = new ByteArrayBuilder();
+    public void setParams(JSONObject params) {
+        this.precision = params.optInt("precision", 128);
+        this.overlay = params.opt("overlay");
     }
 
     @Override
-    public byte[] encode(ImageConverter imageConverter) throws IOException, InvalidRawImageException {
-        ColorImageConverter converter = (ColorImageConverter)imageConverter;
-        BufferedImage bufferedImage = converter.getBufferedImage();
-        int w = bufferedImage.getWidth();
-        int h = bufferedImage.getHeight();
+    public ByteArrayBuilder appendTo(ByteArrayBuilder byteBuffer) throws InvalidRawImageException {
+        int w = getWidth();
+        int h = getHeight();
 
         try {
-            ArrayList<float[]> cymkData = convertToCYMK(bufferedImage, w, h);
+            ArrayList<float[]> cymkData = convertToCYMK(getBufferedImage(), w, h);
 
             // Y,M,C,K,O ribbon
-            appendRibbonData('y', precision, cymkData.get(1));
-            appendRibbonData('m', precision, cymkData.get(2));
-            appendRibbonData('c', precision, cymkData.get(0));
+            appendRibbonDataTo(byteBuffer, 'y', precision, cymkData.get(1));
+            appendRibbonDataTo(byteBuffer, 'm', precision, cymkData.get(2));
+            appendRibbonDataTo(byteBuffer, 'c', precision, cymkData.get(0));
 
             // K(black) and O(overlay) are always precision 2
-            appendRibbonData('k', 2, cymkData.get(3));
+            appendRibbonDataTo( byteBuffer, 'k', 2, cymkData.get(3));
 
             if (overlay != null) {
-                appendRibbonData('o', 2, parseOverlay(overlay, w, h));
+                appendRibbonDataTo(byteBuffer, 'o', 2, parseOverlay(overlay, w, h));
             }
         }
         catch(IOException | JSONException e) {
             throw new InvalidRawImageException(e.getMessage(), e);
         }
 
-        return byteBuffer.toByteArray();
+        return byteBuffer;
     }
 
     private ArrayList<float[]> convertToCYMK(BufferedImage bufferedImage, int width, int height) throws IOException {
@@ -94,7 +89,7 @@ public class EvolisEncoder implements ImageEncoder {
     /**
      * Parses the provided JSON|String|boolean data for determining the clear/overlay layer
      */
-    private float[] parseOverlay(Object overlay, int width, int height) throws IOException, JSONException {
+    private static float[] parseOverlay(Object overlay, int width, int height) throws IOException, JSONException {
         float[] overlayData = new float[width * height];
 
         if (overlay instanceof JSONArray) {
@@ -116,7 +111,7 @@ public class EvolisEncoder implements ImageEncoder {
         } else if (overlay instanceof String) {
             // image mask
             BufferedImage maskImage = ImageIO.read(ConnectionUtilities.getInputStream((String)overlay, true));
-            BitSet mask = MonoImageConverter.generateBlackPixels(LanguageType.EVOLIS, Quantization.BLACK, 127, maskImage);
+            BitSet mask = MonoImageConverter.generateBlackPixels(maskImage, LanguageType.EVOLIS, MonoImageConverter.Quantization.BLACK, 127);
             for(int i = 0; i < mask.size(); i++) {
                 overlayData[i] = (mask.get(i)? 1.0f:0.0f);
             }
@@ -128,7 +123,7 @@ public class EvolisEncoder implements ImageEncoder {
         return overlayData;
     }
 
-    private void appendRibbonData(char ribbon, int precision, float[] colorData) throws IOException {
+    private static void appendRibbonDataTo(ByteArrayBuilder byteBuffer, char ribbon, int precision, float[] colorData) throws IOException {
         log.debug("Building ribbon 'Db;{};{};...'", ribbon, precision);
 
         byteBuffer.append("\u001BDb;", ribbon, ";", precision, ";");
@@ -136,7 +131,7 @@ public class EvolisEncoder implements ImageEncoder {
         byteBuffer.append(new byte[] {0x0D});
     }
 
-    private ArrayList<Byte> compactBits(int precision, float[] colorData) {
+    private static ArrayList<Byte> compactBits(int precision, float[] colorData) {
         ArrayList<Byte> bytes = new ArrayList<>();
 
         int bits = precisionBits(precision);
@@ -170,7 +165,7 @@ public class EvolisEncoder implements ImageEncoder {
         return bytes;
     }
 
-    private int precisionBits(int precision) {
+    private static int precisionBits(int precision) {
         precision--;  // "128" is actually 0-127, subtract one
         int ones = 0;
         while(precision > 0) {
@@ -181,7 +176,7 @@ public class EvolisEncoder implements ImageEncoder {
         return ones;
     }
 
-    private byte byteValue(float value, int precision) {
+    private static byte byteValue(float value, int precision) {
         return (byte)(value * (precision - 1));
     }
 }

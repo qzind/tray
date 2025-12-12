@@ -1,20 +1,21 @@
-package qz.printer.action.raw.encoder;
+package qz.printer.action.raw.converter.escpos;
 
 import qz.common.ByteArrayBuilder;
-import qz.printer.action.raw.ImageConverter;
-import qz.printer.action.raw.mono.MonoImageConverter;
+import qz.printer.action.raw.ByteAppender;
+import qz.printer.action.raw.converter.EscPos;
 
-import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.BitSet;
 
-public class EscPosGsV0Encoder implements ImageEncoder {
-    private ByteArrayBuilder byteBuffer;
+public class GsV0 implements ByteAppender {
+    private final EscPos converter;
+
+    public GsV0(EscPos converter) {
+        this.converter = converter;
+    }
 
     @Override
-    public byte[] encode(ImageConverter imageConverter) throws IOException {
-        MonoImageConverter converter = (MonoImageConverter)imageConverter;
-        byteBuffer = new ByteArrayBuilder();
-
+    public ByteArrayBuilder appendTo(ByteArrayBuilder byteBuffer) throws UnsupportedEncodingException {
         BitSet bitSet = converter.getImageAsBitSet();
         int w = converter.getWidth();
         int h = converter.getHeight();
@@ -29,17 +30,17 @@ public class EscPosGsV0Encoder implements ImageEncoder {
             BitSet sliceSet = bitSet.get(start, end);
 
             // Append the GS v 0 command for the slice
-            appendGsV0Command(w, slicedHeight, sliceSet);
+            appendGsV0CommandTo(byteBuffer, w, slicedHeight, sliceSet);
         }
 
-        return byteBuffer.toByteArray();
+        return byteBuffer;
     }
 
     /**
      * Generates the GS v 0 command for the given BitSet slice.
      * Command: GS v 0 m xL xH yL yH d1...dk
      */
-    private void appendGsV0Command(int width, int height, BitSet slice) throws IOException {
+    private static void appendGsV0CommandTo(ByteArrayBuilder byteBuffer, int width, int height, BitSet slice) throws UnsupportedEncodingException {
         // Calculate bytes needed for image data
         int bytesPerRow = (width + 7) / 8; // Round up to the nearest byte
 
@@ -51,14 +52,15 @@ public class EscPosGsV0Encoder implements ImageEncoder {
         int yH = (height >> 8) & 0xFF;
 
         // Build command
-        byteBuffer.append(0x1D); // GS
-        byteBuffer.append('v');  // 0x76
-        byteBuffer.append('0');  // 0x30
-        byteBuffer.append(0);    // m = 0 (normal mode)
-        byteBuffer.append(xL);
-        byteBuffer.append(xH);
-        byteBuffer.append(yL);
-        byteBuffer.append(yH);
-        byteBuffer.append(imageData);
+        byteBuffer
+                .append(0x1D) // GS
+                .append('v')  // 0x76
+                .append('0')  // 0x30
+                .append(0)    // m = 0 (normal mode)
+                .append(xL)
+                .append(xH)
+                .append(yL)
+                .append(yH)
+                .append(imageData);
     }
 }

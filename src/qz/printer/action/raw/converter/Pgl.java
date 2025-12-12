@@ -1,30 +1,30 @@
-package qz.printer.action.raw.encoder;
+package qz.printer.action.raw.converter;
 
+import org.codehaus.jettison.json.JSONObject;
 import qz.common.ByteArrayBuilder;
 import qz.exception.InvalidRawImageException;
-import qz.printer.action.raw.ImageConverter;
-import qz.printer.action.raw.mono.MonoImageConverter;
+import qz.printer.action.raw.MonoImageConverter;
 
-import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.BitSet;
 
-public class PglEncoder implements ImageEncoder {
-    private final String logoId; // logo name (mandatory)
-    private final boolean igpDots; // toggle IGP/PGL default resolution of 72dpi
+public class Pgl extends MonoImageConverter {
+    private String logoId; // logo name (mandatory)
+    private boolean igpDots; // toggle IGP/PGL default resolution of 72dpi
 
-    public PglEncoder(String logoId, boolean igpDots) {
-        this.logoId = logoId;
-        this.igpDots = igpDots;
+    @Override
+    public void setParams(JSONObject params) {
+        super.setParams(params);
+
+        logoId = params.optString("logoId");
+        igpDots = params.optBoolean("igpDots", false);
     }
 
     @Override
-    public byte[] encode(ImageConverter imageConverter) throws IOException, InvalidRawImageException {
-        MonoImageConverter converter = (MonoImageConverter)imageConverter;
-        ByteArrayBuilder byteBuffer = new ByteArrayBuilder();
-
-        int w = converter.getWidth();
-        int h = converter.getHeight();
-        BitSet bitSet = converter.getImageAsBitSet();
+    public ByteArrayBuilder appendTo(ByteArrayBuilder byteBuffer) throws UnsupportedEncodingException, InvalidRawImageException {
+        int w = getWidth();
+        int h = getHeight();
+        BitSet bitSet = getImageAsBitSet();
 
         if(logoId == null || logoId.trim().isEmpty()) {
             throw new InvalidRawImageException("Printronix graphics require a logoId");
@@ -94,6 +94,6 @@ public class PglEncoder implements ImageEncoder {
                 byteBuffer.append(line).append("\n");
             }
         }
-        return byteBuffer.append("END", "\n").toByteArray();
+        return byteBuffer.append("END", "\n");
     }
 }

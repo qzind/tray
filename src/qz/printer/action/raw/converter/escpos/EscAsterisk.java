@@ -1,55 +1,27 @@
-package qz.printer.action.raw.encoder;
+package qz.printer.action.raw.converter.escpos;
 
 import qz.common.ByteArrayBuilder;
-import qz.printer.action.raw.ImageConverter;
-import qz.printer.action.raw.mono.MonoImageConverter;
+import qz.exception.InvalidRawImageException;
+import qz.printer.action.raw.ByteAppender;
+import qz.printer.action.raw.converter.EscPos;
 
-import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.BitSet;
-import java.util.Locale;
 
-public class EscPosEncoder implements ImageEncoder {
-    /** Raw image encoding option */
-    public enum EscPosEncoderType {
-        DEFAULT,
-        GS_V_0,
-        GS_L;
+public class EscAsterisk implements ByteAppender {
+    private final EscPos converter;
 
-        public static EscPosEncoderType parse(String input) {
-            for(EscPosEncoderType type : EscPosEncoderType.values()) {
-                if(type.name().equalsIgnoreCase(input)) {
-                    return type;
-                }
-            }
-            return DEFAULT;
-        }
+    public EscAsterisk(EscPos converter) {
+        this.converter = converter;
     }
 
-    static private final int DEFAULT_DOT_DENSITY = 32;
-
-    final private int dotDensity;
-    final private boolean legacyMode;
-
-    public EscPosEncoder(String dotDensity) {
-        int parsed = parseDotDensity(dotDensity);
-        this.legacyMode = (parsed < 0);
-        this.dotDensity = Math.abs(parsed);
-    }
-
-    /**
-     * Epson ESC/POS image slice appender
-     * <p>
-     * Images are read as one long array of black or white pixels, as scanned top to bottom and left to right.
-     * Printer format needs this sent in height chunks in bytes (normally 3, for 24 pixels at a time) for each x position along a segment,
-     * and repeated for each segment of height over the byte limit.
-     * </p>
-     */
     @Override
-    public byte[] encode(ImageConverter imageConverter) throws IOException {
-        MonoImageConverter converter = (MonoImageConverter)imageConverter;
-        ByteArrayBuilder byteBuffer = new ByteArrayBuilder();
+    public ByteArrayBuilder appendTo(ByteArrayBuilder byteBuffer) throws UnsupportedEncodingException, InvalidRawImageException {
         int w = converter.getWidth();
         int h = converter.getHeight();
+        int dotDensity = converter.getDotDensity();
+        boolean legacyMode = converter.isLegacyMode();
+
         BitSet bitSet = converter.getImageAsBitSet();
 
         // set line height to the size of each chunk we will be sending
@@ -119,27 +91,6 @@ public class EscPosEncoder implements ImageEncoder {
             // Restore line spacing to 30 dots
             byteBuffer.append(new byte[] { 0x1B, 0x33, 30});
         }
-        return byteBuffer.toByteArray();
-    }
-
-    private static int parseDotDensity(String dotDensity) {
-        if(dotDensity == null || dotDensity.isBlank()) {
-            return DEFAULT_DOT_DENSITY;
-        }
-        switch(dotDensity.toLowerCase(Locale.ENGLISH)) {
-            case "single":
-                return 32;
-            case "double":
-                return 33;
-            case "triple":
-                return 39;
-            // negative: legacy mode
-            case "single-legacy":
-                return -32;
-            case "double-legacy":
-                return -33;
-            default:
-                return Integer.parseInt(dotDensity);
-        }
+        return byteBuffer;
     }
 }

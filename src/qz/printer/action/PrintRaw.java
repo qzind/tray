@@ -118,7 +118,7 @@ public class PrintRaw implements PrintProcessor {
                             default:
                                 commands.append(seekConversion(flavor.read(cmd, opt.optString("xmlTag", null)), rawOpts));
                         }
-                        return;
+                        break;
                     case HTML:
                     case IMAGE:
                     case PDF:

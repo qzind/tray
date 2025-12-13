@@ -41,7 +41,6 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -425,12 +424,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                 // We'll toggle between 'plain' and 'file' when we construct WebAppModel
                 break;
             default:
-                // FIXME: This should be cleaner!
-                String destEncoding = rawOpts.getDestEncoding();
-                if(destEncoding == null) {
-                    destEncoding = Charset.defaultCharset().name();
-                }
-                data = new String(PrintRaw.seekConversion(flavor.read(data), rawOpts), destEncoding);
+                data = new String(PrintRaw.seekConversion(flavor.read(data), rawOpts), rawOpts.getDestEncoding());
         }
 
         double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());

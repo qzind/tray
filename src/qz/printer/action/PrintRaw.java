@@ -37,7 +37,6 @@ import javax.print.event.PrintJobListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -105,9 +104,6 @@ public class PrintRaw implements PrintProcessor {
             PrintOptions.Raw rawOpts = options.getRawOptions();
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
 
-            destEncoding = rawOpts.getDestEncoding();
-            if (destEncoding == null || destEncoding.isEmpty()) { destEncoding = Charset.defaultCharset().name(); }
-
             try {
                 switch(format) {
                     case COMMAND:
@@ -138,18 +134,11 @@ public class PrintRaw implements PrintProcessor {
     }
 
     public static byte[] seekConversion(byte[] rawBytes, PrintOptions.Raw rawOpts) {
-        if (rawOpts.getSrcEncoding() != null) {
-            if(rawOpts.getSrcEncoding().equals(rawOpts.getDestEncoding()) || rawOpts.getDestEncoding() == null) {
-                log.warn("Provided srcEncoding and destEncoding are the same, skipping");
-            } else {
-                try {
-                    String rawConvert = new String(rawBytes, rawOpts.getSrcEncoding());
-                    return rawConvert.getBytes(rawOpts.getDestEncoding());
-                }
-                catch(UnsupportedEncodingException e) {
-                    throw new UnsupportedOperationException(e);
-                }
-            }
+        if (rawOpts.getSrcEncoding().equals(rawOpts.getDestEncoding())) {
+            log.warn("Provided srcEncoding and destEncoding are the same, skipping");
+        } else {
+            String rawConvert = new String(rawBytes, rawOpts.getSrcEncoding());
+            return rawConvert.getBytes(rawOpts.getDestEncoding());
         }
         return rawBytes;
     }

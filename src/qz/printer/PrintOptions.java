@@ -19,6 +19,7 @@ import java.awt.*;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -30,7 +31,6 @@ public class PrintOptions {
     private Pixel psOptions = new Pixel();
     private Raw rawOptions = new Raw();
     private Default defOptions = new Default();
-
 
     /**
      * Parses the provided JSON Object into relevant Pixel and Raw options
@@ -53,10 +53,13 @@ public class PrintOptions {
         if (!configOpts.isNull("encoding")) {
             JSONObject encodings = configOpts.optJSONObject("encoding");
             if (encodings != null) {
-                rawOptions.srcEncoding = encodings.optString("from", null);
-                rawOptions.destEncoding = encodings.optString("to", null);
+                // encoding may be a string or obj. Since optJSONObject didn't return null, it is an object
+                rawOptions.srcEncoding = Charset.forName(encodings.optString("from", Charset.defaultCharset().name()));
+                rawOptions.destEncoding = Charset.forName(encodings.optString("to", Charset.defaultCharset().name()));
             } else {
-                rawOptions.destEncoding = configOpts.optString("encoding", null);
+                // it is a string
+                //todo: this is how the old code did it, shouldn't it set both source and dest?
+                rawOptions.destEncoding = Charset.forName(configOpts.optString("encoding", Charset.defaultCharset().name()));
             }
         }
         if (!configOpts.isNull("spool")) {
@@ -415,8 +418,8 @@ public class PrintOptions {
     /** Raw printing options */
     public class Raw {
         private boolean forceRaw = false;       //Alternate printing for linux systems
-        private String destEncoding = null;     //Text encoding / charset
-        private String srcEncoding = null;      //Conversion text encoding
+        private Charset destEncoding = null;     //Text encoding / charset
+        private Charset srcEncoding = null;      //Conversion text encoding
         private String spoolEnd = null;         //End of document character(s)
         private int spoolSize = 1;              //Pages per spool
         private int copies = 1;                 //Job copies
@@ -427,11 +430,11 @@ public class PrintOptions {
             return forceRaw;
         }
 
-        public String getDestEncoding() {
+        public Charset getDestEncoding() {
             return destEncoding;
         }
 
-        public String getSrcEncoding() {
+        public Charset getSrcEncoding() {
             return srcEncoding;
         }
 

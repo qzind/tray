@@ -11,9 +11,6 @@ package qz.printer.action;
 
 import com.ibm.icu.text.ArabicShapingException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.rendering.PDFRenderer;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -27,20 +24,16 @@ import qz.printer.action.raw.ImageConverter;
 import qz.printer.action.raw.LanguageType;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
-import qz.printer.action.html.WebApp;
-import qz.printer.action.html.WebAppModel;
 import qz.printer.info.NativePrinter;
 import qz.printer.status.CupsUtils;
 import qz.utils.*;
 
-import javax.imageio.ImageIO;
 import javax.print.*;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.JobName;
 import javax.print.event.PrintJobEvent;
 import javax.print.event.PrintJobListener;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
@@ -115,7 +108,6 @@ public class PrintRaw implements PrintProcessor {
             destEncoding = rawOpts.getDestEncoding();
             if (destEncoding == null || destEncoding.isEmpty()) { destEncoding = Charset.defaultCharset().name(); }
 
-            BufferedImage bi;
             try {
                 switch(format) {
                     case COMMAND:
@@ -128,18 +120,16 @@ public class PrintRaw implements PrintProcessor {
                         }
                         return;
                     case HTML:
-                        bi = PrintHTML.createBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
-                        break;
                     case IMAGE:
-                        bi = PrintImage.createBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
-                        break;
                     case PDF:
-                        bi = PrintPDF.createBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
+                        BufferedImage orig = format.newBiCreator().createBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
+                        BufferedImage oriented = applyOrientation(orig, pxlOpts);
+                        ImageConverter converter = LanguageType.parse(opt.optString("language")).newImageConverter(oriented, opt);
+                        converter.appendTo(commands);
                         break;
                     default:
                         throw new Exception(); // deliberately throw
                 }
-                getImageConverter(bi, opt, pxlOpts).appendTo(commands);
             }
             catch(Exception e) {
                 throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s into a raw %s command: %s", flavor, data.getString("data"), format, e.getLocalizedMessage()), e);
@@ -164,21 +154,20 @@ public class PrintRaw implements PrintProcessor {
         return rawBytes;
     }
 
-    private ImageConverter getImageConverter(BufferedImage img, JSONObject opt, PrintOptions.Pixel pxlOpts) throws IOException {
+    /**
+     * Rotate image using orientation or rotation before sending to ImageConverter
+     */
+    private BufferedImage applyOrientation(BufferedImage img, PrintOptions.Pixel pxlOpts) throws IOException {
         if(img == null) {
             throw new IOException("Image provided is empty or null and cannot be converted.");
         }
-        // Rotate image using orientation or rotation before sending to ImageWrapper
-        if (pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
-            img = PrintImage.rotate(img, pxlOpts.getOrientation().getDegreesRot(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
-        } else if (pxlOpts.getRotation() % 360 != 0) {
-            img = PrintImage.rotate(img, pxlOpts.getRotation(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
-        }
 
-        ImageConverter converter = LanguageType.parse(opt.optString("language")).newInstance();
-        converter.setParams(opt);
-        converter.setBufferedImage(img);
-        return converter;
+        if (pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
+            return PrintImage.rotate(img, pxlOpts.getOrientation().getDegreesRot(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
+        } else if (pxlOpts.getRotation() % 360 != 0) {
+            return PrintImage.rotate(img, pxlOpts.getRotation(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
+        }
+        return img;
     }
 
     @Override

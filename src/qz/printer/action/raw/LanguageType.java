@@ -9,8 +9,11 @@
  */
 package qz.printer.action.raw;
 
+import org.codehaus.jettison.json.JSONObject;
+import qz.printer.PrintOptions;
 import qz.printer.action.raw.converter.*;
 
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -55,13 +58,13 @@ public enum LanguageType {
         Collections.addAll(this.altNames, altNames);
     }
 
-    public ImageConverter newInstance() {
+    public ImageConverter newImageConverter(BufferedImage img, JSONObject opt) {
         if(supplier != null) {
             ImageConverter converter = supplier.get();
-            if (converter != null) {
-                converter.setLanguageType(this);
-                return converter;
-            }
+            converter.setLanguageType(this);
+            converter.setParams(opt);
+            converter.setBufferedImage(img);
+            return converter;
         }
         throw new UnsupportedOperationException("ImageConverter missing for LanguageType: " + this);
     }

@@ -38,11 +38,7 @@ public abstract class PrintPixel {
     /**
      * PrintRaw requires all <code>Format</code>s to support conversion to a buffered image
      */
-    public static BufferedImage createBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
-        // FIXME: this can't be abstract if it's static
-        throw new UnsupportedOperationException("How did we get here?");
-    }
-
+    public abstract BufferedImage createBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException;
 
     protected PrintRequestAttributeSet applyDefaultSettings(PrintOptions.Pixel pxlOpts, PageFormat page, Media[] supported) {
         PrintRequestAttributeSet attributes = new HashPrintRequestAttributeSet();

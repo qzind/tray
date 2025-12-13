@@ -414,7 +414,11 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
         }
     }
 
-    public static BufferedImage createBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
+    /**
+     * Creates a raw-compatible BufferedImage
+     */
+    @Override
+    public BufferedImage createBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
         switch(flavor) {
             case FILE:
             case PLAIN:

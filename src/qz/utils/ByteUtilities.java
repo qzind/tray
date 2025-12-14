@@ -72,7 +72,7 @@ public class ByteUtilities {
             case BASE64:
                 return Base64.encodeBase64String(bytes);
             case HEX:
-                return ByteUtilities.bytesToHex(bytes);
+                return ByteUtilities.getHexString(bytes);
             case PLAIN:
                 break;
             default:
@@ -81,8 +81,8 @@ public class ByteUtilities {
         return new String(bytes);
     }
 
-    public static String bytesToHex(byte[] bytes) {
-        return bytesToHex(bytes, true);
+    public static String getHexString(byte[] bytes) {
+        return getHexString(bytes, true);
     }
 
     /**
@@ -91,7 +91,7 @@ public class ByteUtilities {
      * @param bytes     Bytes to be converted.
      * @param upperCase Whether the hex string should be UPPER or lower case.
      */
-    public static String bytesToHex(byte[] bytes, boolean upperCase) {
+    public static String getHexString(byte[] bytes, boolean upperCase) {
         char[] hexChars = new char[bytes.length * 2];
         int v;
         for(int j = 0; j < bytes.length; j++) {
@@ -291,4 +291,16 @@ public class ByteUtilities {
         return false;
     }
 
+    public static byte[] toByteArray(BitSet bitSet) {
+        log.info("Packing bits...");
+        // Arrays elements are always initialized with default values, i.e. 0
+        byte[] byteArray = new byte[bitSet.size() / 8];
+        // Convert every eight zero's to a full byte, in decimal
+        for(int i = 0; i < byteArray.length; i++) {
+            for(int k = 0; k < 8; k++) {
+                byteArray[i] |= (byte)((bitSet.get(8 * i + k)? 1:0) << 7 - k);
+            }
+        }
+        return byteArray;
+    }
 }

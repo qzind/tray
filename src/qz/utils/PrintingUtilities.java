@@ -14,8 +14,7 @@ import qz.communication.WinspoolEx;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.printer.PrintServiceMatcher;
-import qz.printer.action.PrintProcessor;
-import qz.printer.action.ProcessorFactory;
+import qz.printer.action.*;
 import qz.printer.info.NativePrinter;
 import qz.printer.status.CupsUtils;
 import qz.ws.PrintSocketClient;
@@ -27,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.function.Supplier;
 
 public class PrintingUtilities {
 
@@ -42,7 +42,28 @@ public class PrintingUtilities {
     }
 
     public enum Format {
-        COMMAND, DIRECT, HTML, IMAGE, PDF
+        COMMAND,
+        DIRECT,
+        HTML(PrintHTML::new),
+        IMAGE(PrintImage::new),
+        PDF(PrintPDF::new);
+
+        private final Supplier<PrintPixel> biCreator;
+
+        Format() {
+            this(null);
+        }
+
+        Format(Supplier<PrintPixel> biCreator) {
+            this.biCreator = biCreator;
+        }
+
+        public PrintPixel newBiCreator() {
+            if(biCreator == null) {
+                throw new UnsupportedOperationException("Cannot create a enew PrintPixel instance for " + this.name());
+            }
+            return biCreator.get();
+        }
     }
 
     /**

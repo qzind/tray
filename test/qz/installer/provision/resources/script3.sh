@@ -4,4 +4,4 @@ script=$(basename "$0")
 user="$(eval echo ~$(logname))"
 
 echo "$date Successful provisioning test from '$shell': $script" >> "$user/Desktop/provision.log"
-chmod 555 "$user/Desktop/provision.log"
+chmod 664 "$user/Desktop/provision.log"

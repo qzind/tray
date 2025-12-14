@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
 
+import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -302,5 +303,19 @@ public class ByteUtilities {
             }
         }
         return byteArray;
+    }
+
+    /**
+     * Converts a series of bytes from one encoding to another using String conversion
+     */
+    public static byte[] seekConversion(byte[] bytes, Charset srcEncoding, Charset destEncoding) {
+        if (srcEncoding == null) {
+            return bytes;
+        }
+        if (srcEncoding.equals(destEncoding)) {
+            log.warn("Provided source encoding and destination encoding are the same, skipping");
+            return bytes;
+        }
+        return new String(bytes, srcEncoding).getBytes(destEncoding);
     }
 }

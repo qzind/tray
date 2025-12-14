@@ -25,6 +25,7 @@ import qz.printer.PrintOutput;
 import qz.printer.action.html.WebApp;
 import qz.printer.action.html.WebAppModel;
 import qz.printer.action.raw.LanguageType;
+import qz.utils.ByteUtilities;
 import qz.utils.PrintingUtilities;
 
 import javax.print.attribute.PrintRequestAttributeSet;
@@ -41,6 +42,7 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,16 +79,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
 
                 PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.FILE);
 
-                String source;
-                switch(flavor) {
-                    case FILE:
-                    case PLAIN:
-                        // We'll toggle between 'plain' and 'file' when we construct WebAppModel
-                        source = data.getString("data");
-                        break;
-                    default:
-                        source = new String(flavor.read(data.getString("data")), StandardCharsets.UTF_8);
-                }
+                String source = loadHtml(data.getString("data"), flavor, null);
 
                 double pageZoom = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()) / 72.0;
                 if (pageZoom <= 1) { pageZoom = 1; }
@@ -142,6 +135,22 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
         }
         catch(NoClassDefFoundError e) {
             throw new UnsupportedOperationException("JavaFX libraries not found", e);
+        }
+    }
+
+    /**
+     * Loads the HTML data into one large String from various input formats except in the case of a URL (FILE)
+     * which will be loaded directly by the HTML engine.
+     */
+    private String loadHtml(String data, PrintingUtilities.Flavor flavor, Charset srcEncoding) throws IOException {
+        switch(flavor) {
+            case FILE:
+            case PLAIN:
+                // We'll toggle between 'plain' and 'file' when we construct WebAppModel
+                return data;
+            default:
+                // Note: srcEncoding is only available in raw
+                return new String(ByteUtilities.seekConversion(flavor.read(data), srcEncoding, StandardCharsets.UTF_8), StandardCharsets.UTF_8);
         }
     }
 
@@ -418,15 +427,6 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
      */
     @Override
     public BufferedImage createBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
-        switch(flavor) {
-            case FILE:
-            case PLAIN:
-                // We'll toggle between 'plain' and 'file' when we construct WebAppModel
-                break;
-            default:
-                data = new String(PrintRaw.seekConversion(flavor.read(data), rawOpts), rawOpts.getDestEncoding());
-        }
-
         double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
         if (density <= 1) {
             density = LanguageType.parse(opt.optString("language")).getDefaultDensity();
@@ -437,6 +437,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
         double pageHeight = opt.optInt("pageHeight") / density * 72;
 
         BufferedImage bi;
+        data = loadHtml(data, flavor, rawOpts.getSrcEncoding());
         WebAppModel model = new WebAppModel(data, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, false, pageZoom);
 
         try {

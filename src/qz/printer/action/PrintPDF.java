@@ -45,9 +45,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
     private static final Logger log = LogManager.getLogger(PrintPDF.class);
 
-    private List<PDDocument> originals;
-    private List<PDDocument> printables;
-    private Splitter splitter = new Splitter();
+    private final List<PDDocument> originals;
+    private final List<PDDocument> printables;
+    private final Splitter splitter;
 
     private double docWidth = 0;
     private double docHeight = 0;
@@ -58,6 +58,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     public PrintPDF() {
         originals = new ArrayList<>();
         printables = new ArrayList<>();
+        splitter = new Splitter();
     }
 
     @Override
@@ -115,16 +116,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.FILE);
 
             try {
-                PDDocument doc;
-                switch(flavor) {
-                    case PLAIN:
-                        // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
-                    case FILE:
-                        doc = PDDocument.load(ConnectionUtilities.getInputStream(data.getString("data"), true));
-                        break;
-                    default:
-                        doc = PDDocument.load(new ByteArrayInputStream(flavor.read(data.getString("data"))));
-                }
+                PDDocument doc = loadPdf(data.getString("data"), flavor);
 
                 if (pxlOpts.getBounds() != null) {
                     PrintOptions.Bounds bnd = pxlOpts.getBounds();
@@ -165,22 +157,23 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         log.debug("Parsed {} files for printing", printables.size());
     }
 
+    public static PDDocument loadPdf(String data, PrintingUtilities.Flavor flavor) throws IOException {
+        switch(flavor) {
+            case PLAIN:
+                // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
+            case FILE:
+                return PDDocument.load(ConnectionUtilities.getInputStream(data, true));
+            default:
+                return PDDocument.load(new ByteArrayInputStream(flavor.read(data)));
+        }
+    }
+
     /**
      * Creates a raw-compatible BufferedImage
      */
     @Override
     public BufferedImage createBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
-        PDDocument doc;
-
-        switch(flavor) {
-            case PLAIN:
-                // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
-            case FILE:
-                doc = PDDocument.load(ConnectionUtilities.getInputStream(data, true));
-                break;
-            default:
-                doc = PDDocument.load(new ByteArrayInputStream(PrintRaw.seekConversion(flavor.read(data), rawOpts)));
-        }
+        PDDocument doc = loadPdf(data, flavor);
 
         double scale;
         PDRectangle rect = doc.getPage(0).getBBox();

@@ -54,7 +54,7 @@ public class PrintRaw implements PrintProcessor {
 
     private static final Logger log = LogManager.getLogger(PrintRaw.class);
 
-    private ByteArrayBuilder commands;
+    private final ByteArrayBuilder commands;
 
     private enum Backend {
         CUPS_RSS,
@@ -133,16 +133,7 @@ public class PrintRaw implements PrintProcessor {
     }
 
     public static byte[] seekConversion(byte[] rawBytes, PrintOptions.Raw rawOpts) {
-        if (rawOpts.getSrcEncoding() == null) {
-            log.warn("No srcEncoding included, skipping");
-            return rawBytes;
-        }
-        if (rawOpts.getSrcEncoding().equals(rawOpts.getDestEncoding())) {
-            log.warn("Provided srcEncoding and destEncoding are the same, skipping");
-            return rawBytes;
-        }
-        String rawConvert = new String(rawBytes, rawOpts.getSrcEncoding());
-        return rawConvert.getBytes(rawOpts.getDestEncoding());
+        return ByteUtilities.seekConversion(rawBytes, rawOpts.getSrcEncoding(), rawOpts.getDestEncoding());
     }
 
     /**

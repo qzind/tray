@@ -105,6 +105,24 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         log.debug("Parsed {} images for printing", images.size());
     }
 
+    private BufferedImage loadImage(String data, PrintingUtilities.Flavor flavor) throws IOException {
+        // 2.0 compatibility, base64 was inferred by URL pattern
+        if (data.startsWith("data:image/") && data.contains(";base64,")) {
+            String[] parts = data.split(";base64,");
+            data = parts[parts.length - 1];
+            flavor = PrintingUtilities.Flavor.BASE64;
+        }
+
+        switch(flavor) {
+            case PLAIN:
+                // There's really no such thing as a 'PLAIN' image, assume it's a URL
+            case FILE:
+                return ImageIO.read(ConnectionUtilities.getInputStream(data, true));
+            default:
+                return ImageIO.read(new ByteArrayInputStream(flavor.read(data)));
+        }
+    }
+
     private List<BufferedImage> breakupOverPages(BufferedImage img, PageFormat page, PrintRequestAttributeSet attributes) {
         List<BufferedImage> splits = new ArrayList<>();
 
@@ -343,24 +361,6 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
      */
     @Override
     public BufferedImage createBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
-        BufferedImage bi;
-        // 2.0 compat
-        if (data.startsWith("data:image/") && data.contains(";base64,")) {
-            String[] parts = data.split(";base64,");
-            data = parts[parts.length - 1];
-            flavor = PrintingUtilities.Flavor.BASE64;
-        }
-
-        switch(flavor) {
-            case PLAIN:
-                // There's really no such thing as a 'PLAIN' image, assume it's a URL
-            case FILE:
-                bi = ImageIO.read(ConnectionUtilities.getInputStream(data, true));
-                break;
-            default:
-                bi = ImageIO.read(new ByteArrayInputStream(PrintRaw.seekConversion(flavor.read(data), rawOpts)));
-        }
-
-        return bi;
+        return loadImage(data, flavor);
     }
 }

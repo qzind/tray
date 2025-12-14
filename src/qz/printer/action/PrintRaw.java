@@ -133,13 +133,16 @@ public class PrintRaw implements PrintProcessor {
     }
 
     public static byte[] seekConversion(byte[] rawBytes, PrintOptions.Raw rawOpts) {
+        if (rawOpts.getSrcEncoding() == null) {
+            log.warn("No srcEncoding included, skipping");
+            return rawBytes;
+        }
         if (rawOpts.getSrcEncoding().equals(rawOpts.getDestEncoding())) {
             log.warn("Provided srcEncoding and destEncoding are the same, skipping");
-        } else {
-            String rawConvert = new String(rawBytes, rawOpts.getSrcEncoding());
-            return rawConvert.getBytes(rawOpts.getDestEncoding());
+            return rawBytes;
         }
-        return rawBytes;
+        String rawConvert = new String(rawBytes, rawOpts.getSrcEncoding());
+        return rawConvert.getBytes(rawOpts.getDestEncoding());
     }
 
     /**

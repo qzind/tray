@@ -50,14 +50,17 @@ public class PrintOptions {
             rawOptions.forceRaw = false;
         }
 
+        rawOptions.destEncoding = Charset.defaultCharset();
         if (!configOpts.isNull("encoding")) {
             JSONObject encodings = configOpts.optJSONObject("encoding");
             if (encodings != null) {
                 // encoding may be a string or obj. Since optJSONObject didn't return null, it is an object
-                rawOptions.srcEncoding = Charset.forName(encodings.optString("from", Charset.defaultCharset().name()));
+                if (encodings.has("from")) {
+                    rawOptions.srcEncoding = Charset.forName(encodings.optString("from", Charset.defaultCharset().name()));
+                }
                 rawOptions.destEncoding = Charset.forName(encodings.optString("to", Charset.defaultCharset().name()));
             } else {
-                // it is a string
+                // String form, that means it is destination-encoded only
                 rawOptions.destEncoding = Charset.forName(configOpts.optString("encoding", Charset.defaultCharset().name()));
             }
         }

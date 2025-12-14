@@ -37,6 +37,7 @@ import javax.print.event.PrintJobListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -55,8 +56,6 @@ public class PrintRaw implements PrintProcessor {
 
     private ByteArrayBuilder commands;
 
-    private String destEncoding = null;
-
     private enum Backend {
         CUPS_RSS,
         CUPS_LPR,
@@ -72,8 +71,8 @@ public class PrintRaw implements PrintProcessor {
         return PrintingUtilities.Format.COMMAND;
     }
 
-    private byte[] getBytes(String str, String destEncoding) throws ArabicShapingException, IOException {
-        switch(destEncoding.toLowerCase(Locale.ENGLISH)) {
+    private byte[] getBytes(String str, Charset destEncoding) throws ArabicShapingException, IOException {
+        switch(destEncoding.name().toLowerCase()) {
             case "ibm864":
             case "cp864":
             case "csibm864":
@@ -109,7 +108,7 @@ public class PrintRaw implements PrintProcessor {
                     case COMMAND:
                         switch(flavor) {
                             case PLAIN:
-                                commands.append(getBytes(cmd, destEncoding));
+                                commands.append(getBytes(cmd, rawOpts.getDestEncoding()));
                                 break;
                             default:
                                 commands.append(seekConversion(flavor.read(cmd, opt.optString("xmlTag", null)), rawOpts));
@@ -165,12 +164,7 @@ public class PrintRaw implements PrintProcessor {
 
         List<ByteArrayBuilder> pages;
         if (rawOpts.getSpoolSize() > 0 && rawOpts.getSpoolEnd() != null && !rawOpts.getSpoolEnd().isEmpty()) {
-            try {
-                pages = ByteUtilities.splitByteArray(commands.toByteArray(), rawOpts.getSpoolEnd().getBytes(destEncoding), rawOpts.getSpoolSize());
-            }
-            catch(UnsupportedEncodingException e) {
-                throw new PrintException(e);
-            }
+            pages = ByteUtilities.splitByteArray(commands.toByteArray(), rawOpts.getSpoolEnd().getBytes(rawOpts.getDestEncoding()), rawOpts.getSpoolSize());
         } else {
             pages = new ArrayList<>();
             pages.add(commands);
@@ -374,7 +368,6 @@ public class PrintRaw implements PrintProcessor {
     @Override
     public void cleanup() {
         commands.clear();
-        destEncoding = null;
     }
 
 }

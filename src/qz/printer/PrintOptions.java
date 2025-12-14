@@ -58,7 +58,6 @@ public class PrintOptions {
                 rawOptions.destEncoding = Charset.forName(encodings.optString("to", Charset.defaultCharset().name()));
             } else {
                 // it is a string
-                //todo: this is how the old code did it, shouldn't it set both source and dest?
                 rawOptions.destEncoding = Charset.forName(configOpts.optString("encoding", Charset.defaultCharset().name()));
             }
         }

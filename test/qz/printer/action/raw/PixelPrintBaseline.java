@@ -2,9 +2,6 @@ package qz.printer.action.raw;
 
 import qz.utils.ArgValue;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 // Baseline generator for raw image output across all languages
 public class PixelPrintBaseline {
     public static void main(String[] args) throws Exception {

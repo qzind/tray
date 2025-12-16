@@ -96,4 +96,23 @@ public class Pgl extends MonoImageConverter {
         }
         return byteBuffer.append("END", "\n");
     }
+
+    @Override
+    public String getHeader() {
+        return "";
+    }
+
+    @Override
+    public String getFooter() {
+        return "~CREATE;FORM-1;432\n" +     // 432 = Form Length in IGP dot rows
+                "LOGO\n" +
+                "1;1;" + logoId + "\n" +    // Position of the logo on the form y=1, x=1
+                "STOP\n" +
+                "END\n" +
+                // "~PAPER;CUT 0;PAUSE 0;TEAR 0\n",
+                "~EXECUTE;FORM-1;1\n" +
+                "~NORMAL\n" +
+                "~DELETE FORM;FORM-1\n" +
+                "~DELETE LOGO;" + logoId + "\n";
+    }
 }

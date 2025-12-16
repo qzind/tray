@@ -14,4 +14,14 @@ public class Zpl extends MonoImageConverter {
 
         return byteBuffer.append("^GFA,", byteLen, ",", byteLen, ",", perRow, ",", zplHexAsString);
     }
+
+    @Override
+    public String getHeader() {
+        return "^XA\n";
+    }
+
+    @Override
+    public String getFooter() {
+        return "^XZ\n";
+    }
 }

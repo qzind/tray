@@ -26,6 +26,18 @@ public abstract class ImageConverter implements ByteAppender {
         log.info("Loaded BufferedImage: {}x{}", getWidth(), getHeight());
     }
 
+    /**
+     * Header commands to precede the image if printing a full label (or receipt, etc.)
+     * e.g. <code>"^XA\n"</code>
+     */
+    abstract public String getHeader();
+
+    /**
+     * Footer commands to succeed the image if printing a full label (or receipt, etc.)
+     * e.g. <code>"^XZ\n"</code>
+     */
+    abstract public String getFooter();
+
     public void setLanguageType(LanguageType languageType) {
         this.languageType = languageType;
     }

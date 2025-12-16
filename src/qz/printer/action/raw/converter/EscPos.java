@@ -76,6 +76,16 @@ public class EscPos extends MonoImageConverter {
 
     }
 
+    @Override
+    public String getHeader() {
+        return "";
+    }
+
+    @Override
+    public String getFooter() {
+        return "";
+    }
+
     private static int parseDotDensity(String dotDensity, int fallback) {
         if(dotDensity == null || dotDensity.isBlank()) {
             return fallback;

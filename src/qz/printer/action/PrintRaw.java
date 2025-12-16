@@ -9,7 +9,6 @@
  */
 package qz.printer.action;
 
-import com.ibm.icu.text.ArabicShapingException;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -37,7 +36,6 @@ import javax.print.event.PrintJobListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -56,7 +54,7 @@ public class PrintRaw implements PrintProcessor {
 
     private final ByteArrayBuilder commands;
 
-    private enum Backend {
+    public enum Backend {
         CUPS_RSS,
         CUPS_LPR,
         WIN32_WMI
@@ -71,21 +69,8 @@ public class PrintRaw implements PrintProcessor {
         return PrintingUtilities.Format.COMMAND;
     }
 
-    private byte[] getBytes(String str, Charset destEncoding) throws ArabicShapingException, IOException {
-        switch(destEncoding.name().toLowerCase()) {
-            case "ibm864":
-            case "cp864":
-            case "csibm864":
-            case "864":
-            case "ibm-864":
-                return ArabicConversionUtilities.convertToIBM864(str);
-            default:
-                return str.getBytes(destEncoding);
-        }
-    }
-
-
     @Override
+    @SuppressWarnings("SwitchStatementWithTooFewBranches")
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.optJSONObject(i);
@@ -108,10 +93,14 @@ public class PrintRaw implements PrintProcessor {
                     case COMMAND:
                         switch(flavor) {
                             case PLAIN:
-                                commands.append(getBytes(cmd, rawOpts.getDestEncoding()));
+                                commands.append(ByteUtilities.toByteArray(cmd, rawOpts.getDestEncoding()));
                                 break;
                             default:
-                                commands.append(seekConversion(flavor.read(cmd, opt.optString("xmlTag", null)), rawOpts));
+                                commands.append(ByteUtilities.seekConversion(
+                                        flavor.read(cmd, opt.optString("xmlTag", null)),
+                                        rawOpts.getSrcEncoding(),
+                                        rawOpts.getDestEncoding()
+                                ));
                         }
                         break;
                     case HTML:
@@ -130,10 +119,6 @@ public class PrintRaw implements PrintProcessor {
                 throw new UnsupportedOperationException(String.format("Cannot parse (%s)%s into a raw %s command: %s", flavor, data.getString("data"), format, e.getLocalizedMessage()), e);
             }
         }
-    }
-
-    public static byte[] seekConversion(byte[] rawBytes, PrintOptions.Raw rawOpts) {
-        return ByteUtilities.seekConversion(rawBytes, rawOpts.getSrcEncoding(), rawOpts.getDestEncoding());
     }
 
     /**

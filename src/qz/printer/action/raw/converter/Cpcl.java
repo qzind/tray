@@ -22,6 +22,18 @@ public class Cpcl extends MonoImageConverter {
         int w = getWidth() / 8;
         int h = getHeight();
 
-        return byteBuffer.append("EG", " ", w, " ", h, " ", x, " ", y, " ", convertImageToHexString(), new byte[] {13, 10});
+        return byteBuffer.append("EG", " ", w, " ", h, " ", x, " ", y, " ", convertImageToHexString(), "\r\n");
+    }
+
+
+    @Override
+    public String getHeader() {
+        // ! [Offset] [Horizontal Res.] [Vertical Res.] [Height] [Quantity]<CR><LF>
+        return "! 0 200 200 203 1\r\n";
+    }
+
+    @Override
+    public String getFooter() {
+        return "PRINT\r\n";
     }
 }

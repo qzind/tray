@@ -32,6 +32,20 @@ public class Evolis extends ImageConverter {
     }
 
     @Override
+    public String getHeader() {
+        return
+                "\u001BPps;0\r" +   // Enable raw/disable driver printer parameter supervision
+                "\u001BPwr;0\r" +   // Landscape (zero degree) orientation
+                "\u001BWcb;k;0\r" + // Clear card memory
+                "\u001BSs\r";       // Start of sequence
+    }
+
+    @Override
+    public String getFooter() {
+        return "\u001BSe\r";       // End of sequence
+    }
+
+    @Override
     public ByteArrayBuilder appendTo(ByteArrayBuilder byteBuffer) throws InvalidRawImageException {
         int w = getWidth();
         int h = getHeight();

@@ -9,12 +9,14 @@
  */
 package qz.utils;
 
+import com.ibm.icu.text.ArabicShapingException;
 import org.apache.commons.ssl.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -290,6 +292,22 @@ public class ByteUtilities {
             log.warn("Cannot not compare [{} = '{}'].  Reason: {} {}", val1, val2, nfe.getClass().getName(), nfe.getMessage());
         }
         return false;
+    }
+
+    public static byte[] toByteArray(String string, Charset encoding) throws ArabicShapingException, IOException {
+        if(encoding == null) {
+            log.warn("String encoding was not provided for byte array conversion, default encoding will be used instead");
+            return string.getBytes();
+        }
+        switch(encoding.name().toLowerCase()) {
+            case "ibm864":
+            case "cp864":
+            case "csibm864":
+            case "864":
+            case "ibm-864":
+                return ArabicConversionUtilities.convertToIBM864(string);
+        }
+        return string.getBytes(encoding);
     }
 
     public static byte[] toByteArray(BitSet bitSet) {

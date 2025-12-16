@@ -25,4 +25,14 @@ public class Epl extends MonoImageConverter {
 
         return byteBuffer.append("GW", x, ",", y, ",", w, ",", h, ",", getBytes(), "\n");
     }
+
+    @Override
+    public String getHeader() {
+        return "N\n";
+    }
+
+    @Override
+    public String getFooter() {
+        return "P1,1\n";
+    }
 }

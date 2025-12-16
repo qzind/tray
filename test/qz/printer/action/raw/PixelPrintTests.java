@@ -9,23 +9,25 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * Simple raw image printing tests for HTML, IMAGE, and PDF.
- * Generates two jobs per type with different orientations and writes output to ./out
+ * Runs two raw pixel print test for each HTML, IMAGE, and PDF; one in portrait, one in landscape.
+ * Outputs per-test files under ./out/raw-pixel-print-tests/raw-<format>-<portrait/landscape>.zpl
+ * and compares them to a baseline in ./test/baseline/raw-pixel-print-tests
  */
 public class PixelPrintTests {
     private static final Logger log = LogManager.getLogger(PixelPrintTests.class);
 
-    private static final Path OUT_DIR = Paths.get("./out/image-print-tests");
+    private static final Path OUT_DIR = Paths.get("./out/raw-pixel-print-tests");
     private static final Path RES_DIR = Paths.get("test/qz/printer/action/resources");
+    public static final Path BASE_DIR = Paths.get("./test/baseline/raw-pixel-print-tests");
 
     public static void main(String[] args) throws Exception {
-        // Allow writing raw data to files
+        // print to file is off by default. Override for our tests
         System.setProperty(ArgValue.SECURITY_PRINT_TOFILE.getMatch(), "true");
 
         boolean ok = true;
         try {
             runAll(OUT_DIR);
-            TestHelper.assertMatchesBaseline(OUT_DIR, Paths.get("./test/baseline/image-print-tests"));
+            TestHelper.assertMatchesBaseline(OUT_DIR, BASE_DIR);
             log.info("Baseline matched for pixel formats");
         } catch (Throwable t) {
             ok = false;

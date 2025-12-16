@@ -45,13 +45,19 @@ public class TestHelper {
         options.put("orientation", orientation == Orientation.PORTRAIT ? "portrait" : "landscape");
         options.put("units", "in");
 
-        // Use defaults to avoid tiny pages in headless environments
+        JSONObject size = new JSONObject();
+        size.put("width", 4);
+        size.put("height", 6);
+        options.put("size", size);
 
         JSONArray data = new JSONArray();
         JSONObject dataObj = new JSONObject();
 
         // Per-format payload and options
         JSONObject dataOpts = new JSONObject();
+        dataOpts.put("pageWidth", 400);
+        dataOpts.put("pageHeight", 600);
+
         dataOpts.put("language", language.name());
 
         switch(format.toLowerCase(Locale.ENGLISH)) {

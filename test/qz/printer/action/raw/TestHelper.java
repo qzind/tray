@@ -185,9 +185,10 @@ public class TestHelper {
     }
 
     public static void cleanDirectory(Path directory) throws IOException {
-        // Delete old test dir
-        Files.walk(directory)
-                .sorted(Comparator.reverseOrder())
+        Files.createDirectories(directory);
+        // Delete old tests
+        try (Stream<Path> paths = Files.walk(directory)) {
+            paths.sorted(Comparator.reverseOrder())
                 .forEach(p -> {
                     try {
                         Files.delete(p);
@@ -195,7 +196,7 @@ public class TestHelper {
                         throw new UncheckedIOException(e);
                     }
                 });
-        Files.createDirectories(directory);
+        }
     }
 
     private static Set<Path> getRelativeFileSet(Path root) throws IOException {

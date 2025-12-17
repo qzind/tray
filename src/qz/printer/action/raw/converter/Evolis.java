@@ -10,6 +10,7 @@ import qz.exception.InvalidRawImageException;
 import qz.printer.action.raw.ImageConverter;
 import qz.printer.action.raw.LanguageType;
 import qz.printer.action.raw.MonoImageConverter;
+import qz.printer.action.raw.PixelGrid;
 import qz.utils.ConnectionUtilities;
 
 import javax.imageio.ImageIO;
@@ -125,7 +126,7 @@ public class Evolis extends ImageConverter {
         } else if (overlay instanceof String) {
             // image mask
             BufferedImage maskImage = ImageIO.read(ConnectionUtilities.getInputStream((String)overlay, true));
-            BitSet mask = MonoImageConverter.generateBlackPixels(maskImage, LanguageType.EVOLIS, MonoImageConverter.Quantization.BLACK, 127);
+            PixelGrid mask = MonoImageConverter.generateBlackPixels(maskImage, LanguageType.EVOLIS, MonoImageConverter.Quantization.BLACK, 127);
             for(int i = 0; i < mask.size(); i++) {
                 overlayData[i] = (mask.get(i)? 1.0f:0.0f);
             }

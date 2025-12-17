@@ -4,6 +4,7 @@ import org.codehaus.jettison.json.JSONObject;
 import qz.common.ByteArrayBuilder;
 import qz.exception.InvalidRawImageException;
 import qz.printer.action.raw.MonoImageConverter;
+import qz.printer.action.raw.PixelGrid;
 
 import java.io.UnsupportedEncodingException;
 import java.util.BitSet;
@@ -24,7 +25,7 @@ public class Pgl extends MonoImageConverter {
     public ByteArrayBuilder appendTo(ByteArrayBuilder byteBuffer) throws UnsupportedEncodingException, InvalidRawImageException {
         int w = getWidth();
         int h = getHeight();
-        BitSet bitSet = getImageAsBitSet();
+        PixelGrid pixelGrid = getImageAsPixelGrid();
 
         if(logoId == null || logoId.trim().isEmpty()) {
             throw new InvalidRawImageException("Printronix graphics require a logoId");
@@ -54,7 +55,7 @@ public class Pgl extends MonoImageConverter {
             int end = -1;
 
             for(int pixelNum = 1; pixelNum <= w; pixelNum++) {
-                if (bitSet.get(bitSetIndex)) {
+                if (pixelGrid.get(bitSetIndex)) {
                     if (start == -1) {
                         start = pixelNum;
                     }

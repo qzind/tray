@@ -2,7 +2,7 @@ package qz.printer.action.raw.converter.escpos;
 
 import qz.common.ByteArrayBuilder;
 import qz.printer.action.raw.ByteAppender;
-import qz.printer.action.raw.MonoImageConverter;
+import qz.printer.action.raw.PixelGrid;
 import qz.printer.action.raw.converter.EscPos;
 import qz.utils.ByteUtilities;
 
@@ -18,7 +18,7 @@ public class GsL implements ByteAppender {
 
     @Override
     public ByteArrayBuilder appendTo(ByteArrayBuilder byteBuffer) throws UnsupportedEncodingException {
-        BitSet bitSet = converter.getImageAsBitSet();
+        PixelGrid pixelGrid = converter.getImageAsPixelGrid();
         int w = converter.getWidth();
         int h = converter.getHeight();
         final int sliceHeight = 24;
@@ -28,11 +28,10 @@ public class GsL implements ByteAppender {
 
             // isolate a sliced BitSet from the full BitSet
             int start = slicedHeight * y;
-            int end = Math.min(start + w, bitSet.size());
-            BitSet sliceSet = bitSet.get(start, end);
+            PixelGrid slice = pixelGrid.getSlice(start, slicedHeight);
 
             // Append the store graphic command
-            appendStoreCommandTo(byteBuffer, w, sliceHeight, sliceSet);
+            appendStoreCommandTo(byteBuffer, w, sliceHeight, slice);
 
             // Append the print graphic command
             appendPrintCommandTo(byteBuffer);
@@ -44,7 +43,7 @@ public class GsL implements ByteAppender {
     /**
      * Generates the store graphic command (GS ( L with fn = 112) for the given BitSet slice
      */
-    private static void appendStoreCommandTo(ByteArrayBuilder byteBuffer, int width, int height, BitSet slice) throws UnsupportedEncodingException {
+    private static void appendStoreCommandTo(ByteArrayBuilder byteBuffer, int width, int height, PixelGrid slice) throws UnsupportedEncodingException {
         // Calculate command parameters
         byte[] imageData = ByteUtilities.toByteArray(slice);
         int dataLength = imageData.length + 10; // 10 bytes for parameters

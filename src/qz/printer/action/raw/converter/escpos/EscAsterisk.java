@@ -3,6 +3,7 @@ package qz.printer.action.raw.converter.escpos;
 import qz.common.ByteArrayBuilder;
 import qz.exception.InvalidRawImageException;
 import qz.printer.action.raw.ByteAppender;
+import qz.printer.action.raw.PixelGrid;
 import qz.printer.action.raw.converter.EscPos;
 
 import java.io.UnsupportedEncodingException;
@@ -22,7 +23,7 @@ public class EscAsterisk implements ByteAppender {
         int dotDensity = converter.getDotDensity();
         boolean legacyMode = converter.isLegacyMode();
 
-        BitSet bitSet = converter.getImageAsBitSet();
+        PixelGrid pixelGrid = converter.getImageAsPixelGrid();
 
         // set line height to the size of each chunk we will be sending
         int segmentHeight = dotDensity > 1 ? 24 : (dotDensity == 1 ? 8 : 16); // height will be handled explicitly below if striping
@@ -55,7 +56,7 @@ public class EscAsterisk implements ByteAppender {
 
                         // calculate the location of the pixel we want in the bit array and update the slice if it is supposed to be black
                         int i = (y * w) + x;
-                        if(i < bitSet.size() && bitSet.get(i)) {
+                        if(i < pixelGrid.size() && pixelGrid.get(i)) {
                             // append desired bit to current byte being built, remembering that bits go right to left
                             slice |= (byte)(1 << (7 - (bit - (zeroPass? 0:1)) / (stripe? 2:1)));
                         }

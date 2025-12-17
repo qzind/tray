@@ -48,7 +48,7 @@ public abstract class MonoImageConverter extends ImageConverter {
 
     private static final Logger log = LogManager.getLogger(MonoImageConverter.class);
 
-    private BitSet imageAsBitSet; // pixels stored as 1/0 (black/white) array
+    private PixelGrid imageAsPixelGrid; // pixels stored as 1/0 (black/white) array
     private byte[] imageAsByteArray; // packs every eight zero's to a full byte, in decimal
     private Quantization quantization;
     private int threshold;
@@ -57,8 +57,8 @@ public abstract class MonoImageConverter extends ImageConverter {
     public void setBufferedImage(BufferedImage bufferedImage) {
         super.setBufferedImage(validateWidth(getLanguageType(), bufferedImage));
         log.info("Initializing black & white pixels...");
-        this.imageAsBitSet = generateBlackPixels(getBufferedImage(), getLanguageType(), quantization, threshold);
-        this.imageAsByteArray = ByteUtilities.toByteArray(this.imageAsBitSet);
+        this.imageAsPixelGrid = generateBlackPixels(getBufferedImage(), getLanguageType(), quantization, threshold);
+        this.imageAsByteArray = ByteUtilities.toByteArray(this.imageAsPixelGrid);
     }
 
     /**
@@ -70,10 +70,10 @@ public abstract class MonoImageConverter extends ImageConverter {
         threshold = params.optInt("threshold", 127);
     }
 
-    public static BitSet generateBlackPixels(BufferedImage bi, LanguageType languageType, Quantization quantization, int threshold) {
+    public static PixelGrid generateBlackPixels(BufferedImage bi, LanguageType languageType, Quantization quantization, int threshold) {
         log.info("Converting image to monochrome...");
-        int h = bi.getHeight();
         int w = bi.getWidth();
+        int h = bi.getHeight();
         int[] rgbPixels = bi.getRGB(0, 0, w, h, null, 0, w);
 
         /*
@@ -83,7 +83,7 @@ public abstract class MonoImageConverter extends ImageConverter {
          * uses 0's for black pixels.
          * See also: https://support.zebra.com/cpws/docs/eltron/gw_command.htm
          */
-        BitSet pixels = new BitSet(rgbPixels.length);
+        PixelGrid pixels = new PixelGrid(w, h);
         for(int i = 0; i < rgbPixels.length; i++) {
             boolean isBlack = languageType.requiresImageOutputInverted() != isBlack(rgbPixels[i], quantization, threshold);
             pixels.set(i, isBlack);
@@ -120,8 +120,8 @@ public abstract class MonoImageConverter extends ImageConverter {
         }
     }
 
-    public BitSet getImageAsBitSet() {
-        return imageAsBitSet;
+    public PixelGrid getImageAsPixelGrid() {
+        return imageAsPixelGrid;
     }
 
     public byte[] getBytes() {

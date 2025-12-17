@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
+import qz.printer.action.raw.PixelGrid;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -310,14 +311,14 @@ public class ByteUtilities {
         return string.getBytes(encoding);
     }
 
-    public static byte[] toByteArray(BitSet bitSet) {
+    public static byte[] toByteArray(PixelGrid pixelGrid) {
         log.info("Packing bits...");
         // Arrays elements are always initialized with default values, i.e. 0
-        byte[] byteArray = new byte[bitSet.size() / 8];
+        byte[] byteArray = new byte[pixelGrid.size() / 8];
         // Convert every eight zero's to a full byte, in decimal
         for(int i = 0; i < byteArray.length; i++) {
             for(int k = 0; k < 8; k++) {
-                byteArray[i] |= (byte)((bitSet.get(8 * i + k)? 1:0) << 7 - k);
+                byteArray[i] |= (byte)((pixelGrid.get(8 * i + k)? 1:0) << 7 - k);
             }
         }
         return byteArray;

@@ -99,11 +99,12 @@ public class ImageWrapper {
         this.languageType = languageType;
         log.info("Loading BufferedImage");
         log.info("Dimensions: {}x{}", bufferedImage.getWidth(), bufferedImage.getHeight());
-        init();
 
         if (languageType.requiresImageWidthValidated()) {
             validateImageWidth();
         }
+
+        init();
     }
 
     /**

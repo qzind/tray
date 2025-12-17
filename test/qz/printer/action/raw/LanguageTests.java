@@ -1,9 +1,8 @@
 package qz.printer.action.raw;
 
 import qz.utils.ArgValue;
-import java.nio.file.Paths;
 
-import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.Path;
 
 /**
@@ -27,17 +26,18 @@ public class LanguageTests {
         System.exit(r.passed() ? 0 : 1);
     }
 
-    public static TestHelper.Result runAll(Path outBase) throws Exception {
-        Files.createDirectories(outBase);
+    public static TestHelper.Result runAll(Path outRoot) throws Exception {
+        TestHelper.Result r = new TestHelper.Result();
+
+        TestHelper.cleanDirectory(outRoot);
         Path imgPath = RES_DIR.resolve("image_sample_bw.png");
         TestHelper.requireExists(imgPath);
 
-        TestHelper.Result result = new TestHelper.Result();
         for (LanguageType lang : LanguageType.values()) {
             if (lang == LanguageType.UNKNOWN) { continue; }
-            Path outDir = outBase.resolve(lang.name().toLowerCase());
-            TestHelper.runRawImageTest(result, "image", imgPath, TestHelper.Orientation.PORTRAIT, outDir, lang);
+            Path outDir = outRoot.resolve(lang.name().toLowerCase());
+            TestHelper.runRawImageTest(r, "image", imgPath, TestHelper.Orientation.PORTRAIT, outDir, lang);
         }
-        return result;
+        return r;
     }
 }

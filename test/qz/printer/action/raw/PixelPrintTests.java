@@ -2,7 +2,6 @@ package qz.printer.action.raw;
 
 import qz.utils.ArgValue;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -30,8 +29,7 @@ public class PixelPrintTests {
     public static TestHelper.Result runAll(Path outDir) throws Exception {
         TestHelper.Result r = new TestHelper.Result();
 
-        Files.createDirectories(outDir);
-        Files.createDirectories(RES_DIR);
+        TestHelper.cleanDirectory(outDir);
 
         // Resolve sample assets (expected to exist under resources)
         Path htmlPath = RES_DIR.resolve("raw_sample.html");

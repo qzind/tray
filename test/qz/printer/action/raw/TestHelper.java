@@ -12,6 +12,7 @@ import qz.printer.action.PrintRaw;
 import qz.utils.PrintingUtilities;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -117,6 +118,7 @@ public class TestHelper {
             r.ok++;
         } catch (UnsupportedOperationException uoe) {
             r.skipped++;
+            r.errors.add(uoe);
         } catch (Exception e) {
             r.failed++;
             r.errors.add(e);
@@ -180,6 +182,20 @@ public class TestHelper {
             }
             r.ok++;
         }
+    }
+
+    public static void cleanDirectory(Path directory) throws IOException {
+        // Delete old test dir
+        Files.walk(directory)
+                .sorted(Comparator.reverseOrder())
+                .forEach(p -> {
+                    try {
+                        Files.delete(p);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+        Files.createDirectories(directory);
     }
 
     private static Set<Path> getRelativeFileSet(Path root) throws IOException {

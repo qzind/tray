@@ -1,0 +1,6 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ivy-deps" type="AntRunConfiguration" activateToolWindowBeforeRun="false" singleton="false">
+    <antsettings antfile="file://$PROJECT_DIR$/build.xml" target="ivy-deps" />
+    <method v="2" />
+  </configuration>
+</component>

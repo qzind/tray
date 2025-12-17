@@ -413,10 +413,10 @@ public class ImageWrapper {
                     }
                 }
 
-                // igpDots: true: Use IGP standard 60dpi/72dpi graphics (removes ";DOTS" from raw command)
-                // igpDots: false: Use the printer's native resolution (appends ";DOTS" to raw command)
+                // igpDots: true: Use IGP standard 60dpi/72dpi graphics (removes ";DOT" from raw command)
+                // igpDots: false: Use the printer's native resolution (appends ";DOT" to raw command)
                 StringBuilder pgl = new StringBuilder("~LOGO;").append(logoId).append(";")
-                        .append(getHeight()).append(";").append(getWidth()).append(igpDots ? ";DOTS" : "").append("\n")
+                        .append(getHeight()).append(";").append(getWidth()).append(igpDots ? "" : ";DOT").append("\n")
                         .append(getImageAsPGLDots())
                         .append("END").append("\n");
 

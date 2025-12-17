@@ -1,5 +1,6 @@
 package qz.printer.action.raw;
 
+import org.apache.logging.log4j.Level;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.apache.logging.log4j.LogManager;
@@ -21,20 +22,42 @@ import java.util.stream.Stream;
  * NOTE: Language is currently hard-coded to ZPL; will be parameterized later.
  */
 public class TestHelper {
-
-    public static class Result { public int ok; public int skipped; public int failed; }
-
     private static final Logger log = LogManager.getLogger(TestHelper.class);
+
+    public static class Result {
+        public int ok;
+        public int skipped;
+        public int failed;
+        public HashSet<Exception> errors = new HashSet<>();
+
+        public boolean passed() {
+            // fixme: if we removed errors.isEmpty(), having too many languages is a pass, with a skip. is that ok?
+            return errors.isEmpty() && failed == 0;
+        }
+
+        public String getSummaryLine() {
+            return "ok=" + ok + " skipped=" + skipped + " failed=" + failed;
+        }
+
+        public void logSummary() {
+            log.info(getSummaryLine());
+            for (Exception e : errors) {
+                log.error("Failure: {}", e.getMessage(), e);
+            }
+            log.log(passed() ? Level.INFO : Level.ERROR,
+                    "Result: {}", passed() ? "PASSED" : "FAILED"
+            );
+        }
+    }
 
     public enum Orientation { PORTRAIT, LANDSCAPE }
 
     private static Path printImageRaw(String format, Path sourcePath, Orientation orientation, Path outDir, LanguageType language) throws Exception {
         if (language == null) throw new Exception();
         Files.createDirectories(outDir);
-        try { System.setProperty("security.data.protocols", "http,https,file"); } catch (Throwable ignore) {}
 
         String ext = language.name().toLowerCase(Locale.ENGLISH);
-        String outName = String.format(Locale.ENGLISH, "raw-%s-%s.%s", format, orientation.name().toLowerCase(Locale.ENGLISH), ext);
+        String outName = String.format(Locale.ENGLISH, "raw-%s-%s.%s.test", format, orientation.name().toLowerCase(Locale.ENGLISH), ext);
         Path outFile = outDir.resolve(outName).toAbsolutePath().normalize();
 
         JSONObject printer = new JSONObject().put("file", outFile.toString());
@@ -90,11 +113,12 @@ public class TestHelper {
     public static void runRawImageTest(Result r, String format, Path sourcePath, Orientation orientation, Path outDir, LanguageType language) {
         try {
             printImageRaw(format, sourcePath, orientation, outDir, language);
-            if (r != null) r.ok++;
+            r.ok++;
         } catch (UnsupportedOperationException uoe) {
-            if (r != null) r.skipped++;
-        } catch (Throwable t) {
-            if (r != null) r.failed++;
+            r.skipped++;
+        } catch (Exception e) {
+            r.failed++;
+            r.errors.add(e);
         }
     }
 
@@ -108,7 +132,7 @@ public class TestHelper {
      * Assert that all files under actualRoot exactly match those under baselineRoot (names and bytes).
      * Throws IOException if any mismatch or missing/extra file is detected.
      */
-    public static void assertMatchesBaseline(Path actualRoot, Path baselineRoot) throws IOException {
+    public static void assertMatchesBaseline(Result r, Path actualRoot, Path baselineRoot) throws IOException {
         if (!Files.isDirectory(baselineRoot)) throw new IOException("Baseline directory missing: " + baselineRoot.toAbsolutePath());
         if (!Files.isDirectory(actualRoot)) throw new IOException("Output directory missing: " + actualRoot.toAbsolutePath());
 
@@ -122,28 +146,39 @@ public class TestHelper {
             Set<Path> extra = new HashSet<>(actualFiles);
             extra.removeAll(baselineFiles);
 
-            //todo
-            //throw new IOException(
-            //        "File set mismatch. Missing: " + missing + " Extra: " + extra
-            //);
-
+            r.errors.add(
+                new IOException(
+                        "File set mismatch. Missing: " + missing + " Extra: " + extra
+                )
+            );
             // We will continue the testing even after the fail. Make sure to avoid the missing files.
             baselineFiles.removeAll(missing);
+            r.failed += missing.size();
+            r.skipped += extra.size();
         }
 
         // Compare contents
-        for (Path relativePath : baselineFiles) {
+        fileLoop: for (Path relativePath : baselineFiles) {
             byte[] b1 = Files.readAllBytes(baselineRoot.resolve(relativePath));
             byte[] b2 = Files.readAllBytes(actualRoot.resolve(relativePath));
             if (b1.length != b2.length) {
-                throw new IOException("Size mismatch for " + relativePath + ": baseline=" + b1.length + ", actual=" + b2.length);
+                r.failed++;
+                r.errors.add(
+                        new IOException("Size mismatch for " + relativePath + ": baseline=" + b1.length + ", actual=" + b2.length)
+                );
+                continue;
             }
             // todo use Files.mismatch when jvm LL is 12+
             for (int i = 0; i < b1.length; i++) {
                 if (b1[i] != b2[i]) {
-                    throw new IOException("Content mismatch for " + relativePath + " at byte index " + i);
+                    r.failed++;
+                    r.errors.add(
+                            new IOException("Content mismatch for " + relativePath + " at byte index " + i)
+                    );
+                    continue fileLoop;
                 }
             }
+            r.ok++;
         }
     }
 

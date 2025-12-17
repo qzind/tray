@@ -1,7 +1,5 @@
 package qz.printer.action.raw;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import qz.utils.ArgValue;
 
 import java.nio.file.Files;
@@ -14,8 +12,6 @@ import java.nio.file.Paths;
  * and compares them to a baseline in ./test/baseline/raw-pixel-print-tests
  */
 public class PixelPrintTests {
-    private static final Logger log = LogManager.getLogger(PixelPrintTests.class);
-
     private static final Path OUT_DIR = Paths.get("./out/raw-pixel-print-tests");
     private static final Path RES_DIR = Paths.get("test/qz/printer/action/resources");
     public static final Path BASE_DIR = Paths.get("./test/baseline/raw-pixel-print-tests");
@@ -23,17 +19,12 @@ public class PixelPrintTests {
     public static void main(String[] args) throws Exception {
         // print to file is off by default. Override for our tests
         System.setProperty(ArgValue.SECURITY_PRINT_TOFILE.getMatch(), "true");
+        System.setProperty(ArgValue.SECURITY_DATA_PROTOCOLS.getMatch(), "http,https,file");
 
-        boolean ok = true;
-        try {
-            runAll(OUT_DIR);
-            TestHelper.assertMatchesBaseline(OUT_DIR, BASE_DIR);
-            log.info("Baseline matched for pixel formats");
-        } catch (Throwable t) {
-            ok = false;
-            log.error("Baseline mismatch for pixel formats: {}", t.getMessage());
-        }
-        System.exit(ok ? 0 : 1);
+        TestHelper.Result r = runAll(OUT_DIR);
+        TestHelper.assertMatchesBaseline(r, OUT_DIR, BASE_DIR);
+        r.logSummary();
+        System.exit(r.passed() ? 0 : 1);
     }
 
     public static TestHelper.Result runAll(Path outDir) throws Exception {

@@ -32,13 +32,17 @@ public abstract class MonoImageConverter extends ImageConverter {
         LUMA, // luma (or alpha) must be less than a set threshold to be considered black
         DITHER; // image is processed via a separate black & white dithering algorithm
 
-        public static Quantization parse(String input) {
+        /**
+         * Parses the quantization from String <code>input</code>, falling back to
+         * <code>defaultVal</code> if <code>null</code> was provided or if no match is found.
+         */
+        public static Quantization parse(String input, Quantization defaultVal) {
             for(Quantization quantization : Quantization.values()) {
                 if (quantization.name().equalsIgnoreCase(input)) {
                     return quantization;
                 }
             }
-            return BLACK;
+            return defaultVal;
         }
     }
 
@@ -62,7 +66,7 @@ public abstract class MonoImageConverter extends ImageConverter {
      * NOTE: Remember to @Override for subclasses requiring additional params
      */
     public void setParams(JSONObject params) {
-        quantization = Quantization.parse(params.optString("quantization", Quantization.BLACK.toString()));
+        quantization = Quantization.parse(params.optString("quantization"), Quantization.LUMA);
         threshold = params.optInt("threshold", 127);
     }
 

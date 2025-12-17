@@ -39,7 +39,7 @@ public class Pgl extends MonoImageConverter {
 
         // igpDots: true: Use IGP standard 60dpi/72dpi graphics (removes "DOTS" from raw command)
         // igpDots: false: Use the printer's native resolution (appends "DOTS" to raw command)
-        byteBuffer.append("~LOGO", ";", logoId, ";", h, ";", w, ";", igpDots ? "" : "DOT;", "\n");
+        byteBuffer.append("~LOGO", ";", logoId, ";", h, ";", w, ";", igpDots ? "" : "DOT", "\n");
 
         /*
          * Printronix format

@@ -1,5 +1,6 @@
 package qz.printer.action.raw;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.Level;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
@@ -41,7 +42,7 @@ public class TestHelper {
         public void logSummary() {
             log.info(getSummaryLine());
             for (Exception e : errors) {
-                log.error("Failure: {}", e.getMessage(), e);
+                log.error(ExceptionUtils.getStackTrace(e).trim());
             }
             log.log(passed() ? Level.INFO : Level.ERROR,
                     "Result: {}", passed() ? "PASSED" : "FAILED"

@@ -56,7 +56,7 @@ public class TestHelper {
         Files.createDirectories(outDir);
 
         String ext = language.name().toLowerCase(Locale.ENGLISH);
-        String outName = String.format(Locale.ENGLISH, "raw-%s-%s.%s.bin", format, orientation.name().toLowerCase(Locale.ENGLISH), ext);
+        String outName = String.format(Locale.ENGLISH, "raw-%s-%s.%s.raw", format, orientation.name().toLowerCase(Locale.ENGLISH), ext);
         Path outFile = outDir.resolve(outName).toAbsolutePath().normalize();
 
         JSONObject printer = new JSONObject().put("file", outFile.toString());

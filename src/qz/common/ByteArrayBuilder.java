@@ -104,10 +104,12 @@ public final class ByteArrayBuilder {
 
     public ByteArrayBuilder append(Charset charset, Object ... items) throws UnsupportedEncodingException {
         for(Object item : items) {
-            if(item instanceof CharSequence) {
+            if (item instanceof CharSequence) {
                 append((CharSequence)item, charset);
-            } else if(item instanceof Integer) {
+            } else if (item instanceof Integer) {
                 append((Integer)item);
+            } else if(item instanceof Character) {
+                append(String.valueOf((Character)item), charset);
             } else if(item instanceof Byte) {
                 buffer.add((Byte)item);
             } else if(item instanceof byte[]) {

@@ -78,6 +78,7 @@ public class TestHelper {
         JSONObject dataOpts = new JSONObject();
         dataOpts.put("pageWidth", 400);
         dataOpts.put("pageHeight", 600);
+        dataOpts.put("logoId", "test");
 
         dataOpts.put("language", language.name());
 

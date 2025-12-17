@@ -31,8 +31,7 @@ public class TestHelper {
         public HashSet<Exception> errors = new HashSet<>();
 
         public boolean passed() {
-            // fixme: if we removed errors.isEmpty(), having too many languages is a pass, with a skip. is that ok?
-            return errors.isEmpty() && failed == 0;
+            return failed == 0;
         }
 
         public String getSummaryLine() {
@@ -57,7 +56,7 @@ public class TestHelper {
         Files.createDirectories(outDir);
 
         String ext = language.name().toLowerCase(Locale.ENGLISH);
-        String outName = String.format(Locale.ENGLISH, "raw-%s-%s.%s.test", format, orientation.name().toLowerCase(Locale.ENGLISH), ext);
+        String outName = String.format(Locale.ENGLISH, "raw-%s-%s.%s.bin", format, orientation.name().toLowerCase(Locale.ENGLISH), ext);
         Path outFile = outDir.resolve(outName).toAbsolutePath().normalize();
 
         JSONObject printer = new JSONObject().put("file", outFile.toString());
@@ -153,8 +152,7 @@ public class TestHelper {
             );
             // We will continue the testing even after the fail. Make sure to avoid the missing files.
             baselineFiles.removeAll(missing);
-            r.failed += missing.size();
-            r.skipped += extra.size();
+            r.failed += missing.size() + extra.size();
         }
 
         // Compare contents

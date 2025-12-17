@@ -21,18 +21,30 @@ public class PixelGrid {
     }
 
     public void set(int index, boolean isBlack) {
+        if(index >= width * height) {
+            throw new IllegalArgumentException("Location exceeds bounds.");
+        }
         pixels.set(index, isBlack);
     }
 
     public boolean get(int index) {
+        if(index >= width * height) {
+            throw new IllegalArgumentException("Location exceeds bounds.");
+        }
         return pixels.get(index);
     }
 
     public void set(int x, int y, boolean isBlack) {
+        if(x >= width || y >= height) {
+            throw new IllegalArgumentException("Location exceeds bounds.");
+        }
         pixels.set(y * width + x, isBlack);
     }
 
     public boolean get(int x, int y) {
+        if(x >= width || y >= height) {
+            throw new IllegalArgumentException("Location exceeds bounds.");
+        }
         return pixels.get(y * width + x);
     }
 

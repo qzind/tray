@@ -9,11 +9,7 @@
  */
 package qz.printer.action;
 
-import com.ibm.icu.text.ArabicShapingException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.rendering.PDFRenderer;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -23,28 +19,23 @@ import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
 import qz.exception.NullCommandException;
 import qz.exception.NullPrintServiceException;
-import qz.printer.action.raw.ImageWrapper;
+import qz.printer.action.raw.ImageConverter;
 import qz.printer.action.raw.LanguageType;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
-import qz.printer.action.html.WebApp;
-import qz.printer.action.html.WebAppModel;
 import qz.printer.info.NativePrinter;
 import qz.printer.status.CupsUtils;
 import qz.utils.*;
 
-import javax.imageio.ImageIO;
 import javax.print.*;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.JobName;
 import javax.print.event.PrintJobEvent;
 import javax.print.event.PrintJobListener;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,11 +52,9 @@ public class PrintRaw implements PrintProcessor {
 
     private static final Logger log = LogManager.getLogger(PrintRaw.class);
 
-    private ByteArrayBuilder commands;
+    private final ByteArrayBuilder commands;
 
-    private String destEncoding = null;
-
-    private enum Backend {
+    public enum Backend {
         CUPS_RSS,
         CUPS_LPR,
         WIN32_WMI
@@ -80,21 +69,8 @@ public class PrintRaw implements PrintProcessor {
         return PrintingUtilities.Format.COMMAND;
     }
 
-    private byte[] getBytes(String str, String destEncoding) throws ArabicShapingException, IOException {
-        switch(destEncoding.toLowerCase(Locale.ENGLISH)) {
-            case "ibm864":
-            case "cp864":
-            case "csibm864":
-            case "864":
-            case "ibm-864":
-                return ArabicConversionUtilities.convertToIBM864(str);
-            default:
-                return str.getBytes(destEncoding);
-        }
-    }
-
-
     @Override
+    @SuppressWarnings("SwitchStatementWithTooFewBranches")
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.optJSONObject(i);
@@ -107,35 +83,36 @@ public class PrintRaw implements PrintProcessor {
             JSONObject opt = data.optJSONObject("options");
             if (opt == null) { opt = new JSONObject(); }
 
-            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", "COMMAND").toUpperCase(Locale.ENGLISH));
+            PrintingUtilities.Format format = PrintingUtilities.Format.valueOf(data.optString("format", PrintingUtilities.Format.COMMAND.name()).toUpperCase(Locale.ENGLISH));
             PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.PLAIN);
             PrintOptions.Raw rawOpts = options.getRawOptions();
             PrintOptions.Pixel pxlOpts = options.getPixelOptions();
 
-            destEncoding = rawOpts.getDestEncoding();
-            if (destEncoding == null || destEncoding.isEmpty()) { destEncoding = Charset.defaultCharset().name(); }
-
             try {
                 switch(format) {
-                    case HTML:
-                        commands.append(getHtmlWrapper(cmd, opt, flavor, rawOpts, pxlOpts).getImageCommand(opt));
-                        break;
-                    case IMAGE:
-                        commands.append(getImageWrapper(cmd, opt, flavor, rawOpts, pxlOpts).getImageCommand(opt));
-                        break;
-                    case PDF:
-                        commands.append(getPdfWrapper(cmd, opt, flavor, rawOpts, pxlOpts).getImageCommand(opt));
-                        break;
                     case COMMAND:
-                    default:
                         switch(flavor) {
                             case PLAIN:
-                                commands.append(getBytes(cmd, destEncoding));
+                                commands.append(ByteUtilities.toByteArray(cmd, rawOpts.getDestEncoding()));
                                 break;
                             default:
-                                commands.append(seekConversion(flavor.read(cmd, opt.optString("xmlTag", null)), rawOpts));
+                                commands.append(ByteUtilities.seekConversion(
+                                        flavor.read(cmd, opt.optString("xmlTag", null)),
+                                        rawOpts.getSrcEncoding(),
+                                        rawOpts.getDestEncoding()
+                                ));
                         }
                         break;
+                    case HTML:
+                    case IMAGE:
+                    case PDF:
+                        BufferedImage orig = format.newBiCreator().createBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
+                        BufferedImage oriented = applyOrientation(orig, pxlOpts);
+                        ImageConverter converter = LanguageType.parse(opt.optString("language")).newImageConverter(oriented, opt);
+                        converter.appendTo(commands);
+                        break;
+                    default:
+                        throw new Exception(); // deliberately throw
                 }
             }
             catch(Exception e) {
@@ -144,169 +121,20 @@ public class PrintRaw implements PrintProcessor {
         }
     }
 
-    private byte[] seekConversion(byte[] rawBytes, PrintOptions.Raw rawOpts) {
-        if (rawOpts.getSrcEncoding() != null) {
-            if(rawOpts.getSrcEncoding().equals(rawOpts.getDestEncoding()) || rawOpts.getDestEncoding() == null) {
-                log.warn("Provided srcEncoding and destEncoding are the same, skipping");
-            } else {
-                try {
-                    String rawConvert = new String(rawBytes, rawOpts.getSrcEncoding());
-                    return rawConvert.getBytes(rawOpts.getDestEncoding());
-                }
-                catch(UnsupportedEncodingException e) {
-                    throw new UnsupportedOperationException(e);
-                }
-            }
-        }
-        return rawBytes;
-    }
-
-    private ImageWrapper getImageWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
-        BufferedImage bi;
-        // 2.0 compat
-        if (data.startsWith("data:image/") && data.contains(";base64,")) {
-            String[] parts = data.split(";base64,");
-            data = parts[parts.length - 1];
-            flavor = PrintingUtilities.Flavor.BASE64;
-        }
-
-        switch(flavor) {
-            case PLAIN:
-                // There's really no such thing as a 'PLAIN' image, assume it's a URL
-            case FILE:
-                bi = ImageIO.read(ConnectionUtilities.getInputStream(data, true));
-                break;
-            default:
-                bi = ImageIO.read(new ByteArrayInputStream(seekConversion(flavor.read(data), rawOpts)));
-        }
-
-        return getWrapper(bi, opt, pxlOpts);
-    }
-
-    private ImageWrapper getPdfWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
-        PDDocument doc;
-
-        switch(flavor) {
-            case PLAIN:
-                // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
-            case FILE:
-                doc = PDDocument.load(ConnectionUtilities.getInputStream(data, true));
-                break;
-            default:
-                doc = PDDocument.load(new ByteArrayInputStream(seekConversion(flavor.read(data), rawOpts)));
-        }
-
-        double scale;
-        PDRectangle rect = doc.getPage(0).getBBox();
-        double pw = opt.optDouble("pageWidth", 0), ph = opt.optDouble("pageHeight", 0);
-        if (ph <= 0 || (pw > 0 && (rect.getWidth() / rect.getHeight()) >= (pw / ph))) {
-            scale = pw / rect.getWidth();
-        } else {
-            scale = ph / rect.getHeight();
-        }
-        if (scale <= 0) { scale = 1.0; }
-
-        BufferedImage bi = new PDFRenderer(doc).renderImage(0, (float)scale);
-        return getWrapper(bi, opt, pxlOpts);
-    }
-
-    private ImageWrapper getHtmlWrapper(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
-        switch(flavor) {
-            case FILE:
-            case PLAIN:
-                // We'll toggle between 'plain' and 'file' when we construct WebAppModel
-                break;
-            default:
-                data = new String(seekConversion(flavor.read(data), rawOpts), destEncoding);
-        }
-
-        double density = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch());
-        if (density <= 1) {
-            density = LanguageType.getType(opt.optString("language")).getDefaultDensity();
-        }
-        double pageZoom = density / 72.0;
-
-        double pageWidth = opt.optInt("pageWidth") / density * 72;
-        double pageHeight = opt.optInt("pageHeight") / density * 72;
-
-        BufferedImage bi;
-        WebAppModel model = new WebAppModel(data, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, false, pageZoom);
-
-        try {
-            WebApp.initialize(); //starts if not already started
-            bi = WebApp.raster(model);
-
-            // down scale back from web density
-            double scaleFactor = opt.optDouble("pageWidth", 0) / bi.getWidth();
-            BufferedImage scaled = new BufferedImage((int)(bi.getWidth() * scaleFactor), (int)(bi.getHeight() * scaleFactor), BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2d = scaled.createGraphics();
-            g2d.drawImage(bi, 0, 0, (int)(bi.getWidth() * scaleFactor), (int)(bi.getHeight() * scaleFactor), null);
-            g2d.dispose();
-            bi = scaled;
-        }
-        catch(Throwable t) {
-            if (model.getZoom() > 1 && t instanceof IllegalArgumentException) {
-                //probably a unrecognized image loader error, try at default zoom
-                try {
-                    log.warn("Capture failed with increased zoom, attempting with default value");
-                    model.setZoom(1);
-                    bi = WebApp.raster(model);
-                }
-                catch(Throwable tt) {
-                    log.error("Failed to capture html raster");
-                    throw new IOException(tt);
-                }
-            } else {
-                log.error("Failed to capture html raster");
-                throw new IOException(t);
-            }
-        }
-
-        return getWrapper(bi, opt, pxlOpts);
-    }
-
-    private ImageWrapper getWrapper(BufferedImage img, JSONObject opt, PrintOptions.Pixel pxlOpts) throws IOException {
+    /**
+     * Rotate image using orientation or rotation before sending to ImageConverter
+     */
+    private BufferedImage applyOrientation(BufferedImage img, PrintOptions.Pixel pxlOpts) throws IOException {
         if(img == null) {
             throw new IOException("Image provided is empty or null and cannot be converted.");
         }
-        // Rotate image using orientation or rotation before sending to ImageWrapper
+
         if (pxlOpts.getOrientation() != null && pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
-            img = PrintImage.rotate(img, pxlOpts.getOrientation().getDegreesRot(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
+            return PrintImage.rotate(img, pxlOpts.getOrientation().getDegreesRot(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
         } else if (pxlOpts.getRotation() % 360 != 0) {
-            img = PrintImage.rotate(img, pxlOpts.getRotation(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
+            return PrintImage.rotate(img, pxlOpts.getRotation(), pxlOpts.getDithering(), pxlOpts.getInterpolation());
         }
-
-        ImageWrapper iw = new ImageWrapper(img, LanguageType.getType(opt.optString("language")));
-        iw.setCharset(Charset.forName(destEncoding));
-
-        //ESC/POS only
-        int density = opt.optInt("dotDensity", -1);
-        if (density == -1) {
-            String dStr = opt.optString("dotDensity", null);
-            if (dStr != null && !dStr.isEmpty()) {
-                switch(dStr.toLowerCase(Locale.ENGLISH)) {
-                    case "single": density = 32; break;
-                    case "double": density = 33; break;
-                    case "triple": density = 39; break;
-                    // negative: legacy mode
-                    case "single-legacy": density = -32; break;
-                    case "double-legacy": density = -33; break;
-                }
-            } else {
-                density = 32; //default
-            }
-        }
-        iw.setDotDensity(density);
-
-        //EPL only
-        iw.setxPos(opt.optInt("x", 0));
-        iw.setyPos(opt.optInt("y", 0));
-
-        // PGL only
-        iw.setLogoId(opt.optString("logoId", ""));
-        iw.setIgpDots(opt.optBoolean("igpDots", false));
-
-        return iw;
+        return img;
     }
 
     @Override
@@ -315,12 +143,7 @@ public class PrintRaw implements PrintProcessor {
 
         List<ByteArrayBuilder> pages;
         if (rawOpts.getSpoolSize() > 0 && rawOpts.getSpoolEnd() != null && !rawOpts.getSpoolEnd().isEmpty()) {
-            try {
-                pages = ByteUtilities.splitByteArray(commands.getByteArray(), rawOpts.getSpoolEnd().getBytes(destEncoding), rawOpts.getSpoolSize());
-            }
-            catch(UnsupportedEncodingException e) {
-                throw new PrintException(e);
-            }
+            pages = ByteUtilities.splitByteArray(commands.toByteArray(), rawOpts.getSpoolEnd().getBytes(rawOpts.getDestEncoding()), rawOpts.getSpoolSize());
         } else {
             pages = new ArrayList<>();
             pages.add(commands);
@@ -332,9 +155,9 @@ public class PrintRaw implements PrintProcessor {
                 ByteArrayBuilder bab = pages.get(j);
                 try {
                     if (output.isSetHost()) {
-                        printToHost(output.getHost(), output.getPort(), bab.getByteArray());
+                        printToHost(output.getHost(), output.getPort(), bab.toByteArray());
                     } else if (output.isSetFile()) {
-                        printToFile(output.getFile(), bab.getByteArray(), true);
+                        printToFile(output.getFile(), bab.toByteArray(), true);
                     } else {
                         if (rawOpts.isForceRaw()) {
                             if(tempFiles == null) {
@@ -344,7 +167,7 @@ public class PrintRaw implements PrintProcessor {
                             if(tempFiles.size() <= j) {
                                 tempFile = File.createTempFile("qz_raw_", null);
                                 tempFiles.add(j, tempFile);
-                                printToFile(tempFile, bab.getByteArray(), false);
+                                printToFile(tempFile, bab.toByteArray(), false);
                             } else {
                                 tempFile = tempFiles.get(j);
                             }
@@ -356,7 +179,7 @@ public class PrintRaw implements PrintProcessor {
                                 printToBackend(output.getNativePrinter(), tempFile, Backend.CUPS_RSS, Backend.CUPS_LPR);
                             }
                         } else {
-                            printToPrinter(output.getPrintService(), bab.getByteArray(), rawOpts);
+                            printToPrinter(output.getPrintService(), bab.toByteArray(), rawOpts);
                         }
                     }
                 }
@@ -524,7 +347,6 @@ public class PrintRaw implements PrintProcessor {
     @Override
     public void cleanup() {
         commands.clear();
-        destEncoding = null;
     }
 
 }

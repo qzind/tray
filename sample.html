@@ -299,34 +299,64 @@
                                 <hr />
 
                                 <fieldset>
-                                    <legend>Printer Options</legend>
+                                    <legend>Advanced Print Options</legend>
 
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group form-inline">
-                                                <label for="pX">Image X</label>
+                                                <label class="tip" for="pQuantization" data-toggle="tooltip" title="Quantization method for detecting black pixels, defaults to alpha">Quantization</label>
+                                                <select id="pQuantization" class="form-control pull-right">
+                                                    <option value="">Default</option>
+                                                    <option value="alpha">alpha</option>
+                                                    <option value="black">black</option>
+                                                    <option value="dither" disabled="disabled">dither</option>
+                                                    <option value="luma">luma</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group form-inline">
+                                                <label class="tip" data-toggle="tooltip" title="Quantization threshold [0-255], used by alpha or luma only, defaults to 127 " for="pThreshold">Threshold</label>
+                                                <input type="number" id="pThreshold" class="form-control pull-right" />
+                                            </div>
+                                            <div class="form-group form-inline">
+                                                <label class="tip" data-toggle="tooltip" title="For CPCL, EPL only" for="pX">Image X</label>
                                                 <input type="number" id="pX" class="form-control pull-right" />
                                             </div>
                                             <div class="form-group form-inline">
-                                                <label for="pY">Image Y</label>
+                                                <label class="tip" data-toggle="tooltip" title="For CPCL, EPL only" for="pY">Image Y</label>
                                                 <input type="number" id="pY" class="form-control pull-right" />
+                                            </div>
+                                            <div class="form-group form-inline">
+                                                <label class="tip" data-toggle="tooltip" title="For xml flavor only" for="pXml">XML Tag</label>
+                                                <input type="text" id="pXml" class="form-control pull-right" />
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group form-inline">
-                                                <label class="tip" for="pDotDensity" data-toggle="tooltip" title="For ESCPOS only">Dot Density</label>
-                                                <input type="text" id="pDotDensity" class="form-control pull-right" />
+                                                <label class="tip" for="pDotDensity" data-toggle="tooltip" title="ESC/POS only, defaults to single">ESC/POS Dot Density</label>
+                                                <select id="pDotDensity" class="form-control pull-right">
+                                                    <option value="">Default</option>
+                                                    <option value="single">single</option>
+                                                    <option value="double">double</option>
+                                                    <option value="triple">triple</option>
+                                                    <option value="single-legacy">single-legacy</option>
+                                                    <option value="double-legacy">double-legacy</option>
+                                                </select>
                                             </div>
                                             <div class="form-group form-inline">
-                                                <label for="pXml">XML Tag</label>
-                                                <input type="text" id="pXml" class="form-control pull-right" />
+                                                <label class="tip" for="pImageEncoding" data-toggle="tooltip" title="ESC/POS only, defaults to ESC *">ESC/POS Image Encoding</label>
+                                                <select id="pImageEncoding" class="form-control pull-right">
+                                                    <option value="">Default</option>
+                                                    <option value="esc_asterisk">ESC *</option>
+                                                    <option value="gs_l">GS L</option>
+                                                    <option value="gs_v_0">GS V 0</option>
+                                                </select>
                                             </div>
                                             <div class="form-group form-inline">
-                                                <label for="pRawWidth" class="tip" data-toggle="tooltip" title="In pixels">Render Width</label>
+                                                <label for="pRawWidth" class="tip" data-toggle="tooltip" title="In pixels, HTML, PDF only">Render Width</label>
                                                 <input type="number" id="pRawWidth" class="form-control pull-right" />
                                             </div>
                                             <div class="form-group form-inline">
-                                                <label for="pRawHeight" class="tip" data-toggle="tooltip" title="In pixels">Render Height</label>
+                                                <label for="pRawHeight" class="tip" data-toggle="tooltip" title="In pixels, HTML, PDF only">Render Height</label>
                                                 <input type="number" id="pRawHeight" class="form-control pull-right" />
                                             </div>
                                         </div>
@@ -601,12 +631,12 @@
                                 <hr />
 
                                 <fieldset>
-                                    <legend>Printer Options</legend>
+                                    <legend>Advanced Print Options</legend>
 
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group form-inline">
-                                                <label for="pPxlWidth" class="tip" data-toggle="tooltip" title="In relation to units specified">
+                                                <label for="pPxlWidth" class="tip" data-toggle="tooltip" title="In relation to units specified; HTML, PDF only">
                                                     Render Width
                                                 </label>
                                                 <input type="number" id="pPxlWidth" class="form-control pull-right" />
@@ -618,7 +648,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group form-inline">
-                                                <label for="pPxlHeight" class="tip" data-toggle="tooltip" title="In relation to units specified">
+                                                <label for="pPxlHeight" class="tip" data-toggle="tooltip" title="In relation to units specified; HTML, PDF only">
                                                     Render Height
                                                 </label>
                                                 <input type="number" id="pPxlHeight" class="form-control pull-right" />
@@ -2622,12 +2652,15 @@
         //file upload
         $("#rawDropBtn").hide();
 
-        //printer
+        //advanced print options
         $("#pLangEPL").prop('checked', true);
+        $("#pQuantization").val('');
+        $("#pThreshold").val('');
         $("#pX").val('0');
         $("#pY").val('0');
-        $("#pDotDensity").val('single');
         $("#pXml").val('v7:Image');
+        $("#pDotDensity").val('');
+        $("#pImageEncoding").val('');
         $("#pRawWidth").val('480');
         $("#pRawHeight").val('');
     }
@@ -2678,7 +2711,7 @@
         //file upload
         $("#pxlDropBtn").hide();
 
-        //printer
+        //advanced print options
         $("#pPxlWidth").val('');
         $("#pPxlHeight").val('');
         $("#pPxlRange").val('');
@@ -3300,10 +3333,13 @@
         } else {
             return {
                 language: $("input[name='pLanguage']:checked").val(),
+                quantization: $("#pQuantization").val(),
+                threshold: $("#pThreshold").val(),
                 x: $("#pX").val(),
                 y: $("#pY").val(),
-                dotDensity: $("#pDotDensity").val(),
                 xmlTag: $("#pXml").val(),
+                dotDensity: $("#pDotDensity").val(),
+                imageEncoding:  $("#pImageEncoding").val(),
                 pageWidth: $("#pRawWidth").val(),
                 pageHeight: $("#pRawHeight").val()
             };

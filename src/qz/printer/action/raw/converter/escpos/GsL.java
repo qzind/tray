@@ -60,21 +60,21 @@ public class GsL implements ByteAppender {
 
         // Build command
         byteBuffer
-                .append(0x1D) // GS
+                .appendRaw(0x1D) // GS
                 .append('(')
                 .append('L')
-                .append(pL)
-                .append(pH)
-                .append(m)
-                .append(fn)
-                .append(a)
-                .append(bx)
-                .append(by)
-                .append(c)
-                .append(xL)
-                .append(xH)
-                .append(yL)
-                .append(yH)
+                .appendRaw(pL)
+                .appendRaw(pH)
+                .appendRaw(m)
+                .appendRaw(fn)
+                .appendRaw(a)
+                .appendRaw(bx)
+                .appendRaw(by)
+                .appendRaw(c)
+                .appendRaw(xL)
+                .appendRaw(xH)
+                .appendRaw(yL)
+                .appendRaw(yH)
                 .append(imageData);
     }
 
@@ -83,12 +83,12 @@ public class GsL implements ByteAppender {
      */
     public void appendPrintCommandTo(ByteArrayBuilder byteBuffer) throws UnsupportedEncodingException {
         byteBuffer
-                .append(0x1D) // GS
+                .appendRaw(0x1D) // GS
                 .append('(')
                 .append('L')
-                .append(2) // pL
-                .append(0) // pH
-                .append(48) // m
-                .append(50); // Function 50: Print the graphics data in the print buffer
+                .appendRaw(2) // pL
+                .appendRaw(0) // pH
+                .appendRaw(48) // m
+                .appendRaw(50); // Function 50: Print the graphics data in the print buffer
     }
 }

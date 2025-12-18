@@ -52,14 +52,14 @@ public class GsV0 implements ByteAppender {
 
         // Build command
         byteBuffer
-                .append(0x1D) // GS
+                .appendRaw(0x1D) // GS
                 .append('v')  // 0x76
                 .append('0')  // 0x30
-                .append(0)    // m = 0 (normal mode)
-                .append(xL)
-                .append(xH)
-                .append(yL)
-                .append(yH)
+                .appendRaw(0)    // m = 0 (normal mode)
+                .appendRaw(xL)
+                .appendRaw(xH)
+                .appendRaw(yL)
+                .appendRaw(yH)
                 .append(imageData);
     }
 }

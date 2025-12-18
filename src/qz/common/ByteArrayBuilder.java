@@ -94,6 +94,14 @@ public final class ByteArrayBuilder {
         return append(String.valueOf(number), DEFAULT_CHARSET);
     }
 
+    /**
+     * Cast and append the specified integer directly to a byte (instead of converting to a String first)
+     */
+    public ByteArrayBuilder appendRaw(Integer number) {
+        buffer.add(number.byteValue());
+        return this;
+    }
+
     public ByteArrayBuilder append(CharSequence charSequence, Charset charset) throws UnsupportedEncodingException {
         return append(charSequence.toString().getBytes(charset));
     }

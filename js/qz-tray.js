@@ -2821,7 +2821,7 @@ var qz = (function() {
              *
              * @memberof qz.api
              */
-            setPromiseType : function(promiser) {
+            setPromiseType: function(promiser) {
                 _qz.tools.promise = promiser;
             },
 

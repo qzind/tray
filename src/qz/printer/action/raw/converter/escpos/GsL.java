@@ -7,7 +7,6 @@ import qz.printer.action.raw.converter.EscPos;
 import qz.utils.ByteUtilities;
 
 import java.io.UnsupportedEncodingException;
-import java.util.BitSet;
 
 public class GsL implements ByteAppender {
     private final EscPos converter;

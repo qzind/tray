@@ -7,7 +7,6 @@ import qz.printer.action.raw.MonoImageConverter;
 import qz.printer.action.raw.PixelGrid;
 
 import java.io.UnsupportedEncodingException;
-import java.util.BitSet;
 
 public class Pgl extends MonoImageConverter {
     private String logoId; // logo name (mandatory)

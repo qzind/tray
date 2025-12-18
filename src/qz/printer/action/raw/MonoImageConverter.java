@@ -16,7 +16,6 @@ import qz.utils.ByteUtilities;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.BitSet;
 
 /**
  * Abstract wrapper for images to be printed with thermal printers.

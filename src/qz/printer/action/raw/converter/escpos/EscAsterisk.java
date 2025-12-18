@@ -7,7 +7,6 @@ import qz.printer.action.raw.PixelGrid;
 import qz.printer.action.raw.converter.EscPos;
 
 import java.io.UnsupportedEncodingException;
-import java.util.BitSet;
 
 public class EscAsterisk implements ByteAppender {
     private final EscPos converter;

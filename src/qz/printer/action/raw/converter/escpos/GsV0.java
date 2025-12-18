@@ -26,8 +26,7 @@ public class GsV0 implements ByteAppender {
             int slicedHeight = Math.min(sliceHeight, h - y);
 
             // isolate a sliced BitSet from the full BitSet
-            int start = slicedHeight * y;
-            PixelGrid slice = pixelGrid.getSlice(start, slicedHeight);
+            PixelGrid slice = pixelGrid.getSlice(y, slicedHeight);
 
             // Append the GS v 0 command for the slice
             appendGsV0CommandTo(byteBuffer, w, slicedHeight, slice);

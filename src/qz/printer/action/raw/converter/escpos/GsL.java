@@ -26,8 +26,7 @@ public class GsL implements ByteAppender {
             int slicedHeight = Math.min(sliceHeight, h - y);
 
             // isolate a sliced BitSet from the full BitSet
-            int start = slicedHeight * y;
-            PixelGrid slice = pixelGrid.getSlice(start, slicedHeight);
+            PixelGrid slice = pixelGrid.getSlice(y, slicedHeight);
 
             // Append the store graphic command
             appendStoreCommandTo(byteBuffer, w, sliceHeight, slice);

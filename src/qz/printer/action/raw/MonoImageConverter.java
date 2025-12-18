@@ -27,10 +27,11 @@ import java.util.BitSet;
  */
 public abstract class MonoImageConverter extends ImageConverter {
     public enum Quantization {
-        BLACK, // color value must be the exact value of black
         ALPHA, // alpha is more than a set threshold is considered black (discarding color info)
-        LUMA, // luma (or alpha) must be less than a set threshold to be considered black
-        DITHER; // image is processed via a separate black & white dithering algorithm
+        BLACK, // color value must be the exact value of black
+        DITHER, // image is processed via a separate black & white dithering algorithm
+        LUMA; // luma (or alpha) must be less than a set threshold to be considered black
+
 
         /**
          * Parses the quantization from String <code>input</code>, falling back to
@@ -63,7 +64,7 @@ public abstract class MonoImageConverter extends ImageConverter {
 
     /**
      * Params shared between all monochrome image converters
-     * NOTE: Remember to @Override for subclasses requiring additional params
+     * NOTE: Remember to <code>@Override</code> and <code>super(...)</code> for subclasses requiring additional params
      */
     public void setParams(JSONObject params) {
         quantization = Quantization.parse(params.optString("quantization"), Quantization.LUMA);
@@ -104,6 +105,10 @@ public abstract class MonoImageConverter extends ImageConverter {
         int b = color.getBlue();
         int a = color.getAlpha();
         switch(quantization) {
+            case ALPHA:
+                return a > threshold; // pixels that are more opaque than the threshold are black
+            case BLACK: // only fully black pixels are black
+                return color.equals(Color.BLACK);
             case LUMA:
                 if (a < threshold) {
                     return false; // assume pixels that are less opaque than the luma threshold should be considered to be white
@@ -111,10 +116,6 @@ public abstract class MonoImageConverter extends ImageConverter {
 
                 int luma = ((r * 299) + (g * 587) + (b * 114)) / 1000; // luma formula
                 return luma < threshold; // pixels that have less luma than the threshold are black
-            case ALPHA:
-                return a > threshold; // pixels that are more opaque than the threshold are black
-            case BLACK: // only fully black pixels are black
-                return color.equals(Color.BLACK);
             default:
                 throw new UnsupportedOperationException("Image quantization " + quantization + " is not yet supported");
         }

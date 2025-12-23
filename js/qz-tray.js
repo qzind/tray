@@ -27,6 +27,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
+        TITLE: "QZ Tray",
         VERSION: "2.2.6-SNAPSHOT",                              //must match @version above
         DEBUG: false,
 
@@ -110,7 +111,7 @@ var qz = (function() {
                             || (!config.usingSecure && config.port.portIndex >= config.port.insecure.length)) {
                             if (config.hostIndex >= config.host.length - 1) {
                                 //give up, all hope is lost
-                                reject(new Error("Unable to establish connection with QZ"));
+                                reject(new Error("Unable to establish connection with " + _qz.TITLE));
                                 return;
                             } else {
                                 config.hostIndex++;
@@ -146,7 +147,7 @@ var qz = (function() {
                         _qz.websocket.connection.onopen = function(evt) {
                             if (!_qz.websocket.connection.established) {
                                 _qz.log.trace(evt);
-                                _qz.log.info("Established connection with QZ Tray on " + address);
+                                _qz.log.info("Established connection with " + _qz.TITLE + " on " + address);
 
                                 _qz.websocket.setup.openConnection({ resolve: resolve, reject: reject });
 
@@ -196,7 +197,7 @@ var qz = (function() {
 
                         _qz.websocket.connection = null;
                         _qz.websocket.callClose(evt);
-                        _qz.log.info("Closed connection with QZ Tray");
+                        _qz.log.info("Closed connection with " + _qz.TITLE);
 
                         for(var uid in _qz.websocket.pendingCalls) {
                             if (_qz.websocket.pendingCalls.hasOwnProperty(uid)) {
@@ -293,7 +294,7 @@ var qz = (function() {
                         if (returned.uid == null) {
                             if (returned.type == null) {
                                 //incorrect response format, likely connected to incompatible qz version
-                                _qz.websocket.connection.close(4003, "Connected to incompatible QZ Tray version");
+                                _qz.websocket.connection.close(4003, "Connected to incompatible " + _qz.TITLE + " version");
 
                             } else {
                                 //streams (callbacks only, no promises)
@@ -798,7 +799,7 @@ var qz = (function() {
                     return true;
                 }
                 // Promise won't reject on throw; yet better than 'undefined'
-                throw new Error("A connection to QZ has not been established yet");
+                throw new Error("A connection to " + _qz.TITLE + " has not been established yet");
             },
 
             uint8ArrayToHex: function(uint8) {
@@ -969,7 +970,7 @@ var qz = (function() {
                 if (_qz.tools.isActive() && _qz.websocket.connection.semver) {
                     if (_qz.tools.isVersion(2, 0)) {
                         if (!quiet) {
-                            _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
+                            _qz.log.warn("Connected to an older version of " + _qz.TITLE + ", alternate signature algorithms are not supported");
                         }
                         return false;
                     }
@@ -1197,7 +1198,7 @@ var qz = (function() {
                         const state = _qz.websocket.connection.readyState;
 
                         if (state === _qz.tools.ws.OPEN) {
-                            reject(new Error("An open connection with QZ Tray already exists"));
+                            reject(new Error("An open connection with " + _qz.TITLE + " already exists"));
                             return;
                         } else if (state === _qz.tools.ws.CONNECTING) {
                             reject(new Error("The current connection attempt has not returned yet"));
@@ -1283,7 +1284,7 @@ var qz = (function() {
                             reject(new Error("Current connection is still closing"));
                         }
                     } else {
-                        reject(new Error("No open connection with QZ Tray"));
+                        reject(new Error("No open connection with " + _qz.TITLE));
                     }
                 });
             },
@@ -2293,7 +2294,7 @@ var qz = (function() {
                     if (typeof deviceInfo.data === 'object') {
                         if (deviceInfo.data.type.toUpperCase() !== "PLAIN"
                             || typeof deviceInfo.data.data !== "string") {
-                            return _qz.tools.reject(new Error("Data format is not supported with connected QZ Tray version " + _qz.websocket.connection.version));
+                            return _qz.tools.reject(new Error("Data format is not supported with connected "  + _qz.TITLE + " version " + _qz.websocket.connection.version));
                         }
 
                         deviceInfo.data = deviceInfo.data.data;
@@ -2746,6 +2747,18 @@ var qz = (function() {
                 return (_qz.DEBUG = show);
             },
 
+
+            /**
+             * Get internal branding title used by logs and exceptions (e.g "QZ Tray")
+             *
+             * @returns {string} Internal title used for logs and exceptions
+             *
+             * @memberof qz.api
+             */
+            getTitle: function() {
+                return _qz.TITLE;
+            },
+
             /**
              * Get version of connected QZ Tray application.
              *
@@ -2822,6 +2835,18 @@ var qz = (function() {
              */
             setSha256Type: function(hasher) {
                 _qz.tools.hash = hasher;
+            },
+
+            /**
+             * Change the internal branding of "QZ Tray" for logs and exceptions
+             * Must be called before any connection attempts are made to appear in messaging
+             *
+             * @param {string} title Internal name to be used in place of "QZ Tray" for logs and exceptions
+             *
+             * @memberof qz.api
+             */
+            setTitle: function(title) {
+                _qz.TITLE = title;
             },
 
             /**

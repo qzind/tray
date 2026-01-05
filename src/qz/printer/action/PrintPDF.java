@@ -11,6 +11,7 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import org.apache.pdfbox.printing.Scaling;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -28,6 +29,7 @@ import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.MediaPrintableArea;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.Paper;
 import java.awt.print.PrinterException;
@@ -43,9 +45,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
     private static final Logger log = LogManager.getLogger(PrintPDF.class);
 
-    private List<PDDocument> originals;
-    private List<PDDocument> printables;
-    private Splitter splitter = new Splitter();
+    private final List<PDDocument> originals;
+    private final List<PDDocument> printables;
+    private final Splitter splitter;
 
     private double docWidth = 0;
     private double docHeight = 0;
@@ -56,6 +58,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     public PrintPDF() {
         originals = new ArrayList<>();
         printables = new ArrayList<>();
+        splitter = new Splitter();
     }
 
     @Override
@@ -113,16 +116,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.FILE);
 
             try {
-                PDDocument doc;
-                switch(flavor) {
-                    case PLAIN:
-                        // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
-                    case FILE:
-                        doc = PDDocument.load(ConnectionUtilities.getInputStream(data.getString("data"), true));
-                        break;
-                    default:
-                        doc = PDDocument.load(new ByteArrayInputStream(flavor.read(data.getString("data"))));
-                }
+                PDDocument doc = loadPdf(data.getString("data"), flavor);
 
                 if (pxlOpts.getBounds() != null) {
                     PrintOptions.Bounds bnd = pxlOpts.getBounds();
@@ -161,6 +155,37 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         }
 
         log.debug("Parsed {} files for printing", printables.size());
+    }
+
+    public static PDDocument loadPdf(String data, PrintingUtilities.Flavor flavor) throws IOException {
+        switch(flavor) {
+            case PLAIN:
+                // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
+            case FILE:
+                return PDDocument.load(ConnectionUtilities.getInputStream(data, true));
+            default:
+                return PDDocument.load(new ByteArrayInputStream(flavor.read(data)));
+        }
+    }
+
+    /**
+     * Creates a raw-compatible BufferedImage
+     */
+    @Override
+    public BufferedImage createBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
+        PDDocument doc = loadPdf(data, flavor);
+
+        double scale;
+        PDRectangle rect = doc.getPage(0).getBBox();
+        double pw = opt.optDouble("pageWidth", 0), ph = opt.optDouble("pageHeight", 0);
+        if (ph <= 0 || (pw > 0 && (rect.getWidth() / rect.getHeight()) >= (pw / ph))) {
+            scale = pw / rect.getWidth();
+        } else {
+            scale = ph / rect.getHeight();
+        }
+        if (scale <= 0) { scale = 1.0; }
+
+        return new PDFRenderer(doc).renderImage(0, (float)scale);
     }
 
     @Override

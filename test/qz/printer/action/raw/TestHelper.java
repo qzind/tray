@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.printer.action.PrintRaw;
+import qz.utils.ArgValue;
 import qz.utils.PrintingUtilities;
 
 import java.io.IOException;
@@ -36,12 +37,8 @@ public class TestHelper {
             return failed == 0;
         }
 
-        public String getSummaryLine() {
-            return "ok=" + ok + " skipped=" + skipped + " failed=" + failed;
-        }
-
         public void logSummary() {
-            log.info(getSummaryLine());
+            log.info("ok={}, skipped={}, failed={}", ok, skipped, failed);
             for (Exception e : errors) {
                 log.error(ExceptionUtils.getStackTrace(e).trim());
             }
@@ -53,12 +50,18 @@ public class TestHelper {
 
     public enum Orientation { PORTRAIT, LANDSCAPE }
 
+    public static void setupEnviroment() {
+        // print to file is off by default. Override for our tests
+        System.setProperty(ArgValue.SECURITY_PRINT_TOFILE.getMatch(), "true");
+        System.setProperty(ArgValue.SECURITY_DATA_PROTOCOLS.getMatch(), "http,https,file");
+    }
+
     private static Path printImageRaw(String format, Path sourcePath, Orientation orientation, Path outDir, LanguageType language) throws Exception {
         if (language == null) throw new Exception();
         Files.createDirectories(outDir);
 
         String ext = language.name().toLowerCase(Locale.ENGLISH);
-        String outName = String.format(Locale.ENGLISH, "raw-%s-%s.%s.raw", format, orientation.name().toLowerCase(Locale.ENGLISH), ext);
+        String outName = String.format(Locale.ENGLISH, "raw-%s-%s.%s.bin", format, orientation.name().toLowerCase(Locale.ENGLISH), ext);
         Path outFile = outDir.resolve(outName).toAbsolutePath().normalize();
 
         JSONObject printer = new JSONObject().put("file", outFile.toString());

@@ -134,6 +134,8 @@ public class SocketConnection {
     public synchronized void disconnect() throws SerialPortException, DeviceException, IOException {
         log.info("Closing all communication channels for {}", certificate.getCommonName());
 
+        SerialPortMonitor.stopListening(this);
+
         for(SerialIO sio : openSerialPorts.values()) {
             sio.close();
         }

@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.communication.SerialIO;
 import qz.communication.SerialOptions;
+import qz.communication.SerialPortMonitor;
 import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
 import qz.ws.StreamEvent;
@@ -242,30 +243,14 @@ public class SerialUtilities {
 
     public static void setupSerialPort(final Session session, String UID, SocketConnection connection, JSONObject params) throws JSONException {
         final String portName = params.getString("port");
-        if (connection.getSerialPort(portName) != null) {
+        if (SerialPortMonitor.isListening(connection, portName)) {
             PrintSocketClient.sendError(session, UID, String.format("Serial port [%s] is already open.", portName));
             return;
         }
 
         try {
             SerialOptions props = new SerialOptions(params.optJSONObject("options"), true);
-            final SerialIO serial = new SerialIO(portName, connection);
-
-            if (serial.open(props)) {
-                connection.addSerialPort(portName, serial);
-
-                //apply listener here, so we can send all replies to the browser
-                serial.applyPortListener(spe -> {
-                    String output = serial.processSerialEvent(spe);
-
-                    if (output != null) {
-                        log.debug("Received serial output: {}", output);
-                        StreamEvent event = new StreamEvent(StreamEvent.Stream.SERIAL, StreamEvent.Type.RECEIVE)
-                                .withData("portName", portName).withData("output", output);
-                        PrintSocketClient.sendStream(session, event, serial);
-                    }
-                });
-
+            if (SerialPortMonitor.startListening(connection, session, portName, props)) {
                 PrintSocketClient.sendResult(session, UID, null);
             } else {
                 PrintSocketClient.sendError(session, UID, String.format("Unable to open serial port [%s]", portName));

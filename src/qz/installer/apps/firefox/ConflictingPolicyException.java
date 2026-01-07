@@ -1,4 +1,4 @@
-package qz.installer.certificate.firefox;
+package qz.installer.apps.firefox;
 
 class ConflictingPolicyException extends Exception {
     ConflictingPolicyException(String message) {

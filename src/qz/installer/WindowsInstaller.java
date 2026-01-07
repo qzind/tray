@@ -149,18 +149,6 @@ public class WindowsInstaller extends Installer {
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "DisplayVersion", VERSION.toString());
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "EstimatedSize", FileUtils.sizeOfDirectoryAsBigInteger(new File(destination)).intValue() / 1024);
 
-        // TODO: Move this to platform-independent install step
-        try {
-            // Chrome protocol handler (e.g. "qz://*")
-            ChromiumPolicyInstaller.install(PrivilegeLevel.SYSTEM, "URLAllowlist", String.format("%s://*", DATA_DIR));
-            // LocalNetworkAccess (e.g. [*.]qz.io)
-            // FIXME: Read in more root domains via provisioning
-            String[] lnaUrls = { "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL) };
-            ChromiumPolicyInstaller.install(PrivilegeLevel.SYSTEM, "LocalNetworkAccessAllowedForUrls", lnaUrls);
-        } catch(JSONException | IOException e) {
-            log.warn("An error occurred installing the Chromium Policy", e);
-        }
-
         // Firewall rules
         ShellUtilities.execute("netsh.exe", "advfirewall", "firewall", "delete", "rule", String.format("name=%s", ABOUT_TITLE));
         ShellUtilities.execute("netsh.exe", "advfirewall", "firewall", "add", "rule", String.format("name=%s", ABOUT_TITLE),

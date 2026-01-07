@@ -1,4 +1,4 @@
-package qz.installer.certificate.firefox.locator;
+package qz.installer.apps.firefox.locator;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

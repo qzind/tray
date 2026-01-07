@@ -2,10 +2,10 @@ package qz.installer.browser;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
-import qz.installer.certificate.firefox.locator.AppAlias;
-import qz.installer.certificate.firefox.locator.AppInfo;
-import qz.installer.certificate.firefox.locator.AppLocator;
+import qz.installer.apps.firefox.FirefoxCertificateInstaller;
+import qz.installer.apps.firefox.locator.AppAlias;
+import qz.installer.apps.firefox.locator.AppInfo;
+import qz.installer.apps.firefox.locator.AppLocator;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

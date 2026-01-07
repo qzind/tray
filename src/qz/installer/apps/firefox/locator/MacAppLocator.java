@@ -1,4 +1,4 @@
-package qz.installer.certificate.firefox.locator;
+package qz.installer.apps.firefox.locator;
 
 import com.sun.jna.Library;
 import com.sun.jna.Memory;

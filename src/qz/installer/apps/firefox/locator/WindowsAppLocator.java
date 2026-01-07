@@ -8,7 +8,7 @@
  * this software. http://www.gnu.org/licenses/lgpl-2.1.html
  */
 
-package qz.installer.certificate.firefox.locator;
+package qz.installer.apps.firefox.locator;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
@@ -19,7 +19,7 @@ import com.sun.jna.platform.win32.Tlhelp32;
 import com.sun.jna.platform.win32.WinNT;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.installer.certificate.firefox.locator.AppAlias.Alias;
+import qz.installer.apps.firefox.locator.AppAlias.Alias;
 import qz.utils.WindowsUtilities;
 
 

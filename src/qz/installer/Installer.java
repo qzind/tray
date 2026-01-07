@@ -13,10 +13,12 @@ package qz.installer;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.codehaus.jettison.json.JSONException;
 import qz.auth.Certificate;
 import qz.build.provision.params.Phase;
+import qz.installer.apps.ChromiumPolicyInstaller;
 import qz.installer.certificate.*;
-import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
+import qz.installer.apps.firefox.FirefoxCertificateInstaller;
 import qz.installer.provision.ProvisionInstaller;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
@@ -107,7 +109,8 @@ public abstract class Installer {
                 .addAppLauncher()
                 .addStartupEntry()
                 .invokeProvisioning(Phase.INSTALL)
-                .addSystemSettings();
+                .addSystemSettings()
+                .modifyApps();
     }
 
     public static void uninstall() {
@@ -356,6 +359,26 @@ public abstract class Installer {
             }
         }
         return instance;
+    }
+
+    public Installer modifyApps() {
+        // Chromium
+        try {
+            // Chrome protocol handler (e.g. "qz://*")
+            ChromiumPolicyInstaller.install(PrivilegeLevel.SYSTEM, "URLAllowlist", String.format("%s://*", DATA_DIR));
+
+            // LocalNetworkAccess (e.g. [*.]qz.io)
+            // FIXME: Read in more root domains via provisioning
+            String[] lnaUrls = { "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL) };
+            ChromiumPolicyInstaller.install(PrivilegeLevel.SYSTEM, "LocalNetworkAccessAllowedForUrls", lnaUrls);
+        } catch(JSONException | IOException e) {
+            log.warn("An error occurred installing the Chromium Policy", e);
+        }
+
+        // Firefox
+
+
+        return this;
     }
 
     public Installer invokeProvisioning(Phase phase) {

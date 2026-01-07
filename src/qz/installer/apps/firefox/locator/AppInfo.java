@@ -1,9 +1,9 @@
-package qz.installer.certificate.firefox.locator;
+package qz.installer.apps.firefox.locator;
 
 import com.github.zafarkhaja.semver.Version;
 
 import java.nio.file.Path;
-import qz.installer.certificate.firefox.locator.AppAlias.Alias;
+import qz.installer.apps.firefox.locator.AppAlias.Alias;
 
 /**
  * Container class for installed app information

@@ -8,7 +8,7 @@
  * this software. http://www.gnu.org/licenses/lgpl-2.1.html
  */
 
-package qz.installer.certificate.firefox;
+package qz.installer.apps.firefox;
 
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.platform.win32.WinReg;
@@ -18,9 +18,9 @@ import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.installer.Installer;
 import qz.installer.certificate.CertificateManager;
-import qz.installer.certificate.firefox.locator.AppAlias;
-import qz.installer.certificate.firefox.locator.AppInfo;
-import qz.installer.certificate.firefox.locator.AppLocator;
+import qz.installer.apps.firefox.locator.AppAlias;
+import qz.installer.apps.firefox.locator.AppInfo;
+import qz.installer.apps.firefox.locator.AppLocator;
 import qz.utils.JsonWriter;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;

@@ -344,23 +344,22 @@ public class PrintSocketClient {
                     opts = new SerialOptions(params.optJSONObject("options"), false);
                 }
 
-                SerialIO serial = connection.getSerialPort(params.optString("port"));
-                if (serial != null) {
-                    serial.sendData(params, opts);
+                String portName = params.optString("port");
+                if (SerialPortMonitor.isListening(connection, portName)) {
+                    SerialPortMonitor.sendData(connection, portName, params, opts);
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, String.format("Serial port [%s] must be opened first.", params.optString("port")));
+                    sendError(session, UID, String.format("Serial port [%s] must be opened first.", portName));
                 }
                 break;
             }
             case SERIAL_CLOSE_PORT: {
-                SerialIO serial = connection.getSerialPort(params.optString("port"));
-                if (serial != null) {
-                    serial.close();
-                    connection.removeSerialPort(params.optString("port"));
+                String portName = params.optString("port");
+                if (SerialPortMonitor.isListening(connection, portName)) {
+                    SerialPortMonitor.stopListening(connection, portName);
                     sendResult(session, UID, null);
                 } else {
-                    sendError(session, UID, String.format("Serial port [%s] is not open.", params.optString("port")));
+                    sendError(session, UID, String.format("Serial port [%s] is not open.", portName));
                 }
                 break;
             }

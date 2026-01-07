@@ -37,7 +37,7 @@ public abstract class ChromiumPolicyInstaller {
     public abstract boolean install(PrivilegeLevel scope, String policyName, String ... values);
     public abstract boolean uninstall(PrivilegeLevel scope, String policyName, String ... values);
 
-    public static void main(String ... args) throws JSONException, IOException {
+    public static void main(String ... args) {
         /*
         getInstance().install(PrivilegeLevel.USER, "URLAllowlist", "qz://");
         getInstance().install(PrivilegeLevel.USER, "URLAllowlist", "pp://");

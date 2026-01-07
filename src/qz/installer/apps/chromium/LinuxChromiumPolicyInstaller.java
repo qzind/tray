@@ -28,7 +28,7 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
     };
 
     @Override
-    public boolean install(Installer.PrivilegeLevel scope, String policyName, String ... values) throws JSONException, IOException {
+    public boolean install(Installer.PrivilegeLevel scope, String policyName, String ... values) {
         for(String location : LINUX_POLICY_LOCATIONS) {
             log.info("Installing Chromium policy {} {}/{}...", policyName, location, Constants.PROPS_FILE + ".json");
 
@@ -39,39 +39,39 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
             JSONObject jsonPolicy = new JSONObject();
             JSONArray jsonArray = new JSONArray();
 
-            // Ensure parent is writable
-            FileUtilities.setPermissionsParentally(Files.createDirectories(Paths.get(location)), false);
+            try {
+                // Ensure parent is writable
+                FileUtilities.setPermissionsParentally(Files.createDirectories(Paths.get(location)), false);
 
-            // Populate object
-            if(policy.exists()) {
-                try {
+                // Populate object
+                if (policy.exists()) {
                     jsonPolicy = new JSONObject(FileUtils.readFileToString(policy, StandardCharsets.UTF_8));
                     jsonArray = jsonPolicy.optJSONArray(policyName);
-                } catch(JSONException e) {
-                    log.warn("JSONException occurred reading {}, creating a new file.", jsonPolicy);
                 }
-            }
 
-            value:
-            for(String value : values) {
-                for(int i = 0; i < jsonArray.length(); i++) {
-                    if(jsonArray.optString(i, "").equals(value)) {
-                        log.info("Chromium policy {} '{}' already exists at location {}, skipping", policyName, value, location);
-                        continue value;
+                value:
+                for(String value : values) {
+                    for(int i = 0; i < jsonArray.length(); i++) {
+                        if (jsonArray.optString(i, "").equals(value)) {
+                            log.info("Chromium policy {} '{}' already exists at location {}, skipping", policyName, value, location);
+                            continue value;
+                        }
+                    }
+                    jsonArray.put(value);
+                }
+
+                // Insert array into object
+                jsonPolicy.put(policyName, jsonArray);
+
+                // Write contents, ensuring policy file is world readable
+                try(BufferedWriter writer = new BufferedWriter(new FileWriter(policy))) {
+                    writer.write(jsonPolicy.toString());
+                    if (!policy.setReadable(true, false)) {
+                        throw new IOException("Unable to set readable: " + policy);
                     }
                 }
-                jsonArray.put(value);
-            }
-
-            // Insert array into object
-            jsonPolicy.put(policyName, jsonArray);
-
-            // Write contents, ensuring policy file is world readable
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(policy))){
-                writer.write(jsonPolicy.toString());
-                if(!policy.setReadable(true, false)) {
-                    throw new IOException("Unable to set readable: " + policy);
-                }
+            } catch(IOException | JSONException e) {
+                log.warn("An error occurred while writing the new policy file {}", policy, e);
             }
         }
         return true;

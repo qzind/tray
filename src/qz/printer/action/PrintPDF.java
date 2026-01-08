@@ -3,7 +3,9 @@ package qz.printer.action;
 import com.github.zafarkhaja.semver.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -118,10 +120,18 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     case PLAIN:
                         // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
                     case FILE:
-                        doc = PDDocument.load(ConnectionUtilities.getInputStream(data.getString("data"), true));
+                        doc = Loader.loadPDF(
+                                new RandomAccessReadBuffer(
+                                    ConnectionUtilities.protocolRestricted(data.getString("data")).openStream()
+                                )
+                        );
                         break;
                     default:
-                        doc = PDDocument.load(new ByteArrayInputStream(flavor.read(data.getString("data"))));
+                        doc = Loader.loadPDF(
+                                new RandomAccessReadBuffer(
+                                        flavor.read(data.getString("data"))
+                                )
+                        );
                 }
 
                 if (pxlOpts.getBounds() != null) {

@@ -17,6 +17,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.installer.Installer;
+import qz.installer.apps.ConflictingPolicyException;
+import qz.installer.apps.firefox.legacy.LegacyFirefoxCertificateInstaller;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.apps.firefox.locator.AppAlias;
 import qz.installer.apps.firefox.locator.AppInfo;
@@ -153,7 +155,7 @@ public class FirefoxCertificateInstaller {
      */
     private static boolean hasEnterprisePolicy(AppAlias.Alias alias, boolean userOnly) throws ConflictingPolicyException {
         if(SystemUtilities.isWindows()) {
-            String key = String.format("Software\\Policies\\%s\\%s\\Certificates", alias.getVendor(), alias.getName(true));
+            String key = String.format("SOFTWARE\\Policies\\%s\\%s\\Certificates", alias.getVendor(), alias.getName(true));
             Integer foundPolicy = WindowsUtilities.getRegInt(userOnly ? WinReg.HKEY_CURRENT_USER : WinReg.HKEY_LOCAL_MACHINE, key, "ImportEnterpriseRoots");
             if(foundPolicy != null) {
                 return foundPolicy == 1;

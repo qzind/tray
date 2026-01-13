@@ -12,13 +12,14 @@ public class MacChromiumPolicyInstaller extends ChromiumPolicyInstaller {
     private static final Logger log = LogManager.getLogger(MacChromiumPolicyInstaller.class);
 
     private static final String[] MACOS_POLICY_LOCATIONS = {
-            "/Library/Preferences/com.google.Chrome.plist"
+            "%s/Library/Preferences/com.google.Chrome.plist",
+            "%s/Library/Preferences/com.microsoft.Edge.plist"
     };
 
     @Override
     public boolean install(Installer.PrivilegeLevel scope, String policyName, String ... values) {
         for(String unscopedLocation : MACOS_POLICY_LOCATIONS) {
-            String location = scope == Installer.PrivilegeLevel.USER ? System.getProperty("user.home") + unscopedLocation : unscopedLocation;
+            String location = String.format(unscopedLocation, scope == Installer.PrivilegeLevel.USER ? System.getProperty("user.home") : "");
             log.info("Installing Chromium policy {} to {}...", policyName, location);
 
             for(String value : values) {

@@ -23,8 +23,9 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
     private static final Logger log = LogManager.getLogger(LinuxChromiumPolicyInstaller.class);
 
     private static final String[] LINUX_POLICY_LOCATIONS = {
-            "/etc/chromium/policies/managed",
-            "/etc/opt/chrome/policies/managed"
+            "/etc/chromium/policies/managed/%s.json",
+            "/etc/opt/chrome/policies/managed/%s.json",
+            "/etc/opt/edge/policies/managed/%s.json"
     };
 
     @Override
@@ -33,7 +34,7 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
             log.info("Installing Chromium policy {} {}/{}...", policyName, location, Constants.PROPS_FILE + ".json");
 
             // Chromium policy, e.g. /etc/chromium/policies/managed/qz-tray.json
-            File policy = Paths.get(location, Constants.PROPS_FILE + ".json").toFile();
+            File policy = Paths.get(String.format(location, Constants.PROPS_FILE)).toFile();
 
             // Build JSON array (e.g. { "URLAllowlist": [ "qz://*"] } )
             JSONObject jsonPolicy = new JSONObject();

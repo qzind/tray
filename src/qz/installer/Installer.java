@@ -363,17 +363,14 @@ public abstract class Installer {
 
     public Installer modifyApps() {
         // Chromium
-        try {
-            // Chrome protocol handler (e.g. "qz://*")
-            ChromiumPolicyInstaller.install(PrivilegeLevel.SYSTEM, "URLAllowlist", String.format("%s://*", DATA_DIR));
+        // Chrome protocol handler (e.g. "qz://*")
+        ChromiumPolicyInstaller.getInstance().install(PrivilegeLevel.SYSTEM, "URLAllowlist", String.format("%s://*", DATA_DIR));
 
-            // LocalNetworkAccess (e.g. [*.]qz.io)
-            // FIXME: Read in more root domains via provisioning
-            String[] lnaUrls = { "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL) };
-            ChromiumPolicyInstaller.install(PrivilegeLevel.SYSTEM, "LocalNetworkAccessAllowedForUrls", lnaUrls);
-        } catch(JSONException | IOException e) {
-            log.warn("An error occurred installing the Chromium Policy", e);
-        }
+        // LocalNetworkAccess (e.g. [*.]qz.io)
+        // FIXME: Read in more root domains via provisioning
+        String[] lnaUrls = { "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL) };
+        ChromiumPolicyInstaller.getInstance().install(PrivilegeLevel.SYSTEM, "LocalNetworkAccessAllowedForUrls", lnaUrls);
+
 
         // Firefox
 

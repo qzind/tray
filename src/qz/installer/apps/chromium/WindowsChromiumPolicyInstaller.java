@@ -14,7 +14,8 @@ public class WindowsChromiumPolicyInstaller extends ChromiumPolicyInstaller {
     private static final Logger log = LogManager.getLogger(WindowsChromiumPolicyInstaller.class);
 
     private static final String[] WINDOWS_POLICY_LOCATIONS = {
-            "SOFTWARE\\Policies\\Google\\Chrome\\"
+            "SOFTWARE\\Policies\\Google\\Chrome\\%s",
+            "SOFTWARE\\Policies\\Microsoft\\Edge\\%s",
     };
 
     @Override
@@ -23,7 +24,7 @@ public class WindowsChromiumPolicyInstaller extends ChromiumPolicyInstaller {
         for(String location : WINDOWS_POLICY_LOCATIONS) {
             log.info("Installing Chromium policy {}\\{}...", location, policyName);
             for(String value : values) {
-                WindowsUtilities.addNumberedRegValue(root, location + "\\" + policyName, value);
+                WindowsUtilities.addNumberedRegValue(root, String.format(location, policyName), value);
             }
         }
         return true;

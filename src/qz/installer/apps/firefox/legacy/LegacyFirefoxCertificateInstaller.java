@@ -8,7 +8,7 @@
  * this software. http://www.gnu.org/licenses/lgpl-2.1.html
  */
 
-package qz.installer.apps.firefox;
+package qz.installer.apps.firefox.legacy;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

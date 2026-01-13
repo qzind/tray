@@ -13,7 +13,6 @@ package qz.installer;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codehaus.jettison.json.JSONException;
 import qz.auth.Certificate;
 import qz.build.provision.params.Phase;
 import qz.installer.apps.ChromiumPolicyInstaller;

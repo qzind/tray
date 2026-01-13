@@ -30,6 +30,10 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
 
     @Override
     public boolean install(Installer.PrivilegeLevel scope, String policyName, String ... values) {
+        if(scope != Installer.PrivilegeLevel.SYSTEM) {
+            log.info("Skipping installation of Chromium policy {}, not supported as PrivilegeLevel {}", policyName, scope);
+            return false;
+        }
         for(String location : LINUX_POLICY_LOCATIONS) {
             log.info("Installing Chromium policy {} {}/{}...", policyName, location, Constants.PROPS_FILE + ".json");
 
@@ -80,6 +84,10 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
 
     @Override
     public boolean uninstall(Installer.PrivilegeLevel scope, String policyName, String ... values) {
+        if(scope != Installer.PrivilegeLevel.SYSTEM) {
+            log.info("Skipping removal of Chromium policy {}, not supported as PrivilegeLevel {}", policyName, scope);
+            return false;
+        }
         for(String location : LINUX_POLICY_LOCATIONS) {
             log.info("Removing Chromium policy {} {}/{}...", policyName, location, Constants.PROPS_FILE + ".json");
 

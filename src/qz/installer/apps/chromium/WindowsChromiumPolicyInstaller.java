@@ -7,6 +7,8 @@ import qz.installer.Installer;
 import qz.installer.apps.ChromiumPolicyInstaller;
 import qz.utils.WindowsUtilities;
 
+import java.awt.*;
+
 import static com.sun.jna.platform.win32.WinReg.HKEY_CURRENT_USER;
 import static com.sun.jna.platform.win32.WinReg.HKEY_LOCAL_MACHINE;
 
@@ -32,7 +34,13 @@ public class WindowsChromiumPolicyInstaller extends ChromiumPolicyInstaller {
 
     @Override
     public boolean uninstall(Installer.PrivilegeLevel scope, String policyName, String ... values) {
-        // FIXME: Loop over registry attempting to match and remove policy
+        WinReg.HKEY root = scope == Installer.PrivilegeLevel.SYSTEM ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+        for(String location : WINDOWS_POLICY_LOCATIONS) {
+            log.info("Removing Chromium policy {}\\{}...", location, policyName);
+            for(String value : values) {
+                WindowsUtilities.removeNumberedRegValue(root, String.format(location, policyName), value);
+            }
+        }
         return true;
     }
 }

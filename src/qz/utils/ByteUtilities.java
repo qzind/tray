@@ -291,4 +291,42 @@ public class ByteUtilities {
         return false;
     }
 
+    public static boolean isNumber(String input) {
+        if (input == null || input.isEmpty()) {
+            return false;
+        }
+
+        int start = 0;
+        // Handle negative signs
+        if (input.charAt(0) == '-') {
+            // If the string is just "-", it's not an integer
+            if (input.length() == 1) {
+                return false;
+            }
+            start = 1;
+        }
+
+        for (int i = start; i < input.length(); i++) {
+            if (!Character.isDigit(input.charAt(i))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static boolean isPositiveNumber(String input) {
+        if (input == null || input.isEmpty()) {
+            return false;
+        }
+
+        for (int i = 0; i < input.length(); i++) {
+            if (!Character.isDigit(input.charAt(i))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 }

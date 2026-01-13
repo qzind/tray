@@ -1373,6 +1373,39 @@ var qz = (function() {
             },
 
             /**
+             * @param {Object} [server] Server object returned from qz.printers.addServer(...)
+             * @param {string} [query] Search for a specific printer. All printers are returned if not provided.
+             *
+             * @returns {Promise<Array<Object>|Object|Error>} The matched printer object if <code>query</code> is provided.
+             *                                                Otherwise an array of printer objects names found on the remote system.
+             *
+             * @since 2.2.6
+             * @see qz.printers.addServer
+             *
+             * @memberof qz.printers
+             */
+            findRemote: function(server, query) {
+                return _qz.websocket.dataPromise('printers.findRemote', { server: server, query: query });
+            },
+
+            /**
+             * @param {Object} [options]
+             *  @param {string} [options.uri=null] Address of the remote ipp server.  Defaults to localhost if not provided.
+             *  @param {string} [options.username=null] Username for ipp connection
+             *  @param {string} [options.password=null] Password for ipp connection
+             *
+             *
+             * @returns {Promise<Object<{type: string, uuid: string, uri: string}>|Error>} Remote server connection info
+             *
+             * @since 2.2.6
+             *
+             * @memberof qz.printers
+             */
+            addServer: function(options) {
+                return _qz.websocket.dataPromise('printers.addServer', options);
+            },
+
+            /**
              * Provides a list, with additional information, for each printer available to QZ.
              *
              * @returns {Promise<Array<Object>|Object|Error>}

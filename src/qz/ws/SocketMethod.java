@@ -3,6 +3,8 @@ package qz.ws;
 public enum SocketMethod {
     PRINTERS_GET_DEFAULT("printers.getDefault", true, "access connected printers"),
     PRINTERS_FIND("printers.find", true, "access connected printers"),
+    PRINTERS_FIND_REMOTE("printers.findRemote", true, "access remote IPP print server"),
+    PRINTERS_ADD_SERVER("printers.addServer", true, "access remote IPP print server"),
     PRINTERS_DETAIL("printers.detail", true, "access connected printers"),
     PRINTERS_START_LISTENING("printers.startListening", true, "listen for printer status"),
     PRINTERS_CLEAR_QUEUE("printers.clearQueue", true, "cancel all pending jobs for a given printer"),

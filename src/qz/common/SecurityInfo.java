@@ -107,12 +107,12 @@ public class SecurityInfo {
         // Fallback to maven manifest information
         HashMap<String,String> mavenVersions = getMavenVersions();
 
-        String[] mavenLibs = {"jetty-servlet", "jetty-io", "websocket-common",
+        String[] mavenLibs = {"jetty-servlet", "jetty-io", "websocket-common", "kotlin-stdlib",
                               "usb4java-javax", "java-semver", "commons-pool2",
                               "websocket-server", "jettison", "commons-codec", "log4j-api", "log4j-core",
                               "websocket-servlet", "jetty-http", "commons-lang3", "javax-websocket-server-impl",
                               "javax.servlet-api", "hid4java", "usb4java", "websocket-api", "jetty-util", "websocket-client",
-                              "javax.websocket-api", "commons-io", "jetty-security"};
+                              "javax.websocket-api", "commons-io", "jetty-security", "ipp-client-kotlin"};
 
         for(String lib : mavenLibs) {
             libVersions.put(lib, mavenVersions.get(lib));

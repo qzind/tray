@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>QZ Tray Print Test</title>
+  <script src="js/qz-tray.js"></script>
+</head>
+<body>
+  <button onclick="printTest()">Print Test String</button>
+</body>
+
+  <script>
+{
+  qz.websocket.connect();
+  function printTest() {
+    test().then();
+  }
+
+  async function test() {
+    var server = await qz.printers.addServer({url:"ipps://<hostIP>:631/printers", username: "user", password: "pass"});
+    var remotePrinters = await qz.printers.findRemote(server, "");
+    var remotePrinter = await qz.printers.findRemote(server, remotePrinters[0]);
+    alert(JSON.stringify(remotePrinter));
+
+    let config = qz.configs.create( remotePrinter,
+      {
+        size: { width: 4, height: 6},
+        ipp: { CUPS_FLIP_LONG_EDGE_BLAH: true } // Here or in options?
+      }
+    );
+
+    var data = [
+    { 
+      flavor: 'plain', data: 'test test test',
+      options: { ipp: { CUPS_FLIP_LONG_EDGE_BLAH: "true" } }
+    }
+    ];
+
+    qz.print(config, data); // HANDLE 404, etc ERRORS, POSSIBLY MORE?
+  }
+}
+  </script>
+</body>
+</html>

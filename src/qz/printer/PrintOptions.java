@@ -5,6 +5,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.common.Sluggable;
 import qz.utils.LoggerUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
@@ -702,7 +703,7 @@ public class PrintOptions {
     }
 
     /** Pixel page orientation option */
-    public enum Orientation {
+    public enum Orientation implements Sluggable {
         PORTRAIT(OrientationRequested.PORTRAIT, PageFormat.PORTRAIT, 0),
         REVERSE_PORTRAIT(OrientationRequested.PORTRAIT, PageFormat.PORTRAIT, 180),
         LANDSCAPE(OrientationRequested.LANDSCAPE, PageFormat.LANDSCAPE, 270),
@@ -729,6 +730,11 @@ public class PrintOptions {
 
         public int getDegreesRot() {
             return degreesRot;
+        }
+
+        @Override
+        public String slug() {
+            return Sluggable.slugOf(this);
         }
     }
 

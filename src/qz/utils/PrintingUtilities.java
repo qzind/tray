@@ -10,6 +10,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
+import qz.common.Sluggable;
 import qz.communication.WinspoolEx;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
@@ -41,7 +42,7 @@ public class PrintingUtilities {
         PIXEL, RAW
     }
 
-    public enum Format {
+    public enum Format implements Sluggable {
         COMMAND,
         DIRECT,
         HTML(PrintHTML::new),
@@ -63,6 +64,15 @@ public class PrintingUtilities {
                 throw new UnsupportedOperationException("Cannot create a enew PrintPixel instance for " + this.name());
             }
             return biCreator.get();
+        }
+
+        public boolean hasBiCreator() {
+            return biCreator != null;
+        }
+
+        @Override
+        public String slug() {
+            return Sluggable.slugOf(this);
         }
     }
 

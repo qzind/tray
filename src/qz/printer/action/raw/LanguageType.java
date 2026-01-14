@@ -10,7 +10,7 @@
 package qz.printer.action.raw;
 
 import org.codehaus.jettison.json.JSONObject;
-import qz.printer.PrintOptions;
+import qz.common.Sluggable;
 import qz.printer.action.raw.converter.*;
 
 import java.awt.image.BufferedImage;
@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 /**
  * Enum for print languages, such as ZPL, EPL, etc.
  */
-public enum LanguageType {
+public enum LanguageType implements Sluggable {
     CPCL(Cpcl::new, false, true, 203, "COMTEC"),
     CPL(null /* TODO */, 203, "COGNITIVE"),
     DPL(null /* TODO */, 300, "DATAMAX"),
@@ -66,7 +66,7 @@ public enum LanguageType {
             converter.setBufferedImage(img);
             return converter;
         }
-        throw new UnsupportedOperationException("ImageConverter missing for LanguageType: " + this);
+        throw new MissingImageConverterException("ImageConverter missing for LanguageType: " + this);
     }
 
     public static LanguageType parse(String type) {
@@ -105,4 +105,8 @@ public enum LanguageType {
         return defaultDensity;
     }
 
+    @Override
+    public String slug() {
+        return Sluggable.slugOf(this);
+    }
 }

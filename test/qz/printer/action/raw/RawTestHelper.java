@@ -7,10 +7,12 @@ import org.testng.SkipException;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.printer.action.PrintRaw;
+import qz.printer.action.raw.converter.MissingImageConverterException;
 import qz.utils.ArgValue;
 import qz.utils.PrintingUtilities;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,91 +20,70 @@ import java.nio.file.Paths;
 
 /**
  * Test helper for dispatching raw image print conversions.
- * NOTE: Language is currently hard-coded to ZPL; will be parameterized later.
  */
-public class TestHelper {
+public class RawTestHelper {
     private static final Path RES_DIR = Paths.get("test/qz/printer/action/resources");
 
-    public enum Orientation {
-        PORTRAIT("portrait"),
-        LANDSCAPE("landscape");
-
-        private final String value;
-        Orientation(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
-
-    }
-    public enum Format {
-        IMAGE("image", "image_sample_bw.png"),
-        PDF("pdf", "pdf_sample.pdf"),
-        HTML("html", "raw_sample.html");
-
-        private final String value;
-
-        public final Path samplePath;
-        Format(String value, String filename) {
-            this.value = value;
-            this.samplePath = Paths.get(filename);
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
-
-    }
     public static void setupEnvironment() {
         // print to file is off by default. Override for our tests
         System.setProperty(ArgValue.SECURITY_PRINT_TOFILE.getMatch(), "true");
         System.setProperty(ArgValue.SECURITY_DATA_PROTOCOLS.getMatch(), "http,https,file");
     }
 
-    public static JSONObject constructParams(LanguageType languageType, TestHelper.Orientation orientation, TestHelper.Format format) throws JSONException {
+    public static JSONObject constructParams(LanguageType languageType, PrintOptions.Orientation orientation, PrintingUtilities.Format format) throws JSONException {
         JSONObject params = new JSONObject();
 
         JSONObject options = new JSONObject()
-                .put("units", "in")
-                .put("density", 203)
                 .put("orientation", orientation);
-        options.put("size", new JSONObject()
-                .put("width", 4)
-                .put("height", 6));
-
-        params.put("options", options);
 
         //width and height only matter for non-image printing
         JSONObject dataOptions = new JSONObject()
-                .put("pageWidth", 812)
-                .put("pageHeight", 1218)
-                .put("language", languageType.name().toLowerCase());
+                .put("language", languageType.slug());
 
         JSONObject dataObj = new JSONObject()
                 .put("type", "raw")
                 .put("format", format)
                 .put("flavor", "file")
-                .put("data", RES_DIR.resolve(format.samplePath)
-                        .toAbsolutePath()
-                        .toUri())
+                .put("data", getResourceUri(format))
                 .put("options", dataOptions);
 
-        params.put("data", new JSONArray().put(dataObj));
+        switch(format) {
+            case HTML:
+                options.put("density", 203);
+                options.put("units", "in");
+                options.put("size", new JSONObject()
+                        .put("width", 4)
+                        .put("height", 6));
+                // no break, continue to pdf
+            case PDF:
+                dataOptions.put("pageWidth", 812);
+                dataOptions.put("pageHeight", 1218);
+        }
 
         switch(languageType) {
             case PGL:
                 dataOptions.put("logoId", "test");
         }
 
+        params.put("options", options);
+        params.put("data", new JSONArray().put(dataObj));
         return params;
     }
 
+    private static URI getResourceUri(PrintingUtilities.Format format) {
+        // example resource html-sample.html
+        String resourceName = String.format(
+                "%s-sample.%s",
+                format.slug(),
+                format == PrintingUtilities.Format.IMAGE ? "png" : format.slug()
+        );
+        return RES_DIR.resolve(resourceName)
+                .toAbsolutePath()
+                .toUri();
+    }
+
     public static void printRaw(Path outFilePath, JSONObject params) throws Exception {
-        JSONObject printer = new JSONObject().put("file", outFilePath.toString());
+        JSONObject printer = new JSONObject().put("file", outFilePath);
         PrintOutput output = new PrintOutput(printer);
 
         PrintOptions printOptions = new PrintOptions(params.getJSONObject("options"), output, PrintingUtilities.Format.COMMAND);
@@ -110,15 +91,18 @@ public class TestHelper {
         PrintRaw processor = new PrintRaw();
         try {
             processor.parseData(params.getJSONArray("data"), printOptions);
+            processor.print(output, printOptions);
         } catch(UnsupportedOperationException e) {
-            if (e.getMessage().contains("ImageConverter missing for LanguageType:")) {
-                throw new SkipException("No image converter for this language, skipping");
+            // PrintRaw.parseData wraps all exceptions as UnsupportedOperationException
+            if (e.getCause() instanceof MissingImageConverterException) {
+                // TestNG will mark this test as skipped
+                throw new SkipException(e.getMessage());
             } else {
                 throw e;
             }
+        } finally {
+            processor.cleanup();
         }
-        processor.print(output, printOptions);
-        processor.cleanup();
     }
 
     public static void assertMatches(Path file1, Path file2) throws IOException {

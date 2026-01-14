@@ -8,6 +8,7 @@
     <import file="ant/apple/installer.xml"/>
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>
+    <import file="ant/testng.xml"/>
 
     <!-- Fixes some odd empty directory issues -->
     <defaultexcludes remove="**/.DS_Store"/>
@@ -74,6 +75,27 @@
         <copy todir="${dist.dir}">
             <fileset file="LICENSE.txt"/>
         </copy>
+    </target>
+
+    <target name="compile-tests" depends="compile-socket">
+        <echo level="info">test.dir: ${test.dir}</echo>
+
+        <javac destdir="${build.dir}/${project.filename}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8" debug="true">
+            <src path="${test.dir}"/>
+            <classpath>
+                <!-- prefer bouncycastle from pdfbox over others -->
+                <path id="plugin.override">
+                    <pathelement path="${pdfbox.path}"/>
+                </path>
+                <fileset dir="lib">
+                    <include name="**/*.jar"/>
+                </fileset>
+                <fileset dir="${java.home}">
+                    <include name="**/*.jar"/>
+                </fileset>
+            </classpath>
+            <compilerarg value="-Xlint:-options"/>
+        </javac>
     </target>
 
     <target name="build-jar" depends="download-javafx,compile-socket,copy-libs,externalize-libs">
@@ -311,5 +333,27 @@
     <target name="dmg" depends="get-target-arch,target-os-mac,distribute,provision,download-jre,build-dmg"/>
     <target name="makeself" depends="get-target-arch,target-os-linux,distribute,provision,download-jre,build-run"/>
 
-
+    <target name="testng" depends="compile-tests">
+        <testng classpathref="testng.classpath" haltOnFailure="true" verbose="2">
+            <classpath>
+                <pathelement location="${build.dir}/${project.filename}"/>
+                <!-- prefer bouncycastle from pdfbox over others -->
+                <path id="plugin.override">
+                    <pathelement path="${pdfbox.path}"/>
+                </path>
+                <fileset dir="lib">
+                    <include name="**/*.jar"/>
+                </fileset>
+                <fileset dir="${java.home}">
+                    <include name="**/*.jar"/>
+                </fileset>
+            </classpath>
+            <classfileset dir="out/build/qz-tray" includes="**/*Tests.class">
+                <!-- FIXME: Convert all classes to leverage @Test annotation -->
+                <exclude name="**/InstallerTests.class"/>
+                <exclude name="**/AppFinderTests.class"/>
+                <exclude name="**/ProvisionerInstallerTests.class"/>
+            </classfileset>
+        </testng>
+    </target>
 </project>

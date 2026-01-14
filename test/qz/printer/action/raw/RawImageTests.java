@@ -4,6 +4,9 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.testng.SkipException;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.printer.action.PrintRaw;
@@ -13,21 +16,65 @@ import qz.utils.PrintingUtilities;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.util.ArrayList;
 
 /**
  * Test helper for dispatching raw image print conversions.
  */
-public class RawTestHelper {
+public class RawImageTests {
+    // NOTE: BASE_DIR is wiped when establishing baselines
+    // Running a single test will delete other tests' baselines
+    // Only run the full test class when ESTABLISH_BASELINE is true
+    public static final boolean ESTABLISH_BASELINE = false;
+
+    private static final Path OUT_DIR = Paths.get("./out/raw-image-tests");
+    private static final Path BASE_DIR = Paths.get("./test/qz/printer/action/raw/raw-image-baseline");
     private static final Path RES_DIR = Paths.get("test/qz/printer/action/resources");
+
+    @BeforeClass
+    public void prepareDirectory() throws IOException {
+        Files.createDirectories(OUT_DIR);
+        Files.createDirectories(BASE_DIR);
+        RawImageTests.cleanDirectory(OUT_DIR);
+        if (ESTABLISH_BASELINE) RawImageTests.cleanDirectory(BASE_DIR);
+    }
 
     public static void setupEnvironment() {
         // print to file is off by default. Override for our tests
         System.setProperty(ArgValue.SECURITY_PRINT_TOFILE.getMatch(), "true");
         System.setProperty(ArgValue.SECURITY_DATA_PROTOCOLS.getMatch(), "http,https,file");
+    }
+
+    /**
+     * constructs a test matrix of [title, params] for each LanguageType
+     */
+    @DataProvider(name = "languages")
+    public Object[][] languages() throws JSONException {
+        ArrayList<Object[]> retMatrix = new ArrayList<>();
+        for (LanguageType languageType : LanguageType.values()) {
+            JSONObject params = RawImageTests.constructParams(languageType, PrintOptions.Orientation.PORTRAIT, PrintingUtilities.Format.IMAGE);
+            retMatrix.add(new Object[]{languageType.slug(), params});
+        }
+        return retMatrix.toArray(new Object[0][]);
+    }
+
+    /**
+     * constructs a test matrix of [title, params] for each Format with a biCreator (pixelConverter)
+     */
+    @DataProvider(name = "formats")
+    public Object[][] pixel() throws JSONException {
+        ArrayList<Object[]> retMatrix = new ArrayList<>();
+        for (PrintingUtilities.Format format : PrintingUtilities.Format.values()) {
+            if (!format.hasBiCreator()) continue;
+            for ( PrintOptions.Orientation orientation : PrintOptions.Orientation.values()) {
+                retMatrix.add(new Object[] {
+                        String.format("%s-%s-%s", format.slug(), orientation.slug(), LanguageType.ZPL.slug()),
+                        RawImageTests.constructParams(LanguageType.ZPL, orientation, format)
+                });
+            }
+        }
+        return retMatrix.toArray(new Object[0][]);
     }
 
     public static JSONObject constructParams(LanguageType languageType, PrintOptions.Orientation orientation, PrintingUtilities.Format format) throws JSONException {
@@ -82,7 +129,22 @@ public class RawTestHelper {
                 .toUri();
     }
 
-    public static void printRaw(Path outFilePath, JSONObject params) throws Exception {
+    @Test(dataProvider = "languages")
+    public void testLanguagePrint(String title, JSONObject params) throws Exception {
+        printRaw("language-" + title, params);
+    }
+
+    @Test(dataProvider = "formats")
+    public void testFormatPrint(String title, JSONObject params) throws Exception {
+        printRaw("format-" + title, params);
+    }
+
+    public static void printRaw(String title, JSONObject params) throws Exception {
+        RawImageTests.setupEnvironment();
+
+        Path outFilePath = OUT_DIR.resolve(title + "-test.bin");
+        Path baselineFilePath = BASE_DIR.resolve(title + "-test.bin");
+
         JSONObject printer = new JSONObject().put("file", outFilePath);
         PrintOutput output = new PrintOutput(printer);
 
@@ -96,6 +158,12 @@ public class RawTestHelper {
             // PrintRaw.parseData wraps all exceptions as UnsupportedOperationException
             if (e.getCause() instanceof MissingImageConverterException) {
                 // TestNG will mark this test as skipped
+                if (Files.exists(baselineFilePath)) {
+                    // We are trying to skip a print that had a valid baseline. That needs to cause a test fail.
+                    throw new Exception(
+                            "Print test shouldn't be skipped for a valid baseline: " + baselineFilePath
+                    );
+                }
                 throw new SkipException(e.getMessage());
             } else {
                 throw e;
@@ -103,6 +171,12 @@ public class RawTestHelper {
         } finally {
             processor.cleanup();
         }
+
+        if (ESTABLISH_BASELINE) {
+            Files.copy(outFilePath, baselineFilePath, StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        RawImageTests.assertMatches(outFilePath, baselineFilePath);
     }
 
     public static void assertMatches(Path file1, Path file2) throws IOException {

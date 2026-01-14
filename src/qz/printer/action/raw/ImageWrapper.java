@@ -21,7 +21,6 @@ import qz.utils.ByteUtilities;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -338,7 +337,7 @@ public class ImageWrapper {
                 appendEpsonSlices(getByteBuffer());
                 break;
             case ZPL:
-                String zplHexAsString = ByteUtilities.getHexString(getImageAsIntArray());
+                String zplHexAsString = ByteUtilities.toHexString(getImageAsIntArray());
                 int byteLen = zplHexAsString.length() / 2;
                 int perRow = byteLen / getHeight();
                 StringBuilder zpl = new StringBuilder("^GFA,")
@@ -357,7 +356,7 @@ public class ImageWrapper {
                 getByteBuffer().append(epl, charset).append(getBytes()).append(new byte[] {10});
                 break;
             case CPCL:
-                String cpclHexAsString = ByteUtilities.getHexString(getImageAsIntArray());
+                String cpclHexAsString = ByteUtilities.toHexString(getImageAsIntArray());
                 StringBuilder cpcl = new StringBuilder("EG ")
                         .append(getWidth() / 8).append(" ")
                         .append(getHeight()).append(" ")
@@ -393,7 +392,7 @@ public class ImageWrapper {
 
                 break;
             case SBPL:
-                String sbplHexAsString = ByteUtilities.getHexString(getImageAsIntArray());
+                String sbplHexAsString = ByteUtilities.toHexString(getImageAsIntArray());
                 StringBuilder sbpl = new StringBuilder("GH")
                         .append(String.format("%03d", getWidth() / 8))
                         .append(String.format("%03d", getHeight() / 8))

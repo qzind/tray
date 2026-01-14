@@ -133,7 +133,7 @@ public abstract class MonoImageConverter extends ImageConverter {
     }
 
     public String convertImageToHexString() {
-        return ByteUtilities.getHexString(imageAsByteArray);
+        return ByteUtilities.toHexString(imageAsByteArray);
     }
 
     /**

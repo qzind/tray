@@ -145,7 +145,7 @@ public class NetworkUtilities {
         }
 
         Device(NetworkInterface iface) {
-            try { mac = ByteUtilities.getHexString(iface.getHardwareAddress()); } catch(Exception ignore) {}
+            try { mac = ByteUtilities.toHexString(iface.getHardwareAddress()); } catch(Exception ignore) {}
             try { up = iface.isUp(); } catch(SocketException ignore) {}
 
             ip4 = new ArrayList<>();

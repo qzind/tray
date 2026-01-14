@@ -76,7 +76,7 @@ public class ByteUtilities {
             case BASE64:
                 return Base64.encodeBase64String(bytes);
             case HEX:
-                return ByteUtilities.getHexString(bytes);
+                return ByteUtilities.toHexString(bytes);
             case PLAIN:
                 break;
             default:
@@ -85,8 +85,8 @@ public class ByteUtilities {
         return new String(bytes);
     }
 
-    public static String getHexString(byte[] bytes) {
-        return getHexString(bytes, true);
+    public static String toHexString(byte[] bytes) {
+        return toHexString(bytes, true);
     }
 
     /**
@@ -95,7 +95,7 @@ public class ByteUtilities {
      * @param bytes     Bytes to be converted.
      * @param upperCase Whether the hex string should be UPPER or lower case.
      */
-    public static String getHexString(byte[] bytes, boolean upperCase) {
+    public static String toHexString(byte[] bytes, boolean upperCase) {
         char[] hexChars = new char[bytes.length * 2];
         int v;
         for(int j = 0; j < bytes.length; j++) {
@@ -230,7 +230,7 @@ public class ByteUtilities {
      * @param raw Numbers to be converted to hex.
      * @return Hex string representation.
      */
-    public static String getHexString(int[] raw) {
+    public static String toHexString(int[] raw) {
         if (raw == null) { return null; }
 
         final StringBuilder hex = new StringBuilder(2 * raw.length);

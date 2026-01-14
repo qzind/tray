@@ -61,7 +61,7 @@ public class PrintingUtilities {
 
         public PrintPixel newBiCreator() {
             if(biCreator == null) {
-                throw new UnsupportedOperationException("Cannot create a enew PrintPixel instance for " + this.name());
+                throw new UnsupportedOperationException("Cannot create a new PrintPixel instance for " + this.name());
             }
             return biCreator.get();
         }

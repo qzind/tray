@@ -10,6 +10,7 @@ import java.io.UnsupportedEncodingException;
 
 public class GsL implements ByteAppender {
     private final EscPos converter;
+    private static final int SLICE_HEIGHT = 24;
 
     public GsL(EscPos converter) {
         this.converter = converter;
@@ -20,16 +21,15 @@ public class GsL implements ByteAppender {
         PixelGrid pixelGrid = converter.getImageAsPixelGrid();
         int w = converter.getWidth();
         int h = converter.getHeight();
-        final int sliceHeight = 24;
 
-        for (int y = 0; y < h; y += sliceHeight) {
-            int slicedHeight = Math.min(sliceHeight, h - y);
+        for (int y = 0; y < h; y += SLICE_HEIGHT) {
+            int slicedHeight = Math.min(SLICE_HEIGHT, h - y);
 
             // isolate a sliced BitSet from the full BitSet
             PixelGrid slice = pixelGrid.getSlice(y, slicedHeight);
 
             // Append the store graphic command
-            appendStoreCommandTo(byteBuffer, w, sliceHeight, slice);
+            appendStoreCommandTo(byteBuffer, w, slicedHeight, slice);
 
             // Append the print graphic command
             appendPrintCommandTo(byteBuffer);

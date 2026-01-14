@@ -300,13 +300,9 @@ public class ByteUtilities {
             log.warn("String encoding was not provided for byte array conversion, default encoding will be used instead");
             return string.getBytes();
         }
-        switch(encoding.name().toLowerCase()) {
-            case "ibm864":
-            case "cp864":
-            case "csibm864":
-            case "864":
-            case "ibm-864":
-                return ArabicConversionUtilities.convertToIBM864(string);
+        if(encoding.name().equals("IBM864")) {
+            // We parse name elsewhere, so this will also match "cp864", "ibm864", "ibm-864", "864", "csIBM864"
+            return ArabicConversionUtilities.convertToIBM864(string);
         }
         return string.getBytes(encoding);
     }

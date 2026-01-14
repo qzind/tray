@@ -332,7 +332,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
                             byte[] octets = DEROctetString.getInstance(extensionValue).getOctets();
                             SubjectKeyIdentifier subjectKeyIdentifier = SubjectKeyIdentifier.getInstance(octets);
                             byte[] keyIdentifier = subjectKeyIdentifier.getKeyIdentifier();
-                            String hex = ByteUtilities.bytesToHex(keyIdentifier, true);
+                            String hex = ByteUtilities.toHexString(keyIdentifier, true);
                             String uri = PK11_KIT_ID + hex.replaceAll("(.{2})", "%$1") + ";type=cert";
                             log.info("Found matching cert: {}", uri);
 

@@ -9,42 +9,67 @@
  */
 package qz.printer.action.raw;
 
+import org.codehaus.jettison.json.JSONObject;
+import qz.common.Sluggable;
+import qz.printer.action.raw.converter.*;
+
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Enum for print languages, such as ZPL, EPL, etc.
- *
- * @author tfino
  */
-public enum LanguageType {
+public enum LanguageType implements Sluggable {
+    CPCL(Cpcl::new, false, true, 203, "COMTEC"),
+    CPL(null /* TODO */, 203, "COGNITIVE"),
+    DPL(null /* TODO */, 300, "DATAMAX"),
+    EPL(Epl::new, true, true, 203, "ELTRON", "EPL", "EPL2", "EPLII"),
+    ESCP(null /* TODO */, 180, "ESC/P2", "ESC/P", "ESCP2"),
+    ESCPOS(EscPos::new, false, true, 180, "ESC/POS"),
+    EVOLIS(Evolis::new, 300),
+    FGL(null /* TODO */, 203, "BOCA"),
+    JSCRIPT(null /* TODO */, 300, "CAB"),
+    LP(null /* TODO */, 203, "LABELPOINT", "LPII"),
+    PGL(Pgl::new, 203, "IGP/PGL", "PRINTRONIX"),
+    SBPL(Sbpl::new, false, true, 203, "SATO"),
+    STAR(null /* TODO */, 203),
+    ZPL(Zpl::new, false, true, 203, "ZEBRA", "ZPL", "ZPL2", "ZPLII"),
+    UNKNOWN(null, 72);
 
-    ZPL(false, true, 203, "ZPL", "ZPL2", "ZPLII", "ZEBRA"),
-    EPL(true, true, 203, "EPL", "EPL2", "EPLII"),
-    CPCL(false, true, 203),
-    ESCP(false, false, 180, "ESCP", "ESCP2", "ESCPOS", "ESC", "ESC/P", "ESC/P2", "ESCP/P2", "ESC/POS", "ESC\\P", "EPSON"),
-    EVOLIS(false, false, 300),
-    SBPL(false, true, 203, "SATO"),
-    PGL(false, false, 203, "IGP/PGL", "PRINTRONIX"),
-    UNKNOWN(false, false, 72);
+    private final Supplier<ImageConverter> supplier;
+    private final boolean imgOutputInvert;
+    private final boolean imgWidthValidated;
+    private final double defaultDensity;
+    private final List<String> altNames;
 
+    LanguageType(Supplier<ImageConverter> supplier, double defaultDensity, String ... altNames) {
+        this(supplier, false, false, defaultDensity, altNames);
+    }
 
-    private boolean imgOutputInvert = false;
-    private boolean imgWidthValidated = false;
-    private double defaultDensity = 72;
-    private List<String> altNames;
-
-    LanguageType(boolean imgOutputInvert, boolean imgWidthValidated, double defaultDensity, String... altNames) {
+    LanguageType(Supplier<ImageConverter> supplier, boolean imgOutputInvert, boolean imgWidthValidated, double defaultDensity, String... altNames) {
+        this.supplier = supplier;
         this.imgOutputInvert = imgOutputInvert;
         this.imgWidthValidated = imgWidthValidated;
         this.defaultDensity = defaultDensity;
-
         this.altNames = new ArrayList<>();
         Collections.addAll(this.altNames, altNames);
     }
 
-    public static LanguageType getType(String type) {
+    public ImageConverter newImageConverter(BufferedImage img, JSONObject opt) {
+        if(supplier != null) {
+            ImageConverter converter = supplier.get();
+            converter.setLanguageType(this);
+            converter.setParams(opt);
+            converter.setBufferedImage(img);
+            return converter;
+        }
+        throw new MissingImageConverterException("ImageConverter missing for LanguageType: " + this);
+    }
+
+    public static LanguageType parse(String type) {
         for(LanguageType lang : LanguageType.values()) {
             if (lang.name().equalsIgnoreCase(type) || lang.altNames.contains(type)) {
                 return lang;
@@ -54,9 +79,8 @@ public enum LanguageType {
         return UNKNOWN;
     }
 
-
     /**
-     * Returns whether or not this {@code LanguageType}
+     * Returns whether this {@code LanguageType}
      * inverts the black and white pixels before sending to the printer.
      *
      * @return {@code true} if language type flips black and white pixels
@@ -66,7 +90,7 @@ public enum LanguageType {
     }
 
     /**
-     * Returns whether or not the specified {@code LanguageType} requires
+     * Returns whether the specified {@code LanguageType} requires
      * the image width to be validated prior to processing output.  This
      * is required for image formats that normally require the image width to
      * be a multiple of 8
@@ -81,4 +105,8 @@ public enum LanguageType {
         return defaultDensity;
     }
 
+    @Override
+    public String slug() {
+        return Sluggable.slugOf(this);
+    }
 }

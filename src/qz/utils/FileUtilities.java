@@ -195,9 +195,9 @@ public class FileUtilities {
             "ppt", "pps", "pptx", "pptm", "potx", "potm", "ppam", "ppsx", "ppsm", "sldx", "sldm", // Microsoft PowerPoint
             "ade", "adp", "adn", "accdb", "accdr", "accdt", "mdb", "mda", "mdn", "mdt", // Microsoft Access
             "mdw", "mdf", "mde", "accde", "mam", "maq", "mar", "mat", "maf", "ldb", "laccdb", // Microsoft Access
-            "app", "action", "bin", "command", "workflow", // Mac OS Application/Executable
+            "app", "action", "command", "workflow", // Mac OS Application/Executable
             "sh", "ksh", "csh", "pl", "py", "bash", "run",  // Unix Script
-            "ipa, apk", // iOS/Android App
+            "ipa", "apk", // iOS/Android App
             "widget", // Yahoo Widget
             "url" // Internet Shortcut
     };
@@ -609,7 +609,7 @@ public class FileUtilities {
         }
         in.close();
 
-        return cmds.getByteArray();
+        return cmds.toByteArray();
     }
 
 

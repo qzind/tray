@@ -226,7 +226,7 @@ public class ByteUtilities {
      * @param raw Numbers to be converted to hex.
      * @return Hex string representation.
      */
-    public static String toHexString(int[] raw) {
+    public static String getHexString(int[] raw) {
         if (raw == null) { return null; }
 
         final StringBuilder hex = new StringBuilder(2 * raw.length);

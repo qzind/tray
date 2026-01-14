@@ -197,7 +197,7 @@ public class FileUtilities {
             "mdw", "mdf", "mde", "accde", "mam", "maq", "mar", "mat", "maf", "ldb", "laccdb", // Microsoft Access
             "app", "action", "command", "workflow", // Mac OS Application/Executable
             "sh", "ksh", "csh", "pl", "py", "bash", "run",  // Unix Script
-            "ipa, apk", // iOS/Android App
+            "ipa", "apk", // iOS/Android App
             "widget", // Yahoo Widget
             "url" // Internet Shortcut
     };

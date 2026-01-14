@@ -28,7 +28,7 @@ public enum LanguageType implements Sluggable {
     DPL(null /* TODO */, 300, "DATAMAX"),
     EPL(Epl::new, true, true, 203, "ELTRON", "EPL", "EPL2", "EPLII"),
     ESCP(null /* TODO */, 180, "ESC/P2", "ESC/P", "ESCP2"),
-    ESCPOS(EscPos::new, 180, "ESC/POS"),
+    ESCPOS(EscPos::new, false, true, 180, "ESC/POS"),
     EVOLIS(Evolis::new, 300),
     FGL(null /* TODO */, 203, "BOCA"),
     JSCRIPT(null /* TODO */, 300, "CAB"),

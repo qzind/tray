@@ -13,6 +13,7 @@ import qz.printer.action.PrintRaw;
 import qz.printer.action.raw.converter.MissingImageConverterException;
 import qz.utils.ArgValue;
 import qz.utils.PrintingUtilities;
+import qz.utils.SystemUtilities;
 
 import java.io.IOException;
 import java.net.URI;
@@ -68,8 +69,15 @@ public class RawImageTests {
         for (PrintingUtilities.Format format : PrintingUtilities.Format.values()) {
             if (!format.hasBiCreator()) continue;
             for ( PrintOptions.Orientation orientation : PrintOptions.Orientation.values()) {
+                String title;
+                if(format == PrintingUtilities.Format.HTML) {
+                    // JavaFX renders subpixel content differently between OSs, test MUST be platform-specific
+                    title = String.format("%s-%s-%s-%s", format.slug(), SystemUtilities.getOs().slug(), orientation.slug(), LanguageType.ZPL.slug());
+                } else {
+                    title = String.format("%s-%s-%s", format.slug(), orientation.slug(), LanguageType.ZPL.slug());
+                }
                 retMatrix.add(new Object[] {
-                        String.format("%s-%s-%s", format.slug(), orientation.slug(), LanguageType.ZPL.slug()),
+                        title,
                         RawImageTests.constructParams(LanguageType.ZPL, orientation, format)
                 });
             }

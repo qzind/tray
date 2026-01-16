@@ -8,6 +8,7 @@
     <import file="ant/apple/installer.xml"/>
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>
+    <import file="ant/testng.xml"/>
 
     <!-- Fixes some odd empty directory issues -->
     <defaultexcludes remove="**/.DS_Store"/>
@@ -49,20 +50,23 @@
         </path>
         <pathconvert property="pdfbox.path" refid="pdfbox.found"/>
 
+        <!-- classpath to re-use for compilation, tests, etc -->
+        <path id="main.classpath">
+            <pathelement path="${pdfbox.path}"/>
+            <pathelement location="${build.dir}/${project.filename}"/>
+
+            <fileset dir="lib">
+                <include name="**/*.jar"/>
+            </fileset>
+
+            <fileset dir="${java.home}">
+                <include name="**/*.jar"/>
+            </fileset>
+        </path>
+
         <javac destdir="${build.dir}/${project.filename}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8" debug="true">
             <src path="${src.dir}"/>
-            <classpath>
-                <!-- prefer bouncycastle from pdfbox over others -->
-                <path id="plugin.override">
-                    <pathelement path="${pdfbox.path}"/>
-                </path>
-                <fileset dir="lib">
-                    <include name="**/*.jar"/>
-                </fileset>
-                <fileset dir="${java.home}">
-                    <include name="**/*.jar"/>
-                </fileset>
-            </classpath>
+            <classpath refid="main.classpath"/>
             <compilerarg value="-Xlint:-options"/>
         </javac>
 
@@ -74,6 +78,24 @@
         <copy todir="${dist.dir}">
             <fileset file="LICENSE.txt"/>
         </copy>
+    </target>
+
+    <target name="compile-tests" depends="compile-socket">
+        <mkdir dir="${build.dir}/test"/>
+        <echo level="info">Test sources: ${test.dir}</echo>
+        <echo level="info">Test classes: ${build.dir}/test</echo>
+
+        <javac destdir="${build.dir}/test" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8" debug="true">
+            <src path="${test.dir}"/>
+            <classpath refid="main.classpath"/>
+            <compilerarg value="-Xlint:-options"/>
+        </javac>
+
+        <path id="tests.classpath">
+            <path refid="testng.classpath"/>
+            <path refid="main.classpath"/>
+            <pathelement location="${build.dir}/test"/>
+        </path>
     </target>
 
     <target name="build-jar" depends="download-javafx,compile-socket,copy-libs,externalize-libs">
@@ -137,6 +159,8 @@
             <fileset dir="${basedir}/lib">
                 <include name="**/*.jar"/>
                 <exclude name="**/javafx*"/>
+                <exclude name="**/testng*.jar"/>
+                <exclude name="**/jcommander*.jar"/>
             </fileset>
         </unzip>
         <!-- Copy platform specific target javafx version -->
@@ -311,5 +335,9 @@
     <target name="dmg" depends="get-target-arch,target-os-mac,distribute,provision,download-jre,build-dmg"/>
     <target name="makeself" depends="get-target-arch,target-os-linux,distribute,provision,download-jre,build-run"/>
 
-
+    <target name="testng" depends="compile-tests">
+        <testng listeners="qz.testng.ConciseSkipListener" classpathref="tests.classpath" haltOnFailure="true" verbose="2">
+            <classfileset dir="${build.dir}/test" includes="**"/>
+        </testng>
+    </target>
 </project>

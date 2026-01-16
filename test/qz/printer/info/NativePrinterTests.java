@@ -1,10 +1,8 @@
-package tests.qz.printer.info;
+package qz.printer.info;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.printer.PrintServiceMatcher;
-import qz.printer.info.NativePrinter;
-import qz.printer.info.NativePrinterMap;
 
 import java.util.Date;
 

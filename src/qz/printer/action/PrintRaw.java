@@ -27,6 +27,7 @@ import qz.printer.info.NativePrinter;
 import qz.printer.status.CupsUtils;
 import qz.utils.*;
 
+import javax.imageio.ImageIO;
 import javax.print.*;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
@@ -108,6 +109,10 @@ public class PrintRaw implements PrintProcessor {
                     case PDF:
                         BufferedImage orig = format.newBiCreator().createBufferedImage(cmd, opt, flavor, rawOpts, pxlOpts);
                         BufferedImage oriented = applyOrientation(orig, pxlOpts);
+
+                        // Uncomment to write the BufferedImage to disk
+                        // ImageIO.write(oriented, "png", new File(String.format("format-%s-%s-%s.png", format.slug(), pxlOpts.getOrientation().slug(), flavor.toString().toLowerCase(Locale.ENGLISH))));
+
                         ImageConverter converter = LanguageType.parse(opt.optString("language")).newImageConverter(oriented, opt);
                         converter.appendTo(commands);
                         break;

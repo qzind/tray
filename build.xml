@@ -8,7 +8,6 @@
     <import file="ant/apple/installer.xml"/>
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>
-    <import file="ant/testng.xml"/>
 
     <!-- Add Ivy Tasks -->
     <taskdef uri="antlib:org.apache.ivy.ant" resource="org/apache/ivy/ant/antlib.xml">
@@ -18,6 +17,14 @@
             </fileset>
         </classpath>
     </taskdef>
+
+    <!-- Add TestNG Tasks -->
+    <path id="testng.classpath">
+        <fileset dir="ant/deps/ivy">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+    <taskdef resource="testngtasks" classpathref="testng.classpath"/>
 
     <!-- Fixes some odd empty directory issues -->
     <defaultexcludes remove="**/.DS_Store"/>
@@ -92,7 +99,7 @@
         </copy>
     </target>
 
-    <target name="compile-tests" depends="compile-socket,find-testng">
+    <target name="compile-tests" depends="compile-socket">
         <mkdir dir="${build.dir}/test"/>
         <echo level="info">Test sources: ${test.dir}</echo>
         <echo level="info">Test classes: ${build.dir}/test</echo>

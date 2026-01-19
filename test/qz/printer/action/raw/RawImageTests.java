@@ -13,7 +13,9 @@ import qz.printer.action.PrintRaw;
 import qz.printer.action.raw.converter.MissingImageConverterException;
 import qz.utils.ArgValue;
 import qz.utils.PrintingUtilities;
+import qz.utils.SystemUtilities;
 
+import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
@@ -68,8 +70,15 @@ public class RawImageTests {
         for (PrintingUtilities.Format format : PrintingUtilities.Format.values()) {
             if (!format.hasBiCreator()) continue;
             for ( PrintOptions.Orientation orientation : PrintOptions.Orientation.values()) {
+                String title;
+                if(format == PrintingUtilities.Format.HTML) {
+                    // JavaFX renders subpixel content differently between OSs, test MUST be platform-specific
+                    title = String.format("%s-%s-%s-%s", format.slug(), SystemUtilities.getOs().slug(), orientation.slug(), LanguageType.ZPL.slug());
+                } else {
+                    title = String.format("%s-%s-%s", format.slug(), orientation.slug(), LanguageType.ZPL.slug());
+                }
                 retMatrix.add(new Object[] {
-                        String.format("%s-%s-%s", format.slug(), orientation.slug(), LanguageType.ZPL.slug()),
+                        title,
                         RawImageTests.constructParams(LanguageType.ZPL, orientation, format)
                 });
             }
@@ -148,11 +157,19 @@ public class RawImageTests {
         JSONObject printer = new JSONObject().put("file", outFilePath);
         PrintOutput output = new PrintOutput(printer);
 
+        JSONArray data = params.getJSONArray("data");
         PrintOptions printOptions = new PrintOptions(params.getJSONObject("options"), output, PrintingUtilities.Format.COMMAND);
 
         PrintRaw processor = new PrintRaw();
         try {
-            processor.parseData(params.getJSONArray("data"), printOptions);
+            // TODO: Linux is broken in headless; remove after JavaFX 26ea.  See issue #1387
+            if(GraphicsEnvironment.isHeadless() &&
+                    SystemUtilities.isLinux() &&
+                    "html".equalsIgnoreCase(data.getJSONObject(0).getString("format"))) {
+                throw new SkipException("Skipping HTML on Headless Linux per issue #1387");
+            }
+            processor.parseData(data, printOptions);
+            System.out.println(params);
             processor.print(output, printOptions);
         } catch(UnsupportedOperationException e) {
             // PrintRaw.parseData wraps all exceptions as UnsupportedOperationException

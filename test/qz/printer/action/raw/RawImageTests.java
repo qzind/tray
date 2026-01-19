@@ -157,18 +157,18 @@ public class RawImageTests {
         JSONObject printer = new JSONObject().put("file", outFilePath);
         PrintOutput output = new PrintOutput(printer);
 
-        JSONObject jsonOptions = params.getJSONObject("options");
-        PrintOptions printOptions = new PrintOptions(jsonOptions, output, PrintingUtilities.Format.COMMAND);
+        JSONArray data = params.getJSONArray("data");
+        PrintOptions printOptions = new PrintOptions(params.getJSONObject("options"), output, PrintingUtilities.Format.COMMAND);
 
         PrintRaw processor = new PrintRaw();
         try {
             // TODO: Linux is broken in headless; remove after JavaFX 26ea.  See issue #1387
             if(GraphicsEnvironment.isHeadless() &&
                     SystemUtilities.isLinux() &&
-                    "html".equalsIgnoreCase(jsonOptions.getString("format"))) {
-                throw new SkipException("Skipping HTML on Headless Linux");
+                    "html".equalsIgnoreCase(data.getJSONObject(0).getString("format"))) {
+                throw new SkipException("Skipping HTML on Headless Linux per issue #1387");
             }
-            processor.parseData(params.getJSONArray("data"), printOptions);
+            processor.parseData(data, printOptions);
             System.out.println(params);
             processor.print(output, printOptions);
         } catch(UnsupportedOperationException e) {

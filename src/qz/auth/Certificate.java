@@ -464,7 +464,7 @@ public class Certificate {
     public static String makeThumbPrint(X509Certificate cert) throws NoSuchAlgorithmException, CertificateEncodingException {
         MessageDigest md = MessageDigest.getInstance("SHA-1");
         md.update(cert.getEncoded());
-        return ByteUtilities.bytesToHex(md.digest(), false);
+        return ByteUtilities.toHexString(md.digest(), false);
     }
 
     private String data(boolean assumeTrusted) {

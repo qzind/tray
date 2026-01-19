@@ -24,6 +24,7 @@ jobs:
       - if: ${{ matrix.arch == 'x86_64' }}
         run: |
           # Only run tests on same arch
+          ant testng
           sudo out/qz-tray-*.run
           /opt/qz-tray/qz-tray --version
           sudo apt-get install nsis
@@ -49,6 +50,7 @@ jobs:
       - if: ${{ matrix.arch == 'aarch64' }}
         run: |
           # Only run tests on same arch
+          ant testng
           sudo installer -pkg out/qz-tray-*.pkg -target /
           "/Applications/QZ Tray.app/Contents/MacOS/QZ Tray" --version
           brew install nsis makeself
@@ -76,6 +78,7 @@ jobs:
       - if: ${{ matrix.arch == 'x86_64' }}
         run: |
           # Only run tests on same arch
+          ant testng
           Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
           "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"
 

@@ -5,6 +5,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.common.Sluggable;
 import qz.utils.LoggerUtilities;
 import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
@@ -19,6 +20,7 @@ import java.awt.*;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -30,7 +32,6 @@ public class PrintOptions {
     private Pixel psOptions = new Pixel();
     private Raw rawOptions = new Raw();
     private Default defOptions = new Default();
-
 
     /**
      * Parses the provided JSON Object into relevant Pixel and Raw options
@@ -50,13 +51,18 @@ public class PrintOptions {
             rawOptions.forceRaw = false;
         }
 
+        rawOptions.destEncoding = Charset.defaultCharset();
         if (!configOpts.isNull("encoding")) {
             JSONObject encodings = configOpts.optJSONObject("encoding");
             if (encodings != null) {
-                rawOptions.srcEncoding = encodings.optString("from", null);
-                rawOptions.destEncoding = encodings.optString("to", null);
+                // encoding may be a string or obj. Since optJSONObject didn't return null, it is an object
+                if (encodings.has("from")) {
+                    rawOptions.srcEncoding = Charset.forName(encodings.optString("from", Charset.defaultCharset().name()));
+                }
+                rawOptions.destEncoding = Charset.forName(encodings.optString("to", Charset.defaultCharset().name()));
             } else {
-                rawOptions.destEncoding = configOpts.optString("encoding", null);
+                // String form, that means it is destination-encoded only
+                rawOptions.destEncoding = Charset.forName(configOpts.optString("encoding", Charset.defaultCharset().name()));
             }
         }
         if (!configOpts.isNull("spool")) {
@@ -94,7 +100,6 @@ public class PrintOptions {
         if (!configOpts.isNull("retainTemp")) {
             rawOptions.retainTemp = configOpts.optBoolean("retainTemp", false);
         }
-
 
         //check for pixel options
         if (!configOpts.isNull("units")) {
@@ -416,24 +421,23 @@ public class PrintOptions {
     /** Raw printing options */
     public class Raw {
         private boolean forceRaw = false;       //Alternate printing for linux systems
-        private String destEncoding = null;     //Text encoding / charset
-        private String srcEncoding = null;      //Conversion text encoding
+        private Charset destEncoding = null;     //Text encoding / charset
+        private Charset srcEncoding = null;      //Conversion text encoding
         private String spoolEnd = null;         //End of document character(s)
         private int spoolSize = 1;              //Pages per spool
         private int copies = 1;                 //Job copies
         private String jobName = null;          //Job name
         private boolean retainTemp = false;     //Retain any temporary files
 
-
         public boolean isForceRaw() {
             return forceRaw;
         }
 
-        public String getDestEncoding() {
+        public Charset getDestEncoding() {
             return destEncoding;
         }
 
-        public String getSrcEncoding() {
+        public Charset getSrcEncoding() {
             return srcEncoding;
         }
 
@@ -699,7 +703,7 @@ public class PrintOptions {
     }
 
     /** Pixel page orientation option */
-    public enum Orientation {
+    public enum Orientation implements Sluggable {
         PORTRAIT(OrientationRequested.PORTRAIT, PageFormat.PORTRAIT, 0),
         REVERSE_PORTRAIT(OrientationRequested.PORTRAIT, PageFormat.PORTRAIT, 180),
         LANDSCAPE(OrientationRequested.LANDSCAPE, PageFormat.LANDSCAPE, 270),
@@ -727,6 +731,11 @@ public class PrintOptions {
         public int getDegreesRot() {
             return degreesRot;
         }
+
+        @Override
+        public String slug() {
+            return Sluggable.slugOf(this);
+        }
     }
 
     /** Pixel page color option */
@@ -748,5 +757,4 @@ public class PrintOptions {
             return chromatic;
         }
     }
-
 }

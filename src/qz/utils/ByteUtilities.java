@@ -9,12 +9,16 @@
  */
 package qz.utils;
 
+import com.ibm.icu.text.ArabicShapingException;
 import org.apache.commons.ssl.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
+import qz.printer.action.raw.PixelGrid;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -72,7 +76,7 @@ public class ByteUtilities {
             case BASE64:
                 return Base64.encodeBase64String(bytes);
             case HEX:
-                return ByteUtilities.bytesToHex(bytes);
+                return ByteUtilities.toHexString(bytes);
             case PLAIN:
                 break;
             default:
@@ -81,8 +85,8 @@ public class ByteUtilities {
         return new String(bytes);
     }
 
-    public static String bytesToHex(byte[] bytes) {
-        return bytesToHex(bytes, true);
+    public static String toHexString(byte[] bytes) {
+        return toHexString(bytes, true);
     }
 
     /**
@@ -91,7 +95,7 @@ public class ByteUtilities {
      * @param bytes     Bytes to be converted.
      * @param upperCase Whether the hex string should be UPPER or lower case.
      */
-    public static String bytesToHex(byte[] bytes, boolean upperCase) {
+    public static String toHexString(byte[] bytes, boolean upperCase) {
         char[] hexChars = new char[bytes.length * 2];
         int v;
         for(int j = 0; j < bytes.length; j++) {
@@ -226,7 +230,7 @@ public class ByteUtilities {
      * @param raw Numbers to be converted to hex.
      * @return Hex string representation.
      */
-    public static String getHexString(int[] raw) {
+    public static String toHexString(int[] raw) {
         if (raw == null) { return null; }
 
         final StringBuilder hex = new StringBuilder(2 * raw.length);
@@ -291,4 +295,42 @@ public class ByteUtilities {
         return false;
     }
 
+    public static byte[] toByteArray(String string, Charset encoding) throws ArabicShapingException, IOException {
+        if(encoding == null) {
+            log.warn("String encoding was not provided for byte array conversion, default encoding will be used instead");
+            return string.getBytes();
+        }
+        if(encoding.name().equals("IBM864")) {
+            // We parse name elsewhere, so this will also match "cp864", "ibm864", "ibm-864", "864", "csIBM864"
+            return ArabicConversionUtilities.convertToIBM864(string);
+        }
+        return string.getBytes(encoding);
+    }
+
+    public static byte[] toByteArray(PixelGrid pixelGrid) {
+        log.info("Packing bits...");
+        // Arrays elements are always initialized with default values, i.e. 0
+        byte[] byteArray = new byte[pixelGrid.size() / 8];
+        // Convert every eight zero's to a full byte, in decimal
+        for(int i = 0; i < byteArray.length; i++) {
+            for(int k = 0; k < 8; k++) {
+                byteArray[i] |= (byte)((pixelGrid.get(8 * i + k)? 1:0) << 7 - k);
+            }
+        }
+        return byteArray;
+    }
+
+    /**
+     * Converts a series of bytes from one encoding to another using String conversion
+     */
+    public static byte[] seekConversion(byte[] bytes, Charset srcEncoding, Charset destEncoding) {
+        if (srcEncoding == null) {
+            return bytes;
+        }
+        if (srcEncoding.equals(destEncoding)) {
+            log.warn("Provided source encoding and destination encoding are the same, skipping");
+            return bytes;
+        }
+        return new String(bytes, srcEncoding).getBytes(destEncoding);
+    }
 }

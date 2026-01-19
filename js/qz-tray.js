@@ -27,6 +27,7 @@ var qz = (function() {
 ///// PRIVATE METHODS /////
 
     var _qz = {
+        TITLE: "QZ Tray",
         VERSION: "2.2.6-SNAPSHOT",                              //must match @version above
         DEBUG: false,
 
@@ -110,7 +111,7 @@ var qz = (function() {
                             || (!config.usingSecure && config.port.portIndex >= config.port.insecure.length)) {
                             if (config.hostIndex >= config.host.length - 1) {
                                 //give up, all hope is lost
-                                reject(new Error("Unable to establish connection with QZ"));
+                                reject(new Error("Unable to establish connection with " + _qz.TITLE));
                                 return;
                             } else {
                                 config.hostIndex++;
@@ -146,7 +147,7 @@ var qz = (function() {
                         _qz.websocket.connection.onopen = function(evt) {
                             if (!_qz.websocket.connection.established) {
                                 _qz.log.trace(evt);
-                                _qz.log.info("Established connection with QZ Tray on " + address);
+                                _qz.log.info("Established connection with " + _qz.TITLE + " on " + address);
 
                                 _qz.websocket.setup.openConnection({ resolve: resolve, reject: reject });
 
@@ -196,7 +197,7 @@ var qz = (function() {
 
                         _qz.websocket.connection = null;
                         _qz.websocket.callClose(evt);
-                        _qz.log.info("Closed connection with QZ Tray");
+                        _qz.log.info("Closed connection with " + _qz.TITLE);
 
                         for(var uid in _qz.websocket.pendingCalls) {
                             if (_qz.websocket.pendingCalls.hasOwnProperty(uid)) {
@@ -293,7 +294,7 @@ var qz = (function() {
                         if (returned.uid == null) {
                             if (returned.type == null) {
                                 //incorrect response format, likely connected to incompatible qz version
-                                _qz.websocket.connection.close(4003, "Connected to incompatible QZ Tray version");
+                                _qz.websocket.connection.close(4003, "Connected to incompatible " + _qz.TITLE + " version");
 
                             } else {
                                 //streams (callbacks only, no promises)
@@ -798,7 +799,7 @@ var qz = (function() {
                     return true;
                 }
                 // Promise won't reject on throw; yet better than 'undefined'
-                throw new Error("A connection to QZ has not been established yet");
+                throw new Error("A connection to " + _qz.TITLE + " has not been established yet");
             },
 
             uint8ArrayToHex: function(uint8) {
@@ -969,7 +970,7 @@ var qz = (function() {
                 if (_qz.tools.isActive() && _qz.websocket.connection.semver) {
                     if (_qz.tools.isVersion(2, 0)) {
                         if (!quiet) {
-                            _qz.log.warn("Connected to an older version of QZ, alternate signature algorithms are not supported");
+                            _qz.log.warn("Connected to an older version of " + _qz.TITLE + ", alternate signature algorithms are not supported");
                         }
                         return false;
                     }
@@ -1197,7 +1198,7 @@ var qz = (function() {
                         const state = _qz.websocket.connection.readyState;
 
                         if (state === _qz.tools.ws.OPEN) {
-                            reject(new Error("An open connection with QZ Tray already exists"));
+                            reject(new Error("An open connection with " + _qz.TITLE + " already exists"));
                             return;
                         } else if (state === _qz.tools.ws.CONNECTING) {
                             reject(new Error("The current connection attempt has not returned yet"));
@@ -1283,7 +1284,7 @@ var qz = (function() {
                             reject(new Error("Current connection is still closing"));
                         }
                     } else {
-                        reject(new Error("No open connection with QZ Tray"));
+                        reject(new Error("No open connection with " + _qz.TITLE));
                     }
                 });
             },
@@ -1587,13 +1588,18 @@ var qz = (function() {
          *      For <code>[image]</code> formats, valid flavors are <code>[base64 | file*]</code>.<p/>
          *      For <code>[pdf]</code> formats, valid flavors are <code>[base64 | file*]</code>.
          *  @param {Object} [data.options]
-         *   @param {string} [data.options.language] Required with <code>[raw]</code> type + <code>[image]</code> format. Printer language.
-         *   @param {number} [data.options.x] Optional with <code>[raw]</code> type + <code>[image]</code> format. The X position of the image.
-         *   @param {number} [data.options.y] Optional with <code>[raw]</code> type + <code>[image]</code> format. The Y position of the image.
-         *   @param {string|number} [data.options.dotDensity] Optional with <code>[raw]</code> type + <code>[image]</code> format.
-         *   @param {number} [data.precision=128] Optional with <code>[raw]</code> type <code>[image]</code> format. Bit precision of the ribbons.
-         *   @param {boolean|string|Array<Array<number>>} [data.options.overlay=false] Optional with <code>[raw]</code> type <code>[image]</code> format.
+         *   @param {string} [data.options.language] Required with <code>[raw]</code> type + <code>[html|image|pdf]</code> format. Printer language.
+         *   @param {string} [data.options.quantization="alpha"] Optional with <code>[raw]</code> type + <code>[html|image|pdf]</code> format. The "black pixel" quantization method used.  Valid values are <code>[alpha* | black | luma | dither]</code>.
+         *   @param {number} [data.options.threshold=127] Optional with <code>[raw]</code> type + <code>[html|image|pdf]</code> format. The "black pixel" threshold used for quantization.  Default is <code>127</code>.
+         *   @param {number} [data.options.x=0] Optional with <code>[raw]</code> type + <code>[html|image|pdf]</code> format for language(s) <code>[cpcl|epl]</code>. The X position of the image.
+         *   @param {number} [data.options.y=0] Optional with <code>[raw]</code> type + <code>[html|image|pdf]</code> format for language(s) <code>[cpcl|epl]</code>. The Y position of the image.
+         *   @param {string|number} [data.options.dotDensity="single"] Optional with <code>[raw]</code> type + <code>[html|image|pdf]</code> format for language(s) <code>[escpos]</code>.  Valid values are <code>[single* | double | triple | single-legacy | double-legacy]</code> or the escpos "decimal" equivalent
+         *   @param {string} [data.options.imageEncoding="esc_asterisk"] Optional with <code>[raw]</code> type + <code>[html|image|pdf]</code> format for language(s) <code>[escpos]</code> and imageEncoding(s) <code>esc_asterisk</code>.  Valid values are <code>[esc_asterisk* | gs_l | gs_v_0]</code>.
+         *   @param {number} [data.options.precision=128] Optional with <code>[raw]</code> type <code>[html|image|pdf]</code> format for language(s) <code>[evolis]</code>. Bit precision of the ribbons.
+         *   @param {boolean|string|Array<Array<number>>} [data.options.overlay=false] Optional with <code>[raw]</code> type <code>[html|image|pdf]</code> format for language(s) <code>[evolis]</code>.  Instructions for printing the "clear" overlay ribbon.
          *       Boolean sets entire layer, string sets mask image, Array sets array of rectangles in format <code>[x1,y1,x2,y2]</code>.
+         *   @param {string} [data.options.logoId] Mandatory with <code>[raw]</code> type <code>[html|image|pdf]</code> format for language(s) <code>[pgl]</code>. Logo identifier to append for storing in the printer's memory.
+         *   @param {boolean} [data.options.igpDots=false] Optional with <code>[raw]</code> type <code>[html|image|pdf]</code> format for language(s) <code>[pgl]</code>. When set to <code>true</code> instructs printer to fallback to legacy 60x72 dpi when printing graphics
          *   @param {string} [data.options.xmlTag] Required with <code>[xml]</code> flavor. Tag name containing base64 formatted data.
          *   @param {number} [data.options.pageWidth] Optional with <code>[html | pdf]</code> formats. Width of the rendering.
          *       Defaults to paper width.
@@ -2293,7 +2299,7 @@ var qz = (function() {
                     if (typeof deviceInfo.data === 'object') {
                         if (deviceInfo.data.type.toUpperCase() !== "PLAIN"
                             || typeof deviceInfo.data.data !== "string") {
-                            return _qz.tools.reject(new Error("Data format is not supported with connected QZ Tray version " + _qz.websocket.connection.version));
+                            return _qz.tools.reject(new Error("Data format is not supported with connected "  + _qz.TITLE + " version " + _qz.websocket.connection.version));
                         }
 
                         deviceInfo.data = deviceInfo.data.data;
@@ -2746,6 +2752,18 @@ var qz = (function() {
                 return (_qz.DEBUG = show);
             },
 
+
+            /**
+             * Get internal branding title used by logs and exceptions (e.g "QZ Tray")
+             *
+             * @returns {string} Internal title used for logs and exceptions
+             *
+             * @memberof qz.api
+             */
+            getTitle: function() {
+                return _qz.TITLE;
+            },
+
             /**
              * Get version of connected QZ Tray application.
              *
@@ -2822,6 +2840,18 @@ var qz = (function() {
              */
             setSha256Type: function(hasher) {
                 _qz.tools.hash = hasher;
+            },
+
+            /**
+             * Change the internal branding of "QZ Tray" for logs and exceptions
+             * Must be called before any connection attempts are made to appear in messaging
+             *
+             * @param {string} title Internal name to be used in place of "QZ Tray" for logs and exceptions
+             *
+             * @memberof qz.api
+             */
+            setTitle: function(title) {
+                _qz.TITLE = title;
             },
 
             /**

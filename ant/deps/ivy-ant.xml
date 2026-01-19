@@ -2,5 +2,6 @@
     <info organisation="io.qz" module="qz-tray-ant"/>
     <dependencies>
         <dependency name="jsign"  org="net.jsign"  conf="*->default" rev="${jsign.version}"/>
+        <dependency name="testng"  org="org.testng"  conf="*->default" rev="${testng.version}"/>
     </dependencies>
 </ivy-module>

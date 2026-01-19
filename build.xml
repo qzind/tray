@@ -8,6 +8,7 @@
     <import file="ant/apple/installer.xml"/>
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>
+    <import file="ant/testng.xml"/>
 
     <!-- Add Ivy Tasks -->
     <taskdef uri="antlib:org.apache.ivy.ant" resource="org/apache/ivy/ant/antlib.xml">
@@ -65,13 +66,19 @@
 
     <target name="compile-socket" depends="init,ivy-deps">
         <mkdir dir="${build.dir}/${project.filename}"/>
+
+        <!-- classpath to re-use for compilation, tests, etc -->
+        <path id="main.classpath">
+            <pathelement location="${build.dir}/${project.filename}"/>
+
+            <fileset dir="${lib.dir}">
+                <include name="**/*.jar"/>
+            </fileset>
+        </path>
+
         <javac destdir="${build.dir}/${project.filename}" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8" debug="true">
             <src path="${src.dir}"/>
-            <classpath>
-                <fileset dir="${lib.dir}">
-                    <include name="**/*.jar"/>
-                </fileset>
-            </classpath>
+            <classpath refid="main.classpath"/>
             <compilerarg value="-Xlint:-options"/>
         </javac>
 
@@ -83,6 +90,25 @@
         <copy todir="${dist.dir}">
             <fileset file="LICENSE.txt"/>
         </copy>
+    </target>
+
+    <target name="compile-tests" depends="compile-socket,find-testng">
+        <mkdir dir="${build.dir}/test"/>
+        <echo level="info">Test sources: ${test.dir}</echo>
+        <echo level="info">Test classes: ${build.dir}/test</echo>
+
+        <javac destdir="${build.dir}/test" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8" debug="true">
+            <src path="${test.dir}"/>
+            <classpath refid="main.classpath"/>
+            <classpath refid="testng.classpath"/>
+            <compilerarg value="-Xlint:-options"/>
+        </javac>
+
+        <path id="tests.classpath">
+            <path refid="testng.classpath"/>
+            <path refid="main.classpath"/>
+            <pathelement location="${build.dir}/test"/>
+        </path>
     </target>
 
     <target name="build-jar" depends="compile-socket,copy-libs,externalize-libs">
@@ -355,5 +381,9 @@
     <target name="dmg" depends="get-target-arch,target-os-mac,distribute,provision,download-jre,build-dmg"/>
     <target name="makeself" depends="get-target-arch,target-os-linux,distribute,provision,download-jre,build-run"/>
 
-
+    <target name="testng" depends="compile-tests">
+        <testng listeners="qz.testng.ConciseSkipListener" classpathref="tests.classpath" haltOnFailure="true" verbose="2">
+            <classfileset dir="${build.dir}/test" includes="**"/>
+        </testng>
+    </target>
 </project>

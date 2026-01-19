@@ -61,6 +61,12 @@ public enum ArgValue {
         "tray.notifications"),
     TRAY_HEADLESS(PREFERENCES, "Start QZ Tray in headless (no user interface) mode", null, false,
         "tray.headless"),
+    TRAY_LOG_LINES(PREFERENCES, "Number of log lines to display in the log window", null, 500,
+        "tray.log.lines"),
+    TRAY_LOG_SCROLL(PREFERENCES, "Enabled/disable auto-scrolling of logs in the log window", null, true,
+        "tray.log.scroll"),
+    TRAY_LOG_WRAP(PREFERENCES, "Enabled/disable text wrapping in the log window", null, true,
+        "tray.log.wrap"),
     TRAY_MONOCLE(PREFERENCES, "Enable/disable the use of the Monocle for JavaFX/HTML rendering", null, true,
         "tray.monocle"),
     TRAY_STRICTMODE(PREFERENCES, "Enable/disable solely trusting certificates matching authcert.override", null, false,
@@ -140,6 +146,10 @@ public enum ArgValue {
 
     public Object getDefaultVal() {
         return defaultVal;
+    }
+
+    public String getDefaultValAsString() {
+        return defaultVal == null ? null : defaultVal.toString();
     }
 
     public enum ArgType {

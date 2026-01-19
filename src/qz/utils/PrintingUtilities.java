@@ -10,12 +10,12 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
+import qz.common.Sluggable;
 import qz.communication.WinspoolEx;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.printer.PrintServiceMatcher;
-import qz.printer.action.PrintProcessor;
-import qz.printer.action.ProcessorFactory;
+import qz.printer.action.*;
 import qz.printer.info.NativePrinter;
 import qz.printer.status.CupsUtils;
 import qz.ws.PrintSocketClient;
@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.function.Supplier;
 
 public class PrintingUtilities {
 
@@ -41,8 +42,38 @@ public class PrintingUtilities {
         PIXEL, RAW
     }
 
-    public enum Format {
-        COMMAND, DIRECT, HTML, IMAGE, PDF
+    public enum Format implements Sluggable {
+        COMMAND,
+        DIRECT,
+        HTML(PrintHTML::new),
+        IMAGE(PrintImage::new),
+        PDF(PrintPDF::new);
+
+        private final Supplier<PrintPixel> biCreator;
+
+        Format() {
+            this(null);
+        }
+
+        Format(Supplier<PrintPixel> biCreator) {
+            this.biCreator = biCreator;
+        }
+
+        public PrintPixel newBiCreator() {
+            if(biCreator == null) {
+                throw new UnsupportedOperationException("Cannot create a new PrintPixel instance for " + this.name());
+            }
+            return biCreator.get();
+        }
+
+        public boolean hasBiCreator() {
+            return biCreator != null;
+        }
+
+        @Override
+        public String slug() {
+            return Sluggable.slugOf(this);
+        }
     }
 
     /**

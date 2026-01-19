@@ -22,7 +22,6 @@ public interface PrintProcessor {
      */
     void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException;
 
-
     /**
      * Used to setup and send documents to the specified printing {@code service}.
      *

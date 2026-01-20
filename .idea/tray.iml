@@ -11,15 +11,25 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-     <orderEntry type="module-library">
-          <library>
-            <CLASSES>
-              <root url="file://$MODULE_DIR$/deps" />
-            </CLASSES>
-            <JAVADOC />
-            <SOURCES />
-            <jarDirectory url="file://$MODULE_DIR$/deps" recursive="true" />
-          </library>
-        </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/deps" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+        <jarDirectory url="file://$MODULE_DIR$/deps" recursive="true" />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/ant/deps" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+        <jarDirectory url="file://$MODULE_DIR$/ant/deps" recursive="true" />
+      </library>
+    </orderEntry>
   </component>
 </module>

@@ -18,14 +18,6 @@
         </classpath>
     </taskdef>
 
-    <!-- Add TestNG Tasks -->
-    <path id="testng.classpath">
-        <fileset dir="ant/deps/ivy">
-            <include name="*.jar"/>
-        </fileset>
-    </path>
-    <taskdef resource="testngtasks" classpathref="testng.classpath"/>
-
     <!-- Fixes some odd empty directory issues -->
     <defaultexcludes remove="**/.DS_Store"/>
 
@@ -57,7 +49,15 @@
     <target name="ivy-ant-deps" depends="clean-ivy-cache">
         <ivy:settings file="ant/ivy-settings.xml"/>
         <ivy:resolve file="ant/deps/ivy-ant.xml"/>
-        <ivy:retrieve pattern="ant/deps/ivy/[artifact]-[revision](-[classifier]).[ext]" sync="true"/>
+        <ivy:retrieve pattern="${ant.lib.dir}/[artifact]-[revision](-[classifier]).[ext]" sync="true"/>
+
+        <!-- Add TestNG Tasks -->
+        <path id="testng.classpath">
+            <fileset dir="${ant.lib.dir}">
+                <include name="*.jar"/>
+            </fileset>
+        </path>
+        <taskdef resource="testngtasks" classpathref="testng.classpath"/>
     </target>
 
     <target name="quick-clean">

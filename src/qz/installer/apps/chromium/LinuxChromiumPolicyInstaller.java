@@ -51,7 +51,12 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
                 // Populate object
                 if (policy.exists()) {
                     jsonPolicy = new JSONObject(FileUtils.readFileToString(policy, StandardCharsets.UTF_8));
-                    jsonArray = jsonPolicy.optJSONArray(policyName);
+                    JSONArray found = jsonPolicy.optJSONArray(policyName);
+                    if(found == null) {
+                        log.info("Chromium policy found {} but without entry for {}, we'll add it", policy, policyName);
+                    } else {
+                        jsonArray = found;
+                    }
                 }
 
                 value:

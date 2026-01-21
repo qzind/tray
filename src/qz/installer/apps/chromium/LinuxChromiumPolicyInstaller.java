@@ -46,7 +46,7 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
 
             try {
                 // Ensure parent is writable
-                FileUtilities.setPermissionsParentally(Files.createDirectories(location.toPath()), false);
+                FileUtilities.setPermissionsParentally(Files.createDirectories(location.toPath().getParent()), false);
 
                 // Populate object
                 if (location.exists()) {

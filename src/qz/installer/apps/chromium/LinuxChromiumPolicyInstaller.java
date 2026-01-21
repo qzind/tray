@@ -95,7 +95,7 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
         }
         for(String pattern : MANAGED_POLICY_PATH_PATTERNS) {
             // Chromium policy, e.g. /etc/chromium/policies/managed/qz-tray.json
-            File location = Paths.get(pattern, Constants.PROPS_FILE + ".json").toFile();
+            File location = Paths.get(String.format(pattern, Constants.PROPS_FILE)).toFile();
             log.info("Removing Chromium policy {} {}...", policyName, location);
 
             if(location.exists()) {

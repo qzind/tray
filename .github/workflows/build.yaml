@@ -7,19 +7,15 @@ jobs:
     runs-on: [ubuntu-latest]
     strategy:
       matrix:
-        java: [11]
+        java: [25]
         arch: [x86_64, aarch64, riscv64]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
       - run: sudo apt-get install makeself
-      - if: ${{ matrix.arch == 'riscv64' }}
-        run: |
-          # TODO: remove after migrating to JDK21+
-          echo "ANT_ARGS=-Djlink.java.version=21.0.9+15" >> $GITHUB_ENV
       - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
       - uses: actions/upload-artifact@v4
         with:
@@ -38,11 +34,11 @@ jobs:
     runs-on: [macos-latest]
     strategy:
       matrix:
-        java: [11]
+        java: [25]
         arch: [x86_64, aarch64]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
@@ -65,11 +61,11 @@ jobs:
     runs-on: [windows-latest]
     strategy:
       matrix:
-        java: [11]
+        java: [25]
         arch: [x86_64, aarch64]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'

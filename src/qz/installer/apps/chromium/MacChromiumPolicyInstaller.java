@@ -11,15 +11,15 @@ import java.util.HashSet;
 public class MacChromiumPolicyInstaller extends ChromiumPolicyInstaller {
     private static final Logger log = LogManager.getLogger(MacChromiumPolicyInstaller.class);
 
-    private static final String[] MACOS_POLICY_LOCATIONS = {
+    private static final String[] MANAGED_POLICY_PATH_PATTERNS = {
             "%s/Library/Preferences/com.google.Chrome.plist",
             "%s/Library/Preferences/com.microsoft.Edge.plist"
     };
 
     @Override
     public boolean install(Installer.PrivilegeLevel scope, String policyName, String ... values) {
-        for(String unscopedLocation : MACOS_POLICY_LOCATIONS) {
-            String location = String.format(unscopedLocation, scope == Installer.PrivilegeLevel.USER ? System.getProperty("user.home") : "");
+        for(String pattern : MANAGED_POLICY_PATH_PATTERNS) {
+            String location = String.format(pattern, scope == Installer.PrivilegeLevel.USER ? System.getProperty("user.home") : "");
             log.info("Installing Chromium policy {} to {}...", policyName, location);
 
             for(String value : values) {
@@ -36,8 +36,8 @@ public class MacChromiumPolicyInstaller extends ChromiumPolicyInstaller {
 
     @Override
     public boolean uninstall(Installer.PrivilegeLevel scope, String policyName, String ... values) {
-        for(String unscopedLocation : MACOS_POLICY_LOCATIONS) {
-            String location = scope == Installer.PrivilegeLevel.USER ? System.getProperty("user.home") + unscopedLocation : unscopedLocation;
+        for(String pattern : MANAGED_POLICY_PATH_PATTERNS) {
+            String location = scope == Installer.PrivilegeLevel.USER ? System.getProperty("user.home") + pattern : pattern;
             log.info("Removing Chromium policy {} from {}...", policyName, location);
 
             String found = ShellUtilities.executeRaw(new String[]{"/usr/bin/defaults", "read", location, policyName}, true);

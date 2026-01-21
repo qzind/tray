@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
     private static final Logger log = LogManager.getLogger(LinuxChromiumPolicyInstaller.class);
 
-    private static final String[] LINUX_POLICY_LOCATIONS = {
+    private static final String[] MANAGED_POLICY_PATH_PATTERNS = {
             "/etc/chromium/policies/managed/%s.json",
             "/etc/opt/chrome/policies/managed/%s.json",
             "/etc/opt/edge/policies/managed/%s.json"
@@ -34,11 +34,11 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
             log.info("Skipping installation of Chromium policy {}, not supported as PrivilegeLevel {}", policyName, scope);
             return false;
         }
-        for(String location : LINUX_POLICY_LOCATIONS) {
-            log.info("Installing Chromium policy {} {}/{}...", policyName, location, Constants.PROPS_FILE + ".json");
-
+        for(String pattern : MANAGED_POLICY_PATH_PATTERNS) {
             // Chromium policy, e.g. /etc/chromium/policies/managed/qz-tray.json
-            File policy = Paths.get(String.format(location, Constants.PROPS_FILE)).toFile();
+            File location = Paths.get(String.format(pattern, Constants.PROPS_FILE)).toFile();
+            log.info("Installing Chromium policy {} {}...", policyName, location);
+
 
             // Build JSON array (e.g. { "URLAllowlist": [ "qz://*"] } )
             JSONObject jsonPolicy = new JSONObject();
@@ -46,14 +46,14 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
 
             try {
                 // Ensure parent is writable
-                FileUtilities.setPermissionsParentally(Files.createDirectories(Paths.get(location)), false);
+                FileUtilities.setPermissionsParentally(Files.createDirectories(location.toPath()), false);
 
                 // Populate object
-                if (policy.exists()) {
-                    jsonPolicy = new JSONObject(FileUtils.readFileToString(policy, StandardCharsets.UTF_8));
+                if (location.exists()) {
+                    jsonPolicy = new JSONObject(FileUtils.readFileToString(location, StandardCharsets.UTF_8));
                     JSONArray found = jsonPolicy.optJSONArray(policyName);
                     if(found == null) {
-                        log.info("Chromium policy found {} but without entry for {}, we'll add it", policy, policyName);
+                        log.info("Chromium policy found {} but without entry for {}, we'll add it", location, policyName);
                     } else {
                         jsonArray = found;
                     }
@@ -74,14 +74,14 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
                 jsonPolicy.put(policyName, jsonArray);
 
                 // Write contents, ensuring policy file is world readable
-                try(BufferedWriter writer = new BufferedWriter(new FileWriter(policy))) {
+                try(BufferedWriter writer = new BufferedWriter(new FileWriter(location))) {
                     writer.write(jsonPolicy.toString());
-                    if (!policy.setReadable(true, false)) {
-                        throw new IOException("Unable to set readable: " + policy);
+                    if (!location.setReadable(true, false)) {
+                        throw new IOException("Unable to set readable: " + location);
                     }
                 }
             } catch(IOException | JSONException e) {
-                log.warn("An error occurred while writing the new policy file {}", policy, e);
+                log.warn("An error occurred while writing the new policy file {}", location, e);
             }
         }
         return true;
@@ -93,16 +93,16 @@ public class LinuxChromiumPolicyInstaller extends ChromiumPolicyInstaller {
             log.info("Skipping removal of Chromium policy {}, not supported as PrivilegeLevel {}", policyName, scope);
             return false;
         }
-        for(String location : LINUX_POLICY_LOCATIONS) {
-            log.info("Removing Chromium policy {} {}/{}...", policyName, location, Constants.PROPS_FILE + ".json");
-
+        for(String pattern : MANAGED_POLICY_PATH_PATTERNS) {
             // Chromium policy, e.g. /etc/chromium/policies/managed/qz-tray.json
-            File policy = Paths.get(location, Constants.PROPS_FILE + ".json").toFile();
-            if(policy.exists()) {
-                if(policy.delete()) {
-                    log.info("Deleted Chromium policy {}", policy);
+            File location = Paths.get(pattern, Constants.PROPS_FILE + ".json").toFile();
+            log.info("Removing Chromium policy {} {}...", policyName, location);
+
+            if(location.exists()) {
+                if(location.delete()) {
+                    log.info("Deleted Chromium policy {}", location);
                 } else {
-                    log.warn("Unable to delete Chromium policy {}", policy);
+                    log.warn("Unable to delete Chromium policy {}", location);
                 }
             }
         }

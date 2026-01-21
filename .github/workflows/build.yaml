@@ -29,7 +29,7 @@ jobs:
         run: |
           # Only run tests on same arch
           ant testng
-          sudo out/qz-tray-*.run
+          sudo DEBUG=true out/qz-tray-*.run
           /opt/qz-tray/qz-tray --version
           sudo apt-get install nsis
           ant nsis

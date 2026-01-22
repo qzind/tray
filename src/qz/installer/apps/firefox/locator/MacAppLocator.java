@@ -15,7 +15,13 @@ import qz.utils.ShellUtilities;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -35,7 +41,7 @@ public class MacAppLocator extends AppLocator{
         PATH("path"),
         VERSION("version");
 
-        private String key;
+        private final String key;
         private boolean wants;
 
         SiblingNode(String key) {
@@ -45,6 +51,11 @@ public class MacAppLocator extends AppLocator{
 
         private boolean isKey(Node node) {
             if (node.getNodeName().equals("key") && node.getTextContent().equals(key)) {
+                // FIXME: App searchign is completely broken
+                if(node.getNextSibling() != null && node.getNextSibling().getTextContent().contains("irefox")) {
+                    // do nothing
+                    System.out.println(node.getNextSibling().getTextContent());
+                }
                 return true;
             }
             return false;
@@ -62,6 +73,8 @@ public class MacAppLocator extends AppLocator{
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             // don't let the <!DOCTYPE> fail parsing per https://github.com/qzind/tray/issues/809
             dbf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            dbf.setIgnoringElementContentWhitespace(true);
+            dbf.setValidating(true);
             doc = dbf.newDocumentBuilder().parse(p.getInputStream());
         } catch(IOException | ParserConfigurationException | SAXException e) {
             log.warn("Could not retrieve app listing for {}", appAlias.name(), e);

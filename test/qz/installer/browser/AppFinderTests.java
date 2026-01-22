@@ -2,7 +2,7 @@ package qz.installer.browser;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.installer.apps.firefox.FirefoxCertificateInstaller;
+import qz.installer.apps.firefox.OldFirefoxCertificateInstaller;
 import qz.installer.apps.firefox.locator.AppAlias;
 import qz.installer.apps.firefox.locator.AppInfo;
 import qz.installer.apps.firefox.locator.AppLocator;
@@ -33,7 +33,7 @@ public class AppFinderTests {
             ));
 
             if(runningPaths.contains(appInfo.getExePath())) {
-                FirefoxCertificateInstaller.issueRestartWarning(runningPaths, appInfo);
+                OldFirefoxCertificateInstaller.issueRestartWarning(runningPaths, appInfo);
             }
         }
 

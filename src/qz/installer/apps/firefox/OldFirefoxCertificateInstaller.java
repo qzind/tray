@@ -19,7 +19,6 @@ import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
 import qz.common.Constants;
 import qz.installer.Installer;
-import qz.installer.LinuxInstaller;
 import qz.installer.apps.ConflictingPolicyException;
 import qz.installer.apps.firefox.legacy.LegacyFirefoxCertificateInstaller;
 import qz.installer.certificate.CertificateManager;
@@ -41,13 +40,11 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
 
-import static qz.utils.FileUtilities.SHARED_DIR;
-
 /**
  * Installs the Firefox Policy file via Enterprise Policy, Distribution Policy file or AutoConfig, depending on OS & version
  */
-public class FirefoxCertificateInstaller {
-    protected static final Logger log = LogManager.getLogger(FirefoxCertificateInstaller.class);
+public class OldFirefoxCertificateInstaller {
+    protected static final Logger log = LogManager.getLogger(OldFirefoxCertificateInstaller.class);
 
     /**
      * Versions are for Mozilla's official Firefox release.
@@ -71,10 +68,10 @@ public class FirefoxCertificateInstaller {
 
     static {
         try {
-            DISTRIBUTION_ENTERPRISE_ROOT_POLICY = new JSONObject()
-                    .put("policies", new JSONObject()
-                            .put("Certificates", new JSONObject()
-                                    .put("ImportEnterpriseRoots", true)));
+DISTRIBUTION_ENTERPRISE_ROOT_POLICY = new JSONObject()
+        .put("policies", new JSONObject()
+                .put("Certificates", new JSONObject()
+                        .put("ImportEnterpriseRoots", true)));
 
             // Note: "qz-tray.crt" is a copy of "root-ca.crt", renamed to avoid collision
             String certName = String.format("%s%s", KeyPairWrapper.getAlias(KeyPairWrapper.Type.SSL), CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
@@ -319,7 +316,7 @@ public class FirefoxCertificateInstaller {
         }
 
         if (firefoxIsRunning) {
-            if (appInfo.getVersion().isHigherThanOrEquivalentTo(FirefoxCertificateInstaller.FIREFOX_RESTART_VERSION)) {
+            if (appInfo.getVersion().isHigherThanOrEquivalentTo(OldFirefoxCertificateInstaller.FIREFOX_RESTART_VERSION)) {
                 try {
                     Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
                     return true;

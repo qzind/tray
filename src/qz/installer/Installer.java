@@ -17,7 +17,7 @@ import qz.auth.Certificate;
 import qz.build.provision.params.Phase;
 import qz.installer.apps.ChromiumPolicyInstaller;
 import qz.installer.certificate.*;
-import qz.installer.apps.firefox.FirefoxCertificateInstaller;
+import qz.installer.apps.firefox.OldFirefoxCertificateInstaller;
 import qz.installer.provision.ProvisionInstaller;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
@@ -296,7 +296,7 @@ public abstract class Installer {
                     installer.remove(matchingCerts);
                 }
                 installer.install(caCert);
-                FirefoxCertificateInstaller.install(caCert, hostNames);
+                OldFirefoxCertificateInstaller.install(caCert, hostNames);
             } else {
                 // Make sure the certificate is recognized by the system
                 if(caCert == null) {
@@ -306,7 +306,7 @@ public abstract class Installer {
                     CertificateManager.writeCert(caCert, tempCert); // temp cert
                     if (!installer.verify(tempCert)) {
                         installer.install(caCert);
-                        FirefoxCertificateInstaller.install(caCert, hostNames);
+                        OldFirefoxCertificateInstaller.install(caCert, hostNames);
                     }
                     if(!tempCert.delete()) {
                         tempCert.deleteOnExit();
@@ -334,7 +334,7 @@ public abstract class Installer {
         NativeCertificateInstaller instance = NativeCertificateInstaller.getInstance();
         instance.remove(instance.find());
         // Firefox certs
-        FirefoxCertificateInstaller.uninstall();
+        OldFirefoxCertificateInstaller.uninstall();
         return this;
     }
 

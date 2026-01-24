@@ -8,7 +8,7 @@
  * this software. http://www.gnu.org/licenses/lgpl-2.1.html
  */
 
-package qz.installer.certificate.firefox.locator;
+package qz.installer.apps.firefox.locator;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
@@ -19,7 +19,7 @@ import com.sun.jna.platform.win32.Tlhelp32;
 import com.sun.jna.platform.win32.WinNT;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.installer.certificate.firefox.locator.AppAlias.Alias;
+import qz.installer.apps.firefox.locator.AppAlias.Alias;
 import qz.utils.WindowsUtilities;
 
 
@@ -31,7 +31,7 @@ import java.util.Locale;
 import static com.sun.jna.platform.win32.WinReg.HKEY_LOCAL_MACHINE;
 
 public class WindowsAppLocator extends AppLocator{
-    protected static final Logger log = LogManager.getLogger(MacAppLocator.class);
+    protected static final Logger log = LogManager.getLogger(WindowsAppLocator.class);
 
     private static String REG_TEMPLATE = "Software\\%s%s\\%s%s";
 

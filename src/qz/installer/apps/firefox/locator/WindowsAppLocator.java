@@ -31,7 +31,7 @@ import java.util.Locale;
 import static com.sun.jna.platform.win32.WinReg.HKEY_LOCAL_MACHINE;
 
 public class WindowsAppLocator extends AppLocator{
-    protected static final Logger log = LogManager.getLogger(MacAppLocator.class);
+    protected static final Logger log = LogManager.getLogger(WindowsAppLocator.class);
 
     private static String REG_TEMPLATE = "Software\\%s%s\\%s%s";
 

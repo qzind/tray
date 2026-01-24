@@ -15,116 +15,93 @@ import qz.utils.ShellUtilities;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import java.io.IOException;
-import java.io.StringWriter;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.Arrays;
+import java.util.List;
 
-public class MacAppLocator extends AppLocator{
+import static qz.utils.MacUtilities.*;
+
+/*
+ * Apple's XML structure
+ *  <array>
+ *      <dict>
+ *          <array>
+ *              <dict>
+ *                  <dict>
+ *                      <key>_name</key>
+ *                      <string>Firefox</string>
+ *                      <key>info</key>
+ *                      <string>Firefox 146.0</string>
+ *                      <key>path</key>
+ *                      <string>/Applications/Firefox.app</string>
+ *                      <key>version</key>
+ *                      <string>146.0</string>
+ *                  </dict>
+ *              </dict>
+ *              <dict>
+ *                  <!-- ... -->
+ *              </dict>
+ *          </array>
+ *     <dict>
+ *  </array>
+ */
+
+/**
+ * Parses XML output from <code>system_profiler</code> to get application info
+ */
+public class MacAppLocator extends AppLocator {
     protected static final Logger log = LogManager.getLogger(MacAppLocator.class);
 
-    private static String[] BLACKLISTED_PATHS = new String[]{"/Volumes/", "/.Trash/", "/Applications (Parallels)/" };
-
-    /**
-     * Helper class for finding key/value siblings from the DDM
-     */
-    private enum SiblingNode {
-        NAME("_name"),
-        PATH("path"),
-        VERSION("version");
-
-        private final String key;
-        private boolean wants;
-
-        SiblingNode(String key) {
-            this.key = key;
-            this.wants = false;
-        }
-
-        private boolean isKey(Node node) {
-            if (node.getNodeName().equals("key") && node.getTextContent().equals(key)) {
-                // FIXME: App searchign is completely broken
-                if(node.getNextSibling() != null && node.getNextSibling().getTextContent().contains("irefox")) {
-                    // do nothing
-                    System.out.println(node.getNextSibling().getTextContent());
-                }
-                return true;
-            }
-            return false;
-        }
-    }
+    // If apps are found here, ignore them
+    private static final String[] IGNORE_PATHS = {
+            "/Volumes/",
+            "/.Trash/",
+            "/Applications (Parallels)/"
+    };
 
     @Override
     public ArrayList<AppInfo> locate(AppAlias appAlias) {
         ArrayList<AppInfo> appList = new ArrayList<>();
-        Document doc;
-
         try {
             // system_profile benchmarks about 30% better than lsregister
             Process p = Runtime.getRuntime().exec(new String[] {"system_profiler", "SPApplicationsDataType", "-xml"}, ShellUtilities.envp);
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            // don't let the <!DOCTYPE> fail parsing per https://github.com/qzind/tray/issues/809
-            dbf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-            dbf.setIgnoringElementContentWhitespace(true);
-            dbf.setValidating(true);
-            doc = dbf.newDocumentBuilder().parse(p.getInputStream());
-        } catch(IOException | ParserConfigurationException | SAXException e) {
-            log.warn("Could not retrieve app listing for {}", appAlias.name(), e);
-            return appList;
-        }
-        doc.normalizeDocument();
+            List<Node> dicts = getApplicationDicts(createCompatibleDocument(p.getInputStream()));
 
-        NodeList nodeList = doc.getElementsByTagName("dict");
-        for (int i = 0; i < nodeList.getLength(); i++) {
-            NodeList dict = nodeList.item(i).getChildNodes();
-            HashMap<SiblingNode, String> foundApp = new HashMap<>();
-            for (int j = 0; j < dict.getLength(); j++) {
-                Node node = dict.item(j);
-                if (node.getNodeType() == Node.ELEMENT_NODE) {
-                    for (SiblingNode sibling : SiblingNode.values()) {
-                        if (sibling.wants) {
-                            foundApp.put(sibling, node.getTextContent());
-                            sibling.wants = false;
-                            break;
-                        } else if(sibling.isKey(node)) {
-                            sibling.wants = true;
-                            break;
-                        }
-                    }
+            for(Node dict : dicts) {
+                String name = getSiblingValue(dict, "_name");
+                if (name == null) continue;
+                String path = getSiblingValue(dict, "path");
+                if (path == null) continue;
+                String version = getSiblingValue(dict, "version");
+                if (version == null) continue;
+
+                AppAlias.Alias alias;
+                if ((alias = AppAlias.findAlias(appAlias, name, true)) != null) {
+                    appList.add(new AppInfo(alias, Paths.get(path), parseExePath(path), version));
                 }
             }
-            AppAlias.Alias alias;
-            if((alias = AppAlias.findAlias(appAlias, foundApp.get(SiblingNode.NAME), true)) != null) {
-                appList.add(new AppInfo(alias, Paths.get(foundApp.get(SiblingNode.PATH)),
-                        getExePath(foundApp.get(SiblingNode.PATH)), foundApp.get(SiblingNode.VERSION)
-                ));
-            }
+        } catch(ParserConfigurationException | IOException | SAXException e) {
+            log.warn("Something went wrong getting app info for {}", appAlias);
         }
 
-        // Remove blacklisted paths
-        Iterator<AppInfo> appInfoIterator = appList.iterator();
-        while(appInfoIterator.hasNext()) {
-            AppInfo appInfo = appInfoIterator.next();
-            for(String listEntry : BLACKLISTED_PATHS) {
-                if (appInfo.getPath() != null && appInfo.getPath().toString().contains(listEntry)) {
-                    appInfoIterator.remove();
-                }
-            }
-        }
+        // Cleanup bad paths
+        appList.removeIf(app ->
+                                 Arrays.stream(IGNORE_PATHS).anyMatch(app.getPath().toString()::contains)
+        );
         return appList;
     }
 
+
+    /**
+     * Use JNA to obtain the
+     */
     @Override
     public ArrayList<Path> getPidPaths(ArrayList<String> pids) {
-        ArrayList<Path> processPaths = new ArrayList();
+        ArrayList<Path> processPaths = new ArrayList<>();
         for (String pid : pids) {
             Pointer buf = new Memory(SystemB.PROC_PIDPATHINFO_MAXSIZE);
             SystemB.INSTANCE.proc_pidpath(Integer.parseInt(pid), buf, SystemB.PROC_PIDPATHINFO_MAXSIZE);
@@ -134,9 +111,62 @@ public class MacAppLocator extends AppLocator{
     }
 
     /**
+     * Special key/string sibling handler
+     */
+    public static String getSiblingValue(Node dict, String keyValue) {
+        NodeList pairs = dict.getChildNodes();
+        for(int i = 0; i < pairs.getLength(); i++) {
+            Node key = pairs.item(i);
+            // Find <key>_name</name>, <key>path</key>, <key>version</key>, etc
+            if("key".equals(key.getNodeName()) && keyValue.equals(key.getTextContent())) {
+                Node value = key.getNextSibling();
+                // Only support string types for now
+                if("string".equals(value.getNodeName())) {
+                    String textContent = value.getTextContent();
+                    if(textContent != null && !textContent.isBlank()) {
+                        return textContent;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Use a shortcut system to search for <code>&lt;key&gt;_name&lt;/key&gt;</code> and then build our app list
+     * from each parent <code>&lt;dict&gt;</code> node.
+     * <p>
+     * Apple uses several nested levels of <code>&lt;dict&gt;</code>, so although this two-pass approach is slightly more
+     * expensive than a one-pass sibling search, it's much easier to read and debug, so we'll accept the slight performance
+     * hit for our own sanity.
+     */
+    public static List<Node> getApplicationDicts(Document doc) {
+        List<Node> dicts = new ArrayList<>();
+
+        NodeList keys = doc.getElementsByTagName("key");
+        for(int i = 0; i < keys.getLength(); i++) {
+            Node node = keys.item(i);
+            if("_name".equals(node.getTextContent())) {
+                Node parent = node.getParentNode();
+                if("dict".equals(parent.getNodeName())) {
+                    // We've found a structure that looks like this, add it!
+                    //
+                    // <dict>
+                    //   <key>_name</key>
+                    //   <string>Firefox</string>
+                    //   <!-- ... -->
+                    // </dict>
+                    dicts.add(parent);
+                }
+            }
+        }
+        return dicts;
+    }
+
+    /**
      * Calculate executable path by parsing Contents/Info.plist
      */
-    private static Path getExePath(String appPath) {
+    private static Path parseExePath(String appPath) {
         Path path = Paths.get(appPath).toAbsolutePath().normalize();
         Path plist = path.resolve("Contents/Info.plist");
         Document doc;
@@ -147,35 +177,57 @@ public class MacAppLocator extends AppLocator{
             }
             // Convert potentially binary plist files to XML
             Process p = Runtime.getRuntime().exec(new String[] {"plutil", "-convert", "xml1", plist.toString(), "-o", "-"}, ShellUtilities.envp);
-            doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(p.getInputStream());
+            doc = createCompatibleDocument(p.getInputStream());
         } catch(IOException | ParserConfigurationException | SAXException e) {
-            log.warn("Could not parse plist file for {}: {}", appPath, appPath, e);
+            log.warn("Could not parse plist file for {}: {}", appPath, plist, e);
             return null;
         }
-        doc.normalizeDocument();
 
-        boolean upNext = false;
+        //boolean upNext = false;
         NodeList nodeList = doc.getElementsByTagName("dict");
         for (int i = 0; i < nodeList.getLength(); i++) {
             NodeList dict = nodeList.item(i).getChildNodes();
             for(int j = 0; j < dict.getLength(); j++) {
                 Node node = dict.item(j);
                 if ("key".equals(node.getNodeName()) && node.getTextContent().equals("CFBundleExecutable")) {
-                    upNext = true;
-                } else if (upNext && "string".equals(node.getNodeName())) {
-                    return path.resolve("Contents/MacOS/" + node.getTextContent());
+                    Node value = node.getNextSibling();
+                    if("string".equals(value.getNodeName())) {
+                        String textContent = value.getTextContent();
+                        if(textContent != null && !textContent.isBlank()) {
+                            return path.resolve("Contents/MacOS/" + textContent);
+                        }
+                    }
+                    // If we found the key but not a value, abort
+                    return null;
                 }
             }
         }
         return null;
     }
 
+
+    @SuppressWarnings("unused")
     private interface SystemB extends Library {
         SystemB INSTANCE = Native.load("System", SystemB.class);
         int PROC_ALL_PIDS = 1;
         int PROC_PIDPATHINFO_MAXSIZE = 1024 * 4;
+        @SuppressWarnings("UnusedReturnValue")
         int sysctlbyname(String name, Pointer oldp, IntByReference oldlenp, Pointer newp, int newlen);
+        @SuppressWarnings("UnusedReturnValue")
         int proc_listpids(int type, int typeinfo, int[] buffer, int buffersize);
+        @SuppressWarnings("UnusedReturnValue")
         int proc_pidpath(int pid, Pointer buffer, int buffersize);
+    }
+
+    private static Document createCompatibleDocument(InputStream is) throws ParserConfigurationException, IOException, SAXException {
+        DocumentBuilderFactory dbf  = DocumentBuilderFactory.newInstance();
+        // don't let the <!DOCTYPE> fail parsing per https://github.com/qzind/tray/issues/809
+        dbf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        // fix erroneous "\r\n", ignored unless setValidating(true);
+        dbf.setIgnoringElementContentWhitespace(true);
+        dbf.setValidating(true);
+        Document doc = dbf.newDocumentBuilder().parse(is);
+        doc.normalizeDocument();
+        return doc;
     }
 }

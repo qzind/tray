@@ -3418,7 +3418,7 @@
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = function() { resolve(reader.result); }
-            reader.onerror = function() { reject(error); }
+            reader.onerror = function(error) { reject(error); }
         });
     }
 

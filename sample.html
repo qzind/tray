@@ -1507,7 +1507,7 @@
 
     function startConnection(config) {
         // Connect to a print-server instance and/or override secure port handling
-        config ||= {};
+        config = config ? config : {};
         config.host = includedValue($('#connectionHost'));
         config.usingSecure = isChecked($('#connectionUsingSecure'));
 
@@ -3414,11 +3414,11 @@
     }
 
     function getBase64(file) {
-        return new Promise((resolve, reject) => {
+        return new Promise(function(resolve, reject) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
+            reader.onload = function() { resolve(reader.result); }
+            reader.onerror = function(error) { reject(error); }
         });
     }
 

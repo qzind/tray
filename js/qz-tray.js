@@ -34,15 +34,18 @@ var qz = (function() {
         String.prototype.padStart = function padStart(targetLength, padString) {
             targetLength = targetLength >> 0; // truncate if number or convert non-number to 0
             padString = String(typeof padString !== 'undefined' ? padString : ' ');
-            if (this.length > targetLength) {
+
+            if (this.length >= targetLength) {
                 return String(this);
-            } else {
-                targetLength = targetLength - this.length;
-                if (targetLength > padString.length) {
-                    padString += padString.repeat(targetLength / padString.length);
-                }
-                return padString.slice(0, targetLength) + String(this);
             }
+
+            var gapSize = targetLength - this.length;
+            var padding = "";
+            while (padding.length < gapSize) {
+                padding += padString;
+            }
+
+            return padding.slice(0, gapSize) + String(this);
         };
     }
 

@@ -24,6 +24,28 @@ var qz = (function() {
         };
     }
 
+    if (!Array.from) {
+        Array.from = function(object) {
+            return [].slice.call(object);
+        };
+    }
+
+    if (!String.prototype.padStart) {
+        String.prototype.padStart = function padStart(targetLength, padString) {
+            targetLength = targetLength >> 0; // truncate if number or convert non-number to 0
+            padString = String(typeof padString !== 'undefined' ? padString : ' ');
+            if (this.length > targetLength) {
+                return String(this);
+            } else {
+                targetLength = targetLength - this.length;
+                if (targetLength > padString.length) {
+                    padString += padString.repeat(targetLength / padString.length);
+                }
+                return padString.slice(0, targetLength) + String(this);
+            }
+        };
+    }
+
 ///// PRIVATE METHODS /////
 
     var _qz = {
@@ -1758,7 +1780,7 @@ var qz = (function() {
              *   @param {number|Object} [options.rx.crcBytes] If a number is passed it is treated as the crc length. Other values are left as their defaults.
              *    @param {number} [options.rx.crcBytes.index=0] Position after the response data (not including length or data bytes) used to denote the crc.
              *    @param {number} [options.rx.crcBytes.length=1] Length of response crc bytes after the response data length.
-             *   @param {boolean} [options.rx.includeHeader=false] Whether any of the header bytes (`start` bytes and any length bytes) should be included in the processed response.
+             *   @param {boolean} [options.rx.includeHeader=false] Whether any of the header bytes (`start` bytes and any length bytes) should be includeds in the processed response.
              *   @param {string} [options.rx.encoding] Override the encoding used for response data. Uses the same value as <code>options.encoding</code> otherwise.
              *
              * @returns {Promise<null|Error>}

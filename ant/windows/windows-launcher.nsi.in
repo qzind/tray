@@ -17,6 +17,16 @@
 RequestExecutionLevel user
 
 ; Application information
+!define /date YEAR %Y
+VIProductVersion "${build.nsis.version}"
+VIAddVersionKey "FileDescription" "${project.name}"
+VIAddVersionKey "ProductName" "${project.name}"
+VIAddVersionKey "ProductVersion" "${build.version}"
+VIAddVersionKey "CompanyName" "${vendor.company}"
+VIAddVersionKey "LegalCopyright" "Copyright © ${YEAR}"
+VIAddVersionKey "LegalTrademarks" "${vendor.company}"
+VIAddVersionKey "OriginalFilename" "${project.filename}.exe"
+
 Name "${project.name}"
 Caption "${project.name}"
 Icon "${basedir}/assets/branding/windows-icon.ico"

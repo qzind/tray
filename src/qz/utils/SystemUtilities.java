@@ -136,6 +136,19 @@ public class SystemUtilities {
     }
 
     /**
+     * Manipulate a Version into another format (x.x.x.0), e.g. 2.2.6-SNAPSHOT --> 2.2.6.0
+     * Note, this is rigid and can't dynamically output "-" or "+" based on prerelease status
+     */
+    public static String formatVersion(Version version, String format) {
+        String output = format;
+        output = output.replaceFirst("x", String.valueOf(version.majorVersion()));
+        output = output.replaceFirst("x", String.valueOf(version.minorVersion()));
+        output = output.replaceFirst("x", String.valueOf(version.patchVersion()));
+        output = output.replaceFirst("x", version.buildMetadata().orElse(version.preReleaseVersion().orElse("0")));
+        return output;
+    }
+
+    /**
      * The human-readable display version of the OS (e.g. "22.04.1 LTS (Jammy Jellyfish)")
      */
     public static String getOsDisplayVersion() {

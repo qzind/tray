@@ -7,6 +7,13 @@
             <arg value="--version"/>
         </java>
 
+        <!-- build.nsis.version -->
+        <!-- VIProductVersion is strict about formatting -->
+        <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="build.nsis.version" errorproperty="build.nsis.version.error" timeout="60000" failonerror="true">
+            <arg value="--version"/>
+            <arg value="x.x.x.0"/>
+        </java>
+
         <!-- apple.bundleid -->
         <java jar="${dist.dir}/${project.filename}.jar" fork="true" outputproperty="apple.bundleid" errorproperty="apple.bundleid.error" timeout="60000" failonerror="true">
             <arg value="--bundleid"/>
@@ -14,6 +21,7 @@
         <property description="fallback value" name="build.type" value=""/>
         <property description="fallback value" name="build.version" value=""/>
         <property description="fallback value" name="apple.bundleid" value=""/>
+        <property description="fallback value" name="build.nsis.version" value=""/>
 
         <echo level="info">
             Version   : ${build.version}${build.type}

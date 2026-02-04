@@ -5,7 +5,13 @@
 # - windows-icon.ico
 # - ant/windows/nsis/uninstall.ico
 #
-# Possible candidate for migrating to 'src/qz/build' with
+# Usage:
+#   create_branding.sh [assets_color] [apple_color1] [apple_color2]
+#     assets_color: Colorize the qz/ui/resources
+#     apple_color1: Gradient top color for apple-icon.svg
+#     apple_color1: Gradient bottom color for apple-icon.svg
+#
+# This file is a possible candidate for migrating to 'src/qz/build' with
 # other build-time branding enhancements.
 
 set -e
@@ -13,6 +19,13 @@ set -e
 # Get working directory
 DIR=$(cd "$(dirname "$0")" && pwd)
 pushd "$DIR" &> /dev/null
+
+# Handle older imagemagick versions
+if ! command -v magick > /dev/null ; then
+  magick() {
+    convert "$@"
+  }
+fi
 
 # Apple svg file to convert
 apple_svg="apple-icon.svg"
@@ -43,7 +56,7 @@ win_sizes+=(
   96
 )
 
-# Sort
+# Sort highest to lowest
 IFS=$'\n' win_sizes=($(sort -nr <<<"${win_sizes[*]}"))
 unset IFS
 
@@ -51,6 +64,43 @@ unset IFS
 windows_icon_dir="windows-icon.iconset"
 rm -rf "$windows_icon_dir"
 mkdir -p "$windows_icon_dir"
+
+# First parameter: Adjust UI resource colors
+pushd ../../src/qz/ui/resources &> /dev/null
+icons_color="$1"
+if [ -n "$icons_color" ]; then
+  echo Colorizing icons to "$icons_color" as requested
+  for img in about allow desktop exit field folder log reload saved settings; do
+    if [ -f qz-$img.png ]; then
+      echo Colorizing qz-$img.png
+      magick qz-$img.png -fill "$icons_color" -colorize 100 qz-$img.png
+    else
+      echo qz-$img.png does not exist, skipping.
+    fi
+  done
+else
+  echo Colorize flag not set. Skipping.
+fi
+popd &> /dev/null
+
+#
+# Second/third parameters: Adjust macOS SVG colors
+#
+field="stop-color"
+pattern='"[^"]*"'
+cp apple-icon.svg apple-icon-temp.svg
+for color in "$2" "$3"; do
+  if [ -n "$color" ]; then
+    color="\"$color\""
+    echo "Replacing $field=... with $field=$color..."
+    # Deliberately add a space every time so the current match is ignored by future passes
+    sed "1,/$field=$pattern/ s/$field=$pattern/$field = $color/" apple-icon-temp.svg > apple-icon-temp-next.svg
+    mv apple-icon-temp-next.svg apple-icon-temp.svg
+  fi
+done
+# Remove the spaces we added
+sed "s/stop-color = /stop-color=/g" apple-icon-temp.svg > apple-icon.svg
+rm apple-icon-temp.svg
 
 #
 # Create Apple ICNS file
@@ -82,33 +132,23 @@ echo "Your apple icon is ready at $DIR/apple-icon.icns"
 #
 # Create Windows ICO file
 #
+windows_pngs=()
+uninstall_pngs=()
 for size in "${win_sizes[@]}"; do
   file="$windows_icon_dir/icon_${size}x${size}.png"
+  uninstall="$windows_icon_dir/uninstall_${size}x${size}.png"
+  windows_pngs+=("$file")
+  uninstall_pngs+=("$uninstall")
   echo "Rendering $file (${size}px)..."
   rsvg-convert -w $size -h $size -f png -o "$file" "$windows_svg"
+  echo "Rendering $uninstall (${size}px)..."
+  magick "$file" -colorspace gray "$uninstall"
 done
 
-if ! command -v magick > /dev/null ; then
-  # Handle older versions
-  magick() {
-    convert "$@"
-  }
-fi
-magick "$windows_icon_dir"/icon_*.png windows-icon.ico
+magick "${windows_pngs[@]}" windows-icon.ico
+magick "${uninstall_pngs[@]}" "$DIR/../../ant/windows/nsis/uninstall.ico"
 
 echo "Your windows icon is ready at $DIR/windows-icon.ico"
-
-#
-# Create Windows uninstall ICO file
-#
-pushd "$windows_icon_dir" &> /dev/null
-for f in *.png; do
-  echo "Rendering uninstall-$f..."
-  magick "$f" -colorspace gray "uninstall-$f"
-done
-magick uninstall-*.png "$DIR/../../ant/windows/nsis/uninstall.ico"
-popd &> /dev/null
-
 echo "Your windows uninstall icon is ready at ant/windows/nsis/uninstall.ico"
 
 echo "Removing $windows_icon_dir"

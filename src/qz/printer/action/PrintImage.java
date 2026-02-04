@@ -26,6 +26,7 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.ResolutionSyntax;
+import javax.print.attribute.standard.MediaPrintableArea;
 import javax.print.attribute.standard.OrientationRequested;
 import javax.print.attribute.standard.PrinterResolution;
 import java.awt.*;
@@ -35,6 +36,7 @@ import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
+import java.awt.print.Paper;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -50,6 +52,9 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
     private static final Logger log = LogManager.getLogger(PrintImage.class);
 
     protected List<BufferedImage> images;
+
+    private double pageWidth = 0;
+    private double pageHeight = 0;
 
     protected double dpiScale = 1;
     protected boolean scaleImage = false;
@@ -69,10 +74,23 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
     @Override
     public void parseData(JSONArray printData, PrintOptions options) throws JSONException, UnsupportedOperationException {
-        dpiScale = (options.getPixelOptions().getDensity() * options.getPixelOptions().getUnits().as1Inch()) / 72.0;
+        PrintOptions.Pixel pxlOpts = options.getPixelOptions();
+        double convert = 72.0 / pxlOpts.getUnits().as1Inch();
+        dpiScale = pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch() / 72.0;
 
         for(int i = 0; i < printData.length(); i++) {
             JSONObject data = printData.getJSONObject(i);
+
+            if (!data.isNull("options")) {
+                JSONObject dataOpt = data.getJSONObject("options");
+
+                if (!dataOpt.isNull("pageWidth") && dataOpt.optDouble("pageWidth") > 0) {
+                    pageWidth = dataOpt.optDouble("pageWidth") * convert;
+                }
+                if (!dataOpt.isNull("pageHeight") && dataOpt.optDouble("pageHeight") > 0) {
+                    pageHeight = dataOpt.optDouble("pageHeight") * convert;
+                }
+            }
 
             PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.FILE);
 
@@ -188,7 +206,24 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.IMAGE_PRINT));
-        job.setPrintable(this, job.validatePage(page));
+
+        if (pageWidth > 0 || pageHeight > 0) {
+            Paper paper = page.getPaper();
+
+            if (pageWidth <= 0) { pageWidth = page.getImageableWidth(); }
+            if (pageHeight <= 0) { pageHeight = page.getImageableHeight(); }
+
+            paper.setImageableArea(paper.getImageableX(), paper.getImageableY(), pageWidth, pageHeight);
+            page.setPaper(paper);
+
+            // User defined dimensions, so this can be safely removed
+            attributes.remove(MediaPrintableArea.class);
+
+            // job.validate(page) uses the system defined Papersize and Imageable area, we explicitly use our own dimensions
+            job.setPrintable(this, page);
+        } else {
+            job.setPrintable(this, job.validatePage(page));
+        }
 
         printCopies(output, pxlOpts, job, attributes);
     }
@@ -336,6 +371,9 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
     @Override
     public void cleanup() {
         images.clear();
+
+        pageWidth = 0;
+        pageHeight = 0;
 
         dpiScale = 1.0;
         scaleImage = false;

@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Creates the following icon files from SVG:
+# - apple-icon.icns
+# - windows-icon.ico
+# - ant/windows/nsis/uninstall.ico
+#
+# Possible candidate for migrating to 'src/qz/build' with
+# other build-time branding enhancements.
+
 set -e
 
 # Get working directory
@@ -14,7 +22,7 @@ apple_icon_dir="apple-icon.iconset"
 rm -rf "$apple_icon_dir"
 mkdir -p "$apple_icon_dir"
 
-# List of standard macOS icon apple_sizes
+# List of standard macOS icon sizes
 apple_sizes=(
   16
   32
@@ -35,16 +43,18 @@ win_sizes+=(
   96
 )
 
-# Create a temporary directory for the apple iconset
-windows_icon_dir="windows-icon.iconset"
-rm -rf "$windows_icon_dir"
-mkdir -p "$windows_icon_dir"
-
 # Sort
 IFS=$'\n' win_sizes=($(sort -nr <<<"${win_sizes[*]}"))
 unset IFS
 
+# Create a temporary directory for the windows iconset
+windows_icon_dir="windows-icon.iconset"
+rm -rf "$windows_icon_dir"
+mkdir -p "$windows_icon_dir"
+
+#
 # Create Apple ICNS file
+#
 for size in "${apple_sizes[@]}"; do
   for scale in 1 2; do
     scaled=$(($size * $scale))
@@ -69,7 +79,9 @@ fi
 
 echo "Your apple icon is ready at $DIR/apple-icon.icns"
 
+#
 # Create Windows ICO file
+#
 for size in "${win_sizes[@]}"; do
   file="$windows_icon_dir/icon_${size}x${size}.png"
   echo "Rendering $file (${size}px)..."
@@ -82,11 +94,13 @@ if ! command -v magick > /dev/null ; then
     convert "$@"
   }
 fi
-magick "$windows_icon_dir"/*.png windows-icon.ico
+magick "$windows_icon_dir"/icon_*.png windows-icon.ico
 
 echo "Your windows icon is ready at $DIR/windows-icon.ico"
 
+#
 # Create Windows uninstall ICO file
+#
 pushd "$windows_icon_dir" &> /dev/null
 for f in *.png; do
   echo "Rendering uninstall-$f..."

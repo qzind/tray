@@ -28,6 +28,7 @@ jobs:
       - if: ${{ matrix.arch == 'x86_64' }}
         run: |
           # Only run tests on same arch
+          sudo apt-get install firefox chromium
           ant testng
           sudo DEBUG=true out/qz-tray-*.run
           /opt/qz-tray/qz-tray --version
@@ -54,6 +55,7 @@ jobs:
       - if: ${{ matrix.arch == 'aarch64' }}
         run: |
           # Only run tests on same arch
+          brew install --cask google-chrome firefox
           ant testng
           sudo installer -pkg out/qz-tray-*.pkg -target /
           "/Applications/QZ Tray.app/Contents/MacOS/QZ Tray" --version
@@ -82,6 +84,7 @@ jobs:
       - if: ${{ matrix.arch == 'x86_64' }}
         run: |
           # Only run tests on same arch
+          choco install firefox googlechrome
           ant testng
           Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
           "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"

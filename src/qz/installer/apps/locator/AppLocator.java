@@ -1,4 +1,4 @@
-package qz.installer.apps.firefox.locator;
+package qz.installer.apps.locator;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -6,36 +6,36 @@ import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 
 public abstract class AppLocator {
     protected static final Logger log = LogManager.getLogger(AppLocator.class);
 
-    private static AppLocator INSTANCE = getPlatformSpecificAppLocator();
+    private static final AppLocator INSTANCE = getPlatformSpecificAppLocator();
 
-    public abstract ArrayList<AppInfo> locate(AppAlias appAlias);
-    public abstract ArrayList<Path> getPidPaths(ArrayList<String> pids);
+    public abstract HashSet<AppInfo> locate(AppAlias appAlias);
+    public abstract HashSet<Path> getPidPaths(HashSet<String> pids);
 
     @SuppressWarnings("unused")
-    public ArrayList<String> getPids(String ... processNames) {
-        return getPids(new ArrayList<>(Arrays.asList(processNames)));
+    public HashSet<String> getPids(String ... processNames) {
+        return getPids(new HashSet<>(Arrays.asList(processNames)));
     }
 
     /**
      * Linux, Mac
      */
-    public ArrayList<String> getPids(ArrayList<String> processNames) {
+    public HashSet<String> getPids(HashSet<String> processNames) {
         String[] response;
-        ArrayList<String> pidList = new ArrayList<>();
+        HashSet<String> pidList = new HashSet<>();
 
         if(processNames.contains("firefox") && !(SystemUtilities.isWindows() || SystemUtilities.isMac())) {
             processNames.add("MainThread"); // Workaround Firefox 79 https://github.com/qzind/tray/issues/701
             processNames.add("GeckoMain");  // Workaround Firefox 94 https://bugzilla.mozilla.org/show_bug.cgi?id=1742606
         }
 
-        if (processNames.size() == 0) return pidList;
+        if (processNames.isEmpty()) return pidList;
 
         // Quoting handled by the command processor (e.g. pgrep -x "myapp|my app" is perfectly valid)
         String data = ShellUtilities.executeRaw("pgrep", "-x", String.join("|", processNames));
@@ -49,7 +49,7 @@ public abstract class AppLocator {
         return pidList;
     }
 
-    public static ArrayList<Path> getRunningPaths(ArrayList<AppInfo> appList) {
+    public static HashSet<Path> getRunningPaths(HashSet<AppInfo> appList) {
         return getRunningPaths(appList, null);
     }
 
@@ -57,12 +57,12 @@ public abstract class AppLocator {
      * Gets the path to the running executables matching on <code>AppInfo.getExePath</code>
      * This is resource intensive; if a non-null <code>cache</code> is provided, it will return that instead
      */
-    public static ArrayList<Path> getRunningPaths(ArrayList<AppInfo> appList, ArrayList<Path> cache) {
+    public static HashSet<Path> getRunningPaths(HashSet<AppInfo> appList, HashSet<Path> cache) {
         if(cache == null) {
-            ArrayList<String> appNames = new ArrayList<>();
+            HashSet<String> appNames = new HashSet<>();
             for(AppInfo app : appList) {
                 String exeName = app.getExePath().getFileName().toString();
-                if (!appNames.contains(exeName)) appNames.add(exeName);
+                appNames.add(exeName);
             }
             cache = INSTANCE.getPidPaths(INSTANCE.getPids(appNames));
         }

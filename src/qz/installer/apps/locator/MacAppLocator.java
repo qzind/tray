@@ -1,4 +1,4 @@
-package qz.installer.apps.firefox.locator;
+package qz.installer.apps.locator;
 
 import com.sun.jna.Library;
 import com.sun.jna.Memory;
@@ -21,9 +21,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-
-import static qz.utils.MacUtilities.*;
 
 /*
  * Apple's XML structure
@@ -64,8 +63,8 @@ public class MacAppLocator extends AppLocator {
     };
 
     @Override
-    public ArrayList<AppInfo> locate(AppAlias appAlias) {
-        ArrayList<AppInfo> appList = new ArrayList<>();
+    public HashSet<AppInfo> locate(AppAlias appAlias) {
+        HashSet<AppInfo> appList = new HashSet<>();
         try {
             // system_profile benchmarks about 30% better than lsregister
             Process p = Runtime.getRuntime().exec(new String[] {"system_profiler", "SPApplicationsDataType", "-xml"}, ShellUtilities.envp);
@@ -80,7 +79,10 @@ public class MacAppLocator extends AppLocator {
                 if (version == null) continue;
 
                 AppAlias.Alias alias;
-                if ((alias = AppAlias.findAlias(appAlias, name, true)) != null) {
+                // For some reason Firefox is called "Firefox.app"
+                // All others are called "Google Chrome.app", "Microsoft Edge.app", etc
+                boolean stripVendor = appAlias == AppAlias.FIREFOX;
+                if ((alias = AppAlias.findAlias(appAlias, name, stripVendor)) != null) {
                     appList.add(new AppInfo(alias, Paths.get(path), parseExePath(path), version));
                 }
             }
@@ -88,10 +90,18 @@ public class MacAppLocator extends AppLocator {
             log.warn("Something went wrong getting app info for {}", appAlias);
         }
 
-        // Cleanup bad paths
+        // Cleanup bad paths such as mount points, Trash, Parallels' shared apps
         appList.removeIf(app ->
                                  Arrays.stream(IGNORE_PATHS).anyMatch(app.getPath().toString()::contains)
         );
+
+        // Remove "EdgeUpdater" and friends
+        appList.removeIf(app ->
+                                 Arrays.stream(appAlias.aliases).map(alias -> String.format("%sUpdater", alias.getName(true))).anyMatch(
+                                         updater -> app.getPath().toString().contains(updater)
+                                 )
+        );
+
         return appList;
     }
 
@@ -100,8 +110,8 @@ public class MacAppLocator extends AppLocator {
      * Use JNA to obtain the
      */
     @Override
-    public ArrayList<Path> getPidPaths(ArrayList<String> pids) {
-        ArrayList<Path> processPaths = new ArrayList<>();
+    public HashSet<Path> getPidPaths(HashSet<String> pids) {
+        HashSet<Path> processPaths = new HashSet<>();
         for (String pid : pids) {
             Pointer buf = new Memory(SystemB.PROC_PIDPATHINFO_MAXSIZE);
             SystemB.INSTANCE.proc_pidpath(Integer.parseInt(pid), buf, SystemB.PROC_PIDPATHINFO_MAXSIZE);

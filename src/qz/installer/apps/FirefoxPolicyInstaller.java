@@ -3,15 +3,15 @@ package qz.installer.apps;
 import com.github.zafarkhaja.semver.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.common.Constants;
 import qz.installer.Installer;
-import qz.installer.apps.chromium.WindowsChromiumPolicyInstaller;
 import qz.installer.apps.firefox.*;
-import qz.installer.apps.firefox.locator.AppAlias;
-import qz.installer.apps.firefox.locator.AppInfo;
-import qz.installer.apps.firefox.locator.AppLocator;
+import qz.installer.apps.locator.AppAlias;
+import qz.installer.apps.locator.AppInfo;
+import qz.installer.apps.locator.AppLocator;
 import qz.utils.SystemUtilities;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 
 /**
  * Firefox supports three main methods for installing enterprise policies:
@@ -31,6 +31,8 @@ import java.util.ArrayList;
  */
 public abstract class FirefoxPolicyInstaller {
     private static final Logger log = LogManager.getLogger(FirefoxPolicyInstaller.class);
+
+    public static final String POLICY_AUDIT_MESSAGE = "Managed policy installed by " + Constants.ABOUT_TITLE + " on " + SystemUtilities.timeStamp();
 
     public enum PolicyType {
        PLIST,
@@ -62,14 +64,22 @@ public abstract class FirefoxPolicyInstaller {
         return INSTANCE;
     }
 
-    public static boolean supportsEnterprisePolicies(AppInfo appInfo) {
+    public boolean supportsEnterprisePolicies(AppInfo appInfo) {
         return appInfo.getVersion().isHigherThanOrEquivalentTo(getInstance().getRequiredFirefoxVersion());
     }
 
+    public boolean installJsonPolicy() {
+        throw new UnsupportedOperationException("shouldn't get here");
+    }
+
+    public abstract boolean installOsSpecificPolicy(AppAlias.Alias alias, Installer.PrivilegeLevel scope, String policy, String value);
+
     public static void main(String ... args) {
-        ArrayList<AppInfo> foundApps = AppLocator.getInstance().locate(AppAlias.FIREFOX);
+        HashSet<AppInfo> foundApps = AppLocator.getInstance().locate(AppAlias.FIREFOX);
         for(AppInfo app : foundApps) {
             log.info("Found {}", app.getPath());
+            // FIXME: 'value' must be boolean on macOS
+            getInstance().installOsSpecificPolicy(app.getAlias(), Installer.PrivilegeLevel.USER, "Certificates/ImportEnterpriseRoots", "1");
         }
     }
 }

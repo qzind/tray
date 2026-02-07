@@ -14,7 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.installer.certificate.CertificateChainBuilder;
-import qz.installer.apps.firefox.locator.AppInfo;
+import qz.installer.apps.locator.AppInfo;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 

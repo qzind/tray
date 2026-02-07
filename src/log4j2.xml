@@ -7,7 +7,7 @@
     </Appenders>
     <Loggers>
     <!-- Packages -->
-        <Logger name="qz" level="trace">
+        <Logger name="qz" level="trace" additivity="false">
             <AppenderRef ref="console"/>
         </Logger>
         <Logger name="qz.build.provision" level="info"/>

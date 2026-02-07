@@ -3,14 +3,14 @@ package qz.installer.apps.firefox;
 import com.github.zafarkhaja.semver.Version;
 import qz.installer.Installer;
 import qz.installer.apps.FirefoxPolicyInstaller;
+import qz.installer.apps.locator.AppAlias;
 
 public class LinuxFirefoxPolicyInstaller extends FirefoxPolicyInstaller {
     static final Version REQUIRED_FIREFOX_VERSION = Version.parse("65.0.0");
     static final PolicyType[] SUPPORTED_POLICY_TYPES = new PolicyType[]{ PolicyType.JSON };
 
-    // FIXME:  Where do other browsers store this?
     private static final String[] MANAGED_POLICY_PATH_PATTERNS = {
-            "/etc/firefox/policies/policies.json",
+            "/etc/%s/policies/policies.json",
     };
 
     @Override
@@ -36,5 +36,10 @@ public class LinuxFirefoxPolicyInstaller extends FirefoxPolicyInstaller {
     @Override
     public boolean hasConflict() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean installOsSpecificPolicy(AppAlias.Alias alias, Installer.PrivilegeLevel scope, String policy, String value) {
+        return false;
     }
 }

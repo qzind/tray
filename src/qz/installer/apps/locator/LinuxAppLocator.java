@@ -1,4 +1,4 @@
-package qz.installer.apps.firefox.locator;
+package qz.installer.apps.locator;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
@@ -11,13 +11,13 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.HashSet;
 
 public class LinuxAppLocator extends AppLocator {
     private static final Logger log = LogManager.getLogger(LinuxAppLocator.class);
 
-    public ArrayList<AppInfo> locate(AppAlias appAlias) {
-        ArrayList<AppInfo> appList = new ArrayList<>();
+    public HashSet<AppInfo> locate(AppAlias appAlias) {
+        HashSet<AppInfo> appList = new HashSet<>();
 
         // Workaround for calling "firefox --version" as sudo
         String[] env = appendPaths("HOME=/tmp");
@@ -26,8 +26,8 @@ public class LinuxAppLocator extends AppLocator {
         aliasLoop:
         for(AppAlias.Alias alias : appAlias.aliases) {
             // Add non-standard app search locations (e.g. Fedora)
-            for (String dirname : appendPaths(alias.getPosix(), "/usr/lib/$/bin", "/usr/lib64/$/bin", "/usr/lib/$", "/usr/lib64/$")) {
-                Path path = Paths.get(dirname, alias.getPosix());
+            for (String dirname : appendPaths(alias.getSlug(), "/usr/lib/$/bin", "/usr/lib64/$/bin", "/usr/lib/$", "/usr/lib64/$")) {
+                Path path = Paths.get(dirname, alias.getSlug());
                 if (Files.isRegularFile(path) && Files.isExecutable(path)) {
                     log.info("Found {} {}: {}, investigating...", alias.getVendor(), alias.getName(true), path);
                     try {
@@ -59,7 +59,7 @@ public class LinuxAppLocator extends AppLocator {
                             BufferedReader reader = new BufferedReader(new FileReader(file));
                             String line;
                             while((line = reader.readLine()) != null) {
-                                if(line.startsWith("exec") && line.contains(alias.getPosix())) {
+                                if(line.startsWith("exec") && line.contains(alias.getSlug())) {
                                     String[] parts = line.split(" ");
                                     // Get the app name after "exec"
                                     if (parts.length > 1) {
@@ -128,8 +128,8 @@ public class LinuxAppLocator extends AppLocator {
     }
 
     @Override
-    public ArrayList<Path> getPidPaths(ArrayList<String> pids) {
-        ArrayList<Path> pathList = new ArrayList<>();
+    public HashSet<Path> getPidPaths(HashSet<String> pids) {
+        HashSet<Path> pathList = new HashSet<>();
 
         for(String pid : pids) {
             try {

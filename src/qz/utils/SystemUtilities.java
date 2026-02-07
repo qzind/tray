@@ -41,10 +41,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Random;
-import java.util.TimeZone;
+import java.util.*;
 
 /**
  * Utility class for OS detection functions.
@@ -56,7 +53,7 @@ public class SystemUtilities {
     static final String OS_ARCH = System.getProperty("os.arch");
     private static final Os OS_TYPE = Os.bestMatch(OS_NAME);
     private static final Arch JRE_ARCH = Arch.bestMatch(OS_ARCH);
-    private static final Logger log = LogManager.getLogger(TrayManager.class);
+    private static final Logger log = LogManager.getLogger(SystemUtilities.class);
 
     private static double windowScaleFactor = -1;
     private static final Locale defaultLocale = Locale.getDefault();
@@ -268,12 +265,12 @@ public class SystemUtilities {
                     }
             }
         } catch(NumberFormatException e) {
-            log.warn("Could not parse Java version \"{}\"", e);
+            log.warn("Could not parse Java version \"{}\"", version, e);
         }
         if(meta.trim().isEmpty()) {
-            return Version.forIntegers(major, minor, patch);
+            return Version.of(major, minor, patch);
         } else {
-            return Version.forIntegers(major, minor, patch).setBuildMetadata(meta);
+            return Version.of(major, minor, patch, null, meta);
         }
     }
 

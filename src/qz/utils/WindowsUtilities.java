@@ -13,7 +13,6 @@ import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Native;
 import com.sun.jna.platform.win32.*;
 import com.sun.jna.ptr.IntByReference;
-import com.twelvemonkeys.lang.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.build.provision.params.Arch;
@@ -206,6 +205,29 @@ public class WindowsUtilities {
         }
         return null;
     }
+
+    // gracefully swallow InvocationTargetException
+    public static String[] getRegistryKeys(HKEY root, String key) {
+        try {
+            if (Advapi32Util.registryKeyExists(root, key)) {
+                return Advapi32Util.registryGetKeys(root, key);
+            }
+        } catch(Exception e) {
+            log.warn("Couldn't get registry sub-keys for parentKey {}\\\\{}", getHkeyName(root), key);
+        }
+        return null;
+    }
+
+    // gracefully swallow InvocationTargetException
+    public static boolean registryKeyExists(HKEY root, String key) {
+        try {
+            return Advapi32Util.registryKeyExists(root, key);
+        } catch(Exception e) {
+            log.warn("Couldn't get registry key {}\\\\{}", getHkeyName(root), key);
+        }
+        return false;
+    }
+
 
     /**
      * Deletes all matching data values directly beneath the specified key
@@ -467,6 +489,20 @@ public class WindowsUtilities {
             }
         }
         return pid;
+    }
+
+    /**
+     * Cleans up a Windows path that may contain double quotes, commas or env variables
+     */
+    public static Path cleanRegPath(String rawPath) {
+        if(rawPath == null) {
+            return null;
+        }
+        String cleaned = rawPath.replaceAll("^\"|\"$", "");
+        if(cleaned.contains(",")) {
+            cleaned = cleaned.split(",", 2)[0];
+        }
+        return Paths.get(Kernel32Util.expandEnvironmentStrings(cleaned.trim()));
     }
 
     public static boolean isWindowsXP() {

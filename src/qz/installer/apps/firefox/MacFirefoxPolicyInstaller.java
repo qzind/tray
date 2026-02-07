@@ -3,17 +3,18 @@ package qz.installer.apps.firefox;
 import com.github.zafarkhaja.semver.Version;
 import qz.installer.Installer;
 import qz.installer.apps.FirefoxPolicyInstaller;
+import qz.installer.apps.locator.AppAlias;
 
 public class MacFirefoxPolicyInstaller extends FirefoxPolicyInstaller {
     static final Version REQUIRED_FIREFOX_VERSION = Version.parse("63.0.0");
     static final PolicyType[] SUPPORTED_POLICY_TYPES = new PolicyType[]{ PolicyType.PLIST, PolicyType.JSON };
 
-    // FIXME:  Why isn't this dynamic?
     private static final String[] MANAGED_POLICY_PATH_PATTERNS = {
-            "%s/Library/Preferences/org.mozilla.firefox.plist",
-            "%s/Library/Preferences/org.mozilla.firefoxdeveloperedition.plist",
-            "%s/Library/Preferences/org.mozilla.nightly.plist",
-            "%s/Library/Preferences/net.waterfox.waterfoxcurrent.plist",
+            "%s/Contents/Resources/distribution/policies.json",
+    };
+
+    private static final String[] MANAGED_POLICY_PLIST_PATTERNS = {
+            "%s/Library/Preferences/%s.plist",
     };
 
     @Override
@@ -39,5 +40,10 @@ public class MacFirefoxPolicyInstaller extends FirefoxPolicyInstaller {
     @Override
     public boolean hasConflict() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean installOsSpecificPolicy(AppAlias.Alias alias, Installer.PrivilegeLevel scope, String policy, String value) {
+        return false;
     }
 }

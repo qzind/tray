@@ -22,9 +22,9 @@ import qz.installer.Installer;
 import qz.installer.apps.ConflictingPolicyException;
 import qz.installer.apps.firefox.legacy.LegacyFirefoxCertificateInstaller;
 import qz.installer.certificate.CertificateManager;
-import qz.installer.apps.firefox.locator.AppAlias;
-import qz.installer.apps.firefox.locator.AppInfo;
-import qz.installer.apps.firefox.locator.AppLocator;
+import qz.installer.apps.locator.AppAlias;
+import qz.installer.apps.locator.AppInfo;
+import qz.installer.apps.locator.AppLocator;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.utils.JsonWriter;
 import qz.utils.ShellUtilities;
@@ -39,6 +39,7 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 
 /**
  * Installs the Firefox Policy file via Enterprise Policy, Distribution Policy file or AutoConfig, depending on OS & version
@@ -106,14 +107,15 @@ DISTRIBUTION_ENTERPRISE_ROOT_POLICY = new JSONObject()
         String DISTRIBUTION_INSTALL_CERT_POLICY_OLD = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"" + Constants.PROPS_FILE + CertificateManager.DEFAULT_CERTIFICATE_EXTENSION + "\", \"" + LINUX_SNAP_CERT_LOCATION + "\" ] } } }";
         String DISTRIBUTION_REMOVE_CERT_POLICY_OLD = "{ \"policies\": { \"Certificates\": { \"Install\": [ \"/opt/" + Constants.PROPS_FILE +  "/auth/root-ca.crt\"] } } }";
 
-        System.out.println(DISTRIBUTION_ENTERPRISE_ROOT_POLICY_OLD);
-        System.out.println(DISTRIBUTION_ENTERPRISE_ROOT_POLICY);
+        System.out.println("NOTE: The following is JSON is debug info and can safety be ignored... ");
+        System.out.println("   " + DISTRIBUTION_ENTERPRISE_ROOT_POLICY_OLD);
+        System.out.println("   " + DISTRIBUTION_ENTERPRISE_ROOT_POLICY);
 
-        System.out.println(DISTRIBUTION_INSTALL_CERT_POLICY_OLD);
-        System.out.println(DISTRIBUTION_INSTALL_CERT_POLICY);
+        System.out.println("   " + DISTRIBUTION_INSTALL_CERT_POLICY_OLD);
+        System.out.println("   " + DISTRIBUTION_INSTALL_CERT_POLICY);
 
-        System.out.println(DISTRIBUTION_REMOVE_CERT_POLICY_OLD);
-        System.out.println(DISTRIBUTION_REMOVE_CERT_POLICY);
+        System.out.println("   " + DISTRIBUTION_REMOVE_CERT_POLICY_OLD);
+        System.out.println("   " + DISTRIBUTION_REMOVE_CERT_POLICY);
     }
 
     public static final String DISTRIBUTION_POLICY_LOCATION = "distribution/policies.json";
@@ -144,8 +146,8 @@ DISTRIBUTION_ENTERPRISE_ROOT_POLICY = new JSONObject()
         }
 
         // Search for installed instances
-        ArrayList<AppInfo> foundApps = AppLocator.getInstance().locate(AppAlias.FIREFOX);
-        ArrayList<Path> processPaths = null;
+        HashSet<AppInfo> foundApps = AppLocator.getInstance().locate(AppAlias.FIREFOX);
+        HashSet<Path> processPaths = null;
 
         for(AppInfo appInfo : foundApps) {
             boolean success = false;
@@ -174,7 +176,7 @@ DISTRIBUTION_ENTERPRISE_ROOT_POLICY = new JSONObject()
     }
 
     public static void uninstall() {
-        ArrayList<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
+        HashSet<AppInfo> appList = AppLocator.getInstance().locate(AppAlias.FIREFOX);
         for(AppInfo appInfo : appList) {
             if(honorsPolicy(appInfo)) {
                 if(SystemUtilities.isWindows() || SystemUtilities.isMac()) {
@@ -304,7 +306,7 @@ DISTRIBUTION_ENTERPRISE_ROOT_POLICY = new JSONObject()
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public static boolean issueRestartWarning(ArrayList<Path> runningPaths, AppInfo appInfo) {
+    public static boolean issueRestartWarning(HashSet<Path> runningPaths, AppInfo appInfo) {
         boolean firefoxIsRunning = runningPaths.contains(appInfo.getExePath());
 
         // Edge case for detecting if snap is running, since we can't compare the exact path easily

@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
 import org.testng.SkipException;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.installer.apps.locator.AppAlias;
@@ -28,6 +29,13 @@ public class AppLocatorTests {
     private final HashMap<AppAlias,HashSet<AppInfo>> foundApps = new HashMap<>();
     private static final boolean SKIP_BROWSER_SPAWN = false;
 
+    @BeforeClass
+    public void setup() {
+        for (AppAlias app : AppAlias.values()) {
+            foundApps.put(app, AppLocator.getInstance().locate(app));
+        }
+    }
+
     @DataProvider(name = "apps")
     public Object[][] apps() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
@@ -39,7 +47,6 @@ public class AppLocatorTests {
 
     @Test(dataProvider = "apps", priority = 1)
     public void findAppTests(AppAlias app) {
-        foundApps.put(app, AppLocator.getInstance().locate(app));
         Assert.assertFalse(foundApps.get(app).isEmpty());
 
         // Make sure the app exists and we found version information

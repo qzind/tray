@@ -5,7 +5,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
 import org.testng.SkipException;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.installer.apps.locator.AppAlias;
@@ -26,14 +25,17 @@ import java.util.HashSet;
 public class AppLocatorTests {
     private static final Logger log = LogManager.getLogger(AppLocatorTests.class);
 
-    private final HashMap<AppAlias,HashSet<AppInfo>> foundApps = new HashMap<>();
+    private final HashMap<AppAlias,HashSet<AppInfo>> appInfoCache = new HashMap<>();
     private static final boolean SKIP_BROWSER_SPAWN = false;
 
-    @BeforeClass
-    public void setup() {
-        for (AppAlias app : AppAlias.values()) {
-            foundApps.put(app, AppLocator.getInstance().locate(app));
+    /**
+     * Lazy init allows first caller to provide accurate benchmarking values to TestNG
+     */
+    public HashSet<AppInfo> findAppInfo(AppAlias app) {
+        if(appInfoCache.get(app) == null) {
+            appInfoCache.put(app, AppLocator.getInstance().locate(app));
         }
+        return appInfoCache.get(app);
     }
 
     @DataProvider(name = "apps")
@@ -47,10 +49,10 @@ public class AppLocatorTests {
 
     @Test(dataProvider = "apps", priority = 1)
     public void findAppTests(AppAlias app) {
-        Assert.assertFalse(foundApps.get(app).isEmpty());
+        Assert.assertFalse(findAppInfo(app).isEmpty());
 
         // Make sure the app exists and we found version information
-        for (AppInfo appInfo : foundApps.get(app)) {
+        for (AppInfo appInfo : findAppInfo(app)) {
             log.info("[{}] found as '{}' at '{}', Version: '{}'", app.name(), appInfo.getName(true), appInfo.getPath(), appInfo.getVersion());
             Assert.assertFalse(appInfo.getAlias().getName().isBlank());
             Assert.assertTrue(appInfo.getPath().toFile().exists());
@@ -64,10 +66,10 @@ public class AppLocatorTests {
         // A developer's workstation will likely have at least one app started
         // but extremely unlikely to have all apps started.  Pass if
         // at least one app is not started.
-        int foundAppCount = foundApps.get(app).size();
+        int foundAppCount = findAppInfo(app).size();
         int runningAppCount = 0;
-        HashSet<Path> runningPaths = AppLocator.getRunningPaths(foundApps.get(app));
-        for (AppInfo appInfo : foundApps.get(app)) {
+        HashSet<Path> runningPaths = AppLocator.getRunningPaths(findAppInfo(app));
+        for (AppInfo appInfo : findAppInfo(app)) {
             for(Path runningPath : runningPaths) {
                 if(appInfo.getExePath().equals(runningPath)) {
                     log.info("[{}] found running as '{}'", app, appInfo.getExePath());
@@ -81,7 +83,7 @@ public class AppLocatorTests {
     @Test(dataProvider = "apps", priority = 3)
     public void startAppTests(AppAlias app) {
         if(SKIP_BROWSER_SPAWN) throw new SkipException("Skipping per request");
-        for (AppInfo appInfo : foundApps.get(app)) {
+        for (AppInfo appInfo : findAppInfo(app)) {
             log.info("[{}] spawning from '{}'", app.name(), appInfo.getExePath());
             Assert.assertTrue(spawnProcess(appInfo.getExePath()));
         }
@@ -90,9 +92,9 @@ public class AppLocatorTests {
     @Test(dataProvider = "apps", priority = 4)
     public void findRunningAppsTests(AppAlias app) {
         if(SKIP_BROWSER_SPAWN) throw new SkipException("Skipping per request");
-        HashSet<Path> runningPaths = AppLocator.getRunningPaths(foundApps.get(app));
+        HashSet<Path> runningPaths = AppLocator.getRunningPaths(findAppInfo(app));
         outer:
-        for (AppInfo appInfo : foundApps.get(app)) {
+        for (AppInfo appInfo : findAppInfo(app)) {
             for(Path runningPath : runningPaths) {
                 if(appInfo.getExePath().equals(runningPath)) {
                     log.info("[{}] found running at '{}'", app, appInfo.getExePath());

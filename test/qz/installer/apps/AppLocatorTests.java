@@ -79,18 +79,18 @@ public class AppLocatorTests {
     public void startAppTests(AppAlias app) {
         if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
         for (AppInfo appInfo : findAppInfo(app)) {
-            log.info("[{}] spawning from '{}'", app.name(), appInfo.getExePath());
+            log.info("[{}] Spawning '{}' from '{}'", app.name(), appInfo.getName(true), Arrays.toString(appInfo.getExeCommand()));
             Assert.assertTrue(spawnProcess(appInfo));
         }
     }
 
     @Test(dataProvider = "apps", priority = 4)
     public void waitForApps(AppAlias app) {
-        int ms = 50;
+        int ms = 200;
         boolean slept = true;
         if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
         for (AppInfo ignored : findAppInfo(app)) {
-            // Give each app 200ms to wake up
+            // Give each app time to start
             try {
                 Thread.sleep(ms);
             } catch(InterruptedException e) {

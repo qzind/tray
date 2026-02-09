@@ -2,6 +2,7 @@ package qz.installer.apps.locator;
 
 import com.github.zafarkhaja.semver.Version;
 
+import java.awt.*;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,7 +29,7 @@ public class AppInfo {
         this.appPath = appPath;
         this.exePath = exePath;
         this.version = version;
-        this.exeCommand = constructCommand(exePath, exeParams);
+        this.exeCommand = constructCommand(alias, exePath, exeParams);
     }
 
     public AppInfo(Alias alias, Path appPath, Path exePath, String version, String ... exeParams) {
@@ -83,10 +84,22 @@ public class AppInfo {
      * The command needed to start the application including parameters
      * e.g. { "/usr/bin/firefox" }, or  { "/usr/bin/flatpak", "run", "org.mozilla.firefox" }
      */
-    public static String[] constructCommand(Path exePath, String ... exeParams) {
+    public static String[] constructCommand(AppAlias.Alias alias, Path exePath, String ... exeParams) {
         List<String> command = new LinkedList<>();
         command.add(exePath.toString());
         command.addAll(List.of(exeParams));
+        if(GraphicsEnvironment.isHeadless()) {
+            switch(alias.getAppAlias()) {
+                case FIREFOX:
+                    command.add("-headless");
+                    break;
+                case CHROMIUM:
+                    command.add("--headless");
+                    break;
+                default:
+                    log.warn("No headless parameters configured for [{}] found as '{}' at '{}'; commands may terminate prematurely", alias.getAppAlias(), alias.getName(true), exePath);
+            }
+        }
         return command.toArray(new String[0]);
     }
 

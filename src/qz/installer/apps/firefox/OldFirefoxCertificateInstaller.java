@@ -37,9 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashSet;
+import java.util.*;
 
 /**
  * Installs the Firefox Policy file via Enterprise Policy, Distribution Policy file or AutoConfig, depending on OS & version
@@ -147,7 +145,8 @@ DISTRIBUTION_ENTERPRISE_ROOT_POLICY = new JSONObject()
 
         // Search for installed instances
         HashSet<AppInfo> foundApps = AppLocator.getInstance().locate(AppAlias.FIREFOX);
-        HashSet<Path> processPaths = null;
+        // HashSet<Path> processPaths = null;
+        HashMap<String, AppInfo> runningApps = null;
 
         for(AppInfo appInfo : foundApps) {
             boolean success = false;
@@ -170,7 +169,7 @@ DISTRIBUTION_ENTERPRISE_ROOT_POLICY = new JSONObject()
                 }
             }
             if(success) {
-                issueRestartWarning(processPaths = AppLocator.getRunningPaths(foundApps, processPaths), appInfo);
+                issueRestartWarning(runningApps = AppLocator.getInstance().getRunningApps(foundApps, runningApps), appInfo);
             }
         }
     }
@@ -183,9 +182,9 @@ DISTRIBUTION_ENTERPRISE_ROOT_POLICY = new JSONObject()
                     log.info("Skipping uninstall of Firefox enterprise root certificate policy for {}", appInfo);
                 } else {
                     try {
-                        File policy = appInfo.getPath().resolve(DISTRIBUTION_POLICY_LOCATION).toFile();
+                        File policy = appInfo.getAppPath().resolve(DISTRIBUTION_POLICY_LOCATION).toFile();
                         if(policy.exists()) {
-                            JsonWriter.write(appInfo.getPath().resolve(DISTRIBUTION_POLICY_LOCATION).toString(), DISTRIBUTION_INSTALL_CERT_POLICY.toString(), false, true);
+                            JsonWriter.write(appInfo.getAppPath().resolve(DISTRIBUTION_POLICY_LOCATION).toString(), DISTRIBUTION_INSTALL_CERT_POLICY.toString(), false, true);
                         }
                     } catch(IOException | JSONException e) {
                         log.warn("Unable to remove Firefox policy for {}", appInfo, e);
@@ -249,11 +248,11 @@ DISTRIBUTION_ENTERPRISE_ROOT_POLICY = new JSONObject()
      */
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public static boolean installDistributionPolicy(AppInfo app, X509Certificate cert) {
-        Path jsonPath = app.getPath().resolve(SystemUtilities.isMac() ? DISTRIBUTION_MAC_POLICY_LOCATION:DISTRIBUTION_POLICY_LOCATION);
+        Path jsonPath = app.getAppPath().resolve(SystemUtilities.isMac() ? DISTRIBUTION_MAC_POLICY_LOCATION:DISTRIBUTION_POLICY_LOCATION);
         JSONObject jsonPolicy = SystemUtilities.isWindows() || SystemUtilities.isMac() ? DISTRIBUTION_ENTERPRISE_ROOT_POLICY:DISTRIBUTION_INSTALL_CERT_POLICY;
 
         // Special handling for snaps
-        if(app.getPath().toString().startsWith("/snap")) {
+        if(app.getAppPath().toString().startsWith("/snap")) {
             log.info("Snap detected, installing policy file to global location instead: {}", FIREFOX_GLOBAL_POLICY_LOCATION);
             jsonPath = Paths.get(FIREFOX_GLOBAL_POLICY_LOCATION);
         }
@@ -306,29 +305,31 @@ DISTRIBUTION_ENTERPRISE_ROOT_POLICY = new JSONObject()
     }
 
     @SuppressWarnings("UnusedReturnValue")
-    public static boolean issueRestartWarning(HashSet<Path> runningPaths, AppInfo appInfo) {
-        boolean firefoxIsRunning = runningPaths.contains(appInfo.getExePath());
+    public static boolean issueRestartWarning(HashMap<String,AppInfo> runningPaths, AppInfo appInfo) {
+        for(Map.Entry<String, AppInfo> runningApp : runningPaths.entrySet()) {
+            if(runningApp.getValue().equals(appInfo)) {
+                if (appInfo.getVersion().isHigherThanOrEquivalentTo(OldFirefoxCertificateInstaller.FIREFOX_RESTART_VERSION)) {
+                    try {
+                        Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
+                        return true;
+                    }
+                    catch(Exception ignore) {}
+                } else {
+                    log.warn("{} must be restarted manually for changes to take effect", appInfo);
+                }
+            }
+        }
+        // runningPaths.contains(appInfo.getExePath());
 
         // Edge case for detecting if snap is running, since we can't compare the exact path easily
-        for(Path runningPath : runningPaths) {
+        // TODO: is this still needed?
+        /*for(Path runningPath : runningPaths) {
             if (runningPath.startsWith("/snap/")) {
                 firefoxIsRunning = true;
                 break;
             }
-        }
-
-        if (firefoxIsRunning) {
-            if (appInfo.getVersion().isHigherThanOrEquivalentTo(OldFirefoxCertificateInstaller.FIREFOX_RESTART_VERSION)) {
-                try {
-                    Installer.getInstance().spawn(appInfo.getExePath().toString(), "-private", "about:restartrequired");
-                    return true;
-                }
-                catch(Exception ignore) {}
-            } else {
-                log.warn("{} must be restarted manually for changes to take effect", appInfo);
-            }
-        }
-        return false;
+        }*/
+        return false;  // FIXME
     }
 
 

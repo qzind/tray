@@ -64,6 +64,36 @@ public class AppVersionParser {
         return Version.of(0, 0, 0);
     }
 
+    /**
+     * Parses a version string that may have unexpected leading and following characters
+     * such as:
+     *    - "Mozilla Firefox 145.0.2\n"
+     *    - "Chromium 144.0.7559.109 snap\n"
+     */
+    public static Version parseStdOut(String stdOut) {
+        String isolatedVersion = "";
+        if(stdOut != null) {
+            // first strip any leading or trailing whitespace
+            stdOut = stdOut.trim();
+            // second, split by space
+            String[] parts = stdOut.split(" ");
+            // third, try to detect the version "part", starting at the end of our array
+            if(parts.length > 0) {
+                for(int i = parts.length - 1; i >= 0; i--) {
+                    String part = parts[i];
+                    if (!part.isBlank() && Character.isDigit(part.charAt(0))) {
+                        if(part.contains(".")) {
+                            // we found a digit and a period, let's use it
+                            isolatedVersion = part;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return parse(isolatedVersion);
+    }
+
     private static String[] splitAtFirstNonNumber(String input) {
         if (input == null || input.isEmpty()) {
             return new String[]{"", ""};

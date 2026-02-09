@@ -12,10 +12,7 @@ import qz.installer.apps.locator.AppInfo;
 import qz.installer.apps.locator.AppLocator;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 /**
  * Locate all apps registered as <code>AppAlias</code>
@@ -53,9 +50,9 @@ public class AppLocatorTests {
 
         // Make sure the app exists and we found version information
         for (AppInfo appInfo : findAppInfo(app)) {
-            log.info("[{}] found as '{}' at '{}', Version: '{}'", app.name(), appInfo.getName(true), appInfo.getPath(), appInfo.getVersion());
+            log.info("[{}] found as '{}' at '{}' installed to '{}', Version: '{}'", app.name(), appInfo.getName(true), appInfo.getExePath(), appInfo.getAppPath(), appInfo.getVersion());
             Assert.assertFalse(appInfo.getAlias().getName().isBlank());
-            Assert.assertTrue(appInfo.getPath().toFile().exists());
+            Assert.assertTrue(appInfo.getAppPath().toFile().exists());
             Assert.assertTrue(appInfo.getExePath().toFile().exists());
             Assert.assertNotEquals(appInfo.getVersion(), Version.parse("0.0.0"));
         }
@@ -67,17 +64,15 @@ public class AppLocatorTests {
         // but extremely unlikely to have all apps started.  Pass if
         // at least one app is not started.
         int foundAppCount = findAppInfo(app).size();
-        int runningAppCount = 0;
-        HashSet<Path> runningPaths = AppLocator.getRunningPaths(findAppInfo(app));
-        for (AppInfo appInfo : findAppInfo(app)) {
-            for(Path runningPath : runningPaths) {
-                if(appInfo.getExePath().equals(runningPath)) {
-                    log.info("[{}] found running as '{}'", app, appInfo.getExePath());
-                    runningAppCount++;
-                }
-            }
+        HashMap<String, AppInfo> runningApps = AppLocator.getInstance().getRunningApps(findAppInfo(app), null);
+        for(Map.Entry<String, AppInfo> runningApp : runningApps.entrySet()) {
+            String pid = runningApp.getKey();
+            AppInfo appInfo = runningApp.getValue();
+            log.info("[{}] found running as pid {} at '{}'", app, pid, appInfo.getExePath());
         }
-        Assert.assertTrue(runningAppCount < foundAppCount);
+        // An app can have multiple processes, dedupe
+        HashSet<AppInfo> uniqueApps = new HashSet<>(runningApps.values());
+        Assert.assertTrue(uniqueApps.size() < foundAppCount);
     }
 
     @Test(dataProvider = "apps", priority = 3)
@@ -85,38 +80,39 @@ public class AppLocatorTests {
         if(SKIP_BROWSER_SPAWN) throw new SkipException("Skipping per request");
         for (AppInfo appInfo : findAppInfo(app)) {
             log.info("[{}] spawning from '{}'", app.name(), appInfo.getExePath());
-            Assert.assertTrue(spawnProcess(appInfo.getExePath()));
+            Assert.assertTrue(spawnProcess(appInfo));
         }
     }
 
     @Test(dataProvider = "apps", priority = 4)
     public void findRunningAppsTests(AppAlias app) {
         if(SKIP_BROWSER_SPAWN) throw new SkipException("Skipping per request");
-        HashSet<Path> runningPaths = AppLocator.getRunningPaths(findAppInfo(app));
-        outer:
-        for (AppInfo appInfo : findAppInfo(app)) {
-            for(Path runningPath : runningPaths) {
-                if(appInfo.getExePath().equals(runningPath)) {
-                    log.info("[{}] found running at '{}'", app, appInfo.getExePath());
-                    continue outer;
-                }
-            }
-            Assert.fail(String.format("Unable to find a running [%s] process matching '%s'", app, appInfo.getExePath()));
+        HashMap<String, AppInfo> runningApps = AppLocator.getInstance().getRunningApps(findAppInfo(app), null);
+        for(Map.Entry<String, AppInfo> runningApp : runningApps.entrySet()) {
+            String pid = runningApp.getKey();
+            AppInfo appInfo = runningApp.getValue();
+            log.info("[{}] found running as pid {} at '{}'", app, pid, appInfo.getExePath());
         }
+        Assert.assertFalse(runningApps.isEmpty(), String.format("Unable to find a running [%s] process", app.name()));
     }
 
-    private static boolean spawnProcess(Path p) {
+    /**
+     * TODO: Move this somewhere useful and combine with Installer.getInstance().spawn();
+     */
+    private static boolean spawnProcess(AppInfo appInfo) {
+        String[] command = appInfo.getExeCommand();
         try {
-            if(!p.toFile().exists()) {
-                throw new IOException(p + " does not exist");
+            if(!appInfo.exists()) {
+                throw new IOException(appInfo.getExePath() + " or " + appInfo.getAppPath() + " does not exist");
             }
-            ProcessBuilder pb = new ProcessBuilder(p.toString());
+
+            ProcessBuilder pb = new ProcessBuilder(command);
             pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
             pb.redirectError(ProcessBuilder.Redirect.DISCARD);
             pb.redirectInput(ProcessBuilder.Redirect.PIPE);
             pb.start();
         } catch (IOException e) {
-            log.error("Failed to start process {}", p, e);
+            log.error("Failed to start process '{}'", String.join(", ", command), e);
             return false;
         }
         return true;

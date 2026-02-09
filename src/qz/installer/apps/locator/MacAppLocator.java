@@ -19,10 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 /*
  * Apple's XML structure
@@ -92,13 +89,13 @@ public class MacAppLocator extends AppLocator {
 
         // Cleanup bad paths such as mount points, Trash, Parallels' shared apps
         appList.removeIf(app ->
-                                 Arrays.stream(IGNORE_PATHS).anyMatch(app.getPath().toString()::contains)
+                                 Arrays.stream(IGNORE_PATHS).anyMatch(app.getAppPath().toString()::contains)
         );
 
         // Remove "EdgeUpdater" and friends
         appList.removeIf(app ->
                                  Arrays.stream(appAlias.aliases).map(alias -> String.format("%sUpdater", alias.getName(true))).anyMatch(
-                                         updater -> app.getPath().toString().contains(updater)
+                                         updater -> app.getAppPath().toString().contains(updater)
                                  )
         );
 
@@ -110,14 +107,14 @@ public class MacAppLocator extends AppLocator {
      * Use JNA to obtain the
      */
     @Override
-    public HashSet<Path> getPidPaths(HashSet<String> pids) {
-        HashSet<Path> processPaths = new HashSet<>();
+    public HashMap<String, Path> getPidPaths(Set<String> pids) {
+        HashMap<String, Path> pathMap = new HashMap<>();
         for (String pid : pids) {
             Pointer buf = new Memory(SystemB.PROC_PIDPATHINFO_MAXSIZE);
             SystemB.INSTANCE.proc_pidpath(Integer.parseInt(pid), buf, SystemB.PROC_PIDPATHINFO_MAXSIZE);
-            processPaths.add(Paths.get(buf.getString(0).trim()));
+            pathMap.put(pid, Paths.get(buf.getString(0).trim()));
         }
-        return processPaths;
+        return pathMap;
     }
 
     /**

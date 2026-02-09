@@ -77,7 +77,7 @@ public abstract class FirefoxPolicyInstaller {
     public static void main(String ... args) {
         HashSet<AppInfo> foundApps = AppLocator.getInstance().locate(AppAlias.FIREFOX);
         for(AppInfo app : foundApps) {
-            log.info("Found {}", app.getPath());
+            log.info("Found {}", app.getAppPath());
             // FIXME: 'value' must be boolean on macOS
             getInstance().installOsSpecificPolicy(app.getAlias(), Installer.PrivilegeLevel.USER, "Certificates/ImportEnterpriseRoots", "1");
         }

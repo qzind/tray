@@ -21,8 +21,10 @@ import qz.utils.WindowsUtilities;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 public class WindowsAppLocator extends AppLocator{
     protected static final Logger log = LogManager.getLogger(WindowsAppLocator.class);
@@ -140,10 +142,10 @@ public class WindowsAppLocator extends AppLocator{
     }
 
     @Override
-    public HashSet<String> getPids(HashSet<String> processNames) {
+    public HashSet<String> getPids(HashSet<AppInfo> appList) {
         HashSet<String> pidList = new HashSet<>();
 
-        if (processNames.isEmpty()) return pidList;
+        if (appList.isEmpty()) return pidList;
 
         Tlhelp32.PROCESSENTRY32 pe32 = new Tlhelp32.PROCESSENTRY32();
         pe32.dwSize = new WinNT.DWORD(pe32.size());
@@ -158,9 +160,11 @@ public class WindowsAppLocator extends AppLocator{
         if (Kernel32.INSTANCE.Process32First(hSnapshot, pe32)) {
             do {
                 String processName = Native.toString(pe32.szExeFile);
-                if(processNames.contains(processName.toLowerCase(Locale.ENGLISH))) {
-                    pidList.add(pe32.th32ProcessID.toString());
-                }
+                appList.forEach(appInfo -> {
+                    if (appInfo.getExePath().endsWith(processName)) {
+                        pidList.add(pe32.th32ProcessID.toString());
+                    }
+                });
             } while (Kernel32.INSTANCE.Process32Next(hSnapshot, pe32));
         }
 
@@ -169,8 +173,8 @@ public class WindowsAppLocator extends AppLocator{
     }
 
     @Override
-    public HashSet<Path> getPidPaths(HashSet<String> pids) {
-        HashSet<Path> pathList = new HashSet<>();
+    public HashMap<String, Path> getPidPaths(Set<String> pids) {
+        HashMap<String, Path> pathMap = new HashMap<>();
 
         for(String pid : pids) {
             WinNT.HANDLE hProcess = Kernel32.INSTANCE.OpenProcess(WinNT.PROCESS_QUERY_INFORMATION | WinNT.PROCESS_VM_READ, false, Integer.parseInt(pid));
@@ -180,7 +184,7 @@ public class WindowsAppLocator extends AppLocator{
             }
 
             int bufferSize = WinNT.MAX_PATH;
-            Pointer buffer = new Memory(bufferSize * Native.WCHAR_SIZE);
+            Pointer buffer = new Memory((long)bufferSize * Native.WCHAR_SIZE);
 
             if (Psapi.INSTANCE.GetModuleFileNameEx(hProcess, null, buffer, bufferSize) == 0) {
                 log.warn("Full path to PID {} is empty, skipping.", pid);
@@ -189,10 +193,10 @@ public class WindowsAppLocator extends AppLocator{
             }
 
             Kernel32.INSTANCE.CloseHandle(hProcess);
-            pathList.add(Paths.get(Native.WCHAR_SIZE == 1 ?
+            pathMap.put(pid, Paths.get(Native.WCHAR_SIZE == 1 ?
                                         buffer.getString(0) :
                                         buffer.getWideString(0)));
         }
-        return pathList;
+        return pathMap;
     }
 }

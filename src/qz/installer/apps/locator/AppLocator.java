@@ -6,9 +6,8 @@ import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public abstract class AppLocator {
     protected static final Logger log = LogManager.getLogger(AppLocator.class);
@@ -16,57 +15,72 @@ public abstract class AppLocator {
     private static final AppLocator INSTANCE = getPlatformSpecificAppLocator();
 
     public abstract HashSet<AppInfo> locate(AppAlias appAlias);
-    public abstract HashSet<Path> getPidPaths(HashSet<String> pids);
+    public abstract HashMap<String, Path> getPidPaths(Set<String> pids);
 
-    @SuppressWarnings("unused")
-    public HashSet<String> getPids(String ... processNames) {
-        return getPids(new HashSet<>(Arrays.asList(processNames)));
+    /**
+     * Joins the given list of apps and processes on exePath
+     */
+    private HashMap<String, AppInfo> join(HashMap<String, Path> pathMap, HashSet<AppInfo> appList) {
+        HashMap<String, AppInfo> pidMap = new HashMap<>();
+        for(Map.Entry<String, Path> pathEntry : pathMap.entrySet()) {
+            for(AppInfo appInfo : appList) {
+                if(pidMap.containsKey(pathEntry.getKey())) {
+                    continue;
+                }
+                if(appInfo.getExePath().equals(pathEntry.getValue())) {
+                    pidMap.put(pathEntry.getKey(), appInfo);
+                    break;
+                }
+            }
+        }
+        return pidMap;
+    }
+
+    public HashSet<String> getPids(HashSet<AppInfo> appList) {
+        HashSet<String> processNames = appList.stream()
+                .map(appInfo -> appInfo.getExePath().getFileName().toString())
+                .collect(Collectors.toCollection(HashSet::new));
+
+        return getPidsByName(processNames);
     }
 
     /**
      * Linux, Mac
      */
-    public HashSet<String> getPids(HashSet<String> processNames) {
-        String[] response;
-        HashSet<String> pidList = new HashSet<>();
+    public HashSet<String> getPidsByName(HashSet<String> processNames) {
+        HashSet<String> pids = new HashSet<>();
+        if (processNames.isEmpty()) return pids;
 
-        if(processNames.contains("firefox") && !(SystemUtilities.isWindows() || SystemUtilities.isMac())) {
-            processNames.add("MainThread"); // Workaround Firefox 79 https://github.com/qzind/tray/issues/701
-            processNames.add("GeckoMain");  // Workaround Firefox 94 https://bugzilla.mozilla.org/show_bug.cgi?id=1742606
-        }
 
-        if (processNames.isEmpty()) return pidList;
-
+        // We can't find an app by path (only by name) so we have to crawl potentially matching patterns
+        // in hopes to find a pid that we can then check against our appList.
         // Quoting handled by the command processor (e.g. pgrep -x "myapp|my app" is perfectly valid)
-        String data = ShellUtilities.executeRaw("pgrep", "-x", String.join("|", processNames));
+        String pgrepOutput = ShellUtilities.executeRaw("pgrep", "-x", String.join("|", processNames));
 
-        //Splitting an empty string results in a 1 element array, this is not what we want
-        if (!data.isEmpty()) {
-            response = data.split("\\s*\\r?\\n");
-            Collections.addAll(pidList, response);
+        if (!pgrepOutput.isBlank()) {
+            String[] response = pgrepOutput.split("\\s*\\r?\\n");
+            Collections.addAll(pids, response);
         }
 
-        return pidList;
-    }
-
-    public static HashSet<Path> getRunningPaths(HashSet<AppInfo> appList) {
-        return getRunningPaths(appList, null);
+        return pids;
     }
 
     /**
      * Gets the path to the running executables matching on <code>AppInfo.getExePath</code>
      * This is resource intensive; if a non-null <code>cache</code> is provided, it will return that instead
      */
-    public static HashSet<Path> getRunningPaths(HashSet<AppInfo> appList, HashSet<Path> cache) {
+    public HashMap<String,AppInfo> getRunningApps(HashSet<AppInfo> appList, HashMap<String,AppInfo> cache) {
         if(cache == null) {
-            HashSet<String> appNames = new HashSet<>();
-            for(AppInfo app : appList) {
-                String exeName = app.getExePath().getFileName().toString();
-                appNames.add(exeName);
-            }
-            cache = INSTANCE.getPidPaths(INSTANCE.getPids(appNames));
-        }
+            HashMap<String,Path> pathMap = getPidPaths(getPids(appList));
+            cache = join(pathMap, appList);
 
+            // flatpak uses its own process listing
+            if(this instanceof LinuxAppLocator) {
+                LinuxAppLocator locator = (LinuxAppLocator)this;
+                cache.putAll(locator.getFlatpakPids(appList));
+            }
+
+        }
         return cache;
     }
 

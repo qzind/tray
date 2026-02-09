@@ -39,7 +39,7 @@ public class LegacyFirefoxCertificateInstaller {
 
     public static boolean installAutoConfigScript(AppInfo appInfo, String certData, String ... hostNames) {
         try {
-            if(appInfo.getPath().toString().equals("/usr/bin")) {
+            if(appInfo.getAppPath().toString().equals("/usr/bin")) {
                 throw new Exception("Preventing install to root location");
             }
             writePrefsFile(appInfo);
@@ -62,7 +62,7 @@ public class LegacyFirefoxCertificateInstaller {
     }
 
     public static File tryWrite(AppInfo appInfo, boolean mkdirs, String ... paths) throws IOException {
-        Path dir = appInfo.getPath();
+        Path dir = appInfo.getAppPath();
         if (SystemUtilities.isMac()) {
             dir = dir.resolve(MAC_PREFIX);
         }

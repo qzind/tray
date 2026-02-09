@@ -923,4 +923,22 @@ public class FileUtilities {
             FileUtils.deleteQuietly(FileUtilities.TEMP_DIR.toFile());
         }
     }
+
+    /**
+     * Wrapper around the broken <code>Files.probeContentType(...)</code> per
+     * <a href="https://bugs.openjdk.org/browse/JDK-8188228">JDK-8188228</a>
+     */
+    public static String probeContentType(Path filePath) throws IOException {
+        String contentType = Files.probeContentType(filePath);
+        switch(SystemUtilities.getOs()) {
+            case WINDOWS:
+                break;
+            case MAC:
+            case LINUX:
+                if(contentType == null) {
+                    contentType = ShellUtilities.executeRaw("file", "--mime-type", "--brief", filePath.toString()).trim();
+                }
+        }
+        return contentType;
+    }
 }

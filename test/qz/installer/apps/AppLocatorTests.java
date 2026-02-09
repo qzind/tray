@@ -76,6 +76,15 @@ public class AppLocatorTests {
     }
 
     @Test(dataProvider = "apps", priority = 3)
+    public void startAppTests(AppAlias app) {
+        if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
+        for (AppInfo appInfo : findAppInfo(app)) {
+            log.info("[{}] spawning from '{}'", app.name(), appInfo.getExePath());
+            Assert.assertTrue(spawnProcess(appInfo));
+        }
+    }
+
+    @Test(dataProvider = "apps", priority = 4)
     public void waitForApps(AppAlias app) {
         int ms = 200;
         boolean slept = true;
@@ -91,16 +100,7 @@ public class AppLocatorTests {
         }
     }
 
-    @Test(dataProvider = "apps", priority = 4)
-    public void startAppTests(AppAlias app) {
-        if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
-        for (AppInfo appInfo : findAppInfo(app)) {
-            log.info("[{}] spawning from '{}'", app.name(), appInfo.getExePath());
-            Assert.assertTrue(spawnProcess(appInfo));
-        }
-    }
-
-    @Test(dataProvider = "apps", priority = 4)
+    @Test(dataProvider = "apps", priority = 5)
     public void findRunningAppsTests(AppAlias app) {
         if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
         HashMap<String, AppInfo> runningApps = AppLocator.getInstance().getRunningApps(findAppInfo(app), null);

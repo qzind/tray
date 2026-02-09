@@ -86,7 +86,7 @@ public class AppLocatorTests {
 
     @Test(dataProvider = "apps", priority = 4)
     public void waitForApps(AppAlias app) {
-        int ms = 200;
+        int ms = 50;
         boolean slept = true;
         if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
         for (AppInfo ignored : findAppInfo(app)) {

@@ -93,7 +93,7 @@ public class AppLocatorTests {
             AppInfo appInfo = runningApp.getValue();
             log.info("[{}] found running as pid {} at '{}'", app, pid, appInfo.getExePath());
         }
-        Assert.assertFalse(runningApps.isEmpty(), String.format("Unable to find a running [%s] process", app.name()));
+        Assert.assertFalse(runningApps.isEmpty(), String.format("Unable to find a running [%s] process.  Running app count must NOT be empty.", app.name()));
     }
 
     /**

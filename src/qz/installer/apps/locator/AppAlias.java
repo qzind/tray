@@ -85,15 +85,15 @@ public enum AppAlias {
          *   "Mozilla Firefox" --> "Firefox"
          *   "Microsoft Edge" --> "Edge"
          *   "Google Chrome" --> "Chrome"
-         *   "Brave Browser" --> "Brave Browser"
+         *   "Brave Browser" --> "Brave"
          */
         public String getName(boolean stripVendor) {
+            // Strip "Browser" from "Brave Browser"
+            if(stripVendor && name.endsWith("Browser")) {
+                return name.substring(0, name.length() - 7).trim();
+            }
             if(stripVendor && name.startsWith(vendor) && !name.equals(vendor)) {
-                String stripped = name.substring(vendor.length()).trim();
-                // Don't strip "Brave" from "Brave Browser", don't return an empty string
-                if(!stripped.isEmpty() && !stripped.equalsIgnoreCase("browser")) {
-                    return stripped;
-                }
+                return name.substring(vendor.length()).trim();
             }
             return name;
         }

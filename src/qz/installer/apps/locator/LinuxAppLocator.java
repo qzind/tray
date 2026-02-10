@@ -280,7 +280,7 @@ public class LinuxAppLocator extends AppLocator {
 
         for(AppInfo appInfo : appList) {
             for(String line : lines) {
-                String[] split = line.split(" ", 2);
+                String[] split = line.split("\\s+", 2);
                 if(split.length < 2) continue;
                 String application = split[0];
                 String pid = split[1];

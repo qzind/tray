@@ -206,6 +206,29 @@ public class WindowsUtilities {
         return null;
     }
 
+    // gracefully swallow InvocationTargetException
+    public static String[] getRegistryKeys(HKEY root, String key) {
+        try {
+            if (Advapi32Util.registryKeyExists(root, key)) {
+                return Advapi32Util.registryGetKeys(root, key);
+            }
+        } catch(Exception e) {
+            log.warn("Couldn't get registry sub-keys for parentKey {}\\\\{}", getHkeyName(root), key);
+        }
+        return null;
+    }
+
+    // gracefully swallow InvocationTargetException
+    public static boolean registryKeyExists(HKEY root, String key) {
+        try {
+            return Advapi32Util.registryKeyExists(root, key);
+        } catch(Exception e) {
+            log.warn("Couldn't get registry key {}\\\\{}", getHkeyName(root), key);
+        }
+        return false;
+    }
+
+
     /**
      * Deletes all matching data values directly beneath the specified key
      */
@@ -306,6 +329,37 @@ public class WindowsUtilities {
             log.error("Could not write numbered registry value at {}\\\\{}", getHkeyName(root), key, e);
         }
         return false;
+    }
+
+    /**
+     * Removes the specified registry data from the key specified; renumbering any remaining values zero-indexed
+     */
+    public static boolean removeNumberedRegValue(HKEY root, String key, Object data) {
+        if(!Advapi32Util.registryKeyExists(root, key)) {
+            log.warn("Registry key {}\\\\{} doesn't exist, skipping removal", root, key);
+            return false;
+        }
+        HashSet<Object> existingValues = new HashSet<>();
+        for(Map.Entry<String, Object> entry : Advapi32Util.registryGetValues(root, key).entrySet())  {
+            if(ByteUtilities.isPositiveNumber(entry.getKey())) {
+                // Assume a positive number is a numbered index
+                if(data instanceof String || data instanceof Integer) {
+                    // Note: We only delete what we can write; there's a chance of littered indices with unsupported value types
+                    if(!data.equals(entry.getValue())) {
+                        existingValues.add(entry.getValue());
+                        // Delete existing value, we'll add it back lower
+                        Advapi32Util.registryDeleteValue(root, key, entry.getKey());
+                    }
+                } else {
+                    log.error("Registry values of type {} aren't supported", data.getClass());
+                }
+            }
+        }
+
+        for(Object value : existingValues)  {
+            addNumberedRegValue(root, key, value);
+        }
+        return true;
     }
 
     public static boolean addRegValue(HKEY root, String key, String value, Object data) {
@@ -435,6 +489,20 @@ public class WindowsUtilities {
             }
         }
         return pid;
+    }
+
+    /**
+     * Cleans up a Windows path that may contain double quotes, commas or env variables
+     */
+    public static Path cleanRegPath(String rawPath) {
+        if(rawPath == null) {
+            return null;
+        }
+        String cleaned = rawPath.replaceAll("^\"|\"$", "");
+        if(cleaned.contains(",")) {
+            cleaned = cleaned.split(",", 2)[0];
+        }
+        return Paths.get(Kernel32Util.expandEnvironmentStrings(cleaned.trim()));
     }
 
     public static boolean isWindowsXP() {

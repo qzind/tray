@@ -25,6 +25,9 @@ public class SerialOptions {
 
     private PortSettings portSettings = null;
     private ResponseFormat responseFormat = null;
+    private boolean rxExplicitlySet = false;
+    private boolean portSettingsExplicitlySet = false;
+    private boolean encodingExplicitlySet = false;
 
     /**
      * Creates an empty/default options object
@@ -41,8 +44,11 @@ public class SerialOptions {
         if (serialOpts == null) { return; }
 
         //only apply port settings if opening or explicitly set in a send data call
-        if (isOpening || serialOpts.has("baudRate") || serialOpts.has("dataBits") || serialOpts.has("stopBits") || serialOpts.has("parity") || serialOpts.has("flowControl")) {
+        boolean hasCoreSettings = serialOpts.has("baudRate") || serialOpts.has("dataBits") || serialOpts.has("stopBits") || serialOpts.has("parity") || serialOpts.has("flowControl");
+        boolean hasEncoding = serialOpts.has("encoding");
+        if (isOpening || hasCoreSettings || hasEncoding) {
             portSettings = new PortSettings();
+            portSettingsExplicitlySet = hasCoreSettings;
 
             if (!serialOpts.isNull("baudRate")) {
                 try { portSettings.baudRate = SerialUtilities.parseBaudRate(serialOpts.getString("baudRate")); }
@@ -70,6 +76,7 @@ public class SerialOptions {
             }
 
             if (!serialOpts.isNull("encoding") && !serialOpts.optString("encoding").isEmpty()) {
+                encodingExplicitlySet = true;
                 try { portSettings.encoding = Charset.forName(serialOpts.getString("encoding")); }
                 catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "encoding", serialOpts.opt("encoding")); }
             }
@@ -77,6 +84,7 @@ public class SerialOptions {
 
         if (!serialOpts.isNull("rx")) {
             responseFormat = new ResponseFormat();
+            rxExplicitlySet = true;
             //Make the response encoding default to the port encoding. If this is removed it will default to UTF-8
             responseFormat.encoding = portSettings.encoding;
 
@@ -190,6 +198,11 @@ public class SerialOptions {
             // legacy support - only applies on port open
             responseFormat = new ResponseFormat();
 
+            // Mark as explicit if any legacy rx option is provided
+            if (serialOpts.has("start") || serialOpts.has("end") || serialOpts.has("width")) {
+                rxExplicitlySet = true;
+            }
+
             // legacy start only supports string, not an array
             if (!serialOpts.isNull("start")) {
                 responseFormat.boundStart = DeviceUtilities.characterBytes(serialOpts.optString("start", DEFAULT_BEGIN), responseFormat.encoding);
@@ -221,6 +234,18 @@ public class SerialOptions {
 
     public ResponseFormat getResponseFormat() {
         return responseFormat;
+    }
+
+    public boolean isRxExplicitlySet() {
+        return rxExplicitlySet;
+    }
+
+    public boolean isPortSettingsExplicitlySet() {
+        return portSettingsExplicitlySet;
+    }
+
+    public boolean isEncodingExplicitlySet() {
+        return encodingExplicitlySet;
     }
 
     public void setPortSettings(PortSettings portSettings) {
@@ -325,6 +350,20 @@ public class SerialOptions {
         public boolean isBoundNewline() {
             return boundNewline;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof ResponseFormat)) return false;
+            ResponseFormat that = (ResponseFormat)o;
+            return getEncoding().equals(that.getEncoding()) &&
+                    java.util.Arrays.equals(getBoundStart(), that.getBoundStart()) &&
+                    java.util.Arrays.equals(getBoundEnd(), that.getBoundEnd()) &&
+                    isBoundNewline() == that.isBoundNewline() &&
+                    getFixedWidth() == that.getFixedWidth() &&
+                    isIncludeStart() == that.isIncludeStart() &&
+                    java.util.Objects.equals(getLength(), that.getLength()) &&
+                    java.util.Objects.equals(getCrc(), that.getCrc());
+        }
     }
 
     public class ByteParam {
@@ -344,6 +383,15 @@ public class SerialOptions {
 
         public ByteUtilities.Endian getEndian() {
             return endian;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof ByteParam)) return false;
+            ByteParam that = (ByteParam)o;
+            return getIndex() == that.getIndex() &&
+                    getLength() == that.getLength() &&
+                    getEndian() == that.getEndian();
         }
     }
 

@@ -21,6 +21,10 @@ public class ClosedSocketException extends ClosedChannelException {
         this.initCause(t);
     }
 
+    /**
+     * Rethrows anything that we believe to be related to a <code>ClosedChannelException</code>
+     * Does nothing otherwise.
+     */
     public static void filter(Throwable t) throws ClosedChannelException {
         Throwable throwable = t;
         while(true) {

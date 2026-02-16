@@ -24,6 +24,7 @@ public class ClosedSocketException extends ClosedChannelException {
     public static void filter(Throwable t) throws ClosedChannelException {
         Throwable throwable = t;
         while(true) {
+            // Look for nested ClosedChannelException
             if(throwable instanceof ClosedChannelException) {
                 throw (ClosedChannelException)throwable;
             }
@@ -34,6 +35,7 @@ public class ClosedSocketException extends ClosedChannelException {
             }
         }
 
+        // Look for edge-cases, such as StaticException("Closed");
         if (messageMatchesClosed(t)) {
             throw new ClosedSocketException(t);
         }

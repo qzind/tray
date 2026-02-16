@@ -6,10 +6,7 @@
         <dependency name="jna" org="net.java.dev.jna" conf="*->default" rev="${jna.version}"/>
         <dependency name="bcprov-jdk18on" org="org.bouncycastle" conf="*->default" rev="${bouncycastle.version}"/>
         <dependency name="bcpkix-jdk18on" org="org.bouncycastle" conf="*->default" rev="${bouncycastle.version}"/>
-        <dependency name="java-semver" org="com.github.zafarkhaja" conf="*->default" rev="${javasemver.version}">
-            <!-- Skip, need 0.10.0-SNAPSHOT -->
-            <exclude name="*"/>
-        </dependency>
+        <dependency name="java-semver" org="com.github.zafarkhaja" conf="*->default" rev="${javasemver.version}"/>
 
         <!-- Websockets -->
         <dependency name="jettison" org="org.codehaus.jettison" conf="*->default" rev="${jettison.version}">

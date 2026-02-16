@@ -93,10 +93,7 @@
         <dependency name="flatlaf" org="com.formdev" conf="*->default" rev="${flatlaf.version}"/>
 
         <!-- Windows Installer -->
-        <dependency name="mslinks" org="mslinks" conf="*->default" rev="${mslinks.version}">
-            <!-- Skip, missing -->
-            <exclude name="*"/>
-        </dependency>
+        <dependency name="mslinks" org="org.jabref" conf="*->default" rev="${mslinks.version}"/>
 
         <!-- Charsets -->
         <dependency name="icu4j" org="com.ibm.icu" conf="*->default" rev="${icu4j.version}"/>

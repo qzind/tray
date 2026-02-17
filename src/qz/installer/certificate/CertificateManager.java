@@ -267,9 +267,8 @@ public class CertificateManager {
         PEMParser pem = new PEMParser(new FileReader(pemKey));
         Object parsedObject = pem.readObject();
 
-        JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
         PrivateKeyInfo privateKeyInfo = parsedObject instanceof PEMKeyPair ? ((PEMKeyPair)parsedObject).getPrivateKeyInfo() : (PrivateKeyInfo)parsedObject;
-        PrivateKey key = converter.getPrivateKey(privateKeyInfo);
+        PrivateKey key = new JcaPEMKeyConverter().setProvider("BC").getPrivateKey(privateKeyInfo);
 
         List<X509Certificate> certs = new ArrayList<>();
         X509CertificateHolder certHolder = (X509CertificateHolder)pem.readObject();

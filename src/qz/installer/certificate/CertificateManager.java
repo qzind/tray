@@ -22,6 +22,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaMiscPEMGenerator;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.OperatorException;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -266,10 +267,9 @@ public class CertificateManager {
         PEMParser pem = new PEMParser(new FileReader(pemKey));
         Object parsedObject = pem.readObject();
 
+        JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
         PrivateKeyInfo privateKeyInfo = parsedObject instanceof PEMKeyPair ? ((PEMKeyPair)parsedObject).getPrivateKeyInfo() : (PrivateKeyInfo)parsedObject;
-        PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyInfo.getEncoded());
-        KeyFactory factory = KeyFactory.getInstance("RSA");
-        PrivateKey key = factory.generatePrivate(privateKeySpec);
+        PrivateKey key = converter.getPrivateKey(privateKeyInfo);
 
         List<X509Certificate> certs = new ArrayList<>();
         X509CertificateHolder certHolder = (X509CertificateHolder)pem.readObject();

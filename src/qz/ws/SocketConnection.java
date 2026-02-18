@@ -10,7 +10,7 @@ import qz.utils.FileWatcher;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SocketConnection {
 
@@ -19,18 +19,18 @@ public class SocketConnection {
 
     private Certificate certificate;
 
-    private DeviceListener deviceListener;
+    private volatile DeviceListener deviceListener;
 
     // serial port -> open SerialIO
-    private final HashMap<String,SerialIO> openSerialPorts = new HashMap<>();
+    private final ConcurrentHashMap<String,SerialIO> openSerialPorts = new ConcurrentHashMap<>();
     // socket 'host:port' -> open ProtocolIO
-    private final HashMap<String,SocketIO> openNetworkSockets = new HashMap<>();
+    private final ConcurrentHashMap<String,SocketIO> openNetworkSockets = new ConcurrentHashMap<>();
 
     // absolute path -> open file listener
-    private final HashMap<Path,FileIO> openFiles = new HashMap<>();
+    private final ConcurrentHashMap<Path,FileIO> openFiles = new ConcurrentHashMap<>();
 
     // DeviceOptions -> open DeviceIO
-    private final HashMap<DeviceOptions,DeviceIO> openDevices = new HashMap<>();
+    private final ConcurrentHashMap<DeviceOptions,DeviceIO> openDevices = new ConcurrentHashMap<>();
 
 
     public SocketConnection(Certificate cert) {
@@ -46,28 +46,28 @@ public class SocketConnection {
     }
 
 
-    public void addSerialPort(String port, SerialIO io) {
+    public synchronized void addSerialPort(String port, SerialIO io) {
         openSerialPorts.put(port, io);
     }
 
-    public SerialIO getSerialPort(String port) {
+    public synchronized SerialIO getSerialPort(String port) {
         return openSerialPorts.get(port);
     }
 
-    public void removeSerialPort(String port) {
+    public synchronized void removeSerialPort(String port) {
         openSerialPorts.remove(port);
     }
 
 
-    public void addNetworkSocket(String location, SocketIO io) {
+    public synchronized void addNetworkSocket(String location, SocketIO io) {
         openNetworkSockets.put(location, io);
     }
 
-    public SocketIO getNetworkSocket(String location) {
+    public synchronized SocketIO getNetworkSocket(String location) {
         return openNetworkSockets.get(location);
     }
 
-    public void removeNetworkSocket(String location) {
+    public synchronized void removeNetworkSocket(String location) {
         openNetworkSockets.remove(location);
     }
 
@@ -87,37 +87,38 @@ public class SocketConnection {
         deviceListener = null;
     }
 
-    public void addFileListener(Path absolute, FileIO listener) {
+    public synchronized void addFileListener(Path absolute, FileIO listener) {
         openFiles.put(absolute, listener);
     }
 
-    public FileIO getFileListener(Path absolute) {
+    public synchronized FileIO getFileListener(Path absolute) {
         return openFiles.get(absolute);
     }
 
-    public void removeFileListener(Path absolute) {
+    public synchronized void removeFileListener(Path absolute) {
         openFiles.remove(absolute);
     }
 
-    public void removeAllFileListeners() {
-        for(Path path : openFiles.keySet()) {
-            openFiles.get(path).close();
-            FileWatcher.deregisterWatch(openFiles.get(path));
+    public synchronized void removeAllFileListeners() {
+        for(FileIO io : openFiles.values()) {
+            if (io != null) {
+                io.close();
+                FileWatcher.deregisterWatch(io);
+            }
         }
-
         openFiles.clear();
     }
 
 
-    public void addDevice(DeviceOptions dOpts, DeviceIO io) {
+    public synchronized void addDevice(DeviceOptions dOpts, DeviceIO io) {
         openDevices.put(dOpts, io);
     }
 
-    public DeviceIO getDevice(DeviceOptions dOpts) {
+    public synchronized DeviceIO getDevice(DeviceOptions dOpts) {
         return openDevices.get(dOpts);
     }
 
-    public void removeDevice(DeviceOptions dOpts) {
+    public synchronized void removeDevice(DeviceOptions dOpts) {
         openDevices.remove(dOpts);
     }
 

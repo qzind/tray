@@ -8,13 +8,13 @@
  * this software. http://www.gnu.org/licenses/lgpl-2.1.html
  */
 
-package qz.installer.certificate.firefox;
+package qz.installer.apps.firefox.legacy;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.installer.certificate.CertificateChainBuilder;
-import qz.installer.certificate.firefox.locator.AppInfo;
+import qz.installer.apps.locator.AppInfo;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
@@ -39,7 +39,7 @@ public class LegacyFirefoxCertificateInstaller {
 
     public static boolean installAutoConfigScript(AppInfo appInfo, String certData, String ... hostNames) {
         try {
-            if(appInfo.getPath().toString().equals("/usr/bin")) {
+            if(appInfo.getAppPath().toString().equals("/usr/bin")) {
                 throw new Exception("Preventing install to root location");
             }
             writePrefsFile(appInfo);
@@ -62,7 +62,7 @@ public class LegacyFirefoxCertificateInstaller {
     }
 
     public static File tryWrite(AppInfo appInfo, boolean mkdirs, String ... paths) throws IOException {
-        Path dir = appInfo.getPath();
+        Path dir = appInfo.getAppPath();
         if (SystemUtilities.isMac()) {
             dir = dir.resolve(MAC_PREFIX);
         }

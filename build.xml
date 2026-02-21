@@ -5,6 +5,7 @@
     <import file="ant/platform-detect.xml"/>
     <import file="ant/javafx.xml"/>
     <import file="ant/signing.xml"/>
+    <import file="ant/jsdoc.xml"/>
     <import file="ant/apple/installer.xml"/>
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>

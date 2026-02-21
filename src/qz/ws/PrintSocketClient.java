@@ -530,6 +530,7 @@ public class PrintSocketClient {
                 DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
                     usb.close();
+                    connection.removeDevice(usb.getDeviceOptions());
 
                     sendResult(session, UID, null);
                 } else {

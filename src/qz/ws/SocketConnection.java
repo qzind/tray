@@ -138,15 +138,18 @@ public class SocketConnection {
         for(SerialIO sio : openSerialPorts.values()) {
             sio.close();
         }
+        openSerialPorts.clear();
 
         for(SocketIO pio : openNetworkSockets.values()) {
             pio.close();
         }
+        openNetworkSockets.clear();
 
         for(DeviceIO dio : openDevices.values()) {
             dio.setStreaming(false);
             dio.close();
         }
+        openDevices.clear();
 
         removeAllFileListeners();
         stopDeviceListening();

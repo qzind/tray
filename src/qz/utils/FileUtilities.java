@@ -11,7 +11,6 @@ package qz.utils;
 
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
@@ -243,7 +242,7 @@ public class FileUtilities {
             throw new AccessDeniedException("File operations are disabled");
         } else if(!request.isVerified() && FILE_IO_STRICT) {
             throw new AccessDeniedException("File request is not verified");
-        } else if(request.getCertUsed() == null || !request.getCertUsed().isTrusted()) {
+        } else if(request.getCertificate() == null || !request.getCertificate().isTrusted()) {
             throw new AccessDeniedException("Certificate provided is not trusted");
         } else if(!isWhiteListed(path, allowRootDir, fp.isSandbox(), request)) {
             throw new AccessDeniedException("File operation is not in a permitted location");

@@ -22,6 +22,7 @@ import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.status.StatusMonitor;
+import qz.ui.GatewayDialog;
 import qz.utils.*;
 import qz.ws.substitutions.Substitutions;
 
@@ -38,6 +39,7 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 
@@ -138,7 +140,7 @@ public class PrintSocketClient {
                     request.markNewConnection(Certificate.UNKNOWN);
                 }
 
-                if (allowedFromDialog(request, "connect to " + Constants.ABOUT_TITLE,
+                if (allowedFromDialog(UID, request, "connect to " + Constants.ABOUT_TITLE,
                                       findDialogPosition(session, json.optJSONObject("position")))) {
                     sendResult(session, UID, null);
                 } else {
@@ -156,14 +158,14 @@ public class PrintSocketClient {
                         || json.optLong("timestamp") - Constants.VALID_SIGNING_PERIOD > System.currentTimeMillis()) {
                     //bad timestamps use the expired certificate
                     log.warn("Expired signature on request");
-                    request.setStatus(RequestState.Validity.EXPIRED);
-                } else if (json.isNull("signature") || !validSignature(request.getCertUsed(), json)) {
+                    request.setValidity(RequestState.Validity.EXPIRED);
+                } else if (json.isNull("signature") || !validSignature(request.getCertificate(), json)) {
                     //bad signatures use the unsigned certificate
                     log.warn("Bad signature on request");
-                    request.setStatus(RequestState.Validity.UNSIGNED);
+                    request.setValidity(RequestState.Validity.UNSIGNED);
                 } else {
                     log.trace("Valid signature from {}", request.getCertName());
-                    request.setStatus(RequestState.Validity.TRUSTED);
+                    request.setValidity(RequestState.Validity.TRUSTED);
                 }
             }
 
@@ -261,7 +263,7 @@ public class PrintSocketClient {
         }
 
         if (call.isDialogShown()
-                && !allowedFromDialog(request, prompt, findDialogPosition(session, json.optJSONObject("position")))) {
+                && !allowedFromDialog(UID, request, prompt, findDialogPosition(session, json.optJSONObject("position")))) {
             sendError(session, UID, "Request blocked");
             return;
         }
@@ -557,7 +559,7 @@ public class PrintSocketClient {
             }
             case FILE_STOP_LISTENING: {
                 // Coerce to trusted state for unsigned request
-                request.setStatus(RequestState.Validity.TRUSTED);
+                request.setValidity(RequestState.Validity.TRUSTED);
                 if (params.isNull("path")) {
                     connection.removeAllFileListeners();
                     sendResult(session, UID, null);
@@ -684,14 +686,10 @@ public class PrintSocketClient {
         }
     }
 
-    private boolean allowedFromDialog(RequestState request, String prompt, Point position) {
+    private boolean allowedFromDialog(String UID, RequestState requestState, String prompt, Point position) {
         //If cert can be resolved before the lock, do so and return
-        if (request.hasBlockedCert()) {
-            return false;
-        }
-        if (request.hasSavedCert()) {
-            return true;
-        }
+        Optional<GatewayDialog.ResponseState> filter = GatewayDialog.ResponseState.filter(requestState);
+        if(filter.isPresent()) return filter.get().state();
 
         //wait until previous prompts are closed
         try {
@@ -703,7 +701,7 @@ public class PrintSocketClient {
         }
 
         //prompt user for access
-        boolean allowed = trayManager.showGatewayDialog(request, prompt, position);
+        boolean allowed = trayManager.showGatewayDialog(UID, requestState, prompt, position);
 
         dialogAvailable.release();
 

@@ -9,18 +9,18 @@ import java.awt.*;
 
 public class RequestTable extends DisplayTable implements Themeable {
 
-    enum RequestField {
+    public enum RequestField {
         CALL("Call", "call"),
         PARAMS("Parameters", "params"),
         SIGNATURE("Signature", "signature"),
         TIMESTAMP("Timestamp", "timestamp"),
         VALIDITY("Validity", null);
 
-        String description;
-        String fieldName;
+        final String label;
+        final String fieldName;
 
-        RequestField(String description, String fieldName) {
-            this.description = description;
+        RequestField(String label, String fieldName) {
+            this.label = label;
             this.fieldName = fieldName;
         }
 
@@ -35,11 +35,19 @@ public class RequestTable extends DisplayTable implements Themeable {
 
         @Override
         public String toString() {
-            return description;
+            return label;
         }
 
         public static int size() {
             return values().length;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        public String getFieldName() {
+            return fieldName;
         }
     }
 
@@ -54,6 +62,10 @@ public class RequestTable extends DisplayTable implements Themeable {
         this.request = request;
     }
 
+    public RequestState getRequest() {
+        return request;
+    }
+
     @Override
     public void refreshComponents() {
         if (request == null) {
@@ -64,7 +76,7 @@ public class RequestTable extends DisplayTable implements Themeable {
 
         for(RequestField field : RequestField.values()) {
             if (field == RequestField.VALIDITY) {
-                model.addRow(new Object[] {field, request.getStatus().getFormatted()});
+                model.addRow(new Object[] {field, request.getValidity().getDescription()});
             } else {
                 model.addRow(new Object[] {field, field.getValue(request)});
             }
@@ -121,7 +133,7 @@ public class RequestTable extends DisplayTable implements Themeable {
                 case SIGNATURE:
                     if (request.isVerified()) {
                         style = STATUS_TRUSTED;
-                    } else if (request.getStatus() != RequestState.Validity.EXPIRED) {
+                    } else if (request.getValidity() != RequestState.Validity.EXPIRED) {
                         style = STATUS_WARNING;
                     }
 
@@ -135,7 +147,7 @@ public class RequestTable extends DisplayTable implements Themeable {
                     }
                     break;
                 case TIMESTAMP:
-                    if (request.getStatus() == RequestState.Validity.EXPIRED) {
+                    if (request.getValidity() == RequestState.Validity.EXPIRED) {
                         style = STATUS_WARNING;
                     }
                     break;

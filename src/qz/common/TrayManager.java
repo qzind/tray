@@ -22,6 +22,7 @@ import qz.printer.PrintServiceMatcher;
 import qz.printer.action.html.WebApp;
 import qz.ui.*;
 import qz.ui.component.IconCache;
+import qz.ui.headless.HeadlessDialog;
 import qz.ui.tray.TrayType;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
@@ -42,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 
 import static qz.ui.component.IconCache.Icon.*;
 import static qz.utils.ArgValue.*;
+import static qz.ui.headless.HeadlessDialog.*;
 
 /**
  * Manages the icons and actions associated with the TrayIcon
@@ -61,7 +63,7 @@ public class TrayManager {
     private TrayType tray;
 
     private ConfirmDialog confirmDialog;
-    private GatewayDialog gatewayDialog;
+    private final GatewayDialog gatewayDialog;
     private AboutDialog aboutDialog;
     private LogDialog logDialog;
     private SiteManagerDialog sitesDialog;
@@ -163,12 +165,14 @@ public class TrayManager {
             System.setProperty("sun.java2d.print.polling", "false");
         }
 
-        if (!headless) {
-            componentList = new ArrayList<>();
+        gatewayDialog = new GatewayDialog(headless, null,"Action Required", iconCache);
 
-            // The allow/block dialog
-            gatewayDialog = new GatewayDialog(null, "Action Required", iconCache);
-            componentList.add(gatewayDialog);
+        if(headless) {
+            // If headless, look for a location to forward message dialogs to
+            gatewayDialog.setEndpoint(PrefsSearch.getString(TRAY_DIALOG_ENDPOINT, prefs, App.getTrayProperties()));
+        } else {
+            componentList = new ArrayList<>();
+            componentList.add(gatewayDialog.getDialog());
 
             // The ok/cancel dialog
             confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
@@ -495,33 +499,40 @@ public class TrayManager {
         JOptionPane.showMessageDialog(null, message, name, JOptionPane.ERROR_MESSAGE);
     }
 
-    public boolean showGatewayDialog(final RequestState request, final String prompt, final Point position) {
-        if (!headless) {
-            try {
-                SwingUtilities.invokeAndWait(() -> gatewayDialog.prompt("%s wants to " + prompt, request, position));
-            }
-            catch(Exception ignore) {}
-
-            if (gatewayDialog.isApproved()) {
-                log.info("Allowed {} to {}", request.getCertName(), prompt);
-                if (gatewayDialog.isPersistent()) {
-                    whiteList(request.getCertUsed());
-                }
-            } else {
-                log.info("Denied {} to {}", request.getCertName(), prompt);
-                if (gatewayDialog.isPersistent()) {
-                    if (!request.hasCertificate()) {
-                        anonymousItem.doClick(); // if always block anonymous requests -> flag menu item
-                    } else {
-                        blackList(request.getCertUsed());
-                    }
-                }
-            }
-
-            return gatewayDialog.isApproved();
-        } else {
-            return request.hasSavedCert();
+    public boolean showGatewayDialog(final String UID, final RequestState requestState, final String prompt, final Point position) {
+        // No way to prompt, hope it's whitelisted
+        if (headless && gatewayDialog.getEndpoint() == null) {
+            return requestState.hasSavedCert();
         }
+
+        HeadlessDialog.runSafely(headless, () -> gatewayDialog.prompt(UID, "%s wants to " + prompt, requestState, position));
+
+        GatewayDialog.ResponseState responseState = gatewayDialog.getResponseState();
+        switch(responseState) {
+            case ALWAYS_ALLOW:
+                whiteList(requestState.getCertificate());
+            case TEMPORARY_ALLOW:
+                log.info("Allowed {} to {}", requestState.getCertName(), prompt);
+                break;
+            case ALWAYS_BLOCK:
+                blackList(requestState.getCertificate());
+            case TEMPORARY_BLOCK:
+            case UNANSWERED:
+                log.info("Denied {} to {}", requestState.getCertName(), prompt);
+        }
+
+        if(responseState.alwaysBlockAnonymous(requestState)) {
+            // Treat as "block anonymouse requests" to prevent pop-up abuse
+            if(!headless) {
+                anonymousItem.setState(false);
+                anonymousItem.doClick();
+            } else {
+                // simulate the click
+                anonymousListener.actionPerformed(new ActionEvent(gatewayDialog, ActionEvent.ACTION_PERFORMED, "command"));
+            }
+        }
+
+        return responseState.state();
     }
 
     private void whiteList(Certificate cert) {

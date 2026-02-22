@@ -7,16 +7,12 @@ import qz.ui.component.RequestTable;
 
 import javax.swing.*;
 
+/**
+ * Small <code>JPanel</code> container for <code>RequestTable</code> and <code>CertificateTable</code>
+ */
 public class DetailsDialog extends JPanel {
-
-    private JLabel requestLabel;
-    private JScrollPane reqScrollPane;
     private RequestTable requestTable;
-
-    private JLabel certLabel;
-    private JScrollPane certScrollPane;
     private CertificateTable certTable;
-
 
     public DetailsDialog(IconCache iconCache) {
         super();
@@ -26,20 +22,20 @@ public class DetailsDialog extends JPanel {
     }
 
     private void initComponents(IconCache iconCache) {
-        requestLabel = new JLabel("Request");
+        JLabel requestLabel = new JLabel("Request");
         requestLabel.setAlignmentX(CENTER_ALIGNMENT);
 
         requestTable = new RequestTable(iconCache);
-        reqScrollPane = new JScrollPane(requestTable);
+        JScrollPane reqScrollPane = new JScrollPane(requestTable);
         requestTable.getAccessibleContext().setAccessibleName(requestLabel.getText() + " Details");
         requestTable.getAccessibleContext().setAccessibleDescription("Signing details about this request.");
         requestLabel.setLabelFor(requestTable);
 
-        certLabel = new JLabel("Certificate");
+        JLabel certLabel = new JLabel("Certificate");
         certLabel.setAlignmentX(CENTER_ALIGNMENT);
 
         certTable = new CertificateTable(iconCache);
-        certScrollPane = new JScrollPane(certTable);
+        JScrollPane certScrollPane = new JScrollPane(certTable);
         certTable.getAccessibleContext().setAccessibleName(certLabel.getText() + " Details");
         certTable.getAccessibleContext().setAccessibleDescription("Certificate details about this request.");
         certLabel.setLabelFor(certTable);
@@ -53,11 +49,15 @@ public class DetailsDialog extends JPanel {
         add(certScrollPane);
     }
 
-    public void updateDisplay(RequestState request) {
-        certTable.setCertificate(request.getCertUsed());
-        certTable.autoSize();
+    public void setRequest(RequestState requestState) {
+        requestTable.setRequest(requestState);
+    }
 
-        requestTable.setRequest(request);
+    public void updateDisplay() {
+        if(requestTable.getRequest() == null) return;
+
+        certTable.setCertificate(requestTable.getRequest().getCertificate());
+        certTable.autoSize();
         requestTable.autoSize();
     }
 

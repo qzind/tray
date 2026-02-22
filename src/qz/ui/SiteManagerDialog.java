@@ -11,6 +11,7 @@ import qz.installer.certificate.CertificateChainBuilder;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.ui.component.*;
+import qz.ui.component.table.CertificateTable;
 import qz.utils.*;
 
 import javax.swing.*;

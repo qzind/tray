@@ -2,13 +2,17 @@ package qz.ui;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import qz.auth.RequestState;
 import qz.common.Constants;
+import qz.common.Sluggable;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
-import qz.ui.component.RequestTable;
+import qz.ui.component.table.CellStyle;
+import qz.ui.component.table.FieldValueTable;
+import qz.ui.component.table.RequestStateTable;
 import qz.ui.headless.HeadlessDialog;
 import qz.utils.ByteUtilities;
 import qz.utils.SystemUtilities;
@@ -241,10 +245,11 @@ public class GatewayDialog implements HeadlessDialog, Themeable {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public LinkedHashMap<String,Object>[] getFields() throws JSONException {
+    public LinkedHashMap<String,Object> getFields() throws JSONException {
         String base64icon = "data:image/png;base64," + ByteUtilities.toBase64(iconCache.getImage(icon), "png");
+        LinkedHashMap<String, Object> allFields = new LinkedHashMap<>();
 
+        // Main dialog
         LinkedHashMap<String, Object> mainFields = new LinkedHashMap<>();
         mainFields.put("title", title);
         mainFields.put("_hint", "The main allow/block dialog");
@@ -257,26 +262,61 @@ public class GatewayDialog implements HeadlessDialog, Themeable {
         mainFields.put("button_block", BUTTON_BLOCK);
         mainFields.put("button_details", LINK_REQUEST_DETAILS);
         mainFields.put("checkbox_remember", CHECKBOX_REMEMBER);
+        allFields.put("main", mainFields);
 
+        // Confirmation dialog
         LinkedHashMap<String, Object> blockConfirmFields = new LinkedHashMap<>();
         blockConfirmFields.put("title", CONFIRM_BLOCK_TITLE);
         blockConfirmFields.put("_hint", String.format("Only shown when both '%s' AND '%s' are selected", BUTTON_BLOCK, CHECKBOX_REMEMBER));
-        blockConfirmFields.put("uid", uid);
         blockConfirmFields.put("description", confirmBlockText);
+        allFields.put("confirm", blockConfirmFields);
 
-        LinkedHashMap<String, Object> certFields = new LinkedHashMap<>();
-        certFields.put("title", DETAILS_DIALOG_TITLE);
-        certFields.put("_hint", String.format("Shown when '%s' is clicked", LINK_REQUEST_DETAILS));
+        // Details fields (nested tables are below)
+        LinkedHashMap<String, Object> detailsFields = new LinkedHashMap<>();
+        detailsFields.put("title", DETAILS_DIALOG_TITLE);
+        detailsFields.put("_hint", String.format("Shown when '%s' is clicked. Possible 'class' values: %s",
+                                                 LINK_REQUEST_DETAILS,
+                                                 Sluggable.sluggedArrayString(CellStyle.values())));
 
-        // TODO: Add special empty handling for "connect", "{}", etc, currently defined in table rendering
-        for(RequestTable.RequestField requestField : RequestTable.RequestField.values()) {
+        // Details: Request
+        LinkedHashMap<String, Object> requestFields = new LinkedHashMap<>();
+        requestFields.put("type", "table");
+        requestFields.put("label", DetailsDialog.REQUEST_TABLE_LABEL);
+        requestFields.put("name", DetailsDialog.REQUEST_TABLE_NAME);
+        requestFields.put("description", DetailsDialog.REQUEST_TABLE_DESCRIPTION);
+        JSONArray requestColumns = new JSONArray();
+        FieldValueTable.COLUMMNS.forEach(requestColumns::put);
+        requestFields.put("columns", requestColumns);
+
+        for(RequestStateTable.RequestField requestField : RequestStateTable.RequestField.values()) {
             JSONObject values = new JSONObject();
             values.put("label", requestField.getLabel());
             values.put("value", requestField.getValue(requestState));
-            certFields.put(requestField.getFieldName(), values);
+            CellStyle cellStyle = RequestStateTable.getStyle(requestState, requestField);
+            values.put("class", cellStyle.slug());
+            if(cellStyle.isBold()) {
+                values.put("style", new JSONObject().put("font-weight", "bold"));
+            }
+            requestFields.put(requestField.getFieldName(true), values);
         }
+        detailsFields.put("request", requestFields);
 
-        return new LinkedHashMap[] { mainFields, blockConfirmFields, certFields };
+        // Details: Certificate
+        LinkedHashMap<String, Object> certFields = new LinkedHashMap<>();
+        certFields.put("type", "table");
+        certFields.put("label", DetailsDialog.CERT_TABLE_LABEL);
+        certFields.put("name", DetailsDialog.CERT_TABLE_NAME);
+        certFields.put("description", DetailsDialog.CERT_TABLE_DESCRIPTION);
+        JSONArray tableColumns = new JSONArray();
+        FieldValueTable.COLUMMNS.forEach(tableColumns::put);
+        certFields.put("columns", tableColumns);
+        detailsFields.put("cert", certFields);
+        // TODO: Add certificate data
+
+        allFields.put("details", detailsFields);
+
+
+        return allFields;
     }
 
     public JDialog getDialog() {

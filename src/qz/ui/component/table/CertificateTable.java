@@ -1,8 +1,9 @@
-package qz.ui.component;
+package qz.ui.component.table;
 
 import qz.auth.Certificate;
 import qz.common.Constants;
 import qz.ui.Themeable;
+import qz.ui.component.IconCache;
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,12 +14,13 @@ import java.util.TimeZone;
 import java.util.function.Function;
 
 import static qz.auth.Certificate.*;
+import static qz.ui.component.table.CellStyle.*;
 
 /**
  * Created by Tres on 2/22/2015.
  * Displays Certificate information in a JTable
  */
-public class CertificateTable extends DisplayTable implements Themeable {
+public class CertificateTable extends FieldValueTable implements Themeable {
     private Certificate cert;
 
     private static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone("UTC");
@@ -27,15 +29,15 @@ public class CertificateTable extends DisplayTable implements Themeable {
     private Instant now;
 
     enum CertificateField {
-        ORGANIZATION("Organization", (Certificate cert) -> cert.getOrganization()),
-        COMMON_NAME("Common Name", (Certificate cert) -> cert.getCommonName()),
-        TRUSTED("Trusted", (Certificate cert) -> cert.isTrusted()),
-        VALID_FROM("Valid From", (Certificate cert) -> cert.getValidFrom()),
-        VALID_TO("Valid To", (Certificate cert) -> cert.getValidTo()),
-        FINGERPRINT("Fingerprint", (Certificate cert) -> cert.getFingerprint());
+        ORGANIZATION("Organization", Certificate::getOrganization),
+        COMMON_NAME("Common Name", Certificate::getCommonName),
+        TRUSTED("Trusted", Certificate::isTrusted),
+        VALID_FROM("Valid From", Certificate::getValidFrom),
+        VALID_TO("Valid To", Certificate::getValidTo),
+        FINGERPRINT("Fingerprint", Certificate::getFingerprint);
 
-        String description;
-        Function<Certificate, Object> getter;
+        final String description;
+        final Function<Certificate, Object> getter;
         TimeZone timeZone = DEFAULT_TIME_ZONE; // Date fields only
 
         CertificateField(String description, Function<Certificate, Object> getter) {
@@ -93,7 +95,7 @@ public class CertificateTable extends DisplayTable implements Themeable {
         super(iconCache);
         setDefaultRenderer(Object.class, new CertificateTableCellRenderer());
         addMouseListener(new MouseAdapter() {
-            Point loc = new Point(-1, -1);
+            final Point loc = new Point(-1, -1);
 
             @Override
             public void mousePressed(MouseEvent e) {
@@ -138,7 +140,7 @@ public class CertificateTable extends DisplayTable implements Themeable {
         removeRows();
 
         // First Column
-        for(CertificateField field : CertificateField.values()) {
+        for(CertificateField field:CertificateField.values()) {
             if(field.equals(CertificateField.TRUSTED) && !Certificate.isTrustBuiltIn()) {
                 continue; // Remove "Verified by" text; uncertain in strict mode
             }
@@ -170,17 +172,17 @@ public class CertificateTable extends DisplayTable implements Themeable {
                 switch((CertificateField)value) {
                     case VALID_FROM:
                         boolean futureExpiration = cert.getValidFromDate().isAfter(now);
-                        label = stylizeLabel(futureExpiration? STATUS_WARNING:STATUS_NORMAL, label, isSelected, "future inception");
+                        label = stylizeLabel(futureExpiration?WARNING:NORMAL, label, isSelected, "future inception");
                         break;
                     case VALID_TO:
                         boolean expiresSoon = cert.getValidToDate().isBefore(warn);
                         boolean expired = cert.getValidToDate().isBefore(now);
                         String reason = expired? "expired":(expiresSoon? "expires soon":null);
 
-                        label = stylizeLabel(expiresSoon || expired? STATUS_WARNING:STATUS_NORMAL, label, isSelected, reason);
+                        label = stylizeLabel(expiresSoon || expired?WARNING:NORMAL, label, isSelected, reason);
                         break;
                     default:
-                        label = stylizeLabel(STATUS_NORMAL, label, isSelected);
+                        label = stylizeLabel(NORMAL, label, isSelected);
                         break;
                 }
                 if (iconCache != null) {
@@ -190,10 +192,10 @@ public class CertificateTable extends DisplayTable implements Themeable {
             }
 
             // Second Column
-            if (cert == null || col < 1) { return stylizeLabel(STATUS_NORMAL, label, isSelected); }
+            if (cert == null || col < 1) { return stylizeLabel(NORMAL, label, isSelected); }
 
             CertificateField field = (CertificateField)table.getValueAt(row, col - 1);
-            if (field == null) { return stylizeLabel(STATUS_NORMAL, label, isSelected); }
+            if (field == null) { return stylizeLabel(NORMAL, label, isSelected); }
             switch(field) {
                 case TRUSTED:
                     if(cert.isValid()) {
@@ -206,16 +208,16 @@ public class CertificateTable extends DisplayTable implements Themeable {
                     } else {
                         label.setText(Constants.UNTRUSTED_CERT);
                     }
-                    return stylizeLabel(!cert.isValid()? STATUS_WARNING:STATUS_TRUSTED, label, isSelected);
+                    return stylizeLabel(!cert.isValid()?WARNING:TRUSTED, label, isSelected);
                 case VALID_FROM:
                     boolean futureExpiration = cert.getValidFromDate().isAfter(now);
-                    return stylizeLabel(futureExpiration? STATUS_WARNING:STATUS_NORMAL, label, isSelected);
+                    return stylizeLabel(futureExpiration?WARNING:NORMAL, label, isSelected);
                 case VALID_TO:
                     boolean expiresSoon = cert.getValidToDate().isBefore(warn);
                     boolean expired = cert.getValidToDate().isBefore(now);
-                    return stylizeLabel(expiresSoon || expired? STATUS_WARNING:STATUS_NORMAL, label, isSelected);
+                    return stylizeLabel(expiresSoon || expired?WARNING:NORMAL, label, isSelected);
                 default:
-                    return stylizeLabel(STATUS_NORMAL, label, isSelected);
+                    return stylizeLabel(NORMAL, label, isSelected);
             }
         }
     }

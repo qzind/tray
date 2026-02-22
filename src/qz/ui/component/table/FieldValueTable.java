@@ -1,20 +1,23 @@
-package qz.ui.component;
+package qz.ui.component.table;
 
+import qz.ui.component.IconCache;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Displays information in a JTable
  */
-public class DisplayTable extends JTable {
-
+public class FieldValueTable extends JTable {
+    public static List<String> COLUMMNS = Arrays.asList("Field", "Value");
     protected DefaultTableModel model;
 
     protected IconCache iconCache;
 
-    public DisplayTable(IconCache iconCache) {
+    public FieldValueTable(IconCache iconCache) {
         super();
         initComponents();
 
@@ -26,8 +29,7 @@ public class DisplayTable extends JTable {
             @Override
             public boolean isCellEditable(int x, int y) { return false; }
         };
-        model.addColumn("Field");
-        model.addColumn("Value");
+        COLUMMNS.forEach(column -> model.addColumn(column));
 
         // Fix Linux row height
         int origHeight = getRowHeight();

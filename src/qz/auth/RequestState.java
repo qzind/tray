@@ -1,15 +1,18 @@
 package qz.auth;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import qz.common.Constants;
+import qz.common.Sluggable;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class RequestState {
 
-    public enum Validity {
+    public enum Validity implements Sluggable {
         TRUSTED("Valid"),
         EXPIRED("Expired Signature"),
         UNSIGNED("Invalid Signature"),
@@ -39,6 +42,11 @@ public class RequestState {
                 return INVALID_CERT;
             }
             return Validity.UNKNOWN;
+        }
+
+        @Override
+        public String slug() {
+            return Sluggable.slugOf(this);
         }
     }
 
@@ -119,8 +127,9 @@ public class RequestState {
     public JSONObject toJson() {
         JSONObject json = new JSONObject();
         try {
+            json.put("validity", validity.slug());
+            json.put("_hint", "Possible 'validity' values: " + Sluggable.sluggedArrayString(Validity.values()));
             json.put("initialConnect", initialConnect);
-            json.put("validity", validity.name());
             json.put("validityDescription", validity.getDescription());
             json.put("validityString", getValidityString());
             json.put("hasBlockedCert", hasBlockedCert());

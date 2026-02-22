@@ -10,7 +10,6 @@ import qz.common.Constants;
 import qz.utils.ArgValue;
 
 import javax.swing.*;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -75,24 +74,28 @@ public interface HeadlessDialog {
 
     void setEndpoint(String value);
 
-    LinkedHashMap<String, Object>[] getFields() throws JSONException;
+    LinkedHashMap<String,Object> getFields() throws JSONException;
 
-    static JSONArray serializeFields(HeadlessDialog dialog) throws JSONException {
-            JSONArray jsonArray = new JSONArray();
-
-            for(HashMap<String,Object> fieldMap : dialog.getFields()) {
-                JSONObject obj = new JSONObject();
-                for(Map.Entry<String, Object> entry : fieldMap.entrySet()) {
-                    try {
-                        obj.put(entry.getKey(), entry.getValue());
-                    } catch(JSONException e) {
-                        log.warn(e);
-                    }
+    @SuppressWarnings("unchecked")
+    static JSONObject serializeFields(HashMap<String, Object> fieldMap) {
+        JSONObject obj = new JSONObject();
+        for(Map.Entry<String, Object> entry : fieldMap.entrySet()) {
+            try {
+                Object o = entry.getValue();
+                if(o instanceof HashMap) {
+                    obj.put(entry.getKey(), serializeFields((HashMap<String, Object>)o));
+                } else {
+                    obj.put(entry.getKey(), entry.getValue());
                 }
-                jsonArray.put(obj);
+            } catch(JSONException e) {
+                log.warn(e);
             }
+        }
+        return obj;
+    }
 
-            return jsonArray;
+    static JSONObject serializeFields(HeadlessDialog dialog) throws JSONException {
+        return serializeFields(dialog.getFields());
     }
 
     /**

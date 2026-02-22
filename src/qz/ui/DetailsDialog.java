@@ -1,9 +1,9 @@
 package qz.ui;
 
 import qz.auth.RequestState;
-import qz.ui.component.CertificateTable;
+import qz.ui.component.table.CertificateTable;
 import qz.ui.component.IconCache;
-import qz.ui.component.RequestTable;
+import qz.ui.component.table.RequestStateTable;
 
 import javax.swing.*;
 
@@ -11,7 +11,15 @@ import javax.swing.*;
  * Small <code>JPanel</code> container for <code>RequestTable</code> and <code>CertificateTable</code>
  */
 public class DetailsDialog extends JPanel {
-    private RequestTable requestTable;
+    public static final String REQUEST_TABLE_LABEL = "Request";
+    public static final String REQUEST_TABLE_NAME = String.format("%s Details", REQUEST_TABLE_LABEL);
+    public static final String REQUEST_TABLE_DESCRIPTION = "Signing details about this request.";
+
+    public static final String CERT_TABLE_LABEL = "Certificate";
+    public static final String CERT_TABLE_NAME = String.format("%s Details", CERT_TABLE_LABEL);
+    public static final String CERT_TABLE_DESCRIPTION = "Certificate details about this request.";
+
+    private RequestStateTable requestStateTable;
     private CertificateTable certTable;
 
     public DetailsDialog(IconCache iconCache) {
@@ -22,22 +30,22 @@ public class DetailsDialog extends JPanel {
     }
 
     private void initComponents(IconCache iconCache) {
-        JLabel requestLabel = new JLabel("Request");
+        JLabel requestLabel = new JLabel(REQUEST_TABLE_LABEL);
         requestLabel.setAlignmentX(CENTER_ALIGNMENT);
 
-        requestTable = new RequestTable(iconCache);
-        JScrollPane reqScrollPane = new JScrollPane(requestTable);
-        requestTable.getAccessibleContext().setAccessibleName(requestLabel.getText() + " Details");
-        requestTable.getAccessibleContext().setAccessibleDescription("Signing details about this request.");
-        requestLabel.setLabelFor(requestTable);
+        requestStateTable = new RequestStateTable(iconCache);
+        JScrollPane reqScrollPane = new JScrollPane(requestStateTable);
+        requestStateTable.getAccessibleContext().setAccessibleName(REQUEST_TABLE_DESCRIPTION);
+        requestStateTable.getAccessibleContext().setAccessibleDescription(REQUEST_TABLE_NAME);
+        requestLabel.setLabelFor(requestStateTable);
 
-        JLabel certLabel = new JLabel("Certificate");
+        JLabel certLabel = new JLabel(CERT_TABLE_LABEL);
         certLabel.setAlignmentX(CENTER_ALIGNMENT);
 
         certTable = new CertificateTable(iconCache);
         JScrollPane certScrollPane = new JScrollPane(certTable);
-        certTable.getAccessibleContext().setAccessibleName(certLabel.getText() + " Details");
-        certTable.getAccessibleContext().setAccessibleDescription("Certificate details about this request.");
+        certTable.getAccessibleContext().setAccessibleName(CERT_TABLE_NAME);
+        certTable.getAccessibleContext().setAccessibleDescription(CERT_TABLE_DESCRIPTION);
         certLabel.setLabelFor(certTable);
 
         add(requestLabel);
@@ -50,15 +58,15 @@ public class DetailsDialog extends JPanel {
     }
 
     public void setRequest(RequestState requestState) {
-        requestTable.setRequest(requestState);
+        requestStateTable.setRequestState(requestState);
     }
 
     public void updateDisplay() {
-        if(requestTable.getRequest() == null) return;
+        if(requestStateTable.getRequestState() == null) return;
 
-        certTable.setCertificate(requestTable.getRequest().getCertificate());
+        certTable.setCertificate(requestStateTable.getRequestState().getCertificate());
         certTable.autoSize();
-        requestTable.autoSize();
+        requestStateTable.autoSize();
     }
 
 }

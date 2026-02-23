@@ -19,7 +19,7 @@ public class SocketConnection {
 
     private Certificate certificate;
 
-    private DeviceListener deviceListener;
+    private volatile DeviceListener deviceListener;
 
     // serial port -> open SerialIO
     private final HashMap<String,SerialIO> openSerialPorts = new HashMap<>();
@@ -100,11 +100,12 @@ public class SocketConnection {
     }
 
     public void removeAllFileListeners() {
-        for(Path path : openFiles.keySet()) {
-            openFiles.get(path).close();
-            FileWatcher.deregisterWatch(openFiles.get(path));
+        for(FileIO io : openFiles.values()) {
+            if (io != null) {
+                io.close();
+                FileWatcher.deregisterWatch(io);
+            }
         }
-
         openFiles.clear();
     }
 
@@ -137,15 +138,18 @@ public class SocketConnection {
         for(SerialIO sio : openSerialPorts.values()) {
             sio.close();
         }
+        openSerialPorts.clear();
 
         for(SocketIO pio : openNetworkSockets.values()) {
             pio.close();
         }
+        openNetworkSockets.clear();
 
         for(DeviceIO dio : openDevices.values()) {
             dio.setStreaming(false);
             dio.close();
         }
+        openDevices.clear();
 
         removeAllFileListeners();
         stopDeviceListening();

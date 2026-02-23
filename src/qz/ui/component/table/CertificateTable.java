@@ -1,15 +1,13 @@
 package qz.ui.component.table;
 
 import qz.auth.Certificate;
-import qz.common.Constants;
 import qz.ui.Themeable;
 import qz.ui.component.IconCache;
 
 import javax.swing.*;
 import java.awt.*;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
+import static qz.ui.component.table.CertificateField.*;
 import static qz.ui.component.table.FieldStyle.*;
 
 /**
@@ -25,7 +23,7 @@ public class CertificateTable extends FieldValueTable implements Themeable {
 
         addMouseListener(new TableFocusBeforeClickListener<>(CertificateField.class, (certificateField) -> {
             if (certificateField.isDateField()) {
-                CertificateField.toggleTimeZone();
+                toggleTimeZone();
                 refreshComponents();
             }
         }));
@@ -46,14 +44,9 @@ public class CertificateTable extends FieldValueTable implements Themeable {
 
         removeRows();
 
-        // First Column
-        for(CertificateField.CertificateFieldType type:CertificateField.CertificateFieldType.values()) {
-            if(type.equals(CertificateField.CertificateFieldType.TRUSTED) && !Certificate.isTrustBuiltIn()) {
-                continue; // Remove "Verified by" text; uncertain in strict mode
-            }
+        for(CertificateFieldType type : CertificateFieldType.values()) {
             CertificateField field = new CertificateField(type, cert);
-            model.addRow(new Object[] {field, field});
-            //model.addRow(new Object[] {field, field.calculateValue(cert)});
+            model.addRow(new Object[] {field, field}); // we'll calculate the labels on render
         }
 
         repaint();

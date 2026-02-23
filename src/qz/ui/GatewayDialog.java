@@ -10,6 +10,7 @@ import qz.common.Constants;
 import qz.common.Sluggable;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
+import qz.ui.component.table.CertificateField;
 import qz.ui.component.table.FieldStyle;
 import qz.ui.component.table.FieldValueTable;
 import qz.ui.component.table.RequestTable;
@@ -28,12 +29,13 @@ import java.util.Optional;
 
 import static javax.swing.JComponent.*;
 import static javax.swing.WindowConstants.*;
+import static qz.ui.component.table.CertificateField.*;
 
 /**
  * Created by Tres on 2/19/2015.
  * A basic allow/block dialog with support for displaying Certificate information
  */
-public class GatewayDialog implements HeadlessDialog, Themeable {
+public class GatewayDialog extends HeadlessDialog implements Themeable {
     private static final Logger log = LogManager.getLogger(GatewayDialog.class);
 
     // Main dialog
@@ -62,9 +64,6 @@ public class GatewayDialog implements HeadlessDialog, Themeable {
 
     // Details dialog
     public static String DETAILS_DIALOG_TITLE = "Details";
-
-    // Headless only
-    private Endpoint endpoint;
 
     private JDialog dialog;
     private JLabel verifiedLabel;
@@ -215,8 +214,7 @@ public class GatewayDialog implements HeadlessDialog, Themeable {
 
         if(headless) {
             try {
-                log.info("\n{}\n", HeadlessDialog.serializeFields(this).toString(2));
-                responseState = ResponseState.TEMPORARY_ALLOW;
+                responseState = ResponseState.getState(promptAndWait());
             }
             catch(JSONException e) {
                 log.error(e);
@@ -236,89 +234,6 @@ public class GatewayDialog implements HeadlessDialog, Themeable {
     }
 
     @Override
-    public void setEndpoint(String value) {
-        this.endpoint = Endpoint.parse(value);
-    }
-
-    public Endpoint getEndpoint() {
-        return endpoint;
-    }
-
-    @Override
-    public LinkedHashMap<String,Object> getFields() throws JSONException {
-        String base64icon = "data:image/png;base64," + ByteUtilities.toBase64(iconCache.getImage(icon), "png");
-        LinkedHashMap<String, Object> allFields = new LinkedHashMap<>();
-
-        // Main dialog
-        LinkedHashMap<String, Object> mainFields = new LinkedHashMap<>();
-        mainFields.put("title", title);
-        mainFields.put("_hint", "The main allow/block dialog");
-        mainFields.put("uid", uid);
-        mainFields.put("description", description);
-        mainFields.put("remember", null);
-        mainFields.put("validity", requestState.toJson());
-        mainFields.put("icon", base64icon);
-        mainFields.put("button_allow", BUTTON_ALLOW);
-        mainFields.put("button_block", BUTTON_BLOCK);
-        mainFields.put("button_details", LINK_REQUEST_DETAILS);
-        mainFields.put("checkbox_remember", CHECKBOX_REMEMBER);
-        allFields.put("main", mainFields);
-
-        // Confirmation dialog
-        LinkedHashMap<String, Object> blockConfirmFields = new LinkedHashMap<>();
-        blockConfirmFields.put("title", CONFIRM_BLOCK_TITLE);
-        blockConfirmFields.put("_hint", String.format("Only shown when both '%s' AND '%s' are selected", BUTTON_BLOCK, CHECKBOX_REMEMBER));
-        blockConfirmFields.put("description", confirmBlockText);
-        allFields.put("confirm", blockConfirmFields);
-
-        // Details fields (nested tables are below)
-        LinkedHashMap<String, Object> detailsFields = new LinkedHashMap<>();
-        detailsFields.put("title", DETAILS_DIALOG_TITLE);
-        detailsFields.put("_hint", String.format("Shown when '%s' is clicked. Possible 'class' values: %s",
-                                                 LINK_REQUEST_DETAILS,
-                                                 Sluggable.sluggedArrayString(FieldStyle.values())));
-
-        // Details: Request
-        LinkedHashMap<String, Object> requestFields = new LinkedHashMap<>();
-        requestFields.put("type", "table");
-        requestFields.put("label", DetailsDialog.REQUEST_TABLE_LABEL);
-        requestFields.put("name", DetailsDialog.REQUEST_TABLE_NAME);
-        requestFields.put("description", DetailsDialog.REQUEST_TABLE_DESCRIPTION);
-        JSONArray requestColumns = new JSONArray();
-        FieldValueTable.COLUMNS.forEach(requestColumns::put);
-        requestFields.put("columns", requestColumns);
-
-        for(RequestTable.RequestField requestField : RequestTable.RequestField.values()) {
-            JSONObject values = new JSONObject();
-            values.put("label", requestField.getLabel());
-            values.put("value", requestField.getValue(requestState));
-            FieldStyle fieldStyle = RequestTable.getStyle(requestState, requestField);
-            values.put("class", fieldStyle.slug());
-            if(fieldStyle.isBold()) {
-                values.put("style", new JSONObject().put("font-weight", "bold"));
-            }
-            requestFields.put(requestField.getFieldName(true), values);
-        }
-        detailsFields.put("request", requestFields);
-
-        // Details: Certificate
-        LinkedHashMap<String, Object> certFields = new LinkedHashMap<>();
-        certFields.put("type", "table");
-        certFields.put("label", DetailsDialog.CERT_TABLE_LABEL);
-        certFields.put("name", DetailsDialog.CERT_TABLE_NAME);
-        certFields.put("description", DetailsDialog.CERT_TABLE_DESCRIPTION);
-        JSONArray tableColumns = new JSONArray();
-        FieldValueTable.COLUMNS.forEach(tableColumns::put);
-        certFields.put("columns", tableColumns);
-        detailsFields.put("cert", certFields);
-        // TODO: Add certificate data
-
-        allFields.put("details", detailsFields);
-
-
-        return allFields;
-    }
-
     public JDialog getDialog() {
         return dialog;
     }
@@ -330,11 +245,17 @@ public class GatewayDialog implements HeadlessDialog, Themeable {
     public enum ResponseState {
         ALWAYS_ALLOW, TEMPORARY_ALLOW, ALWAYS_BLOCK, TEMPORARY_BLOCK, UNANSWERED;
 
-        public static ResponseState getState(boolean allowButton, boolean remember) {
-            if(allowButton) {
+        public static ResponseState getState(boolean allow, boolean remember) {
+            if(allow) {
                 return remember ? ALWAYS_ALLOW : TEMPORARY_ALLOW;
             }
             return remember ? ALWAYS_BLOCK : TEMPORARY_BLOCK;
+        }
+
+        public static ResponseState getState(JSONObject json) {
+
+            return getState(json.optBoolean("allow", false),
+                            json.optBoolean("remember", false));
         }
 
         public boolean state() {
@@ -359,6 +280,114 @@ public class GatewayDialog implements HeadlessDialog, Themeable {
         public boolean alwaysBlockAnonymous(RequestState requestState) {
             return this == ALWAYS_BLOCK && !requestState.hasCertificate();
         }
+    }
+
+    @Override
+    public LinkedHashMap<String,Object> serialize() throws JSONException {
+        String base64icon = "data:image/png;base64," + ByteUtilities.toBase64(iconCache.getImage(icon), "png");
+        LinkedHashMap<String, Object> allFields = new LinkedHashMap<>();
+
+        //
+        // Main Dialog
+        //
+        LinkedHashMap<String, Object> mainFields = new LinkedHashMap<>();
+        mainFields.put("title", title);
+        mainFields.put("_hint", "The main allow/block dialog");
+        mainFields.put("uid", uid);
+        mainFields.put("description", description);
+        mainFields.put("remember", null);
+        mainFields.put("validity", requestState.toJson());
+        mainFields.put("icon", base64icon);
+        mainFields.put("button_allow", BUTTON_ALLOW);
+        mainFields.put("button_block", BUTTON_BLOCK);
+        mainFields.put("button_details", LINK_REQUEST_DETAILS);
+        mainFields.put("checkbox_remember", CHECKBOX_REMEMBER);
+        allFields.put("main", mainFields);
+
+        //
+        // Confirmation Dialog
+        //
+        LinkedHashMap<String, Object> blockConfirmFields = new LinkedHashMap<>();
+        blockConfirmFields.put("title", CONFIRM_BLOCK_TITLE);
+        blockConfirmFields.put("_hint", String.format("Only shown when both '%s' AND '%s' are selected", BUTTON_BLOCK, CHECKBOX_REMEMBER));
+        blockConfirmFields.put("description", confirmBlockText);
+        allFields.put("confirm", blockConfirmFields);
+
+        //
+        // Details
+        //
+        LinkedHashMap<String, Object> detailsFields = new LinkedHashMap<>();
+        detailsFields.put("title", DETAILS_DIALOG_TITLE);
+        detailsFields.put("_hint", String.format("Shown when '%s' is clicked. Possible 'class' values: %s",
+                                                 LINK_REQUEST_DETAILS,
+                                                 Sluggable.sluggedArrayString(FieldStyle.values())));
+
+        //
+        // Details: Request
+        //
+        LinkedHashMap<String, Object> requestFields = new LinkedHashMap<>();
+        requestFields.put("type", "table");
+        requestFields.put("label", DetailsDialog.REQUEST_TABLE_LABEL);
+        requestFields.put("name", DetailsDialog.REQUEST_TABLE_NAME);
+        requestFields.put("description", DetailsDialog.REQUEST_TABLE_DESCRIPTION);
+        JSONArray requestColumns = new JSONArray();
+        FieldValueTable.COLUMNS.forEach(requestColumns::put);
+        requestFields.put("columns", requestColumns);
+
+        for(RequestTable.RequestField requestField : RequestTable.RequestField.values()) {
+            JSONObject values = new JSONObject();
+            values.put("label", requestField.getLabel());
+            values.put("value", requestField.getValue(requestState));
+            FieldStyle fieldStyle = RequestTable.getStyle(requestState, requestField);
+            values.put("class", fieldStyle.slug());
+            if(fieldStyle.isBold()) {
+                values.put("style", new JSONObject().put("font-weight", "bold"));
+            }
+            requestFields.put(requestField.getFieldName(true), values);
+        }
+        detailsFields.put("request", requestFields);
+
+        //
+        // Details: Certificate
+        //
+        LinkedHashMap<String, Object> certFields = new LinkedHashMap<>();
+        certFields.put("type", "table");
+        certFields.put("label", DetailsDialog.CERT_TABLE_LABEL);
+        certFields.put("name", DetailsDialog.CERT_TABLE_NAME);
+        certFields.put("description", DetailsDialog.CERT_TABLE_DESCRIPTION);
+        JSONArray tableColumns = new JSONArray();
+        FieldValueTable.COLUMNS.forEach(tableColumns::put);
+        certFields.put("columns", tableColumns);
+
+        if(requestState.hasCertificate()) {
+            for(CertificateFieldType type : CertificateField.CertificateFieldType.values()) {
+                CertificateField field = new CertificateField(type, requestState.getCertificate());
+                JSONObject values = new JSONObject();
+                values.put("label", field.getLabel());
+                values.put("value", field.getValue());
+                FieldStyle fieldStyle = field.getStyle();
+                values.put("class", fieldStyle.slug());
+                if(fieldStyle.isBold()) {
+                    values.put("style", new JSONObject().put("font-weight", "bold"));
+                }
+
+                certFields.put(field.getType().slug(), values);
+            }
+        }
+        detailsFields.put("cert", certFields);
+
+        allFields.put("details", detailsFields);
+
+        //
+        // Response Template
+        //
+        LinkedHashMap<String, Object> sampleFields = new LinkedHashMap<>();
+        sampleFields.put("allow", false);
+        sampleFields.put("remember", false);
+
+        allFields.put("_sample_response", sampleFields);
+
+        return allFields;
     }
 
 }

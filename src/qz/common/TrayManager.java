@@ -22,7 +22,6 @@ import qz.printer.PrintServiceMatcher;
 import qz.printer.action.html.WebApp;
 import qz.ui.*;
 import qz.ui.component.IconCache;
-import qz.ui.headless.HeadlessDialog;
 import qz.ui.tray.TrayType;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
@@ -505,7 +504,7 @@ public class TrayManager {
             return requestState.hasSavedCert();
         }
 
-        HeadlessDialog.runSafely(headless, () -> gatewayDialog.prompt(UID, "%s wants to " + prompt, requestState, position));
+        GatewayDialog.runSafely(headless, () -> gatewayDialog.prompt(UID, "%s wants to " + prompt, requestState, position));
 
         GatewayDialog.ResponseState responseState = gatewayDialog.getResponseState();
         switch(responseState) {

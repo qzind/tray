@@ -2,88 +2,61 @@ package qz.ui.headless;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import qz.build.jlink.Parsable;
-import qz.common.Constants;
-import qz.utils.ArgValue;
 
 import javax.swing.*;
-import java.net.URL;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 
-public interface HeadlessDialog {
-    Logger log = LogManager.getLogger(HeadlessDialog.class);
+import static qz.ui.headless.Endpoint.*;
 
-    class Endpoint {
-        public enum Type implements Parsable<Type> {
-            FILE_PROMPT,
-            REST_URL;
-        }
+public abstract class HeadlessDialog {
+    private final static Logger log = LogManager.getLogger(HeadlessDialog.class);
 
-        private final URL url;
-        private final Path path;
-        private final Type type;
+    private Endpoint endpoint;
 
-        public Endpoint(Type type, Path path) {
-            this.type = type;
-            this.path = path;
-            this.url = null;
-        }
-
-        public Endpoint(Type type, URL url) {
-            this.type = type;
-            this.path = null;
-            this.url = url;
-        }
-
-        public Type getType() {
-            return type;
-        }
-
-        public Path getPath() {
-            return path;
-        }
-
-        public URL getUrl() {
-            return url;
-        }
-
-        public static Endpoint parse(String value) {
-            try {
-                String lower = value.toLowerCase(Locale.ENGLISH);
-                Type type = lower.matches("https?:")? Type.REST_URL:Type.FILE_PROMPT;
-                switch(type) {
-                    case REST_URL:
-                        return new Endpoint(type, new URL(value));
-                    default:
-                        return new Endpoint(type, Path.of(value));
-                }
-            }
-            catch(Exception e) {
-                log.warn("Unable to parse headless dialog endpoint {}.  If you're using {} in headless mode, certificates must be allowed manually via '{}'.", value, Constants.ABOUT_TITLE, ArgValue.ALLOW.getMatch(), e);
-            }
-            return null;
+    public void setEndpoint(String value) {
+        if((endpoint = Endpoint.parse(value)) != null) {
+            log.info("Headless endpoint configured as {} pointing to '{}'", endpoint.getType(), endpoint);
         }
     }
 
-    void setEndpoint(String value);
+    public Endpoint getEndpoint() {
+        return endpoint;
+    }
 
-    LinkedHashMap<String,Object> getFields() throws JSONException;
+    public static JSONObject serializeToJson(HeadlessDialog dialog) throws JSONException {
+        return serializeToJson(dialog.serialize());
+    }
 
+    public JSONObject promptAndWait() throws JSONException {
+        // log.info("\n{}\n", serializeToJson(this).toString(2));
+        return createPromptable().prompt(endpoint, serializeToJson(this));
+    }
+
+    public Promptable createPromptable() {
+        switch(endpoint.getType()) {
+            case REST_URL:
+                return new RestPrompt();
+            case FILE_PROMPT:
+            default:
+                return new FilePrompt();
+        }
+    }
+
+    /**
+     * Recursive function for converting nested HashMaps to JSON
+     */
     @SuppressWarnings("unchecked")
-    static JSONObject serializeFields(HashMap<String, Object> fieldMap) {
+    public static JSONObject serializeToJson(HashMap<String, Object> serializedFields) {
         JSONObject obj = new JSONObject();
-        for(Map.Entry<String, Object> entry : fieldMap.entrySet()) {
+        for(Map.Entry<String, Object> entry : serializedFields.entrySet()) {
             try {
                 Object o = entry.getValue();
                 if(o instanceof HashMap) {
-                    obj.put(entry.getKey(), serializeFields((HashMap<String, Object>)o));
+                    obj.put(entry.getKey(), serializeToJson((HashMap<String, Object>)o));
                 } else {
                     obj.put(entry.getKey(), entry.getValue());
                 }
@@ -94,14 +67,10 @@ public interface HeadlessDialog {
         return obj;
     }
 
-    static JSONObject serializeFields(HeadlessDialog dialog) throws JSONException {
-        return serializeFields(dialog.getFields());
-    }
-
     /**
      * Runs the provided action on the EDT unless headless
      */
-    static void runSafely(boolean headless, Runnable action) {
+    public static void runSafely(boolean headless, Runnable action) {
         try {
             if (headless || SwingUtilities.isEventDispatchThread()) {
                 action.run();
@@ -113,4 +82,8 @@ public interface HeadlessDialog {
             log.error(e);
         }
     }
+
+    public abstract LinkedHashMap<String,Object> serialize() throws JSONException;
+
+    public abstract JDialog getDialog();
 }

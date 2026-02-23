@@ -2,6 +2,7 @@ package qz.ui.component.table;
 
 import qz.auth.Certificate;
 import qz.common.Constants;
+import qz.common.Sluggable;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
@@ -13,7 +14,7 @@ import static qz.ui.component.table.FieldStyle.NORMAL;
 import static qz.ui.component.table.FieldStyle.WARNING;
 
 public class CertificateField {
-    public enum CertificateFieldType {
+    public enum CertificateFieldType implements Sluggable {
         ORGANIZATION("Organization", Certificate::getOrganization),
         COMMON_NAME("Common Name", Certificate::getCommonName),
         TRUSTED("Trusted", Certificate::isTrusted),
@@ -47,6 +48,10 @@ public class CertificateField {
             return false;
         }
 
+        public String slug() {
+            return Sluggable.slugOf(this);
+        }
+
         public String calculateDescription(Certificate certificate) {
             String warning = getLabelWarning(certificate);
             if(warning != null) {
@@ -58,12 +63,14 @@ public class CertificateField {
         public String calculateValue(Certificate certificate) {
             if (this == CertificateFieldType.TRUSTED) {
                 if (certificate.isValid()) {
-                    if (certificate.isSponsored() && Certificate.isTrustBuiltIn()) {
-                        // isTrustBuiltIn: Assume only QZ sponsors
-                        return Constants.SPONSORED_CERT;
-                    } else {
-                        return Constants.TRUSTED_CERT;
+                    if(certificate.isThirdParty()) {
+                        return Constants.THIRD_PARTY_CERT;
                     }
+                    if(Certificate.isTrustBuiltIn()) {
+                        return certificate.isSponsored() ? Constants.SPONSORED_CERT : Constants.TRUSTED_CERT;
+                    }
+                    // Not a QZ cert, change wording
+                    return Constants.STRICT_MODE_CERT;
                 } else {
                     return Constants.UNTRUSTED_CERT;
                 }

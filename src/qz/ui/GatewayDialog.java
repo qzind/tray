@@ -10,9 +10,9 @@ import qz.common.Constants;
 import qz.common.Sluggable;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
-import qz.ui.component.table.CellStyle;
+import qz.ui.component.table.FieldStyle;
 import qz.ui.component.table.FieldValueTable;
-import qz.ui.component.table.RequestStateTable;
+import qz.ui.component.table.RequestTable;
 import qz.ui.headless.HeadlessDialog;
 import qz.utils.ByteUtilities;
 import qz.utils.SystemUtilities;
@@ -276,7 +276,7 @@ public class GatewayDialog implements HeadlessDialog, Themeable {
         detailsFields.put("title", DETAILS_DIALOG_TITLE);
         detailsFields.put("_hint", String.format("Shown when '%s' is clicked. Possible 'class' values: %s",
                                                  LINK_REQUEST_DETAILS,
-                                                 Sluggable.sluggedArrayString(CellStyle.values())));
+                                                 Sluggable.sluggedArrayString(FieldStyle.values())));
 
         // Details: Request
         LinkedHashMap<String, Object> requestFields = new LinkedHashMap<>();
@@ -285,16 +285,16 @@ public class GatewayDialog implements HeadlessDialog, Themeable {
         requestFields.put("name", DetailsDialog.REQUEST_TABLE_NAME);
         requestFields.put("description", DetailsDialog.REQUEST_TABLE_DESCRIPTION);
         JSONArray requestColumns = new JSONArray();
-        FieldValueTable.COLUMMNS.forEach(requestColumns::put);
+        FieldValueTable.COLUMNS.forEach(requestColumns::put);
         requestFields.put("columns", requestColumns);
 
-        for(RequestStateTable.RequestField requestField : RequestStateTable.RequestField.values()) {
+        for(RequestTable.RequestField requestField : RequestTable.RequestField.values()) {
             JSONObject values = new JSONObject();
             values.put("label", requestField.getLabel());
             values.put("value", requestField.getValue(requestState));
-            CellStyle cellStyle = RequestStateTable.getStyle(requestState, requestField);
-            values.put("class", cellStyle.slug());
-            if(cellStyle.isBold()) {
+            FieldStyle fieldStyle = RequestTable.getStyle(requestState, requestField);
+            values.put("class", fieldStyle.slug());
+            if(fieldStyle.isBold()) {
                 values.put("style", new JSONObject().put("font-weight", "bold"));
             }
             requestFields.put(requestField.getFieldName(true), values);
@@ -308,7 +308,7 @@ public class GatewayDialog implements HeadlessDialog, Themeable {
         certFields.put("name", DetailsDialog.CERT_TABLE_NAME);
         certFields.put("description", DetailsDialog.CERT_TABLE_DESCRIPTION);
         JSONArray tableColumns = new JSONArray();
-        FieldValueTable.COLUMMNS.forEach(tableColumns::put);
+        FieldValueTable.COLUMNS.forEach(tableColumns::put);
         certFields.put("columns", tableColumns);
         detailsFields.put("cert", certFields);
         // TODO: Add certificate data

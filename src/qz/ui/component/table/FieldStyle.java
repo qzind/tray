@@ -7,7 +7,7 @@ import java.awt.*;
 import static qz.common.Constants.TRUSTED_COLOR;
 import static qz.common.Constants.WARNING_COLOR;
 
-public enum CellStyle implements Sluggable { NORMAL, WARNING, TRUSTED;
+public enum FieldStyle implements Sluggable { NORMAL, WARNING, TRUSTED;
 
     @Override
     public String slug() {
@@ -15,7 +15,7 @@ public enum CellStyle implements Sluggable { NORMAL, WARNING, TRUSTED;
     }
 
     public boolean isBold() {
-        return this == WARNING;
+        return this != NORMAL;
     }
 
     public Color getColor() {

@@ -1,6 +1,5 @@
 package qz.auth;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import qz.common.Constants;
@@ -8,7 +7,6 @@ import qz.common.Sluggable;
 
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 public class RequestState {
 
@@ -79,8 +77,6 @@ public class RequestState {
         this.initialConnect = true;
         this.validity = Validity.getValidity(cert);
     }
-
-
 
     public Validity getValidity() {
         return validity;

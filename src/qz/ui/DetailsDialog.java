@@ -3,7 +3,7 @@ package qz.ui;
 import qz.auth.RequestState;
 import qz.ui.component.table.CertificateTable;
 import qz.ui.component.IconCache;
-import qz.ui.component.table.RequestStateTable;
+import qz.ui.component.table.RequestTable;
 
 import javax.swing.*;
 
@@ -19,7 +19,7 @@ public class DetailsDialog extends JPanel {
     public static final String CERT_TABLE_NAME = String.format("%s Details", CERT_TABLE_LABEL);
     public static final String CERT_TABLE_DESCRIPTION = "Certificate details about this request.";
 
-    private RequestStateTable requestStateTable;
+    private RequestTable requestTable;
     private CertificateTable certTable;
 
     public DetailsDialog(IconCache iconCache) {
@@ -33,11 +33,11 @@ public class DetailsDialog extends JPanel {
         JLabel requestLabel = new JLabel(REQUEST_TABLE_LABEL);
         requestLabel.setAlignmentX(CENTER_ALIGNMENT);
 
-        requestStateTable = new RequestStateTable(iconCache);
-        JScrollPane reqScrollPane = new JScrollPane(requestStateTable);
-        requestStateTable.getAccessibleContext().setAccessibleName(REQUEST_TABLE_DESCRIPTION);
-        requestStateTable.getAccessibleContext().setAccessibleDescription(REQUEST_TABLE_NAME);
-        requestLabel.setLabelFor(requestStateTable);
+        requestTable = new RequestTable(iconCache);
+        JScrollPane reqScrollPane = new JScrollPane(requestTable);
+        requestTable.getAccessibleContext().setAccessibleName(REQUEST_TABLE_DESCRIPTION);
+        requestTable.getAccessibleContext().setAccessibleDescription(REQUEST_TABLE_NAME);
+        requestLabel.setLabelFor(requestTable);
 
         JLabel certLabel = new JLabel(CERT_TABLE_LABEL);
         certLabel.setAlignmentX(CENTER_ALIGNMENT);
@@ -58,15 +58,15 @@ public class DetailsDialog extends JPanel {
     }
 
     public void setRequest(RequestState requestState) {
-        requestStateTable.setRequestState(requestState);
+        requestTable.setRequestState(requestState);
     }
 
     public void updateDisplay() {
-        if(requestStateTable.getRequestState() == null) return;
+        if(requestTable.getRequestState() == null) return;
 
-        certTable.setCertificate(requestStateTable.getRequestState().getCertificate());
+        certTable.setCertificate(requestTable.getRequestState().getCertificate());
         certTable.autoSize();
-        requestStateTable.autoSize();
+        requestTable.autoSize();
     }
 
 }

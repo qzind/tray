@@ -10,10 +10,10 @@ import java.awt.*;
 import java.util.Locale;
 import java.util.Objects;
 
-import static qz.ui.component.table.CellStyle.*;
+import static qz.ui.component.table.FieldStyle.*;
 
 
-public class RequestStateTable extends FieldValueTable implements Themeable {
+public class RequestTable extends FieldValueTable implements Themeable {
     private final static String NOT_REQUIRED = "Not Required";
     private final static String MISSING = "Missing";
 
@@ -88,7 +88,7 @@ public class RequestStateTable extends FieldValueTable implements Themeable {
 
     private RequestState requestState;
 
-    public RequestStateTable(IconCache iconCache) {
+    public RequestTable(IconCache iconCache) {
         super(iconCache);
         setDefaultRenderer(Object.class, new RequestTableCellRenderer());
     }
@@ -101,13 +101,13 @@ public class RequestStateTable extends FieldValueTable implements Themeable {
         return requestState;
     }
 
-    public static CellStyle getStyle(RequestState requestState, RequestField requestField) {
+    public static FieldStyle getStyle(RequestState requestState, RequestField requestField) {
         switch(requestField) {
             case SIGNATURE:
-                if(requestState.isVerified()) {
-                    // no signature value on initial connection
-                    return  requestState.isInitialConnect() ? NORMAL: TRUSTED;
-                } else if (requestState.getValidity() != RequestState.Validity.EXPIRED) {
+                if(requestState.isInitialConnect()) {
+                    return NORMAL;
+                }
+                if (requestState.getValidity() != RequestState.Validity.TRUSTED) {
                     return WARNING;
                 }
                 break;
@@ -117,7 +117,7 @@ public class RequestStateTable extends FieldValueTable implements Themeable {
                 }
                 break;
             case VALIDITY:
-                return requestState.isVerified()? TRUSTED : WARNING;
+                return requestState.getValidity() == RequestState.Validity.TRUSTED? TRUSTED : WARNING;
         }
         return NORMAL;
     }

@@ -1,10 +1,10 @@
 package qz.ui.component.table;
 
+import qz.ui.component.IconCache;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
-
-import static qz.ui.component.table.CellStyle.*;
 
 public class StyledTableCellRenderer extends DefaultTableCellRenderer {
 
@@ -25,22 +25,17 @@ public class StyledTableCellRenderer extends DefaultTableCellRenderer {
         return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
     }
 
-    protected JLabel stylizeLabel(CellStyle style, JLabel label, boolean isSelected) {
-        return stylizeLabel(style, label, isSelected, null);
+    protected JLabel stylizeLabel(FieldStyle style, JLabel label, boolean isSelected) {
+        label.setIcon(null);
+        label.setFont(label.getFont().deriveFont(style.isBold() ? Font.BOLD : Font.PLAIN));
+        label.setForeground(isSelected? defaultSelectedForeground:style.getColor(defaultForeground));
+        return label;
     }
 
-    protected JLabel stylizeLabel(CellStyle style, JLabel label, boolean isSelected, String reason) {
-        label.setIcon(null);
-
-        int fontWeight = style.isBold() ? Font.BOLD : Font.PLAIN;
-        Color foreground = style.getColor(defaultForeground);
-
-        label.setFont(label.getFont().deriveFont(fontWeight));
-        label.setForeground(isSelected? defaultSelectedForeground:foreground);
-        if (style == WARNING && reason != null) {
-            label.setText(label.getText() + " (" + reason + ")");
+    protected JLabel stylizeIcon(IconCache iconCache, IconCache.Icon icon, Object unused, JLabel label, boolean isSelected) {
+        if (iconCache != null) {
+            label.setIcon(iconCache.getIcon(icon));
         }
-
         return label;
     }
 

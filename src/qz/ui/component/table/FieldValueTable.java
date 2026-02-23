@@ -12,7 +12,7 @@ import java.util.List;
  * Displays information in a JTable
  */
 public class FieldValueTable extends JTable {
-    public static List<String> COLUMMNS = Arrays.asList("Field", "Value");
+    public static List<String> COLUMNS = Arrays.asList("Field", "Value");
     protected DefaultTableModel model;
 
     protected IconCache iconCache;
@@ -29,7 +29,7 @@ public class FieldValueTable extends JTable {
             @Override
             public boolean isCellEditable(int x, int y) { return false; }
         };
-        COLUMMNS.forEach(column -> model.addColumn(column));
+        COLUMNS.forEach(column -> model.addColumn(column));
 
         // Fix Linux row height
         int origHeight = getRowHeight();

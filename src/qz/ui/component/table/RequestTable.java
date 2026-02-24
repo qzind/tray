@@ -1,7 +1,7 @@
 package qz.ui.component.table;
 
 import org.codehaus.jettison.json.JSONException;
-import qz.auth.RequestState;
+import qz.auth.Request;
 import qz.ui.Themeable;
 import qz.ui.component.IconCache;
 
@@ -32,15 +32,15 @@ public class RequestTable extends FieldValueTable implements Themeable {
             this.fieldName = fieldName;
         }
 
-        public String getValue(RequestState requestState) {
+        public String getValue(Request request) {
             String value = "";
             boolean initialConnect = false;
-            if (requestState != null) {
+            if (request != null) {
                 try {
-                    if(!requestState.getRequestData().isNull(fieldName)) {
-                        value = requestState.getRequestData().getString(fieldName);
+                    if(!request.getRequestData().isNull(fieldName)) {
+                        value = request.getRequestData().getString(fieldName);
                     }
-                    initialConnect = requestState.isInitialConnect();
+                    initialConnect = request.isInitialConnect();
                 } catch(JSONException ignore) {}
             }
 
@@ -54,7 +54,7 @@ public class RequestTable extends FieldValueTable implements Themeable {
                     case SIGNATURE:
                         return initialConnect ? NOT_REQUIRED : MISSING;
                     case VALIDITY:
-                        return Objects.requireNonNull(requestState).getValidity().getDescription();
+                        return Objects.requireNonNull(request).getValidity().getDescription();
                 }
             }
             return value;
@@ -86,52 +86,52 @@ public class RequestTable extends FieldValueTable implements Themeable {
         }
     }
 
-    private RequestState requestState;
+    private Request request;
 
     public RequestTable(IconCache iconCache) {
         super(iconCache);
         setDefaultRenderer(Object.class, new RequestTableCellRenderer());
     }
 
-    public void setRequestState(RequestState requestState) {
-        this.requestState = requestState;
+    public void setRequest(Request request) {
+        this.request = request;
     }
 
-    public RequestState getRequestState() {
-        return requestState;
+    public Request getRequest() {
+        return request;
     }
 
-    public static FieldStyle getStyle(RequestState requestState, RequestField requestField) {
+    public static FieldStyle getStyle(Request request, RequestField requestField) {
         switch(requestField) {
             case SIGNATURE:
-                if(requestState.isInitialConnect()) {
+                if(request.isInitialConnect()) {
                     return NORMAL;
                 }
-                if (requestState.getValidity() != RequestState.Validity.TRUSTED) {
+                if (request.getValidity() != Request.Validity.TRUSTED) {
                     return WARNING;
                 }
                 break;
             case TIMESTAMP:
-                if (requestState.getValidity() == RequestState.Validity.EXPIRED) {
+                if (request.getValidity() == Request.Validity.EXPIRED) {
                     return WARNING;
                 }
                 break;
             case VALIDITY:
-                return requestState.getValidity() == RequestState.Validity.TRUSTED? TRUSTED : WARNING;
+                return request.getValidity() == Request.Validity.TRUSTED? TRUSTED : WARNING;
         }
         return NORMAL;
     }
 
     @Override
     public void refreshComponents() {
-        if (requestState == null) {
+        if (request == null) {
             return;
         }
 
         removeRows();
 
         for(RequestField field : RequestField.values()) {
-            model.addRow(new Object[] {field, field.getValue(requestState)});
+            model.addRow(new Object[] {field, field.getValue(request)});
         }
 
         repaint();
@@ -163,12 +163,12 @@ public class RequestTable extends FieldValueTable implements Themeable {
             }
 
             // Second Column
-            if (requestState == null || col < 1) { return stylizeLabel(NORMAL, label, isSelected); }
+            if (request == null || col < 1) { return stylizeLabel(NORMAL, label, isSelected); }
 
             RequestField field = (RequestField)table.getValueAt(row, col - 1);
             if (field == null) { return stylizeLabel(NORMAL, label, isSelected); }
 
-            return stylizeLabel(getStyle(requestState, field), label, isSelected);
+            return stylizeLabel(getStyle(request, field), label, isSelected);
         }
 
     }

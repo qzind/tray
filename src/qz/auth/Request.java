@@ -7,7 +7,7 @@ import qz.common.Sluggable;
 
 import java.time.Instant;
 
-public class RequestState {
+public class Request {
 
     public enum Validity implements Sluggable {
         TRUSTED("Valid"),
@@ -52,7 +52,7 @@ public class RequestState {
     private Validity validity;
     boolean initialConnect;
 
-    public RequestState(Certificate certificate, JSONObject requestData) {
+    public Request(Certificate certificate, JSONObject requestData) {
         this.certificate = certificate;
         this.requestData = requestData;
         this.validity = Validity.UNKNOWN;
@@ -81,8 +81,8 @@ public class RequestState {
         return validity;
     }
 
-    public void setValidity(Validity state) {
-        validity = state;
+    public void setValidity(Validity validity) {
+        this.validity = validity;
     }
 
     public boolean hasCertificate() {

@@ -16,7 +16,7 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 import qz.App;
 import qz.auth.Certificate;
-import qz.auth.RequestState;
+import qz.auth.Request;
 import qz.installer.shortcut.ShortcutCreator;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.action.html.WebApp;
@@ -497,29 +497,29 @@ public class TrayManager {
         JOptionPane.showMessageDialog(null, message, name, JOptionPane.ERROR_MESSAGE);
     }
 
-    public boolean showGatewayDialog(final String UID, final RequestState requestState, final String prompt, final Point position) {
+    public boolean showGatewayDialog(final String UID, final Request request, final String prompt, final Point position) {
         // No way to prompt, hope it's whitelisted
         if (headless && gatewayDialog.getEndpoint() == null) {
-            return requestState.hasSavedCert();
+            return request.hasSavedCert();
         }
 
-        GatewayDialog.runSafely(headless, () -> gatewayDialog.prompt(UID, "%s wants to " + prompt, requestState, position));
+        GatewayDialog.runSafely(headless, () -> gatewayDialog.prompt(UID, "%s wants to " + prompt, request, position));
 
         GatewayDialog.Response response = gatewayDialog.getResponse();
         switch(response) {
             case ALWAYS_ALLOW:
-                whiteList(requestState.getCertificate());
+                whiteList(request.getCertificate());
             case TEMPORARY_ALLOW:
-                log.info("Allowed {} to {}", requestState.getCertName(), prompt);
+                log.info("Allowed {} to {}", request.getCertName(), prompt);
                 break;
             case ALWAYS_BLOCK:
-                blackList(requestState.getCertificate());
+                blackList(request.getCertificate());
             case TEMPORARY_BLOCK:
             case UNANSWERED:
-                log.info("Denied {} to {}", requestState.getCertName(), prompt);
+                log.info("Denied {} to {}", request.getCertName(), prompt);
         }
 
-        if(response.alwaysBlockAnonymous(requestState)) {
+        if(response.alwaysBlockAnonymous(request)) {
             // Treat as "block anonymous requests" to prevent pop-up abuse
             if(!headless) {
                 anonymousItem.setState(false);

@@ -1,6 +1,6 @@
 package qz.ui;
 
-import qz.auth.RequestState;
+import qz.auth.Request;
 import qz.ui.component.table.CertificateTable;
 import qz.ui.component.IconCache;
 import qz.ui.component.table.RequestTable;
@@ -57,14 +57,14 @@ public class DetailsDialog extends JPanel {
         add(certScrollPane);
     }
 
-    public void setRequest(RequestState requestState) {
-        requestTable.setRequestState(requestState);
+    public void setRequest(Request request) {
+        requestTable.setRequest(request);
     }
 
     public void updateDisplay() {
-        if(requestTable.getRequestState() == null) return;
+        if(requestTable.getRequest() == null) return;
 
-        certTable.setCertificate(requestTable.getRequestState().getCertificate());
+        certTable.setCertificate(requestTable.getRequest().getCertificate());
         certTable.autoSize();
         requestTable.autoSize();
     }

@@ -5,7 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import qz.auth.RequestState;
+import qz.auth.Request;
 import qz.common.Constants;
 import qz.common.Sluggable;
 import qz.ui.component.IconCache;
@@ -55,7 +55,7 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
     private String uid;
     private IconCache.Icon icon;
     private String iconToolTip;
-    private RequestState requestState;
+    private Request request;
     private Response response;
 
     // Confirm dialog
@@ -125,7 +125,7 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         bottomPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 5));
         rememberCheckbox = new JCheckBox(CHECKBOX_REMEMBER, false);
         rememberCheckbox.setMnemonic(KeyEvent.VK_R);
-        rememberCheckbox.addActionListener(e -> allowButton.setEnabled(!rememberCheckbox.isSelected() || requestState.isVerified()));
+        rememberCheckbox.addActionListener(e -> allowButton.setEnabled(!rememberCheckbox.isSelected() || request.isVerified()));
         rememberCheckbox.setAlignmentX(RIGHT_ALIGNMENT);
 
         bottomPanel.add(certInfoLabel);
@@ -176,12 +176,12 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
     };
 
     public final void refreshComponents() {
-        if (requestState != null) {
+        if (request != null) {
             // TODO:  Add name, publisher
-            detailsDialog.setRequest(requestState);
+            detailsDialog.setRequest(request);
             descriptionLabel.setText("<html><p>" +
                                              description +
-                                             "</p><strong>" + requestState.getValidityString() + "</strong>" +
+                                             "</p><strong>" + request.getValidityString() + "</strong>" +
                                              "</html>");
             certInfoLabel.setText(LINK_REQUEST_DETAILS);
             verifiedLabel.setIcon(iconCache.getIcon(icon));
@@ -198,19 +198,19 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         dialog.pack();
     }
 
-    public void prompt(String UID, String descriptionPattern, RequestState requestState, Point position)  {
+    public void prompt(String UID, String descriptionPattern, Request request, Point position)  {
         // Main dialog
         this.uid = UID;
-        this.requestState = requestState;
-        this.description = String.format(descriptionPattern, requestState.getCertName());
-        this.icon = getIcon(requestState);
-        this.iconToolTip = requestState.isSponsored() ? Constants.SPONSORED_TOOLTIP : null;
-        this.detailColor = requestState.isVerified() ? Constants.TRUSTED_COLOR : Constants.WARNING_COLOR;
+        this.request = request;
+        this.description = String.format(descriptionPattern, request.getCertName());
+        this.icon = getIcon(request);
+        this.iconToolTip = request.isSponsored() ? Constants.SPONSORED_TOOLTIP : null;
+        this.detailColor = request.isVerified() ? Constants.TRUSTED_COLOR : Constants.WARNING_COLOR;
 
         // Block confirmation dialog
         this.confirmBlockText = String.format(Constants.BLOCK_SITES_TEXT.replace(" blocked ", " block ") + "?",
-                                              requestState.hasCertificate() ?
-                                                              requestState.getCertName() : "");
+                                              request.hasCertificate() ?
+                                                              request.getCertName() : "");
 
         if(headless) {
             try {
@@ -226,11 +226,11 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         }
     }
 
-    public static IconCache.Icon getIcon(RequestState requestState) {
-        if (requestState.isVerified()) {
-            return requestState.isSponsored() ? IconCache.Icon.TRUST_SPONSORED_ICON : IconCache.Icon.TRUST_VERIFIED_ICON;
+    public static IconCache.Icon getIcon(Request request) {
+        if (request.isVerified()) {
+            return request.isSponsored() ? IconCache.Icon.TRUST_SPONSORED_ICON : IconCache.Icon.TRUST_VERIFIED_ICON;
         }
-        return requestState.getCertificate().isValid() ? IconCache.Icon.TRUST_ISSUE_ICON : IconCache.Icon.TRUST_MISSING_ICON;
+        return request.getCertificate().isValid() ? IconCache.Icon.TRUST_ISSUE_ICON : IconCache.Icon.TRUST_MISSING_ICON;
     }
 
     @Override
@@ -266,18 +266,18 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
             return false;
         }
 
-        public static Optional<Response> filter(RequestState requestState) {
-            if(requestState.hasSavedCert()) {
+        public static Optional<Response> filter(Request request) {
+            if(request.hasSavedCert()) {
                 return Optional.of(ALWAYS_ALLOW);
             }
-            if(requestState.hasBlockedCert()) {
+            if(request.hasBlockedCert()) {
                 return Optional.of(ALWAYS_BLOCK);
             }
             return Optional.empty();
         }
 
-        public boolean alwaysBlockAnonymous(RequestState requestState) {
-            return this == ALWAYS_BLOCK && !requestState.hasCertificate();
+        public boolean alwaysBlockAnonymous(Request request) {
+            return this == ALWAYS_BLOCK && !request.hasCertificate();
         }
     }
 
@@ -295,7 +295,7 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         mainFields.put("uid", uid);
         mainFields.put("description", description);
         mainFields.put("remember", null);
-        mainFields.put("validity", requestState.toJson());
+        mainFields.put("validity", request.toJson());
         mainFields.put("icon", base64icon);
         mainFields.put("button-allow", new JSONObject()
                 .put("value", BUTTON_ALLOW)
@@ -308,7 +308,7 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         );
         mainFields.put("checkbox-remember", new JSONObject()
                 .put("value", CHECKBOX_REMEMBER)
-                .put("checked", requestState.isVerified()));
+                .put("checked", request.isVerified()));
         allFields.put("main", mainFields);
 
         //
@@ -342,10 +342,10 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         requestFields.put("columns", requestColumns);
 
         for(RequestTable.RequestField requestField : RequestTable.RequestField.values()) {
-            FieldStyle style = RequestTable.getStyle(requestState, requestField);
+            FieldStyle style = RequestTable.getStyle(request, requestField);
             requestFields.put(requestField.getFieldName(true), new JSONObject()
                     .put("label", requestField.getLabel())
-                    .put("value", requestField.getValue(requestState))
+                    .put("value", requestField.getValue(request))
                     .put("class", style.slug())
                     .put("style", new JSONObject()
                             .put("font-weight", style.isBold() ? "bold" : "normal")
@@ -366,9 +366,9 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         FieldValueTable.COLUMNS.forEach(tableColumns::put);
         certFields.put("columns", tableColumns);
 
-        if(requestState.hasCertificate()) {
+        if(request.hasCertificate()) {
             for(Type type : Type.values()) {
-                CertificateField field = new CertificateField(type, requestState.getCertificate());
+                CertificateField field = new CertificateField(type, request.getCertificate());
                 FieldStyle style = field.getStyle();
                 certFields.put(field.getType().slug(), new JSONObject()
                         .put("label", field.getLabel())

@@ -36,7 +36,7 @@ public abstract class HeadlessDialog {
         return createPromptable().prompt(endpoint, serializeToJson(this));
     }
 
-    public Promptable createPromptable() {
+    private Promptable createPromptable() {
         switch(endpoint.getType()) {
             case REST_URL:
                 return new RestPrompt();

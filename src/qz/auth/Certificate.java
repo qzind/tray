@@ -462,7 +462,7 @@ public class Certificate {
     }
 
     public boolean isValid() {
-        return valid;
+        return valid; // TODO: Rename to differentiate from malformed certificates
     }
 
     public boolean isExpired() {

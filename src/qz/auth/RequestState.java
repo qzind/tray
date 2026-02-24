@@ -6,7 +6,6 @@ import qz.common.Constants;
 import qz.common.Sluggable;
 
 import java.time.Instant;
-import java.util.Arrays;
 
 public class RequestState {
 
@@ -111,12 +110,14 @@ public class RequestState {
     }
 
     public String getValidityString() {
-        if (validity == Validity.TRUSTED) {
-            return Constants.TRUSTED_CERT;
-        } else if (Arrays.asList(Validity.UNSIGNED, Validity.EXPIRED, Validity.EXPIRED_CERT, Validity.FUTURE_CERT).contains(validity)) {
-            return Constants.NO_TRUST + " - " + validity.getDescription();
-        } else {
-            return Constants.UNTRUSTED_CERT;
+        switch(validity) {
+            case TRUSTED:
+                return Constants.TRUSTED_CERT;
+            case INVALID_CERT:
+            case UNKNOWN:
+                return Constants.UNTRUSTED_CERT; // TODO: Consolidate wording
+            default:
+                return String.format("%s - %s", Constants.NO_TRUST, validity.getDescription());
         }
     }
 

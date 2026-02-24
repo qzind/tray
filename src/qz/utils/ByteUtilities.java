@@ -18,7 +18,6 @@ import qz.common.Constants;
 import qz.printer.action.raw.PixelGrid;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -249,7 +248,7 @@ public class ByteUtilities {
      * Converts a BufferedImage into a browser-compatible base64 image
      * Useful for serializing
      */
-    public static String toBase64(BufferedImage image, String format) {
+    public static String imageToBase64(BufferedImage image, String format) {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ImageIO.write(image, format, bos);

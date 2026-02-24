@@ -283,7 +283,7 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
 
     @Override
     public LinkedHashMap<String,Object> serialize() throws JSONException {
-        String base64icon = "data:image/png;base64," + ByteUtilities.toBase64(iconCache.getImage(icon), "png");
+        String base64icon = "data:image/png;base64," + ByteUtilities.imageToBase64(iconCache.getImage(icon), "png");
         LinkedHashMap<String, Object> allFields = new LinkedHashMap<>();
 
         //

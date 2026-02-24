@@ -56,7 +56,7 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
     private IconCache.Icon icon;
     private String iconToolTip;
     private RequestState requestState;
-    private ResponseState responseState;
+    private Response response;
 
     // Confirm dialog
     public static String CONFIRM_BLOCK_TITLE = "Confirm";
@@ -78,7 +78,7 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         this.headless = headless;
         this.iconCache = iconCache;
         this.description = "Description missing";
-        this.responseState = ResponseState.UNANSWERED;
+        this.response = Response.UNANSWERED;
 
         if(!headless) {
             initComponents(owner);
@@ -163,12 +163,12 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
     private final transient ActionListener buttonAction = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            responseState = ResponseState.getState(e.getSource().equals(allowButton), rememberCheckbox.isSelected());
+            response = Response.getResponse(e.getSource().equals(allowButton), rememberCheckbox.isSelected());
 
             // Require confirmation for permanent block
-            if (responseState == ResponseState.ALWAYS_BLOCK) {
+            if (response == Response.ALWAYS_BLOCK) {
                 if (!confirmDialog.prompt(confirmBlockText)) {
-                    responseState = ResponseState.TEMPORARY_BLOCK;
+                    response = Response.TEMPORARY_BLOCK;
                 }
             }
             dialog.setVisible(false);
@@ -214,7 +214,7 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
 
         if(headless) {
             try {
-                responseState = ResponseState.getState(promptAndWait());
+                response = Response.getResponse(promptAndWait());
             }
             catch(JSONException e) {
                 log.error(e);
@@ -238,24 +238,23 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         return dialog;
     }
 
-    public ResponseState getResponseState() {
-        return responseState;
+    public Response getResponse() {
+        return response;
     }
 
-    public enum ResponseState {
+    public enum Response {
         ALWAYS_ALLOW, TEMPORARY_ALLOW, ALWAYS_BLOCK, TEMPORARY_BLOCK, UNANSWERED;
 
-        public static ResponseState getState(boolean allow, boolean remember) {
+        public static Response getResponse(boolean allow, boolean remember) {
             if(allow) {
                 return remember ? ALWAYS_ALLOW : TEMPORARY_ALLOW;
             }
             return remember ? ALWAYS_BLOCK : TEMPORARY_BLOCK;
         }
 
-        public static ResponseState getState(JSONObject json) {
-
-            return getState(json.optBoolean("allow", false),
-                            json.optBoolean("remember", false));
+        public static Response getResponse(JSONObject json) {
+            return getResponse(json.optBoolean("allow", false),
+                               json.optBoolean("remember", false));
         }
 
         public boolean state() {
@@ -267,7 +266,7 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
             return false;
         }
 
-        public static Optional<ResponseState> filter(RequestState requestState) {
+        public static Optional<Response> filter(RequestState requestState) {
             if(requestState.hasSavedCert()) {
                 return Optional.of(ALWAYS_ALLOW);
             }

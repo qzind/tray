@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 
 import static qz.ui.component.IconCache.Icon.*;
 import static qz.utils.ArgValue.*;
-import static qz.ui.headless.HeadlessDialog.*;
 
 /**
  * Manages the icons and actions associated with the TrayIcon
@@ -506,8 +505,8 @@ public class TrayManager {
 
         GatewayDialog.runSafely(headless, () -> gatewayDialog.prompt(UID, "%s wants to " + prompt, requestState, position));
 
-        GatewayDialog.ResponseState responseState = gatewayDialog.getResponseState();
-        switch(responseState) {
+        GatewayDialog.Response response = gatewayDialog.getResponse();
+        switch(response) {
             case ALWAYS_ALLOW:
                 whiteList(requestState.getCertificate());
             case TEMPORARY_ALLOW:
@@ -520,7 +519,7 @@ public class TrayManager {
                 log.info("Denied {} to {}", requestState.getCertName(), prompt);
         }
 
-        if(responseState.alwaysBlockAnonymous(requestState)) {
+        if(response.alwaysBlockAnonymous(requestState)) {
             // Treat as "block anonymous requests" to prevent pop-up abuse
             if(!headless) {
                 anonymousItem.setState(false);
@@ -531,7 +530,7 @@ public class TrayManager {
             }
         }
 
-        return responseState.state();
+        return response.state();
     }
 
     private void whiteList(Certificate cert) {

@@ -688,7 +688,7 @@ public class PrintSocketClient {
 
     private boolean allowedFromDialog(String UID, RequestState requestState, String prompt, Point position) {
         //If cert can be resolved before the lock, do so and return
-        Optional<GatewayDialog.ResponseState> filter = GatewayDialog.ResponseState.filter(requestState);
+        Optional<GatewayDialog.Response> filter = GatewayDialog.Response.filter(requestState);
         if(filter.isPresent()) return filter.get().state();
 
         //wait until previous prompts are closed

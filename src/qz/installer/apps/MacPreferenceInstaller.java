@@ -316,8 +316,8 @@ public class MacPreferenceInstaller {
             case MISSING:
                 log.info("Preference entry '{}' is missing from plist file {}", entry, plist);
                 break;
-            case DATA: // not supported
-            case DATE: // not supported
+            case DATA: // not yet supported
+            case DATE: // not yet supported
             default:
                 log.info("Preference entry type '{}' is not yet supported at this time.", entry);
                 break;

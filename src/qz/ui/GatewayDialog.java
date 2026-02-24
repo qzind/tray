@@ -25,7 +25,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.util.LinkedHashMap;
-import java.util.Optional;
 
 import static javax.swing.JComponent.*;
 import static javax.swing.WindowConstants.*;
@@ -257,27 +256,12 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
                                json.optBoolean("remember", false));
         }
 
-        public boolean state() {
-            switch(this) {
-                case ALWAYS_ALLOW:
-                case TEMPORARY_ALLOW:
-                    return true;
-            }
-            return false;
-        }
-
-        public static Optional<Response> filter(Request request) {
-            if(request.hasSavedCert()) {
-                return Optional.of(ALWAYS_ALLOW);
-            }
-            if(request.hasBlockedCert()) {
-                return Optional.of(ALWAYS_BLOCK);
-            }
-            return Optional.empty();
-        }
-
         public boolean alwaysBlockAnonymous(Request request) {
             return this == ALWAYS_BLOCK && !request.hasCertificate();
+        }
+
+        public boolean isAllowed() {
+            return this == ALWAYS_ALLOW || this == TEMPORARY_ALLOW;
         }
     }
 

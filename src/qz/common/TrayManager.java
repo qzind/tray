@@ -530,7 +530,7 @@ public class TrayManager {
             }
         }
 
-        return response.state();
+        return response.isAllowed();
     }
 
     private void whiteList(Certificate cert) {

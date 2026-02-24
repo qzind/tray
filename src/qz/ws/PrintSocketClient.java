@@ -22,7 +22,6 @@ import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.status.StatusMonitor;
-import qz.ui.GatewayDialog;
 import qz.utils.*;
 import qz.ws.substitutions.Substitutions;
 
@@ -39,7 +38,6 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 
@@ -688,8 +686,12 @@ public class PrintSocketClient {
 
     private boolean allowedFromDialog(String UID, Request request, String prompt, Point position) {
         //If cert can be resolved before the lock, do so and return
-        Optional<GatewayDialog.Response> filter = GatewayDialog.Response.filter(request);
-        if(filter.isPresent()) return filter.get().state();
+        if (request.hasBlockedCert()) {
+            return false;
+        }
+        if (request.hasSavedCert()) {
+            return true;
+        }
 
         //wait until previous prompts are closed
         try {

@@ -298,10 +298,18 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         mainFields.put("remember", null);
         mainFields.put("validity", requestState.toJson());
         mainFields.put("icon", base64icon);
-        mainFields.put("button_allow", BUTTON_ALLOW);
-        mainFields.put("button_block", BUTTON_BLOCK);
-        mainFields.put("button_details", LINK_REQUEST_DETAILS);
-        mainFields.put("checkbox_remember", CHECKBOX_REMEMBER);
+        mainFields.put("button-allow", new JSONObject()
+                .put("value", BUTTON_ALLOW)
+        );
+        mainFields.put("button-block", new JSONObject()
+                .put("value", BUTTON_BLOCK)
+        );
+        mainFields.put("button-details", new JSONObject()
+                .put("value", LINK_REQUEST_DETAILS)
+        );
+        mainFields.put("checkbox-remember", new JSONObject()
+                .put("value", CHECKBOX_REMEMBER)
+                .put("checked", requestState.isVerified()));
         allFields.put("main", mainFields);
 
         //
@@ -335,15 +343,15 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         requestFields.put("columns", requestColumns);
 
         for(RequestTable.RequestField requestField : RequestTable.RequestField.values()) {
-            JSONObject values = new JSONObject();
-            values.put("label", requestField.getLabel());
-            values.put("value", requestField.getValue(requestState));
-            FieldStyle fieldStyle = RequestTable.getStyle(requestState, requestField);
-            values.put("class", fieldStyle.slug());
-            if(fieldStyle.isBold()) {
-                values.put("style", new JSONObject().put("font-weight", "bold"));
-            }
-            requestFields.put(requestField.getFieldName(true), values);
+            FieldStyle style = RequestTable.getStyle(requestState, requestField);
+            requestFields.put(requestField.getFieldName(true), new JSONObject()
+                    .put("label", requestField.getLabel())
+                    .put("value", requestField.getValue(requestState))
+                    .put("class", style.slug())
+                    .put("style", new JSONObject()
+                            .put("font-weight", style.isBold() ? "bold" : "normal")
+                    )
+            );
         }
         detailsFields.put("request", requestFields);
 
@@ -362,16 +370,15 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         if(requestState.hasCertificate()) {
             for(CertificateFieldType type : CertificateField.CertificateFieldType.values()) {
                 CertificateField field = new CertificateField(type, requestState.getCertificate());
-                JSONObject values = new JSONObject();
-                values.put("label", field.getLabel());
-                values.put("value", field.getValue());
-                FieldStyle fieldStyle = field.getStyle();
-                values.put("class", fieldStyle.slug());
-                if(fieldStyle.isBold()) {
-                    values.put("style", new JSONObject().put("font-weight", "bold"));
-                }
-
-                certFields.put(field.getType().slug(), values);
+                FieldStyle style = field.getStyle();
+                certFields.put(field.getType().slug(), new JSONObject()
+                        .put("label", field.getLabel())
+                        .put("value", field.getValue())
+                        .put("class", style.slug())
+                        .put("style", new JSONObject()
+                                .put("font-weight", style.isBold() ? "bold" : "normal")
+                        )
+                );
             }
         }
         detailsFields.put("cert", certFields);

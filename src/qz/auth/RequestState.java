@@ -125,11 +125,11 @@ public class RequestState {
         try {
             json.put("validity", validity.slug());
             json.put("_hint", "Possible 'validity' values: " + Sluggable.sluggedArrayString(Validity.values()));
-            json.put("initialConnect", initialConnect);
-            json.put("validityDescription", validity.getDescription());
-            json.put("validityString", getValidityString());
-            json.put("hasBlockedCert", hasBlockedCert());
-            json.put("hasSavedCert", hasSavedCert());
+            json.put("initial-connect", initialConnect);
+            json.put("validity-description", validity.getDescription());
+            json.put("validity-string", getValidityString());
+            json.put("has-blocked-cert", hasBlockedCert());
+            json.put("has-saved-cert", hasSavedCert());
         } catch(JSONException ignore) {}
 
         return json;

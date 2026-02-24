@@ -44,7 +44,7 @@ public class CertificateTable extends FieldValueTable implements Themeable {
 
         removeRows();
 
-        for(CertificateFieldType type : CertificateFieldType.values()) {
+        for(Type type : Type.values()) {
             CertificateField field = new CertificateField(type, cert);
             model.addRow(new Object[] {field, field}); // we'll calculate the labels on render
         }
@@ -59,7 +59,7 @@ public class CertificateTable extends FieldValueTable implements Themeable {
     }
 
     public void autoSize() {
-        super.autoSize(CertificateField.CertificateFieldType.size(), 2);
+        super.autoSize(Type.size(), 2);
     }
 
     /** Custom cell renderer for JTable to allow colors and styles not directly available in a JTable */

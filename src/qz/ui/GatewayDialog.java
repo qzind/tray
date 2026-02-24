@@ -368,7 +368,7 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         certFields.put("columns", tableColumns);
 
         if(requestState.hasCertificate()) {
-            for(CertificateFieldType type : CertificateField.CertificateFieldType.values()) {
+            for(Type type : Type.values()) {
                 CertificateField field = new CertificateField(type, requestState.getCertificate());
                 FieldStyle style = field.getStyle();
                 certFields.put(field.getType().slug(), new JSONObject()

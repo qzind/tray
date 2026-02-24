@@ -14,7 +14,7 @@ import static qz.ui.component.table.FieldStyle.NORMAL;
 import static qz.ui.component.table.FieldStyle.WARNING;
 
 public class CertificateField {
-    public enum CertificateFieldType implements Sluggable {
+    public enum Type implements Sluggable {
         ORGANIZATION("Organization", Certificate::getOrganization),
         COMMON_NAME("Common Name", Certificate::getCommonName),
         TRUSTED("Trusted", Certificate::isTrusted),
@@ -25,7 +25,7 @@ public class CertificateField {
         private final String description;
         private final Function<Certificate, Object> getter;
 
-        CertificateFieldType(String description, Function<Certificate, Object> getter) {
+        Type(String description, Function<Certificate, Object> getter) {
             this.description = description;
             this.getter = getter;
         }
@@ -61,7 +61,7 @@ public class CertificateField {
         }
 
         public String calculateValue(Certificate certificate) {
-            if (this == CertificateFieldType.TRUSTED) {
+            if (this == Type.TRUSTED) {
                 if (certificate.isValid()) {
                     if(certificate.isThirdParty()) {
                         return Constants.THIRD_PARTY_CERT;
@@ -147,7 +147,7 @@ public class CertificateField {
     private static final TimeZone ALTERNATE_TIME_ZONE = TimeZone.getDefault();
     private static TimeZone TIME_ZONE = DEFAULT_TIME_ZONE;
 
-    private final CertificateFieldType type;
+    private final Type type;
     private final Certificate cert;
     private final String label;
     private final String value;
@@ -156,7 +156,7 @@ public class CertificateField {
     /**
      * Basic container for Certificate fields
      */
-    public CertificateField(CertificateFieldType type, Certificate cert) {
+    public CertificateField(Type type, Certificate cert) {
         this.type = type;
         this.cert = cert;
         this.label = type.calculateDescription(cert);
@@ -182,7 +182,7 @@ public class CertificateField {
         return style;
     }
 
-    public CertificateFieldType getType() {
+    public Type getType() {
         return type;
     }
 

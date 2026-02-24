@@ -521,7 +521,7 @@ public class TrayManager {
         }
 
         if(responseState.alwaysBlockAnonymous(requestState)) {
-            // Treat as "block anonymouse requests" to prevent pop-up abuse
+            // Treat as "block anonymous requests" to prevent pop-up abuse
             if(!headless) {
                 anonymousItem.setState(false);
                 anonymousItem.doClick();

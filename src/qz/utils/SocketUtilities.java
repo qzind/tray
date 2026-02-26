@@ -64,6 +64,11 @@ public class SocketUtilities {
                         PrintSocketClient.sendStream(session, eventErr, socket);
                     }
 
+                    if (!socket.isOpen()) {
+                        // ensure cleanup if device was closed
+                        connection.removeNetworkSocket(String.format("%s:%s", host, port));
+                    }
+
                     try { Thread.sleep(100); } catch(Exception ignore) {}
                 }).start();
 

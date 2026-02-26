@@ -55,6 +55,11 @@ public class H4J_HidIO implements DeviceIO, DeviceListener {
         return UsbUtil.toHexString(device.getProductId());
     }
 
+    @Override
+    public DeviceOptions getDeviceOptions() {
+        return dOpts;
+    }
+
     public byte[] readData(int responseSize, Byte unused) throws DeviceException {
         byte[] response = new byte[responseSize];
 

@@ -223,6 +223,11 @@ public class UsbUtilities {
                                 } /** No-op prevents re-throw **/);
                             }
                         }
+
+                        if (!usb.isOpen()) {
+                            // ensure cleanup if device was closed
+                            connection.removeDevice(dOpts);
+                        }
                     }
                 }.start();
 

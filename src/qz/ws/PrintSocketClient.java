@@ -530,6 +530,7 @@ public class PrintSocketClient {
                 DeviceIO usb = connection.getDevice(dOpts);
                 if (usb != null) {
                     usb.close();
+                    connection.removeDevice(usb.getDeviceOptions());
 
                     sendResult(session, UID, null);
                 } else {
@@ -828,14 +829,14 @@ public class PrintSocketClient {
      */
     private static synchronized void send(Session session, JSONObject reply) throws WebSocketException, ClosedChannelException {
         try {
-            session.getRemote().sendString(reply.toString());
+            if(session.isOpen()) {
+                session.getRemote().sendString(reply.toString());
+            } else {
+                throw new ClosedSocketException("Channel was closed before message could be sent");
+            }
         }
         catch(IOException e) {
-            if(e instanceof ClosedChannelException) {
-                throw (ClosedChannelException)e;
-            } else if(e.getCause() instanceof ClosedChannelException) {
-                throw (ClosedChannelException)e.getCause();
-            }
+            ClosedSocketException.filter(e); // Explicitly detect and re-throw ClosedChannelExceptions
             log.error("Could not send message", e);
         }
     }

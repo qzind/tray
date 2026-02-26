@@ -79,7 +79,7 @@ public abstract class HeadlessDialog {
             }
         } catch (Exception e) {
             Thread.currentThread().interrupt();
-            log.error(e);
+            log.warn("A runnable was cancelled due to an unhandled exception {}", e.getLocalizedMessage());
         }
     }
 

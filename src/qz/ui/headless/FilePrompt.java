@@ -71,11 +71,11 @@ public class FilePrompt implements Endpoint.Promptable {
                 catch(InterruptedException e) {
                     log.info("Dialog response '{}' cancelled, listener thread interrupted.", response);
                     cleanup(request, response);
-                    return null;
+                    return new JSONObject();
                 }
             }
         }
-        return null;
+        return new JSONObject();
     }
 
     @Override

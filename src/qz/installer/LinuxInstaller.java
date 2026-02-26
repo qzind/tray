@@ -194,7 +194,7 @@ public class LinuxInstaller extends Installer {
     public void spawn(List<String> args) throws Exception {
         if(!SystemUtilities.isAdmin()) {
             // Not admin, just run as the existing user
-            ShellUtilities.execute(args.toArray(new String[args.size()]));
+            spawnProcess(args.toArray(new String[0]));
             return;
         }
 

@@ -410,4 +410,19 @@ public abstract class Installer {
     public void spawn(String ... args) throws Exception {
         spawn(new ArrayList(Arrays.asList(args)));
     }
+
+    /**
+     * TODO: Consolidate with spawn()
+     */
+    public void spawnProcess(String ... command) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(command);
+            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+            pb.redirectInput(ProcessBuilder.Redirect.PIPE);
+            pb.start();
+        } catch (IOException e) {
+            log.error("Failed to start process '{}'", String.join(", ", command), e);
+        }
+    }
 }

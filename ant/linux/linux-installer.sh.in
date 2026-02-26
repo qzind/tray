@@ -3,9 +3,18 @@
 # Halt on first error
 set -e
 
+TARGET_DIR="/opt/"
+LOG_FILE="${install.log}"
+
 if [ "$(id -u)" != "0" ]; then
-   echo "This script must be run with root (sudo) privileges" 1>&2
-   exit 1
+    if [ "$1" == "--user" ]; then
+        TARGET_DIR="$HOME/.local/opt/"
+        LOG_FILE="/tmp/$USER-${project.datadir}-install.log"
+        echo -e "Installing as '$USER' to '$TARGET_DIR'...\n"
+    else
+        echo "This script should be run with root (sudo) privileges.  Call with '-- --user' to ignore." 1>&2
+        exit 1
+    fi
 fi
 
 # Console colors
@@ -21,14 +30,14 @@ mask=755
 echo -e "Starting install...\n"
 
 # Clear the log for writing
-> "${install.log}"
+> "$LOG_FILE"
 
 run_task () {
     echo -e "Running $1 task..."
     if [ -n "$DEBUG" ]; then
         "./${project.filename}" $@ && ret_val=$? || ret_val=$?
     else
-        "./${project.filename}" $@ &>> "${install.log}" && ret_val=$? || ret_val=$?
+        "./${project.filename}" $@ &>> "$LOG_FILE" && ret_val=$? || ret_val=$?
     fi
 
     if [ $ret_val -eq 0 ]; then
@@ -49,10 +58,10 @@ run_task () {
 # Make a temporary jar for preliminary installation steps
 run_task preinstall
 
-run_task install --dest "/opt/${project.filename}"
+run_task install --dest "$TARGET_DIR/${project.filename}"
 
 # We should be installed now, generate the certificate
-pushd "/opt/${project.filename}" &> /dev/null
+pushd "$TARGET_DIR/${project.filename}" &> /dev/null
 run_task certgen
 
 # Tell the desktop to look for new mimetypes in the background
@@ -63,6 +72,6 @@ umask "$umask_bak"
 
 echo "Installation complete... Starting ${project.name}..."
 # spawn itself as a regular user, inheriting environment
-run_task spawn "/opt/${project.filename}/${project.filename}"
+run_task spawn "$TARGET_DIR/${project.filename}/${project.filename}"
 
 popd &> /dev/null

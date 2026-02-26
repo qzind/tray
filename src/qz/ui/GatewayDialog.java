@@ -292,7 +292,8 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         );
         mainFields.put("checkbox-remember", new JSONObject()
                 .put("value", CHECKBOX_REMEMBER)
-                .put("checked", request.isVerified()));
+                .put("checked", request.isVerified())
+                .put("disabled", request.isVerified() ? null : "disabled"));
         allFields.put("main", mainFields);
 
         //

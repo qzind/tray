@@ -18,6 +18,7 @@ import java.security.MessageDigest;
  */
 public class FilePrompt implements Endpoint.Promptable {
     private final static Logger log = LogManager.getLogger(FilePrompt.class);
+    private final static int READ_ATTEMPTS = 5;
 
     public static JSONObject filePrompt(String jsonData, Path request, Path response) throws InterruptedException, IOException, JSONException {
         ensureWritable(request);
@@ -31,25 +32,47 @@ public class FilePrompt implements Endpoint.Promptable {
         if (directory == null) directory = Path.of(".");
 
         // 2. Setup WatchService
-        try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
+        try(WatchService watchService = FileSystems.getDefault().newWatchService()) {
             directory.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
 
-            while (true) {
-                WatchKey key = watchService.take(); // Blocks until an event occurs
-                for (WatchEvent<?> event : key.pollEvents()) {
-                    Path context = (Path) event.context();
+            while(true) {
+                WatchKey key;
+                try {
+                    key = watchService.take();
+                    for(WatchEvent<?> event : key.pollEvents()) {
+                        Path context = (Path)event.context();
 
-                    // 3. Check if the changed file is the one we want
-                    if (context.endsWith(response.getFileName())) {
-                        Thread.sleep(100); // Small buffer for OS file-lock release
-                        log.info("Dialog response '{}' found...", response);
-                        String jsonResponse = FileUtils.readFileToString(response.toFile(), StandardCharsets.UTF_8);
-                        cleanup(request);
-                        cleanup(response);
-                        return new JSONObject(jsonResponse);
+                        // Try a few times to read JSON in the event we're mid-write
+                        for(int i = 0; i < READ_ATTEMPTS; i++) {
+                            try {
+                                // 3. Check if the changed file is the one we want
+                                if (context.endsWith(response.getFileName())) {
+                                    //Thread.sleep(100); // Small buffer for OS file-lock release
+                                    log.info("Dialog response '{}' found...", response);
+                                    String jsonResponse = FileUtils.readFileToString(response.toFile(), StandardCharsets.UTF_8);
+                                    JSONObject jsonObject = new JSONObject(jsonResponse);
+                                    if (jsonObject.length() == 0) {
+                                        continue; // maybe the file is still being written?
+                                    }
+                                    cleanup(request, response);
+                                    return jsonObject;
+                                }
+                            }
+                            catch(JSONException e) {
+                                if (i == READ_ATTEMPTS - 1) {
+                                    // Give up, JSON is malformed
+                                    throw e;
+                                }
+                            }
+                        }
                     }
+                    if (!key.reset()) break;
                 }
-                if (!key.reset()) break;
+                catch(InterruptedException e) {
+                    log.info("Dialog response '{}' cancelled, listener thread interrupted.", response);
+                    cleanup(request, response);
+                    return null;
+                }
             }
         }
         return null;
@@ -70,13 +93,15 @@ public class FilePrompt implements Endpoint.Promptable {
         return new JSONObject();
     }
 
-    private static void cleanup(Path path) {
-        File file = path.toFile();
-        if(file.exists() && file.canWrite()) {
-            if(!file.delete()) {
-                file.deleteOnExit();
-            }
-        }
+    private static void cleanup(Path ... paths) {
+         for(Path path : paths) {
+             File file = path.toFile();
+             if (file.exists() && file.canWrite()) {
+                 if (!file.delete()) {
+                     file.deleteOnExit();
+                 }
+             }
+         }
     }
 
     /**

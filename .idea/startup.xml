@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectStartupSharedConfiguration">
     <configurations>
-      <configuration id="Ant Target.download-javafx" name="download-javafx" />
+      <configuration id="Ant Target.ivy-deps" name="ivy-deps" />
     </configurations>
   </component>
 </project>

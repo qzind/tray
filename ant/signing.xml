@@ -1,5 +1,6 @@
 <project name="signing-helpers" basedir="../">
     <property file="ant/project.properties"/>
+    <property file="ant/ivy-deps.properties"/>
 
     <!-- Custom code-signing properties -->
     <property file="${basedir}/../private/private.properties"/>
@@ -10,7 +11,7 @@
     <!-- Locate first jsign-x.x.x.jar sorted name desc -->
     <target name="find-jsign">
         <sort id="jsign.sorted">
-            <fileset dir="${basedir}/ant/lib/">
+            <fileset dir="${basedir}/ant/deps/ivy">
                 <include name="jsign*.jar"/>
             </fileset>
             <reverse xmlns="antlib:org.apache.tools.ant.types.resources.comparators"/>

@@ -1,14 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="qz" default="distribute" basedir=".">
+<project name="qz" default="distribute" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
     <property file="ant/project.properties"/>
+    <property file="ant/ivy-deps.properties"/>
     <import file="ant/platform-detect.xml"/>
-    <import file="ant/javafx.xml"/>
     <import file="ant/signing.xml"/>
     <import file="ant/apple/installer.xml"/>
     <import file="ant/linux/installer.xml"/>
     <import file="ant/windows/installer.xml"/>
-    <import file="ant/testng.xml"/>
+
+    <!-- Add Ivy Tasks -->
+    <taskdef uri="antlib:org.apache.ivy.ant" resource="org/apache/ivy/ant/antlib.xml">
+        <classpath>
+            <fileset dir="ant/deps/manual">
+                <include name="ivy*.jar"/>
+            </fileset>
+        </classpath>
+    </taskdef>
 
     <!-- Fixes some odd empty directory issues -->
     <defaultexcludes remove="**/.DS_Store"/>
@@ -25,41 +33,52 @@
         <delete dir="${out.dir}" includeemptydirs="true" defaultexcludes="false"/>
     </target>
 
+    <target name="clean-ivy-cache" if="ivy.clean.cache">
+        <ivy:cleancache/>
+    </target>
+
+    <!-- Libraries to be bundled with the main application -->
+    <target name="ivy-deps" depends="platform-detect,clean-ivy-cache,ivy-ant-deps">
+        <ivy:settings file="ant/ivy-settings.xml"/>
+        <ivy:resolve file="ant/ivy.xml"/>
+        <ivy:report/>
+        <ivy:retrieve pattern="${ivy.lib.dir}/[artifact]-[revision](-[classifier]).[ext]" sync="true"/>
+    </target>
+
+    <!-- Libraries used solely by ant -->
+    <target name="ivy-ant-deps" depends="clean-ivy-cache">
+        <ivy:settings file="ant/ivy-settings.xml"/>
+        <ivy:resolve file="ant/deps/ivy-ant.xml"/>
+        <ivy:retrieve pattern="${ant.lib.dir}/[artifact]-[revision](-[classifier]).[ext]" sync="true"/>
+
+        <!-- Add TestNG Tasks -->
+        <path id="testng.classpath">
+            <fileset dir="${ant.lib.dir}">
+                <include name="*.jar"/>
+            </fileset>
+        </path>
+        <taskdef resource="testngtasks" classpathref="testng.classpath"/>
+    </target>
+
     <target name="quick-clean">
         <!-- Cleanup lingering files (for other OS installers) -->
         <delete includeemptydirs="true" defaultexcludes="false" failonerror="false">
             <fileset dir="${out.dir}">
                 <include name="**/**"/>
-                <exclude name="**/jlink/jdk-**/**"/>
-                <exclude name="**/javafx-**/**"/>
+                <exclude name="**/jlink/**"/>
                 <exclude name="**/dist/provision/**"/>
             </fileset>
         </delete>
     </target>
 
-    <target name="compile-socket" depends="init">
+    <target name="compile-socket" depends="init,ivy-deps">
         <mkdir dir="${build.dir}/${project.filename}"/>
-
-        <!-- find the pdfbox jar -->
-        <path id="pdfbox.found">
-            <first>
-                <fileset dir="lib/printing/">
-                    <include name="pdfbox*.jar"/>
-                </fileset>
-            </first>
-        </path>
-        <pathconvert property="pdfbox.path" refid="pdfbox.found"/>
 
         <!-- classpath to re-use for compilation, tests, etc -->
         <path id="main.classpath">
-            <pathelement path="${pdfbox.path}"/>
             <pathelement location="${build.dir}/${project.filename}"/>
 
-            <fileset dir="lib">
-                <include name="**/*.jar"/>
-            </fileset>
-
-            <fileset dir="${java.home}">
+            <fileset dir="${lib.dir}">
                 <include name="**/*.jar"/>
             </fileset>
         </path>
@@ -88,6 +107,7 @@
         <javac destdir="${build.dir}/test" source="${javac.source}" target="${javac.target}" includeantruntime="false" encoding="UTF-8" debug="true">
             <src path="${test.dir}"/>
             <classpath refid="main.classpath"/>
+            <classpath refid="testng.classpath"/>
             <compilerarg value="-Xlint:-options"/>
         </javac>
 
@@ -98,7 +118,7 @@
         </path>
     </target>
 
-    <target name="build-jar" depends="download-javafx,compile-socket,copy-libs,externalize-libs">
+    <target name="build-jar" depends="compile-socket,copy-libs,externalize-libs">
         <echo level="info">Building jar</echo>
 
         <!-- Strip jlink-incompat files -->
@@ -144,32 +164,23 @@
         </delete>
     </target>
 
-    <target name="copy-libs" depends="download-javafx">
-        <!-- Copy jfx libs-->
-        <mkdir dir="${dist.dir}/libs"/>
-        <copy todir="${dist.dir}/libs" flatten="true">
-            <fileset dir="${target.fx.dir}">
-                <include name="**/*.${target.libext}"/>
-            </fileset>
-        </copy>
+    <target name="copy-libs">
+        <!-- Calculate usable javafx exclude value -->
+        <condition property="host.javafx.exclude" value="this-will-never-match">
+            <equals arg1="${host.javafx.platform}" arg2="${target.javafx.platform}"/>
+        </condition>
+        <property description="fallback value" name="host.javafx.exclude" value="${host.javafx.platform}"/>
 
         <!-- Copy platform independent third-party libs -->
         <mkdir dir="${out.dir}/libs-temp"/>
         <unzip dest="${out.dir}/libs-temp" overwrite="false">
-            <fileset dir="${basedir}/lib">
+            <fileset dir="${lib.dir}">
                 <include name="**/*.jar"/>
-                <exclude name="**/javafx*"/>
-                <exclude name="**/testng*.jar"/>
-                <exclude name="**/jcommander*.jar"/>
+                <!-- Excludes host javafx natives if cross-compiling -->
+                <exclude name="**/javafx-${host.javafx.exclude}*.jar"/>
             </fileset>
         </unzip>
-        <!-- Copy platform specific target javafx version -->
-        <echo level="info">Copying ${target.fx.dir}</echo>
-        <unzip dest="${out.dir}/libs-temp" overwrite="false">
-            <fileset dir="${target.fx.dir}">
-                <include name="**/*.jar"/>
-            </fileset>
-        </unzip>
+
         <!-- Remove files that can/did collide during unpacking -->
         <delete includeemptydirs="true" failonerror="false">
             <fileset dir="${out.dir}/libs-temp">
@@ -184,12 +195,44 @@
             </fileset>
         </delete>
 
+        <!-- Remove unused files from icu4j (saves about 10 MB) -->
+        <!-- See also https://github.com/qzind/tray/pull/339#issuecomment-404385229 -->
+        <delete failonerror="false">
+            <fileset dir="${out.dir}/libs-temp">
+                <!-- icu4j -->
+                <include name="**/brkitr/*.brk"/>
+                <include name="**/brkitr/*.dict"/>
+                <include name="**/col/ucadata.icu"/>
+                <include name="**/icudata/unames.icu"/>
+                <include name="**/icudata/*.spp"/>
+                <include name="**/icudata/**/*.res"/>
+                <exclude name="**/icudata/**/en*.res"/>
+                <exclude name="**/icudata/**/ar*.res"/>
+
+                <!-- icu4j-charset -->
+                <include name="**/icudata/*cns-11643-1992.cnv*"/>
+                <include name="**/icudata/*ebcdic-xml-us.cnv*"/>
+                <include name="**/icudata/*euc-jp-2007.cnv*"/>
+                <include name="**/icudata/*euc-tw-2014.cnv*"/>
+                <include name="**/icudata/*gb18030.cnv*"/>
+                <include name="**/icudata/*ibm-1363_P11B-1998.cnv*"/>
+                <include name="**/icudata/*ibm-1364_P110-2007.cnv*"/>
+                <include name="**/icudata/*ibm-1371_P100-1999.cnv*"/>
+                <include name="**/icudata/*ibm-1373_P100-2002.cnv*"/>
+                <include name="**/icudata/*ibm-1375_P100-2008.cnv*"/>
+                <include name="**/icudata/*ibm-1383_P110-1999.cnv*"/>
+                <include name="**/icudata/*ibm-1386_P100-2001.cnv*"/>
+                <include name="**/icudata/*ibm-1388_P103-2001.cnv*"/>
+                <include name="**/icudata/*ibm-1390_P110-2003.cnv*"/>
+            </fileset>
+        </delete>
+
         <!-- Merge META-INF/services from TCVN-3, icu4j-charset-slim -->
         <!-- find the icu4j-charset-slim jar -->
         <path id="icu4j-slim.found">
             <first>
-                <fileset dir="lib/charsets/">
-                    <include name="icu4j-charset-*.jar"/>
+                <fileset dir="${lib.dir}">
+                    <include name="**/icu4j-charset-*.jar"/>
                 </fileset>
             </first>
         </path>
@@ -198,8 +241,8 @@
         <!-- find the TCVN-3 jar -->
         <path id="tcvn-3.found">
             <first>
-                <fileset dir="lib/charsets/">
-                    <include name="TCVN-3*.jar"/>
+                <fileset dir="${lib.dir}">
+                    <include name="**/TCVN-3*.jar"/>
                 </fileset>
             </first>
         </path>
@@ -211,12 +254,22 @@
             <zipentry zipfile="${tcvn-3.path}" name="META-INF/services/java.nio.charset.spi.CharsetProvider"/>
         </concat>
 
-        <!-- Merge META-INF/services from PDFBOX, jpeg2000 and TwelveMonkeys -->
+        <!-- Merge META-INF/services from jbig2, jpeg2000 and TwelveMonkeys -->
+        <!-- find the pdfbox jar -->
+        <path id="jbig2.found">
+            <first>
+                <fileset dir="${lib.dir}/">
+                    <include name="**/jbig2*.jar"/>
+                </fileset>
+            </first>
+        </path>
+        <pathconvert property="jbig2.path" refid="jbig2.found"/>
+
         <!-- find the TwelveMonkeys jar -->
         <path id="imageio-jpeg.found">
             <first>
-                <fileset dir="lib/imaging/">
-                    <include name="imageio-jpeg*.jar"/>
+                <fileset dir="${lib.dir}/">
+                    <include name="**/imageio-jpeg*.jar"/>
                 </fileset>
             </first>
         </path>
@@ -225,8 +278,8 @@
         <!-- find the jpeg2000 jar -->
         <path id="imageio-jpeg2000.found">
             <first>
-                <fileset dir="lib/imaging/">
-                    <include name="jai-imageio-jpeg2000*.jar"/>
+                <fileset dir="${lib.dir}/">
+                    <include name="**/jai-imageio-jpeg2000*.jar"/>
                 </fileset>
             </first>
         </path>
@@ -234,7 +287,7 @@
 
         <!-- merge service entries for ImageReaderSpi -->
         <concat destfile="${out.dir}/libs-temp/META-INF/services/javax.imageio.spi.ImageReaderSpi" fixlastline="true">
-            <zipentry zipfile="${pdfbox.path}" name="META-INF/services/javax.imageio.spi.ImageReaderSpi"/>
+            <zipentry zipfile="${jbig2.path}" name="META-INF/services/javax.imageio.spi.ImageReaderSpi"/>
             <zipentry zipfile="${imageio-jpeg.path}" name="META-INF/services/javax.imageio.spi.ImageReaderSpi"/>
             <zipentry zipfile="${imageio-jpeg2000.path}" name="META-INF/services/javax.imageio.spi.ImageReaderSpi"/>
         </concat>

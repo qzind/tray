@@ -1,0 +1,182 @@
+<ivy-module version="2.0" xmlns:m="antlib:org.apache.ivy.ant">
+    <info organisation="io.qz" module="qz-tray"/>
+    <dependencies>
+        <!-- Core -->
+        <dependency name="jna-platform" org="net.java.dev.jna" conf="*->default" rev="${jna.version}"/>
+        <dependency name="jna" org="net.java.dev.jna" conf="*->default" rev="${jna.version}"/>
+        <dependency name="bcprov-jdk18on" org="org.bouncycastle" conf="*->default" rev="${bouncycastle.version}"/>
+        <dependency name="bcpkix-jdk18on" org="org.bouncycastle" conf="*->default" rev="${bouncycastle.version}"/>
+        <dependency name="java-semver" org="com.github.zafarkhaja" conf="*->default" rev="${javasemver.version}"/>
+
+        <!-- Websockets -->
+        <dependency name="jettison" org="org.codehaus.jettison" conf="*->default" rev="${jettison.version}">
+            <!-- FIXME: Skip, currently 1.3.3-SNAPSHOT needs testing -->
+            <exclude name="*"/>
+        </dependency>
+
+        <dependency name="jakarta.websocket-api" org="jakarta.websocket" conf="*->default"
+                    rev="${websocket-api.version}">
+            <!-- FIXME: Skip, currently 1.1 needs testing -->
+            <exclude name="*"/>
+        </dependency>
+        <dependency name="javax.websocket-api" org="javax.websocket" conf="*->default"
+                    rev="${websocket-api.version}"/>
+        <!-- FIXME: Replace with jakarta above? -->
+
+        <dependency name="jetty-servlet-api" org="org.eclipse.jetty.toolchain" conf="*->default"
+                    rev="${servlet-api.version}"/>
+
+        <!-- Jetty -->
+        <dependency name="jetty-client" org="org.eclipse.jetty" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="jetty-http" org="org.eclipse.jetty" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="jetty-io" org="org.eclipse.jetty" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="jetty-security" org="org.eclipse.jetty" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="jetty-server" org="org.eclipse.jetty" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="jetty-servlet" org="org.eclipse.jetty" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="jetty-util" org="org.eclipse.jetty" conf="*->default" rev="${jetty.version}"/>
+
+        <!-- Jetty Websocket -->
+        <dependency name="websocket-core-client" org="org.eclipse.jetty.websocket" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="websocket-core-common" org="org.eclipse.jetty.websocket" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="websocket-core-server" org="org.eclipse.jetty.websocket" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="websocket-jetty-api" org="org.eclipse.jetty.websocket" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="websocket-jetty-client" org="org.eclipse.jetty.websocket" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="websocket-jetty-common" org="org.eclipse.jetty.websocket" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="websocket-jetty-server" org="org.eclipse.jetty.websocket" conf="*->default" rev="${jetty.version}"/>
+        <dependency name="websocket-servlet" org="org.eclipse.jetty.websocket" conf="*->default" rev="${jetty.version}"/>
+
+        <!-- Apache Commons -->
+        <dependency name="commons-codec" org="commons-codec" conf="*->default"
+                    rev="${commons-codec.version}">
+        </dependency>
+        <dependency name="commons-io" org="commons-io" conf="*->default"
+                    rev="${commons-io.version}">
+        </dependency>
+        <dependency name="commons-pool2" org="org.apache.commons" conf="*->default"
+                    rev="${commons-pool2.version}">
+        </dependency>
+        <dependency name="not-going-to-be-commons-ssl" org="com.narupley" conf="*->default"
+                    rev="${commons-ssl.version}">
+            <exclude name="bcprov-jdk15on"/>
+        </dependency>
+
+        <!-- Communications -->
+        <dependency name="usb-api" org="javax.usb" conf="*->default" rev="${usb-api.version}"/>
+        <dependency name="usb4java" org="org.usb4java" conf="*->default" rev="${usb4java.version}"/>
+        <dependency name="usb4java-javax" org="org.usb4java" conf="*->default" rev="${usb4java.version}"/>
+        <dependency name="libusb4java" org="org.usb4java" rev="${libusb4java.version}">
+            <artifact name="libusb4java" type="jar" m:classifier="linux-arm"/>
+            <artifact name="libusb4java" type="jar" m:classifier="linux-x86_64"/>
+            <artifact name="libusb4java" type="jar" m:classifier="linux-x86"/>
+            <artifact name="libusb4java" type="jar" m:classifier="osx-x86_64"/>
+            <artifact name="libusb4java" type="jar" m:classifier="osx-x86"/>
+            <artifact name="libusb4java" type="jar" m:classifier="windows-x86_64"/>
+            <artifact name="libusb4java" type="jar" m:classifier="windows-x86"/>
+        </dependency>
+
+        <dependency name="purejavahidapi" org="nyholku" conf="*->default" rev="${purejavahidapi.version}">
+            <exclude name="jna"/>
+            <!-- Skip, need 0.0.10-SNAPSHOT -->
+            <exclude name="*"/>
+        </dependency>
+        <dependency name="hid4java" org="org.hid4java" conf="*->default" rev="${hid4java.version}">
+            <exclude name="jna"/>
+            <!-- Skip, need 0.8.0+7-SNAPSHOT https://github.com/qzind/tray/pull/1267 -->
+            <exclude name="*"/>
+        </dependency>
+        <dependency name="jssc" org="io.github.java-native" conf="*->default" rev="${jssc.version}"/>
+
+        <!-- Theming -->
+        <dependency name="flatlaf" org="com.formdev" conf="*->default" rev="${flatlaf.version}"/>
+
+        <!-- Windows Installer -->
+        <dependency name="mslinks" org="org.jabref" conf="*->default" rev="${mslinks.version}"/>
+
+        <!-- Charsets -->
+        <dependency name="icu4j" org="com.ibm.icu" conf="*->default" rev="${icu4j.version}"/>
+        <dependency name="icu4j-charset" org="com.ibm.icu" conf="*->default" rev="${icu4j.version}"/>
+        <dependency name="TCVN-3" org="com.ibm.icu" conf="*->default" rev="${icu4j.version}">
+            <!-- Skip, missing, send upstream? -->
+            <exclude name="*"/>
+        </dependency>
+
+        <!-- Imaging -->
+        <dependency name="common-image" org="com.twelvemonkeys.common" conf="*->default" rev="${twelvemonkeys.version}"/>
+        <dependency name="common-io" org="com.twelvemonkeys.common" conf="*->default" rev="${twelvemonkeys.version}"/>
+        <dependency name="common-lang" org="com.twelvemonkeys.common" conf="*->default" rev="${twelvemonkeys.version}"/>
+        <dependency name="imageio-core" org="com.twelvemonkeys.imageio" conf="*->default" rev="${twelvemonkeys.version}"/>
+        <dependency name="imageio-jpeg" org="com.twelvemonkeys.imageio" conf="*->default" rev="${twelvemonkeys.version}"/>
+        <dependency name="imageio-metadata" org="com.twelvemonkeys.imageio" conf="*->default" rev="${twelvemonkeys.version}"/>
+
+        <dependency name="jai-imageio-core" org="com.github.jai-imageio" conf="*->default" rev="${jaiimageio.version}"/>
+        <dependency name="jai-imageio-jpeg2000" org="com.github.jai-imageio" conf="*->default" rev="${jaiimageio.version}"/>
+
+        <!-- Logging -->
+        <dependency name="log4j-core" org="org.apache.logging.log4j" conf="*->default" rev="${log4j.version}"/>
+        <dependency name="log4j-api" org="org.apache.logging.log4j" conf="*->default" rev="${log4j.version}"/>
+
+        <!-- Printing -->
+        <dependency name="pdfbox" org="org.apache.pdfbox" conf="*->default" rev="${pdfbox.version}">
+            <exclude name="log4j-core"/>
+            <exclude name="log4j-api"/>
+            <exclude name="commons-httpclient"/>
+            <exclude name="bcprov-jdk15on"/>
+        </dependency>
+        <dependency name="jbig2-imageio" org="org.apache.pdfbox" conf="*->default" rev="${jbig2.version}"/>
+
+        <!-- javafx -->
+        <dependency name="javafx-controls" org="org.openjfx" conf="*->default" rev="${javafx.version}"/>
+        <dependency name="javafx-fxml" org="org.openjfx" conf="*->default" rev="${javafx.version}"/>
+        <dependency name="javafx-graphics" org="org.openjfx" conf="*->default" rev="${javafx.version}"/>
+        <dependency name="javafx-base" org="org.openjfx" conf="*->default" rev="${javafx.version}"/>
+        <dependency name="javafx-media" org="org.openjfx" conf="*->default" rev="${javafx.version}"/>
+        <dependency name="javafx-swing" org="org.openjfx" conf="*->default" rev="${javafx.version}"/>
+        <dependency name="javafx-web" org="org.openjfx" conf="*->default" rev="${javafx.version}"/>
+
+        <!-- host javafx natives -->
+        <dependency org="org.openjfx" name="javafx-controls" rev="${javafx.version}">
+            <artifact name="javafx-controls" type="jar" m:classifier="${host.javafx.platform}"/>
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-fxml" rev="${javafx.version}">
+            <artifact name="javafx-fxml" type="jar" m:classifier="${host.javafx.platform}"/>
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-graphics" rev="${javafx.version}">
+            <artifact name="javafx-graphics" type="jar" m:classifier="${host.javafx.platform}"/>
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-base" rev="${javafx.version}">
+            <artifact name="javafx-base" type="jar" m:classifier="${host.javafx.platform}"/>
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-media" rev="${javafx.version}">
+            <artifact name="javafx-media" type="jar" m:classifier="${host.javafx.platform}"/>
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-swing" rev="${javafx.version}">
+            <artifact name="javafx-swing" type="jar" m:classifier="${host.javafx.platform}"/>
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-web" rev="${javafx.version}">
+            <artifact name="javafx-web" type="jar" m:classifier="${host.javafx.platform}"/>
+        </dependency>
+
+        <!-- target javafx natives -->
+        <dependency org="org.openjfx" name="javafx-controls" rev="${javafx.version}">
+            <artifact name="javafx-controls" type="jar" m:classifier="${target.javafx.platform}"/>
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-fxml" rev="${javafx.version}">
+            <artifact name="javafx-fxml" type="jar" m:classifier="${target.javafx.platform}"/>
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-graphics" rev="${javafx.version}">
+            <artifact name="javafx-graphics" type="jar" m:classifier="${target.javafx.platform}"/>
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-base" rev="${javafx.version}">
+            <artifact name="javafx-base" type="jar" m:classifier="${target.javafx.platform}"/>
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-media" rev="${javafx.version}">
+            <artifact name="javafx-media" type="jar" m:classifier="${target.javafx.platform}"/>
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-swing" rev="${javafx.version}">
+            <artifact name="javafx-swing" type="jar" m:classifier="${target.javafx.platform}"/>
+        </dependency>
+        <dependency org="org.openjfx" name="javafx-web" rev="${javafx.version}">
+            <artifact name="javafx-web" type="jar" m:classifier="${target.javafx.platform}"/>
+        </dependency>
+    </dependencies>
+</ivy-module>

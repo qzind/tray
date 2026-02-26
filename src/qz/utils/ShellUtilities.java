@@ -262,11 +262,9 @@ public class ShellUtilities {
                 File[] files = directory.listFiles();
                 if (files != null && files.length > 0) {
                     try {
-                        // Use browseFileDirectory (JDK9+) via reflection
-                        Method m = Desktop.class.getDeclaredMethod("browseFileDirectory", File.class);
-                        m.invoke(Desktop.getDesktop(), files[0].getCanonicalFile());
+                        Desktop.getDesktop().browseFileDirectory(files[0].getCanonicalFile());
                     }
-                    catch(ReflectiveOperationException e) {
+                    catch(IOException e) {
                         // Fallback to open -R
                         ShellUtilities.execute("open", "-R", files[0].getCanonicalPath());
                     }

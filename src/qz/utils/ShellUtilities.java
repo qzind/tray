@@ -91,7 +91,7 @@ public class ShellUtilities {
      * @param silent Specify whether to suppress the command from the log files
      * @return {@code true} if {@code Process.exitValue()} is {@code 0}, otherwise {@code false}.
      */
-    public static boolean execute(String[] commandArray, File workingDir, boolean silent) {
+    public static boolean execute(String[] commandArray, File workingDir, boolean silent, String[] envp) {
         if (!silent) {
             log.debug("Executing: {}", Arrays.toString(commandArray));
         }
@@ -112,6 +112,10 @@ public class ShellUtilities {
         }
 
         return false;
+    }
+
+    public static boolean execute(String[] commandArray, File workingDir, boolean silent) {
+        return execute(commandArray, workingDir, silent, envp);
     }
 
     /**
@@ -178,13 +182,17 @@ public class ShellUtilities {
         return executeRaw(commandArray, false);
     }
 
+    public static String executeRaw(String[] envp, String ... commandArray) {
+        return executeRaw(commandArray, false, envp);
+    }
+
     /**
      * Executes a synchronous shell command and return the raw character result.
      *
      * @param commandArray array of shell commands to execute
      * @return The entire raw standard output of command
      */
-    public static String executeRaw(String[] commandArray, boolean silent) {
+    public static String executeRaw(String[] commandArray, boolean silent, String[] envp) {
         if(!silent) {
             log.debug("Executing: {}", Arrays.toString(commandArray));
         }
@@ -212,6 +220,10 @@ public class ShellUtilities {
         }
 
         return "";
+    }
+
+    public static String executeRaw(String[] commandArray, boolean silent) {
+        return executeRaw(commandArray, silent, envp);
     }
 
     /**

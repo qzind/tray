@@ -154,5 +154,29 @@
         "os": "windows",
         "data": "DCDSetup1.5.0.17.exe",
         "args": "/S /v/qn"
+    },
+    {
+      "description": "[POLICY] URL for LNA at 'install'",
+      "type": "policy",
+      "os": "*",
+      "name": "LocalNetworkAccessAllowedForUrls",
+      "format": "indexed",
+      "value": "[*.]qz.io"
+    },
+    {
+      "description": "[POLICY] URI for qz:launch at 'install'",
+      "type": "policy",
+      "os": "*",
+      "name": "URLAllowList",
+      "format": "indexed",
+      "value": "qz://*"
+    },
+    {
+      "description": "[POLICY] URI for qz:launch at 'install'",
+      "type": "policy",
+      "os": "*",
+      "name": "AutoLaunchProtocolsFromOrigins",
+      "format": "json",
+      "value": "[{\"allowed_origins\": [\"*\"], \"protocol\": \"qz\"}]"
     }
 ]

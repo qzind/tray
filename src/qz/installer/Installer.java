@@ -15,8 +15,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.build.provision.params.Phase;
+import qz.installer.apps.ChromiumPolicyInstaller;
 import qz.installer.certificate.*;
-import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
+import qz.installer.apps.firefox.OldFirefoxCertificateInstaller;
 import qz.installer.provision.ProvisionInstaller;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
@@ -107,7 +108,8 @@ public abstract class Installer {
                 .addAppLauncher()
                 .addStartupEntry()
                 .invokeProvisioning(Phase.INSTALL)
-                .addSystemSettings();
+                .addSystemSettings()
+                .modifyApps();
     }
 
     public static void uninstall() {
@@ -294,7 +296,7 @@ public abstract class Installer {
                     installer.remove(matchingCerts);
                 }
                 installer.install(caCert);
-                FirefoxCertificateInstaller.install(caCert, hostNames);
+                OldFirefoxCertificateInstaller.install(caCert, hostNames);
             } else {
                 // Make sure the certificate is recognized by the system
                 if(caCert == null) {
@@ -304,7 +306,7 @@ public abstract class Installer {
                     CertificateManager.writeCert(caCert, tempCert); // temp cert
                     if (!installer.verify(tempCert)) {
                         installer.install(caCert);
-                        FirefoxCertificateInstaller.install(caCert, hostNames);
+                        OldFirefoxCertificateInstaller.install(caCert, hostNames);
                     }
                     if(!tempCert.delete()) {
                         tempCert.deleteOnExit();
@@ -332,7 +334,7 @@ public abstract class Installer {
         NativeCertificateInstaller instance = NativeCertificateInstaller.getInstance();
         instance.remove(instance.find());
         // Firefox certs
-        FirefoxCertificateInstaller.uninstall();
+        OldFirefoxCertificateInstaller.uninstall();
         return this;
     }
 
@@ -356,6 +358,23 @@ public abstract class Installer {
             }
         }
         return instance;
+    }
+
+    public Installer modifyApps() {
+        // Chromium
+        // Chrome protocol handler (e.g. "qz://*")
+        ChromiumPolicyInstaller.getInstance().install(PrivilegeLevel.SYSTEM, "URLAllowlist", String.format("%s://*", DATA_DIR));
+
+        // LocalNetworkAccess (e.g. [*.]qz.io)
+        // FIXME: Read in more root domains via provisioning
+        String[] lnaUrls = { "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL) };
+        ChromiumPolicyInstaller.getInstance().install(PrivilegeLevel.SYSTEM, "LocalNetworkAccessAllowedForUrls", lnaUrls);
+
+
+        // Firefox
+
+
+        return this;
     }
 
     public Installer invokeProvisioning(Phase phase) {

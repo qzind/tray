@@ -24,7 +24,7 @@ public class LinuxInstaller extends Installer {
     public static final String SYSTEM_STARTUP_DIR = "/etc/xdg/autostart";
     public static final String USER_STARTUP_DIR = "%s/.config/autostart";
     public static final String APP_DIR = "/usr/share/applications";
-    public static final String SYSTEM_APP_LAUNCHER = APP_DIR + SHORTCUT_NAME;
+    public static final String SYSTEM_APP_LAUNCHER = APP_DIR;
     public static final String USER_APP_LAUNCHER = "%s/.local/share/applications";
     public static final String UDEV_RULES = "/lib/udev/rules.d/99-udev-override.rules";
     public static final String[] CHROME_POLICY_DIRS = {"/etc/chromium/policies/managed", "/etc/opt/chrome/policies/managed" };
@@ -48,17 +48,18 @@ public class LinuxInstaller extends Installer {
 
     public Installer addAppLauncher() {
         String appLauncher = SystemUtilities.isAdmin() ? SYSTEM_APP_LAUNCHER : String.format(USER_APP_LAUNCHER, System.getProperty("user.home"));
-        addLauncher(appLauncher, false);
+        addLauncher(String.format("%s/%s", appLauncher, SHORTCUT_NAME), false);
         return this;
     }
 
     public Installer addStartupEntry() {
         String startupDir = SystemUtilities.isAdmin() ? SYSTEM_STARTUP_DIR : String.format(USER_STARTUP_DIR, System.getProperty("user.home"));
-        addLauncher(startupDir, true);
+        addLauncher(String.format("%s/%s", startupDir, SHORTCUT_NAME), true);
         return this;
     }
 
     private void addLauncher(String location, boolean isStartup) {
+        boolean ownerOnly = !SystemUtilities.isAdmin();
         HashMap<String, String> fieldMap = new HashMap<>();
         // Dynamic fields
         fieldMap.put("%DESTINATION%", destination);
@@ -68,9 +69,10 @@ public class LinuxInstaller extends Installer {
 
         File launcher = new File(location);
         try {
+            launcher.getParentFile().mkdirs();
             FileUtilities.configureAssetFile("assets/linux-shortcut.desktop.in", launcher, fieldMap, LinuxInstaller.class);
-            launcher.setReadable(true, false);
-            launcher.setExecutable(true, false);
+            launcher.setReadable(true, ownerOnly);
+            launcher.setExecutable(true, ownerOnly);
         } catch(IOException e) {
             log.warn("Unable to write {} file: {}", isStartup ? "startup":"launcher", location, e);
         }

@@ -1,9 +1,21 @@
 package qz.ui;
 
-import qz.auth.RequestState;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+import qz.auth.Request;
 import qz.common.Constants;
+import qz.common.Sluggable;
 import qz.ui.component.IconCache;
 import qz.ui.component.LinkLabel;
+import qz.ui.component.table.CertificateField;
+import qz.ui.component.table.FieldStyle;
+import qz.ui.component.table.FieldValueTable;
+import qz.ui.component.table.RequestTable;
+import qz.ui.headless.HeadlessDialog;
+import qz.utils.ByteUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
@@ -12,48 +24,74 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.util.LinkedHashMap;
+
+import static javax.swing.JComponent.*;
+import static javax.swing.WindowConstants.*;
+import static qz.ui.component.table.CertificateField.*;
 
 /**
  * Created by Tres on 2/19/2015.
  * A basic allow/block dialog with support for displaying Certificate information
  */
-public class GatewayDialog extends JDialog implements Themeable {
+public class GatewayDialog extends HeadlessDialog implements Themeable {
+    private static final Logger log = LogManager.getLogger(GatewayDialog.class);
 
+    // Main dialog
+    public static String BUTTON_ALLOW = "Allow";
+    public static String BUTTON_BLOCK = "Block";
+    public static String LINK_REQUEST_DETAILS = "View request details";
+    public static String CHECKBOX_REMEMBER = Constants.REMEMBER_THIS_DECISION;
+
+    private final IconCache iconCache;
+    private final boolean headless;
+    public final String title;
+
+    // Main dialog
+    private String description;
+    private Color detailColor;
+    private ConfirmDialog confirmDialog;
+    private String uid;
+    private IconCache.Icon icon;
+    private String iconToolTip;
+    private Request request;
+    private Response response;
+
+    // Confirm dialog
+    public static String CONFIRM_BLOCK_TITLE = "Confirm";
+    public String confirmBlockText;
+
+    // Details dialog
+    public static String DETAILS_DIALOG_TITLE = "Details";
+
+    private JDialog dialog;
     private JLabel verifiedLabel;
     private JLabel descriptionLabel;
     private LinkLabel certInfoLabel;
-    private JPanel descriptionPanel;
-
     private DetailsDialog detailsDialog;
-
     private JButton allowButton;
-    private JButton blockButton;
-    private JPanel optionsPanel;
+    private JCheckBox rememberCheckbox;
 
-    private JCheckBox persistentCheckBox;
-    private JPanel bottomPanel;
-
-    private JPanel mainPanel;
-
-    private final IconCache iconCache;
-
-    private String description;
-    private RequestState request;
-    private boolean approved;
-    private boolean persistent;
-
-    public GatewayDialog(Frame owner, String title, IconCache iconCache) {
-        super(owner, title, true);
+    public GatewayDialog(boolean headless, Frame owner, String title, IconCache iconCache) {
+        this.title = title;
+        this.headless = headless;
         this.iconCache = iconCache;
-        this.description = "";
-        this.approved = false;
-        this.setIconImages(iconCache.getImages(IconCache.Icon.TASK_BAR_ICON));
-        initComponents();
-        refreshComponents();
+        this.description = "Description missing";
+        this.response = Response.UNANSWERED;
+
+        if(!headless) {
+            initComponents(owner);
+            refreshComponents();
+        }
     }
 
-    private void initComponents() {
-        descriptionPanel = new JPanel();
+    private void initComponents(Frame owner) {
+        dialog = new JDialog(owner, title, true);
+        dialog.setIconImages(iconCache.getImages(IconCache.Icon.TASK_BAR_ICON));
+
+        confirmDialog = new ConfirmDialog(null, CONFIRM_BLOCK_TITLE, iconCache);
+
+        JPanel descriptionPanel = new JPanel();
         verifiedLabel = new JLabel();
         verifiedLabel.setBorder(new EmptyBorder(3, 3, 3, 3));
         descriptionLabel = new JLabel();
@@ -62,10 +100,10 @@ public class GatewayDialog extends JDialog implements Themeable {
         descriptionPanel.add(descriptionLabel);
         descriptionPanel.setBorder(new EmptyBorder(3, 3, 3, 3));
 
-        optionsPanel = new JPanel();
-        allowButton = new JButton("Allow", iconCache.getIcon(IconCache.Icon.ALLOW_ICON));
+        JPanel optionsPanel = new JPanel();
+        allowButton = new JButton(BUTTON_ALLOW, iconCache.getIcon(IconCache.Icon.ALLOW_ICON));
         allowButton.setMnemonic(KeyEvent.VK_A);
-        blockButton = new JButton("Block", iconCache.getIcon(IconCache.Icon.BLOCK_ICON));
+        JButton blockButton = new JButton(BUTTON_BLOCK, iconCache.getIcon(IconCache.Icon.BLOCK_ICON));
         blockButton.setMnemonic(KeyEvent.VK_B);
         allowButton.addActionListener(buttonAction);
         blockButton.addActionListener(buttonAction);
@@ -74,28 +112,28 @@ public class GatewayDialog extends JDialog implements Themeable {
         certInfoLabel = new LinkLabel();
         certInfoLabel.setAlignmentX(LEFT_ALIGNMENT);
         certInfoLabel.addActionListener(e -> {
-            detailsDialog.updateDisplay(request);
+            detailsDialog.updateDisplay();
             JOptionPane.showMessageDialog(
-                    GatewayDialog.this,
+                    dialog,
                     detailsDialog,
-                    "Details",
+                    DETAILS_DIALOG_TITLE,
                     JOptionPane.PLAIN_MESSAGE);
         });
 
-        bottomPanel = new JPanel();
+        JPanel bottomPanel = new JPanel();
         bottomPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 5));
-        persistentCheckBox = new JCheckBox(Constants.REMEMBER_THIS_DECISION, false);
-        persistentCheckBox.setMnemonic(KeyEvent.VK_R);
-        persistentCheckBox.addActionListener(e -> allowButton.setEnabled(!persistentCheckBox.isSelected() || request.isVerified()));
-        persistentCheckBox.setAlignmentX(RIGHT_ALIGNMENT);
+        rememberCheckbox = new JCheckBox(CHECKBOX_REMEMBER, false);
+        rememberCheckbox.setMnemonic(KeyEvent.VK_R);
+        rememberCheckbox.addActionListener(e -> allowButton.setEnabled(!rememberCheckbox.isSelected() || request.isVerified()));
+        rememberCheckbox.setAlignmentX(RIGHT_ALIGNMENT);
 
         bottomPanel.add(certInfoLabel);
-        bottomPanel.add(persistentCheckBox);
+        bottomPanel.add(rememberCheckbox);
 
         optionsPanel.add(allowButton);
         optionsPanel.add(blockButton);
 
-        mainPanel = new JPanel();
+        JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 
         mainPanel.add(descriptionPanel);
@@ -103,76 +141,49 @@ public class GatewayDialog extends JDialog implements Themeable {
         mainPanel.add(new JSeparator());
         mainPanel.add(bottomPanel);
 
-        getContentPane().add(mainPanel);
+        dialog.getContentPane().add(mainPanel);
 
         allowButton.requestFocusInWindow();
 
-        setDefaultCloseOperation(HIDE_ON_CLOSE);
-        setResizable(false);
-        pack();
+        dialog.setDefaultCloseOperation(HIDE_ON_CLOSE);
+        dialog.setResizable(false);
+        dialog.pack();
 
-        setAlwaysOnTop(true);
-        setLocationRelativeTo(null);    // center on main display
+        dialog.setAlwaysOnTop(true);
+        dialog.setLocationRelativeTo(null);    // center on main display
     }
 
     @Override
     public void refresh() {
-        ThemeUtilities.refreshAll(this, detailsDialog);
+        ThemeUtilities.refreshAll(dialog, detailsDialog);
         refreshComponents();
     }
 
     private final transient ActionListener buttonAction = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            approved = e.getSource().equals(allowButton);
-            persistent = persistentCheckBox.isSelected();
+            response = Response.getResponse(e.getSource().equals(allowButton), rememberCheckbox.isSelected());
 
             // Require confirmation for permanent block
-            if (!approved && persistent) {
-                ConfirmDialog confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
-                String message = Constants.BLOCK_SITES_TEXT.replace(" blocked ", " block ") + "?";
-                message = String.format(message, request.hasCertificate()? request.getCertName():"");
-                if (!confirmDialog.prompt(message)) {
-                    persistent = false;
-                    return;
+            if (response == Response.ALWAYS_BLOCK) {
+                if (!confirmDialog.prompt(confirmBlockText)) {
+                    response = Response.TEMPORARY_BLOCK;
                 }
             }
-            setVisible(false);
+            dialog.setVisible(false);
         }
     };
 
     public final void refreshComponents() {
         if (request != null) {
             // TODO:  Add name, publisher
-            descriptionLabel.setText("<html>" +
-                                             String.format(description, "<p>" + request.getCertName()) +
-                                             "</p><strong>" + request.getValidityInfo() + "</strong>" +
+            detailsDialog.setRequest(request);
+            descriptionLabel.setText("<html><p>" +
+                                             description +
+                                             "</p><strong>" + request.getValidityString() + "</strong>" +
                                              "</html>");
-            certInfoLabel.setText("View request details");
-
-            IconCache.Icon trustIcon;
-            String iconToolTip = null;
-            Color detailColor = Constants.TRUSTED_COLOR;
-            if (request.isVerified()) {
-                //cert and signature are good
-                if(request.isSponsored()) {
-                    // special case for sponsored certs
-                    trustIcon = IconCache.Icon.TRUST_SPONSORED_ICON;
-                    iconToolTip = Constants.SPONSORED_TOOLTIP;
-                } else {
-                    trustIcon = IconCache.Icon.TRUST_VERIFIED_ICON;
-                }
-            } else if (request.getCertUsed().isValid()) {
-                //cert is good, but there is an issue with the signature
-                trustIcon = IconCache.Icon.TRUST_ISSUE_ICON;
-                detailColor = Constants.WARNING_COLOR;
-            } else {
-                //nothing is good
-                trustIcon = IconCache.Icon.TRUST_MISSING_ICON;
-                detailColor = Constants.WARNING_COLOR;
-            }
-
-            verifiedLabel.setIcon(iconCache.getIcon(trustIcon));
+            certInfoLabel.setText(LINK_REQUEST_DETAILS);
+            verifiedLabel.setIcon(iconCache.getIcon(icon));
             verifiedLabel.setToolTipText(iconToolTip);
             certInfoLabel.setForeground(detailColor);
         } else {
@@ -180,58 +191,195 @@ public class GatewayDialog extends JDialog implements Themeable {
             verifiedLabel.setIcon(null);
         }
 
-        persistentCheckBox.setSelected(false);
+        rememberCheckbox.setSelected(false);
         allowButton.setEnabled(true);
         allowButton.requestFocusInWindow();
-        pack();
+        dialog.pack();
     }
 
-    public boolean isApproved() {
-        return approved;
-    }
+    public void prompt(String UID, String descriptionPattern, Request request, Point position)  {
+        // Main dialog
+        this.uid = UID;
+        this.request = request;
+        this.description = String.format(descriptionPattern, request.getCertName());
+        this.icon = getIcon(request);
+        this.iconToolTip = request.isSponsored() ? Constants.SPONSORED_TOOLTIP : null;
+        this.detailColor = request.isVerified() ? Constants.TRUSTED_COLOR : Constants.WARNING_COLOR;
 
-    public boolean isPersistent() {
-        return persistent;
-    }
+        // Block confirmation dialog
+        this.confirmBlockText = String.format(Constants.BLOCK_SITES_TEXT.replace(" blocked ", " block ") + "?",
+                                              request.hasCertificate() ?
+                                                              request.getCertName() : "");
 
-    public void setRequest(RequestState req) {
-        request = req;
-    }
-
-    public RequestState getRequest() {
-        return request;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public boolean prompt(String description, RequestState request, Point position) {
-        //reset dialog state on new prompt
-        approved = false;
-        persistent = false;
-        persistentCheckBox.setSelected(false);
-
-        if (request == null || request.hasBlockedCert()) {
-            approved = false;
-            return false;
+        if(headless) {
+            try {
+                response = Response.getResponse(promptAndWait());
+            }
+            catch(JSONException e) {
+                log.error(e);
+            }
+        } else {
+            refreshComponents();
+            SystemUtilities.centerDialog(this.dialog, position);
+            dialog.setVisible(true);
         }
-        if (request.hasSavedCert()) {
-            approved = true;
-            return true;
+    }
+
+    public static IconCache.Icon getIcon(Request request) {
+        if (request.isVerified()) {
+            return request.isSponsored() ? IconCache.Icon.TRUST_SPONSORED_ICON : IconCache.Icon.TRUST_VERIFIED_ICON;
+        }
+        return request.getCertificate().isValid() ? IconCache.Icon.TRUST_ISSUE_ICON : IconCache.Icon.TRUST_MISSING_ICON;
+    }
+
+    @Override
+    public JDialog getDialog() {
+        return dialog;
+    }
+
+    public Response getResponse() {
+        return response;
+    }
+
+    public enum Response {
+        ALWAYS_ALLOW, TEMPORARY_ALLOW, ALWAYS_BLOCK, TEMPORARY_BLOCK, UNANSWERED;
+
+        public static Response getResponse(boolean allow, boolean remember) {
+            if(allow) {
+                return remember ? ALWAYS_ALLOW : TEMPORARY_ALLOW;
+            }
+            return remember ? ALWAYS_BLOCK : TEMPORARY_BLOCK;
         }
 
-        setDescription(description);
-        setRequest(request);
-        refreshComponents();
-        SystemUtilities.centerDialog(this, position);
-        setVisible(true);
+        public static Response getResponse(JSONObject json) {
+            return getResponse(json.optBoolean("allow", false),
+                               json.optBoolean("remember", false));
+        }
 
-        return isApproved();
+        public boolean alwaysBlockAnonymous(Request request) {
+            return this == ALWAYS_BLOCK && !request.hasCertificate();
+        }
+
+        public boolean isAllowed() {
+            return this == ALWAYS_ALLOW || this == TEMPORARY_ALLOW;
+        }
     }
+
+    @Override
+    public LinkedHashMap<String,Object> serialize() throws JSONException {
+        String base64icon = "data:image/png;base64," + ByteUtilities.imageToBase64(iconCache.getImage(icon), "png");
+        LinkedHashMap<String, Object> allFields = new LinkedHashMap<>();
+
+        //
+        // Main Dialog
+        //
+        LinkedHashMap<String, Object> mainFields = new LinkedHashMap<>();
+        mainFields.put("title", title);
+        mainFields.put("_hint", "The main allow/block dialog");
+        mainFields.put("uid", uid);
+        mainFields.put("description", description);
+        mainFields.put("remember", null);
+        mainFields.put("validity", request.toJson());
+        mainFields.put("icon", base64icon);
+        mainFields.put("button-allow", new JSONObject()
+                .put("value", BUTTON_ALLOW)
+        );
+        mainFields.put("button-block", new JSONObject()
+                .put("value", BUTTON_BLOCK)
+        );
+        mainFields.put("button-details", new JSONObject()
+                .put("value", LINK_REQUEST_DETAILS)
+        );
+        mainFields.put("checkbox-remember", new JSONObject()
+                .put("value", CHECKBOX_REMEMBER)
+                .put("checked", request.isVerified())
+                .put("disabled", request.isVerified() ? null : "disabled"));
+        allFields.put("main", mainFields);
+
+        //
+        // Confirmation Dialog
+        //
+        LinkedHashMap<String, Object> blockConfirmFields = new LinkedHashMap<>();
+        blockConfirmFields.put("title", CONFIRM_BLOCK_TITLE);
+        blockConfirmFields.put("_hint", String.format("Only shown when both '%s' AND '%s' are selected", BUTTON_BLOCK, CHECKBOX_REMEMBER));
+        blockConfirmFields.put("description", confirmBlockText);
+        allFields.put("confirm", blockConfirmFields);
+
+        //
+        // Details
+        //
+        LinkedHashMap<String, Object> detailsFields = new LinkedHashMap<>();
+        detailsFields.put("title", DETAILS_DIALOG_TITLE);
+        detailsFields.put("_hint", String.format("Shown when '%s' is clicked. Possible 'class' values: %s",
+                                                 LINK_REQUEST_DETAILS,
+                                                 Sluggable.sluggedArrayString(FieldStyle.values())));
+
+        //
+        // Details: Request
+        //
+        LinkedHashMap<String, Object> requestFields = new LinkedHashMap<>();
+        requestFields.put("type", "table");
+        requestFields.put("label", DetailsDialog.REQUEST_TABLE_LABEL);
+        requestFields.put("name", DetailsDialog.REQUEST_TABLE_NAME);
+        requestFields.put("description", DetailsDialog.REQUEST_TABLE_DESCRIPTION);
+        JSONArray requestColumns = new JSONArray();
+        FieldValueTable.COLUMNS.forEach(requestColumns::put);
+        requestFields.put("columns", requestColumns);
+
+        for(RequestTable.RequestField requestField : RequestTable.RequestField.values()) {
+            FieldStyle style = RequestTable.getStyle(request, requestField);
+            requestFields.put(requestField.getFieldName(true), new JSONObject()
+                    .put("label", requestField.getLabel())
+                    .put("value", requestField.getValue(request))
+                    .put("class", style.slug())
+                    .put("style", new JSONObject()
+                            .put("font-weight", style.isBold() ? "bold" : "normal")
+                    )
+            );
+        }
+        detailsFields.put("request", requestFields);
+
+        //
+        // Details: Certificate
+        //
+        LinkedHashMap<String, Object> certFields = new LinkedHashMap<>();
+        certFields.put("type", "table");
+        certFields.put("label", DetailsDialog.CERT_TABLE_LABEL);
+        certFields.put("name", DetailsDialog.CERT_TABLE_NAME);
+        certFields.put("description", DetailsDialog.CERT_TABLE_DESCRIPTION);
+        JSONArray tableColumns = new JSONArray();
+        FieldValueTable.COLUMNS.forEach(tableColumns::put);
+        certFields.put("columns", tableColumns);
+
+        if(request.hasCertificate()) {
+            for(Type type : Type.values()) {
+                CertificateField field = new CertificateField(type, request.getCertificate());
+                FieldStyle style = field.getStyle();
+                certFields.put(field.getType().slug(), new JSONObject()
+                        .put("label", field.getLabel())
+                        .put("value", field.getValue())
+                        .put("class", style.slug())
+                        .put("style", new JSONObject()
+                                .put("font-weight", style.isBold() ? "bold" : "normal")
+                        )
+                );
+            }
+        }
+        detailsFields.put("cert", certFields);
+
+        allFields.put("details", detailsFields);
+
+        //
+        // Response Template
+        //
+        LinkedHashMap<String, Object> sampleFields = new LinkedHashMap<>();
+        sampleFields.put("allow", false);
+        sampleFields.put("remember", false);
+
+        allFields.put("_sample_response", sampleFields);
+
+        return allFields;
+    }
+
 }
 

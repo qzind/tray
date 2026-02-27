@@ -19,6 +19,7 @@ import qz.build.provision.params.Arch;
 import qz.common.Constants;
 
 import java.awt.*;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -42,6 +43,16 @@ public class WindowsUtilities {
     private static final String TRAY_REG_CHEVRON_KEY = "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\TrayNotify";
     private static final String TRAY_REG_POLICY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
+
+    // Universal SIDs that represent elevated/system status
+    private static final String[] ELEVATED_SIDS = {
+            "S-1-5-32-544", // Built-in Administrators
+            "S-1-5-18",     // Local System
+            "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464", // TrustedInstaller
+            "S-1-5-19",     // Local Service
+            "S-1-5-20"      // Network Service
+    };
+
     private static final int WINDOWS_10_BUILD_NUMBER = 10000;
     private static Boolean isWow64;
     private static Integer pid;
@@ -463,5 +474,23 @@ public class WindowsUtilities {
                 "nt authority\\system".equalsIgnoreCase(whoami) ||
                 // Special handling for session-less logins
                 (getHostName() + "$").equalsIgnoreCase(whoami);
+    }
+    public static boolean isAdminOwned(Path path) {
+        try {
+            File file = path.toFile();
+            if (!file.exists()) {
+                return false;
+            }
+            UserPrincipal principal = Files.getOwner(path);
+            for(String sid : ELEVATED_SIDS) {
+                if(principal.getName().equalsIgnoreCase(Advapi32Util.getAccountBySid(sid).fqn)) {
+                    return true;
+                }
+            }
+        } catch(IOException e) {
+            log.warn("Unable to determine if path {} is a system-owned file, so we'll assume it is.", path);
+            return true;
+        }
+        return false;
     }
 }

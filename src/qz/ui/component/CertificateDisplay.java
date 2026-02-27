@@ -4,8 +4,8 @@ import qz.auth.Certificate;
 
 public class CertificateDisplay {
 
-    private Certificate cert;
-    private boolean local = true;
+    private final Certificate cert;
+    private final boolean local;
 
     public CertificateDisplay(Certificate cert, boolean local) {
         this.cert = cert;

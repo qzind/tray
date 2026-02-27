@@ -35,13 +35,14 @@ public class Certificate {
 
     private static final Logger log = LogManager.getLogger(Certificate.class);
     private static final String QUIETLY_FAIL = "quiet";
+    public static final String NOT_PROVIDED = "Not provided";
 
     public enum Algorithm {
         SHA1("SHA1withRSA"),
         SHA256("SHA256withRSA"),
         SHA512("SHA512withRSA");
 
-        String name;
+        final String name;
 
         Algorithm(String name) {
             this.name = name;
@@ -67,6 +68,7 @@ public class Certificate {
     public static final DateTimeFormatter DATE_PARSE = DateTimeFormatter.ofPattern("uuuu-MM-dd['T'][ ]HH:mm:ss[.n]['Z']"); //allow parsing of both ISO and custom formatted dates
 
     private X509Certificate theCertificate;
+    private boolean thirdParty;
     private boolean sponsored;
     private String fingerprint;
     private String commonName;
@@ -174,6 +176,9 @@ public class Certificate {
     /** Decodes a certificate and intermediate certificate from the given string */
     public Certificate(String in) throws CertificateException {
         try {
+            // Assume someone else's cert until proven otherwise
+            thirdParty = true;
+
             //Strip beginning and end
             String[] split = in.split("--START INTERMEDIATE CERT--");
             byte[] serverCertificate = Base64.decodeBase64(split[0].replaceAll(X509Constants.BEGIN_CERT, "").replaceAll(X509Constants.END_CERT, ""));
@@ -222,6 +227,10 @@ public class Certificate {
                         foundRoot = rootCA;
                         valid = true;
                         log.debug("Successfully chained certificate: CN={}, O={} ({})", getCommonName(), getOrganization(), getFingerprint());
+                        if(Certificate.builtIn.equals(foundRoot)) {
+                            // Issued by QZ - not a 3rd-party cert
+                            thirdParty = false;
+                        }
                         break; // if successful, don't attempt another chain
                     }
                     catch(Exception e) {
@@ -421,7 +430,7 @@ public class Certificate {
         if (validFrom.isAfter(UNKNOWN_MIN)) {
             return DATE_FORMAT.format(validFrom.atZone(ZoneOffset.UTC));
         } else {
-            return "Not Provided";
+            return NOT_PROVIDED;
         }
     }
 
@@ -429,7 +438,7 @@ public class Certificate {
         if (validTo.isBefore(UNKNOWN_MAX)) {
             return DATE_FORMAT.format(validTo.atZone(ZoneOffset.UTC));
         } else {
-            return "Not Provided";
+            return NOT_PROVIDED;
         }
     }
 
@@ -453,7 +462,7 @@ public class Certificate {
     }
 
     public boolean isValid() {
-        return valid;
+        return valid; // TODO: Rename to differentiate from malformed certificates
     }
 
     public boolean isExpired() {
@@ -515,6 +524,10 @@ public class Certificate {
 
     public static boolean isTrustBuiltIn() {
         return trustBuiltIn;
+    }
+
+    public boolean isThirdParty() {
+        return thirdParty;
     }
 
     public static boolean hasAdditionalCAs() {

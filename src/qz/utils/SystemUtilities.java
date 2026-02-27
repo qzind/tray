@@ -39,10 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Random;
-import java.util.TimeZone;
+import java.util.*;
 
 /**
  * Utility class for OS detection functions.
@@ -609,6 +606,23 @@ public class SystemUtilities {
         }
         // Assume dist or out are signs we're running from some form of build directory
         return !path.endsWith("dist") && !path.endsWith("out");
+    }
+
+    /**
+     * Determine if we're installed system-wide
+     */
+    public static boolean isInstalledSystemWide() {
+        if(isInstalled()) {
+            switch(getOs()) {
+                case MAC:
+                    return Objects.requireNonNull(getJarParentPath()).startsWith("/Applications");
+                case WINDOWS:
+                    return WindowsUtilities.isAdminOwned(Objects.requireNonNull(SystemUtilities.getJarPath()));
+                default:
+                    return Objects.requireNonNull(getJarParentPath()).startsWith("/opt");
+            }
+        }
+        return false;
     }
 
     /**

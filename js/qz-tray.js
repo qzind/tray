@@ -1549,6 +1549,7 @@ var qz = (function() {
              *  @param {Object} [options.size=null] Paper size.
              *   @param {number} [options.size.width=null] Page width.
              *   @param {number} [options.size.height=null] Page height.
+             *   @param {boolean} [options.size.custom=false] If the provided page size is not included in the driver.
              *  @param {string} [options.units='in'] Page units, applies to paper size, margins, and density. Valid value <code>[in | cm | mm]</code>
              *
              *  @param {boolean} [options.forceRaw=false] Print the specified raw data using direct method, skipping the driver.  Not yet supported on Windows.

@@ -17,6 +17,7 @@ import java.nio.file.Paths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.installer.LinuxInstaller;
+import qz.utils.SystemUtilities;
 
 /**
  * @author Tres Finocchiaro
@@ -27,10 +28,24 @@ class LinuxShortcutCreator extends ShortcutCreator {
     private static String DESKTOP = System.getProperty("user.home") + "/Desktop/";
 
     public boolean canAutoStart() {
-        return Files.exists(Paths.get(LinuxInstaller.STARTUP_DIR, LinuxInstaller.SHORTCUT_NAME));
+        if(SystemUtilities.isInstalled()) {
+            return Files.exists(Paths.get(
+                    SystemUtilities.isInstalledSystemWide()?
+                            LinuxInstaller.SYSTEM_STARTUP_DIR:
+                            LinuxInstaller.USER_STARTUP_DIR,
+                    LinuxInstaller.SHORTCUT_NAME));
+        }
+        return false;
     }
     public void createDesktopShortcut() {
-        copyShortcut(LinuxInstaller.APP_LAUNCHER, DESKTOP);
+        if(SystemUtilities.isInstalled()) {
+            copyShortcut(SystemUtilities.isInstalledSystemWide()?
+                                 LinuxInstaller.SYSTEM_APP_LAUNCHER:
+                                 LinuxInstaller.USER_APP_LAUNCHER,
+                         DESKTOP);
+        } else {
+            log.warn("Skipping creation of Desktop icon, we don't appear to be installed");
+        }
     }
 
     private static void copyShortcut(String source, String target) {

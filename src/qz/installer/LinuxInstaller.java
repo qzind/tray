@@ -21,10 +21,11 @@ public class LinuxInstaller extends Installer {
     protected static final Logger log = LogManager.getLogger(LinuxInstaller.class);
 
     public static final String SHORTCUT_NAME = PROPS_FILE + ".desktop";
-    public static final String STARTUP_DIR = "/etc/xdg/autostart/";
-    public static final String STARTUP_LAUNCHER = STARTUP_DIR + SHORTCUT_NAME;
-    public static final String APP_DIR = "/usr/share/applications/";
-    public static final String APP_LAUNCHER = APP_DIR + SHORTCUT_NAME;
+    public static final String SYSTEM_STARTUP_DIR = "/etc/xdg/autostart";
+    public static final String USER_STARTUP_DIR = "%s/.config/autostart";
+    public static final String APP_DIR = "/usr/share/applications";
+    public static final String SYSTEM_APP_LAUNCHER = APP_DIR + SHORTCUT_NAME;
+    public static final String USER_APP_LAUNCHER = "%s/.local/share/applications";
     public static final String UDEV_RULES = "/lib/udev/rules.d/99-udev-override.rules";
     public static final String[] CHROME_POLICY_DIRS = {"/etc/chromium/policies/managed", "/etc/opt/chrome/policies/managed" };
     public static final String CHROME_POLICY = "{ \"URLAllowlist\": [\"" + DATA_DIR + "://*\"] }";
@@ -46,12 +47,14 @@ public class LinuxInstaller extends Installer {
     }
 
     public Installer addAppLauncher() {
-        addLauncher(APP_LAUNCHER, false);
+        String appLauncher = SystemUtilities.isAdmin() ? SYSTEM_APP_LAUNCHER : String.format(USER_APP_LAUNCHER, System.getProperty("user.home"));
+        addLauncher(appLauncher, false);
         return this;
     }
 
     public Installer addStartupEntry() {
-        addLauncher(STARTUP_LAUNCHER, true);
+        String startupDir = SystemUtilities.isAdmin() ? SYSTEM_STARTUP_DIR : String.format(USER_STARTUP_DIR, System.getProperty("user.home"));
+        addLauncher(startupDir, true);
         return this;
     }
 
@@ -77,14 +80,21 @@ public class LinuxInstaller extends Installer {
         log.info("Removing legacy autostart entries for all users matching {} or {}", ABOUT_TITLE, PROPS_FILE);
         // assume users are in /home
         String[] shortcutNames = {ABOUT_TITLE, PROPS_FILE};
-        for(File file : new File("/home").listFiles()) {
-            if (file.isDirectory()) {
-                File userStart = new File(file.getPath() + "/.config/autostart");
-                if (userStart.exists() && userStart.isDirectory()) {
-                    for (String shortcutName : shortcutNames) {
-                        File legacyStartup = new File(userStart.getPath() + File.separator + shortcutName + ".desktop");
-                        if(legacyStartup.exists()) {
-                            legacyStartup.delete();
+        String[] shortcutPatterns = {USER_STARTUP_DIR, USER_APP_LAUNCHER};
+        for(File homeDir : Objects.requireNonNull(new File("/home").listFiles())) {
+            if (homeDir.isDirectory()) {
+                // FIXME: "removeLegacyStartup()" is a misnomer now that we cleanup app launchers too
+                for(String shortcutPattern : shortcutPatterns) {
+                    Path folder = Paths.get(String.format(shortcutPattern, homeDir));
+                    if (folder.toFile().exists() && folder.toFile().isDirectory()) {
+                        for(String shortcutName : shortcutNames) {
+                            String name = String.format("%s.desktop", shortcutName);
+                            File shortcut = folder.resolve(name).toFile();
+                            if (shortcut.exists()) {
+                                if(shortcut.delete()) {
+                                    log.info("Removing {}", shortcut);
+                                }
+                            }
                         }
                     }
                 }

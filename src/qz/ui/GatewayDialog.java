@@ -38,19 +38,20 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
     private static final Logger log = LogManager.getLogger(GatewayDialog.class);
 
     // Main dialog
-    public static String BUTTON_ALLOW = "Allow";
-    public static String BUTTON_BLOCK = "Block";
-    public static String LINK_REQUEST_DETAILS = "View request details";
-    public static String CHECKBOX_REMEMBER = Constants.REMEMBER_THIS_DECISION;
+    private static final String BUTTON_ALLOW = "Allow";
+    private static final String BUTTON_BLOCK = "Block";
+    private static final String LINK_REQUEST_DETAILS = "View request details";
+    private static final String CHECKBOX_REMEMBER = Constants.REMEMBER_THIS_DECISION;
 
+    private final JDialog dialog;
     private final IconCache iconCache;
     private final boolean headless;
-    public final String title;
+    private final String title;
+    private final ConfirmDialog confirmDialog;
 
-    // Main dialog
     private String description;
     private Color detailColor;
-    private ConfirmDialog confirmDialog;
+
     private String uid;
     private IconCache.Icon icon;
     private String iconToolTip;
@@ -58,13 +59,11 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
     private Response response;
 
     // Confirm dialog
-    public static String CONFIRM_BLOCK_TITLE = "Confirm";
-    public String confirmBlockText;
+    private static final String CONFIRM_BLOCK_TITLE = "Confirm";
+    private String confirmBlockText;
 
     // Details dialog
-    public static String DETAILS_DIALOG_TITLE = "Details";
-
-    private JDialog dialog;
+    private static final String DETAILS_DIALOG_TITLE = "Details";
     private JLabel verifiedLabel;
     private JLabel descriptionLabel;
     private LinkLabel certInfoLabel;
@@ -78,6 +77,8 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
         this.iconCache = iconCache;
         this.description = "Description missing";
         this.response = Response.UNANSWERED;
+        this.dialog = headless ? null : new JDialog(owner, title, true);
+        this.confirmDialog = headless ? null : new ConfirmDialog(null, CONFIRM_BLOCK_TITLE, iconCache);
 
         if(!headless) {
             initComponents(owner);
@@ -86,10 +87,7 @@ public class GatewayDialog extends HeadlessDialog implements Themeable {
     }
 
     private void initComponents(Frame owner) {
-        dialog = new JDialog(owner, title, true);
         dialog.setIconImages(iconCache.getImages(IconCache.Icon.TASK_BAR_ICON));
-
-        confirmDialog = new ConfirmDialog(null, CONFIRM_BLOCK_TITLE, iconCache);
 
         JPanel descriptionPanel = new JPanel();
         verifiedLabel = new JLabel();

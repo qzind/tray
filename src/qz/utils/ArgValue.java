@@ -13,7 +13,7 @@ public enum ArgValue {
     // Informational
     HELP(INFORMATION, "Display help information and exit.", null, null,
          "--help", "-h", "/?"),
-    VERSION(INFORMATION, "Display version information and exit.", null, null,
+    VERSION(INFORMATION, "Display version information and exit.  Optionally, a format parameter may be specified e.g. \"x.x.x.x\" to coerce formatting.", "--version [format]", null,
             "--version", "-v"),
     BUNDLEID(INFORMATION, "Display Apple bundle identifier and exit.", null, null,
              "--bundleid", "-i"),

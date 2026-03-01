@@ -37,6 +37,17 @@
 RequestExecutionLevel admin
 CRCCheck On
 
+; Application information
+!define /date YEAR %Y
+VIProductVersion "${build.nsis.version}"
+VIAddVersionKey "FileDescription" "${project.name} Uninstaller"
+VIAddVersionKey "ProductName" "${project.name}"
+VIAddVersionKey "ProductVersion" "${build.version}"
+VIAddVersionKey "CompanyName" "${vendor.company}"
+VIAddVersionKey "LegalCopyright" "Copyright © ${YEAR}"
+VIAddVersionKey "LegalTrademarks" "${vendor.company}"
+VIAddVersionKey "OriginalFilename" "uninstall.exe"
+
 Name "Uninstall ${project.name}"
 Caption "Uninstall ${project.name}"
 Icon "${basedir}/ant/windows/nsis/uninstall.ico"

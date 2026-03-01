@@ -63,6 +63,10 @@
                     </button>
                     <h3 class="panel-title">
                         Connection: <span id="qz-status" class="text-muted" style="font-weight: bold;">Unknown</span>
+                        <div class="pull-right">
+                            <span id="qz-hostname" class="badge" style="opacity: 50%; font-size: 0.8em; font-weight: normal;"></span>
+                            <span id="qz-port" class="badge" style="opacity: 50%; font-size: 0.8em; font-weight: normal;"></span>
+                        </div>
                     </h3>
                 </div>
 
@@ -1507,19 +1511,36 @@
 
     function startConnection(config) {
         // Connect to a print-server instance and/or override secure port handling
-        config ||= {};
+        config = config ? config : {};
         config.host = includedValue($('#connectionHost'));
         config.usingSecure = isChecked($('#connectionUsingSecure'));
 
-        if (!qz.websocket.isActive()) {
-            updateState('Waiting', 'default');
+        // Gracefully handle pasted values
+        if(config.host) {
+            // Strip off the protocol
+            const host = config.host.replace(/^(?:\w+:)?\/\/([^/]+).*/i, '$1');
+            $('#connectionHost').val(host);
+            // Force check "usingSecure" if https/wss was selected
+            if(/^(https|wss):\/\//i.test(config.host)) {
+                $('#connectionUsingSecure').prop("checked", true);
+            }
+            if(config.host !== host) {
+                // recurse
+                startConnection(config);
+                return;
+            }
+        }
 
+        updateState('Waiting', 'default');
+        if (!qz.websocket.isActive()) {
             qz.websocket.connect(config).then(function() {
                 updateState('Active', 'success');
                 findVersion();
             }).catch(handleConnectionError);
         } else {
-            displayMessage('An active connection with QZ already exists.', 'alert-warning');
+            qz.websocket.disconnect().then(function() {
+                startConnection(config);
+            }).catch(handleConnectionError);
         }
     }
 
@@ -3110,6 +3131,13 @@
     function updateState(text, css) {
         $("#qz-status").html(text);
         $("#qz-connection").removeClass().addClass('panel panel-' + css);
+        if (text == "Active") {
+            $("#qz-hostname").html(qz.websocket.getConnectionInfo().host);
+            $("#qz-port").html(qz.websocket.getConnectionInfo().port);
+        } else {
+            $("#qz-hostname").html("");
+            $("#qz-port").html("");
+        }
 
         if (text === "Inactive" || text === "Error") {
             $("#launch").show();
@@ -3414,11 +3442,11 @@
     }
 
     function getBase64(file) {
-        return new Promise((resolve, reject) => {
+        return new Promise(function(resolve, reject) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
+            reader.onload = function() { resolve(reader.result); }
+            reader.onerror = function(error) { reject(error); }
         });
     }
 

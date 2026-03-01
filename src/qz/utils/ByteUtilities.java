@@ -17,6 +17,9 @@ import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
 import qz.printer.action.raw.PixelGrid;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -239,6 +242,25 @@ public class ByteUtilities {
         }
 
         return hex.toString();
+    }
+
+    /**
+     * Converts a BufferedImage into a browser-compatible base64 image
+     * Useful for serializing
+     */
+    public static String imageToBase64(BufferedImage image, String format) {
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ImageIO.write(image, format, bos);
+            byte[] imageBytes = bos.toByteArray();
+            bos.close();
+            // Java's encoder won't add newlines
+            return java.util.Base64.getEncoder().encodeToString(imageBytes);
+        } catch(IOException e) {
+            log.warn("Could not convert BufferedImage to base64", e);
+            return "";
+        }
+
     }
 
     public static int parseBytes(byte[] bytes, int startIndex, int length, Endian endian) {

@@ -16,7 +16,7 @@ import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
 import org.usb4java.LoaderException;
 import qz.auth.Certificate;
-import qz.auth.RequestState;
+import qz.auth.Request;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.communication.*;
@@ -122,7 +122,7 @@ public class PrintSocketClient {
 
             Integer connectionPort = ((InetSocketAddress)session.getRemoteAddress()).getPort();
             SocketConnection connection = openConnections.get(connectionPort);
-            RequestState request = new RequestState(connection.getCertificate(), json);
+            Request request = new Request(connection.getCertificate(), json);
 
             //if sent a certificate use that instead for this connection
             if (json.has("certificate")) {
@@ -138,7 +138,7 @@ public class PrintSocketClient {
                     request.markNewConnection(Certificate.UNKNOWN);
                 }
 
-                if (allowedFromDialog(request, "connect to " + Constants.ABOUT_TITLE,
+                if (allowedFromDialog(UID, request, "connect to " + Constants.ABOUT_TITLE,
                                       findDialogPosition(session, json.optJSONObject("position")))) {
                     sendResult(session, UID, null);
                 } else {
@@ -156,14 +156,14 @@ public class PrintSocketClient {
                         || json.optLong("timestamp") - Constants.VALID_SIGNING_PERIOD > System.currentTimeMillis()) {
                     //bad timestamps use the expired certificate
                     log.warn("Expired signature on request");
-                    request.setStatus(RequestState.Validity.EXPIRED);
-                } else if (json.isNull("signature") || !validSignature(request.getCertUsed(), json)) {
+                    request.setValidity(Request.Validity.EXPIRED);
+                } else if (json.isNull("signature") || !validSignature(request.getCertificate(), json)) {
                     //bad signatures use the unsigned certificate
                     log.warn("Bad signature on request");
-                    request.setStatus(RequestState.Validity.UNSIGNED);
+                    request.setValidity(Request.Validity.UNSIGNED);
                 } else {
                     log.trace("Valid signature from {}", request.getCertName());
-                    request.setStatus(RequestState.Validity.TRUSTED);
+                    request.setValidity(Request.Validity.TRUSTED);
                 }
             }
 
@@ -228,7 +228,7 @@ public class PrintSocketClient {
      * @param session WebSocket session
      * @param json    JSON received from web API
      */
-    private void processMessage(Session session, JSONObject json, SocketConnection connection, RequestState request) throws JSONException, SerialPortException, DeviceException, IOException {
+    private void processMessage(Session session, JSONObject json, SocketConnection connection, Request request) throws JSONException, SerialPortException, DeviceException, IOException {
         // perform client-side substitutions
         if(Substitutions.areActive()) {
             Substitutions substitutions = Substitutions.getInstance();
@@ -261,7 +261,7 @@ public class PrintSocketClient {
         }
 
         if (call.isDialogShown()
-                && !allowedFromDialog(request, prompt, findDialogPosition(session, json.optJSONObject("position")))) {
+                && !allowedFromDialog(UID, request, prompt, findDialogPosition(session, json.optJSONObject("position")))) {
             sendError(session, UID, "Request blocked");
             return;
         }
@@ -558,7 +558,7 @@ public class PrintSocketClient {
             }
             case FILE_STOP_LISTENING: {
                 // Coerce to trusted state for unsigned request
-                request.setStatus(RequestState.Validity.TRUSTED);
+                request.setValidity(Request.Validity.TRUSTED);
                 if (params.isNull("path")) {
                     connection.removeAllFileListeners();
                     sendResult(session, UID, null);
@@ -685,7 +685,7 @@ public class PrintSocketClient {
         }
     }
 
-    private boolean allowedFromDialog(RequestState request, String prompt, Point position) {
+    private boolean allowedFromDialog(String UID, Request request, String prompt, Point position) {
         //If cert can be resolved before the lock, do so and return
         if (request.hasBlockedCert()) {
             return false;
@@ -704,7 +704,7 @@ public class PrintSocketClient {
         }
 
         //prompt user for access
-        boolean allowed = trayManager.showGatewayDialog(request, prompt, position);
+        boolean allowed = trayManager.showGatewayDialog(UID, request, prompt, position);
 
         dialogAvailable.release();
 

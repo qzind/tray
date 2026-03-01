@@ -75,6 +75,8 @@ public enum ArgValue {
         "tray.idle.printers"),
     TRAY_IDLE_JAVAFX(PREFERENCES, "Enable/disable idle starting of JavaFX for better initial performance", null, true,
         "tray.idle.javafx"),
+    TRAY_DIALOG_ENDPOINT(PREFERENCES, "Headless mode only: Enable a custom endpoint for dialogs", null, null,
+                         "tray.dialog.endpoint"),
     SECURITY_FILE_ENABLED(PREFERENCES, "Enable/disable all File Communications features", null, true,
         "security.file.enabled"),
     SECURITY_FILE_STRICT(PREFERENCES, "Enable/disable signing requirements for File Communications features", null, true,

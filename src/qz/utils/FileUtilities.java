@@ -11,7 +11,6 @@ package qz.utils;
 
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
@@ -25,7 +24,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import qz.App;
 import qz.auth.Certificate;
-import qz.auth.RequestState;
+import qz.auth.Request;
 import qz.common.ByteArrayBuilder;
 import qz.common.Constants;
 import qz.common.PropertyHelper;
@@ -238,12 +237,12 @@ public class FileUtilities {
      *    3. Is the location whitelisted?
      *    4. Is the file extension permitted
      */
-    private static void checkFileRequest(Path path, FileParams fp, RequestState request, boolean allowRootDir) throws AccessDeniedException {
+    private static void checkFileRequest(Path path, FileParams fp, Request request, boolean allowRootDir) throws AccessDeniedException {
         if(!FILE_IO_ENABLED) {
             throw new AccessDeniedException("File operations are disabled");
         } else if(!request.isVerified() && FILE_IO_STRICT) {
             throw new AccessDeniedException("File request is not verified");
-        } else if(request.getCertUsed() == null || !request.getCertUsed().isTrusted()) {
+        } else if(request.getCertificate() == null || !request.getCertificate().isTrusted()) {
             throw new AccessDeniedException("Certificate provided is not trusted");
         } else if(!isWhiteListed(path, allowRootDir, fp.isSandbox(), request)) {
             throw new AccessDeniedException("File operation is not in a permitted location");
@@ -254,11 +253,11 @@ public class FileUtilities {
         }
     }
 
-    public static Path getAbsolutePath(JSONObject params, RequestState request, boolean allowRootDir) throws JSONException, IOException {
+    public static Path getAbsolutePath(JSONObject params, Request request, boolean allowRootDir) throws JSONException, IOException {
         return getAbsolutePath(params, request, allowRootDir, false);
     }
 
-    public static Path getAbsolutePath(JSONObject params, RequestState request, boolean allowRootDir, boolean createMissing) throws JSONException, IOException {
+    public static Path getAbsolutePath(JSONObject params, Request request, boolean allowRootDir, boolean createMissing) throws JSONException, IOException {
         FileParams fp = new FileParams(params);
         String commonName = request.isVerified()? escapeFileName(request.getCertName()):"UNTRUSTED";
 
@@ -355,7 +354,7 @@ public class FileUtilities {
      * Currently hard-coded to the QZ data directory or anything provided by qz-tray.properties
      * e.g. %APPDATA%/qz/data or $HOME/.qz/data, etc
      */
-    public static boolean isWhiteListed(Path path, boolean allowRootDir, boolean sandbox, RequestState request) {
+    public static boolean isWhiteListed(Path path, boolean allowRootDir, boolean sandbox, Request request) {
         String commonName = request.isVerified()? escapeFileName(request.getCertName()):"UNTRUSTED";
         if (whiteList == null) {
             whiteList = new ArrayList<>();

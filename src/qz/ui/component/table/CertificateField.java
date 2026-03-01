@@ -139,9 +139,9 @@ public class CertificateField {
         }
     }
 
-    public static final String FUTURE_INCEPTION = "future inception";
-    public static final String EXPIRED = "expired";
-    public static final String EXPIRES_SOON = "expires soon";
+    private static final String FUTURE_INCEPTION = "future inception";
+    private static final String EXPIRED = "expired";
+    private static final String EXPIRES_SOON = "expires soon";
 
     private static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone("UTC");
     private static final TimeZone ALTERNATE_TIME_ZONE = TimeZone.getDefault();

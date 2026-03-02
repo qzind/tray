@@ -349,6 +349,11 @@ public class PrintOptions {
                     catch(JSONException e) { LoggerUtilities.optionWarn(log, "double", "size.height", subSize.opt("height")); }
                 }
 
+                if (!subSize.isNull("custom")) {
+                    try { s.custom = subSize.getBoolean("custom"); }
+                    catch(JSONException e) { LoggerUtilities.optionWarn(log, "boolean", "size.custom", subSize.opt("custom")); }
+                }
+
                 if (s.height <= 0 && s.width <= 0) {
                     log.warn("Page size has been set without dimensions, using default");
                 } else {
@@ -586,13 +591,18 @@ public class PrintOptions {
     public class Size {
         private double width = -1;  //Page width
         private double height = -1; //Page height
-
+        private boolean custom = false; //Force a custom size
 
         public Size() {}
 
         public Size(double width, double height) {
+            this(width, height, false);
+        }
+
+        public Size(double width, double height, boolean custom) {
             this.width = width;
             this.height = height;
+            this.custom = custom;
         }
 
         public double getWidth() {
@@ -601,6 +611,10 @@ public class PrintOptions {
 
         public double getHeight() {
             return height;
+        }
+
+        public boolean isCustom() {
+            return custom;
         }
     }
 

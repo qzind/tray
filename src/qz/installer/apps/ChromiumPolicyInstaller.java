@@ -1,43 +1,31 @@
 package qz.installer.apps;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-import qz.common.Constants;
+import qz.installer.Installer;
 import qz.installer.apps.chromium.LinuxChromiumPolicyInstaller;
 import qz.installer.apps.chromium.MacChromiumPolicyInstaller;
 import qz.installer.apps.chromium.WindowsChromiumPolicyInstaller;
-import qz.utils.FileUtilities;
-import qz.utils.ShellUtilities;
+import qz.installer.apps.locator.AppAlias;
 import qz.utils.SystemUtilities;
-import qz.utils.WindowsUtilities;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashSet;
-
-import static qz.common.Constants.PROPS_FILE;
 import static qz.installer.Installer.*;
-import static com.sun.jna.platform.win32.WinReg.*;
 
 public abstract class ChromiumPolicyInstaller {
     private static final Logger log = LogManager.getLogger(ChromiumPolicyInstaller.class);
 
     static ChromiumPolicyInstaller INSTANCE = getInstance();
 
-    public abstract boolean install(PrivilegeLevel scope, String policyName, String ... values);
-    public abstract boolean uninstall(PrivilegeLevel scope, String policyName, String ... values);
+    public abstract String calculateLocation(PrivilegeLevel scope, AppAlias.Alias alias, String policyName, boolean isArray);
+
+    public abstract boolean install(PrivilegeLevel scope, AppAlias.Alias alias, String policyName, boolean isArray, Object ... values);
+
+    public abstract boolean uninstall(PrivilegeLevel scope, AppAlias.Alias alias, String policyName, boolean isArray, Object ... values);
+
 
     public static void main(String ... args) {
+        AppAlias.Alias chrome = AppAlias.CHROMIUM.getAliases()[0];
+        AppAlias.Alias edge = AppAlias.CHROMIUM.getAliases()[1];
         /*
         getInstance().install(PrivilegeLevel.USER, "URLAllowlist", "qz://");
         getInstance().install(PrivilegeLevel.USER, "URLAllowlist", "pp://");
@@ -47,9 +35,25 @@ public abstract class ChromiumPolicyInstaller {
         getInstance().uninstall(PrivilegeLevel.USER, "URLAllowlist", "pp://");
         */
 
-        getInstance().install(PrivilegeLevel.USER, "URLAllowlist", "qz://");
-        getInstance().install(PrivilegeLevel.USER, "URLAllowlist", "pp://");
-        getInstance().install(PrivilegeLevel.USER, "URLAllowlist", "qz://");
+        getInstance().install(PrivilegeLevel.USER, chrome, "URLAllowlist", true,"qz://");
+        getInstance().install(PrivilegeLevel.USER, chrome,"URLAllowlist", true,"pp://");
+        getInstance().install(PrivilegeLevel.USER, chrome,"URLAllowlist", true,"qz://");
+
+        getInstance().install(PrivilegeLevel.USER, edge, "URLAllowlist", true,"qz://");
+        getInstance().install(PrivilegeLevel.USER, edge,"URLAllowlist", true,"pp://");
+        getInstance().install(PrivilegeLevel.USER, edge,"URLAllowlist", true,"qz://");
+
+        getInstance().install(Installer.PrivilegeLevel.USER, chrome, "SafeBrowsingEnabled", false, true);
+        getInstance().install(Installer.PrivilegeLevel.USER, edge,"SafeBrowsingEnabled", false, false);
+
+        //getInstance().uninstall(Installer.PrivilegeLevel.USER, chrome, "SafeBrowsingEnabled", false);
+        //getInstance().uninstall(Installer.PrivilegeLevel.USER, edge,"SafeBrowsingEnabled", false);
+
+
+        //getInstance().uninstall(Installer.PrivilegeLevel.SYSTEM, chrome, "SafeBrowsingEnabled", false);
+        //getInstance().uninstall(Installer.PrivilegeLevel.SYSTEM, edge,"SafeBrowsingEnabled", false);
+
+
         //getInstance().uninstall(PrivilegeLevel.USER, "URLAllowlist", "qz://");
         //getInstance().uninstall(PrivilegeLevel.USER, "URLAllowlist", "qz://");
         //getInstance().uninstall(PrivilegeLevel.USER, "URLAllowlist", "pp://");

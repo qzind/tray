@@ -1,4 +1,4 @@
-package qz.installer.apps;
+package qz.installer.apps.exception;
 
 public class ConflictingPolicyException extends Exception {
     public ConflictingPolicyException(String message) {

@@ -85,6 +85,35 @@ public class MacPreferenceInstaller {
             return UNKNOWN;
         }
 
+        public static PlistEntryType getType(Object o) {
+            if(o instanceof String) {
+                return STRING;
+            }
+            if(o instanceof byte[]) {
+                return DATA;
+            }
+            if(o instanceof Integer) {
+                return INTEGER;
+            }
+            if(o instanceof Float) {
+                return FLOAT;
+            }
+
+            if(o instanceof Boolean) {
+                return BOOLEAN;
+            }
+            if(o instanceof Date) {
+                return DATE;
+            }
+            if(o instanceof Object[]) {
+                return ARRAY;
+            }
+            if(o == null) {
+                return MISSING;
+            }
+            return UNKNOWN;
+        }
+
         public static String fromString(String value) {
             return trim(value);
         }
@@ -115,8 +144,8 @@ public class MacPreferenceInstaller {
 
         // For simplicity's sake (at least for now) assume all arrays are one-level, one-dimensional
         // and only contain string values
-        public static ArrayList<String> fromArray(String haystack) {
-            ArrayList<String> values = new ArrayList<>();
+        public static ArrayList<Object> fromArray(String haystack) {
+            ArrayList<Object> values = new ArrayList<>();
             String[] lines = trim(haystack).split("[\r?\n]+");
             for(String line : lines) {
                 String value = trim(line);
@@ -140,7 +169,7 @@ public class MacPreferenceInstaller {
         /**
          * Read the array, but with special assumption that duplicated entries aren't wanted or warranted
          */
-        private static HashSet<String> fromUniqueArray(String haystack) {
+        private static HashSet<Object> fromUniqueArray(String haystack) {
             return new HashSet<>(fromArray(haystack));
         }
 
@@ -204,10 +233,12 @@ public class MacPreferenceInstaller {
         return defaultsCliGet(plist, PlistOperation.READ, entry);
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private static boolean defaultsDelete(Path plist, String entry) {
         return defaultsCliPut(plist, PlistOperation.DELETE, entry, PlistEntryType.UNKNOWN, null);
     }
 
+    @SuppressWarnings("unused")
     private static boolean defaultsWrite(Path plist, String entry, PlistEntryType type, Object value) {
         return defaultsCliPut(plist, PlistOperation.WRITE, entry, type, value);
     }
@@ -217,7 +248,7 @@ public class MacPreferenceInstaller {
         return defaultsCliPut(plist, PlistOperation.RENAME, entry, PlistEntryType.UNKNOWN, newName);
     }
 
-    public static Collection<String> getArray(Path plist, String entry, boolean unique) {
+    public static Collection<Object> getArray(Path plist, String entry, boolean unique) {
         if(unique) {
             return PlistEntryType.fromUniqueArray(defaultsRead(plist, entry));
         } else {
@@ -225,9 +256,9 @@ public class MacPreferenceInstaller {
         }
     }
 
-    public static boolean appendArray(Path plist, String entry, Collection<String> values, boolean dedupe) {
-        Collection<String> existingItems = getArray(plist, entry, dedupe);
-        Collection<String> newItems;
+    public static boolean appendArray(Path plist, String entry, Collection<Object> values, boolean dedupe) {
+        Collection<Object> existingItems = getArray(plist, entry, dedupe);
+        Collection<Object> newItems;
 
         if(dedupe) {
             // clear out the value(s) that were there before
@@ -244,7 +275,7 @@ public class MacPreferenceInstaller {
         newItems.addAll(values);
 
         // preparing multiple array values for cli injection is error-prone, instead do one at a time
-        for(String value : newItems) {
+        for(Object value : newItems) {
             if(!defaultsCliPut(plist, PlistOperation.WRITE, entry, PlistEntryType.ARRAY, value)) {
                 log.warn("An error occurred writing '{}': '{}' to {}", entry, value, plist);
                 return false;
@@ -253,18 +284,26 @@ public class MacPreferenceInstaller {
         return true;
     }
 
-    /*public boolean install(Path plist, String policyName, Object ... values) {
-        log.info("Installing macOS Preference(s) {} to {}...", policyName, plist);
-        for(Object value : values) {
-            String stringified = value.toString();
-            String found = ShellUtilities.executeRaw(new String[]{"/usr/bin/defaults", "read", plist.toString(), policyName}, true);
-            if(found.contains(value)) {
-                log.info("Preference {} '{}' already exists at location {}, skipping", policyName, value, location);
-                continue;
+    public static boolean write(Path plist, String entry, Object ... values) {
+        if(delete(plist, entry)) {
+            for(Object value : values) {
+                // exit early/antipattern: plist entry can only occur once
+                return defaultsWrite(plist, entry, PlistEntryType.getType(value), value);
             }
-            ShellUtilities.execute("/usr/bin/defaults", "write", location, policyName, "-array-add", value);
         }
-    }*/
+        return false;
+    }
+
+    public static boolean delete(Path plist, String entry) {
+        PlistEntryType type = defaultsReadType(plist, entry);
+        if(type != PlistEntryType.MISSING) {
+            if(!defaultsDelete(plist, entry)) {
+                log.warn("An error occurred deleting '{}' from {}", entry, plist);
+                return false;
+            }
+        }
+        return true;
+    }
 
     public static void main(String ... args) {
         String entry = "URLAllowlist"; // array
@@ -275,7 +314,7 @@ public class MacPreferenceInstaller {
         plist = Path.of("/Users/owner/Library/Preferences/com.google.Chrome.plist");
         String val = "qz://";
 
-        HashSet<String> entries = PlistEntryType.fromUniqueArray(defaultsRead(plist, entry));
+        HashSet<Object> entries = PlistEntryType.fromUniqueArray(defaultsRead(plist, entry));
         if(!entries.isEmpty()) {
             if (!defaultsDelete(plist, entry)) {
                 log.error("Something went wrong deleting '{}' from  {}", entry, plist);
@@ -309,7 +348,7 @@ public class MacPreferenceInstaller {
                 break;
             case ARRAY:
                 // Unit tests can use fromArray to prevent deduping
-                ArrayList<String> arrayVal = PlistEntryType.fromArray(defaultsRead(plist, entry));
+                ArrayList<Object> arrayVal = PlistEntryType.fromArray(defaultsRead(plist, entry));
                 log.info("{} ({}):", entry, type.slug());
                 arrayVal.forEach(System.out::println);
                 break;

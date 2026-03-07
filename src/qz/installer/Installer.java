@@ -16,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.build.provision.params.Phase;
 import qz.installer.apps.ChromiumPolicyInstaller;
+import qz.installer.apps.locator.AppAlias;
 import qz.installer.certificate.*;
 import qz.installer.apps.firefox.OldFirefoxCertificateInstaller;
 import qz.installer.provision.ProvisionInstaller;
@@ -363,12 +364,14 @@ public abstract class Installer {
     public Installer modifyApps() {
         // Chromium
         // Chrome protocol handler (e.g. "qz://*")
-        ChromiumPolicyInstaller.getInstance().install(PrivilegeLevel.SYSTEM, "URLAllowlist", String.format("%s://*", DATA_DIR));
+        for(AppAlias.Alias alias : AppAlias.CHROMIUM.getAliases()) {
+            ChromiumPolicyInstaller.getInstance().install(PrivilegeLevel.SYSTEM, alias, "URLAllowlist", true, String.format("%s://*", DATA_DIR));
+            // LocalNetworkAccess (e.g. [*.]qz.io)
+            // FIXME: Read in more root domains via provisioning
+            Object[] lnaUrls = { "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL) };
+            ChromiumPolicyInstaller.getInstance().install(PrivilegeLevel.SYSTEM, alias, "LocalNetworkAccessAllowedForUrls", true, lnaUrls);
+        }
 
-        // LocalNetworkAccess (e.g. [*.]qz.io)
-        // FIXME: Read in more root domains via provisioning
-        String[] lnaUrls = { "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL) };
-        ChromiumPolicyInstaller.getInstance().install(PrivilegeLevel.SYSTEM, "LocalNetworkAccessAllowedForUrls", lnaUrls);
 
 
         // Firefox

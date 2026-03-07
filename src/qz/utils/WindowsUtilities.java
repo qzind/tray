@@ -301,7 +301,7 @@ public class WindowsUtilities {
     /**
      * Adds a registry entry at <code>key</code>/<code>0</code>, incrementing as needed
      */
-    public static boolean addNumberedRegValue(HKEY root, String key, Object data) {
+    public static boolean addNumberedRegValue(HKEY root, String key, int startIndex, Object data) {
         try {
             // Recursively create keys as needed
             String partialKey = "";
@@ -323,11 +323,10 @@ public class WindowsUtilities {
                 }
             }
             // Find the next available number and iterate
-            int counter=0;
-            while(Advapi32Util.registryValueExists(root, key, counter + "")) {
-                counter++;
+            while (Advapi32Util.registryValueExists(root, key, Integer.toString(startIndex))) {
+                startIndex++;
             }
-            String value = String.valueOf(counter);
+            String value = Integer.toString(startIndex);
             if (data instanceof String) {
                 Advapi32Util.registrySetStringValue(root, key, value, (String)data);
             } else if (data instanceof Integer) {
@@ -345,7 +344,7 @@ public class WindowsUtilities {
     /**
      * Removes the specified registry data from the key specified; renumbering any remaining values zero-indexed
      */
-    public static boolean removeNumberedRegValue(HKEY root, String key, Object data) {
+    public static boolean deleteNumberedRegValue(HKEY root, String key, Object data) {
         if(!Advapi32Util.registryKeyExists(root, key)) {
             log.warn("Registry key {}\\\\{} doesn't exist, skipping removal", root, key);
             return false;
@@ -368,7 +367,7 @@ public class WindowsUtilities {
         }
 
         for(Object value : existingValues)  {
-            addNumberedRegValue(root, key, value);
+            addNumberedRegValue(root, key, 0, value);
         }
         return true;
     }

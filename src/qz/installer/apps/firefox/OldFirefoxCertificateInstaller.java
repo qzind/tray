@@ -19,7 +19,7 @@ import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
 import qz.common.Constants;
 import qz.installer.Installer;
-import qz.installer.apps.ConflictingPolicyException;
+import qz.installer.apps.exception.ConflictingPolicyException;
 import qz.installer.apps.firefox.legacy.LegacyFirefoxCertificateInstaller;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.apps.locator.AppAlias;

@@ -34,6 +34,6 @@ public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstal
         existing.removeAll(List.of(values));
         // Write remaining entries back
         // Note: dedupe: true will delete what's there first, so this may result in the policyName being removed entirely
-        return putEntries(state, existing, true);
+        return putEntries(state, existing.toArray());
     }
 }

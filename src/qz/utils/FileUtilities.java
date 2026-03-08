@@ -11,7 +11,6 @@ package qz.utils;
 
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
@@ -41,6 +40,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
@@ -940,5 +940,23 @@ public class FileUtilities {
                 }
         }
         return contentType;
+    }
+
+    public static JSONObject readJsonFile(Path location) throws IOException, JSONException {
+        // Ensure parent is writable
+        File locationFile = location.toFile();
+        FileUtilities.setPermissionsParentally(Files.createDirectories(location.getParent()), false);
+        return locationFile.exists() ? new JSONObject(FileUtils.readFileToString(locationFile, StandardCharsets.UTF_8)) : new JSONObject();
+    }
+
+    public static void writeJsonFile(JSONObject content, Path location, boolean worldReadable) throws IOException {
+        // Write contents, ensuring policy file is world readable
+        File locationFile = location.toFile();
+        try(BufferedWriter writer = new BufferedWriter(new FileWriter(locationFile))) {
+            writer.write(content.toString());
+            if (!locationFile.setReadable(true, !worldReadable)) {
+                throw new IOException("Unable to set readable: " + location);
+            }
+        }
     }
 }

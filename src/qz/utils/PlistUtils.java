@@ -1,17 +1,19 @@
-package qz.installer.apps;
+package qz.utils;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.build.jlink.Parsable;
 import qz.common.Sluggable;
-import qz.utils.ShellUtilities;
 
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
 
-public class MacPreferenceInstaller {
-    private static final Logger log = LogManager.getLogger(MacPreferenceInstaller.class);
+/**
+ * Wrapper around macOS 'default read', 'defaults write', etc
+ */
+public class PlistUtils {
+    private static final Logger log = LogManager.getLogger(PlistUtils.class);
 
     /*
      * Strict values for cli operations
@@ -114,30 +116,37 @@ public class MacPreferenceInstaller {
             return UNKNOWN;
         }
 
+        @SuppressWarnings("unused")
         public static String fromString(String value) {
             return trim(value);
         }
 
+        @SuppressWarnings("unused")
         public static byte[] fromData(String rawValue) {
             throw new UnsupportedOperationException("Sorry, parsing bytes from cli is not yet supported");
         }
 
+        @SuppressWarnings("unused")
         public static Integer fromInteger(String rawValue) {
             return Integer.parseInt(trim(rawValue));
         }
 
+        @SuppressWarnings("unused")
         public static Float fromFloat(String rawValue) {
             return Float.parseFloat(trim(rawValue));
         }
 
+        @SuppressWarnings("unused")
         public static Boolean fromBoolean(String rawValue) {
             return "1".equals(trim(rawValue));
         }
 
+        @SuppressWarnings("unused")
         public static Boolean fromDate(String rawValue) {
             throw new UnsupportedOperationException("Sorry, parsing dates from cli is not yet supported");
         }
 
+        @SuppressWarnings("unused")
         public static boolean fromUnknown(String rawValue) {
             throw new UnsupportedOperationException("Sorry, parsing unknowns from cli is not yet supported");
         }
@@ -225,26 +234,30 @@ public class MacPreferenceInstaller {
         return ShellUtilities.execute(defaultsCliPrepare(plist, operation, entry, type.getValueType(), stringVal));
     }
 
-    private static PlistEntryType defaultsReadType(Path plist, String entry) {
+    public static PlistEntryType defaultsReadType(Path plist, String entry) {
         return PlistEntryType.parse(defaultsCliGet(plist, PlistOperation.READ_TYPE, entry));
     }
 
-    private static String defaultsRead(Path plist, String entry) {
+    public static String defaultsRead(Path plist, String entry) {
         return defaultsCliGet(plist, PlistOperation.READ, entry);
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    private static boolean defaultsDelete(Path plist, String entry) {
+    public static boolean defaultsDelete(Path plist, String entry) {
         return defaultsCliPut(plist, PlistOperation.DELETE, entry, PlistEntryType.UNKNOWN, null);
     }
 
     @SuppressWarnings("unused")
-    private static boolean defaultsWrite(Path plist, String entry, PlistEntryType type, Object value) {
+    public static boolean defaultsWrite(Path plist, String entry, PlistEntryType type, Object value) {
         return defaultsCliPut(plist, PlistOperation.WRITE, entry, type, value);
     }
 
+    private static boolean defaultsWriteArrayAdd(Path plist, String entry, Object value) {
+        return defaultsCliPut(plist, PlistUtils.PlistOperation.WRITE, entry, PlistUtils.PlistEntryType.ARRAY, value);
+    }
+
     @SuppressWarnings("unused")
-    private static boolean defaultsRename(Path plist, String entry, String newName) {
+    public static boolean defaultsRename(Path plist, String entry, String newName) {
         return defaultsCliPut(plist, PlistOperation.RENAME, entry, PlistEntryType.UNKNOWN, newName);
     }
 
@@ -256,7 +269,28 @@ public class MacPreferenceInstaller {
         }
     }
 
-    public static boolean appendArray(Path plist, String entry, Collection<Object> values, boolean dedupe) {
+    public static boolean write(Path plist, String entry, Object value) {
+        if(delete(plist, entry)) {
+           return defaultsWrite(plist, entry, PlistEntryType.getType(value), value);
+        }
+        return false;
+    }
+
+    public static boolean delete(Path plist, String entry) {
+        PlistEntryType type = defaultsReadType(plist, entry);
+        if(type != PlistEntryType.MISSING) {
+            if(!defaultsDelete(plist, entry)) {
+                log.warn("An error occurred deleting '{}' from {}", entry, plist);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Special handling for non-destructive array entries; String arrays only
+     */
+    public static boolean writeArray(Path plist, String entry, Collection<Object> values, boolean dedupe) {
         Collection<Object> existingItems = getArray(plist, entry, dedupe);
         Collection<Object> newItems;
 
@@ -276,7 +310,7 @@ public class MacPreferenceInstaller {
 
         // preparing multiple array values for cli injection is error-prone, instead do one at a time
         for(Object value : newItems) {
-            if(!defaultsCliPut(plist, PlistOperation.WRITE, entry, PlistEntryType.ARRAY, value)) {
+            if(!defaultsWriteArrayAdd(plist, entry, value)) {
                 log.warn("An error occurred writing '{}': '{}' to {}", entry, value, plist);
                 return false;
             }
@@ -284,28 +318,7 @@ public class MacPreferenceInstaller {
         return true;
     }
 
-    public static boolean write(Path plist, String entry, Object ... values) {
-        if(delete(plist, entry)) {
-            for(Object value : values) {
-                // exit early/antipattern: plist entry can only occur once
-                return defaultsWrite(plist, entry, PlistEntryType.getType(value), value);
-            }
-        }
-        return false;
-    }
-
-    public static boolean delete(Path plist, String entry) {
-        PlistEntryType type = defaultsReadType(plist, entry);
-        if(type != PlistEntryType.MISSING) {
-            if(!defaultsDelete(plist, entry)) {
-                log.warn("An error occurred deleting '{}' from {}", entry, plist);
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public static void main(String ... args) {
+    /*(public static void main(String ... args) {
         String entry = "URLAllowlist"; // array
         //entry = "UserAccountID"; // integer
         //entry = "NSNavPanelExpandedStateForSaveMode"; // boolean
@@ -361,5 +374,5 @@ public class MacPreferenceInstaller {
                 log.info("Preference entry type '{}' is not yet supported at this time.", entry);
                 break;
         }
-    }
+    }*/
 }

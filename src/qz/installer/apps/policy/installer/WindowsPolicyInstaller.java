@@ -39,12 +39,12 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
     }
 
     @Override
-    public PolicyState removeEntries(PolicyState state, Object ... data) {
+    public PolicyState removeEntries(PolicyState state, Object ... values) {
         WinReg.HKEY root = state.getHkey();
         Path key = state.getLocation();
-        for(Object object : data) {
-            if(!WindowsUtilities.deleteNumberedRegValue(root, key.toString(), object)) {
-                return state;
+        for(Object value : values) {
+            if(!WindowsUtilities.deleteNumberedRegValue(root, key.toString(), value)) {
+                return state.setFailed(String.format("Unable to delete %s from %s\\%s", value, WindowsUtilities.getHkeyName(root), key));
             }
         }
         return state;

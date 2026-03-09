@@ -318,7 +318,7 @@ public class WindowsUtilities {
             // Make sure it doesn't already exist
             for(Map.Entry<String, Object> entry : Advapi32Util.registryGetValues(root, key).entrySet())  {
                 if(entry.getValue().equals(data)) {
-                    log.debug("Registry data {}\\\\{}\\\\{} already has {}, skipping.", WindowsUtilities.getHkeyName(root), key, entry.getKey(), data);
+                    log.debug("Registry data '{}\\\\{}\\\\{}' already has '{}', skipping.", WindowsUtilities.getHkeyName(root), key, entry.getKey(), data);
                     return true;
                 }
             }
@@ -390,7 +390,9 @@ public class WindowsUtilities {
                     Advapi32Util.registryCreateKey(root, partialKey);
                 }
             }
-            if (data instanceof String) {
+            if (data instanceof Boolean) {
+                Advapi32Util.registrySetIntValue(root, key, value, ((Boolean)data) ? 1 : 0);
+            } else if (data instanceof String) {
                 Advapi32Util.registrySetStringValue(root, key, value, (String)data);
             } else if (data instanceof Integer) {
                 Advapi32Util.registrySetIntValue(root, key, value, (Integer)data);

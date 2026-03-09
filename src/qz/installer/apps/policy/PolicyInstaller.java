@@ -85,7 +85,7 @@ public class PolicyInstaller {
                 if(values.length < 1) {
                     return state.setFailed("no policy values were provided");
                 }
-                return primitive.removeEntries(state, name, values);
+                return primitive.removeEntries(state, values);
             case VALUE:
             default:
                 if(values.length > 1) {

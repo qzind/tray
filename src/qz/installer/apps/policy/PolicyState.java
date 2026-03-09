@@ -129,19 +129,20 @@ public class PolicyState {
         return this;
     }
 
-    public String toString(PolicyInstaller.Phase phase) {
+    @Override
+    public String toString() {
         String lowerPhase = phase.name().toLowerCase(Locale.ENGLISH);
         String titlePhase = titleCase(lowerPhase);
 
         switch(status) {
             case STARTED:
-                return String.format("%s", titlePhase);
+                return String.format("%sing", titlePhase);
             case SKIPPED:
                 return String.format("Skipped %s", lowerPhase);
             case SUCCEEDED:
                 return String.format("Successfully %sed", lowerPhase);
             case FAILED:
-                return String.format("Error occurred %sed", lowerPhase);
+                return String.format("Error occurred %sing", lowerPhase);
             default:
                 return titlePhase;
         }
@@ -160,7 +161,17 @@ public class PolicyState {
         }
         String location = (hkey == null ? this.location.toString() :
                 String.format("%s\\%s", WindowsUtilities.getHkeyName(hkey), this.location));
-        log.info("{} {} ({}) policy {} to {}{}...", this, browserClass, alias.getName(false), name, location, reasonText);
+
+        log.info("{} {} ({}) policy '{}' {} '{}'{}{}",
+                 this,
+                 browserClass,
+                 alias.getName(false),
+                 name,
+                 phase == PolicyInstaller.Phase.INSTALL ? "to" : "from",
+                 location,
+                 reasonText,
+                 status == Status.STARTED ? "..." : ""
+        );
         return this;
     }
 }

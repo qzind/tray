@@ -22,12 +22,9 @@ public abstract class AppLocator {
      */
     private HashMap<String, AppInfo> join(HashMap<String, Path> pathMap, HashSet<AppInfo> appList) {
         HashMap<String, AppInfo> pidMap = new HashMap<>();
-        for(Map.Entry<String, Path> pathEntry : pathMap.entrySet()) {
-            for(AppInfo appInfo : appList) {
-                if(pidMap.containsKey(pathEntry.getKey())) {
-                    continue;
-                }
-                if(appInfo.getExePath().equals(pathEntry.getValue())) {
+        for (Map.Entry<String, Path> pathEntry : pathMap.entrySet()) {
+            for (AppInfo appInfo : appList) {
+                if (appInfo.getExePath().equals(pathEntry.getValue())) {
                     pidMap.put(pathEntry.getKey(), appInfo);
                     break;
                 }

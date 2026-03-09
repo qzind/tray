@@ -47,8 +47,8 @@ public class PolicyInstaller {
         this.scope = scope;
         this.alias = alias;
 
-        this.primitive = createPrimitiveInstaller(os);
-        this.locator = createPolicyLocator(os, alias);
+        this.primitive = constructPrimitiveInstaller();
+        this.locator = constructPolicyLocator();
     }
 
     public PolicyState install(PolicyState.Type type, String name, Object ... values) {
@@ -86,7 +86,7 @@ public class PolicyInstaller {
         }
     }
 
-    private static PrimitivePolicyInstaller createPrimitiveInstaller(Os os) {
+    private PrimitivePolicyInstaller constructPrimitiveInstaller() {
         switch(os) {
             case WINDOWS:
                 return new WindowsPolicyInstaller();
@@ -98,7 +98,7 @@ public class PolicyInstaller {
         }
     }
 
-    private static PolicyLocator createPolicyLocator(Os os, AppAlias.Alias alias) {
+    private PolicyLocator constructPolicyLocator() {
         switch(alias.getAppAlias()) {
             case CHROMIUM:
                 switch(os) {

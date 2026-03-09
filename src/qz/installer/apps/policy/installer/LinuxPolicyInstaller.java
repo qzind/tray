@@ -77,6 +77,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
 
             // Insert array into object
             jsonPolicy.put(key, jsonArray);
+            writeJsonFile(jsonPolicy, location, true);
         } catch(IOException | JSONException e) {
             return state.setFailed(e);
         }

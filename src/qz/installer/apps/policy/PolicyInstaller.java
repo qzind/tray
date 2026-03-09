@@ -54,6 +54,10 @@ public class PolicyInstaller {
     public PolicyState install(PolicyState.Type type, String name, Object ... values) {
         PolicyState state = createPolicyState(Phase.INSTALL, type, name);
 
+        if(isProhibited()) {
+            return state.setFailed("User mode policies are not yet supported on Linux");
+        }
+
         if(values.length < 1) {
             return state.setFailed("no policy value was provided");
         }
@@ -71,6 +75,11 @@ public class PolicyInstaller {
 
     public PolicyState uninstall(PolicyState.Type type, String name, Object ... values) {
         PolicyState state = createPolicyState(Phase.UNINSTALL, type, name);
+
+        if(isProhibited()) {
+            return state.setFailed("User mode policies are not yet supported on Linux");
+        }
+
         switch(state.getType()) {
             case ARRAY:
                 if(values.length < 1) {
@@ -125,5 +134,9 @@ public class PolicyInstaller {
                     WinReg.HKEY_CURRENT_USER;
         }
         return new PolicyState(alias, phase, type, name, locator.getLocation(scope, alias), hkey);
+    }
+
+    private boolean isProhibited() {
+        return os == Os.LINUX && scope == Installer.PrivilegeLevel.USER;
     }
 }

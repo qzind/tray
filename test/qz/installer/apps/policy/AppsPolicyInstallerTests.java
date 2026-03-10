@@ -13,16 +13,16 @@ public abstract class AppsPolicyInstallerTests {
         PolicyInstaller chromeInstaller = new PolicyInstaller(PrivilegeLevel.USER, chrome);
 
         // INSTALL
-        chromeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "qz://").log();
-        chromeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "pp://").log();
-        chromeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "qz://").log();
-        chromeInstaller.install(PolicyState.Type.VALUE, "SafeBrowsingEnabled", true).log();
+        chromeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
+        chromeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "pp://");
+        chromeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
+        chromeInstaller.install(PolicyState.Type.VALUE, "SafeBrowsingEnabled", true);
 
         // UNINSTALL
-        chromeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "qz://").log();
-        chromeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "pp://").log();
-        chromeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "qz://").log();
-        chromeInstaller.uninstall(PolicyState.Type.VALUE, "SafeBrowsingEnabled").log();
+        chromeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
+        chromeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "pp://");
+        chromeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
+        chromeInstaller.uninstall(PolicyState.Type.VALUE, "SafeBrowsingEnabled");
 
         //
         // MICROSOFT EDGE
@@ -31,16 +31,16 @@ public abstract class AppsPolicyInstallerTests {
         PolicyInstaller edgeInstaller = new PolicyInstaller(PrivilegeLevel.USER, edge);
 
         // INSTALL
-        edgeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "qz://").log();
-        edgeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "pp://").log();
-        edgeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "qz://").log();
-        edgeInstaller.install(PolicyState.Type.VALUE, "SafeBrowsingEnabled", true).log();
+        edgeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
+        edgeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "pp://");
+        edgeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
+        edgeInstaller.install(PolicyState.Type.VALUE, "SafeBrowsingEnabled", true);
 
         // UNINSTALL
-        edgeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "qz://").log();
-        edgeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "pp://").log();
-        edgeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "qz://").log();
-        edgeInstaller.uninstall(PolicyState.Type.VALUE, "SafeBrowsingEnabled").log();
+        edgeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
+        edgeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "pp://");
+        edgeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
+        edgeInstaller.uninstall(PolicyState.Type.VALUE, "SafeBrowsingEnabled");
 
         // TODO: Add firefox
     }

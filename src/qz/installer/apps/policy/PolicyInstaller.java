@@ -55,21 +55,21 @@ public class PolicyInstaller {
         PolicyState state = createPolicyState(Phase.INSTALL, type, name);
 
         if(isProhibited()) {
-            return state.setFailed("User mode policies are not yet supported on Linux");
+            return state.setFailed("User mode policies are not yet supported on Linux").log();
         }
 
         if(values.length < 1) {
-            return state.setFailed("no policy value was provided");
+            return state.setFailed("no policy value was provided").log();
         }
         switch(state.getType()) {
             case ARRAY:
-                return primitive.putEntries(state, values);
+                return primitive.putEntries(state, values).log();
             case VALUE:
             default:
                 if(values.length > 1) {
-                    return state.setFailed("only one value is allowed");
+                    return state.setFailed("only one value is allowed").log();
                 }
-                return primitive.putValue(state, values[0]);
+                return primitive.putValue(state, values[0]).log();
         }
     }
 
@@ -77,21 +77,21 @@ public class PolicyInstaller {
         PolicyState state = createPolicyState(Phase.UNINSTALL, type, name);
 
         if(isProhibited()) {
-            return state.setFailed("User mode policies are not yet supported on Linux");
+            return state.setFailed("User mode policies are not yet supported on Linux").log();
         }
 
         switch(state.getType()) {
             case ARRAY:
                 if(values.length < 1) {
-                    return state.setFailed("no policy values were provided");
+                    return state.setFailed("no policy values were provided").log();
                 }
-                return primitive.removeEntries(state, values);
+                return primitive.removeEntries(state, values).log();
             case VALUE:
             default:
                 if(values.length > 1) {
-                    return state.setFailed("policy values were provided, but none were expected");
+                    return state.setFailed("policy values were provided, but none were expected").log();
                 }
-                return primitive.removeValue(state);
+                return primitive.removeValue(state).log();
         }
     }
 

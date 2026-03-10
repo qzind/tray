@@ -49,4 +49,17 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         }
         return state;
     }
+
+    @Override
+    public Object getValue(PolicyState state) throws Exception {
+        WinReg.HKEY root = state.getHkey();
+        Path key = state.getLocation();
+        return WindowsUtilities.getRegValue(root, key.toString(), state.getName());
+    }
+
+    @Override
+    public Object[] getEntries(PolicyState state) throws Exception {
+        // TODO: Need to construct object array
+        throw new UnsupportedOperationException("Convert by adapting code from addNumberedRegValue");
+    }
 }

@@ -25,6 +25,8 @@ public class PolicyInstaller {
         PolicyState removeValue(PolicyState state);
         PolicyState putEntries(PolicyState state, Object ... values);
         PolicyState removeEntries(PolicyState state, Object ... values);
+        Object getValue(PolicyState state) throws Exception;
+        Object[] getEntries(PolicyState state) throws Exception;
     }
 
     public interface PolicyLocator {
@@ -35,8 +37,8 @@ public class PolicyInstaller {
     final private Installer.PrivilegeLevel scope;
     final private AppAlias.Alias alias;
 
-    final private PrimitivePolicyInstaller primitive;
-    final private PolicyLocator locator;
+    final PrimitivePolicyInstaller primitive;
+    final PolicyLocator locator;
 
     public PolicyInstaller(Installer.PrivilegeLevel scope, AppAlias.Alias alias) {
         this(SystemUtilities.getOs(), scope, alias);

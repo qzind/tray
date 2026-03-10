@@ -340,39 +340,42 @@ public class PlistUtils {
             log.error("Something went wrong writing '{}': '{}' to {}", entry, val, plist);
             return;
         }
+*/
 
+    public static Object getValue(Path plist, String entry) {
         PlistEntryType type = defaultsReadType(plist, entry);
         switch(type) {
             case STRING:
-                String stringVal = PlistEntryType.fromString(defaultsRead(plist, entry));
-                log.info("{} ({}): {}", entry, type.slug(), stringVal);
-                break;
+                return PlistEntryType.fromString(defaultsRead(plist, entry));
             case INTEGER:
-                Integer intVal = PlistEntryType.fromInteger(defaultsRead(plist, entry));
-                log.info("{} ({}): {}", entry, type.slug(), intVal);
-                break;
+                return PlistEntryType.fromInteger(defaultsRead(plist, entry));
             case FLOAT:
-                Float floatVal = PlistEntryType.fromFloat(defaultsRead(plist, entry));
-                log.info("{} ({}): {}", entry, type.slug(), floatVal);
-                break;
+                return PlistEntryType.fromFloat(defaultsRead(plist, entry));
             case BOOLEAN:
-                Boolean boolVal = PlistEntryType.fromBoolean(defaultsRead(plist, entry));
-                log.info("{} ({}): {}", entry, type.slug(), boolVal);
-                break;
-            case ARRAY:
-                // Unit tests can use fromArray to prevent deduping
-                ArrayList<Object> arrayVal = PlistEntryType.fromArray(defaultsRead(plist, entry));
-                log.info("{} ({}):", entry, type.slug());
-                arrayVal.forEach(System.out::println);
-                break;
+                return PlistEntryType.fromBoolean(defaultsRead(plist, entry));
             case MISSING:
-                log.info("Preference entry '{}' is missing from plist file {}", entry, plist);
+                break;
+            case ARRAY: // wrong function call
+            case DATA: // not yet supported
+            case DATE: // not yet supported
+            default:
+                log.info("Preference entry type '{}' is not yet supported for getValue() at this time.", entry);
+        }
+        return null;
+    }
+
+    public static Object[] getArray(Path plist, String entry) {
+        PlistEntryType type = defaultsReadType(plist, entry);
+        switch(type) {
+            case ARRAY:
+                return PlistEntryType.fromArray(defaultsRead(plist, entry)).toArray();
+            case MISSING:
                 break;
             case DATA: // not yet supported
             case DATE: // not yet supported
             default:
-                log.info("Preference entry type '{}' is not yet supported at this time.", entry);
-                break;
+                log.info("Preference entry type '{}' is not an array.", entry);
         }
-    }*/
+        return null;
+    }
 }

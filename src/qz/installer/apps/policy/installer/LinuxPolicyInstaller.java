@@ -110,6 +110,24 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
         return state.setSucceeded();
     }
 
+    @Override
+    public Object getValue(PolicyState state) throws Exception {
+        return readJsonFile(state.getLocation()).optJSONObject(state.getName());
+    }
+
+    @Override
+    public Object[] getEntries(PolicyState state) throws Exception {
+        JSONArray entries = readJsonFile(state.getLocation()).optJSONArray(state.getName());
+        if(entries == null) {
+            return new Object[0];
+        }
+        Object[] returnVal = new Object[entries.length()];
+        for(int i = 0; i < entries.length(); i++) {
+            returnVal[i] = entries.get(i);
+        }
+        return returnVal;
+    }
+
     /**
      * Uses an intermediary ArrayList to fix a bug with JSONArray
      * See also: <a href="https://github.com/jettison-json/jettison/issues/113">#133</a>

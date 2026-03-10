@@ -36,4 +36,14 @@ public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstal
         // Note: dedupe: true will delete what's there first, so this may result in the policyName being removed entirely
         return putEntries(state, existing.toArray());
     }
+
+    @Override
+    public Object getValue(PolicyState state) {
+        return PlistUtils.getValue(state.getLocation(), state.getName());
+    }
+
+    @Override
+    public Object[] getEntries(PolicyState state) {
+        return PlistUtils.getArray(state.getLocation(), state.getName());
+    }
 }

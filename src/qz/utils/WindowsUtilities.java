@@ -217,6 +217,17 @@ public class WindowsUtilities {
         return null;
     }
 
+    public static Object getRegValue(HKEY root, String key, String value) {
+        try {
+            if (Advapi32Util.registryKeyExists(root, key) && Advapi32Util.registryValueExists(root, key, value)) {
+                return Advapi32Util.registryGetValue(root, key, value);
+            }
+        } catch(Exception e) {
+            log.warn("Couldn't get registry value {}\\\\{}\\\\{}", getHkeyName(root), key, value);
+        }
+        return null;
+    }
+
     // gracefully swallow InvocationTargetException
     public static String[] getRegistryKeys(HKEY root, String key) {
         try {

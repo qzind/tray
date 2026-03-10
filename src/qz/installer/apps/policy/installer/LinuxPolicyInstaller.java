@@ -10,6 +10,7 @@ import qz.installer.apps.policy.PolicyState;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -88,22 +89,50 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     public PolicyState removeEntries(PolicyState state, Object ... values) {
         String key = state.getName();
         Path location = state.getLocation();
-        Set<Object> remove = new HashSet<>(Arrays.asList(values));
+        Set<Object> removeSet = new HashSet<>(Arrays.asList(values));
         try {
             JSONObject jsonPolicy = readJsonFile(location);
             JSONArray jsonArray = jsonPolicy.optJSONArray(key);
             if(jsonArray != null) {
-                for(int i = jsonArray.length() - 1; i >= 0; i--) {
-                    Object existing = jsonArray.get(i);
-                    if (remove.contains(existing)) {
-                        jsonArray.remove(i);
-                    }
+                jsonArray = removeFromJsonArray(removeSet, jsonArray);
+                if(jsonArray.length() > 0) {
+                    jsonPolicy.put(key, jsonArray); // explicit put, pointer has changed
+                } else {
+                    jsonPolicy.remove(key); // clean up empty array
                 }
                 writeJsonFile(jsonPolicy, location, true);
+            } else {
+                return state.setSkipped(String.format("array value '%s' doesn't exist", key));
             }
         } catch(IOException | JSONException e) {
             return state.setFailed(e);
         }
         return state.setSucceeded();
     }
+
+    /**
+     * Uses an intermediary ArrayList to fix a bug with JSONArray
+     * See also: <a href="https://github.com/jettison-json/jettison/issues/113">#133</a>
+     */
+    private JSONArray removeFromJsonArray(Set<Object> removeSet, JSONArray jsonArray) throws JSONException {
+        ArrayList<Object> tempArray = new ArrayList<>();
+        // populate from JSONArray
+        for(int i = 0; i < jsonArray.length(); i++) {
+            tempArray.add(i, jsonArray.get(i));
+        }
+        // remove matches
+        for(int i = tempArray.size() - 1; i >= 0; i--) {
+            Object existing = tempArray.get(i);
+            if (removeSet.contains(existing)) {
+                tempArray.remove(i);
+            }
+        }
+        // convert back to JSONArray
+        jsonArray = new JSONArray();
+        for(Object o : tempArray) {
+            jsonArray.put(o);
+        }
+        return jsonArray;
+    }
+
 }

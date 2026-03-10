@@ -7,6 +7,7 @@ import qz.installer.apps.policy.PolicyState;
 import qz.utils.WindowsUtilities;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 
 public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstaller {
     @Override
@@ -54,12 +55,25 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
     public Object getValue(PolicyState state) throws Exception {
         WinReg.HKEY root = state.getHkey();
         Path key = state.getLocation();
+
         return WindowsUtilities.getRegValue(root, key.toString(), state.getName());
     }
 
     @Override
-    public Object[] getEntries(PolicyState state) throws Exception {
-        // TODO: Need to construct object array
-        throw new UnsupportedOperationException("Convert by adapting code from addNumberedRegValue");
+    public Object[] getEntries(PolicyState state) {
+        WinReg.HKEY root = state.getHkey();
+        Path key = state.getLocation();
+
+        ArrayList<Object> values = new ArrayList<>();
+
+        // Iterate over the numerical values and add them to the arraylist
+        int index = 0;
+        Object val;
+        // val is assigned, and the loop is continued if there was a non-null value returned
+        while ((val = WindowsUtilities.getRegValue(root, key.toString(), Integer.toString(index))) != null) {
+            values.add(val);
+            index++;
+        }
+        return values.toArray(new Object[0]);
     }
 }

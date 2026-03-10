@@ -102,7 +102,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
                 }
                 writeJsonFile(jsonPolicy, location, true);
             } else {
-                return state.setSkipped(String.format("array value '%s' doesn't exist", key));
+                return state.setSucceeded(String.format("skipping, array value '%s' doesn't exist", key));
             }
         } catch(IOException | JSONException e) {
             return state.setFailed(e);

@@ -28,7 +28,7 @@ public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstal
     public PolicyState removeEntries(PolicyState state, Object ... values) {
         Collection<Object> existing = PlistUtils.getArray(state.getLocation(), state.getName(), true);
         if (existing.isEmpty()) {
-            return state.setSkipped("policy file was not found or empty");
+            return state.setSucceeded("skipping, policy file was not found or empty");
         }
         // Remove just our own entries
         existing.removeAll(List.of(values));

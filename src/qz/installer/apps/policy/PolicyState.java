@@ -36,8 +36,7 @@ public class PolicyState {
     public enum Status {
         STARTED,
         SUCCEEDED,
-        FAILED,
-        SKIPPED;
+        FAILED;
     }
 
     final AppAlias.Alias alias;
@@ -110,12 +109,12 @@ public class PolicyState {
         return setStatus(Status.FAILED, null, exception);
     }
 
-    public PolicyState setSkipped(String reason) {
-        return setStatus(Status.SKIPPED, reason, null);
-    }
-
     public PolicyState setSucceeded() {
         return setStatus(Status.SUCCEEDED, null, null);
+    }
+
+    public PolicyState setSucceeded(String reason) {
+        return setStatus(Status.SUCCEEDED, reason, null);
     }
 
     public PolicyState setSucceeded(boolean succeeded) {
@@ -137,8 +136,6 @@ public class PolicyState {
         switch(status) {
             case STARTED:
                 return String.format("%sing", titlePhase);
-            case SKIPPED:
-                return String.format("Skipped %s", lowerPhase);
             case SUCCEEDED:
                 return String.format("Successfully %sed", lowerPhase);
             case FAILED:

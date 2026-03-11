@@ -10,10 +10,7 @@ import qz.installer.apps.policy.PolicyState;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static qz.utils.FileUtilities.*;
 
@@ -111,21 +108,74 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     }
 
     @Override
-    public Object getValue(PolicyState state) throws Exception {
-        return readJsonFile(state.getLocation()).optJSONObject(state.getName());
+    public PolicyState putMap(PolicyState state, Map<String,Object> map) {
+        String key = state.getName();
+        Path location = state.getLocation();
+        try {
+            JSONObject jsonPolicy = readJsonFile(location);
+            JSONObject jsonObject = jsonPolicy.optJSONObject(key);
+            if(jsonObject == null) {
+                log.debug("JSON file found {} but without array entry for {}, we'll add it", location, key);
+                jsonObject = new JSONObject();
+            }
+
+            for(Map.Entry<String, Object> entry : map.entrySet()) {
+                jsonObject.put(entry.getKey(), entry.getValue());
+            }
+
+            // Insert array into object
+            jsonPolicy.put(key, jsonObject);
+            writeJsonFile(jsonPolicy, location, true);
+        } catch(IOException | JSONException e) {
+            return state.setFailed(e);
+        }
+        return state.setSucceeded();
     }
 
     @Override
-    public Object[] getEntries(PolicyState state) throws Exception {
-        JSONArray entries = readJsonFile(state.getLocation()).optJSONArray(state.getName());
-        if(entries == null) {
-            return new Object[0];
+    public Object getValue(PolicyState state) {
+        try {
+            return readJsonFile(state.getLocation()).optJSONObject(state.getName());
+        } catch(JSONException | IOException ignore) {}
+        return null;
+    }
+
+    @Override
+    public Object[] getEntries(PolicyState state) {
+        try {
+            JSONArray entries = readJsonFile(state.getLocation()).optJSONArray(state.getName());
+            if (entries == null) {
+                return new Object[0];
+            }
+            Object[] returnVal = new Object[entries.length()];
+            for(int i = 0; i < entries.length(); i++) {
+                returnVal[i] = entries.get(i);
+            }
+            return returnVal;
+        } catch(JSONException | IOException ignore) {}
+        return new Object[0];
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public HashMap<String,Object> getMap(PolicyState state) {
+        String key = state.getName();
+        Path location = state.getLocation();
+        HashMap<String,Object> returnValue = new HashMap<>();
+        try {
+            JSONObject jsonPolicy = readJsonFile(location);
+            JSONObject jsonObject = jsonPolicy.optJSONObject(key);
+            if(jsonObject != null) {
+                Iterator<String> iterator = jsonObject.keys(); // unchecked: seems to always be <String>
+                while(iterator.hasNext()) {
+                    String mapKey = iterator.next();
+                    returnValue.put(key, jsonObject.get(mapKey));
+                }
+            }
+        } catch(IOException | JSONException e) {
+            state.setFailed(e);
         }
-        Object[] returnVal = new Object[entries.length()];
-        for(int i = 0; i < entries.length(); i++) {
-            returnVal[i] = entries.get(i);
-        }
-        return returnVal;
+        return returnValue;
     }
 
     /**

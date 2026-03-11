@@ -17,7 +17,7 @@ import java.util.Locale;
  * <ul>
  *  <li><code>alias</code>: Information about the app for calculating location</li>
  *  <li><code>phase</code>: <code>Phase</code> (</code><code>INSTALL</code> or <code>REMOVAL</code>) of policy</li>
- *  <li><code>type</code>: <code>Type</code> of values Single <code>VALUE</code> or <code>ARRAY</code> of values</li>
+ *  <li><code>type</code>: <code>Type</code> of values Single <code>VALUE</code>, <code>ARRAY</code> of values or <code>MAP</code> of String to value</li>
  *  <li><code>name</code>: <code>String</code> policy name</li>
  *  <li><code>location</code>: Location <code>Path</code> of policy to change</li>
  *   <ul><li><code>hkey</code>: Windows-only <code>HKEY</code> for storing <code>HKLM</code>, <code>HKCU</code>, etc</li></ul>
@@ -30,7 +30,8 @@ public class PolicyState {
 
     public enum Type {
         VALUE,
-        ARRAY
+        ARRAY,
+        MAP
     }
 
     public enum Status {
@@ -55,7 +56,7 @@ public class PolicyState {
         this.phase = phase;
         this.type = type;
         this.name = name;
-        if(hkey != null && type == Type.ARRAY) {
+        if(hkey != null && (type == Type.ARRAY || type == Type.MAP)) {
             // Special handling for Windows arrays: name is the reg key
             this.location = Paths.get(String.format("%s\\%s", location.toString(), name));
         } else {

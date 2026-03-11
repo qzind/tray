@@ -7,7 +7,7 @@ import qz.installer.apps.policy.PolicyState;
 import qz.utils.WindowsUtilities;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.*;
 
 public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstaller {
     @Override
@@ -52,7 +52,20 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
     }
 
     @Override
-    public Object getValue(PolicyState state) throws Exception {
+    public PolicyState putMap(PolicyState state, Map<String,Object> map) {
+        WinReg.HKEY root = state.getHkey();
+        Path key = state.getLocation();
+
+        for(Map.Entry<String, Object> mapEntry : map.entrySet()) {
+            if(!WindowsUtilities.addRegValue(root, key.toString(), mapEntry.getKey(), mapEntry.getValue())) {
+                return state.setFailed(String.format("Error writing '%s'='%s' to %s\\%s", mapEntry.getKey(), mapEntry.getValue(), WindowsUtilities.getHkeyName(root), key));
+            }
+        }
+        return state;
+    }
+
+    @Override
+    public Object getValue(PolicyState state) {
         WinReg.HKEY root = state.getHkey();
         Path key = state.getLocation();
 
@@ -75,5 +88,20 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
             index++;
         }
         return values.toArray(new Object[0]);
+    }
+
+    @Override
+    public HashMap<String,Object> getMap(PolicyState state) {
+        WinReg.HKEY root = state.getHkey();
+        Path key = state.getLocation();
+
+        HashMap<String, Object> values = new HashMap<>();
+        TreeMap<String, Object> treeMap = WindowsUtilities.getRegistryValues(root, key.toString());
+
+        if(treeMap != null) {
+            values.putAll(treeMap);
+        }
+
+        return values;
     }
 }

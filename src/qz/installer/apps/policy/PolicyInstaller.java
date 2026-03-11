@@ -13,6 +13,8 @@ import qz.installer.apps.policy.locator.WindowsChromiumPolicyLocator;
 import qz.utils.SystemUtilities;
 
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PolicyInstaller {
     public enum Phase {
@@ -25,8 +27,39 @@ public class PolicyInstaller {
         PolicyState removeValue(PolicyState state);
         PolicyState putEntries(PolicyState state, Object ... values);
         PolicyState removeEntries(PolicyState state, Object ... values);
-        Object getValue(PolicyState state) throws Exception;
-        Object[] getEntries(PolicyState state) throws Exception;
+        PolicyState putMap(PolicyState state, Map<String, Object> map);
+        Object getValue(PolicyState state);
+        Object[] getEntries(PolicyState state);
+        HashMap<String, Object> getMap(PolicyState state);
+
+        @SuppressWarnings("unchecked")
+        static PolicyState putMap(PrimitivePolicyInstaller primitive, PolicyState state, Object ... values) {
+            for(Object value : values) {
+                if(primitive.putMap(state, (HashMap<String,Object>)value).hasFailed()) {
+                    break;
+                }
+            }
+            return state;
+        }
+
+        @SuppressWarnings("unchecked")
+        static PolicyState removeMap(PrimitivePolicyInstaller primitive, PolicyState state, Object ... values) {
+            for(Object value : values) {
+                HashMap<String,Object> provided = (HashMap<String,Object>)value;
+                HashMap<String,Object> remaining = primitive.getMap(state);
+                if (remaining == null) return state.setSucceeded("suspiciously succeeded, the map is null");
+                int removeCount = 0;
+                for(String key : provided.keySet())
+                    if (remaining.remove(key) != null)
+                        removeCount++;
+
+                if (removeCount == 0)  return state.setSucceeded("nothing to remove");
+                if (!primitive.removeValue(state).hasFailed()) return state; // delete failed
+                if (remaining.isEmpty())  return state.setSucceeded("nothing to write");
+                if (primitive.putMap(state, remaining).hasFailed()) return state;
+            }
+            return state;
+        }
     }
 
     public interface PolicyLocator {
@@ -66,6 +99,8 @@ public class PolicyInstaller {
         switch(state.getType()) {
             case ARRAY:
                 return primitive.putEntries(state, values).log();
+            case MAP:
+                return PrimitivePolicyInstaller.putMap(primitive, state, values).log();
             case VALUE:
             default:
                 if(values.length > 1) {
@@ -88,6 +123,11 @@ public class PolicyInstaller {
                     return state.setFailed("no policy values were provided").log();
                 }
                 return primitive.removeEntries(state, values).log();
+            case MAP:
+                if(values.length < 1) {
+                    return state.setFailed("no policy values were provided").log();
+                }
+                return PrimitivePolicyInstaller.removeMap(primitive, state, values);
             case VALUE:
             default:
                 if(values.length > 1) {

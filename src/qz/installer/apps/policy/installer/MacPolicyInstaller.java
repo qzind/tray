@@ -4,9 +4,7 @@ import qz.installer.apps.policy.PolicyInstaller;
 import qz.installer.apps.policy.PolicyState;
 import qz.utils.PlistUtils;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstaller {
     @Override
@@ -38,6 +36,11 @@ public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstal
     }
 
     @Override
+    public PolicyState putMap(PolicyState state, Map<String,Object> map) {
+        return null;
+    }
+
+    @Override
     public Object getValue(PolicyState state) {
         return PlistUtils.getValue(state.getLocation(), state.getName());
     }
@@ -45,5 +48,10 @@ public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstal
     @Override
     public Object[] getEntries(PolicyState state) {
         return PlistUtils.getArray(state.getLocation(), state.getName());
+    }
+
+    @Override
+    public HashMap<String,Object> getMap(PolicyState state) {
+        return PlistUtils.getMap(state.getLocation(), state.getName());
     }
 }

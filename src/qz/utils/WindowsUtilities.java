@@ -241,6 +241,18 @@ public class WindowsUtilities {
     }
 
     // gracefully swallow InvocationTargetException
+    public static TreeMap<String, Object> getRegistryValues(HKEY root, String key) {
+        try {
+            if (Advapi32Util.registryKeyExists(root, key)) {
+                return Advapi32Util.registryGetValues(root, key);
+            }
+        } catch(Exception e) {
+            log.warn("Couldn't get registry values for parentKey {}\\\\{}", getHkeyName(root), key);
+        }
+        return null;
+    }
+
+    // gracefully swallow InvocationTargetException
     public static boolean registryKeyExists(HKEY root, String key) {
         try {
             return Advapi32Util.registryKeyExists(root, key);

@@ -61,6 +61,7 @@ public class PlistUtils {
         BOOLEAN("bool", "boolean"),
         DATE("date"),
         ARRAY("array"),
+        DICT("dict"),
         MISSING(),
         UNKNOWN();
 
@@ -72,7 +73,8 @@ public class PlistUtils {
             this.matches = matches;
             this.slug = Sluggable.slugOf(name());
             // "-array" can be destructive, so we'll prefer "-array-add" instead
-            this.valueType = slug.equals("array") ? "-array-add" : String.format("-%s", slug); // -boolean, -string, etc
+            this.valueType = slug.equals("array") || slug.equals("dict") ?
+                    String.format("-%s-add", slug) : String.format("-%s", slug); // -boolean, -string, etc
         }
 
         public static PlistEntryType parse(String input) {
@@ -100,7 +102,6 @@ public class PlistUtils {
             if(o instanceof Float) {
                 return FLOAT;
             }
-
             if(o instanceof Boolean) {
                 return BOOLEAN;
             }
@@ -109,6 +110,9 @@ public class PlistUtils {
             }
             if(o instanceof Object[]) {
                 return ARRAY;
+            }
+            if(o instanceof Map) {
+                return DICT;
             }
             if(o == null) {
                 return MISSING;
@@ -152,27 +156,87 @@ public class PlistUtils {
         }
 
         // For simplicity's sake (at least for now) assume all arrays are one-level, one-dimensional
-        // and only contain string values
+        // and only contain primitive types such as string, int, float, boolean
         public static ArrayList<Object> fromArray(String haystack) {
             ArrayList<Object> values = new ArrayList<>();
             String[] lines = trim(haystack).split("[\r?\n]+");
             for(String line : lines) {
-                String value = trim(line);
-                if(value.isBlank() || value.startsWith("(") || value.startsWith(")")) {
+                String rawValue = trim(line);
+                if(rawValue.isBlank() || rawValue.startsWith("(") || rawValue.startsWith(")")) {
                     continue;
                 }
-                if(value.endsWith(",")) {
-                    value = value.substring(0, value.length() - 1);
-                }
-                if(value.endsWith("\"")) {
-                    value = value.substring(0, value.length() - 1);
-                }
-                if(value.startsWith("\"")) {
-                    value = value.replaceFirst("\"", "");
-                }
-                values.add(value);
+                values.add(parseObject(rawValue, false));
             }
             return values;
+        }
+
+        /**
+         * Converts the output of the terminal to a <code>HashMap&lt;String,Object&gt;</code>
+         * For simplicity's sake (at least for now) assume all dictionaries are one-level, one-dimensional
+         *
+         * @param haystack The terminal output to parse
+         */
+        public static HashMap<String, Object> fromDictionary(String haystack) {
+            HashMap<String, Object> values = new HashMap<>();
+            String[] lines = trim(haystack).split("[\r?\n]+");
+            for(String line : lines) {
+                String value = trim(line);
+                if(value.isBlank() || value.startsWith("{") || value.startsWith("}")) {
+                    continue;
+                }
+                if(!value.contains(" = ")) {
+                    log.warn("Skipping dictionary line '{}', it doesn't contain ' = '", value);
+                    continue;
+                }
+                String[] parts = value.split(" = ", 2);
+                if(parts.length < 2) {
+                    log.warn("Skipping dictionary line '{}', it's not in an expected format ' = '", value);
+                    continue;
+                }
+
+                String key = parts[0].trim();
+                String rawValue = parts[1].trim();
+
+                values.put(key, parseObject(rawValue, true));
+            }
+            return values;
+        }
+
+        /**
+         * Attempts to parse terminal output to a String, Integer, Float or (conditionally) Boolean
+         *
+         * @param raw raw terminal output
+         * @param assumeBooleans  Automatically converts zeros and ones to true/false due to limitations of <code>defaults read</code>
+         */
+        private static Object parseObject(String raw, boolean assumeBooleans) {
+            // Dictionary entries end in ';', arrays end in ','
+            if(raw.endsWith(";") || raw.endsWith(",")) {
+                raw = raw.substring(0, raw.length() - 1);
+            }
+
+            // String
+            if(raw.startsWith("\"")) {
+                raw = raw.replaceFirst("\"", "");
+                if(raw.endsWith("\"")) {
+                    raw = raw.substring(0, raw.length() - 1);
+                }
+                return raw;
+            }
+
+            if(assumeBooleans) {
+                // Boolean
+                if (raw.equalsIgnoreCase("1") || raw.equalsIgnoreCase("0")) {
+                    return fromBoolean(raw);
+                }
+            }
+
+            // Float
+            if(raw.contains(".")) {
+                return fromFloat(raw);
+            }
+
+            // Int
+            return fromInteger(raw);
         }
 
         /**
@@ -220,18 +284,7 @@ public class PlistUtils {
                 // value and type are omitted
                 return ShellUtilities.execute(defaultsCliPrepare(plist, operation, entry));
         }
-        String stringVal = value.toString();
-        switch(type) {
-            case UNKNOWN:
-                type = PlistEntryType.STRING;
-                break;
-            case BOOLEAN:
-                // man pages say "TRUE", not "true"; both seem to work; we'll err on the side of caution
-                stringVal = stringVal.toUpperCase(Locale.ENGLISH);
-                break;
-            default:
-        }
-        return ShellUtilities.execute(defaultsCliPrepare(plist, operation, entry, type.getValueType(), stringVal));
+        return ShellUtilities.execute(defaultsCliPrepare(plist, operation, entry, type.getValueType(), value.toString()));
     }
 
     public static PlistEntryType defaultsReadType(Path plist, String entry) {
@@ -244,12 +297,17 @@ public class PlistUtils {
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean defaultsDelete(Path plist, String entry) {
-        return defaultsCliPut(plist, PlistOperation.DELETE, entry, PlistEntryType.UNKNOWN, null);
+        return defaultsCliPut(plist, PlistOperation.DELETE, entry, PlistEntryType.MISSING, null);
     }
 
     @SuppressWarnings("unused")
     public static boolean defaultsWrite(Path plist, String entry, PlistEntryType type, Object value) {
         return defaultsCliPut(plist, PlistOperation.WRITE, entry, type, value);
+    }
+
+    private static boolean defaultWriteDictionary(Path plist, String entry, Map.Entry<String, Object> mapEntry) {
+        String mapValueType = PlistEntryType.getType(mapEntry.getValue()).getValueType();
+        return ShellUtilities.execute(defaultsCliPrepare(plist, PlistOperation.WRITE, entry, PlistEntryType.DICT.getValueType(), mapEntry.getKey(), mapValueType, mapEntry.getValue().toString()));
     }
 
     private static boolean defaultsWriteArrayAdd(Path plist, String entry, Object value) {
@@ -258,7 +316,7 @@ public class PlistUtils {
 
     @SuppressWarnings("unused")
     public static boolean defaultsRename(Path plist, String entry, String newName) {
-        return defaultsCliPut(plist, PlistOperation.RENAME, entry, PlistEntryType.UNKNOWN, newName);
+        return defaultsCliPut(plist, PlistOperation.RENAME, entry, PlistEntryType.MISSING, newName);
     }
 
     public static Collection<Object> getArray(Path plist, String entry, boolean unique) {
@@ -286,6 +344,44 @@ public class PlistUtils {
         }
         return true;
     }
+
+    public static boolean writeMap(Path plist, String entry, HashMap<String, Object> values) {
+        for(Map.Entry<String,Object> mapEntry : values.entrySet()) {
+            if(!defaultWriteDictionary(plist, entry, mapEntry)) {
+                log.warn("An error occurred writing '{}': '{}:{}' to {}", entry, mapEntry.getKey(), mapEntry.getValue(), plist);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /*
+    public static boolean deleteMap(Path plist, String entry, Map<String,Object> values) {
+        HashMap<String, Object> remaining = getMap(plist, entry);
+        if(remaining == null) {
+            return true;
+        }
+        int removeCount = 0;
+        for(String key : values.keySet()) {
+            if(remaining.remove(key) != null) {
+                removeCount++;
+            }
+        }
+        if(removeCount == 0) {
+            return true; // nothing to remove
+        }
+
+        // Delete and rewrite the map with our remaining values
+        if(!delete(plist, entry)) {
+            return false; // delete failed
+        }
+
+        if (remaining.isEmpty()) {
+            return true; // nothing left to write back
+        }
+
+        return writeMap(plist, entry, remaining);
+    }*/
 
     /**
      * Special handling for non-destructive array entries; String arrays only
@@ -375,6 +471,21 @@ public class PlistUtils {
             case DATE: // not yet supported
             default:
                 log.info("Preference entry type '{}' is not an array.", entry);
+        }
+        return null;
+    }
+
+    public static HashMap<String, Object> getMap(Path plist, String entry) {
+        PlistEntryType type = defaultsReadType(plist, entry);
+        switch(type) {
+            case DICT:
+                return PlistEntryType.fromDictionary(defaultsRead(plist, entry));
+            case MISSING:
+                break;
+            case DATA: // not yet supported
+            case DATE: // not yet supported
+            default:
+                log.info("Preference entry type '{}' is not a dictionary.", entry);
         }
         return null;
     }

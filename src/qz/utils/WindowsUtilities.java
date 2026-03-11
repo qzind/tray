@@ -391,6 +391,11 @@ public class WindowsUtilities {
             }
         }
 
+        if(!deleteRegKey(root, key)) {
+            log.error("Unable to clear registry key at {}\\\\{}", WindowsUtilities.getHkeyName(root), key);
+            return false;
+        }
+
         for(Object value : existingValues)  {
             if(!addNumberedRegValue(root, key, value)) {
                 return false;

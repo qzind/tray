@@ -282,7 +282,10 @@ public class PlistUtils {
                 return ShellUtilities.execute(defaultsCliPrepare(plist, operation, entry, value.toString()));
             case DELETE:
                 // value and type are omitted
-                return ShellUtilities.execute(defaultsCliPrepare(plist, operation, entry));
+                if(defaultsReadType(plist, entry) != PlistEntryType.MISSING) {
+                    return ShellUtilities.execute(defaultsCliPrepare(plist, operation, entry));
+                }
+                return true; // nothing to delete
         }
         return ShellUtilities.execute(defaultsCliPrepare(plist, operation, entry, type.getValueType(), value.toString()));
     }
@@ -355,57 +358,17 @@ public class PlistUtils {
         return true;
     }
 
-    /*
-    public static boolean deleteMap(Path plist, String entry, Map<String,Object> values) {
-        HashMap<String, Object> remaining = getMap(plist, entry);
-        if(remaining == null) {
-            return true;
-        }
-        int removeCount = 0;
-        for(String key : values.keySet()) {
-            if(remaining.remove(key) != null) {
-                removeCount++;
-            }
-        }
-        if(removeCount == 0) {
-            return true; // nothing to remove
-        }
-
-        // Delete and rewrite the map with our remaining values
-        if(!delete(plist, entry)) {
-            return false; // delete failed
-        }
-
-        if (remaining.isEmpty()) {
-            return true; // nothing left to write back
-        }
-
-        return writeMap(plist, entry, remaining);
-    }*/
-
     /**
-     * Special handling for non-destructive array entries; String arrays only
+     * Blindly write the array to the specified location
      */
-    public static boolean writeArray(Path plist, String entry, Collection<Object> values, boolean dedupe) {
-        Collection<Object> existingItems = getArray(plist, entry, dedupe);
-        Collection<Object> newItems;
-
-        if(dedupe) {
-            // clear out the value(s) that were there before
-            if(!existingItems.isEmpty()) {
-                if(!defaultsDelete(plist, entry)) {
-                    log.warn("An error occurred deleting '{}' from {}", entry, plist);
-                    return false;
-                }
-            }
-            newItems = new HashSet<>(existingItems);
-        } else {
-            newItems = new ArrayList<>();
+    public static boolean writeArray(Path plist, String entry, Collection<Object> values) {
+        if(!defaultsDelete(plist, entry)) {
+            log.warn("An error occurred deleting '{}' from {}", entry, plist);
+            return false;
         }
-        newItems.addAll(values);
 
         // preparing multiple array values for cli injection is error-prone, instead do one at a time
-        for(Object value : newItems) {
+        for(Object value : values) {
             if(!defaultsWriteArrayAdd(plist, entry, value)) {
                 log.warn("An error occurred writing '{}': '{}' to {}", entry, value, plist);
                 return false;
@@ -413,30 +376,6 @@ public class PlistUtils {
         }
         return true;
     }
-
-    /*(public static void main(String ... args) {
-        String entry = "URLAllowlist"; // array
-        //entry = "UserAccountID"; // integer
-        //entry = "NSNavPanelExpandedStateForSaveMode"; // boolean
-        //entry = "ConfigurationCoPilotEnabled"; // integer
-        Path plist = Path.of("/Users/owner/Library/Preferences/com.teamviewer.teamviewer.preferences.plist");
-        plist = Path.of("/Users/owner/Library/Preferences/com.google.Chrome.plist");
-        String val = "qz://";
-
-        HashSet<Object> entries = PlistEntryType.fromUniqueArray(defaultsRead(plist, entry));
-        if(!entries.isEmpty()) {
-            if (!defaultsDelete(plist, entry)) {
-                log.error("Something went wrong deleting '{}' from  {}", entry, plist);
-                return;
-            }
-        }
-
-        entries.add(val);
-        if(!appendArray(plist, entry, entries, true)) {
-            log.error("Something went wrong writing '{}': '{}' to {}", entry, val, plist);
-            return;
-        }
-*/
 
     public static Object getValue(Path plist, String entry) {
         PlistEntryType type = defaultsReadType(plist, entry);

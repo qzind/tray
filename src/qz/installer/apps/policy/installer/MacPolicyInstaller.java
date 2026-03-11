@@ -19,7 +19,7 @@ public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstal
 
     @Override
     public PolicyState putEntries(PolicyState state, Object ... values) {
-        return state.setSucceeded(PlistUtils.writeArray(state.getLocation(), state.getName(), Arrays.asList(values), true));
+        return state.setSucceeded(PlistUtils.writeArray(state.getLocation(), state.getName(), new HashSet<>(Arrays.asList(values))));
     }
 
     @Override

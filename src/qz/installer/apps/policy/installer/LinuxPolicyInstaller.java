@@ -123,7 +123,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
                 jsonObject.put(entry.getKey(), entry.getValue());
             }
 
-            // Insert array into object
+            // Insert map into object
             jsonPolicy.put(key, jsonObject);
             writeJsonFile(jsonPolicy, location, true);
         } catch(IOException | JSONException e) {

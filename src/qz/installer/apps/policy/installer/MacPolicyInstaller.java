@@ -52,6 +52,11 @@ public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstal
 
     @Override
     public Map<String,Object> getMap(PolicyState state) {
-        return PlistUtils.getMap(state.getLocation(), state.getName());
+        Map<String,Object> map = PlistUtils.getMap(state.getLocation(), state.getName());
+        if(map != null) {
+            state.setSucceeded(map.isEmpty()? String.format("Plist '%s' is missing map entry for '%s', returning an empty map", state.getLocation(), state.getName()) : null);
+        }
+        state.setFailed(String.format("An unexpected error occurred obtaining map value '%s' from '%s'",state.getName(),  state.getLocation()));
+        return new HashMap<>();
     }
 }

@@ -55,9 +55,9 @@ public class PolicyInstaller {
                     if (remaining.remove(key) != null)
                         removeCount++;
 
-                if (removeCount == 0)  return state.setSucceeded("nothing to remove");
+                if (removeCount == 0) return state.setSucceeded("nothing to remove");
                 if (!primitive.removeValue(state).hasFailed()) return state; // delete failed
-                if (remaining.isEmpty())  return state.setSucceeded("nothing to write");
+                if (remaining.isEmpty()) return state.setSucceeded("nothing to write");
                 if (primitive.putMap(state, remaining).hasFailed()) return state;
             }
             return state;
@@ -131,7 +131,7 @@ public class PolicyInstaller {
                 if(values.length < 1) {
                     return state.setFailed("no policy values were provided").log();
                 }
-                return PrimitivePolicyInstaller.removeMap(primitive, state, pairToMapArray(values));
+                return PrimitivePolicyInstaller.removeMap(primitive, state, pairToMapArray(values)).log();
             case VALUE:
             default:
                 if(values.length > 1) {

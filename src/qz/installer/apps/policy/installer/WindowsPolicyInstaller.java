@@ -99,9 +99,11 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         TreeMap<String, Object> treeMap = WindowsUtilities.getRegistryValues(root, key.toString());
 
         if(treeMap != null) {
+            state.setSucceeded(treeMap.isEmpty()? String.format("Registry '%s' is missing map entry for '%s', skipping", state.getLocation(), state.getName()) : null);
             values.putAll(treeMap);
+        } else {
+            state.setFailed(String.format("An unexpected error occurred obtaining map value '%s' from '%s'", state.getName(), state.getLocation()));
         }
-
         return values;
     }
 }

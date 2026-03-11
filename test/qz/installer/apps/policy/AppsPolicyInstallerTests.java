@@ -1,47 +1,132 @@
 package qz.installer.apps.policy;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.testng.Assert;
+import org.testng.SkipException;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 import qz.installer.apps.locator.AppAlias;
+import qz.utils.SystemUtilities;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 import static qz.installer.Installer.*;
 
-public abstract class AppsPolicyInstallerTests {
-    public static void main(String ... args) {
-        //
-        // GOOGLE CHROME
-        //
-        AppAlias.Alias chrome = AppAlias.CHROMIUM.getAliases()[0];
-        PolicyInstaller chromeInstaller = new PolicyInstaller(PrivilegeLevel.USER, chrome);
+public class AppsPolicyInstallerTests {
+    private static final Logger log = LogManager.getLogger(AppsPolicyInstallerTests.class);
 
-        // INSTALL
-        chromeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
-        chromeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "pp://");
-        chromeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
-        chromeInstaller.install(PolicyState.Type.VALUE, "SafeBrowsingEnabled", true);
+    /**
+     * constructs a test matrix of [AppAlias, PolicyState, PolicyName, Values]
+     */
+    @DataProvider(name = "policyArrays")
+    public Object[][] policyArrays() {
+        ArrayList<Object[]> retMatrix = new ArrayList<>();
+        for (AppAlias appAlias: AppAlias.values()) {
+            for (AppAlias.Alias alias : appAlias.getAliases()) {
+                retMatrix.add(new Object[] {alias, PolicyState.Type.ARRAY, "URLAllowlist", new Object[]{"qz://", "pp://", "qz://"}});
+            }
+        }
+        return retMatrix.toArray(new Object[0][]);
+    }
 
-        // UNINSTALL
-        chromeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
-        chromeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "pp://");
-        chromeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
-        chromeInstaller.uninstall(PolicyState.Type.VALUE, "SafeBrowsingEnabled");
+    @Test(dataProvider = "policyArrays", priority = 1)
+    public void testAppsPolicyArrayInstall(AppAlias.Alias alias, PolicyState.Type type, String name, Object[] values) {
+        PolicyInstaller policyInstaller = createPolicyInstaller(alias);
 
-        //
-        // MICROSOFT EDGE
-        //
-        AppAlias.Alias edge = AppAlias.CHROMIUM.getAliases()[1];
-        PolicyInstaller edgeInstaller = new PolicyInstaller(PrivilegeLevel.USER, edge);
+        PolicyState state = policyInstaller.install(type, name, values);
+        assertState(state);
+        List<Object> returnedList = Arrays.asList(policyInstaller.primitive.getEntries(state.reset()));
 
-        // INSTALL
-        edgeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
-        edgeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "pp://");
-        edgeInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
-        edgeInstaller.install(PolicyState.Type.VALUE, "SafeBrowsingEnabled", true);
+        // Verify there is one, and only one, match.
+        for (Object value: values) {
+            int firstIndex = returnedList.indexOf(value);
+            if (firstIndex == -1) Assert.fail("No match found for value: " + value);
+            List<Object> sublist = returnedList.subList(firstIndex + 1, returnedList.size());
+            if (sublist.contains(value)) Assert.fail("Duplicate matches found for value: " + value);
+        }
+    }
 
-        // UNINSTALL
-        edgeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
-        edgeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "pp://");
-        edgeInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", "qz://");
-        edgeInstaller.uninstall(PolicyState.Type.VALUE, "SafeBrowsingEnabled");
+    @Test(dataProvider = "policyArrays", priority = 2)
+    public void testAppsPolicyArrayUninstall(AppAlias.Alias alias, PolicyState.Type type, String name, Object[] values) {
+        PolicyInstaller policyInstaller = createPolicyInstaller(alias);
 
-        // TODO: Add firefox
+        PolicyState state = policyInstaller.uninstall(type, name, values);
+        assertState(state);
+        List<Object> returnedList = Arrays.asList(policyInstaller.primitive.getEntries(state.reset()));
+
+        // Verify none of our values remain in the array
+        for (Object value: values) {
+            int firstIndex = returnedList.indexOf(value);
+            if (firstIndex != -1) Assert.fail("Failed to remove element: " + value);
+        }
+    }
+
+    /**
+     * constructs a test matrix of [AppAlias, PolicyState, PolicyName, Value]
+     */
+    @DataProvider(name = "policyBooleans")
+    public Object[][] policyBooleans() {
+        ArrayList<Object[]> retMatrix = new ArrayList<>();
+        for (AppAlias appAlias: AppAlias.values()) {
+            for (AppAlias.Alias alias : appAlias.getAliases()) {
+                retMatrix.add(new Object[] {alias, PolicyState.Type.VALUE, "SafeBrowsingEnabled", true});
+            }
+        }
+        return retMatrix.toArray(new Object[0][]);
+    }
+
+    @Test(dataProvider = "policyBooleans", priority = 1)
+    public void testAppsPolicyBooleanInstall(AppAlias.Alias alias, PolicyState.Type type, String name, Object value) {
+        PolicyInstaller policyInstaller = createPolicyInstaller(alias);
+
+        PolicyState state = policyInstaller.install(type, name, value);
+        assertState(state);
+        Object returnedValue = policyInstaller.primitive.getValue(state.reset());
+
+        assetEqual(returnedValue, value);
+    }
+
+    @Test(dataProvider = "policyBooleans", priority = 2)
+    public void testAppsPolicyBooleanUninstall(AppAlias.Alias alias, PolicyState.Type type, String name, Object value) {
+        PolicyInstaller policyInstaller = createPolicyInstaller(alias);
+
+        PolicyState state = policyInstaller.uninstall(type, name, value);
+        assertState(state);
+        Object returnedValue = policyInstaller.primitive.getValue(state.reset());
+
+        assetEqual(returnedValue, value);
+    }
+
+    private PolicyInstaller createPolicyInstaller(AppAlias.Alias alias) {
+        PrivilegeLevel privilegeLevel = SystemUtilities.isAdmin() ? PrivilegeLevel.SYSTEM : PrivilegeLevel.USER;
+        try {
+            return new PolicyInstaller(privilegeLevel, alias);
+        } catch(Exception e) {
+            throw new SkipException("");
+        }
+    }
+
+    private void assertState(PolicyState state) {
+        if (state.hasFailed()) {
+            state.log();
+            Assert.fail(state.reason);
+        }
+    }
+
+    private void assetEqual(Object returnedValue, Object value) {
+        if (!Objects.equals(value, returnedValue)) {
+            log.warn(
+                    "Expected value: {} (type: {}), returned value: {} (type: {})",
+                    value,
+                    value == null ? "null" : value.getClass().getName(),
+                    returnedValue,
+                    returnedValue == null ? "null" : returnedValue.getClass().getName()
+            );
+            Assert.fail("Return value mismatch");
+        }
     }
 }

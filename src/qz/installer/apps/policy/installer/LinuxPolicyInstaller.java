@@ -135,7 +135,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     @Override
     public Object getValue(PolicyState state) {
         try {
-            return readJsonFile(state.getLocation()).optJSONObject(state.getName());
+            return readJsonFile(state.getLocation()).opt(state.getName());
         } catch(JSONException | IOException ignore) {}
         return null;
     }

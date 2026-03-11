@@ -37,7 +37,7 @@ public class PolicyState {
     public enum Status {
         STARTED,
         SUCCEEDED,
-        FAILED;
+        FAILED
     }
 
     final AppAlias.Alias alias;
@@ -66,8 +66,6 @@ public class PolicyState {
 
         this.status = Status.STARTED;
         this.exception = null;
-
-
     }
 
     public Exception getException() {
@@ -126,6 +124,13 @@ public class PolicyState {
         this.status = status;
         this.reason = reason;
         this.exception = exception;
+        return this;
+    }
+
+    public PolicyState reset() {
+        this.status = Status.STARTED;
+        this.reason = null;
+        this.exception = null;
         return this;
     }
 

@@ -91,7 +91,7 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
     }
 
     @Override
-    public HashMap<String,Object> getMap(PolicyState state) {
+    public Map<String,Object> getMap(PolicyState state) {
         WinReg.HKEY root = state.getHkey();
         Path key = state.getLocation();
 

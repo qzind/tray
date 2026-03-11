@@ -1,6 +1,8 @@
 package qz.installer.apps.policy;
 
 import com.sun.jna.platform.win32.WinReg;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.build.provision.params.Os;
 import qz.installer.Installer;
 import qz.installer.apps.locator.AppAlias;
@@ -14,6 +16,7 @@ import qz.utils.SystemUtilities;
 
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class PolicyInstaller {
@@ -30,23 +33,22 @@ public class PolicyInstaller {
         PolicyState putMap(PolicyState state, Map<String, Object> map);
         Object getValue(PolicyState state);
         Object[] getEntries(PolicyState state);
-        HashMap<String, Object> getMap(PolicyState state);
+        Map<String, Object> getMap(PolicyState state);
 
         @SuppressWarnings("unchecked")
         static PolicyState putMap(PrimitivePolicyInstaller primitive, PolicyState state, Object ... values) {
             for(Object value : values) {
-                if(primitive.putMap(state, (HashMap<String,Object>)value).hasFailed()) {
+                if(primitive.putMap(state, (Map<String,Object>)value).hasFailed()) {
                     break;
                 }
             }
             return state;
         }
 
-        @SuppressWarnings("unchecked")
         static PolicyState removeMap(PrimitivePolicyInstaller primitive, PolicyState state, Object ... values) {
             for(Object value : values) {
-                HashMap<String,Object> provided = (HashMap<String,Object>)value;
-                HashMap<String,Object> remaining = primitive.getMap(state);
+                Map<String,Object> provided = objectToMap(value);
+                Map<String,Object> remaining = primitive.getMap(state);
                 if (remaining == null) return state.setSucceeded("suspiciously succeeded, the map is null");
                 int removeCount = 0;
                 for(String key : provided.keySet())
@@ -65,6 +67,8 @@ public class PolicyInstaller {
     public interface PolicyLocator {
         Path getLocation(Installer.PrivilegeLevel scope, AppAlias.Alias alias);
     }
+
+    final private static Logger log = LogManager.getLogger(PolicyInstaller.class);
 
     final private Os os;
     final private Installer.PrivilegeLevel scope;
@@ -100,7 +104,7 @@ public class PolicyInstaller {
             case ARRAY:
                 return primitive.putEntries(state, values).log();
             case MAP:
-                return PrimitivePolicyInstaller.putMap(primitive, state, values).log();
+                return PrimitivePolicyInstaller.putMap(primitive, state, pairToMapArray(values)).log();
             case VALUE:
             default:
                 if(values.length > 1) {
@@ -127,7 +131,7 @@ public class PolicyInstaller {
                 if(values.length < 1) {
                     return state.setFailed("no policy values were provided").log();
                 }
-                return PrimitivePolicyInstaller.removeMap(primitive, state, values);
+                return PrimitivePolicyInstaller.removeMap(primitive, state, pairToMapArray(values));
             case VALUE:
             default:
                 if(values.length > 1) {
@@ -147,6 +151,39 @@ public class PolicyInstaller {
             default:
                 return new LinuxPolicyInstaller();
         }
+    }
+
+    /**
+     * If the first two <code>values</code> are a String and Object,
+     * wraps them into a new <code>HashMap&lt;String,Object&gt;[]</code>
+     * otherwise returns them unmodified.
+     */
+    private static Object[] pairToMapArray(Object ... values) {
+        if(values[0] instanceof String && values.length == 2) {
+            // convert to HashMap
+            HashMap<String, Object> value = new HashMap<>();
+            value.put((String)values[0], values[1]);
+            // wrap as Object[]
+            return new Object[] { value };
+        }
+        return values;
+    }
+
+    /**
+     * Safe cast of <code>Object</code> to <code>Map&lt;String,Object&gt;</code>
+     * falling back to an empty <code>Map</code> on failure.
+     */
+    @SuppressWarnings("unchecked,rawtypes")
+    private static Map<String, Object> objectToMap(Object value) {
+        if(value instanceof Map) {
+            Map map = (Map)value;
+            Iterator<Object> iterator = map.keySet().iterator();
+            if(iterator.hasNext() && iterator.next() instanceof String) {
+                return (Map<String,Object>)value;
+            }
+        }
+        log.warn("Could not cast '{}' to Map<String,Object>, returning empty Map instead", value.getClass());
+        return new HashMap<>();
     }
 
     private PolicyLocator constructPolicyLocator() {

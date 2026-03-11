@@ -61,7 +61,7 @@ public class PlistUtils {
         BOOLEAN("bool", "boolean"),
         DATE("date"),
         ARRAY("array"),
-        DICT("dict"),
+        DICT("dict", "dictionary"),
         MISSING(),
         UNKNOWN();
 
@@ -345,7 +345,7 @@ public class PlistUtils {
         return true;
     }
 
-    public static boolean writeMap(Path plist, String entry, HashMap<String, Object> values) {
+    public static boolean writeMap(Path plist, String entry, Map<String, Object> values) {
         for(Map.Entry<String,Object> mapEntry : values.entrySet()) {
             if(!defaultWriteDictionary(plist, entry, mapEntry)) {
                 log.warn("An error occurred writing '{}': '{}:{}' to {}", entry, mapEntry.getKey(), mapEntry.getValue(), plist);

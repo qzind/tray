@@ -158,10 +158,10 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
 
     @Override
     @SuppressWarnings("unchecked")
-    public HashMap<String,Object> getMap(PolicyState state) {
+    public Map<String,Object> getMap(PolicyState state) {
         String key = state.getName();
         Path location = state.getLocation();
-        HashMap<String,Object> returnValue = new HashMap<>();
+        Map<String,Object> returnValue = new HashMap<>();
         try {
             JSONObject jsonPolicy = readJsonFile(location);
             JSONObject jsonObject = jsonPolicy.optJSONObject(key);

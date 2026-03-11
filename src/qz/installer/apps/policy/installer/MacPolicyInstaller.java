@@ -37,7 +37,7 @@ public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstal
 
     @Override
     public PolicyState putMap(PolicyState state, Map<String,Object> map) {
-        return null;
+        return state.setSucceeded(PlistUtils.writeMap(state.getLocation(), state.getName(), map));
     }
 
     @Override
@@ -51,7 +51,7 @@ public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstal
     }
 
     @Override
-    public HashMap<String,Object> getMap(PolicyState state) {
+    public Map<String,Object> getMap(PolicyState state) {
         return PlistUtils.getMap(state.getLocation(), state.getName());
     }
 }

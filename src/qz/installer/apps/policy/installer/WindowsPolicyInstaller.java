@@ -69,7 +69,7 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         WinReg.HKEY root = state.getHkey();
         Path key = state.getLocation();
 
-        return WindowsUtilities.getRegValue(root, key.toString(), state.getName());
+        return state.failIfNull(WindowsUtilities.getRegValue(root, key.toString(), state.getName()));
     }
 
     @Override
@@ -81,13 +81,14 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
 
         // Iterate over the numerical values and add them to the arraylist
         int index = 0;
-        Object val;
+        Object value;
         // val is assigned, and the loop is continued if there was a non-null value returned
-        while ((val = WindowsUtilities.getRegValue(root, key.toString(), Integer.toString(index))) != null) {
-            values.add(val);
+        while ((value = WindowsUtilities.getRegValue(root, key.toString(), Integer.toString(index))) != null) {
+            values.add(value);
             index++;
         }
-        return values.toArray(new Object[0]);
+        // this will never be null, but will show a log when empty
+        return state.failIfNull(values.toArray(new Object[0]));
     }
 
     @Override
@@ -95,15 +96,7 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         WinReg.HKEY root = state.getHkey();
         Path key = state.getLocation();
 
-        HashMap<String, Object> values = new HashMap<>();
         TreeMap<String, Object> treeMap = WindowsUtilities.getRegistryValues(root, key.toString());
-
-        if(treeMap != null) {
-            state.setSucceeded(treeMap.isEmpty()? String.format("Registry '%s' is missing map entry for '%s', skipping", state.getLocation(), state.getName()) : null);
-            values.putAll(treeMap);
-        } else {
-            state.setFailed(String.format("An unexpected error occurred obtaining map value '%s' from '%s'", state.getName(), state.getLocation()));
-        }
-        return values;
+        return new HashMap<>(state.failIfNull(treeMap));
     }
 }

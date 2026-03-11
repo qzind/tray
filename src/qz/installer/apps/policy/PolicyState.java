@@ -8,7 +8,9 @@ import qz.utils.WindowsUtilities;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Container for policy lifecycle
@@ -108,6 +110,35 @@ public class PolicyState {
         return setStatus(Status.FAILED, null, exception);
     }
 
+    public Object failIfNull(Object value) {
+        if(value == null) {
+            setFailed("Returned value is null");
+        } else {
+            setSucceeded();
+        }
+        return value;
+    }
+
+    public Object[] failIfNull(Object[] values) {
+        if(values == null) {
+            setFailed("Returned values are null");
+            return new Object[0];
+        } else {
+            setSucceeded(values.length == 0 ? String.format("Location '%s' is missing array entry for '%s', returning an empty array", location, name) : null);
+        }
+        return values;
+    }
+
+    public Map<String, Object> failIfNull(Map<String, Object> map) {
+        if(map == null) {
+            setFailed("Returned map is null");
+            return new HashMap<>();
+        } else {
+            setSucceeded(map.isEmpty() ? String.format("Location '%s' is missing map entry for '%s', returning an empty map", location, name) : null);
+        }
+        return map;
+    }
+
     public PolicyState setSucceeded() {
         return setStatus(Status.SUCCEEDED, null, null);
     }
@@ -165,16 +196,21 @@ public class PolicyState {
         String location = (hkey == null ? this.location.toString() :
                 String.format("%s\\%s", WindowsUtilities.getHkeyName(hkey), this.location));
 
-        log.info("{} {} ({}) policy '{}' {} '{}'{}{}",
-                 this,
-                 browserClass,
-                 alias.getName(false),
-                 name,
-                 phase == PolicyInstaller.Phase.INSTALL ? "to" : "from",
-                 location,
-                 reasonText,
-                 status == Status.STARTED ? "..." : ""
-        );
+        String message = String.format("%s %s (%s) policy '%s' %s '%s'%s%s",
+                                       this,
+                                       browserClass,
+                                       alias.getName(false),
+                                       name,
+                                       phase == PolicyInstaller.Phase.INSTALL ? "to" : "from",
+                                       location,
+                                       reasonText,
+                                       status == Status.STARTED ? "..." : "");
+
+        if(exception != null) {
+            log.error(message, exception);
+        } else {
+            log.info(message);
+        }
         return this;
     }
 }

@@ -9,10 +9,7 @@ import org.testng.annotations.Test;
 import qz.installer.apps.locator.AppAlias;
 import qz.utils.SystemUtilities;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static qz.installer.Installer.*;
 
@@ -98,8 +95,34 @@ public class AppsPolicyInstallerTests {
         assertState(state);
         Object returnedValue = policyInstaller.primitive.getValue(state.reset());
 
-        assetEqual(returnedValue, value);
+        assetEqual(returnedValue, null);
     }
+
+    /**
+     * constructs a test matrix of [AppAlias, PolicyState, PolicyName, Values]
+     */
+    @DataProvider(name = "policyMaps")
+    public Object[][] policyMaps() {
+        ArrayList<Object[]> retMatrix = new ArrayList<>();
+        for (AppAlias appAlias: AppAlias.values()) {
+            for (AppAlias.Alias alias : appAlias.getAliases()) {
+                retMatrix.add(new Object[] {alias, PolicyState.Type.MAP, "Certificate", "ImportEnterpriseRoots", true});
+            }
+        }
+        return retMatrix.toArray(new Object[0][]);
+    }
+
+    @Test(dataProvider = "policyMaps", priority = 1)
+    public void testAppsPolicyMapInstall(AppAlias.Alias alias, PolicyState.Type type, String name, String subKey, Object value) {
+        PolicyInstaller policyInstaller = createPolicyInstaller(alias);
+
+        PolicyState state = policyInstaller.install(type, name, subKey, value);
+        assertState(state);
+
+        Map<String, Object> map = policyInstaller.primitive.getMap(state.reset());
+        assert(map.containsKey(subKey));
+    }
+
 
     private PolicyInstaller createPolicyInstaller(AppAlias.Alias alias) {
         PrivilegeLevel privilegeLevel = SystemUtilities.isAdmin() ? PrivilegeLevel.SYSTEM : PrivilegeLevel.USER;

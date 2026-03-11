@@ -134,26 +134,27 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
 
     @Override
     public Object getValue(PolicyState state) {
+        Object value = null;
         try {
-            return readJsonFile(state.getLocation()).opt(state.getName());
+            value = readJsonFile(state.getLocation()).opt(state.getName());
         } catch(JSONException | IOException ignore) {}
-        return null;
+        return state.failIfNull(value);
     }
 
     @Override
     public Object[] getEntries(PolicyState state) {
+        Object[] values = null;
         try {
             JSONArray entries = readJsonFile(state.getLocation()).optJSONArray(state.getName());
             if (entries == null) {
                 return new Object[0];
             }
-            Object[] returnVal = new Object[entries.length()];
+            values = new Object[entries.length()];
             for(int i = 0; i < entries.length(); i++) {
-                returnVal[i] = entries.get(i);
+                values[i] = entries.get(i);
             }
-            return returnVal;
         } catch(JSONException | IOException ignore) {}
-        return new Object[0];
+        return state.failIfNull(values);
     }
 
     @Override
@@ -161,22 +162,23 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     public Map<String,Object> getMap(PolicyState state) {
         String key = state.getName();
         Path location = state.getLocation();
-        Map<String,Object> returnValue = new HashMap<>();
+        Map<String,Object> map = null;
         try {
             JSONObject jsonPolicy = readJsonFile(location);
+            map = new HashMap<>();
             JSONObject jsonObject = jsonPolicy.optJSONObject(key);
             if(jsonObject != null) {
                 Iterator<String> iterator = jsonObject.keys(); // unchecked: seems to always be <String>
                 while(iterator.hasNext()) {
                     String mapKey = iterator.next();
-                    returnValue.put(mapKey, jsonObject.get(mapKey));
+                    map.put(mapKey, jsonObject.get(mapKey));
                 }
             }
-            state.setSucceeded(returnValue.isEmpty() ? String.format("JSON file '%s' is missing map entry for '%s', returning an empty map", location, key) : null);
+            state.setSucceeded(map.isEmpty() ? String.format("JSON file '%s' is missing map entry for '%s', returning an empty map", location, key) : null);
         } catch(IOException | JSONException e) {
             state.setFailed(e);
         }
-        return returnValue;
+        return state.failIfNull(map);
     }
 
     /**

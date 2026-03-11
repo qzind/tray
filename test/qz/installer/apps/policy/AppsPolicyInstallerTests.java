@@ -8,6 +8,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.installer.apps.locator.AppAlias;
 import qz.utils.SystemUtilities;
+import qz.utils.WindowsUtilities;
 
 import java.util.*;
 
@@ -141,6 +142,21 @@ public class AppsPolicyInstallerTests {
     }
 
     private void assetEqual(Object returnedValue, Object value) {
+        if(SystemUtilities.isWindows()) {
+            // Windows registry is incapable of returning a boolean
+            if(value instanceof Boolean && returnedValue instanceof Integer) {
+                Integer intReturned = (Integer)returnedValue;
+                switch(intReturned) {
+                    case 0:
+                    case 1:
+                        // treat as boolean
+                        returnedValue = intReturned != 0;
+                        break;
+                    default:
+                        // let it fail
+                }
+            }
+        }
         if (!Objects.equals(value, returnedValue)) {
             log.warn(
                     "Expected value: {} (type: {}), returned value: {} (type: {})",

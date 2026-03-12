@@ -87,6 +87,50 @@ public enum Vendor implements Parsable {
         }
     }
 
+    public String getApiPlatform(Platform platform) {
+        switch(this) {
+            case BELLSOFT:
+                // Assume they're the same unless we know otherwise
+                return String.format("os=%s",getUrlPlatform(platform));
+            case ECLIPSE:
+            default:
+                throw new UnsupportedOperationException(String.format("Filtering API by os is not yet supported for this vendor (%s)", this));
+        }
+    }
+
+    public String getApiMajorVersion(Version version) {
+        switch(this) {
+            case BELLSOFT:
+                // Assume they're the same unless we know otherwise
+                return String.format("version-feature=%d", version.majorVersion());
+            case ECLIPSE:
+            default:
+                throw new UnsupportedOperationException(String.format("Filtering API by major version is not yet supported for this vendor (%s)", this));
+        }
+    }
+
+    public String getApiArch(Arch arch) {
+        switch(this) {
+            case BELLSOFT:
+                switch(arch) {
+                    case ARM32:
+                    case AARCH64:
+                        return String.format("arch=arm&bitness=%s", arch.getBitness());
+                    case X86:
+                    case X86_64:
+                        return String.format("arch=x86&bitness=%s", arch.getBitness());
+                    case RISCV32:
+                    case RISCV64:
+                        return String.format("arch=riscv&bitness=%s", arch.getBitness());
+                    case PPC64:
+                        return String.format("arch=ppc&bitness=%s", arch.getBitness());
+                }
+            case ECLIPSE:
+            default:
+                throw new UnsupportedOperationException(String.format("Filtering API by arch '%s' is not yet supported for this vendor (%s)", arch, this));
+        }
+    }
+
     /**
      * Map Vendor to Platform name
      */

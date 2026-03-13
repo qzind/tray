@@ -3,12 +3,10 @@ package qz.installer.apps.policy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
-import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.installer.apps.locator.AppAlias;
 import qz.utils.SystemUtilities;
-import qz.utils.WindowsUtilities;
 
 import java.util.*;
 
@@ -18,23 +16,20 @@ public class AppsPolicyInstallerTests {
     private static final Logger log = LogManager.getLogger(AppsPolicyInstallerTests.class);
 
     /**
-     * constructs a test matrix of [AppAlias, PolicyState, PolicyName, Values[]]
+     * constructs a test matrix of [PolicyInstaller, PolicyState, PolicyName, Values[]]
      * There must be at least 2 values
      */
     @DataProvider(name = "policyArrays")
     public Object[][] policyArrays() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
         for (AppAlias.Alias alias : AppAlias.CHROMIUM.getAliases()) {
-            retMatrix.add(new Object[] {alias, PolicyState.Type.ARRAY, "URLAllowlist", new Object[]{"qz://", "pp://"}});
+            retMatrix.add(new Object[] {createPolicyInstaller(alias), PolicyState.Type.ARRAY, "URLAllowlist", new Object[]{"qz://", "pp://"}});
         }
-
         return retMatrix.toArray(new Object[0][]);
     }
 
     @Test(dataProvider = "policyArrays", priority = 1)
-    public void testAppsPolicyArrayInstall(AppAlias.Alias alias, PolicyState.Type type, String name, Object[] values) {
-        PolicyInstaller policyInstaller = createPolicyInstaller(alias);
-
+    public void testAppsPolicyArrayInstall(PolicyInstaller policyInstaller, PolicyState.Type type, String name, Object[] values) {
         PolicyState state = policyInstaller.install(type, name, values);
         assertState(state);
 
@@ -54,9 +49,7 @@ public class AppsPolicyInstallerTests {
     }
 
     @Test(dataProvider = "policyArrays", priority = 2)
-    public void testAppsPolicyArrayUninstall(AppAlias.Alias alias, PolicyState.Type type, String name, Object[] values) {
-        PolicyInstaller policyInstaller = createPolicyInstaller(alias);
-
+    public void testAppsPolicyArrayUninstall(PolicyInstaller policyInstaller, PolicyState.Type type, String name, Object[] values) {
         // Remove the first element
         PolicyState state = policyInstaller.uninstall(type, name, values[0]);
         assertState(state);
@@ -78,21 +71,19 @@ public class AppsPolicyInstallerTests {
     }
 
     /**
-     * constructs a test matrix of [AppAlias, PolicyState, PolicyName, Value]
+     * constructs a test matrix of [PolicyInstaller, PolicyState, PolicyName, Value]
      */
     @DataProvider(name = "policyBooleans")
     public Object[][] policyBooleans() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
         for (AppAlias.Alias alias : AppAlias.CHROMIUM.getAliases()) {
-            retMatrix.add(new Object[] {alias, PolicyState.Type.VALUE, "SafeBrowsingEnabled", true});
+            retMatrix.add(new Object[] {createPolicyInstaller(alias), PolicyState.Type.VALUE, "SafeBrowsingEnabled", true});
         }
         return retMatrix.toArray(new Object[0][]);
     }
 
     @Test(dataProvider = "policyBooleans", priority = 1)
-    public void testAppsPolicyBooleanInstall(AppAlias.Alias alias, PolicyState.Type type, String name, Object value) {
-        PolicyInstaller policyInstaller = createPolicyInstaller(alias);
-
+    public void testAppsPolicyBooleanInstall(PolicyInstaller policyInstaller, PolicyState.Type type, String name, Object value) {
         PolicyState state = policyInstaller.install(type, name, value);
         assertState(state);
         Object returnedValue = policyInstaller.primitive.getValue(state.reset());
@@ -101,9 +92,7 @@ public class AppsPolicyInstallerTests {
     }
 
     @Test(dataProvider = "policyBooleans", priority = 2)
-    public void testAppsPolicyBooleanUninstall(AppAlias.Alias alias, PolicyState.Type type, String name, Object value) {
-        PolicyInstaller policyInstaller = createPolicyInstaller(alias);
-
+    public void testAppsPolicyBooleanUninstall(PolicyInstaller policyInstaller, PolicyState.Type type, String name, Object value) {
         PolicyState state = policyInstaller.uninstall(type, name, value);
         assertState(state);
         Object returnedValue = policyInstaller.primitive.getValue(state.reset());
@@ -112,21 +101,19 @@ public class AppsPolicyInstallerTests {
     }
 
     /**
-     * constructs a test matrix of [AppAlias, PolicyState, PolicyName, Values]
+     * constructs a test matrix of [PolicyInstaller, PolicyState, PolicyName, Values]
      */
     @DataProvider(name = "policyMaps")
     public Object[][] policyMaps() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
         for (AppAlias.Alias alias : AppAlias.FIREFOX.getAliases()) {
-            retMatrix.add(new Object[] {alias, PolicyState.Type.MAP, "Certificate", "ImportEnterpriseRoots", true});
+            retMatrix.add(new Object[] {createPolicyInstaller(alias), PolicyState.Type.MAP, "Certificate", "ImportEnterpriseRoots", true});
         }
         return retMatrix.toArray(new Object[0][]);
     }
 
     @Test(dataProvider = "policyMaps", priority = 1)
-    public void testAppsPolicyMapInstall(AppAlias.Alias alias, PolicyState.Type type, String name, String subKey, Object value) {
-        PolicyInstaller policyInstaller = createPolicyInstaller(alias);
-
+    public void testAppsPolicyMapInstall(PolicyInstaller policyInstaller, PolicyState.Type type, String name, String subKey, Object value) {
         PolicyState state = policyInstaller.install(type, name, subKey, value);
         assertState(state);
 
@@ -135,9 +122,7 @@ public class AppsPolicyInstallerTests {
     }
 
     @Test(dataProvider = "policyMaps", priority = 2)
-    public void testAppsPolicyMapUninstall(AppAlias.Alias alias, PolicyState.Type type, String name, String subKey, Object value) {
-        PolicyInstaller policyInstaller = createPolicyInstaller(alias);
-
+    public void testAppsPolicyMapUninstall(PolicyInstaller policyInstaller, PolicyState.Type type, String name, String subKey, Object value) {
         PolicyState state = policyInstaller.uninstall(type, name, subKey, value);
         assertState(state);
 
@@ -147,11 +132,7 @@ public class AppsPolicyInstallerTests {
 
     private PolicyInstaller createPolicyInstaller(AppAlias.Alias alias) {
         PrivilegeLevel privilegeLevel = SystemUtilities.isAdmin() ? PrivilegeLevel.SYSTEM : PrivilegeLevel.USER;
-        try {
-            return new PolicyInstaller(privilegeLevel, alias);
-        } catch(Exception e) {
-            throw new SkipException("");
-        }
+        return new PolicyInstaller(privilegeLevel, alias);
     }
 
     private void assertState(PolicyState state) {

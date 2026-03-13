@@ -7,7 +7,7 @@ import qz.installer.apps.policy.PolicyInstaller;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class WindowsChromiumPolicyLocator implements PolicyInstaller.PolicyLocator {
+public class WindowsPolicyLocator implements PolicyInstaller.PolicyLocator {
     // e.g. "SOFTWARE\\Policies\\Google\\Chrome\\%s",
     private static final String MANAGED_POLICY_PATH_PATTERN = "SOFTWARE\\Policies\\%s\\%s";
 

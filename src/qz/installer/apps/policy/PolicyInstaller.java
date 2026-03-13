@@ -9,9 +9,9 @@ import qz.installer.apps.locator.AppAlias;
 import qz.installer.apps.policy.installer.LinuxPolicyInstaller;
 import qz.installer.apps.policy.installer.MacPolicyInstaller;
 import qz.installer.apps.policy.installer.WindowsPolicyInstaller;
-import qz.installer.apps.policy.locator.LinuxChromiumPolicyLocator;
-import qz.installer.apps.policy.locator.MacChromiumPolicyLocator;
-import qz.installer.apps.policy.locator.WindowsChromiumPolicyLocator;
+import qz.installer.apps.policy.locator.LinuxPolicyLocator;
+import qz.installer.apps.policy.locator.MacPolicyLocator;
+import qz.installer.apps.policy.locator.WindowsPolicyLocator;
 import qz.utils.SystemUtilities;
 
 import java.nio.file.Path;
@@ -187,21 +187,14 @@ public class PolicyInstaller {
     }
 
     private PolicyLocator constructPolicyLocator() {
-        switch(alias.getAppAlias()) {
-            case CHROMIUM:
-                switch(os) {
-                    case WINDOWS:
-                        return new WindowsChromiumPolicyLocator();
-                    case MAC:
-                        return new MacChromiumPolicyLocator();
-                    case LINUX:
-                    default:
-                        return new LinuxChromiumPolicyLocator();
-                }
-            case FIREFOX:
-                // TODO: Implement firefox
+        switch(os) {
+            case WINDOWS:
+                return new WindowsPolicyLocator();
+            case MAC:
+                return new MacPolicyLocator();
+            case LINUX:
             default:
-                throw new UnsupportedOperationException();
+                return new LinuxPolicyLocator();
         }
     }
 

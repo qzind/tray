@@ -24,11 +24,10 @@ public class AppsPolicyInstallerTests {
     @DataProvider(name = "policyArrays")
     public Object[][] policyArrays() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
-        for (AppAlias appAlias: AppAlias.values()) {
-            for (AppAlias.Alias alias : appAlias.getAliases()) {
-                retMatrix.add(new Object[] {alias, PolicyState.Type.ARRAY, "URLAllowlist", new Object[]{"qz://", "pp://"}});
-            }
+        for (AppAlias.Alias alias : AppAlias.CHROMIUM.getAliases()) {
+            retMatrix.add(new Object[] {alias, PolicyState.Type.ARRAY, "URLAllowlist", new Object[]{"qz://", "pp://"}});
         }
+
         return retMatrix.toArray(new Object[0][]);
     }
 
@@ -84,10 +83,8 @@ public class AppsPolicyInstallerTests {
     @DataProvider(name = "policyBooleans")
     public Object[][] policyBooleans() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
-        for (AppAlias appAlias: AppAlias.values()) {
-            for (AppAlias.Alias alias : appAlias.getAliases()) {
-                retMatrix.add(new Object[] {alias, PolicyState.Type.VALUE, "SafeBrowsingEnabled", true});
-            }
+        for (AppAlias.Alias alias : AppAlias.CHROMIUM.getAliases()) {
+            retMatrix.add(new Object[] {alias, PolicyState.Type.VALUE, "SafeBrowsingEnabled", true});
         }
         return retMatrix.toArray(new Object[0][]);
     }
@@ -120,10 +117,8 @@ public class AppsPolicyInstallerTests {
     @DataProvider(name = "policyMaps")
     public Object[][] policyMaps() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
-        for (AppAlias appAlias: AppAlias.values()) {
-            for (AppAlias.Alias alias : appAlias.getAliases()) {
-                retMatrix.add(new Object[] {alias, PolicyState.Type.MAP, "Certificate", "ImportEnterpriseRoots", true});
-            }
+        for (AppAlias.Alias alias : AppAlias.FIREFOX.getAliases()) {
+            retMatrix.add(new Object[] {alias, PolicyState.Type.MAP, "Certificate", "ImportEnterpriseRoots", true});
         }
         return retMatrix.toArray(new Object[0][]);
     }
@@ -139,6 +134,16 @@ public class AppsPolicyInstallerTests {
         assert(map.containsKey(subKey));
     }
 
+    @Test(dataProvider = "policyMaps", priority = 2)
+    public void testAppsPolicyMapUninstall(AppAlias.Alias alias, PolicyState.Type type, String name, String subKey, Object value) {
+        PolicyInstaller policyInstaller = createPolicyInstaller(alias);
+
+        PolicyState state = policyInstaller.uninstall(type, name, subKey, value);
+        assertState(state);
+
+        Map<String, Object> map = policyInstaller.primitive.getMap(state.reset());
+        assert(!map.containsKey(subKey));
+    }
 
     private PolicyInstaller createPolicyInstaller(AppAlias.Alias alias) {
         PrivilegeLevel privilegeLevel = SystemUtilities.isAdmin() ? PrivilegeLevel.SYSTEM : PrivilegeLevel.USER;

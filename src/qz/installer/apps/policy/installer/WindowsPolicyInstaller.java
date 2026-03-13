@@ -23,7 +23,14 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         WinReg.HKEY root = state.getHkey();
         String key = state.getLocation().toString();
         String name = state.getName();
-        return state.setSucceeded(WindowsUtilities.deleteRegValue(root, key, name));
+        switch(state.getType()) {
+            case ARRAY:
+            case MAP:
+                return state.setSucceeded(WindowsUtilities.deleteRegKey(root, key));
+            case VALUE:
+            default:
+                return state.setSucceeded(WindowsUtilities.deleteRegValue(root, key, name));
+        }
     }
 
     @Override

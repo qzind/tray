@@ -362,11 +362,6 @@ public class PlistUtils {
      * Blindly write the array to the specified location
      */
     public static boolean writeArray(Path plist, String entry, Collection<Object> values) {
-        if(!defaultsDelete(plist, entry)) {
-            log.warn("An error occurred deleting '{}' from {}", entry, plist);
-            return false;
-        }
-
         // preparing multiple array values for cli injection is error-prone, instead do one at a time
         for(Object value : values) {
             if(!defaultsWriteArrayAdd(plist, entry, value)) {

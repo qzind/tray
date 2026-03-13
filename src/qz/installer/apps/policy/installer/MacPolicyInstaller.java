@@ -19,7 +19,13 @@ public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstal
 
     @Override
     public PolicyState putEntries(PolicyState state, Object ... values) {
-        return state.setSucceeded(PlistUtils.writeArray(state.getLocation(), state.getName(), new HashSet<>(Arrays.asList(values))));
+        // we always dedupe to clean up previous installs
+        Collection<Object> existing = PlistUtils.getArray(state.getLocation(), state.getName(), true);
+        existing.addAll(List.of(values));
+        if(removeValue(state).hasFailed())  {
+            return state;
+        }
+        return state.setSucceeded(PlistUtils.writeArray(state.getLocation(), state.getName(), existing));
     }
 
     @Override
@@ -28,10 +34,11 @@ public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstal
         if (existing.isEmpty()) {
             return state.setSucceeded("skipping, policy file was not found or empty");
         }
-        // Remove just our own entries
+        // Remove values specified
         existing.removeAll(List.of(values));
+        // Clear out the old array
+        removeValue(state);
         // Write remaining entries back
-        // Note: dedupe: true will delete what's there first, so this may result in the policyName being removed entirely
         return putEntries(state, existing.toArray());
     }
 

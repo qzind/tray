@@ -18,14 +18,15 @@ public class AppsPolicyInstallerTests {
     private static final Logger log = LogManager.getLogger(AppsPolicyInstallerTests.class);
 
     /**
-     * constructs a test matrix of [AppAlias, PolicyState, PolicyName, Values]
+     * constructs a test matrix of [AppAlias, PolicyState, PolicyName, Values[]]
+     * There must be at least 2 values
      */
     @DataProvider(name = "policyArrays")
     public Object[][] policyArrays() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
         for (AppAlias appAlias: AppAlias.values()) {
             for (AppAlias.Alias alias : appAlias.getAliases()) {
-                retMatrix.add(new Object[] {alias, PolicyState.Type.ARRAY, "URLAllowlist", new Object[]{"qz://", "pp://", "qz://"}});
+                retMatrix.add(new Object[] {alias, PolicyState.Type.ARRAY, "URLAllowlist", new Object[]{"qz://", "pp://"}});
             }
         }
         return retMatrix.toArray(new Object[0][]);
@@ -37,6 +38,11 @@ public class AppsPolicyInstallerTests {
 
         PolicyState state = policyInstaller.install(type, name, values);
         assertState(state);
+
+        // Intentionally add the first element a second time
+        state = policyInstaller.install(type, name, values[0]);
+        assertState(state);
+
         List<Object> returnedList = Arrays.asList(policyInstaller.primitive.getEntries(state.reset()));
 
         // Verify there is one, and only one, match.
@@ -52,9 +58,18 @@ public class AppsPolicyInstallerTests {
     public void testAppsPolicyArrayUninstall(AppAlias.Alias alias, PolicyState.Type type, String name, Object[] values) {
         PolicyInstaller policyInstaller = createPolicyInstaller(alias);
 
-        PolicyState state = policyInstaller.uninstall(type, name, values);
+        // Remove the first element
+        PolicyState state = policyInstaller.uninstall(type, name, values[0]);
         assertState(state);
         List<Object> returnedList = Arrays.asList(policyInstaller.primitive.getEntries(state.reset()));
+
+        // Verify the second element wasn't erroneously deleted
+        assert(returnedList.contains(values[1]));
+
+        // Remove the remaining items, including the value we already removed again
+        state = policyInstaller.uninstall(type, name, values);
+        assertState(state);
+        returnedList = Arrays.asList(policyInstaller.primitive.getEntries(state.reset()));
 
         // Verify none of our values remain in the array
         for (Object value: values) {

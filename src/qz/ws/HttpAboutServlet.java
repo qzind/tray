@@ -102,25 +102,35 @@ public class HttpAboutServlet extends DefaultServlet {
             return;
         }
 
+        String sessionId = request.getParameter("session_id");
         String pid = request.getParameter("pid");
         String challenge = request.getParameter("challenge");
 
         try {
-            if(SystemUtilities.validatePidChallenge(pid, challenge, SALT_LENGTH_RESTART)) {
+            if(!request.getSession().getId().equals(sessionId)) {
+                postUnauthorized(response, "Invalid session id");
+                return;
+            }
+
+            if (SystemUtilities.validatePidChallenge(pid, challenge, SALT_LENGTH_RESTART)) {
                 int pidNum = Integer.parseInt(pid);
                 // TODO: Actually close the browser when the button is clicked
                 response.setContentType("text/html");
-                String message = String.format("Challenge accepted, closing pid=%d... (not really)", pidNum);
-                response.getWriter().println("<html><script>alert('" + message + "');</script></html>");
+                String message = String.format("Challenge accepted!\\n   session_id = %s\\n   pid = %d\\n\\nClick OK to close window (not really)", sessionId, pidNum);
+                response.getWriter().println("<html><script>alert(\"" + message + "\");</script></html>");
                 response.setStatus(HttpServletResponse.SC_ACCEPTED);
                 return;
             }
         } catch(NumberFormatException e) {
             log.error("Invalid pid '{}' provided for restart", pid, e);
         }
+        postUnauthorized(response, "Incorrect challenge");
+    }
 
+    private void postUnauthorized(HttpServletResponse response, String message) throws IOException {
+        log.error(message);
+        response.getWriter().println(message);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        log.warn("Challenge '{}' denied", challenge);
     }
 
     private boolean interceptRestartRequest(HttpServletRequest request, HttpServletResponse response) {
@@ -135,6 +145,7 @@ public class HttpAboutServlet extends DefaultServlet {
 
         try {
             HashMap<String,String> fieldMap = new HashMap<>();
+            fieldMap.put("%SESSION_ID%", request.getSession().getId());
             fieldMap.put("%FAVICON%", FAVICON);
             fieldMap.put("%RESTART_TITLE%", IS_REBRANDED ? "Oh Snap" : "Oh Sheet");
             fieldMap.put("%RESTART_PID%", pid);

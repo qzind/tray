@@ -113,7 +113,7 @@
     <p class="message">Looks like a restart is needed so that we can get back on the same page.</p>
 
     <form method="post">
-      <input type="hidden" name="session_id" value="ABC-123">
+      <input type="hidden" name="session_id" value="%SESSION_ID%">
       <input type="hidden" name="pid" value="%RESTART_PID%">
       <button type="submit" name="challenge" value="%RESTART_CHALLENGE%">Restart Now</button>
     </form>

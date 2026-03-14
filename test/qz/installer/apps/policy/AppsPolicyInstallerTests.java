@@ -5,15 +5,20 @@ import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import qz.installer.apps.locator.AppAlias;
 import qz.utils.SystemUtilities;
 
 import java.util.*;
 
 import static qz.installer.Installer.*;
 
+import static qz.installer.Installer.PrivilegeLevel.*;
+import static qz.installer.apps.policy.PolicyState.Type.*;
+import static qz.installer.apps.locator.AppAlias.*;
+
 public class AppsPolicyInstallerTests {
     private static final Logger log = LogManager.getLogger(AppsPolicyInstallerTests.class);
+
+    final static PrivilegeLevel scope = SystemUtilities.isAdmin() ? SYSTEM : USER;
 
     /**
      * constructs a test matrix of [PolicyInstaller, PolicyState, PolicyName, Values[]]
@@ -22,22 +27,23 @@ public class AppsPolicyInstallerTests {
     @DataProvider(name = "policyArrays")
     public Object[][] policyArrays() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
-        for (AppAlias.Alias alias : AppAlias.CHROMIUM.getAliases()) {
-            retMatrix.add(new Object[] {createPolicyInstaller(alias), PolicyState.Type.ARRAY, "URLAllowlist", new Object[]{"qz://", "pp://"}});
+        for (Alias alias : CHROMIUM.getAliases()) {
+            retMatrix.add(new Object[] { alias, "URLAllowlist", new Object[]{"qz://", "pp://"}});
         }
         return retMatrix.toArray(new Object[0][]);
     }
 
     @Test(dataProvider = "policyArrays", priority = 1)
-    public void testAppsPolicyArrayInstall(PolicyInstaller policyInstaller, PolicyState.Type type, String name, Object[] values) {
-        PolicyState state = policyInstaller.install(type, name, values);
+    public void testAppsPolicyArrayInstall(Alias alias, String name, Object[] values) {
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
+        PolicyState state = policyInstaller.install(ARRAY, name, values);
         assertState(state);
 
         // Intentionally add the first element a second time
-        state = policyInstaller.install(type, name, values[0]);
+        state = policyInstaller.install(ARRAY, name, values[0]);
         assertState(state);
 
-        List<Object> returnedList = Arrays.asList(policyInstaller.primitive.getEntries(state.reset()));
+        List<Object> returnedList = Arrays.asList(policyInstaller.getEntries(state.reset()));
 
         // Verify there is one, and only one, match.
         for (Object value: values) {
@@ -49,19 +55,21 @@ public class AppsPolicyInstallerTests {
     }
 
     @Test(dataProvider = "policyArrays", priority = 2)
-    public void testAppsPolicyArrayUninstall(PolicyInstaller policyInstaller, PolicyState.Type type, String name, Object[] values) {
+    public void testAppsPolicyArrayUninstall(Alias alias, String name, Object[] values) {
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
+
         // Remove the first element
-        PolicyState state = policyInstaller.uninstall(type, name, values[0]);
+        PolicyState state = policyInstaller.uninstall(ARRAY, name, values[0]);
         assertState(state);
-        List<Object> returnedList = Arrays.asList(policyInstaller.primitive.getEntries(state.reset()));
+        List<Object> returnedList = Arrays.asList(policyInstaller.getEntries(state.reset()));
 
         // Verify the second element wasn't erroneously deleted
         assert(returnedList.contains(values[1]));
 
         // Remove the remaining items, including the value we already removed again
-        state = policyInstaller.uninstall(type, name, values);
+        state = policyInstaller.uninstall(ARRAY, name, values);
         assertState(state);
-        returnedList = Arrays.asList(policyInstaller.primitive.getEntries(state.reset()));
+        returnedList = Arrays.asList(policyInstaller.getEntries(state.reset()));
 
         // Verify none of our values remain in the array
         for (Object value: values) {
@@ -76,26 +84,30 @@ public class AppsPolicyInstallerTests {
     @DataProvider(name = "policyBooleans")
     public Object[][] policyBooleans() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
-        for (AppAlias.Alias alias : AppAlias.CHROMIUM.getAliases()) {
-            retMatrix.add(new Object[] {createPolicyInstaller(alias), PolicyState.Type.VALUE, "SafeBrowsingEnabled", true});
+        for (Alias alias : CHROMIUM.getAliases()) {
+            retMatrix.add(new Object[] {alias, "SafeBrowsingEnabled", true});
         }
         return retMatrix.toArray(new Object[0][]);
     }
 
     @Test(dataProvider = "policyBooleans", priority = 1)
-    public void testAppsPolicyBooleanInstall(PolicyInstaller policyInstaller, PolicyState.Type type, String name, Object value) {
-        PolicyState state = policyInstaller.install(type, name, value);
+    public void testAppsPolicyBooleanInstall(Alias alias, String name, Object value) {
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
+
+        PolicyState state = policyInstaller.install(VALUE, name, value);
         assertState(state);
-        Object returnedValue = policyInstaller.primitive.getValue(state.reset());
+        Object returnedValue = policyInstaller.getValue(state.reset());
 
         assetEqual(returnedValue, value);
     }
 
     @Test(dataProvider = "policyBooleans", priority = 2)
-    public void testAppsPolicyBooleanUninstall(PolicyInstaller policyInstaller, PolicyState.Type type, String name, Object value) {
-        PolicyState state = policyInstaller.uninstall(type, name, value);
+    public void testAppsPolicyBooleanUninstall(Alias alias, String name, Object value) {
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
+
+        PolicyState state = policyInstaller.uninstall(VALUE, name, value);
         assertState(state);
-        Object returnedValue = policyInstaller.primitive.getValue(state.reset());
+        Object returnedValue = policyInstaller.getValue(state.reset());
 
         assetEqual(returnedValue, null);
     }
@@ -106,43 +118,42 @@ public class AppsPolicyInstallerTests {
     @DataProvider(name = "policyMaps")
     public Object[][] policyMaps() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
-        for (AppAlias.Alias alias : AppAlias.FIREFOX.getAliases()) {
-            retMatrix.add(new Object[] {createPolicyInstaller(alias), PolicyState.Type.MAP, "Certificate", "ImportEnterpriseRoots", true});
+        for (Alias alias : FIREFOX.getAliases()) {
+            retMatrix.add(new Object[] {alias, "Certificate", "ImportEnterpriseRoots", true});
         }
         return retMatrix.toArray(new Object[0][]);
     }
 
     @Test(dataProvider = "policyMaps", priority = 1)
-    public void testAppsPolicyMapInstall(PolicyInstaller policyInstaller, PolicyState.Type type, String name, String subKey, Object value) {
-        PolicyState state = policyInstaller.install(type, name, subKey, value);
+    public void testAppsPolicyMapInstall(Alias alias, String name, String subKey, Object value) {
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
+
+        PolicyState state = policyInstaller.install(MAP, name, subKey, value);
         assertState(state);
 
-        Map<String, Object> map = policyInstaller.primitive.getMap(state.reset());
+        Map<String, Object> map = policyInstaller.getMap(state.reset());
         assert(map.containsKey(subKey));
     }
 
     @Test(dataProvider = "policyMaps", priority = 2)
-    public void testAppsPolicyMapUninstall(PolicyInstaller policyInstaller, PolicyState.Type type, String name, String subKey, Object value) {
-        PolicyState state = policyInstaller.uninstall(type, name, subKey, value);
+    public void testAppsPolicyMapUninstall(Alias alias, String name, String subKey, Object value) {
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
+
+        PolicyState state = policyInstaller.uninstall(MAP, name, subKey, value);
         assertState(state);
 
-        Map<String, Object> map = policyInstaller.primitive.getMap(state.reset());
+        Map<String, Object> map = policyInstaller.getMap(state.reset());
         assert(!map.containsKey(subKey));
     }
 
-    private PolicyInstaller createPolicyInstaller(AppAlias.Alias alias) {
-        PrivilegeLevel privilegeLevel = SystemUtilities.isAdmin() ? PrivilegeLevel.SYSTEM : PrivilegeLevel.USER;
-        return new PolicyInstaller(privilegeLevel, alias);
-    }
-
-    private void assertState(PolicyState state) {
+    private static void assertState(PolicyState state) {
         if (state.hasFailed()) {
             state.log();
             Assert.fail(state.reason);
         }
     }
 
-    private void assetEqual(Object returnedValue, Object value) {
+    private static void assetEqual(Object returnedValue, Object value) {
         if(SystemUtilities.isWindows()) {
             // Windows registry is incapable of returning a boolean
             if(value instanceof Boolean && returnedValue instanceof Integer) {

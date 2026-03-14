@@ -74,8 +74,8 @@ public class PolicyInstaller {
     final private Installer.PrivilegeLevel scope;
     final private AppAlias.Alias alias;
 
-    final PrimitivePolicyInstaller primitive;
-    final PolicyLocator locator;
+    final private PrimitivePolicyInstaller primitive;
+    final private PolicyLocator locator;
 
     public PolicyInstaller(Installer.PrivilegeLevel scope, AppAlias.Alias alias) {
         this(SystemUtilities.getOs(), scope, alias);
@@ -210,5 +210,21 @@ public class PolicyInstaller {
 
     private boolean isProhibited() {
         return os == Os.LINUX && scope == Installer.PrivilegeLevel.USER;
+    }
+
+    //
+    // Package-private methods, for unit tests only
+    //
+
+    Object getValue(PolicyState state) {
+        return primitive.getValue(state);
+    }
+
+    Object[] getEntries(PolicyState state) {
+        return primitive.getEntries(state);
+    }
+
+    Map<String, Object> getMap(PolicyState state) {
+        return primitive.getMap(state);
     }
 }

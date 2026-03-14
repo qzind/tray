@@ -40,6 +40,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.text.SimpleDateFormat;
@@ -799,27 +800,102 @@ public class FileUtilities {
         }
     }
 
+    @SuppressWarnings("rawtypes")
+    public static String readSvgAsset(Class relativeClass, String relativeAsset) throws IOException {
+        return readSvgAsset(relativeClass, relativeAsset, true, true);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static String readSvgAsset(Class relativeClass, String relativeAsset, boolean stripHeader, boolean minify) throws IOException {
+        try(InputStream is = relativeClass.getResourceAsStream(relativeAsset)) {
+            if(is == null) {
+                throw new IOException(String.format("InputStream for '%s' is null", relativeAsset));
+            }
+            StringBuilder buffer = new StringBuilder();
+            LineNumberReader reader = new LineNumberReader(new InputStreamReader(is));
+            String line;
+            while((line = reader.readLine()) != null) {
+                // start reading at the first
+                if(stripHeader && buffer.length() == 0 && !line.contains("<svg")) {
+                    continue;
+                }
+                buffer.append(line);
+            }
+            if(minify) {
+                return buffer.toString().replaceAll("\\s+", " ").trim();
+            }
+            return buffer.toString();
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static synchronized void configureAssetToFile(Class relativeClass, String relativeAsset, HashMap<String, String> additionalMappings, File outputFile) throws IOException {
+        try(OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
+            if(outputFile.getParentFile().exists() || outputFile.getParentFile().mkdirs()) {
+                throw new IOException(String.format("Can't create parent directories for asset file '%s'", outputFile));
+            }
+            if (outputFile.exists() && !outputFile.delete()) {
+                throw new IOException(String.format("Can't delete asset file '%s'", outputFile));
+            }
+            configureAssetToStream(relativeClass, relativeAsset, additionalMappings, outputStream);
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static synchronized String configureAssetToString(Class relativeClass, String relativeAsset, HashMap<String, String> additionalMappings) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        configureAssetToStream(relativeClass, relativeAsset, additionalMappings, out);
+        return out.toString(StandardCharsets.UTF_8);
+    }
+
     /**
-     * Configures the given embedded resource file using qz.common.Constants combined with the provided
-     * HashMap and writes to the specified location
-     *
-     * Will look for resource relative to relativeClass package location.
+     * Configures the given embedded resource file using <code>qz.common.Constants</code> combined with
+     * the provided <code>HashMap&lt;String, String&gt;</code> and writes to the specified location
+     * @param relativeClass The class used for calculating asset path
+     * @param relativeAsset The path of the asset, relative to <code>relativeClass</code>
+     * @param additionalMappings Mappings in addition to those found in <code>Constants</code>
+     * @param outputStream The stream to write the data to
      */
-    public static synchronized void configureAssetFile(String relativeAsset, File dest, HashMap<String, String> additionalMappings, Class relativeClass) throws IOException {
+    @SuppressWarnings("rawtypes")
+    private static synchronized void configureAssetToStream(Class relativeClass, String relativeAsset, HashMap<String, String> additionalMappings, OutputStream outputStream) throws IOException {
         // Static fields, parsed from qz.common.Constants
-        List<Field> fields = new ArrayList<>();
-        HashMap<String, String> allMappings = (HashMap<String, String>)additionalMappings.clone();
-        fields.addAll(Arrays.asList(Constants.class.getFields())); // public only
+        HashMap<String, String> allMappings = addPublicFieldsFromClass(new HashMap<>(additionalMappings), Constants.class);
+
+        try(InputStream is = relativeClass.getResourceAsStream(relativeAsset)) {
+            if(is == null) {
+                throw new IOException(String.format("InputStream for '%s' is null", relativeAsset));
+            }
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            OutputStreamWriter writer = new OutputStreamWriter(outputStream);
+
+            String line;
+            while((line = reader.readLine()) != null) {
+                for(Map.Entry<String,String> mapping : allMappings.entrySet()) {
+                    if (line.contains(mapping.getKey()) && mapping.getValue() != null) {
+                        line = line.replaceAll(mapping.getKey(), mapping.getValue());
+                    }
+                }
+                writer.write(line + "\n");
+            }
+            reader.close();
+            writer.close();
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static HashMap<String,String> addPublicFieldsFromClass(HashMap<String,String> mapping, Class clazz) {
+        List<Field> fields = new ArrayList<>(Arrays.asList(clazz.getFields())); // public only
         for(Field field : fields) {
             if (Modifier.isStatic(field.getModifiers())) { // static only
                 try {
                     String key = "%" + field.getName() + "%";
                     Object value = field.get(null);
                     if (value != null) {
+                        // HashMap will naturally dedupe, but 'putIfAbsent' will preserve overrides
                         if (value instanceof String) {
-                            allMappings.putIfAbsent(key, (String)value);
+                            mapping.putIfAbsent(key, (String)value);
                         } else if(value instanceof Boolean) {
-                            allMappings.putIfAbsent(key, "" + field.getBoolean(null));
+                            mapping.putIfAbsent(key, "" + field.getBoolean(null));
                         }
                     }
                 }
@@ -829,25 +905,7 @@ public class FileUtilities {
                 }
             }
         }
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(relativeClass.getResourceAsStream(relativeAsset)));
-        BufferedWriter writer = new BufferedWriter(new FileWriter(dest));
-
-        String line;
-        while((line = reader.readLine()) != null) {
-            for(Map.Entry<String, String> mapping : allMappings.entrySet()) {
-                if (line.contains(mapping.getKey())) {
-                    line = line.replaceAll(mapping.getKey(), mapping.getValue());
-                }
-            }
-            writer.write(line + "\n");
-        }
-        reader.close();
-        writer.close();
-    }
-
-    public static void configureAssetFile(String relativeAsset, Path dest, HashMap<String, String> additionalMappings, Class relativeClass) throws IOException {
-        configureAssetFile(relativeAsset, dest.toFile(), additionalMappings, relativeClass);
+        return mapping;
     }
 
     private static Path getTempDirectory() {
@@ -920,6 +978,42 @@ public class FileUtilities {
     public static void cleanup() {
         if(FileUtilities.TEMP_DIR != null) {
             FileUtils.deleteQuietly(FileUtilities.TEMP_DIR.toFile());
+        }
+    }
+
+    /**
+     * Wrapper around the broken <code>Files.probeContentType(...)</code> per
+     * <a href="https://bugs.openjdk.org/browse/JDK-8188228">JDK-8188228</a>
+     */
+    public static String probeContentType(Path filePath) throws IOException {
+        String contentType = Files.probeContentType(filePath);
+        switch(SystemUtilities.getOs()) {
+            case WINDOWS:
+                break;
+            case MAC:
+            case LINUX:
+                if(contentType == null) {
+                    contentType = ShellUtilities.executeRaw("file", "--mime-type", "--brief", filePath.toString()).trim();
+                }
+        }
+        return contentType;
+    }
+
+    public static JSONObject readJsonFile(Path location) throws IOException, JSONException {
+        // Ensure parent is writable
+        File locationFile = location.toFile();
+        FileUtilities.setPermissionsParentally(Files.createDirectories(location.getParent()), false);
+        return locationFile.exists() ? new JSONObject(FileUtils.readFileToString(locationFile, StandardCharsets.UTF_8)) : new JSONObject();
+    }
+
+    public static void writeJsonFile(JSONObject content, Path location, boolean worldReadable) throws IOException {
+        // Write contents, ensuring policy file is world readable
+        File locationFile = location.toFile();
+        try(BufferedWriter writer = new BufferedWriter(new FileWriter(locationFile))) {
+            writer.write(content.toString());
+            if (!locationFile.setReadable(true, !worldReadable)) {
+                throw new IOException("Unable to set readable: " + location);
+            }
         }
     }
 }

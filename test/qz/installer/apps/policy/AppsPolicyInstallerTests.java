@@ -21,8 +21,8 @@ public class AppsPolicyInstallerTests {
     final static PrivilegeLevel scope = SystemUtilities.isAdmin() ? SYSTEM : USER;
 
     /**
-     * constructs a test matrix of [PolicyInstaller, PolicyState, PolicyName, Values[]]
-     * There must be at least 2 values
+     * Constructs a test matrix of [Alias, PolicyName, Values[]]
+     * Note: Unit tests assume at least 2 values
      */
     @DataProvider(name = "policyArrays")
     public Object[][] policyArrays() {
@@ -79,7 +79,7 @@ public class AppsPolicyInstallerTests {
     }
 
     /**
-     * constructs a test matrix of [PolicyInstaller, PolicyState, PolicyName, Value]
+     * Constructs a test matrix of [Alias, PolicyName, Value]
      */
     @DataProvider(name = "policyBooleans")
     public Object[][] policyBooleans() {
@@ -113,7 +113,7 @@ public class AppsPolicyInstallerTests {
     }
 
     /**
-     * constructs a test matrix of [PolicyInstaller, PolicyState, PolicyName, Values]
+     * Constructs a test matrix of [Alias, PolicyName, Values]
      */
     @DataProvider(name = "policyMaps")
     public Object[][] policyMaps() {

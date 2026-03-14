@@ -142,9 +142,9 @@ public class LegacyFirefoxCertificateInstaller {
         fieldMap.put("%APP_PATH%", SystemUtilities.isMac() ? SystemUtilities.getAppPath() != null ? SystemUtilities.getAppPath().toString() : "" : "");
         fieldMap.put("%UNINSTALL%", "" + uninstall);
 
-        FileUtilities.configureAssetFile(CFG_TEMPLATE, dest, fieldMap, LegacyFirefoxCertificateInstaller.class);
-        dest.setReadable(true, false);
+        FileUtilities.configureAssetToFile(LegacyFirefoxCertificateInstaller.class, CFG_TEMPLATE, fieldMap, dest);
+        if(dest.setReadable(true, false)) {
+            log.warn("An error occurred setting the AutoConfig file '{}' readable", dest);
+        }
     }
-
-
 }

@@ -67,10 +67,10 @@ public class LinuxInstaller extends Installer {
 
         File launcher = new File(location);
         try {
-            launcher.getParentFile().mkdirs();
-            FileUtilities.configureAssetFile("assets/linux-shortcut.desktop.in", launcher, fieldMap, LinuxInstaller.class);
-            launcher.setReadable(true, ownerOnly);
-            launcher.setExecutable(true, ownerOnly);
+            FileUtilities.configureAssetToFile(LinuxInstaller.class, "assets/linux-shortcut.desktop.in", fieldMap, launcher);
+            if (!launcher.setReadable(true, ownerOnly) || !launcher.setExecutable(true, ownerOnly)) {
+                throw new IOException("Unable to change permissions for launcher");
+            }
         } catch(IOException e) {
             log.warn("Unable to write {} file: {}", isStartup ? "startup":"launcher", location, e);
         }
@@ -118,17 +118,18 @@ public class LinuxInstaller extends Installer {
         }
 
         // USB permissions
+        File udev = new File(UDEV_RULES);
         try {
-            File udev = new File(UDEV_RULES);
-            if (udev.exists()) {
-                udev.delete();
-            }
-            FileUtilities.configureAssetFile("assets/linux-udev.rules.in", new File(UDEV_RULES), new HashMap<>(), LinuxInstaller.class);
+            FileUtilities.configureAssetToFile(LinuxInstaller.class, "assets/linux-udev.rules.in", new HashMap<>(), new File(UDEV_RULES));
             // udev rules should be -rw-r--r--
-            udev.setReadable(true, false);
-            ShellUtilities.execute("udevadm", "control", "--reload-rules");
+            if(!udev.setReadable(true, false)) {
+                throw new IOException(String.format("Can't set '%s' readable", udev));
+            }
+            if(!ShellUtilities.execute("udevadm", "control", "--reload-rules")) {
+                throw new IOException("Can't reload udevadm, USB support may not work until a reboot");
+            }
         } catch(IOException e) {
-            log.warn("Could not install udev rules, usb support may fail {}", UDEV_RULES, e);
+            log.warn("Could not install udev rules, error creating '{}', USB support may fail", udev, e);
         }
 
         // Cleanup incorrectly placed files

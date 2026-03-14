@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Restart Required | %ABOUT_TITLE%</title>
+<link rel="icon" type="image/png" href="%FAVICON%">
+<style>
+  :root {
+    --bg-color: #ffffff;
+    --text-color: #1a1a1a;
+    --btn-bg: %BRAND_COLOR%;
+    --btn-text: #ffffff;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-color: #1a1a1a;
+      --text-color: #ffffff;
+    }
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  a {
+    color: %BRAND_COLOR%;
+  }
+
+  .container {
+    display: flex;
+    max-width: 800px;
+    padding: 40px;
+    gap: 40px;
+  }
+
+  .icon-side {
+    flex: 0 0 150px;
+  }
+
+  .content-side {
+    flex: 1;
+  }
+
+  h1 {
+    color: %BRAND_COLOR%;
+    font-size: 3.5rem;
+    margin: 0 0 10px 0;
+  }
+
+  p.message {
+    font-size: 2.2rem;
+    line-height: 1.2;
+    margin: 0 0 30px 0;
+  }
+
+  button {
+    background-color: var(--btn-bg);
+    color: var(--btn-text);
+    border: none;
+    padding: 12px 24px;
+    font-size: 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 40px;
+  }
+
+  details p {
+    font-size: 1rem;
+    opacity: 0.8;
+    line-height: 1.4;
+  }
+
+  details summary {
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+
+  details summary::after {
+    content: ' ►';
+    margin-left: 0.33rem;
+    font-size: 1rem;
+  }
+
+  details[open] summary:after {
+    transform: rotate(90deg);
+    transition: transform 0.2s ease;
+  }
+
+
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="icon-side">
+    %RESTART_SVG%
+  </div>
+
+  <div class="content-side">
+    <h1>%RESTART_TITLE%</h1>
+    <p class="message">Looks like a restart is needed so that we can get back on the same page.</p>
+
+    <form method="post">
+      <input type="hidden" name="session_id" value="ABC-123">
+      <input type="hidden" name="pid" value="%RESTART_PID%">
+      <button type="submit" name="challenge" value="%RESTART_CHALLENGE%">Restart Now</button>
+    </form>
+
+    <details>
+      <summary>Why did this happen?</summary>
+      <p>
+        <a href="%ABOUT_URL%" target="_blank">%ABOUT_TITLE%</a> recently installed a small browser policy to make printing easier. <br>
+        Click <a href="/#policies">here</a> to find out more about the policies enabled on this browser.
+      </p>
+    </details>
+  </div>
+</div>
+
+</body>
+</html>

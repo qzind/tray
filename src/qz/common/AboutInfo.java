@@ -12,6 +12,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.installer.apps.locator.AppAlias;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.installer.certificate.CertificateManager;
 import qz.utils.MacUtilities;
@@ -48,6 +49,7 @@ public class AboutInfo {
             about.put("ssl", ssl(certificateManager));
             about.put("libraries", libraries());
             about.put("charsets", charsets());
+            about.put("policies", policies());
         }
         catch(JSONException | GeneralSecurityException e) {
             log.error("Failed to write JSON data", e);
@@ -166,6 +168,17 @@ public class AboutInfo {
 
         charsets.put("charsets", Arrays.toString(names.toArray()));
         return charsets;
+    }
+
+    private static JSONObject policies() throws JSONException {
+        JSONObject policies = new JSONObject();
+
+        for(AppAlias appAlias : AppAlias.values()) {
+            policies.put(String.format("%s (variants)", appAlias.name().toLowerCase(Locale.ENGLISH)), Arrays.toString(appAlias.getAliases()));
+            policies.put(appAlias.name().toLowerCase(Locale.ENGLISH), "" /* FIXME */);
+        }
+
+        return policies;
     }
 
     public static String getPreferredHostname() {

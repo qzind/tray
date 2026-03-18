@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import qz.installer.apps.locator.AppAlias;
 import qz.utils.SystemUtilities;
 
 import java.util.*;
@@ -20,20 +21,61 @@ public class AppsPolicyInstallerTests {
 
     final static PrivilegeLevel scope = SystemUtilities.isAdmin() ? SYSTEM : USER;
 
+    static Object[][] chromeTests = {
+        {"SafeBrowsingEnabled", true},
+        {"DefaultNotificationsSetting", 2},
+        {"PolicyTestFloat", 5.5},
+        {"DefaultDownloadDirectory", "/home/${user_name}/Downloads"},
+        {"URLAllowlist", new Object[] {"qz://", "pp://"}},
+    };
+    static Object[][] firefoxTests = {
+        {"DisableSafeMode", true},
+        {"PrivateBrowsingModeAvailability", 2},
+        {"PolicyTestFloat", 5.5},
+        {"DefaultDownloadDirectory", "${home}/Downloads"},
+        {"HttpAllowlist", new Object[] {"http://example.org", "http://example.edu"}},
+    };
+
+    static HashMap<AppAlias, Object[][]> testMap;
+    static {
+        testMap = new HashMap<>(Map.of(
+                CHROMIUM, chromeTests,
+                FIREFOX, firefoxTests
+        ));
+    }
+
     /**
-     * Constructs a test matrix of [Alias, PolicyName, Values[]]
-     * Note: Unit tests assume at least 2 values
+     * Constructs a test matrix of [Alias, valueType, PolicyName, Value]
+     * Note: Array tests assume at least 2 values
      */
-    @DataProvider(name = "policyArrays")
+    @DataProvider(name = "policyTests")
     public Object[][] policyArrays() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
-        for (Alias alias : CHROMIUM.getAliases()) {
-            retMatrix.add(new Object[] { alias, "URLAllowlist", new Object[]{"qz://", "pp://"}});
+        for (AppAlias appAlias : AppAlias.values()) {
+            Object[][] tests = testMap.get(appAlias);
+            if (tests == null) Assert.fail("No tests have been included for " + appAlias);
+            for (Alias alias : appAlias.getAliases()) {
+                for (Object[] testRow: tests) {
+                    retMatrix.add(new Object[] {alias, testRow[0], testRow[1]});
+                }
+            }
         }
         return retMatrix.toArray(new Object[0][]);
     }
 
-    @Test(dataProvider = "policyArrays", priority = 1)
+    @Test(dataProvider = "policyTests")
+    public void testAppPolicy(Alias alias, String name, Object value) {
+        if (value instanceof Object[]) {
+            testAppsPolicyArrayInstall(alias, name, (Object[])value);
+            testAppsPolicyArrayUninstall(alias, name, (Object[])value);
+        } else if (value instanceof Number || value instanceof Boolean || value instanceof String) {
+            testAppsPolicyValueInstall(alias, name, value);
+            testAppsPolicyValueUninstall(alias, name, value);
+        } else {
+            Assert.fail("Bad type: " + (value == null ? "null" : value.getClass().getName()));
+        }
+    }
+
     public void testAppsPolicyArrayInstall(Alias alias, String name, Object[] values) {
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
         PolicyState state = policyInstaller.install(ARRAY, name, values);
@@ -54,7 +96,6 @@ public class AppsPolicyInstallerTests {
         }
     }
 
-    @Test(dataProvider = "policyArrays", priority = 2)
     public void testAppsPolicyArrayUninstall(Alias alias, String name, Object[] values) {
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
 
@@ -78,20 +119,7 @@ public class AppsPolicyInstallerTests {
         }
     }
 
-    /**
-     * Constructs a test matrix of [Alias, PolicyName, Value]
-     */
-    @DataProvider(name = "policyBooleans")
-    public Object[][] policyBooleans() {
-        ArrayList<Object[]> retMatrix = new ArrayList<>();
-        for (Alias alias : CHROMIUM.getAliases()) {
-            retMatrix.add(new Object[] {alias, "SafeBrowsingEnabled", true});
-        }
-        return retMatrix.toArray(new Object[0][]);
-    }
-
-    @Test(dataProvider = "policyBooleans", priority = 1)
-    public void testAppsPolicyBooleanInstall(Alias alias, String name, Object value) {
+    public void testAppsPolicyValueInstall(Alias alias, String name, Object value) {
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
 
         PolicyState state = policyInstaller.install(VALUE, name, value);
@@ -101,8 +129,7 @@ public class AppsPolicyInstallerTests {
         assetEqual(returnedValue, value);
     }
 
-    @Test(dataProvider = "policyBooleans", priority = 2)
-    public void testAppsPolicyBooleanUninstall(Alias alias, String name, Object value) {
+    public void testAppsPolicyValueUninstall(Alias alias, String name, Object value) {
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
 
         PolicyState state = policyInstaller.uninstall(VALUE, name, value);
@@ -114,6 +141,7 @@ public class AppsPolicyInstallerTests {
 
     /**
      * Constructs a test matrix of [Alias, PolicyName, Values]
+     * todo: add to test map
      */
     @DataProvider(name = "policyMaps")
     public Object[][] policyMaps() {

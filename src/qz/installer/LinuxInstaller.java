@@ -27,8 +27,6 @@ public class LinuxInstaller extends Installer {
     public static final String SYSTEM_APP_LAUNCHER = APP_DIR;
     public static final String USER_APP_LAUNCHER = "%s/.local/share/applications";
     public static final String UDEV_RULES = "/lib/udev/rules.d/99-udev-override.rules";
-    public static final String[] CHROME_POLICY_DIRS = {"/etc/chromium/policies/managed", "/etc/opt/chrome/policies/managed" };
-    public static final String CHROME_POLICY = "{ \"URLAllowlist\": [\"" + DATA_DIR + "://*\"] }";
 
     private String destination = "/opt/" + PROPS_FILE;
     private String sudoer;
@@ -69,10 +67,10 @@ public class LinuxInstaller extends Installer {
 
         File launcher = new File(location);
         try {
-            launcher.getParentFile().mkdirs();
-            FileUtilities.configureAssetFile("assets/linux-shortcut.desktop.in", launcher, fieldMap, LinuxInstaller.class);
-            launcher.setReadable(true, ownerOnly);
-            launcher.setExecutable(true, ownerOnly);
+            FileUtilities.configureAssetToFile(LinuxInstaller.class, "assets/linux-shortcut.desktop.in", fieldMap, launcher);
+            if (!launcher.setReadable(true, ownerOnly) || !launcher.setExecutable(true, ownerOnly)) {
+                throw new IOException("Unable to change permissions for launcher");
+            }
         } catch(IOException e) {
             log.warn("Unable to write {} file: {}", isStartup ? "startup":"launcher", location, e);
         }
@@ -119,38 +117,19 @@ public class LinuxInstaller extends Installer {
             }
         }
 
-        // Chrome protocol handler
-        for (String policyDir : CHROME_POLICY_DIRS) {
-            log.info("Installing chrome protocol handler {}/{}...", policyDir, PROPS_FILE + ".json");
-            try {
-                FileUtilities.setPermissionsParentally(Files.createDirectories(Paths.get(policyDir)), false);
-            } catch(IOException e) {
-                log.warn("An error occurred creating {}", policyDir);
-            }
-
-            Path policy = Paths.get(policyDir, PROPS_FILE + ".json");
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(policy.toFile()))){
-                writer.write(CHROME_POLICY);
-                policy.toFile().setReadable(true, false);
-            }
-            catch(IOException e) {
-                log.warn("Unable to write chrome policy: {} ({}:launch will fail)", policy, DATA_DIR);
-            }
-
-        }
-
         // USB permissions
+        File udev = new File(UDEV_RULES);
         try {
-            File udev = new File(UDEV_RULES);
-            if (udev.exists()) {
-                udev.delete();
-            }
-            FileUtilities.configureAssetFile("assets/linux-udev.rules.in", new File(UDEV_RULES), new HashMap<>(), LinuxInstaller.class);
+            FileUtilities.configureAssetToFile(LinuxInstaller.class, "assets/linux-udev.rules.in", new HashMap<>(), new File(UDEV_RULES));
             // udev rules should be -rw-r--r--
-            udev.setReadable(true, false);
-            ShellUtilities.execute("udevadm", "control", "--reload-rules");
+            if(!udev.setReadable(true, false)) {
+                throw new IOException(String.format("Can't set '%s' readable", udev));
+            }
+            if(!ShellUtilities.execute("udevadm", "control", "--reload-rules")) {
+                throw new IOException("Can't reload udevadm, USB support may not work until a reboot");
+            }
         } catch(IOException e) {
-            log.warn("Could not install udev rules, usb support may fail {}", UDEV_RULES, e);
+            log.warn("Could not install udev rules, error creating '{}', USB support may fail", udev, e);
         }
 
         // Cleanup incorrectly placed files
@@ -182,13 +161,6 @@ public class LinuxInstaller extends Installer {
     }
 
     public Installer removeSystemSettings() {
-        // Chrome protocol handler
-        for (String policyDir : CHROME_POLICY_DIRS) {
-            log.info("Removing chrome protocol handler {}/{}...", policyDir, PROPS_FILE + ".json");
-            Path policy = Paths.get(policyDir, PROPS_FILE + ".json");
-            policy.toFile().delete();
-        }
-
         // USB permissions
         File udev = new File(UDEV_RULES);
         if (udev.exists()) {

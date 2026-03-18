@@ -43,13 +43,13 @@ public class MacInstaller extends Installer {
         fieldMap.put("%PARAM%", "--honorautostart");
 
         try {
-            FileUtilities.configureAssetFile("assets/mac-launchagent.plist.in", dest, fieldMap, MacInstaller.class);
+            FileUtilities.configureAssetToFile(MacInstaller.class, "assets/mac-launchagent.plist.in", fieldMap, dest);
             // Disable service until reboot
-            if(SystemUtilities.isMac()) {
-                ShellUtilities.execute("/bin/launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
+            if (!ShellUtilities.execute("/bin/launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH)) {
+                log.warn("An error occurred unloading the startup launcher, multiple instances may spawn");
             }
         } catch(IOException e) {
-            log.warn("Unable to write startup file: {}", dest, e);
+            log.error("An error occurred creating the startup launcher '{}'", dest);
         }
 
         return this;

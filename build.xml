@@ -244,7 +244,7 @@
     <target name="override-authcert" if="authcert.use">
         <echo level="info">Bundling with manual cert for signing auth: ${authcert.use}</echo>
         <!-- See also: Constants.OVERRIDE_CERT -->
-        <property description="suppress-property-warning" name="authcert.use" value="override.crt"/>
+                <property description="suppress-property-warning" name="authcert.use" value="override.crt"/>
         <copy file="${authcert.use}" tofile="${dist.dir}/override.crt" overwrite="true"/>
     </target>
 
@@ -336,8 +336,9 @@
     <target name="makeself" depends="get-target-arch,target-os-linux,distribute,provision,download-jre,build-run"/>
 
     <target name="testng" depends="compile-tests">
-        <testng listeners="qz.testng.ConciseSkipListener" classpathref="tests.classpath" haltOnFailure="true" verbose="2">
-            <classfileset dir="${build.dir}/test" includes="**"/>
+        <property description="Pattern for TestNG classes" name="testng.pattern" value="**"/>
+        <testng listeners="qz.testng.ConciseSkipListener" classpathref="tests.classpath" haltOnFailure="true" verbose="2" outputdir="${out.dir}/test-output">
+            <classfileset dir="${build.dir}/test" includes="${testng.pattern}"/>
         </testng>
     </target>
 </project>

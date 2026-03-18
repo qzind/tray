@@ -217,6 +217,52 @@ public class WindowsUtilities {
         return null;
     }
 
+    public static Object getRegValue(HKEY root, String key, String value) {
+        try {
+            if (Advapi32Util.registryKeyExists(root, key) && Advapi32Util.registryValueExists(root, key, value)) {
+                return Advapi32Util.registryGetValue(root, key, value);
+            }
+        } catch(Exception e) {
+            log.warn("Couldn't get registry value {}\\\\{}\\\\{}", getHkeyName(root), key, value);
+        }
+        return null;
+    }
+
+    // gracefully swallow InvocationTargetException
+    public static String[] getRegistryKeys(HKEY root, String key) {
+        try {
+            if (Advapi32Util.registryKeyExists(root, key)) {
+                return Advapi32Util.registryGetKeys(root, key);
+            }
+        } catch(Exception e) {
+            log.warn("Couldn't get registry sub-keys for parentKey {}\\\\{}", getHkeyName(root), key);
+        }
+        return null;
+    }
+
+    // gracefully swallow InvocationTargetException
+    public static TreeMap<String, Object> getRegistryValues(HKEY root, String key) {
+        try {
+            if (Advapi32Util.registryKeyExists(root, key)) {
+                return Advapi32Util.registryGetValues(root, key);
+            }
+        } catch(Exception e) {
+            log.warn("Couldn't get registry values for parentKey {}\\\\{}", getHkeyName(root), key);
+        }
+        return null;
+    }
+
+    // gracefully swallow InvocationTargetException
+    public static boolean registryKeyExists(HKEY root, String key) {
+        try {
+            return Advapi32Util.registryKeyExists(root, key);
+        } catch(Exception e) {
+            log.warn("Couldn't get registry key {}\\\\{}", getHkeyName(root), key);
+        }
+        return false;
+    }
+
+
     /**
      * Deletes all matching data values directly beneath the specified key
      */
@@ -278,7 +324,7 @@ public class WindowsUtilities {
     /**
      * Adds a registry entry at <code>key</code>/<code>0</code>, incrementing as needed
      */
-    public static boolean addNumberedRegValue(HKEY root, String key, Object data) {
+    public static boolean addNumberedRegValue(WinReg.HKEY root, String key, Object data) {
         try {
             // Recursively create keys as needed
             String partialKey = "";
@@ -295,16 +341,16 @@ public class WindowsUtilities {
             // Make sure it doesn't already exist
             for(Map.Entry<String, Object> entry : Advapi32Util.registryGetValues(root, key).entrySet())  {
                 if(entry.getValue().equals(data)) {
-                    log.info("Registry data {}\\\\{}\\\\{} already has {}, skipping.", getHkeyName(root), key, entry.getKey(), data);
+                    log.debug("Registry data '{}\\\\{}\\\\{}' already has '{}', skipping.", WindowsUtilities.getHkeyName(root), key, entry.getKey(), data);
                     return true;
                 }
             }
             // Find the next available number and iterate
-            int counter=0;
-            while(Advapi32Util.registryValueExists(root, key, counter + "")) {
-                counter++;
+            int startIndex = 0;
+            while (Advapi32Util.registryValueExists(root, key, Integer.toString(startIndex))) {
+                startIndex++;
             }
-            String value = String.valueOf(counter);
+            String value = Integer.toString(startIndex);
             if (data instanceof String) {
                 Advapi32Util.registrySetStringValue(root, key, value, (String)data);
             } else if (data instanceof Integer) {
@@ -312,11 +358,50 @@ public class WindowsUtilities {
             } else {
                 throw new Exception("Registry values of type "  + data.getClass() + " aren't supported");
             }
-            return true;
         } catch(Exception e) {
-            log.error("Could not write numbered registry value at {}\\\\{}", getHkeyName(root), key, e);
+            log.error("Could not write numbered registry value at {}\\\\{}", WindowsUtilities.getHkeyName(root), key, e);
+            return false;
         }
-        return false;
+        return true;
+    }
+
+    /**
+     * Removes the specified registry data from the key specified; renumbering any remaining values zero-indexed
+     */
+    public static boolean deleteNumberedRegValue(WinReg.HKEY root, String key, Object data) {
+        if(!Advapi32Util.registryKeyExists(root, key)) {
+            log.warn("Registry key {}\\\\{} doesn't exist, skipping removal", root, key);
+            return true;
+        }
+        HashSet<Object> existingValues = new HashSet<>();
+        for(Map.Entry<String, Object> entry : Advapi32Util.registryGetValues(root, key).entrySet())  {
+            if(ByteUtilities.isPositiveNumber(entry.getKey())) {
+                // Assume a positive number is a numbered index
+                if(data instanceof String || data instanceof Integer) {
+                    // Note: We only delete what we can write; there's a chance of littered indices with unsupported value types
+                    if(!data.equals(entry.getValue())) {
+                        existingValues.add(entry.getValue());
+                        // Delete existing value, we'll add it back lower
+                        Advapi32Util.registryDeleteValue(root, key, entry.getKey());
+                    }
+                } else {
+                    log.error("Registry values of type {} aren't supported", data.getClass());
+                    return false;
+                }
+            }
+        }
+
+        if(!deleteRegKey(root, key)) {
+            log.error("Unable to clear registry key at {}\\\\{}", WindowsUtilities.getHkeyName(root), key);
+            return false;
+        }
+
+        for(Object value : existingValues)  {
+            if(!addNumberedRegValue(root, key, value)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static boolean addRegValue(HKEY root, String key, String value, Object data) {
@@ -333,7 +418,9 @@ public class WindowsUtilities {
                     Advapi32Util.registryCreateKey(root, partialKey);
                 }
             }
-            if (data instanceof String) {
+            if (data instanceof Boolean) {
+                Advapi32Util.registrySetIntValue(root, key, value, ((Boolean)data) ? 1 : 0);
+            } else if (data instanceof String) {
                 Advapi32Util.registrySetStringValue(root, key, value, (String)data);
             } else if (data instanceof Integer) {
                 Advapi32Util.registrySetIntValue(root, key, value, (Integer)data);
@@ -350,7 +437,7 @@ public class WindowsUtilities {
     /**
      * Use reflection to get readable <code>HKEY</code> name, useful for debugging errors
      */
-    private static String getHkeyName(HKEY hkey) {
+    public static String getHkeyName(HKEY hkey) {
         for(Field f : WinReg.class.getFields()) {
             if (f.getName().startsWith("HKEY_")) {
                 try {
@@ -446,6 +533,20 @@ public class WindowsUtilities {
             }
         }
         return pid;
+    }
+
+    /**
+     * Cleans up a Windows path that may contain double quotes, commas or env variables
+     */
+    public static Path cleanRegPath(String rawPath) {
+        if(rawPath == null) {
+            return null;
+        }
+        String cleaned = rawPath.replaceAll("^\"|\"$", "");
+        if(cleaned.contains(",")) {
+            cleaned = cleaned.split(",", 2)[0];
+        }
+        return Paths.get(Kernel32Util.expandEnvironmentStrings(cleaned.trim()));
     }
 
     public static boolean isWindowsXP() {

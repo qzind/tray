@@ -26,6 +26,7 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.ResolutionSyntax;
+import javax.print.attribute.standard.MediaPrintableArea;
 import javax.print.attribute.standard.OrientationRequested;
 import javax.print.attribute.standard.PrinterResolution;
 import java.awt.*;
@@ -191,7 +192,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
         if (pxlOpts.getSize() != null && pxlOpts.getSize().isCustom()) {
                 // User defined dimensions, so this can be safely removed
-                attributes.remove(MediaPrintableArea.class);  
+                attributes.remove(MediaPrintableArea.class);
             // forcing a custom size, skip validation
             job.setPrintable(this, page);
         } else {

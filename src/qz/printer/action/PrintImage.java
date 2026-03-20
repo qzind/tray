@@ -190,6 +190,8 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         job.setJobName(pxlOpts.getJobName(Constants.IMAGE_PRINT));
 
         if (pxlOpts.getSize() != null && pxlOpts.getSize().isCustom()) {
+                // User defined dimensions, so this can be safely removed
+                attributes.remove(MediaPrintableArea.class);  
             // forcing a custom size, skip validation
             job.setPrintable(this, page);
         } else {

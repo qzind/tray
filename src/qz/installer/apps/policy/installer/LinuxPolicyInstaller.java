@@ -52,34 +52,41 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
 
     @Override
     public PolicyState putEntries(PolicyState state, Object... values) {
-        String key = state.getName();
-        Path location = state.getLocation();
         try {
-            JSONObject jsonPolicy = readJsonFile(location);
-            JSONArray jsonArray = jsonPolicy.optJSONArray(key);
-            if(jsonArray == null) {
-                log.debug("JSON file found {} but without array entry for {}, we'll add it", location, key);
-                jsonArray = new JSONArray();
-            }
-
-            value:
-            for(Object value : values) {
-                for(int i = 0; i < jsonArray.length(); i++) {
-                    if (value.equals(jsonArray.opt(i))) {
-                        log.debug("JSON array entry {} '{}' already exists at location {}, skipping", key, value, location);
-                        continue value;
-                    }
-                }
-                jsonArray.put(value);
-            }
-
-            // Insert array into object
-            jsonPolicy.put(key, jsonArray);
-            writeJsonFile(jsonPolicy, location, true);
-        } catch(IOException | JSONException e) {
-            return state.setFailed(e);
+            JSONObject jsonPolicy = readJsonFile(state.getLocation());
+            putEntries(jsonPolicy, state.getName(), values);
+            writeJsonFile(jsonPolicy, state.getLocation(), true);
+            state.setSucceeded();
         }
-        return state.setSucceeded();
+        catch(JSONException | IOException e) {
+           state.setFailed(e);
+        }
+        return state;
+    }
+
+    private void putEntries(JSONObject jsonObject, String key, Object... values) throws JSONException, IOException {
+        JSONArray jsonArray = jsonObject.optJSONArray(key);
+        if(jsonArray == null) {
+            log.debug("JSON file found but without array entry for {}, we'll add it", key);
+            jsonArray = new JSONArray();
+        } else {
+            // Explicitly dedupe before adding
+            jsonArray = removeFromJsonArray(new HashSet<>(Arrays.asList(values)), jsonArray);
+        }
+
+        value:
+        for(Object value : values) {
+            for(int i = 0; i < jsonArray.length(); i++) {
+                if (value.equals(jsonArray.opt(i))) {
+                    log.debug("JSON array entry {} '{}' already exists, skipping", key, value);
+                    continue value;
+                }
+            }
+            jsonArray.put(value);
+        }
+
+        // Insert array into object
+        jsonObject.put(key, jsonArray);
     }
 
     @Override
@@ -120,7 +127,12 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
             }
 
             for(Map.Entry<String, Object> entry : map.entrySet()) {
-                jsonObject.put(entry.getKey(), entry.getValue());
+                // Handle nested array
+                if(entry.getValue() instanceof Object[]) {
+                    putEntries(jsonObject, entry.getKey(), entry.getValue());
+                } else {
+                    jsonObject.put(entry.getKey(), entry.getValue());
+                }
             }
 
             // Insert map into object

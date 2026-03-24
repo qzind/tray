@@ -15,9 +15,7 @@ import qz.installer.apps.policy.locator.WindowsPolicyLocator;
 import qz.utils.SystemUtilities;
 
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public class PolicyInstaller {
     public enum Phase {
@@ -51,9 +49,23 @@ public class PolicyInstaller {
                 Map<String,Object> remaining = primitive.getMap(state);
                 if (remaining == null) return state.setSucceeded("suspiciously succeeded, the map is null");
                 int removeCount = 0;
-                for(String key : provided.keySet())
-                    if (remaining.remove(key) != null)
+                for(String key : provided.keySet()) {
+                    if(!remaining.containsKey(key)) continue;
+                    if (provided.get(key) instanceof Object[] && remaining.get(key) instanceof Object[]) {
+                        int size = ((Object[])remaining.get(key)).length;
+                        HashSet<Object> remainingSet = new HashSet<>(List.of((Object[])remaining.get(key)));
+                        for(Object o : List.of((Object[])provided.get(key))) {
+                            remainingSet.remove(o);
+                        }
+                        remaining.put(key, remainingSet.toArray());
+
+                        if(size != remainingSet.size()) {
+                            removeCount++;
+                        }
+                    } else if (remaining.remove(key) != null) {
                         removeCount++;
+                    }
+                }
 
                 if (removeCount == 0) return state.setSucceeded("nothing to remove");
                 if (!primitive.removeValue(state).hasFailed()) return state; // delete failed

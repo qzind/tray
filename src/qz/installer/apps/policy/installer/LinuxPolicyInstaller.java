@@ -183,7 +183,12 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
                 Iterator<String> iterator = jsonObject.keys(); // unchecked: seems to always be <String>
                 while(iterator.hasNext()) {
                     String mapKey = iterator.next();
-                    map.put(mapKey, jsonObject.get(mapKey));
+                    Object o = jsonObject.get(mapKey);
+                    if(o instanceof JSONArray) {
+                        map.put(mapKey, toArray((JSONArray)o));
+                    } else {
+                        map.put(mapKey, o);
+                    }
                 }
             }
             state.setSucceeded(map.isEmpty() ? String.format("JSON file '%s' is missing map entry for '%s', returning an empty map", location, key) : null);
@@ -216,6 +221,14 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
             jsonArray.put(o);
         }
         return jsonArray;
+    }
+
+    private static Object[] toArray(JSONArray jsonArray) throws JSONException {
+        Object[] values = new Object[jsonArray.length()];
+        for(int i = 0; i < jsonArray.length(); i++) {
+            values[i] = jsonArray.get(i);
+        }
+        return values;
     }
 
 }

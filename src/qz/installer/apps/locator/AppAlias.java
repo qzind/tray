@@ -89,7 +89,7 @@ public enum AppAlias {
          */
         public String getName(boolean stripVendor) {
             // Strip "Browser" from "Brave Browser"
-            if(stripVendor && name.endsWith("Browser")) {
+            if(stripVendor && (name.endsWith("Browser") || name.endsWith("Classic"))) {
                 return name.substring(0, name.length() - 7).trim();
             }
             if(stripVendor && name.startsWith(vendor) && !name.equals(vendor)) {

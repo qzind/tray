@@ -41,7 +41,7 @@ public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
                     case FIREFOX:
                     default:
                         // /etc/firefox
-                        return SYSTEM_PREFIX;
+                        return SYSTEM_PREFIX.resolve(alias.getSlug());
                 }
             case USER:
                 // TODO: placeholder: not yet supported

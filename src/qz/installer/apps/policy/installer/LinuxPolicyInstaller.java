@@ -129,7 +129,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
             for(Map.Entry<String, Object> entry : map.entrySet()) {
                 // Handle nested array
                 if(entry.getValue() instanceof Object[]) {
-                    putEntries(jsonObject, entry.getKey(), entry.getValue());
+                    putEntries(jsonObject, entry.getKey(), (Object[])entry.getValue());
                 } else {
                     jsonObject.put(entry.getKey(), entry.getValue());
                 }

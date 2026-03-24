@@ -68,7 +68,7 @@ public class PolicyInstaller {
                 }
 
                 if (removeCount == 0) return state.setSucceeded("nothing to remove");
-                if (!primitive.removeValue(state).hasFailed()) return state; // delete failed
+                if (primitive.removeValue(state).hasFailed()) return state; // delete failed
                 if (remaining.isEmpty()) return state.setSucceeded("nothing to write");
                 if (primitive.putMap(state, remaining).hasFailed()) return state;
             }

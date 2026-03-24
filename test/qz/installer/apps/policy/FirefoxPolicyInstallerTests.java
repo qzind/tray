@@ -9,11 +9,13 @@ import qz.installer.apps.locator.AppAlias;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import static qz.installer.apps.policy.PolicyState.Type.*;
+
 public class FirefoxPolicyInstallerTests{
     private static final Logger log = LogManager.getLogger(FirefoxPolicyInstallerTests.class);
 
     static Object[][] firefoxTests = {
-            //todo
+            {"Certificates", new Object[] {"ImportEnterpriseRoots", true}, MAP},
     };
 
     @DataProvider(name = "firefoxPolicyTests")

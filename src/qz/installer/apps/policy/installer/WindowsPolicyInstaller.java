@@ -9,6 +9,8 @@ import qz.utils.WindowsUtilities;
 import java.nio.file.Path;
 import java.util.*;
 
+import static qz.installer.apps.policy.PolicyInstaller.normalizeFloats;
+
 public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstaller {
     @Override
     public PolicyState putValue(PolicyState state, Object value) {
@@ -76,7 +78,7 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         WinReg.HKEY root = state.getHkey();
         Path key = state.getLocation();
 
-        return state.failIfNull(WindowsUtilities.getRegValue(root, key.toString(), state.getName()));
+        return normalizeFloats(state.failIfNull(WindowsUtilities.getRegValue(root, key.toString(), state.getName())));
     }
 
     @Override
@@ -91,7 +93,7 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         Object value;
         // val is assigned, and the loop is continued if there was a non-null value returned
         while ((value = WindowsUtilities.getRegValue(root, key.toString(), Integer.toString(index))) != null) {
-            values.add(value);
+            values.add(normalizeFloats(value));
             index++;
         }
         // this will never be null, but will show a log when empty
@@ -104,6 +106,9 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         Path key = state.getLocation();
 
         TreeMap<String, Object> treeMap = WindowsUtilities.getRegistryValues(root, key.toString());
+        if (treeMap != null) {
+            treeMap.replaceAll((k, v) -> normalizeFloats(v));
+        }
         return new HashMap<>(state.failIfNull(treeMap));
     }
 }

@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
+import static qz.installer.apps.policy.PolicyInstaller.normalizeFloats;
 import static qz.utils.FileUtilities.*;
 
 public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstaller {
@@ -148,7 +149,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     public Object getValue(PolicyState state) {
         Object value = null;
         try {
-            value = readJsonFile(state.getLocation()).opt(state.getName());
+            value = normalizeFloats(readJsonFile(state.getLocation()).opt(state.getName()));
         } catch(JSONException | IOException ignore) {}
         return state.failIfNull(value);
     }
@@ -161,10 +162,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
             if (entries == null) {
                 return new Object[0];
             }
-            values = new Object[entries.length()];
-            for(int i = 0; i < entries.length(); i++) {
-                values[i] = entries.get(i);
-            }
+            values = toArray(entries);
         } catch(JSONException | IOException ignore) {}
         return state.failIfNull(values);
     }
@@ -187,7 +185,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
                     if(o instanceof JSONArray) {
                         map.put(mapKey, toArray((JSONArray)o));
                     } else {
-                        map.put(mapKey, o);
+                        map.put(mapKey, normalizeFloats(o));
                     }
                 }
             }
@@ -226,7 +224,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     private static Object[] toArray(JSONArray jsonArray) throws JSONException {
         Object[] values = new Object[jsonArray.length()];
         for(int i = 0; i < jsonArray.length(); i++) {
-            values[i] = jsonArray.get(i);
+            values[i] = normalizeFloats(jsonArray.get(i));
         }
         return values;
     }

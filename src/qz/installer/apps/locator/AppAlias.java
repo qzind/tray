@@ -13,7 +13,6 @@ public enum AppAlias {
             new Alias("Mozilla", "Firefox Nightly", "org.mozilla.nightly"),
             new Alias("Mozilla", "LibreWolf", "org.mozilla.librewolf"),
             new Alias("Waterfox", "Waterfox", "net.waterfox.waterfoxcurrent"),
-            new Alias("Mozilla", "Pale Moon", "org.mozilla.palemoon"),
             new Alias("Mozilla", "IceCat", "org.gnu.icecat")
     ),
     CHROMIUM(

@@ -1021,8 +1021,8 @@ public class FileUtilities {
      * Helper for creating any/all parent directories and making them traversable
      */
     public static boolean mkdirsRecursive(File file, boolean r, boolean w, boolean x, boolean ownerOnly) {
-        File parent;
-        while((parent = file.getParentFile()) != null) {
+        File parent = file;
+        while((parent = parent.getParentFile()) != null) {
             if (!parent.exists()) {
                 if (!parent.mkdirs()) {
                     log.warn("Unable to create directory '{}'", parent);

@@ -68,7 +68,7 @@ public class CertificateSideLoader {
 
         // Calculate new cert path
         return policyLocation
-                .resolve("..")
+                .getParent()
                 .resolve("certificates")
                 .resolve(CERTIFICATE_NAME)
                 .toFile();

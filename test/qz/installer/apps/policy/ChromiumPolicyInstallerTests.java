@@ -18,8 +18,8 @@ public class ChromiumPolicyInstallerTests {
     private static final Logger log = LogManager.getLogger(ChromiumPolicyInstallerTests.class);
 
     static Object[][] chromiumTests = {
-            {"URLAllowlist", new Object[] {String.format("%s://*", Constants.DATA_DIR)}, ARRAY},
-            {"LocalNetworkAccessAllowedForUrls", "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL), VALUE},
+            {ARRAY, "URLAllowlist", new Object[] {String.format("%s://*", Constants.DATA_DIR)}},
+            {VALUE, "LocalNetworkAccessAllowedForUrls", "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL)},
     };
 
     @DataProvider(name = "chromiumPolicyTests")
@@ -30,8 +30,8 @@ public class ChromiumPolicyInstallerTests {
     }
 
     @Test(dataProvider = "chromiumPolicyTests")
-    public void testChromiumPolicies(AppAlias.Alias alias, String name, Object value, PolicyState.Type type) {
-        PolicyInstallerTestDispatcher.dispatchInstallTest(alias, name, value, type);
-        PolicyInstallerTestDispatcher.dispatchUninstallTest(alias, name, value, type);
+    public void testGenericPolicies(AppAlias.Alias alias, PolicyState.Type type, String name, Object value) {
+        PolicyInstallerTestDispatcher.dispatchInstallTest(alias, type, name, value);
+        PolicyInstallerTestDispatcher.dispatchUninstallTest(alias, type, name, value);
     }
 }

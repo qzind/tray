@@ -27,31 +27,32 @@ public class PolicyInstallerTestDispatcher {
         return retMatrix.toArray(new Object[0][]);
     }
 
-    public static PolicyState dispatchInstallTest(AppAlias.Alias alias, String name, Object value, PolicyState.Type type) {
+    public static PolicyState dispatchInstallTest(AppAlias.Alias alias, PolicyState.Type type, String name, Object value) {
         switch(type) {
             case VALUE:
                 return testAppsPolicyValueInstall(alias, name, value);
             case ARRAY:
-                return testAppsPolicyArrayInstall(alias, name, (Object[])value);
+                return testAppsPolicyArrayInstall(alias, name, value);
             case MAP:
                 return testAppsPolicyMapInstall(alias, name, value);
         }
         return null;
     }
 
-    public static PolicyState dispatchUninstallTest(AppAlias.Alias alias, String name, Object value, PolicyState.Type type) {
+    public static PolicyState dispatchUninstallTest(AppAlias.Alias alias, PolicyState.Type type, String name, Object value) {
         switch(type) {
             case VALUE:
                 return testAppsPolicyValueUninstall(alias, name, value);
             case ARRAY:
-                return testAppsPolicyArrayUninstall(alias, name, (Object[])value);
+                return testAppsPolicyArrayUninstall(alias, name, value);
             case MAP:
                 return testAppsPolicyMapUninstall(alias, name, value);
         }
         return null;
     }
 
-    private static PolicyState testAppsPolicyArrayInstall(AppAlias.Alias alias, String name, Object[] values) {
+    private static PolicyState testAppsPolicyArrayInstall(AppAlias.Alias alias, String name, Object value) {
+        Object[] values = (Object[])value;
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
         PolicyState state = policyInstaller.install(ARRAY, name, values);
         assertState(state);
@@ -63,16 +64,17 @@ public class PolicyInstallerTestDispatcher {
         List<Object> returnedList = Arrays.asList(policyInstaller.getEntries(state.reset()));
 
         // Verify there is one, and only one, match.
-        for (Object value: values) {
-            int firstIndex = returnedList.indexOf(value);
-            if (firstIndex == -1) Assert.fail("No match found for value: " + value);
+        for (Object element: values) {
+            int firstIndex = returnedList.indexOf(element);
+            if (firstIndex == -1) Assert.fail("No match found for value: " + element);
             List<Object> sublist = returnedList.subList(firstIndex + 1, returnedList.size());
-            if (sublist.contains(value)) Assert.fail("Duplicate matches found for value: " + value);
+            if (sublist.contains(element)) Assert.fail("Duplicate matches found for value: " + element);
         }
         return state;
     }
 
-    private static PolicyState testAppsPolicyArrayUninstall(AppAlias.Alias alias, String name, Object[] values) {
+    private static PolicyState testAppsPolicyArrayUninstall(AppAlias.Alias alias, String name, Object value) {
+        Object[] values = (Object[])value;
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
         PolicyState state;
         List<Object> returnedList;
@@ -94,9 +96,9 @@ public class PolicyInstallerTestDispatcher {
         returnedList = Arrays.asList(policyInstaller.getEntries(state.reset()));
 
         // Verify none of our values remain in the array
-        for (Object value: values) {
-            int firstIndex = returnedList.indexOf(value);
-            if (firstIndex != -1) Assert.fail("Failed to remove element: " + value);
+        for (Object element: values) {
+            int firstIndex = returnedList.indexOf(element);
+            if (firstIndex != -1) Assert.fail("Failed to remove element: " + element);
         }
         return state;
     }

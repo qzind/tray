@@ -15,17 +15,17 @@ public class GenericPolicyInstallerTests {
     private static final Logger log = LogManager.getLogger(GenericPolicyInstallerTests.class);
 
     static Object[][] genericTests = {
-            {"testBool", true, VALUE},                                      //boolean
-            {"testInt", 1234, VALUE},                                       //integer
-            {"testFloat", 123.4, VALUE},                                    //decimal
-            {"testString", "test", VALUE},                                  //string
-            {"testArray", new Object[] {"element 1", "element 2"}, ARRAY},  //2-item array
-            {"testArray", new Object[] {"element 1"}, ARRAY},               //1-item array
-            {"testMap", new HashMap<String, Object>(Map.of(                 //map from map
+            {VALUE, "testBool", true},                                      //boolean
+            {VALUE, "testInt", 1234},                                       //integer
+            {VALUE, "testFloat", 123.4},                                    //decimal
+            {VALUE, "testString", "test"},                                  //string
+            {ARRAY, "testArray", new Object[] {"element 1", "element 2"}},  //2-item array
+            {ARRAY, "testArray", new Object[] {"element 1"}},               //1-item array
+            {MAP, "testMap", new HashMap<String, Object>(Map.of(                 //map from map
                     "firstKey", "value 1",
                     "secondKey", "value 2"
-                    )), MAP},
-            {"testMap", new Object[] {"firstKey", "value 1"}, MAP}             //map from array
+                    ))},
+            {MAP, "testMap", new Object[] {"firstKey", "value 1"}}             //map from array
     };
 
     @DataProvider(name = "genericPolicyTests")
@@ -38,8 +38,8 @@ public class GenericPolicyInstallerTests {
     }
 
     @Test(dataProvider = "genericPolicyTests")
-    public void testGenericPolicies(Alias alias, String name, Object value, PolicyState.Type type) {
-        PolicyInstallerTestDispatcher.dispatchInstallTest(alias, name, value, type);
-        PolicyInstallerTestDispatcher.dispatchUninstallTest(alias, name, value, type);
+    public void testGenericPolicies(Alias alias, PolicyState.Type type, String name, Object value) {
+        PolicyInstallerTestDispatcher.dispatchInstallTest(alias, type, name, value);
+        PolicyInstallerTestDispatcher.dispatchUninstallTest(alias, type, name, value);
     }
 }

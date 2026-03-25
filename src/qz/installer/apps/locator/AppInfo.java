@@ -4,11 +4,14 @@ import com.github.zafarkhaja.semver.Version;
 
 import java.awt.*;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.installer.Installer;
 import qz.installer.apps.AppVersionParser;
 import qz.installer.apps.locator.AppAlias.Alias;
 
@@ -101,6 +104,30 @@ public class AppInfo {
             }
         }
         return command.toArray(new String[0]);
+    }
+
+
+    public static boolean issueRestartWarning(HashMap<String,AppInfo> runningPaths, AppInfo appInfo) {
+        for(Map.Entry<String, AppInfo> runningApp : runningPaths.entrySet()) {
+            if(runningApp.getValue().equals(appInfo)) {
+                return runningApp.getValue().issueRestartWarning();
+            }
+        }
+        return false;
+    }
+
+    public boolean issueRestartWarning() {
+        try {
+            if(this.getAlias().getAppAlias() == AppAlias.FIREFOX) {
+                // TODO: Replace with "/restart" page
+                Installer.getInstance().spawn(this.getExePath().toString(), "-private", "about:restartrequired");
+                return true;
+            }
+            throw new UnsupportedOperationException(String.format("Restart pages are not yet supported for '%s'", this));
+        } catch(Exception e) {
+            log.warn("Unable to spawn '{}', will need to be restarted manually for changes to take effect", this);
+        }
+        return false;
     }
 
     @Override

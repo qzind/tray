@@ -111,7 +111,7 @@ public class AppLocatorTests {
         }
         int runningCount = new HashSet<>(runningApps.values()).size();
         int foundCount = findAppInfo(app).size();
-        Assert.assertTrue(runningCount == foundCount, String.format("[%s] Running app count %s must be equal to found app count %s.", app.name(), runningCount, foundCount));
+        Assert.assertEquals(foundCount, runningCount, String.format("[%s] Running app count %s must be equal to found app count %s.", app.name(), runningCount, foundCount));
     }
 
     /**

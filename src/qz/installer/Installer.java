@@ -15,11 +15,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.build.provision.params.Phase;
+import qz.installer.apps.firefox.CertificateSideLoader;
 import qz.installer.apps.locator.AppAlias;
 import qz.installer.apps.policy.PolicyState;
 import qz.installer.apps.policy.PolicyInstaller;
 import qz.installer.certificate.*;
-import qz.installer.apps.firefox.OldFirefoxCertificateInstaller;
 import qz.installer.provision.ProvisionInstaller;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
@@ -46,6 +46,8 @@ public abstract class Installer {
     public static boolean IS_SILENT =  "1".equals(System.getenv(DATA_DIR + "_silent"));
     public static String JRE_LOCATION = SystemUtilities.isMac() ? "Contents/PlugIns/Java.runtime/Contents/Home" : "runtime";
 
+    private final PrivilegeLevel scope;
+    private final boolean ownerOnly;
     WebsocketPorts websocketPorts;
 
     public enum PrivilegeLevel {
@@ -65,6 +67,11 @@ public abstract class Installer {
 
     private static Installer instance;
 
+    public Installer() {
+        scope = SystemUtilities.isAdmin() ? PrivilegeLevel.SYSTEM : PrivilegeLevel.USER;
+        ownerOnly = isOwnerOnly(scope);
+    }
+
     public static Installer getInstance() {
         if(instance == null) {
             switch(SystemUtilities.getOs()) {
@@ -79,6 +86,10 @@ public abstract class Installer {
             }
         }
         return instance;
+    }
+
+    public PrivilegeLevel getScope() {
+        return scope;
     }
 
     public static void install(String destination, boolean silent) throws Exception {
@@ -141,10 +152,10 @@ public abstract class Installer {
         // Fix permissions for provisioned files
         FileUtilities.setExecutableRecursively(SystemUtilities.isMac() ?
                                                        dest.resolve("Contents/Resources").resolve(PROVISION_DIR) :
-                                                       dest.resolve(PROVISION_DIR), false);
+                                                       dest.resolve(PROVISION_DIR), ownerOnly);
         if(!SystemUtilities.isWindows()) {
-            setExecutable(SystemUtilities.isMac() ? "Contents/Resources/uninstall" : "uninstall");
-            setExecutable(SystemUtilities.isMac() ? "Contents/MacOS/" + ABOUT_TITLE : PROPS_FILE);
+            setExecutableRelative(SystemUtilities.isMac() ? "Contents/Resources/uninstall" : "uninstall");
+            setExecutableRelative(SystemUtilities.isMac() ? "Contents/MacOS/" + ABOUT_TITLE : PROPS_FILE);
             return setJrePermissions(getDestination());
         }
         return this;
@@ -159,21 +170,35 @@ public abstract class Installer {
         File[] files = jreBin.listFiles(pathname -> !pathname.isDirectory());
         if(files != null) {
             for(File file : files) {
-                file.setExecutable(true, false);
+                if(!file.setExecutable(true, ownerOnly)) {
+                    log.error("Unable to set file executable '{}'", file);
+                }
             }
         }
 
-        // Set jspawnhelper executable
-        new File(jreLib, "jspawnhelper" + (SystemUtilities.isWindows() ? ".exe" : "")).setExecutable(true, false);
+        setExecutableRelative(jreLib, String.format("jspawnhelper%s", SystemUtilities.isWindows() ? ".exe" : ""));
         return this;
     }
 
-    private void setExecutable(String relativePath) {
-        new File(getDestination(), relativePath).setExecutable(true, false);
+    /**
+     * Helper to avoid IDE warnings about unused return value.
+     */
+    private void setExecutable(File file) {
+        if(!file.setExecutable(true, ownerOnly)) {
+            log.warn("Unable to set '{}' executable, this will cause problems", file);
+        }
+    }
+
+    private void setExecutableRelative(File parent, String relativePath) {
+        setExecutable(new File(parent, relativePath));
+    }
+
+    private void setExecutableRelative(String relativePath) {
+        setExecutable(new File(getDestination(), relativePath));
     }
 
     /**
-     * Explicitly purge libs to notify system cache per https://github.com/qzind/tray/issues/662
+     * Explicitly purge libs to notify system cache per <a href="https://github.com/qzind/tray/issues/662">#662</a>
      */
     public Installer removeLibs() {
         String[] dirs = { "libs" };
@@ -185,6 +210,7 @@ public abstract class Installer {
         return this;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public Installer cleanupLegacyLogs(int rolloverCount) {
         // Convert old < 2.2.3 log file format
         Path logLocation = USER_DIR;
@@ -201,8 +227,11 @@ public abstract class Installer {
                     newFile = logLocation.resolve("debug." + ++newIndex + ".log").toFile();
                 } while(newFile.exists());
 
-                oldFile.renameTo(newFile);
-                log.info("Migrated log file {} to new location {}", oldFile, newFile);
+                if(oldFile.renameTo(newFile)) {
+                    log.info("Migrated log file '{}' to new location '{}'", oldFile, newFile);
+                } else {
+                    log.error("An error occurred migrating log file '{}' to new location '{}'", oldFile, newFile);
+                }
             }
         } while(oldFile.exists() || oldIndex <= rolloverCount);
 
@@ -242,7 +271,9 @@ public abstract class Installer {
         });
 
         files.forEach(file -> {
-            new File(instance.getDestination() + File.separator + file).delete();
+            if(!new File(instance.getDestination() + File.separator + file).delete()) {
+                log.warn("Unable to delete legacy file '{}'", file);
+            }
         });
 
         move.forEach((src, dest) -> {
@@ -288,7 +319,7 @@ public abstract class Installer {
         try {
             // Check that the CA cert is installed
             X509Certificate caCert = certificateManager.getKeyPair(CA).getCert();
-            NativeCertificateInstaller installer = NativeCertificateInstaller.getInstance();
+            NativeCertificateInstaller installer = NativeCertificateInstaller.getInstance(scope);
 
             if (forceNew || needsInstall) {
                 // Remove installed certs per request (usually the desktop installer, or failure to write properties)
@@ -298,20 +329,24 @@ public abstract class Installer {
                     installer.remove(matchingCerts);
                 }
                 installer.install(caCert);
-                OldFirefoxCertificateInstaller.install(caCert, hostNames);
-            } else {
-                // Make sure the certificate is recognized by the system
-                if(caCert == null) {
-                    log.info("CA cert is empty, skipping installation checks.  This is normal for trusted/3rd-party SSL certificates.");
-                } else {
-                    File tempCert = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
-                    CertificateManager.writeCert(caCert, tempCert); // temp cert
-                    if (!installer.verify(tempCert)) {
-                        installer.install(caCert);
-                        OldFirefoxCertificateInstaller.install(caCert, hostNames);
-                    }
-                    if(!tempCert.delete()) {
-                        tempCert.deleteOnExit();
+
+                // Install Firefox Certificate
+                for(AppAlias.Alias alias : AppAlias.FIREFOX.getAliases()) {
+                    PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
+                    switch(SystemUtilities.getOs()) {
+                        case WINDOWS:
+                        case MAC:
+                            // Windows and macOS set policy flag
+                            policyInstaller.install(PolicyState.Type.MAP, "Certificates", "ImportEnterpriseRoots", true);
+                            break;
+                        case LINUX:
+                        default:
+                            // Linux needs cert added explicitly
+                            CertificateSideLoader sideLoader = new CertificateSideLoader(scope, alias);
+                            File certFile = sideLoader.add(caCert);
+                            if(certFile != null) {
+                                policyInstaller.install(PolicyState.Type.MAP, "Certificates", "Install", new Object[] { certFile });
+                            }
                     }
                 }
             }
@@ -333,10 +368,25 @@ public abstract class Installer {
      */
     public Installer removeCerts() {
         // System certs
-        NativeCertificateInstaller instance = NativeCertificateInstaller.getInstance();
+        NativeCertificateInstaller instance = NativeCertificateInstaller.getInstance(scope);
         instance.remove(instance.find());
         // Firefox certs
-        OldFirefoxCertificateInstaller.uninstall();
+        // Install Firefox Certificate
+        for(AppAlias.Alias alias : AppAlias.FIREFOX.getAliases()) {
+            switch(SystemUtilities.getOs()) {
+                case WINDOWS:
+                case MAC:
+                    // Leave behind "ImportEnterpriseRoots"
+                    break;
+                case LINUX:
+                default:
+                    // Delete certs we've installed
+                    File certFile = new CertificateSideLoader(scope, alias).remove();
+                    if(certFile != null) {
+                        new PolicyInstaller(scope, alias).uninstall(PolicyState.Type.MAP, "Certificates", "Install", new Object[] { certFile });
+                    }
+            }
+        }
         return this;
     }
 
@@ -346,9 +396,18 @@ public abstract class Installer {
      */
     public Installer addUserSettings() {
         // Check for whitelisted certificates in <install>/whitelist/
-        Path whiteList = SystemUtilities.getJarParentPath().resolve(WHITELIST_CERT_DIR);
+        Path jarParent = SystemUtilities.getJarParentPath();
+        if(jarParent == null) {
+            log.error("Could not calculate jar parent path, can't add user settings");
+            return this;
+        }
+        Path whiteList = jarParent.resolve(WHITELIST_CERT_DIR);
         if(Files.exists(whiteList) && Files.isDirectory(whiteList)) {
-            for(File file : whiteList.toFile().listFiles()) {
+            File[] whiteListFiles = whiteList.toFile().listFiles();
+            if(whiteListFiles == null) {
+                return this; // no files
+            }
+            for(File file : whiteListFiles) {
                 try {
                     Certificate cert = new Certificate(FileUtilities.readLocalFile(file.getPath()));
                     if (!cert.isSaved()) {
@@ -362,12 +421,12 @@ public abstract class Installer {
         return instance;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public Installer modifyApps() {
         // Chromium
         // Chrome protocol handler (e.g. "qz://*")
         for(AppAlias.Alias alias : AppAlias.CHROMIUM.getAliases()) {
-            // FIXME: PrivilegeLevel shouldn't be hard-coded
-            PolicyInstaller policyInstaller = new PolicyInstaller(PrivilegeLevel.SYSTEM, alias);
+            PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
             policyInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", String.format("%s://*", DATA_DIR));
             // LocalNetworkAccess (e.g. [*.]qz.io)
             // FIXME: Read in more root domains via provisioning
@@ -411,6 +470,7 @@ public abstract class Installer {
         return this;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public static Properties persistProperties(File oldFile, Properties newProps) {
         if(oldFile.exists()) {
             Properties oldProps = new Properties();
@@ -431,7 +491,7 @@ public abstract class Installer {
     }
 
     public void spawn(String ... args) throws Exception {
-        spawn(new ArrayList(Arrays.asList(args)));
+        spawn(new ArrayList<>(Arrays.asList(args)));
     }
 
     /**
@@ -447,5 +507,14 @@ public abstract class Installer {
         } catch (IOException e) {
             log.error("Failed to start process '{}'", String.join(", ", command), e);
         }
+    }
+
+    /**
+     * Helper for file system permissions (such as <code>setExecutable(...)</code> or <code>setReadable(...)</code>).
+     * Returns <code>false</code> for SYSTEM-scoped installs since these files often need to be world read/execute
+     * but returns <code>true</code> for USER-scoped installs to avoid granting permission to strangers
+     */
+    public static boolean isOwnerOnly(PrivilegeLevel scope) {
+        return scope != PrivilegeLevel.SYSTEM;
     }
 }

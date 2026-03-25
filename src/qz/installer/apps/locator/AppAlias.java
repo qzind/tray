@@ -8,22 +8,19 @@ import java.util.Locale;
 public enum AppAlias {
     // Tor Browser intentionally excluded; Tor's proxy blocks localhost connections
     FIREFOX(
-            new Alias("Mozilla", "Mozilla Firefox", "org.mozilla.firefox", true),
-            new Alias("Mozilla", "Firefox Developer Edition", "org.mozilla.firefoxdeveloperedition", true),
-            new Alias("Mozilla", "Firefox Nightly", "org.mozilla.nightly", true),
-            new Alias("Mozilla", "LibreWolf", "org.mozilla.librewolf", true),
-            new Alias("Mozilla", "SeaMonkey", "org.mozilla.seamonkey", false),
-            new Alias("Waterfox", "Waterfox", "net.waterfox.waterfoxcurrent", true),
-            new Alias("Waterfox", "Waterfox Classic", "org.waterfoxproject.waterfox classic", false),
-            new Alias("Mozilla", "Pale Moon", "org.mozilla.palemoon", false),
-            // IceCat is technically enterprise ready, but not officially distributed for macOS, Windows
-            new Alias("Mozilla", "IceCat", "org.gnu.icecat", false)
+            new Alias("Mozilla", "Mozilla Firefox", "org.mozilla.firefox"),
+            new Alias("Mozilla", "Firefox Developer Edition", "org.mozilla.firefoxdeveloperedition"),
+            new Alias("Mozilla", "Firefox Nightly", "org.mozilla.nightly"),
+            new Alias("Mozilla", "LibreWolf", "org.mozilla.librewolf"),
+            new Alias("Waterfox", "Waterfox", "net.waterfox.waterfoxcurrent"),
+            new Alias("Mozilla", "Pale Moon", "org.mozilla.palemoon"),
+            new Alias("Mozilla", "IceCat", "org.gnu.icecat")
     ),
     CHROMIUM(
-            new Alias("Google", "Google Chrome", "com.google.Chrome", true),
-            new Alias("Microsoft", "Microsoft Edge", "com.microsoft.Edge", true),
-            new Alias("Brave", "Brave Browser", "com.brave.Browser", true),
-            new Alias("Chromium", "Chromium", "org.chromium.Chromium", true)
+            new Alias("Google", "Google Chrome", "com.google.Chrome"),
+            new Alias("Microsoft", "Microsoft Edge", "com.microsoft.Edge"),
+            new Alias("Brave", "Brave Browser", "com.brave.Browser"),
+            new Alias("Chromium", "Chromium", "org.chromium.Chromium")
     );
     final Alias[] aliases;
     AppAlias(Alias... aliases) {
@@ -49,16 +46,14 @@ public enum AppAlias {
         private final String vendor;
         private final String name;
         private final String bundleId;
-        private final boolean enterpriseReady;
         private final String slug;
 
         private AppAlias appAlias;
 
-        private Alias(String vendor, String name, String bundleId, boolean enterpriseReady) {
+        private Alias(String vendor, String name, String bundleId) {
             this.name = name;
             this.vendor = vendor;
             this.bundleId = bundleId;
-            this.enterpriseReady = enterpriseReady;
             this.slug = Sluggable.slugOf(getName(true));
         }
 
@@ -104,13 +99,6 @@ public enum AppAlias {
 
         public String getSlug() {
             return slug;
-        }
-
-        /**
-         * Returns whether the app is known to recognize enterprise policies, such as GPO
-         */
-        public boolean isEnterpriseReady() {
-            return enterpriseReady;
         }
 
         @Override

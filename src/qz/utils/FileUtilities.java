@@ -1016,4 +1016,38 @@ public class FileUtilities {
             }
         }
     }
+
+    /**
+     * Helper for creating any/all parent directories and making them traversable
+     */
+    public static boolean mkdirsRecursive(File file, boolean r, boolean w, boolean x, boolean ownerOnly) {
+        File parent;
+        while((parent = file.getParentFile()) != null) {
+            if (!parent.exists()) {
+                if (!parent.mkdirs()) {
+                    log.warn("Unable to create directory '{}'", parent);
+                    return false;
+                }
+            }
+            if(r) {
+                if (!parent.setReadable(true, ownerOnly)) {
+                    log.warn("Unable to set readable '{}'", parent);
+                    return false;
+                }
+            }
+            if(w) {
+                if (!parent.setWritable(true, ownerOnly)) {
+                    log.warn("Unable to set writable '{}'", parent);
+                    return false;
+                }
+            }
+            if(x) {
+                if (!parent.setExecutable(true, ownerOnly)) {
+                    log.warn("Unable to set traversable '{}'", parent);
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }

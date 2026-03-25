@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import qz.installer.apps.locator.AppAlias;
 import qz.installer.apps.policy.PolicyInstaller;
 import qz.installer.apps.policy.PolicyState;
 
@@ -21,14 +22,13 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     @Override
     public PolicyState putValue(PolicyState state, Object value) {
         String key = state.getName();
-        Path location = state.getLocation();
         try {
-            JSONObject jsonPolicy = readJsonFile(location);
+            JSONObject jsonPolicy = readJson(state);
             if (jsonPolicy.has(key)) {
                 jsonPolicy.remove(key);
             }
             jsonPolicy.put(key, value);
-            writeJsonFile(jsonPolicy, location, true);
+            writeJson(jsonPolicy, state);
         } catch(IOException | JSONException e) {
             return state.setFailed(e);
         }
@@ -38,13 +38,12 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     @Override
     public PolicyState removeValue(PolicyState state) {
         String key = state.getName();
-        Path location = state.getLocation();
         try {
-            JSONObject jsonObject = readJsonFile(location);
+            JSONObject jsonObject = readJson(state);
             if(jsonObject.has(key)) {
                 jsonObject.remove(key);
             }
-            writeJsonFile(jsonObject, location, true);
+            writeJson(jsonObject, state);
         } catch(IOException | JSONException e) {
             return state.setFailed(e);
         }
@@ -54,9 +53,9 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     @Override
     public PolicyState putEntries(PolicyState state, Object... values) {
         try {
-            JSONObject jsonPolicy = readJsonFile(state.getLocation());
+            JSONObject jsonPolicy = readJson(state);
             putEntries(jsonPolicy, state.getName(), values);
-            writeJsonFile(jsonPolicy, state.getLocation(), true);
+            writeJson(jsonPolicy, state);
             state.setSucceeded();
         }
         catch(JSONException | IOException e) {
@@ -93,10 +92,9 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     @Override
     public PolicyState removeEntries(PolicyState state, Object ... values) {
         String key = state.getName();
-        Path location = state.getLocation();
         Set<Object> removeSet = new HashSet<>(Arrays.asList(values));
         try {
-            JSONObject jsonPolicy = readJsonFile(location);
+            JSONObject jsonPolicy = readJson(state);
             JSONArray jsonArray = jsonPolicy.optJSONArray(key);
             if(jsonArray != null) {
                 jsonArray = removeFromJsonArray(removeSet, jsonArray);
@@ -105,7 +103,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
                 } else {
                     jsonPolicy.remove(key); // clean up empty array
                 }
-                writeJsonFile(jsonPolicy, location, true);
+                writeJson(jsonPolicy, state);
             } else {
                 return state.setSucceeded(String.format("skipping, array value '%s' doesn't exist", key));
             }
@@ -120,7 +118,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
         String key = state.getName();
         Path location = state.getLocation();
         try {
-            JSONObject jsonPolicy = readJsonFile(location);
+            JSONObject jsonPolicy = readJson(state);
             JSONObject jsonObject = jsonPolicy.optJSONObject(key);
             if(jsonObject == null) {
                 log.debug("JSON file found '{}' but without map entry for '{}', we'll add it", location, key);
@@ -138,7 +136,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
 
             // Insert map into object
             jsonPolicy.put(key, jsonObject);
-            writeJsonFile(jsonPolicy, location, true);
+            writeJson(jsonPolicy, state);
         } catch(IOException | JSONException e) {
             return state.setFailed(e);
         }
@@ -149,7 +147,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     public Object getValue(PolicyState state) {
         Object value = null;
         try {
-            value = normalizeFloats(readJsonFile(state.getLocation()).opt(state.getName()));
+            value = normalizeFloats(readJson(state).opt(state.getName()));
         } catch(JSONException | IOException ignore) {}
         return state.failIfNull(value);
     }
@@ -158,7 +156,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     public Object[] getEntries(PolicyState state) {
         Object[] values = null;
         try {
-            JSONArray entries = readJsonFile(state.getLocation()).optJSONArray(state.getName());
+            JSONArray entries = readJson(state).optJSONArray(state.getName());
             if (entries == null) {
                 return new Object[0];
             }
@@ -174,7 +172,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
         Path location = state.getLocation();
         Map<String,Object> map = null;
         try {
-            JSONObject jsonPolicy = readJsonFile(location);
+            JSONObject jsonPolicy = readJson(state);
             map = new HashMap<>();
             JSONObject jsonObject = jsonPolicy.optJSONObject(key);
             if(jsonObject != null) {
@@ -219,6 +217,29 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
             jsonArray.put(o);
         }
         return jsonArray;
+    }
+
+    /**
+     * Reads JSON file from state.getLocation(). For firefox on linux,  this returns a
+     * sub object under the key "policies" instead.
+     */
+    private static JSONObject readJson(PolicyState state) throws JSONException, IOException {
+        if (Arrays.asList(AppAlias.FIREFOX.getAliases()).contains(state.getAlias())) {
+            JSONObject jsonObject = readJsonFile(state.getLocation()).optJSONObject("policies");
+            return jsonObject != null ? jsonObject : new JSONObject();
+        } else {
+            return readJsonFile(state.getLocation());
+        }
+    }
+
+    private static void writeJson(JSONObject jsonPolicy, PolicyState state) throws JSONException, IOException {
+        if (Arrays.asList(AppAlias.FIREFOX.getAliases()).contains(state.getAlias())) {
+            JSONObject oldJsonPolicy = readJsonFile(state.getLocation());
+            oldJsonPolicy.put("policies", jsonPolicy);
+            writeJsonFile(oldJsonPolicy, state.getLocation(), true);
+        } else {
+            writeJsonFile(jsonPolicy, state.getLocation(), true);
+        }
     }
 
     private static Object[] toArray(JSONArray jsonArray) throws JSONException {

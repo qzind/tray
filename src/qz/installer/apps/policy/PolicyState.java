@@ -94,6 +94,10 @@ public class PolicyState {
         return location;
     }
 
+    public AppAlias.Alias getAlias() {
+        return alias;
+    }
+
     public WinReg.HKEY getHkey() {
         return hkey;
     }

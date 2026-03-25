@@ -3,24 +3,23 @@ package qz.installer.apps.policy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
+import qz.installer.Installer;
+import qz.installer.apps.locator.AppAlias;
 import qz.utils.SystemUtilities;
 
 import java.util.*;
 
-import static qz.installer.Installer.PrivilegeLevel;
-import static qz.installer.Installer.PrivilegeLevel.SYSTEM;
-import static qz.installer.Installer.PrivilegeLevel.USER;
-import static qz.installer.apps.locator.AppAlias.Alias;
+import static qz.installer.Installer.PrivilegeLevel.*;
 import static qz.installer.apps.policy.PolicyState.Type.*;
 
 public class PolicyInstallerTestDispatcher {
     private static final Logger log = LogManager.getLogger(PolicyInstallerTestDispatcher.class);
 
-    final static PrivilegeLevel scope = SystemUtilities.isAdmin()? SYSTEM:USER;
+    final static Installer.PrivilegeLevel scope = SystemUtilities.isAdmin()? SYSTEM:USER;
 
-    public static Object[][] constructTestMatrix(Object[][] tests, ArrayList<Alias> aliases) {
+    public static Object[][] constructTestMatrix(Object[][] tests, ArrayList<AppAlias.Alias> aliases) {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
-        for (Alias alias: aliases) {
+        for (AppAlias.Alias alias: aliases) {
             for (Object[] testRow: tests) {
                 retMatrix.add(new Object[] {alias, testRow[0], testRow[1], testRow[2]});
             }
@@ -28,7 +27,7 @@ public class PolicyInstallerTestDispatcher {
         return retMatrix.toArray(new Object[0][]);
     }
 
-    public static PolicyState dispatchInstallTest(Alias alias, String name, Object value, PolicyState.Type type) {
+    public static PolicyState dispatchInstallTest(AppAlias.Alias alias, String name, Object value, PolicyState.Type type) {
         switch(type) {
             case VALUE:
                 return testAppsPolicyValueInstall(alias, name, value);
@@ -40,7 +39,7 @@ public class PolicyInstallerTestDispatcher {
         return null;
     }
 
-    public static PolicyState dispatchUninstallTest(Alias alias, String name, Object value, PolicyState.Type type) {
+    public static PolicyState dispatchUninstallTest(AppAlias.Alias alias, String name, Object value, PolicyState.Type type) {
         switch(type) {
             case VALUE:
                 return testAppsPolicyValueUninstall(alias, name, value);
@@ -52,7 +51,7 @@ public class PolicyInstallerTestDispatcher {
         return null;
     }
 
-    private static PolicyState testAppsPolicyArrayInstall(Alias alias, String name, Object[] values) {
+    private static PolicyState testAppsPolicyArrayInstall(AppAlias.Alias alias, String name, Object[] values) {
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
         PolicyState state = policyInstaller.install(ARRAY, name, values);
         assertState(state);
@@ -73,7 +72,7 @@ public class PolicyInstallerTestDispatcher {
         return state;
     }
 
-    private static PolicyState testAppsPolicyArrayUninstall(Alias alias, String name, Object[] values) {
+    private static PolicyState testAppsPolicyArrayUninstall(AppAlias.Alias alias, String name, Object[] values) {
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
         PolicyState state;
         List<Object> returnedList;
@@ -102,7 +101,7 @@ public class PolicyInstallerTestDispatcher {
         return state;
     }
 
-    private static PolicyState testAppsPolicyValueInstall(Alias alias, String name, Object value) {
+    private static PolicyState testAppsPolicyValueInstall(AppAlias.Alias alias, String name, Object value) {
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
 
         PolicyState state = policyInstaller.install(VALUE, name, value);
@@ -113,7 +112,7 @@ public class PolicyInstallerTestDispatcher {
         return state;
     }
 
-    private static PolicyState testAppsPolicyValueUninstall(Alias alias, String name, Object value) {
+    private static PolicyState testAppsPolicyValueUninstall(AppAlias.Alias alias, String name, Object value) {
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
 
         PolicyState state = policyInstaller.uninstall(VALUE, name, value);
@@ -125,7 +124,7 @@ public class PolicyInstallerTestDispatcher {
     }
     
     @SuppressWarnings("unchecked")
-    private static PolicyState testAppsPolicyMapInstall(Alias alias, String name, Object value) {
+    private static PolicyState testAppsPolicyMapInstall(AppAlias.Alias alias, String name, Object value) {
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
         PolicyState state;
 
@@ -148,7 +147,7 @@ public class PolicyInstallerTestDispatcher {
     }
 
     @SuppressWarnings("unchecked")
-    private static PolicyState testAppsPolicyMapUninstall(Alias alias, String name, Object value) {
+    private static PolicyState testAppsPolicyMapUninstall(AppAlias.Alias alias, String name, Object value) {
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
         PolicyState state;
 

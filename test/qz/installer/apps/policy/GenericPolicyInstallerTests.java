@@ -22,10 +22,10 @@ public class GenericPolicyInstallerTests {
             {"testArray", new Object[] {"element 1", "element 2"}, ARRAY},  //2-item array
             {"testArray", new Object[] {"element 1"}, ARRAY},               //1-item array
             {"testMap", new HashMap<String, Object>(Map.of(                 //map from map
-                    "key 1", "value 1",
-                    "key 2", "value 2"
+                    "firstKey", "value 1",
+                    "secondKey", "value 2"
                     )), MAP},
-            {"testMap", new Object[] {"key 1", "value 1"}, MAP}             //map from array
+            {"testMap", new Object[] {"firstKey", "value 1"}, MAP}             //map from array
     };
 
     @DataProvider(name = "genericPolicyTests")

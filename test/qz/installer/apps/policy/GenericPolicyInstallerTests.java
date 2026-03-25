@@ -2,6 +2,7 @@ package qz.installer.apps.policy;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.installer.apps.locator.AppAlias;
@@ -47,6 +48,9 @@ public class GenericPolicyInstallerTests {
 
     @Test(dataProvider = "genericPolicyTests")
     public void testGenericPolicies(Alias alias, PolicyState.Type type, String name, Object value) {
+        if (value instanceof Float && SystemUtilities.isWindows()) {
+            throw new SkipException("Float values are not supported on Windows");
+        }
         PolicyInstallerTestDispatcher.dispatchInstallTest(alias, type, name, value);
         PolicyInstallerTestDispatcher.dispatchUninstallTest(alias, type, name, value);
     }

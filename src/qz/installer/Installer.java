@@ -341,6 +341,9 @@ public abstract class Installer {
                             break;
                         case LINUX:
                         default:
+                            // remove old value
+                            policyInstaller.uninstall(PolicyState.Type.MAP, "Certificates", "Install", new Object[] { PROPS_FILE + ".crt" });
+
                             // Linux needs cert added explicitly
                             CertificateSideLoader sideLoader = new CertificateSideLoader(scope, alias);
                             File certFile = sideLoader.add(caCert);

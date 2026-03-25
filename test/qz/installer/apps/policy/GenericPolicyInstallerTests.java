@@ -17,15 +17,15 @@ public class GenericPolicyInstallerTests {
     static Object[][] genericTests = {
             {VALUE, "testBool", true},                                      //boolean
             {VALUE, "testInt", 1234},                                       //integer
-            {VALUE, "testFloat", 123.4},                                    //decimal
+            {VALUE, "testFloat", 123.4f},                                   //decimal
             {VALUE, "testString", "test"},                                  //string
             {ARRAY, "testArray", new Object[] {"element 1", "element 2"}},  //2-item array
             {ARRAY, "testArray", new Object[] {"element 1"}},               //1-item array
-            {MAP, "testMap", new HashMap<String, Object>(Map.of(                 //map from map
+            {MAP, "testMap", new HashMap<String, Object>(Map.of(            //map from map
                     "firstKey", "value 1",
                     "secondKey", "value 2"
                     ))},
-            {MAP, "testMap", new Object[] {"firstKey", "value 1"}}             //map from array
+            {MAP, "testMap", new Object[] {"firstKey", "value 1"}}          //map from array
     };
 
     @DataProvider(name = "genericPolicyTests")

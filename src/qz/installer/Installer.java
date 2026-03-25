@@ -345,7 +345,7 @@ public abstract class Installer {
                             CertificateSideLoader sideLoader = new CertificateSideLoader(scope, alias);
                             File certFile = sideLoader.add(caCert);
                             if(certFile != null) {
-                                policyInstaller.install(PolicyState.Type.MAP, "Certificates", "Install", new Object[] { certFile });
+                                policyInstaller.install(PolicyState.Type.MAP, "Certificates", "Install", new Object[] { certFile.toString() });
                             }
                     }
                 }

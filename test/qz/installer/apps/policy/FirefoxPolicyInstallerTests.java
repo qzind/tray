@@ -6,6 +6,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.installer.apps.locator.AppAlias;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -16,6 +17,7 @@ public class FirefoxPolicyInstallerTests{
 
     static Object[][] firefoxTests = {
             {MAP, "Certificates", new Object[] {"ImportEnterpriseRoots", true}},
+            {MAP, "Certificates", new Object[] {"Install", new Object[] { new File("./test.crt").toString() }}}
     };
 
     @DataProvider(name = "firefoxPolicyTests")

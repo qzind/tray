@@ -17,6 +17,8 @@ import qz.auth.Certificate;
 import qz.build.provision.params.Phase;
 import qz.installer.apps.firefox.CertificateSideLoader;
 import qz.installer.apps.locator.AppAlias;
+import qz.installer.apps.locator.AppInfo;
+import qz.installer.apps.locator.AppLocator;
 import qz.installer.apps.policy.PolicyState;
 import qz.installer.apps.policy.PolicyInstaller;
 import qz.installer.certificate.*;
@@ -352,6 +354,14 @@ public abstract class Installer {
                             }
                     }
                 }
+
+                // Find running Firefox instances
+                HashSet<AppInfo> uniqueApps = new HashSet<>();
+                HashMap<String, AppInfo> foundProcesses = AppLocator.getInstance().getRunningApps(AppLocator.getInstance().locate(AppAlias.FIREFOX), null);
+                // Dedupe
+                foundProcesses.forEach((key, value) -> uniqueApps.add(value));
+                // Issue restart warnings
+                uniqueApps.forEach((AppInfo::issueRestartWarning));
             }
         }
         catch(Exception e) {

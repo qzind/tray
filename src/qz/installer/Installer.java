@@ -396,7 +396,7 @@ public abstract class Installer {
                     // Delete certs we've installed
                     File certFile = new CertificateSideLoader(scope, alias).remove();
                     if(certFile != null) {
-                        new PolicyInstaller(scope, alias).uninstall(PolicyState.Type.MAP, "Certificates", "Install", new Object[] { certFile });
+                        new PolicyInstaller(scope, alias).uninstall(PolicyState.Type.MAP, "Certificates", "Install", new Object[] { certFile.toString() });
                     }
             }
         }

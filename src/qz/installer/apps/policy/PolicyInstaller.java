@@ -57,7 +57,12 @@ public class PolicyInstaller {
                         for(Object o : List.of((Object[])provided.get(key))) {
                             remainingSet.remove(o);
                         }
-                        remaining.put(key, remainingSet.toArray());
+
+                        if (remainingSet.isEmpty()) {
+                            remaining.remove(key);
+                        } else {
+                            remaining.put(key, remainingSet.toArray());
+                        }
 
                         if(size != remainingSet.size()) {
                             removeCount++;

@@ -4,7 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import qz.installer.apps.locator.AppAlias;
+import qz.installer.apps.locator.AppFamily;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,14 +22,14 @@ public class FirefoxPolicyInstallerTests{
 
     @DataProvider(name = "firefoxPolicyTests")
     public Object[][] firefoxPolicyTests() {
-        ArrayList<AppAlias.Alias> testAliases = new ArrayList<>();
-        Collections.addAll(testAliases, AppAlias.FIREFOX.getAliases());
-        return PolicyInstallerTestDispatcher.constructTestMatrix(firefoxTests, testAliases);
+        ArrayList<AppFamily.AppVariant> testAppVariants = new ArrayList<>();
+        Collections.addAll(testAppVariants, AppFamily.FIREFOX.getVariants());
+        return PolicyInstallerTestDispatcher.constructTestMatrix(firefoxTests, testAppVariants);
     }
 
     @Test(dataProvider = "firefoxPolicyTests")
-    public void testGenericPolicies(AppAlias.Alias alias, PolicyState.Type type, String name, Object value) {
-        PolicyInstallerTestDispatcher.dispatchInstallTest(alias, type, name, value);
-        PolicyInstallerTestDispatcher.dispatchUninstallTest(alias, type, name, value);
+    public void testGenericPolicies(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
+        PolicyInstallerTestDispatcher.dispatchInstallTest(appVariant, type, name, value);
+        PolicyInstallerTestDispatcher.dispatchUninstallTest(appVariant, type, name, value);
     }
 }

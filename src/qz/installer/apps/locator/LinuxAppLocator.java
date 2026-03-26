@@ -18,21 +18,21 @@ public class LinuxAppLocator extends AppLocator {
     private static final String[] RESTRICTED = { "/bin", "/usr/bin", "/usr/local/bin" };
     public static final Path FLATPAK_PATH = getFlatpakPath();
 
-    public HashSet<AppInfo> locate(AppAlias appAlias) {
-        HashSet<AppInfo> appList = new HashSet<>();
+    public HashSet<ResolvedApp> locate(AppFamily appFamily) {
+        HashSet<ResolvedApp> resolvedApps = new HashSet<>();
 
         // Conventional apps and snaps
-        for(AppAlias.Alias alias : appAlias.aliases) {
-            String exeName = alias.getSlug();
+        for(AppFamily.AppVariant appVariant : appFamily.appVariants) {
+            String exeName = appVariant.getSlug();
             String[] envPath = { "PATH=" + patternPathAppender(exeName, "/usr/lib/$/bin", "/usr/lib64/$/bin", "/usr/lib/$", "/usr/lib64/$") };
             String exeString = ShellUtilities.executeRaw(envPath,"which", exeName);
             if(exeString.isBlank()) {
-                log.info("Could not find '{}' '{}' on this system, skipping.", alias.getVendor(), alias.getName(true));
+                log.info("Could not find '{}' '{}' on this system, skipping.", appVariant.getVendor(), appVariant.getName(true));
                 continue; // can't find it, let's move on
             }
             Path exePath = Paths.get(exeString.trim());
             if (Files.isRegularFile(exePath) && Files.isExecutable(exePath)) {
-                log.info("Found '{}' '{}': '{}', investigating...", alias.getVendor(), alias.getName(true), exePath);
+                log.info("Found '{}' '{}': '{}', investigating...", appVariant.getVendor(), appVariant.getName(true), exePath);
                 try {
                     // Canonicalize (unless it's a snap)
                     exePath = toRealPath(exePath);
@@ -41,62 +41,62 @@ public class LinuxAppLocator extends AppLocator {
                     exePath = legacyDotShRemoval(exePath);
 
                     if(isShellScript(exePath)) {
-                        exePath = parseScript(exePath, alias.getSlug());
+                        exePath = parseScript(exePath, appVariant.getSlug());
                     } else {
-                        log.info("Assuming '{}' '{}' is installed: '{}'", alias.getVendor(), alias.getName(true), exePath);
+                        log.info("Assuming '{}' '{}' is installed: '{}'", appVariant.getVendor(), appVariant.getName(true), exePath);
                     }
 
                     if(exePath == null) {
-                        log.info("'{}' '{}' was not found on this system.", alias.getVendor(), alias.getName(true));
+                        log.info("'{}' '{}' was not found on this system.", appVariant.getVendor(), appVariant.getName(true));
                         continue;
                     }
 
                     String[] envHome = { "HOME=/tmp" }; // firefox --version 'sudo' workaround per https://stackoverflow.com/questions/52941623
                     String stdOut = ShellUtilities.executeRaw(envHome, exePath.toString(), "--version");
 
-                    AppInfo appInfo = new AppInfo(
-                            alias,
+                    ResolvedApp resolvedApp = new ResolvedApp(
+                            appVariant,
                             getAppPath(exePath),
                             exePath,
                             AppVersionParser.parseStdOut(stdOut)
                     );
 
-                    if(!isRestricted(appInfo)) {
-                        appList.add(appInfo);
+                    if(!isRestricted(resolvedApp)) {
+                        resolvedApps.add(resolvedApp);
                     } else {
-                        log.warn("App path '{}' is restricted, skipping", appInfo.getAppPath());
+                        log.warn("App path '{}' is restricted, skipping", resolvedApp.getAppPath());
                     }
                 } catch(Exception e) {
-                    log.warn("Something went wrong getting app info for '{}' '{}'", alias.getVendor(), alias.getName(true), e);
+                    log.warn("Something went wrong getting app info for '{}' '{}'", appVariant.getVendor(), appVariant.getName(true), e);
                 }
             }
         }
 
         // Flatpak apps
         if(FLATPAK_PATH != null) {
-            for(AppAlias.Alias alias : appAlias.aliases) {
-                AppInfo flatpakInfo = getFlatpakAppInfo(alias);
+            for(AppFamily.AppVariant appVariant : appFamily.appVariants) {
+                ResolvedApp flatpakInfo = getFlatpakResolvedApp(appVariant);
                 if(flatpakInfo != null) {
-                    appList.add(flatpakInfo);
+                    resolvedApps.add(flatpakInfo);
                 }
             }
         }
 
-        return appList;
+        return resolvedApps;
     }
 
-    private AppInfo getFlatpakAppInfo(AppAlias.Alias alias) {
+    private ResolvedApp getFlatpakResolvedApp(AppFamily.AppVariant appVariant) {
         if(FLATPAK_PATH == null) {
             log.error("An attempt to call 'flatpak' was made on this system, but it does not appear to be installed");
             return null;
         }
 
         // Call "flatpak info org.mozilla.firefox"
-        String appInfo = ShellUtilities.executeRaw(FLATPAK_PATH.toString(), "info", alias.getBundleId());
-        if(appInfo.isEmpty()) {
+        String flatpakInfo = ShellUtilities.executeRaw(FLATPAK_PATH.toString(), "info", appVariant.getBundleId());
+        if(flatpakInfo.isEmpty()) {
             return null;
         }
-        String[] lines = appInfo.split("[\r?\n]+");
+        String[] lines = flatpakInfo.split("[\r?\n]+");
         String version = null;
         for(String line : lines) {
             if(line.trim().startsWith("Version:")) {
@@ -107,7 +107,7 @@ public class LinuxAppLocator extends AppLocator {
             return null;
         }
         // Call "flatpak info --show-location org.mozilla.firefox"
-        String appLocation = ShellUtilities.executeRaw(FLATPAK_PATH.toString(), "info", "--show-location", alias.getBundleId());
+        String appLocation = ShellUtilities.executeRaw(FLATPAK_PATH.toString(), "info", "--show-location", appVariant.getBundleId());
 
         if(appLocation.isBlank()) {
             return null;
@@ -119,7 +119,7 @@ public class LinuxAppLocator extends AppLocator {
         if(activePath.toFile().exists()) {
             appPath = activePath;
         }
-        return new AppInfo(alias, appPath, FLATPAK_PATH, version, "run", alias.getBundleId());
+        return new ResolvedApp(appVariant, appPath, FLATPAK_PATH, version, "run", appVariant.getBundleId());
     }
 
     private static Path getFlatpakPath() {
@@ -130,8 +130,8 @@ public class LinuxAppLocator extends AppLocator {
     /**
      * Detect apps whose paths that too near the root of the filesystem
      */
-    private boolean isRestricted(AppInfo appInfo) {
-        return Arrays.stream(RESTRICTED).anyMatch(s -> appInfo.getAppPath().toString().equals(s));
+    private boolean isRestricted(ResolvedApp resolvedApp) {
+        return Arrays.stream(RESTRICTED).anyMatch(s -> resolvedApp.getAppPath().toString().equals(s));
     }
 
     /**
@@ -245,10 +245,10 @@ public class LinuxAppLocator extends AppLocator {
      * Linux has additional flatpak processes which aren't included in this listing
      */
     @Override
-    public HashSet<String> getPids(HashSet<AppInfo> appList) {
+    public HashSet<String> getPids(HashSet<ResolvedApp> resolvedApps) {
         // Everything except flatpak
-        HashSet<String> processNames = appList.stream()
-                .map(appInfo -> appInfo.getExePath().getFileName().toString())
+        HashSet<String> processNames = resolvedApps.stream()
+                .map(app -> app.getExePath().getFileName().toString())
                 .filter(exeName -> !exeName.equals("flatpak"))
                 .collect(Collectors.toCollection(HashSet::new));
 
@@ -264,8 +264,8 @@ public class LinuxAppLocator extends AppLocator {
         return getPidsByName(processNames);
     }
 
-    public HashMap<String,AppInfo> getFlatpakPids(HashSet<AppInfo> appList) {
-        HashMap<String,AppInfo> pidMap = new HashMap<>();
+    public HashMap<String,ResolvedApp> getFlatpakPids(HashSet<ResolvedApp> resolvedApps) {
+        HashMap<String,ResolvedApp> pidMap = new HashMap<>();
         // skip if flatpak isn't supported
         if(SystemUtilities.isWindows() || SystemUtilities.isMac() || LinuxAppLocator.FLATPAK_PATH == null) {
             return pidMap;
@@ -278,14 +278,14 @@ public class LinuxAppLocator extends AppLocator {
         );
         String[] lines = running.split("\\r?\\n");
 
-        for(AppInfo appInfo : appList) {
+        for(ResolvedApp resolvedApp : resolvedApps) {
             for(String line : lines) {
                 String[] split = line.split("\\s+", 2);
                 if(split.length < 2) continue;
                 String application = split[0];
                 String pid = split[1];
-                if (application.trim().equals(appInfo.getAlias().getBundleId()) && !pid.isBlank()) {
-                    pidMap.put(pid.trim(), appInfo);
+                if (application.trim().equals(resolvedApp.getAlias().getBundleId()) && !pid.isBlank()) {
+                    pidMap.put(pid.trim(), resolvedApp);
                 }
             }
         }

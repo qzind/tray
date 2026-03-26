@@ -5,7 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.common.Constants;
-import qz.installer.apps.locator.AppAlias;
+import qz.installer.apps.locator.AppFamily;
 import qz.utils.SystemUtilities;
 
 import java.util.ArrayList;
@@ -24,14 +24,14 @@ public class ChromiumPolicyInstallerTests {
 
     @DataProvider(name = "chromiumPolicyTests")
     public Object[][] chromiumPolicyTests() {
-        ArrayList<AppAlias.Alias> testAliases = new ArrayList<>();
-        Collections.addAll(testAliases, AppAlias.CHROMIUM.getAliases());
-        return PolicyInstallerTestDispatcher.constructTestMatrix(chromiumTests, testAliases);
+        ArrayList<AppFamily.AppVariant> testAppVariants = new ArrayList<>();
+        Collections.addAll(testAppVariants, AppFamily.CHROMIUM.getVariants());
+        return PolicyInstallerTestDispatcher.constructTestMatrix(chromiumTests, testAppVariants);
     }
 
     @Test(dataProvider = "chromiumPolicyTests")
-    public void testGenericPolicies(AppAlias.Alias alias, PolicyState.Type type, String name, Object value) {
-        PolicyInstallerTestDispatcher.dispatchInstallTest(alias, type, name, value);
-        PolicyInstallerTestDispatcher.dispatchUninstallTest(alias, type, name, value);
+    public void testGenericPolicies(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
+        PolicyInstallerTestDispatcher.dispatchInstallTest(appVariant, type, name, value);
+        PolicyInstallerTestDispatcher.dispatchUninstallTest(appVariant, type, name, value);
     }
 }

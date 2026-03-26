@@ -4,7 +4,7 @@ import com.sun.jna.platform.win32.WinReg;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.installer.Installer;
-import qz.installer.apps.locator.AppAlias;
+import qz.installer.apps.locator.AppFamily;
 import qz.utils.WindowsUtilities;
 
 import java.nio.file.Path;
@@ -44,7 +44,7 @@ public class PolicyState {
     }
 
     final Installer.PrivilegeLevel scope;
-    final AppAlias.Alias alias;
+    final AppFamily.AppVariant appVariant;
     final PolicyInstaller.Phase phase;
     final Type type;
     final String name;
@@ -55,9 +55,9 @@ public class PolicyState {
     Status status;
     String reason;
 
-    public PolicyState(Installer.PrivilegeLevel scope, AppAlias.Alias alias, PolicyInstaller.Phase phase, Type type, String name, Path location, WinReg.HKEY hkey) {
+    public PolicyState(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant, PolicyInstaller.Phase phase, Type type, String name, Path location, WinReg.HKEY hkey) {
         this.scope = scope;
-        this.alias = alias;
+        this.appVariant = appVariant;
         this.phase = phase;
         this.type = type;
         this.name = name;
@@ -101,8 +101,8 @@ public class PolicyState {
         return location;
     }
 
-    public AppAlias getAppAlias() {
-        return alias.getAppAlias();
+    public AppFamily getAppAlias() {
+        return appVariant.getAppFamily();
     }
 
     public WinReg.HKEY getHkey() {
@@ -199,7 +199,7 @@ public class PolicyState {
     }
 
     public PolicyState log() {
-        String browserClass = titleCase(alias.getAppAlias().name());
+        String browserClass = titleCase(appVariant.getAppFamily().name());
         String reasonText = "";
         if(reason != null) {
             reasonText = String.format(" (%s)", String.join(", ", reason));
@@ -210,7 +210,7 @@ public class PolicyState {
         String message = String.format("%s %s (%s) policy '%s' %s '%s'%s%s",
                                        this,
                                        browserClass,
-                                       alias.getName(false),
+                                       appVariant.getName(false),
                                        name,
                                        phase == PolicyInstaller.Phase.INSTALL ? "to" : "from",
                                        location,

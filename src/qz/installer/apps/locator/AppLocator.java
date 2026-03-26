@@ -14,18 +14,18 @@ public abstract class AppLocator {
 
     private static final AppLocator INSTANCE = getPlatformSpecificAppLocator();
 
-    public abstract HashSet<AppInfo> locate(AppAlias appAlias);
+    public abstract HashSet<ResolvedApp> locate(AppFamily appFamily);
     public abstract HashMap<String, Path> getPidPaths(Set<String> pids);
 
     /**
      * Joins the given list of apps and processes on exePath
      */
-    private HashMap<String, AppInfo> join(HashMap<String, Path> pathMap, HashSet<AppInfo> appList) {
-        HashMap<String, AppInfo> pidMap = new HashMap<>();
+    private HashMap<String,ResolvedApp> join(HashMap<String, Path> pathMap, HashSet<ResolvedApp> resolvedApps) {
+        HashMap<String,ResolvedApp> pidMap = new HashMap<>();
         for (Map.Entry<String, Path> pathEntry : pathMap.entrySet()) {
-            for (AppInfo appInfo : appList) {
-                if (appInfo.getExePath().equals(pathEntry.getValue())) {
-                    pidMap.put(pathEntry.getKey(), appInfo);
+            for (ResolvedApp app : resolvedApps) {
+                if (app.getExePath().equals(pathEntry.getValue())) {
+                    pidMap.put(pathEntry.getKey(), app);
                     break;
                 }
             }
@@ -33,9 +33,9 @@ public abstract class AppLocator {
         return pidMap;
     }
 
-    public HashSet<String> getPids(HashSet<AppInfo> appList) {
-        HashSet<String> processNames = appList.stream()
-                .map(appInfo -> appInfo.getExePath().getFileName().toString())
+    public HashSet<String> getPids(HashSet<ResolvedApp> resolvedApps) {
+        HashSet<String> processNames = resolvedApps.stream()
+                .map(app -> app.getExePath().getFileName().toString())
                 .collect(Collectors.toCollection(HashSet::new));
 
         return getPidsByName(processNames);
@@ -50,7 +50,7 @@ public abstract class AppLocator {
 
 
         // We can't find an app by path (only by name) so we have to crawl potentially matching patterns
-        // in hopes to find a pid that we can then check against our appList.
+        // in hopes to find a pid that we can then check against our resolved apps.
         // Quoting handled by the command processor (e.g. pgrep -x "myapp|my app" is perfectly valid)
         String pgrepOutput = ShellUtilities.executeRaw("pgrep", "-x", String.join("|", processNames));
 
@@ -63,18 +63,18 @@ public abstract class AppLocator {
     }
 
     /**
-     * Gets the path to the running executables matching on <code>AppInfo.getExePath</code>
+     * Gets the path to the running executables matching on <code>ResolvedApp.getExePath</code>
      * This is resource intensive; if a non-null <code>cache</code> is provided, it will return that instead
      */
-    public HashMap<String,AppInfo> getRunningApps(HashSet<AppInfo> appList, HashMap<String,AppInfo> cache) {
+    public HashMap<String,ResolvedApp> getRunningApps(HashSet<ResolvedApp> resolvedApps, HashMap<String,ResolvedApp> cache) {
         if(cache == null) {
-            HashMap<String,Path> pathMap = getPidPaths(getPids(appList));
-            cache = join(pathMap, appList);
+            HashMap<String,Path> pathMap = getPidPaths(getPids(resolvedApps));
+            cache = join(pathMap, resolvedApps);
 
             // flatpak uses its own process listing
             if(this instanceof LinuxAppLocator) {
                 LinuxAppLocator locator = (LinuxAppLocator)this;
-                cache.putAll(locator.getFlatpakPids(appList));
+                cache.putAll(locator.getFlatpakPids(resolvedApps));
             }
 
         }

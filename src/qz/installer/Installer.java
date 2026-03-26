@@ -16,8 +16,7 @@ import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.build.provision.params.Phase;
 import qz.installer.apps.firefox.CertificateSideLoader;
-import qz.installer.apps.locator.AppAlias;
-import qz.installer.apps.locator.AppInfo;
+import qz.installer.apps.locator.ResolvedApp;
 import qz.installer.apps.locator.AppLocator;
 import qz.installer.apps.policy.PolicyState;
 import qz.installer.apps.policy.PolicyInstaller;
@@ -33,6 +32,7 @@ import java.security.cert.X509Certificate;
 import java.util.*;
 
 import static qz.common.Constants.*;
+import static qz.installer.apps.locator.AppFamily.*;
 import static qz.installer.certificate.KeyPairWrapper.Type.CA;
 import static qz.utils.FileUtilities.*;
 
@@ -333,8 +333,8 @@ public abstract class Installer {
                 installer.install(caCert);
 
                 // Install Firefox Certificate
-                for(AppAlias.Alias alias : AppAlias.FIREFOX.getAliases()) {
-                    PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
+                for(AppVariant appVariant : FIREFOX.getVariants()) {
+                    PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
                     switch(SystemUtilities.getOs()) {
                         case WINDOWS:
                         case MAC:
@@ -347,7 +347,7 @@ public abstract class Installer {
                             policyInstaller.uninstall(PolicyState.Type.MAP, "Certificates", "Install", new Object[] { PROPS_FILE + ".crt" });
 
                             // Linux needs cert added explicitly
-                            CertificateSideLoader sideLoader = new CertificateSideLoader(scope, alias);
+                            CertificateSideLoader sideLoader = new CertificateSideLoader(scope, appVariant);
                             File certFile = sideLoader.add(caCert);
                             if(certFile != null) {
                                 policyInstaller.install(PolicyState.Type.MAP, "Certificates", "Install", new Object[] { certFile.toString() });
@@ -356,12 +356,12 @@ public abstract class Installer {
                 }
 
                 // Find running Firefox instances
-                HashSet<AppInfo> uniqueApps = new HashSet<>();
-                HashMap<String, AppInfo> foundProcesses = AppLocator.getInstance().getRunningApps(AppLocator.getInstance().locate(AppAlias.FIREFOX), null);
+                HashSet<ResolvedApp> uniqueApps = new HashSet<>();
+                HashMap<String,ResolvedApp> foundProcesses = AppLocator.getInstance().getRunningApps(AppLocator.getInstance().locate(FIREFOX), null);
                 // Dedupe
                 foundProcesses.forEach((key, value) -> uniqueApps.add(value));
                 // Issue restart warnings
-                uniqueApps.forEach((AppInfo::issueRestartWarning));
+                uniqueApps.forEach((ResolvedApp::issueRestartWarning));
             }
         }
         catch(Exception e) {
@@ -385,7 +385,7 @@ public abstract class Installer {
         instance.remove(instance.find());
         // Firefox certs
         // Install Firefox Certificate
-        for(AppAlias.Alias alias : AppAlias.FIREFOX.getAliases()) {
+        for(AppVariant appVariant : FIREFOX.getVariants()) {
             switch(SystemUtilities.getOs()) {
                 case WINDOWS:
                 case MAC:
@@ -394,9 +394,9 @@ public abstract class Installer {
                 case LINUX:
                 default:
                     // Delete certs we've installed
-                    File certFile = new CertificateSideLoader(scope, alias).remove();
+                    File certFile = new CertificateSideLoader(scope, appVariant).remove();
                     if(certFile != null) {
-                        new PolicyInstaller(scope, alias).uninstall(PolicyState.Type.MAP, "Certificates", "Install", new Object[] { certFile.toString() });
+                        new PolicyInstaller(scope, appVariant).uninstall(PolicyState.Type.MAP, "Certificates", "Install", new Object[] {certFile.toString() });
                     }
             }
         }
@@ -438,8 +438,8 @@ public abstract class Installer {
     public Installer modifyApps() {
         // Chromium
         // Chrome protocol handler (e.g. "qz://*")
-        for(AppAlias.Alias alias : AppAlias.CHROMIUM.getAliases()) {
-            PolicyInstaller policyInstaller = new PolicyInstaller(scope, alias);
+        for(AppVariant appVariant : CHROMIUM.getVariants()) {
+            PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
             policyInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", String.format("%s://*", DATA_DIR));
             // LocalNetworkAccess (e.g. [*.]qz.io)
             // FIXME: Read in more root domains via provisioning

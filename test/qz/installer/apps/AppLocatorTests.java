@@ -7,8 +7,8 @@ import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import qz.installer.apps.locator.AppAlias;
-import qz.installer.apps.locator.AppInfo;
+import qz.installer.apps.locator.AppFamily;
+import qz.installer.apps.locator.ResolvedApp;
 import qz.installer.apps.locator.AppLocator;
 
 import java.io.IOException;
@@ -22,74 +22,74 @@ import java.util.*;
 public class AppLocatorTests {
     private static final Logger log = LogManager.getLogger(AppLocatorTests.class);
 
-    private final HashMap<AppAlias,HashSet<AppInfo>> appInfoCache = new HashMap<>();
+    private final HashMap<AppFamily,HashSet<ResolvedApp>> resolvedAppsCache = new HashMap<>();
     private static final boolean SKIP_APP_SPAWN = false;
 
     /**
      * Lazy init allows first caller to provide accurate benchmarking values to TestNG
      */
-    public HashSet<AppInfo> findAppInfo(AppAlias app) {
-        if(appInfoCache.get(app) == null) {
-            appInfoCache.put(app, AppLocator.getInstance().locate(app));
+    public HashSet<ResolvedApp> findResolvedApps(AppFamily app) {
+        if(resolvedAppsCache.get(app) == null) {
+            resolvedAppsCache.put(app, AppLocator.getInstance().locate(app));
         }
-        return appInfoCache.get(app);
+        return resolvedAppsCache.get(app);
     }
 
     @DataProvider(name = "apps")
     public Object[][] apps() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
-        for (AppAlias alias : AppAlias.values()) {
+        for (AppFamily alias : AppFamily.values()) {
             retMatrix.add(new Object[]{alias});
         }
         return retMatrix.toArray(new Object[0][]);
     }
 
     @Test(dataProvider = "apps", priority = 1)
-    public void findAppTests(AppAlias app) {
-        Assert.assertFalse(findAppInfo(app).isEmpty());
+    public void findAppTests(AppFamily app) {
+        Assert.assertFalse(findResolvedApps(app).isEmpty());
 
         // Make sure the app exists and we found version information
-        for (AppInfo appInfo : findAppInfo(app)) {
-            log.info("[{}] found as '{}' at '{}' installed to '{}', Version: '{}'", app.name(), appInfo.getName(true), appInfo.getExePath(), appInfo.getAppPath(), appInfo.getVersion());
-            Assert.assertFalse(appInfo.getAlias().getName().isBlank());
-            Assert.assertTrue(appInfo.getAppPath().toFile().exists());
-            Assert.assertTrue(appInfo.getExePath().toFile().exists());
-            Assert.assertNotEquals(appInfo.getVersion(), Version.parse("0.0.0"));
+        for (ResolvedApp resolvedApp : findResolvedApps(app)) {
+            log.info("[{}] found as '{}' at '{}' installed to '{}', Version: '{}'", app.name(), resolvedApp.getName(true), resolvedApp.getExePath(), resolvedApp.getAppPath(), resolvedApp.getVersion());
+            Assert.assertFalse(resolvedApp.getAlias().getName().isBlank());
+            Assert.assertTrue(resolvedApp.getAppPath().toFile().exists());
+            Assert.assertTrue(resolvedApp.getExePath().toFile().exists());
+            Assert.assertNotEquals(resolvedApp.getVersion(), Version.parse("0.0.0"));
         }
     }
 
     @Test(dataProvider = "apps", priority = 2)
-    public void stoppedAppTests(AppAlias app) {
+    public void stoppedAppTests(AppFamily app) {
         // A developer's workstation will likely have at least one app started
         // but extremely unlikely to have all apps started.  Pass if
         // at least one app is not started.
-        int foundAppCount = findAppInfo(app).size();
-        HashMap<String, AppInfo> runningApps = AppLocator.getInstance().getRunningApps(findAppInfo(app), null);
-        for(Map.Entry<String, AppInfo> runningApp : runningApps.entrySet()) {
+        int foundAppCount = findResolvedApps(app).size();
+        HashMap<String,ResolvedApp> runningApps = AppLocator.getInstance().getRunningApps(findResolvedApps(app), null);
+        for(Map.Entry<String,ResolvedApp> runningApp : runningApps.entrySet()) {
             String pid = runningApp.getKey();
-            AppInfo appInfo = runningApp.getValue();
-            log.info("[{}] found running as pid {} at '{}'", app, pid, appInfo.getExePath());
+            ResolvedApp resolvedApp = runningApp.getValue();
+            log.info("[{}] found running as pid {} at '{}'", app, pid, resolvedApp.getExePath());
         }
         // An app can have multiple processes, dedupe
-        HashSet<AppInfo> uniqueApps = new HashSet<>(runningApps.values());
+        HashSet<ResolvedApp> uniqueApps = new HashSet<>(runningApps.values());
         Assert.assertTrue(uniqueApps.size() < foundAppCount);
     }
 
     @Test(dataProvider = "apps", priority = 3)
-    public void startAppTests(AppAlias app) {
+    public void startAppTests(AppFamily app) {
         if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
-        for (AppInfo appInfo : findAppInfo(app)) {
-            log.info("[{}] Spawning '{}' from '{}'", app.name(), appInfo.getName(true), Arrays.toString(appInfo.getExeCommand()));
-            Assert.assertTrue(spawnProcess(appInfo));
+        for (ResolvedApp resolvedApp : findResolvedApps(app)) {
+            log.info("[{}] Spawning '{}' from '{}'", app.name(), resolvedApp.getName(true), Arrays.toString(resolvedApp.getExeCommand()));
+            Assert.assertTrue(spawnProcess(resolvedApp));
         }
     }
 
     @Test(dataProvider = "apps", priority = 4)
-    public void waitForApps(AppAlias app) {
+    public void waitForApps(AppFamily app) {
         int ms = 200;
         boolean slept = true;
         if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
-        for (AppInfo ignored : findAppInfo(app)) {
+        for (ResolvedApp ignored : findResolvedApps(app)) {
             // Give each app time to start
             try {
                 Thread.sleep(ms);
@@ -101,27 +101,27 @@ public class AppLocatorTests {
     }
 
     @Test(dataProvider = "apps", priority = 5)
-    public void findRunningAppsTests(AppAlias app) {
+    public void findRunningAppsTests(AppFamily app) {
         if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
-        HashMap<String, AppInfo> runningApps = AppLocator.getInstance().getRunningApps(findAppInfo(app), null);
-        for(Map.Entry<String, AppInfo> runningApp : runningApps.entrySet()) {
+        HashMap<String,ResolvedApp> runningApps = AppLocator.getInstance().getRunningApps(findResolvedApps(app), null);
+        for(Map.Entry<String,ResolvedApp> runningApp : runningApps.entrySet()) {
             String pid = runningApp.getKey();
-            AppInfo appInfo = runningApp.getValue();
-            log.info("[{}] found running as pid {} at '{}'", app, pid, appInfo.getExePath());
+            ResolvedApp resolvedApp = runningApp.getValue();
+            log.info("[{}] found running as pid {} at '{}'", app, pid, resolvedApp.getExePath());
         }
         int runningCount = new HashSet<>(runningApps.values()).size();
-        int foundCount = findAppInfo(app).size();
+        int foundCount = findResolvedApps(app).size();
         Assert.assertEquals(foundCount, runningCount, String.format("[%s] Running app count %s must be equal to found app count %s.", app.name(), runningCount, foundCount));
     }
 
     /**
      * TODO: Move this somewhere useful and combine with Installer.getInstance().spawn();
      */
-    private static boolean spawnProcess(AppInfo appInfo) {
-        String[] command = appInfo.getExeCommand();
+    private static boolean spawnProcess(ResolvedApp resolvedApp) {
+        String[] command = resolvedApp.getExeCommand();
         try {
-            if(!appInfo.exists()) {
-                throw new IOException(appInfo.getExePath() + " or " + appInfo.getAppPath() + " does not exist");
+            if(!resolvedApp.exists()) {
+                throw new IOException(resolvedApp.getExePath() + " or " + resolvedApp.getAppPath() + " does not exist");
             }
 
             ProcessBuilder pb = new ProcessBuilder(command);

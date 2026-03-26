@@ -5,17 +5,15 @@ import org.apache.logging.log4j.Logger;
 import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import qz.installer.apps.locator.AppAlias;
+import qz.installer.apps.locator.AppFamily;
 import qz.utils.SystemUtilities;
 
 import java.util.*;
 
 import static qz.installer.apps.policy.PolicyState.Type.*;
-import static qz.installer.apps.locator.AppAlias.*;
+import static qz.installer.apps.locator.AppFamily.*;
 
 public class GenericPolicyInstallerTests {
-    private static final Logger log = LogManager.getLogger(GenericPolicyInstallerTests.class);
-
     private static final HashMap<String, Object> testHashMap = new HashMap<>(Map.of(
         "firstKey", "value 1",
         "secondKey", "value 2"
@@ -39,19 +37,19 @@ public class GenericPolicyInstallerTests {
 
     @DataProvider(name = "genericPolicyTests")
     public Object[][] genericPolicyTests() {
-        ArrayList<AppAlias.Alias> testAliases = new ArrayList<>();
-        for (AppAlias appAlias : AppAlias.values()) {
-            Collections.addAll(testAliases,appAlias.getAliases());
+        ArrayList<AppVariant> testAppVariants = new ArrayList<>();
+        for (AppFamily appFamily : AppFamily.values()) {
+            Collections.addAll(testAppVariants, appFamily.getVariants());
         }
-        return PolicyInstallerTestDispatcher.constructTestMatrix(genericTests, testAliases);
+        return PolicyInstallerTestDispatcher.constructTestMatrix(genericTests, testAppVariants);
     }
 
     @Test(dataProvider = "genericPolicyTests")
-    public void testGenericPolicies(Alias alias, PolicyState.Type type, String name, Object value) {
+    public void testGenericPolicies(AppVariant appVariant, PolicyState.Type type, String name, Object value) {
         if (value instanceof Float && SystemUtilities.isWindows()) {
             throw new SkipException("Float values are not supported on Windows");
         }
-        PolicyInstallerTestDispatcher.dispatchInstallTest(alias, type, name, value);
-        PolicyInstallerTestDispatcher.dispatchUninstallTest(alias, type, name, value);
+        PolicyInstallerTestDispatcher.dispatchInstallTest(appVariant, type, name, value);
+        PolicyInstallerTestDispatcher.dispatchUninstallTest(appVariant, type, name, value);
     }
 }

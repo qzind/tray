@@ -5,65 +5,65 @@ import qz.common.Sluggable;
 import java.util.Arrays;
 import java.util.Locale;
 
-public enum AppAlias {
+public enum AppFamily {
     // Tor Browser intentionally excluded; Tor's proxy blocks localhost connections
     FIREFOX(
-            new Alias("Mozilla", "Mozilla Firefox", "org.mozilla.firefox"),
-            new Alias("Mozilla", "Firefox Developer Edition", "org.mozilla.firefoxdeveloperedition"),
-            new Alias("Mozilla", "Firefox Nightly", "org.mozilla.nightly"),
-            new Alias("Mozilla", "LibreWolf", "org.mozilla.librewolf"),
-            new Alias("Waterfox", "Waterfox", "net.waterfox.waterfoxcurrent"),
-            new Alias("Mozilla", "IceCat", "org.gnu.icecat")
+            new AppVariant("Mozilla", "Mozilla Firefox", "org.mozilla.firefox"),
+            new AppVariant("Mozilla", "Firefox Developer Edition", "org.mozilla.firefoxdeveloperedition"),
+            new AppVariant("Mozilla", "Firefox Nightly", "org.mozilla.nightly"),
+            new AppVariant("Mozilla", "LibreWolf", "org.mozilla.librewolf"),
+            new AppVariant("Waterfox", "Waterfox", "net.waterfox.waterfoxcurrent"),
+            new AppVariant("Mozilla", "IceCat", "org.gnu.icecat")
     ),
     CHROMIUM(
-            new Alias("Google", "Google Chrome", "com.google.Chrome"),
-            new Alias("Microsoft", "Microsoft Edge", "com.microsoft.Edge"),
-            new Alias("Brave", "Brave Browser", "com.brave.Browser"),
-            new Alias("Chromium", "Chromium", "org.chromium.Chromium")
+            new AppVariant("Google", "Google Chrome", "com.google.Chrome"),
+            new AppVariant("Microsoft", "Microsoft Edge", "com.microsoft.Edge"),
+            new AppVariant("Brave", "Brave Browser", "com.brave.Browser"),
+            new AppVariant("Chromium", "Chromium", "org.chromium.Chromium")
     );
-    final Alias[] aliases;
-    AppAlias(Alias... aliases) {
-        this.aliases = aliases;
+    final AppVariant[] appVariants;
+    AppFamily(AppVariant... appVariants) {
+        this.appVariants = appVariants;
     }
 
-    public Alias[] getAliases() {
-        return aliases;
+    public AppVariant[] getVariants() {
+        return appVariants;
     }
 
-    public static Alias findAlias(AppAlias appAlias, String appName, boolean stripVendor) {
+    public static AppVariant findVariant(AppFamily appFamily, String appName, boolean stripVendor) {
         if (appName != null) {
-            for (Alias alias : appAlias.aliases) {
-                if (appName.toLowerCase(Locale.ENGLISH).matches(alias.getName(stripVendor).toLowerCase(Locale.ENGLISH))) {
-                    return alias;
+            for (AppVariant appVariant : appFamily.appVariants) {
+                if (appName.toLowerCase(Locale.ENGLISH).matches(appVariant.getName(stripVendor).toLowerCase(Locale.ENGLISH))) {
+                    return appVariant;
                 }
             }
         }
         return null;
     }
 
-    public static class Alias {
+    public static class AppVariant {
         private final String vendor;
         private final String name;
         private final String bundleId;
         private final String slug;
 
-        private AppAlias appAlias;
+        private AppFamily appFamily;
 
-        private Alias(String vendor, String name, String bundleId) {
+        private AppVariant(String vendor, String name, String bundleId) {
             this.name = name;
             this.vendor = vendor;
             this.bundleId = bundleId;
             this.slug = Sluggable.slugOf(getName(true));
         }
 
-        public AppAlias getAppAlias() {
-            if (appAlias == null) {
-                appAlias = Arrays.stream(AppAlias.values())
-                        .filter(aa -> Arrays.stream(aa.getAliases()).anyMatch(a -> a == this))
+        public AppFamily getAppFamily() {
+            if (appFamily == null) {
+                appFamily = Arrays.stream(AppFamily.values())
+                        .filter(aa -> Arrays.stream(aa.getVariants()).anyMatch(a -> a == this))
                         .findFirst()
                         .orElse(null);
             }
-            return appAlias;
+            return appFamily;
         }
 
         public String getVendor() {

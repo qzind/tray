@@ -4,7 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.installer.Installer;
-import qz.installer.apps.locator.AppAlias;
+import qz.installer.apps.locator.AppFamily;
 import qz.installer.apps.policy.locator.LinuxPolicyLocator;
 import qz.installer.certificate.CertificateManager;
 import qz.utils.FileUtilities;
@@ -26,11 +26,11 @@ public class CertificateSideLoader {
     private static final LinuxPolicyLocator locator = new LinuxPolicyLocator();
 
     private final Installer.PrivilegeLevel scope;
-    private final AppAlias.Alias alias;
+    private final AppFamily.AppVariant appVariant;
 
-    public CertificateSideLoader(Installer.PrivilegeLevel scope, AppAlias.Alias alias) {
+    public CertificateSideLoader(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant) {
         this.scope = scope;
-        this.alias = alias;
+        this.appVariant = appVariant;
     }
 
     /**
@@ -51,7 +51,7 @@ public class CertificateSideLoader {
                 CertificateManager.writeCert(cert, certFile);
                 return certFile;
             } catch(IOException e) {
-                log.error("Unable to install '{}' certificate", alias.getName(true), e);
+                log.error("Unable to install '{}' certificate", appVariant.getName(true), e);
             }
         }
 
@@ -59,7 +59,7 @@ public class CertificateSideLoader {
     }
 
     private File calculatePath() {
-        Path policyLocation = locator.getLocation(scope, alias);
+        Path policyLocation = locator.getLocation(scope, appVariant);
 
         // Cleanup old cert location (e.g. /etc/policies/firefox/qz-tray.crt)
         remove(policyLocation

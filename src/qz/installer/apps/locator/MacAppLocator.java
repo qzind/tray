@@ -60,8 +60,8 @@ public class MacAppLocator extends AppLocator {
     };
 
     @Override
-    public HashSet<AppInfo> locate(AppAlias appAlias) {
-        HashSet<AppInfo> appList = new HashSet<>();
+    public HashSet<ResolvedApp> locate(AppFamily appFamily) {
+        HashSet<ResolvedApp> resolvedApps = new HashSet<>();
         try {
             // system_profile benchmarks about 30% better than lsregister
             Process p = Runtime.getRuntime().exec(new String[] {"system_profiler", "SPApplicationsDataType", "-xml"}, ShellUtilities.envp);
@@ -75,31 +75,31 @@ public class MacAppLocator extends AppLocator {
                 String version = getSiblingValue(dict, "version");
                 if (version == null) continue;
 
-                AppAlias.Alias alias;
+                AppFamily.AppVariant appVariant;
                 // For some reason Firefox is called "Firefox.app"
                 // All others are called "Google Chrome.app", "Microsoft Edge.app", etc
-                boolean stripVendor = appAlias == AppAlias.FIREFOX;
-                if ((alias = AppAlias.findAlias(appAlias, name, stripVendor)) != null) {
-                    appList.add(new AppInfo(alias, Paths.get(path), parseExePath(path), version));
+                boolean stripVendor = appFamily == AppFamily.FIREFOX;
+                if ((appVariant = AppFamily.findVariant(appFamily, name, stripVendor)) != null) {
+                    resolvedApps.add(new ResolvedApp(appVariant, Paths.get(path), parseExePath(path), version));
                 }
             }
         } catch(ParserConfigurationException | IOException | SAXException e) {
-            log.warn("Something went wrong getting app info for {}", appAlias);
+            log.warn("Something went wrong getting app info for {}", appFamily);
         }
 
         // Cleanup bad paths such as mount points, Trash, Parallels' shared apps
-        appList.removeIf(app ->
+        resolvedApps.removeIf(app ->
                                  Arrays.stream(IGNORE_PATHS).anyMatch(app.getAppPath().toString()::contains)
         );
 
         // Remove "EdgeUpdater" and friends
-        appList.removeIf(app ->
-                                 Arrays.stream(appAlias.aliases).map(alias -> String.format("%sUpdater", alias.getName(true))).anyMatch(
+        resolvedApps.removeIf(app ->
+                                 Arrays.stream(appFamily.appVariants).map(alias -> String.format("%sUpdater", alias.getName(true))).anyMatch(
                                          updater -> app.getAppPath().toString().contains(updater)
                                  )
         );
 
-        return appList;
+        return resolvedApps;
     }
 
 

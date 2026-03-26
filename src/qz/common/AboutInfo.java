@@ -12,7 +12,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.installer.apps.locator.AppAlias;
+import qz.installer.apps.locator.AppFamily;
 import qz.installer.certificate.KeyPairWrapper;
 import qz.installer.certificate.CertificateManager;
 import qz.utils.MacUtilities;
@@ -173,9 +173,9 @@ public class AboutInfo {
     private static JSONObject policies() throws JSONException {
         JSONObject policies = new JSONObject();
 
-        for(AppAlias appAlias : AppAlias.values()) {
-            policies.put(String.format("%s (variants)", appAlias.name().toLowerCase(Locale.ENGLISH)), Arrays.toString(appAlias.getAliases()));
-            policies.put(appAlias.name().toLowerCase(Locale.ENGLISH), "" /* FIXME */);
+        for(AppFamily appFamily : AppFamily.values()) {
+            policies.put(String.format("%s (variants)", appFamily.name().toLowerCase(Locale.ENGLISH)), Arrays.toString(appFamily.getVariants()));
+            policies.put(appFamily.name().toLowerCase(Locale.ENGLISH), "" /* FIXME */);
         }
 
         return policies;

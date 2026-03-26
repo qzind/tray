@@ -5,7 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.build.provision.params.Os;
 import qz.installer.Installer;
-import qz.installer.apps.locator.AppAlias;
+import qz.installer.apps.locator.AppFamily;
 import qz.installer.apps.policy.installer.LinuxPolicyInstaller;
 import qz.installer.apps.policy.installer.MacPolicyInstaller;
 import qz.installer.apps.policy.installer.WindowsPolicyInstaller;
@@ -82,26 +82,26 @@ public class PolicyInstaller {
     }
 
     public interface PolicyLocator {
-        Path getLocation(Installer.PrivilegeLevel scope, AppAlias.Alias alias);
+        Path getLocation(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant);
     }
 
     final private static Logger log = LogManager.getLogger(PolicyInstaller.class);
 
     final private Os os;
     final private Installer.PrivilegeLevel scope;
-    final private AppAlias.Alias alias;
+    final private AppFamily.AppVariant appVariant;
 
     final private PrimitivePolicyInstaller primitive;
     final private PolicyLocator locator;
 
-    public PolicyInstaller(Installer.PrivilegeLevel scope, AppAlias.Alias alias) {
-        this(SystemUtilities.getOs(), scope, alias);
+    public PolicyInstaller(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant) {
+        this(SystemUtilities.getOs(), scope, appVariant);
     }
 
-    public PolicyInstaller(Os os, Installer.PrivilegeLevel scope, AppAlias.Alias alias) {
+    public PolicyInstaller(Os os, Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant) {
         this.os = os;
         this.scope = scope;
-        this.alias = alias;
+        this.appVariant = appVariant;
 
         this.primitive = constructPrimitiveInstaller();
         this.locator = constructPolicyLocator();
@@ -233,7 +233,7 @@ public class PolicyInstaller {
                     WinReg.HKEY_LOCAL_MACHINE :
                     WinReg.HKEY_CURRENT_USER;
         }
-        return new PolicyState(scope, alias, phase, type, name, locator.getLocation(scope, alias), hkey);
+        return new PolicyState(scope, appVariant, phase, type, name, locator.getLocation(scope, appVariant), hkey);
     }
 
     private boolean isProhibited() {

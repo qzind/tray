@@ -16,7 +16,7 @@ import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.installer.apps.locator.AppAlias.Alias;
+import qz.installer.apps.locator.AppFamily.AppVariant;
 import qz.utils.WindowsUtilities;
 
 import java.nio.file.Path;
@@ -30,14 +30,14 @@ public class WindowsAppLocator extends AppLocator{
     protected static final Logger log = LogManager.getLogger(WindowsAppLocator.class);
 
     @Override
-    public HashSet<AppInfo> locate(AppAlias appAlias) {
-        HashSet<AppInfo> appList = new HashSet<>();
-        for (Alias alias : appAlias.aliases) {
-            if (alias.getVendor() != null) {
-                appList.addAll(locate(alias));
+    public HashSet<ResolvedApp> locate(AppFamily appFamily) {
+        HashSet<ResolvedApp> resolvedApps = new HashSet<>();
+        for (AppVariant appVariant : appFamily.appVariants) {
+            if (appVariant.getVendor() != null) {
+                resolvedApps.addAll(locate(appVariant));
             }
         }
-        return appList;
+        return resolvedApps;
     }
 
     final String START_MENU_SHELL_TEMPLATE = "SOFTWARE\\Clients\\StartMenuInternet\\%s\\shell\\open\\command";
@@ -50,8 +50,8 @@ public class WindowsAppLocator extends AppLocator{
      *      @ = "C:\Program Files (x86)\Microsoft\\Edge\\Application\msedge.exe"
      *    </pre>
      */
-    private HashSet<AppInfo> locate(Alias alias) {
-        HashSet<AppInfo> found = new HashSet<>();
+    private HashSet<ResolvedApp> locate(AppVariant appVariant) {
+        HashSet<ResolvedApp> found = new HashSet<>();
 
         // Chrome can be installed use-wide or system-wide
         WinReg.HKEY[] hives = {WinReg.HKEY_LOCAL_MACHINE, WinReg.HKEY_CURRENT_USER };
@@ -64,10 +64,10 @@ public class WindowsAppLocator extends AppLocator{
 
         for(WinReg.HKEY hive : hives) {
             for(String basePath : basePaths) {
-                String appName = alias.getName(false);
+                String appName = appVariant.getName(false);
                 String regPath = String.format(basePath, appName);
                 boolean keyExists = WindowsUtilities.registryKeyExists(hive, regPath);
-                if(alias.getAppAlias() == AppAlias.FIREFOX) {
+                if(appVariant.getAppFamily() == AppFamily.FIREFOX) {
                     // Legacy Firefox uses non-standard registry names (e.g. "Mozilla Firefox 68.12.0 ESR (x64 en-US)")
                     String firstMatch = firstKeyStartsWith(hive, String.format(basePath, ""), appName);
                     if(firstMatch != null) {
@@ -90,7 +90,7 @@ public class WindowsAppLocator extends AppLocator{
                 // We found an entry, but no exe, let's try to make and educated guess
                 if(installPath != null && exeLocation == null) {
                     // first, blindly check for app.exe
-                    Path exeGuess = installPath.resolve(alias.getSlug() + ".exe");
+                    Path exeGuess = installPath.resolve(appVariant.getSlug() + ".exe");
                     if(exeGuess.toFile().exists()) {
                         exeLocation = exeGuess.toString();
                     } else {
@@ -110,7 +110,7 @@ public class WindowsAppLocator extends AppLocator{
                     if(exePath.toAbsolutePath().toString().toLowerCase(Locale.ENGLISH)
                             .contains(installPath.toAbsolutePath().toString().toLowerCase(Locale.ENGLISH))) {
                         // We have a match
-                        found.add(new AppInfo(alias, installPath, exePath, versionString));
+                        found.add(new ResolvedApp(appVariant, installPath, exePath, versionString));
                     }
                 }
 
@@ -142,10 +142,10 @@ public class WindowsAppLocator extends AppLocator{
     }
 
     @Override
-    public HashSet<String> getPids(HashSet<AppInfo> appList) {
+    public HashSet<String> getPids(HashSet<ResolvedApp> resolvedApps) {
         HashSet<String> pidList = new HashSet<>();
 
-        if (appList.isEmpty()) return pidList;
+        if (resolvedApps.isEmpty()) return pidList;
 
         Tlhelp32.PROCESSENTRY32 pe32 = new Tlhelp32.PROCESSENTRY32();
         pe32.dwSize = new WinNT.DWORD(pe32.size());
@@ -160,8 +160,8 @@ public class WindowsAppLocator extends AppLocator{
         if (Kernel32.INSTANCE.Process32First(hSnapshot, pe32)) {
             do {
                 String processName = Native.toString(pe32.szExeFile);
-                appList.forEach(appInfo -> {
-                    if (appInfo.getExePath().endsWith(processName)) {
+                resolvedApps.forEach(app -> {
+                    if (app.getExePath().endsWith(processName)) {
                         pidList.add(pe32.th32ProcessID.toString());
                     }
                 });

@@ -1,7 +1,7 @@
 package qz.installer.apps.policy.locator;
 
 import qz.installer.Installer;
-import qz.installer.apps.locator.AppAlias;
+import qz.installer.apps.locator.AppFamily;
 import qz.installer.apps.policy.PolicyInstaller;
 
 import java.nio.file.Path;
@@ -15,7 +15,7 @@ public class WindowsPolicyLocator implements PolicyInstaller.PolicyLocator {
      * Calculates the registry key path.
      */
     @Override
-    public Path getLocation(Installer.PrivilegeLevel unused, AppAlias.Alias alias) {
-        return Paths.get(String.format(MANAGED_POLICY_PATH_PATTERN, alias.getVendor(), alias.getName(true)));
+    public Path getLocation(Installer.PrivilegeLevel unused, AppFamily.AppVariant appVariant) {
+        return Paths.get(String.format(MANAGED_POLICY_PATH_PATTERN, appVariant.getVendor(), appVariant.getName(true)));
     }
 }

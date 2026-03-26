@@ -1,7 +1,5 @@
 package qz.installer.apps.policy;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -14,26 +12,26 @@ import static qz.installer.apps.policy.PolicyState.Type.*;
 import static qz.installer.apps.locator.AppFamily.*;
 
 public class GenericPolicyInstallerTests {
-    private static final HashMap<String, Object> testHashMap = new HashMap<>(Map.of(
-        "firstKey", "value 1",
-        "secondKey", "value 2"
-    ));
+    static ArrayList<Object[]> genericTests = new ArrayList<>();
     static {
+        HashMap<String, Object> testHashMap = new HashMap<>(Map.of(
+                "firstKey", "value 1",
+                "secondKey", "value 2"
+        ));
+
         if (SystemUtilities.isLinux()) {
             testHashMap.put("thirdKey", new Object[] {"element 1", "element 2"}); //arrays in maps are only supported on linux
         }
-    }
 
-    static Object[][] genericTests = {
-            {VALUE, "testBool", true},                                      //boolean
-            {VALUE, "testInt", 1234},                                       //integer
-            {VALUE, "testFloat", 123.4f},                                   //decimal
-            {VALUE, "testString", "test"},                                  //string
-            {ARRAY, "testArray", new Object[] {"element 1", "element 2"}},  //2-item array
-            {ARRAY, "testArray", new Object[] {"element 1"}},               //1-item array
-            {MAP, "testMap", testHashMap},                                  //map from map
-            {MAP, "testMap", new Object[] {"firstKey", "value 1"}}          //map from array
-    };
+        genericTests.add(new Object[] {VALUE, "testBool", true});                                     //boolean
+        genericTests.add(new Object[] {VALUE, "testInt", 1234});                                      //integer
+        genericTests.add(new Object[] {VALUE, "testFloat", 123.4f});                                  //decimal
+        genericTests.add(new Object[] {VALUE, "testString", "test"});                                 //string
+        genericTests.add(new Object[] {ARRAY, "testArray", new Object[] {"element 1", "element 2"}}); //2-item array
+        genericTests.add(new Object[] {ARRAY, "testArray", new Object[] {"element 1"}});              //1-item array
+        genericTests.add(new Object[] {MAP, "testMap", testHashMap});                                 //map from map
+        genericTests.add(new Object[] {MAP, "testMap", new Object[] {"firstKey", "value 1"}});        //map from array
+    }
 
     @DataProvider(name = "genericPolicyTests")
     public Object[][] genericPolicyTests() {

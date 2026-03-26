@@ -27,7 +27,7 @@ public class FirefoxPolicyInstallerTests{
     public Object[][] firefoxPolicyTests() {
         ArrayList<AppFamily.AppVariant> testAppVariants = new ArrayList<>();
         Collections.addAll(testAppVariants, AppFamily.FIREFOX.getVariants());
-        return PolicyInstallerTestDispatcher.constructTestMatrix(firefoxTests.toArray(new Object[0][]), testAppVariants);
+        return PolicyInstallerTestDispatcher.constructTestMatrix(firefoxTests, testAppVariants);
     }
 
     @Test(dataProvider = "firefoxPolicyTests")

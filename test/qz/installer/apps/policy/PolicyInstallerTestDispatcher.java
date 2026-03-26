@@ -17,7 +17,7 @@ public class PolicyInstallerTestDispatcher {
 
     final static Installer.PrivilegeLevel scope = SystemUtilities.isAdmin()? SYSTEM:USER;
 
-    public static Object[][] constructTestMatrix(Object[][] tests, ArrayList<AppFamily.AppVariant> appVariants) {
+    public static Object[][] constructTestMatrix(ArrayList<Object[]> tests, ArrayList<AppFamily.AppVariant> appVariants) {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
         for (AppFamily.AppVariant appVariant : appVariants) {
             for (Object[] testRow: tests) {

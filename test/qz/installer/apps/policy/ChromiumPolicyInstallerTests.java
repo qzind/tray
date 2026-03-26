@@ -1,7 +1,5 @@
 package qz.installer.apps.policy;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.common.Constants;
@@ -15,12 +13,12 @@ import static qz.common.Constants.ABOUT_URL;
 import static qz.installer.apps.policy.PolicyState.Type.*;
 
 public class ChromiumPolicyInstallerTests {
-    private static final Logger log = LogManager.getLogger(ChromiumPolicyInstallerTests.class);
+    static ArrayList<Object[]> chromiumTests = new ArrayList<>();
 
-    static Object[][] chromiumTests = {
-            {ARRAY, "URLAllowlist", new Object[] {String.format("%s://*", Constants.DATA_DIR)}},
-            {VALUE, "LocalNetworkAccessAllowedForUrls", "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL)},
-    };
+    static {
+        chromiumTests.add(new Object[]{ARRAY, "URLAllowlist", new Object[] {String.format("%s://*", Constants.DATA_DIR)}});
+        chromiumTests.add(new Object[]{VALUE, "LocalNetworkAccessAllowedForUrls", "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL)});
+    }
 
     @DataProvider(name = "chromiumPolicyTests")
     public Object[][] chromiumPolicyTests() {

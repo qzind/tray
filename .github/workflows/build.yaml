@@ -57,6 +57,8 @@ jobs:
           # Only run tests on same arch
           brew install --cask google-chrome firefox
           ant testng
+          # Run policy tests again, but as root
+          sudo ant -Dtestng.pattern="**/policy/**" testng
           sudo installer -pkg out/qz-tray-*.pkg -target /
           "/Applications/QZ Tray.app/Contents/MacOS/QZ Tray" --version
           brew install nsis makeself
@@ -86,6 +88,8 @@ jobs:
           # Only run tests on same arch
           choco install firefox googlechrome
           ant testng
+          # Run policy tests again, but as root
+          sudo ant -Dtestng.pattern="**/policy/**" testng
           Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
           "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"
 

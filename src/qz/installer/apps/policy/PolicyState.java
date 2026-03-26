@@ -3,6 +3,7 @@ package qz.installer.apps.policy;
 import com.sun.jna.platform.win32.WinReg;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.installer.Installer;
 import qz.installer.apps.locator.AppAlias;
 import qz.utils.WindowsUtilities;
 
@@ -42,6 +43,7 @@ public class PolicyState {
         FAILED
     }
 
+    final Installer.PrivilegeLevel scope;
     final AppAlias.Alias alias;
     final PolicyInstaller.Phase phase;
     final Type type;
@@ -53,7 +55,8 @@ public class PolicyState {
     Status status;
     String reason;
 
-    public PolicyState(AppAlias.Alias alias, PolicyInstaller.Phase phase, Type type, String name, Path location, WinReg.HKEY hkey) {
+    public PolicyState(Installer.PrivilegeLevel scope, AppAlias.Alias alias, PolicyInstaller.Phase phase, Type type, String name, Path location, WinReg.HKEY hkey) {
+        this.scope = scope;
         this.alias = alias;
         this.phase = phase;
         this.type = type;
@@ -68,6 +71,10 @@ public class PolicyState {
 
         this.status = Status.STARTED;
         this.exception = null;
+    }
+
+    public Installer.PrivilegeLevel getScope() {
+        return scope;
     }
 
     public Exception getException() {
@@ -94,8 +101,8 @@ public class PolicyState {
         return location;
     }
 
-    public AppAlias.Alias getAlias() {
-        return alias;
+    public AppAlias getAppAlias() {
+        return alias.getAppAlias();
     }
 
     public WinReg.HKEY getHkey() {

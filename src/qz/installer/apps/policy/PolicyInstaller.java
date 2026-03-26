@@ -233,7 +233,7 @@ public class PolicyInstaller {
                     WinReg.HKEY_LOCAL_MACHINE :
                     WinReg.HKEY_CURRENT_USER;
         }
-        return new PolicyState(alias, phase, type, name, locator.getLocation(scope, alias), hkey);
+        return new PolicyState(scope, alias, phase, type, name, locator.getLocation(scope, alias), hkey);
     }
 
     private boolean isProhibited() {

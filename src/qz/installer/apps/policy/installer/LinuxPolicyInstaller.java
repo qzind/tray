@@ -5,7 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import qz.installer.apps.locator.AppAlias;
+import qz.installer.Installer;
 import qz.installer.apps.policy.PolicyInstaller;
 import qz.installer.apps.policy.PolicyState;
 
@@ -220,25 +220,35 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     }
 
     /**
-     * Reads JSON file from state.getLocation(). For firefox on linux,  this returns a
-     * sub object under the key "policies" instead.
+     * Returns a <code>JSONObject</code> with the existing policy data or creates an empty <code>JSONObject</code> if missing.
+     * Note: Firefox nests all policies in a top-level <code>policies</code> key.
      */
     private static JSONObject readJson(PolicyState state) throws JSONException, IOException {
-        if (Arrays.asList(AppAlias.FIREFOX.getAliases()).contains(state.getAlias())) {
-            JSONObject jsonObject = readJsonFile(state.getLocation()).optJSONObject("policies");
-            return jsonObject != null ? jsonObject : new JSONObject();
-        } else {
-            return readJsonFile(state.getLocation());
+        switch(state.getAppAlias()) {
+            case FIREFOX:
+                JSONObject jsonObject = readJsonFile(state.getLocation()).optJSONObject("policies");
+                return jsonObject != null ? jsonObject : new JSONObject();
+            case CHROMIUM:
+            default:
+                return readJsonFile(state.getLocation());
         }
     }
 
+    /**
+     * Writes a <code>JSONObject</code> with the existing policy data.
+     * Note: Firefox nests all policies in a top-level <code>policies</code> key.
+     */
     private static void writeJson(JSONObject jsonPolicy, PolicyState state) throws JSONException, IOException {
-        if (Arrays.asList(AppAlias.FIREFOX.getAliases()).contains(state.getAlias())) {
-            JSONObject oldJsonPolicy = readJsonFile(state.getLocation());
-            oldJsonPolicy.put("policies", jsonPolicy);
-            writeJsonFile(oldJsonPolicy, state.getLocation(), true);
-        } else {
-            writeJsonFile(jsonPolicy, state.getLocation(), true);
+        switch(state.getAppAlias()) {
+            case FIREFOX:
+                // Read the entire policy back in, for the off-chance that there are other keys
+                JSONObject jsonObject = readJsonFile(state.getLocation());
+                // Overwrite the entire "policies" key, since the helpers are non-destructive
+                writeJsonFile(jsonObject.put("policies", jsonPolicy), state.getLocation(), Installer.isOwnerOnly(state.getScope()));
+                break;
+            case CHROMIUM:
+            default:
+                writeJsonFile(jsonPolicy, state.getLocation(), Installer.isOwnerOnly(state.getScope()));
         }
     }
 

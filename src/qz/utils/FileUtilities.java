@@ -1007,7 +1007,6 @@ public class FileUtilities {
     }
 
     public static void writeJsonFile(JSONObject content, Path location, boolean worldReadable) throws IOException {
-        // Write contents, ensuring policy file is world readable
         File locationFile = location.toFile();
         try(BufferedWriter writer = new BufferedWriter(new FileWriter(locationFile))) {
             writer.write(content.toString());

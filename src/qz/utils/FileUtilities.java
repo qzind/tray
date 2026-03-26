@@ -830,13 +830,13 @@ public class FileUtilities {
 
     @SuppressWarnings("rawtypes")
     public static synchronized void configureAssetToFile(Class relativeClass, String relativeAsset, HashMap<String, String> additionalMappings, File outputFile) throws IOException {
+        if(!outputFile.getParentFile().exists() && !outputFile.getParentFile().mkdirs()) {
+            throw new IOException(String.format("Can't create parent directories for asset file '%s'", outputFile));
+        }
+        if (outputFile.exists() && !outputFile.delete()) {
+            throw new IOException(String.format("Can't delete asset file '%s'", outputFile));
+        }
         try(FileOutputStream outputStream = new FileOutputStream(outputFile)) {
-            if(!outputFile.getParentFile().exists() && !outputFile.getParentFile().mkdirs()) {
-                throw new IOException(String.format("Can't create parent directories for asset file '%s'", outputFile));
-            }
-            if (outputFile.exists() && !outputFile.delete()) {
-                throw new IOException(String.format("Can't delete asset file '%s'", outputFile));
-            }
             configureAssetToStream(relativeClass, relativeAsset, additionalMappings, outputStream);
         }
     }
@@ -865,20 +865,19 @@ public class FileUtilities {
             if(is == null) {
                 throw new IOException(String.format("InputStream for '%s' is null", relativeAsset));
             }
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            OutputStreamWriter writer = new OutputStreamWriter(outputStream);
-
-            String line;
-            while((line = reader.readLine()) != null) {
-                for(Map.Entry<String,String> mapping : allMappings.entrySet()) {
-                    if (line.contains(mapping.getKey()) && mapping.getValue() != null) {
-                        line = line.replaceAll(mapping.getKey(), mapping.getValue());
+            try(BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+                try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))) {
+                    String line;
+                    while((line = reader.readLine()) != null) {
+                        for(Map.Entry<String,String> mapping : allMappings.entrySet()) {
+                            if (line.contains(mapping.getKey()) && mapping.getValue() != null) {
+                                line = line.replaceAll(mapping.getKey(), mapping.getValue());
+                            }
+                        }
+                        writer.write(line + "\n");
                     }
                 }
-                writer.write(line + "\n");
             }
-            reader.close();
-            writer.close();
         }
     }
 

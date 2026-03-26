@@ -25,7 +25,7 @@ public class AppLocatorTests {
 
     private final Installer installer = Installer.getInstance();
     private final HashMap<AppFamily,HashSet<ResolvedApp>> resolvedAppsCache = new HashMap<>();
-    private static final boolean SKIP_APP_SPAWN = true;
+    private static final boolean SKIP_APP_SPAWN = false;
 
     /**
      * Lazy init allows first caller to provide accurate benchmarking values to TestNG

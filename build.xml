@@ -91,6 +91,11 @@
             <compilerarg value="-Xlint:-options"/>
         </javac>
 
+        <!-- Include any non-source files -->
+        <copy todir="${build.dir}/test">
+            <fileset dir="${test.dir}" excludes="**/*.java"/>
+        </copy>
+
         <path id="tests.classpath">
             <path refid="testng.classpath"/>
             <path refid="main.classpath"/>

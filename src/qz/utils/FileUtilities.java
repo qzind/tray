@@ -1009,7 +1009,7 @@ public class FileUtilities {
         File locationFile = location.toFile();
         try(BufferedWriter writer = new BufferedWriter(new FileWriter(locationFile))) {
             writer.write(content.toString());
-            if (!locationFile.setReadable(true, !worldReadable)) {
+            if (!locationFile.setReadable(true, worldReadable)) {
                 throw new IOException("Unable to set readable: " + location);
             }
         }

@@ -3,6 +3,7 @@ package qz.installer.apps.policy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
+import org.testng.SkipException;
 import qz.installer.Installer;
 import qz.installer.apps.locator.AppFamily;
 import qz.utils.SystemUtilities;
@@ -174,6 +175,9 @@ public class PolicyInstallerTestDispatcher {
     private static void assertState(PolicyState state) {
         if (state.hasFailed()) {
             state.log();
+            if (state.exception instanceof UnsupportedPolicyException) {
+                throw new SkipException(state.reason);
+            }
             Assert.fail(state.reason);
         }
     }

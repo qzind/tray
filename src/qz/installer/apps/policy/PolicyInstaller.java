@@ -111,7 +111,7 @@ public class PolicyInstaller {
         PolicyState state = createPolicyState(Phase.INSTALL, type, name);
 
         if(isProhibited()) {
-            return state.setFailed("User mode policies are not yet supported on Linux").log();
+            return state.setFailed(new UnsupportedPolicyException("User mode policies are not yet supported on Linux")).log();
         }
 
         if(values.length < 1) {
@@ -135,7 +135,7 @@ public class PolicyInstaller {
         PolicyState state = createPolicyState(Phase.UNINSTALL, type, name);
 
         if(isProhibited()) {
-            return state.setFailed("User mode policies are not yet supported on Linux").log();
+            return state.setFailed(new UnsupportedPolicyException("User mode policies are not yet supported on Linux")).log();
         }
 
         switch(state.getType()) {

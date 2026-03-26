@@ -22,12 +22,12 @@
     </target>
 
     <target name="clean" depends="init">
-        <delete dir="${out.dir}" includeemptydirs="true" defaultexcludes="false"/>
+        <delete dir="${out.dir}" includeemptydirs="true" defaultexcludes="false" followSymlinks="false" removeNotFollowedSymlinks="true"/>
     </target>
 
     <target name="quick-clean">
         <!-- Cleanup lingering files (for other OS installers) -->
-        <delete includeemptydirs="true" defaultexcludes="false" failonerror="false">
+        <delete includeemptydirs="true" defaultexcludes="false" failonerror="false" followSymlinks="false" removeNotFollowedSymlinks="true">
             <fileset dir="${out.dir}">
                 <include name="**/**"/>
                 <exclude name="**/jlink/jdk-**/**"/>

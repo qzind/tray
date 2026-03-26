@@ -203,6 +203,6 @@ public class WindowsInstaller extends Installer {
         if(SystemUtilities.isAdmin()) {
             log.warn("Spawning as user isn't implemented; starting process with elevation instead");
         }
-        ShellUtilities.execute(args.toArray(new String[args.size()]));
+        super.startProcess(args);
     }
 }

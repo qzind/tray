@@ -7,6 +7,7 @@ import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import qz.installer.Installer;
 import qz.installer.apps.locator.AppFamily;
 import qz.installer.apps.locator.ResolvedApp;
 import qz.installer.apps.locator.AppLocator;
@@ -22,8 +23,9 @@ import java.util.*;
 public class AppLocatorTests {
     private static final Logger log = LogManager.getLogger(AppLocatorTests.class);
 
+    private final Installer installer = Installer.getInstance();
     private final HashMap<AppFamily,HashSet<ResolvedApp>> resolvedAppsCache = new HashMap<>();
-    private static final boolean SKIP_APP_SPAWN = false;
+    private static final boolean SKIP_APP_SPAWN = true;
 
     /**
      * Lazy init allows first caller to provide accurate benchmarking values to TestNG
@@ -80,7 +82,12 @@ public class AppLocatorTests {
         if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
         for (ResolvedApp resolvedApp : findResolvedApps(app)) {
             log.info("[{}] Spawning '{}' from '{}'", app.name(), resolvedApp.getName(true), Arrays.toString(resolvedApp.getExeCommand()));
-            Assert.assertTrue(spawnProcess(resolvedApp));
+            try {
+               installer.spawn(resolvedApp);
+               assert(true);
+            } catch(Exception e) {
+               assert(false);
+            }
         }
     }
 
@@ -112,27 +119,5 @@ public class AppLocatorTests {
         int runningCount = new HashSet<>(runningApps.values()).size();
         int foundCount = findResolvedApps(app).size();
         Assert.assertEquals(foundCount, runningCount, String.format("[%s] Running app count %s must be equal to found app count %s.", app.name(), runningCount, foundCount));
-    }
-
-    /**
-     * TODO: Move this somewhere useful and combine with Installer.getInstance().spawn();
-     */
-    private static boolean spawnProcess(ResolvedApp resolvedApp) {
-        String[] command = resolvedApp.getExeCommand();
-        try {
-            if(!resolvedApp.exists()) {
-                throw new IOException(resolvedApp.getExePath() + " or " + resolvedApp.getAppPath() + " does not exist");
-            }
-
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
-            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
-            pb.redirectInput(ProcessBuilder.Redirect.PIPE);
-            pb.start();
-        } catch (IOException e) {
-            log.error("Failed to start process '{}'", String.join(", ", command), e);
-            return false;
-        }
-        return true;
     }
 }

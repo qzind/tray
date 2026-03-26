@@ -503,23 +503,26 @@ public abstract class Installer {
         return newProps;
     }
 
+    public void spawn(ResolvedApp app) throws Exception {
+        spawn(app.getExeCommand());
+    }
+
     public void spawn(String ... args) throws Exception {
         spawn(new ArrayList<>(Arrays.asList(args)));
     }
 
-    /**
-     * TODO: Consolidate with spawn()
-     */
-    public void spawnProcess(String ... command) {
-        try {
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
-            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
-            pb.redirectInput(ProcessBuilder.Redirect.PIPE);
-            pb.start();
-        } catch (IOException e) {
-            log.error("Failed to start process '{}'", String.join(", ", command), e);
-        }
+    void startProcess(List<String> argList) throws Exception {
+        startProcess(argList, null);
+    }
+
+    void startProcess(List<String> argList, HashMap<String,String> envp) throws Exception {
+        ProcessBuilder pb = new ProcessBuilder(argList);
+        if(envp != null) pb.environment().putAll(envp);
+
+        pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+        pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+        pb.redirectInput(ProcessBuilder.Redirect.PIPE);
+        pb.start();
     }
 
     /**

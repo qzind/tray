@@ -18,6 +18,7 @@ import qz.utils.SystemUtilities;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -116,10 +117,9 @@ public class MacInstaller extends Installer {
                 // Fallback, should only fire via Terminal + sudo
                 sudoer = ShellUtilities.executeRaw("logname").trim();
             }
-            // Start directly without waitFor(...), avoids deadlocking
-            Runtime.getRuntime().exec(new String[] { "su", sudoer, "-c", "\"" + StringUtils.join(args, "\" \"") + "\""});
+            super.startProcess(List.of("su", sudoer, "-c", "\"" + StringUtils.join(args, "\" \"") + "\""));
         } else {
-            Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
+            super.startProcess(args);
         }
     }
 }

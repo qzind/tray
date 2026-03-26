@@ -176,41 +176,28 @@ public class LinuxInstaller extends Installer {
      * Spawns the process as the underlying regular user account, preserving the environment
      */
     public void spawn(List<String> args) throws Exception {
+        ArrayList<String> argsList;
+        HashMap<String,String> envp = new HashMap<>();
         if(!SystemUtilities.isAdmin()) {
-            // Not admin, just run as the existing user
-            spawnProcess(args.toArray(new String[0]));
-            return;
-        }
+            argsList = new ArrayList<>(args);
+            argsList.add(1, "nohup");
+        } else {
+            // Get user's environment from dbus, etc
+            envp.putAll(getUserEnv(sudoer));
 
-        // Get user's environment from dbus, etc
-        HashMap<String, String> env = getUserEnv(sudoer);
-        if(env.size() == 0) {
-            throw new Exception("Unable to get dbus info; can't spawn instance");
+            // Concat "sudo|su", sudoer, "nohup", args
+            argsList = sudoCommand(sudoer, args);
         }
-
-        // Prepare the environment
-        String[] envp = new String[env.size() + ShellUtilities.envp.length];
-        int i = 0;
-        // Keep existing env
-        for(String keep : ShellUtilities.envp) {
-            envp[i++] = keep;
-        }
-        for(String key :env.keySet()) {
-            envp[i++] = String.format("%s=%s", key, env.get(key));
-        }
-
-        // Concat "sudo|su", sudoer, "nohup", args
-        ArrayList<String> argsList = sudoCommand(sudoer, true, args);
 
         // Spawn
         log.info("Executing: {}", Arrays.toString(argsList.toArray()));
-        Runtime.getRuntime().exec(argsList.toArray(new String[argsList.size()]), envp);
+        super.startProcess(argsList, envp);
     }
 
     /**
      * Constructs a command to help running as another user using "sudo" or "su"
      */
-    public static ArrayList<String> sudoCommand(String sudoer, boolean async, List<String> cmds) {
+    public static ArrayList<String> sudoCommand(String sudoer, List<String> cmds) {
         ArrayList<String> sudo = new ArrayList<>();
         if(StringUtils.isEmpty(sudoer) || !userExists(sudoer)) {
             throw new UnsupportedOperationException(String.format("Parameter [sudoer: %s] is empty or the provided user was not found", sudoer));
@@ -226,10 +213,8 @@ public class LinuxInstaller extends Installer {
             sudo.add("-u");
             sudo.add(sudoer);
 
-            // Add "background" task support
-            if(async) {
-                sudo.add("nohup");
-            }
+            // Let the process outlive its parent
+            sudo.add("nohup");
             if(cmds != null && cmds.size() > 0) {
                 // Add additional commands
                 sudo.addAll(cmds);
@@ -244,10 +229,9 @@ public class LinuxInstaller extends Installer {
 
             sudo.add("-c");
 
-            // Add "background" task support
-            if(async) {
-                sudo.add("nohup");
-            }
+            // Let the process outlive its parent
+            sudo.add("nohup");
+
             if(cmds != null && cmds.size() > 0) {
                 // Add additional commands
                 sudo.addAll(Arrays.asList(StringUtils.join(cmds, "\" \"") + "\""));

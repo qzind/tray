@@ -1,7 +1,5 @@
 package qz.installer.apps.policy;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.installer.apps.locator.AppFamily;
@@ -19,7 +17,7 @@ public class FirefoxPolicyInstallerTests{
     static {
         if (SystemUtilities.isLinux()) {
             //arrays in maps are only supported on linux
-            firefoxTests.add(new Object[] {MAP, "Certificates", new Object[] {"Install", new Object[] {new File("./test.crt").toString()}}});
+            firefoxTests.add(new Object[] {MAP, "Certificates", new Object[] {"Install", new Object[] {new File("policy-testing.crt").toString()}}});
         } else {
             firefoxTests.add(new Object[] {MAP, "Certificates", new Object[] {"ImportEnterpriseRoots", true}});
         }

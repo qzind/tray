@@ -120,7 +120,7 @@ public class LinuxInstaller extends Installer {
         // USB permissions
         File udev = new File(UDEV_RULES);
         try {
-            FileUtilities.configureAssetToFile(LinuxInstaller.class, "assets/linux-udev.rules.in", new HashMap<>(), new File(UDEV_RULES));
+            FileUtilities.configureAssetToFile(LinuxInstaller.class, "assets/linux-udev.rules.in", new HashMap<>(), udev);
             // udev rules should be -rw-r--r--
             if(!udev.setReadable(true, false)) {
                 throw new IOException(String.format("Can't set '%s' readable", udev));

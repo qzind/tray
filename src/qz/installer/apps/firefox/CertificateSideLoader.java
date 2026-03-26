@@ -49,6 +49,10 @@ public class CertificateSideLoader {
         if(FileUtilities.mkdirsRecursive(certFile, true, false, true, isOwnerOnly(scope))) {
             try {
                 CertificateManager.writeCert(cert, certFile);
+                // Assume the file should be readable too
+                if (!certFile.setReadable(isOwnerOnly(scope))) {
+                    log.warn("Unable to set readable '{}'", certFile);
+                }
                 return certFile;
             } catch(IOException e) {
                 log.error("Unable to install '{}' certificate", appVariant.getName(true), e);

@@ -830,8 +830,8 @@ public class FileUtilities {
 
     @SuppressWarnings("rawtypes")
     public static synchronized void configureAssetToFile(Class relativeClass, String relativeAsset, HashMap<String, String> additionalMappings, File outputFile) throws IOException {
-        try(OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-            if(outputFile.getParentFile().exists() || outputFile.getParentFile().mkdirs()) {
+        try(FileOutputStream outputStream = new FileOutputStream(outputFile)) {
+            if(!outputFile.getParentFile().exists() && !outputFile.getParentFile().mkdirs()) {
                 throw new IOException(String.format("Can't create parent directories for asset file '%s'", outputFile));
             }
             if (outputFile.exists() && !outputFile.delete()) {

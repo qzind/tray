@@ -119,6 +119,7 @@ public class MacInstaller extends Installer {
             }
             super.startProcess(List.of("su", sudoer, "-c", "\"" + StringUtils.join(args, "\" \"") + "\""));
         } else {
+            args.add(0, "nohup");
             super.startProcess(args);
         }
     }

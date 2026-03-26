@@ -180,7 +180,7 @@ public class LinuxInstaller extends Installer {
         HashMap<String,String> envp = new HashMap<>();
         if(!SystemUtilities.isAdmin()) {
             argsList = new ArrayList<>(args);
-            argsList.add(1, "nohup");
+            argsList.add(0, "nohup");
         } else {
             // Get user's environment from dbus, etc
             envp.putAll(getUserEnv(sudoer));

@@ -2,37 +2,37 @@ package qz.installer.apps.policy;
 
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import qz.common.Constants;
 import qz.installer.apps.locator.AppFamily;
 import qz.utils.SystemUtilities;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.List;
 
+import static qz.common.Constants.ABOUT_URL;
 import static qz.installer.apps.policy.PolicyState.Type.*;
 
-public class FirefoxPolicyInstallerTests{
-    static ArrayList<Object[]> firefoxTests = new ArrayList<>();
-
-    static {
+public class FirefoxPolicyInstallerTests extends PolicyTestDispatcher {
+    @DataProvider(name = "firefoxPoliciesData")
+    public Object[][] firefoxPoliciesData() {
+        Object[][] tests;
         if (SystemUtilities.isLinux()) {
-            //arrays in maps are only supported on linux
-            firefoxTests.add(new Object[] {MAP, "Certificates", new Object[] {"Install", new Object[] {new File("policy-testing.crt").toString()}}});
+            tests = new Object[][] {
+                    // arrays in maps are only supported on linux
+                    { MAP, "Certificates", new Object[] {"Install", new Object[] {new File("policy-testing.crt").toString() } } }
+            };
         } else {
-            firefoxTests.add(new Object[] {MAP, "Certificates", new Object[] {"ImportEnterpriseRoots", true}});
+            tests = new Object[][] {
+                    { MAP, "Certificates", new Object[] {"ImportEnterpriseRoots", true } }
+            };
         }
+        return PolicyTestDispatcher.addAppVariants(List.of(tests), AppFamily.FIREFOX);
     }
 
-    @DataProvider(name = "firefoxPolicyTests")
-    public Object[][] firefoxPolicyTests() {
-        ArrayList<AppFamily.AppVariant> testAppVariants = new ArrayList<>();
-        Collections.addAll(testAppVariants, AppFamily.FIREFOX.getVariants());
-        return PolicyInstallerTestDispatcher.constructTestMatrix(firefoxTests, testAppVariants);
-    }
-
-    @Test(dataProvider = "firefoxPolicyTests")
-    public void testGenericPolicies(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
-        PolicyInstallerTestDispatcher.dispatchInstallTest(appVariant, type, name, value);
-        PolicyInstallerTestDispatcher.dispatchUninstallTest(appVariant, type, name, value);
+    @Test(dataProvider = "firefoxPoliciesData")
+    public void testFirefoxPolicies(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
+        testAppsPolicyInstall(appVariant, type, name, value);
+        testAppsPolicyUninstall(appVariant, type, name, value);
     }
 }

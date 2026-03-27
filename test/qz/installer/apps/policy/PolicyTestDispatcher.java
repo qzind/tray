@@ -10,26 +10,31 @@ import qz.installer.apps.locator.AppFamily;
 import qz.utils.SystemUtilities;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static qz.installer.Installer.PrivilegeLevel.*;
 import static qz.installer.apps.policy.PolicyState.Type.*;
 
-public class PolicyInstallerTestDispatcher {
-    private static final Logger log = LogManager.getLogger(PolicyInstallerTestDispatcher.class);
+public abstract class PolicyTestDispatcher {
+    private static final Logger log = LogManager.getLogger(PolicyTestDispatcher.class);
+    private static final Installer.PrivilegeLevel scope = SystemUtilities.isAdmin()? SYSTEM:USER;
 
-    final static Installer.PrivilegeLevel scope = SystemUtilities.isAdmin()? SYSTEM:USER;
-
-    public static Object[][] constructTestMatrix(ArrayList<Object[]> tests, ArrayList<AppFamily.AppVariant> appVariants) {
-        ArrayList<Object[]> retMatrix = new ArrayList<>();
-        for (AppFamily.AppVariant appVariant : appVariants) {
-            for (Object[] testRow: tests) {
+    static Object[][] addAppVariants(List<Object[]> tests, AppFamily.AppVariant ... appVariants) {
+        List<Object[]> retMatrix = new ArrayList<>();
+        Arrays.stream(appVariants).forEach(appVariant -> {
+            for(Object[] testRow : tests) {
                 retMatrix.add(new Object[] {appVariant, testRow[0], testRow[1], testRow[2]});
             }
-        }
+        });
         return retMatrix.toArray(new Object[0][]);
     }
 
-    public static PolicyState dispatchInstallTest(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
+    static Object[][] addAppVariants(List<Object[]> tests, AppFamily ... appFamilies) {
+        return addAppVariants(tests, Arrays.stream(appFamilies).flatMap(appFamily -> Stream.of(appFamily.getVariants())).toArray(AppFamily.AppVariant[]::new));
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    static PolicyState testAppsPolicyInstall(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
         switch(type) {
             case VALUE:
                 return testAppsPolicyValueInstall(appVariant, name, value);
@@ -41,7 +46,8 @@ public class PolicyInstallerTestDispatcher {
         return null;
     }
 
-    public static PolicyState dispatchUninstallTest(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
+    @SuppressWarnings("UnusedReturnValue")
+    static PolicyState testAppsPolicyUninstall(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
         switch(type) {
             case VALUE:
                 return testAppsPolicyValueUninstall(appVariant, name, value);
@@ -54,7 +60,7 @@ public class PolicyInstallerTestDispatcher {
     }
 
     private static PolicyState testAppsPolicyArrayInstall(AppFamily.AppVariant appVariant, String name, Object value) {
-        Object[] values = (Object[])value;
+        Object[] values = value instanceof Object[] ? (Object[])value : new Object[] { value };
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
         PolicyState state = policyInstaller.install(ARRAY, name, values);
         assertState(state);
@@ -76,7 +82,7 @@ public class PolicyInstallerTestDispatcher {
     }
 
     private static PolicyState testAppsPolicyArrayUninstall(AppFamily.AppVariant appVariant, String name, Object value) {
-        Object[] values = (Object[])value;
+        Object[] values = value instanceof Object[] ? (Object[])value : new Object[] { value };
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
         PolicyState state;
         List<Object> returnedList;
@@ -211,29 +217,39 @@ public class PolicyInstallerTestDispatcher {
         return true;
     }
 
-    private static void assertEqual(Object returnedValue, Object value) {
+    private static void assertEqual(Object actual, Object expected) {
         if(SystemUtilities.isWindows()) {
             // Windows registry is incapable of returning a boolean
-            if(value instanceof Boolean && returnedValue instanceof Integer) {
-                Integer intReturned = (Integer)returnedValue;
+            if(expected instanceof Boolean && actual instanceof Integer) {
+                Integer intReturned = (Integer)actual;
                 switch(intReturned) {
                     case 0:
                     case 1:
                         // treat as boolean
-                        returnedValue = intReturned != 0;
+                        actual = intReturned != 0;
                         break;
                     default:
                         // let it fail
                 }
             }
         }
-        if (!Objects.equals(value, returnedValue)) {
+        if(SystemUtilities.isMac()) {
+            if(expected instanceof Integer && actual instanceof Boolean) {
+                // cli limitations for maps
+                expected = expected.equals(1);
+            }
+            if(expected instanceof Float && actual instanceof String) {
+                // cli puts quotes around floats for no reason :/
+                actual = Float.parseFloat((String)actual);
+            }
+        }
+        if (!Objects.equals(expected, actual)) {
             log.warn(
                     "Expected value: {} (type: {}), returned value: {} (type: {})",
-                    value,
-                    value == null ? "null" : value.getClass().getName(),
-                    returnedValue,
-                    returnedValue == null ? "null" : returnedValue.getClass().getName()
+                    expected,
+                    expected == null ? "null" : expected.getClass().getName(),
+                    actual,
+                    actual == null ? "null" : actual.getClass().getName()
             );
             Assert.fail("Return value mismatch");
         }

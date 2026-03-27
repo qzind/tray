@@ -68,16 +68,16 @@
         "data": "script2"
     },
     {
-        "description": "[ALL OS SCRIPT] with '.sh' extension at 'install'",
+        "description": "[LINUX & MAC SCRIPT] with '.sh' extension at 'install'",
         "type": "script",
-        "os": "*",
+        "os": "linux|mac",
         "phase": "install",
         "data": "script3.sh"
     },
     {
         "description": "[AARCH64 ONLY SCRIPT] with '.sh' extension at 'install'",
         "type": "script",
-        "os": "*",
+        "os": "linux|mac",
         "arch": "aarch64",
         "phase": "install",
         "data": "script2"

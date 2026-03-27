@@ -50,13 +50,28 @@ public class PolicyInvoker implements Invokable {
         for(AppFamily.AppVariant appVariant : step.getApp().getVariants()) {
             PolicyInstaller installer = new PolicyInstaller(scope, appVariant);
             PolicyState state;
-            if(values instanceof Object[]) {
-                state = installer.install(type, step.getName(), (Object[])values);
-            } else {
-                state = installer.install(type, step.getName(), values);
-            }
-            if(state.hasFailed()) {
-                success = false;
+            switch(step.getPhase()) {
+                case UNINSTALL:
+                    if (values instanceof Object[]) {
+                        state = installer.uninstall(type, step.getName(), (Object[])values);
+                    } else {
+                        state = installer.uninstall(type, step.getName(), values);
+                    }
+                    if (state.hasFailed()) {
+                        success = false;
+                    }
+                    break;
+                case INSTALL:
+                case CERTGEN:
+                default:
+                    if (values instanceof Object[]) {
+                        state = installer.install(type, step.getName(), (Object[])values);
+                    } else {
+                        state = installer.install(type, step.getName(), values);
+                    }
+                    if (state.hasFailed()) {
+                        success = false;
+                    }
             }
         }
         return success;

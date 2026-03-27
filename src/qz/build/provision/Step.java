@@ -287,7 +287,7 @@ public class Step {
                 .enforcePhase(Type.CONF, Phase.CERTGEN)
                 .enforcePhase(Type.SOFTWARE, Phase.INSTALL)
                 .enforcePhase(Type.REMOVER, Phase.INSTALL)
-                .enforcePhase(Type.POLICY, Phase.CERTGEN, Phase.INSTALL)
+                .enforcePhase(Type.POLICY, Phase.CERTGEN, Phase.INSTALL, Phase.UNINSTALL)
                 .enforcePhase(Type.PROPERTY, Phase.CERTGEN, Phase.INSTALL)
                 .validateRemover();
     }
@@ -383,10 +383,15 @@ public class Step {
         String formatted = String.format(message, args);
         return new UnsupportedOperationException(formatted);
     }
-    Step cloneTo(Phase phase) {
+
+    public Step cloneTo(Phase phase, String description) {
        return relativePath != null ?
                     new Step(relativePath, description, type, os, arch, phase, app, name, format, data, args) :
                     new Step(relativeClass, description, type, os, arch, phase, app, name, format, data, args);
+    }
+
+    Step cloneTo(Phase phase) {
+        return cloneTo(phase, description);
     }
 
     @SuppressWarnings("CloneDoesntCallSuperClone")

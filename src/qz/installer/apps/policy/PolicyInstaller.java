@@ -4,6 +4,7 @@ import com.sun.jna.platform.win32.WinReg;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.build.provision.params.Os;
+import qz.common.Sluggable;
 import qz.installer.Installer;
 import qz.installer.apps.exception.UnsupportedPolicyException;
 import qz.installer.apps.locator.AppFamily;
@@ -19,9 +20,12 @@ import java.nio.file.Path;
 import java.util.*;
 
 public class PolicyInstaller {
-    public enum Phase {
+    public enum Phase implements Sluggable {
         INSTALL,
         UNINSTALL;
+        public String slug() {
+            return Sluggable.slugOf(this);
+        }
     }
 
     public interface PrimitivePolicyInstaller {

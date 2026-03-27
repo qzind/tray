@@ -96,16 +96,16 @@
         "data": "foo=bar"
     },
     {
-        "description": "[PROPERTY] at 'install' (qz-tray.properties)",
+        "description": "[PROPERTY] at 'certgen' (qz-tray.properties)",
         "type": "property",
-        "phase": "install",
+        "phase": "certgen",
         "os": "*",
         "data": "websocket.secure.ports=9191,9292,9393,9494"
     },
     {
         "description": "[PROPERTY] at 'certgen' (qz-tray.properties)",
         "type": "property",
-        "phase": "install",
+        "phase": "certgen",
         "os": "*",
         "data": "websocket.insecure.ports=9192,9293,9394,9495"
     },
@@ -156,7 +156,7 @@
         "args": "/S /v/qn"
     },
     {
-        "description": "[POLICY] ARRAY: URL for LNA at 'install'",
+        "description": "[POLICY] ARRAY: Chromium URL for LNA at 'install'",
         "type": "policy",
         "phase": "install",
         "os": "*",
@@ -166,7 +166,7 @@
         "data": "[*.]qz.io"
     },
     {
-        "description": "[POLICY] ARRAY: URI for qz:launch at 'install'",
+        "description": "[POLICY] ARRAY: Chromium URI for qz:launch at 'install'",
         "type": "policy",
         "phase": "install",
         "os": "*",
@@ -176,7 +176,7 @@
         "data": "[\"qz://*\"]"
     },
     {
-        "description": "[POLICY] ARRAY: URI for qz:launch at 'install'",
+        "description": "[POLICY] ARRAY: Chromium URI for qz:launch at 'install'",
         "type": "policy",
         "phase": "install",
         "os": "*",
@@ -186,7 +186,16 @@
         "data": "qz://*"
     },
     {
-        "description": "[POLICY] MAP: URI for qz:launch at 'certgen'",
+        "description": "[POLICY] VALUE: Chromium toggle private browsing at 'install'",
+        "type": "policy",
+        "phase": "install",
+        "os": "*",
+        "app": "chromium",
+        "name": "IncognitoModeAvailability",
+        "data": false
+    },
+    {
+        "description": "[POLICY] MAP: Firefox root certs at 'certgen'",
         "type": "policy",
         "os": "windows|mac",
         "app": "firefox",
@@ -195,7 +204,7 @@
         "data": "{\"ImportEnterpriseRoots\": true }"
     },
     {
-        "description": "[POLICY] URI for qz:launch at 'certgen'",
+        "description": "[POLICY] MAP: Firefox specific cert at 'certgen'",
         "type": "policy",
         "os": "linux",
         "app": "firefox",

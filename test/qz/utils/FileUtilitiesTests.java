@@ -17,7 +17,7 @@ public class FileUtilitiesTests {
         File tempFile = File.createTempFile("configured-asset-", ".ini");
         FileUtilities.configureAssetToFile(
                 this.getClass(),
-                "assets/configurable-asset.ini.in",
+                "resources/configurable-asset.ini.in",
                 new HashMap<>(Map.of("%SAMPLE_DATA%", "7890")),
                 tempFile
         );

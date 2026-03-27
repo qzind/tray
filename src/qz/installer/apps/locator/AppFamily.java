@@ -1,11 +1,12 @@
 package qz.installer.apps.locator;
 
+import qz.build.provision.params.EnumParser;
 import qz.common.Sluggable;
 
 import java.util.Arrays;
 import java.util.Locale;
 
-public enum AppFamily {
+public enum AppFamily implements Sluggable{
     // Tor Browser intentionally excluded; Tor's proxy blocks localhost connections
     FIREFOX(
             new AppVariant("Mozilla", "Mozilla Firefox", "org.mozilla.firefox"),
@@ -39,6 +40,15 @@ public enum AppFamily {
             }
         }
         return null;
+    }
+
+    public static AppFamily parse(String value, AppFamily fallback) {
+        return EnumParser.parse(AppFamily.class, value, fallback);
+    }
+
+    @Override
+    public String slug() {
+        return Sluggable.slugOf(this);
     }
 
     public static class AppVariant {

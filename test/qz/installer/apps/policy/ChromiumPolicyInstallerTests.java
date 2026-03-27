@@ -17,7 +17,7 @@ public class ChromiumPolicyInstallerTests {
 
     static {
         chromiumTests.add(new Object[]{ARRAY, "URLAllowlist", new Object[] {String.format("%s://*", Constants.DATA_DIR)}});
-        chromiumTests.add(new Object[]{VALUE, "LocalNetworkAccessAllowedForUrls", "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL)});
+        chromiumTests.add(new Object[]{ARRAY, "LocalNetworkAccessAllowedForUrls", "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL)});
     }
 
     @DataProvider(name = "chromiumPolicyTests")

@@ -3,6 +3,7 @@ package qz.installer.apps.policy;
 import com.sun.jna.platform.win32.WinReg;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.build.provision.params.EnumParser;
 import qz.installer.Installer;
 import qz.installer.apps.locator.AppFamily;
 import qz.utils.WindowsUtilities;
@@ -34,7 +35,14 @@ public class PolicyState {
     public enum Type {
         VALUE,
         ARRAY,
-        MAP
+        MAP;
+
+        public static Type parse(String name, Type fallback) {
+            if(name.equalsIgnoreCase("plain")) {
+                return VALUE;
+            }
+            return EnumParser.parse(Type.class, name, fallback);
+        }
     }
 
     public enum Status {

@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.build.provision.params.Os;
 import qz.installer.Installer;
+import qz.installer.apps.exception.UnsupportedPolicyException;
 import qz.installer.apps.locator.AppFamily;
 import qz.installer.apps.policy.installer.LinuxPolicyInstaller;
 import qz.installer.apps.policy.installer.MacPolicyInstaller;

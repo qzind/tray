@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
 import org.testng.SkipException;
 import qz.installer.Installer;
+import qz.installer.apps.exception.UnsupportedPolicyException;
 import qz.installer.apps.locator.AppFamily;
 import qz.utils.SystemUtilities;
 

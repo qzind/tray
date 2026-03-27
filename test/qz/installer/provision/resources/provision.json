@@ -156,27 +156,51 @@
         "args": "/S /v/qn"
     },
     {
-      "description": "[POLICY] URL for LNA at 'install'",
-      "type": "policy",
-      "os": "*",
-      "name": "LocalNetworkAccessAllowedForUrls",
-      "format": "indexed",
-      "value": "[*.]qz.io"
+        "description": "[POLICY] ARRAY: URL for LNA at 'install'",
+        "type": "policy",
+        "phase": "install",
+        "os": "*",
+        "app": "chromium",
+        "name": "LocalNetworkAccessAllowedForUrls",
+        "format": "array",
+        "data": "[*.]qz.io"
     },
     {
-      "description": "[POLICY] URI for qz:launch at 'install'",
-      "type": "policy",
-      "os": "*",
-      "name": "URLAllowList",
-      "format": "indexed",
-      "value": "qz://*"
+        "description": "[POLICY] ARRAY: URI for qz:launch at 'install'",
+        "type": "policy",
+        "phase": "install",
+        "os": "*",
+        "app": "chromium",
+        "name": "URLAllowList",
+        "format": "array",
+        "data": "[\"qz://*\"]"
     },
     {
-      "description": "[POLICY] URI for qz:launch at 'install'",
-      "type": "policy",
-      "os": "*",
-      "name": "AutoLaunchProtocolsFromOrigins",
-      "format": "json",
-      "value": "[{\"allowed_origins\": [\"*\"], \"protocol\": \"qz\"}]"
+        "description": "[POLICY] ARRAY: URI for qz:launch at 'install'",
+        "type": "policy",
+        "phase": "install",
+        "os": "*",
+        "app": "chromium",
+        "name": "URLAllowList",
+        "format": "array",
+        "data": "qz://*"
+    },
+    {
+        "description": "[POLICY] MAP: URI for qz:launch at 'certgen'",
+        "type": "policy",
+        "os": "windows|mac",
+        "app": "firefox",
+        "name": "Certificates",
+        "format": "map",
+        "data": "{\"ImportEnterpriseRoots\": true }"
+    },
+    {
+        "description": "[POLICY] URI for qz:launch at 'certgen'",
+        "type": "policy",
+        "os": "linux",
+        "app": "firefox",
+        "name": "Certificates",
+        "format": "map",
+        "data": "{\"Install\": [ \"provision-testing.crt\"] }"
     }
 ]

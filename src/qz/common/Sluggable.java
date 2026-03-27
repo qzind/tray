@@ -8,7 +8,7 @@ public interface Sluggable {
     String slug();
 
     static String slugOf(Enum<?> e) {
-        return slugOf(e.name());
+        return slugOf(e == null ? null : e.name());
     }
     static String slugOf(String unslugged) {
         if(unslugged == null || unslugged.isBlank()) return null;

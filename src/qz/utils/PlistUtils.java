@@ -314,7 +314,8 @@ public class PlistUtils {
     }
 
     private static boolean defaultsWriteArrayAdd(Path plist, String entry, Object value) {
-        return defaultsCliPut(plist, PlistUtils.PlistOperation.WRITE, entry, PlistUtils.PlistEntryType.ARRAY, value);
+        // wrap in double quotes to prevent bugs with values such as "[*.]qz.io"
+        return defaultsCliPut(plist, PlistUtils.PlistOperation.WRITE, entry, PlistUtils.PlistEntryType.ARRAY, String.format("\"%s\"", value));
     }
 
     @SuppressWarnings("unused")

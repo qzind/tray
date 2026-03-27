@@ -14,11 +14,9 @@ import qz.build.provision.params.Type;
 import qz.common.Constants;
 import qz.common.PropertyHelper;
 import qz.installer.apps.policy.PolicyInstaller;
-import qz.installer.certificate.CertificateManager;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;

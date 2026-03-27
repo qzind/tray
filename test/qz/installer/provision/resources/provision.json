@@ -149,7 +149,7 @@
         "path": "net.properties"
     },
     {
-        "description": "[SOFTWARE] at 'install'",
+        "description": "[SOFTWARE ERROR EXPECTED] file missing at 'install'",
         "type": "software",
         "os": "windows",
         "data": "DCDSetup1.5.0.17.exe",

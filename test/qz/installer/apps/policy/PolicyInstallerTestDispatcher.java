@@ -111,7 +111,7 @@ public class PolicyInstallerTestDispatcher {
         assertState(state);
 
         Object returnedValue = policyInstaller.getValue(state.reset());
-        assetEqual(returnedValue, value);
+        assertEqual(returnedValue, value);
         return state;
     }
 
@@ -122,7 +122,7 @@ public class PolicyInstallerTestDispatcher {
         assertState(state);
 
         Object returnedValue = policyInstaller.getValue(state.reset());
-        assetEqual(returnedValue, null);
+        assertEqual(returnedValue, null);
         return state;
     }
     
@@ -193,13 +193,7 @@ public class PolicyInstallerTestDispatcher {
                 //todo
                 continue;
             }
-            if (!outerValue.equals(entry.getValue())){
-                log.warn("Mismatch found for entry:{}. Expected:{}, Returned:{}",
-                         entry.getKey(),
-                         entry.getValue(),
-                         outerValue);
-                return false;
-            }
+            assertEqual(outerValue, entry.getValue());
         }
         return true;
     }
@@ -216,7 +210,7 @@ public class PolicyInstallerTestDispatcher {
         return true;
     }
 
-    private static void assetEqual(Object returnedValue, Object value) {
+    private static void assertEqual(Object returnedValue, Object value) {
         if(SystemUtilities.isWindows()) {
             // Windows registry is incapable of returning a boolean
             if(value instanceof Boolean && returnedValue instanceof Integer) {

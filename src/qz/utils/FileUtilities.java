@@ -1020,7 +1020,8 @@ public class FileUtilities {
      */
     public static boolean mkdirsRecursive(File file, boolean r, boolean w, boolean x, boolean ownerOnly) {
         File parent = file;
-        while((parent = parent.getParentFile()) != null) {
+        while((parent = parent.getParentFile()) != null
+                && parent.getParentFile().getParentFile() != null) { // Don't traverse into /home, /Users, /root, etc
             if (!parent.exists()) {
                 if (!parent.mkdirs()) {
                     log.warn("Unable to create directory '{}'", parent);

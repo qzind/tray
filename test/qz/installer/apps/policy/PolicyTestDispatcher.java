@@ -60,19 +60,19 @@ public abstract class PolicyTestDispatcher {
     }
 
     private static PolicyState testAppsPolicyArrayInstall(AppFamily.AppVariant appVariant, String name, Object value) {
-        Object[] values = (Object[])value;
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
         PolicyState state = policyInstaller.install(ARRAY, name, value);
         assertState(state);
 
         // Intentionally add the first element a second time
-        state = policyInstaller.install(ARRAY, name, values[0]);
+        Object[] array = (Object[])value;
+        state = policyInstaller.install(ARRAY, name, array[0]);
         assertState(state);
 
         List<Object> returnedList = Arrays.asList(policyInstaller.getEntries(state.reset()));
 
         // Verify there is one, and only one, match.
-        for (Object element: values) {
+        for (Object element: array) {
             int firstIndex = returnedList.indexOf(element);
             if (firstIndex == -1) Assert.fail("No match found for value: " + element);
             List<Object> sublist = returnedList.subList(firstIndex + 1, returnedList.size());
@@ -82,20 +82,20 @@ public abstract class PolicyTestDispatcher {
     }
 
     private static PolicyState testAppsPolicyArrayUninstall(AppFamily.AppVariant appVariant, String name, Object value) {
-        Object[] values = (Object[])value;
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
         PolicyState state;
         List<Object> returnedList;
 
         // If there are 2 or more items, we can check for over-deletion
-        if (values.length > 1) {
+        Object[] array = (Object[])value;
+        if (array.length > 1) {
             // Remove the first element
-            state = policyInstaller.uninstall(ARRAY, name, values[0]);
+            state = policyInstaller.uninstall(ARRAY, name, array[0]);
             assertState(state);
             returnedList = Arrays.asList(policyInstaller.getEntries(state.reset()));
 
             // Verify the second element wasn't erroneously deleted
-            Assert.assertTrue(returnedList.contains(values[1]));
+            Assert.assertTrue(returnedList.contains(array[1]));
         }
 
         // Remove the remaining items, including the value we already removed again
@@ -104,7 +104,7 @@ public abstract class PolicyTestDispatcher {
         returnedList = Arrays.asList(policyInstaller.getEntries(state.reset()));
 
         // Verify none of our values remain in the array
-        for (Object element: values) {
+        for (Object element: array) {
             int firstIndex = returnedList.indexOf(element);
             if (firstIndex != -1) Assert.fail("Failed to remove element: " + element);
         }

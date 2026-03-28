@@ -17,6 +17,7 @@ import qz.installer.apps.policy.PolicyInstaller;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
+import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -83,6 +84,7 @@ public class ProvisionerInstallerTests {
 
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     public static void createPropertiesFile(Path path) {
+        FileUtilities.mkdirsRecursive(path.toFile(), true, true, false, SystemUtilities.isAdmin());
         PropertyHelper helper = new PropertyHelper(path.toFile());
         helper.setProperty("ProvisionDummyEntry", "test value");
         if(!helper.save()) {

@@ -43,10 +43,9 @@ public class ExhaustivePolicyInstallerTests extends PolicyTestDispatcher {
         if (SystemUtilities.isLinux()) {
             // arrays in maps are only supported on linux
             Object[][] linuxOnly = new Object[][] {
-                    { MAP, "testMapArrayString", new Object[] { "firstElement", "secondElement"} }, // map from string array
-                    { MAP, "testMapArrayInt", new Object[] { 111, 222 } }, // map from int array
-                    { MAP, "testMapArrayBool", new Object[] { true, false } }, // map from boolean array
-                    //{ MAP, "thirdKey", new Object[] {"element 1", "element 2"} }
+                    { MAP, "testMapArrayString", new Object[] {"StringArray", new Object[] {"firstElement", "secondElement"}}},
+                    { MAP, "testMapArrayString", new Object[] {"IntArray", new Object[] {111, 222}}},
+                    { MAP, "testMapArrayString", new Object[] {"BoolArray", new Object[] {true, false}}},
             };
             allTests.addAll(List.of(linuxOnly));
         }

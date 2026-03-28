@@ -80,7 +80,7 @@
         "os": "linux|mac",
         "arch": "aarch64",
         "phase": "install",
-        "data": "script2"
+        "data": "script3.sh"
     },
     {
         "description": "[CERTIFICATE] at 'startup' (allowed.dat)",

@@ -60,9 +60,9 @@ public abstract class PolicyTestDispatcher {
     }
 
     private static PolicyState testAppsPolicyArrayInstall(AppFamily.AppVariant appVariant, String name, Object value) {
-        Object[] values = value instanceof Object[] ? (Object[])value : new Object[] { value };
+        Object[] values = (Object[])value;
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
-        PolicyState state = policyInstaller.install(ARRAY, name, values);
+        PolicyState state = policyInstaller.install(ARRAY, name, value);
         assertState(state);
 
         // Intentionally add the first element a second time
@@ -82,7 +82,7 @@ public abstract class PolicyTestDispatcher {
     }
 
     private static PolicyState testAppsPolicyArrayUninstall(AppFamily.AppVariant appVariant, String name, Object value) {
-        Object[] values = value instanceof Object[] ? (Object[])value : new Object[] { value };
+        Object[] values = (Object[])value;
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
         PolicyState state;
         List<Object> returnedList;
@@ -99,7 +99,7 @@ public abstract class PolicyTestDispatcher {
         }
 
         // Remove the remaining items, including the value we already removed again
-        state = policyInstaller.uninstall(ARRAY, name, values);
+        state = policyInstaller.uninstall(ARRAY, name, value);
         assertState(state);
         returnedList = Arrays.asList(policyInstaller.getEntries(state.reset()));
 

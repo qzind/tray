@@ -112,6 +112,15 @@ public class PolicyInstaller {
         this.locator = constructPolicyLocator();
     }
 
+    /**
+     * If an Object[] is received through this Object overload, cast it to an Object[] before
+     * forwarding to the varargs overload. All non-array values pass along unchanged.
+     */
+    public PolicyState install(PolicyState.Type type, String name, Object value) {
+        Object[] unboxed = value instanceof Object[] ? (Object[])value: new Object[]{value};
+        return install(type, name, unboxed);
+    }
+
     public PolicyState install(PolicyState.Type type, String name, Object ... values) {
         PolicyState state = createPolicyState(Phase.INSTALL, type, name);
 
@@ -134,6 +143,15 @@ public class PolicyInstaller {
                 }
                 return primitive.putValue(state, values[0]).log();
         }
+    }
+
+    /**
+     * If an Object[] is received through this Object overload, cast it to an Object[] before
+     * forwarding to the varargs overload. All non-array values pass along unchanged.
+     */
+    public PolicyState uninstall(PolicyState.Type type, String name, Object value) {
+        Object[] unboxed = value instanceof Object[] ? (Object[])value: new Object[]{value};
+        return uninstall(type, name, unboxed);
     }
 
     public PolicyState uninstall(PolicyState.Type type, String name, Object ... values) {

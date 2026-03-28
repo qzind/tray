@@ -23,13 +23,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ProvisionerInstallerTests {
-    private static final Logger log = LogManager.getLogger(ProvisionerInstallerTests.class);
+public class ProvisionInstallerTests {
+    private static final Logger log = LogManager.getLogger(ProvisionInstallerTests.class);
 
     @DataProvider(name = "steps")
     public Iterator<Object[]> steps() {
-        try(InputStream in = ProvisionerInstallerTests.class.getResourceAsStream("resources/" + Constants.PROVISION_FILE)) {
-            ProvisionInstaller provisionInstaller = new ProvisionInstaller(ProvisionerInstallerTests.class, in);
+        try(InputStream in = ProvisionInstallerTests.class.getResourceAsStream("resources/" + Constants.PROVISION_FILE)) {
+            ProvisionInstaller provisionInstaller = new ProvisionInstaller(ProvisionInstallerTests.class, in);
             List<Step> steps = provisionInstaller.getSteps();
             List<Step> clones = new ArrayList<>();
 

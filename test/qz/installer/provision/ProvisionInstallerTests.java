@@ -72,7 +72,7 @@ public class ProvisionInstallerTests {
         boolean expected = !step.getDescription().contains("ERROR EXPECTED") && // description says so
                 Os.matchesHost(step.getOs()) &&  // wrong os
                 step.getType() != Type.CONF && // depends on mutable jvm runtime
-                !(step.getType() == Type.POLICY && !SystemUtilities.isAdmin() && SystemUtilities.isLinux());
+                !(step.getType() == Type.POLICY && !SystemUtilities.isAdmin() && SystemUtilities.isLinux());  // policies require root on Linux
 
         boolean actual;
         try {

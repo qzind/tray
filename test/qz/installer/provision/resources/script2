@@ -1,5 +1,3 @@
-#!/bin/bash
-
 shell=$(ps -p $$ -oargs=|awk '{print $1}')
 date=$(date "+%F %T")
 script=$(basename "$0")

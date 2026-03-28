@@ -2,15 +2,12 @@ package qz.installer.apps.policy;
 
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import qz.common.Constants;
 import qz.installer.apps.locator.AppFamily;
 import qz.utils.SystemUtilities;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
-import static qz.common.Constants.ABOUT_URL;
 import static qz.installer.apps.policy.PolicyState.Type.*;
 
 public class FirefoxPolicyInstallerTests extends PolicyTestDispatcher {

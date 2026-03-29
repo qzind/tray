@@ -332,9 +332,13 @@ public abstract class Installer {
                 }
                 installer.install(caCert);
 
+                // Install Chrome URLAllowlist TODO: Remove @2.3.0 per #1277
+                PolicyInstaller policyInstaller = new PolicyInstaller(scope, CHROMIUM.getVariants()[0]); // "Chrome" proper
+                policyInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", DATA_DIR + "://*");
+
                 // Install Firefox Certificate
                 for(AppVariant appVariant : FIREFOX.getVariants()) {
-                    PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
+                    policyInstaller = new PolicyInstaller(scope, appVariant);
                     switch(SystemUtilities.getOs()) {
                         case WINDOWS:
                         case MAC:
@@ -383,8 +387,13 @@ public abstract class Installer {
         // System certs
         NativeCertificateInstaller instance = NativeCertificateInstaller.getInstance(scope);
         instance.remove(instance.find());
-        // Firefox certs
-        // Install Firefox Certificate
+
+        // Remove Chrome URLAllowlist TODO: Remove @2.3.0 per #1277
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, CHROMIUM.getVariants()[0]); // "Chrome" proper
+        policyInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", DATA_DIR + "://*");
+        policyInstaller.uninstall(PolicyState.Type.ARRAY, "URLWhitelist", DATA_DIR + "://*");
+
+        // Remove Firefox Certificate
         for(AppVariant appVariant : FIREFOX.getVariants()) {
             switch(SystemUtilities.getOs()) {
                 case WINDOWS:

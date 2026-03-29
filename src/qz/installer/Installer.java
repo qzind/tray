@@ -33,6 +33,7 @@ import java.util.*;
 
 import static qz.common.Constants.*;
 import static qz.installer.apps.locator.AppFamily.*;
+import static qz.installer.apps.policy.PolicyState.Type.MAP;
 import static qz.installer.certificate.KeyPairWrapper.Type.CA;
 import static qz.utils.FileUtilities.*;
 
@@ -343,6 +344,11 @@ public abstract class Installer {
                         case WINDOWS:
                         case MAC:
                             // Windows and macOS set policy flag
+                            Map<String, Object> returnMap = policyInstaller.readMap(MAP, "Certificates");
+                            if(returnMap.getOrDefault("ImportEnterpriseRoots", true).equals(false)) {
+                                log.error("Cannot install '{}' policy 'ImportEnterpriseRoots' to 'true', it's already set to 'false'", appVariant);
+                                continue; // appVariant
+                            }
                             policyInstaller.install(PolicyState.Type.MAP, "Certificates", "ImportEnterpriseRoots", true);
                             break;
                         case LINUX:

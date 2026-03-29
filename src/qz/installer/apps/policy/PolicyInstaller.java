@@ -22,7 +22,8 @@ import java.util.*;
 public class PolicyInstaller {
     public enum Phase implements Sluggable {
         INSTALL,
-        UNINSTALL;
+        UNINSTALL,
+        QUERY;
         public String slug() {
             return Sluggable.slugOf(this);
         }
@@ -207,6 +208,20 @@ public class PolicyInstaller {
             return new Object[] { value };
         }
         return values;
+    }
+
+    public Map<String, Object> readMap(PolicyState.Type type, String name) {
+        return getMap(createPolicyState(Phase.QUERY, type, name));
+    }
+
+    @SuppressWarnings("unused")
+    public Object readValue(PolicyState.Type type, String name) {
+        return getValue(createPolicyState(Phase.QUERY, type, name));
+    }
+
+    @SuppressWarnings("unused")
+    public Object[] readArray(PolicyState.Type type, String name) {
+        return getEntries(createPolicyState(Phase.QUERY, type, name));
     }
 
     /**

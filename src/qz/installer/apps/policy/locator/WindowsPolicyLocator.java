@@ -15,7 +15,7 @@ public class WindowsPolicyLocator implements PolicyInstaller.PolicyLocator {
      * Calculates the registry key path.
      */
     @Override
-    public Path getLocation(Installer.PrivilegeLevel unused, AppFamily.AppVariant appVariant) {
+    public Path getLocation(Installer.PrivilegeLevel unused, AppFamily.AppVariant appVariant, AppType ignore) {
         return Paths.get(String.format(MANAGED_POLICY_PATH_PATTERN, appVariant.getVendor(), appVariant.getName(true)));
     }
 }

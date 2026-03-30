@@ -15,7 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.build.provision.params.Phase;
-import qz.installer.apps.firefox.CertificateSideLoader;
+import qz.installer.apps.firefox.FirefoxCertificateInstaller;
 import qz.installer.apps.locator.ResolvedApp;
 import qz.installer.apps.locator.AppLocator;
 import qz.installer.apps.policy.PolicyState;
@@ -33,7 +33,6 @@ import java.util.*;
 
 import static qz.common.Constants.*;
 import static qz.installer.apps.locator.AppFamily.*;
-import static qz.installer.apps.policy.PolicyState.Type.MAP;
 import static qz.installer.certificate.KeyPairWrapper.Type.CA;
 import static qz.utils.FileUtilities.*;
 
@@ -337,33 +336,8 @@ public abstract class Installer {
                 PolicyInstaller policyInstaller = new PolicyInstaller(scope, CHROMIUM.getVariants()[0]); // "Chrome" proper
                 policyInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", DATA_DIR + "://*");
 
-                // Install Firefox Certificate
-                for(AppVariant appVariant : FIREFOX.getVariants()) {
-                    policyInstaller = new PolicyInstaller(scope, appVariant);
-                    switch(SystemUtilities.getOs()) {
-                        case WINDOWS:
-                        case MAC:
-                            // Windows and macOS set policy flag
-                            Map<String, Object> returnMap = policyInstaller.readMap(MAP, "Certificates");
-                            if(returnMap.getOrDefault("ImportEnterpriseRoots", true).equals(false)) {
-                                log.error("Cannot install '{}' policy 'ImportEnterpriseRoots' to 'true', it's already set to 'false'", appVariant);
-                                continue; // appVariant
-                            }
-                            policyInstaller.install(PolicyState.Type.MAP, "Certificates", "ImportEnterpriseRoots", true);
-                            break;
-                        case LINUX:
-                        default:
-                            // remove old value
-                            policyInstaller.uninstall(PolicyState.Type.MAP, "Certificates", "Install", new Object[] { PROPS_FILE + ".crt" });
-
-                            // Linux needs cert added explicitly
-                            CertificateSideLoader sideLoader = new CertificateSideLoader(scope, appVariant);
-                            File certFile = sideLoader.add(caCert);
-                            if(certFile != null) {
-                                policyInstaller.install(PolicyState.Type.MAP, "Certificates", "Install", new Object[] { certFile.toString() });
-                            }
-                    }
-                }
+                // Install Firefox certificate
+                new FirefoxCertificateInstaller(scope, caCert).install();
 
                 // Find running Firefox instances
                 HashSet<ResolvedApp> uniqueApps = new HashSet<>();
@@ -399,22 +373,9 @@ public abstract class Installer {
         policyInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", DATA_DIR + "://*");
         policyInstaller.uninstall(PolicyState.Type.ARRAY, "URLWhitelist", DATA_DIR + "://*");
 
-        // Remove Firefox Certificate
-        for(AppVariant appVariant : FIREFOX.getVariants()) {
-            switch(SystemUtilities.getOs()) {
-                case WINDOWS:
-                case MAC:
-                    // Leave behind "ImportEnterpriseRoots"
-                    break;
-                case LINUX:
-                default:
-                    // Delete certs we've installed
-                    File certFile = new CertificateSideLoader(scope, appVariant).remove();
-                    if(certFile != null) {
-                        new PolicyInstaller(scope, appVariant).uninstall(PolicyState.Type.MAP, "Certificates", "Install", new Object[] {certFile.toString() });
-                    }
-            }
-        }
+        // Uninstall Firefox certificate
+        new FirefoxCertificateInstaller(scope, null).uninstall();
+
         return this;
     }
 

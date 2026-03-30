@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 
 import static qz.installer.Installer.PrivilegeLevel.*;
 import static qz.installer.apps.policy.PolicyState.Type.*;
+import static qz.installer.apps.policy.PolicyInstaller.PolicyLocator.*;
 
 public abstract class PolicyTestDispatcher {
     private static final Logger log = LogManager.getLogger(PolicyTestDispatcher.class);
@@ -22,9 +23,11 @@ public abstract class PolicyTestDispatcher {
     static Object[][] addAppVariants(List<Object[]> tests, AppFamily.AppVariant ... appVariants) {
         List<Object[]> retMatrix = new ArrayList<>();
         Arrays.stream(appVariants).forEach(appVariant -> {
-            for(Object[] testRow : tests) {
-                retMatrix.add(new Object[] {appVariant, testRow[0], testRow[1], testRow[2]});
-            }
+            // prepend appVariant
+            tests.stream().map(testRow -> new ArrayList<>(List.of(testRow))).forEach(variantRow -> {
+                variantRow.add(0, appVariant);
+                retMatrix.add(variantRow.toArray(new Object[0]));
+            });
         });
         return retMatrix.toArray(new Object[0][]);
     }
@@ -35,32 +38,42 @@ public abstract class PolicyTestDispatcher {
 
     @SuppressWarnings("UnusedReturnValue")
     static PolicyState testAppsPolicyInstall(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
+        return testAppsPolicyInstall(appVariant, AppType.DEFAULT, type, name, value);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    static PolicyState testAppsPolicyInstall(AppFamily.AppVariant appVariant, AppType appType, PolicyState.Type type, String name, Object value) {
         switch(type) {
             case VALUE:
-                return testAppsPolicyValueInstall(appVariant, name, value);
+                return testAppsPolicyValueInstall(appVariant, appType, name, value);
             case ARRAY:
-                return testAppsPolicyArrayInstall(appVariant, name, value);
+                return testAppsPolicyArrayInstall(appVariant, appType, name, value);
             case MAP:
-                return testAppsPolicyMapInstall(appVariant, name, value);
+                return testAppsPolicyMapInstall(appVariant, appType, name, value);
         }
         return null;
     }
 
     @SuppressWarnings("UnusedReturnValue")
     static PolicyState testAppsPolicyUninstall(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
+        return testAppsPolicyInstall(appVariant, AppType.DEFAULT, type, name, value);
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    static PolicyState testAppsPolicyUninstall(AppFamily.AppVariant appVariant, AppType appType, PolicyState.Type type, String name, Object value) {
         switch(type) {
             case VALUE:
-                return testAppsPolicyValueUninstall(appVariant, name, value);
+                return testAppsPolicyValueUninstall(appVariant, appType, name, value);
             case ARRAY:
-                return testAppsPolicyArrayUninstall(appVariant, name, value);
+                return testAppsPolicyArrayUninstall(appVariant, appType, name, value);
             case MAP:
-                return testAppsPolicyMapUninstall(appVariant, name, value);
+                return testAppsPolicyMapUninstall(appVariant, appType, name, value);
         }
         return null;
     }
 
-    private static PolicyState testAppsPolicyArrayInstall(AppFamily.AppVariant appVariant, String name, Object value) {
-        PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
+    private static PolicyState testAppsPolicyArrayInstall(AppFamily.AppVariant appVariant, AppType appType, String name, Object value) {
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant, appType);
         PolicyState state = policyInstaller.install(ARRAY, name, value);
         assertState(state);
 
@@ -81,8 +94,8 @@ public abstract class PolicyTestDispatcher {
         return state;
     }
 
-    private static PolicyState testAppsPolicyArrayUninstall(AppFamily.AppVariant appVariant, String name, Object value) {
-        PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
+    private static PolicyState testAppsPolicyArrayUninstall(AppFamily.AppVariant appVariant, AppType appType, String name, Object value) {
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant, appType);
         PolicyState state;
         List<Object> returnedList;
 
@@ -111,8 +124,8 @@ public abstract class PolicyTestDispatcher {
         return state;
     }
 
-    private static PolicyState testAppsPolicyValueInstall(AppFamily.AppVariant appVariant, String name, Object value) {
-        PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
+    private static PolicyState testAppsPolicyValueInstall(AppFamily.AppVariant appVariant, AppType appType, String name, Object value) {
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant, appType);
 
         PolicyState state = policyInstaller.install(VALUE, name, value);
         assertState(state);
@@ -122,8 +135,8 @@ public abstract class PolicyTestDispatcher {
         return state;
     }
 
-    private static PolicyState testAppsPolicyValueUninstall(AppFamily.AppVariant appVariant, String name, Object value) {
-        PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
+    private static PolicyState testAppsPolicyValueUninstall(AppFamily.AppVariant appVariant, AppType appType, String name, Object value) {
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant, appType);
 
         PolicyState state = policyInstaller.uninstall(VALUE, name, value);
         assertState(state);
@@ -134,8 +147,8 @@ public abstract class PolicyTestDispatcher {
     }
     
     @SuppressWarnings("unchecked")
-    private static PolicyState testAppsPolicyMapInstall(AppFamily.AppVariant appVariant, String name, Object value) {
-        PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
+    private static PolicyState testAppsPolicyMapInstall(AppFamily.AppVariant appVariant, AppType appType, String name, Object value) {
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant, appType);
         PolicyState state;
 
         HashMap<String, Object> intendedMap = new HashMap<>();
@@ -157,8 +170,8 @@ public abstract class PolicyTestDispatcher {
     }
 
     @SuppressWarnings("unchecked")
-    private static PolicyState testAppsPolicyMapUninstall(AppFamily.AppVariant appVariant, String name, Object value) {
-        PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
+    private static PolicyState testAppsPolicyMapUninstall(AppFamily.AppVariant appVariant, AppType appType, String name, Object value) {
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant, appType);
         PolicyState state;
 
         HashMap<String, Object> intendedMap = new HashMap<>();

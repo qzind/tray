@@ -88,25 +88,39 @@ public class PolicyInstaller {
     }
 
     public interface PolicyLocator {
-        Path getLocation(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant);
+        enum AppType {
+            DEFAULT, // used by all platforms
+            FLATPAK, // linux only
+            APPIMAGE, // linux only
+            SNAP // linux only
+        }
+
+        Path getLocation(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant, AppType appType);
     }
 
     final private static Logger log = LogManager.getLogger(PolicyInstaller.class);
 
     final private Os os;
     final private Installer.PrivilegeLevel scope;
+    final private PolicyLocator.AppType appType;
     final private AppFamily.AppVariant appVariant;
 
     final private PrimitivePolicyInstaller primitive;
     final private PolicyLocator locator;
 
-    public PolicyInstaller(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant) {
-        this(SystemUtilities.getOs(), scope, appVariant);
+
+    public PolicyInstaller(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant, PolicyLocator.AppType appType) {
+        this(SystemUtilities.getOs(), scope, appVariant, appType);
     }
 
-    public PolicyInstaller(Os os, Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant) {
+    public PolicyInstaller(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant) {
+        this(SystemUtilities.getOs(), scope, appVariant, PolicyLocator.AppType.DEFAULT);
+    }
+
+    public PolicyInstaller(Os os, Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant, PolicyLocator.AppType appType) {
         this.os = os;
         this.scope = scope;
+        this.appType = appType;
         this.appVariant = appVariant;
 
         this.primitive = constructPrimitiveInstaller();
@@ -271,7 +285,7 @@ public class PolicyInstaller {
                     WinReg.HKEY_LOCAL_MACHINE :
                     WinReg.HKEY_CURRENT_USER;
         }
-        return new PolicyState(scope, appVariant, phase, type, name, locator.getLocation(scope, appVariant), hkey);
+        return new PolicyState(scope, appVariant, phase, type, name, locator.getLocation(scope, appVariant, appType), hkey);
     }
 
     private boolean isProhibited() {

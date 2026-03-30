@@ -85,7 +85,7 @@ public class ProvisionInstallerTests {
 
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     public static void createPropertiesFile(Path path) {
-        FileUtilities.mkdirsRecursive(path.toFile(), true, true, false, !SystemUtilities.isAdmin());
+        FileUtilities.mkdirsRecursive(path.toFile(), true, true, true, !SystemUtilities.isAdmin());
         PropertyHelper helper = new PropertyHelper(path.toFile());
         helper.setProperty("ProvisionDummyEntry", "test value");
         if(!helper.save()) {

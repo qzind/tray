@@ -123,7 +123,7 @@ public class FirefoxCertificateInstaller {
             try {
                 CertificateManager.writeCert(caCart, certFile);
                 // Assume the file should be readable too
-                if (!certFile.setReadable(isOwnerOnly(scope))) {
+                if (!certFile.setReadable(true, isOwnerOnly(scope))) {
                     log.warn("Unable to set readable '{}'", certFile);
                 }
                 return certFile;

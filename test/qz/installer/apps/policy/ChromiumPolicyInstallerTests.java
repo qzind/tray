@@ -19,8 +19,7 @@ public class ChromiumPolicyInstallerTests extends PolicyTestDispatcher {
                 { ARRAY, "LocalNetworkAccessAllowedForUrls", new Object[] { "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL) } },
                 { VALUE, "IncognitoModeAvailability", false }
         };
-        Object[][] tests2 = addAppVariants(List.of(tests), AppFamily.CHROMIUM);
-        return tests2;
+        return addAppVariants(List.of(tests), AppFamily.CHROMIUM);
     }
 
     @Test(dataProvider = "chromiumPoliciesData")

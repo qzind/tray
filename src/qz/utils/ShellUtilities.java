@@ -33,7 +33,7 @@ public class ShellUtilities {
     private static boolean debugEnvp = false;
 
     // Display terminal output in console logs
-    private static boolean debugOutput = true;
+    private static boolean debugOutput = false;
 
     // Shell environment overrides.  null = don't override
     private static Map<String, String> env = new HashMap<>(System.getenv());

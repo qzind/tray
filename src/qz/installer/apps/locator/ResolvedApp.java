@@ -4,10 +4,8 @@ import com.github.zafarkhaja.semver.Version;
 
 import java.awt.*;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -120,7 +118,11 @@ public class ResolvedApp {
         try {
             if(this.getAlias().getAppFamily() == AppFamily.FIREFOX) {
                 // TODO: Replace with "/restart" page
-                Installer.getInstance().spawn(this.getExePath().toString(), "-private", "about:restartrequired");
+                ArrayList<String> command = new ArrayList<>(List.of(getExeCommand()));
+                command.add("-private");
+                command.add("about:restartrequired");
+
+                Installer.getInstance().spawn(command);
                 return true;
             }
             throw new UnsupportedOperationException(String.format("Restart pages are not yet supported for '%s'", this));

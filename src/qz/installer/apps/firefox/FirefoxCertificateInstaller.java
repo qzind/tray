@@ -183,8 +183,9 @@ public class FirefoxCertificateInstaller {
         switch(appFamily) {
             case FIREFOX:
                 if (SystemUtilities.isLinux()) {
-                    // Firefox on Linux has flatpak policy support too
-                    appTypes.add(AppType.FLATPAK);
+                    // Firefox on Linux has flatpak policy support too, but certs appear broken
+                    // See https://github.com/mozilla/policy-templates/discussions/1301
+                    // appTypes.add(AppType.FLATPAK);
                 }
             case CHROMIUM:
             default:

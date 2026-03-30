@@ -12,7 +12,7 @@ public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
     final static String CHROMIUM_POLICY_PATTERN = "%s/policies/managed/%s.json";
 
     final static String DEFAULT_FIREFOX_POLICY_PATTERN = "%s/policies/policies.json";
-    final static String FLATPAK_FIREFOX_POLICY_PATTERN = "%s/current/active/files/etc/policies/policies.json";
+    final static String FLATPAK_FIREFOX_POLICY_PATTERN = "%s/current/active/files/etc/%s/policies/policies.json";
 
     final static Path DEFAULT_SYSTEM_PREFIX = Paths.get("/etc");
     final static Path FLATPAK_SYSTEM_PREFIX = Paths.get("/var/lib/flatpak/app");
@@ -36,7 +36,7 @@ public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
                 switch(appType) {
                     case FLATPAK:
                         // /var/lib/flatpak/app/org.mozilla.firefox/current/active/files/etc/firefox/
-                        return Paths.get(String.format(FLATPAK_FIREFOX_POLICY_PATTERN, prefix));
+                        return Paths.get(String.format(FLATPAK_FIREFOX_POLICY_PATTERN, prefix, appVariant.getSlug()));
                     case APPIMAGE: // untested
                     case SNAP:
                     case DEFAULT:

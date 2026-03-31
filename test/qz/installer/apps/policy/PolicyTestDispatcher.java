@@ -21,6 +21,8 @@ public abstract class PolicyTestDispatcher {
     private static final Logger log = LogManager.getLogger(PolicyTestDispatcher.class);
     private static final Installer.PrivilegeLevel scope = SystemUtilities.isAdmin()? SYSTEM:USER;
 
+    int testCounter = 0;
+
     static Object[][] addAppVariants(List<Object[]> tests, AppFamily.AppVariant ... appVariants) {
         List<Object[]> retMatrix = new ArrayList<>();
         Arrays.stream(appVariants).forEach(appVariant -> {
@@ -44,8 +46,6 @@ public abstract class PolicyTestDispatcher {
 
     @SuppressWarnings("UnusedReturnValue")
     static PolicyState testAppsPolicyInstall(AppFamily.AppVariant appVariant, AppType appType, PolicyState.Type type, String name, Object value) {
-        skipIf(Os.LINUX, USER);
-
         switch(type) {
             case VALUE:
                 return testAppsPolicyValueInstall(appVariant, appType, name, value);
@@ -64,8 +64,6 @@ public abstract class PolicyTestDispatcher {
 
     @SuppressWarnings("UnusedReturnValue,SameParameterValue")
     static PolicyState testAppsPolicyUninstall(AppFamily.AppVariant appVariant, AppType appType, PolicyState.Type type, String name, Object value) {
-        skipIf(Os.LINUX, USER);
-
         switch(type) {
             case VALUE:
                 return testAppsPolicyValueUninstall(appVariant, appType, name, value);
@@ -82,7 +80,7 @@ public abstract class PolicyTestDispatcher {
         PolicyState state = policyInstaller.install(ARRAY, name, value);
         assertState(state);
 
-        // Intentionally add the first element a second time
+        // Intentionally add the first element a second time (this will show a duplicate log)
         Object[] array = (Object[])value;
         state = policyInstaller.install(ARRAY, name, array[0]);
         assertState(state);
@@ -274,9 +272,8 @@ public abstract class PolicyTestDispatcher {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static void skipIf(Os os, Installer.PrivilegeLevel scope) throws SkipException {
-        if(SystemUtilities.getOs() == os && PolicyTestDispatcher.scope == scope) {
-            throw new SkipException(String.format("Skipping test for Os: '%s', PrivilegeLevel: '%s'", os, scope));
-        }
+    static void skipIf(boolean ... conditions) throws SkipException {
+        for(boolean condition : conditions) if(!condition) return;
+        throw new SkipException(String.format("Skipping test for Os: '%s', PrivilegeLevel: '%s'", SystemUtilities.getOs(), scope));
     }
 }

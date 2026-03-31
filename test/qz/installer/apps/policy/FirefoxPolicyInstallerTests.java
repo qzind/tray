@@ -9,6 +9,7 @@ import java.io.File;
 import java.util.List;
 
 import static qz.installer.apps.policy.PolicyState.Type.*;
+import static qz.installer.apps.policy.PolicyInstaller.PolicyLocator.*;
 
 public class FirefoxPolicyInstallerTests extends PolicyTestDispatcher {
     @DataProvider(name = "firefoxPoliciesData")
@@ -29,7 +30,13 @@ public class FirefoxPolicyInstallerTests extends PolicyTestDispatcher {
 
     @Test(dataProvider = "firefoxPoliciesData")
     public void testFirefoxPolicies(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
-        testAppsPolicyInstall(appVariant, type, name, value);
-        testAppsPolicyUninstall(appVariant, type, name, value);
+        for(AppType appType : AppType.values()) {
+            if(appType.isSupported(appVariant.getAppFamily())) {
+                testAppsPolicyInstall(appVariant, appType, type, name, value);
+                testAppsPolicyUninstall(appVariant, appType, type, name, value);
+                testCounter++;
+            }
+        }
+        skipIf(testCounter == 0);
     }
 }

@@ -11,6 +11,7 @@ import java.util.HashSet;
 
 // sudo ant -Dtestng.pattern="**/RestartTest.class" testng</code>
 public class FirefoxRestartWarningTests {
+    @SuppressWarnings("FieldCanBeLocal")
     private final boolean TEST_ENABLED = false;
 
     @Test

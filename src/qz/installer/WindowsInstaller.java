@@ -99,10 +99,6 @@ public class WindowsInstaller extends Installer {
         WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + ABOUT_TITLE);
         WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, "Software\\" + ABOUT_TITLE);
         WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, DATA_DIR);
-        // Chrome protocol handler
-        WindowsUtilities.deleteRegData(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLAllowlist", String.format("%s://*", DATA_DIR));
-        // Deprecated Chrome protocol handler
-        WindowsUtilities.deleteRegData(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLWhitelist", String.format("%s://*", DATA_DIR));
 
         // Cleanup launchers
         for(WindowsSpecialFolders folder : new WindowsSpecialFolders[] { START_MENU, COMMON_START_MENU, DESKTOP, PUBLIC_DESKTOP, COMMON_STARTUP, RECENT }) {

@@ -14,6 +14,7 @@ import qz.installer.apps.policy.locator.LinuxPolicyLocator;
 import qz.installer.apps.policy.locator.MacPolicyLocator;
 import qz.installer.apps.policy.locator.WindowsPolicyLocator;
 import qz.utils.SystemUtilities;
+import qz.utils.UnixUtilities;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -90,7 +91,34 @@ public class PolicyInstaller {
         enum AppType {
             NATIVE, // used by all platforms
             FLATPAK, // linux only
-            SNAP // linux only
+            SNAP; // linux only
+
+            /**
+             * Identifies if this <code>AppFamily</code> policy type is supported on this
+             * <code>Os</code> and <code>PrivilegeLevel</code>
+             */
+            @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+            boolean isSupported(AppFamily appFamily) {
+                if(!List.of(new AppFamily[] { AppFamily.CHROMIUM, AppFamily.FIREFOX }).contains(appFamily)) {
+                    return false;
+                }
+
+                switch(this) {
+                    case NATIVE:
+                        return !SystemUtilities.isLinux() || SystemUtilities.isAdmin();
+                    case FLATPAK:
+                        return SystemUtilities.isLinux() && appFamily == AppFamily.CHROMIUM;
+                    case SNAP:
+                        return UnixUtilities.isUbuntu() && SystemUtilities.isAdmin();
+                    default:
+                        return false;
+                }
+            }
+
+            @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+            public boolean isSupported(AppFamily.AppVariant appVariant) {
+                return isSupported(appVariant.getAppFamily());
+            }
         }
 
         Path getLocation(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant, AppType appType);

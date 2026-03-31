@@ -65,13 +65,9 @@ public class MacInstaller extends Installer {
     }
 
     public Installer addSystemSettings() {
-        // Chrome protocol handler
-        String plist = "/Library/Preferences/com.google.Chrome.plist";
-        if(ShellUtilities.execute(new String[] { "/usr/bin/defaults", "write", plist }, new String[] {DATA_DIR + "://*" }).isEmpty()) {
-            ShellUtilities.execute("/usr/bin/defaults", "write", plist, "URLAllowlist", "-array-add", DATA_DIR +"://*");
-        }
         return this;
     }
+
     public Installer removeSystemSettings() {
         // Remove startup entry
         File dest = new File(LAUNCH_AGENT_PATH);

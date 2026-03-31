@@ -59,7 +59,13 @@ public class ExhaustivePolicyInstallerTests extends PolicyTestDispatcher {
 
     @Test(dataProvider = "exhaustivePoliciesData")
     public void exhaustivePoliciesTests(AppVariant appVariant, PolicyState.Type type, String name, Object value) {
-        testAppsPolicyInstall(appVariant, type, name, value);
-        testAppsPolicyUninstall(appVariant, type, name, value);
+        for(PolicyInstaller.PolicyLocator.AppType appType : PolicyInstaller.PolicyLocator.AppType.values()) {
+            if(appType.isSupported(appVariant.getAppFamily())) {
+                testAppsPolicyInstall(appVariant, appType, type, name, value);
+                testAppsPolicyUninstall(appVariant, appType, type, name, value);
+                testCounter++;
+            }
+        }
+        skipIf(testCounter == 0);
     }
 }

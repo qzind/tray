@@ -4,6 +4,7 @@ import qz.common.Constants;
 import qz.installer.Installer;
 import qz.installer.apps.locator.AppFamily;
 import qz.installer.apps.policy.PolicyInstaller;
+import qz.utils.SystemUtilities;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,6 +15,10 @@ public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
 
     final static Path DEFAULT_SYSTEM_PREFIX = Paths.get("/etc");
     final static String SNAP_SYSTEM_PREFIX_PATTERN = "/var/snap/%s/current";
+
+    final static String FLATPAK_PREFIX_PATTERN = "%s/flatpak/extension/%s.Extension.%s/%s/1/";
+    final static String FLATPAK_SYSTEM_PREFIX = "/var/lib/";
+    final static String FLATPAK_USER_PREFIX = String.format("%s/.local/share", System.getProperty("user.home"));
 
     public static void main(String ... args) {
         LinuxPolicyLocator locator = new LinuxPolicyLocator();
@@ -39,10 +44,10 @@ public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
             case CHROMIUM:
                 // /etc/chromium/, /etc/opt/chrome/
                 switch(appType) {
+                    case FLATPAK: // different prefix, same policy pattern
                     case SNAP: // different prefix, same policy pattern
                     case NATIVE:
                         return Paths.get(String.format(CHROMIUM_POLICY_PATTERN, prefix, Constants.PROPS_FILE));
-                    case FLATPAK: // requires custom flatpak extension
                     default:
                 }
             case FIREFOX:
@@ -64,6 +69,8 @@ public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
                 switch(appVariant.getAppFamily()) {
                     case CHROMIUM:
                         switch(appType) {
+                            case FLATPAK:
+                                return Paths.get(String.format(FLATPAK_PREFIX_PATTERN, FLATPAK_SYSTEM_PREFIX, appVariant.getBundleId(), Constants.PROPS_FILE, SystemUtilities.getArch()));
                             case SNAP:
                                 return Paths.get(String.format(SNAP_SYSTEM_PREFIX_PATTERN, appVariant.getSlug()));
                             case NATIVE:
@@ -85,7 +92,17 @@ public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
                         }
                 }
             case USER:
-                // unsupported
+                switch(appVariant.getAppFamily()) {
+                    case CHROMIUM:
+                        switch(appType) {
+                            case FLATPAK:
+                                return Paths.get(String.format(FLATPAK_PREFIX_PATTERN, FLATPAK_USER_PREFIX, appVariant.getBundleId(), Constants.PROPS_FILE, SystemUtilities.getArch()));
+                            case NATIVE:
+                            default: // unsupported
+                        }
+                    case FIREFOX:
+                    default: // unsupported
+                }
         }
         throw unsupportedException(scope, appType, appVariant);
     }

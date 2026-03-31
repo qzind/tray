@@ -104,7 +104,7 @@ public class MacAppLocator extends AppLocator {
 
 
     /**
-     * Use JNA to obtain the
+     * Use JNA to obtain the full path to the executable
      */
     @Override
     public HashMap<String, Path> getPidPaths(Set<String> pids) {
@@ -143,9 +143,9 @@ public class MacAppLocator extends AppLocator {
      * Use a shortcut system to search for <code>&lt;key&gt;_name&lt;/key&gt;</code> and then build our app list
      * from each parent <code>&lt;dict&gt;</code> node.
      * <p>
-     * Apple uses several nested levels of <code>&lt;dict&gt;</code>, so although this two-pass approach is slightly more
-     * expensive than a one-pass sibling search, it's much easier to read and debug, so we'll accept the slight performance
-     * hit for our own sanity.
+     * Apple uses several nested levels of <code>&lt;dict&gt;</code>, so although this two-pass approach is slightly
+     * more expensive than a one-pass sibling search, it's much easier to read and debug, so we'll accept the
+     * slight performance hit for our own sanity.
      */
     public static List<Node> getApplicationDicts(Document doc) {
         List<Node> dicts = new ArrayList<>();

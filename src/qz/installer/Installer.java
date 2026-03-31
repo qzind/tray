@@ -60,6 +60,7 @@ public abstract class Installer {
     public abstract Installer removeLegacyStartup();
     public abstract Installer addAppLauncher();
     public abstract Installer addStartupEntry();
+    @SuppressWarnings("UnusedReturnValue")
     public abstract Installer addSystemSettings();
     public abstract Installer removeSystemSettings();
     public abstract void spawn(List<String> args) throws Exception;
@@ -123,8 +124,7 @@ public abstract class Installer {
                 .addAppLauncher()
                 .addStartupEntry()
                 .invokeProvisioning(Phase.INSTALL)
-                .addSystemSettings()
-                .modifyApps();
+                .addSystemSettings();
     }
 
     public static void uninstall() {
@@ -408,25 +408,6 @@ public abstract class Installer {
             }
         }
         return instance;
-    }
-
-    @SuppressWarnings("UnusedReturnValue")
-    public Installer modifyApps() {
-        // Chromium
-        // Chrome protocol handler (e.g. "qz://*")
-        for(AppVariant appVariant : CHROMIUM.getVariants()) {
-            PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant);
-            policyInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", String.format("%s://*", DATA_DIR));
-            // LocalNetworkAccess (e.g. [*.]qz.io)
-            // FIXME: Read in more root domains via provisioning
-            Object[] lnaUrls = { "[*.]" + SystemUtilities.parseRootDomain(ABOUT_URL) };
-            policyInstaller.install(PolicyState.Type.VALUE, "LocalNetworkAccessAllowedForUrls", lnaUrls);
-        }
-
-        // Firefox
-
-
-        return this;
     }
 
     public Installer invokeProvisioning(Phase phase) {

@@ -170,7 +170,7 @@ public class LinuxInstaller extends Installer {
     }
 
     // Environmental variables for spawning a task using sudo. Order is important.
-    static String[] SUDO_EXPORTS = {"USER", "HOME", "UPSTART_SESSION", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "XDG_CURRENT_DESKTOP", "GNOME_DESKTOP_SESSION_ID", "WAYLAND_DISPLAY" };
+    static String[] SUDO_EXPORTS = {"USER", "HOME", "UPSTART_SESSION", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "XDG_CURRENT_DESKTOP", "GNOME_DESKTOP_SESSION_ID", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR" };
 
     /**
      * Spawns the process as the underlying regular user account, preserving the environment
@@ -287,7 +287,7 @@ public class LinuxInstaller extends Installer {
            throw new UnsupportedOperationException("Administrative access is required");
         }
 
-        String[] dbusMatches = { "ibus-daemon.*--panel", "dbus-daemon.*--config-file="};
+        String[] dbusMatches = { "ibus-daemon.*--panel", "dbus-daemon.*--config-file=", "dbus-broker.*--config-file="};
 
         ArrayList<String> pids = new ArrayList<>();
         for(String dbusMatch : dbusMatches) {

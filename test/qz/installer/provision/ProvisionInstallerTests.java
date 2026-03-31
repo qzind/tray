@@ -73,9 +73,10 @@ public class ProvisionInstallerTests {
     public void provisionInstallerTests(Step step) throws JSONException {
         boolean expected = !step.getDescription().contains("ERROR EXPECTED") && // description says so
                 Os.matchesHost(step.getOs()) &&  // wrong os
-                step.getType() != Type.CONF; // platform / app / scope combo is supported
+                step.getType() != Type.CONF; // depends on mutable jvm runtime
 
         if(step.getType() == Type.POLICY && AppType.collect(step.getApp()).length == 0) {
+            // not supported for this os / app family / scope
             throw new SkipException(String.format("Can't run step '%s' on this platform", step));
         }
 

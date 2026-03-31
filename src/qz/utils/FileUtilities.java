@@ -800,13 +800,11 @@ public class FileUtilities {
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    public static String readSvgAsset(Class relativeClass, String relativeAsset) throws IOException {
+    public static String readSvgAsset(Class<?> relativeClass, String relativeAsset) throws IOException {
         return readSvgAsset(relativeClass, relativeAsset, true, true);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static String readSvgAsset(Class relativeClass, String relativeAsset, boolean stripHeader, boolean minify) throws IOException {
+    public static String readSvgAsset(Class<?> relativeClass, String relativeAsset, boolean stripHeader, boolean minify) throws IOException {
         try(InputStream is = relativeClass.getResourceAsStream(relativeAsset)) {
             if(is == null) {
                 throw new IOException(String.format("InputStream for '%s' is null", relativeAsset));
@@ -828,8 +826,7 @@ public class FileUtilities {
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    public static synchronized void configureAssetToFile(Class relativeClass, String relativeAsset, HashMap<String, String> additionalMappings, File outputFile) throws IOException {
+    public static synchronized void configureAssetToFile(Class<?> relativeClass, String relativeAsset, HashMap<String, String> additionalMappings, File outputFile) throws IOException {
         if(!outputFile.getParentFile().exists() && !outputFile.getParentFile().mkdirs()) {
             throw new IOException(String.format("Can't create parent directories for asset file '%s'", outputFile));
         }
@@ -841,8 +838,7 @@ public class FileUtilities {
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    public static synchronized String configureAssetToString(Class relativeClass, String relativeAsset, HashMap<String, String> additionalMappings) throws IOException {
+    public static synchronized String configureAssetToString(Class<?> relativeClass, String relativeAsset, HashMap<String, String> additionalMappings) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         configureAssetToStream(relativeClass, relativeAsset, additionalMappings, out);
         return out.toString(StandardCharsets.UTF_8);
@@ -856,8 +852,7 @@ public class FileUtilities {
      * @param additionalMappings Mappings in addition to those found in <code>Constants</code>
      * @param outputStream The stream to write the data to
      */
-    @SuppressWarnings("rawtypes")
-    private static synchronized void configureAssetToStream(Class relativeClass, String relativeAsset, HashMap<String, String> additionalMappings, OutputStream outputStream) throws IOException {
+    private static synchronized void configureAssetToStream(Class<?> relativeClass, String relativeAsset, HashMap<String, String> additionalMappings, OutputStream outputStream) throws IOException {
         // Static fields, parsed from qz.common.Constants
         HashMap<String, String> allMappings = addPublicFieldsFromClass(new HashMap<>(additionalMappings), Constants.class);
 
@@ -881,8 +876,8 @@ public class FileUtilities {
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    private static HashMap<String,String> addPublicFieldsFromClass(HashMap<String,String> mapping, Class clazz) {
+    @SuppressWarnings("SameParameterValue")
+    private static HashMap<String,String> addPublicFieldsFromClass(HashMap<String,String> mapping, Class<?> clazz) {
         List<Field> fields = new ArrayList<>(Arrays.asList(clazz.getFields())); // public only
         for(Field field : fields) {
             if (Modifier.isStatic(field.getModifiers())) { // static only

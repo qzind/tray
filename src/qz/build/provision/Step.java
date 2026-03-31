@@ -52,8 +52,7 @@ public class Step {
     /**
      * Only should be used by unit tests
      */
-    @SuppressWarnings("rawtypes")
-    Step(Class relativeClass, String description, Type type, HashSet<Os> os, HashSet<Arch> arch, Phase phase, AppFamily app, String name, String format, String data, List<String> args) {
+    Step(Class<?> relativeClass, String description, Type type, HashSet<Os> os, HashSet<Arch> arch, Phase phase, AppFamily app, String name, String format, String data, List<String> args) {
         this((Path)null, description, type, os, arch, phase, app, name, format, data, args);
         this.relativeClass = relativeClass;
     }

@@ -51,9 +51,15 @@ public class FirefoxCertificateInstaller {
      */
     public void install() {
         PolicyInstaller policyInstaller;
-        for(Map.Entry<AppFamily.AppVariant,Set<AppType>> variantSet : getVariantAppTypes(FIREFOX).entrySet()) {
-            AppFamily.AppVariant appVariant = variantSet.getKey();
-            for(AppType appType : variantSet.getValue()) {
+        AppType[] appTypes = AppType.collect(FIREFOX);
+        if(appTypes.length == 0) {
+            log.warn("Combination of app '{}', os '{}' and scope '{}' are not supported for certificate install, skipping",
+                     FIREFOX, SystemUtilities.getOs(), scope);
+            return;
+        }
+
+        for(AppFamily.AppVariant appVariant : FIREFOX.getVariants()) {
+            for(AppType appType : appTypes) {
                 policyInstaller = new PolicyInstaller(scope, appVariant, appType);
                 switch(SystemUtilities.getOs()) {
                     case WINDOWS:
@@ -83,9 +89,8 @@ public class FirefoxCertificateInstaller {
 
     public void uninstall() {
         // Remove Firefox Certificate
-        for(Map.Entry<AppFamily.AppVariant, Set<AppType>> variantSet : getVariantAppTypes(FIREFOX).entrySet()) {
-            AppFamily.AppVariant appVariant = variantSet.getKey();
-            for(AppType appType : variantSet.getValue()) {
+        for(AppFamily.AppVariant appVariant : FIREFOX.getVariants()) {
+            for(AppType appType : AppType.collect(FIREFOX)) {
                 switch(SystemUtilities.getOs()) {
                     case WINDOWS:
                     case MAC:
@@ -162,35 +167,5 @@ public class FirefoxCertificateInstaller {
             }
         }
         return true;
-    }
-
-    /**
-     * Creates a matrix of AppVariant : AppType for this platform
-     * <p>
-     * This is currently kept generic so it can eventually be moved into a separate utilities function
-     * for when policy support for other <code>AppFamily</code> (e.g. <code>CHROMIUM</code>) is added.
-     * </p>
-     */
-    @SuppressWarnings("SameParameterValue")
-    private static HashMap<AppFamily.AppVariant, Set<AppType>> getVariantAppTypes(AppFamily appFamily) {
-        HashMap<AppFamily.AppVariant, Set<AppType>> variantSets = new HashMap<>();
-
-        // All apps and platforms have native install type
-        Set<AppType> appTypes = new HashSet<>(Set.of(AppType.NATIVE));
-        switch(appFamily) {
-            case FIREFOX:
-                if (SystemUtilities.isLinux()) {
-                    // Firefox on Linux has flatpak policy support too, but certs appear broken
-                    // See https://github.com/mozilla/policy-templates/discussions/1301
-                    // appTypes.add(AppType.FLATPAK);
-                }
-            case CHROMIUM:
-            default:
-        }
-
-        for(AppFamily.AppVariant variant : appFamily.getVariants()) {
-            variantSets.put(variant, appTypes);
-        }
-        return variantSets;
     }
 }

@@ -48,9 +48,13 @@ public class PolicyInvoker implements Invokable {
                 break;
         }
 
+        AppType[] appTypes = AppType.collect(step.getApp());
+        if(appTypes.length == 0) {
+            return false;
+        }
         boolean success = true;
         for(AppFamily.AppVariant appVariant : step.getApp().getVariants()) {
-            for(AppType appType : AppType.collect(step.getApp())) {
+            for(AppType appType : appTypes) {
                 PolicyInstaller installer = new PolicyInstaller(scope, appVariant, appType);
                 PolicyState state;
                 switch(step.getPhase()) {

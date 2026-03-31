@@ -192,7 +192,7 @@
         "os": "*",
         "app": "chromium",
         "name": "IncognitoModeAvailability",
-        "data": false
+        "data": 1
     },
     {
         "description": "[POLICY] MAP: Firefox root certs at 'certgen'",

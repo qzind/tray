@@ -24,9 +24,9 @@ public class ExhaustivePolicyInstallerTests extends PolicyTestDispatcher {
                 { VALUE, "testString", "test" },
                 { ARRAY, "testArray", new Object[] { "element 1", "element 2" } }, // 2-element array
                 { ARRAY, "testArray", new Object[] { "element 1" } }, // 1-element array
-                { MAP, "testMapString", new HashMap<>(Map.of("firstKey", "value 1", "secondKey", "value 2" ))}, // map from map string
-                { MAP, "testMapInt", new HashMap<>(Map.of("firstKey", 1, "secondKey", 2 ))}, // map from map int
-                { MAP, "testMapBool", new HashMap<>(Map.of("firstKey", true, "secondKey", false ))}, // map from map boolean
+                { MAP, "testMapString", new HashMap<>(Map.of("firstKey", "value 1", "secondKey", "value 2")) }, // map from map string
+                { MAP, "testMapInt", new HashMap<>(Map.of("firstKey", 1, "secondKey", 2)) }, // map from map int
+                { MAP, "testMapBool", new HashMap<>(Map.of("firstKey", true, "secondKey", false)) }, // map from map boolean
         };
 
         List<Object[]> allTests = new ArrayList<>(List.of(baseline));
@@ -35,7 +35,7 @@ public class ExhaustivePolicyInstallerTests extends PolicyTestDispatcher {
             // floats aren't supported on Windows
             Object[][] floatTests = new Object[][] {
                     { VALUE, "testFloat", 123.4f },
-                    { MAP, "testMapFloat", new HashMap<>(Map.of("firstKey", 1.1f, "secondKey", 2.2f ))}, // map from map float
+                    { MAP, "testMapFloat", new HashMap<>(Map.of("firstKey", 1.1f, "secondKey", 2.2f)) }, // map from map float
             };
             allTests.addAll(List.of(floatTests));
         }
@@ -43,10 +43,10 @@ public class ExhaustivePolicyInstallerTests extends PolicyTestDispatcher {
         if (SystemUtilities.isLinux()) {
             // arrays in maps are only supported on linux
             Object[][] linuxOnly = new Object[][] {
-                    { MAP, "testMapArrayString", new Object[] {"stringArray", new Object[] {"firstElement", "secondElement"}}},
-                    { MAP, "testMapArrayInt", new Object[] {"intArray", new Object[] {111, 222}}},
-                    { MAP, "testMapArrayBool", new Object[] {"boolArray", new Object[] {true, false}}},
-                    { MAP, "testMapArrayFloat", new Object[] {"floatArray", new Object[] {1.1f, 2.2f}}},
+                    { MAP, "testMapArrayString", new Object[] { "stringArray", new Object[] { "firstElement", "secondElement" } } },
+                    { MAP, "testMapArrayInt", new Object[] { "intArray", new Object[] { 111, 222 } } },
+                    { MAP, "testMapArrayBool", new Object[] { "boolArray", new Object[] {true, false } } },
+                    { MAP, "testMapArrayFloat", new Object[] { "floatArray", new Object[] { 1.1f, 2.2f } } },
             };
             allTests.addAll(List.of(linuxOnly));
         }

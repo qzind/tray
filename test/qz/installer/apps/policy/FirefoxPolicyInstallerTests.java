@@ -17,11 +17,11 @@ public class FirefoxPolicyInstallerTests extends PolicyTestDispatcher {
         if (SystemUtilities.isLinux()) {
             tests = new Object[][] {
                     // arrays in maps are only supported on linux
-                    { MAP, "Certificates", new Object[] {"Install", new Object[] {new File("policy-testing.crt").toString() } } },
+                    { MAP, "Certificates", new Object[] { "Install", new Object[] { new File("policy-testing.crt").toString() } } },
             };
         } else {
             tests = new Object[][] {
-                    { MAP, "Certificates", new Object[] {"ImportEnterpriseRoots", true } }
+                    { MAP, "Certificates", new Object[] { "ImportEnterpriseRoots", true } }
             };
         }
         return PolicyTestDispatcher.addAppVariants(List.of(tests), AppFamily.FIREFOX);

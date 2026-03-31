@@ -49,7 +49,6 @@ public class AboutInfo {
             about.put("ssl", ssl(certificateManager));
             about.put("libraries", libraries());
             about.put("charsets", charsets());
-            about.put("policies", policies());
         }
         catch(JSONException | GeneralSecurityException e) {
             log.error("Failed to write JSON data", e);
@@ -168,17 +167,6 @@ public class AboutInfo {
 
         charsets.put("charsets", Arrays.toString(names.toArray()));
         return charsets;
-    }
-
-    private static JSONObject policies() throws JSONException {
-        JSONObject policies = new JSONObject();
-
-        for(AppFamily appFamily : AppFamily.values()) {
-            policies.put(String.format("%s (variants)", appFamily.name().toLowerCase(Locale.ENGLISH)), Arrays.toString(appFamily.getVariants()));
-            policies.put(appFamily.name().toLowerCase(Locale.ENGLISH), "" /* FIXME */);
-        }
-
-        return policies;
     }
 
     public static String getPreferredHostname() {

@@ -175,8 +175,8 @@ public class FirefoxCertificateInstaller {
     private static HashMap<AppFamily.AppVariant, Set<AppType>> getVariantAppTypes(AppFamily appFamily) {
         HashMap<AppFamily.AppVariant, Set<AppType>> variantSets = new HashMap<>();
 
-        // All apps and platforms have default
-        Set<AppType> appTypes = new HashSet<>(Set.of(AppType.DEFAULT));
+        // All apps and platforms have native install type
+        Set<AppType> appTypes = new HashSet<>(Set.of(AppType.NATIVE));
         switch(appFamily) {
             case FIREFOX:
                 if (SystemUtilities.isLinux()) {

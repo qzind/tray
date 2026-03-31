@@ -10,15 +10,26 @@ import java.nio.file.Paths;
 
 public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
     final static String CHROMIUM_POLICY_PATTERN = "%s/policies/managed/%s.json";
-
-    final static String DEFAULT_FIREFOX_POLICY_PATTERN = "%s/policies/policies.json";
-    final static String FLATPAK_FIREFOX_POLICY_PATTERN = "%s/current/active/files/etc/%s/policies/policies.json";
+    final static String FIREFOX_POLICY_PATTERN = "%s/policies/policies.json";
 
     final static Path DEFAULT_SYSTEM_PREFIX = Paths.get("/etc");
-    final static Path FLATPAK_SYSTEM_PREFIX = Paths.get("/var/lib/flatpak/app");
+    final static String SNAP_SYSTEM_PREFIX_PATTERN = "/var/snap/%s/current";
 
-    final static Path DEFAULT_USER_PREFIX = Paths.get(System.getProperty("user.home")).resolve(".config");
-    final static Path FLATPAK_USER_PREFIX = Paths.get(System.getProperty("user.home")).resolve(".local/share/flatpak/app");
+    public static void main(String ... args) {
+        LinuxPolicyLocator locator = new LinuxPolicyLocator();
+        for(Installer.PrivilegeLevel scope : new Installer.PrivilegeLevel[] { Installer.PrivilegeLevel.USER, Installer.PrivilegeLevel.SYSTEM }) {
+            for(AppFamily.AppVariant appVariant : AppFamily.CHROMIUM.getVariants()) {
+                for(AppType appType : PolicyInstaller.PolicyLocator.AppType.values()) {
+                    try {
+                        System.err.printf("%s\n  Type: %s\n  Scope: %s\n  Path:  '%s'\n", appVariant, appType, scope, locator.getLocation(scope, appVariant, appType));
+                    }
+                    catch(Exception e) {
+                        System.out.printf(" %s%n", e.getMessage());
+                    }
+                }
+            }
+        }
+    }
 
     @Override
     public Path getLocation(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant, AppType appType) {
@@ -27,26 +38,24 @@ public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
         switch(appFamily) {
             case CHROMIUM:
                 // /etc/chromium/, /etc/opt/chrome/
-                if(appType != AppType.DEFAULT) {
-                    // TODO: Add AppType support
-                    throw new UnsupportedOperationException(String.format("AppType '%s' is not yet supported for '%s'", appType, appVariant));
+                switch(appType) {
+                    case SNAP: // different prefix, same policy pattern
+                    case NATIVE:
+                        return Paths.get(String.format(CHROMIUM_POLICY_PATTERN, prefix, Constants.PROPS_FILE));
+                    case FLATPAK: // requires custom flatpak extension
+                    default:
                 }
-                return Paths.get(String.format(CHROMIUM_POLICY_PATTERN, prefix, Constants.PROPS_FILE));
             case FIREFOX:
                 switch(appType) {
-                    case FLATPAK:
-                        // /var/lib/flatpak/app/org.mozilla.firefox/current/active/files/etc/firefox/
-                        return Paths.get(String.format(FLATPAK_FIREFOX_POLICY_PATTERN, prefix, appVariant.getSlug()));
-                    case APPIMAGE: // untested
-                    case SNAP:
-                    case DEFAULT:
-                    default:
+                    case SNAP: // identical path as default
+                    case NATIVE:
                         // /etc/firefox/
-                        return Paths.get(String.format(DEFAULT_FIREFOX_POLICY_PATTERN, prefix));
+                        return Paths.get(String.format(FIREFOX_POLICY_PATTERN, prefix));
+                    case FLATPAK: // see https://github.com/mozilla/policy-templates/discussions/1301
+                    default:
                 }
-
         }
-        throw new UnsupportedOperationException(String.format("PolicyLocator for %s on Linux has not yet implemented", appFamily));
+        throw unsupportedException(scope, appType, appVariant);
     }
 
     private static Path getPrefix(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant, AppType appType) {
@@ -54,49 +63,35 @@ public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
             case SYSTEM:
                 switch(appVariant.getAppFamily()) {
                     case CHROMIUM:
-                        // TODO: Add AppType support
-                        return appVariant.getSlug().equals("chromium")
-                                // first-party: /etc/chromium
-                                ? DEFAULT_SYSTEM_PREFIX.resolve(appVariant.getSlug())
-                                // third-party: /etc/opt/chrome
-                                : DEFAULT_SYSTEM_PREFIX.resolve("opt").resolve(appVariant.getSlug());
+                        switch(appType) {
+                            case SNAP:
+                                return Paths.get(String.format(SNAP_SYSTEM_PREFIX_PATTERN, appVariant.getSlug()));
+                            case NATIVE:
+                                return appVariant.getSlug().equals("chromium")
+                                        // first-party: /etc/chromium
+                                        ? DEFAULT_SYSTEM_PREFIX.resolve(appVariant.getSlug())
+                                        // third-party: /etc/opt/chrome
+                                        : DEFAULT_SYSTEM_PREFIX.resolve("opt").resolve(appVariant.getSlug());
+                            default: // unsupported
+                        }
                     case FIREFOX:
                     default:
                         switch(appType) {
-                            case FLATPAK:
-                                // /var/lib/flatpak/app/org.mozilla.firefox
-                                return FLATPAK_SYSTEM_PREFIX.resolve(appVariant.getBundleId());
-                            case APPIMAGE: // untested
                             case SNAP:
-                            case DEFAULT:
-                            default:
+                            case NATIVE:
                                 // /etc/firefox
                                 return DEFAULT_SYSTEM_PREFIX.resolve(appVariant.getSlug());
+                            default: // unsupported
                         }
-
                 }
             case USER:
-                switch(appVariant.getAppFamily()) {
-                    case FIREFOX:
-                        switch(appType) {
-                            case FLATPAK:
-                                // ~/.local/share/flatpak/app/org.mozilla.firefox"
-                                return FLATPAK_USER_PREFIX.resolve(appVariant.getBundleId());
-                            case APPIMAGE:
-                            case SNAP:
-                            case DEFAULT:
-                            default:
-                                // fallthrough
-                        }
-                    case CHROMIUM:
-                    default:
-                        // fallthrough
-                }
-                // TODO: placeholder: not yet supported
-                return DEFAULT_USER_PREFIX.resolve(appVariant.getSlug()); // ~/.config/chromium
-            default:
-                throw new UnsupportedOperationException(String.format("Scope %s is not yet supported", scope));
+                // unsupported
         }
+        throw unsupportedException(scope, appType, appVariant);
+    }
+
+    private static UnsupportedOperationException unsupportedException(Installer.PrivilegeLevel scope, AppType appType, AppFamily.AppVariant appVariant) {
+        return new UnsupportedOperationException(String.format("Scope '%s' for AppType '%s' is not yet supported for '%s'", scope, appType, appVariant));
     }
 }
 

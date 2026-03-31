@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
 import org.testng.SkipException;
+import qz.build.provision.params.Os;
 import qz.installer.Installer;
 import qz.installer.apps.exception.UnsupportedPolicyException;
 import qz.installer.apps.locator.AppFamily;
@@ -38,11 +39,13 @@ public abstract class PolicyTestDispatcher {
 
     @SuppressWarnings("UnusedReturnValue")
     static PolicyState testAppsPolicyInstall(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
-        return testAppsPolicyInstall(appVariant, AppType.DEFAULT, type, name, value);
+        return testAppsPolicyInstall(appVariant, AppType.NATIVE, type, name, value);
     }
 
     @SuppressWarnings("UnusedReturnValue")
     static PolicyState testAppsPolicyInstall(AppFamily.AppVariant appVariant, AppType appType, PolicyState.Type type, String name, Object value) {
+        skipIf(Os.LINUX, USER);
+
         switch(type) {
             case VALUE:
                 return testAppsPolicyValueInstall(appVariant, appType, name, value);
@@ -56,11 +59,13 @@ public abstract class PolicyTestDispatcher {
 
     @SuppressWarnings("UnusedReturnValue")
     static PolicyState testAppsPolicyUninstall(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
-        return testAppsPolicyInstall(appVariant, AppType.DEFAULT, type, name, value);
+        return testAppsPolicyInstall(appVariant, AppType.NATIVE, type, name, value);
     }
 
-    @SuppressWarnings("UnusedReturnValue")
+    @SuppressWarnings("UnusedReturnValue,SameParameterValue")
     static PolicyState testAppsPolicyUninstall(AppFamily.AppVariant appVariant, AppType appType, PolicyState.Type type, String name, Object value) {
+        skipIf(Os.LINUX, USER);
+
         switch(type) {
             case VALUE:
                 return testAppsPolicyValueUninstall(appVariant, appType, name, value);
@@ -265,6 +270,12 @@ public abstract class PolicyTestDispatcher {
                     actual == null ? "null" : actual.getClass().getName()
             );
             Assert.fail("Return value mismatch");
+        }
+    }
+
+    private static void skipIf(Os os, Installer.PrivilegeLevel scope) throws SkipException {
+        if(SystemUtilities.getOs() == os && PolicyTestDispatcher.scope == scope) {
+            throw new SkipException(String.format("Skipping test for Os: '%s', PrivilegeLevel: '%s'", os, scope));
         }
     }
 }

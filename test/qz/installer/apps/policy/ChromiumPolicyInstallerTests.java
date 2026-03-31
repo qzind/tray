@@ -5,11 +5,13 @@ import org.testng.annotations.Test;
 import qz.common.Constants;
 import qz.installer.apps.locator.AppFamily;
 import qz.utils.SystemUtilities;
+import qz.utils.UnixUtilities;
 
 import java.util.List;
 
 import static qz.common.Constants.ABOUT_URL;
 import static qz.installer.apps.policy.PolicyState.Type.*;
+import static qz.installer.apps.policy.PolicyInstaller.PolicyLocator.*;
 
 public class ChromiumPolicyInstallerTests extends PolicyTestDispatcher {
     @DataProvider(name = "chromiumPoliciesData")
@@ -24,7 +26,12 @@ public class ChromiumPolicyInstallerTests extends PolicyTestDispatcher {
 
     @Test(dataProvider = "chromiumPoliciesData")
     public void testChromiumPolicies(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
-        testAppsPolicyInstall(appVariant, type, name, value);
-        testAppsPolicyUninstall(appVariant, type, name, value);
+        testAppsPolicyInstall(appVariant, AppType.NATIVE, type, name, value);
+        testAppsPolicyUninstall(appVariant, AppType.NATIVE, type, name, value);
+
+        if(UnixUtilities.isUbuntu() && SystemUtilities.isAdmin()) {
+            testAppsPolicyInstall(appVariant, AppType.SNAP, type, name, value);
+            testAppsPolicyUninstall(appVariant, AppType.SNAP, type, name, value);
+        }
     }
 }

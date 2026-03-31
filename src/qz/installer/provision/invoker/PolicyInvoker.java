@@ -9,6 +9,7 @@ import qz.installer.apps.locator.AppFamily;
 import qz.installer.apps.policy.PolicyInstaller;
 import qz.installer.apps.policy.PolicyState;
 import qz.utils.SystemUtilities;
+import qz.utils.UnixUtilities;
 
 import java.util.*;
 
@@ -21,6 +22,13 @@ public class PolicyInvoker implements Invokable {
 
     @Override
     public boolean invoke() throws Exception {
+        HashSet<PolicyInstaller.PolicyLocator.AppType> appTypes = new HashSet<>();
+        appTypes.add(PolicyInstaller.PolicyLocator.AppType.NATIVE);
+        if(step.getApp() == AppFamily.CHROMIUM && UnixUtilities.isUbuntu() && SystemUtilities.isAdmin()) {
+            // Add Chromium snap support on Ubuntu
+            appTypes.add(PolicyInstaller.PolicyLocator.AppType.SNAP);
+        }
+
         Installer.PrivilegeLevel scope = SystemUtilities.isAdmin() ? Installer.PrivilegeLevel.SYSTEM : Installer.PrivilegeLevel.USER;
         PolicyState.Type type = PolicyState.Type.parse(step.getFormat(), PolicyState.Type.VALUE);
         Object values;
@@ -48,30 +56,32 @@ public class PolicyInvoker implements Invokable {
 
         boolean success = true;
         for(AppFamily.AppVariant appVariant : step.getApp().getVariants()) {
-            PolicyInstaller installer = new PolicyInstaller(scope, appVariant);
-            PolicyState state;
-            switch(step.getPhase()) {
-                case UNINSTALL:
-                    if (values instanceof Object[]) {
-                        state = installer.uninstall(type, step.getName(), (Object[])values);
-                    } else {
-                        state = installer.uninstall(type, step.getName(), values);
-                    }
-                    if (state.hasFailed()) {
-                        success = false;
-                    }
-                    break;
-                case INSTALL:
-                case CERTGEN:
-                default:
-                    if (values instanceof Object[]) {
-                        state = installer.install(type, step.getName(), (Object[])values);
-                    } else {
-                        state = installer.install(type, step.getName(), values);
-                    }
-                    if (state.hasFailed()) {
-                        success = false;
-                    }
+            for(PolicyInstaller.PolicyLocator.AppType appType : appTypes) {
+                PolicyInstaller installer = new PolicyInstaller(scope, appVariant, appType);
+                PolicyState state;
+                switch(step.getPhase()) {
+                    case UNINSTALL:
+                        if (values instanceof Object[]) {
+                            state = installer.uninstall(type, step.getName(), (Object[])values);
+                        } else {
+                            state = installer.uninstall(type, step.getName(), values);
+                        }
+                        if (state.hasFailed()) {
+                            success = false;
+                        }
+                        break;
+                    case INSTALL:
+                    case CERTGEN:
+                    default:
+                        if (values instanceof Object[]) {
+                            state = installer.install(type, step.getName(), (Object[])values);
+                        } else {
+                            state = installer.install(type, step.getName(), values);
+                        }
+                        if (state.hasFailed()) {
+                            success = false;
+                        }
+                }
             }
         }
         return success;

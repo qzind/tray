@@ -6,7 +6,6 @@ import org.apache.logging.log4j.Logger;
 import qz.build.provision.params.Os;
 import qz.common.Sluggable;
 import qz.installer.Installer;
-import qz.installer.apps.exception.UnsupportedPolicyException;
 import qz.installer.apps.locator.AppFamily;
 import qz.installer.apps.policy.installer.LinuxPolicyInstaller;
 import qz.installer.apps.policy.installer.MacPolicyInstaller;
@@ -89,9 +88,8 @@ public class PolicyInstaller {
 
     public interface PolicyLocator {
         enum AppType {
-            DEFAULT, // used by all platforms
+            NATIVE, // used by all platforms
             FLATPAK, // linux only
-            APPIMAGE, // linux only
             SNAP // linux only
         }
 
@@ -114,7 +112,7 @@ public class PolicyInstaller {
     }
 
     public PolicyInstaller(Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant) {
-        this(SystemUtilities.getOs(), scope, appVariant, PolicyLocator.AppType.DEFAULT);
+        this(SystemUtilities.getOs(), scope, appVariant, PolicyLocator.AppType.NATIVE);
     }
 
     public PolicyInstaller(Os os, Installer.PrivilegeLevel scope, AppFamily.AppVariant appVariant, PolicyLocator.AppType appType) {
@@ -138,10 +136,6 @@ public class PolicyInstaller {
 
     public PolicyState install(PolicyState.Type type, String name, Object ... values) {
         PolicyState state = createPolicyState(Phase.INSTALL, type, name);
-
-        if(isProhibited()) {
-            return state.setFailed(new UnsupportedPolicyException("User mode policies are not yet supported on Linux")).log();
-        }
 
         if(values.length < 1) {
             return state.setFailed("no policy value was provided").log();
@@ -171,10 +165,6 @@ public class PolicyInstaller {
 
     public PolicyState uninstall(PolicyState.Type type, String name, Object ... values) {
         PolicyState state = createPolicyState(Phase.UNINSTALL, type, name);
-
-        if(isProhibited()) {
-            return state.setFailed(new UnsupportedPolicyException("User mode policies are not yet supported on Linux")).log();
-        }
 
         switch(state.getType()) {
             case ARRAY:
@@ -286,10 +276,6 @@ public class PolicyInstaller {
                     WinReg.HKEY_CURRENT_USER;
         }
         return new PolicyState(scope, appVariant, phase, type, name, locator.getLocation(scope, appVariant, appType), hkey);
-    }
-
-    private boolean isProhibited() {
-        return os == Os.LINUX && scope == Installer.PrivilegeLevel.USER;
     }
 
     //

@@ -21,7 +21,7 @@ public abstract class PolicyTestDispatcher {
     private static final Logger log = LogManager.getLogger(PolicyTestDispatcher.class);
     private static final Installer.PrivilegeLevel scope = SystemUtilities.isAdmin()? SYSTEM:USER;
 
-    int testCounter = 0;
+    private int testCounter = 0;
 
     static Object[][] addAppVariants(List<Object[]> tests, AppFamily.AppVariant ... appVariants) {
         List<Object[]> retMatrix = new ArrayList<>();
@@ -275,5 +275,19 @@ public abstract class PolicyTestDispatcher {
     static void skipIf(boolean ... conditions) throws SkipException {
         for(boolean condition : conditions) if(!condition) return;
         throw new SkipException(String.format("Skipping test for Os: '%s', PrivilegeLevel: '%s'", SystemUtilities.getOs(), scope));
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    void runTests(boolean doInstall, boolean doUninstall, AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
+        for(AppType appType : AppType.collect(appVariant.getAppFamily())) {
+            if (doInstall) {
+                testAppsPolicyInstall(appVariant, appType, type, name, value);
+            }
+            if (doUninstall) {
+                testAppsPolicyUninstall(appVariant, appType, type, name, value);
+            }
+            testCounter++;
+        }
+        skipIf(testCounter == 0);
     }
 }

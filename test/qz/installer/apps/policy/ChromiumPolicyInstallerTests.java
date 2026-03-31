@@ -10,7 +10,6 @@ import java.util.List;
 
 import static qz.common.Constants.ABOUT_URL;
 import static qz.installer.apps.policy.PolicyState.Type.*;
-import static qz.installer.apps.policy.PolicyInstaller.PolicyLocator.*;
 
 public class ChromiumPolicyInstallerTests extends PolicyTestDispatcher {
     @DataProvider(name = "chromiumPoliciesData")
@@ -25,13 +24,6 @@ public class ChromiumPolicyInstallerTests extends PolicyTestDispatcher {
 
     @Test(dataProvider = "chromiumPoliciesData")
     public void testChromiumPolicies(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
-        for(AppType appType : AppType.values()) {
-            if(appType.isSupported(appVariant.getAppFamily())) {
-                testAppsPolicyInstall(appVariant, appType, type, name, value);
-                testAppsPolicyUninstall(appVariant, appType, type, name, value);
-                testCounter++;
-            }
-        }
-        skipIf(testCounter == 0);
+        runTests(true, true, appVariant, type, name, value);
     }
 }

@@ -98,7 +98,7 @@ public class PolicyInstaller {
              * <code>Os</code> and <code>PrivilegeLevel</code>
              */
             @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-            boolean isSupported(AppFamily appFamily) {
+            public boolean isSupported(AppFamily appFamily) {
                 if(!List.of(new AppFamily[] { AppFamily.CHROMIUM, AppFamily.FIREFOX }).contains(appFamily)) {
                     return false;
                 }
@@ -118,6 +118,12 @@ public class PolicyInstaller {
             @SuppressWarnings("BooleanMethodIsAlwaysInverted")
             public boolean isSupported(AppFamily.AppVariant appVariant) {
                 return isSupported(appVariant.getAppFamily());
+            }
+
+            public static AppType[] collect(AppFamily appFamily) {
+                return Arrays.stream(values())
+                        .filter(type -> type.isSupported(appFamily))
+                        .toArray(AppType[]::new);
             }
         }
 

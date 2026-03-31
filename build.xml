@@ -249,7 +249,7 @@
     <target name="override-authcert" if="authcert.use">
         <echo level="info">Bundling with manual cert for signing auth: ${authcert.use}</echo>
         <!-- See also: Constants.OVERRIDE_CERT -->
-                <property description="suppress-property-warning" name="authcert.use" value="override.crt"/>
+        <property description="suppress-property-warning" name="authcert.use" value="override.crt"/>
         <copy file="${authcert.use}" tofile="${dist.dir}/override.crt" overwrite="true"/>
     </target>
 

@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.servlet.FilterHolder;
 import qz.common.AboutInfo;
+import qz.installer.apps.locator.AppFamily;
 import qz.installer.certificate.CertificateManager;
 import qz.utils.ByteUtilities;
 import qz.utils.FileUtilities;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static qz.common.Constants.*;
@@ -152,6 +154,7 @@ public class HttpAboutServlet extends DefaultServlet {
             fieldMap.put("%BRAND_COLOR%", BRAND_COLOR);
             fieldMap.put("%RESTART_CHALLENGE%", SystemUtilities.calculatePidChallenge(pid, SALT_LENGTH_RESTART));
             fieldMap.put("%RESTART_SVG%", FileUtilities.readSvgAsset(getClass(),"resources/restart-graphic.svg"));
+            fieldMap.put("%POLICY_URL%", parseApp(request) == AppFamily.FIREFOX ? "about:policies" : "about:policy");
             String display = FileUtilities.configureAssetToString(getClass(),"resources/restart-required.html.in", fieldMap);
 
             response.setStatus(HttpServletResponse.SC_OK);
@@ -275,6 +278,21 @@ public class HttpAboutServlet extends DefaultServlet {
             }
             filterChain.doFilter(request, response);
         });
+    }
+
+    private static AppFamily parseApp(HttpServletRequest request) {
+        String userAgent = request.getHeader("User-Agent");
+        if(userAgent != null) {
+            for(AppFamily appFamily : AppFamily.values()) {
+                for(AppFamily.AppVariant variant : appFamily.getVariants()) {
+                    if (userAgent.toLowerCase(Locale.ENGLISH).contains(variant.getSlug())) {
+                        return appFamily;
+                    }
+                }
+            }
+        }
+        // If we can't guess, fallback to Chrome
+        return AppFamily.CHROMIUM;
     }
 
 }

@@ -170,32 +170,32 @@ public class LinuxInstaller extends Installer {
     }
 
     // Environmental variables for spawning a task using sudo. Order is important.
-    static String[] SUDO_EXPORTS = {"USER", "HOME", "UPSTART_SESSION", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "XDG_CURRENT_DESKTOP", "GNOME_DESKTOP_SESSION_ID" };
+    static String[] SUDO_EXPORTS = {"USER", "HOME", "UPSTART_SESSION", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "XDG_CURRENT_DESKTOP", "GNOME_DESKTOP_SESSION_ID", "WAYLAND_DISPLAY" };
 
     /**
      * Spawns the process as the underlying regular user account, preserving the environment
      */
     public void spawn(List<String> args) throws Exception {
         ArrayList<String> argsList;
-        HashMap<String,String> envp = new HashMap<>();
         if(!SystemUtilities.isAdmin()) {
             argsList = new ArrayList<>(args);
             argsList.add(0, "nohup");
         } else {
-            // Get user's environment from dbus, etc
-            envp.putAll(getUserEnv(sudoer));
-
             // Concat "sudo|su", sudoer, "nohup", args
             argsList = sudoCommand(sudoer, args);
         }
 
         // Spawn
         log.info("Executing: {}", Arrays.toString(argsList.toArray()));
-        super.startProcess(argsList, envp);
+        super.startProcess(argsList);
     }
 
     /**
      * Constructs a command to help running as another user using "sudo" or "su"
+     * <p>
+     * Note: sudo has a bug with "-E" that prevents passing environment variables
+     * so they must be passed on the command line
+     * </p>
      */
     public static ArrayList<String> sudoCommand(String sudoer, List<String> cmds) {
         ArrayList<String> sudo = new ArrayList<>();
@@ -208,8 +208,14 @@ public class LinuxInstaller extends Installer {
             log.info("Guessing that this system prefers \"sudo\" over \"su\".");
             sudo.add("sudo");
 
+            // Get user's environment from dbus, etc
+            getUserEnv(sudoer).forEach((key, value) -> {
+                if (value != null && !value.isBlank()) {
+                    sudo.add(String.format("%s=%s", key, value));
+                }
+            });
+
             // Add calling user
-            sudo.add("-E"); // preserve environment
             sudo.add("-u");
             sudo.add(sudoer);
 
@@ -222,6 +228,10 @@ public class LinuxInstaller extends Installer {
         } else {
             // Build and escape for "su"
             log.info("Guessing that this system prefers \"su\" over \"sudo\".");
+
+            // su passes as one large command wrap in single-quotes
+            cmds.replaceAll(s -> String.format("'%s'", s));
+
             sudo.add("su");
 
             // Add calling user
@@ -230,12 +240,18 @@ public class LinuxInstaller extends Installer {
             sudo.add("-c");
 
             // Let the process outlive its parent
-            sudo.add("nohup");
+            cmds.add(0, "nohup");
 
-            if(cmds != null && cmds.size() > 0) {
-                // Add additional commands
-                sudo.addAll(Arrays.asList(StringUtils.join(cmds, "\" \"") + "\""));
-            }
+            // Get user's environment from dbus, etc
+            getUserEnv(sudoer).forEach((key, value) -> {
+                if (value != null && !value.isBlank()) {
+                    cmds.add(0, String.format("%s='%s'", key, value));
+                }
+            });
+
+
+            // Add additional commands
+            sudo.add(StringUtils.join(cmds, " "));
         }
         return sudo;
     }

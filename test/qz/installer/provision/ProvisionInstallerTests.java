@@ -2,7 +2,6 @@ package qz.installer.provision;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codehaus.jettison.json.JSONException;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
@@ -70,16 +69,21 @@ public class ProvisionInstallerTests {
      * For validating written values, write dedicated tests elsewhere.
      */
     @Test(dataProvider = "steps")
-    public void provisionInstallerTests(Step step) throws JSONException {
-        boolean expected = !step.getDescription().contains("ERROR EXPECTED") && // description says so
-                Os.matchesHost(step.getOs()) &&  // wrong os
-                step.getType() != Type.CONF; // depends on mutable jvm runtime
+    public void provisionInstallerTests(Step step) {
+        if(!Os.matchesHost(step.getOs())) {
+            throw new SkipException("Host os doesn't match target os");
+        }
+
+        if(step.getType() == Type.CONF) {
+            throw new SkipException(String.format("Provision type '%s' is not supported via TestNG", step.getType()));
+        }
 
         if(step.getType() == Type.POLICY && AppType.collect(step.getApp()).length == 0) {
             // not supported for this os / app family / scope
             throw new SkipException(String.format("Can't run step '%s' on this platform", step));
         }
 
+        boolean expected = !step.getDescription().contains("ERROR EXPECTED"); // description says so
         boolean actual;
         try {
             actual = ProvisionInstaller.invokeStep(step);

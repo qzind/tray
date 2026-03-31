@@ -215,7 +215,7 @@ public abstract class PolicyTestDispatcher {
             Object outerValue = outerMap.get(entry.getKey());
             if (outerValue == null) return false;
             if (outerValue instanceof Object[]) {
-                //todo
+                //todo: Add dedupe tests for arrays in maps
                 continue;
             }
             assertEqual(outerValue, entry.getValue());
@@ -273,6 +273,7 @@ public abstract class PolicyTestDispatcher {
         }
     }
 
+    @SuppressWarnings("SameParameterValue")
     private static void skipIf(Os os, Installer.PrivilegeLevel scope) throws SkipException {
         if(SystemUtilities.getOs() == os && PolicyTestDispatcher.scope == scope) {
             throw new SkipException(String.format("Skipping test for Os: '%s', PrivilegeLevel: '%s'", os, scope));

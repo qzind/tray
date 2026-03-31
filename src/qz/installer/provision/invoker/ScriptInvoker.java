@@ -23,7 +23,7 @@ public class ScriptInvoker extends InvokableResource {
             return false;
         }
         Script engine = Script.parse(step.getData());
-        ArrayList<String> command = getInterpreter(engine, script);
+        ArrayList<String> command = getInterpreter(engine);
         if(command.isEmpty() && SystemUtilities.isWindows()) {
             log.warn("No interpreter found for {}, skipping", step.getData());
             return false;
@@ -43,9 +43,9 @@ public class ScriptInvoker extends InvokableResource {
      * An empty array will fall back to Unix "shebang" notation, e.g. #!/usr/bin/python3
      * which will allow the OS to select the correct interpreter for the given file
      * </p>
-     * <b>Note: </b> Special attention for "shebang" is given on macOS, see #1396
+     * No special attention is given to "shebang", behavior may differ between OSs
      */
-    private static ArrayList<String> getInterpreter(Script engine, File script) {
+    private static ArrayList<String> getInterpreter(Script engine) {
         ArrayList<String> interpreter = new ArrayList<>();
         Os osType = SystemUtilities.getOs();
         switch(engine) {

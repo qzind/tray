@@ -372,7 +372,6 @@ public abstract class Installer {
         // Remove Chrome URLAllowlist TODO: Remove @2.3.0 per #1277
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, CHROMIUM.getVariants()[0]); // "Chrome" proper
         policyInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", DATA_DIR + "://*");
-        policyInstaller.uninstall(PolicyState.Type.ARRAY, "URLWhitelist", DATA_DIR + "://*");
 
         // Uninstall Firefox certificate
         new FirefoxCertificateInstaller(scope, null).uninstall();

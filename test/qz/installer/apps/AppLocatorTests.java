@@ -18,14 +18,15 @@ import java.util.*;
 /**
  * Locate all apps registered as <code>AppAlias</code>
  * This will spawn a bunch an instance of any app found.
- * Set <code>SKIP_APP_SPAWN=true</code> to skip spawning apps.
+ * Set <code>SPAWN_APPS=true</code> to run locally.
  */
 public class AppLocatorTests {
     private static final Logger log = LogManager.getLogger(AppLocatorTests.class);
 
     private final Installer installer = Installer.getInstance();
     private final HashMap<AppFamily,HashSet<ResolvedApp>> resolvedAppsCache = new HashMap<>();
-    private static final boolean SKIP_APP_SPAWN = false;
+    private static final boolean SPAWN_APPS = System.getenv("GITHUB_ACTIONS") != null ||
+            System.getenv("SPAWN_APPS") != null;
 
     /**
      * Lazy init allows first caller to provide accurate benchmarking values to TestNG
@@ -79,7 +80,7 @@ public class AppLocatorTests {
 
     @Test(dataProvider = "apps", priority = 3)
     public void startAppTests(AppFamily app) {
-        if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
+        if(!SPAWN_APPS) throw new SkipException("Skipping per request");
         for (ResolvedApp resolvedApp : findResolvedApps(app)) {
             log.info("[{}] Spawning '{}' from '{}'", app.name(), resolvedApp.getName(true), Arrays.toString(resolvedApp.getExeCommand()));
             try {
@@ -95,7 +96,7 @@ public class AppLocatorTests {
     public void waitForApps(AppFamily app) {
         int ms = 200;
         boolean slept = true;
-        if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
+        if(!SPAWN_APPS) throw new SkipException("Skipping per request");
         for (ResolvedApp ignored : findResolvedApps(app)) {
             // Give each app time to start
             try {
@@ -109,7 +110,7 @@ public class AppLocatorTests {
 
     @Test(dataProvider = "apps", priority = 5)
     public void findRunningAppsTests(AppFamily app) {
-        if(SKIP_APP_SPAWN) throw new SkipException("Skipping per request");
+        if(!SPAWN_APPS) throw new SkipException("Skipping per request");
         HashMap<String,ResolvedApp> runningApps = AppLocator.getInstance().getRunningApps(findResolvedApps(app), null);
         for(Map.Entry<String,ResolvedApp> runningApp : runningApps.entrySet()) {
             String pid = runningApp.getKey();

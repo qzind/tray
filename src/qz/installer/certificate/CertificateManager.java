@@ -401,7 +401,7 @@ public class CertificateManager {
                 log.info("Found {}/{}.properties", loc, Constants.PROPS_FILE);
                 return props;
             } catch(Exception ignore) {
-                log.warn("Properties couldn't be loaded at {}, trying fallback...", loc, ignore);
+                log.warn("Properties couldn't be loaded at {}, trying fallback...", loc);
             }
         }
         log.info("Could not get SSL properties from file.");

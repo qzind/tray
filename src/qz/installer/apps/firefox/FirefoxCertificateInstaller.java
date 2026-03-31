@@ -16,10 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.cert.X509Certificate;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static qz.common.Constants.PROPS_FILE;
 import static qz.installer.Installer.*;

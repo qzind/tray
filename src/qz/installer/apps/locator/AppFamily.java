@@ -77,7 +77,21 @@ public enum AppFamily implements Sluggable{
         }
 
         public String getVendor() {
-            return vendor;
+            return getVendor(false);
+        }
+
+        /**
+         * "Google" --> "google"
+         */
+        public String getVendor(boolean slugged) {
+            if(!slugged) {
+                return vendor;
+            }
+
+            String slug = vendor;
+            // only return first word
+            if (vendor.contains(" ")) slug = slug.split("\\s+")[0];
+            return slug.toLowerCase(Locale.ENGLISH);
         }
 
         public String getName() {

@@ -20,19 +20,20 @@ import org.bouncycastle.util.encoders.Base64;
 import qz.auth.X509Constants;
 import qz.common.Constants;
 import qz.installer.Installer;
-import qz.utils.ByteUtilities;
-import qz.utils.ShellUtilities;
-import qz.utils.SystemUtilities;
-import qz.utils.UnixUtilities;
+import qz.installer.apps.locator.AppFamily;
+import qz.utils.*;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.nio.file.Path;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 
 import static qz.installer.Installer.PrivilegeLevel.*;
 
@@ -44,8 +45,9 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     private static final String CA_CERTIFICATES = "/usr/local/share/ca-certificates/";
     private static final String CA_CERTIFICATE_NAME = Constants.PROPS_FILE + "-root.crt"; // e.g. qz-tray-root.crt
     private static final String PK11_KIT_ID = "pkcs11:id=";
+    private static final String FIREFOX_FLATPAK_PROFILE_PATTERN = "%s/.var/app/%s/config/%s/%s/profiles.ini";
 
-    private static String[] NSSDB_URLS = {
+    private static final List<String> NSSDB_URLS = new ArrayList<>(List.of(new String[]{
             // Conventional cert store
             "sql:" + System.getenv("HOME") + "/.pki/nssdb/",
 
@@ -54,7 +56,12 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
             "sql:" + System.getenv("HOME") + "/snap/brave/current/.pki/nssdb/",
             "sql:" + System.getenv("HOME") + "/snap/opera/current/.pki/nssdb/",
             "sql:" + System.getenv("HOME") + "/snap/opera-beta/current/.pki/nssdb/"
-    };
+    }));
+
+    static {
+        // Add any found flatpack nssdb locations
+        NSSDB_URLS.addAll(getFirefoxFlatpakUrls());
+    }
 
     private Installer.PrivilegeLevel certType;
 
@@ -293,6 +300,56 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
             }
         }
         return found;
+    }
+
+    /**
+     * Gets a list of Firefox-like profiles on this system created using Flatpak which needs
+     * a certificate installed in user-space
+     */
+    private static HashSet<String> getFirefoxFlatpakUrls() {
+        String homeDir = System.getenv("HOME");
+        HashSet<String> databases = new HashSet<>();
+
+        for(AppFamily.AppVariant variant : AppFamily.FIREFOX.getVariants()) {
+            // "~/.var/app/org.mozilla.firefox/config/mozilla/firefox/profiles.ini"
+            String profilesPath = String.format(FIREFOX_FLATPAK_PROFILE_PATTERN,
+                                                homeDir,
+                                                variant.getBundleId(),
+                                                variant.getVendor(true),
+                                                variant.getSlug());
+
+            File profilesIni = new File(profilesPath);
+            if(profilesIni.exists()) {
+                File db = findDefaultProfile(profilesIni);
+                if(db != null) {
+                    databases.add(String.format("sql:%s/", db.getPath()));
+                }
+            }
+        }
+
+        return databases;
+    }
+
+    public static File findDefaultProfile(File profilesIni) {
+        try {
+            String allContent = FileUtilities.readLocalFile(profilesIni.toPath());
+            for(String section : allContent.split("(?m)^(?=\\[.*])")) {
+                Properties p = new Properties();
+                p.load(new StringReader(section));
+                String defaultProfile = p.getProperty("Default");
+                if (defaultProfile != null && !"1".equals(defaultProfile)) { // "1" was for older FF versions
+                    // TODO: Add special handling for non-relative profiles "IsRelative=0"
+                    Path profilePath = profilesIni.getParentFile().toPath().resolve(defaultProfile);
+                    File profileFile = profilePath.toFile();
+                    if (profileFile.exists() && profileFile.isDirectory()) {
+                        return profileFile;
+                    }
+                }
+            }
+        } catch(IOException e) {
+            log.warn("An error occurred parsing the ini file '{}'", profilesIni);
+        }
+        return null;
     }
 
     /**

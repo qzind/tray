@@ -59,7 +59,7 @@ public class PolicyInstaller {
                     if(!remaining.containsKey(key)) continue;
                     if (provided.get(key) instanceof Object[] && remaining.get(key) instanceof Object[]) {
                         int size = ((Object[])remaining.get(key)).length;
-                        HashSet<Object> remainingSet = new HashSet<>(List.of((Object[])remaining.get(key)));
+                        HashSet<Object> remainingSet = new LinkedHashSet<>(List.of((Object[])remaining.get(key)));
                         for(Object o : List.of((Object[])provided.get(key))) {
                             remainingSet.remove(o);
                         }

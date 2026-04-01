@@ -281,7 +281,7 @@ public class PlistUtils {
          * Read the array, but with special assumption that duplicated entries aren't wanted or warranted
          */
         private static HashSet<Object> fromUniqueArray(String haystack) {
-            return new HashSet<>(fromArray(haystack));
+            return new LinkedHashSet<>(fromArray(haystack));
         }
 
         private static String trim(String value) {

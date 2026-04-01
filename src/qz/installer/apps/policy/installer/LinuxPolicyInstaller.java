@@ -71,7 +71,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
             jsonArray = new JSONArray();
         } else {
             // Explicitly dedupe before adding
-            jsonArray = removeFromJsonArray(new HashSet<>(Arrays.asList(values)), jsonArray);
+            jsonArray = removeFromJsonArray(new LinkedHashSet<>(Arrays.asList(values)), jsonArray);
         }
 
         value:
@@ -92,7 +92,7 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
     @Override
     public PolicyState removeEntries(PolicyState state, Object ... values) {
         String key = state.getName();
-        Set<Object> removeSet = new HashSet<>(Arrays.asList(values));
+        Set<Object> removeSet = new LinkedHashSet<>(Arrays.asList(values));
         try {
             JSONObject jsonPolicy = readJson(state);
             JSONArray jsonArray = jsonPolicy.optJSONArray(key);

@@ -373,7 +373,7 @@ public class WindowsUtilities {
             log.warn("Registry key {}\\\\{} doesn't exist, skipping removal", root, key);
             return true;
         }
-        HashSet<Object> existingValues = new HashSet<>();
+        HashSet<Object> existingValues = new LinkedHashSet<>();
         for(Map.Entry<String, Object> entry : Advapi32Util.registryGetValues(root, key).entrySet())  {
             if(ByteUtilities.isPositiveNumber(entry.getKey())) {
                 // Assume a positive number is a numbered index

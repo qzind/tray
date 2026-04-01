@@ -45,6 +45,8 @@ public class ExhaustivePolicyInstallerTests extends PolicyTestDispatcher {
                 { MAP, "testMapArrayString", new Object[] { "stringArray", new Object[] { "firstElement", "secondElement" } } },
                 { MAP, "testMapArrayInt", new Object[] { "intArray", new Object[] { 111, 222 } } },
                 { MAP, "testMapArrayBool", new Object[] { "boolArray", new Object[] {true, false } } },
+                // nested
+                { MAP, "testMapNestedArrayString", new Object[] { "nestedMap", new HashMap<>(Map.of("stringArray", new Object[] {"firstElement", "secondElement" })) } },
         };
         allTests.addAll(List.of(mapArrayTests));
 

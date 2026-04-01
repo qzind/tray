@@ -4,7 +4,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
 import org.testng.SkipException;
-import qz.build.provision.params.Os;
 import qz.installer.Installer;
 import qz.installer.apps.exception.UnsupportedPolicyException;
 import qz.installer.apps.locator.AppFamily;
@@ -168,7 +167,7 @@ public abstract class PolicyTestDispatcher {
         assertState(state);
 
         Map<String, Object> returnedMap = policyInstaller.getMap(state.reset());
-        Assert.assertTrue(mapContainsMap(returnedMap, intendedMap));
+        Assert.assertFalse(mapExcludesMap(returnedMap, intendedMap));
         return state;
     }
 
@@ -206,22 +205,6 @@ public abstract class PolicyTestDispatcher {
     }
 
     /***
-     * Returns true if all k,v pairs in innerMap exist in outerMap
-     */
-    private static boolean mapContainsMap(Map<String, Object> outerMap, HashMap<String, Object> innerMap) {
-        for (Map.Entry<String, Object> entry: innerMap.entrySet()) {
-            Object outerValue = outerMap.get(entry.getKey());
-            if (outerValue == null) return false;
-            if (outerValue instanceof Object[]) {
-                //todo: Add dedupe tests for arrays in maps
-                continue;
-            }
-            assertEqual(outerValue, entry.getValue());
-        }
-        return true;
-    }
-
-    /***
      * Returns true if
      */
     @SuppressWarnings("unchecked")
@@ -245,9 +228,12 @@ public abstract class PolicyTestDispatcher {
                     Object[] compareArray = (Object[]) compareValue;
 
                     for (Object baseItem : baseArray) {
-                        if (Arrays.asList(compareArray).contains(baseItem)) {
-                            return false;
+                        for(Object compareItem : compareArray) {
+                            if(baseItem.equals(coerced(compareItem, baseItem))) {
+                                break;
+                            }
                         }
+                        return false;
                     }
                 } else {
                     return false;
@@ -257,33 +243,30 @@ public abstract class PolicyTestDispatcher {
         return true;
     }
 
-    private static void assertEqual(Object actual, Object expected) {
+    /**
+     * Workaround platform-specific quirks by coercing one value type to another
+     */
+    private static Object coerced(Object actual, Object expected) {
         if(SystemUtilities.isWindows()) {
             // Windows registry is incapable of returning a boolean
             if(expected instanceof Boolean && actual instanceof Integer) {
-                Integer intReturned = (Integer)actual;
-                switch(intReturned) {
+                Integer intActual = (Integer)actual;
+                switch(intActual) {
                     case 0:
                     case 1:
                         // treat as boolean
-                        actual = intReturned != 0;
-                        break;
+                        return intActual != 0;
                     default:
                         // let it fail
                 }
             }
         }
-        if(SystemUtilities.isMac()) {
-            if(expected instanceof Integer && actual instanceof Boolean) {
-                // cli limitations for maps
-                expected = expected.equals(1);
-            }
-            if(expected instanceof Float && actual instanceof String) {
-                // cli puts quotes around floats for no reason :/
-                actual = Float.parseFloat((String)actual);
-            }
-        }
-        if (!Objects.equals(expected, actual)) {
+        return actual;
+    }
+
+    private static void assertEqual(Object actual, Object expected) {
+        actual = coerced(actual, expected);
+        if (!Objects.equals(actual, expected)) {
             log.warn(
                     "Expected value: {} (type: {}), returned value: {} (type: {})",
                     expected,

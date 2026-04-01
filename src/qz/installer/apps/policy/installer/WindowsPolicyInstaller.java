@@ -4,6 +4,7 @@ import com.sun.jna.platform.win32.WinReg;
 
 import qz.installer.apps.policy.PolicyInstaller;
 import qz.installer.apps.policy.PolicyState;
+import qz.utils.ByteUtilities;
 import qz.utils.WindowsUtilities;
 
 import java.nio.file.Path;
@@ -127,20 +128,33 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         String[] subKeys = WindowsUtilities.getRegistryKeys(root, regKey.toString());
         if(subKeys != null) {
             for(String subKey : subKeys) {
-                ArrayList<Object> values = new ArrayList<>();
-                Object value;
-                int index = 0;
-                String arrayKey = regKey.resolve(subKey).toString();
-                while ((value = WindowsUtilities.getRegValue(root, arrayKey, String.valueOf(index))) != null) {
-                    values.add(value);
-                    index++;
-                }
-                if(!values.isEmpty()) {
-                    map.put(subKey, values.toArray(new Object[0]));
+                PolicyState nested = state.nested(subKey);
+                if(isArray(nested)) {
+                    map.put(subKey, getEntries(nested));
+                } else {
+                    map.put(subKey, getMap(nested));
                 }
             }
         }
 
         return map;
+    }
+
+    /**
+     * Returns true if the key appears to contain an array by seeing if the entries are all numbered
+     * e.g. 0 = "foo", 1 = "bar"
+     */
+    public boolean isArray(PolicyState state) {
+        TreeMap<String, Object> treeMap = WindowsUtilities.getRegistryValues(state.getHkey(), state.getLocation().toString());
+        if(treeMap == null) {
+            return false;
+        }
+        HashMap<String,Object> map = new HashMap<>(treeMap);
+        for(String s : map.keySet()) {
+            if(!ByteUtilities.isPositiveNumber(s)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

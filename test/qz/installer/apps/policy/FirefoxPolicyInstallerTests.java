@@ -18,10 +18,12 @@ public class FirefoxPolicyInstallerTests extends PolicyTestDispatcher {
             tests = new Object[][] {
                     // arrays in maps are only supported on linux
                     { MAP, "Certificates", new Object[] { "Install", new Object[] { new File("policy-testing.crt").toString() } } },
+                    { MAP, "LocalNetworkAccess", new Object[] { "SkipDomains", new Object[] { "*.qz.io" } } },
             };
         } else {
             tests = new Object[][] {
-                    { MAP, "Certificates", new Object[] { "ImportEnterpriseRoots", true } }
+                    { MAP, "Certificates", new Object[] { "ImportEnterpriseRoots", true } },
+                    { MAP, "LocalNetworkAccess", new Object[] { "SkipDomains", new Object[] { "*.qz.io" } } },
             };
         }
         return PolicyTestDispatcher.addAppVariants(List.of(tests), AppFamily.FIREFOX);

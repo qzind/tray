@@ -166,6 +166,16 @@
         "data": "[*.]qz.io"
     },
     {
+        "description": "[POLICY] ARRAY: Firefox URL for LNA at 'install'",
+        "type": "policy",
+        "phase": "install",
+        "os": "*",
+        "app": "firefox",
+        "name": "LocalNetworkAccess",
+        "format": "map",
+        "data": "{\"SkipDomains\": [\"*.qz.io\"] }"
+    },
+    {
         "description": "[POLICY] ARRAY: Chromium URI for qz:launch at 'install'",
         "type": "policy",
         "phase": "install",

@@ -278,7 +278,7 @@ public class PolicyInstaller {
      * falling back to an empty <code>Map</code> on failure.
      */
     @SuppressWarnings("unchecked,rawtypes")
-    private static Map<String, Object> objectToMap(Object value) {
+    public static Map<String, Object> objectToMap(Object value) {
         if(value instanceof Map) {
             Map map = (Map)value;
             Iterator<Object> iterator = map.keySet().iterator();

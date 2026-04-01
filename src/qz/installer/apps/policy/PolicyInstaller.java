@@ -85,6 +85,27 @@ public class PolicyInstaller {
             }
             return state;
         }
+
+        static Map<String, Object> mergeMap(Map<String, Object> existingValues, Map<String, Object> newValues, boolean dedupe) {
+            newValues.forEach((key, value2) -> {
+                existingValues.merge(key, value2, (existingValue, newValue) -> {
+                    // Handle Object array deduplication
+                    if (existingValue instanceof Object[] && newValue instanceof Object[]) {
+                        return mergeArrays((Object[]) existingValue, (Object[]) newValue, dedupe);
+                    }
+                    return newValue;
+                });
+            });
+
+            return existingValues;
+        }
+
+        private static Object[] mergeArrays(Object[] existingArray, Object[] newArray, boolean dedupe) {
+            Collection<Object> collection = dedupe ? new LinkedHashSet<>() : new ArrayList<>();
+            Collections.addAll(collection, existingArray);
+            Collections.addAll(collection, newArray);
+            return collection.toArray(new Object[0]);
+        }
     }
 
     public interface PolicyLocator {

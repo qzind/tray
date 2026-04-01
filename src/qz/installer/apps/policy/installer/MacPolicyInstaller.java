@@ -6,6 +6,8 @@ import qz.utils.PlistUtils;
 
 import java.util.*;
 
+import static qz.installer.apps.policy.PolicyInstaller.PrimitivePolicyInstaller.*;
+
 public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstaller {
     @Override
     public PolicyState putValue(PolicyState state, Object value) {
@@ -44,7 +46,7 @@ public class MacPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstal
 
     @Override
     public PolicyState putMap(PolicyState state, Map<String,Object> map) {
-        return state.setSucceeded(PlistUtils.writeMap(state.getLocation(), state.getName(), map));
+        return state.setSucceeded(PlistUtils.writeMap(state.getLocation(), state.getName(), mergeMap(getMap(state), map, true)));
     }
 
     @Override

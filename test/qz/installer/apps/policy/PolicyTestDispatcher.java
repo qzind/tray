@@ -222,12 +222,36 @@ public abstract class PolicyTestDispatcher {
     }
 
     /***
-     * Returns true of there are no keys that overlap between the two maps
+     * Returns true if
      */
-    private static boolean mapExcludesMap(Map<String, Object> mapA, HashMap<String, Object> mapB) {
-        for (String key : mapA.keySet()) {
-            if (mapB.containsKey(key)) {
-                return false;
+    @SuppressWarnings("unchecked")
+    private static boolean mapExcludesMap(Map<String, Object> baseMap, Map<String, Object> compareMap) {
+        if (baseMap == null || compareMap == null) return true;
+
+        for (Map.Entry<String, Object> baseEntry : baseMap.entrySet()) {
+            String baseKey = baseEntry.getKey();
+            Object baseValue = baseEntry.getValue();
+
+            if (compareMap.containsKey(baseKey)) {
+                Object compareValue = compareMap.get(baseKey);
+
+                if (baseValue instanceof Map && compareValue instanceof Map) {
+                    // recurse
+                    if (!mapExcludesMap((Map<String, Object>) baseValue, (Map<String, Object>) compareValue)) {
+                        return false;
+                    }
+                } else if (baseValue instanceof Object[] && compareValue instanceof Object[]) {
+                    Object[] baseArray = (Object[]) baseValue;
+                    Object[] compareArray = (Object[]) compareValue;
+
+                    for (Object baseItem : baseArray) {
+                        if (Arrays.asList(compareArray).contains(baseItem)) {
+                            return false;
+                        }
+                    }
+                } else {
+                    return false;
+                }
             }
         }
         return true;

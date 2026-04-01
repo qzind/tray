@@ -33,13 +33,14 @@ public class PolicyInvoker implements Invokable {
                     break;
                 }
                 try {
-                    values = toList(new JSONArray(step.getData())).toArray();
+                    values = toList(new JSONArray(step.getData()));
                 } catch(JSONException ignore) {
                     // Treat non-arrays as single elements
                     values = step.getData();
                 }
                 break;
             case MAP:
+                log.warn("\n" + step.getData() + "\n" + new JSONObject().put("SkipDomains", new JSONArray().put("*.qz.io")));
                 values = toMap(new JSONObject(step.getData()));
                 break;
             case VALUE:
@@ -104,7 +105,7 @@ public class PolicyInvoker implements Invokable {
         return map;
     }
 
-    public static List<Object> toList(JSONArray array) throws Exception {
+    public static Object[] toList(JSONArray array) throws Exception {
         List<Object> list = new ArrayList<>();
         for (int i = 0; i < array.length(); i++) {
             Object value = array.get(i);
@@ -115,6 +116,6 @@ public class PolicyInvoker implements Invokable {
             }
             list.add(value);
         }
-        return list;
+        return list.toArray();
     }
 }

@@ -60,26 +60,30 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public PolicyState putMap(PolicyState state, Map<String,Object> map) {
         WinReg.HKEY root = state.getHkey();
         Path regKey = state.getLocation();
 
+        PolicyState nested;
         for(Map.Entry<String, Object> mapEntry : map.entrySet()) {
             String mapKey = mapEntry.getKey();
             Object value = mapEntry.getValue();
 
-            if(value instanceof Object[]) {
-                String arrayKey = regKey.resolve(mapKey).toString();
-                for(Object arrayValue : (Object[])value) {
-                    if(!WindowsUtilities.addNumberedRegValue(root, arrayKey, arrayValue)) {
-                        return state.setFailed(String.format("Error writing '%s'='%s' to %s\\%s", mapKey, Arrays.toString((Object[])value), WindowsUtilities.getHkeyName(root), regKey));
-                    }
-                }
-                continue;
-            }
+            nested = state.nested(mapKey);
 
-            if(!WindowsUtilities.addRegValue(root, regKey.toString(), mapKey, value)) {
-                return state.setFailed(String.format("Error writing '%s'='%s' to %s\\%s", mapKey, value, WindowsUtilities.getHkeyName(root), regKey));
+            if(value instanceof Map) {
+                if((nested = putMap(nested, (Map<String, Object>)value)).hasFailed()) {
+                    return nested;
+                }
+            } else if(value instanceof Object[]) {
+                if((nested = putEntries(nested, (Object[])value)).hasFailed()) {
+                    return nested;
+                }
+            } else {
+                if (!WindowsUtilities.addRegValue(root, regKey.toString(), mapKey, value)) {
+                    return state.setFailed(String.format("Error writing '%s'='%s' to %s\\%s", mapKey, value, WindowsUtilities.getHkeyName(root), regKey));
+                }
             }
         }
         return state;

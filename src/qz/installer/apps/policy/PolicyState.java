@@ -70,7 +70,7 @@ public class PolicyState {
         this.type = type;
         this.name = name;
         if(hkey != null && (type == Type.ARRAY || type == Type.MAP)) {
-            // Special handling for Windows arrays: name is the reg key
+            // Special handling for Windows arrays and maps: name is the reg key
             this.location = Paths.get(String.format("%s\\%s", location.toString(), name));
         } else {
             this.location = location;
@@ -231,5 +231,13 @@ public class PolicyState {
             log.info(message);
         }
         return this;
+    }
+
+    /**
+     * Clone this PolicyState into the nested name
+     * Note: Array and maps will automatically append name to registry key on Windows; pass location as-s
+     */
+    public PolicyState nested(String child) {
+        return new PolicyState(scope, appVariant, phase, type, child, hkey == null? location.resolve(name) : location, hkey).reset();
     }
 }

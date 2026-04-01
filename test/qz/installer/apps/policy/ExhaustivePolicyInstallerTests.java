@@ -41,11 +41,16 @@ public class ExhaustivePolicyInstallerTests extends PolicyTestDispatcher {
         }
 
         // FIXME: Combine with above
-        if (true) {
+        Object[][] mapArrayTests = new Object[][] {
+                { MAP, "testMapArrayString", new Object[] { "stringArray", new Object[] { "firstElement", "secondElement" } } },
+                { MAP, "testMapArrayInt", new Object[] { "intArray", new Object[] { 111, 222 } } },
+                { MAP, "testMapArrayBool", new Object[] { "boolArray", new Object[] {true, false } } },
+        };
+        allTests.addAll(List.of(mapArrayTests));
+
+
+        if(!SystemUtilities.isWindows()) {
             Object[][] linuxOnly = new Object[][] {
-                    { MAP, "testMapArrayString", new Object[] { "stringArray", new Object[] { "firstElement", "secondElement" } } },
-                    { MAP, "testMapArrayInt", new Object[] { "intArray", new Object[] { 111, 222 } } },
-                    { MAP, "testMapArrayBool", new Object[] { "boolArray", new Object[] {true, false } } },
                     { MAP, "testMapArrayFloat", new Object[] { "floatArray", new Object[] { 1.1f, 2.2f } } },
             };
             allTests.addAll(List.of(linuxOnly));

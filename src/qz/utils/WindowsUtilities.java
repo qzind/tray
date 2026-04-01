@@ -308,6 +308,26 @@ public class WindowsUtilities {
         return false;
     }
 
+    public static boolean deleteRegKeyRecursively(HKEY root, String key) {
+        try {
+            if (Advapi32Util.registryKeyExists(root, key)) {
+                String[] subKeys = Advapi32Util.registryGetKeys(root, key);
+                if(subKeys != null) {
+                    for(String subKey : subKeys) {
+                        if(!deleteRegKeyRecursively(root, key + "\\" + subKey)) {
+                            return false;
+                        }
+                    }
+                }
+                Advapi32Util.registryDeleteKey(root, key);
+                return true;
+            }
+        } catch(Exception e) {
+            log.warn("Couldn't recursively delete value {}\\\\{}", getHkeyName(root), key);
+        }
+        return false;
+    }
+
     // gracefully swallow InvocationTargetException
     public static boolean deleteRegValue(HKEY root, String key, String value) {
         try {
@@ -351,7 +371,9 @@ public class WindowsUtilities {
                 startIndex++;
             }
             String value = Integer.toString(startIndex);
-            if (data instanceof String) {
+            if (data instanceof Boolean) {
+                Advapi32Util.registrySetIntValue(root, key, value, ((Boolean)data) ? 1 : 0);
+            } else if (data instanceof String) {
                 Advapi32Util.registrySetStringValue(root, key, value, (String)data);
             } else if (data instanceof Integer) {
                 Advapi32Util.registrySetIntValue(root, key, value, (Integer)data);
@@ -377,9 +399,13 @@ public class WindowsUtilities {
         for(Map.Entry<String, Object> entry : Advapi32Util.registryGetValues(root, key).entrySet())  {
             if(ByteUtilities.isPositiveNumber(entry.getKey())) {
                 // Assume a positive number is a numbered index
-                if(data instanceof String || data instanceof Integer) {
+                if(data instanceof String || data instanceof Integer || data instanceof Boolean) {
+                    Object expected = data;
+                    if(data instanceof Boolean && entry.getValue() instanceof Integer) {
+                        expected = ((Boolean)data) ? 1 : 0;
+                    }
                     // Note: We only delete what we can write; there's a chance of littered indices with unsupported value types
-                    if(!data.equals(entry.getValue())) {
+                    if(!expected.equals(entry.getValue())) {
                         existingValues.add(entry.getValue());
                         // Delete existing value, we'll add it back lower
                         Advapi32Util.registryDeleteValue(root, key, entry.getKey());
@@ -391,7 +417,7 @@ public class WindowsUtilities {
             }
         }
 
-        if(!deleteRegKey(root, key)) {
+        if(!deleteRegKeyRecursively(root, key)) {
             log.error("Unable to clear registry key at {}\\\\{}", WindowsUtilities.getHkeyName(root), key);
             return false;
         }

@@ -9,10 +9,9 @@ import qz.utils.WindowsUtilities;
 import java.nio.file.Path;
 import java.util.*;
 
-import static qz.installer.apps.policy.PolicyInstaller.normalizeFloats;
-
 public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstaller {
     @Override
+
     public PolicyState putValue(PolicyState state, Object value) {
         WinReg.HKEY root = state.getHkey();
         String path = state.getLocation().toString();
@@ -28,7 +27,7 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         switch(state.getType()) {
             case ARRAY:
             case MAP:
-                return state.setSucceeded(WindowsUtilities.deleteRegKey(root, key));
+                return state.setSucceeded(WindowsUtilities.deleteRegKeyRecursively(root, key));
             case VALUE:
             default:
                 return state.setSucceeded(WindowsUtilities.deleteRegValue(root, key, name));
@@ -63,11 +62,24 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
     @Override
     public PolicyState putMap(PolicyState state, Map<String,Object> map) {
         WinReg.HKEY root = state.getHkey();
-        Path key = state.getLocation();
+        Path regKey = state.getLocation();
 
         for(Map.Entry<String, Object> mapEntry : map.entrySet()) {
-            if(!WindowsUtilities.addRegValue(root, key.toString(), mapEntry.getKey(), mapEntry.getValue())) {
-                return state.setFailed(String.format("Error writing '%s'='%s' to %s\\%s", mapEntry.getKey(), mapEntry.getValue(), WindowsUtilities.getHkeyName(root), key));
+            String mapKey = mapEntry.getKey();
+            Object value = mapEntry.getValue();
+
+            if(value instanceof Object[]) {
+                String arrayKey = regKey.resolve(mapKey).toString();
+                for(Object arrayValue : (Object[])value) {
+                    if(!WindowsUtilities.addNumberedRegValue(root, arrayKey, arrayValue)) {
+                        return state.setFailed(String.format("Error writing '%s'='%s' to %s\\%s", mapKey, Arrays.toString((Object[])value), WindowsUtilities.getHkeyName(root), regKey));
+                    }
+                }
+                continue;
+            }
+
+            if(!WindowsUtilities.addRegValue(root, regKey.toString(), mapKey, value)) {
+                return state.setFailed(String.format("Error writing '%s'='%s' to %s\\%s", mapKey, value, WindowsUtilities.getHkeyName(root), regKey));
             }
         }
         return state;
@@ -78,7 +90,7 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         WinReg.HKEY root = state.getHkey();
         Path key = state.getLocation();
 
-        return normalizeFloats(state.failIfNull(WindowsUtilities.getRegValue(root, key.toString(), state.getName())));
+        return state.failIfNull(WindowsUtilities.getRegValue(root, key.toString(), state.getName()));
     }
 
     @Override
@@ -93,7 +105,7 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         Object value;
         // val is assigned, and the loop is continued if there was a non-null value returned
         while ((value = WindowsUtilities.getRegValue(root, key.toString(), Integer.toString(index))) != null) {
-            values.add(normalizeFloats(value));
+            values.add(value);
             index++;
         }
         // this will never be null, but will show a log when empty
@@ -103,12 +115,28 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
     @Override
     public Map<String,Object> getMap(PolicyState state) {
         WinReg.HKEY root = state.getHkey();
-        Path key = state.getLocation();
+        Path regKey = state.getLocation();
 
-        TreeMap<String, Object> treeMap = WindowsUtilities.getRegistryValues(root, key.toString());
-        if (treeMap != null) {
-            treeMap.replaceAll((k, v) -> normalizeFloats(v));
+        TreeMap<String, Object> treeMap = WindowsUtilities.getRegistryValues(root, regKey.toString());
+        HashMap<String,Object> map = new HashMap<>(state.failIfNull(treeMap));
+
+        String[] subKeys = WindowsUtilities.getRegistryKeys(root, regKey.toString());
+        if(subKeys != null) {
+            for(String subKey : subKeys) {
+                ArrayList<Object> values = new ArrayList<>();
+                Object value;
+                int index = 0;
+                String arrayKey = regKey.resolve(subKey).toString();
+                while ((value = WindowsUtilities.getRegValue(root, arrayKey, String.valueOf(index))) != null) {
+                    values.add(value);
+                    index++;
+                }
+                if(!values.isEmpty()) {
+                    map.put(subKey, values.toArray(new Object[0]));
+                }
+            }
         }
-        return new HashMap<>(state.failIfNull(treeMap));
+
+        return map;
     }
 }

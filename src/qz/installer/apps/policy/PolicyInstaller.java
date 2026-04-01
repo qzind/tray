@@ -61,7 +61,7 @@ public class PolicyInstaller {
                         int size = ((Object[])remaining.get(key)).length;
                         HashSet<Object> remainingSet = new LinkedHashSet<>(List.of((Object[])remaining.get(key)));
                         for(Object o : List.of((Object[])provided.get(key))) {
-                            remainingSet.remove(o);
+                            remainingSet.removeIf(existing -> valuesEqual(o, existing));
                         }
 
                         if (remainingSet.isEmpty()) {
@@ -105,6 +105,18 @@ public class PolicyInstaller {
             Collections.addAll(collection, existingArray);
             Collections.addAll(collection, newArray);
             return collection.toArray(new Object[0]);
+        }
+
+        static boolean valuesEqual(Object expected, Object actual) {
+            if(SystemUtilities.isWindows()) {
+                if(expected instanceof Boolean && actual instanceof Integer) {
+                    return ((Boolean)expected) == (((Integer)actual) != 0);
+                }
+                if(expected instanceof Integer && actual instanceof Boolean) {
+                    return (((Integer)expected) != 0) == (Boolean)actual;
+                }
+            }
+            return Objects.equals(expected, actual);
         }
     }
 

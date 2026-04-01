@@ -226,7 +226,7 @@ public class MacAppLocator extends AppLocator {
         int proc_pidpath(int pid, Pointer buffer, int buffersize);
     }
 
-    private static Document createCompatibleDocument(InputStream is) throws ParserConfigurationException, IOException, SAXException {
+    public static Document createCompatibleDocument(InputStream is) throws ParserConfigurationException, IOException, SAXException {
         DocumentBuilderFactory dbf  = DocumentBuilderFactory.newInstance();
         // don't let the <!DOCTYPE> fail parsing per https://github.com/qzind/tray/issues/809
         dbf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);

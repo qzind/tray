@@ -2,10 +2,27 @@ package qz.utils;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 import qz.build.jlink.Parsable;
 import qz.common.Sluggable;
+import qz.installer.apps.locator.MacAppLocator;
+import qz.installer.apps.policy.PolicyInstaller;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -179,25 +196,40 @@ public class PlistUtils {
         public static HashMap<String, Object> fromDictionary(String haystack) {
             HashMap<String, Object> values = new HashMap<>();
             String[] lines = trim(haystack).split("[\r?\n]+");
+            String key = null;
+            List<Object> nestedArray = null;
             for(String line : lines) {
                 String value = trim(line);
                 if(value.isBlank() || value.startsWith("{") || value.startsWith("}")) {
                     continue;
                 }
-                if(!value.contains(" = ")) {
+                /*if(!value.contains(" = ")) {
                     log.warn("Skipping dictionary line '{}', it doesn't contain ' = '", value);
                     continue;
-                }
+                }*/
                 String[] parts = value.split(" = ", 2);
-                if(parts.length < 2) {
-                    log.warn("Skipping dictionary line '{}', it's not in an expected format ' = '", value);
-                    continue;
+                String rawValue;
+                if(parts.length == 2) {
+                    key = parts[0].trim();
+                    rawValue = parts[1].trim();
+                } else {
+                    rawValue = parts[0].trim();
                 }
 
-                String key = parts[0].trim();
-                String rawValue = parts[1].trim();
-
-                values.put(key, parseObject(rawValue, true));
+                if(rawValue.equals("(")) {
+                    // nested array
+                    nestedArray = new ArrayList<>();
+                } else if (nestedArray != null) {
+                    if (!rawValue.startsWith(")")) {
+                        // append next value
+                        nestedArray.add(parseObject(rawValue, false));
+                    } else {
+                        // end of array
+                        values.put(key, nestedArray.toArray());
+                    }
+                } else if(key != null) {
+                    values.put(key, parseObject(rawValue, true));
+                }
             }
             return values;
         }
@@ -230,13 +262,19 @@ public class PlistUtils {
                 }
             }
 
-            // Float
-            if(raw.contains(".")) {
-                return fromFloat(raw);
-            }
+            try {
+                // Float
+                if (raw.contains(".")) {
+                    return fromFloat(raw);
+                }
 
-            // Int
-            return fromInteger(raw);
+                // Int
+                return fromInteger(raw);
+            } catch(NumberFormatException e) {
+                // Nested objects don't use double quotes.  Why apple?
+                // Fallback on string, I guess
+                return raw;
+            }
         }
 
         /**
@@ -309,8 +347,62 @@ public class PlistUtils {
     }
 
     private static boolean defaultWriteDictionary(Path plist, String entry, Map.Entry<String, Object> mapEntry) {
-        String mapValueType = PlistEntryType.getType(mapEntry.getValue()).getValueType();
-        return ShellUtilities.execute(defaultsCliPrepare(plist, PlistOperation.WRITE, entry, PlistEntryType.DICT.getValueType(), mapEntry.getKey(), mapValueType, mapEntry.getValue().toString()));
+        try {
+            Object o = mapEntry.getValue();
+
+            // Convert to nested XML format
+            if(o instanceof Map || o instanceof Object[]) {
+                Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+                Element element = createElement(doc, mapEntry.getValue());
+                Transformer transformer = TransformerFactory.newInstance().newTransformer();
+                transformer.setOutputProperty("omit-xml-declaration", "yes");
+                StringWriter writer = new StringWriter();
+                transformer.transform(new DOMSource(element), new StreamResult(writer));
+                return ShellUtilities.execute(defaultsCliPrepare(plist, PlistOperation.WRITE, entry, PlistEntryType.DICT.getValueType(), mapEntry.getKey(), writer.toString()));
+            }
+            // add type for primitives
+            String valueType = PlistEntryType.getType(o).getValueType();
+            return ShellUtilities.execute(defaultsCliPrepare(plist, PlistOperation.WRITE, entry, PlistEntryType.DICT.getValueType(), mapEntry.getKey(), valueType, o.toString()));
+
+        } catch(ParserConfigurationException | TransformerException e) {
+            log.warn("An unexpected error occurred trying to prepare the dictionary write command", e);
+        }
+        return false;
+    }
+
+    public static Element createElement(Document doc, Object o) {
+        PlistEntryType type = PlistEntryType.getType(o);
+        Element element = doc.createElement(type.slug);
+        switch(type) {
+            case BOOLEAN:
+                // <true/>|<false/>
+                element = doc.createElement(o.toString());
+                break;
+            case FLOAT:
+                element = doc.createElement("real");
+            case STRING:
+            case INTEGER:
+                element.setTextContent(o.toString());
+                break;
+            case ARRAY:
+                Object[] array = (Object[])o;
+                for(Object item : array) {
+                    element.appendChild(createElement(doc, item));
+                }
+                break;
+            case DICT:
+                Map<String,Object> map = PolicyInstaller.objectToMap(o);
+                for(Map.Entry<String,Object> entry : map.entrySet()) {
+                    Element key = doc.createElement("key");
+                    key.setTextContent(entry.getKey());
+                    element.appendChild(key);
+                    element.appendChild(createElement(doc, entry.getValue()));
+                }
+                break;
+            default:
+                throw new UnsupportedOperationException(String.format("Can't create DOM element of type '%s' for value '%s'", type, o));
+        }
+        return element;
     }
 
     private static boolean defaultsWriteArrayAdd(Path plist, String entry, Object value) {
@@ -395,7 +487,7 @@ public class PlistUtils {
         return null;
     }
 
-    public static Object[] getArray(Path plist, String entry) {
+    public static Object[] getArray_OLD(Path plist, String entry) {
         PlistEntryType type = defaultsReadType(plist, entry);
         switch(type) {
             case ARRAY:
@@ -410,7 +502,7 @@ public class PlistUtils {
         return null;
     }
 
-    public static HashMap<String, Object> getMap(Path plist, String entry) {
+    public static HashMap<String, Object> getMap_OLD(Path plist, String entry) {
         PlistEntryType type = defaultsReadType(plist, entry);
         switch(type) {
             case DICT:
@@ -423,5 +515,93 @@ public class PlistUtils {
                 log.info("Preference entry type '{}' is not a dictionary.", entry);
         }
         return null;
+    }
+
+    public static Object[] getArray(Path plist, String entry) {
+        Object o = parseMap(getRootNodeList(plist)).get(entry);
+        if(o instanceof Object[]) {
+            return (Object[])o;
+        }
+        return new Object[0];
+    }
+
+    @SuppressWarnings("unchecked")
+    public static HashMap<String, Object> getMap(Path plist, String entry) {
+        HashMap<String, Object> o = parseMap(getRootNodeList(plist));
+        if(o.get(entry) instanceof HashMap) {
+            return (HashMap<String,Object>)o.get(entry);
+        }
+        return new HashMap<>();
+    }
+
+    private static NodeList getRootNodeList(Path plist)  {
+        try {
+            String rawXml = ShellUtilities.executeRaw(
+                    "/usr/bin/plutil", "-convert", "xml1", "-o", "-", plist.toString());
+            Document doc = MacAppLocator.createCompatibleDocument(new ByteArrayInputStream(rawXml.getBytes(StandardCharsets.UTF_8)));
+            Element element = doc.getDocumentElement();
+            NodeList root = element.getElementsByTagName("dict");
+            if(root.getLength() > 0) {
+                return root.item(0).getChildNodes();
+            }
+        }
+        catch(ParserConfigurationException | IOException | SAXException e) {
+            log.warn("An unexpected error occurred trying to parse the plist file", e);
+        }
+        return null;
+    }
+
+    public static HashMap<String, Object> parseMap(NodeList nodeList) {
+        HashMap<String, Object> map = new HashMap<>();
+        if(nodeList == null || nodeList.getLength() == 0) {
+            return map;
+        }
+        for(int i = 0; i < nodeList.getLength(); i++) {
+            Node item = nodeList.item(i);
+            if(item.getNodeName().equals("key")) {
+                String key = item.getTextContent();
+                Node valueItem = item.getNextSibling();
+                if(valueItem.getNodeName().equals("dict")) {
+                    map.put(key, parseMap(valueItem.getChildNodes()));
+                } else if(valueItem.getNodeName().equals("array")) {
+                    map.put(key, parseArray(valueItem.getChildNodes()));
+                } else {
+                    map.put(key, parseNodeValue(valueItem));
+                }
+            }
+        }
+        return map;
+    }
+
+    public static Object[] parseArray(NodeList nodeList) {
+        List<Object> objectArray = new ArrayList<>();
+        for(int i = 0; i < nodeList.getLength(); i++) {
+            objectArray.add(parseNodeValue(nodeList.item(i)));
+        }
+        return objectArray.toArray();
+    }
+
+    public static Object parseNodeValue(Node node) {
+        switch(node.getNodeName()) {
+            case "dict":
+                return parseMap(node.getChildNodes());
+            case "array":
+                return parseArray(node.getChildNodes());
+            case "true":
+                return true;
+            case "false":
+                return false;
+            case "real":
+                return Float.parseFloat(node.getTextContent());
+            case "integer":
+                return Integer.parseInt(node.getTextContent());
+            case "date":
+                return Instant.parse(node.getTextContent());
+            case "data":
+                return Base64.getDecoder().decode(node.getTextContent().replaceAll("\\s+", ""));
+            case "string":
+            default:
+        }
+        return node.getTextContent();
     }
 }

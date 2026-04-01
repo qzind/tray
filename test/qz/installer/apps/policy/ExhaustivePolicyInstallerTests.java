@@ -40,8 +40,8 @@ public class ExhaustivePolicyInstallerTests extends PolicyTestDispatcher {
             allTests.addAll(List.of(floatTests));
         }
 
-        if (SystemUtilities.isLinux()) {
-            // arrays in maps are only supported on linux
+        // FIXME: Combine with above
+        if (true) {
             Object[][] linuxOnly = new Object[][] {
                     { MAP, "testMapArrayString", new Object[] { "stringArray", new Object[] { "firstElement", "secondElement" } } },
                     { MAP, "testMapArrayInt", new Object[] { "intArray", new Object[] { 111, 222 } } },

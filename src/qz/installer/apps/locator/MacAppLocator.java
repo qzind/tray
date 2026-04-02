@@ -11,12 +11,11 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import qz.utils.MacUtilities;
 import qz.utils.ShellUtilities;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -65,7 +64,7 @@ public class MacAppLocator extends AppLocator {
         try {
             // system_profile benchmarks about 30% better than lsregister
             Process p = Runtime.getRuntime().exec(new String[] {"system_profiler", "SPApplicationsDataType", "-xml"}, ShellUtilities.envp);
-            List<Node> dicts = getApplicationDicts(createCompatibleDocument(p.getInputStream()));
+            List<Node> dicts = getApplicationDicts(MacUtilities.createXmlDocument(p.getInputStream()));
 
             for(Node dict : dicts) {
                 String name = getSiblingValue(dict, "_name");
@@ -178,13 +177,7 @@ public class MacAppLocator extends AppLocator {
         Path plist = path.resolve("Contents/Info.plist");
         Document doc;
         try {
-            if(!plist.toFile().exists()) {
-                log.warn("Could not locate plist file for {}: {}",  appPath, plist);
-                return null;
-            }
-            // Convert potentially binary plist files to XML
-            Process p = Runtime.getRuntime().exec(new String[] {"plutil", "-convert", "xml1", plist.toString(), "-o", "-"}, ShellUtilities.envp);
-            doc = createCompatibleDocument(p.getInputStream());
+            doc = MacUtilities.createXmlDocument(plist);
         } catch(IOException | ParserConfigurationException | SAXException e) {
             log.warn("Could not parse plist file for {}: {}", appPath, plist, e);
             return null;
@@ -224,17 +217,5 @@ public class MacAppLocator extends AppLocator {
         int proc_listpids(int type, int typeinfo, int[] buffer, int buffersize);
         @SuppressWarnings("UnusedReturnValue")
         int proc_pidpath(int pid, Pointer buffer, int buffersize);
-    }
-
-    public static Document createCompatibleDocument(InputStream is) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory dbf  = DocumentBuilderFactory.newInstance();
-        // don't let the <!DOCTYPE> fail parsing per https://github.com/qzind/tray/issues/809
-        dbf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        // fix erroneous "\r\n", ignored unless setValidating(true);
-        dbf.setIgnoringElementContentWhitespace(true);
-        dbf.setValidating(true);
-        Document doc = dbf.newDocumentBuilder().parse(is);
-        doc.normalizeDocument();
-        return doc;
     }
 }

@@ -437,9 +437,7 @@ public class PlistUtils {
 
     private static NodeList getRootNodeList(Path plist)  {
         try {
-            String rawXml = ShellUtilities.executeRaw(
-                    "/usr/bin/plutil", "-convert", "xml1", "-o", "-", plist.toString());
-            Document doc = MacAppLocator.createCompatibleDocument(new ByteArrayInputStream(rawXml.getBytes(StandardCharsets.UTF_8)));
+            doc = MacUtilities.createXmlDocument(plist);
             Element element = doc.getDocumentElement();
             NodeList root = element.getElementsByTagName("dict");
             if(root.getLength() > 0) {

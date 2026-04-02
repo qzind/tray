@@ -14,19 +14,35 @@ import static qz.installer.apps.locator.AppFamily.*;
  * Tests one of each <code>PolicyState.Type</code> as well as each primitive type
  * <code>String</code>, <code>int</code>, <code>float</code>, </code><code>boolean</code>
  */
-@SuppressWarnings("ExtractMethodRecommender")
 public class ExhaustivePolicyInstallerTests extends PolicyTestDispatcher {
     @DataProvider(name = "exhaustivePoliciesData")
     public Object[][] exhaustivePoliciesData() {
         Object[][] baseline = new Object[][] {
-                { VALUE, "testBool", true },
-                { VALUE, "testInt", 1234 },
+                // primitive
                 { VALUE, "testString", "test" },
-                { ARRAY, "testArray", new Object[] { "element 1", "element 2" } }, // 2-element array
-                { ARRAY, "testArray", new Object[] { "element 1" } }, // 1-element array
+                { VALUE, "testInt", 1234 },
+                { VALUE, "testBool", true },
+
+                // array
+                { ARRAY, "testStringArray", new Object[] { "element 1" } }, // 1-element array
+                { ARRAY, "testStringArray", new Object[] { "element 1", "element 2" } }, // 2-element array
+                { ARRAY, "testIntArray", new Object[] { 1, 2 } },
+                { ARRAY, "testBoolArray", new Object[] { true, false, true } },
+
+                // map
                 { MAP, "testMapString", new HashMap<>(Map.of("firstKey", "value 1", "secondKey", "value 2")) }, // map from map string
                 { MAP, "testMapInt", new HashMap<>(Map.of("firstKey", 1, "secondKey", 2)) }, // map from map int
                 { MAP, "testMapBool", new HashMap<>(Map.of("firstKey", true, "secondKey", false)) }, // map from map boolean
+
+                // array in map
+                { MAP, "testMapArrayString", new Object[] { "stringArray", new Object[] { "firstElement", "secondElement" } } },
+                { MAP, "testMapArrayInt", new Object[] { "intArray", new Object[] { 111, 222 } } },
+                { MAP, "testMapArrayBool", new Object[] { "boolArray", new Object[] { true, false } } },
+
+                // array in map in map
+                { MAP, "testMapNestedArrayString", new Object[] { "nestedMap", new HashMap<>(Map.of("stringArray", new Object[] { "firstElement", "secondElement" })) } },
+                { MAP, "testMapNestedArrayInt", new Object[] { "nestedMap", new HashMap<>(Map.of("intArray", new Object[] { 11, 12 })) } },
+                { MAP, "testMapNestedArrayBool", new Object[] { "nestedMap", new HashMap<>(Map.of("boolArray", new Object[] { true, false })) } },
         };
 
         List<Object[]> allTests = new ArrayList<>(List.of(baseline));
@@ -35,27 +51,12 @@ public class ExhaustivePolicyInstallerTests extends PolicyTestDispatcher {
             // floats aren't supported on Windows
             Object[][] floatTests = new Object[][] {
                     { VALUE, "testFloat", 123.4f },
-                    { MAP, "testMapFloat", new HashMap<>(Map.of("firstKey", 1.1f, "secondKey", 2.2f)) }, // map from map float
+                    { ARRAY, "testFloatArray", new Object[] { 1.1f, 2.2f } },
+                    { MAP, "testMapFloat", new HashMap<>(Map.of("firstKey", 1.1f, "secondKey", 2.2f))},
+                    { MAP, "testMapArrayFloat", new Object[] { "floatArray", new Object[] { 1.1f, 2.2f } } },
+                    { MAP, "testMapNestedArrayFloat", new Object[] { "nestedMap", new HashMap<>(Map.of("floatArray", new Object[] { 1.1f, 2.2f })) } },
             };
             allTests.addAll(List.of(floatTests));
-        }
-
-        // FIXME: Combine with above
-        Object[][] mapArrayTests = new Object[][] {
-                { MAP, "testMapArrayString", new Object[] { "stringArray", new Object[] { "firstElement", "secondElement" } } },
-                { MAP, "testMapArrayInt", new Object[] { "intArray", new Object[] { 111, 222 } } },
-                { MAP, "testMapArrayBool", new Object[] { "boolArray", new Object[] {true, false } } },
-                // nested
-                { MAP, "testMapNestedArrayString", new Object[] { "nestedMap", new HashMap<>(Map.of("stringArray", new Object[] {"firstElement", "secondElement" })) } },
-        };
-        allTests.addAll(List.of(mapArrayTests));
-
-
-        if(!SystemUtilities.isWindows()) {
-            Object[][] linuxOnly = new Object[][] {
-                    { MAP, "testMapArrayFloat", new Object[] { "floatArray", new Object[] { 1.1f, 2.2f } } },
-            };
-            allTests.addAll(List.of(linuxOnly));
         }
 
         // Lots of tests: Only add the first variant of each type

@@ -193,7 +193,7 @@ public class Step {
     public static Step parse(JSONObject jsonStep, Object relativeObject) {
         String description = jsonStep.optString("description", "");
         Type type = Type.parse(jsonStep.optString("type", null));
-        String data = jsonStep.optString("data", null);
+        Object data = jsonStep.opt("data");
 
         // Handle installer args
         List<String> args = new LinkedList<>();

@@ -56,7 +56,9 @@ public abstract class InvokableResource implements Invokable {
 
         // Set scripts executable
         if(step.getType() == Type.SCRIPT && !SystemUtilities.isWindows()) {
-            destination.setExecutable(true, false);
+            if(!destination.setExecutable(true, !SystemUtilities.isAdmin())) {
+                log.error("Unable to set resource executable '{}'", destination);
+            }
         }
         return destination;
     }

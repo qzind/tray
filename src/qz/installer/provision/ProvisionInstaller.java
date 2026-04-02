@@ -29,7 +29,7 @@ import static qz.utils.FileUtilities.*;
 
 public class ProvisionInstaller {
     protected static final Logger log = LogManager.getLogger(ProvisionInstaller.class);
-    private ArrayList<Step> steps;
+    private final ArrayList<Step> steps;
 
     static {
         // Populate variables for scripting environment
@@ -62,7 +62,7 @@ public class ProvisionInstaller {
      * Package private for internal testing only
      * Assumes files located in ./resources/ subdirectory
      */
-    ProvisionInstaller(Class relativeClass, InputStream in) throws IOException, JSONException {
+    ProvisionInstaller(Class<?> relativeClass, InputStream in) throws IOException, JSONException {
         this(relativeClass, IOUtils.toString(in, StandardCharsets.UTF_8));
     }
 
@@ -70,7 +70,7 @@ public class ProvisionInstaller {
      * Package private for internal testing only
      * Assumes files located in ./resources/ subdirectory
      */
-    ProvisionInstaller(Class relativeClass, String jsonData) throws JSONException {
+    ProvisionInstaller(Class<?> relativeClass, String jsonData) throws JSONException {
         this.steps = parse(jsonData, relativeClass);
     }
 
@@ -95,7 +95,7 @@ public class ProvisionInstaller {
         return parse(new JSONArray(jsonData), relativeObject);
     }
 
-    private boolean invokeStep(Step step) throws Exception {
+    static boolean invokeStep(Step step) throws Exception {
         if(Os.matchesHost(step.getOs())) {
             log.info("[PROVISION] Invoking step '{}'", step.toString());
         } else {
@@ -125,6 +125,9 @@ public class ProvisionInstaller {
                 break;
             case RESOURCE:
                 invoker = new ResourceInvoker(step);
+                break;
+            case POLICY:
+                invoker = new PolicyInvoker(step);
                 break;
             case PREFERENCE:
                 invoker = new PropertyInvoker(step, PropertyInvoker.getPreferences(step));

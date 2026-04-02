@@ -15,15 +15,11 @@ import mslinks.ShellLink;
 import mslinks.ShellLinkException;
 import mslinks.ShellLinkHelper;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codehaus.jettison.json.JSONException;
-import qz.common.Constants;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 import qz.utils.WindowsUtilities;
-import qz.ws.PrintSocketServer;
 
 import javax.swing.*;
 
@@ -33,7 +29,6 @@ import static com.sun.jna.platform.win32.WinReg.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;

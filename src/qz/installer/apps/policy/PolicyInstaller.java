@@ -299,7 +299,7 @@ public class PolicyInstaller {
      * Safe cast of <code>Double</code> to <code>Float</code> for consistency across platforms.
      * Returns <code>value</code> unmodified if it is not a <code>Double</code>.
      */
-    public static Object normalizeFloats(Object value) {
+    public static Object normalizeFloat(Object value) {
         if (value instanceof Double) {
             value = ((Double)value).floatValue();
         }

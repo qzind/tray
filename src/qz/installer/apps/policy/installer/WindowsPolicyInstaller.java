@@ -70,15 +70,14 @@ public class WindowsPolicyInstaller implements PolicyInstaller.PrimitivePolicyIn
         for(Map.Entry<String, Object> mapEntry : map.entrySet()) {
             String mapKey = mapEntry.getKey();
             Object value = mapEntry.getValue();
-
             nested = state.nested(mapKey);
 
             if(value instanceof Map) {
-                if((nested = putMap(nested, (Map<String, Object>)value)).hasFailed()) {
+                if(putMap(nested, (Map<String, Object>)value).hasFailed()) {
                     return nested;
                 }
             } else if(value instanceof Object[]) {
-                if((nested = putEntries(nested, (Object[])value)).hasFailed()) {
+                if(putEntries(nested, (Object[])value).hasFailed()) {
                     return nested;
                 }
             } else {

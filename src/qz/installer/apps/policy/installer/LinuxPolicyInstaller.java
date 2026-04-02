@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-import static qz.installer.apps.policy.PolicyInstaller.normalizeFloat;
 import static qz.utils.FileUtilities.*;
 
 public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInstaller {
@@ -258,6 +257,17 @@ public class LinuxPolicyInstaller implements PolicyInstaller.PrimitivePolicyInst
             values[i] = normalizeFloat(jsonArray.get(i));
         }
         return values;
+    }
+
+    /**
+     * Safe cast of <code>Double</code> to <code>Float</code> for consistency across platforms.
+     * Returns <code>value</code> unmodified if it is not a <code>Double</code>.
+     */
+    public static Object normalizeFloat(Object value) {
+        if (value instanceof Double) {
+            value = ((Double)value).floatValue();
+        }
+        return value;
     }
 
 }

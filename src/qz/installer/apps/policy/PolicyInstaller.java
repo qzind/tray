@@ -296,17 +296,6 @@ public class PolicyInstaller {
     }
 
     /**
-     * Safe cast of <code>Double</code> to <code>Float</code> for consistency across platforms.
-     * Returns <code>value</code> unmodified if it is not a <code>Double</code>.
-     */
-    public static Object normalizeFloat(Object value) {
-        if (value instanceof Double) {
-            value = ((Double)value).floatValue();
-        }
-        return value;
-    }
-
-    /**
      * Safe cast of <code>Object</code> to <code>Map&lt;String,Object&gt;</code>
      * falling back to an empty <code>Map</code> on failure.
      */

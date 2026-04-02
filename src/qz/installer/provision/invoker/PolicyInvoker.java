@@ -16,37 +16,28 @@ import static qz.installer.apps.policy.PolicyInstaller.PolicyLocator.*;
 
 public class PolicyInvoker implements Invokable {
     final Step step;
+    final PolicyState.Type type;
 
     public PolicyInvoker(Step step) {
         this.step = step;
+        this.type = PolicyState.Type.parse(step.getFormat(), PolicyState.Type.VALUE);
     }
 
     @Override
     public boolean invoke() throws Exception {
         Installer.PrivilegeLevel scope = SystemUtilities.isAdmin() ? Installer.PrivilegeLevel.SYSTEM : Installer.PrivilegeLevel.USER;
-        PolicyState.Type type = PolicyState.Type.parse(step.getFormat(), PolicyState.Type.VALUE);
+
         Object values;
-        switch(type) {
-            case ARRAY:
-                if(step.getData().startsWith("[*")) {
-                    values = step.getData();
-                    break;
-                }
-                try {
-                    values = toList(new JSONArray(step.getData()));
-                } catch(JSONException ignore) {
-                    // Treat non-arrays as single elements
-                    values = step.getData();
-                }
-                break;
-            case MAP:
-                log.warn("\n" + step.getData() + "\n" + new JSONObject().put("SkipDomains", new JSONArray().put("*.qz.io")));
-                values = toMap(new JSONObject(step.getData()));
-                break;
-            case VALUE:
-            default:
-                values = step.getData();
-                break;
+        Object stepData = step.getDataObject();
+        if(stepData instanceof String) {
+            values = parseValuesFromString(step.getDataString());
+        } else if(stepData instanceof JSONArray) {
+            values = toList((JSONArray)stepData);
+        } else if(stepData instanceof  JSONObject) {
+            values = toMap((JSONObject)stepData);
+        } else {
+            // primitive, etc
+            values = stepData;
         }
 
         AppType[] appTypes = AppType.collect(step.getApp());
@@ -118,4 +109,25 @@ public class PolicyInvoker implements Invokable {
         }
         return list.toArray();
     }
+
+    /**
+     * Parse a String JSON value with special handling for nested JSON
+     */
+    private Object parseValuesFromString(String dataString) throws Exception {
+        switch(type) {
+            case MAP:
+                return toMap(new JSONObject(dataString));
+            case ARRAY:
+                if (!dataString.startsWith("[*")) {
+                    try {
+                        return toList(new JSONArray(dataString));
+                    } catch(JSONException ignore) {}
+                }
+                // fallthrough: treat non-arrays as single elements
+            case VALUE:
+            default:
+        }
+        return dataString;
+    }
+
 }

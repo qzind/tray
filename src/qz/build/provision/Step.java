@@ -27,7 +27,7 @@ public class Step {
     HashSet<Os> os;
     HashSet<Arch> arch;
     Phase phase;
-    String data;
+    Object data;
     AppFamily app;
     String name;
     String format;
@@ -35,7 +35,7 @@ public class Step {
     Path relativePath;
     Class<?> relativeClass;
 
-    public Step(Path relativePath, String description, Type type, HashSet<Os> os, HashSet<Arch> arch, Phase phase, AppFamily app, String name, String format, String data, List<String> args) {
+    public Step(Path relativePath, String description, Type type, HashSet<Os> os, HashSet<Arch> arch, Phase phase, AppFamily app, String name, String format, Object data, List<String> args) {
         this.relativePath = relativePath;
         this.description = description;
         this.type = type;
@@ -52,7 +52,7 @@ public class Step {
     /**
      * Only should be used by unit tests
      */
-    Step(Class<?> relativeClass, String description, Type type, HashSet<Os> os, HashSet<Arch> arch, Phase phase, AppFamily app, String name, String format, String data, List<String> args) {
+    Step(Class<?> relativeClass, String description, Type type, HashSet<Os> os, HashSet<Arch> arch, Phase phase, AppFamily app, String name, String format, Object data, List<String> args) {
         this((Path)null, description, type, os, arch, phase, app, name, format, data, args);
         this.relativeClass = relativeClass;
     }
@@ -157,7 +157,16 @@ public class Step {
         this.format = format;
     }
 
+    @Deprecated
     public String getData() {
+        return getDataString();
+    }
+
+    public String getDataString() {
+        return (data == null || data instanceof String) ? (String)data : data.toString();
+    }
+
+    public Object getDataObject() {
         return data;
     }
 
@@ -295,7 +304,7 @@ public class Step {
         if(type != Type.REMOVER) {
             return this;
         }
-        Remover remover = Remover.parse(data);
+        Remover remover = Remover.parse(getDataString());
         switch(remover) {
             case CUSTOM:
                 break;
@@ -308,7 +317,7 @@ public class Step {
         }
 
         // Custom removers must have three elements
-        if(data == null || data.split(",").length != 3) {
+        if(data == null || getDataString().split(",").length != 3) {
             throw formatted("Remover data '%s' is invalid.  Data must match a known type [%s] or contain exactly 3 elements.", data, Remover.valuesDelimited(","));
         }
         return this;
@@ -329,7 +338,7 @@ public class Step {
         if(os.isEmpty()) {
             switch(type) {
                 case SOFTWARE:
-                    os.addAll(Software.parse(data).defaultOs());
+                    os.addAll(Software.parse(getDataString()).defaultOs());
                     break;
                 case CONF:
                 default:

@@ -9,7 +9,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import qz.build.jlink.Parsable;
 import qz.common.Sluggable;
-import qz.installer.apps.locator.MacAppLocator;
 import qz.installer.apps.policy.PolicyInstaller;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -21,7 +20,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
@@ -160,33 +158,15 @@ public class PlistUtils {
         }
 
         public static PlistEntryType getType(Object o) {
-            if(o instanceof String) {
-                return STRING;
-            }
-            if(o instanceof byte[]) {
-                return DATA;
-            }
-            if(o instanceof Integer) {
-                return INTEGER;
-            }
-            if(o instanceof Float) {
-                return FLOAT;
-            }
-            if(o instanceof Boolean) {
-                return BOOLEAN;
-            }
-            if(o instanceof Date) {
-                return DATE;
-            }
-            if(o instanceof Object[]) {
-                return ARRAY;
-            }
-            if(o instanceof Map) {
-                return DICT;
-            }
-            if(o == null) {
-                return MISSING;
-            }
+            if(o instanceof String) return STRING;
+            if(o instanceof byte[]) return DATA;
+            if(o instanceof Integer) return INTEGER;
+            if(o instanceof Float) return FLOAT;
+            if(o instanceof Boolean) return BOOLEAN;
+            if(o instanceof Date) return DATE;
+            if(o instanceof Object[]) return ARRAY;
+            if(o instanceof Map) return DICT;
+            if(o == null) return MISSING;
             return UNKNOWN;
         }
 
@@ -420,10 +400,7 @@ public class PlistUtils {
 
     public static Object[] getArray(Path plist, String entry) {
         Object o = parseMap(getRootNodeList(plist), entry).get(entry);
-        if(o instanceof Object[]) {
-            return (Object[])o;
-        }
-        return new Object[0];
+        return o instanceof Object[] ? (Object[])o : new Object[0];
     }
 
     @SuppressWarnings("unchecked")

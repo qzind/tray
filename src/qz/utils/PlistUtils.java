@@ -15,6 +15,7 @@ import qz.installer.apps.policy.PolicyInstaller;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -27,7 +28,10 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * Wrapper around macOS 'default read', 'defaults write', etc
+ * Helper for reading and writing macOS 'plist' preference files
+ * Contains two main approaches:
+ * - Primitive types: wrapper around macOS 'default read', 'defaults write', etc
+ * - Complex types: leverage 'plutil' and parse as XML
  */
 public class PlistUtils {
     private static final Logger log = LogManager.getLogger(PlistUtils.class);
@@ -74,8 +78,8 @@ public class PlistUtils {
         STRING("string"),
         DATA("data"),
         INTEGER("int", "integer"),
-        FLOAT("float"),
-        BOOLEAN("bool", "boolean"),
+        FLOAT("float", "real"),
+        BOOLEAN("bool", "boolean", "false", "true"),
         DATE("date"),
         ARRAY("array"),
         DICT("dict", "dictionary"),
@@ -94,7 +98,11 @@ public class PlistUtils {
                     String.format("-%s-add", slug) : String.format("-%s", slug); // -boolean, -string, etc
         }
 
-        public static PlistEntryType parse(String input) {
+        public static PlistEntryType parseType(Node node) {
+            return parseType(node.getNodeName());
+        }
+
+        public static PlistEntryType parseType(String input) {
             if(input == null || input.isBlank()) {
                 return MISSING;
             }
@@ -104,6 +112,51 @@ public class PlistUtils {
             }
             // should never get here... perhaps apple's added a new type
             return UNKNOWN;
+        }
+
+        public Object parseValue(Node node) {
+            switch(this) {
+                case STRING:
+                case DATA:
+                case INTEGER:
+                case FLOAT:
+                case DATE:
+                    return parseValue(node.getTextContent());
+                case BOOLEAN: // <true/>, <false/>
+                    return parseValue(node.getNodeName());
+                case ARRAY:
+                    return parseArray(node.getChildNodes());
+                case DICT:
+                    return parseMap(node.getChildNodes());
+                case MISSING:
+                    return null;
+                default:
+                    throw new UnsupportedOperationException(String.format("Parsing PlistEntryType '%s' is not yet supported", this));
+            }
+        }
+
+        public Object parseValue(String input) {
+            switch(this) {
+                case STRING:
+                    return fromString(input);
+                case DATA:
+                    return fromData(input);
+                case INTEGER:
+                    return fromInteger(input);
+                case FLOAT:
+                    return fromFloat(input);
+                case BOOLEAN:
+                    return fromBoolean(input);
+                case DATE:
+                    return fromDate(input);
+                case MISSING:
+                    return null;
+                case ARRAY:
+                case DICT:
+                    throw new UnsupportedOperationException(String.format("PlistEntryType '%s' cannot be directly parsed.  Please use parseMap/parseArray instead.", this));
+                default:
+                    throw new UnsupportedOperationException(String.format("Parsing PlistEntryType '%s' is not yet supported", this));
+            }
         }
 
         public static PlistEntryType getType(Object o) {
@@ -144,7 +197,7 @@ public class PlistUtils {
 
         @SuppressWarnings("unused")
         public static byte[] fromData(String rawValue) {
-            throw new UnsupportedOperationException("Sorry, parsing bytes from cli is not yet supported");
+            return Base64.getDecoder().decode(removeWhiteSpace(rawValue));
         }
 
         @SuppressWarnings("unused")
@@ -159,12 +212,20 @@ public class PlistUtils {
 
         @SuppressWarnings("unused")
         public static Boolean fromBoolean(String rawValue) {
-            return "1".equals(trim(rawValue));
+            switch(trim(rawValue)) {
+                case "true":
+                case "1":
+                    return true;
+                case "false":
+                case "0":
+                default:
+                    return false;
+            }
         }
 
         @SuppressWarnings("unused")
-        public static Boolean fromDate(String rawValue) {
-            throw new UnsupportedOperationException("Sorry, parsing dates from cli is not yet supported");
+        public static Instant fromDate(String rawValue) {
+            return Instant.parse(trim(rawValue));
         }
 
         @SuppressWarnings("unused")
@@ -172,116 +233,12 @@ public class PlistUtils {
             throw new UnsupportedOperationException("Sorry, parsing unknowns from cli is not yet supported");
         }
 
-        // For simplicity's sake (at least for now) assume all arrays are one-level, one-dimensional
-        // and only contain primitive types such as string, int, float, boolean
-        public static ArrayList<Object> fromArray(String haystack) {
-            ArrayList<Object> values = new ArrayList<>();
-            String[] lines = trim(haystack).split("[\r?\n]+");
-            for(String line : lines) {
-                String rawValue = trim(line);
-                if(rawValue.isBlank() || rawValue.startsWith("(") || rawValue.startsWith(")")) {
-                    continue;
-                }
-                values.add(parseObject(rawValue, false));
-            }
-            return values;
+        private static Object parseObject(Node node) {
+            return PlistEntryType.parseType(node).parseValue(node);
         }
 
-        /**
-         * Converts the output of the terminal to a <code>HashMap&lt;String,Object&gt;</code>
-         * For simplicity's sake (at least for now) assume all dictionaries are one-level, one-dimensional
-         *
-         * @param haystack The terminal output to parse
-         */
-        public static HashMap<String, Object> fromDictionary(String haystack) {
-            HashMap<String, Object> values = new HashMap<>();
-            String[] lines = trim(haystack).split("[\r?\n]+");
-            String key = null;
-            List<Object> nestedArray = null;
-            for(String line : lines) {
-                String value = trim(line);
-                if(value.isBlank() || value.startsWith("{") || value.startsWith("}")) {
-                    continue;
-                }
-                /*if(!value.contains(" = ")) {
-                    log.warn("Skipping dictionary line '{}', it doesn't contain ' = '", value);
-                    continue;
-                }*/
-                String[] parts = value.split(" = ", 2);
-                String rawValue;
-                if(parts.length == 2) {
-                    key = parts[0].trim();
-                    rawValue = parts[1].trim();
-                } else {
-                    rawValue = parts[0].trim();
-                }
-
-                if(rawValue.equals("(")) {
-                    // nested array
-                    nestedArray = new ArrayList<>();
-                } else if (nestedArray != null) {
-                    if (!rawValue.startsWith(")")) {
-                        // append next value
-                        nestedArray.add(parseObject(rawValue, false));
-                    } else {
-                        // end of array
-                        values.put(key, nestedArray.toArray());
-                    }
-                } else if(key != null) {
-                    values.put(key, parseObject(rawValue, true));
-                }
-            }
-            return values;
-        }
-
-        /**
-         * Attempts to parse terminal output to a String, Integer, Float or (conditionally) Boolean
-         *
-         * @param raw raw terminal output
-         * @param assumeBooleans  Automatically converts zeros and ones to true/false due to limitations of <code>defaults read</code>
-         */
-        private static Object parseObject(String raw, boolean assumeBooleans) {
-            // Dictionary entries end in ';', arrays end in ','
-            if(raw.endsWith(";") || raw.endsWith(",")) {
-                raw = raw.substring(0, raw.length() - 1);
-            }
-
-            // String
-            if(raw.startsWith("\"")) {
-                raw = raw.replaceFirst("\"", "");
-                if(raw.endsWith("\"")) {
-                    raw = raw.substring(0, raw.length() - 1);
-                }
-                return raw;
-            }
-
-            if(assumeBooleans) {
-                // Boolean
-                if (raw.equalsIgnoreCase("1") || raw.equalsIgnoreCase("0")) {
-                    return fromBoolean(raw);
-                }
-            }
-
-            try {
-                // Float
-                if (raw.contains(".")) {
-                    return fromFloat(raw);
-                }
-
-                // Int
-                return fromInteger(raw);
-            } catch(NumberFormatException e) {
-                // Nested objects don't use double quotes.  Why apple?
-                // Fallback on string, I guess
-                return raw;
-            }
-        }
-
-        /**
-         * Read the array, but with special assumption that duplicated entries aren't wanted or warranted
-         */
-        private static HashSet<Object> fromUniqueArray(String haystack) {
-            return new LinkedHashSet<>(fromArray(haystack));
+        private static String removeWhiteSpace(String value) {
+            return value == null ? value : value.replaceAll("\\s+", "");
         }
 
         private static String trim(String value) {
@@ -295,6 +252,19 @@ public class PlistUtils {
 
         public String getValueType() {
             return valueType;
+        }
+    }
+
+    static Document doc;
+    static Transformer transformer;
+    static {
+        try {
+            doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+            transformer = TransformerFactory.newInstance().newTransformer();
+            transformer.setOutputProperty("omit-xml-declaration", "yes");
+        } catch(ParserConfigurationException | TransformerConfigurationException e) {
+            log.error("Something went critically wrong trying to initialize the XML parser.  Policy installation will fail.", e);
+            doc = null;
         }
     }
 
@@ -329,7 +299,7 @@ public class PlistUtils {
     }
 
     public static PlistEntryType defaultsReadType(Path plist, String entry) {
-        return PlistEntryType.parse(defaultsCliGet(plist, PlistOperation.READ_TYPE, entry));
+        return PlistEntryType.parseType(defaultsCliGet(plist, PlistOperation.READ_TYPE, entry));
     }
 
     public static String defaultsRead(Path plist, String entry) {
@@ -342,32 +312,33 @@ public class PlistUtils {
     }
 
     @SuppressWarnings("unused")
+    public static boolean defaultsRename(Path plist, String entry, String newName) {
+        return defaultsCliPut(plist, PlistOperation.RENAME, entry, PlistEntryType.MISSING, newName);
+    }
+
+    @SuppressWarnings("unused")
     public static boolean defaultsWrite(Path plist, String entry, PlistEntryType type, Object value) {
         return defaultsCliPut(plist, PlistOperation.WRITE, entry, type, value);
     }
 
-    private static boolean defaultWriteDictionary(Path plist, String entry, Map.Entry<String, Object> mapEntry) {
+    private static boolean defaultsWriteArray(Path plist, String entry, Object array) {
+        Element element = createElement(doc, array);
+        return ShellUtilities.execute(defaultsCliPrepare(plist, PlistOperation.WRITE, entry, PlistEntryType.ARRAY.getValueType(), serialize(element)));
+    }
+
+    private static boolean defaultsWriteDict(Path plist, String entry, Map.Entry<String, Object> mapEntry) {
+        Element element = createElement(doc, mapEntry.getValue());
+        return ShellUtilities.execute(defaultsCliPrepare(plist, PlistOperation.WRITE, entry, PlistEntryType.DICT.getValueType(), mapEntry.getKey(), serialize(element)));
+    }
+
+    public static String serialize(Element element) {
+        StringWriter writer = new StringWriter();
         try {
-            Object o = mapEntry.getValue();
-
-            // Convert to nested XML format
-            if(o instanceof Map || o instanceof Object[]) {
-                Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
-                Element element = createElement(doc, mapEntry.getValue());
-                Transformer transformer = TransformerFactory.newInstance().newTransformer();
-                transformer.setOutputProperty("omit-xml-declaration", "yes");
-                StringWriter writer = new StringWriter();
-                transformer.transform(new DOMSource(element), new StreamResult(writer));
-                return ShellUtilities.execute(defaultsCliPrepare(plist, PlistOperation.WRITE, entry, PlistEntryType.DICT.getValueType(), mapEntry.getKey(), writer.toString()));
-            }
-            // add type for primitives
-            String valueType = PlistEntryType.getType(o).getValueType();
-            return ShellUtilities.execute(defaultsCliPrepare(plist, PlistOperation.WRITE, entry, PlistEntryType.DICT.getValueType(), mapEntry.getKey(), valueType, o.toString()));
-
-        } catch(ParserConfigurationException | TransformerException e) {
-            log.warn("An unexpected error occurred trying to prepare the dictionary write command", e);
+            transformer.transform(new DOMSource(element), new StreamResult(writer));
+        } catch(TransformerException e) {
+            log.error("An exception occurred trying to transform the DOM Element '{}' to XML", element, e);
         }
-        return false;
+        return writer.toString();
     }
 
     public static Element createElement(Document doc, Object o) {
@@ -405,24 +376,6 @@ public class PlistUtils {
         return element;
     }
 
-    private static boolean defaultsWriteArrayAdd(Path plist, String entry, Object value) {
-        // wrap in double quotes to prevent bugs with values such as "[*.]qz.io"
-        return defaultsCliPut(plist, PlistUtils.PlistOperation.WRITE, entry, PlistUtils.PlistEntryType.ARRAY, String.format("\"%s\"", value));
-    }
-
-    @SuppressWarnings("unused")
-    public static boolean defaultsRename(Path plist, String entry, String newName) {
-        return defaultsCliPut(plist, PlistOperation.RENAME, entry, PlistEntryType.MISSING, newName);
-    }
-
-    public static Collection<Object> getArray(Path plist, String entry, boolean unique) {
-        if(unique) {
-            return PlistEntryType.fromUniqueArray(defaultsRead(plist, entry));
-        } else {
-            return PlistEntryType.fromArray(defaultsRead(plist, entry));
-        }
-    }
-
     public static boolean write(Path plist, String entry, Object value) {
         if(delete(plist, entry)) {
            return defaultsWrite(plist, entry, PlistEntryType.getType(value), value);
@@ -443,7 +396,7 @@ public class PlistUtils {
 
     public static boolean writeMap(Path plist, String entry, Map<String, Object> values) {
         for(Map.Entry<String,Object> mapEntry : values.entrySet()) {
-            if(!defaultWriteDictionary(plist, entry, mapEntry)) {
+            if(!defaultsWriteDict(plist, entry, mapEntry)) {
                 log.warn("An error occurred writing '{}': '{}:{}' to {}", entry, mapEntry.getKey(), mapEntry.getValue(), plist);
                 return false;
             }
@@ -451,13 +404,9 @@ public class PlistUtils {
         return true;
     }
 
-    /**
-     * Blindly write the array to the specified location
-     */
     public static boolean writeArray(Path plist, String entry, Collection<Object> values) {
-        // preparing multiple array values for cli injection is error-prone, instead do one at a time
         for(Object value : values) {
-            if(!defaultsWriteArrayAdd(plist, entry, value)) {
+            if(!defaultsWriteArray(plist, entry, value)) {
                 log.warn("An error occurred writing '{}': '{}' to {}", entry, value, plist);
                 return false;
             }
@@ -466,59 +415,11 @@ public class PlistUtils {
     }
 
     public static Object getValue(Path plist, String entry) {
-        PlistEntryType type = defaultsReadType(plist, entry);
-        switch(type) {
-            case STRING:
-                return PlistEntryType.fromString(defaultsRead(plist, entry));
-            case INTEGER:
-                return PlistEntryType.fromInteger(defaultsRead(plist, entry));
-            case FLOAT:
-                return PlistEntryType.fromFloat(defaultsRead(plist, entry));
-            case BOOLEAN:
-                return PlistEntryType.fromBoolean(defaultsRead(plist, entry));
-            case MISSING:
-                break;
-            case ARRAY: // wrong function call
-            case DATA: // not yet supported
-            case DATE: // not yet supported
-            default:
-                log.info("Preference entry type '{}' is not yet supported for getValue() at this time.", entry);
-        }
-        return null;
-    }
-
-    public static Object[] getArray_OLD(Path plist, String entry) {
-        PlistEntryType type = defaultsReadType(plist, entry);
-        switch(type) {
-            case ARRAY:
-                return PlistEntryType.fromArray(defaultsRead(plist, entry)).toArray();
-            case MISSING:
-                break;
-            case DATA: // not yet supported
-            case DATE: // not yet supported
-            default:
-                log.info("Preference entry type '{}' is not an array.", entry);
-        }
-        return null;
-    }
-
-    public static HashMap<String, Object> getMap_OLD(Path plist, String entry) {
-        PlistEntryType type = defaultsReadType(plist, entry);
-        switch(type) {
-            case DICT:
-                return PlistEntryType.fromDictionary(defaultsRead(plist, entry));
-            case MISSING:
-                break;
-            case DATA: // not yet supported
-            case DATE: // not yet supported
-            default:
-                log.info("Preference entry type '{}' is not a dictionary.", entry);
-        }
-        return null;
+        return defaultsReadType(plist, entry).parseValue(defaultsRead(plist, entry));
     }
 
     public static Object[] getArray(Path plist, String entry) {
-        Object o = parseMap(getRootNodeList(plist)).get(entry);
+        Object o = parseMap(getRootNodeList(plist), entry).get(entry);
         if(o instanceof Object[]) {
             return (Object[])o;
         }
@@ -527,7 +428,7 @@ public class PlistUtils {
 
     @SuppressWarnings("unchecked")
     public static HashMap<String, Object> getMap(Path plist, String entry) {
-        HashMap<String, Object> o = parseMap(getRootNodeList(plist));
+        HashMap<String, Object> o = parseMap(getRootNodeList(plist), entry);
         if(o.get(entry) instanceof HashMap) {
             return (HashMap<String,Object>)o.get(entry);
         }
@@ -552,6 +453,10 @@ public class PlistUtils {
     }
 
     public static HashMap<String, Object> parseMap(NodeList nodeList) {
+        return parseMap(nodeList, null);
+    }
+
+    public static HashMap<String, Object> parseMap(NodeList nodeList, String entry) {
         HashMap<String, Object> map = new HashMap<>();
         if(nodeList == null || nodeList.getLength() == 0) {
             return map;
@@ -560,13 +465,16 @@ public class PlistUtils {
             Node item = nodeList.item(i);
             if(item.getNodeName().equals("key")) {
                 String key = item.getTextContent();
+                if(entry != null && !key.equals(entry)) {
+                    continue; // skip unrelated items
+                }
                 Node valueItem = item.getNextSibling();
                 if(valueItem.getNodeName().equals("dict")) {
                     map.put(key, parseMap(valueItem.getChildNodes()));
                 } else if(valueItem.getNodeName().equals("array")) {
                     map.put(key, parseArray(valueItem.getChildNodes()));
                 } else {
-                    map.put(key, parseNodeValue(valueItem));
+                    map.put(key, PlistEntryType.parseObject(valueItem));
                 }
             }
         }
@@ -576,32 +484,8 @@ public class PlistUtils {
     public static Object[] parseArray(NodeList nodeList) {
         List<Object> objectArray = new ArrayList<>();
         for(int i = 0; i < nodeList.getLength(); i++) {
-            objectArray.add(parseNodeValue(nodeList.item(i)));
+            objectArray.add(PlistEntryType.parseObject(nodeList.item(i)));
         }
         return objectArray.toArray();
-    }
-
-    public static Object parseNodeValue(Node node) {
-        switch(node.getNodeName()) {
-            case "dict":
-                return parseMap(node.getChildNodes());
-            case "array":
-                return parseArray(node.getChildNodes());
-            case "true":
-                return true;
-            case "false":
-                return false;
-            case "real":
-                return Float.parseFloat(node.getTextContent());
-            case "integer":
-                return Integer.parseInt(node.getTextContent());
-            case "date":
-                return Instant.parse(node.getTextContent());
-            case "data":
-                return Base64.getDecoder().decode(node.getTextContent().replaceAll("\\s+", ""));
-            case "string":
-            default:
-        }
-        return node.getTextContent();
     }
 }

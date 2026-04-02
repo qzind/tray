@@ -16,7 +16,6 @@ public class FirefoxPolicyInstallerTests extends PolicyTestDispatcher {
         Object[][] tests;
         if (SystemUtilities.isLinux()) {
             tests = new Object[][] {
-                    // arrays in maps are only supported on linux
                     { MAP, "Certificates", new Object[] { "Install", new Object[] { new File("policy-testing.crt").toString() } } },
                     { MAP, "LocalNetworkAccess", new Object[] { "SkipDomains", new Object[] { "*.qz.io" } } },
             };

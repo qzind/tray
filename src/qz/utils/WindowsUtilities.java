@@ -358,6 +358,11 @@ public class WindowsUtilities {
                     Advapi32Util.registryCreateKey(root, partialKey);
                 }
             }
+            // Cast to int for comparison
+            if (data instanceof Boolean) {
+                data = ((Boolean)data) ? 1 : 0;
+            }
+
             // Make sure it doesn't already exist
             for(Map.Entry<String, Object> entry : Advapi32Util.registryGetValues(root, key).entrySet())  {
                 if(entry.getValue().equals(data)) {
@@ -371,9 +376,7 @@ public class WindowsUtilities {
                 startIndex++;
             }
             String value = Integer.toString(startIndex);
-            if (data instanceof Boolean) {
-                Advapi32Util.registrySetIntValue(root, key, value, ((Boolean)data) ? 1 : 0);
-            } else if (data instanceof String) {
+            if (data instanceof String) {
                 Advapi32Util.registrySetStringValue(root, key, value, (String)data);
             } else if (data instanceof Integer) {
                 Advapi32Util.registrySetIntValue(root, key, value, (Integer)data);

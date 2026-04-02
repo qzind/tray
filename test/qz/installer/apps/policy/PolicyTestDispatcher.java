@@ -56,11 +56,6 @@ public abstract class PolicyTestDispatcher {
         return null;
     }
 
-    @SuppressWarnings("UnusedReturnValue")
-    static PolicyState testAppsPolicyUninstall(AppFamily.AppVariant appVariant, PolicyState.Type type, String name, Object value) {
-        return testAppsPolicyInstall(appVariant, AppType.NATIVE, type, name, value);
-    }
-
     @SuppressWarnings("UnusedReturnValue,SameParameterValue")
     static PolicyState testAppsPolicyUninstall(AppFamily.AppVariant appVariant, AppType appType, PolicyState.Type type, String name, Object value) {
         switch(type) {
@@ -84,44 +79,40 @@ public abstract class PolicyTestDispatcher {
         state = policyInstaller.install(ARRAY, name, array[0]);
         assertState(state);
 
-        List<Object> returnedList = Arrays.asList(policyInstaller.getEntries(state.reset()));
-
-        // Verify there is one, and only one, match.
+        // Verify there's at least one match
+        Object[] remaining = policyInstaller.getEntries(state.reset());
         for (Object element: array) {
-            int firstIndex = returnedList.indexOf(element);
-            if (firstIndex == -1) Assert.fail("No match found for value: " + element);
-            List<Object> sublist = returnedList.subList(firstIndex + 1, returnedList.size());
-            if (sublist.contains(element)) Assert.fail("Duplicate matches found for value: " + element);
+            Assert.assertTrue(arrayContains(remaining, element), "No match found for value: " + element);
         }
+        // Verify there's only one match
+        Assert.assertEquals(remaining.length, new HashSet<>(List.of(remaining)).size(), "Duplicate elements found");
         return state;
     }
 
     private static PolicyState testAppsPolicyArrayUninstall(AppFamily.AppVariant appVariant, AppType appType, String name, Object value) {
         PolicyInstaller policyInstaller = new PolicyInstaller(scope, appVariant, appType);
         PolicyState state;
-        List<Object> returnedList;
 
         // If there are 2 or more items, we can check for over-deletion
-        Object[] array = (Object[])value;
-        if (array.length > 1) {
+        Object[] provided = (Object[])value;
+        if (provided.length > 1) {
             // Remove the first element
-            state = policyInstaller.uninstall(ARRAY, name, array[0]);
+            state = policyInstaller.uninstall(ARRAY, name, provided[0]);
             assertState(state);
-            returnedList = Arrays.asList(policyInstaller.getEntries(state.reset()));
+            Object[] remaining = policyInstaller.getEntries(state.reset());
 
             // Verify the second element wasn't erroneously deleted
-            Assert.assertTrue(returnedList.contains(array[1]));
+            Assert.assertTrue(arrayContains(remaining, provided[1]), "Returned list doesn't contain " + provided[1]);
         }
 
         // Remove the remaining items, including the value we already removed again
         state = policyInstaller.uninstall(ARRAY, name, value);
         assertState(state);
-        returnedList = Arrays.asList(policyInstaller.getEntries(state.reset()));
 
         // Verify none of our values remain in the array
-        for (Object element: array) {
-            int firstIndex = returnedList.indexOf(element);
-            if (firstIndex != -1) Assert.fail("Failed to remove element: " + element);
+        Object[] remaining = policyInstaller.getEntries(state.reset());
+        for (Object element: provided) {
+            Assert.assertFalse(arrayContains(remaining, element), "Failed to remove element: " + element);
         }
         return state;
     }
@@ -243,12 +234,24 @@ public abstract class PolicyTestDispatcher {
         return true;
     }
 
+    private static boolean arrayContains(Object[] array, Object value) {
+        for (Object o : array) {
+            if(o.equals(coerced(value, o))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Workaround platform-specific quirks by coercing one value type to another
      */
     private static Object coerced(Object actual, Object expected) {
         if(SystemUtilities.isWindows()) {
             // Windows registry is incapable of returning a boolean
+            if(expected instanceof Integer && actual instanceof Boolean) {
+                return ((Boolean)actual) ? 1 : 0;
+            }
             if(expected instanceof Boolean && actual instanceof Integer) {
                 Integer intActual = (Integer)actual;
                 switch(intActual) {

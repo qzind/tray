@@ -26,6 +26,7 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.ResolutionSyntax;
+import javax.print.attribute.standard.MediaPrintableArea;
 import javax.print.attribute.standard.OrientationRequested;
 import javax.print.attribute.standard.PrinterResolution;
 import java.awt.*;
@@ -77,18 +78,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
             PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.FILE);
 
             try {
-                BufferedImage bi;
-                switch(flavor) {
-                    case PLAIN:
-                        // There's really no such thing as a 'PLAIN' image, assume it's a URL
-                    case FILE:
-                        bi = ImageIO.read(ConnectionUtilities.getInputStream(data.getString("data"), true));
-                        break;
-                    default:
-                        bi = ImageIO.read(new ByteArrayInputStream(flavor.read(data.getString("data"))));
-                }
-
-                images.add(bi);
+                images.add(loadImage(data.getString("data"), flavor));
             }
             catch(IIOException e) {
                 if (e.getCause() != null && e.getCause() instanceof FileNotFoundException) {
@@ -103,6 +93,24 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         }
 
         log.debug("Parsed {} images for printing", images.size());
+    }
+
+    private BufferedImage loadImage(String data, PrintingUtilities.Flavor flavor) throws IOException {
+        // 2.0 compatibility, base64 was inferred by URL pattern
+        if (data.startsWith("data:image/") && data.contains(";base64,")) {
+            String[] parts = data.split(";base64,");
+            data = parts[parts.length - 1];
+            flavor = PrintingUtilities.Flavor.BASE64;
+        }
+
+        switch(flavor) {
+            case PLAIN:
+                // There's really no such thing as a 'PLAIN' image, assume it's a URL
+            case FILE:
+                return ImageIO.read(ConnectionUtilities.getInputStream(data, true));
+            default:
+                return ImageIO.read(new ByteArrayInputStream(flavor.read(data)));
+        }
     }
 
     private List<BufferedImage> breakupOverPages(BufferedImage img, PageFormat page, PrintRequestAttributeSet attributes) {
@@ -181,7 +189,16 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         }
 
         job.setJobName(pxlOpts.getJobName(Constants.IMAGE_PRINT));
-        job.setPrintable(this, job.validatePage(page));
+
+        if (pxlOpts.getSize() != null && pxlOpts.getSize().isCustom()) {
+                // User defined dimensions, so this can be safely removed
+                attributes.remove(MediaPrintableArea.class);
+            // forcing a custom size, skip validation
+            job.setPrintable(this, page);
+        } else {
+            //expecting a valid paper size, validate
+            job.setPrintable(this, job.validatePage(page));
+        }
 
         printCopies(output, pxlOpts, job, attributes);
     }
@@ -338,4 +355,11 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         manualReverse = false;
     }
 
+    /**
+     * Creates a raw-compatible BufferedImage
+     */
+    @Override
+    public BufferedImage createBufferedImage(String data, JSONObject opt, PrintingUtilities.Flavor flavor, PrintOptions.Raw rawOpts, PrintOptions.Pixel pxlOpts) throws IOException {
+        return loadImage(data, flavor);
+    }
 }

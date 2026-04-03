@@ -16,6 +16,7 @@
         <fileset dir="${dist.dir}/" id="win.sign.found">
             <include name="**/*.dll"/>
             <include name="**/*.exe"/>
+            <exclude name="provision/**"/>
         </fileset>
         <!-- Pass all files at once, wrapped in quotes -->
         <pathconvert pathsep="&quot; &quot;" property="win.sign.separated" refid="win.sign.found"/>

@@ -6,6 +6,7 @@ public interface DeviceIO extends DeviceListener {
 
     String getProductId();
 
+    DeviceOptions getDeviceOptions();
 
     void open() throws DeviceException;
 

@@ -13,7 +13,7 @@ public enum ArgValue {
     // Informational
     HELP(INFORMATION, "Display help information and exit.", null, null,
          "--help", "-h", "/?"),
-    VERSION(INFORMATION, "Display version information and exit.", null, null,
+    VERSION(INFORMATION, "Display version information and exit.  Optionally, a format parameter may be specified e.g. \"x.x.x.x\" to coerce formatting.", "--version [format]", null,
             "--version", "-v"),
     BUNDLEID(INFORMATION, "Display Apple bundle identifier and exit.", null, null,
              "--bundleid", "-i"),
@@ -61,6 +61,12 @@ public enum ArgValue {
         "tray.notifications"),
     TRAY_HEADLESS(PREFERENCES, "Start QZ Tray in headless (no user interface) mode", null, false,
         "tray.headless"),
+    TRAY_LOG_LINES(PREFERENCES, "Number of log lines to display in the log window", null, 500,
+        "tray.log.lines"),
+    TRAY_LOG_SCROLL(PREFERENCES, "Enabled/disable auto-scrolling of logs in the log window", null, true,
+        "tray.log.scroll"),
+    TRAY_LOG_WRAP(PREFERENCES, "Enabled/disable text wrapping in the log window", null, true,
+        "tray.log.wrap"),
     TRAY_MONOCLE(PREFERENCES, "Enable/disable the use of the Monocle for JavaFX/HTML rendering", null, true,
         "tray.monocle"),
     TRAY_STRICTMODE(PREFERENCES, "Enable/disable solely trusting certificates matching authcert.override", null, false,
@@ -69,6 +75,8 @@ public enum ArgValue {
         "tray.idle.printers"),
     TRAY_IDLE_JAVAFX(PREFERENCES, "Enable/disable idle starting of JavaFX for better initial performance", null, true,
         "tray.idle.javafx"),
+    TRAY_DIALOG_ENDPOINT(PREFERENCES, "Headless mode only: Enable a custom endpoint for dialogs", null, null,
+                         "tray.dialog.endpoint"),
     SECURITY_FILE_ENABLED(PREFERENCES, "Enable/disable all File Communications features", null, true,
         "security.file.enabled"),
     SECURITY_FILE_STRICT(PREFERENCES, "Enable/disable signing requirements for File Communications features", null, true,
@@ -140,6 +148,10 @@ public enum ArgValue {
 
     public Object getDefaultVal() {
         return defaultVal;
+    }
+
+    public String getDefaultValAsString() {
+        return defaultVal == null ? null : defaultVal.toString();
     }
 
     public enum ArgType {

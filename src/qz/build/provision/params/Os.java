@@ -1,6 +1,7 @@
 package qz.build.provision.params;
 
 import org.apache.commons.lang3.StringUtils;
+import qz.common.Sluggable;
 import qz.utils.SystemUtilities;
 
 import java.util.*;
@@ -8,7 +9,7 @@ import java.util.*;
 /**
  * Basic OS parser
  */
-public enum Os {
+public enum Os implements Sluggable {
     WINDOWS,
     MAC,
     LINUX,
@@ -63,5 +64,10 @@ public enum Os {
     @Override
     public String toString() {
         return super.toString().toLowerCase(Locale.ENGLISH);
+    }
+
+    @Override
+    public String slug() {
+        return Sluggable.slugOf(this);
     }
 }

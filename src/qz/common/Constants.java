@@ -48,9 +48,15 @@ public class Constants {
     public static final String VERSION_DOWNLOAD_URL = "https://github.com/qzind/tray/releases";
     public static final boolean ENABLE_DIAGNOSTICS = true; // Diagnostics menu (logs, etc)
 
+    public static final String BRAND_COLOR_HEX = "#44aa53";
+    @SuppressWarnings("ConstantValue")
+    public static final boolean IS_REBRANDED = !ABOUT_EMAIL.equals("support@qz.io");
+
     public static final String TRUSTED_CERT = String.format("Verified by %s", Constants.ABOUT_COMPANY);
     public static final String SPONSORED_CERT = String.format("Sponsored by %s", Constants.ABOUT_COMPANY);
     public static final String SPONSORED_TOOLTIP = "Sponsored organization";
+    public static final String STRICT_MODE_CERT = "Strictly permitted";
+    public static final String THIRD_PARTY_CERT = "Third-party issued";
     public static final String UNTRUSTED_CERT = "Untrusted website";
     public static final String NO_TRUST = "Cannot verify trust";
 

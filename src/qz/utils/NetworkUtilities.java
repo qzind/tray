@@ -9,7 +9,6 @@
  */
 package qz.utils;
 
-import com.sun.jna.platform.win32.Kernel32Util;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -146,7 +145,7 @@ public class NetworkUtilities {
         }
 
         Device(NetworkInterface iface) {
-            try { mac = ByteUtilities.bytesToHex(iface.getHardwareAddress()); } catch(Exception ignore) {}
+            try { mac = ByteUtilities.toHexString(iface.getHardwareAddress()); } catch(Exception ignore) {}
             try { up = iface.isUp(); } catch(SocketException ignore) {}
 
             ip4 = new ArrayList<>();

@@ -68,19 +68,19 @@
         "data": "script2"
     },
     {
-        "description": "[ALL OS SCRIPT] with '.sh' extension at 'install'",
+        "description": "[LINUX & MAC SCRIPT] with '.sh' extension at 'install'",
         "type": "script",
-        "os": "*",
+        "os": "linux|mac",
         "phase": "install",
         "data": "script3.sh"
     },
     {
         "description": "[AARCH64 ONLY SCRIPT] with '.sh' extension at 'install'",
         "type": "script",
-        "os": "*",
+        "os": "linux|mac",
         "arch": "aarch64",
         "phase": "install",
-        "data": "script2"
+        "data": "script3.sh"
     },
     {
         "description": "[CERTIFICATE] at 'startup' (allowed.dat)",
@@ -96,16 +96,16 @@
         "data": "foo=bar"
     },
     {
-        "description": "[PROPERTY] at 'install' (qz-tray.properties)",
+        "description": "[PROPERTY] at 'certgen' (qz-tray.properties)",
         "type": "property",
-        "phase": "install",
+        "phase": "certgen",
         "os": "*",
         "data": "websocket.secure.ports=9191,9292,9393,9494"
     },
     {
         "description": "[PROPERTY] at 'certgen' (qz-tray.properties)",
         "type": "property",
-        "phase": "install",
+        "phase": "certgen",
         "os": "*",
         "data": "websocket.insecure.ports=9192,9293,9394,9495"
     },
@@ -129,7 +129,7 @@
         "data": "Cherry Connect,cc-util,cc"
     },
     {
-        "description": "[REMOVER] at 'install' QZ-branded version",
+        "description": "[ERROR EXPECTED] remover at 'install' QZ-branded version",
         "type": "remover",
         "os": "*",
         "phase": "install",
@@ -147,5 +147,92 @@
         "os": "*",
         "data": "java.net.useSystemProxies=true",
         "path": "net.properties"
+    },
+    {
+        "description": "[SOFTWARE ERROR EXPECTED] file missing at 'install'",
+        "type": "software",
+        "os": "windows",
+        "data": "DCDSetup1.5.0.17.exe",
+        "args": "/S /v/qn"
+    },
+    {
+        "description": "[POLICY] ARRAY: Chromium URL for LNA at 'install'",
+        "type": "policy",
+        "phase": "install",
+        "os": "*",
+        "app": "chromium",
+        "name": "LocalNetworkAccessAllowedForUrls",
+        "format": "array",
+        "data": "[*.]qz.io"
+    },
+    {
+        "description": "[POLICY] MAP: Firefox URL String for LNA at 'install'",
+        "type": "policy",
+        "phase": "install",
+        "os": "*",
+        "app": "firefox",
+        "name": "LocalNetworkAccess",
+        "format": "map",
+        "data": "{\"SkipDomains\":[\"*.qz.io\"]}"
+    },
+    {
+        "description": "[POLICY] MAP: Firefox URL JSON for LNA at 'install'",
+        "type": "policy",
+        "phase": "install",
+        "os": "*",
+        "app": "firefox",
+        "name": "LocalNetworkAccess",
+        "format": "map",
+        "data":
+            {
+                "SkipDomains": [ "*.qz.io" ]
+            }
+    },
+    {
+        "description": "[POLICY] ARRAY: Chromium URI for qz:launch at 'install'",
+        "type": "policy",
+        "phase": "install",
+        "os": "*",
+        "app": "chromium",
+        "name": "URLAllowList",
+        "format": "array",
+        "data": "[\"qz://*\"]"
+    },
+    {
+        "description": "[POLICY] ARRAY: Chromium URI for qz:launch at 'install'",
+        "type": "policy",
+        "phase": "install",
+        "os": "*",
+        "app": "chromium",
+        "name": "URLAllowList",
+        "format": "array",
+        "data": "qz://*"
+    },
+    {
+        "description": "[POLICY] VALUE: Chromium toggle private browsing at 'install'",
+        "type": "policy",
+        "phase": "install",
+        "os": "*",
+        "app": "chromium",
+        "name": "IncognitoModeAvailability",
+        "data": 1
+    },
+    {
+        "description": "[POLICY] MAP: Firefox root certs at 'certgen'",
+        "type": "policy",
+        "os": "windows|mac",
+        "app": "firefox",
+        "name": "Certificates",
+        "format": "map",
+        "data": "{\"ImportEnterpriseRoots\": true }"
+    },
+    {
+        "description": "[POLICY] MAP: Firefox specific cert at 'certgen'",
+        "type": "policy",
+        "os": "linux",
+        "app": "firefox",
+        "name": "Certificates",
+        "format": "map",
+        "data": "{\"Install\": [ \"provision-testing.crt\"] }"
     }
 ]

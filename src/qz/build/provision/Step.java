@@ -11,11 +11,12 @@ import qz.build.provision.params.Phase;
 import qz.build.provision.params.Type;
 import qz.build.provision.params.types.Remover;
 import qz.build.provision.params.types.Software;
+import qz.common.Sluggable;
+import qz.installer.apps.locator.AppFamily;
+import qz.installer.apps.policy.PolicyState;
 
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class Step {
     protected static final Logger log = LogManager.getLogger(Step.class);
@@ -26,12 +27,15 @@ public class Step {
     HashSet<Os> os;
     HashSet<Arch> arch;
     Phase phase;
-    String data;
+    Object data;
+    AppFamily app;
+    String name;
+    String format;
 
     Path relativePath;
-    Class relativeClass;
+    Class<?> relativeClass;
 
-    public Step(Path relativePath, String description, Type type, HashSet<Os> os, HashSet<Arch> arch, Phase phase, String data, List<String> args) {
+    public Step(Path relativePath, String description, Type type, HashSet<Os> os, HashSet<Arch> arch, Phase phase, AppFamily app, String name, String format, Object data, List<String> args) {
         this.relativePath = relativePath;
         this.description = description;
         this.type = type;
@@ -40,33 +44,32 @@ public class Step {
         this.phase = phase;
         this.data = data;
         this.args = args;
+        this.app = app;
+        this.name = name;
+        this.format = format;
     }
 
     /**
      * Only should be used by unit tests
      */
-    Step(Class relativeClass, String description, Type type, HashSet<Os> os, HashSet<Arch> arch, Phase phase, String data, List<String> args) {
+    Step(Class<?> relativeClass, String description, Type type, HashSet<Os> os, HashSet<Arch> arch, Phase phase, AppFamily app, String name, String format, Object data, List<String> args) {
+        this((Path)null, description, type, os, arch, phase, app, name, format, data, args);
         this.relativeClass = relativeClass;
-        this.description = description;
-        this.type = type;
-        this.os = os;
-        this.arch = arch;
-        this.phase = phase;
-        this.data = data;
-        this.args = args;
     }
 
     @Override
     public String toString() {
-        return "Step { " +
-                "description=\"" + description + "\", " +
-                "type=\"" + type + "\", " +
-                "os=\"" + Os.serialize(os) + "\", " +
-                "arch=\"" + Arch.serialize(arch) + "\", " +
-                "phase=\"" + phase + "\", " +
-                "data=\"" + data + "\", " +
-                "args=\"" + StringUtils.join(args, ",") + "\" " +
-                "}";
+        return String.format("Step { description='%s', type='%s', os='%s', arch='%s', phase='%s', app='%s', name='%s', format='%s', data='%s', args='%s' }",
+                             description,
+                             type,
+                             Os.serialize(os),
+                             Arch.serialize(arch),
+                             phase,
+                             Sluggable.slugOf(app),
+                             name,
+                             format,
+                             data,
+                             StringUtils.join(args, ","));
     }
 
     public JSONObject toJSON() throws JSONException {
@@ -77,6 +80,12 @@ public class Step {
                 .put("arch", Arch.serialize(arch))
                 .put("phase", phase)
                 .put("data", data);
+
+        if(app != null) {
+            json.put("app", Sluggable.slugOf(app))
+                    .put("name", name)
+                    .put("format", PolicyState.Type.parse(format, PolicyState.Type.VALUE));
+        }
 
         for(int i = 0; i < args.size(); i++) {
             json.put(String.format("arg%s", i + 1), args.get(i));
@@ -128,7 +137,36 @@ public class Step {
         this.phase = phase;
     }
 
+    public AppFamily getApp() {
+        return app;
+    }
+
+    public void setApp(AppFamily app) {
+        this.app = app;
+    }
+
+    public void setName(String name) { this.name = name; }
+
+    public String getName() { return name; };
+
+    public String getFormat() {
+        return format;
+    }
+
+    public void setFormat(String format) {
+        this.format = format;
+    }
+
+    @Deprecated
     public String getData() {
+        return getDataString();
+    }
+
+    public String getDataString() {
+        return (data == null || data instanceof String) ? (String)data : data.toString();
+    }
+
+    public Object getDataObject() {
         return data;
     }
 
@@ -136,7 +174,7 @@ public class Step {
         this.data = data;
     }
 
-    public Class getRelativeClass() {
+    public Class<?> getRelativeClass() {
         return relativeClass;
     }
 
@@ -155,7 +193,7 @@ public class Step {
     public static Step parse(JSONObject jsonStep, Object relativeObject) {
         String description = jsonStep.optString("description", "");
         Type type = Type.parse(jsonStep.optString("type", null));
-        String data = jsonStep.optString("data", null);
+        Object data = jsonStep.opt("data");
 
         // Handle installer args
         List<String> args = new LinkedList<>();
@@ -169,9 +207,10 @@ public class Step {
                 String singleArg = jsonStep.optString(String.format("arg%d", ++argCounter), "");
                 if(!singleArg.trim().isEmpty()) {
                     args.add(singleArg.trim());
+                } else {
+                    // stop searching if the next incremental arg (e.g. "arg2") isn't found
+                    break;
                 }
-                // stop searching if the next incremental arg (e.g. "arg2") isn't found
-                break;
             }
         }
 
@@ -184,7 +223,7 @@ public class Step {
             }
 
             // Keep only the first value
-            if(args.size() > 0) {
+            if(!args.isEmpty()) {
                 args = args.subList(0, 1);
             } else {
                 throw formatted("Conf path value cannot be blank.");
@@ -196,7 +235,7 @@ public class Step {
             // Do not tolerate bad os values
             String osString = jsonStep.optString("os");
             os = Os.parse(osString);
-            if(os.size() == 0) {
+            if(os.isEmpty()) {
                 throw formatted("Os provided '%s' could not be parsed", osString);
             }
         }
@@ -206,7 +245,7 @@ public class Step {
             // Do not tolerate bad arch values
             String archString = jsonStep.optString("arch");
             arch = Arch.parse(archString);
-            if(arch.size() == 0) {
+            if(arch.isEmpty()) {
                 throw formatted("Arch provided \"%s\" could not be parsed", archString);
             }
         }
@@ -219,11 +258,25 @@ public class Step {
                 log.warn("Phase provided \"{}\" could not be parsed", phaseString);
             }
         }
+
+        AppFamily app = null;
+        if(jsonStep.has("app")) {
+            String appString = jsonStep.optString("app", null);
+            app = AppFamily.parse(appString, null);
+            if(app == null) {
+                log.warn("App provided \"{}\" could not be parsed", appString);
+            }
+        }
+
+        String name = jsonStep.optString("name", null);
+
+        String format = jsonStep.optString("format", "plain");
+
         Step step;
         if(relativeObject instanceof Path) {
-            step = new Step((Path)relativeObject, description, type, os, arch, phase, data, args);
+            step = new Step((Path)relativeObject, description, type, os, arch, phase, app, name, format, data, args);
         } else if(relativeObject instanceof Class) {
-            step = new Step((Class)relativeObject, description, type, os, arch, phase, data, args);
+            step = new Step((Class<?>)relativeObject, description, type, os, arch, phase, app, name, format, data, args);
         } else {
             throw formatted("Parameter relativeObject must be of type 'Path' or 'Class' but '%s' was provided", relativeObject.getClass());
         }
@@ -235,12 +288,14 @@ public class Step {
                 .throwIfNull("Data", data)
                 .validateOs()
                 .validateArch()
+                .validatePolicy()
                 .enforcePhase(Type.PREFERENCE, Phase.STARTUP)
                 .enforcePhase(Type.CA, Phase.CERTGEN)
                 .enforcePhase(Type.CERT, Phase.STARTUP)
                 .enforcePhase(Type.CONF, Phase.CERTGEN)
                 .enforcePhase(Type.SOFTWARE, Phase.INSTALL)
                 .enforcePhase(Type.REMOVER, Phase.INSTALL)
+                .enforcePhase(Type.POLICY, Phase.CERTGEN, Phase.INSTALL, Phase.UNINSTALL)
                 .enforcePhase(Type.PROPERTY, Phase.CERTGEN, Phase.INSTALL)
                 .validateRemover();
     }
@@ -249,10 +304,11 @@ public class Step {
         if(type != Type.REMOVER) {
             return this;
         }
-        Remover remover = Remover.parse(data);
+        Remover remover = Remover.parse(getDataString());
         switch(remover) {
             case CUSTOM:
                 break;
+            case QZ:
             default:
                 if(remover.matchesCurrentSystem()) {
                     throw formatted("Remover '%s' would conflict with this installer, skipping. ", remover);
@@ -261,7 +317,7 @@ public class Step {
         }
 
         // Custom removers must have three elements
-        if(data == null || data.split(",").length != 3) {
+        if(data == null || getDataString().split(",").length != 3) {
             throw formatted("Remover data '%s' is invalid.  Data must match a known type [%s] or contain exactly 3 elements.", data, Remover.valuesDelimited(","));
         }
         return this;
@@ -276,16 +332,19 @@ public class Step {
 
     private Step validateOs() {
         if(os == null) {
-            if(type == Type.SOFTWARE) {
-                // Software must default to a sane operating system
-                os = Software.parse(data).defaultOs();
-            } else {
-                os = new HashSet<>();
-            }
+            os = new HashSet<>();
         }
-        if(os.size() == 0) {
-            os.add(Os.ALL);
-            log.debug("Os list is null, assuming '{}'", Os.ALL);
+
+        if(os.isEmpty()) {
+            switch(type) {
+                case SOFTWARE:
+                    os.addAll(Software.parse(getDataString()).defaultOs());
+                    break;
+                case CONF:
+                default:
+                    os.add(Os.ALL);
+            }
+            log.debug("Os list is empty, assuming '{}'", os);
         }
         return this;
     }
@@ -294,9 +353,17 @@ public class Step {
         if(arch == null) {
             arch = new HashSet<>();
         }
-        if(arch.size() == 0) {
+        if(arch.isEmpty()) {
             arch.add(Arch.ALL);
-            log.debug("Arch list is null, assuming '{}'", Arch.ALL);
+            log.debug("Arch list is empty, assuming '{}'", Arch.ALL);
+        }
+        return this;
+    }
+
+    private Step validatePolicy() {
+        if(type == Type.POLICY && app == null) {
+            String[] slugs = Arrays.stream(AppFamily.values()).map(AppFamily::slug).toArray(String[]::new);
+            throw formatted("Policy requires a corresponding app value.  Possible values are: [%s]", String.join(",", slugs));
         }
         return this;
     }
@@ -324,12 +391,18 @@ public class Step {
         String formatted = String.format(message, args);
         return new UnsupportedOperationException(formatted);
     }
-    Step cloneTo(Phase phase) {
+
+    public Step cloneTo(Phase phase, String description) {
        return relativePath != null ?
-                    new Step(relativePath, description, type, os, arch, phase, data, args) :
-                    new Step(relativeClass, description, type, os, arch, phase, data, args);
+                    new Step(relativePath, description, type, os, arch, phase, app, name, format, data, args) :
+                    new Step(relativeClass, description, type, os, arch, phase, app, name, format, data, args);
     }
 
+    Step cloneTo(Phase phase) {
+        return cloneTo(phase, description);
+    }
+
+    @SuppressWarnings("CloneDoesntCallSuperClone")
     public Step clone() {
         return cloneTo(this.phase);
     }

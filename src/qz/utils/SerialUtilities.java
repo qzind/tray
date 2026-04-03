@@ -263,6 +263,11 @@ public class SerialUtilities {
                         StreamEvent event = new StreamEvent(StreamEvent.Stream.SERIAL, StreamEvent.Type.RECEIVE)
                                 .withData("portName", portName).withData("output", output);
                         PrintSocketClient.sendStream(session, event, serial);
+
+                        if (!serial.isOpen()) {
+                            //error happened sending stream data, cleanup
+                            connection.removeSerialPort(portName);
+                        }
                     }
                 });
 

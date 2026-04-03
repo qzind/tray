@@ -68,7 +68,7 @@ public class App {
             X509Certificate caCert = certManager.getKeyPair(KeyPairWrapper.Type.CA).getCert();
             // Only install if a CA cert exists (e.g. one we generated)
             if(caCert != null) {
-                NativeCertificateInstaller.getInstance().install(certManager.getKeyPair(KeyPairWrapper.Type.CA).getCert());
+                NativeCertificateInstaller.getInstance(Installer.PrivilegeLevel.USER).install(certManager.getKeyPair(KeyPairWrapper.Type.CA).getCert());
             }
         }
 

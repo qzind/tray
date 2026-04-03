@@ -43,13 +43,13 @@ public class MacInstaller extends Installer {
         fieldMap.put("%PARAM%", "--honorautostart");
 
         try {
-            FileUtilities.configureAssetFile("assets/mac-launchagent.plist.in", dest, fieldMap, MacInstaller.class);
+            FileUtilities.configureAssetToFile(MacInstaller.class, "assets/mac-launchagent.plist.in", fieldMap, dest);
             // Disable service until reboot
-            if(SystemUtilities.isMac()) {
-                ShellUtilities.execute("/bin/launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH);
+            if (!ShellUtilities.execute("/bin/launchctl", "unload", MacInstaller.LAUNCH_AGENT_PATH)) {
+                log.warn("An error occurred unloading the startup launcher, multiple instances may spawn");
             }
         } catch(IOException e) {
-            log.warn("Unable to write startup file: {}", dest, e);
+            log.error("An error occurred creating the startup launcher '{}'", dest);
         }
 
         return this;
@@ -64,13 +64,9 @@ public class MacInstaller extends Installer {
     }
 
     public Installer addSystemSettings() {
-        // Chrome protocol handler
-        String plist = "/Library/Preferences/com.google.Chrome.plist";
-        if(ShellUtilities.execute(new String[] { "/usr/bin/defaults", "write", plist }, new String[] {DATA_DIR + "://*" }).isEmpty()) {
-            ShellUtilities.execute("/usr/bin/defaults", "write", plist, "URLAllowlist", "-array-add", DATA_DIR +"://*");
-        }
         return this;
     }
+
     public Installer removeSystemSettings() {
         // Remove startup entry
         File dest = new File(LAUNCH_AGENT_PATH);
@@ -116,10 +112,10 @@ public class MacInstaller extends Installer {
                 // Fallback, should only fire via Terminal + sudo
                 sudoer = ShellUtilities.executeRaw("logname").trim();
             }
-            // Start directly without waitFor(...), avoids deadlocking
-            Runtime.getRuntime().exec(new String[] { "su", sudoer, "-c", "\"" + StringUtils.join(args, "\" \"") + "\""});
+            super.startProcess(List.of("su", sudoer, "-c", "\"" + StringUtils.join(args, "\" \"") + "\""));
         } else {
-            Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
+            args.add(0, "nohup");
+            super.startProcess(args);
         }
     }
 }

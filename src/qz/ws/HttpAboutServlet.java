@@ -8,23 +8,39 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.servlet.FilterHolder;
 import qz.common.AboutInfo;
+import qz.installer.apps.locator.AppFamily;
 import qz.installer.certificate.CertificateManager;
+import qz.utils.ByteUtilities;
+import qz.utils.FileUtilities;
+import qz.utils.SystemUtilities;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static qz.common.Constants.*;
+import static qz.ui.component.IconCache.*;
+import static qz.ui.component.IconCache.Icon.*;
 
 /**
  * HTTP JSON endpoint for serving QZ Tray information
  */
 public class HttpAboutServlet extends DefaultServlet {
-
-    private static final Logger log = LogManager.getLogger(PrintSocketServer.class);
-
+    private static final Logger log = LogManager.getLogger(HttpAboutServlet.class);
     private static final int JSON_INDENT = 2;
-    private CertificateManager certificateManager;
-    private String allowOrigin;
+
+    private static final String FAVICON = String.format("data:image/png;base64,%s", ByteUtilities.imageToBase64(LOGO_ICON, "png"));
+    // TODO: Remove when portal adds "BRAND_COLOR_HEX" value
+    private static final String BRAND_COLOR = IS_REBRANDED ? getHtmlColorFromIcon(ABOUT_ICON, BRAND_COLOR_HEX) : BRAND_COLOR_HEX;
+    private static final int SALT_LENGTH_RESTART = ThreadLocalRandom.current().nextInt(12, 31);
+
+    private final CertificateManager certificateManager;
+    private final String allowOrigin;
 
     public HttpAboutServlet(CertificateManager certificateManager, String allowOrigin) {
         this.certificateManager = certificateManager;
@@ -45,6 +61,11 @@ public class HttpAboutServlet extends DefaultServlet {
     }
 
     private void generateHtmlResponse(HttpServletRequest request, HttpServletResponse response) {
+        // Handle the "Restart required" prompt
+        if(interceptRestartRequest(request, response)) {
+            return;
+        }
+
         StringBuilder display = new StringBuilder();
 
         display.append("<html>")
@@ -75,6 +96,75 @@ public class HttpAboutServlet extends DefaultServlet {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             log.warn("Exception occurred loading html page {}", e.getMessage());
         }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        if(!"/restart".equals(request.getServletPath())) {
+            return;
+        }
+
+        String sessionId = request.getParameter("session_id");
+        String pid = request.getParameter("pid");
+        String challenge = request.getParameter("challenge");
+
+        try {
+            if(!request.getSession().getId().equals(sessionId)) {
+                postUnauthorized(response, "Invalid session id");
+                return;
+            }
+
+            if (SystemUtilities.validatePidChallenge(pid, challenge, SALT_LENGTH_RESTART)) {
+                int pidNum = Integer.parseInt(pid);
+                // TODO: Actually close the browser when the button is clicked
+                response.setContentType("text/html");
+                String message = String.format("Challenge accepted!\\n   session_id = %s\\n   pid = %d\\n\\nClick OK to close window (not really)", sessionId, pidNum);
+                response.getWriter().println("<html><script>alert(\"" + message + "\");</script></html>");
+                response.setStatus(HttpServletResponse.SC_ACCEPTED);
+                return;
+            }
+        } catch(NumberFormatException e) {
+            log.error("Invalid pid '{}' provided for restart", pid, e);
+        }
+        postUnauthorized(response, "Incorrect challenge");
+    }
+
+    private void postUnauthorized(HttpServletResponse response, String message) throws IOException {
+        log.error(message);
+        response.getWriter().println(message);
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    }
+
+    private boolean interceptRestartRequest(HttpServletRequest request, HttpServletResponse response) {
+        if(!"/restart".equals(request.getServletPath())) {
+            return false;
+        }
+
+        String pid = request.getParameter("pid");
+        if(pid == null) {
+            pid = "-1";
+        }
+
+        try {
+            HashMap<String,String> fieldMap = new HashMap<>();
+            fieldMap.put("%SESSION_ID%", request.getSession().getId());
+            fieldMap.put("%FAVICON%", FAVICON);
+            fieldMap.put("%RESTART_TITLE%", IS_REBRANDED ? "Oh Snap" : "Oh Sheet");
+            fieldMap.put("%RESTART_PID%", pid);
+            fieldMap.put("%BRAND_COLOR%", BRAND_COLOR);
+            fieldMap.put("%RESTART_CHALLENGE%", SystemUtilities.calculatePidChallenge(pid, SALT_LENGTH_RESTART));
+            fieldMap.put("%RESTART_SVG%", FileUtilities.readSvgAsset(getClass(),"resources/restart-graphic.svg"));
+            fieldMap.put("%POLICY_URL%", parseApp(request) == AppFamily.FIREFOX ? "about:policies" : "about:policy");
+            String display = FileUtilities.configureAssetToString(getClass(),"resources/restart-required.html.in", fieldMap);
+
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType("text/html");
+            response.getOutputStream().print(display);
+        } catch(IOException e) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            log.warn("Exception occurred loading html restart page {}", e.getMessage());
+        }
+        return true;
     }
 
     private void generateJsonResponse(HttpServletRequest request, HttpServletResponse response) {
@@ -142,7 +232,7 @@ public class HttpAboutServlet extends DefaultServlet {
     }
 
     private String titleRow(String title) {
-        return "<tr><th colspan='99'>" + title + "</th></tr>";
+        return String.format("<tr><th id='%s' colspan='99'>%s</th></tr>", title, title);
     }
 
     private String contentRow(String key, Object value) throws JSONException {
@@ -188,6 +278,21 @@ public class HttpAboutServlet extends DefaultServlet {
             }
             filterChain.doFilter(request, response);
         });
+    }
+
+    private static AppFamily parseApp(HttpServletRequest request) {
+        String userAgent = request.getHeader("User-Agent");
+        if(userAgent != null) {
+            for(AppFamily appFamily : AppFamily.values()) {
+                for(AppFamily.AppVariant variant : appFamily.getVariants()) {
+                    if (userAgent.toLowerCase(Locale.ENGLISH).contains(variant.getSlug())) {
+                        return appFamily;
+                    }
+                }
+            }
+        }
+        // If we can't guess, fallback to Chrome
+        return AppFamily.CHROMIUM;
     }
 
 }

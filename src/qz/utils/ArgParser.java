@@ -386,7 +386,12 @@ public class ArgParser {
 
             // Handle version request
             if (hasFlag(ArgValue.VERSION)) {
-                System.out.println(Constants.VERSION);
+                String versionFormat;
+                if ((versionFormat = valueOpt(ArgValue.VERSION.getMatches())) != null) {
+                    System.out.println(SystemUtilities.formatVersion(Constants.VERSION, versionFormat));
+                } else {
+                    System.out.println(Constants.VERSION);
+                }
                 exitStatus = SUCCESS;
                 return true;
             }

@@ -1380,12 +1380,15 @@ var qz = (function() {
             /**
              * The domain to automagically append to non-qualified hosts, such as "qz.surf", or "example.com"
              *
-             * @param {string} surfDomain="qz.surf" The domain to append to non-qualified hosts without a leading dot.
+             * @param {string} surfDomain="qz.surf" The domain to append to non-qualified hosts.
              * @since 2.2.6
              *
              * @memberof qz.websocket
              */
             setSurfDomain: function(surfDomain) {
+                if (surfDomain.indexOf('.') === 0) {
+                    surfDomain = surfDomain.substring(1);
+                }
                 _qz.websocket.connectConfig.surfDomain = surfDomain;
             },
 

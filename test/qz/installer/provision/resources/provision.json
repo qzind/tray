@@ -194,7 +194,7 @@
         "phase": "install",
         "os": "*",
         "app": "chromium",
-        "name": "URLAllowList",
+        "name": "URLAllowlist",
         "format": "array",
         "data": "[\"qz://*\"]"
     },
@@ -204,7 +204,7 @@
         "phase": "install",
         "os": "*",
         "app": "chromium",
-        "name": "URLAllowList",
+        "name": "URLAllowlist",
         "format": "array",
         "data": "qz://*"
     },

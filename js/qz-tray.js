@@ -87,6 +87,8 @@ var qz = (function() {
                 host: ["localhost", "localhost.qz.io"], //hosts QZ Tray can be running on
                 hostIndex: 0,                           //internal var - index on host array
                 usingSecure: true,                      //boolean use of secure protocol
+                usingSurf: true,                        //append suffix to non-qualified hostnames
+                surfDomain: "qz.surf",                  //surf suffix to append
                 protocol: {
                     secure: "wss://",                   //secure websocket
                     insecure: "ws://"                   //insecure websocket
@@ -706,6 +708,25 @@ var qz = (function() {
 
             ws: typeof WebSocket !== 'undefined' ? WebSocket : null,
 
+            /**
+             * Normalize a host string by appending a "surf"" tld if necessary.
+             * Ignored if "usingSurf" is set to false
+             */
+            appendSurf: function(host) {
+                return _qz.tools.isQualified(host) ? host : host + "." + _qz.websocket.connectConfig.surfDomain;
+            },
+
+            /**
+             * Returns if the provided hostname is fully-qualified either as a domain
+             * name or as an ip address. Used to determine whether to append a "surf" suffix
+             * (e.g. ".qz.surf") at the end.
+             */
+            isQualified: function(host) {
+                return (host.toLowerCase() === 'localhost') // essentially qualified
+                    || host.indexOf('.') !== -1 // ipv4
+                    || host.indexOf(':') !== -1; // ipv6
+            },
+
             absolute: function(loc) {
                 if (typeof window !== 'undefined' && typeof document.createElement === 'function') {
                     var a = document.createElement("a");
@@ -1257,6 +1278,12 @@ var qz = (function() {
                     //ensure any hosts are passed to internals as an array
                     if (typeof options.host !== 'undefined' && !Array.isArray(options.host)) {
                         options.host = [options.host];
+                        //append "surf" domain if enabled
+                        if(_qz.websocket.connectConfig.usingSurf) {
+                            for(var i = 0; i < options.host.length; i++) {
+                                options.host[i] = _qz.tools.appendSurf(options.host[i]);
+                            }
+                        }
                     }
 
                     _qz.websocket.shutdown = false; //reset state for new connection attempt
@@ -1336,6 +1363,33 @@ var qz = (function() {
              */
             setClosedCallbacks: function(calls) {
                 _qz.websocket.closedCallbacks = calls;
+            },
+
+            /**
+             * Whether to append the "surf" domain (e.g. "qz.surf") to the end of non-qualified hosts (except "localhost")
+             *
+             * @param {boolean} usingSurf=true Toggles automatic "surf" domain appending
+             * @since 2.2.6
+             *
+             * @memberof qz.websocket
+             */
+            setUsingSurf: function(usingSurf) {
+                _qz.websocket.connectConfig.usingSurf = usingSurf;
+            },
+
+            /**
+             * The domain to automagically append to non-qualified hosts, such as "qz.surf", or "example.com"
+             *
+             * @param {string} surfDomain="qz.surf" The domain to append to non-qualified hosts.
+             * @since 2.2.6
+             *
+             * @memberof qz.websocket
+             */
+            setSurfDomain: function(surfDomain) {
+                if (surfDomain.indexOf('.') === 0) {
+                    surfDomain = surfDomain.substring(1);
+                }
+                _qz.websocket.connectConfig.surfDomain = surfDomain;
             },
 
             /**

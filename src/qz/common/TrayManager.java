@@ -16,7 +16,7 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 import qz.App;
 import qz.auth.Certificate;
-import qz.auth.RequestState;
+import qz.auth.Request;
 import qz.installer.shortcut.ShortcutCreator;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.action.html.WebApp;
@@ -61,7 +61,7 @@ public class TrayManager {
     private TrayType tray;
 
     private ConfirmDialog confirmDialog;
-    private GatewayDialog gatewayDialog;
+    private final GatewayDialog gatewayDialog;
     private AboutDialog aboutDialog;
     private LogDialog logDialog;
     private SiteManagerDialog sitesDialog;
@@ -163,12 +163,14 @@ public class TrayManager {
             System.setProperty("sun.java2d.print.polling", "false");
         }
 
-        if (!headless) {
-            componentList = new ArrayList<>();
+        gatewayDialog = new GatewayDialog(headless, null,"Action Required", iconCache);
 
-            // The allow/block dialog
-            gatewayDialog = new GatewayDialog(null, "Action Required", iconCache);
-            componentList.add(gatewayDialog);
+        if(headless) {
+            // If headless, look for a location to forward message dialogs to
+            gatewayDialog.setEndpoint(PrefsSearch.getString(TRAY_DIALOG_ENDPOINT, prefs, App.getTrayProperties()));
+        } else {
+            componentList = new ArrayList<>();
+            componentList.add(gatewayDialog.getDialog());
 
             // The ok/cancel dialog
             confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
@@ -495,33 +497,40 @@ public class TrayManager {
         JOptionPane.showMessageDialog(null, message, name, JOptionPane.ERROR_MESSAGE);
     }
 
-    public boolean showGatewayDialog(final RequestState request, final String prompt, final Point position) {
-        if (!headless) {
-            try {
-                SwingUtilities.invokeAndWait(() -> gatewayDialog.prompt("%s wants to " + prompt, request, position));
-            }
-            catch(Exception ignore) {}
-
-            if (gatewayDialog.isApproved()) {
-                log.info("Allowed {} to {}", request.getCertName(), prompt);
-                if (gatewayDialog.isPersistent()) {
-                    whiteList(request.getCertUsed());
-                }
-            } else {
-                log.info("Denied {} to {}", request.getCertName(), prompt);
-                if (gatewayDialog.isPersistent()) {
-                    if (!request.hasCertificate()) {
-                        anonymousItem.doClick(); // if always block anonymous requests -> flag menu item
-                    } else {
-                        blackList(request.getCertUsed());
-                    }
-                }
-            }
-
-            return gatewayDialog.isApproved();
-        } else {
+    public boolean showGatewayDialog(final String UID, final Request request, final String prompt, final Point position) {
+        // No way to prompt, hope it's whitelisted
+        if (headless && gatewayDialog.getEndpoint() == null) {
             return request.hasSavedCert();
         }
+
+        GatewayDialog.runSafely(headless, () -> gatewayDialog.prompt(UID, "%s wants to " + prompt, request, position));
+
+        GatewayDialog.Response response = gatewayDialog.getResponse();
+        switch(response) {
+            case ALWAYS_ALLOW:
+                whiteList(request.getCertificate());
+            case TEMPORARY_ALLOW:
+                log.info("Allowed {} to {}", request.getCertName(), prompt);
+                break;
+            case ALWAYS_BLOCK:
+                blackList(request.getCertificate());
+            case TEMPORARY_BLOCK:
+            case UNANSWERED:
+                log.info("Denied {} to {}", request.getCertName(), prompt);
+        }
+
+        if(response.alwaysBlockAnonymous(request)) {
+            // Treat as "block anonymous requests" to prevent pop-up abuse
+            if(!headless) {
+                anonymousItem.setState(false);
+                anonymousItem.doClick();
+            } else {
+                // simulate the click
+                anonymousListener.actionPerformed(new ActionEvent(gatewayDialog, ActionEvent.ACTION_PERFORMED, "command"));
+            }
+        }
+
+        return response.isAllowed();
     }
 
     private void whiteList(Certificate cert) {

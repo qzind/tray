@@ -32,6 +32,9 @@ public class ShellUtilities {
     // Display envp values in errors and console logs
     private static boolean debugEnvp = false;
 
+    // Display terminal output in console logs
+    private static boolean debugOutput = false;
+
     // Shell environment overrides.  null = don't override
     private static Map<String, String> env = new HashMap<>(System.getenv());
     @Deprecated /* TODO: Make private, use getEnvp() instead */
@@ -91,7 +94,7 @@ public class ShellUtilities {
      * @param silent Specify whether to suppress the command from the log files
      * @return {@code true} if {@code Process.exitValue()} is {@code 0}, otherwise {@code false}.
      */
-    public static boolean execute(String[] commandArray, File workingDir, boolean silent) {
+    public static boolean execute(String[] commandArray, File workingDir, boolean silent, String[] envp) {
         if (!silent) {
             log.debug("Executing: {}", Arrays.toString(commandArray));
         }
@@ -99,8 +102,13 @@ public class ShellUtilities {
             // Create and execute our new process
             Process p = Runtime.getRuntime().exec(commandArray, envp, workingDir);
             // Consume output to prevent deadlock
-            while (p.getInputStream().read() != -1) {}
-            while (p.getErrorStream().read() != -1) {}
+            byte[] buffer = new byte[1024];
+            while (p.getInputStream().read(buffer) != -1) {
+                if(debugOutput) System.out.println(new String(buffer).trim());
+            }
+            while (p.getErrorStream().read(buffer) != -1) {
+                if(debugOutput) System.err.println(new String(buffer).trim());
+            }
             p.waitFor();
             return p.exitValue() == 0;
         }
@@ -112,6 +120,10 @@ public class ShellUtilities {
         }
 
         return false;
+    }
+
+    public static boolean execute(String[] commandArray, File workingDir, boolean silent) {
+        return execute(commandArray, workingDir, silent, envp);
     }
 
     /**
@@ -178,13 +190,17 @@ public class ShellUtilities {
         return executeRaw(commandArray, false);
     }
 
+    public static String executeRaw(String[] envp, String ... commandArray) {
+        return executeRaw(commandArray, false, envp);
+    }
+
     /**
      * Executes a synchronous shell command and return the raw character result.
      *
      * @param commandArray array of shell commands to execute
      * @return The entire raw standard output of command
      */
-    public static String executeRaw(String[] commandArray, boolean silent) {
+    public static String executeRaw(String[] commandArray, boolean silent, String[] envp) {
         if(!silent) {
             log.debug("Executing: {}", Arrays.toString(commandArray));
         }
@@ -212,6 +228,10 @@ public class ShellUtilities {
         }
 
         return "";
+    }
+
+    public static String executeRaw(String[] commandArray, boolean silent) {
+        return executeRaw(commandArray, silent, envp);
     }
 
     /**

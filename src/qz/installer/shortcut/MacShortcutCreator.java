@@ -85,7 +85,7 @@ class MacShortcutCreator extends ShortcutCreator {
     public void createDesktopShortcut() {
         try {
             new File(SHORTCUT_PATH).delete();
-            if(SystemUtilities.getJarParentPath().endsWith("Contents")) {
+            if(SystemUtilities.getJarParentPath().endsWith("Resources")) {
                 // We're probably running from an .app bundle
                 Files.createSymbolicLink(Paths.get(SHORTCUT_PATH), SystemUtilities.getAppPath());
             } else {

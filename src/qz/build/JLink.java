@@ -272,7 +272,7 @@ public class JLink {
             fieldMap.put("%BUNDLE_VENDOR%", javaVendor.getVendorName());
             fieldMap.put("%BUNDLE_PRODUCT%", javaVendor.getProductName());
             log.info("Deploying {}/Info.plist", macOS.getParent());
-            FileUtilities.configureAssetFile("assets/mac-runtime.plist.in", macOS.getParent().resolve("Info.plist"), fieldMap, JLink.class);
+            FileUtilities.configureAssetToFile(JLink.class, "assets/mac-runtime.plist.in", fieldMap, macOS.getParent().resolve("Info.plist").toFile());
         }
 
         FileUtils.deleteQuietly(outPath.toFile());

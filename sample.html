@@ -63,6 +63,10 @@
                     </button>
                     <h3 class="panel-title">
                         Connection: <span id="qz-status" class="text-muted" style="font-weight: bold;">Unknown</span>
+                        <div class="pull-right">
+                            <span id="qz-hostname" class="badge" style="opacity: 50%; font-size: 0.8em; font-weight: normal;"></span>
+                            <span id="qz-port" class="badge" style="opacity: 50%; font-size: 0.8em; font-weight: normal;"></span>
+                        </div>
                     </h3>
                 </div>
 
@@ -588,6 +592,11 @@
                                                         &nbsp; Height:
                                                     </label>
                                                     <input type="number" step="any" id="pxlSizeHeight" class="form-control pull-right" />
+                                                </div>
+
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlSizeForce">&nbsp; As Custom Size</label>
+                                                    <input type="checkbox" id="pxlSizeForce" class="pull-right" />
                                                 </div>
                                             </div>
 
@@ -1507,19 +1516,36 @@
 
     function startConnection(config) {
         // Connect to a print-server instance and/or override secure port handling
-        config ||= {};
+        config = config ? config : {};
         config.host = includedValue($('#connectionHost'));
         config.usingSecure = isChecked($('#connectionUsingSecure'));
 
-        if (!qz.websocket.isActive()) {
-            updateState('Waiting', 'default');
+        // Gracefully handle pasted values
+        if(config.host) {
+            // Strip off the protocol
+            const host = config.host.replace(/^(?:\w+:)?\/\/([^/]+).*/i, '$1');
+            $('#connectionHost').val(host);
+            // Force check "usingSecure" if https/wss was selected
+            if(/^(https|wss):\/\//i.test(config.host)) {
+                $('#connectionUsingSecure').prop("checked", true);
+            }
+            if(config.host !== host) {
+                // recurse
+                startConnection(config);
+                return;
+            }
+        }
 
+        updateState('Waiting', 'default');
+        if (!qz.websocket.isActive()) {
             qz.websocket.connect(config).then(function() {
                 updateState('Active', 'success');
                 findVersion();
             }).catch(handleConnectionError);
         } else {
-            displayMessage('An active connection with QZ already exists.', 'alert-warning');
+            qz.websocket.disconnect().then(function() {
+                startConnection(config);
+            }).catch(handleConnectionError);
         }
     }
 
@@ -2150,7 +2176,7 @@
         //print options not used with this flavor
 
         var printData = [
-            { type: 'pixel', format: 'image', flavor: 'file', data: 'assets/img/image_sample.png' }
+            { type: 'pixel', format: 'image', flavor: 'file', data: 'assets/test/custom_sized_tester.png' }
             //also valid, as format and flavor will default to proper values:
 //             { type: 'pixel', data: 'assets/img/image_sample.png' }
         ];
@@ -2698,6 +2724,7 @@
 
         $("#pxlSizeWidth").val('');
         $("#pxlSizeHeight").val('');
+        $("#pxlSizeForce").prop('checked', false);
         $("#pxlSizeActive").prop('checked', false);
         $("#pxlSizeGroup").css('display', 'none');
 
@@ -3110,6 +3137,13 @@
     function updateState(text, css) {
         $("#qz-status").html(text);
         $("#qz-connection").removeClass().addClass('panel panel-' + css);
+        if (text == "Active") {
+            $("#qz-hostname").html(qz.websocket.getConnectionInfo().host);
+            $("#qz-port").html(qz.websocket.getConnectionInfo().port);
+        } else {
+            $("#qz-hostname").html("");
+            $("#qz-port").html("");
+        }
 
         if (text === "Inactive" || text === "Error") {
             $("#launch").show();
@@ -3252,7 +3286,8 @@
         if (isChecked($("#pxlSizeActive"), cleanConditions['pxlSizeActive']) && (($("#pxlSizeWidth").val() !== '') || ($("#pxlSizeHeight").val() !== ''))) {
             pxlSize = {
                 width: $("#pxlSizeWidth").val(),
-                height: $("#pxlSizeHeight").val()
+                height: $("#pxlSizeHeight").val(),
+                custom: $("#pxlSizeForce").prop('checked')
             };
         }
 
@@ -3414,11 +3449,11 @@
     }
 
     function getBase64(file) {
-        return new Promise((resolve, reject) => {
+        return new Promise(function(resolve, reject) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = error => reject(error);
+            reader.onload = function() { resolve(reader.result); }
+            reader.onerror = function(error) { reject(error); }
         });
     }
 
@@ -3446,7 +3481,7 @@
             // Ensure we're on the right tab
             stayOnTab = true;
         }
-        
+
         var setupDropButton = function(format, name, data, stayOnTab) {
             var tabHref;
             var buttonId;
@@ -3461,7 +3496,7 @@
                     buttonId = "#rawDropBtn"
                     tabHref = "#rawContent";
             }
-            
+
             var button = $(buttonId);
             if(stayOnTab) {
                 // File upload button can't change tabs
@@ -3489,7 +3524,7 @@
 
         if (file) {
             console.log("Dropped file:", file);
-            getBase64(file).then(function(base64) { 
+            getBase64(file).then(function(base64) {
                 var name = file.name;
                 var extension = name.substring(name.lastIndexOf('.') + 1, name.length) || '';
                 switch(extension.toLowerCase()) {
@@ -3511,7 +3546,7 @@
                     default:
                         setupDropButton("command", name, base64, stayOnTab);
                 }
-            }).catch(displayError); 
+            }).catch(displayError);
         }
     }
 

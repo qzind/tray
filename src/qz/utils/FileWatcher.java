@@ -11,11 +11,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.ClosedChannelException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class FileWatcher {
 
@@ -24,8 +25,7 @@ public class FileWatcher {
     private static Thread watchThread;
     private static WatchService watchService;
 
-    private static HashSet<FileIO> fileIOs = new HashSet<>();
-
+    private static final Set<FileIO> fileIOs = ConcurrentHashMap.newKeySet();
 
     public synchronized static void startWatchThread() throws IOException {
         if (watchThread != null && watchThread.isAlive()) {
@@ -59,7 +59,7 @@ public class FileWatcher {
         watchThread.start();
     }
 
-    public static void registerWatch(FileIO fileIO) throws IOException {
+    public synchronized static void registerWatch(FileIO fileIO) throws IOException {
         fileIO.setWk(fileIO.getAbsolutePath().register(watchService,
                                                        StandardWatchEventKinds.ENTRY_MODIFY,
                                                        StandardWatchEventKinds.ENTRY_CREATE,
@@ -73,7 +73,7 @@ public class FileWatcher {
     }
 
 
-    private synchronized static void fileChanged(Path path, String fileName, String type) throws ClosedChannelException {
+    private static void fileChanged(Path path, String fileName, String type) throws ClosedChannelException {
         Path filePath = path.resolve(fileName);
         for(FileIO fio : fileIOs) {
             if (!fio.isMatch(fileName)) continue;
@@ -109,7 +109,7 @@ public class FileWatcher {
             if (listener.isReversed()) { raf.seek(raf.length() - bytes.length); }
             raf.readFully(bytes);
 
-            return new String(bytes, Charset.forName("UTF-8"));
+            return new String(bytes, StandardCharsets.UTF_8);
         }
     }
 
@@ -118,7 +118,7 @@ public class FileWatcher {
 
         String buffer;
         if (listener.isReversed()) {
-            try(ReversedLinesFileReader reader = new ReversedLinesFileReader(path.toFile())) {
+            try(ReversedLinesFileReader reader = ReversedLinesFileReader.builder().setPath(path).get()) {
                 int count = 0;
                 while((buffer = reader.readLine()) != null && count++ != listener.getLines()) {
                     // Warning, this will strip "\r" from the data

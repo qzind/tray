@@ -40,6 +40,7 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Utility class for OS detection functions.
@@ -205,7 +206,7 @@ public class SystemUtilities {
 
     public static Version getJavaVersion() {
         Runtime.Version ver = Runtime.version();
-        return Version.forIntegers(ver.feature(), ver.interim(), ver.patch()).setBuildMetadata("" + ver.update());
+        return Version.of(ver.feature(), ver.interim(), ver.patch()).withBuildMetadata("" + ver.update());
     }
 
     /**
@@ -213,7 +214,7 @@ public class SystemUtilities {
      * The double dash "--" is since JDK9 but important to send the command output to stdout
      */
     public static Version getJavaVersion(Path javaCommand) {
-        return getJavaVersion(ShellUtilities.executeRaw(javaCommand.toString(), "--version"));
+        return parseJavaVersion(ShellUtilities.executeRaw(javaCommand.toString(), "--version"));
     }
 
     public static int getProcessId() {
@@ -767,6 +768,42 @@ public class SystemUtilities {
             return jarPath.toFile().lastModified();
         }
         return -1L; // Fallback
+    }
+
+    /**
+     * For "Restart Now" button
+     */
+    public static String calculatePidChallenge(String pid, int saltLength) {
+        // more salt
+        String alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
+        StringBuilder pidSalted = new StringBuilder(saltLength + pid.length());
+        for (int i = 0; i < saltLength; i++) {
+            int index = ThreadLocalRandom.current().nextInt(alphabet.length());
+            pidSalted.append(alphabet.charAt(index));
+        }
+        pidSalted.append(pid);
+
+        StringBuilder pidChallenge = new StringBuilder();
+        pidChallenge.append(new String(Base64.encodeBase64(pidSalted.toString().getBytes(StandardCharsets.UTF_8), false)));
+        pidChallenge.append(calculateSaltedChallenge());
+        return new String(Base64.encodeBase64(pidChallenge.toString().getBytes(StandardCharsets.UTF_8), false));
+    }
+
+    /**
+     * For "Restart Now" button
+     */
+    public static Boolean validatePidChallenge(String pid, String challenge, int saltLength) {
+        String decodedBoth = new String(Base64.decodeBase64(challenge), StandardCharsets.UTF_8);
+        int pidSaltedLength = ((saltLength + pid.length() + 2) / 3) * 4;
+        String pidSalted = decodedBoth.substring(0, pidSaltedLength);
+        String pidSaltedDecoded = new String(Base64.decodeBase64(pidSalted), StandardCharsets.UTF_8);
+        String pidDecoded = pidSaltedDecoded.substring(saltLength);
+        if(!pid.equals(pidDecoded)) {
+            return false;
+        }
+
+        String challengeDecoded = decodedBoth.substring(pidSaltedLength);
+        return validateSaltedChallenge(challengeDecoded);
     }
 
     /**

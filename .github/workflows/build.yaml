@@ -27,7 +27,7 @@ jobs:
           sudo apt-get install firefox chromium
           ant testng
           # Run policy tests again, but as root
-          sudo JAVA_HOME=$JAVA_HOME ant -Dtestng.pattern="**/policy/**" testng
+          sudo ant "JAVA_HOME=$JAVA_HOME" -Dtestng.pattern="**/policy/**" testng
           sudo DEBUG=true out/qz-tray-*.run
           /opt/qz-tray/qz-tray --version
           sudo apt-get install nsis
@@ -56,7 +56,7 @@ jobs:
           brew install --cask google-chrome firefox
           ant testng
           # Run policy tests again, but as root
-          sudo JAVA_HOME=$JAVA_HOME ant -Dtestng.pattern="**/policy/**" testng
+          sudo ant "JAVA_HOME=$JAVA_HOME" -Dtestng.pattern="**/policy/**" testng
           sudo installer -pkg out/qz-tray-*.pkg -target /
           "/Applications/QZ Tray.app/Contents/MacOS/QZ Tray" --version
           brew install nsis makeself

@@ -10,13 +10,12 @@ jobs:
         java: [25]
         arch: [x86_64, aarch64, riscv64]
     steps:
-      - uses: actions/checkout@v4
-      - run: sudo apt-get install makeself firefox chromium nsis
+      - uses: actions/checkout@v3
       - uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
-      - run:
+      - run: sudo apt-get install makeself
       - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
       - uses: actions/upload-artifact@v4
         with:
@@ -25,11 +24,13 @@ jobs:
       - if: ${{ matrix.arch == 'x86_64' }}
         run: |
           # Only run tests on same arch
+          sudo apt-get install firefox chromium
           ant testng
           # Run policy tests again, but as root
           sudo ant -Dtestng.pattern="**/policy/**" testng
           sudo DEBUG=true out/qz-tray-*.run
           /opt/qz-tray/qz-tray --version
+          sudo apt-get install nsis
           ant nsis
 
   macos:
@@ -39,9 +40,7 @@ jobs:
         java: [25]
         arch: [x86_64, aarch64]
     steps:
-      - uses: actions/checkout@v4
-      - run: brew install nsis makeself
-      - run: brew install --cask google-chrome firefox
+      - uses: actions/checkout@v3
       - uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
@@ -54,11 +53,13 @@ jobs:
       - if: ${{ matrix.arch == 'aarch64' }}
         run: |
           # Only run tests on same arch
+          brew install --cask google-chrome firefox
           ant testng
           # Run policy tests again, but as root
           sudo ant -Dtestng.pattern="**/policy/**" testng
           sudo installer -pkg out/qz-tray-*.pkg -target /
           "/Applications/QZ Tray.app/Contents/MacOS/QZ Tray" --version
+          brew install nsis makeself
           ant makeself
           ant nsis
 
@@ -69,12 +70,12 @@ jobs:
         java: [25]
         arch: [x86_64, aarch64]
     steps:
-      - uses: actions/checkout@v4
-      - run: choco install nsis firefox googlechrome
+      - uses: actions/checkout@v3
       - uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
+      - run: choco install nsis
       - run: ant "-Dtarget.arch=${{ matrix.arch }}" nsis
       - uses: actions/upload-artifact@v4
         with:
@@ -83,6 +84,7 @@ jobs:
       - if: ${{ matrix.arch == 'x86_64' }}
         run: |
           # Only run tests on same arch
+          choco install firefox googlechrome
           ant testng
           Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
           "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"

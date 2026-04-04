@@ -67,7 +67,7 @@ public class JLink {
         this.javaVersion = getParam("javaVersion", javaVersion, JAVA_DEFAULT_VERSION);
         this.gcVersion = getParam("gcVersion", gcVersion, JAVA_DEFAULT_GC_VERSION);
 
-        this.javaSemver = SystemUtilities.getJavaVersion(this.javaVersion);
+        this.javaSemver = SystemUtilities.parseJavaVersion(this.javaVersion);
 
         // Optional: Provide the location of a custom JDK on the local filesystem
         if(!StringUtils.isEmpty(targetJdk)) {
@@ -78,7 +78,7 @@ public class JLink {
             if(customVersion.contains("\"")) {
                 customVersion = customVersion.split("\"")[1];
             }
-            Version customSemver = SystemUtilities.getJavaVersion(customVersion);
+            Version customSemver = SystemUtilities.parseJavaVersion(customVersion);
             if(needsDownload(javaSemver, customSemver)) {
                 // The "release" file doesn't have build info, so we can't auto-download :(
                 if(javaSemver.getMajorVersion() != customSemver.getMajorVersion()) {
@@ -131,7 +131,7 @@ public class JLink {
 
         // Per JDK-8240734: Major versions checks aren't enough starting with 11.0.16+8
         // see also https://github.com/adoptium/adoptium-support/issues/557
-        Version bad = SystemUtilities.getJavaVersion("11.0.16+8");
+        Version bad = SystemUtilities.parseJavaVersion("11.0.16+8");
         if(want.greaterThanOrEqualTo(bad) && installed.lessThan(bad) ||
                 installed.greaterThanOrEqualTo(bad) && want.lessThan(bad)) {
                 // Force download

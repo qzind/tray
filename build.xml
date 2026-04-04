@@ -33,6 +33,10 @@
         <delete dir="${out.dir}" includeemptydirs="true" defaultexcludes="false" followSymlinks="false" removeNotFollowedSymlinks="true"/>
     </target>
 
+    <target name="check-updates" depends="ivy-deps">
+        <ivy:checkdepsupdate showTransitive="false" revisionToCheck="latest.release" />
+    </target>
+
     <target name="clean-ivy-cache" if="ivy.clean.cache">
         <ivy:cleancache/>
     </target>

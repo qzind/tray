@@ -140,51 +140,47 @@ var qz = (function() {
                         return;
                     }
 
-                    if (_qz.websocket.connection != null) {
-                        _qz.websocket.connection.established = false;
+                    _qz.websocket.connection.established = false;
 
-                        //called on successful connection to qz, begins setup of websocket calls and resolves connect promise after certificate is sent
-                        _qz.websocket.connection.onopen = function(evt) {
-                            if (!_qz.websocket.connection.established) {
-                                _qz.log.trace(evt);
-                                _qz.log.info("Established connection with " + _qz.TITLE + " on " + address);
-
-                                _qz.websocket.setup.openConnection({ resolve: resolve, reject: reject });
-
-                                if (config.keepAlive > 0) {
-                                    var interval = setInterval(function() {
-                                        if (!_qz.tools.isActive() || _qz.websocket.connection.interval !== interval) {
-                                            clearInterval(interval);
-                                            return;
-                                        }
-
-                                        _qz.websocket.connection.send("ping");
-                                    }, config.keepAlive * 1000);
-
-                                    _qz.websocket.connection.interval = interval;
-                                }
-                            }
-                        };
-
-                        //called during websocket close during setup
-                        _qz.websocket.connection.onclose = function() {
-                            // Safari compatibility fix to raise error event
-                            if (_qz.websocket.connection && typeof navigator !== 'undefined' && navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {
-                                _qz.websocket.connection.onerror();
-                            }
-                        };
-
-                        //called for errors during setup (such as invalid ports), reject connect promise only if all ports have been tried
-                        _qz.websocket.connection.onerror = function(evt) {
+                    //called on successful connection to qz, begins setup of websocket calls and resolves connect promise after certificate is sent
+                    _qz.websocket.connection.onopen = function(evt) {
+                        if (!_qz.websocket.connection.established) {
                             _qz.log.trace(evt);
+                            _qz.log.info("Established connection with " + _qz.TITLE + " on " + address);
 
-                            _qz.websocket.connection = null;
+                            _qz.websocket.setup.openConnection({ resolve: resolve, reject: reject });
 
-                            deeper();
-                        };
-                    } else {
-                        reject(new Error("Unable to create a websocket connection"));
-                    }
+                            if (config.keepAlive > 0) {
+                                var interval = setInterval(function() {
+                                    if (!_qz.tools.isActive() || _qz.websocket.connection.interval !== interval) {
+                                        clearInterval(interval);
+                                        return;
+                                    }
+
+                                    _qz.websocket.connection.send("ping");
+                                }, config.keepAlive * 1000);
+
+                                _qz.websocket.connection.interval = interval;
+                            }
+                        }
+                    };
+
+                    //called during websocket close during setup
+                    _qz.websocket.connection.onclose = function() {
+                        // Safari compatibility fix to raise error event
+                        if (_qz.websocket.connection && typeof navigator !== 'undefined' && navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {
+                            _qz.websocket.connection.onerror();
+                        }
+                    };
+
+                    //called for errors during setup (such as invalid ports), reject connect promise only if all ports have been tried
+                    _qz.websocket.connection.onerror = function(evt) {
+                        _qz.log.trace(evt);
+
+                        _qz.websocket.connection = null;
+
+                        deeper();
+                    };
                 },
 
                 /** Finish setting calls on successful connection, sets web socket calls that won't settle the promise. */

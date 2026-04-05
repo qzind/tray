@@ -132,7 +132,7 @@ var qz = (function() {
 
                     try {
                         _qz.log.trace("Attempting connection", address);
-                        _qz.websocket.connection = new _qz.tools.ws(address);
+                        var ws = new _qz.tools.ws(address);
                     }
                     catch(err) {
                         _qz.log.error(err);
@@ -140,11 +140,13 @@ var qz = (function() {
                         return;
                     }
 
-                    _qz.websocket.connection.established = false;
+                    _qz.websocket.connection = null;
 
                     //called on successful connection to qz, begins setup of websocket calls and resolves connect promise after certificate is sent
-                    _qz.websocket.connection.onopen = function(evt) {
-                        if (!_qz.websocket.connection.established) {
+                    ws.onopen = function(evt) {
+                        if (!_qz.websocket.connection) {
+                            _qz.websocket.connection = ws;
+
                             _qz.log.trace(evt);
                             _qz.log.info("Established connection with " + _qz.TITLE + " on " + address);
 
@@ -166,15 +168,15 @@ var qz = (function() {
                     };
 
                     //called during websocket close during setup
-                    _qz.websocket.connection.onclose = function() {
+                    ws.onclose = function() {
                         // Safari compatibility fix to raise error event
-                        if (_qz.websocket.connection && typeof navigator !== 'undefined' && navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {
-                            _qz.websocket.connection.onerror();
+                        if (ws && typeof navigator !== 'undefined' && navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {
+                            ws.onerror();
                         }
                     };
 
                     //called for errors during setup (such as invalid ports), reject connect promise only if all ports have been tried
-                    _qz.websocket.connection.onerror = function(evt) {
+                    ws.onerror = function(evt) {
                         _qz.log.trace(evt);
 
                         _qz.websocket.connection = null;
@@ -185,8 +187,6 @@ var qz = (function() {
 
                 /** Finish setting calls on successful connection, sets web socket calls that won't settle the promise. */
                 openConnection: function(openPromise) {
-                    _qz.websocket.connection.established = true;
-
                     //called when an open connection is closed
                     _qz.websocket.connection.onclose = function(evt) {
                         _qz.log.trace(evt);

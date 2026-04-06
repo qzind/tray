@@ -10,7 +10,7 @@ import java.util.Locale;
  * A special template class for handling enums with varargs needing string matches.
  *
  * Parsable enums must declare <code>public static void String[] matches;</code>
- * in the constructor, which <code>parse(Class enumType, </T>String value) will
+ * in the constructor, which <code>parse(Class enumType, </T>String value)</code> will
  * call using reflection.
  *
  * Enums are inherently static in Java and cannot extend superclasses.  The

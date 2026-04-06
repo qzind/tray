@@ -89,6 +89,11 @@ public class PJHA_HidIO implements DeviceIO {
         return UsbUtil.toHexString(deviceInfo.getProductId());
     }
 
+    @Override
+    public DeviceOptions getDeviceOptions() {
+        return dOpts;
+    }
+
     public byte[] readData(int responseSize, Byte unused) throws DeviceException {
         byte[] response = new byte[responseSize];
         if (dataBuffer.isEmpty()) {

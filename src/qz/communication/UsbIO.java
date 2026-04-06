@@ -78,6 +78,11 @@ public class UsbIO implements DeviceIO {
         return UsbUtil.toHexString(iface.getUsbInterfaceDescriptor().iInterface());
     }
 
+    @Override
+    public DeviceOptions getDeviceOptions() {
+        return dOpts;
+    }
+
     public byte[] readData(int responseSize, Byte endpoint) throws DeviceException {
         try {
             byte[] response = new byte[responseSize];

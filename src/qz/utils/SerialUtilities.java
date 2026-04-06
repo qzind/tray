@@ -9,12 +9,10 @@ import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.communication.SerialIO;
 import qz.communication.SerialOptions;
 import qz.communication.SerialPortMonitor;
 import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
-import qz.ws.StreamEvent;
 
 import java.util.Arrays;
 import java.util.List;

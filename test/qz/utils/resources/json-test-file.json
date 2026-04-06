@@ -1,0 +1,396 @@
+{
+  "policies": {
+    "AllowedDomainsForApps": "managedfirefox.com,example.com",
+    "AppAutoUpdate": true,
+    "AppUpdatePin": "106.",
+    "AppUpdateURL": "https://yoursite.com",
+    "Authentication": {
+      "SPNEGO": ["mydomain.com", "https://myotherdomain.com"],
+      "Delegated": ["mydomain.com", "https://myotherdomain.com"],
+      "NTLM": ["mydomain.com", "https://myotherdomain.com"],
+      "AllowNonFQDN": {
+        "SPNEGO": true,
+        "NTLM": true
+      },
+      "AllowProxies": {
+        "SPNEGO": true,
+        "NTLM": true
+      },
+      "Locked": true,
+      "PrivateBrowsing": true
+    },
+    "AutoLaunchProtocolsFromOrigins": [{
+      "protocol": "zoommtg",
+      "allowed_origins": [
+        "https://somesite.zoom.us"
+      ]
+    }],
+    "BackgroundAppUpdate": true,
+    "BlockAboutAddons": true,
+    "BlockAboutConfig": true,
+    "BlockAboutProfiles": true,
+    "BlockAboutSupport": true,
+    "Bookmarks": [
+      {
+        "Title": "Example",
+        "URL": "https://example.com",
+        "Favicon": "https://example.com/favicon.ico",
+        "Placement": "toolbar",
+        "Folder": "FolderName"
+      }
+    ],
+    "BrowserDataBackup": {
+      "AllowBackup": true,
+      "AllowRestore": true
+    },
+    "CaptivePortal": true,
+    "Certificates": {
+      "Install": ["cert1.der", "/home/username/cert2.pem"]
+    },
+    "Containers": {
+      "Default": [
+        {
+          "name": "My container",
+          "icon": "pet",
+          "color": "turquoise"
+        }
+      ]
+    },
+    "Cookies": {
+      "Allow": ["http://example.org/"],
+      "AllowSession": ["http://example.edu/"],
+      "Block": ["http://example.edu/"],
+      "Locked": true,
+      "Behavior": "accept",
+      "BehaviorPrivateBrowsing": "accept"
+    },
+    "DefaultDownloadDirectory": "${home}/Downloads",
+    "DisableBuiltinPDFViewer": true,
+    "DisabledCiphers": {
+      "CIPHER_NAME": true
+    },
+    "DisableDeveloperTools": true,
+    "DisableEncryptedClientHello": true,
+    "DisableFeedbackCommands": true,
+    "DisableFirefoxAccounts": true,
+    "DisableFirefoxScreenshots": true,
+    "DisableFirefoxStudies": true,
+    "DisableForgetButton": true,
+    "DisableFormHistory": true,
+    "DisableMasterPasswordCreation": true,
+    "DisablePasswordReveal": true,
+    "DisablePrivateBrowsing": true,
+    "DisableProfileImport": true,
+    "DisableProfileRefresh": true,
+    "DisableRemoteImprovements": true,
+    "DisableSafeMode": true,
+    "DisableSecurityBypass": {
+      "InvalidCertificate": true,
+      "SafeBrowsing": true
+    },
+    "DisableSetDesktopBackground": true,
+    "DisableSystemAddonUpdate": true,
+    "DisableTelemetry": true,
+    "DisplayBookmarksToolbar": "always",
+    "DisplayMenuBar": "always",
+    "DNSOverHTTPS": {
+      "Enabled":  true,
+      "ProviderURL": "URL_TO_ALTERNATE_PROVIDER",
+      "Locked": true,
+      "ExcludedDomains": ["example.com"]
+    },
+    "DontCheckDefaultBrowser": true,
+    "DownloadDirectory": "${home}/Downloads",
+    "EnableTrackingProtection": {
+      "Value": true,
+      "Locked": true,
+      "Cryptomining": true,
+      "Fingerprinting": true,
+      "EmailTracking": true,
+      "SuspectedFingerprinting": true,
+      "Category": "strict",
+      "Exceptions": ["https://example.com"],
+      "BaselineExceptions": true,
+      "ConvenienceExceptions": true
+    },
+    "EncryptedMediaExtensions": {
+      "Enabled": true,
+      "Locked": true
+    },
+    "ExemptDomainFileTypePairsFromFileTypeDownloadWarnings": [{
+      "file_extension": "jnlp",
+      "domains": ["example.com"]
+    }],
+    "Extensions": {
+      "Install": ["https://addons.mozilla.org/firefox/downloads/somefile.xpi", "//path/to/xpi"],
+      "Uninstall": ["bad_addon_id@mozilla.org"],
+      "Locked":  ["addon_id@mozilla.org"]
+    },
+    "ExtensionSettings": {
+      "*": {
+        "blocked_install_message": "Custom error message.",
+        "install_sources": ["https://yourwebsite.com/*"],
+        "installation_mode": "blocked",
+        "allowed_types": ["extension"]
+      },
+      "uBlock0@raymondhill.net": {
+        "installation_mode": "force_installed",
+        "install_url": "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"
+      },
+      "https-everywhere@eff.org": {
+        "installation_mode": "allowed"
+      }
+    },
+    "ExtensionUpdate": true,
+    "FirefoxHome": {
+      "Search": true,
+      "TopSites": true,
+      "SponsoredTopSites": true,
+      "Highlights": true,
+      "Pocket": true,
+      "SponsoredPocket": true,
+      "Snippets": true,
+      "Locked": true
+    },
+    "FirefoxSuggest": {
+      "WebSuggestions": true,
+      "SponsoredSuggestions": true,
+      "ImproveSuggest": true,
+      "Locked": true
+    },
+    "GenerativeAI": {
+      "Enabled": true,
+      "Chatbot": true,
+      "LinkPreviews": true,
+      "TabGroups": true,
+      "Locked": true
+    },
+    "GoToIntranetSiteForSingleWordEntryInAddressBar": true,
+    "Handlers": {
+      "mimeTypes": {
+        "application/msword": {
+          "action": "useSystemDefault",
+          "ask": false
+        }
+      },
+      "schemes": {
+        "mailto": {
+          "action": "useHelperApp",
+          "ask": true,
+          "handlers": [{
+            "name": "Gmail",
+            "uriTemplate": "https://mail.google.com/mail/?extsrc=mailto&url=%s"
+          }]
+        }
+      },
+      "extensions": {
+        "pdf": {
+          "action": "useHelperApp",
+          "ask": true,
+          "handlers": [{
+            "name": "Adobe Acrobat",
+            "path": "/usr/bin/acroread"
+          }]
+        }
+      }
+    },
+    "HardwareAcceleration": true,
+    "Homepage": {
+      "URL": "http://example.com/",
+      "Locked": true,
+      "Additional": ["http://example.org/",
+                    "http://example.edu/"],
+      "StartPage": "none"
+    },
+    "HttpAllowlist": ["http://example.org",
+                       "http://example.edu"],
+    "HttpsOnlyMode": "allowed",
+    "InstallAddonsPermission": {
+      "Allow": ["http://example.org/",
+                "http://example.edu/"],
+      "Default": true
+    },
+    "LegacySameSiteCookieBehaviorEnabled": true,
+    "LegacySameSiteCookieBehaviorEnabledForDomainList": ["example.org", "example.edu"],
+    "LocalFileLinks": ["http://example.org/", "http://example.edu/"],
+    "ManagedBookmarks": [
+      {
+        "toplevel_name": "My managed bookmarks folder"
+      },
+      {
+        "url": "example.com",
+        "name": "Example"
+      },
+      {
+        "name": "Mozilla links",
+        "children": [
+          {
+            "url": "https://mozilla.org",
+            "name": "Mozilla.org"
+          },
+          {
+            "url": "https://support.mozilla.org/",
+            "name": "SUMO"
+          }
+        ]
+      }
+    ],
+    "NetworkPrediction": true,
+    "NewTabPage": true,
+    "NoDefaultBookmarks": true,
+    "OfferToSaveLogins": true,
+    "OfferToSaveLoginsDefault": true,
+    "OverrideFirstRunPage": "http://example.org",
+    "OverridePostUpdatePage": "http://example.org",
+    "PasswordManagerEnabled": true,
+    "PasswordManagerExceptions": ["https://example.org", "https://example.edu"],
+    "PDFjs": {
+      "Enabled": true,
+      "EnablePermissions": true
+    },
+    "Permissions": {
+      "Camera": {
+        "Allow": ["https://example.org","https://example.org:1234"],
+        "Block": ["https://example.edu"],
+        "BlockNewRequests": true,
+        "Locked": true
+      },
+      "Microphone": {
+        "Allow": ["https://example.org"],
+        "Block": ["https://example.edu"],
+        "BlockNewRequests": true,
+        "Locked": true
+      },
+      "Location": {
+        "Allow": ["https://example.org"],
+        "Block": ["https://example.edu"],
+        "BlockNewRequests": true,
+        "Locked": true
+      },
+      "Notifications": {
+        "Allow": ["https://example.org"],
+        "Block": ["https://example.edu"],
+        "BlockNewRequests": true,
+        "Locked": true
+      },
+      "Autoplay": {
+        "Allow": ["https://example.org"],
+        "Block": ["https://example.edu"],
+        "Default": "allow-audio-video",
+        "Locked": true
+      },
+      "VirtualReality": {
+        "Allow": ["https://example.org"],
+        "Block": ["https://example.edu"],
+        "BlockNewRequests": true,
+        "Locked": true
+      },
+      "ScreenShare": {
+        "Allow": ["https://example.org"],
+        "Block": ["https://example.edu"],
+        "BlockNewRequests": true,
+        "Locked": true
+      }
+    },
+    "PictureInPicture": {
+      "Enabled": true,
+      "Locked": true
+    },
+    "PopupBlocking": {
+      "Allow": ["http://example.org/",
+                "http://example.edu/"],
+      "Default": true,
+      "Locked": true
+    },
+    "PostQuantumKeyAgreementEnabled": true,
+    "Preferences": {
+      "accessibility.force_disabled": {
+        "Value": 1,
+        "Status": "default"
+      },
+      "browser.cache.disk.parent_directory": {
+        "Value": "SOME_NATIVE_PATH",
+        "Status": "user"
+      },
+      "browser.tabs.warnOnClose": {
+        "Value": false,
+        "Status": "locked"
+      }
+    },
+    "PrimaryPassword": true,
+    "PrintingEnabled": true,
+    "PrivateBrowsingModeAvailability": 0,
+    "PromptForDownloadLocation": true,
+    "Proxy": {
+      "Mode": "none",
+      "Locked": true,
+      "HTTPProxy": "hostname",
+      "UseHTTPProxyForAllProtocols": true,
+      "SSLProxy": "hostname",
+      "FTPProxy": "hostname",
+      "SOCKSProxy": "hostname",
+      "SOCKSVersion": 4,
+      "Passthrough": "<local>",
+      "AutoConfigURL": "URL_TO_AUTOCONFIG",
+      "AutoLogin": true,
+      "UseProxyForDNS": true
+    },
+    "RequestedLocales": "de,en-US",
+    "SanitizeOnShutdown": {
+      "Cache": true,
+      "Cookies": true,
+      "FormData": true,
+      "History": true,
+      "Sessions": true,
+      "SiteSettings": true,
+      "Locked": true
+    },
+    "SearchEngines": {
+      "Add": [
+        {
+          "Name": "Example1",
+          "URLTemplate": "https://www.example.org/q={searchTerms}",
+          "Method": "GET",
+          "IconURL": "https://www.example.org/favicon.ico",
+          "Alias": "example",
+          "Description": "Description",
+          "PostData": "name=value&q={searchTerms}",
+          "SuggestURLTemplate": "https://www.example.org/suggestions/q={searchTerms}"
+        }
+      ],
+      "Default": "NAME_OF_SEARCH_ENGINE",
+      "PreventInstalls": true,
+      "Remove": ["NAME_OF_SEARCH_ENGINE"]
+    },
+    "SearchSuggestEnabled": true,
+    "SecurityDevices": {
+      "NAME_OF_DEVICE": "PATH_TO_LIBRARY_FOR_DEVICE"
+    },
+    "ShowHomeButton": true,
+    "SkipTermsOfUse": true,
+    "SSLVersionMax": "tls1",
+    "SSLVersionMin": "tls1",
+    "SupportMenu": {
+      "Title": "Support Menu",
+      "URL": "http://example.com/support",
+      "AccessKey": "S"
+    },
+    "StartDownloadsInTempDirectory": true,
+    "TranslateEnabled": true,
+    "UserMessaging": {
+      "ExtensionRecommendations": true,
+      "FeatureRecommendations": true,
+      "UrlbarInterventions": true,
+      "SkipOnboarding": true,
+      "MoreFromMozilla": true,
+      "FirefoxLabs": true,
+      "Locked": true
+    },
+    "UseSystemPrintDialog": true,
+    "VisualSearchEnabled": true,
+    "WebsiteFilter": {
+      "Block": ["<all_urls>"],
+      "Exceptions": ["http://example.org/*"]
+    }
+  }
+}

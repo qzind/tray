@@ -370,7 +370,7 @@ public class PrintSocketClient {
                 break;
             case SOCKET_SEND_DATA: {
                 String location = String.format("%s:%s", params.optString("host"), params.optInt("port"));
-                SocketIO socket = connection.getNetworkSocket(location);
+                NetworkIO socket = connection.getNetworkSocket(location);
                 if (socket != null) {
                     socket.sendData(params);
                     sendResult(session, UID, null);
@@ -381,7 +381,7 @@ public class PrintSocketClient {
             }
             case SOCKET_CLOSE_PORT: {
                 String location = String.format("%s:%s", params.optString("host"), params.optInt("port"));
-                SocketIO socket = connection.getNetworkSocket(location);
+                NetworkIO socket = connection.getNetworkSocket(location);
                 if (socket != null) {
                     socket.close();
                     connection.removeNetworkSocket(location);

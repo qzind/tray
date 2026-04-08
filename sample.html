@@ -944,6 +944,15 @@
                                                 <a class="btn btn-info" onclick="weightShtrih();">Get Weight</a>
                                                 <a class="btn btn-primary" onclick="showUdpIntegration();">Integration Info</a>
                                             </div>
+                                            <hr/>
+                                            <h5>Direct DB Ops (New API)</h5>
+                                            <div class="btn-group btn-group-justified" style="margin-bottom: 5px;">
+                                                <a class="btn btn-success" onclick="shtrihStatus();">Scale Status</a>
+                                                <a class="btn btn-warning" onclick="shtrihSync();">Sync PLU</a>
+                                            </div>
+                                            <div class="btn-group btn-group-justified">
+                                                <a class="btn btn-danger" onclick="shtrihClear();">Clear PLU</a>
+                                            </div>
 
                                             <div class="form-group form-inline">
                                                 <label for="socketProtocol">Protocol</label>
@@ -2379,6 +2388,46 @@
     function closeSocket() {
         qz.socket.close($("#socketHost").val(), $("#socketPort").val()).then(function() {
             displayMessage("Socket closed");
+        }).catch(displayError);
+    }
+
+    function getShtrihConnection() {
+        return {
+            host: $("#socketHost").val(),
+            port: parseInt($("#socketPort").val()),
+            password: parseInt($("#scalePassword").val()),
+            local_port: 2000,
+            timeout_udp_ms: 600,
+            driver_timeout_ms: 150
+        };
+    }
+
+    function shtrihStatus() {
+        var params = getShtrihConnection();
+        displayMessage("Fetching Shtrih-M status...");
+        qz.websocket.send("shtrih.status", { params: params }).then(function(res) {
+            displayMessage("Shtrih-M Status: " + JSON.stringify(res.data, null, 2));
+        }).catch(displayError);
+    }
+
+    function shtrihSync() {
+        var params = getShtrihConnection();
+        params.products = [
+            { plu_code: 11223, product_name: "Sherin kolbasa", price: 60000.00 },
+            { plu_code: 11224, product_name: "Cheese", price: 45000.00 }
+        ];
+        displayMessage("Syncing PLUs to scale...");
+        qz.websocket.send("shtrih.syncProducts", { params: params }).then(function(res) {
+            displayMessage("Shtrih-M Sync: " + JSON.stringify(res.data, null, 2));
+        }).catch(displayError);
+    }
+
+    function shtrihClear() {
+        var params = getShtrihConnection();
+        params.products = [11223, 11224];
+        displayMessage("Clearing PLUs from scale...");
+        qz.websocket.send("shtrih.clearProducts", { params: params }).then(function(res) {
+            displayMessage("Shtrih-M Clear: " + JSON.stringify(res.data, null, 2));
         }).catch(displayError);
     }
 

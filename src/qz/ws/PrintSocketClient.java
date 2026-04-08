@@ -228,7 +228,7 @@ public class PrintSocketClient {
      * @param session WebSocket session
      * @param json    JSON received from web API
      */
-    private void processMessage(Session session, JSONObject json, SocketConnection connection, Request request) throws JSONException, SerialPortException, DeviceException, IOException {
+    private void processMessage(Session session, JSONObject json, SocketConnection connection, Request request) throws JSONException, SerialPortException, DeviceException, IOException, Exception {
         // perform client-side substitutions
         if(Substitutions.areActive()) {
             Substitutions substitutions = Substitutions.getInstance();
@@ -678,9 +678,24 @@ public class PrintSocketClient {
                     log.warn("A valid challenge was not provided: {}, ignoring request to close", challenge);
                 }
                 break;
+            case SHTRIH_STATUS:
+                sendResult(session, UID, qz.shtrih.ShtrihUtilities.getStatus(params));
+                break;
+            case SHTRIH_SYNC:
+                sendResult(session, UID, qz.shtrih.ShtrihUtilities.syncProducts(params, params.optJSONArray("products")));
+                break;
+            case SHTRIH_LIST:
+                sendResult(session, UID, qz.shtrih.ShtrihUtilities.listProducts(params));
+                break;
+            case SHTRIH_CLEAR:
+                sendResult(session, UID, qz.shtrih.ShtrihUtilities.clearProducts(params, params.optJSONArray("products")));
+                break;
+
             case INVALID:
             default:
-                sendError(session, UID, "Invalid function call: " + json.optString("call", "NONE"));
+                if (UID != null && !UID.isEmpty()) {
+                    sendError(session, UID, "Unknown call: " + call.getCallName());
+                }
                 break;
         }
     }

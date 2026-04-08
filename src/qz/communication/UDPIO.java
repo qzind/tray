@@ -39,11 +39,16 @@ public class UDPIO implements NetworkIO {
     @Override
     public boolean open() throws IOException {
         address = InetAddress.getByName(host);
+        // Using unbound socket to allow setReuseAddress(true) before binding
+        socket = new DatagramSocket(null);
+        socket.setReuseAddress(true);
+
         if (localPort > 0) {
-            socket = new DatagramSocket(localPort);
+            socket.bind(new InetSocketAddress(localPort));
         } else {
-            socket = new DatagramSocket();
+            socket.bind(new InetSocketAddress(0));
         }
+
         socket.setSoTimeout(NetworkUtilities.SOCKET_TIMEOUT);
         log.info("Opened UDP socket on local port {} to {}:{}", socket.getLocalPort(), host, port);
         return true;

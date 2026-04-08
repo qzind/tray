@@ -16,7 +16,7 @@ import java.net.Socket;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 
-public class SocketIO implements DeviceListener {
+public class SocketIO implements NetworkIO {
 
     private static final Logger log = LogManager.getLogger(SocketIO.class);
 
@@ -37,6 +37,7 @@ public class SocketIO implements DeviceListener {
         this.websocket = websocket;
     }
 
+    @Override
     public boolean open() throws IOException {
         socket = new Socket(host, port);
         socket.setSoTimeout(NetworkUtilities.SOCKET_TIMEOUT);
@@ -46,31 +47,36 @@ public class SocketIO implements DeviceListener {
         return socket.isConnected();
     }
 
+    @Override
     public boolean isOpen() {
-        return socket.isConnected();
+        return socket != null && socket.isConnected();
     }
 
+    @Override
     public void sendData(JSONObject params) throws JSONException, IOException {
         log.debug("Sending data over [{}:{}]", host, port);
         dataOut.write(DeviceUtilities.getDataBytes(params, encoding));
         dataOut.flush();
     }
 
-    public String processSocketResponse() throws IOException {
+    @Override
+    public byte[] processResponse() throws IOException {
         byte[] response = new byte[1024];
         ArrayList<Byte> fullResponse = new ArrayList<>();
         do {
             int size = dataIn.read(response);
+            if (size == -1) break;
             for(int i = 0; i < size; i++) {
                 fullResponse.add(response[i]);
             }
         }
         while(dataIn.available() > 0);
         if(fullResponse.size() > 0) {
-            return new String(ArrayUtils.toPrimitive(fullResponse.toArray(new Byte[0])), encoding);
+            return ArrayUtils.toPrimitive(fullResponse.toArray(new Byte[0]));
         }
         return null;
     }
+
 
     @Override
     public void close() {

@@ -1,6 +1,6 @@
 <project name="signing-helpers" basedir="../">
     <property file="ant/project.properties"/>
-    <property file="ant/ivy-deps.properties"/>
+    <property file="ant/dependencies.properties"/>
 
     <!-- Custom code-signing properties -->
     <property file="${basedir}/../private/private.properties"/>

@@ -1,6 +1,6 @@
 <project name="host-info" default="platform-detect" basedir="..">
     <property file="ant/project.properties"/>
-    <property file="ant/ivy-deps.properties"/>
+    <property file="ant/dependencies.properties"/>
     <!--
         Detects and echos host and target information
 

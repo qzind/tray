@@ -2,7 +2,7 @@
 
 <project name="qz" default="distribute" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
     <property file="ant/project.properties"/>
-    <property file="ant/ivy-deps.properties"/>
+    <property file="ant/dependencies.properties"/>
     <import file="ant/platform-detect.xml"/>
     <import file="ant/signing.xml"/>
     <import file="ant/apple/installer.xml"/>
@@ -33,7 +33,7 @@
         <delete dir="${out.dir}" includeemptydirs="true" defaultexcludes="false" followSymlinks="false" removeNotFollowedSymlinks="true"/>
     </target>
 
-    <target name="check-updates" depends="ivy-deps">
+    <target name="check-updates" depends="ivy-resolve">
         <ivy:checkdepsupdate showTransitive="false" revisionToCheck="latest.release" />
     </target>
 
@@ -42,7 +42,7 @@
     </target>
 
     <!-- Libraries to be bundled with the main application -->
-    <target name="ivy-deps" depends="platform-detect,clean-ivy-cache,ivy-ant-deps">
+    <target name="ivy-resolve" depends="platform-detect,clean-ivy-cache,ivy-ant-resolve">
         <ivy:settings file="ant/ivy-settings.xml"/>
         <ivy:resolve file="ant/ivy.xml"/>
         <ivy:report/>
@@ -50,7 +50,7 @@
     </target>
 
     <!-- Libraries used solely by ant -->
-    <target name="ivy-ant-deps" depends="clean-ivy-cache">
+    <target name="ivy-ant-resolve" depends="clean-ivy-cache">
         <ivy:settings file="ant/ivy-settings.xml"/>
         <ivy:resolve file="ant/deps/ivy-ant.xml"/>
         <ivy:retrieve pattern="${ant.lib.dir}/[artifact]-[revision](-[classifier]).[ext]" sync="true"/>
@@ -75,7 +75,7 @@
         </delete>
     </target>
 
-    <target name="compile-socket" depends="init,ivy-deps">
+    <target name="compile-socket" depends="init,ivy-resolve">
         <mkdir dir="${build.dir}/${project.filename}"/>
 
         <!-- classpath to re-use for compilation, tests, etc -->

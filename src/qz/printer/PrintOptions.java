@@ -62,7 +62,10 @@ public class PrintOptions {
                 rawOptions.destEncoding = Charset.forName(encodings.optString("to", Charset.defaultCharset().name()));
             } else {
                 // String form, that means it is destination-encoded only
-                rawOptions.destEncoding = Charset.forName(configOpts.optString("encoding", Charset.defaultCharset().name()));
+                String encoding = configOpts.optString("encoding", Charset.defaultCharset().name());
+                if(!encoding.isBlank()) {
+                    rawOptions.destEncoding = Charset.forName(encoding);
+                }
             }
         }
         if (!configOpts.isNull("spool")) {

@@ -5,7 +5,79 @@
     <import file="${basedir}/ant/signing.xml"/>
     <property environment="env"/>
 
-    <target name="build-exe" depends="get-version,platform-detect">
+    <target name="copy-nsis-plugins" depends="find-nsisbin">
+        <property name="plugins.path" value="${out.dir}/nsis/Plugins"/>
+        <mkdir dir="${plugins.path}"/>
+
+        <!--
+        ========================
+        Project-specific Plugins
+        ========================
+        -->
+        <echo message="Copying NSIS project-specific Plugins: ant/windows/nsis/Plugins"/>
+        <copy todir="${plugins.path}" verbose="true">
+            <fileset dir="ant/windows/nsis/Plugins">
+                <include name="**/*.dll"/>
+                <include name="**/*.exe"/>
+            </fileset>
+        </copy>
+
+        <!--
+        ===================
+        System-wide Plugins
+        ===================
+        -->
+        <!-- Call makensis -HDRINFO to get environment details -->
+        <exec executable="${nsisbin}" outputproperty="nsisbin.output">
+            <arg value="-HDRINFO"/>
+        </exec>
+
+        <!-- Extract "NSISDIR" -->
+        <loadresource property="nsisdir.path">
+            <propertyresource name="nsisbin.output"/>
+            <filterchain>
+                <linecontainsregexp>
+                    <regexp pattern="NSISDIR="/>
+                </linecontainsregexp>
+                <replaceregex pattern=".*NSISDIR=([^,]+).*" replace="\1" flags="s"/>
+                <striplinebreaks/>
+            </filterchain>
+        </loadresource>
+        <property name="nsisdir.path" value="error occurred" description="fallback value"/>
+
+        <!-- Merge system-wide "x86-unicode" files directly into "Release_Unicode" -->
+        <echo message="Copying NSIS system-wide Plugins: ${nsisdir.path}/Plugins"/>
+        <copy todir="${plugins.path}/Release_Unicode" verbose="true" overwrite="false">
+            <fileset dir="${nsisdir.path}/Plugins">
+                <include name="**/*-unicode/*.*"/>
+            </fileset>
+            <mapper type="flatten"/>
+        </copy>
+
+        <!-- Merge system-wide "x86-ansi" files directly into "Release_ANSI" -->
+        <copy todir="${plugins.path}/Release_ANSI" verbose="true" overwrite="false">
+            <fileset dir="${nsisdir.path}/Plugins">
+                <include name="**/*-ansi/*.*"/>
+            </fileset>
+            <mapper type="flatten"/>
+        </copy>
+    </target>
+
+    <target name="sign-nsis-plugins" depends="copy-nsis-plugins">
+        <!-- Sign Plugins before NSIS bundles them -->
+        <fileset dir="${plugins.path}" id="plugins.dlls">
+            <include name="**/*.dll"/>
+            <include name="**/*.exe"/>
+        </fileset>
+
+        <!-- Pass all files at once, wrapped in quotes -->
+        <pathconvert pathsep="&quot; &quot;" property="plugins.dlls.separated" refid="plugins.dlls"/>
+        <antcall target="sign-file">
+            <param name="sign.file" value="&quot;${plugins.dlls.separated}&quot;"/>
+        </antcall>
+    </target>
+
+    <target name="build-exe" depends="get-version,platform-detect,sign-nsis-plugins">
         <!-- Get the os-preferred name for the target architecture -->
         <condition property="windows.target.arch" value="arm64">
             <isset property="target.arch.aarch64"/>

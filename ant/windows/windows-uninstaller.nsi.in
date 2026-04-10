@@ -7,9 +7,9 @@
 !include WinMessages.nsh
 
 !ifdef NSIS_UNICODE
-	!addplugindir "${basedir}/ant/windows/nsis/Plugins/Release_Unicode"
+	!addplugindir "${plugins.path}/Release_Unicode"
 !else
-	!addplugindir "${basedir}/ant/windows/nsis/Plugins/Release_ANSI"
+	!addplugindir "${plugins.path}/Release_ANSI"
 !endif
 !addincludedir "${basedir}/ant/windows/nsis/Include"
 !include StdUtils.nsh

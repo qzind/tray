@@ -50,8 +50,7 @@ public class TaskKiller {
             // Fallback to pgrep, needed for macOS (See JDK-8319589, JDK-8197387)
             pids.addAll(findPidsPgrep());
         } else {
-            // Fallback to powershell, needed for Windows, see #1360
-            pids.addAll(findPidsPwsh());
+            pids.addAll(WindowsUtilities.findPids(new String[] { "java.exe", "javaw.exe" }, JAR_NAMES));
         }
 
         // Careful not to kill ourselves ;)
@@ -82,41 +81,6 @@ public class TaskKiller {
             throw new IOException("Could not find jcmd, we can't use it for detecting running instances");
         }
         return jcmd;
-    }
-
-
-    static final String[] PWSH_QUERY = { "powershell.exe", "-Command", "\"(Get-CimInstance Win32_Process -Filter \\\"Name = 'java.exe' OR Name = 'javaw.exe'\\\").Where({$_.CommandLine -like '*%s*'}).ProcessId\"" };
-
-    /**
-     * Leverage powershell.exe when run as SYSTEM to workaround https://github.com/qzind/tray/issues/1360
-     * TODO: Remove when jcmd is patched to work as SYSTEM account
-     */
-    private static HashSet<Integer> findPidsPwsh() {
-        HashSet<Integer> foundPids = new HashSet<>();
-
-        for(String jarName : JAR_NAMES) {
-            String[] pwshQuery = PWSH_QUERY.clone();
-            int lastIndex = pwshQuery.length - 1;
-            // Format the last element to contain the jarName
-            pwshQuery[lastIndex] = String.format(pwshQuery[lastIndex], jarName);
-            String stdout = ShellUtilities.executeRaw(pwshQuery);
-            String[] lines = stdout.split("\\s*\\r?\\n");
-            for(String line : lines) {
-                if(line.trim().isEmpty()) {
-                    // Don't try to process blank lines
-                    continue;
-                }
-
-                int pid = parsePid(line);
-                if (pid >= 0) {
-                    foundPids.add(pid);
-                } else {
-                    log.warn("Could not parse PID value.  Full line: '{}', Full output: '{}'", line, stdout);
-                }
-            }
-        }
-
-        return foundPids;
     }
 
     /**
@@ -207,7 +171,7 @@ public class TaskKiller {
     }
 
     // Parses an int value form the first index of a String[], returning -1 if something went wrong
-    private static int parsePid(String[] input) {
+    public static int parsePid(String[] input) {
         if(input != null) {
             if(input.length == 2) {
                 return parsePid(input[0]);
@@ -217,7 +181,7 @@ public class TaskKiller {
     }
 
     // Parses an int value form the provided string, returning -1 if something went wrong
-    private static int parsePid(String input) {
+    public static int parsePid(String input) {
         String pidString = input.trim();
         if(StringUtils.isNumeric(pidString)) {
             return Integer.parseInt(pidString);

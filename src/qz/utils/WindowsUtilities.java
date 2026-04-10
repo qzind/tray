@@ -576,11 +576,11 @@ public class WindowsUtilities {
         } catch(RuntimeException e) {
             log.warn("Unable to use JNA WmiQuery to query processes, falling back to command line", e);
             if (SystemUtilities.getOsVersion().isHigherThanOrEquivalentTo(Version.parse("10.0.22000"))) {
-                // Windows 10 or older, fallback to WMIC
-                pids.addAll(findPidsWmic(commandMatches));
-            } else {
                 // Windows 11 or higher, fallback to PowerShell
                 pids.addAll(findPidsPwsh(commandMatches));
+            } else {
+                // Windows 10 or older, fallback to WMIC
+                pids.addAll(findPidsWmic(commandMatches));
             }
         }
         return pids;

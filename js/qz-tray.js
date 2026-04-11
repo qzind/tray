@@ -129,7 +129,7 @@ var qz = (function() {
                         config.usingSecure = true;
                     }
 
-                    var deeper = function() {
+                    var deeper = function(e) {
                         if (_qz.websocket.shutdown) {
                             //connection attempt was cancelled, bail out
                             reject(new Error("Connection attempt cancelled by user"));
@@ -142,7 +142,9 @@ var qz = (function() {
                             || (!config.usingSecure && config.port.portIndex >= config.port.insecure.length)) {
                             if (config.hostIndex >= config.host.length - 1) {
                                 //give up, all hope is lost
-                                reject(new Error("Unable to establish connection with " + _qz.TITLE));
+                                reject(new Error("Unable to establish connection with " + _qz.TITLE), {
+                                    cause: e
+                                });
                                 return;
                             } else {
                                 config.hostIndex++;
@@ -166,7 +168,7 @@ var qz = (function() {
                     }
                     catch(err) {
                         _qz.log.error(err);
-                        deeper();
+                        deeper(err);
                         return;
                     }
 

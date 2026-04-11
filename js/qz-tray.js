@@ -77,10 +77,9 @@ var qz = (function() {
             },
 
             setup: {
-                connectToAddress: function(address) {
-                    _qz.log.trace("Attempting connection", address);
+                webSocketPromise: function(address) {
                     var ws = new _qz.tools.ws(address);
-                    var wsPromise = _qz.tools.promise(function(resolve, reject) {
+                    return _qz.tools.promise(function(resolve, reject) {
                         ws.onopen = function() {
                             resolve(ws);
                         }
@@ -89,6 +88,17 @@ var qz = (function() {
                     }).finally(function() {
                         ws.onopen = ws.onerror = ws.onclose = null;
                     });
+                },
+
+                connectToAddress: function(address) {
+                    _qz.log.trace("Attempting connection", address);
+                    var wsPromise;
+                    if (window.lna && window.lna.webSocketLna) {
+                        _qz.log.trace("Using lna.js WebSocket");
+                        wsPromise = window.lna.webSocketLna(address);
+                    } else {
+                        wsPromise = _qz.websocket.setup.webSocketPromise(address);
+                    }
                     wsPromise.then(function() {
                         _qz.log.info("Established connection with " + _qz.TITLE + " on " + address);
                     });

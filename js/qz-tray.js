@@ -81,24 +81,13 @@ var qz = (function() {
                     _qz.log.trace("Attempting connection", address);
                     var ws = new _qz.tools.ws(address);
                     var wsPromise = _qz.tools.promise(function(resolve, reject) {
-                        ws.onopen = function(evt) {
+                        ws.onopen = function() {
                             resolve(ws);
                         }
-
-                        ws.onclose = function() {
-                            // Safari compatibility fix to raise error event
-                            if (ws && typeof navigator !== 'undefined' && navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {
-                                ws.onerror();
-                            }
-                        };
-
-                        ws.onerror = function(evt) {
-                            reject(evt);
-                        }
+                        // Older Safari versions may trigger close event instead of error event.
+                        ws.onclose = ws.onerror = reject;
                     }).finally(function() {
-                        ws.onopen = null;
-                        ws.onerror = null;
-                        ws.onclose = null;
+                        ws.onopen = ws.onerror = ws.onclose = null;
                     });
                     wsPromise.then(function() {
                         _qz.log.info("Established connection with " + _qz.TITLE + " on " + address);

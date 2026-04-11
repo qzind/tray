@@ -136,6 +136,12 @@ var qz = (function() {
                             return;
                         }
 
+                        if (e.denied) {
+                            //LNA was blocked by user, stop trying
+                            reject(e);
+                            return;
+                        }
+
                         config.port.portIndex++;
 
                         if ((config.usingSecure && config.port.portIndex >= config.port.secure.length)

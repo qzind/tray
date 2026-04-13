@@ -111,6 +111,8 @@ public enum ArgValue {
         "log.size"),
     AUTHCERT_OVERRIDE(PREFERENCES, "Override the trusted root certificate in the software.", null, null,
         "authcert.override", "trustedRootCert"),
+    PRINTER_DETAILS_DEBUG(PREFERENCES, "Debug printer details to the logs as they're crawled.  Helpful for debugging driver-related hard-crashes.", null, false,
+        "printer.details.debug"),
     PRINTER_STATUS_JOB_DATA(PREFERENCES, "Return all raw (binary) job data with job statuses (use with caution)", null, false,
         "printer.status.jobdata");
 

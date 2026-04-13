@@ -15,9 +15,12 @@ import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import qz.App;
 import qz.printer.info.CachedPrintServiceLookup;
 import qz.printer.info.NativePrinter;
 import qz.printer.info.NativePrinterMap;
+import qz.utils.ArgValue;
+import qz.utils.PrefsSearch;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
@@ -33,10 +36,23 @@ public class PrintServiceMatcher {
     // TODO: Include JDK version test for caching when JDK-7001133 is fixed upstream
     private static final boolean useCache = SystemUtilities.isUnix();
 
+    // Printer drivers are the source of many crashes, allow detailed logs to help identify problematic driver(s)
+    private static final boolean debug = PrefsSearch.getBoolean(ArgValue.PRINTER_DETAILS_DEBUG, App.getTrayProperties());
+
     public static NativePrinterMap getNativePrinterList(boolean silent, boolean withAttributes) {
         NativePrinterMap printers = NativePrinterMap.getInstance();
-        printers.putAll(true, lookupPrintServices());
-        if (withAttributes) { printers.values().forEach(NativePrinter::getDriverAttributes); }
+        if(debug) log.debug("Populating the initial PrintService listing...");
+        PrintService[] printServices = lookupPrintServices();
+        if(debug) log.debug("Found {} PrintService entries", printServices.length);
+        printers.putAll(true, printServices);
+        if (withAttributes) {
+            if(debug) log.debug("Fetching driver attributes for all printers...");
+            for(NativePrinter nativePrinter : printers.values()) {
+                if(debug) log.debug("Fetching driver attributes for '{}'...", nativePrinter.getPrinterId());
+                NativePrinter.getDriverAttributes(nativePrinter);
+            }
+            if(debug) log.debug("Done fetching driver attributes");
+        }
         if (!silent) { log.debug("Found {} printers", printers.size()); }
         return printers;
     }
@@ -174,18 +190,25 @@ public class PrintServiceMatcher {
 
         boolean mediaTrayCrawled = false;
 
-        for(NativePrinter printer : getNativePrinterList().values()) {
+        Collection<NativePrinter> nativePrinters = getNativePrinterList().values();
+        if(debug) log.debug("Iterating over all {} discovered printer(s)", nativePrinters.size());
+
+        for(NativePrinter printer : nativePrinters) {
+            if(debug) log.debug("Fetching driver details for '{}'...", printer.getPrinterId());
             PrintService ps = printer.getPrintService().value();
             JSONObject jsonService = new JSONObject();
             jsonService.put("name", ps.getName());
 
             if (includeDetails) {
+                if(debug) log.debug("Fetching driver name and connection details for '{}'...", printer.getPrinterId());
                 jsonService.put("driver", printer.getDriver().value());
                 jsonService.put("connection", printer.getConnection());
                 jsonService.put("default", ps == defaultService);
+                if(debug) log.debug("'{}': '{}' (Driver)", printer.getPrinterId(), printer.getDriver().value());
+                if(debug) log.debug("'{}': '{}' (Connection)", printer.getPrinterId(), printer.getConnection());
 
                 if (!mediaTrayCrawled) {
-                    log.info("Gathering printer MediaTray information...");
+                    log.info("Gathering printer MediaTray information for the first time...");
                     mediaTrayCrawled = true;
                 }
 
@@ -193,9 +216,14 @@ public class PrintServiceMatcher {
                 JSONArray trays = new JSONArray();
                 JSONArray sizes = new JSONArray();
 
+                if(debug) log.debug("Fetching MediaTrays and MediaSizes for '{}'...", printer.getPrinterId());
                 for(Media m : (Media[])ps.getSupportedAttributeValues(Media.class, null, null)) {
-                    if (m instanceof MediaTray) { trays.put(m.toString()); }
+                    if (m instanceof MediaTray) {
+                        if(debug) log.debug("'{}': '{}' (MediaTray)", printer.getPrinterId(), m.toString());
+                        trays.put(m.toString());
+                    }
                     if (m instanceof MediaSizeName) {
+                        if(debug) log.debug("'{}': '{}' (MediaSizeName)", printer.getPrinterId(), m.toString());
                         if(uniqueSizes.add(m.toString())) {
                             MediaSize mediaSize = MediaSize.getMediaSizeForName((MediaSizeName)m);
                             if(mediaSize == null) {
@@ -228,9 +256,12 @@ public class PrintServiceMatcher {
                     jsonService.put("sizes", sizes);
                 }
 
+                if(debug) log.debug("Fetching PrinterResolution for '{}'...", printer.getPrinterId());
                 PrinterResolution res = printer.getResolution().value();
                 int density = -1; if (res != null) { density = res.getFeedResolution(ResolutionSyntax.DPI); }
                 jsonService.put("density", density);
+                if(debug) log.debug("'{}': {} (PrinterResolution)", printer.getPrinterId(), density);
+                if(debug) log.debug("Done fetching driver details for '{}'", printer.getPrinterId());
             }
 
             list.put(jsonService);

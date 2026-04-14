@@ -57,7 +57,7 @@ jobs:
           ant testng
           # Run policy tests again, but as root
           sudo ant -Dtestng.pattern="**/policy/**" testng
-          sudo installer -pkg out/qz-tray-*.pkg -target /
+          sudo installer -pkg out/qz-tray-*.pkg -target / || (cat /tmp/qz-install.log && false)
           "/Applications/QZ Tray.app/Contents/MacOS/QZ Tray" --version
           brew install nsis makeself
           ant makeself

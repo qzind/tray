@@ -2,7 +2,7 @@
 
 <project name="qz" default="distribute" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
     <property file="ant/project.properties"/>
-    <property file="ant/ivy-deps.properties"/>
+    <property file="ant/dependencies.properties"/>
     <import file="ant/platform-detect.xml"/>
     <import file="ant/signing.xml"/>
     <import file="ant/apple/installer.xml"/>

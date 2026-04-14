@@ -10,14 +10,14 @@ jobs:
         java: [25]
         arch: [x86_64, aarch64, riscv64]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
       - run: sudo apt-get install makeself
       - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: qz-tray-linux-${{ matrix.arch }}
           path: out/qz-tray-*.run
@@ -40,13 +40,13 @@ jobs:
         java: [25]
         arch: [x86_64, aarch64]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
       - run: ant -Dtarget.arch=${{ matrix.arch }} pkgbuild
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: qz-tray-macos-${{ matrix.arch }}
           path: out/qz-tray-*.pkg
@@ -70,14 +70,14 @@ jobs:
         java: [25]
         arch: [x86_64, aarch64]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
       - run: choco install nsis
       - run: ant "-Dtarget.arch=${{ matrix.arch }}" nsis
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: qz-tray-windows-${{ matrix.arch }}
           path: out/qz-tray-*.exe

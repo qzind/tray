@@ -23,6 +23,3 @@
         <!-- <module organisation="org.openjfx" name=".*" resolver="gluonhq"/> -->
     </modules>
 </ivysettings>
-
-
-

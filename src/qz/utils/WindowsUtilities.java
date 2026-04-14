@@ -12,6 +12,7 @@ package qz.utils;
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Native;
 import com.sun.jna.platform.win32.*;
+import com.sun.jna.platform.win32.COM.WbemcliUtil;
 import com.sun.jna.ptr.IntByReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,6 +32,7 @@ import java.util.*;
 import java.util.List;
 
 import static com.sun.jna.platform.win32.WinReg.*;
+import static qz.installer.TaskKiller.parsePid;
 import static qz.utils.SystemUtilities.*;
 
 import static java.nio.file.attribute.AclEntryPermission.*;
@@ -562,6 +564,137 @@ public class WindowsUtilities {
             }
         }
         return pid;
+    }
+
+    /**
+     * Find the processIds matching the given
+     */
+    public static HashSet<Integer> findPids(String[] exeNames, String ... commandMatches) {
+        HashSet<Integer> pids = new HashSet<>();
+        try {
+            pids.addAll(WindowsUtilities.findPidsWmi(exeNames, commandMatches));
+        } catch(RuntimeException e) {
+            log.warn("Unable to use JNA WmiQuery to query processes, falling back to command line", e);
+            if (SystemUtilities.getOsVersion().isHigherThanOrEquivalentTo(Version.parse("10.0.22000"))) {
+                // Windows 11 or higher, fallback to PowerShell
+                pids.addAll(findPidsPwsh(commandMatches));
+            } else {
+                // Windows 10 or older, fallback to WMIC
+                pids.addAll(findPidsWmic(commandMatches));
+            }
+        }
+        return pids;
+    }
+
+    enum Win32_Process {
+        Name, ProcessId, ExecutablePath, CommandLine
+    }
+
+    /**
+     * Get pids using JNA and WmiQuery
+     * <p>
+     * TODO: Remove when <code>jcmd</code> is patched to work as <code>SYSTEM</code> account <a href="https://github.com/qzind/tray/issues/1360">#1360</a>
+     * </p>
+     */
+    public static HashSet<Integer> findPidsWmi(String[] processNames, String ... commandMatches) {
+        HashSet<Integer> foundPids = new HashSet<>();
+        Ole32.INSTANCE.CoInitializeEx(null, Ole32.COINIT_APARTMENTTHREADED);
+
+        try {
+            WbemcliUtil.WmiQuery<Win32_Process> processQuery = new WbemcliUtil.WmiQuery<>("Win32_Process", Win32_Process.class);
+            WbemcliUtil.WmiResult<Win32_Process> results = processQuery.execute();
+            
+            for(int i = 0; i < results.getResultCount(); i++) {
+                Object name = results.getValue(Win32_Process.Name, i);
+                Object command = results.getValue(Win32_Process.CommandLine, i);
+                Object pid = results.getValue(Win32_Process.ProcessId, i);
+                if(name instanceof String) {
+                    // filter by process
+                    for(String processName : processNames) {
+                        if(processName.equalsIgnoreCase((String)name)) {
+                            // filter by command line match
+                            if (command instanceof String) {
+                                for(String match : commandMatches) {
+                                    if(((String)command).contains(match)) {
+                                        foundPids.add(Integer.parseInt(pid.toString()));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } finally {
+            Ole32.INSTANCE.CoUninitialize();
+        }
+        return foundPids;
+    }
+
+    // note: double %% is literal
+    static final String[] WMIC_QUERY = {"wmic.exe", "process", "where", "CommandLine like '%%%s%%'", "get", "processid" };
+
+    /**
+     * Get pids using wmic command line
+     * <p>
+     * <b>Warning:</b> Should only be used in a fallback where something in JNA has gone terribly wrong.
+     * Since doesn't filter for <code>java.exe</code> or <code>javaw.exe</code> this could technically match
+     * a process such as <code>7zip.exe</code> with the <code>qz-tray.jar</code> file open.
+     * </p>
+     */
+    static HashSet<Integer> findPidsWmic(String ... commandMatches) {
+        HashSet<Integer> foundPids = new HashSet<>();
+        for(String jarName : commandMatches) {
+            String[] wmicQuery = WMIC_QUERY;
+            // Format the 3rd element to contain the jarName
+            wmicQuery[3] = String.format(wmicQuery[3], jarName);
+            String stdout = ShellUtilities.executeRaw(wmicQuery);
+            String[] procs = stdout.split("\\s*\\r?\\n");
+            for(String proc : procs) {
+                int pid = parsePid(proc);
+                if (pid >= 0) {
+                    foundPids.add(pid);
+                } else {
+                    log.warn("Could not parse PID value.  Value: '{}', Full output: '{}'", proc, stdout);
+                }
+            }
+        }
+
+        return foundPids;
+    }
+
+    static final String[] PWSH_QUERY = { "powershell.exe", "-Command", "\"(Get-CimInstance Win32_Process -Filter \\\"Name = 'java.exe' OR Name = 'javaw.exe'\\\").Where({$_.CommandLine -like '*%s*'}).ProcessId\"" };
+
+    /**
+     * Get pids using powershell command line
+     * <p>
+     * <b>Warning:</b> Should only be used in a fallback where something in JNA has gone terribly wrong.</p>
+     */
+    private static HashSet<Integer> findPidsPwsh(String ... commandMatches) {
+        HashSet<Integer> foundPids = new HashSet<>();
+
+        for(String jarName : commandMatches) {
+            String[] pwshQuery = PWSH_QUERY.clone();
+            int lastIndex = pwshQuery.length - 1;
+            // Format the last element to contain the jarName
+            pwshQuery[lastIndex] = String.format(pwshQuery[lastIndex], jarName);
+            String stdout = ShellUtilities.executeRaw(pwshQuery);
+            String[] lines = stdout.split("\\s*\\r?\\n");
+            for(String line : lines) {
+                if(line.trim().isEmpty()) {
+                    // Don't try to process blank lines
+                    continue;
+                }
+
+                int pid = parsePid(line);
+                if (pid >= 0) {
+                    foundPids.add(pid);
+                } else {
+                    log.warn("Could not parse PID value.  Full line: '{}', Full output: '{}'", line, stdout);
+                }
+            }
+        }
+
+        return foundPids;
     }
 
     /**

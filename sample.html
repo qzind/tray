@@ -2879,6 +2879,13 @@
             }
         });
 
+        $("#connectionHost").on('keyup', function(e) {
+            if (e.which == 13 || e.keyCode == 13) {
+                startConnection();
+                return false;
+            }
+        });
+
         $("#fileButton").on('change', function(e) {
             if (this.files && this.files[0]) {
                 $("#fileLocation").val(this.files[0]['name']);

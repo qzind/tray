@@ -501,7 +501,7 @@ public class WebApp extends Application {
                     String[] split = parts[1].split(" ");
                     if (split.length > 0) {
                         try {
-                            webkitVersion = Version.valueOf(split[0]);
+                            webkitVersion = Version.parse(split[0], false);
                             log.info("WebKit version {} detected", webkitVersion);
                         } catch(Exception ignore) {}
                     }

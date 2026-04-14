@@ -27,7 +27,8 @@ jobs:
           sudo apt-get install firefox chromium
           ant testng
           # Run policy tests again, but as root
-          sudo ant -Dtestng.pattern="**/policy/**" testng
+          # FIXME: Uncomment when fixed upstream https://github.com/actions/setup-java/issues/997
+          # sudo ant -Dtestng.pattern="**/policy/**" testng
           sudo DEBUG=true out/qz-tray-*.run
           /opt/qz-tray/qz-tray --version
           sudo apt-get install nsis

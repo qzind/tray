@@ -1,23 +1,23 @@
 <ivy-module version="2.0" xmlns:m="antlib:org.apache.ivy.ant">
     <info organisation="io.qz" module="qz-tray"/>
     <dependencies>
-        <!-- Core -->
-        <dependency name="jna-platform" org="${jna.org}" conf="*->default" rev="${jna.rev}"/>
-        <dependency name="jna" org="${jna.org}" conf="*->default" rev="${jna.rev}"/>
+        <!--========= Core =========-->
         <dependency name="bcprov-jdk18on" org="${bc.org}" conf="*->default" rev="${bc.rev}"/>
         <dependency name="bcpkix-jdk18on" org="${bc.org}" conf="*->default" rev="${bc.rev}"/>
-        <dependency name="${semver.name}" org="${semver.org}" conf="*->default" rev="${semver.rev}"/>
-
         <dependency name="jettison" org="${jettison.org}" conf="*->default" rev="${jettison.rev}">
             <!-- Skip, needs testing -->
             <exclude name="*"/>
         </dependency>
+        <dependency name="jna" org="${jna.org}" conf="*->default" rev="${jna.rev}"/>
+        <dependency name="jna-platform" org="${jna.org}" conf="*->default" rev="${jna.rev}"/>
+        <dependency name="${semver.name}" org="${semver.org}" conf="*->default" rev="${semver.rev}"/>
 
-        <!-- Websockets -->
+
+        <!--====== WebSocket ======-->
         <dependency name="${websocket-api.name}" org="${websocket-api.org}" conf="*->default"  rev="${websocket-api.rev}"/>
         <dependency name="jetty-servlet-api" org="${servlet-api.org}" conf="*->default" rev="${servlet-api.rev}"/>
 
-        <!-- Jetty -->
+        <!--====== Jetty ======-->
         <dependency name="jetty-client" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
         <dependency name="jetty-http" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
         <dependency name="jetty-io" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
@@ -26,7 +26,7 @@
         <dependency name="jetty-servlet" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
         <dependency name="jetty-util" org="${jetty.org}" conf="*->default" rev="${jetty.rev}"/>
 
-        <!-- Jetty Websocket -->
+        <!--====== Jetty WebSocket ======-->
         <dependency name="websocket-core-client" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
         <dependency name="websocket-core-common" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
         <dependency name="websocket-core-server" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
@@ -36,22 +36,13 @@
         <dependency name="websocket-jetty-server" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
         <dependency name="websocket-servlet" org="${jetty.org}.websocket" conf="*->default" rev="${jetty.rev}"/>
 
-        <!-- Apache Commons -->
-        <dependency name="commons-codec" org="${commons-codec.org}" conf="*->default"
-                    rev="${commons-codec.rev}">
-        </dependency>
-        <dependency name="commons-io" org="${commons-io.org}" conf="*->default"
-                    rev="${commons-io.rev}">
-        </dependency>
-        <dependency name="commons-pool2" org="${commons-pool2.org}" conf="*->default"
-                    rev="${commons-pool2.rev}">
-        </dependency>
-        <dependency name="not-going-to-be-commons-ssl" org="${commons-ssl.org}" conf="*->default"
-                    rev="${commons-ssl.rev}">
-            <exclude name="bcprov-jdk15on"/>
-        </dependency>
+        <!--====== Apache Commons ======-->
+        <dependency name="commons-codec" org="${commons-codec.org}" conf="*->default" rev="${commons-codec.rev}"/>
+        <dependency name="commons-io" org="${commons-io.org}" conf="*->default" rev="${commons-io.rev}"/>
+        <dependency name="commons-pool2" org="${commons-pool2.org}" conf="*->default" rev="${commons-pool2.rev}"/>
+        <dependency name="not-going-to-be-commons-ssl" org="${commons-ssl.org}" conf="*->default" rev="${commons-ssl.rev}"/>
 
-        <!-- Communications -->
+        <!--====== Communications ======-->
         <dependency name="usb-api" org="${usb-api.org}" conf="*->default" rev="${usb-api.rev}"/>
         <dependency name="usb4java" org="${usb4java.org}" conf="*->default" rev="${usb4java.rev}"/>
         <dependency name="usb4java-javax" org="${usb4java.org}" conf="*->default" rev="${usb4java.rev}"/>
@@ -71,19 +62,18 @@
             <exclude name="*"/>
         </dependency>
         <dependency name="hid4java" org="${hid4java.org}" conf="*->default" rev="${hid4java.rev}">
-            <exclude name="jna"/>
             <!-- Skip, need 0.8.0+7-SNAPSHOT https://github.com/qzind/tray/pull/1267 -->
             <exclude name="*"/>
         </dependency>
         <dependency name="jssc" org="${jssc.org}" conf="*->default" rev="${jssc.rev}"/>
 
-        <!-- Theming -->
+        <!--====== Theming ======-->
         <dependency name="flatlaf" org="${flatlaf.org}" conf="*->default" rev="${flatlaf.rev}"/>
 
-        <!-- Windows Installer -->
+        <!--====== Windows Installer ======-->
         <dependency name="mslinks" org="${mslinks.org}" conf="*->default" rev="${mslinks.rev}"/>
 
-        <!-- Charsets -->
+        <!--====== Charset ======-->
         <dependency name="icu4j" org="${icu4j.org}" conf="*->default" rev="${icu4j.rev}"/>
         <dependency name="icu4j-charset" org="${icu4j.org}" conf="*->default" rev="${icu4j.rev}"/>
         <dependency name="TCVN-3" org="${icu4j.org}" conf="*->default" rev="${icu4j.rev}">
@@ -91,7 +81,7 @@
             <exclude name="*"/>
         </dependency>
 
-        <!-- Imaging -->
+        <!--====== Imaging ======-->
         <dependency name="common-image" org="com.twelvemonkeys.common" conf="*->default" rev="${twelvemonkeys.rev}"/>
         <dependency name="common-io" org="com.twelvemonkeys.common" conf="*->default" rev="${twelvemonkeys.rev}"/>
         <dependency name="common-lang" org="com.twelvemonkeys.common" conf="*->default" rev="${twelvemonkeys.rev}"/>
@@ -104,19 +94,18 @@
 
         <dependency name="jbig2-imageio" org="${jbig2.org}" conf="*->default" rev="${jbig2.rev}"/>
 
-        <!-- Logging -->
+        <!--====== Logging ======-->
         <dependency name="log4j-core" org="${log4j.org}" conf="*->default" rev="${log4j.rev}"/>
         <dependency name="log4j-api" org="${log4j.org}" conf="*->default" rev="${log4j.rev}"/>
 
-        <!-- Printing -->
+        <!--====== Printing ======-->
         <dependency name="pdfbox" org="${pdfbox.org}" conf="*->default" rev="${pdfbox.rev}">
             <exclude name="log4j-core"/>
             <exclude name="log4j-api"/>
             <exclude name="commons-httpclient"/>
-            <exclude name="bcprov-jdk15on"/>
         </dependency>
 
-        <!-- javafx -->
+        <!--====== JavaFX ======-->
         <dependency name="javafx-controls" org="${javafx.org}" conf="*->default" rev="${javafx.rev}"/>
         <dependency name="javafx-fxml" org="${javafx.org}" conf="*->default" rev="${javafx.rev}"/>
         <dependency name="javafx-graphics" org="${javafx.org}" conf="*->default" rev="${javafx.rev}"/>
@@ -125,50 +114,38 @@
         <dependency name="javafx-swing" org="${javafx.org}" conf="*->default" rev="${javafx.rev}"/>
         <dependency name="javafx-web" org="${javafx.org}" conf="*->default" rev="${javafx.rev}"/>
 
-        <!-- host javafx natives -->
+        <!--====== JavaFX Natives ======-->
         <dependency org="${javafx.org}" name="javafx-controls" rev="${javafx.rev}">
             <artifact name="javafx-controls" type="jar" m:classifier="${host.javafx.platform}"/>
-        </dependency>
-        <dependency org="${javafx.org}" name="javafx-fxml" rev="${javafx.rev}">
-            <artifact name="javafx-fxml" type="jar" m:classifier="${host.javafx.platform}"/>
-        </dependency>
-        <dependency org="${javafx.org}" name="javafx-graphics" rev="${javafx.rev}">
-            <artifact name="javafx-graphics" type="jar" m:classifier="${host.javafx.platform}"/>
-        </dependency>
-        <dependency org="${javafx.org}" name="javafx-base" rev="${javafx.rev}">
-            <artifact name="javafx-base" type="jar" m:classifier="${host.javafx.platform}"/>
-        </dependency>
-        <dependency org="${javafx.org}" name="javafx-media" rev="${javafx.rev}">
-            <artifact name="javafx-media" type="jar" m:classifier="${host.javafx.platform}"/>
-        </dependency>
-        <dependency org="${javafx.org}" name="javafx-swing" rev="${javafx.rev}">
-            <artifact name="javafx-swing" type="jar" m:classifier="${host.javafx.platform}"/>
-        </dependency>
-        <dependency org="${javafx.org}" name="javafx-web" rev="${javafx.rev}">
-            <artifact name="javafx-web" type="jar" m:classifier="${host.javafx.platform}"/>
-        </dependency>
-
-        <!-- target javafx natives -->
-        <dependency org="${javafx.org}" name="javafx-controls" rev="${javafx.rev}">
             <artifact name="javafx-controls" type="jar" m:classifier="${target.javafx.platform}"/>
         </dependency>
         <dependency org="${javafx.org}" name="javafx-fxml" rev="${javafx.rev}">
+            <artifact name="javafx-fxml" type="jar" m:classifier="${host.javafx.platform}"/>
             <artifact name="javafx-fxml" type="jar" m:classifier="${target.javafx.platform}"/>
         </dependency>
         <dependency org="${javafx.org}" name="javafx-graphics" rev="${javafx.rev}">
+            <artifact name="javafx-graphics" type="jar" m:classifier="${host.javafx.platform}"/>
             <artifact name="javafx-graphics" type="jar" m:classifier="${target.javafx.platform}"/>
         </dependency>
         <dependency org="${javafx.org}" name="javafx-base" rev="${javafx.rev}">
+            <artifact name="javafx-base" type="jar" m:classifier="${host.javafx.platform}"/>
             <artifact name="javafx-base" type="jar" m:classifier="${target.javafx.platform}"/>
         </dependency>
         <dependency org="${javafx.org}" name="javafx-media" rev="${javafx.rev}">
+            <artifact name="javafx-media" type="jar" m:classifier="${host.javafx.platform}"/>
             <artifact name="javafx-media" type="jar" m:classifier="${target.javafx.platform}"/>
         </dependency>
         <dependency org="${javafx.org}" name="javafx-swing" rev="${javafx.rev}">
+            <artifact name="javafx-swing" type="jar" m:classifier="${host.javafx.platform}"/>
             <artifact name="javafx-swing" type="jar" m:classifier="${target.javafx.platform}"/>
         </dependency>
         <dependency org="${javafx.org}" name="javafx-web" rev="${javafx.rev}">
+            <artifact name="javafx-web" type="jar" m:classifier="${host.javafx.platform}"/>
             <artifact name="javafx-web" type="jar" m:classifier="${target.javafx.platform}"/>
         </dependency>
+
+        <!--====== Global Excludes ======-->
+        <!-- bcprov-jdk15on: module name variance prevents ejection; dependency of "not-going-to-be-commons-ssl" -->
+        <exclude module=".*jdk15on.*" matcher="regexp"/>
     </dependencies>
 </ivy-module>

@@ -37,6 +37,10 @@
         <ivy:checkdepsupdate showTransitive="false" revisionToCheck="latest.release" />
     </target>
 
+    <target name="show-dependencies" depends="ivy-deps">
+        <ivy:dependencytree />
+    </target>
+
     <target name="clean-ivy-cache" if="ivy.clean.cache">
         <ivy:cleancache/>
     </target>

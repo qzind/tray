@@ -78,15 +78,18 @@ var qz = (function() {
 
             setup: {
                 webSocketPromise: function(address) {
-                    var ws = new _qz.tools.ws(address);
+                    var ws;
                     return _qz.tools.promise(function(resolve, reject) {
+                        ws = new _qz.tools.ws(address);
                         ws.onopen = function() {
                             resolve(ws);
                         }
                         // Older Safari versions may trigger close event instead of error event.
                         ws.onclose = ws.onerror = reject;
                     }).finally(function() {
-                        ws.onopen = ws.onerror = ws.onclose = null;
+                        if (ws) {
+                            ws.onopen = ws.onerror = ws.onclose = null;
+                        }
                     });
                 },
 
@@ -169,15 +172,7 @@ var qz = (function() {
                         address = config.protocol.insecure + config.host[config.hostIndex] + ":" + config.port.insecure[config.port.portIndex];
                     }
 
-                    try {
-                        var promise = _qz.websocket.setup.connectToAddress(address);
-                    }
-                    catch(err) {
-                        _qz.log.error(err);
-                        deeper(err);
-                        return;
-                    }
-
+                    var promise = _qz.websocket.setup.connectToAddress(address);
                     _qz.websocket.connection = null;
 
                     promise.then(
@@ -201,7 +196,6 @@ var qz = (function() {
                         },
                         //called for errors during setup (such as invalid ports), reject connect promise only if all ports have been tried
                         function(e) {
-                            _qz.websocket.connection = null;
                             deeper(e);
                         }
                     )

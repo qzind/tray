@@ -102,13 +102,17 @@ var qz = (function() {
                     } else {
                         wsPromise = _qz.websocket.setup.webSocketPromise(address);
                     }
-                    wsPromise.then(function() {
-                        _qz.log.info("Established connection with " + _qz.TITLE + " on " + address);
+                    return wsPromise.catch(function(evt) {
+                        var msg = evt.denied
+                            ? "Connection attempt denied by Local Network Access restrictions"
+                            : "Unable to establish connection with " + _qz.TITLE;
+                        var err = new Error(msg, {cause: evt});
+                        if (window.lna && evt instanceof window.lna.LnaError) {
+                            err.denied = evt.denied;
+                            err.permission = evt.permission;
+                        }
+                        throw err;
                     });
-                    wsPromise.catch(function(evt) {
-                        _qz.log.trace(evt);
-                    })
-                    return wsPromise;
                 },
 
                 /** Loop through possible ports to open connection, sets web socket calls that will settle the promise. */
@@ -140,7 +144,7 @@ var qz = (function() {
                         }
 
                         if (e.denied) {
-                            //LNA was blocked by user, stop trying
+                            //user denied LNA permission, stop trying
                             reject(e);
                             return;
                         }
@@ -151,9 +155,7 @@ var qz = (function() {
                             || (!config.usingSecure && config.port.portIndex >= config.port.insecure.length)) {
                             if (config.hostIndex >= config.host.length - 1) {
                                 //give up, all hope is lost
-                                reject(new Error("Unable to establish connection with " + _qz.TITLE), {
-                                    cause: e
-                                });
+                                reject(e);
                                 return;
                             } else {
                                 config.hostIndex++;
@@ -178,6 +180,7 @@ var qz = (function() {
                     promise.then(
                         //called on successful connection to qz, begins setup of websocket calls and resolves connect promise after certificate is sent
                         function(ws) {
+                            _qz.log.info("Established connection with " + _qz.TITLE + " on " + address);
                             _qz.websocket.connection = ws;
                             _qz.websocket.setup.openConnection({ resolve: resolve, reject: reject });
 
@@ -196,6 +199,7 @@ var qz = (function() {
                         },
                         //called for errors during setup (such as invalid ports), reject connect promise only if all ports have been tried
                         function(e) {
+                            _qz.log.trace(e);
                             deeper(e);
                         }
                     )

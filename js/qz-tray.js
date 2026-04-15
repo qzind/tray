@@ -106,7 +106,7 @@ var qz = (function() {
                         var msg = evt.denied
                             ? "Connection attempt denied by Local Network Access restrictions"
                             : "Unable to establish connection with " + _qz.TITLE;
-                        var err = new Error(msg, {cause: evt});
+                        var err = new Error(msg);
                         if (window.lna && evt instanceof window.lna.LnaError) {
                             err.denied = evt.denied;
                             err.permission = evt.permission;

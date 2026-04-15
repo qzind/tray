@@ -12,7 +12,6 @@
         <dependency name="jna-platform" org="${jna.org}" conf="*->default" rev="${jna.rev}"/>
         <dependency name="${semver.name}" org="${semver.org}" conf="*->default" rev="${semver.rev}"/>
 
-
         <!--====== WebSocket ======-->
         <dependency name="${websocket-api.name}" org="${websocket-api.org}" conf="*->default"  rev="${websocket-api.rev}"/>
         <dependency name="jetty-servlet-api" org="${servlet-api.org}" conf="*->default" rev="${servlet-api.rev}"/>
@@ -97,6 +96,7 @@
         <!--====== Logging ======-->
         <dependency name="log4j-core" org="${log4j.org}" conf="*->default" rev="${log4j.rev}"/>
         <dependency name="log4j-api" org="${log4j.org}" conf="*->default" rev="${log4j.rev}"/>
+        <dependency name="${slf4j-nop.name}" org="${slf4j-nop.org}" conf="*->default" rev="${slf4j-nop.rev}"/>
 
         <!--====== Printing ======-->
         <dependency name="pdfbox" org="${pdfbox.org}" conf="*->default" rev="${pdfbox.rev}">

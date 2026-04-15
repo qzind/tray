@@ -1,8 +1,9 @@
 <ivy-module version="2.0" xmlns:m="antlib:org.apache.ivy.ant">
     <info organisation="io.qz" module="qz-tray-ant"/>
     <dependencies>
-        <dependency name="jsign" org="net.jsign" conf="*->default" rev="${jsign.rev}"/>
-        <dependency name="testng" org="org.testng" conf="*->default" rev="${testng.rev}"/>
-        <dependency name="testng-ant" org="org.testng" conf="*->default" rev="${testng-ant.rev}"/>
+        <dependency name="${jsign.name}" org="${jsign.org}" conf="*->default" rev="${jsign.rev}"/>
+        <dependency name="${slf4j-nop.name}" org="${slf4j-nop.org}" conf="*->default" rev="${slf4j-nop.rev}"/>
+        <dependency name="${testng.name}" org="${testng.org}" conf="*->default" rev="${testng.rev}"/>
+        <dependency name="${testng.name}-ant" org="${testng.org}" conf="*->default" rev="${testng-ant.rev}"/>
     </dependencies>
 </ivy-module>

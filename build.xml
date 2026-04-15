@@ -403,7 +403,7 @@
 
     <target name="testng" depends="compile-tests">
         <property description="Pattern for TestNG classes" name="testng.pattern" value="**"/>
-        <testng listeners="qz.testng.ConciseSkipListener" classpathref="tests.classpath" haltOnFailure="true" verbose="2" outputdir="${out.dir}/test-output">
+        <testng suitename="ant" testname="ant" listeners="qz.testng.ConciseSkipListener" classpathref="tests.classpath" haltOnFailure="true" verbose="2" outputdir="${out.dir}/test-output">
             <classfileset dir="${build.dir}/test" includes="${testng.pattern}"/>
         </testng>
     </target>

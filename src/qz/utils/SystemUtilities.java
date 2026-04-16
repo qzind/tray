@@ -28,7 +28,6 @@ import java.awt.*;
 import java.awt.geom.Area;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -69,6 +68,7 @@ public class SystemUtilities {
 
     private static Boolean darkDesktop;
     private static Boolean darkTaskbar;
+    @Deprecated
     private static Boolean hasMonocle;
     private static String classProtocol;
     private static Version osVersion;
@@ -205,7 +205,8 @@ public class SystemUtilities {
     }
 
     public static Version getJavaVersion() {
-        return getJavaVersion(System.getProperty("java.version"));
+        Runtime.Version ver = Runtime.version();
+        return Version.of(ver.feature(), ver.interim(), ver.patch()).withBuildMetadata("" + ver.update());
     }
 
     /**
@@ -213,44 +214,20 @@ public class SystemUtilities {
      * The double dash "--" is since JDK9 but important to send the command output to stdout
      */
     public static Version getJavaVersion(Path javaCommand) {
-        return getJavaVersion(ShellUtilities.executeRaw(javaCommand.toString(), "--version"));
+        return parseJavaVersion(ShellUtilities.executeRaw(javaCommand.toString(), "--version"));
     }
 
     public static int getProcessId() {
         if(pid == null) {
-            // Try Java 9+
-            if(Constants.JAVA_VERSION.getMajorVersion() >= 9) {
-                pid = getProcessIdJigsaw();
-            }
-            // Try JNA
-            if(pid == null || pid == -1) {
-                pid = SystemUtilities.isWindows() ? WindowsUtilities.getProcessId() : UnixUtilities.getProcessId();
-            }
+            pid = (int)ProcessHandle.current().pid();
         }
         return pid;
     }
 
-    private static int getProcessIdJigsaw() {
-        try {
-            Class processHandle = Class.forName("java.lang.ProcessHandle");
-            Method current = processHandle.getDeclaredMethod("current");
-            Method pid = processHandle.getDeclaredMethod("pid");
-            Object processHandleInstance = current.invoke(processHandle);
-            Object pidValue = pid.invoke(processHandleInstance);
-            if(pidValue instanceof Long) {
-                return ((Long)pidValue).intValue();
-            }
-        } catch(Throwable t) {
-            log.warn("Could not get process ID using Java 9+, will attempt to fallback to JNA", t);
-        }
-        return -1;
-    }
-
     /**
-     * Handle Java versioning nuances
-     * To eventually be replaced with <code>java.lang.Runtime.Version</code> (JDK9+)
+     * Parse a Java version while handling Java versioning and formatting nuances
      */
-    public static Version getJavaVersion(String version) {
+    public static Version parseJavaVersion(String version) {
         String[] parts = version.trim().split("\\D+");
 
         int major = 1;
@@ -459,7 +436,7 @@ public class SystemUtilities {
                 darculaThemeNeeded = false;
             }
             if(isDarkDesktop() && darculaThemeNeeded) {
-                UIManager.setLookAndFeel("com.bulenkov.darcula.DarculaLaf");
+                UIManager.setLookAndFeel("com.formdev.flatlaf.FlatDarculaLaf");
             } else {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             }
@@ -684,6 +661,7 @@ public class SystemUtilities {
         return false;
     }
 
+    @Deprecated
     public static boolean hasMonocle() {
         if(hasMonocle == null) {
             try {

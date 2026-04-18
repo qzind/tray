@@ -38,8 +38,7 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 
 @WebSocket
@@ -66,7 +65,11 @@ public class PrintSocketClient {
         trayManager.displayInfoMessage("Client connected");
 
         //new connections are unknown until they send a proper certificate
-        openConnections.put(((InetSocketAddress)session.getRemoteAddress()).getPort(), new SocketConnection(Certificate.UNKNOWN));
+        SocketConnection connection =  new SocketConnection(Certificate.UNKNOWN);
+        openConnections.put(((InetSocketAddress)session.getRemoteAddress()).getPort(), connection);
+
+        //Browsers now slow or interrupt JS timers, leading to the websockets keepalive failing. A server-side keepalive ping will qct as a fallback.
+        connection.startKeepAlive(session, (int)(session.getPolicy().getIdleTimeout().toSeconds() / 2));
     }
 
     @OnWebSocketClose

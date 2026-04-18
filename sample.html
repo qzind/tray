@@ -911,11 +911,68 @@
                                                 <label for="socketPort">Port</label>
                                                 <input type="number" id="socketPort" class="form-control pull-right" />
                                             </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="socketResponseFormat">Response</label>
+                                                <select id="socketResponseFormat" class="form-control pull-right">
+                                                    <option value="PLAIN">Plain Text</option>
+                                                    <option value="HEX">Hex</option>
+                                                    <option value="BASE64">Base64</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="socketDataFormat">Format</label>
+                                                <select id="socketDataFormat" class="form-control pull-right">
+                                                    <option value="PLAIN">Plain</option>
+                                                    <option value="HEX">Hex</option>
+                                                    <option value="BASE64">Base64</option>
+                                                </select>
+                                            </div>
+
+                                            <hr/>
+                                            <h5>Shtrih-M Toolset</h5>
+                                            <div class="form-group form-inline">
+                                                <label for="scalePassword">Password</label>
+                                                <input id="scalePassword" type="number" class="form-control pull-right" value="30" style="width: 100px;">
+                                            </div>
+                                            <div class="btn-group btn-group-justified" style="margin-bottom: 5px;">
+                                                <a class="btn btn-default" onclick="gudokShtrih();">Gudok (Beep)</a>
+                                                <a class="btn btn-default" onclick="statusShtrih();">Status</a>
+                                            </div>
+                                            <div class="btn-group btn-group-justified" style="margin-top: 5px;">
+                                                <a class="btn btn-info" onclick="weightShtrih();">Get Weight</a>
+                                                <a class="btn btn-primary" onclick="showUdpIntegration();">Integration Info</a>
+                                            </div>
+                                            <hr/>
+                                            <h5>Direct DB Ops (New API)</h5>
+                                            <div class="btn-group btn-group-justified" style="margin-bottom: 5px;">
+                                                <a class="btn btn-success" onclick="shtrihStatus();">Scale Status</a>
+                                                <a class="btn btn-warning" onclick="shtrihSync();">Sync PLU</a>
+                                            </div>
+                                            <div class="btn-group btn-group-justified">
+                                                <a class="btn btn-danger" onclick="shtrihClear();">Clear PLU</a>
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="socketProtocol">Protocol</label>
+                                                <select id="socketProtocol" class="form-control pull-right">
+                                                    <option value="tcp">TCP</option>
+                                                    <option value="udp">UDP</option>
+                                                </select>
+                                            </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group form-inline">
                                                 <label for="socketData">Data</label>
                                                 <input type="text" id="socketData" class="form-control pull-right" />
+                                            </div>
+
+                                            <div class="form-group form-inline">
+                                                <label for="socketLocalPort" class="tip" data-toggle="tooltip" title="UDP Only: Bind to a specific local port">
+                                                    Local Port
+                                                </label>
+                                                <input type="number" id="socketLocalPort" class="form-control pull-right" />
                                             </div>
                                         </div>
                                     </div>
@@ -2251,18 +2308,126 @@
 
     // Socket //
     function openSocket() {
-        qz.socket.open($("#socketHost").val(), $("#socketPort").val()).then(function() {
-            displayMessage("Socket opened");
+        var protocol = $("#socketProtocol").val();
+        var options = {
+             protocol: protocol,
+             localPort: $("#socketLocalPort").val(),
+             responseFormat: $("#socketResponseFormat").val()
+        };
+
+        qz.socket.open($("#socketHost").val(), $("#socketPort").val(), options).then(function() {
+            displayMessage("Socket opened (" + protocol.toUpperCase() + ")");
         }).catch(displayError);
     }
 
     function sendSocketData() {
-        qz.socket.sendData($("#socketHost").val(), $("#socketPort").val(), $("#socketData").val()).catch(displayError);
+        var data = $("#socketData").val();
+        var type = $("#socketDataFormat").val();
+        
+        // Auto-clean spaces for HEX
+        if (type === 'HEX') {
+            data = data.replace(/\s+/g, '');
+        }
+
+        qz.socket.sendData($("#socketHost").val(), $("#socketPort").val(), { data: data, type: type }).catch(displayError);
+    }
+
+    /* Shtrih-M Helpers */
+    function gudokShtrih() {
+        prepareShtrih();
+        sendShtrihPacket(0x13, []);
+    }
+
+    function statusShtrih() {
+        prepareShtrih();
+        sendShtrihPacket(0x11, getShtrihPasswordBytes());
+    }
+
+    function weightShtrih() {
+        prepareShtrih();
+        sendShtrihPacket(0x15, getShtrihPasswordBytes());
+    }
+
+    function prepareShtrih() {
+        $("#socketProtocol").val('udp');
+        $("#socketLocalPort").val('2000');
+        $("#socketPort").val('1213');
+        $("#socketDataFormat").val('HEX');
+        $("#socketResponseFormat").val('HEX');
+    }
+
+    function getShtrihPasswordBytes() {
+        var pwd = parseInt($("#scalePassword").val()) || 0;
+        return [pwd & 0xFF, (pwd >> 8) & 0xFF, (pwd >> 16) & 0xFF, (pwd >> 24) & 0xFF];
+    }
+
+    function sendShtrihPacket(cmd, dataBytes) {
+        var len = dataBytes.length + 1;
+        var packet = [len, cmd].concat(dataBytes);
+        var crc = 0;
+        for (var i = 0; i < packet.length; i++) { crc ^= packet[i]; }
+        var fullPacket = [0x02].concat(packet).concat([crc]);
+        var hexString = fullPacket.map(function(b) { return ("0" + b.toString(16)).slice(-2).toUpperCase(); }).join("");
+        $("#socketData").val(hexString);
+        displayMessage("Shtrih-M Packet: " + hexString);
+        qz.socket.sendData($("#socketHost").val(), $("#socketPort").val(), { data: hexString, type: 'HEX' }).catch(function(err) {
+            displayMessage("Opening socket first...");
+            openSocket();
+        });
+    }
+
+    function showUdpIntegration() {
+        var win = window.open('https://github.com/auzcoder/tray/blob/master/udp_integration.md', '_blank');
+        if (win) {
+            win.focus();
+        } else {
+            alert('https://github.com/auzcoder/tray/blob/master/udp_integration.md');
+        }
     }
 
     function closeSocket() {
         qz.socket.close($("#socketHost").val(), $("#socketPort").val()).then(function() {
             displayMessage("Socket closed");
+        }).catch(displayError);
+    }
+
+    function getShtrihConnection() {
+        return {
+            host: $("#socketHost").val(),
+            port: parseInt($("#socketPort").val()),
+            password: parseInt($("#scalePassword").val()),
+            local_port: 2000,
+            timeout_udp_ms: 600,
+            driver_timeout_ms: 150
+        };
+    }
+
+    function shtrihStatus() {
+        var params = getShtrihConnection();
+        displayMessage("Fetching Shtrih-M status...");
+        qz.websocket.send("shtrih.status", { params: params }).then(function(res) {
+            displayMessage("Shtrih-M Status: " + JSON.stringify(res.data, null, 2));
+        }).catch(displayError);
+    }
+
+    function shtrihSync() {
+        var params = getShtrihConnection();
+        params.products = [
+            { plu_code: 11223, product_name: "Sherin kolbasa", price: 60000.00 },
+            { plu_code: 11224, product_name: "Cheese", price: 45000.00 }
+        ];
+        displayMessage("Syncing PLUs to scale...");
+        qz.websocket.send("shtrih.syncProducts", { params: params }).then(function(res) {
+            displayMessage("Shtrih-M Sync: " + JSON.stringify(res.data, null, 2));
+        }).catch(displayError);
+    }
+
+    function shtrihClear() {
+        var params = getShtrihConnection();
+        params.products = [11223, 11224];
+        displayMessage("Clearing PLUs from scale...");
+        qz.websocket.send("shtrih.clearProducts", { params: params }).then(function(res) {
+            displayMessage("Shtrih-M Clear: " + JSON.stringify(res.data, null, 2));
         }).catch(displayError);
     }
 
@@ -2778,6 +2943,16 @@
         // M/T PS60 - 9600, 7, 1, EVEN, NONE
     }
 
+    function resetSocketOptions() {
+        $("#socketHost").val('localhost');
+        $("#socketPort").val('');
+        $("#socketProtocol").val('tcp');
+        $("#socketDataFormat").val('PLAIN');
+        $("#socketResponseFormat").val('PLAIN');
+        $("#socketData").val('');
+        $("#socketLocalPort").val('');
+    }
+
     function resetUsbOptions() {
         $("#usbVendor").val('');
         $("#usbProduct").val('');
@@ -2867,6 +3042,7 @@
         resetUsbOptions();
         resetHidOptions();
         resetFileOptions();
+        resetSocketOptions();
         resetPrinterStatusOptions();
         updateRawButtons();
 

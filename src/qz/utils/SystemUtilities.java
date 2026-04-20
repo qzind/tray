@@ -331,7 +331,7 @@ public class SystemUtilities {
             log.warn("Could not parse Java version \"{}\"", version, e);
         }
 
-        Version javaVer = pre.trim().isEmpty() ?
+        Version javaVer = pre.isBlank() ?
                 Version.of(major, minor, patch) :
                 Version.of(major, minor, patch, pre);
 

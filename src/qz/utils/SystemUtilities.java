@@ -328,7 +328,7 @@ public class SystemUtilities {
                     }
             }
         } catch(NumberFormatException e) {
-            log.warn("Could not parse Java version \"{}\"", version,  e);
+            log.warn("Could not parse Java version \"{}\"", version, e);
         }
 
         Version javaVer = pre.trim().isEmpty() ?

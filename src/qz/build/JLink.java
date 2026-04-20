@@ -36,7 +36,7 @@ import java.util.*;
 public class JLink {
     private static final Logger log = LogManager.getLogger(JLink.class);
     public static final Vendor JAVA_DEFAULT_VENDOR = Vendor.BELLSOFT;
-    private static final String JAVA_DEFAULT_VERSION = "11.0.17+7";
+    public static final String JAVA_DEFAULT_VERSION = "11.0.17+7";
     private static final String JAVA_DEFAULT_GC_ENGINE = "hotspot"; // or "openj9"
     private static final String JAVA_DEFAULT_GC_VERSION = "0.35.0"; // openj9 gc only
 

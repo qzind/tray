@@ -219,7 +219,7 @@ public class SystemUtilities {
     public static int getProcessId() {
         if(pid == null) {
             // Try Java 9+
-            if(Constants.JAVA_VERSION.getMajorVersion() >= 9) {
+            if(Constants.JAVA_VERSION.majorVersion() >= 9) {
                 pid = getProcessIdJigsaw();
             }
             // Try JNA
@@ -251,12 +251,62 @@ public class SystemUtilities {
      * To eventually be replaced with <code>java.lang.Runtime.Version</code> (JDK9+)
      */
     public static Version getJavaVersion(String version) {
+        // Try to find the "(build 11.0.27+0)" line
+        String buildMatch = "(build";
+        if(version.contains("\n")) {
+            String[] lines = version.split("\n");
+            for(String line : lines) {
+                int buildLoc = line.indexOf(buildMatch);
+                if(buildLoc != -1) {
+                    version = line.substring(buildLoc + buildMatch.length() , line.length() -1);
+                    break;
+                }
+            }
+        }
+        // Chomp off leading "openjdk", etc
+        int i;
+        for(i = 0; i < version.length() - 1; i++) {
+            if(ByteUtilities.isNumber(version.substring(i, i+1))) {
+                version = version.substring(i).trim();
+                break;
+            }
+        }
+        // Chomp off any trailing data
+        if(version.contains(" ")) {
+            version = version.split(" ", 2)[0];
+        }
+        // Chomp off "-LTS"
+        if(version.endsWith("-LTS")) {
+            version = version.substring(0, version.length() - 4);
+        }
+
+        String pre = "";
+        String meta = "";
+
+        // Get build info
+        if(version.startsWith("1.") && version.contains("_")) {
+            // handle old "1.8.0_231-b11" format
+            String[] split = version.split("_", 2);
+            version = split[0];
+            meta = split[1].trim();
+            if(meta.contains("-")) {
+                // chomp off "-b11"
+                meta = meta.split("-", 2)[0];
+            }
+        } else if(version.contains("+")) {
+            String[] split = version.split("\\+", 2);
+            version = split[0];
+            meta = split[1].trim();
+        } else if(version.contains("-")) {
+            String[] split = version.split("-");
+            version = split[0];
+            pre = split[1].trim();
+        }
         String[] parts = version.trim().split("\\D+");
 
         int major = 1;
         int minor = 0;
         int patch = 0;
-        String meta = "";
 
         try {
             switch(parts.length) {
@@ -278,13 +328,17 @@ public class SystemUtilities {
                     }
             }
         } catch(NumberFormatException e) {
-            log.warn("Could not parse Java version \"{}\"", version, e);
+            log.warn("Could not parse Java version \"{}\"", version,  e);
         }
-        if(meta.trim().isEmpty()) {
-            return Version.of(major, minor, patch);
-        } else {
-            return Version.of(major, minor, patch, null, meta);
+
+        Version javaVer = pre.trim().isEmpty() ?
+                Version.of(major, minor, patch) :
+                Version.of(major, minor, patch, pre);
+
+        if(!meta.isBlank()) {
+            javaVer = javaVer.withBuildMetadata(meta);
         }
+        return javaVer;
     }
 
     /**

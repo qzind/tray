@@ -54,6 +54,7 @@ public class JLink {
     private String gcEngine;
     private String javaVersion;
     private String gcVersion;
+    private boolean apiEnabled;
 
     private Path targetJdk;
 
@@ -71,6 +72,9 @@ public class JLink {
         this.gcEngine = getParam("gcEngine", gcEngine, JAVA_DEFAULT_GC_ENGINE);
         this.javaVersion = getParam("javaVersion", javaVersion, JAVA_DEFAULT_VERSION);
         this.gcVersion = getParam("gcVersion", gcVersion, JAVA_DEFAULT_GC_VERSION);
+
+        // Check to see if we should use an API download
+        this.apiEnabled = Boolean.parseBoolean(System.getProperty("jlink.api.enabled"));
 
         this.javaSemver = SystemUtilities.getJavaVersion(this.javaVersion);
 
@@ -130,7 +134,11 @@ public class JLink {
     /**
      * Handle incompatibilities between JDKs, download a fresh one if needed
      */
-    private static boolean needsDownload(Version want, Version installed) {
+    private boolean needsDownload(Version want, Version installed) {
+        if(apiEnabled) {
+            // always assume api downloads differ from the local version
+            return true;
+        }
         // jdeps and jlink historically require matching major JDK versions.  Download if needed.
         boolean downloadJdk = installed.getMajorVersion() != want.getMajorVersion();
 
@@ -171,14 +179,12 @@ public class JLink {
      */
     private Pair<URL,Version> getApiUrl(Arch arch, Platform platform, HashMap<String,String> headers) throws IOException {
         String apiUrl = System.getProperty("jlink.api.url");
-        String wantsNewest = System.getProperty("jlink.api.newest"); // defaults to true
+        boolean exact = Boolean.parseBoolean(System.getProperty("jlink.api.exact")); // defaults to false
 
         Version bestVersion = Version.of(0);
         URL bestUrl = null;
 
         if(apiUrl != null) {
-            // assume we always want the newest build
-            boolean newest = wantsNewest == null || wantsNewest.isBlank() || Boolean.parseBoolean(wantsNewest);
             // e.g. product-info-bell-soft-12345.json
             String hostString = new URL(apiUrl).getHost().replaceAll("\\.", "-");
             long hoursSinceEpoch = System.currentTimeMillis() / 3600000;
@@ -198,14 +204,20 @@ public class JLink {
                 for(int i = 0; i < jsonArray.length(); i++) {
                     if(jsonArray.get(i) instanceof JSONObject) {
                         JSONObject entry = jsonArray.getJSONObject(i);
-                        if(!entry.optString("packageType", "").equals("zip") ||
+                        if((!entry.optString("packageType", "").equals("zip") &&
+                                !entry.optString("packageType", "").equals("tar.gz")) ||
                                 !entry.optString("bundleType", "").equals("jdk")) {
                             continue;
                         }
 
                         String versionFound = entry.optString("version");
                         String downloadUrl = entry.optString("downloadUrl");
-                        if(newest) {
+                        if(exact) {
+                            if (javaVersion.equals(versionFound)) {
+                                bestVersion = SystemUtilities.getJavaVersion(versionFound);
+                                bestUrl = new URL(downloadUrl);
+                            }
+                        } else {
                             if (versionFound != null) {
                                 Version foundVersion = SystemUtilities.getJavaVersion(versionFound);
                                 if (foundVersion.isHigherThan(bestVersion)) {
@@ -221,11 +233,6 @@ public class JLink {
                                     }
                                 }
                             }
-                        } else {
-                            if(javaVersion.equals(versionFound)) {
-                                bestVersion = SystemUtilities.getJavaVersion(versionFound);
-                                bestUrl = new URL(downloadUrl);
-                            }
                         }
                     } else {
                         log.warn("Entry {} is not a JSONObject", i);
@@ -233,7 +240,7 @@ public class JLink {
                 }
             }
             catch(JSONException e) {
-                throw new IOException("Error parsing download file", e);
+                throw new IOException("Error parsing download file as JSON", e);
             }
         }
         return new Pair<>(bestUrl, bestVersion);
@@ -245,18 +252,16 @@ public class JLink {
     private String downloadJdk(Arch arch, Platform platform) throws IOException {
         String url = new Url(this.javaVendor).format(arch, platform, this.gcEngine, this.javaSemver, this.javaVersion, this.gcVersion);
 
-        // Check to see if we should use an API download
-        HashMap<String, String> apiHeaders = getApiHeaders();
-        Pair<URL,Version> apiPair = getApiUrl(arch, platform, apiHeaders);
-        if(apiPair.getKey() != null) {
-            log.info("Using Java '{} from '{}' since an API url was provided", apiPair.getValue(), apiPair.getKey());
+        if (apiEnabled) {
+            Pair<URL,Version> apiPair = getApiUrl(arch, platform, getApiHeaders());
+            log.info("Using Java '{}' from '{}' since an 'jlink.api.enabled={}' was provided", apiPair.getValue(), apiPair.getKey(), apiEnabled);
             url = apiPair.getKey().toString();
             javaSemver = apiPair.getValue();
         }
 
         // Saves to out e.g. "out/jlink/jdk-AdoptOpenjdk-amd64-platform-11_0_7"
         String resourceName = String.format("jlink/jdk%s-%s-%s-%s-%s",
-                                            apiPair.getKey() == null ? "" : "-api",
+                                            apiEnabled ? "-api" : "",
                                             javaVendor.value(),
                                             arch,
                                             platform.value(),
@@ -268,7 +273,11 @@ public class JLink {
                 .uncompress();
 
         // Get first subfolder, e.g. jdk-11.0.7+10
-        for(File subfolder : new File(extractedJdk).listFiles(pathname -> pathname.isDirectory())) {
+        File[] subFolders  = new File(extractedJdk).listFiles(File::isDirectory);
+        if(subFolders == null) {
+            throw new IOException(String.format("Error locating a suitable JDK: Unable to list files for '%s'", extractedJdk));
+        }
+        for(File subfolder : subFolders) {
             extractedJdk = subfolder.getPath();
             if(platform == Platform.MAC && Paths.get(extractedJdk, "/Contents/Home").toFile().isDirectory()) {
                 extractedJdk += "/Contents/Home";

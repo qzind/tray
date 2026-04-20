@@ -22,12 +22,12 @@
     </target>
 
     <target name="clean" depends="init">
-        <delete dir="${out.dir}" includeemptydirs="true" defaultexcludes="false"/>
+        <delete dir="${out.dir}" includeemptydirs="true" defaultexcludes="false" followSymlinks="false" removeNotFollowedSymlinks="true"/>
     </target>
 
     <target name="quick-clean">
         <!-- Cleanup lingering files (for other OS installers) -->
-        <delete includeemptydirs="true" defaultexcludes="false" failonerror="false">
+        <delete includeemptydirs="true" defaultexcludes="false" failonerror="false" followSymlinks="false" removeNotFollowedSymlinks="true">
             <fileset dir="${out.dir}">
                 <include name="**/**"/>
                 <exclude name="**/jlink/jdk-**/**"/>
@@ -90,6 +90,11 @@
             <classpath refid="main.classpath"/>
             <compilerarg value="-Xlint:-options"/>
         </javac>
+
+        <!-- Include any non-source files -->
+        <copy todir="${build.dir}/test">
+            <fileset dir="${test.dir}" excludes="**/*.java"/>
+        </copy>
 
         <path id="tests.classpath">
             <path refid="testng.classpath"/>
@@ -340,8 +345,9 @@
     <target name="makeself" depends="get-target-arch,target-os-linux,distribute,provision,download-jre,build-run"/>
 
     <target name="testng" depends="compile-tests">
-        <testng listeners="qz.testng.ConciseSkipListener" classpathref="tests.classpath" haltOnFailure="true" verbose="2">
-            <classfileset dir="${build.dir}/test" includes="**"/>
+        <property description="Pattern for TestNG classes" name="testng.pattern" value="**"/>
+        <testng listeners="qz.testng.ConciseSkipListener" classpathref="tests.classpath" haltOnFailure="true" verbose="2" outputdir="${out.dir}/test-output">
+            <classfileset dir="${build.dir}/test" includes="${testng.pattern}"/>
         </testng>
     </target>
 </project>

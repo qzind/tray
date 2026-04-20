@@ -29,9 +29,6 @@ public abstract class NativeCertificateInstaller {
     private static final Logger log = LogManager.getLogger(NativeCertificateInstaller.class);
     protected static NativeCertificateInstaller instance;
 
-    public static NativeCertificateInstaller getInstance() {
-        return getInstance(SystemUtilities.isAdmin() ? Installer.PrivilegeLevel.SYSTEM : Installer.PrivilegeLevel.USER);
-    }
     public static NativeCertificateInstaller getInstance(Installer.PrivilegeLevel type) {
         if (instance == null) {
             switch(SystemUtilities.getOs()) {

@@ -593,6 +593,11 @@
                                                     </label>
                                                     <input type="number" step="any" id="pxlSizeHeight" class="form-control pull-right" />
                                                 </div>
+
+                                                <div class="form-group form-inline">
+                                                    <label for="pxlSizeForce">&nbsp; As Custom Size</label>
+                                                    <input type="checkbox" id="pxlSizeForce" class="pull-right" />
+                                                </div>
                                             </div>
 
                                             <div class="form-group">
@@ -2719,6 +2724,7 @@
 
         $("#pxlSizeWidth").val('');
         $("#pxlSizeHeight").val('');
+        $("#pxlSizeForce").prop('checked', false);
         $("#pxlSizeActive").prop('checked', false);
         $("#pxlSizeGroup").css('display', 'none');
 
@@ -2869,6 +2875,13 @@
         $("#printerSearch").on('keyup', function(e) {
             if (e.which == 13 || e.keyCode == 13) {
                 findPrinter($('#printerSearch').val(), true);
+                return false;
+            }
+        });
+
+        $("#connectionHost").on('keyup', function(e) {
+            if (e.which == 13 || e.keyCode == 13) {
+                startConnection();
                 return false;
             }
         });
@@ -3280,7 +3293,8 @@
         if (isChecked($("#pxlSizeActive"), cleanConditions['pxlSizeActive']) && (($("#pxlSizeWidth").val() !== '') || ($("#pxlSizeHeight").val() !== ''))) {
             pxlSize = {
                 width: $("#pxlSizeWidth").val(),
-                height: $("#pxlSizeHeight").val()
+                height: $("#pxlSizeHeight").val(),
+                custom: $("#pxlSizeForce").prop('checked')
             };
         }
 
@@ -3474,7 +3488,7 @@
             // Ensure we're on the right tab
             stayOnTab = true;
         }
-        
+
         var setupDropButton = function(format, name, data, stayOnTab) {
             var tabHref;
             var buttonId;
@@ -3489,7 +3503,7 @@
                     buttonId = "#rawDropBtn"
                     tabHref = "#rawContent";
             }
-            
+
             var button = $(buttonId);
             if(stayOnTab) {
                 // File upload button can't change tabs
@@ -3517,7 +3531,7 @@
 
         if (file) {
             console.log("Dropped file:", file);
-            getBase64(file).then(function(base64) { 
+            getBase64(file).then(function(base64) {
                 var name = file.name;
                 var extension = name.substring(name.lastIndexOf('.') + 1, name.length) || '';
                 switch(extension.toLowerCase()) {
@@ -3539,7 +3553,7 @@
                     default:
                         setupDropButton("command", name, base64, stayOnTab);
                 }
-            }).catch(displayError); 
+            }).catch(displayError);
         }
     }
 

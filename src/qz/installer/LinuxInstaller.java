@@ -27,8 +27,6 @@ public class LinuxInstaller extends Installer {
     public static final String SYSTEM_APP_LAUNCHER = APP_DIR;
     public static final String USER_APP_LAUNCHER = "%s/.local/share/applications";
     public static final String UDEV_RULES = "/lib/udev/rules.d/99-udev-override.rules";
-    public static final String[] CHROME_POLICY_DIRS = {"/etc/chromium/policies/managed", "/etc/opt/chrome/policies/managed" };
-    public static final String CHROME_POLICY = "{ \"URLAllowlist\": [\"" + DATA_DIR + "://*\"] }";
 
     private String destination = "/opt/" + PROPS_FILE;
     private String sudoer;
@@ -69,10 +67,10 @@ public class LinuxInstaller extends Installer {
 
         File launcher = new File(location);
         try {
-            launcher.getParentFile().mkdirs();
-            FileUtilities.configureAssetFile("assets/linux-shortcut.desktop.in", launcher, fieldMap, LinuxInstaller.class);
-            launcher.setReadable(true, ownerOnly);
-            launcher.setExecutable(true, ownerOnly);
+            FileUtilities.configureAssetToFile(LinuxInstaller.class, "assets/linux-shortcut.desktop.in", fieldMap, launcher);
+            if (!launcher.setReadable(true, ownerOnly) || !launcher.setExecutable(true, ownerOnly)) {
+                throw new IOException("Unable to change permissions for launcher");
+            }
         } catch(IOException e) {
             log.warn("Unable to write {} file: {}", isStartup ? "startup":"launcher", location, e);
         }
@@ -119,38 +117,19 @@ public class LinuxInstaller extends Installer {
             }
         }
 
-        // Chrome protocol handler
-        for (String policyDir : CHROME_POLICY_DIRS) {
-            log.info("Installing chrome protocol handler {}/{}...", policyDir, PROPS_FILE + ".json");
-            try {
-                FileUtilities.setPermissionsParentally(Files.createDirectories(Paths.get(policyDir)), false);
-            } catch(IOException e) {
-                log.warn("An error occurred creating {}", policyDir);
-            }
-
-            Path policy = Paths.get(policyDir, PROPS_FILE + ".json");
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(policy.toFile()))){
-                writer.write(CHROME_POLICY);
-                policy.toFile().setReadable(true, false);
-            }
-            catch(IOException e) {
-                log.warn("Unable to write chrome policy: {} ({}:launch will fail)", policy, DATA_DIR);
-            }
-
-        }
-
         // USB permissions
+        File udev = new File(UDEV_RULES);
         try {
-            File udev = new File(UDEV_RULES);
-            if (udev.exists()) {
-                udev.delete();
-            }
-            FileUtilities.configureAssetFile("assets/linux-udev.rules.in", new File(UDEV_RULES), new HashMap<>(), LinuxInstaller.class);
+            FileUtilities.configureAssetToFile(LinuxInstaller.class, "assets/linux-udev.rules.in", new HashMap<>(), udev);
             // udev rules should be -rw-r--r--
-            udev.setReadable(true, false);
-            ShellUtilities.execute("udevadm", "control", "--reload-rules");
+            if(!udev.setReadable(true, false)) {
+                throw new IOException(String.format("Can't set '%s' readable", udev));
+            }
+            if(!ShellUtilities.execute("udevadm", "control", "--reload-rules")) {
+                throw new IOException("Can't reload udevadm, USB support may not work until a reboot");
+            }
         } catch(IOException e) {
-            log.warn("Could not install udev rules, usb support may fail {}", UDEV_RULES, e);
+            log.warn("Could not install udev rules, error creating '{}', USB support may fail", udev, e);
         }
 
         // Cleanup incorrectly placed files
@@ -182,13 +161,6 @@ public class LinuxInstaller extends Installer {
     }
 
     public Installer removeSystemSettings() {
-        // Chrome protocol handler
-        for (String policyDir : CHROME_POLICY_DIRS) {
-            log.info("Removing chrome protocol handler {}/{}...", policyDir, PROPS_FILE + ".json");
-            Path policy = Paths.get(policyDir, PROPS_FILE + ".json");
-            policy.toFile().delete();
-        }
-
         // USB permissions
         File udev = new File(UDEV_RULES);
         if (udev.exists()) {
@@ -198,47 +170,34 @@ public class LinuxInstaller extends Installer {
     }
 
     // Environmental variables for spawning a task using sudo. Order is important.
-    static String[] SUDO_EXPORTS = {"USER", "HOME", "UPSTART_SESSION", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "XDG_CURRENT_DESKTOP", "GNOME_DESKTOP_SESSION_ID" };
+    static String[] SUDO_EXPORTS = {"USER", "HOME", "UPSTART_SESSION", "DISPLAY", "DBUS_SESSION_BUS_ADDRESS", "XDG_CURRENT_DESKTOP", "GNOME_DESKTOP_SESSION_ID", "WAYLAND_DISPLAY", "XDG_RUNTIME_DIR" };
 
     /**
      * Spawns the process as the underlying regular user account, preserving the environment
      */
     public void spawn(List<String> args) throws Exception {
+        ArrayList<String> argsList;
         if(!SystemUtilities.isAdmin()) {
-            // Not admin, just run as the existing user
-            spawnProcess(args.toArray(new String[0]));
-            return;
+            argsList = new ArrayList<>(args);
+            argsList.add(0, "nohup");
+        } else {
+            // Concat "sudo|su", sudoer, "nohup", args
+            argsList = sudoCommand(sudoer, args);
         }
-
-        // Get user's environment from dbus, etc
-        HashMap<String, String> env = getUserEnv(sudoer);
-        if(env.size() == 0) {
-            throw new Exception("Unable to get dbus info; can't spawn instance");
-        }
-
-        // Prepare the environment
-        String[] envp = new String[env.size() + ShellUtilities.envp.length];
-        int i = 0;
-        // Keep existing env
-        for(String keep : ShellUtilities.envp) {
-            envp[i++] = keep;
-        }
-        for(String key :env.keySet()) {
-            envp[i++] = String.format("%s=%s", key, env.get(key));
-        }
-
-        // Concat "sudo|su", sudoer, "nohup", args
-        ArrayList<String> argsList = sudoCommand(sudoer, true, args);
 
         // Spawn
         log.info("Executing: {}", Arrays.toString(argsList.toArray()));
-        Runtime.getRuntime().exec(argsList.toArray(new String[argsList.size()]), envp);
+        super.startProcess(argsList);
     }
 
     /**
      * Constructs a command to help running as another user using "sudo" or "su"
+     * <p>
+     * Note: sudo has a bug with "-E" that prevents passing environment variables
+     * so they must be passed on the command line
+     * </p>
      */
-    public static ArrayList<String> sudoCommand(String sudoer, boolean async, List<String> cmds) {
+    public static ArrayList<String> sudoCommand(String sudoer, List<String> cmds) {
         ArrayList<String> sudo = new ArrayList<>();
         if(StringUtils.isEmpty(sudoer) || !userExists(sudoer)) {
             throw new UnsupportedOperationException(String.format("Parameter [sudoer: %s] is empty or the provided user was not found", sudoer));
@@ -249,15 +208,19 @@ public class LinuxInstaller extends Installer {
             log.info("Guessing that this system prefers \"sudo\" over \"su\".");
             sudo.add("sudo");
 
+            // Get user's environment from dbus, etc
+            getUserEnv(sudoer).forEach((key, value) -> {
+                if (value != null && !value.isBlank()) {
+                    sudo.add(String.format("%s=%s", key, value));
+                }
+            });
+
             // Add calling user
-            sudo.add("-E"); // preserve environment
             sudo.add("-u");
             sudo.add(sudoer);
 
-            // Add "background" task support
-            if(async) {
-                sudo.add("nohup");
-            }
+            // Let the process outlive its parent
+            sudo.add("nohup");
             if(cmds != null && cmds.size() > 0) {
                 // Add additional commands
                 sudo.addAll(cmds);
@@ -265,6 +228,10 @@ public class LinuxInstaller extends Installer {
         } else {
             // Build and escape for "su"
             log.info("Guessing that this system prefers \"su\" over \"sudo\".");
+
+            // su passes as one large command wrap in single-quotes
+            cmds.replaceAll(s -> String.format("'%s'", s));
+
             sudo.add("su");
 
             // Add calling user
@@ -272,14 +239,19 @@ public class LinuxInstaller extends Installer {
 
             sudo.add("-c");
 
-            // Add "background" task support
-            if(async) {
-                sudo.add("nohup");
-            }
-            if(cmds != null && cmds.size() > 0) {
-                // Add additional commands
-                sudo.addAll(Arrays.asList(StringUtils.join(cmds, "\" \"") + "\""));
-            }
+            // Let the process outlive its parent
+            cmds.add(0, "nohup");
+
+            // Get user's environment from dbus, etc
+            getUserEnv(sudoer).forEach((key, value) -> {
+                if (value != null && !value.isBlank()) {
+                    cmds.add(0, String.format("%s='%s'", key, value));
+                }
+            });
+
+
+            // Add additional commands
+            sudo.add(StringUtils.join(cmds, " "));
         }
         return sudo;
     }
@@ -315,7 +287,7 @@ public class LinuxInstaller extends Installer {
            throw new UnsupportedOperationException("Administrative access is required");
         }
 
-        String[] dbusMatches = { "ibus-daemon.*--panel", "dbus-daemon.*--config-file="};
+        String[] dbusMatches = { "ibus-daemon.*--panel", "dbus-daemon.*--config-file=", "dbus-broker.*--config-file="};
 
         ArrayList<String> pids = new ArrayList<>();
         for(String dbusMatch : dbusMatches) {

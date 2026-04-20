@@ -20,19 +20,20 @@ import org.bouncycastle.util.encoders.Base64;
 import qz.auth.X509Constants;
 import qz.common.Constants;
 import qz.installer.Installer;
-import qz.utils.ByteUtilities;
-import qz.utils.ShellUtilities;
-import qz.utils.SystemUtilities;
-import qz.utils.UnixUtilities;
+import qz.installer.apps.locator.AppFamily;
+import qz.utils.*;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.nio.file.Path;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 
 import static qz.installer.Installer.PrivilegeLevel.*;
 
@@ -44,8 +45,9 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     private static final String CA_CERTIFICATES = "/usr/local/share/ca-certificates/";
     private static final String CA_CERTIFICATE_NAME = Constants.PROPS_FILE + "-root.crt"; // e.g. qz-tray-root.crt
     private static final String PK11_KIT_ID = "pkcs11:id=";
+    private static final String FIREFOX_FLATPAK_PROFILE_PATTERN = "%s/.var/app/%s/config/%s/%s/profiles.ini";
 
-    private static String[] NSSDB_URLS = {
+    private static final List<String> NSSDB_URLS = new ArrayList<>(List.of(new String[]{
             // Conventional cert store
             "sql:" + System.getenv("HOME") + "/.pki/nssdb/",
 
@@ -54,29 +56,34 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
             "sql:" + System.getenv("HOME") + "/snap/brave/current/.pki/nssdb/",
             "sql:" + System.getenv("HOME") + "/snap/opera/current/.pki/nssdb/",
             "sql:" + System.getenv("HOME") + "/snap/opera-beta/current/.pki/nssdb/"
-    };
+    }));
 
-    private Installer.PrivilegeLevel certType;
+    static {
+        // Add any found flatpack nssdb locations
+        NSSDB_URLS.addAll(findFirefoxFlatpackUrls());
+    }
 
-    public LinuxCertificateInstaller(Installer.PrivilegeLevel certType) {
-        setInstallType(certType);
+    private Installer.PrivilegeLevel scope;
+
+    public LinuxCertificateInstaller(Installer.PrivilegeLevel scope) {
+        setInstallType(scope);
         findCertutil();
     }
 
     public Installer.PrivilegeLevel getInstallType() {
-        return certType;
+        return scope;
     }
 
     public void setInstallType(Installer.PrivilegeLevel certType) {
-        this.certType = certType;
-        if (this.certType == SYSTEM) {
+        this.scope = certType;
+        if (this.scope == SYSTEM) {
             log.warn("Command \"certutil\" (required for certain browsers) needs to run as USER.  We'll try again on launch.");
         }
     }
 
     public boolean remove(List<String> idList) {
         boolean success = true;
-        if(certType == SYSTEM) {
+        if(scope == SYSTEM) {
             boolean first = distrustUsingUpdateCaCertificates(idList);
             boolean second = distrustUsingTrustAnchor(idList);
             success = first || second;
@@ -92,7 +99,7 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
 
     public List<String> find() {
         ArrayList<String> nicknames = new ArrayList<>();
-        if(certType == SYSTEM) {
+        if(scope == SYSTEM) {
             nicknames = findUsingTrustAnchor();
             nicknames.addAll(findUsingUsingUpdateCaCert());
         } else {
@@ -122,13 +129,13 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     public boolean add(File certFile) {
         boolean success = true;
 
-        if(certType == SYSTEM) {
+        if(scope == SYSTEM) {
             // Attempt two common methods for installing the SSL certificate
             File systemCertFile;
             boolean first = (systemCertFile = trustUsingUpdateCaCertificates(certFile)) != null;
             boolean second = trustUsingTrustAnchor(systemCertFile, certFile);
             success = first || second;
-        } else if(certType == USER) {
+        } else if(scope == USER) {
             // Install certificate to local profile using "certutil"
             for(String nssdb : NSSDB_URLS) {
                 String[] parts = nssdb.split(":", 2);
@@ -148,10 +155,11 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
         return success;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     private boolean findCertutil() {
         boolean installed = ShellUtilities.execute("which", "certutil");
         if (!installed) {
-            if (certType == SYSTEM && promptCertutil()) {
+            if (scope == SYSTEM && promptCertutil()) {
                 if(UnixUtilities.isUbuntu() || UnixUtilities.isDebian()) {
                     installed = ShellUtilities.execute("apt-get", "install", "-y", "libnss3-tools");
                 } else if(UnixUtilities.isFedora()) {
@@ -179,10 +187,10 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
 
     /**
      * Common technique for installing system-wide certificates on Debian-based systems (Ubuntu, etc.)
-     *
+     * <p>
      * This technique is only known to work for select browsers, such as Epiphany.  Browsers such as
      * Firefox and Chromium require different techniques.
-     *
+     * </p>
      * @return Full path to the destination file if successful, otherwise <code>null</code>
      */
     private File trustUsingUpdateCaCertificates(File certFile) {
@@ -215,9 +223,8 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     }
 
     /**
-     * Common technique for installing system-wide certificates on Fedora-based systems
-     *
-     * Uses first existing non-null file provided
+     * Common technique for installing system-wide certificates on Fedora-based systems.
+     * Uses first existing non-null file provided.
      */
     private boolean trustUsingTrustAnchor(File ... certFiles) {
         if (hasTrustAnchorCommand()) {
@@ -296,15 +303,68 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
     }
 
     /**
+     * Gets a list of Firefox-like profiles on this system created using Flatpak which needs
+     * a certificate installed in user-space
+     */
+    private static HashSet<String> findFirefoxFlatpackUrls() {
+        String homeDir = System.getenv("HOME");
+        HashSet<String> databases = new HashSet<>();
+
+        for(AppFamily.AppVariant variant : AppFamily.FIREFOX.getVariants()) {
+            // "~/.var/app/org.mozilla.firefox/config/mozilla/firefox/profiles.ini"
+            String profilesPath = String.format(FIREFOX_FLATPAK_PROFILE_PATTERN,
+                                                homeDir,
+                                                variant.getBundleId(),
+                                                variant.getVendor(true),
+                                                variant.getSlug());
+
+            File profilesIni = new File(profilesPath);
+            if(profilesIni.exists()) {
+                File db = findDefaultProfile(profilesIni);
+                if(db != null) {
+                    databases.add(String.format("sql:%s/", db.getPath()));
+                }
+            }
+        }
+
+        return databases;
+    }
+
+    public static File findDefaultProfile(File profilesIni) {
+        try {
+            String allContent = FileUtilities.readLocalFile(profilesIni.toPath());
+            for(String section : allContent.split("(?m)^(?=\\[.*])")) {
+                Properties p = new Properties();
+                p.load(new StringReader(section));
+                String defaultProfile = p.getProperty("Default");
+                if (defaultProfile != null && !"1".equals(defaultProfile)) { // "1" was for older FF versions
+                    // TODO: Add special handling for non-relative profiles "IsRelative=0"
+                    Path profilePath = profilesIni.getParentFile().toPath().resolve(defaultProfile);
+                    File profileFile = profilePath.toFile();
+                    if (profileFile.exists() && profileFile.isDirectory()) {
+                        return profileFile;
+                    }
+                }
+            }
+        } catch(IOException e) {
+            log.warn("An error occurred parsing the ini file '{}'", profilesIni);
+        }
+        return null;
+    }
+
+    /**
      * Find QZ installed certificates in the "trust anchor" by searching by email.
-     *
+     * <p>
      * The "trust" utility identifies certificates as URIs:
      * Example:
-     *    pkcs11:id=%7C%5D%02%84%13%D4%CC%8A%9B%81%CE%17%1C%2E%29%1E%9C%48%63%42;type=cert
+     *    <code>pkcs11:id=%7C%5D%02%84%13%D4%CC%8A%9B%81%CE%17%1C%2E%29%1E%9C%48%63%42;type=cert</code>
      *    ... which is an encoded version of the cert's SubjectKeyIdentifier field
      * To identify a match:
-     *    1. Extract all trusted certificates and look for a familiar email address
-     *    2. If found, construct and store a "trust" compatible URI as the nickname
+     * <ol>
+     *   <li> Extract all trusted certificates and look for a familiar email address</li>
+     *   <li> If found, construct and store a "trust" compatible URI as the nickname</li>
+     * </ol>
+     * </p>
      */
     private ArrayList<String> findUsingTrustAnchor() {
         ArrayList<String> uris = new ArrayList<>();
@@ -313,7 +373,10 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
             // Temporary location for system certificates
             tempFile = File.createTempFile("trust-extract-for-qz-", ".pem");
             // Delete before use: "trust extract" requires an empty file
-            tempFile.delete();
+            if(!tempFile.delete()) {
+                log.warn("Cannot delete temp file '{}' before writing", tempFile);
+                return uris;
+            }
             if(ShellUtilities.execute("trust", "extract", "--format", "pem-bundle", tempFile.getPath())) {
                 BufferedReader reader = new BufferedReader(new FileReader(tempFile));
                 String line;

@@ -15,8 +15,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
 import qz.build.provision.params.Phase;
+import qz.installer.apps.firefox.FirefoxCertificateInstaller;
+import qz.installer.apps.locator.ResolvedApp;
+import qz.installer.apps.locator.AppLocator;
+import qz.installer.apps.policy.PolicyState;
+import qz.installer.apps.policy.PolicyInstaller;
 import qz.installer.certificate.*;
-import qz.installer.certificate.firefox.FirefoxCertificateInstaller;
 import qz.installer.provision.ProvisionInstaller;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
@@ -28,6 +32,7 @@ import java.security.cert.X509Certificate;
 import java.util.*;
 
 import static qz.common.Constants.*;
+import static qz.installer.apps.locator.AppFamily.*;
 import static qz.installer.certificate.KeyPairWrapper.Type.CA;
 import static qz.utils.FileUtilities.*;
 
@@ -43,6 +48,8 @@ public abstract class Installer {
     public static boolean IS_SILENT =  "1".equals(System.getenv(DATA_DIR + "_silent"));
     public static String JRE_LOCATION = SystemUtilities.isMac() ? "Contents/PlugIns/Java.runtime/Contents/Home" : "runtime";
 
+    private final PrivilegeLevel scope;
+    private final boolean ownerOnly;
     WebsocketPorts websocketPorts;
 
     public enum PrivilegeLevel {
@@ -53,6 +60,7 @@ public abstract class Installer {
     public abstract Installer removeLegacyStartup();
     public abstract Installer addAppLauncher();
     public abstract Installer addStartupEntry();
+    @SuppressWarnings("UnusedReturnValue")
     public abstract Installer addSystemSettings();
     public abstract Installer removeSystemSettings();
     public abstract void spawn(List<String> args) throws Exception;
@@ -61,6 +69,11 @@ public abstract class Installer {
     public abstract String getDestination();
 
     private static Installer instance;
+
+    public Installer() {
+        scope = SystemUtilities.isAdmin() ? PrivilegeLevel.SYSTEM : PrivilegeLevel.USER;
+        ownerOnly = isOwnerOnly(scope);
+    }
 
     public static Installer getInstance() {
         if(instance == null) {
@@ -76,6 +89,10 @@ public abstract class Installer {
             }
         }
         return instance;
+    }
+
+    public PrivilegeLevel getScope() {
+        return scope;
     }
 
     public static void install(String destination, boolean silent) throws Exception {
@@ -137,10 +154,10 @@ public abstract class Installer {
         // Fix permissions for provisioned files
         FileUtilities.setExecutableRecursively(SystemUtilities.isMac() ?
                                                        dest.resolve("Contents/Resources").resolve(PROVISION_DIR) :
-                                                       dest.resolve(PROVISION_DIR), false);
+                                                       dest.resolve(PROVISION_DIR), ownerOnly);
         if(!SystemUtilities.isWindows()) {
-            setExecutable(SystemUtilities.isMac() ? "Contents/Resources/uninstall" : "uninstall");
-            setExecutable(SystemUtilities.isMac() ? "Contents/MacOS/" + ABOUT_TITLE : PROPS_FILE);
+            setExecutableRelative(SystemUtilities.isMac() ? "Contents/Resources/uninstall" : "uninstall");
+            setExecutableRelative(SystemUtilities.isMac() ? "Contents/MacOS/" + ABOUT_TITLE : PROPS_FILE);
             return setJrePermissions(getDestination());
         }
         return this;
@@ -155,21 +172,35 @@ public abstract class Installer {
         File[] files = jreBin.listFiles(pathname -> !pathname.isDirectory());
         if(files != null) {
             for(File file : files) {
-                file.setExecutable(true, false);
+                if(!file.setExecutable(true, ownerOnly)) {
+                    log.error("Unable to set file executable '{}'", file);
+                }
             }
         }
 
-        // Set jspawnhelper executable
-        new File(jreLib, "jspawnhelper" + (SystemUtilities.isWindows() ? ".exe" : "")).setExecutable(true, false);
+        setExecutableRelative(jreLib, String.format("jspawnhelper%s", SystemUtilities.isWindows() ? ".exe" : ""));
         return this;
     }
 
-    private void setExecutable(String relativePath) {
-        new File(getDestination(), relativePath).setExecutable(true, false);
+    /**
+     * Helper to avoid IDE warnings about unused return value.
+     */
+    private void setExecutable(File file) {
+        if(!file.setExecutable(true, ownerOnly)) {
+            log.warn("Unable to set '{}' executable, this will cause problems", file);
+        }
+    }
+
+    private void setExecutableRelative(File parent, String relativePath) {
+        setExecutable(new File(parent, relativePath));
+    }
+
+    private void setExecutableRelative(String relativePath) {
+        setExecutable(new File(getDestination(), relativePath));
     }
 
     /**
-     * Explicitly purge libs to notify system cache per https://github.com/qzind/tray/issues/662
+     * Explicitly purge libs to notify system cache per <a href="https://github.com/qzind/tray/issues/662">#662</a>
      */
     public Installer removeLibs() {
         String[] dirs = { "libs" };
@@ -181,6 +212,7 @@ public abstract class Installer {
         return this;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public Installer cleanupLegacyLogs(int rolloverCount) {
         // Convert old < 2.2.3 log file format
         Path logLocation = USER_DIR;
@@ -197,8 +229,11 @@ public abstract class Installer {
                     newFile = logLocation.resolve("debug." + ++newIndex + ".log").toFile();
                 } while(newFile.exists());
 
-                oldFile.renameTo(newFile);
-                log.info("Migrated log file {} to new location {}", oldFile, newFile);
+                if(oldFile.renameTo(newFile)) {
+                    log.info("Migrated log file '{}' to new location '{}'", oldFile, newFile);
+                } else {
+                    log.error("An error occurred migrating log file '{}' to new location '{}'", oldFile, newFile);
+                }
             }
         } while(oldFile.exists() || oldIndex <= rolloverCount);
 
@@ -238,7 +273,9 @@ public abstract class Installer {
         });
 
         files.forEach(file -> {
-            new File(instance.getDestination() + File.separator + file).delete();
+            if(!new File(instance.getDestination() + File.separator + file).delete()) {
+                log.warn("Unable to delete legacy file '{}'", file);
+            }
         });
 
         move.forEach((src, dest) -> {
@@ -284,7 +321,7 @@ public abstract class Installer {
         try {
             // Check that the CA cert is installed
             X509Certificate caCert = certificateManager.getKeyPair(CA).getCert();
-            NativeCertificateInstaller installer = NativeCertificateInstaller.getInstance();
+            NativeCertificateInstaller installer = NativeCertificateInstaller.getInstance(scope);
 
             if (forceNew || needsInstall) {
                 // Remove installed certs per request (usually the desktop installer, or failure to write properties)
@@ -294,22 +331,22 @@ public abstract class Installer {
                     installer.remove(matchingCerts);
                 }
                 installer.install(caCert);
-                FirefoxCertificateInstaller.install(caCert, hostNames);
-            } else {
-                // Make sure the certificate is recognized by the system
-                if(caCert == null) {
-                    log.info("CA cert is empty, skipping installation checks.  This is normal for trusted/3rd-party SSL certificates.");
-                } else {
-                    File tempCert = File.createTempFile(KeyPairWrapper.getAlias(KeyPairWrapper.Type.CA) + "-", CertificateManager.DEFAULT_CERTIFICATE_EXTENSION);
-                    CertificateManager.writeCert(caCert, tempCert); // temp cert
-                    if (!installer.verify(tempCert)) {
-                        installer.install(caCert);
-                        FirefoxCertificateInstaller.install(caCert, hostNames);
-                    }
-                    if(!tempCert.delete()) {
-                        tempCert.deleteOnExit();
-                    }
-                }
+
+                // Install Chrome URLAllowlist TODO: Remove @2.3.0 per #1277
+                PolicyInstaller policyInstaller = new PolicyInstaller(scope, CHROMIUM.getVariants()[0]); // "Chrome" proper
+                policyInstaller.uninstall(PolicyState.Type.ARRAY, "URLWhitelist", DATA_DIR + "://*"); // Deprecated Chrome v100+
+                policyInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", DATA_DIR + "://*");
+
+                // Install Firefox certificate
+                new FirefoxCertificateInstaller(scope, caCert).install();
+
+                // Find running Firefox instances
+                HashSet<ResolvedApp> uniqueApps = new HashSet<>();
+                HashMap<String,ResolvedApp> foundProcesses = AppLocator.getInstance().getRunningApps(AppLocator.getInstance().locate(FIREFOX), null);
+                // Dedupe
+                foundProcesses.forEach((key, value) -> uniqueApps.add(value));
+                // Issue restart warnings
+                uniqueApps.forEach((ResolvedApp::issueRestartWarning));
             }
         }
         catch(Exception e) {
@@ -329,10 +366,16 @@ public abstract class Installer {
      */
     public Installer removeCerts() {
         // System certs
-        NativeCertificateInstaller instance = NativeCertificateInstaller.getInstance();
+        NativeCertificateInstaller instance = NativeCertificateInstaller.getInstance(scope);
         instance.remove(instance.find());
-        // Firefox certs
-        FirefoxCertificateInstaller.uninstall();
+
+        // Remove Chrome URLAllowlist TODO: Remove @2.3.0 per #1277
+        PolicyInstaller policyInstaller = new PolicyInstaller(scope, CHROMIUM.getVariants()[0]); // "Chrome" proper
+        policyInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", DATA_DIR + "://*");
+
+        // Uninstall Firefox certificate
+        new FirefoxCertificateInstaller(scope, null).uninstall();
+
         return this;
     }
 
@@ -342,9 +385,18 @@ public abstract class Installer {
      */
     public Installer addUserSettings() {
         // Check for whitelisted certificates in <install>/whitelist/
-        Path whiteList = SystemUtilities.getJarParentPath().resolve(WHITELIST_CERT_DIR);
+        Path jarParent = SystemUtilities.getJarParentPath();
+        if(jarParent == null) {
+            log.error("Could not calculate jar parent path, can't add user settings");
+            return this;
+        }
+        Path whiteList = jarParent.resolve(WHITELIST_CERT_DIR);
         if(Files.exists(whiteList) && Files.isDirectory(whiteList)) {
-            for(File file : whiteList.toFile().listFiles()) {
+            File[] whiteListFiles = whiteList.toFile().listFiles();
+            if(whiteListFiles == null) {
+                return this; // no files
+            }
+            for(File file : whiteListFiles) {
                 try {
                     Certificate cert = new Certificate(FileUtilities.readLocalFile(file.getPath()));
                     if (!cert.isSaved()) {
@@ -388,6 +440,7 @@ public abstract class Installer {
         return this;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     public static Properties persistProperties(File oldFile, Properties newProps) {
         if(oldFile.exists()) {
             Properties oldProps = new Properties();
@@ -407,22 +460,34 @@ public abstract class Installer {
         return newProps;
     }
 
+    public void spawn(ResolvedApp app) throws Exception {
+        spawn(app.getExeCommand());
+    }
+
     public void spawn(String ... args) throws Exception {
-        spawn(new ArrayList(Arrays.asList(args)));
+        spawn(new ArrayList<>(Arrays.asList(args)));
+    }
+
+    void startProcess(List<String> argList) throws Exception {
+        startProcess(argList, null);
+    }
+
+    void startProcess(List<String> argList, HashMap<String,String> envp) throws Exception {
+        ProcessBuilder pb = new ProcessBuilder(argList);
+        if(envp != null) pb.environment().putAll(envp);
+
+        pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+        pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+        pb.redirectInput(ProcessBuilder.Redirect.PIPE);
+        pb.start();
     }
 
     /**
-     * TODO: Consolidate with spawn()
+     * Helper for file system permissions (such as <code>setExecutable(...)</code> or <code>setReadable(...)</code>).
+     * Returns <code>false</code> for SYSTEM-scoped installs since these files often need to be world read/execute
+     * but returns <code>true</code> for USER-scoped installs to avoid granting permission to strangers
      */
-    public void spawnProcess(String ... command) {
-        try {
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
-            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
-            pb.redirectInput(ProcessBuilder.Redirect.PIPE);
-            pb.start();
-        } catch (IOException e) {
-            log.error("Failed to start process '{}'", String.join(", ", command), e);
-        }
+    public static boolean isOwnerOnly(PrivilegeLevel scope) {
+        return scope != PrivilegeLevel.SYSTEM;
     }
 }

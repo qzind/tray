@@ -280,65 +280,55 @@ public class SystemUtilities {
             version = version.substring(0, version.length() - 4);
         }
 
-        String pre = "";
-        String meta = "";
-
-        // Get build info
-        if(version.startsWith("1.") && version.contains("_")) {
-            // handle old "1.8.0_231-b11" format
-            String[] split = version.split("_", 2);
-            version = split[0];
-            meta = split[1].trim();
-            if(meta.contains("-")) {
-                // chomp off "-b11"
-                meta = meta.split("-", 2)[0];
+        // Assume we have a somewhat usable version... inject any missing '.'
+        int dots = 0;
+        i = 0;
+        while(dots < 2) {
+            if(i < version.length()) {
+                String c = version.substring(i, i + 1);
+                if (ByteUtilities.isNumber(c)) {
+                    i++;
+                    continue;
+                }
+                if (".".equals(c)) {
+                    i++;
+                    dots++;
+                    continue;
+                }
             }
-        } else if(version.contains("+")) {
-            String[] split = version.split("\\+", 2);
-            version = split[0];
-            meta = split[1].trim();
-        } else if(version.contains("-")) {
-            String[] split = version.split("-");
-            version = split[0];
-            pre = split[1].trim();
+            // reassignment in a loop
+            version = version.substring(0 , i) + ".0" + version.substring(i);
+            // jump ahead of our inserts
+            i+=2;
+            dots++;
         }
-        String[] parts = version.trim().split("\\D+");
 
-        int major = 1;
-        int minor = 0;
-        int patch = 0;
+        // Our index MUST now be the 'patch' number
+        i++;
+        if(i < version.length() && "_".equals(version.substring(i, i + 1))) {
+            // If the next character is an underscore, replace it with a "+"
+            version = version.replaceFirst("_", "+");
+        }
 
-        try {
-            switch(parts.length) {
-                default:
-                case 4:
-                    meta = parts[3];
-                case 3:
-                    patch = Integer.parseInt(parts[2]);
-                case 2:
-                    minor = Integer.parseInt(parts[1]);
-                    major = Integer.parseInt(parts[0]);
-                    break;
-                case 1:
-                    major = Integer.parseInt(parts[0]);
-                    if (major <= 8) {
-                        // Force old 1.x style formatting
-                        minor = major;
-                        major = 1;
-                    }
+        Version retVal = Version.parse(version);
+        // Special handling for old 1.7, 1.8 versions
+        if(retVal.majorVersion() < 9L && retVal.majorVersion() != 1L) {
+            // Chomp of off patch and shift info to the right
+            retVal = retVal.preReleaseVersion().isPresent() ?
+                    Version.of(1L, retVal.majorVersion(), retVal.minorVersion(), retVal.preReleaseVersion().get()) :
+                    Version.of(1L, retVal.majorVersion(), retVal.minorVersion());
+        }
+
+        // Append build meta data
+        if(retVal.majorVersion() == 1L && retVal.buildMetadata().isPresent()) {
+            // 1.x added arbitrary '-b08' after the '+202'.  Chomp it off
+            String build = retVal.buildMetadata().get();
+            if(build.contains("-")) {
+                build = build.split("-")[0];
             }
-        } catch(NumberFormatException e) {
-            log.warn("Could not parse Java version \"{}\"", version, e);
+            retVal = retVal.withBuildMetadata(build);
         }
-
-        Version javaVer = pre.isBlank() ?
-                Version.of(major, minor, patch) :
-                Version.of(major, minor, patch, pre);
-
-        if(!meta.isBlank()) {
-            javaVer = javaVer.withBuildMetadata(meta);
-        }
-        return javaVer;
+        return retVal;
     }
 
     /**

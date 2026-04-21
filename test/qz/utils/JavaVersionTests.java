@@ -49,17 +49,34 @@ public class JavaVersionTests {
                                                    "Java(TM) SE Runtime Environment 18.9 (build 11.0.4+10-LTS)\n" +
                                                    "Java HotSpot(TM) 64-Bit Server VM 18.9 (build 11.0.4+10-LTS, mixed mode)"));
 
-        // Old "cursed" 1.8 format
+        // Old "cursed" 1.x format
         Assert.assertEquals(Version.parse("1.8.0+202"),
                             getJavaVersion("java version \"1.8.0_202\"\n" +
                                                    "Java(TM) SE Runtime Environment (build 1.8.0_202-b08)\n" +
                                                    "Java HotSpot (TM) 64-Bit Server VM (huild 25.202-h08, mixed mode)"));
+
+        Assert.assertEquals(Version.parse("1.7.0+55"),
+                            getJavaVersion("java version \"1.7.0_55\"\n" +
+                                                   "Java(TM) SE Runtime Environment (build 1.7.0_55-b13)\n" +
+                                                   "Java HotSpot(TM) 64-Bit Server VM (build 24.55-b03, mixed mode)"));
+
+        assert(Version.parse("1.0.0-rc.1")
+                .isLowerThanOrEquivalentTo(Version.parse("1.0.0-rc.1+build.1")));
+
+        // Future Early Access
+        Assert.assertEquals(Version.parse("27.0.0-ea+18-1643"),
+                            getJavaVersion("openjdk 27-ea 2026-09-15\n" +
+                                                   "OpenJDK Runtime Environment (build 27-ea+18-1643)\n" +
+                                                   "OpenJDK 64-Bit Server VM (build 27-ea+18-1643, mixed mode, sharing)"));
 
         // JLink internal class version
         Assert.assertTrue(getJavaVersion(JLink.JAVA_DEFAULT_VERSION).majorVersion() >= 11);
 
         // Currently installed Java version
         Assert.assertTrue(getJavaVersion().majorVersion() >= 11);
+
+        // Edge-cases
+        Assert.assertEquals(Version.parse("1.8.0"), getJavaVersion("8"));
 
         // From ant properties
         Properties antProperties = new Properties();

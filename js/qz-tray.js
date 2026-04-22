@@ -78,27 +78,37 @@ var qz = (function() {
 
             setup: {
                 webSocketPromise: function(address) {
-                    var ws;
+                    var ws, onError, onOpen;
                     return _qz.tools.promise(function(resolve, reject) {
                         ws = new _qz.tools.ws(address);
-                        ws.onopen = function() {
+                        _qz.websocket.connection = ws;
+                        onOpen = function() {
                             resolve(ws);
-                        }
+                        };
+                        onError = function(e) {
+                            _qz.websocket.connection = null;
+                            reject(e);
+                        };
+                        ws.addEventListener("open", onOpen);
+                        ws.addEventListener("error", onError);
                         // Older Safari versions may trigger close event instead of error event.
-                        ws.onclose = ws.onerror = reject;
+                        ws.addEventListener("close", onError);
                     }).finally(function() {
-                        if (ws) {
-                            ws.onopen = ws.onerror = ws.onclose = null;
-                        }
+                        ws.removeEventListener("open", onOpen);
+                        ws.removeEventListener("error", onError);
+                        ws.removeEventListener("close", onError);
                     });
                 },
 
                 connectToAddress: function(address) {
                     _qz.log.trace("Attempting connection", address);
                     var wsPromise;
-                    if (window.lna && window.lna.webSocketLna) {
-                        _qz.log.trace("Using lna.js WebSocket");
-                        wsPromise = window.lna.webSocketLna(address);
+                    if (window.lna && window.lna.detectLna) {
+                        _qz.log.trace("Using lna.js");
+                        wsPromise = window.lna.detectLna(address, _qz.websocket.setup.webSocketPromise, {
+                            isWebSocket: true,
+                            defaultAddressSpace: 'public'
+                        });
                     } else {
                         wsPromise = _qz.websocket.setup.webSocketPromise(address);
                     }
@@ -175,13 +185,11 @@ var qz = (function() {
                     }
 
                     var promise = _qz.websocket.setup.connectToAddress(address);
-                    _qz.websocket.connection = null;
 
                     promise.then(
                         //called on successful connection to qz, begins setup of websocket calls and resolves connect promise after certificate is sent
-                        function(ws) {
+                        function() {
                             _qz.log.info("Established connection with " + _qz.TITLE + " on " + address);
-                            _qz.websocket.connection = ws;
                             _qz.websocket.setup.openConnection({ resolve: resolve, reject: reject });
 
                             if (config.keepAlive > 0) {

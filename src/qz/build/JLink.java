@@ -76,7 +76,7 @@ public class JLink {
         // Check to see if we should use an API download
         this.apiEnabled = Boolean.parseBoolean(System.getProperty("jlink.api.enabled"));
 
-        this.javaSemver = SystemUtilities.getJavaVersion(this.javaVersion);
+        this.javaSemver = JavaVersion.parse(this.javaVersion);
 
         // Optional: Provide the location of a custom JDK on the local filesystem
         if(!StringUtils.isEmpty(targetJdk)) {
@@ -87,7 +87,7 @@ public class JLink {
             if(customVersion.contains("\"")) {
                 customVersion = customVersion.split("\"")[1];
             }
-            Version customSemver = SystemUtilities.getJavaVersion(customVersion);
+            Version customSemver = JavaVersion.parse(customVersion);
             if(needsDownload(javaSemver, customSemver)) {
                 // The "release" file doesn't have build info, so we can't auto-download :(
                 if(javaSemver.getMajorVersion() != customSemver.getMajorVersion()) {
@@ -144,7 +144,7 @@ public class JLink {
 
         // Per JDK-8240734: Major versions checks aren't enough starting with 11.0.16+8
         // see also https://github.com/adoptium/adoptium-support/issues/557
-        Version bad = SystemUtilities.getJavaVersion("11.0.16+8");
+        Version bad = JavaVersion.parse("11.0.16+8");
         if(want.greaterThanOrEqualTo(bad) && installed.lessThan(bad) ||
                 installed.greaterThanOrEqualTo(bad) && want.lessThan(bad)) {
                 // Force download
@@ -214,12 +214,12 @@ public class JLink {
                         String downloadUrl = entry.optString("downloadUrl");
                         if(exact) {
                             if (javaVersion.equals(versionFound)) {
-                                bestVersion = SystemUtilities.getJavaVersion(versionFound);
+                                bestVersion = JavaVersion.parse(versionFound);
                                 bestUrl = new URL(downloadUrl);
                             }
                         } else {
                             if (versionFound != null) {
-                                Version foundVersion = SystemUtilities.getJavaVersion(versionFound);
+                                Version foundVersion = JavaVersion.parse(versionFound);
                                 if (foundVersion.isHigherThan(bestVersion)) {
                                     bestVersion = foundVersion;
                                     bestUrl = new URL(downloadUrl);
@@ -325,7 +325,7 @@ public class JLink {
         log.info("Assuming jlink path: {}", jlinkPath);
         jdepsPath.toFile().setExecutable(true, false);
         jlinkPath.toFile().setExecutable(true, false);
-        jdepsVersion = SystemUtilities.getJavaVersion(jdepsPath);
+        jdepsVersion = JavaVersion.parseCli(jdepsPath);
         return this;
     }
 

@@ -1,7 +1,7 @@
 package qz.common;
 
 import com.github.zafarkhaja.semver.Version;
-import qz.utils.SystemUtilities;
+import qz.utils.JavaVersion;
 
 import java.awt.*;
 
@@ -15,7 +15,7 @@ public class Constants {
     public static final char[] HEXES_ARRAY = HEXES.toCharArray();
     public static final int BYTE_BUFFER_SIZE = 8192;
     public static final Version VERSION = Version.valueOf("2.2.6");
-    public static final Version JAVA_VERSION = SystemUtilities.getJavaVersion();
+    public static final Version JAVA_VERSION = JavaVersion.current();
     public static final String JAVA_VENDOR = System.getProperty("java.vendor");
 
     /* QZ-Tray Constants */

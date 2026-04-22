@@ -41,6 +41,7 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -204,18 +205,6 @@ public class SystemUtilities {
         return whoami;
     }
 
-    public static Version getJavaVersion() {
-        return getJavaVersion(System.getProperty("java.version"));
-    }
-
-    /**
-     * Call a java command (e.g. java) with "--version" and parse the output
-     * The double dash "--" is since JDK9 but important to send the command output to stdout
-     */
-    public static Version getJavaVersion(Path javaCommand) {
-        return getJavaVersion(ShellUtilities.executeRaw(javaCommand.toString(), "--version"));
-    }
-
     public static int getProcessId() {
         if(pid == null) {
             // Try Java 9+
@@ -244,91 +233,6 @@ public class SystemUtilities {
             log.warn("Could not get process ID using Java 9+, will attempt to fallback to JNA", t);
         }
         return -1;
-    }
-
-    /**
-     * Handle Java versioning nuances
-     * To eventually be replaced with <code>java.lang.Runtime.Version</code> (JDK9+)
-     */
-    public static Version getJavaVersion(String version) {
-        // Try to find the "(build 11.0.27+0)" line
-        String buildMatch = "(build";
-        if(version.contains("\n")) {
-            String[] lines = version.split("\n");
-            for(String line : lines) {
-                int buildLoc = line.indexOf(buildMatch);
-                if(buildLoc != -1) {
-                    version = line.substring(buildLoc + buildMatch.length() , line.length() -1);
-                    break;
-                }
-            }
-        }
-        // Chomp off leading "openjdk", etc
-        int i;
-        for(i = 0; i < version.length() - 1; i++) {
-            if(ByteUtilities.isNumber(version.substring(i, i+1))) {
-                version = version.substring(i).trim();
-                break;
-            }
-        }
-        // Chomp off any trailing data
-        if(version.contains(" ")) {
-            version = version.split(" ", 2)[0];
-        }
-        // Chomp off "-LTS"
-        if(version.endsWith("-LTS")) {
-            version = version.substring(0, version.length() - 4);
-        }
-
-        // Assume we have a somewhat usable version... inject any missing '.'
-        int dots = 0;
-        i = 0;
-        while(dots < 2) {
-            if(i < version.length()) {
-                String c = version.substring(i, i + 1);
-                if (ByteUtilities.isNumber(c)) {
-                    i++;
-                    continue;
-                }
-                if (".".equals(c)) {
-                    i++;
-                    dots++;
-                    continue;
-                }
-            }
-            // reassignment in a loop
-            version = version.substring(0 , i) + ".0" + version.substring(i);
-            // jump ahead of our inserts
-            i+=2;
-            dots++;
-        }
-
-        // Our index MUST now be the 'patch' number
-        i++;
-        if(i < version.length() && "_".equals(version.substring(i, i + 1))) {
-            // If the next character is an underscore, replace it with a "+"
-            version = version.replaceFirst("_", "+");
-        }
-
-        Version retVal = Version.parse(version);
-        // Special handling for old 1.7, 1.8 versions
-        if(retVal.majorVersion() < 9L && retVal.majorVersion() != 1L) {
-            // Chomp of off patch and shift info to the right
-            retVal = retVal.preReleaseVersion().isPresent() ?
-                    Version.of(1L, retVal.majorVersion(), retVal.minorVersion(), retVal.preReleaseVersion().get()) :
-                    Version.of(1L, retVal.majorVersion(), retVal.minorVersion());
-        }
-
-        // Append build meta data
-        if(retVal.majorVersion() == 1L && retVal.buildMetadata().isPresent()) {
-            // 1.x added arbitrary '-b08' after the '+202'.  Chomp it off
-            String build = retVal.buildMetadata().get();
-            if(build.contains("-")) {
-                build = build.split("-")[0];
-            }
-            retVal = retVal.withBuildMetadata(build);
-        }
-        return retVal;
     }
 
     /**

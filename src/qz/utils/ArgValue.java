@@ -13,7 +13,7 @@ public enum ArgValue {
     // Informational
     HELP(INFORMATION, "Display help information and exit.", null, null,
          "--help", "-h", "/?"),
-    VERSION(INFORMATION, "Display version information and exit.", null, null,
+    VERSION(INFORMATION, "Display version information and exit.  Optionally, a format parameter may be specified e.g. \"x.x.x.x\" to coerce formatting.", "--version [format]", null,
             "--version", "-v"),
     BUNDLEID(INFORMATION, "Display Apple bundle identifier and exit.", null, null,
              "--bundleid", "-i"),
@@ -75,6 +75,8 @@ public enum ArgValue {
         "tray.idle.printers"),
     TRAY_IDLE_JAVAFX(PREFERENCES, "Enable/disable idle starting of JavaFX for better initial performance", null, true,
         "tray.idle.javafx"),
+    TRAY_DIALOG_ENDPOINT(PREFERENCES, "Headless mode only: Enable a custom endpoint for dialogs", null, null,
+                         "tray.dialog.endpoint"),
     SECURITY_FILE_ENABLED(PREFERENCES, "Enable/disable all File Communications features", null, true,
         "security.file.enabled"),
     SECURITY_FILE_STRICT(PREFERENCES, "Enable/disable signing requirements for File Communications features", null, true,
@@ -109,6 +111,8 @@ public enum ArgValue {
         "log.size"),
     AUTHCERT_OVERRIDE(PREFERENCES, "Override the trusted root certificate in the software.", null, null,
         "authcert.override", "trustedRootCert"),
+    PRINTER_DETAILS_DEBUG(PREFERENCES, "Debug printer details to the logs as they're crawled.  Helpful for debugging driver-related hard-crashes.", null, false,
+        "printer.details.debug"),
     PRINTER_STATUS_JOB_DATA(PREFERENCES, "Return all raw (binary) job data with job statuses (use with caution)", null, false,
         "printer.status.jobdata");
 

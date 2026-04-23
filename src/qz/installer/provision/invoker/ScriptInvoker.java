@@ -6,11 +6,11 @@ import qz.build.provision.params.types.Script;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
-import java.io.File;
+import java.io.*;
 import java.util.ArrayList;
 
 public class ScriptInvoker extends InvokableResource {
-    private Step step;
+    private final Step step;
 
     public ScriptInvoker(Step step) {
         this.step = step;
@@ -29,7 +29,7 @@ public class ScriptInvoker extends InvokableResource {
             return false;
         }
         command.add(script.toString());
-        boolean success = ShellUtilities.execute(command.toArray(new String[command.size()]));
+        boolean success = ShellUtilities.execute(command.toArray(new String[0]));
         if(!success) {
             log.error("An error occurred invoking [{}]", step.getData());
         }
@@ -39,10 +39,10 @@ public class ScriptInvoker extends InvokableResource {
 
     /**
      * Returns the interpreter command (and if needed, arguments) to invoke the script file
-     *
+     * <p>
      * An empty array will fall back to Unix "shebang" notation, e.g. #!/usr/bin/python3
      * which will allow the OS to select the correct interpreter for the given file
-     *
+     * </p>
      * No special attention is given to "shebang", behavior may differ between OSs
      */
     private static ArrayList<String> getInterpreter(Script engine) {

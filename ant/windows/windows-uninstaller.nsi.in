@@ -7,9 +7,9 @@
 !include WinMessages.nsh
 
 !ifdef NSIS_UNICODE
-	!addplugindir "${basedir}/ant/windows/nsis/Plugins/Release_Unicode"
+	!addplugindir "${plugins.path}/Release_Unicode"
 !else
-	!addplugindir "${basedir}/ant/windows/nsis/Plugins/Release_ANSI"
+	!addplugindir "${plugins.path}/Release_ANSI"
 !endif
 !addincludedir "${basedir}/ant/windows/nsis/Include"
 !include StdUtils.nsh
@@ -36,6 +36,17 @@
 
 RequestExecutionLevel admin
 CRCCheck On
+
+; Application information
+!define /date YEAR %Y
+VIProductVersion "${build.nsis.version}"
+VIAddVersionKey "FileDescription" "${project.name} Uninstaller"
+VIAddVersionKey "ProductName" "${project.name}"
+VIAddVersionKey "ProductVersion" "${build.version}"
+VIAddVersionKey "CompanyName" "${vendor.company}"
+VIAddVersionKey "LegalCopyright" "Copyright © ${YEAR}"
+VIAddVersionKey "LegalTrademarks" "${vendor.company}"
+VIAddVersionKey "OriginalFilename" "uninstall.exe"
 
 Name "Uninstall ${project.name}"
 Caption "Uninstall ${project.name}"

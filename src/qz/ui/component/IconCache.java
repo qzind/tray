@@ -394,4 +394,23 @@ public class IconCache {
         // Return the buffered image
         return bi;
     }
+
+    /**
+     * For rebranded installs, calculates the "BRAND_COLOR" by inspecting the center of the specified <code>IconCache.Icon</code>.
+     * For "QZ" brained installs, returns Constants.BRAND_COLOR
+     * @return String value representing the brand color.
+     */
+    public static String getHtmlColorFromIcon(IconCache.Icon icon, String fallback) {
+        try(InputStream is = IconCache.class.getResourceAsStream(icon.getPath())) {
+            if (is == null) throw new IOException(String.format("InputStream for '%s' is null", icon.getPath()));
+            BufferedImage bi = ImageIO.read(is);
+            int pixel = bi.getRGB(bi.getWidth() / 2, bi.getHeight() / 2);
+            return String.format("#%06X", (0xFFFFFF & pixel));
+        }
+        catch(IOException e) {
+            log.warn("Unable to calculate color from BufferedImage, falling back to '{}'", fallback, e);
+        }
+        return fallback;
+    }
+
 }

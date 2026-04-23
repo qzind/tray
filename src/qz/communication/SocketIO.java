@@ -74,9 +74,6 @@ public class SocketIO implements DeviceListener {
 
     @Override
     public void close() {
-        // Remove orphaned reference
-        websocket.removeNetworkSocket(String.format("%s:%s", host, port));
-
         try {
             dataOut.close();
         } catch(IOException e) {

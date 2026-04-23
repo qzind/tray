@@ -15,13 +15,11 @@ import mslinks.ShellLink;
 import mslinks.ShellLinkException;
 import mslinks.ShellLinkHelper;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 import qz.utils.WindowsUtilities;
-import qz.ws.PrintSocketServer;
 
 import javax.swing.*;
 
@@ -96,10 +94,6 @@ public class WindowsInstaller extends Installer {
         WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + ABOUT_TITLE);
         WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, "Software\\" + ABOUT_TITLE);
         WindowsUtilities.deleteRegKey(HKEY_LOCAL_MACHINE, DATA_DIR);
-        // Chrome protocol handler
-        WindowsUtilities.deleteRegData(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLAllowlist", String.format("%s://*", DATA_DIR));
-        // Deprecated Chrome protocol handler
-        WindowsUtilities.deleteRegData(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLWhitelist", String.format("%s://*", DATA_DIR));
 
         // Cleanup launchers
         for(WindowsSpecialFolders folder : new WindowsSpecialFolders[] { START_MENU, COMMON_START_MENU, DESKTOP, PUBLIC_DESKTOP, COMMON_STARTUP, RECENT }) {
@@ -145,9 +139,6 @@ public class WindowsInstaller extends Installer {
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "URLInfoAbout", ABOUT_SUPPORT_URL);
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "DisplayVersion", VERSION.toString());
         WindowsUtilities.addRegValue(HKEY_LOCAL_MACHINE, uninstallKey, "EstimatedSize", FileUtils.sizeOfDirectoryAsBigInteger(new File(destination)).intValue() / 1024);
-
-        // Chrome protocol handler
-        WindowsUtilities.addNumberedRegValue(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Google\\Chrome\\URLAllowlist", String.format("%s://*", DATA_DIR));
 
         // Firewall rules
         ShellUtilities.execute("netsh.exe", "advfirewall", "firewall", "delete", "rule", String.format("name=%s", ABOUT_TITLE));
@@ -203,6 +194,6 @@ public class WindowsInstaller extends Installer {
         if(SystemUtilities.isAdmin()) {
             log.warn("Spawning as user isn't implemented; starting process with elevation instead");
         }
-        ShellUtilities.execute(args.toArray(new String[args.size()]));
+        super.startProcess(args);
     }
 }

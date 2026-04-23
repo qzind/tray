@@ -101,15 +101,18 @@ var qz = (function() {
                 },
 
                 connectToAddress: function(address) {
+                    var lna = _qz.tools.getLna();
+
                     _qz.log.trace("Attempting connection", address);
                     var wsPromise;
-                    if (window.lna && window.lna.detectLna) {
-                        _qz.log.trace("Using lna.js");
-                        wsPromise = window.lna.detectLna(address, _qz.websocket.setup.webSocketPromise, {
+                    if (lna) {
+                        _qz.log.trace("Connecting with lna.js");
+                        wsPromise = lna.detectLna(address, _qz.websocket.setup.webSocketPromise, {
                             isWebSocket: true,
                             defaultAddressSpace: 'public'
                         });
                     } else {
+                        _qz.log.trace("Connecting without lna.js");
                         wsPromise = _qz.websocket.setup.webSocketPromise(address);
                     }
                     return wsPromise.catch(function(evt) {
@@ -117,7 +120,7 @@ var qz = (function() {
                             ? "Connection attempt denied by Local Network Access restrictions"
                             : "Unable to establish connection with " + _qz.TITLE;
                         var err = new Error(msg);
-                        if (window.lna && evt instanceof window.lna.LnaError) {
+                        if (lna && evt instanceof lna.LnaError) {
                             err.denied = evt.denied;
                             err.permission = evt.permission;
                         }
@@ -704,6 +707,27 @@ var qz = (function() {
             },
 
             ws: typeof WebSocket !== 'undefined' ? WebSocket : null,
+            lna: undefined,
+
+            getLna: function() {
+                if (_qz.tools.lna === undefined) {
+                    _qz.tools.lna = _qz.tools.loadLna() || null;
+                }
+                return _qz.tools.lna;
+            },
+
+            loadLna: function() {
+                if (typeof window !== 'undefined' && window.lna && window.lna.detectLna) {
+                    return window.lna;
+                }
+                if (typeof require === 'function') {
+                    try {
+                        return require('lna');
+                    } catch (e) {
+                        _qz.log.warn("Unable to load LNA library", e);
+                    }
+                }
+            },
 
             absolute: function(loc) {
                 if (typeof window !== 'undefined' && typeof document.createElement === 'function') {

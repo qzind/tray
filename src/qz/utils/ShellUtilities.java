@@ -336,4 +336,43 @@ public class ShellUtilities {
         }
         return "(suppressed)";
     }
+
+    /**
+     * Prints a pretty ASCII box on the screen
+     */
+    public static String consoleBox(String... lines) {
+        if (lines == null || lines.length == 0) return "";
+
+        int padding = 2; // Number of spaces on each side
+        int maxWidth = 0;
+
+        for (String s : lines) {
+            if (s != null && s.length() > maxWidth) {
+                maxWidth = s.length();
+            }
+        }
+
+        // Total internal width including padding
+        int totalWidth = maxWidth + (padding * 2);
+
+        StringBuilder sb = new StringBuilder("\n");
+
+        // Top border
+        sb.append("╔").append("═".repeat(totalWidth)).append("╗\n");
+
+        // Content lines
+        for (String s : lines) {
+            if (s == null) s = "";
+            int trailingSpaces = totalWidth - s.length() - padding;
+            sb.append("║")
+                    .append(" ".repeat(padding)) // Left padding
+                    .append(s)
+                    .append(" ".repeat(trailingSpaces)) // Right padding to fill the box
+                    .append("║\n");
+        }
+
+        // Bottom border
+        sb.append("╚").append("═".repeat(totalWidth)).append("╝").append("\n");
+        return sb.toString();
+    }
 }

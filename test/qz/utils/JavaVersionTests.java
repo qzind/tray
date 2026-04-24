@@ -158,4 +158,39 @@ public class JavaVersionTests {
         // Ensures version in project.properties doesn't get corrupted by our own complicated parsing logic
         Assert.assertEquals(Version.parse(javaVersion), parse(javaVersion));
     }
+
+    @DataProvider(name = "comparisons")
+    public Object[][] comparisons() {
+        return new Object[][] {
+                { "1.8.0_202-b13", "<", "1.8.0+203" },
+                { "25+1", ">", "25.0.0" },
+                { "11.0.3+11", ">", "11.0.3+8" },
+                { "25-ea", "<", "25" },
+                { "25", "=", "25.0.0" },
+                { "27-ea+18", ">", "27-ea+8-1643" },
+                { "17.0.9+10-jvmci-23.0-b22", ">", "17.0.9+9" }
+        };
+    }
+
+    @Test(dataProvider = "comparisons")
+    public void compareTests(String lhs, String operator, String rhs) {
+        Version left = JavaVersion.parse(lhs);
+        Version right = JavaVersion.parse(rhs);
+        int diff = left.compareTo(right);
+
+        log.trace("Raw: '{}' {} '{}'", lhs, operator, rhs);
+        log.trace("Parsed: '{}' {} '{}'", left, operator, right);
+
+        switch(operator) {
+            case "<":
+                Assert.assertEquals(diff, -1);
+                break;
+            case ">":
+                Assert.assertEquals(diff, 1);
+                break;
+            case "=":
+                Assert.assertEquals(diff, 0);
+                break;
+        }
+    }
 }

@@ -213,24 +213,16 @@ public class JLink {
                         String versionFound = entry.optString("version");
                         String downloadUrl = entry.optString("downloadUrl");
                         if(exact) {
-                            if (javaVersion.equals(versionFound)) {
+                            if (javaVersion.compareTo(versionFound) == 0) {
                                 bestVersion = JavaVersion.parse(versionFound);
                                 bestUrl = new URL(downloadUrl);
                             }
                         } else {
                             if (versionFound != null) {
                                 Version foundVersion = JavaVersion.parse(versionFound);
-                                if (foundVersion.isHigherThan(bestVersion)) {
+                                if (foundVersion.compareTo(bestVersion) >= 1) {
                                     bestVersion = foundVersion;
                                     bestUrl = new URL(downloadUrl);
-                                } else if (foundVersion.equals(bestVersion)) {
-                                    // handle '+nnn'
-                                    if (foundVersion.buildMetadata().isPresent() && bestVersion.buildMetadata().isPresent()) {
-                                        if (foundVersion.buildMetadata().get().compareTo(bestVersion.buildMetadata().get()) > 0) {
-                                            bestVersion = foundVersion;
-                                            bestUrl = new URL(downloadUrl);
-                                        }
-                                    }
                                 }
                             }
                         }
@@ -240,6 +232,11 @@ public class JLink {
                 }
                 if(bestUrl == null) {
                     throw new IOException(String.format("Could not find a matching download URL for arch: '%s', platform: '%s', exactMatch: '%s'", arch, platform, exact));
+                } else {
+                    log.info(ShellUtilities.consoleBox(
+                            String.format("API URL: %s", apiUrl),
+                            String.format("Download URL: %s", bestUrl.toString().split("\\?")[0]),
+                            String.format("Version: %s", bestVersion)));
                 }
             }
             catch(JSONException e) {

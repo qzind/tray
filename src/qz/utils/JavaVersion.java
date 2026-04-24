@@ -98,9 +98,10 @@ public class JavaVersion {
         }
 
         // Java prohibits trailing zeros for no fricken reason
-        sanitized = sanitized.replaceAll("(\\.0)+(?=[+\\-]|$)", "");
-
-        return sanitized;
+        // We limit the split to 2 parts so we don't break this same rule in the metadata
+        String[] parts = sanitized.split("(?=[+\\-])", 2);
+        parts[0] = parts[0].replaceAll("(\\.0)+$", "");
+        return (parts.length > 1) ? parts[0] + parts[1] : parts[0];
     }
 
     /**

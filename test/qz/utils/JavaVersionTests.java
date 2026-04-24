@@ -87,6 +87,14 @@ public class JavaVersionTests {
                                 "OpenJDK Runtime Environment (build 27-ea+18-1643)\n" +
                                 "OpenJDK 64-Bit Server VM (build 27-ea+18-1643, mixed mode, sharing)"
                 },
+                {
+                    "17.0.9+9.jvmci-23.0-b22", // semver wants a dot not a dash :/
+                    "17.0.9+9-jvmci-23.0-b22",
+                    "17.0.9+9-jvmci-23.0-b22",
+                    "openjdk version \"17.0.9\" 2023-10-17\n" +
+                          "OpenJDK Runtime Environment GraalVM CE 17.0.9+9.1 (build 17.0.9+9-jvmci-23.0-b22)\n" +
+                          "OpenJDK 64-Bit Server VM GraalVM CE 17.0.9+9.1 (build 17.0.9+9-jvmci-23.0-b22, mixed mode, sharing)"
+                },
                 // Java 8 was actually Java 1.8.0
                 {
                         "1.8.0",

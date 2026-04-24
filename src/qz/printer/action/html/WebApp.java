@@ -202,6 +202,7 @@ public class WebApp extends Application {
                     } else {
                         // Assume newer "Headless" mode is available
                         System.setProperty("glass.platform", "Headless");
+                        System.setProperty("prism.order", "sw"); // Per JDK-8382148
                     }
                     log.trace("Initializing {} glass.platform", SystemUtilities.hasMonocle() ? "monocle" : "headless");
                 } else {

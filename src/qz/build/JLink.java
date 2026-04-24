@@ -238,6 +238,9 @@ public class JLink {
                         log.warn("Entry {} is not a JSONObject", i);
                     }
                 }
+                if(bestUrl == null) {
+                    throw new IOException(String.format("Could not find a matching download URL for arch: '%s', platform: '%s', exactMatch: '%s'", arch, platform, exact));
+                }
             }
             catch(JSONException e) {
                 throw new IOException("Error parsing download file as JSON", e);

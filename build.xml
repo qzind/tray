@@ -323,6 +323,10 @@
 
         <echo level="info">Downloading and bundling the jre for ${target.os}</echo>
         <java jar="${dist.dir}/${project.filename}.jar" fork="true" failonerror="true">
+            <syspropertyset>
+                <!-- Expose all jlink properties to the environment -->
+                <propertyref prefix="jlink."/>
+            </syspropertyset>
             <arg value="jlink"/>
             <arg line="--platform ${target.os}"/>
             <arg line="--arch ${target.arch}"/>

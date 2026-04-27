@@ -23,9 +23,12 @@ public enum Arch {
     UNKNOWN();
 
     private HashSet<String> aliases = new HashSet<>();
+    private int bitness;
+
     Arch(String ... aliases) {
         this.aliases.add(name().toLowerCase(Locale.ENGLISH));
         this.aliases.addAll(Arrays.asList(aliases));
+        this.bitness = name().endsWith("64") ? 64 : 32;
     }
 
     public static Arch parseStrict(String input) throws UnsupportedOperationException {
@@ -61,6 +64,10 @@ public enum Arch {
             return "*";
         }
         return StringUtils.join(archList, "|");
+    }
+
+    public int getBitness() {
+        return bitness;
     }
 
     @Override

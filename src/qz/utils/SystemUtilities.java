@@ -41,6 +41,7 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -204,22 +205,10 @@ public class SystemUtilities {
         return whoami;
     }
 
-    public static Version getJavaVersion() {
-        return getJavaVersion(System.getProperty("java.version"));
-    }
-
-    /**
-     * Call a java command (e.g. java) with "--version" and parse the output
-     * The double dash "--" is since JDK9 but important to send the command output to stdout
-     */
-    public static Version getJavaVersion(Path javaCommand) {
-        return getJavaVersion(ShellUtilities.executeRaw(javaCommand.toString(), "--version"));
-    }
-
     public static int getProcessId() {
         if(pid == null) {
             // Try Java 9+
-            if(Constants.JAVA_VERSION.getMajorVersion() >= 9) {
+            if(Constants.JAVA_VERSION.majorVersion() >= 9) {
                 pid = getProcessIdJigsaw();
             }
             // Try JNA
@@ -244,47 +233,6 @@ public class SystemUtilities {
             log.warn("Could not get process ID using Java 9+, will attempt to fallback to JNA", t);
         }
         return -1;
-    }
-
-    /**
-     * Handle Java versioning nuances
-     * To eventually be replaced with <code>java.lang.Runtime.Version</code> (JDK9+)
-     */
-    public static Version getJavaVersion(String version) {
-        String[] parts = version.trim().split("\\D+");
-
-        int major = 1;
-        int minor = 0;
-        int patch = 0;
-        String meta = "";
-
-        try {
-            switch(parts.length) {
-                default:
-                case 4:
-                    meta = parts[3];
-                case 3:
-                    patch = Integer.parseInt(parts[2]);
-                case 2:
-                    minor = Integer.parseInt(parts[1]);
-                    major = Integer.parseInt(parts[0]);
-                    break;
-                case 1:
-                    major = Integer.parseInt(parts[0]);
-                    if (major <= 8) {
-                        // Force old 1.x style formatting
-                        minor = major;
-                        major = 1;
-                    }
-            }
-        } catch(NumberFormatException e) {
-            log.warn("Could not parse Java version \"{}\"", version, e);
-        }
-        if(meta.trim().isEmpty()) {
-            return Version.of(major, minor, patch);
-        } else {
-            return Version.of(major, minor, patch, null, meta);
-        }
     }
 
     /**

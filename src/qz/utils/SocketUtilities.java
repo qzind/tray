@@ -5,7 +5,9 @@ import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.websocket.api.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.communication.NetworkIO;
 import qz.communication.SocketIO;
+import qz.communication.UDPIO;
 import qz.ws.PrintSocketClient;
 import qz.ws.SocketConnection;
 import qz.ws.StreamEvent;
@@ -29,17 +31,37 @@ public class SocketUtilities {
         }
 
         //TODO - move to dedicated options class?
-        Charset encoding = StandardCharsets.UTF_8;
+        Charset encodingInternal = StandardCharsets.UTF_8;
         if (!params.isNull("options")) {
             JSONObject options = params.getJSONObject("options");
-
             if (!options.isNull("encoding")) {
-                encoding = Charset.forName(options.getString("encoding"));
+                encodingInternal = Charset.forName(options.getString("encoding"));
             }
         }
 
+        final Charset encodingFinal = encodingInternal;
         try {
-            final SocketIO socket = new SocketIO(host, port, encoding, connection);
+            final NetworkIO socket;
+            String protocol = "tcp";
+            int localPort = 0;
+            String responseFormat = "PLAIN";
+
+            if (!params.isNull("options")) {
+                JSONObject options = params.getJSONObject("options");
+                protocol = options.optString("protocol", "tcp").toLowerCase();
+                localPort = options.optInt("localPort", options.optJSONObject("options") != null ? options.optJSONObject("options").optInt("localPort", 0) : 0);
+                responseFormat = options.optString("responseFormat", "PLAIN").toUpperCase();
+            } else {
+                protocol = params.optString("protocol", "tcp").toLowerCase();
+            }
+
+            final PrintingUtilities.Flavor format = PrintingUtilities.Flavor.parse(responseFormat, PrintingUtilities.Flavor.PLAIN);
+
+            if ("udp".equals(protocol)) {
+                socket = new UDPIO(host, port, localPort, encodingFinal, connection);
+            } else {
+                socket = new SocketIO(host, port, encodingFinal, connection);
+            }
 
             if (socket.open()) {
                 connection.addNetworkSocket(location, socket);
@@ -50,18 +72,19 @@ public class SocketUtilities {
 
                     try {
                         while(socket.isOpen()) {
-                            String response = socket.processSocketResponse();
+                            byte[] response = socket.processResponse();
 
                             if (response != null) {
-                                log.debug("Received socket response: {}", response);
-                                PrintSocketClient.sendStream(session, event.withData("response", response), socket);
+                                String formatted = ByteUtilities.toString(format, response);
+                                log.debug("Received socket response ({}): {}", format, formatted);
+                                PrintSocketClient.sendStream(session, event.withData("response", formatted), (Runnable)socket::close);
                             }
                         }
                     }
                     catch(IOException e) {
                         StreamEvent eventErr = new StreamEvent(StreamEvent.Stream.SOCKET, StreamEvent.Type.ERROR)
                                 .withData("host", host).withData("port", port).withException(e);
-                        PrintSocketClient.sendStream(session, eventErr, socket);
+                        PrintSocketClient.sendStream(session, eventErr, (Runnable)socket::close);
                     }
 
                     if (!socket.isOpen()) {
@@ -77,6 +100,7 @@ public class SocketUtilities {
                 PrintSocketClient.sendError(session, UID, String.format("Unable to open socket [%s]", location));
             }
         }
+
         catch(IOException e) {
             PrintSocketClient.sendError(session, UID, e);
         }

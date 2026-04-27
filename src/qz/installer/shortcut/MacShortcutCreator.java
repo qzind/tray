@@ -19,10 +19,7 @@ import qz.common.Constants;
 import qz.utils.MacUtilities;
 import qz.utils.SystemUtilities;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,8 +31,12 @@ import java.nio.file.Paths;
 class MacShortcutCreator extends ShortcutCreator {
 
     private static final Logger log = LogManager.getLogger(MacShortcutCreator.class);
-    private static String SHORTCUT_PATH = System.getProperty("user.home") + "/Desktop/" + Constants.ABOUT_TITLE;
+    private static final Path SHORTCUT_PATH = Paths.get(System.getProperty("user.home") + "/Desktop/" + Constants.ABOUT_TITLE);
 
+
+    public static void main(String ... args) {
+        boolean can = getInstance().canAutoStart();
+    }
     /**
      * Verify LaunchAgents plist file exists and parse it to verify it's enabled
      */
@@ -46,11 +47,7 @@ class MacShortcutCreator extends ShortcutCreator {
 
         if (Files.exists(plistPath)) {
             try {
-                DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-                Document doc = dBuilder.parse(plistPath.toFile());
-                doc.getDocumentElement().normalize();
-
+                Document doc = MacUtilities.createXmlDocument(plistPath);
                 NodeList dictList = doc.getElementsByTagName("dict");
 
                 // Loop to find "RunAtLoad" key, then the adjacent key
@@ -84,15 +81,14 @@ class MacShortcutCreator extends ShortcutCreator {
 
     public void createDesktopShortcut() {
         try {
-            new File(SHORTCUT_PATH).delete();
-            if(SystemUtilities.getJarParentPath().endsWith("Resources")) {
-                // We're probably running from an .app bundle
-                Files.createSymbolicLink(Paths.get(SHORTCUT_PATH), SystemUtilities.getAppPath());
-            } else {
-                // We're running from a mystery location, use the jar instead
-                Files.createSymbolicLink(Paths.get(SHORTCUT_PATH), SystemUtilities.getJarPath());
+            if(SHORTCUT_PATH.toFile().exists() && !SHORTCUT_PATH.toFile().delete()) {
+                throw new IOException(String.format("Unable to delete '%s', we can't create a the shortcut", SHORTCUT_PATH));
             }
-
+            if(SystemUtilities.getJarPath() == null) {
+                throw new IOException(String.format("Unable to create '%s', the jar location is null", SHORTCUT_PATH));
+            }
+            Files.createSymbolicLink(SHORTCUT_PATH, SystemUtilities.isInstalled() ?
+                    SystemUtilities.getAppPath() : SystemUtilities.getJarPath());
         } catch(IOException e) {
             log.warn("Could not create desktop shortcut {}", SHORTCUT_PATH, e);
         }

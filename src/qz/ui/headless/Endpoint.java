@@ -65,6 +65,9 @@ public class Endpoint {
     }
 
     public static Endpoint parse(String value) {
+        if(value == null || value.isBlank()) {
+            return null;
+        }
         try {
             String lower = value.toLowerCase(Locale.ENGLISH);
             Type type = lower.matches("https?:")? Type.REST_URL:Type.FILE_PROMPT;

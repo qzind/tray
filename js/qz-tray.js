@@ -734,7 +734,7 @@ var qz = (function() {
                     return a.href;
                 } else if (typeof exports === 'object') {
                     //node.js
-                    require('path').resolve(loc);
+                    return require('path').resolve(loc);
                 }
                 return loc;
             },

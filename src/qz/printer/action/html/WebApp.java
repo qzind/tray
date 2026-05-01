@@ -1,8 +1,6 @@
 package qz.printer.action.html;
 
 import com.github.zafarkhaja.semver.Version;
-import com.sun.javafx.tk.TKPulseListener;
-import com.sun.javafx.tk.Toolkit;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -12,6 +10,7 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.print.PageLayout;
 import javafx.print.PrinterJob;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Transform;
@@ -33,6 +32,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntPredicate;
 
@@ -50,6 +50,10 @@ public class WebApp extends Application {
     private static Version webkitVersion = null;
     private static int CAPTURE_FRAMES = 2;
     private static int VECTOR_FRAMES = 1;
+    private static final int REQUIRED_STABLE_FRAMES = 3;
+    private static final int MAX_CAPTURE_FRAMES = 120;
+    private static final long CAPTURE_TIMEOUT_MS = 2000L;
+    private static final double STABILITY_EPSILON_PX = 0.5d;
     private static Stage stage;
     private static WebView webView;
     private static double pageWidth;
@@ -346,6 +350,7 @@ public class WebApp extends Application {
 
     public static synchronized BufferedImage raster(final WebAppModel model) throws Throwable {
         AtomicReference<BufferedImage> capture = new AtomicReference<>();
+        final AtomicBoolean captureDone = new AtomicBoolean(false);
 
         //ensure JavaFX has started before we run
         if (startupLatch.getCount() > 0) {
@@ -361,29 +366,90 @@ public class WebApp extends Application {
         raster = true;
 
         load(model, (int frames) -> {
-            if (frames == CAPTURE_FRAMES) {
-                log.debug("Attempting image capture");
-
-                Toolkit.getToolkit().addPostSceneTkPulseListener(new TKPulseListener() {
-                    @Override
-                    public void pulse() {
-                        try {
-                            // TODO: Revert to Callback once JDK-8244588/SUPQZ-5 is avail (JDK11+ only)
-                            capture.set(SwingFXUtils.fromFXImage(webView.snapshot(null, null), null));
-                            unlatch(null);
-                        }
-                        catch(Exception e) {
-                            unlatch(e);
-                        }
-                        finally {
-                            Toolkit.getToolkit().removePostSceneTkPulseListener(this);
-                        }
-                    }
-                });
-                Toolkit.getToolkit().requestNextPulse();
+            if (frames < CAPTURE_FRAMES) {
+                return false;
             }
 
-            return frames >= CAPTURE_FRAMES;
+            if (captureDone.get()) {
+                return true;
+            }
+
+            log.debug("Attempting image capture");
+
+            final long captureStartNanos = System.nanoTime();
+            final int[] stable = {0};
+            final int[] pulseFrames = {0};
+            final double[] lastW = {Double.NaN};
+            final double[] lastH = {Double.NaN};
+
+            new AnimationTimer() {
+                @Override
+                public void handle(long now) {
+                    if (captureDone.get()) {
+                        stop();
+                        return;
+                    }
+
+                    try {
+                        pulseFrames[0]++;
+
+                        double w = webView.getLayoutBounds().getWidth();
+                        double h = webView.getLayoutBounds().getHeight();
+
+                        if (!Double.isNaN(lastW[0]) && nearlyEqual(w, lastW[0]) && nearlyEqual(h, lastH[0])) {
+                            stable[0]++;
+                        } else {
+                            stable[0] = 0;
+                        }
+
+                        lastW[0] = w;
+                        lastH[0] = h;
+
+                        long elapsedMs = (System.nanoTime() - captureStartNanos) / 1_000_000L;
+                        boolean stableReady = stable[0] >= REQUIRED_STABLE_FRAMES;
+                        boolean frameFallback = pulseFrames[0] >= MAX_CAPTURE_FRAMES;
+                        boolean timeFallback = elapsedMs >= CAPTURE_TIMEOUT_MS;
+
+                        if (!(stableReady || frameFallback || timeFallback)) {
+                            return;
+                        }
+
+                        if (frameFallback || timeFallback) {
+                            log.warn("Raster stability fallback used: stable={}, frames={}, elapsedMs={}",
+                                     stable[0], pulseFrames[0], elapsedMs);
+                        }
+
+                        if (!captureDone.compareAndSet(false, true)) {
+                            stop();
+                            return;
+                        }
+
+                        SnapshotParameters params = new SnapshotParameters();
+                        webView.snapshot(result -> {
+                            try {
+                                capture.set(SwingFXUtils.fromFXImage(result.getImage(), null));
+                                unlatch(null);
+                            } catch(Throwable t) {
+                                Throwable normalized = normalizeSnapshotException(t);
+                                log.error("Raster snapshot callback failed: {}", normalized.getMessage(), normalized);
+                                unlatch(normalized);
+                            }
+                            return null;
+                        }, params, null);
+
+                        stop();
+                    } catch(Throwable t) {
+                        Throwable normalized = normalizeSnapshotException(t);
+                        log.error("Raster capture loop failed: {}", normalized.getMessage(), normalized);
+                        if (captureDone.compareAndSet(false, true)) {
+                            unlatch(normalized);
+                        }
+                        stop();
+                    }
+                }
+            }.start();
+
+            return true;
         });
 
         log.trace("Waiting on capture..");
@@ -392,6 +458,29 @@ public class WebApp extends Application {
         if (thrown.get() != null) { throw thrown.get(); }
 
         return capture.get();
+    }
+
+    private static boolean nearlyEqual(double a, double b) {
+        return Math.abs(a - b) <= STABILITY_EPSILON_PX;
+    }
+
+    private static Throwable normalizeSnapshotException(Throwable t) {
+        if (t == null) {
+            return new IOException("Unknown snapshot error");
+        }
+
+        String msg = t.getMessage() == null ? "" : t.getMessage().toLowerCase();
+        if (t instanceof IllegalArgumentException
+                || msg.contains("too large")
+                || msg.contains("out of range")
+                || msg.contains("dimensions")
+                || msg.contains("requested dimensions")
+                || msg.contains("not enough memory")
+                || t instanceof OutOfMemoryError) {
+            return new IOException("WebView stage too large for raster snapshot", t);
+        }
+
+        return t;
     }
 
     /**

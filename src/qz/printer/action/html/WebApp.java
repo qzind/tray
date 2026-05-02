@@ -43,6 +43,9 @@ import java.util.function.IntPredicate;
  * Do not use constructor (used by JavaFX), instead call {@code WebApp.initialize()}
  */
 public class WebApp extends Application {
+    public static double getZoom() {
+        return pageZoom;
+    }
 
     private static final Logger log = LogManager.getLogger(WebApp.class);
 

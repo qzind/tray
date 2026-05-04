@@ -744,9 +744,14 @@ var qz = (function() {
             },
 
             loadLna: function() {
-                if (typeof window !== 'undefined' && window.lna && window.lna.detectLna) {
+                if (typeof window === 'undefined') {
+                    // Not in a browser, no LNA restrictions apply
+                    return;
+                }
+                if (window.lna && window.lna.detectLna) {
                     return window.lna;
                 }
+                // Use `require` if available so that bundlers can detect the dependency
                 if (typeof require === 'function') {
                     try {
                         return require('lna');

@@ -7,10 +7,12 @@ import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.ListChangeListener;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.print.PageLayout;
 import javafx.print.PrinterJob;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Scale;
@@ -20,10 +22,6 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import qz.common.Constants;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
@@ -31,6 +29,7 @@ import qz.ws.PrintSocketServer;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -88,19 +87,6 @@ public class WebApp extends Application {
             if (!hasBody) {
                 log.warn("Loaded page has no body - likely a redirect, skipping state");
                 return;
-            }
-
-            //ensure html tag doesn't use scrollbars, clipping page instead
-            Document doc = webView.getEngine().getDocument();
-            NodeList tags = doc.getElementsByTagName("html");
-            if (tags != null && tags.getLength() > 0) {
-                Node base = tags.item(0);
-                Attr applied = (Attr)base.getAttributes().getNamedItem("style");
-                if (applied == null) {
-                    applied = doc.createAttribute("style");
-                }
-                applied.setValue(applied.getValue() + "; overflow: hidden;");
-                base.getAttributes().setNamedItem(applied);
             }
 
             //width was resized earlier (for responsive html), then calculate the best fit height
@@ -264,6 +250,12 @@ public class WebApp extends Application {
 
         //prevents JavaFX from shutting down when hiding window
         Platform.setImplicitExit(false);
+
+        // hide webview scrollbars whenever they appear
+        webView.getChildrenUnmodifiable().addListener((ListChangeListener<Node>)change -> {
+            Set<Node> nodeSet = webView.lookupAll(".scroll-bar");
+            nodeSet.forEach(scroll -> scroll.setVisible(false));
+        });
     }
 
     /**
@@ -429,7 +421,7 @@ public class WebApp extends Application {
     }
 
     private static double findHeight() {
-        String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
+        String heightText = webView.getEngine().executeScript("document.body.scrollHeight").toString();
         return Double.parseDouble(heightText);
     }
 

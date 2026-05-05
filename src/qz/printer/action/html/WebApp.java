@@ -435,6 +435,7 @@ public class WebApp extends Application {
     }
 
     private static double findHeight() {
+        doUpdatePeer();
         String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
         return Double.parseDouble(heightText);
     }
@@ -452,24 +453,28 @@ public class WebApp extends Application {
         webView.autosize();
 
         if (!raster) {
-            // Call updatePeer; fixes a bug with webView resizing
-            // Can be avoided by calling stage.show() but breaks headless environments
-            // See: https://github.com/qzind/tray/issues/513
-            String[] methods = {"impl_updatePeer" /*jfx8*/, "doUpdatePeer" /*jfx11*/};
-            try {
-                for(Method m : webView.getClass().getDeclaredMethods()) {
-                    for(String method : methods) {
-                        if (m.getName().equals(method)) {
-                            m.setAccessible(true);
-                            m.invoke(webView);
-                            return;
-                        }
+            doUpdatePeer();
+        }
+    }
+
+    private static void doUpdatePeer() {
+        // Call updatePeer; fixes a bug with webView resizing
+        // Can be avoided by calling stage.show() but breaks headless environments
+        // See: https://github.com/qzind/tray/issues/513
+        String[] methods = {"impl_updatePeer" /*jfx8*/, "doUpdatePeer" /*jfx11*/};
+        try {
+            for(Method m : webView.getClass().getDeclaredMethods()) {
+                for(String method : methods) {
+                    if (m.getName().equals(method)) {
+                        m.setAccessible(true);
+                        m.invoke(webView);
+                        return;
                     }
                 }
             }
-            catch(SecurityException | ReflectiveOperationException e) {
-                log.warn("Unable to update peer; Blank pages may occur.", e);
-            }
+        }
+        catch(SecurityException | ReflectiveOperationException e) {
+            log.warn("Unable to update peer; Blank pages may occur.", e);
         }
     }
 

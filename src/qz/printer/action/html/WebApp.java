@@ -414,13 +414,7 @@ public class WebApp extends Application {
             pageHeight = model.getWebHeight();
 
             log.trace("Setting starting size {}:{}", pageWidth, pageHeight);
-            adjustSize(pageWidth * pageZoom, pageHeight * pageZoom);
-
-            if (pageHeight == 0) {
-                webView.setMinHeight(1);
-                webView.setPrefHeight(1);
-                webView.setMaxHeight(1);
-            }
+            adjustSize(pageWidth * pageZoom, Math.max(pageHeight * pageZoom, 1));
 
             autosize(webView);
 
@@ -435,7 +429,6 @@ public class WebApp extends Application {
     }
 
     private static double findHeight() {
-        doUpdatePeer();
         String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
         return Double.parseDouble(heightText);
     }
@@ -444,6 +437,7 @@ public class WebApp extends Application {
         webView.setMinSize(toWidth, toHeight);
         webView.setPrefSize(toWidth, toHeight);
         webView.setMaxSize(toWidth, toHeight);
+        doUpdatePeer();
     }
 
     /**
@@ -451,10 +445,6 @@ public class WebApp extends Application {
      */
     public static void autosize(WebView webView) {
         webView.autosize();
-
-        if (!raster) {
-            doUpdatePeer();
-        }
     }
 
     private static void doUpdatePeer() {

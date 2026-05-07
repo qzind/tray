@@ -16,10 +16,6 @@ jobs:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
       - run: sudo apt-get install makeself
-      - run: |
-          # Force sudo to see java too per https://github.com/actions/setup-java/issues/997
-          echo 'export JAVA_CMD="$JAVA_HOME/bin/java"' | sudo tee /etc/profile.d/java-sudo-fix.sh
-          sudo chmod +x /etc/profile.d/java-sudo-fix.sh
       - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
       - uses: actions/upload-artifact@v7
         with:
@@ -32,7 +28,7 @@ jobs:
           ant testng
           # Run policy tests again, but as root
           sudo ant -Dtestng.pattern="**/policy/**" testng
-          sudo DEBUG=true out/qz-tray-*.run
+          sudo DEBUG_WRAPPER=1 DEBUG=true out/qz-tray-*.run
           /opt/qz-tray/qz-tray --version
           sudo apt-get install nsis
           ant nsis

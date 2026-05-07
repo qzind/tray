@@ -1,6 +1,7 @@
 package qz.printer.action.html;
 
 import com.github.zafarkhaja.semver.Version;
+import com.sun.javafx.scene.NodeHelper;
 import com.sun.javafx.tk.TKPulseListener;
 import com.sun.javafx.tk.Toolkit;
 import javafx.animation.AnimationTimer;
@@ -28,7 +29,6 @@ import qz.ws.PrintSocketServer;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -57,7 +57,6 @@ public class WebApp extends Application {
     private static double pageWidth;
     private static double pageHeight;
     private static double pageZoom;
-    private static boolean raster;
     private static boolean headless;
 
     private static CountDownLatch startupLatch;
@@ -267,10 +266,15 @@ public class WebApp extends Application {
      */
     public static synchronized void print(final PrinterJob job, final WebAppModel model) throws Throwable {
         model.setZoom(1); //vector prints do not need to use zoom
-        raster = false;
+
+        // prevents blank pages
+        Platform.runLater(() -> {
+            stage.show();
+            stage.toBack();
+        });
 
         load(model, (int frames) -> {
-            if(frames == VECTOR_FRAMES) {
+            if(frames >= VECTOR_FRAMES) {
                 try {
                     double printScale = 72d / 96d;
                     webView.getTransforms().add(new Scale(printScale, printScale));
@@ -290,6 +294,7 @@ public class WebApp extends Application {
                     }
 
                     Platform.runLater(() -> {
+                        Throwable possiblyThrown = null;
                         double useScale = 1;
                         for(Transform t : webView.getTransforms()) {
                             if (t instanceof Scale) { useScale *= ((Scale)t).getX(); }
@@ -316,19 +321,16 @@ public class WebApp extends Application {
                                     job.printPage(webView);
                                 }
                             }
-
-                            unlatch(null);
-                        }
-                        catch(Exception e) {
-                            unlatch(e);
-                        }
-                        finally {
-                            //reset state
+                        } catch(Throwable t) {
+                            possiblyThrown = t;
+                        } finally {
                             webView.getTransforms().clear();
                         }
+                        unlatch(possiblyThrown);
                     });
+                } catch(Throwable t) {
+                    unlatch(t);
                 }
-                catch(Exception e) { unlatch(e); }
             }
             return frames >= VECTOR_FRAMES;
         });
@@ -353,8 +355,6 @@ public class WebApp extends Application {
             stage.toBack();
         });
 
-        raster = true;
-
         load(model, (int frames) -> {
             if (frames == CAPTURE_FRAMES) {
                 log.debug("Attempting image capture");
@@ -362,17 +362,19 @@ public class WebApp extends Application {
                 Toolkit.getToolkit().addPostSceneTkPulseListener(new TKPulseListener() {
                     @Override
                     public void pulse() {
+                        Throwable possiblyThrown = null;
                         try {
                             // TODO: Revert to Callback once JDK-8244588/SUPQZ-5 is avail (JDK11+ only)
                             capture.set(SwingFXUtils.fromFXImage(webView.snapshot(null, null), null));
                             unlatch(null);
                         }
-                        catch(Exception e) {
-                            unlatch(e);
+                        catch(Throwable t) {
+                            possiblyThrown = t;
                         }
                         finally {
                             Toolkit.getToolkit().removePostSceneTkPulseListener(this);
                         }
+                        unlatch(possiblyThrown);
                     }
                 });
                 Toolkit.getToolkit().requestNextPulse();
@@ -429,7 +431,7 @@ public class WebApp extends Application {
         webView.setMinSize(toWidth, toHeight);
         webView.setPrefSize(toWidth, toHeight);
         webView.setMaxSize(toWidth, toHeight);
-        doUpdatePeer();
+        NodeHelper.updatePeer(webView);
     }
 
     /**
@@ -437,27 +439,6 @@ public class WebApp extends Application {
      */
     public static void autosize(WebView webView) {
         webView.autosize();
-    }
-
-    private static void doUpdatePeer() {
-        // Call updatePeer; fixes a bug with webView resizing
-        // Can be avoided by calling stage.show() but breaks headless environments
-        // See: https://github.com/qzind/tray/issues/513
-        String[] methods = {"impl_updatePeer" /*jfx8*/, "doUpdatePeer" /*jfx11*/};
-        try {
-            for(Method m : webView.getClass().getDeclaredMethods()) {
-                for(String method : methods) {
-                    if (m.getName().equals(method)) {
-                        m.setAccessible(true);
-                        m.invoke(webView);
-                        return;
-                    }
-                }
-            }
-        }
-        catch(SecurityException | ReflectiveOperationException e) {
-            log.warn("Unable to update peer; Blank pages may occur.", e);
-        }
     }
 
     private static double calculateSupportedZoom(double width, double height) {

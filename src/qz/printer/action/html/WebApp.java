@@ -294,7 +294,7 @@ public class WebApp extends Application {
                     }
 
                     Platform.runLater(() -> {
-                        Throwable possiblyThrown = null;
+                        Exception possiblyThrown = null;
                         double useScale = 1;
                         for(Transform t : webView.getTransforms()) {
                             if (t instanceof Scale) { useScale *= ((Scale)t).getX(); }
@@ -321,15 +321,15 @@ public class WebApp extends Application {
                                     job.printPage(webView);
                                 }
                             }
-                        } catch(Throwable t) {
-                            possiblyThrown = t;
+                        } catch(Exception e) {
+                            possiblyThrown = e;
                         } finally {
                             webView.getTransforms().clear();
                         }
                         unlatch(possiblyThrown);
                     });
-                } catch(Throwable t) {
-                    unlatch(t);
+                } catch(Exception e) {
+                    unlatch(e);
                 }
             }
             return frames >= VECTOR_FRAMES;
@@ -362,13 +362,13 @@ public class WebApp extends Application {
                 Toolkit.getToolkit().addPostSceneTkPulseListener(new TKPulseListener() {
                     @Override
                     public void pulse() {
-                        Throwable possiblyThrown = null;
+                        Exception possiblyThrown = null;
                         try {
                             // TODO: Revert to Callback once JDK-8244588/SUPQZ-5 is avail (JDK11+ only)
                             capture.set(SwingFXUtils.fromFXImage(webView.snapshot(null, null), null));
                             unlatch(null);
                         }
-                        catch(Throwable t) {
+                        catch(Exception t) {
                             possiblyThrown = t;
                         }
                         finally {

@@ -27,7 +27,7 @@ jobs:
           sudo apt-get install firefox chromium
           ant testng
           # Run policy tests again, but as root
-          sudo DEBUG_WRAPPER=1 ant -Dtestng.pattern="**/policy/**" testng
+          sudo JAVA_HOME="$JAVA_HOME" JAVACMD="$JAVA_HOME/bin/java" ant -Dtestng.pattern="**/policy/**" testng
           sudo DEBUG=true out/qz-tray-*.run
           /opt/qz-tray/qz-tray --version
           sudo apt-get install nsis

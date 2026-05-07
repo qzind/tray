@@ -7,10 +7,12 @@ import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.ListChangeListener;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.print.PageLayout;
 import javafx.print.PrinterJob;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Scale;
@@ -20,10 +22,6 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import qz.common.Constants;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
@@ -31,6 +29,7 @@ import qz.ws.PrintSocketServer;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -58,7 +57,6 @@ public class WebApp extends Application {
     private static double pageWidth;
     private static double pageHeight;
     private static double pageZoom;
-    private static boolean raster;
     private static boolean headless;
 
     private static CountDownLatch startupLatch;
@@ -88,19 +86,6 @@ public class WebApp extends Application {
             if (!hasBody) {
                 log.warn("Loaded page has no body - likely a redirect, skipping state");
                 return;
-            }
-
-            //ensure html tag doesn't use scrollbars, clipping page instead
-            Document doc = webView.getEngine().getDocument();
-            NodeList tags = doc.getElementsByTagName("html");
-            if (tags != null && tags.getLength() > 0) {
-                Node base = tags.item(0);
-                Attr applied = (Attr)base.getAttributes().getNamedItem("style");
-                if (applied == null) {
-                    applied = doc.createAttribute("style");
-                }
-                applied.setValue(applied.getValue() + "; overflow: hidden;");
-                base.getAttributes().setNamedItem(applied);
             }
 
             //width was resized earlier (for responsive html), then calculate the best fit height
@@ -133,7 +118,7 @@ public class WebApp extends Application {
 
             log.trace("Set HTML page height to {}", pageHeight);
 
-            autosize(webView);
+            webView.autosize();
 
             Platform.runLater(() -> new AnimationTimer() {
                 int frames = 0;
@@ -264,6 +249,12 @@ public class WebApp extends Application {
 
         //prevents JavaFX from shutting down when hiding window
         Platform.setImplicitExit(false);
+
+        // hide webview scrollbars whenever they appear
+        webView.getChildrenUnmodifiable().addListener((ListChangeListener<Node>)change -> {
+            Set<Node> nodeSet = webView.lookupAll(".scroll-bar");
+            nodeSet.forEach(scroll -> scroll.setVisible(false));
+        });
     }
 
     /**
@@ -275,10 +266,15 @@ public class WebApp extends Application {
      */
     public static synchronized void print(final PrinterJob job, final WebAppModel model) throws Throwable {
         model.setZoom(1); //vector prints do not need to use zoom
-        raster = false;
+
+        // prevents blank pages
+        Platform.runLater(() -> {
+            stage.show();
+            stage.toBack();
+        });
 
         load(model, (int frames) -> {
-            if(frames == VECTOR_FRAMES) {
+            if(frames >= VECTOR_FRAMES) {
                 try {
                     double printScale = 72d / 96d;
                     webView.getTransforms().add(new Scale(printScale, printScale));
@@ -298,6 +294,7 @@ public class WebApp extends Application {
                     }
 
                     Platform.runLater(() -> {
+                        Exception possiblyThrown = null;
                         double useScale = 1;
                         for(Transform t : webView.getTransforms()) {
                             if (t instanceof Scale) { useScale *= ((Scale)t).getX(); }
@@ -324,19 +321,16 @@ public class WebApp extends Application {
                                     job.printPage(webView);
                                 }
                             }
-
-                            unlatch(null);
-                        }
-                        catch(Exception e) {
-                            unlatch(e);
-                        }
-                        finally {
-                            //reset state
+                        } catch(Exception e) {
+                            possiblyThrown = e;
+                        } finally {
                             webView.getTransforms().clear();
                         }
+                        unlatch(possiblyThrown);
                     });
+                } catch(Exception e) {
+                    unlatch(e);
                 }
-                catch(Exception e) { unlatch(e); }
             }
             return frames >= VECTOR_FRAMES;
         });
@@ -361,8 +355,6 @@ public class WebApp extends Application {
             stage.toBack();
         });
 
-        raster = true;
-
         load(model, (int frames) -> {
             if (frames == CAPTURE_FRAMES) {
                 log.debug("Attempting image capture");
@@ -370,17 +362,18 @@ public class WebApp extends Application {
                 Toolkit.getToolkit().addPostSceneTkPulseListener(new TKPulseListener() {
                     @Override
                     public void pulse() {
+                        Exception possiblyThrown = null;
                         try {
                             // TODO: Revert to Callback once JDK-8244588/SUPQZ-5 is avail (JDK11+ only)
                             capture.set(SwingFXUtils.fromFXImage(webView.snapshot(null, null), null));
-                            unlatch(null);
                         }
-                        catch(Exception e) {
-                            unlatch(e);
+                        catch(Exception t) {
+                            possiblyThrown = t;
                         }
                         finally {
                             Toolkit.getToolkit().removePostSceneTkPulseListener(this);
                         }
+                        unlatch(possiblyThrown);
                     }
                 });
                 Toolkit.getToolkit().requestNextPulse();
@@ -414,15 +407,9 @@ public class WebApp extends Application {
             pageHeight = model.getWebHeight();
 
             log.trace("Setting starting size {}:{}", pageWidth, pageHeight);
-            adjustSize(pageWidth * pageZoom, pageHeight * pageZoom);
+            adjustSize(pageWidth * pageZoom, Math.max(pageHeight * pageZoom, 1));
 
-            if (pageHeight == 0) {
-                webView.setMinHeight(1);
-                webView.setPrefHeight(1);
-                webView.setMaxHeight(1);
-            }
-
-            autosize(webView);
+            webView.autosize();
 
             printAction = action;
 
@@ -435,7 +422,7 @@ public class WebApp extends Application {
     }
 
     private static double findHeight() {
-        String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
+        String heightText = webView.getEngine().executeScript("document.body.scrollHeight").toString();
         return Double.parseDouble(heightText);
     }
 
@@ -443,33 +430,27 @@ public class WebApp extends Application {
         webView.setMinSize(toWidth, toHeight);
         webView.setPrefSize(toWidth, toHeight);
         webView.setMaxSize(toWidth, toHeight);
+        doUpdatePeer();
     }
 
-    /**
-     * Fix blank page after autosize is called
-     */
-    public static void autosize(WebView webView) {
-        webView.autosize();
-
-        if (!raster) {
-            // Call updatePeer; fixes a bug with webView resizing
-            // Can be avoided by calling stage.show() but breaks headless environments
-            // See: https://github.com/qzind/tray/issues/513
-            String[] methods = {"impl_updatePeer" /*jfx8*/, "doUpdatePeer" /*jfx11*/};
-            try {
-                for(Method m : webView.getClass().getDeclaredMethods()) {
-                    for(String method : methods) {
-                        if (m.getName().equals(method)) {
-                            m.setAccessible(true);
-                            m.invoke(webView);
-                            return;
-                        }
+    private static void doUpdatePeer() {
+        // Call updatePeer; fixes a bug with webView resizing
+        // Candidate for replacement: NodeHelper.updatePeer()
+        // See: https://github.com/qzind/tray/issues/513
+        String[] methods = {"doUpdatePeer" /*jfx11*/, "impl_updatePeer" /*jfx8*/};
+        try {
+            for(Method m : webView.getClass().getDeclaredMethods()) {
+                for(String method : methods) {
+                    if (m.getName().equals(method)) {
+                        m.setAccessible(true);
+                        m.invoke(webView);
+                        return;
                     }
                 }
             }
-            catch(SecurityException | ReflectiveOperationException e) {
-                log.warn("Unable to update peer; Blank pages may occur.", e);
-            }
+        }
+        catch(SecurityException | ReflectiveOperationException e) {
+            log.warn("Unable to update peer; Blank pages may occur.", e);
         }
     }
 

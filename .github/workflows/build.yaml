@@ -18,10 +18,8 @@ jobs:
       - run: sudo apt-get install makeself
       - run: |
           # Force sudo to see java too per https://github.com/actions/setup-java/issues/997
-          sudo update-alternatives --install /usr/bin/java java "$JAVA_HOME/bin/java" 1
-          sudo update-alternatives --install /usr/bin/javac javac "$JAVA_HOME/bin/javac" 1
-          sudo update-alternatives --set java "$JAVA_HOME/bin/java"
-          sudo update-alternatives --set javac "$JAVA_HOME/bin/javac"
+          echo 'export JAVA_CMD="$JAVA_HOME/bin/java"' | sudo tee /etc/profile.d/java-sudo-fix.sh
+          sudo chmod +x /etc/profile.d/java-sudo-fix.sh
       - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
       - uses: actions/upload-artifact@v7
         with:

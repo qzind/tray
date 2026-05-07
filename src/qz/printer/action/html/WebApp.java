@@ -1,7 +1,6 @@
 package qz.printer.action.html;
 
 import com.github.zafarkhaja.semver.Version;
-import com.sun.javafx.scene.NodeHelper;
 import com.sun.javafx.tk.TKPulseListener;
 import com.sun.javafx.tk.Toolkit;
 import javafx.animation.AnimationTimer;
@@ -29,6 +28,7 @@ import qz.ws.PrintSocketServer;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -118,7 +118,7 @@ public class WebApp extends Application {
 
             log.trace("Set HTML page height to {}", pageHeight);
 
-            autosize(webView);
+            webView.autosize();
 
             Platform.runLater(() -> new AnimationTimer() {
                 int frames = 0;
@@ -410,7 +410,7 @@ public class WebApp extends Application {
             log.trace("Setting starting size {}:{}", pageWidth, pageHeight);
             adjustSize(pageWidth * pageZoom, Math.max(pageHeight * pageZoom, 1));
 
-            autosize(webView);
+            webView.autosize();
 
             printAction = action;
 
@@ -431,14 +431,28 @@ public class WebApp extends Application {
         webView.setMinSize(toWidth, toHeight);
         webView.setPrefSize(toWidth, toHeight);
         webView.setMaxSize(toWidth, toHeight);
-        NodeHelper.updatePeer(webView);
+        doUpdatePeer();
     }
 
-    /**
-     * Fix blank page after autosize is called
-     */
-    public static void autosize(WebView webView) {
-        webView.autosize();
+    private static void doUpdatePeer() {
+        // Call updatePeer; fixes a bug with webView resizing
+        // Candidate for replacement: NodeHelper.updatePeer()
+        // See: https://github.com/qzind/tray/issues/513
+        String[] methods = {"doUpdatePeer" /*jfx11*/, "impl_updatePeer" /*jfx8*/};
+        try {
+            for(Method m : webView.getClass().getDeclaredMethods()) {
+                for(String method : methods) {
+                    if (m.getName().equals(method)) {
+                        m.setAccessible(true);
+                        m.invoke(webView);
+                        return;
+                    }
+                }
+            }
+        }
+        catch(SecurityException | ReflectiveOperationException e) {
+            log.warn("Unable to update peer; Blank pages may occur.", e);
+        }
     }
 
     private static double calculateSupportedZoom(double width, double height) {

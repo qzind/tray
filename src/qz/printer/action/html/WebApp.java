@@ -436,22 +436,9 @@ public class WebApp extends Application {
 
     private static void doUpdatePeer() {
         // Call updatePeer; fixes a bug with webView resizing
-        // See: https://github.com/qzind/tray/issues/1449
-        try {
-            SceneHelper.setAllowPGAccess(true);
-            NodeHelper.updatePeer(webView);
-        }
-        catch(SecurityException e) {
-            log.warn("Unable to update peer; Blank pages may occur.", e);
-        }
-        finally {
-            try {
-                SceneHelper.setAllowPGAccess(false);
-            }
-            catch(Throwable t) {
-                log.trace("Unable to restore SceneHelper.allowPGAccess", t);
-            }
-        }
+        SceneHelper.setAllowPGAccess(true);
+        NodeHelper.updatePeer(webView);
+        SceneHelper.setAllowPGAccess(false);
     }
 
     private static double calculateSupportedZoom(double width, double height) {

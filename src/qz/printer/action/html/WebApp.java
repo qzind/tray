@@ -1,6 +1,8 @@
 package qz.printer.action.html;
 
 import com.github.zafarkhaja.semver.Version;
+import com.sun.javafx.scene.NodeHelper;
+import com.sun.javafx.scene.SceneHelper;
 import com.sun.javafx.tk.TKPulseListener;
 import com.sun.javafx.tk.Toolkit;
 import javafx.animation.AnimationTimer;
@@ -28,7 +30,6 @@ import qz.ws.PrintSocketServer;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -435,23 +436,9 @@ public class WebApp extends Application {
 
     private static void doUpdatePeer() {
         // Call updatePeer; fixes a bug with webView resizing
-        // Candidate for replacement: NodeHelper.updatePeer()
-        // See: https://github.com/qzind/tray/issues/513
-        String[] methods = {"doUpdatePeer" /*jfx11*/, "impl_updatePeer" /*jfx8*/};
-        try {
-            for(Method m : webView.getClass().getDeclaredMethods()) {
-                for(String method : methods) {
-                    if (m.getName().equals(method)) {
-                        m.setAccessible(true);
-                        m.invoke(webView);
-                        return;
-                    }
-                }
-            }
-        }
-        catch(SecurityException | ReflectiveOperationException e) {
-            log.warn("Unable to update peer; Blank pages may occur.", e);
-        }
+        SceneHelper.setAllowPGAccess(true);
+        NodeHelper.updatePeer(webView);
+        SceneHelper.setAllowPGAccess(false);
     }
 
     private static double calculateSupportedZoom(double width, double height) {

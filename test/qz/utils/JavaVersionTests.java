@@ -1,5 +1,6 @@
 package qz.utils;
 
+import com.github.zafarkhaja.semver.UnexpectedCharacterException;
 import com.github.zafarkhaja.semver.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -156,7 +157,15 @@ public class JavaVersionTests {
         }
         String javaVersion = antProperties.getProperty("jlink.java.version");
         // Ensures version in project.properties doesn't get corrupted by our own complicated parsing logic
-        Assert.assertEquals(Version.parse(javaVersion), parse(javaVersion));
+        Version bareVersion;
+        try {
+            // Legacy 11.0.0+N format
+            bareVersion = Version.parse(javaVersion);
+        } catch(UnexpectedCharacterException e) {
+            // Modern 25+N format
+            bareVersion = JavaVersion.toSemantic(Runtime.Version.parse(javaVersion));
+        }
+        Assert.assertEquals(bareVersion, parse(javaVersion));
     }
 
     @DataProvider(name = "comparisons")

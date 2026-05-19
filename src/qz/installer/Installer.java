@@ -332,11 +332,6 @@ public abstract class Installer {
                 }
                 installer.install(caCert);
 
-                // Install Chrome URLAllowlist TODO: Remove @2.3.0 per #1277
-                PolicyInstaller policyInstaller = new PolicyInstaller(scope, CHROMIUM.getVariants()[0]); // "Chrome" proper
-                policyInstaller.uninstall(PolicyState.Type.ARRAY, "URLWhitelist", DATA_DIR + "://*"); // Deprecated Chrome v100+
-                policyInstaller.install(PolicyState.Type.ARRAY, "URLAllowlist", DATA_DIR + "://*");
-
                 // Install Firefox certificate
                 new FirefoxCertificateInstaller(scope, caCert).install();
 
@@ -368,10 +363,6 @@ public abstract class Installer {
         // System certs
         NativeCertificateInstaller instance = NativeCertificateInstaller.getInstance(scope);
         instance.remove(instance.find());
-
-        // Remove Chrome URLAllowlist TODO: Remove @2.3.0 per #1277
-        PolicyInstaller policyInstaller = new PolicyInstaller(scope, CHROMIUM.getVariants()[0]); // "Chrome" proper
-        policyInstaller.uninstall(PolicyState.Type.ARRAY, "URLAllowlist", DATA_DIR + "://*");
 
         // Uninstall Firefox certificate
         new FirefoxCertificateInstaller(scope, null).uninstall();

@@ -104,6 +104,57 @@ var qz = (function() {
             },
 
             setup: {
+                webSocketPromise: function(address) {
+                    var ws, onError, onOpen;
+                    return _qz.tools.promise(function(resolve, reject) {
+                        ws = new _qz.tools.ws(address);
+                        _qz.websocket.connection = ws;
+                        onOpen = function() {
+                            resolve(ws);
+                        };
+                        onError = function(e) {
+                            _qz.websocket.connection = null;
+                            reject(e);
+                        };
+                        ws.addEventListener("open", onOpen);
+                        ws.addEventListener("error", onError);
+                        // Older Safari versions may trigger close event instead of error event.
+                        ws.addEventListener("close", onError);
+                    }).finally(function() {
+                        ws.removeEventListener("open", onOpen);
+                        ws.removeEventListener("error", onError);
+                        ws.removeEventListener("close", onError);
+                    });
+                },
+
+                connectToAddress: function(address) {
+                    var lna = _qz.tools.getLna();
+
+                    _qz.log.trace("Attempting connection", address);
+                    var wsPromise;
+                    if (lna) {
+                        _qz.log.trace("Connecting with lna.js");
+                        wsPromise = lna.detectLna(address, _qz.websocket.setup.webSocketPromise, {
+                            isWebSocket: true,
+                            defaultAddressSpace: 'public'
+                        });
+                    } else {
+                        _qz.log.trace("Connecting without lna.js");
+                        wsPromise = _qz.websocket.setup.webSocketPromise(address);
+                    }
+                    return wsPromise.catch(function(evt) {
+                        var msg = evt.denied
+                            ? "Connection attempt denied by Local Network Access restrictions"
+                            : "Unable to establish connection with " + _qz.TITLE;
+                        var err = new Error(msg);
+                        if (lna && evt instanceof lna.LnaError) {
+                            err.denied = evt.denied;
+                            err.permission = evt.permission;
+                        }
+                        throw err;
+                    });
+                },
+
                 /** Loop through possible ports to open connection, sets web socket calls that will settle the promise. */
                 findConnection: function(config, resolve, reject) {
                     if (_qz.websocket.shutdown) {
@@ -125,10 +176,16 @@ var qz = (function() {
                         config.usingSecure = true;
                     }
 
-                    var deeper = function() {
+                    var deeper = function(e) {
                         if (_qz.websocket.shutdown) {
                             //connection attempt was cancelled, bail out
                             reject(new Error("Connection attempt cancelled by user"));
+                            return;
+                        }
+
+                        if (e.denied) {
+                            //user denied LNA permission, stop trying
+                            reject(e);
                             return;
                         }
 
@@ -138,7 +195,7 @@ var qz = (function() {
                             || (!config.usingSecure && config.port.portIndex >= config.port.insecure.length)) {
                             if (config.hostIndex >= config.host.length - 1) {
                                 //give up, all hope is lost
-                                reject(new Error("Unable to establish connection with " + _qz.TITLE));
+                                reject(e);
                                 return;
                             } else {
                                 config.hostIndex++;
@@ -157,67 +214,37 @@ var qz = (function() {
                         address = config.protocol.insecure + config.host[config.hostIndex] + ":" + config.port.insecure[config.port.portIndex];
                     }
 
-                    try {
-                        _qz.log.trace("Attempting connection", address);
-                        _qz.websocket.connection = new _qz.tools.ws(address);
-                    }
-                    catch(err) {
-                        _qz.log.error(err);
-                        deeper();
-                        return;
-                    }
+                    var promise = _qz.websocket.setup.connectToAddress(address);
 
-                    if (_qz.websocket.connection != null) {
-                        _qz.websocket.connection.established = false;
-
+                    promise.then(
                         //called on successful connection to qz, begins setup of websocket calls and resolves connect promise after certificate is sent
-                        _qz.websocket.connection.onopen = function(evt) {
-                            if (!_qz.websocket.connection.established) {
-                                _qz.log.trace(evt);
-                                _qz.log.info("Established connection with " + _qz.TITLE + " on " + address);
+                        function() {
+                            _qz.log.info("Established connection with " + _qz.TITLE + " on " + address);
+                            _qz.websocket.setup.openConnection({ resolve: resolve, reject: reject });
 
-                                _qz.websocket.setup.openConnection({ resolve: resolve, reject: reject });
+                            if (config.keepAlive > 0) {
+                                var interval = setInterval(function() {
+                                    if (!_qz.tools.isActive() || _qz.websocket.connection.interval !== interval) {
+                                        clearInterval(interval);
+                                        return;
+                                    }
 
-                                if (config.keepAlive > 0) {
-                                    var interval = setInterval(function() {
-                                        if (!_qz.tools.isActive() || _qz.websocket.connection.interval !== interval) {
-                                            clearInterval(interval);
-                                            return;
-                                        }
+                                    _qz.websocket.connection.send("ping");
+                                }, config.keepAlive * 1000);
 
-                                        _qz.websocket.connection.send("ping");
-                                    }, config.keepAlive * 1000);
-
-                                    _qz.websocket.connection.interval = interval;
-                                }
+                                _qz.websocket.connection.interval = interval;
                             }
-                        };
-
-                        //called during websocket close during setup
-                        _qz.websocket.connection.onclose = function() {
-                            // Safari compatibility fix to raise error event
-                            if (_qz.websocket.connection && typeof navigator !== 'undefined' && navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Chrome') == -1) {
-                                _qz.websocket.connection.onerror();
-                            }
-                        };
-
+                        },
                         //called for errors during setup (such as invalid ports), reject connect promise only if all ports have been tried
-                        _qz.websocket.connection.onerror = function(evt) {
-                            _qz.log.trace(evt);
-
-                            _qz.websocket.connection = null;
-
-                            deeper();
-                        };
-                    } else {
-                        reject(new Error("Unable to create a websocket connection"));
-                    }
+                        function(e) {
+                            _qz.log.trace(e);
+                            deeper(e);
+                        }
+                    )
                 },
 
                 /** Finish setting calls on successful connection, sets web socket calls that won't settle the promise. */
                 openConnection: function(openPromise) {
-                    _qz.websocket.connection.established = true;
-
                     //called when an open connection is closed
                     _qz.websocket.connection.onclose = function(evt) {
                         _qz.log.trace(evt);
@@ -707,6 +734,32 @@ var qz = (function() {
             },
 
             ws: typeof WebSocket !== 'undefined' ? WebSocket : null,
+            lna: undefined,
+
+            getLna: function() {
+                if (_qz.tools.lna === undefined) {
+                    _qz.tools.lna = _qz.tools.loadLna() || null;
+                }
+                return _qz.tools.lna;
+            },
+
+            loadLna: function() {
+                if (typeof self === 'undefined') {
+                    // Not in a browser, no LNA restrictions apply
+                    return;
+                }
+                if (self.lna && self.lna.detectLna) {
+                    return self.lna;
+                }
+                // Use `require` if available so that bundlers can detect the dependency
+                if (typeof require === 'function') {
+                    try {
+                        return require('lna');
+                    } catch (e) {
+                        _qz.log.warn("Unable to load LNA library", e);
+                    }
+                }
+            },
 
             /**
              * Normalize a host string by appending a "surf"" tld if necessary.

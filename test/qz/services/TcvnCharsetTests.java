@@ -67,34 +67,16 @@ public class TcvnCharsetTests {
 	}
 
 	@Test(dataProvider = "tcvnData")
-	public void testTcvnEncoding(String input, byte[] expectedBytes) throws Exception {
-		log.trace("Encoding string '{}' to {}", input, CHARSET_NAME);
-
-		byte[] actualBytes = input.getBytes(CHARSET_NAME);
-
-		log.trace("Comparing byte arrays. Expected length: {}, Actual length: {}",
-			expectedBytes.length, actualBytes.length);
-
-		Assert.assertEquals(actualBytes, expectedBytes, "Byte arrays do not match for input: " + input);
+	public void testTcvnEncoding(String inputString, byte[] expectedBytes) throws Exception {
+		log.trace("Encoding string '{}'", inputString);
+		byte[] actualBytes = inputString.getBytes(CHARSET_NAME);
+		Assert.assertEquals(actualBytes, expectedBytes);
 	}
 
-	@Test
-	public void testDecoding() throws Exception {
-		byte[] rawTcvnBytes = new byte[] {
-			(byte) 0x56,
-			(byte) 0x69,
-			(byte) 0x65,
-			(byte) 0x74,
-			(byte) 0x20,
-			(byte) 0x4E,
-			(byte) 0x61,
-			(byte) 0x6D
-		};
-		String expectedString = "Viet Nam";
-
-		String actualString = new String(rawTcvnBytes, CHARSET_NAME);
-		log.trace("Decoded string actual: '{}', expected: '{}'", actualString, expectedString);
-
+	@Test(dataProvider = "tcvnData")
+	public void testTcvnDecoding(String expectedString, byte[] inputBytes) throws Exception {
+		log.trace("Decoding bytes, expecting string '{}'", expectedString);
+		String actualString = new String(inputBytes, CHARSET_NAME);
 		Assert.assertEquals(actualString, expectedString);
 	}
 }

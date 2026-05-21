@@ -52,8 +52,8 @@ public class WebApp extends Application {
 
     private static WebApp instance = null;
     private static Version webkitVersion = null;
-    private static int CAPTURE_FRAMES = 2;
-    private static int VECTOR_FRAMES = 1;
+    static int CAPTURE_FRAMES = 2;
+    static int VECTOR_FRAMES = 1;
     private static Stage stage;
     private static WebView webView;
     private static double pageWidth;
@@ -495,5 +495,13 @@ public class WebApp extends Application {
             }
         }
         return webkitVersion;
+    }
+
+    public static boolean isHeadless() {
+        return headless;
+    }
+
+    public static boolean hasStarted() {
+        return startupLatch.getCount() > 0;
     }
 }

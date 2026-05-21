@@ -62,6 +62,32 @@ public class TcvnCharsetTests {
 					(byte) 0x61,
 					(byte) 0x6D
 				}
+			},
+			// Empty string should return an empty byte array
+			{
+				"",
+				new byte[] {}
+			}
+		};
+	}
+
+	@DataProvider(name = "invalidCharacterData")
+	public Object[][] invalidCharacterData() {
+		return new Object[][] {
+			// Kanji characters should fall back to '?' (0x3F) once for each character
+			{
+				"日本語",
+				new byte[] { (byte) 0x3F, (byte) 0x3F, (byte) 0x3F }
+			},
+			// Cyrillic characters should be more of the same
+			{
+				"Привет",
+				new byte[] { (byte) 0x3F, (byte) 0x3F, (byte) 0x3F, (byte) 0x3F, (byte) 0x3F, (byte) 0x3F }
+			},
+			// Mixed valid ASCII and invalid characters
+			{
+				"Vn日本語",
+				new byte[] { (byte) 0x56, (byte) 0x6E, (byte) 0x3F, (byte) 0x3F, (byte) 0x3F }
 			}
 		};
 	}
@@ -78,5 +104,12 @@ public class TcvnCharsetTests {
 		log.trace("Decoding bytes, expecting string '{}'", expectedString);
 		String actualString = new String(inputBytes, CHARSET_NAME);
 		Assert.assertEquals(actualString, expectedString);
+	}
+
+	@Test(dataProvider = "invalidCharacterData")
+	public void testInvalidCharactersEncoding(String inputString, byte[] expectedBytes) throws Exception {
+		log.trace("Encoding invalid character string '{}'", inputString);
+		byte[] actualBytes = inputString.getBytes(CHARSET_NAME);
+		Assert.assertEquals(actualBytes, expectedBytes);
 	}
 }

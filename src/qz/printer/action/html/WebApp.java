@@ -24,8 +24,11 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.App;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
+import qz.utils.ArgValue;
+import qz.utils.PrefsSearch;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -467,10 +470,24 @@ public class WebApp extends Application {
 
     /**
      * Compatibility overload for preview integration.
-     * Current behavior delegates to existing vector print flow.
      */
     public static synchronized void print(final PrinterJob job, final WebAppModel model, PrintOptions options) throws Throwable {
-        print(job, model);
+        if (PrefsSearch.getBoolean(ArgValue.TRAY_PREVIEW, App.getTrayProperties())) {
+            if (headless) {
+                log.warn("Preview requested by tray preference, but environment is headless. Printing directly.");
+                print(job, model);
+                return;
+            }
+
+            PreviewHtmlInstance previewHtmlInstance = new PreviewHtmlInstance(stage);
+            previewHtmlInstance.show(job, model, options);
+            previewHtmlInstance.await();
+            if (!previewHtmlInstance.isCanceled()) {
+                print(job, model);
+            }
+        } else {
+            print(job, model);
+        }
     }
 
     public static Version getWebkitVersion() {

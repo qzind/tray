@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.printer.PrintOptions;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.CountDownLatch;
 
 class PreviewHtmlInstance extends AbstractHtmlInstance {
@@ -17,8 +18,9 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
     private WebAppModel model;
     private PrintOptions options;
     private PreviewWindow preview;
-    //rename or move this
-    private CountDownLatch initLatch = new CountDownLatch(1);
+    private final CountDownLatch initLatch = new CountDownLatch(1);
+    private final CountDownLatch doneLatch = new CountDownLatch(1);
+    private final AtomicBoolean canceled = new AtomicBoolean(true);
 
     public PreviewHtmlInstance(Stage stage) {
         stateListener = (ov, oldState, newState) -> {
@@ -56,6 +58,7 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
     public void show(PrinterJob job, WebAppModel model, PrintOptions options) throws InterruptedException {
         this.model = model;
         this.options = options;
+        canceled.set(true);
         initLatch.await();
 
         load(model, frames -> {
@@ -72,14 +75,27 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
         Platform.runLater(() -> {
             preview = new PreviewWindow(renderStage.getStyle(), webView);
             preview.setOnPrint(rectangle -> {
-                log.warn(rectangle.getWidth());
-                log.warn(rectangle.getHeight());
+                log.debug("Preview accepted at {} x {}", rectangle.getWidth(), rectangle.getHeight());
+                canceled.set(false);
+                doneLatch.countDown();
             });
-            preview.setOnCancel(() -> log.warn("Print preview canceled"));
+            preview.setOnCancel(() -> {
+                log.debug("Print preview canceled");
+                canceled.set(true);
+                doneLatch.countDown();
+            });
             preview.setPreviewWidth(width);
             preview.setPreviewHeight(height);
             preview.setUnit(options.getPixelOptions().getUnits());
             preview.show();
         });
+    }
+
+    public void await() throws InterruptedException {
+        doneLatch.await();
+    }
+
+    public boolean isCanceled() {
+        return canceled.get();
     }
 }

@@ -75,12 +75,13 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
         Platform.runLater(() -> {
             preview = new PreviewWindow(renderStage.getStyle(), webView);
             preview.setOnPrint(rectangle -> {
-                log.debug("Preview accepted at {} x {}", rectangle.getWidth(), rectangle.getHeight());
+                // Match PR #1375 intent: accept preview-driven dimensions before printing.
+                model.setWidth(rectangle.getWidth() * (72d / 96d));
+                model.setHeight(rectangle.getHeight() * (72d / 96d));
                 canceled.set(false);
                 doneLatch.countDown();
             });
             preview.setOnCancel(() -> {
-                log.debug("Print preview canceled");
                 canceled.set(true);
                 doneLatch.countDown();
             });

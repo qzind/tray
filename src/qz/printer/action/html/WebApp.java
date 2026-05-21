@@ -24,7 +24,6 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.App;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.utils.ArgValue;
@@ -472,21 +471,30 @@ public class WebApp extends Application {
      * Compatibility overload for preview integration.
      */
     public static synchronized void print(final PrinterJob job, final WebAppModel model, PrintOptions options) throws Throwable {
-        if (PrefsSearch.getBoolean(ArgValue.TRAY_PREVIEW, App.getTrayProperties())) {
-            if (headless) {
-                log.warn("Preview requested by tray preference, but environment is headless. Printing directly.");
-                print(job, model);
-                return;
-            }
+        boolean previewEnabled = PrintSocketServer.getTrayManager() != null
+                ? PrintSocketServer.getTrayManager().isPreviewPreferred()
+                : PrefsSearch.getBoolean(ArgValue.TRAY_PREVIEW);
 
+        // TODO(#1357): Need clarification on expected behavior in headless/Monocle.
+        // Current fallback: skip preview UI and print directly
+        // when no interactive display is available.
+        if (headless) {
+            if (previewEnabled) {
+                log.warn("Preview enabled, but environment is headless. Printing directly.");
+            }
+            print(job, model);
+            return;
+        }
+
+        if (previewEnabled) {
             PreviewHtmlInstance previewHtmlInstance = new PreviewHtmlInstance(stage);
             previewHtmlInstance.show(job, model, options);
             previewHtmlInstance.await();
             if (!previewHtmlInstance.isCanceled()) {
-                print(job, model);
+                new PrintHtmlInstance(stage).print(job, model);
             }
         } else {
-            print(job, model);
+            new PrintHtmlInstance(stage).print(job, model);
         }
     }
 

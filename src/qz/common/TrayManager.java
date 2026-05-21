@@ -118,7 +118,7 @@ public class TrayManager {
         shortcutCreator = ShortcutCreator.getInstance();
 
         SystemUtilities.setSystemLookAndFeel(headless);
-        iconCache = new IconCache();
+        iconCache = IconCache.getInstance();
 
         if (SystemUtilities.isSystemTraySupported(headless)) { // UI mode with tray
             switch(SystemUtilities.getOs()) {
@@ -675,6 +675,10 @@ public class TrayManager {
 
     public boolean isMonoclePreferred() {
         return getPref(TRAY_MONOCLE);
+    }
+
+    public boolean isPreviewPreferred() {
+        return getPref(TRAY_PREVIEW);
     }
 
     public boolean isHeadless() {

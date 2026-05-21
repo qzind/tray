@@ -471,17 +471,25 @@ public class WebApp extends Application {
      * Compatibility overload for preview integration.
      */
     public static synchronized void print(final PrinterJob job, final WebAppModel model, PrintOptions options) throws Throwable {
+        // Use live in-memory tray prefs when TrayManager is available;
+        // fall back to persisted preferences for contexts without TrayManager.
+        boolean monoclePreferred = PrintSocketServer.getTrayManager() != null
+                ? PrintSocketServer.getTrayManager().isMonoclePreferred()
+                : PrefsSearch.getBoolean(ArgValue.TRAY_MONOCLE);
+        // Use active tray state first, then read persisted default
+        // when no tray instance is present.
         boolean previewEnabled = PrintSocketServer.getTrayManager() != null
                 ? PrintSocketServer.getTrayManager().isPreviewPreferred()
                 : PrefsSearch.getBoolean(ArgValue.TRAY_PREVIEW);
 
-        // TODO(#1357): Need clarification on expected behavior in headless/Monocle.
+        // TODO(#1357): Need clarification on expected behavior in headless/Monocle
         // Current fallback: skip preview UI and print directly
-        // when no interactive display is available.
-        if (headless) {
+        // when running in non-interactive render modes.
+        if (headless || monoclePreferred) {
             if (previewEnabled) {
-                log.warn("Preview enabled, but environment is headless. Printing directly.");
+                log.warn("Preview enabled, but environment is non-interactive (headless/monocle). Printing directly.");
             }
+            // skip preview UI and use the legacy direct print path.
             print(job, model);
             return;
         }
@@ -494,6 +502,8 @@ public class WebApp extends Application {
                 new PrintHtmlInstance(stage).print(job, model);
             }
         } else {
+            // Keep direct-print on the same PrintHtmlInstance
+            // path as preview-accepted print.
             new PrintHtmlInstance(stage).print(job, model);
         }
     }

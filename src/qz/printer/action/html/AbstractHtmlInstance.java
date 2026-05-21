@@ -1,5 +1,7 @@
 package qz.printer.action.html;
 
+import com.sun.javafx.scene.NodeHelper;
+import com.sun.javafx.scene.SceneHelper;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -14,7 +16,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntPredicate;
@@ -178,21 +179,11 @@ abstract class AbstractHtmlInstance {
             // Call updatePeer; fixes a bug with webView resizing
             // Can be avoided by calling stage.show() but breaks headless environments
             // See: https://github.com/qzind/tray/issues/513
-            String[] methods = {"impl_updatePeer" /*jfx8*/, "doUpdatePeer" /*jfx11*/};
-            try {
-                for(Method m : webView.getClass().getDeclaredMethods()) {
-                    for(String method : methods) {
-                        if (m.getName().equals(method)) {
-                            m.setAccessible(true);
-                            m.invoke(webView);
-                            return;
-                        }
-                    }
-                }
-            }
-            catch(SecurityException | ReflectiveOperationException e) {
-                log.warn("Unable to update peer; Blank pages may occur.", e);
-            }
+            // Remove reflection-based impl_updatePeer/doUpdatePeer lookup and
+            // prefer this explicit helper path for consistent JavaFX behavior.
+            SceneHelper.setAllowPGAccess(true);
+            NodeHelper.updatePeer(webView);
+            SceneHelper.setAllowPGAccess(false);
         }
     }
 

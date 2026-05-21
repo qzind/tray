@@ -22,11 +22,19 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
     private final CountDownLatch doneLatch = new CountDownLatch(1);
     private final AtomicBoolean canceled = new AtomicBoolean(true);
 
+    private void finishAsCanceled() {
+        canceled.set(true);
+        doneLatch.countDown();
+    }
+
     public PreviewHtmlInstance(Stage stage) {
         stateListener = (ov, oldState, newState) -> {
             if (newState == Worker.State.SUCCEEDED) {
 
-                if (!hasBody()) return;
+                if (!hasBody()) {
+                    finishAsCanceled();
+                    return;
+                }
                 disableHtmlScrollbars();
 
                 if (model.getWebHeight() <= 0) {
@@ -35,10 +43,15 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
                             Thread.sleep(100);
                         }
                         catch(InterruptedException e) {
-                            throw new RuntimeException(e);
+                            Thread.currentThread().interrupt();
+                            return;
                         }
 
-                        Platform.runLater(() -> preview.setPreviewHeight(findHeight()));
+                        Platform.runLater(() -> {
+                            if (preview != null) {
+                                preview.setPreviewHeight(findHeight());
+                            }
+                        });
                     }).start();
                 }
                 firePrintAction();
@@ -47,11 +60,18 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
 
         //todo
         Platform.runLater(() -> {
-            renderStage = new Stage(stage.getStyle());
-            webView = new WebView();
-            initStateListeners(webView.getEngine().getLoadWorker());
-
-            initLatch.countDown();
+            try {
+                renderStage = new Stage(stage.getStyle());
+                webView = new WebView();
+                initStateListeners(webView.getEngine().getLoadWorker());
+            }
+            catch(RuntimeException e) {
+                log.error("Failed to initialize preview stage", e);
+                finishAsCanceled();
+            }
+            finally {
+                initLatch.countDown();
+            }
         });
     }
 
@@ -73,22 +93,25 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
 
     private void launchPreview(double width, double height) {
         Platform.runLater(() -> {
-            preview = new PreviewWindow(renderStage.getStyle(), webView);
-            preview.setOnPrint(rectangle -> {
-                // Match PR #1375 intent: accept preview-driven dimensions before printing.
-                model.setWidth(rectangle.getWidth() * (72d / 96d));
-                model.setHeight(rectangle.getHeight() * (72d / 96d));
-                canceled.set(false);
-                doneLatch.countDown();
-            });
-            preview.setOnCancel(() -> {
-                canceled.set(true);
-                doneLatch.countDown();
-            });
-            preview.setPreviewWidth(width);
-            preview.setPreviewHeight(height);
-            preview.setUnit(options.getPixelOptions().getUnits());
-            preview.show();
+            try {
+                preview = new PreviewWindow(renderStage.getStyle(), webView);
+                preview.setOnPrint(rectangle -> {
+                    // Match PR #1375 intent: accept preview-driven dimensions before printing.
+                    model.setWidth(rectangle.getWidth() * (72d / 96d));
+                    model.setHeight(rectangle.getHeight() * (72d / 96d));
+                    canceled.set(false);
+                    doneLatch.countDown();
+                });
+                preview.setOnCancel(this::finishAsCanceled);
+                preview.setPreviewWidth(width);
+                preview.setPreviewHeight(height);
+                preview.setUnit(options.getPixelOptions().getUnits());
+                preview.show();
+            }
+            catch(RuntimeException e) {
+                log.error("Failed to launch preview window", e);
+                finishAsCanceled();
+            }
         });
     }
 

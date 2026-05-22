@@ -1,5 +1,6 @@
 package qz.printer.action.html;
 
+import javafx.geometry.Orientation;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -12,22 +13,30 @@ import java.text.DecimalFormat;
 
 public class Ruler extends Canvas {
     private final Double thickness;
-    private final boolean isVertical;
+    private final Orientation orientation;
     private final DecimalFormat legendFormat = new DecimalFormat("#.#");
 
     private PreviewWindow.UNIT unit;
 
-    public Ruler(Double thickness, PreviewWindow.UNIT unit, boolean isVertical) {
+    public Ruler(Double thickness, PreviewWindow.UNIT unit) {
+        this(thickness, unit, Orientation.HORIZONTAL);
+    }
+
+    public Ruler(Double thickness, PreviewWindow.UNIT unit, Orientation orientation) {
         this.thickness = thickness;
         this.unit = unit;
-        this.isVertical = isVertical;
+        this.orientation = orientation;
 
         widthProperty().addListener(evt -> draw());
         heightProperty().addListener(evt -> draw());
     }
 
+    private boolean isVertical() {
+        return orientation == Orientation.VERTICAL;
+    }
+
     private double getLength() {
-        return isVertical ? getHeight() : getWidth();
+        return isVertical() ? getHeight() : getWidth();
     }
 
     public void draw() {
@@ -39,7 +48,7 @@ public class Ruler extends Canvas {
 
         gc.setStroke(Color.BLACK);
 
-        if (isVertical) {
+        if (isVertical()) {
             gc.rotate(-90);
         } else {
             gc.setFill(Color.GRAY);
@@ -54,7 +63,7 @@ public class Ruler extends Canvas {
 
         gc.setFill(Color.WHITESMOKE);
         int direction; //the vertical line goes 'backwards'
-        if (isVertical) {
+        if (isVertical()) {
             direction = -1;
             gc.fillRect(-length,0, length, thickness);
         } else {
@@ -90,13 +99,13 @@ public class Ruler extends Canvas {
 
     @Override
     public double prefWidth(double height) {
-        if (isVertical) return 20;
+        if (isVertical()) return 20;
         return getWidth();
     }
 
     @Override
     public double prefHeight(double width) {
-        if (!isVertical) return 20;
+        if (!isVertical()) return 20;
         return getHeight();
     }
 

@@ -3,6 +3,7 @@ package qz.printer.action.html;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -76,8 +77,8 @@ public class PreviewWindow {
 
     private void initUiElements() {
         //todo default units? probably look at the print request
-        topRuler = new Ruler(thickness, UNIT.IN, false);
-        leftRuler = new Ruler(thickness, UNIT.IN, true);
+        topRuler = new Ruler(thickness, UNIT.IN, Orientation.HORIZONTAL);
+        leftRuler = new Ruler(thickness, UNIT.IN, Orientation.VERTICAL);
 
         //This contains the ruler canvases, and the content
         ScrollPane scrollPane = new ScrollPane();

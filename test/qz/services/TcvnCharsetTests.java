@@ -13,6 +13,7 @@ public class TcvnCharsetTests {
 
 	private static final Logger log = LogManager.getLogger(TcvnCharsetTests.class);
 
+	@SuppressWarnings("all")
 	private static final String CHARSET_NAME = "TCVN-3-1";
 
 	@Test
@@ -106,10 +107,7 @@ public class TcvnCharsetTests {
 		Assert.assertEquals(actualString, expectedString);
 	}
 
-	// TODO: Remove the expectedExceptions part of the decorator
-	//       once https://github.com/yohanes/vncharsets/issues/1 is handled
-	@Test(dataProvider = "invalidCharacterData",
-		expectedExceptions = { AssertionError.class, IllegalArgumentException.class })
+	@Test(dataProvider = "invalidCharacterData")
 	public void testInvalidCharactersEncoding(String inputString, byte[] expectedBytes) throws Exception {
 		log.trace("Encoding invalid character string '{}'", inputString);
 		byte[] actualBytes = inputString.getBytes(CHARSET_NAME);

@@ -489,7 +489,7 @@ public class WebApp extends Application {
             if (previewEnabled) {
                 log.warn("Preview enabled, but environment is non-interactive (headless/monocle). Printing directly.");
             }
-            // skip preview UI and use the legacy direct print path.
+            // skip preview UI and use direct print path
             print(job, model);
             return;
         }
@@ -499,12 +499,11 @@ public class WebApp extends Application {
             previewHtmlInstance.show(job, model, options);
             previewHtmlInstance.await();
             if (!previewHtmlInstance.isCanceled()) {
-                new PrintHtmlInstance(stage).print(job, model);
+                print(job, model);
             }
         } else {
-            // Keep direct-print on the same PrintHtmlInstance
-            // path as preview-accepted print.
-            new PrintHtmlInstance(stage).print(job, model);
+            // Direct print
+            print(job, model);
         }
     }
 

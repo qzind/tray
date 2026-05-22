@@ -12,7 +12,9 @@ package qz.printer.action;
 
 import com.sun.javafx.print.PrintHelper;
 import com.sun.javafx.print.Units;
+import javafx.application.Platform;
 import javafx.print.*;
+import javafx.stage.FileChooser;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -37,20 +39,34 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
 import java.awt.print.PrinterException;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.net.URL;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PrintHTML extends PrintImage implements PrintProcessor {
 
     private static final Logger log = LogManager.getLogger(PrintHTML.class);
+    private static final Pattern HEAD_OPEN = Pattern.compile("(?i)<head\\b[^>]*>");
+    private static final Pattern HTML_OPEN = Pattern.compile("(?i)<html\\b[^>]*>");
+    private static final Pattern BASE_TAG = Pattern.compile("(?i)<base\\b[^>]*href\\s*=\\s*(['\"]).*?\\1[^>]*>");
+    private static final Pattern ATTR_PATH = Pattern.compile("(?i)(\\b(?:src|href)\\s*=\\s*)(['\"])([^'\"]+)\\2");
+    private static final Pattern IMG_SRC = Pattern.compile("(?i)(<img\\b[^>]*\\bsrc\\s*=\\s*)(['\"])([^'\"]+)\\2");
 
     private List<WebAppModel> models;
 
@@ -80,6 +96,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                 PrintingUtilities.Flavor flavor = PrintingUtilities.Flavor.parse(data, PrintingUtilities.Flavor.FILE);
 
                 String source = loadHtml(data.getString("data"), flavor, null);
+                boolean plainText = shouldLoadAsPlainText(flavor, source);
 
                 double pageZoom = (pxlOpts.getDensity() * pxlOpts.getUnits().as1Inch()) / 72.0;
                 if (pageZoom <= 1) { pageZoom = 1; }
@@ -125,7 +142,7 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
                     }
                 }
 
-                models.add(new WebAppModel(source, (flavor != PrintingUtilities.Flavor.FILE), pageWidth, pageHeight, pxlOpts.isScaleContent(), pageZoom));
+                models.add(new WebAppModel(source, plainText, pageWidth, pageHeight, pxlOpts.isScaleContent(), pageZoom));
             }
 
             log.debug("Parsed {} html records", models.size());
@@ -139,19 +156,248 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
     }
 
     /**
-     * Loads the HTML data into one large String from various input formats except in the case of a URL (FILE)
-     * which will be loaded directly by the HTML engine.
+     * Converts incoming HTML payload by flavor:
+     * - FILE: keep path/URL untouched for WebEngine.load(...)
+     * - PLAIN: preprocess inline HTML for loadContent(...)
+     * - BASE64/HEX/etc: decode to UTF-8 HTML, then preprocess
      */
     private String loadHtml(String data, PrintingUtilities.Flavor flavor, Charset srcEncoding) throws IOException {
         switch(flavor) {
             case FILE:
+                return data;
             case PLAIN:
                 // We'll toggle between 'plain' and 'file' when we construct WebAppModel
-                return data;
+                return preparePlainHtml(data);
             default:
                 // Note: srcEncoding is only available in raw
-                return new String(ByteUtilities.seekConversion(flavor.read(data), srcEncoding, StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+                return preparePlainHtml(new String(ByteUtilities.seekConversion(flavor.read(data), srcEncoding, StandardCharsets.UTF_8), StandardCharsets.UTF_8));
         }
+    }
+
+    /**
+     * Determines which WebEngine API to use:
+     * - plain text -> loadContent(...)
+     * - file/url source -> load(...)
+     */
+    private boolean shouldLoadAsPlainText(PrintingUtilities.Flavor flavor, String source) {
+        return flavor != PrintingUtilities.Flavor.FILE && !looksLikeFileUrl(source);
+    }
+
+    /**
+     * Prepares raw HTML for WebView rendering in plain mode.
+     */
+    private String preparePlainHtml(String html) {
+        String normalized = normalizeLocalAssetPaths(html);
+        normalized = inlineLocalImageSources(normalized);
+        return ensureBaseHref(normalized);
+    }
+
+    /**
+     * Opens native desktop HTML picker and returns selected file as file:// URL.
+     * Used by websocket upload workflows where browser cannot provide a trusted local path.
+     */
+    public static String pickHtmlFile() {
+        try {
+            CountDownLatch latch = new CountDownLatch(1);
+            AtomicReference<File> selected = new AtomicReference<>();
+            Platform.runLater(() -> {
+                try {
+                    FileChooser chooser = new FileChooser();
+                    chooser.setTitle("Select HTML File");
+                    chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("HTML Files", "*.html", "*.htm"));
+                    selected.set(chooser.showOpenDialog(null));
+                } finally {
+                    latch.countDown();
+                }
+            });
+            latch.await();
+            File file = selected.get();
+            return file == null ? null : file.toURI().toString();
+        } catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch(Exception e) {
+            log.warn("Failed to open native HTML file chooser", e);
+            return null;
+        }
+    }
+
+    /**
+     * Converts absolute filesystem src/href values into file:// URLs so WebView treats
+     * them consistently across platforms.
+     */
+    private String normalizeLocalAssetPaths(String html) {
+        Matcher m = ATTR_PATH.matcher(html);
+        StringBuffer sb = new StringBuffer();
+        while(m.find()) {
+            String attrPrefix = m.group(1);
+            String quote = m.group(2);
+            String value = m.group(3);
+            String replacement = value;
+
+            if (looksLikeUnixAbsolutePath(value) || looksLikeWindowsAbsolutePath(value)) {
+                replacement = new File(value).toURI().toString();
+            }
+
+            m.appendReplacement(sb, Matcher.quoteReplacement(attrPrefix + quote + replacement + quote));
+        }
+        m.appendTail(sb);
+        return sb.toString();
+    }
+
+    /**
+     * Injects a base href only when we can derive a trusted local parent path.
+     * This helps relative asset resolution for plain HTML content.
+     */
+    private String ensureBaseHref(String html) {
+        if (BASE_TAG.matcher(html).find()) {
+            return html;
+        }
+
+        String baseHref = findBestBaseHref(html);
+        if (baseHref == null) {
+            return html;
+        }
+        String baseTag = "<base href=\"" + baseHref + "\">";
+
+        Matcher head = HEAD_OPEN.matcher(html);
+        if (head.find()) {
+            return html.substring(0, head.end()) + baseTag + html.substring(head.end());
+        }
+
+        Matcher htmlTag = HTML_OPEN.matcher(html);
+        if (htmlTag.find()) {
+            return html.substring(0, htmlTag.end()) + "<head>" + baseTag + "</head>" + html.substring(htmlTag.end());
+        }
+
+        return "<head>" + baseTag + "</head>" + html;
+    }
+
+    /**
+     * Inlines local image files into data URIs to avoid platform-specific local file
+     * loading differences during plain HTML rendering.
+     */
+    private String inlineLocalImageSources(String html) {
+        Matcher m = IMG_SRC.matcher(html);
+        StringBuffer sb = new StringBuffer();
+        while(m.find()) {
+            String prefix = m.group(1);
+            String quote = m.group(2);
+            String src = m.group(3);
+            String replacement = src;
+
+            if (!src.startsWith("data:")) {
+                String dataUri = tryEncodeLocalImageAsDataUri(src);
+                if (dataUri != null) {
+                    replacement = dataUri;
+                }
+            }
+
+            m.appendReplacement(sb, Matcher.quoteReplacement(prefix + quote + replacement + quote));
+        }
+        m.appendTail(sb);
+        return sb.toString();
+    }
+
+    /**
+     * Best-effort conversion of local file/file:// image src to a data URI.
+     */
+    private String tryEncodeLocalImageAsDataUri(String src) {
+        try {
+            byte[] bytes;
+            String mime;
+
+            if (src.startsWith("file:")) {
+                URI uri = URI.create(src);
+                bytes = Files.readAllBytes(Paths.get(uri));
+                mime = detectImageMimeType(Paths.get(uri).getFileName().toString());
+            } else if (looksLikeUnixAbsolutePath(src) || looksLikeWindowsAbsolutePath(src)) {
+                bytes = Files.readAllBytes(Paths.get(src));
+                mime = detectImageMimeType(src);
+            } else {
+                return null;
+            }
+
+            return "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(bytes);
+        } catch(Exception e) {
+            log.debug("Unable to inline image source [{}]", src, e);
+            return null;
+        }
+    }
+
+    private String detectImageMimeType(String path) {
+        String lower = path.toLowerCase();
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+            return "image/jpeg";
+        } else if (lower.endsWith(".gif")) {
+            return "image/gif";
+        } else if (lower.endsWith(".bmp")) {
+            return "image/bmp";
+        } else if (lower.endsWith(".svg")) {
+            return "image/svg+xml";
+        } else if (lower.endsWith(".webp")) {
+            return "image/webp";
+        }
+        return "image/png";
+    }
+
+    /**
+     * Finds first trustworthy local src/href and derives its parent as base href.
+     */
+    private static String findBestBaseHref(String html) {
+        Matcher m = ATTR_PATH.matcher(html);
+        while(m.find()) {
+            String value = m.group(3);
+            String base = deriveParentBase(value);
+            if (base != null) {
+                return base;
+            }
+        }
+        return null;
+    }
+
+    private static String deriveParentBase(String value) {
+        try {
+            if (value == null || value.isEmpty() || value.startsWith("data:")) {
+                return null;
+            }
+
+            if (value.startsWith("file:")) {
+                URI uri = URI.create(value);
+                if (!"file".equalsIgnoreCase(uri.getScheme())) {
+                    return null;
+                }
+                File f = Paths.get(uri).toFile();
+                File parent = f.getParentFile();
+                return parent != null ? ensureTrailingSlash(parent.toURI().toString()) : null;
+            }
+
+            if (looksLikeUnixAbsolutePath(value) || looksLikeWindowsAbsolutePath(value)) {
+                File f = new File(value);
+                File parent = f.getParentFile();
+                return parent != null ? ensureTrailingSlash(parent.toURI().toString()) : null;
+            }
+        } catch(Exception ignored) {
+            // no trusted local base derived
+        }
+        return null;
+    }
+
+    private static String ensureTrailingSlash(String uri) {
+        return uri.endsWith("/") ? uri : uri + "/";
+    }
+
+    private static boolean looksLikeUnixAbsolutePath(String value) {
+        return value.startsWith("/") && !value.startsWith("//");
+    }
+
+    private static boolean looksLikeWindowsAbsolutePath(String value) {
+        return value.length() > 2 && Character.isLetter(value.charAt(0)) && value.charAt(1) == ':' &&
+               (value.charAt(2) == '\\' || value.charAt(2) == '/');
+    }
+
+    private static boolean looksLikeFileUrl(String value) {
+        return value != null && value.regionMatches(true, 0, "file:", 0, 5);
     }
 
     @Override

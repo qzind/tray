@@ -21,6 +21,7 @@ import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.communication.*;
 import qz.printer.PrintServiceMatcher;
+import qz.printer.action.PrintHTML;
 import qz.printer.status.StatusMonitor;
 import qz.utils.*;
 import qz.ws.substitutions.Substitutions;
@@ -300,6 +301,9 @@ public class PrintSocketClient {
                 break;
             case PRINTERS_DETAIL:
                 sendResult(session, UID, PrintServiceMatcher.getPrintersJSON(true));
+                break;
+            case PRINTERS_PICK_HTML_FILE:
+                sendResult(session, UID, PrintHTML.pickHtmlFile());
                 break;
             case PRINTERS_START_LISTENING:
                 if (StatusMonitor.startListening(connection, session, params)) {

@@ -1516,17 +1516,6 @@ var qz = (function() {
             },
 
             /**
-             * Opens a native file picker and returns the selected HTML file path.
-             *
-             * @returns {Promise<string|null|Error>}
-             *
-             * @memberof qz.printers
-             */
-            pickHtmlFile: function() {
-                return _qz.websocket.dataPromise('printers.pickHtmlFile');
-            },
-
-            /**
              * Start listening for printer status events, such as paper_jam events.
              * Reported under the ACTION type in the streamEvent on callbacks.
              *

@@ -2195,12 +2195,11 @@
         var type = $(button).attr('data-type');
         var format = $(button).attr('data-format');
         var flavor = $(button).attr('data-flavor');
-        var raw = $(button).attr('data-base64');
-        var payload = (raw && raw.indexOf('base64,') > -1) ? raw.split('base64,')[1] : raw;
+        var base64 = $(button).attr('data-base64').split('base64,')[1];
         var opts = getUpdatedOptions(type === 'pixel');
 
         var printData = [
-            { type: type, format: format, flavor: flavor, data: payload, options: opts }
+            { type: type, format: format, flavor: flavor, data: base64, options: opts }
         ];
 
         qz.print(config, printData).catch(displayError);
@@ -2902,19 +2901,6 @@
             }
         });
 
-        $(".upload-button").on('click', function(e) {
-            // Pixel tab upload: use native picker directly so HTML file path is captured once.
-            e.preventDefault();
-            qz.printers.pickHtmlFile().then(function(path) {
-                if (!path) {
-                    displayError("No HTML file selected from native picker");
-                    return;
-                }
-                setupNativeHtmlDropButton(path);
-            }).catch(displayError);
-            return false;
-        });
-
         $('a[data-toggle="tab"]').on('shown.bs.tab', function() {
             if (window.readingWeight) {
                 $("#usbWeightRadio").click();
@@ -3548,27 +3534,16 @@
 
         if (file) {
             console.log("Dropped file:", file);
-            var name = file.name;
-            var extension = name.substring(name.lastIndexOf('.') + 1, name.length) || '';
-            var lower = extension.toLowerCase();
-
-            if (lower === 'htm' || lower === 'html') {
-                qz.printers.pickHtmlFile().then(function(path) {
-                    if (path) {
-                        setupDropButton("html", name, path, stayOnTab);
-                        var button = $("#pxlDropBtn");
-                        button.attr("data-flavor", "file");
-                        return;
-                    }
-                    displayError("No HTML file selected from native picker");
-                }).catch(displayError);
-                return;
-            }
-
             getBase64(file).then(function(base64) {
+                var name = file.name;
+                var extension = name.substring(name.lastIndexOf('.') + 1, name.length) || '';
                 switch(extension.toLowerCase()) {
                     case 'pdf':
                         setupDropButton("pdf", name, base64, stayOnTab);
+                        break;
+                    case 'htm':
+                    case 'html':
+                        setupDropButton("html", name, base64, stayOnTab);
                         break;
                     case 'png':
                     case 'jpg':
@@ -3592,18 +3567,6 @@
         } else {
             $("#qz-page").removeClass("drag-target");
         }
-    }
-
-    function setupNativeHtmlDropButton(path) {
-        var name = decodeURIComponent(path).split(/[\\/]/).pop();
-        var button = $("#pxlDropBtn");
-        button.attr("data-format", "html");
-        button.attr("data-flavor", "file");
-        button.attr("data-base64", path);
-        button.html('Print dropped "' + name + '"');
-        button.show();
-        updateRawButtons();
-        button.fadeOut(300).fadeIn(500);
     }
 </script>
 

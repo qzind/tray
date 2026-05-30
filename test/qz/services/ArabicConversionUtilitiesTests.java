@@ -11,6 +11,7 @@ import qz.utils.ArabicConversionUtilities;
 public class ArabicConversionUtilitiesTests {
 
 	private static final Logger log = LogManager.getLogger(ArabicConversionUtilitiesTests.class);
+	private static final String ARABIC_WELCOME = "مرحبا";
 
 	@DataProvider(name = "arabicData")
 	public Object[][] arabicData() {
@@ -38,13 +39,20 @@ public class ArabicConversionUtilitiesTests {
 			},
 			// Literal Arabic Input
 			{
-				"مرحبا",
+				ARABIC_WELCOME,
 				new byte[] {
-					(byte) 0xA8,
-					(byte) 0xC8,
-					(byte) 0xCD,
-					(byte) 0xD1,
-					(byte) 0xE5
+					(byte) 0xA8, (byte) 0xC8, (byte) 0xCD, (byte) 0xD1, (byte) 0xE5
+				}
+			},
+			// Mixed
+			{
+				"ASCII and " + ARABIC_WELCOME,
+				new byte[] {
+					(byte) 0x41, (byte) 0x53, (byte) 0x43, (byte) 0x49, (byte) 0x49, // ASCII
+					(byte) 0x20, // Space
+					(byte) 0x61, (byte) 0x6E, (byte) 0x64, // and
+					(byte) 0x20, // Space
+					(byte) 0xA8, (byte) 0xC8, (byte) 0xCD, (byte) 0xD1, (byte) 0xE5
 				}
 			}
 		};
@@ -52,7 +60,7 @@ public class ArabicConversionUtilitiesTests {
 
 	@Test(dataProvider = "arabicData")
 	public void testConvertToIBM864(String inputString, byte[] expectedBytes) throws Exception {
-		byte[] actualBytes = ArabicConversionUtilities.convertToIBM864(inputString);
-		Assert.assertEquals(actualBytes, expectedBytes);
+		byte[] resultBytes = ArabicConversionUtilities.convertToIBM864(inputString);
+		Assert.assertEquals(resultBytes, expectedBytes);
 	}
 }

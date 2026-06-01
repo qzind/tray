@@ -1,4 +1,4 @@
-package qz.services;
+package qz.integration.services;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

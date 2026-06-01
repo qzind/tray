@@ -1,4 +1,4 @@
-package qz.utils;
+package qz.integration.services;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,8 +9,6 @@ import org.testng.annotations.Test;
 import qz.utils.ArabicConversionUtilities;
 
 public class ArabicConversionUtilitiesTests {
-
-	private static final Logger log = LogManager.getLogger(ArabicConversionUtilitiesTests.class);
 	private static final String ARABIC_WELCOME = "مرحبا";
 
 	@DataProvider(name = "arabicData")

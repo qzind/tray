@@ -360,7 +360,7 @@
         </testng>
     </target>
 
-    <target name="integration-tests" depends="compile-tests">
+    <target name="integration-tests" depends="compile-tests,distribute">
         <testng listeners="qz.testng.ConciseSkipListener" classpathref="integration.test.classpath" haltOnFailure="true" verbose="2" outputdir="${out.dir}/report/integration">
             <classfileset dir="${build.dir}/test" includes="**/integration/**/*.class"/>
         </testng>

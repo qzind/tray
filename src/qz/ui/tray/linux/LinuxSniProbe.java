@@ -107,7 +107,7 @@ public class LinuxSniProbe {
         return this;
     }
 
-    private boolean canAttemptStatusNotifierPoc() {
+    boolean canAttemptStatusNotifierPoc() {
         return isLinux && !headless && sessionBusReachable && statusNotifierWatcherPresent;
     }
 

@@ -24,7 +24,8 @@ public class LinuxTrayIconPoc {
             // The item bus name must match the watcher
             // namespace that is actually present at runtime
             // The PID keeps the POC service unique
-            String itemService = getItemServicePrefix(probe.getStatusNotifierWatcher())
+            String statusNotifierWatcher = probe.getStatusNotifierWatcher();
+            String itemService = getItemServicePrefix(statusNotifierWatcher)
                     + ProcessHandle.current().pid();
             LinuxStatusNotifierItem item = new LinuxStatusNotifierItem();
 
@@ -35,13 +36,7 @@ public class LinuxTrayIconPoc {
 
             // Register against the watcher detected
             // by LinuxSniProbe instead of assuming a desktop environment
-            StatusNotifierWatcher watcher = connection.getRemoteObject(
-                    probe.getStatusNotifierWatcher(),
-                    "/StatusNotifierWatcher",
-                    StatusNotifierWatcher.class,
-                    false
-            );
-            watcher.registerStatusNotifierItem(itemService);
+            registerStatusNotifierItem(connection, statusNotifierWatcher, itemService);
 
             log.info("Registered StatusNotifier item {} at {}", itemService, item.getObjectPath());
             // Keep the POC alive
@@ -61,5 +56,25 @@ public class LinuxTrayIconPoc {
         return watcher.startsWith("org.freedesktop.")
                 ? "org.freedesktop.StatusNotifierItem-"
                 : "org.kde.StatusNotifierItem-";
+    }
+
+    private static void registerStatusNotifierItem(DBusConnection connection, String watcherService, String itemService) throws Exception {
+        if (watcherService.startsWith("org.freedesktop.")) {
+            FreedesktopStatusNotifierWatcher watcher = connection.getRemoteObject(
+                    watcherService,
+                    "/StatusNotifierWatcher",
+                    FreedesktopStatusNotifierWatcher.class,
+                    false
+            );
+            watcher.registerStatusNotifierItem(itemService);
+        } else {
+            KdeStatusNotifierWatcher watcher = connection.getRemoteObject(
+                    watcherService,
+                    "/StatusNotifierWatcher",
+                    KdeStatusNotifierWatcher.class,
+                    false
+            );
+            watcher.registerStatusNotifierItem(itemService);
+        }
     }
 }

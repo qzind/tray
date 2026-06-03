@@ -111,6 +111,10 @@ public class LinuxSniProbe {
         return isLinux && !headless && sessionBusReachable && statusNotifierWatcherPresent;
     }
 
+    String getStatusNotifierWatcher() {
+        return statusNotifierWatcher;
+    }
+
     private String getMissingWatcherSuggestion() {
         String desktop = currentDesktop.toLowerCase(Locale.ENGLISH);
 

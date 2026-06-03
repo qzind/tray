@@ -28,6 +28,9 @@ public interface FreedesktopStatusNotifierItem extends DBusInterface {
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconName")
     String getIconName();
 
+    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconThemePath")
+    String getIconThemePath();
+
     @DBusMemberName("ContextMenu")
     void contextMenu(int x, int y);
 

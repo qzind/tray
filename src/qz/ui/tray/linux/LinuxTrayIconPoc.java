@@ -27,7 +27,8 @@ public class LinuxTrayIconPoc {
             String statusNotifierWatcher = probe.getStatusNotifierWatcher();
             String itemService = getItemServicePrefix(statusNotifierWatcher)
                     + ProcessHandle.current().pid();
-            LinuxStatusNotifierItem item = new LinuxStatusNotifierItem();
+            String iconThemePath = LinuxSniIconTheme.prepare();
+            LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath);
 
             // Own the item service name and export
             // the object that the watcher/tray host will inspect
@@ -39,6 +40,7 @@ public class LinuxTrayIconPoc {
             registerStatusNotifierItem(connection, statusNotifierWatcher, itemService);
 
             log.info("Registered StatusNotifier item {} at {}", itemService, item.getObjectPath());
+            log.info("Published StatusNotifier icon theme path {}", iconThemePath);
             // Keep the POC alive
             // the watcher removes the item when
             // this bus name disappears

@@ -24,6 +24,9 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.utils.ArgValue;
@@ -86,9 +89,7 @@ public class WebApp extends Application {
             unlatch(new IOException("Page load was cancelled for an unknown reason"));
         }
         if (newState == Worker.State.SUCCEEDED) {
-            boolean hasBody = (boolean)webView.getEngine().executeScript("document.body != null");
-            if (!hasBody) {
-                log.warn("Loaded page has no body - likely a redirect, skipping state");
+            if (!hasBody(webView)) {
                 return;
             }
 
@@ -436,6 +437,29 @@ public class WebApp extends Application {
     static double findHeight(WebView view) {
         String heightText = view.getEngine().executeScript("document.body.scrollHeight").toString();
         return Double.parseDouble(heightText);
+    }
+
+    static boolean hasBody(WebView view) {
+        boolean hasBody = (boolean)view.getEngine().executeScript("document.body != null");
+        if (!hasBody) {
+            log.warn("Loaded page has no body - likely a redirect, skipping state");
+        }
+        return hasBody;
+    }
+
+    static void disableHtmlScrollbars(WebView view) {
+        //ensure html tag doesn't use scrollbars, clipping page instead
+        Document doc = view.getEngine().getDocument();
+        NodeList tags = doc.getElementsByTagName("html");
+        if (tags != null && tags.getLength() > 0) {
+            org.w3c.dom.Node base = tags.item(0);
+            Attr applied = (Attr)base.getAttributes().getNamedItem("style");
+            if (applied == null) {
+                applied = doc.createAttribute("style");
+            }
+            applied.setValue(applied.getValue() + "; overflow: hidden;");
+            base.getAttributes().setNamedItem(applied);
+        }
     }
 
     private static void adjustSize(double toWidth, double toHeight) {

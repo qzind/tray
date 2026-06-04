@@ -10,10 +10,6 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -187,26 +183,11 @@ abstract class AbstractHtmlInstance {
     }
 
     protected void disableHtmlScrollbars() {
-        //ensure html tag doesn't use scrollbars, clipping page instead
-        Document doc = webView.getEngine().getDocument();
-        NodeList tags = doc.getElementsByTagName("html");
-        if (tags != null && tags.getLength() > 0) {
-            Node base = tags.item(0);
-            Attr applied = (Attr)base.getAttributes().getNamedItem("style");
-            if (applied == null) {
-                applied = doc.createAttribute("style");
-            }
-            applied.setValue(applied.getValue() + "; overflow: hidden;");
-            base.getAttributes().setNamedItem(applied);
-        }
+        WebApp.disableHtmlScrollbars(webView);
     }
 
     protected boolean hasBody() {
-        boolean hasBody = (boolean)webView.getEngine().executeScript("document.body != null");
-        if (!hasBody) {
-            log.warn("Loaded page has no body - likely a redirect, skipping state");
-        }
-        return hasBody;
+        return WebApp.hasBody(webView);
     }
 
     /**

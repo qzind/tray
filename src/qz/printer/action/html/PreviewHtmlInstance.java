@@ -2,7 +2,6 @@ package qz.printer.action.html;
 
 import javafx.application.Platform;
 import javafx.concurrent.Worker;
-import javafx.print.PrinterJob;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
@@ -75,7 +74,7 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
         });
     }
 
-    public void show(PrinterJob job, WebAppModel model, PrintOptions options) throws InterruptedException {
+    public void show(WebAppModel model, PrintOptions options) throws InterruptedException {
         this.model = model;
         this.options = options;
         canceled.set(true);

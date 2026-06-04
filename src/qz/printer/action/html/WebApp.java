@@ -496,7 +496,7 @@ public class WebApp extends Application {
 
         if (previewEnabled) {
             PreviewHtmlInstance previewHtmlInstance = new PreviewHtmlInstance(stage);
-            previewHtmlInstance.show(job, model, options);
+            previewHtmlInstance.show(model, options);
             previewHtmlInstance.await();
             if (!previewHtmlInstance.isCanceled()) {
                 print(job, model);

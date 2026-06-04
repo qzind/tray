@@ -49,8 +49,8 @@ public class PreviewWindow {
 
     // Ruler fields
     private static final double thickness = 20;
-    private DecimalFormat unitFormat = UNIT.IN.unitFormat;
-    private double dpu = UNIT.IN.dpu;
+    private DecimalFormat unitFormat = Unit.IN.unitFormat;
+    private double dpu = Unit.IN.dpu;
 
     public PreviewWindow(StageStyle style, Node content) {
         this.content = content;
@@ -71,8 +71,8 @@ public class PreviewWindow {
 
     private void initUiElements() {
         //todo default units? probably look at the print request
-        topRuler = new Ruler(thickness, UNIT.IN, Orientation.HORIZONTAL);
-        leftRuler = new Ruler(thickness, UNIT.IN, Orientation.VERTICAL);
+        topRuler = new Ruler(thickness, Unit.IN, Orientation.HORIZONTAL);
+        leftRuler = new Ruler(thickness, Unit.IN, Orientation.VERTICAL);
 
         //This contains the ruler canvases, and the content
         ScrollPane scrollPane = new ScrollPane();
@@ -110,13 +110,12 @@ public class PreviewWindow {
 
         ObservableList<String> options =
                 FXCollections.observableArrayList(
-                        PreviewWindow.UNIT.IN.toString(),
-                        PreviewWindow.UNIT.CM.toString(),
-                        PreviewWindow.UNIT.MM.toString(),
-                        PreviewWindow.UNIT.PX.toString()
+                        PreviewWindow.Unit.IN.toString(),
+                        PreviewWindow.Unit.CM.toString(),
+                        PreviewWindow.Unit.MM.toString()
                 );
         units = new ComboBox<>(options);
-        units.setValue(PreviewWindow.UNIT.IN.toString());
+        units.setValue(PreviewWindow.Unit.IN.toString());
 
         // visual spacing on the toolbar for the 2 buttons
         HBox spring = new HBox();
@@ -169,7 +168,7 @@ public class PreviewWindow {
     private void registerTextFieldListeners() {
         // A new unit has been selected. Redraw the rulers
         units.valueProperty().addListener((ov, t, unitString) -> {
-            UNIT newUnit = UNIT.fromString(unitString);
+            Unit newUnit = Unit.fromString(unitString);
             setUnit(newUnit);
         });
 
@@ -282,17 +281,17 @@ public class PreviewWindow {
     public void setUnit(PrintOptions.Unit newUnit) {
         switch(newUnit) {
             case INCH:
-                setUnit(UNIT.IN);
+                setUnit(Unit.IN);
                 return;
             case CM:
-                setUnit(UNIT.CM);
+                setUnit(Unit.CM);
                 return;
             case MM:
-                setUnit(UNIT.MM);
+                setUnit(Unit.MM);
         }
     }
 
-    private void setUnit(UNIT newUnit) {
+    private void setUnit(Unit newUnit) {
         if (newUnit == null) return;
         dpu = newUnit.dpu;
         unitFormat = newUnit.unitFormat;
@@ -307,18 +306,21 @@ public class PreviewWindow {
         setDimensions(contentWidth, contentHeight);
     }
 
-    enum UNIT {
-        //todo 72/96 needs to be cleared up. should pixel be 72 or 96, also 72 should be pulled from somewhere
+    /**
+     * This enum is necessary because it stores ruler/display
+     * metadata that PrintOptions.Unit does not have
+     */
+    enum Unit {
+        // WebView dimensions are specified in CSS pixels (1 CSS inch = 96 CSS px)
         IN("in", 96, 8, 1, "#.##"),
         CM("cm", 96 / inToCm, 10, 1, "#.#"),
-        MM("mm", 96 / (inToCm * 10), 10, 10, "#.#"),
-        PX("px", 1, 5, 50, "#");
+        MM("mm", 96 / (inToCm * 10), 10, 10, "#.#");
 
         final String label;
-        public final DecimalFormat unitFormat;
-        public final double dpu, unitsPerLabel;
-        public final int divisions;
-        UNIT(String label, double dpu, int divisions, double unitsPerLabel, String formatString) {
+        final DecimalFormat unitFormat;
+        final double dpu, unitsPerLabel;
+        final int divisions;
+        Unit(String label, double dpu, int divisions, double unitsPerLabel, String formatString) {
             this.label = label;
             this.dpu = dpu;
             this.divisions = divisions;
@@ -326,8 +328,8 @@ public class PreviewWindow {
             unitFormat = new DecimalFormat(formatString);
         }
 
-        static PreviewWindow.UNIT fromString(String value) {
-            for (PreviewWindow.UNIT u : PreviewWindow.UNIT.values()) {
+        static PreviewWindow.Unit fromString(String value) {
+            for (PreviewWindow.Unit u : PreviewWindow.Unit.values()) {
                 if (value.equals(u.toString())) return u;
             }
             return null;

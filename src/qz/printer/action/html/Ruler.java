@@ -16,13 +16,13 @@ class Ruler extends Canvas {
     private final Orientation orientation;
     private final DecimalFormat legendFormat = new DecimalFormat("#.#");
 
-    private PreviewWindow.UNIT unit;
+    private PreviewWindow.Unit unit;
 
-    Ruler(Double thickness, PreviewWindow.UNIT unit) {
+    Ruler(Double thickness, PreviewWindow.Unit unit) {
         this(thickness, unit, Orientation.HORIZONTAL);
     }
 
-    Ruler(Double thickness, PreviewWindow.UNIT unit, Orientation orientation) {
+    Ruler(Double thickness, PreviewWindow.Unit unit, Orientation orientation) {
         this.thickness = thickness;
         this.unit = unit;
         this.orientation = orientation;
@@ -84,7 +84,7 @@ class Ruler extends Canvas {
         }
     }
 
-    void setUnit(PreviewWindow.UNIT unit) {
+    void setUnit(PreviewWindow.Unit unit) {
         this.unit = unit;
     }
 

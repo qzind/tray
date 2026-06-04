@@ -11,18 +11,18 @@ import javafx.scene.transform.Affine;
 
 import java.text.DecimalFormat;
 
-public class Ruler extends Canvas {
+class Ruler extends Canvas {
     private final Double thickness;
     private final Orientation orientation;
     private final DecimalFormat legendFormat = new DecimalFormat("#.#");
 
     private PreviewWindow.UNIT unit;
 
-    public Ruler(Double thickness, PreviewWindow.UNIT unit) {
+    Ruler(Double thickness, PreviewWindow.UNIT unit) {
         this(thickness, unit, Orientation.HORIZONTAL);
     }
 
-    public Ruler(Double thickness, PreviewWindow.UNIT unit, Orientation orientation) {
+    Ruler(Double thickness, PreviewWindow.UNIT unit, Orientation orientation) {
         this.thickness = thickness;
         this.unit = unit;
         this.orientation = orientation;
@@ -31,12 +31,8 @@ public class Ruler extends Canvas {
         heightProperty().addListener(evt -> draw());
     }
 
-    private boolean isVertical() {
-        return orientation == Orientation.VERTICAL;
-    }
-
     private double getLength() {
-        return isVertical() ? getHeight() : getWidth();
+        return orientation == Orientation.VERTICAL ? getHeight() : getWidth();
     }
 
     public void draw() {
@@ -48,7 +44,7 @@ public class Ruler extends Canvas {
 
         gc.setStroke(Color.BLACK);
 
-        if (isVertical()) {
+        if (orientation == Orientation.VERTICAL) {
             gc.rotate(-90);
         } else {
             gc.setFill(Color.GRAY);
@@ -63,7 +59,7 @@ public class Ruler extends Canvas {
 
         gc.setFill(Color.WHITESMOKE);
         int direction; //the vertical line goes 'backwards'
-        if (isVertical()) {
+        if (orientation == Orientation.VERTICAL) {
             direction = -1;
             gc.fillRect(-length,0, length, thickness);
         } else {
@@ -88,7 +84,7 @@ public class Ruler extends Canvas {
         }
     }
 
-    public void setUnit(PreviewWindow.UNIT unit) {
+    void setUnit(PreviewWindow.UNIT unit) {
         this.unit = unit;
     }
 
@@ -99,14 +95,12 @@ public class Ruler extends Canvas {
 
     @Override
     public double prefWidth(double height) {
-        if (isVertical()) return 20;
-        return getWidth();
+        return orientation == Orientation.VERTICAL ? 20 : getWidth();
     }
 
     @Override
     public double prefHeight(double width) {
-        if (!isVertical()) return 20;
-        return getHeight();
+        return orientation == Orientation.HORIZONTAL ? 20 : getHeight();
     }
 
     @Override

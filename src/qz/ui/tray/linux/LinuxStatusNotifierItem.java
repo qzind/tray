@@ -1,8 +1,11 @@
 package qz.ui.tray.linux;
 
+import org.freedesktop.dbus.DBusPath;
+
 public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, FreedesktopStatusNotifierItem {
 
     private static final String OBJECT_PATH = "/StatusNotifierItem";
+    private static final DBusPath MENU_PATH = new DBusPath("/MenuBar");
     private static final String CATEGORY = "ApplicationStatus";
     private static final String ID = "qz-tray";
     private static final String TITLE = "QZ Tray";
@@ -48,6 +51,13 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     @Override
     public String getIconThemePath() {
         return iconThemePath;
+    }
+
+    @Override
+    public DBusPath getMenu() {
+        // Ubuntu GNOME requires a non-empty Menu object path before
+        // it considers a StatusNotifierItem ready for display
+        return MENU_PATH;
     }
 
     @Override

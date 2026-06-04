@@ -142,8 +142,7 @@ abstract class AbstractHtmlInstance {
     }
 
     protected double findHeight() {
-        String heightText = webView.getEngine().executeScript("Math.max(document.body.offsetHeight, document.body.scrollHeight)").toString();
-        return Double.parseDouble(heightText);
+        return WebApp.findHeight(webView);
     }
 
     protected void adjustSize(double toWidth, double toHeight) {

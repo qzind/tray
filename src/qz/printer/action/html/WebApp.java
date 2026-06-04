@@ -430,7 +430,11 @@ public class WebApp extends Application {
     }
 
     private static double findHeight() {
-        String heightText = webView.getEngine().executeScript("document.body.scrollHeight").toString();
+        return findHeight(webView);
+    }
+
+    static double findHeight(WebView view) {
+        String heightText = view.getEngine().executeScript("document.body.scrollHeight").toString();
         return Double.parseDouble(heightText);
     }
 

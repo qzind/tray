@@ -10,6 +10,8 @@ import java.util.concurrent.CountDownLatch;
 public class LinuxTrayIconPoc {
 
     private static final Logger log = LogManager.getLogger(LinuxTrayIconPoc.class);
+    private static final String ICON_NAME_PROPERTY = "qz.sni.iconName";
+    private static final String ICON_THEME_PATH_PROPERTY = "qz.sni.iconThemePath";
 
     public static void main(String[] args) {
         LinuxSniProbe probe = LinuxSniProbe.inspect();
@@ -28,7 +30,11 @@ public class LinuxTrayIconPoc {
             String itemService = getItemServicePrefix(statusNotifierWatcher)
                     + ProcessHandle.current().pid();
             String iconThemePath = LinuxSniIconTheme.prepare();
-            LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath);
+            // POC-only overrides let reviewers separate system icon lookup
+            // from QZ's temporary icon theme lookup without source changes
+            String iconName = System.getProperty(ICON_NAME_PROPERTY, "qz-tray");
+            iconThemePath = System.getProperty(ICON_THEME_PATH_PROPERTY, iconThemePath);
+            LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconName, iconThemePath);
 
             // Own the item service name and export
             // the object that the watcher/tray host will inspect
@@ -40,6 +46,7 @@ public class LinuxTrayIconPoc {
             registerStatusNotifierItem(connection, statusNotifierWatcher, itemService);
 
             log.info("Registered StatusNotifier item {} at {}", itemService, item.getObjectPath());
+            log.info("Published StatusNotifier icon name {}", iconName);
             log.info("Published StatusNotifier icon theme path {}", iconThemePath);
             // Keep the POC alive
             // the watcher removes the item when

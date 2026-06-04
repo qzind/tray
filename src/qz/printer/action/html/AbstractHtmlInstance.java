@@ -138,11 +138,7 @@ abstract class AbstractHtmlInstance {
     }
 
     protected void loadSource(WebAppModel model) {
-        if (model.isPlainText()) {
-            webView.getEngine().loadContent(model.getSource(), "text/html");
-        } else {
-            webView.getEngine().load(model.getSource());
-        }
+        WebApp.loadSource(webView, model);
     }
 
     protected double findHeight() {
@@ -188,14 +184,7 @@ abstract class AbstractHtmlInstance {
     }
 
     protected double calculateSupportedZoom(double width, double height) {
-        long memory = Runtime.getRuntime().maxMemory();
-        int allowance = (memory / 1048576L) > 1024? 3:2;
-        if (WebApp.isHeadless()) { allowance--; }
-        long availSpace = memory << allowance;
-
-        // Memory needed for print is roughly estimated as
-        // (width * height) [pixels needed] * (pageZoom * 72d) [print density used] * 3 [rgb channels]
-        return Math.sqrt(availSpace / ((width * height) * (pageZoom * 72d) * 3));
+        return WebApp.calculateSupportedZoom(width, height, pageZoom, WebApp.isHeadless());
     }
 
     protected void disableHtmlScrollbars() {

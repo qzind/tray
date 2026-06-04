@@ -417,12 +417,16 @@ public class WebApp extends Application {
 
             printAction = action;
 
-            if (model.isPlainText()) {
-                webView.getEngine().loadContent(model.getSource(), "text/html");
-            } else {
-                webView.getEngine().load(model.getSource());
-            }
+            loadSource(webView, model);
         });
+    }
+
+    static void loadSource(WebView view, WebAppModel model) {
+        if (model.isPlainText()) {
+            view.getEngine().loadContent(model.getSource(), "text/html");
+        } else {
+            view.getEngine().load(model.getSource());
+        }
     }
 
     private static double findHeight() {
@@ -445,14 +449,18 @@ public class WebApp extends Application {
     }
 
     private static double calculateSupportedZoom(double width, double height) {
+        return calculateSupportedZoom(width, height, pageZoom, headless);
+    }
+
+    static double calculateSupportedZoom(double width, double height, double requestedZoom, boolean isHeadless) {
         long memory = Runtime.getRuntime().maxMemory();
         int allowance = (memory / 1048576L) > 1024? 3:2;
-        if (headless) { allowance--; }
+        if (isHeadless) { allowance--; }
         long availSpace = memory << allowance;
 
         // Memory needed for print is roughly estimated as
         // (width * height) [pixels needed] * (pageZoom * 72d) [print density used] * 3 [rgb channels]
-        return Math.sqrt(availSpace / ((width * height) * (pageZoom * 72d) * 3));
+        return Math.sqrt(availSpace / ((width * height) * (requestedZoom * 72d) * 3));
     }
 
     /**

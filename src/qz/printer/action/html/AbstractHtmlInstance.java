@@ -1,7 +1,5 @@
 package qz.printer.action.html;
 
-import com.sun.javafx.scene.NodeHelper;
-import com.sun.javafx.scene.SceneHelper;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -26,7 +24,6 @@ abstract class AbstractHtmlInstance {
     protected double pageHeight;
     protected double pageZoom;
 
-    protected boolean raster;
     protected IntPredicate printAction;
     protected final AtomicReference<Throwable> thrown = new AtomicReference<>();
 
@@ -77,7 +74,7 @@ abstract class AbstractHtmlInstance {
 
             log.trace("Set HTML page height to {}", pageHeight);
 
-            autosize(webView);
+            autoSize(webView);
 
             firePrintAction();
         }
@@ -125,7 +122,7 @@ abstract class AbstractHtmlInstance {
                 webView.setMaxHeight(1);
             }
 
-            autosize(webView);
+            autoSize(webView);
 
             printAction = action;
 
@@ -158,22 +155,14 @@ abstract class AbstractHtmlInstance {
         }.start());
     }
 
-    /**
-     * Fix blank page after autosize is called
-     */
-    protected void autosize(WebView webView) {
+    protected void autoSize(WebView webView) {
         webView.autosize();
-
-        if (!raster) {
-            // Call updatePeer; fixes a bug with webView resizing
-            // Can be avoided by calling stage.show() but breaks headless environments
-            // See: https://github.com/qzind/tray/issues/513
-            // Remove reflection-based impl_updatePeer/doUpdatePeer lookup and
-            // prefer this explicit helper path for consistent JavaFX behavior.
-            SceneHelper.setAllowPGAccess(true);
-            NodeHelper.updatePeer(webView);
-            SceneHelper.setAllowPGAccess(false);
-        }
+        // Delay the peer update until after autoSize so large preview
+        // dimensions are not rendered during intermediate sizing.
+        // Without this call, large previews are not rendered.
+        // This thus fixes blank pages being displayed after
+        // autoSize is called
+        WebApp.doUpdatePeer(webView);
     }
 
     protected double calculateSupportedZoom(double width, double height) {

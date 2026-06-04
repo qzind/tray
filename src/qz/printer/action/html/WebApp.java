@@ -464,17 +464,16 @@ public class WebApp extends Application {
 
     private static void adjustSize(double toWidth, double toHeight) {
         adjustSize(webView, toWidth, toHeight);
+        doUpdatePeer(webView);
     }
 
     static void adjustSize(WebView view, double toWidth, double toHeight) {
         view.setMinSize(toWidth, toHeight);
         view.setPrefSize(toWidth, toHeight);
         view.setMaxSize(toWidth, toHeight);
-        doUpdatePeer(view);
     }
 
     static void doUpdatePeer(WebView view) {
-        // Call updatePeer; fixes a bug with webView resizing
         SceneHelper.setAllowPGAccess(true);
         NodeHelper.updatePeer(view);
         SceneHelper.setAllowPGAccess(false);

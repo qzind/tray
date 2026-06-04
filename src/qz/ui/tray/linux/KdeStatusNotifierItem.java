@@ -43,6 +43,7 @@ public interface KdeStatusNotifierItem extends DBusInterface {
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconThemePath")
     String getIconThemePath();
 
+    // Ubuntu GNOME requires Menu before it retains a registered item
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "Menu")
     DBusPath getMenu();
 

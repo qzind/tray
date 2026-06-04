@@ -10,12 +10,11 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     private static final String ID = "qz-tray";
     private static final String TITLE = "QZ Tray";
     private static final String STATUS = "Active";
+    private static final String ICON_NAME = "qz-tray";
 
-    private final String iconName;
     private final String iconThemePath;
 
-    LinuxStatusNotifierItem(String iconName, String iconThemePath) {
-        this.iconName = iconName;
+    LinuxStatusNotifierItem(String iconThemePath) {
         this.iconThemePath = iconThemePath;
     }
 
@@ -46,7 +45,7 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     @Override
     public String getIconName() {
-        return iconName;
+        return ICON_NAME;
     }
 
     @Override
@@ -56,8 +55,9 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     @Override
     public DBusPath getMenu() {
-        // Ubuntu GNOME requires a non-empty Menu object path before
-        // it considers a StatusNotifierItem ready for display
+        // Without this, Ubuntu GNOME dropped the registered item until it received
+        // a non-empty Menu object path before it would consider the tray item as ready
+        // for display
         return MENU_PATH;
     }
 

@@ -32,6 +32,10 @@ class LinuxSniIconTheme {
                 : Files.createTempDirectory("qz_sni_icons_");
     }
 
+    /**
+     * Makes the generated hicolor directory a valid icon theme
+     * so GTK/GNOME can resolve qz-tray instead of showing a fallback icon
+     */
     private static void writeThemeIndex(Path themePath) throws IOException {
         Path indexPath = themePath.resolve("hicolor").resolve("index.theme");
         StringBuilder directories = new StringBuilder();

@@ -1,5 +1,6 @@
 package qz.ui.tray.linux;
 
+import org.freedesktop.dbus.DBusPath;
 import org.freedesktop.dbus.annotations.DBusBoundProperty;
 import org.freedesktop.dbus.annotations.DBusInterfaceName;
 import org.freedesktop.dbus.annotations.DBusMemberName;
@@ -30,6 +31,9 @@ public interface FreedesktopStatusNotifierItem extends DBusInterface {
 
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconThemePath")
     String getIconThemePath();
+
+    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "Menu")
+    DBusPath getMenu();
 
     @DBusMemberName("ContextMenu")
     void contextMenu(int x, int y);

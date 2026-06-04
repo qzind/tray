@@ -226,6 +226,16 @@ public class WebApp extends Application {
         }
     }
 
+    static void initStateListeners(
+            Worker<Void> worker,
+            ChangeListener<Worker.State> state,
+            ChangeListener<Throwable> exception) {
+        worker.stateProperty().addListener(state);
+        worker.workDoneProperty().addListener(workDoneListener);
+        worker.exceptionProperty().addListener(exception);
+        worker.messageProperty().addListener(msgListener);
+    }
+
     @Override
     public void start(Stage st) throws Exception {
         startupLatch.countDown();
@@ -247,10 +257,7 @@ public class WebApp extends Application {
         stage.setHeight(1);
 
         Worker<Void> worker = webView.getEngine().getLoadWorker();
-        worker.stateProperty().addListener(stateListener);
-        worker.workDoneProperty().addListener(workDoneListener);
-        worker.exceptionProperty().addListener(exceptListener);
-        worker.messageProperty().addListener(msgListener);
+        initStateListeners(worker, stateListener, exceptListener);
 
         //prevents JavaFX from shutting down when hiding window
         Platform.setImplicitExit(false);
@@ -480,18 +487,14 @@ public class WebApp extends Application {
     }
 
     private static double calculateSupportedZoom(double width, double height) {
-        return calculateSupportedZoom(width, height, pageZoom, headless);
-    }
-
-    static double calculateSupportedZoom(double width, double height, double requestedZoom, boolean isHeadless) {
         long memory = Runtime.getRuntime().maxMemory();
         int allowance = (memory / 1048576L) > 1024? 3:2;
-        if (isHeadless) { allowance--; }
+        if (headless) { allowance--; }
         long availSpace = memory << allowance;
 
         // Memory needed for print is roughly estimated as
         // (width * height) [pixels needed] * (pageZoom * 72d) [print density used] * 3 [rgb channels]
-        return Math.sqrt(availSpace / ((width * height) * (requestedZoom * 72d) * 3));
+        return Math.sqrt(availSpace / ((width * height) * (pageZoom * 72d) * 3));
     }
 
     /**

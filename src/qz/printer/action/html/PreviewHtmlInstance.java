@@ -1,6 +1,7 @@
 package qz.printer.action.html;
 
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.concurrent.Worker;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
@@ -8,8 +9,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.printer.PrintOptions;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class PreviewHtmlInstance extends AbstractHtmlInstance {
     private static final Logger log = LogManager.getLogger(PreviewHtmlInstance.class);
@@ -21,15 +22,15 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
     private final CountDownLatch doneLatch = new CountDownLatch(1);
     private final AtomicBoolean canceled = new AtomicBoolean(true);
 
-    private void finishAsCanceled() {
-        canceled.set(true);
-        doneLatch.countDown();
-    }
+    PreviewHtmlInstance(Stage stage) {
+        ChangeListener<Worker.State> stateListener = (ov, oldState, newState) -> {
+            log.trace("New state: {} > {}", oldState, newState);
 
-    public PreviewHtmlInstance(Stage stage) {
-        stateListener = (ov, oldState, newState) -> {
+            if (newState == Worker.State.CANCELLED) {
+                log.warn("Preview page load was cancelled");
+                finishAsCanceled();
+            }
             if (newState == Worker.State.SUCCEEDED) {
-
                 if (!hasBody()) {
                     finishAsCanceled();
                     return;
@@ -56,13 +57,19 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
                 firePrintAction();
             }
         };
+        ChangeListener<Throwable> exceptionListener = (obs, oldExc, newExc) -> {
+            if (newExc != null) {
+                log.error("Preview page load failed", newExc);
+                finishAsCanceled();
+            }
+        };
 
         //todo
         Platform.runLater(() -> {
             try {
                 renderStage = new Stage(stage.getStyle());
                 webView = new WebView();
-                initStateListeners(webView.getEngine().getLoadWorker());
+                WebApp.initStateListeners(webView.getEngine().getLoadWorker(), stateListener, exceptionListener);
             }
             catch(RuntimeException e) {
                 log.error("Failed to initialize preview stage", e);
@@ -74,7 +81,7 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
         });
     }
 
-    public void show(WebAppModel model, PrintOptions options) throws InterruptedException {
+    void show(WebAppModel model, PrintOptions options) throws InterruptedException {
         this.model = model;
         this.options = options;
         canceled.set(true);
@@ -88,6 +95,14 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
 
             return true;
         });
+    }
+
+    void await() throws InterruptedException {
+        doneLatch.await();
+    }
+
+    boolean isCanceled() {
+        return canceled.get();
     }
 
     private void launchPreview(double width, double height) {
@@ -114,11 +129,9 @@ class PreviewHtmlInstance extends AbstractHtmlInstance {
         });
     }
 
-    public void await() throws InterruptedException {
-        doneLatch.await();
+    private void finishAsCanceled() {
+        canceled.set(true);
+        doneLatch.countDown();
     }
 
-    public boolean isCanceled() {
-        return canceled.get();
-    }
 }

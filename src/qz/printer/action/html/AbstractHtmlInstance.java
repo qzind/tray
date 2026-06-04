@@ -142,9 +142,7 @@ abstract class AbstractHtmlInstance {
     }
 
     protected void adjustSize(double toWidth, double toHeight) {
-        webView.setMinSize(toWidth, toHeight);
-        webView.setPrefSize(toWidth, toHeight);
-        webView.setMaxSize(toWidth, toHeight);
+        WebApp.adjustSize(webView, toWidth, toHeight);
     }
 
     protected void firePrintAction() {

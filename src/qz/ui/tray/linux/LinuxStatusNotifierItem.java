@@ -10,11 +10,12 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     private static final String ID = "qz-tray";
     private static final String TITLE = "QZ Tray";
     private static final String STATUS = "Active";
-    private static final String ICON_NAME = "qz-tray";
 
+    private final String iconName;
     private final String iconThemePath;
 
-    LinuxStatusNotifierItem(String iconThemePath) {
+    LinuxStatusNotifierItem(String iconName, String iconThemePath) {
+        this.iconName = iconName;
         this.iconThemePath = iconThemePath;
     }
 
@@ -45,7 +46,7 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     @Override
     public String getIconName() {
-        return ICON_NAME;
+        return iconName;
     }
 
     @Override

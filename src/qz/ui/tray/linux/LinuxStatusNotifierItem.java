@@ -20,9 +20,11 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     private final String iconThemePath;
     private final LinuxStatusNotifierIconPixmap[] iconPixmap;
+    private final boolean iconPixmapOnly;
 
-    LinuxStatusNotifierItem(String iconThemePath) throws IOException {
+    LinuxStatusNotifierItem(String iconThemePath, boolean iconPixmapOnly) throws IOException {
         this.iconThemePath = iconThemePath;
+        this.iconPixmapOnly = iconPixmapOnly;
         iconPixmap = loadIconPixmap();
     }
 
@@ -53,12 +55,15 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     @Override
     public String getIconName() {
-        return ICON_NAME;
+        // The SNI spec lets hosts prefer IconName over IconPixmap when both
+        // exist. COSMIC currently needs a pixmap-only item to avoid retrying
+        // unresolved theme lookup.
+        return iconPixmapOnly ? "" : ICON_NAME;
     }
 
     @Override
     public String getIconThemePath() {
-        return iconThemePath;
+        return iconPixmapOnly ? "" : iconThemePath;
     }
 
     @Override

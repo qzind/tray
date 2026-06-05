@@ -61,12 +61,12 @@ public class LinuxSniProbe {
         return env.inspectDbus();
     }
 
-    private static String getEnv(String name) {
+    private String getEnv(String name) {
         String value = System.getenv(name);
         return value == null ? "" : value;
     }
 
-    private static String present(String value) {
+    private String present(String value) {
         return value == null || value.isEmpty() ? "" : "present";
     }
 
@@ -136,17 +136,18 @@ public class LinuxSniProbe {
 
     @Override
     public String toString() {
-        return "Linux: " + isLinux + System.lineSeparator()
-                + "Headless: " + headless + System.lineSeparator()
-                + "XDG_CURRENT_DESKTOP: " + currentDesktop + System.lineSeparator()
-                + "XDG_SESSION_TYPE: " + sessionType + System.lineSeparator()
-                + "DISPLAY: " + display + System.lineSeparator()
-                + "WAYLAND_DISPLAY: " + waylandDisplay + System.lineSeparator()
-                + "DBUS_SESSION_BUS_ADDRESS: " + present(dbusSessionBusAddress) + System.lineSeparator()
-                + "XDG_RUNTIME_DIR: " + xdgRuntimeDir + System.lineSeparator()
-                + "Session bus reachable: " + sessionBusReachable + System.lineSeparator()
-                + "StatusNotifier watcher: " + (statusNotifierWatcherPresent ? statusNotifierWatcher + " present" : "missing") + System.lineSeparator()
-                + "Can attempt StatusNotifier POC: " + canAttemptStatusNotifierPoc() + System.lineSeparator()
-                + "Failure reason: " + (failureReason == null ? "" : failureReason);
+        String report = "Linux: " + isLinux + "\n"
+                + "Headless: " + headless + "\n"
+                + "XDG_CURRENT_DESKTOP: " + currentDesktop + "\n"
+                + "XDG_SESSION_TYPE: " + sessionType + "\n"
+                + "DISPLAY: " + display + "\n"
+                + (waylandDisplay.isEmpty() ? "" : "WAYLAND_DISPLAY: " + waylandDisplay + "\n")
+                + "DBUS_SESSION_BUS_ADDRESS: " + present(dbusSessionBusAddress) + "\n"
+                + "XDG_RUNTIME_DIR: " + xdgRuntimeDir + "\n"
+                + "Session bus reachable: " + sessionBusReachable + "\n"
+                + "StatusNotifier watcher: " + (statusNotifierWatcherPresent ? statusNotifierWatcher + " present" : "missing") + "\n"
+                + "Can attempt StatusNotifier POC: " + canAttemptStatusNotifierPoc();
+
+        return failureReason == null ? report : report + "\nFailure reason: " + failureReason;
     }
 }

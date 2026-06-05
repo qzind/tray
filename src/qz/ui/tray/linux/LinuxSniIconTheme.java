@@ -46,18 +46,18 @@ class LinuxSniIconTheme {
                 directories.append(',');
             }
             directories.append(size).append('x').append(size).append("/apps");
-            sections.append(System.lineSeparator())
+            sections.append("\n")
                     .append('[').append(size).append('x').append(size).append("/apps]")
-                    .append(System.lineSeparator())
-                    .append("Size=").append(size).append(System.lineSeparator())
-                    .append("Context=Applications").append(System.lineSeparator())
-                    .append("Type=Fixed").append(System.lineSeparator());
+                    .append("\n")
+                    .append("Size=").append(size).append("\n")
+                    .append("Context=Applications").append("\n")
+                    .append("Type=Fixed").append("\n");
         }
 
-        String index = "[Icon Theme]" + System.lineSeparator()
-                + "Name=QZ Tray" + System.lineSeparator()
-                + "Comment=Temporary QZ Tray StatusNotifier icons" + System.lineSeparator()
-                + "Directories=" + directories + System.lineSeparator()
+        String index = "[Icon Theme]\n"
+                + "Name=QZ Tray\n"
+                + "Comment=Temporary QZ Tray StatusNotifier icons\n"
+                + "Directories=" + directories + "\n"
                 + sections;
 
         Files.createDirectories(indexPath.getParent());

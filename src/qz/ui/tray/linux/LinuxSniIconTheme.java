@@ -29,6 +29,14 @@ class LinuxSniIconTheme {
         return themePath.toString();
     }
 
+    static String getSymbolicIconPath(String themePath) {
+        return Path.of(themePath)
+                .resolve("hicolor")
+                .resolve("scalable")
+                .resolve("status")
+                .toString();
+    }
+
     private static Path getThemePath() throws IOException {
         return FileUtilities.TEMP_DIR != null
                 ? FileUtilities.TEMP_DIR.resolve("sni-icons")

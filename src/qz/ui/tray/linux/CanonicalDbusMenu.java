@@ -15,6 +15,8 @@ import org.freedesktop.dbus.types.Variant;
  * References:
  * https://sources.debian.org/src/libdbusmenu/18.10.20180917~bzr492%2Brepack1-2/libdbusmenu-glib/dbus-menu.xml
  * https://hypfvieh.github.io/dbus-java/exporting-objects.html
+ * https://hypfvieh.github.io/dbus-java/properties.html
+ * https://hypfvieh.github.io/dbus-java/dbus-java-core/apidocs/org.freedesktop.dbus/org/freedesktop/dbus/annotations/DBusInterfaceName.html
  */
 @DBusInterfaceName("com.canonical.dbusmenu")
 public interface CanonicalDbusMenu extends DBusInterface {

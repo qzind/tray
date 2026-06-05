@@ -12,7 +12,11 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
     private static final String OBJECT_PATH = "/MenuBar";
     private static final int ROOT_ID = 0;
     private static final int ABOUT_ID = 1;
+    // DBusMenu protocol/interface version exposed through the Version property
     private static final UInt32 VERSION = new UInt32(3);
+    // Layout revision returned by GetLayout
+    // This POC menu is static, so revision
+    // 1 is enough until menu items or properties become dynamic
     private static final UInt32 REVISION = new UInt32(1);
     private static final String STATUS = "normal";
     private static final String EVENT_CLICKED = "clicked";
@@ -41,7 +45,8 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
     @Override
     public LinuxDbusMenuLayout getLayout(int parentId, int recursionDepth, String[] propertyNames) {
         // dbus-java maps Java arrays to D-Bus arrays for this exported interface,
-        // which keeps the DBusMenu signatures aligned with libdbusmenu.
+        // which keeps the DBusMenu signatures aligned with libdbusmenu:
+        // https://hypfvieh.github.io/dbus-java/variant-handling.html
         LinuxDbusMenuLayoutItem layout = parentId == ABOUT_ID
                 ? aboutItem(propertyNames)
                 : rootItem(recursionDepth, propertyNames);
@@ -67,6 +72,8 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
 
     @Override
     public void event(int id, String eventId, Variant<?> data, UInt32 timestamp) {
+        // DBusMenu sends user activation through Event/EventGroup
+        // This POC only handles the single action "About" meanwhile
         if(id == ABOUT_ID && EVENT_CLICKED.equals(eventId)) {
             aboutAction.show();
         }
@@ -75,7 +82,7 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
     @Override
     public int[] eventGroup(LinuxDbusMenuEvent[] events) {
         for(LinuxDbusMenuEvent event : events) {
-            event(event.id, event.eventId, event.data, event.timestamp);
+            event(event.getId(), event.getEventId(), event.getData(), event.getTimestamp());
         }
         return new int[0];
     }
@@ -91,6 +98,9 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
     }
 
     private LinuxDbusMenuLayoutItem rootItem(int recursionDepth, String[] propertyNames) {
+        // A recursion depth of 0 asks for the root item only
+        // Any other value used by tested hosts should expose
+        // the one "About" item
         Variant<?>[] children = recursionDepth == 0
                 ? new Variant<?>[0]
                 : new Variant<?>[] { new Variant<>(aboutItem(propertyNames)) };
@@ -102,6 +112,8 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
     }
 
     private Map<String, Variant<?>> getProperties(int id, String[] propertyNames) {
+        // DBusMenu item properties are a{sv}, so dbus-java represents each value
+        // with Variant<?> while Java keeps the dictionary as a Map
         Map<String, Variant<?>> properties = new LinkedHashMap<>();
 
         if(id == ABOUT_ID) {

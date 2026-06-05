@@ -13,6 +13,8 @@ class LinuxTrayAboutAction {
     private AboutDialog aboutDialog;
 
     void show() {
+        // D-Bus calls arrive off the Swing event thread
+        // so, the existing QZ UI must be created and shown on the EDT
         SwingUtilities.invokeLater(() -> {
             try {
                 getAboutDialog().setVisible(true);
@@ -25,6 +27,7 @@ class LinuxTrayAboutAction {
 
     private AboutDialog getAboutDialog() {
         if(aboutDialog == null) {
+            // Reuse the existing AboutDialog implementation
             JMenuItem aboutItem = new JMenuItem("About...");
             aboutDialog = new AboutDialog(aboutItem, new IconCache());
             aboutDialog.initComponents();

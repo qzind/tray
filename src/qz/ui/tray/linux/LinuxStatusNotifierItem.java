@@ -48,12 +48,12 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     @Override
     public String getIconName() {
-        return symbolicIcon ? LinuxSniIconTheme.getSymbolicIconFile(iconThemePath) : ICON_NAME;
+        return symbolicIcon ? SYMBOLIC_ICON_NAME : ICON_NAME;
     }
 
     @Override
     public String getIconThemePath() {
-        return symbolicIcon ? "" : iconThemePath;
+        return iconThemePath;
     }
 
     @Override

@@ -20,6 +20,8 @@ public class LinuxTrayIconPoc {
             return;
         }
 
+        // dbus-java's exported-object flow starts with the user's session bus:
+        // https://hypfvieh.github.io/dbus-java/exporting-objects.html
         try (DBusConnection connection = DBusConnectionBuilder.forSessionBus().build()) {
             // The item bus name must match the watcher
             // namespace that is actually present at runtime
@@ -31,9 +33,11 @@ public class LinuxTrayIconPoc {
             LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath);
             LinuxDbusMenu menu = new LinuxDbusMenu(new LinuxTrayAboutAction());
 
-            // Own the item service name and export
-            // the object that the watcher/tray host will inspect
+            // Own the item service name before registration so the watcher can resolve
+            // the service name back to this process.
             connection.requestBusName(itemService);
+            // Export the StatusNotifierItem object that the
+            // watcher/tray host will inspect
             connection.exportObject(item.getObjectPath(), item);
             // The StatusNotifierItem Menu property points here
             // so exporting it before registration lets tray hosts

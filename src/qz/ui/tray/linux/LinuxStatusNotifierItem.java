@@ -57,7 +57,8 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     public DBusPath getMenu() {
         // Without this, Ubuntu GNOME dropped the registered item until it received
         // a non-empty Menu object path before it would consider the tray item as ready
-        // for display
+        // for display. The POC exports a minimal com.canonical.dbusmenu object at
+        // this path before registering the item.
         return MENU_PATH;
     }
 

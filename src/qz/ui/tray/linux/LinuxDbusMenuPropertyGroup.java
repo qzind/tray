@@ -6,13 +6,15 @@ import org.freedesktop.dbus.types.Variant;
 
 import java.util.Map;
 
-public final class LinuxDbusMenuPropertyGroup extends Struct {
+// D-Bus structs are positional
+// This maps DBusMenu's per-item property group
+// to the id plus a{sv} property dictionary expected by tray hosts
+public class LinuxDbusMenuPropertyGroup extends Struct {
 
     @Position(0)
-    public final int id;
-
+    private final int id;
     @Position(1)
-    public final Map<String, Variant<?>> properties;
+    private final Map<String, Variant<?>> properties;
 
     public LinuxDbusMenuPropertyGroup(int id, Map<String, Variant<?>> properties) {
         this.id = id;

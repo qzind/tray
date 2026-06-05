@@ -6,16 +6,17 @@ import org.freedesktop.dbus.types.Variant;
 
 import java.util.Map;
 
-public final class LinuxDbusMenuLayoutItem extends Struct {
+// D-Bus structs are positional
+// dbus-java's @Position annotations keep this
+// class aligned with DBusMenu's (ia{sv}av) layout item signature
+public class LinuxDbusMenuLayoutItem extends Struct {
 
     @Position(0)
-    public final int id;
-
+    private final int id;
     @Position(1)
-    public final Map<String, Variant<?>> properties;
-
+    private final Map<String, Variant<?>> properties;
     @Position(2)
-    public final Variant<?>[] children;
+    private final Variant<?>[] children;
 
     public LinuxDbusMenuLayoutItem(int id, Map<String, Variant<?>> properties, Variant<?>[] children) {
         this.id = id;

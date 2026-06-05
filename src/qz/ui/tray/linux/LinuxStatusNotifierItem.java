@@ -3,6 +3,7 @@ package qz.ui.tray.linux;
 import org.freedesktop.dbus.DBusPath;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,7 +17,8 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     private static final String TITLE = "QZ Tray";
     private static final String STATUS = "Active";
     private static final String ICON_NAME = "qz-tray";
-    private static final String ICON_PIXMAP_RESOURCE = "/qz/ui/resources/qz-default-48.png";
+    private static final String ICON_PIXMAP_RESOURCE = "/qz/ui/resources/qz-default-%s.png";
+    private static final int[] ICON_PIXMAP_SIZES = {16, 22, 24, 32, 48};
 
     private final String iconThemePath;
     private final LinuxStatusNotifierIconPixmap[] iconPixmap;
@@ -95,19 +97,45 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     public void scroll(int delta, String orientation) {}
 
     private static LinuxStatusNotifierIconPixmap[] loadIconPixmap() throws IOException {
-        try(InputStream in = LinuxStatusNotifierItem.class.getResourceAsStream(ICON_PIXMAP_RESOURCE)) {
+        LinuxStatusNotifierIconPixmap[] pixmaps = new LinuxStatusNotifierIconPixmap[ICON_PIXMAP_SIZES.length];
+        BufferedImage baseImage = readPixmapResource(48);
+
+        for(int i = 0; i < ICON_PIXMAP_SIZES.length; i++) {
+            int size = ICON_PIXMAP_SIZES[i];
+            BufferedImage image = size == 32 || size == 48 ? readPixmapResource(size) : scalePixmap(baseImage, size);
+            pixmaps[i] = new LinuxStatusNotifierIconPixmap(size, size, getArgbPixels(image));
+        }
+
+        return pixmaps;
+    }
+
+    private static BufferedImage readPixmapResource(int size) throws IOException {
+        String resourcePath = String.format(ICON_PIXMAP_RESOURCE, size);
+
+        try(InputStream in = LinuxStatusNotifierItem.class.getResourceAsStream(resourcePath)) {
             if(in == null) {
-                throw new IOException(String.format("StatusNotifier icon resource missing: %s", ICON_PIXMAP_RESOURCE));
+                throw new IOException(String.format("StatusNotifier icon resource missing: %s", resourcePath));
             }
             BufferedImage image = ImageIO.read(in);
             if(image == null) {
-                throw new IOException(String.format("StatusNotifier icon resource unreadable: %s", ICON_PIXMAP_RESOURCE));
+                throw new IOException(String.format("StatusNotifier icon resource unreadable: %s", resourcePath));
             }
 
-            return new LinuxStatusNotifierIconPixmap[] {
-                    new LinuxStatusNotifierIconPixmap(image.getWidth(), image.getHeight(), getArgbPixels(image))
-            };
+            return image;
         }
+    }
+
+    private static BufferedImage scalePixmap(BufferedImage image, int size) {
+        BufferedImage scaled = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = scaled.createGraphics();
+
+        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        graphics.drawImage(image, 0, 0, size, size, null);
+        graphics.dispose();
+
+        return scaled;
     }
 
     private static byte[] getArgbPixels(BufferedImage image) {

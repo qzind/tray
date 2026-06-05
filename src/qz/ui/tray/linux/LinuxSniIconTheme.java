@@ -12,7 +12,9 @@ import java.nio.file.StandardCopyOption;
 class LinuxSniIconTheme {
 
     private static final String ICON_NAME = "qz-tray";
+    private static final String SYMBOLIC_ICON_NAME = "qz-tray-symbolic";
     private static final String RESOURCE_PATH = "/qz/ui/resources/qz-default-%s.png";
+    private static final Path SVG_PATH = Path.of("assets", "branding", "linux-icon.svg");
     private static final int[] ICON_SIZES = {32, 48};
 
     static String prepare() throws IOException {
@@ -22,6 +24,7 @@ class LinuxSniIconTheme {
         for(int size : ICON_SIZES) {
             copyIcon(size, themePath);
         }
+        copySymbolicIcon(themePath);
 
         return themePath.toString();
     }
@@ -53,6 +56,20 @@ class LinuxSniIconTheme {
                     .append("Context=Applications").append("\n")
                     .append("Type=Fixed").append("\n");
         }
+        if(Files.exists(SVG_PATH)) {
+            if(directories.length() > 0) {
+                directories.append(',');
+            }
+            directories.append("scalable/status");
+            sections.append("\n")
+                    .append("[scalable/status]")
+                    .append("\n")
+                    .append("Size=16").append("\n")
+                    .append("MinSize=1").append("\n")
+                    .append("MaxSize=256").append("\n")
+                    .append("Context=Status").append("\n")
+                    .append("Type=Scalable").append("\n");
+        }
 
         String index = "[Icon Theme]\n"
                 + "Name=QZ Tray\n"
@@ -82,5 +99,23 @@ class LinuxSniIconTheme {
             }
             Files.copy(in, iconPath, StandardCopyOption.REPLACE_EXISTING);
         }
+    }
+
+    private static void copySymbolicIcon(Path themePath) throws IOException {
+        if(!Files.exists(SVG_PATH)) {
+            return;
+        }
+
+        // Source-tree POC only: this relative path works when run from the
+        // tray repo root. A packaged implementation should load this as a
+        // Java resource instead of depending on the process working directory.
+        Path iconPath = themePath
+                .resolve("hicolor")
+                .resolve("scalable")
+                .resolve("status")
+                .resolve(SYMBOLIC_ICON_NAME + ".svg");
+
+        Files.createDirectories(iconPath.getParent());
+        Files.copy(SVG_PATH, iconPath, StandardCopyOption.REPLACE_EXISTING);
     }
 }

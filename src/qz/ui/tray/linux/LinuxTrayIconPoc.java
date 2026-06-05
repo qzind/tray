@@ -52,6 +52,7 @@ public class LinuxTrayIconPoc {
             log.info("Published StatusNotifier icon theme path {}", iconThemePath);
             if (probe.needsSymbolicIcon()) {
                 log.info("Published StatusNotifier symbolic icon name qz-tray-symbolic");
+                log.info("Published StatusNotifier empty icon theme path for COSMIC diagnostic");
             }
             // Keep the POC alive
             // the watcher removes the item when

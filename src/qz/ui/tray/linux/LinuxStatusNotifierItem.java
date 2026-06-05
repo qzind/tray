@@ -53,7 +53,7 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     @Override
     public String getIconThemePath() {
-        return iconThemePath;
+        return symbolicIcon ? "" : iconThemePath;
     }
 
     @Override

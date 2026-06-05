@@ -37,6 +37,12 @@ class LinuxSniIconTheme {
                 .toString();
     }
 
+    static String getSymbolicIconFile(String themePath) {
+        return Path.of(getSymbolicIconPath(themePath))
+                .resolve(SYMBOLIC_ICON_NAME + ".svg")
+                .toString();
+    }
+
     private static Path getThemePath() throws IOException {
         return FileUtilities.TEMP_DIR != null
                 ? FileUtilities.TEMP_DIR.resolve("sni-icons")

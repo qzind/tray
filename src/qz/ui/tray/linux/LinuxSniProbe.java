@@ -115,6 +115,12 @@ public class LinuxSniProbe {
         return statusNotifierWatcher;
     }
 
+    boolean needsIconPixmapOnly() {
+        // COSMIC registers the SNI item but does not resolve the generated
+        // IconName/IconThemePath or scalable SVG during POC testing.
+        return currentDesktop.toLowerCase(Locale.ENGLISH).contains("cosmic");
+    }
+
     private String getMissingWatcherSuggestion() {
         String desktop = currentDesktop.toLowerCase(Locale.ENGLISH);
 

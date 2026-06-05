@@ -30,7 +30,7 @@ public class LinuxTrayIconPoc {
             String itemService = getItemServicePrefix(statusNotifierWatcher)
                     + ProcessHandle.current().pid();
             String iconThemePath = LinuxSniIconTheme.prepare();
-            LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath);
+            LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath, probe.needsIconPixmapOnly());
             LinuxDbusMenu menu = new LinuxDbusMenu(new LinuxTrayAboutAction());
 
             // Own the item service name before registration so the watcher can resolve
@@ -50,6 +50,9 @@ public class LinuxTrayIconPoc {
 
             log.info("Registered StatusNotifier item {} at {}", itemService, item.getObjectPath());
             log.info("Published StatusNotifier icon theme path {}", iconThemePath);
+            if (probe.needsIconPixmapOnly()) {
+                log.info("Published StatusNotifier icon as pixmap-only for this desktop");
+            }
             // Keep the POC alive
             // the watcher removes the item when
             // this bus name disappears

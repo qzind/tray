@@ -13,7 +13,6 @@ class LinuxSniIconTheme {
 
     private static final String ICON_NAME = "qz-tray";
     private static final String RESOURCE_PATH = "/qz/ui/resources/qz-default-%s.png";
-    private static final Path SVG_PATH = Path.of("assets", "branding", "linux-icon.svg");
     private static final int[] ICON_SIZES = {32, 48};
 
     static String prepare() throws IOException {
@@ -23,7 +22,6 @@ class LinuxSniIconTheme {
         for(int size : ICON_SIZES) {
             copyIcon(size, themePath);
         }
-        copyScalableIcon(themePath);
 
         return themePath.toString();
     }
@@ -55,20 +53,6 @@ class LinuxSniIconTheme {
                     .append("Context=Applications").append("\n")
                     .append("Type=Fixed").append("\n");
         }
-        if(Files.exists(SVG_PATH)) {
-            if(directories.length() > 0) {
-                directories.append(',');
-            }
-            directories.append("scalable/apps");
-            sections.append("\n")
-                    .append("[scalable/apps]")
-                    .append("\n")
-                    .append("Size=128").append("\n")
-                    .append("MinSize=1").append("\n")
-                    .append("MaxSize=256").append("\n")
-                    .append("Context=Applications").append("\n")
-                    .append("Type=Scalable").append("\n");
-        }
 
         String index = "[Icon Theme]\n"
                 + "Name=QZ Tray\n"
@@ -98,20 +82,5 @@ class LinuxSniIconTheme {
             }
             Files.copy(in, iconPath, StandardCopyOption.REPLACE_EXISTING);
         }
-    }
-
-    private static void copyScalableIcon(Path themePath) throws IOException {
-        if(!Files.exists(SVG_PATH)) {
-            return;
-        }
-
-        Path iconPath = themePath
-                .resolve("hicolor")
-                .resolve("scalable")
-                .resolve("apps")
-                .resolve(ICON_NAME + ".svg");
-
-        Files.createDirectories(iconPath.getParent());
-        Files.copy(SVG_PATH, iconPath, StandardCopyOption.REPLACE_EXISTING);
     }
 }

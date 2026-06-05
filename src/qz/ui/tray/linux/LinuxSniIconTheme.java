@@ -37,12 +37,6 @@ class LinuxSniIconTheme {
                 .toString();
     }
 
-    static String getSymbolicIconFile(String themePath) {
-        return Path.of(getSymbolicIconPath(themePath))
-                .resolve(SYMBOLIC_ICON_NAME + ".svg")
-                .toString();
-    }
-
     private static Path getThemePath() throws IOException {
         return FileUtilities.TEMP_DIR != null
                 ? FileUtilities.TEMP_DIR.resolve("sni-icons")
@@ -74,7 +68,7 @@ class LinuxSniIconTheme {
             if(directories.length() > 0) {
                 directories.append(',');
             }
-            directories.append("scalable/status");
+            directories.append("scalable/status,scalable/apps");
             sections.append("\n")
                     .append("[scalable/status]")
                     .append("\n")
@@ -82,6 +76,14 @@ class LinuxSniIconTheme {
                     .append("MinSize=1").append("\n")
                     .append("MaxSize=256").append("\n")
                     .append("Context=Status").append("\n")
+                    .append("Type=Scalable").append("\n")
+                    .append("\n")
+                    .append("[scalable/apps]")
+                    .append("\n")
+                    .append("Size=16").append("\n")
+                    .append("MinSize=1").append("\n")
+                    .append("MaxSize=256").append("\n")
+                    .append("Context=Applications").append("\n")
                     .append("Type=Scalable").append("\n");
         }
 
@@ -123,10 +125,15 @@ class LinuxSniIconTheme {
         // Source-tree POC only: this relative path works when run from the
         // tray repo root. A packaged implementation should load this as a
         // Java resource instead of depending on the process working directory.
+        copySymbolicIcon(themePath, "status");
+        copySymbolicIcon(themePath, "apps");
+    }
+
+    private static void copySymbolicIcon(Path themePath, String context) throws IOException {
         Path iconPath = themePath
                 .resolve("hicolor")
                 .resolve("scalable")
-                .resolve("status")
+                .resolve(context)
                 .resolve(SYMBOLIC_ICON_NAME + ".svg");
 
         Files.createDirectories(iconPath.getParent());

@@ -51,8 +51,7 @@ public class LinuxTrayIconPoc {
             log.info("Registered StatusNotifier item {} at {}", itemService, item.getObjectPath());
             log.info("Published StatusNotifier icon theme path {}", iconThemePath);
             if (probe.needsSymbolicIcon()) {
-                log.info("Published StatusNotifier symbolic icon path {}",
-                        LinuxSniIconTheme.getSymbolicIconFile(iconThemePath));
+                log.info("Published StatusNotifier symbolic icon name qz-tray-symbolic");
             }
             // Keep the POC alive
             // the watcher removes the item when

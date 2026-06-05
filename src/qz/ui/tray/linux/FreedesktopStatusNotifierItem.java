@@ -32,6 +32,9 @@ public interface FreedesktopStatusNotifierItem extends DBusInterface {
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconThemePath")
     String getIconThemePath();
 
+    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconPixmap")
+    LinuxStatusNotifierIconPixmap[] getIconPixmap();
+
     // Keep the freedesktop item surface compatible with the KDE item surface
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "Menu")
     DBusPath getMenu();

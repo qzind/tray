@@ -29,11 +29,16 @@ public class LinuxTrayIconPoc {
                     + ProcessHandle.current().pid();
             String iconThemePath = LinuxSniIconTheme.prepare();
             LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath);
+            LinuxDbusMenu menu = new LinuxDbusMenu(new LinuxTrayAboutAction());
 
             // Own the item service name and export
             // the object that the watcher/tray host will inspect
             connection.requestBusName(itemService);
             connection.exportObject(item.getObjectPath(), item);
+            // The StatusNotifierItem Menu property points here
+            // so exporting it before registration lets tray hosts
+            // fetch the menu immediately
+            connection.exportObject(menu.getObjectPath(), menu);
 
             // Register against the watcher detected
             // by LinuxSniProbe instead of assuming a desktop environment

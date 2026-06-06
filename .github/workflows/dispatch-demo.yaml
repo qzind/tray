@@ -1,0 +1,29 @@
+name: Dispatch Demo Update Event
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - sample.html
+      - js/*
+      - css/*
+      - fonts/*
+      - assets/*
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          client-id: ${{ vars.QZIO_APP_CLIENT_ID }}
+          private-key: ${{ secrets.QZIO_APP_PRIVATE_KEY }}
+          repositories: ${{ vars.QZIO_REPO }}
+
+      - name: Create repository dispatch event
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh api -X POST '/repos/${{ vars.QZIO_REPO }}/dispatches' \
+          -f 'event_type=tray_demo_updated'

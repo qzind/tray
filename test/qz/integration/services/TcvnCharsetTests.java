@@ -11,17 +11,14 @@ import java.nio.charset.UnsupportedCharsetException;
 
 public class TcvnCharsetTests {
 
-	private static final Logger log = LogManager.getLogger(TcvnCharsetTests.class);
-
 	@SuppressWarnings("all")
 	private static final String CHARSET_NAME = "TCVN-3-1";
 
 	@Test
 	public void testCharsetAvailability() {
-		log.trace("Checking if {} is supported by the JVM provider", CHARSET_NAME);
 		try {
 			Charset cs = Charset.forName(CHARSET_NAME);
-			Assert.assertNotNull(cs, "Charset should not be null if registered");
+			Assert.assertNotNull(cs);
 		} catch (UnsupportedCharsetException e) {
 			Assert.fail(CHARSET_NAME + " charset provider is not registered or supported in this runtime.");
 		}
@@ -95,21 +92,18 @@ public class TcvnCharsetTests {
 
 	@Test(dataProvider = "tcvnData")
 	public void testTcvnEncoding(String inputString, byte[] expectedBytes) throws Exception {
-		log.trace("Encoding string '{}'", inputString);
 		byte[] actualBytes = inputString.getBytes(CHARSET_NAME);
 		Assert.assertEquals(actualBytes, expectedBytes);
 	}
 
 	@Test(dataProvider = "tcvnData")
 	public void testTcvnDecoding(String expectedString, byte[] inputBytes) throws Exception {
-		log.trace("Decoding bytes, expecting string '{}'", expectedString);
 		String actualString = new String(inputBytes, CHARSET_NAME);
 		Assert.assertEquals(actualString, expectedString);
 	}
 
 	@Test(dataProvider = "invalidCharacterData")
 	public void testInvalidCharactersEncoding(String inputString, byte[] expectedBytes) throws Exception {
-		log.trace("Encoding invalid character string '{}'", inputString);
 		byte[] actualBytes = inputString.getBytes(CHARSET_NAME);
 		Assert.assertEquals(actualBytes, expectedBytes);
 	}

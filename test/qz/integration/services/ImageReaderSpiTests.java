@@ -7,6 +7,7 @@ import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import java.io.InputStream;
@@ -23,10 +24,19 @@ public class ImageReaderSpiTests {
 	@DataProvider(name = "nameAndImage")
 	public Object[][] nameAndImage() {
 		return new Object[][] {
+				// JBIG2 - Provided by Apache PDFBox
 				{
-					// JBIG2 - Provided by Apache PDFBox
 					"JBIG2",
 					"assets/jbig2-cameraman.jb2"
+				},
+				// JPEG 2000 - Provided by ???
+				{
+					"JPEG 2000",
+					"assets/jpeg2000-cameraman.jp2"
+				},
+				{
+					"JPEG2000",
+					"assets/jpeg2000-cameraman.jp2"
 				}
 		};
 	}

@@ -35,8 +35,10 @@ public class Jbig2Tests {
 
 					for (int y = 0; y < decoded.getHeight(); y++) {
 						for (int x = 0; x < decoded.getWidth(); x++) {
-							Assert.assertEquals(decoded.getRGB(x, y), truth.getRGB(x, y),
-								"Mismatch at %d,%d".formatted(x, y));
+							Assert.assertEquals(
+								decoded.getRGB(x, y), truth.getRGB(x, y),
+								String.format("Mismatch at %d,%d", x, y)
+							);
 						}
 					}
 				}

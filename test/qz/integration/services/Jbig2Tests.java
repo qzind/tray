@@ -14,14 +14,11 @@ public class Jbig2Tests {
 
 		ImageIO.scanForPlugins();
 
-		String assetPath = "qz/integration/services/assets/jbig2-cameraman.jb2";
-		String truthPath = "qz/integration/services/assets/jbig2-cameraman.png";
+		try (InputStream jb2Stream = Jbig2Tests.class.getResourceAsStream("assets/jbig2-cameraman.jb2");
+			 InputStream truthStream = Jbig2Tests.class.getResourceAsStream("assets/jbig2-cameraman.png")) {
 
-		try (InputStream jb2Stream = getClass().getClassLoader().getResourceAsStream(assetPath);
-			 InputStream truthStream = getClass().getClassLoader().getResourceAsStream(truthPath)) {
-
-			Assert.assertNotNull(jb2Stream, "Could not find asset on classpath: " + assetPath);
-			Assert.assertNotNull(truthStream, "Could not find truth file on classpath: " + truthPath);
+			Assert.assertNotNull(jb2Stream, "jb2Stream is null - can't find or read assets/jbig2-cameraman.jb2!");
+			Assert.assertNotNull(truthStream, "truthStream is null - can't find or read assets/jbig2-cameraman.png!");
 
 			try (javax.imageio.stream.ImageInputStream iis = ImageIO.createImageInputStream(jb2Stream)) {
 				org.apache.pdfbox.jbig2.JBIG2ImageReader reader = new org.apache.pdfbox.jbig2.JBIG2ImageReader(

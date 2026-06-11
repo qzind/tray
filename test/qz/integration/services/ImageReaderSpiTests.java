@@ -28,8 +28,7 @@ public class ImageReaderSpiTests {
 				{
 					"JBIG2",
 					"assets/jbig2-cameraman.jb2"
-				},
-				// JPEG 2000 - Provided by ???
+				// JPEG 2000 - Provided by jai-imageio
 				{
 					"JPEG 2000",
 					"assets/jpeg2000-cameraman.jp2"

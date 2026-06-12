@@ -14,14 +14,18 @@ import java.io.InputStream;
 import java.util.Iterator;
 
 public class ImageReaderSpiTests {
+	@BeforeMethod
+	public void beforeMethod() {
+		ImageIO.scanForPlugins();
+	}
 
-	@DataProvider(name = "nameAndImage")
-	public Object[][] nameAndImage() {
+	@DataProvider(name = "formats")
+	public Object[][] formats() {
 		return new Object[][] {
 				// JBIG2 - Provided by Apache PDFBox
 				{
-						"JBIG2",
-						"assets/jbig2-cameraman.jb2"
+					"JBIG2",
+					"assets/jbig2-cameraman.jb2"
 				},
 				// JPEG 2000 - Provided by jai-imageio
 				{
@@ -35,37 +39,24 @@ public class ImageReaderSpiTests {
 		};
 	}
 
-	@DataProvider(name = "names")
-	public Object[][] name() {
-		return new Object[][] {
-			{ "JBIG2" },
-			{ "JPEG 2000" }, { "JPEG2000" }
-		};
-	}
-
-	@BeforeMethod
-    public void setUp() {
-		ImageIO.scanForPlugins();
-	}
-
 	@Test
 	public void testUnknownFormat() {
 		Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("NonExistentFormat");
 		Assert.assertFalse(readers.hasNext());
 	}
 
-	@Test(dataProvider="names")
-	public void testFormatPresent(String name) {
+	@Test(dataProvider="formats")
+	public void testFormatPresent(String formatName, String ignore) {
 		Iterator<ImageReader> readers;
 
-		readers = ImageIO.getImageReadersByFormatName(name);
+		readers = ImageIO.getImageReadersByFormatName(formatName);
 		Assert.assertTrue(readers.hasNext());
 
-		readers = ImageIO.getImageReadersByFormatName(name.toLowerCase());
+		readers = ImageIO.getImageReadersByFormatName(formatName.toLowerCase());
 		Assert.assertTrue(readers.hasNext());
 	}
 
-	@Test(dataProvider = "nameAndImage")
+	@Test(dataProvider = "formats")
 	public void testFormat(String formatName, String resource) throws Exception {
 		try (InputStream is = getClass().getResourceAsStream(resource)) {
 			Assert.assertNotNull(is, "InputStream is null");

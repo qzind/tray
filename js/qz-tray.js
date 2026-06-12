@@ -901,6 +901,11 @@ var qz = (function() {
                 throw new Error("A connection to " + _qz.TITLE + " has not been established yet");
             },
 
+            isConnected: function() {
+                return !_qz.websocket.shutdown && _qz.websocket.connection != null
+                    && _qz.websocket.connection.established;
+            },
+
             uint8ArrayToHex: function(uint8) {
                 return Array.from(uint8)
                     .map(function(i) { return i.toString(16).padStart(2, '0'); })
@@ -1272,6 +1277,19 @@ var qz = (function() {
              */
             isActive: function() {
                 return _qz.tools.isActive();
+            },
+
+            /**
+             * Check actual connection. Unlike isActive() this only returns true when the connection is fully established.
+             *
+             * @returns {boolean} If there is an established connection with QZ Tray.
+             *
+             * @see connect
+             *
+             * @memberof  qz.websocket
+             */
+            isConnected: function() {
+                return _qz.tools.isConnected();
             },
 
             /**

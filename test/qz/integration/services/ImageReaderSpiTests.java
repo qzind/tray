@@ -13,21 +13,16 @@ import org.testng.annotations.Test;
 import java.io.InputStream;
 import java.util.Iterator;
 
-import java.util.Arrays;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class ImageReaderSpiTests {
-
-	private static final Logger log = LogManager.getLogger(ImageReaderSpiTests.class);
 
 	@DataProvider(name = "nameAndImage")
 	public Object[][] nameAndImage() {
 		return new Object[][] {
 				// JBIG2 - Provided by Apache PDFBox
 				{
-					"JBIG2",
-					"assets/jbig2-cameraman.jb2"
+						"JBIG2",
+						"assets/jbig2-cameraman.jb2"
+				},
 				// JPEG 2000 - Provided by jai-imageio
 				{
 					"JPEG 2000",

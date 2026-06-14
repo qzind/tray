@@ -18,25 +18,25 @@ public class ImageReaderSpiTests {
 	@DataProvider(name = "formats")
 	public Object[][] formats() {
 		return new Object[][] {
-				// JBIG2 - Provided by Apache PDFBox
-				{
-					"JBIG2",
-					"assets/jbig2-cameraman.jb2",
-				},
-				// JPEG 2000 - Provided by jai-imageio
-				{
-					"JPEG 2000",
-					"assets/jpeg2000-cameraman.jp2",
-				},
-				{
-					"JPEG2000",
-					"assets/jpeg2000-cameraman.jp2",
-				},
-				// Buggy JPEG - Provided by TwelveMonkeys
-				{
-					"JPEG",
-					"assets/jfif-cmyk-invalid-icc-profile-srgb.jpg",
-				},
+			// JBIG2 - Provided by Apache PDFBox
+			{
+				"JBIG2",
+				"assets/jbig2-cameraman.jb2",
+			},
+			// JPEG 2000 - Provided by jai-imageio
+			{
+				"JPEG 2000",
+				"assets/jpeg2000-cameraman.jp2",
+			},
+			{
+				"JPEG2000",
+				"assets/jpeg2000-cameraman.jp2",
+			},
+			// Buggy JPEG - Provided by TwelveMonkeys
+			{
+				"JPEG",
+				"assets/jfif-cmyk-invalid-icc-profile-srgb.jpg",
+			},
 		};
 	}
 
@@ -84,7 +84,7 @@ public class ImageReaderSpiTests {
 			} finally {
 				reader.dispose();
 			}
-			Assert.fail("Couldn't find a matching pixel, decoding is assumed failed");
+			Assert.fail("Image doesn't have a valid dimension, decoding is assumed failed");
 		}
 	}
 

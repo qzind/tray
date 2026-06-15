@@ -2,11 +2,12 @@ package qz.integration.services;
 
 import java.security.Provider;
 import java.security.Security;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class SecuritySpiTests {
 
@@ -20,15 +21,19 @@ public class SecuritySpiTests {
 		}
 	}
 
-	@Test
-	public void testBouncyCastleProvidersRegistered() {
+	@DataProvider(name = "providers")
+	public Object[][] providers() {
+		return new Object[][] {
+			{ "BC", BouncyCastleProvider.class.getName() },
+			{ "BCPQC", BouncyCastlePQCProvider.class.getName() }
+		};
+	}
 
-		Provider bc = Security.getProvider("BC");
-		Assert.assertNotNull(bc, "BouncyCastleProvider should be registered by PDFBox!");
-
-		Provider bcpqc = Security.getProvider("BCPQC");
-		Assert.assertNotNull(bcpqc, "BouncyCastlePQCProvider hould be registered by PDFBox!");
-
+	@Test(dataProvider = "providers")
+	public void testProviderRegistration(String providerName, String className) {
+		Provider p = Security.getProvider(providerName);
+		Assert.assertNotNull(p, String.format("Provider %s was not found!", providerName));
+		Assert.assertEquals(p.getClass().getName(), className, String.format("Provider class mismatch for %s!", providerName));
 	}
 
 }

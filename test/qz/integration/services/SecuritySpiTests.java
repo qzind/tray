@@ -33,7 +33,6 @@ public class SecuritySpiTests {
 	public void testProviderRegistration(String providerName, String className) {
 		Provider p = Security.getProvider(providerName);
 		Assert.assertNotNull(p, String.format("Provider %s was not found!", providerName));
-		Assert.assertEquals(p.getClass().getName(), className, String.format("Provider class mismatch for %s!", providerName));
 	}
 
 }

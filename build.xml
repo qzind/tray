@@ -96,9 +96,16 @@
             <fileset dir="${test.dir}" excludes="**/*.java"/>
         </copy>
 
-        <path id="tests.classpath">
+        <path id="unit.test.classpath">
             <path refid="testng.classpath"/>
             <path refid="main.classpath"/>
+            <pathelement location="${build.dir}/test"/>
+        </path>
+
+        <!-- Integration tests must use the jar file directly -->
+        <path id="integration.test.classpath">
+            <path refid="testng.classpath"/>
+            <path location="${dist.dir}/${project.filename}.jar"/>
             <pathelement location="${build.dir}/test"/>
         </path>
     </target>
@@ -344,10 +351,18 @@
     <target name="dmg" depends="get-target-arch,target-os-mac,distribute,provision,download-jre,build-dmg"/>
     <target name="makeself" depends="get-target-arch,target-os-linux,distribute,provision,download-jre,build-run"/>
 
-    <target name="testng" depends="compile-tests">
+    <target name="testng" depends="unit-tests,integration-tests"/>
+
+    <target name="unit-tests" depends="compile-tests">
         <property description="Pattern for TestNG classes" name="testng.pattern" value="**"/>
-        <testng listeners="qz.testng.ConciseSkipListener" classpathref="tests.classpath" haltOnFailure="true" verbose="2" outputdir="${out.dir}/test-output">
-            <classfileset dir="${build.dir}/test" includes="${testng.pattern}"/>
+        <testng listeners="qz.testng.ConciseSkipListener" classpathref="unit.test.classpath" haltOnFailure="true" verbose="2" outputdir="${out.dir}/report/unit">
+            <classfileset dir="${build.dir}/test" includes="${testng.pattern}" excludes="**/integration/**/*.class"/>
+        </testng>
+    </target>
+
+    <target name="integration-tests" depends="build-jar,compile-tests">
+        <testng listeners="qz.testng.ConciseSkipListener" classpathref="integration.test.classpath" haltOnFailure="true" verbose="2" outputdir="${out.dir}/report/integration">
+            <classfileset dir="${build.dir}/test" includes="**/integration/**/*.class"/>
         </testng>
     </target>
 </project>

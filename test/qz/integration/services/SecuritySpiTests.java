@@ -10,6 +10,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class SecuritySpiTests {
+
 	@DataProvider(name = "providers")
 	public Object[][] providers() throws ClassNotFoundException {
 		return new Object[][] {

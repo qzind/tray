@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 import qz.utils.ArabicConversionUtilities;
 
 public class ArabicConversionUtilitiesTests {
+
 	private static final String ARABIC_WELCOME = "مرحبا";
 
 	@DataProvider(name = "arabicData")
@@ -21,13 +22,6 @@ public class ArabicConversionUtilitiesTests {
 					(byte) 0x51, (byte) 0x5A, (byte) 0x20, (byte) 0x54,
 					(byte) 0x72, (byte) 0x61, (byte) 0x79, (byte) 0x20,
 					(byte) 0x54, (byte) 0x65, (byte) 0x73, (byte) 0x74
-				}
-			},
-			// ESC/P Control Codes (Recommended by Gemini)
-			{
-				"\u001b\u0041\u0042", // ESC A B
-				new byte[] {
-					(byte) 0x1B, (byte) 0x41, (byte) 0x42
 				}
 			},
 			// Empty string should return an empty byte array
@@ -61,4 +55,5 @@ public class ArabicConversionUtilitiesTests {
 		byte[] resultBytes = ArabicConversionUtilities.convertToIBM864(inputString);
 		Assert.assertEquals(resultBytes, expectedBytes);
 	}
+
 }

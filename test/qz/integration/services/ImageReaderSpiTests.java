@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.util.Iterator;
 
 public class ImageReaderSpiTests {
+
 	@DataProvider(name = "formats")
 	public Object[][] formats() {
 		return new Object[][] {

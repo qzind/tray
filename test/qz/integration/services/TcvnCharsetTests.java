@@ -1,13 +1,12 @@
 package qz.integration.services;
 
+import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.nio.charset.Charset;
-import java.nio.charset.UnsupportedCharsetException;
 
 public class TcvnCharsetTests {
 
@@ -107,4 +106,5 @@ public class TcvnCharsetTests {
 		byte[] actualBytes = inputString.getBytes(CHARSET_NAME);
 		Assert.assertEquals(actualBytes, expectedBytes);
 	}
+
 }

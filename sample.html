@@ -1633,9 +1633,8 @@
         qz.printers.find().then(function(data) {
             var list = '';
             for(var i = 0; i < data.length; i++) {
-                var printer = data[i].replace(/ /g, "&nbsp;")
-                var button = '<button class="btn btn-default btn-xs" onclick="findPrinter(\'' + data[i].replace(/\\/g, "\\\\") + '\', true)" data-dismiss="alert">Use This</button>';
-                list += "&nbsp; " + printer + "&nbsp;" + button + "<br/>";
+                var button = '<button class="btn btn-default btn-xs" onclick="findPrinter(\'' + data[i].replace(/\\/g, "\\\\") + '\', true)" data-dismiss="alert">Use This</button>'
+                list += "&nbsp; " + data[i].replace(/ /g, "&nbsp;") + "&nbsp;" + button + "<br/>";
             }
 
             displayMessage("<strong>Available printers:</strong><br/>" + list, null, 15000);

@@ -1610,7 +1610,7 @@
     function findPrinter(query, set, radio) {
         $("#printerSearch").val(query);
         qz.printers.find(query).then(function(data) {
-            displayMessage("<strong>Found:</strong> " + data);
+            displayMessage("<strong>Found:</strong> " + data.replace(/ /g, "&nbsp;"));
             if (set) { setPrinter(data); }
             if(radio) {
                 var input = document.querySelector("input[value='" + radio + "']");
@@ -1633,8 +1633,9 @@
         qz.printers.find().then(function(data) {
             var list = '';
             for(var i = 0; i < data.length; i++) {
-                var button = '<button class="btn btn-default btn-xs" onclick="findPrinter(\'' + data[i].replace(/\\/g, "\\\\") + '\', true)" data-dismiss="alert">Use This</button>'
-                list += "&nbsp; " + data[i] + "&nbsp;" + button + "<br/>";
+                var printer = data[i].replace(/ /g, "&nbsp;")
+                var button = '<button class="btn btn-default btn-xs" onclick="findPrinter(\'' + data[i].replace(/\\/g, "\\\\") + '\', true)" data-dismiss="alert">Use This</button>';
+                list += "&nbsp; " + printer + "&nbsp;" + button + "<br/>";
             }
 
             displayMessage("<strong>Available printers:</strong><br/>" + list, null, 15000);
@@ -3454,7 +3455,7 @@
             if (printer == undefined) {
                 printer = 'NONE';
             }
-            $("#configPrinter").html(printer);
+            $("#configPrinter").html(printer.replace(/ /g, "&nbsp;"));
         }
     }
 

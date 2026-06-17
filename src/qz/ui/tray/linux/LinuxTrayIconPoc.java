@@ -30,7 +30,7 @@ public class LinuxTrayIconPoc {
             String itemService = getItemServicePrefix(statusNotifierWatcher)
                     + ProcessHandle.current().pid();
             String iconThemePath = LinuxSniIconTheme.prepare();
-            LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath, probe.needsSymbolicIcon());
+            LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath);
             LinuxDbusMenu menu = new LinuxDbusMenu(new LinuxTrayAboutAction());
 
             // Own the item service name before registration so the watcher can resolve
@@ -50,10 +50,6 @@ public class LinuxTrayIconPoc {
 
             log.info("Registered StatusNotifier item {} at {}", itemService, item.getObjectPath());
             log.info("Published StatusNotifier icon theme path {}", iconThemePath);
-            if (probe.needsSymbolicIcon()) {
-                log.info("Published StatusNotifier symbolic icon name qz-tray-symbolic");
-                log.info("Published StatusNotifier empty icon theme path for COSMIC diagnostic");
-            }
             // Keep the POC alive
             // the watcher removes the item when
             // this bus name disappears

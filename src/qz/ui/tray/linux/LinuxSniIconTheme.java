@@ -13,8 +13,10 @@ class LinuxSniIconTheme {
 
     private static final String ICON_NAME = "qz-tray";
     private static final String SYMBOLIC_ICON_NAME = "qz-tray-symbolic";
-    private static final String RESOURCE_PATH = "/qz/ui/resources/qz-default-%s.png";
-    private static final Path SVG_PATH = Path.of("assets", "branding", "linux-icon.svg");
+    // Tray hosts resolve the exported IconName exactly, so the resource
+    // is named with the same stable freedesktop-style symbolic icon name.
+    private static final String PNG_RESOURCE_PATH = "/qz/ui/resources/qz-default-%s.png";
+    private static final String SVG_RESOURCE_PATH = "/qz/ui/resources/%s.svg";
     private static final int[] ICON_SIZES = {32, 48};
 
     static String prepare() throws IOException {
@@ -24,17 +26,9 @@ class LinuxSniIconTheme {
         for(int size : ICON_SIZES) {
             copyIcon(size, themePath);
         }
-        copySymbolicIcon(themePath);
+        copySymbolicIcons(themePath);
 
         return themePath.toString();
-    }
-
-    static String getSymbolicIconPath(String themePath) {
-        return Path.of(themePath)
-                .resolve("hicolor")
-                .resolve("scalable")
-                .resolve("status")
-                .toString();
     }
 
     private static Path getThemePath() throws IOException {
@@ -64,28 +58,8 @@ class LinuxSniIconTheme {
                     .append("Context=Applications").append("\n")
                     .append("Type=Fixed").append("\n");
         }
-        if(Files.exists(SVG_PATH)) {
-            if(directories.length() > 0) {
-                directories.append(',');
-            }
-            directories.append("scalable/status,scalable/apps");
-            sections.append("\n")
-                    .append("[scalable/status]")
-                    .append("\n")
-                    .append("Size=16").append("\n")
-                    .append("MinSize=1").append("\n")
-                    .append("MaxSize=256").append("\n")
-                    .append("Context=Status").append("\n")
-                    .append("Type=Scalable").append("\n")
-                    .append("\n")
-                    .append("[scalable/apps]")
-                    .append("\n")
-                    .append("Size=16").append("\n")
-                    .append("MinSize=1").append("\n")
-                    .append("MaxSize=256").append("\n")
-                    .append("Context=Applications").append("\n")
-                    .append("Type=Scalable").append("\n");
-        }
+        appendDirectory(directories, sections, "scalable/status", "Status");
+        appendDirectory(directories, sections, "scalable/apps", "Applications");
 
         String index = "[Icon Theme]\n"
                 + "Name=QZ Tray\n"
@@ -109,7 +83,7 @@ class LinuxSniIconTheme {
 
         Files.createDirectories(iconPath.getParent());
 
-        try(InputStream in = LinuxSniIconTheme.class.getResourceAsStream(String.format(RESOURCE_PATH, size))) {
+        try(InputStream in = LinuxSniIconTheme.class.getResourceAsStream(String.format(PNG_RESOURCE_PATH, size))) {
             if(in == null) {
                 throw new IOException(String.format("StatusNotifier icon resource missing for size %s", size));
             }
@@ -117,26 +91,40 @@ class LinuxSniIconTheme {
         }
     }
 
-    private static void copySymbolicIcon(Path themePath) throws IOException {
-        if(!Files.exists(SVG_PATH)) {
-            return;
-        }
-
-        // Source-tree POC only: this relative path works when run from the
-        // tray repo root. A packaged implementation should load this as a
-        // Java resource instead of depending on the process working directory.
+    private static void copySymbolicIcons(Path themePath) throws IOException {
         copySymbolicIcon(themePath, "status");
         copySymbolicIcon(themePath, "apps");
     }
 
     private static void copySymbolicIcon(Path themePath, String context) throws IOException {
-        Path iconPath = themePath
-                .resolve("hicolor")
-                .resolve("scalable")
-                .resolve(context)
-                .resolve(SYMBOLIC_ICON_NAME + ".svg");
+        try(InputStream in = LinuxSniIconTheme.class.getResourceAsStream(String.format(SVG_RESOURCE_PATH, SYMBOLIC_ICON_NAME))) {
+            if(in == null) {
+                throw new IOException(String.format("StatusNotifier SVG icon resource missing: %s", SYMBOLIC_ICON_NAME));
+            }
 
-        Files.createDirectories(iconPath.getParent());
-        Files.copy(SVG_PATH, iconPath, StandardCopyOption.REPLACE_EXISTING);
+            Path iconPath = themePath
+                    .resolve("hicolor")
+                    .resolve("scalable")
+                    .resolve(context)
+                    .resolve(SYMBOLIC_ICON_NAME + ".svg");
+
+            Files.createDirectories(iconPath.getParent());
+            Files.copy(in, iconPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private static void appendDirectory(StringBuilder directories, StringBuilder sections, String directory, String context) {
+        if(directories.length() > 0) {
+            directories.append(',');
+        }
+        directories.append(directory);
+        sections.append("\n")
+                .append('[').append(directory).append(']')
+                .append("\n")
+                .append("Size=16").append("\n")
+                .append("MinSize=1").append("\n")
+                .append("MaxSize=256").append("\n")
+                .append("Context=").append(context).append("\n")
+                .append("Type=Scalable").append("\n");
     }
 }

@@ -889,8 +889,7 @@ var qz = (function() {
 
             isActive: function() {
                 return !_qz.websocket.shutdown && _qz.websocket.connection != null
-                    && (_qz.websocket.connection.readyState === _qz.tools.ws.OPEN
-                        || _qz.websocket.connection.readyState === _qz.tools.ws.CONNECTING);
+                    && _qz.websocket.connection.readyState === _qz.tools.ws.OPEN;
             },
 
             assertActive: function() {
@@ -1380,7 +1379,7 @@ var qz = (function() {
             disconnect: function() {
                 return _qz.tools.promise(function(resolve, reject) {
                     if (_qz.websocket.connection != null) {
-                        if (_qz.tools.isActive()) {
+                        if (_qz.tools.isActive() || _qz.websocket.connection.readyState === _qz.tools.ws.CONNECTING) {
                             // handles closing both 'connecting' and 'connected' states
                             _qz.websocket.shutdown = true;
                             _qz.websocket.connection.promise = { resolve: resolve, reject: reject };

@@ -12,6 +12,8 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
     private static final String OBJECT_PATH = "/MenuBar";
     private static final int ROOT_ID = 0;
     private static final int ABOUT_ID = 1;
+    private static final int SEPARATOR_ID = 2;
+    private static final int EXIT_ID = 3;
     // DBusMenu protocol/interface version exposed through the Version property
     private static final UInt32 VERSION = new UInt32(3);
     // Layout revision returned by GetLayout
@@ -22,9 +24,11 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
     private static final String EVENT_CLICKED = "clicked";
 
     private final LinuxTrayAboutAction aboutAction;
+    private final LinuxTrayExitAction exitAction;
 
-    LinuxDbusMenu(LinuxTrayAboutAction aboutAction) {
+    LinuxDbusMenu(LinuxTrayAboutAction aboutAction, LinuxTrayExitAction exitAction) {
         this.aboutAction = aboutAction;
+        this.exitAction = exitAction;
     }
 
     @Override
@@ -47,9 +51,7 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
         // dbus-java maps Java arrays to D-Bus arrays for this exported interface,
         // which keeps the DBusMenu signatures aligned with libdbusmenu:
         // https://hypfvieh.github.io/dbus-java/variant-handling.html
-        LinuxDbusMenuLayoutItem layout = parentId == ABOUT_ID
-                ? aboutItem(propertyNames)
-                : rootItem(recursionDepth, propertyNames);
+        LinuxDbusMenuLayoutItem layout = getItem(parentId, recursionDepth, propertyNames);
         return new LinuxDbusMenuLayout(REVISION, layout);
     }
 
@@ -73,9 +75,11 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
     @Override
     public void event(int id, String eventId, Variant<?> data, UInt32 timestamp) {
         // DBusMenu sends user activation through Event/EventGroup
-        // This POC only handles the single action "About" meanwhile
+        // and each id maps back to the matching QZ Tray action.
         if(id == ABOUT_ID && EVENT_CLICKED.equals(eventId)) {
             aboutAction.show();
+        } else if(id == EXIT_ID && EVENT_CLICKED.equals(eventId)) {
+            exitAction.exit();
         }
     }
 
@@ -100,15 +104,40 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
     private LinuxDbusMenuLayoutItem rootItem(int recursionDepth, String[] propertyNames) {
         // A recursion depth of 0 asks for the root item only
         // Any other value used by tested hosts should expose
-        // the one "About" item
+        // the menu's actionable child items
         Variant<?>[] children = recursionDepth == 0
                 ? new Variant<?>[0]
-                : new Variant<?>[] { new Variant<>(aboutItem(propertyNames)) };
+                : new Variant<?>[] {
+                        new Variant<>(aboutItem(propertyNames)),
+                        new Variant<>(separatorItem(propertyNames)),
+                        new Variant<>(exitItem(propertyNames))
+                };
         return new LinuxDbusMenuLayoutItem(ROOT_ID, getProperties(ROOT_ID, propertyNames), children);
+    }
+
+    private LinuxDbusMenuLayoutItem getItem(int id, int recursionDepth, String[] propertyNames) {
+        if(id == ABOUT_ID) {
+            return aboutItem(propertyNames);
+        }
+        if(id == EXIT_ID) {
+            return exitItem(propertyNames);
+        }
+        if(id == SEPARATOR_ID) {
+            return separatorItem(propertyNames);
+        }
+        return rootItem(recursionDepth, propertyNames);
     }
 
     private LinuxDbusMenuLayoutItem aboutItem(String[] propertyNames) {
         return new LinuxDbusMenuLayoutItem(ABOUT_ID, getProperties(ABOUT_ID, propertyNames), new Variant<?>[0]);
+    }
+
+    private LinuxDbusMenuLayoutItem exitItem(String[] propertyNames) {
+        return new LinuxDbusMenuLayoutItem(EXIT_ID, getProperties(EXIT_ID, propertyNames), new Variant<?>[0]);
+    }
+
+    private LinuxDbusMenuLayoutItem separatorItem(String[] propertyNames) {
+        return new LinuxDbusMenuLayoutItem(SEPARATOR_ID, getProperties(SEPARATOR_ID, propertyNames), new Variant<?>[0]);
     }
 
     private Map<String, Variant<?>> getProperties(int id, String[] propertyNames) {
@@ -119,6 +148,13 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
         if(id == ABOUT_ID) {
             addProperty(properties, propertyNames, "label", "About");
             addProperty(properties, propertyNames, "enabled", true);
+            addProperty(properties, propertyNames, "visible", true);
+        } else if(id == EXIT_ID) {
+            addProperty(properties, propertyNames, "label", "Exit");
+            addProperty(properties, propertyNames, "enabled", true);
+            addProperty(properties, propertyNames, "visible", true);
+        } else if(id == SEPARATOR_ID) {
+            addProperty(properties, propertyNames, "type", "separator");
             addProperty(properties, propertyNames, "visible", true);
         } else if(id == ROOT_ID) {
             addProperty(properties, propertyNames, "children-display", "submenu");

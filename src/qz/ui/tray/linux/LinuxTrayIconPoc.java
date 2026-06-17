@@ -31,7 +31,7 @@ public class LinuxTrayIconPoc {
                     + ProcessHandle.current().pid();
             String iconThemePath = LinuxSniIconTheme.prepare();
             LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath);
-            LinuxDbusMenu menu = new LinuxDbusMenu(new LinuxTrayAboutAction());
+            LinuxDbusMenu menu = new LinuxDbusMenu(new LinuxTrayAboutAction(), new LinuxTrayExitAction());
 
             // Own the item service name before registration so the watcher can resolve
             // the service name back to this process.

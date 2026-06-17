@@ -479,10 +479,14 @@ public class TrayManager {
 
     private final ActionListener exitListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
-            boolean showAllNotifications = getPref(TRAY_NOTIFICATIONS);
-            if (!showAllNotifications || confirmDialog.prompt("Exit " + name + "?")) { exit(0); }
+            confirmAndExit();
         }
     };
+
+    public void confirmAndExit() {
+        boolean showAllNotifications = getPref(TRAY_NOTIFICATIONS);
+        if (!showAllNotifications || confirmDialog == null || confirmDialog.prompt("Exit " + name + "?")) { exit(0); }
+    }
 
     public void exit(int returnCode) {
         prefs.save();

@@ -1,19 +1,41 @@
 package qz.ui.tray.linux;
 
+import com.github.zafarkhaja.semver.Version;
 import org.freedesktop.dbus.types.UInt32;
 import org.freedesktop.dbus.types.Variant;
+import qz.common.Constants;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 class LinuxDbusMenu implements CanonicalDbusMenu {
 
     private static final String OBJECT_PATH = "/MenuBar";
     private static final int ROOT_ID = 0;
-    private static final int ABOUT_ID = 1;
-    private static final int SEPARATOR_ID = 2;
-    private static final int EXIT_ID = 3;
+    private static final int ADVANCED_ID = 100;
+    private static final int DIAGNOSTIC_ID = 110;
+    private static final int BROWSE_APP_ID = 111;
+    private static final int BROWSE_USER_ID = 112;
+    private static final int BROWSE_SHARED_ID = 113;
+    private static final int DIAGNOSTIC_OPTIONS_SEPARATOR_ID = 114;
+    private static final int NOTIFICATIONS_ID = 115;
+    private static final int MONOCLE_ID = 116;
+    private static final int DIAGNOSTIC_LOGS_SEPARATOR_ID = 117;
+    private static final int VIEW_LOGS_ID = 118;
+    private static final int ZIP_LOGS_ID = 119;
+    private static final int ADVANCED_DIAGNOSTIC_SEPARATOR_ID = 120;
+    private static final int SITE_MANAGER_ID = 121;
+    private static final int DESKTOP_SHORTCUT_ID = 122;
+    private static final int ADVANCED_OPTIONS_SEPARATOR_ID = 123;
+    private static final int BLOCK_ANONYMOUS_ID = 124;
+    private static final int RELOAD_ID = 200;
+    private static final int ABOUT_ID = 201;
+    private static final int AUTOSTART_ID = 202;
+    private static final int EXIT_SEPARATOR_ID = 203;
+    private static final int EXIT_ID = 204;
     // DBusMenu protocol/interface version exposed through the Version property
     private static final UInt32 VERSION = new UInt32(3);
     // Layout revision returned by GetLayout
@@ -74,8 +96,8 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
 
     @Override
     public void event(int id, String eventId, Variant<?> data, UInt32 timestamp) {
-        // DBusMenu sends user activation through Event/EventGroup
-        // and each id maps back to the matching QZ Tray action.
+        // DBusMenu sends activation through Event/EventGroup.
+        // Only the actions already proven by this POC are wired here.
         if(id == ABOUT_ID && EVENT_CLICKED.equals(eventId)) {
             aboutAction.show();
         } else if(id == EXIT_ID && EVENT_CLICKED.equals(eventId)) {
@@ -101,43 +123,66 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
         return new LinuxDbusMenuAboutToShowGroup(new int[0], new int[0]);
     }
 
-    private LinuxDbusMenuLayoutItem rootItem(int recursionDepth, String[] propertyNames) {
-        // A recursion depth of 0 asks for the root item only
-        // Any other value used by tested hosts should expose
-        // the menu's actionable child items
-        Variant<?>[] children = recursionDepth == 0
-                ? new Variant<?>[0]
-                : new Variant<?>[] {
-                        new Variant<>(aboutItem(propertyNames)),
-                        new Variant<>(separatorItem(propertyNames)),
-                        new Variant<>(exitItem(propertyNames))
-                };
-        return new LinuxDbusMenuLayoutItem(ROOT_ID, getProperties(ROOT_ID, propertyNames), children);
-    }
-
     private LinuxDbusMenuLayoutItem getItem(int id, int recursionDepth, String[] propertyNames) {
-        if(id == ABOUT_ID) {
-            return aboutItem(propertyNames);
+        List<Variant<?>> children = new ArrayList<>();
+
+        if(recursionDepth != 0) {
+            int childDepth = recursionDepth < 0 ? recursionDepth : recursionDepth - 1;
+            for(int childId : getChildIds(id)) {
+                children.add(new Variant<>(getItem(childId, childDepth, propertyNames)));
+            }
         }
-        if(id == EXIT_ID) {
-            return exitItem(propertyNames);
-        }
-        if(id == SEPARATOR_ID) {
-            return separatorItem(propertyNames);
-        }
-        return rootItem(recursionDepth, propertyNames);
+
+        return new LinuxDbusMenuLayoutItem(
+                id,
+                getProperties(id, propertyNames),
+                children.toArray(new Variant<?>[0])
+        );
     }
 
-    private LinuxDbusMenuLayoutItem aboutItem(String[] propertyNames) {
-        return new LinuxDbusMenuLayoutItem(ABOUT_ID, getProperties(ABOUT_ID, propertyNames), new Variant<?>[0]);
-    }
+    private int[] getChildIds(int id) {
+        if(id == ROOT_ID) {
+            return new int[] {
+                    ADVANCED_ID,
+                    RELOAD_ID,
+                    ABOUT_ID,
+                    AUTOSTART_ID,
+                    EXIT_SEPARATOR_ID,
+                    EXIT_ID
+            };
+        }
 
-    private LinuxDbusMenuLayoutItem exitItem(String[] propertyNames) {
-        return new LinuxDbusMenuLayoutItem(EXIT_ID, getProperties(EXIT_ID, propertyNames), new Variant<?>[0]);
-    }
+        if(id == ADVANCED_ID) {
+            List<Integer> children = new ArrayList<>();
+            if(Constants.ENABLE_DIAGNOSTICS) {
+                children.add(DIAGNOSTIC_ID);
+                children.add(ADVANCED_DIAGNOSTIC_SEPARATOR_ID);
+            }
+            children.add(SITE_MANAGER_ID);
+            children.add(DESKTOP_SHORTCUT_ID);
+            children.add(ADVANCED_OPTIONS_SEPARATOR_ID);
+            children.add(BLOCK_ANONYMOUS_ID);
+            return children.stream().mapToInt(Integer::intValue).toArray();
+        }
 
-    private LinuxDbusMenuLayoutItem separatorItem(String[] propertyNames) {
-        return new LinuxDbusMenuLayoutItem(SEPARATOR_ID, getProperties(SEPARATOR_ID, propertyNames), new Variant<?>[0]);
+        if(id == DIAGNOSTIC_ID) {
+            List<Integer> children = new ArrayList<>(Arrays.asList(
+                    BROWSE_APP_ID,
+                    BROWSE_USER_ID,
+                    BROWSE_SHARED_ID,
+                    DIAGNOSTIC_OPTIONS_SEPARATOR_ID,
+                    NOTIFICATIONS_ID
+            ));
+            if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
+                children.add(MONOCLE_ID);
+            }
+            children.add(DIAGNOSTIC_LOGS_SEPARATOR_ID);
+            children.add(VIEW_LOGS_ID);
+            children.add(ZIP_LOGS_ID);
+            return children.stream().mapToInt(Integer::intValue).toArray();
+        }
+
+        return new int[0];
     }
 
     private Map<String, Variant<?>> getProperties(int id, String[] propertyNames) {
@@ -145,23 +190,68 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
         // with Variant<?> while Java keeps the dictionary as a Map
         Map<String, Variant<?>> properties = new LinkedHashMap<>();
 
-        if(id == ABOUT_ID) {
-            addProperty(properties, propertyNames, "label", "About");
-            addProperty(properties, propertyNames, "enabled", true);
-            addProperty(properties, propertyNames, "visible", true);
-        } else if(id == EXIT_ID) {
-            addProperty(properties, propertyNames, "label", "Exit");
-            addProperty(properties, propertyNames, "enabled", true);
-            addProperty(properties, propertyNames, "visible", true);
-        } else if(id == SEPARATOR_ID) {
+        if(isSeparator(id)) {
             addProperty(properties, propertyNames, "type", "separator");
             addProperty(properties, propertyNames, "visible", true);
-        } else if(id == ROOT_ID) {
-            addProperty(properties, propertyNames, "children-display", "submenu");
-            addProperty(properties, propertyNames, "visible", true);
+            return properties;
         }
 
+        if(id == ROOT_ID || id == ADVANCED_ID || id == DIAGNOSTIC_ID) {
+            addProperty(properties, propertyNames, "children-display", "submenu");
+        }
+
+        String label = getLabel(id);
+        if(label != null) {
+            addProperty(properties, propertyNames, "label", label);
+        }
+
+        if(isCheckbox(id)) {
+            // These entries mirror TrayManager's checkbox presentation only.
+            // Their live state and click behavior will be supplied by the action facade.
+            addProperty(properties, propertyNames, "toggle-type", "checkmark");
+            addProperty(properties, propertyNames, "toggle-state", 0);
+        }
+
+        addProperty(properties, propertyNames, "enabled", true);
+        addProperty(properties, propertyNames, "visible", true);
         return properties;
+    }
+
+    private String getLabel(int id) {
+        switch(id) {
+            case ADVANCED_ID: return "Advanced";
+            case DIAGNOSTIC_ID: return "Diagnostic";
+            case BROWSE_APP_ID: return "Browse App folder...";
+            case BROWSE_USER_ID: return "Browse User folder...";
+            case BROWSE_SHARED_ID: return "Browse Shared folder...";
+            case NOTIFICATIONS_ID: return "Show all notifications";
+            case MONOCLE_ID: return "Use Monocle for HTML";
+            case VIEW_LOGS_ID: return "View logs (live feed)...";
+            case ZIP_LOGS_ID: return "Zip logs (to Desktop)";
+            case SITE_MANAGER_ID: return "Site Manager...";
+            case DESKTOP_SHORTCUT_ID: return "Create Desktop shortcut";
+            case BLOCK_ANONYMOUS_ID: return "Block anonymous requests";
+            case RELOAD_ID: return "Reload";
+            case ABOUT_ID: return "About...";
+            case AUTOSTART_ID: return "Automatically start";
+            case EXIT_ID: return "Exit";
+            default: return null;
+        }
+    }
+
+    private boolean isCheckbox(int id) {
+        return id == NOTIFICATIONS_ID
+                || id == MONOCLE_ID
+                || id == BLOCK_ANONYMOUS_ID
+                || id == AUTOSTART_ID;
+    }
+
+    private boolean isSeparator(int id) {
+        return id == DIAGNOSTIC_OPTIONS_SEPARATOR_ID
+                || id == DIAGNOSTIC_LOGS_SEPARATOR_ID
+                || id == ADVANCED_DIAGNOSTIC_SEPARATOR_ID
+                || id == ADVANCED_OPTIONS_SEPARATOR_ID
+                || id == EXIT_SEPARATOR_ID;
     }
 
     private void addProperty(Map<String, Variant<?>> properties, String[] propertyNames, String name, Object value) {

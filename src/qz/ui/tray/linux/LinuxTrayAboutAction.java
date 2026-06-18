@@ -7,12 +7,12 @@ import qz.ui.component.IconCache;
 
 import javax.swing.*;
 
-class LinuxTrayAboutAction {
+public class LinuxTrayAboutAction {
 
     private static final Logger log = LogManager.getLogger(LinuxTrayAboutAction.class);
     private AboutDialog aboutDialog;
 
-    void show() {
+    public void show() {
         // D-Bus calls arrive off the Swing event thread
         // so, the existing QZ UI must be created and shown on the EDT
         SwingUtilities.invokeLater(() -> {

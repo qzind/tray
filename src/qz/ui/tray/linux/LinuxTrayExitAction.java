@@ -8,11 +8,11 @@ import qz.ws.PrintSocketServer;
 
 import javax.swing.*;
 
-class LinuxTrayExitAction {
+public class LinuxTrayExitAction {
 
     private static final Logger log = LogManager.getLogger(LinuxTrayExitAction.class);
 
-    void exit() {
+    public void exit() {
         // D-Bus calls arrive off the Swing event thread. When running inside the
         // real app, reuse TrayManager's normal confirmation and shutdown path.
         SwingUtilities.invokeLater(() -> {

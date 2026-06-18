@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.freedesktop.dbus.connections.impl.DBusConnection;
 import org.freedesktop.dbus.connections.impl.DBusConnectionBuilder;
+import qz.ui.tray.linux.menu.LinuxDbusMenu;
 
 import java.util.concurrent.CountDownLatch;
 

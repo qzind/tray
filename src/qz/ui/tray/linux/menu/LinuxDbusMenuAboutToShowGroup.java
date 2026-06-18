@@ -1,4 +1,4 @@
-package qz.ui.tray.linux;
+package qz.ui.tray.linux.menu;
 
 import org.freedesktop.dbus.interfaces.DBusSerializable;
 

@@ -209,7 +209,7 @@ class LinuxDbusMenu implements CanonicalDbusMenu {
             // These entries mirror TrayManager's checkbox presentation only.
             // Their live state and click behavior will be supplied by the action facade.
             addProperty(properties, propertyNames, "toggle-type", "checkmark");
-            addProperty(properties, propertyNames, "toggle-state", 0);
+            addProperty(properties, propertyNames, "toggle-state", 1);
         }
 
         addProperty(properties, propertyNames, "enabled", true);

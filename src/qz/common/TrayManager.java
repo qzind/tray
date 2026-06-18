@@ -23,6 +23,9 @@ import qz.printer.action.html.WebApp;
 import qz.ui.*;
 import qz.ui.component.IconCache;
 import qz.ui.tray.TrayType;
+import qz.ui.tray.linux.LinuxSniProbe;
+import qz.ui.tray.linux.LinuxStatusNotifierTray;
+import qz.ui.tray.linux.menu.LinuxDbusMenu;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
@@ -59,6 +62,8 @@ public class TrayManager {
 
     // Custom swing pop-up menu
     private TrayType tray;
+    // Keep the Linux StatusNotifier D-Bus connection alive
+    private LinuxStatusNotifierTray statusNotifierTray;
 
     private ConfirmDialog confirmDialog;
     private final GatewayDialog gatewayDialog;
@@ -151,10 +156,11 @@ public class TrayManager {
                 headless = true;
             }
         } else if (!headless) { // UI mode without tray
-            tray = TrayType.TASKBAR.init(exitListener, iconCache);
-            tray.setIcon(DANGER_ICON);
-            tray.setToolTip(name);
-            tray.showTaskbar();
+            if(SystemUtilities.isLinux()) {
+                initLinuxTray();
+            } else {
+                initTaskbarTray();
+            }
         }
 
         // TODO: Remove when fixed upstream.  See issue #393
@@ -210,7 +216,7 @@ public class TrayManager {
             }).start();
         }
 
-        if (tray != null) {
+        if (!headless) {
             addMenuItems();
         }
 
@@ -235,6 +241,37 @@ public class TrayManager {
                 PrintServiceMatcher.getNativePrinterList(false, true);
             });
         }
+    }
+
+    private void initLinuxTray() {
+        LinuxSniProbe probe = LinuxSniProbe.inspect();
+        if(!probe.canAttemptStatusNotifier()) {
+            initTaskbarTray();
+            return;
+        }
+
+        try {
+            LinuxDbusMenu menu = new LinuxDbusMenu(
+                    runOnEventThread(aboutListener),
+                    runOnEventThread(exitListener)
+            );
+            statusNotifierTray = new LinuxStatusNotifierTray(probe, menu);
+        }
+        catch(Exception e) {
+            log.warn("Unable to start Linux StatusNotifier tray, using taskbar fallback", e);
+            initTaskbarTray();
+        }
+    }
+
+    private void initTaskbarTray() {
+        tray = TrayType.TASKBAR.init(exitListener, iconCache);
+        tray.setIcon(DANGER_ICON);
+        tray.setToolTip(name);
+        tray.showTaskbar();
+    }
+
+    private Runnable runOnEventThread(ActionListener listener) {
+        return () -> SwingUtilities.invokeLater(() -> listener.actionPerformed(null));
     }
 
     /**
@@ -621,6 +658,9 @@ public class TrayManager {
     }
 
     public void refreshIcon(final Runnable whenDone) {
+        if(tray == null) {
+            return;
+        }
         SwingUtilities.invokeLater(() -> {
             tray.setIcon(shownIcon);
             if(whenDone != null) {

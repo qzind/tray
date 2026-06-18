@@ -27,6 +27,7 @@ public class LinuxSniProbe {
     private final String waylandDisplay;
     private final String dbusSessionBusAddress;
     private final String xdgRuntimeDir;
+    private final boolean verifiedDesktop;
     private boolean sessionBusReachable;
     // If statusNotifierWatcherPresent == true, it does not guarantee tray icons will work
     // it only proves that a watcher service exists on d-bus
@@ -44,6 +45,7 @@ public class LinuxSniProbe {
         waylandDisplay = getEnv("WAYLAND_DISPLAY");
         dbusSessionBusAddress = getEnv("DBUS_SESSION_BUS_ADDRESS");
         xdgRuntimeDir = getEnv("XDG_RUNTIME_DIR");
+        verifiedDesktop = isVerifiedDesktop(currentDesktop);
     }
 
     public static LinuxSniProbe inspect() {
@@ -99,6 +101,9 @@ public class LinuxSniProbe {
             if (!statusNotifierWatcherPresent) {
                 failureReason = "status-notifier-watcher-missing";
                 log.warn("No StatusNotifier watcher was found. {}", getMissingWatcherSuggestion());
+            } else if(!verifiedDesktop) {
+                failureReason = "desktop-not-verified";
+                log.warn("StatusNotifier is not verified for desktop '{}'; using the taskbar fallback.", currentDesktop);
             }
         } catch (Exception e) {
             log.warn("Unable to inspect Linux StatusNotifier environment. {}", getMissingWatcherSuggestion(), e);
@@ -107,8 +112,8 @@ public class LinuxSniProbe {
         return this;
     }
 
-    boolean canAttemptStatusNotifierPoc() {
-        return isLinux && !headless && sessionBusReachable && statusNotifierWatcherPresent;
+    public boolean canAttemptStatusNotifier() {
+        return isLinux && !headless && verifiedDesktop && sessionBusReachable && statusNotifierWatcherPresent;
     }
 
     String getStatusNotifierWatcher() {
@@ -134,11 +139,35 @@ public class LinuxSniProbe {
                 "Install or enable AppIndicator/StatusNotifier support for your desktop environment.";
     }
 
+    private boolean isVerifiedDesktop(String desktopName) {
+        // End-to-end QZ Tray tests passed on Ubuntu GNOME with AppIndicator
+        // support, KDE Plasma, and XFCE with StatusNotifier support
+        //
+        // Tested but not usable:
+        // - COSMIC registered the item, but showed a gray placeholder and no menu
+        // - Pantheon/elementary OS 8.1 had no StatusNotifier watcher or panel host
+        //
+        // Good candidates for future verification:
+        // - LXQt, whose panel has a plugin implementing the SNI specification
+        // - MATE with mate-indicator-applet, which hosts Ayatana indicators
+        // - Budgie 10.8+, whose system tray uses StatusNotifier
+        //
+        // Cinnamon and other desktops should also be tested when their session
+        // exposes a watcher, but remain on the fallback until icon and menu
+        // behavior are verified end to end
+        String desktop = desktopName.toLowerCase(Locale.ENGLISH);
+        return desktop.contains("gnome")
+                || desktop.contains("kde")
+                || desktop.contains("plasma")
+                || desktop.contains("xfce");
+    }
+
     @Override
     public String toString() {
         String report = "Linux: " + isLinux + "\n"
                 + "Headless: " + headless + "\n"
                 + "XDG_CURRENT_DESKTOP: " + currentDesktop + "\n"
+                + "Verified desktop: " + verifiedDesktop + "\n"
                 + "XDG_SESSION_TYPE: " + sessionType + "\n"
                 + "DISPLAY: " + display + "\n"
                 + (waylandDisplay.isEmpty() ? "" : "WAYLAND_DISPLAY: " + waylandDisplay + "\n")
@@ -146,7 +175,7 @@ public class LinuxSniProbe {
                 + "XDG_RUNTIME_DIR: " + xdgRuntimeDir + "\n"
                 + "Session bus reachable: " + sessionBusReachable + "\n"
                 + "StatusNotifier watcher: " + (statusNotifierWatcherPresent ? statusNotifierWatcher + " present" : "missing") + "\n"
-                + "Can attempt StatusNotifier POC: " + canAttemptStatusNotifierPoc();
+                + "Can attempt StatusNotifier: " + canAttemptStatusNotifier();
 
         return failureReason == null ? report : report + "\nFailure reason: " + failureReason;
     }

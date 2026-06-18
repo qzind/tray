@@ -14,13 +14,14 @@ public class LinuxTrayIconPoc {
         LinuxSniProbe probe = LinuxSniProbe.inspect();
         log.info("\n{}", probe.toString());
 
-        if (!probe.canAttemptStatusNotifierPoc()) {
+        if (!probe.canAttemptStatusNotifier()) {
             log.warn("Cannot attempt Linux StatusNotifier tray POC");
             return;
         }
 
         try {
-            LinuxDbusMenu menu = new LinuxDbusMenu(new LinuxTrayAboutAction(), new LinuxTrayExitAction());
+            LinuxTrayPocActions actions = new LinuxTrayPocActions();
+            LinuxDbusMenu menu = new LinuxDbusMenu(actions::showAbout, actions::exit);
 
             // Keep the POC alive; closing the tray connection removes the item.
             try (LinuxStatusNotifierTray tray = new LinuxStatusNotifierTray(probe, menu)) {

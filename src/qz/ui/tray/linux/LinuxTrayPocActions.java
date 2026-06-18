@@ -4,17 +4,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.ui.AboutDialog;
 import qz.ui.component.IconCache;
+import qz.utils.FileUtilities;
 
 import javax.swing.*;
 
-public class LinuxTrayAboutAction {
+class LinuxTrayPocActions {
 
-    private static final Logger log = LogManager.getLogger(LinuxTrayAboutAction.class);
+    private static final Logger log = LogManager.getLogger(LinuxTrayPocActions.class);
     private AboutDialog aboutDialog;
 
-    public void show() {
-        // D-Bus calls arrive off the Swing event thread
-        // so, the existing QZ UI must be created and shown on the EDT
+    void showAbout() {
         SwingUtilities.invokeLater(() -> {
             try {
                 getAboutDialog().setVisible(true);
@@ -25,9 +24,13 @@ public class LinuxTrayAboutAction {
         });
     }
 
+    void exit() {
+        FileUtilities.cleanup();
+        System.exit(0);
+    }
+
     private AboutDialog getAboutDialog() {
         if(aboutDialog == null) {
-            // Reuse the existing AboutDialog implementation
             JMenuItem aboutItem = new JMenuItem("About...");
             aboutDialog = new AboutDialog(aboutItem, new IconCache());
             aboutDialog.initComponents();

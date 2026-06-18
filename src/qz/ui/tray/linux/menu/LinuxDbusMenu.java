@@ -4,8 +4,6 @@ import com.github.zafarkhaja.semver.Version;
 import org.freedesktop.dbus.types.UInt32;
 import org.freedesktop.dbus.types.Variant;
 import qz.common.Constants;
-import qz.ui.tray.linux.LinuxTrayAboutAction;
-import qz.ui.tray.linux.LinuxTrayExitAction;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +27,7 @@ public class LinuxDbusMenu implements CanonicalDbusMenu {
     private final Map<Integer, MenuNode> nodes = new LinkedHashMap<>();
     private int nextItemId = 1;
 
-    public LinuxDbusMenu(LinuxTrayAboutAction aboutAction, LinuxTrayExitAction exitAction) {
+    public LinuxDbusMenu(Runnable aboutAction, Runnable exitAction) {
         List<MenuNode> diagnosticChildren = new ArrayList<>(Arrays.asList(
                 item("Browse App folder..."),
                 item("Browse User folder..."),
@@ -57,10 +55,10 @@ public class LinuxDbusMenu implements CanonicalDbusMenu {
         MenuNode root = new RootMenuItem(ROOT_ID, Arrays.asList(
                 submenu("Advanced", advancedChildren),
                 item("Reload"),
-                item("About...", aboutAction::show),
+                item("About...", aboutAction),
                 checkbox("Automatically start"),
                 separator(),
-                item("Exit", exitAction::exit)
+                item("Exit", exitAction)
         ));
         index(root);
     }

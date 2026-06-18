@@ -17,15 +17,16 @@ import org.eclipse.jetty.server.Server;
 import qz.App;
 import qz.auth.Certificate;
 import qz.auth.Request;
-import qz.build.provision.params.Os;
 import qz.installer.shortcut.ShortcutCreator;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.action.html.WebApp;
 import qz.ui.*;
 import qz.ui.component.IconCache;
 import qz.ui.tray.TrayType;
+import qz.ui.tray.linux.LinuxSniProbe;
+import qz.ui.tray.linux.LinuxStatusNotifierTray;
+import qz.ui.tray.linux.menu.LinuxDbusMenu;
 import qz.utils.*;
-import qz.utils.linux.LinuxUtilities;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
 import qz.ws.WebsocketPorts;
@@ -61,6 +62,8 @@ public class TrayManager {
 
     // Custom swing pop-up menu
     private TrayType tray;
+    // Keep the Linux StatusNotifier D-Bus connection alive
+    private LinuxStatusNotifierTray statusNotifierTray;
 
     private ConfirmDialog confirmDialog;
     private final GatewayDialog gatewayDialog;
@@ -142,10 +145,11 @@ public class TrayManager {
                 setHeadless(true);
             }
         } else if (!isHeadless()) { // UI mode without tray
-            tray = TrayType.TASKBAR.init(exitListener, iconCache);
-            tray.setIcon(DANGER_ICON);
-            tray.setToolTip(name);
-            tray.showTaskbar();
+            if(SystemUtilities.isLinux()) {
+                initLinuxTray();
+            } else {
+                initTaskbarTray();
+            }
         }
 
         // TODO: Remove when fixed upstream.  See issue #393
@@ -198,24 +202,35 @@ public class TrayManager {
         }
     }
 
-    public void refreshTheme() {
-        iconCache.fixTrayIcons(SystemUtilities.isDarkTaskbar());
-        refreshIcon(null);
-        // TODO: Merge into ThemeUtilities
-        SwingUtilities.invokeLater(() -> {
-            SystemUtilities.setSystemLookAndFeel();
-            for(Component c : componentList) {
-                SwingUtilities.updateComponentTreeUI(c);
-                if (c instanceof Themeable) {
-                    ((Themeable)c).refresh();
-                }
-                if (c instanceof JDialog) {
-                    ((JDialog)c).pack();
-                } else if (c instanceof JPopupMenu) {
-                    ((JPopupMenu)c).pack();
-                }
-            }
-        });
+    private void initLinuxTray() {
+        LinuxSniProbe probe = LinuxSniProbe.inspect();
+        if(!probe.canAttemptStatusNotifier()) {
+            initTaskbarTray();
+            return;
+        }
+
+        try {
+            LinuxDbusMenu menu = new LinuxDbusMenu(
+                    runOnEventThread(aboutListener),
+                    runOnEventThread(exitListener)
+            );
+            statusNotifierTray = new LinuxStatusNotifierTray(probe, menu);
+        }
+        catch(Exception e) {
+            log.warn("Unable to start Linux StatusNotifier tray, using taskbar fallback", e);
+            initTaskbarTray();
+        }
+    }
+
+    private void initTaskbarTray() {
+        tray = TrayType.TASKBAR.init(exitListener, iconCache);
+        tray.setIcon(DANGER_ICON);
+        tray.setToolTip(name);
+        tray.showTaskbar();
+    }
+
+    private Runnable runOnEventThread(ActionListener listener) {
+        return () -> SwingUtilities.invokeLater(() -> listener.actionPerformed(null));
     }
 
     /**

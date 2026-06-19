@@ -30,16 +30,16 @@ public class LinuxDbusMenuActions {
         return trayManager.areNotificationsEnabled();
     }
 
-    public void setNotificationsEnabled(boolean enabled) {
-        invokeOnEdt(() -> trayManager.setNotifications(enabled));
+    public void setNotificationsEnabled(boolean enabled, Runnable completion) {
+        invokeOnEdt(() -> trayManager.setNotifications(enabled), completion);
     }
 
     public boolean isMonocleEnabled() {
         return trayManager.isMonocleEnabled();
     }
 
-    public void setMonocleEnabled(boolean enabled) {
-        invokeOnEdt(() -> trayManager.setMonocle(enabled));
+    public void setMonocleEnabled(boolean enabled, Runnable completion) {
+        invokeOnEdt(() -> trayManager.setMonocle(enabled), completion);
     }
 
     public void showLogs() {
@@ -62,8 +62,8 @@ public class LinuxDbusMenuActions {
         return trayManager.areAnonymousRequestsBlocked();
     }
 
-    public void setAnonymousRequestsBlocked(boolean blocked) {
-        invokeOnEdt(() -> trayManager.setAnonymousRequestsBlocked(blocked));
+    public void setAnonymousRequestsBlocked(boolean blocked, Runnable completion) {
+        invokeOnEdt(() -> trayManager.setAnonymousRequestsBlocked(blocked), completion);
     }
 
     public void reload() {
@@ -82,8 +82,8 @@ public class LinuxDbusMenuActions {
         return trayManager.isAutoStartEnabled();
     }
 
-    public void setAutoStartEnabled(boolean enabled) {
-        invokeOnEdt(() -> trayManager.setAutoStart(enabled));
+    public void setAutoStartEnabled(boolean enabled, Runnable completion) {
+        invokeOnEdt(() -> trayManager.setAutoStart(enabled), completion);
     }
 
     public void exit() {
@@ -92,5 +92,29 @@ public class LinuxDbusMenuActions {
 
     private void invokeOnEdt(Runnable action) {
         SwingUtilities.invokeLater(action);
+    }
+
+    /**
+     * Runs a state-changing tray action on Swing's event dispatch thread and
+     * invokes its completion callback only after the action has finished
+     *
+     * This lets DBusMenu read and publish the authoritative resulting state
+     * instead of assuming the requested checkbox value was applied, since
+     * actions such as changing autostart can be canceled or fail
+     *
+     * @param action the Swing-side action which may change tray state
+     * @param completion the callback which publishes the resulting state
+     */
+    private void invokeOnEdt(Runnable action, Runnable completion) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // TrayManager and its dialogs must run on Swing's EDT
+                action.run();
+            }
+            finally {
+                // Always republish the actual state even when the action fails
+                completion.run();
+            }
+        });
     }
 }

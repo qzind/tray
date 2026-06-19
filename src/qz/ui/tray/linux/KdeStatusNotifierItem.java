@@ -40,9 +40,6 @@ public interface KdeStatusNotifierItem extends DBusInterface {
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconName")
     String getIconName();
 
-    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconPixmap")
-    LinuxSniPixmap[] getIconPixmap();
-
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconThemePath")
     String getIconThemePath();
 

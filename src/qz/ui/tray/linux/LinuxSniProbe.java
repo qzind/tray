@@ -152,7 +152,7 @@ public class LinuxSniProbe {
 
     private boolean isVerifiedDesktop(String desktopName) {
         // End-to-end QZ Tray tests passed on Ubuntu GNOME with AppIndicator
-        // support, KDE Plasma, and XFCE with StatusNotifier support
+        // support, KDE Plasma, XFCE, and Ubuntu Budgie
         //
         // Tested but not usable:
         // - COSMIC registered the item, but showed a gray placeholder and no menu
@@ -161,7 +161,6 @@ public class LinuxSniProbe {
         // Good candidates for future verification:
         // - LXQt, whose panel has a plugin implementing the SNI specification
         // - MATE with mate-indicator-applet, which hosts Ayatana indicators
-        // - Budgie 10.8+, whose system tray uses StatusNotifier
         //
         // Cinnamon and other desktops should also be tested when their session
         // exposes a watcher, but remain on the fallback until icon and menu
@@ -170,7 +169,8 @@ public class LinuxSniProbe {
         return desktop.contains("gnome")
                 || desktop.contains("kde")
                 || desktop.contains("plasma")
-                || desktop.contains("xfce");
+                || desktop.contains("xfce")
+                || desktop.contains("budgie");
     }
 
     @Override

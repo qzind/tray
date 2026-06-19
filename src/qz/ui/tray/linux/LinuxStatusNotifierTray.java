@@ -45,6 +45,8 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         AutoCloseable newWatcherRegistration = null;
         try {
             newConnection.requestBusName(itemService);
+            // LinuxDbusMenu owns signal creation while this connection owns delivery
+            menu.setSignalEmitter(newConnection::sendMessage);
             newConnection.exportObject(item.getObjectPath(), item);
             newConnection.exportObject(menu.getObjectPath(), menu);
             // Desktop panels can restart their watcher while QZ Tray keeps running

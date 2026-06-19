@@ -1,6 +1,9 @@
 package qz.ui.tray.linux.menu;
 
 import com.github.zafarkhaja.semver.Version;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.freedesktop.dbus.messages.DBusSignal;
 import org.freedesktop.dbus.types.UInt32;
 import org.freedesktop.dbus.types.Variant;
 import qz.common.Constants;
@@ -10,11 +13,13 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 public class LinuxDbusMenu implements CanonicalDbusMenu {
 
+    private static final Logger log = LogManager.getLogger(LinuxDbusMenu.class);
     private static final String OBJECT_PATH = "/MenuBar";
     private static final int ROOT_ID = 0;
     // DBusMenu protocol/interface version exposed through the Version property
@@ -27,6 +32,9 @@ public class LinuxDbusMenu implements CanonicalDbusMenu {
     private static final String EVENT_CLICKED = "clicked";
 
     private final Map<Integer, MenuNode> nodes = new LinkedHashMap<>();
+    // The no-op allows menu construction before
+    // a dbus connection exists
+    private Consumer<DBusSignal> signalEmitter = signal -> {};
     private int nextItemId = 1;
 
     public LinuxDbusMenu(LinuxDbusMenuActions actions) {
@@ -120,7 +128,9 @@ public class LinuxDbusMenu implements CanonicalDbusMenu {
         if(node instanceof StandardMenuItem) {
             ((StandardMenuItem)node).activate();
         } else if(node instanceof CheckboxMenuItem) {
-            ((CheckboxMenuItem)node).activate();
+            CheckboxMenuItem checkbox = (CheckboxMenuItem)node;
+            // Publish after TrayManager finishes and the state supplier is current
+            checkbox.activate(() -> emitToggleState(checkbox));
         }
     }
 
@@ -140,6 +150,10 @@ public class LinuxDbusMenu implements CanonicalDbusMenu {
     @Override
     public LinuxDbusMenuAboutToShowGroup aboutToShowGroup(int[] ids) {
         return new LinuxDbusMenuAboutToShowGroup(new int[0], new int[0]);
+    }
+
+    public void setSignalEmitter(Consumer<DBusSignal> signalEmitter) {
+        this.signalEmitter = signalEmitter;
     }
 
     private LinuxDbusMenuLayoutItem getItem(int id, int recursionDepth, String[] propertyNames) {
@@ -220,11 +234,11 @@ public class LinuxDbusMenu implements CanonicalDbusMenu {
         return StandardMenuItem.item(nextId(), label, action);
     }
 
-    private MenuNode checkbox(String label, BooleanSupplier checked, Consumer<Boolean> action) {
+    private MenuNode checkbox(String label, BooleanSupplier checked, BiConsumer<Boolean, Runnable> action) {
         return checkbox(label, checked, action, () -> true);
     }
 
-    private MenuNode checkbox(String label, BooleanSupplier checked, Consumer<Boolean> action,
+    private MenuNode checkbox(String label, BooleanSupplier checked, BiConsumer<Boolean, Runnable> action,
                               BooleanSupplier enabled) {
         return new CheckboxMenuItem(nextId(), label, checked, action, enabled);
     }
@@ -240,6 +254,30 @@ public class LinuxDbusMenu implements CanonicalDbusMenu {
     private void addProperty(Map<String, Variant<?>> properties, String[] propertyNames, String name, Object value) {
         if(propertyNames == null || propertyNames.length == 0 || Arrays.asList(propertyNames).contains(name)) {
             properties.put(name, new Variant<>(value));
+        }
+    }
+
+    private void emitToggleState(CheckboxMenuItem checkbox) {
+        Map<String, Variant<?>> properties = new LinkedHashMap<>();
+        // DBusMenu uses 0 for unchecked and 1 for checked
+        // A good example is here:
+        // https://github.com/JetBrains/libdbusmenu/blob/master/libdbusmenu-glib/menuitem.h
+        properties.put("toggle-state", new Variant<>(checkbox.isChecked() ? 1 : 0));
+
+        try {
+            // Only the changed item property is sent
+            // The layout and revision remain unchanged
+            signalEmitter.accept(new ItemsPropertiesUpdated(
+                    OBJECT_PATH,
+                    new LinuxDbusMenuPropertyGroup[] {
+                            new LinuxDbusMenuPropertyGroup(checkbox.getId(), properties)
+                    },
+                    // No properties are removed by a checkbox state change
+                    new LinuxDbusMenuRemovedPropertyGroup[0]
+            ));
+        }
+        catch(Exception e) {
+            log.warn("Unable to update DBusMenu toggle state for item {}", checkbox.getId(), e);
         }
     }
 

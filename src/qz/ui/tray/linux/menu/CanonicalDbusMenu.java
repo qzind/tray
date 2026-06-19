@@ -4,7 +4,9 @@ import org.freedesktop.dbus.annotations.DBusBoundProperty;
 import org.freedesktop.dbus.annotations.DBusInterfaceName;
 import org.freedesktop.dbus.annotations.DBusMemberName;
 import org.freedesktop.dbus.annotations.DBusProperty;
+import org.freedesktop.dbus.exceptions.DBusException;
 import org.freedesktop.dbus.interfaces.DBusInterface;
+import org.freedesktop.dbus.messages.DBusSignal;
 import org.freedesktop.dbus.types.UInt32;
 import org.freedesktop.dbus.types.Variant;
 
@@ -20,6 +22,23 @@ import org.freedesktop.dbus.types.Variant;
  */
 @DBusInterfaceName("com.canonical.dbusmenu")
 public interface CanonicalDbusMenu extends DBusInterface {
+
+    // Updates cached item properties without rebuilding the menu layout
+    // Signature: a(ia{sv})a(ias)
+    // NOTE:
+    // dbus-java derives com.canonical.dbusmenu from the enclosing interface
+    // Keep the signal nested so it uses the correct DBusInterface
+    class ItemsPropertiesUpdated extends DBusSignal {
+
+        // WARNING:
+        // Keep this constructor public for dbus-java reflection
+        // Lower visibility prevents LinuxDbusMenu from being exported
+        public ItemsPropertiesUpdated(String path,
+                               LinuxDbusMenuPropertyGroup[] updatedProperties,
+                               LinuxDbusMenuRemovedPropertyGroup[] removedProperties) throws DBusException {
+            super(path, updatedProperties, removedProperties);
+        }
+    }
 
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "Version")
     UInt32 getVersion();

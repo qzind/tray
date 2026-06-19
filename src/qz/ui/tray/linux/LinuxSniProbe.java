@@ -19,6 +19,8 @@ public class LinuxSniProbe {
             "org.kde.StatusNotifierWatcher",
             "org.freedesktop.StatusNotifierWatcher"
     };
+    // Test unverified desktops without adding them to the production allowlist
+    private static final String ALLOW_UNVERIFIED_DESKTOP = "qz.sni.allowUnverifiedDesktop";
     private final boolean isLinux;
     private final boolean headless;
     private final String currentDesktop;
@@ -28,6 +30,7 @@ public class LinuxSniProbe {
     private final String dbusSessionBusAddress;
     private final String xdgRuntimeDir;
     private final boolean verifiedDesktop;
+    private final boolean allowUnverifiedDesktop;
     private boolean sessionBusReachable;
     // If statusNotifierWatcherPresent == true, it does not guarantee tray icons will work
     // it only proves that a watcher service exists on d-bus
@@ -46,6 +49,9 @@ public class LinuxSniProbe {
         dbusSessionBusAddress = getEnv("DBUS_SESSION_BUS_ADDRESS");
         xdgRuntimeDir = getEnv("XDG_RUNTIME_DIR");
         verifiedDesktop = isVerifiedDesktop(currentDesktop);
+        // This flag changes test eligibility only
+        // It does not mark the desktop as verified
+        allowUnverifiedDesktop = Boolean.getBoolean(ALLOW_UNVERIFIED_DESKTOP);
     }
 
     public static LinuxSniProbe inspect() {
@@ -101,9 +107,11 @@ public class LinuxSniProbe {
             if (!statusNotifierWatcherPresent) {
                 failureReason = "status-notifier-watcher-missing";
                 log.warn("No StatusNotifier watcher was found. {}", getMissingWatcherSuggestion());
-            } else if(!verifiedDesktop) {
+            } else if(!verifiedDesktop && !allowUnverifiedDesktop) {
                 failureReason = "desktop-not-verified";
                 log.warn("StatusNotifier is not verified for desktop '{}'; using the taskbar fallback.", currentDesktop);
+            } else if(!verifiedDesktop) {
+                log.warn("StatusNotifier desktop verification bypass enabled for '{}'", currentDesktop);
             }
         } catch (Exception e) {
             log.warn("Unable to inspect Linux StatusNotifier environment. {}", getMissingWatcherSuggestion(), e);
@@ -113,7 +121,10 @@ public class LinuxSniProbe {
     }
 
     public boolean canAttemptStatusNotifier() {
-        return isLinux && !headless && verifiedDesktop && sessionBusReachable && statusNotifierWatcherPresent;
+        // The override bypasses only the desktop allowlist
+        // Linux, display, session bus, and watcher checks still apply
+        return isLinux && !headless && (verifiedDesktop || allowUnverifiedDesktop) &&
+                sessionBusReachable && statusNotifierWatcherPresent;
     }
 
     String getStatusNotifierWatcher() {
@@ -168,6 +179,7 @@ public class LinuxSniProbe {
                 + "Headless: " + headless + "\n"
                 + "XDG_CURRENT_DESKTOP: " + currentDesktop + "\n"
                 + "Verified desktop: " + verifiedDesktop + "\n"
+                + "Allow unverified desktop: " + allowUnverifiedDesktop + "\n"
                 + "XDG_SESSION_TYPE: " + sessionType + "\n"
                 + "DISPLAY: " + display + "\n"
                 + (waylandDisplay.isEmpty() ? "" : "WAYLAND_DISPLAY: " + waylandDisplay + "\n")

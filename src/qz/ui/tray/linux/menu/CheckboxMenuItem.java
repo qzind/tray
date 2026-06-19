@@ -1,17 +1,23 @@
 package qz.ui.tray.linux.menu;
 
 import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
  class CheckboxMenuItem implements MenuNode {
 
     private final int id;
     private final String label;
-    private final boolean checked;
+     private final BooleanSupplier checked;
+     private final Consumer<Boolean> action;
+     private final BooleanSupplier enabled;
 
-    CheckboxMenuItem(int id, String label, boolean checked) {
+     CheckboxMenuItem(int id, String label, BooleanSupplier checked, Consumer<Boolean> action, BooleanSupplier enabled) {
         this.id = id;
         this.label = label;
         this.checked = checked;
+         this.action = action;
+         this.enabled = enabled;
     }
 
     @Override
@@ -29,6 +35,16 @@ import java.util.List;
     }
 
      boolean isChecked() {
-        return checked;
+         return checked.getAsBoolean();
+     }
+
+     boolean isEnabled() {
+         return enabled.getAsBoolean();
     }
-}
+
+     void activate() {
+         if (isEnabled()) {
+             action.accept(!isChecked());
+         }
+     }
+ }

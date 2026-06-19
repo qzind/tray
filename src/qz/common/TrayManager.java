@@ -26,6 +26,7 @@ import qz.ui.tray.TrayType;
 import qz.ui.tray.linux.LinuxSniProbe;
 import qz.ui.tray.linux.LinuxStatusNotifierTray;
 import qz.ui.tray.linux.menu.LinuxDbusMenu;
+import qz.ui.tray.linux.menu.LinuxDbusMenuActions;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
@@ -42,6 +43,7 @@ import java.util.ArrayList;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
+import static qz.App.getUserPrefs;
 import static qz.ui.component.IconCache.Icon.*;
 import static qz.ui.ThemeUtilities.*;
 import static qz.utils.ArgValue.*;
@@ -56,6 +58,8 @@ import static qz.App.*;
 public class TrayManager {
 
     private static final Logger log = LogManager.getLogger(TrayManager.class);
+
+    private boolean headless;
 
     // The cached icons
     private final IconCache iconCache;
@@ -210,10 +214,7 @@ public class TrayManager {
         }
 
         try {
-            LinuxDbusMenu menu = new LinuxDbusMenu(
-                    runOnEventThread(aboutListener),
-                    runOnEventThread(exitListener)
-            );
+            LinuxDbusMenu menu = new LinuxDbusMenu(new LinuxDbusMenuActions(this));
             statusNotifierTray = new LinuxStatusNotifierTray(probe, menu);
         }
         catch(Exception e) {
@@ -229,8 +230,24 @@ public class TrayManager {
         tray.showTaskbar();
     }
 
-    private Runnable runOnEventThread(ActionListener listener) {
-        return () -> SwingUtilities.invokeLater(() -> listener.actionPerformed(null));
+    public void refreshTheme() {
+        iconCache.fixTrayIcons(SystemUtilities.isDarkTaskbar());
+        refreshIcon(null);
+        // TODO: Merge into ThemeUtilities
+        SwingUtilities.invokeLater(() -> {
+            SystemUtilities.setSystemLookAndFeel();
+            for(Component c : componentList) {
+                SwingUtilities.updateComponentTreeUI(c);
+                if (c instanceof Themeable) {
+                    ((Themeable)c).refresh();
+                }
+                if (c instanceof JDialog) {
+                    ((JDialog)c).pack();
+                } else if (c instanceof JPopupMenu) {
+                    ((JPopupMenu)c).pack();
+                }
+            }
+        });
     }
 
     /**
@@ -383,19 +400,35 @@ public class TrayManager {
     private final ActionListener notificationsListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            getUserPrefs().setProperty(TRAY_NOTIFICATIONS, ((JCheckBoxMenuItem)e.getSource()).getState());
+            setNotifications(((JCheckBoxMenuItem)e.getSource()).getState());
         }
     };
+
+    public boolean areNotificationsEnabled() {
+        return getPref(TRAY_NOTIFICATIONS);
+    }
+
+    public void setNotifications(boolean enabled) {
+        getUserPrefs().setProperty(TRAY_NOTIFICATIONS, enabled);
+    }
 
     private final ActionListener monocleListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
             JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
-            getUserPrefs().setProperty(TRAY_MONOCLE, j.getState());
-            displayWarningMessage(String.format("A restart of %s is required to ensure this feature is %sabled.",
-                                                Constants.ABOUT_TITLE, j.getState()? "en":"dis"));
+            setMonocle(j.getState());
         }
     };
+
+    public boolean isMonocleEnabled() {
+        return getPref(TRAY_MONOCLE);
+    }
+
+    public void setMonocle(boolean enabled) {
+        getUserPrefs().setProperty(TRAY_MONOCLE, enabled);
+        displayWarningMessage(String.format("A restart of %s is required to ensure this feature is %sabled.",
+                                            Constants.ABOUT_TITLE, enabled ? "en" : "dis"));
+    }
 
     private final ActionListener desktopListener() {
         return e -> {
@@ -410,20 +443,28 @@ public class TrayManager {
     };
 
     private final ActionListener anonymousListener = e -> {
-        boolean checkBoxState = true;
+        boolean blocked = true;
         if (e.getSource() instanceof JCheckBoxMenuItem) {
-            checkBoxState = ((JCheckBoxMenuItem)e.getSource()).getState();
+            blocked = ((JCheckBoxMenuItem)e.getSource()).getState();
         }
 
-        log.debug("Block unsigned: {}", checkBoxState);
+        setAnonymousRequestsBlocked(blocked);
+    };
 
-        if (checkBoxState) {
+    public boolean areAnonymousRequestsBlocked() {
+        return Certificate.UNKNOWN.isBlocked();
+    }
+
+    public void setAnonymousRequestsBlocked(boolean blocked) {
+        log.debug("Block unsigned: {}", blocked);
+
+        if (blocked) {
             blackList(Certificate.UNKNOWN);
         } else {
             FileUtilities.deleteFromFile(Constants.BLOCK_FILE, Certificate.UNKNOWN.data(), true);
             FileUtilities.deleteFromFile(Constants.BLOCK_FILE, Certificate.UNKNOWN.data(), false);
         }
-    };
+    }
 
     private final ActionListener logListener = new ActionListener() {
         @Override
@@ -432,20 +473,43 @@ public class TrayManager {
         }
     };
 
+    public void showLogs() {
+        logDialog.setVisible(true);
+    }
+
+    public void showSiteManager() {
+        sitesDialog.setVisible(true);
+    }
+
+    public void createDesktopShortcut() {
+        shortcutCreator.createDesktopShortcut();
+    }
+
     private ActionListener startupListener() {
         return e -> {
             JCheckBoxMenuItem source = (JCheckBoxMenuItem)e.getSource();
-            if (!source.getState() && !confirmDialog.prompt("Remove " + name + " from startup?")) {
-                source.setState(true);
-                return;
-            }
-            if (FileUtilities.setAutostart(source.getState())) {
-                displayInfoMessage("Successfully " + (source.getState() ? "enabled" : "disabled") + " autostart");
-            } else {
-                displayErrorMessage("Error " + (source.getState() ? "enabling" : "disabling") + " autostart");
-            }
+            setAutoStart(source.getState());
             source.setState(FileUtilities.isAutostart());
         };
+    }
+
+    public boolean canAutoStart() {
+        return shortcutCreator.canAutoStart();
+    }
+
+    public boolean isAutoStartEnabled() {
+        return FileUtilities.isAutostart();
+    }
+
+    public void setAutoStart(boolean enabled) {
+        if (!enabled && !confirmDialog.prompt("Remove " + name + " from startup?")) {
+            return;
+        }
+        if (FileUtilities.setAutostart(enabled)) {
+            displayInfoMessage("Successfully " + (enabled ? "enabled" : "disabled") + " autostart");
+        } else {
+            displayErrorMessage("Error " + (enabled ? "enabling" : "disabling") + " autostart");
+        }
     }
 
     /**
@@ -467,11 +531,19 @@ public class TrayManager {
         }
     };
 
+    public void reload() {
+        reloadListener.actionPerformed(null);
+    }
+
     private final ActionListener aboutListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
             aboutDialog.setVisible(true);
         }
     };
+
+    public void showAbout() {
+        aboutListener.actionPerformed(null);
+    }
 
     private final ActionListener exitListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
@@ -486,6 +558,14 @@ public class TrayManager {
 
     public void exit(int returnCode) {
         getUserPrefs().save();
+        if(statusNotifierTray != null) {
+            try {
+                statusNotifierTray.close();
+            }
+            catch(IOException e) {
+                log.warn("Unable to close Linux StatusNotifier tray", e);
+            }
+        }
         FileUtilities.cleanup();
         System.exit(returnCode);
     }

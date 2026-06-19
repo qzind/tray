@@ -11,7 +11,7 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     private static final String TITLE = "QZ Tray";
     private static final String STATUS = "Active";
     // This must match the generated icon theme name exactly
-    private static final String THEMED_ICON_NAME = "qz-tray-symbolic";
+    private static final String THEMED_ICON_NAME = "kdeconnectindicatordark";
 
     private final String iconThemePath;
     private final String iconName;

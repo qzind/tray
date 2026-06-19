@@ -2,6 +2,8 @@ package qz.ui.tray.linux;
 
 import qz.utils.FileUtilities;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -40,6 +42,14 @@ class LinuxSniIconTheme {
                 .resolve("apps")
                 .resolve(ICON_NAME + ".png")
                 .toString();
+    }
+
+    static LinuxSniPixmap[] getIconPixmaps() throws IOException {
+        LinuxSniPixmap[] pixmaps = new LinuxSniPixmap[ICON_SIZES.length];
+        for(int i = 0; i < ICON_SIZES.length; i++) {
+            pixmaps[i] = readIconPixmap(ICON_SIZES[i]);
+        }
+        return pixmaps;
     }
 
     private static Path getThemePath() throws IOException {
@@ -99,6 +109,34 @@ class LinuxSniIconTheme {
                 throw new IOException(String.format("StatusNotifier icon resource missing for size %s", size));
             }
             Files.copy(in, iconPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private static LinuxSniPixmap readIconPixmap(int size) throws IOException {
+        try(InputStream in = LinuxSniIconTheme.class.getResourceAsStream(String.format(PNG_RESOURCE_PATH, size))) {
+            if(in == null) {
+                throw new IOException(String.format("StatusNotifier icon resource missing for size %s", size));
+            }
+
+            BufferedImage image = ImageIO.read(in);
+            if(image == null) {
+                throw new IOException(String.format("StatusNotifier icon resource is invalid for size %s", size));
+            }
+
+            // The wire format is ARGB with four bytes per pixel
+            // COSMIC converts this sequence to RGBA before displaying it
+            byte[] data = new byte[image.getWidth() * image.getHeight() * 4];
+            int offset = 0;
+            for(int y = 0; y < image.getHeight(); y++) {
+                for(int x = 0; x < image.getWidth(); x++) {
+                    int argb = image.getRGB(x, y);
+                    data[offset++] = (byte)(argb >>> 24);
+                    data[offset++] = (byte)(argb >>> 16);
+                    data[offset++] = (byte)(argb >>> 8);
+                    data[offset++] = (byte)argb;
+                }
+            }
+            return new LinuxSniPixmap(image.getWidth(), image.getHeight(), data);
         }
     }
 

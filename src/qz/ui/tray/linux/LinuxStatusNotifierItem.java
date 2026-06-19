@@ -57,6 +57,11 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     }
 
     @Override
+    public boolean isMenu() {
+        return true;
+    }
+
+    @Override
     public DBusPath getMenu() {
         // Without this, Ubuntu GNOME dropped the registered item until it received
         // a non-empty Menu object path before it would consider the tray item as ready

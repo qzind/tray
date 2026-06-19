@@ -135,6 +135,10 @@ public class LinuxSniProbe {
         return currentDesktop.toLowerCase(Locale.ENGLISH).contains("cinnamon");
     }
 
+    boolean isCosmic() {
+        return currentDesktop.toLowerCase(Locale.ENGLISH).contains("cosmic");
+    }
+
     private String getMissingWatcherSuggestion() {
         String desktop = currentDesktop.toLowerCase(Locale.ENGLISH);
 

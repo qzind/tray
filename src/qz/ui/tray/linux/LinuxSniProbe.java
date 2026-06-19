@@ -131,6 +131,10 @@ public class LinuxSniProbe {
         return statusNotifierWatcher;
     }
 
+    boolean isCinnamon() {
+        return currentDesktop.toLowerCase(Locale.ENGLISH).contains("cinnamon");
+    }
+
     private String getMissingWatcherSuggestion() {
         String desktop = currentDesktop.toLowerCase(Locale.ENGLISH);
 

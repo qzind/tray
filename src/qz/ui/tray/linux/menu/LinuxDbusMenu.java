@@ -10,6 +10,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 public class LinuxDbusMenu implements CanonicalDbusMenu {
 
@@ -18,7 +20,7 @@ public class LinuxDbusMenu implements CanonicalDbusMenu {
     // DBusMenu protocol/interface version exposed through the Version property
     private static final UInt32 VERSION = new UInt32(3);
     // Layout revision returned by GetLayout
-    // This POC menu is static, so revision
+    // This menu is static, so revision
     // 1 is enough until menu items or properties become dynamic
     private static final UInt32 REVISION = new UInt32(1);
     private static final String STATUS = "normal";
@@ -27,38 +29,42 @@ public class LinuxDbusMenu implements CanonicalDbusMenu {
     private final Map<Integer, MenuNode> nodes = new LinkedHashMap<>();
     private int nextItemId = 1;
 
-    public LinuxDbusMenu(Runnable aboutAction, Runnable exitAction) {
+    public LinuxDbusMenu(LinuxDbusMenuActions actions) {
         List<MenuNode> diagnosticChildren = new ArrayList<>(Arrays.asList(
-                item("Browse App folder..."),
-                item("Browse User folder..."),
-                item("Browse Shared folder..."),
+                item("Browse App folder...", actions::browseAppDirectory),
+                item("Browse User folder...", actions::browseUserDirectory),
+                item("Browse Shared folder...", actions::browseSharedDirectory),
                 separator(),
-                checkbox("Show all notifications")
+                checkbox("Show all notifications", actions::areNotificationsEnabled,
+                        actions::setNotificationsEnabled)
         ));
         if(Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("11.0.0"))) {
-            diagnosticChildren.add(checkbox("Use Monocle for HTML"));
+            diagnosticChildren.add(checkbox("Use Monocle for HTML", actions::isMonocleEnabled,
+                    actions::setMonocleEnabled));
         }
         diagnosticChildren.add(separator());
-        diagnosticChildren.add(item("View logs (live feed)..."));
-        diagnosticChildren.add(item("Zip logs (to Desktop)"));
+        diagnosticChildren.add(item("View logs (live feed)...", actions::showLogs));
+        diagnosticChildren.add(item("Zip logs (to Desktop)", actions::zipLogs));
 
         List<MenuNode> advancedChildren = new ArrayList<>();
         if(Constants.ENABLE_DIAGNOSTICS) {
             advancedChildren.add(submenu("Diagnostic", diagnosticChildren));
             advancedChildren.add(separator());
         }
-        advancedChildren.add(item("Site Manager..."));
-        advancedChildren.add(item("Create Desktop shortcut"));
+        advancedChildren.add(item("Site Manager...", actions::showSiteManager));
+        advancedChildren.add(item("Create Desktop shortcut", actions::createDesktopShortcut));
         advancedChildren.add(separator());
-        advancedChildren.add(checkbox("Block anonymous requests"));
+        advancedChildren.add(checkbox("Block anonymous requests", actions::areAnonymousRequestsBlocked,
+                actions::setAnonymousRequestsBlocked));
 
         MenuNode root = new RootMenuItem(ROOT_ID, Arrays.asList(
                 submenu("Advanced", advancedChildren),
-                item("Reload"),
-                item("About...", aboutAction),
-                checkbox("Automatically start"),
+                item("Reload", actions::reload),
+                item("About...", actions::showAbout),
+                checkbox("Automatically start", actions::isAutoStartEnabled,
+                        actions::setAutoStartEnabled, actions::canAutoStart),
                 separator(),
-                item("Exit", exitAction)
+                item("Exit", actions::exit)
         ));
         index(root);
     }
@@ -107,10 +113,14 @@ public class LinuxDbusMenu implements CanonicalDbusMenu {
     @Override
     public void event(int id, String eventId, Variant<?> data, UInt32 timestamp) {
         // DBusMenu sends activation through Event/EventGroup.
-        // Only the actions already proven by this POC are wired here.
         MenuNode node = nodes.get(id);
-        if(node instanceof StandardMenuItem && EVENT_CLICKED.equals(eventId)) {
-            ((StandardMenuItem) node).activate();
+        if(!EVENT_CLICKED.equals(eventId)) {
+            return;
+        }
+        if(node instanceof StandardMenuItem) {
+            ((StandardMenuItem)node).activate();
+        } else if(node instanceof CheckboxMenuItem) {
+            ((CheckboxMenuItem)node).activate();
         }
     }
 
@@ -175,17 +185,19 @@ public class LinuxDbusMenu implements CanonicalDbusMenu {
         }
 
         if(node instanceof StandardMenuItem) {
-            addProperty(properties, propertyNames, "label", ((StandardMenuItem) node).getLabel());
+            StandardMenuItem item = (StandardMenuItem)node;
+            addProperty(properties, propertyNames, "label", item.getLabel());
+            addProperty(properties, propertyNames, "enabled", item.isEnabled());
         } else if(node instanceof CheckboxMenuItem) {
             CheckboxMenuItem checkbox = (CheckboxMenuItem) node;
             addProperty(properties, propertyNames, "label", checkbox.getLabel());
-            // These entries mirror TrayManager's checkbox presentation only.
-            // Their live state and click behavior will be supplied by the action facade.
             addProperty(properties, propertyNames, "toggle-type", "checkmark");
             addProperty(properties, propertyNames, "toggle-state", checkbox.isChecked() ? 1 : 0);
+            addProperty(properties, propertyNames, "enabled", checkbox.isEnabled());
+        } else {
+            addProperty(properties, propertyNames, "enabled", true);
         }
 
-        addProperty(properties, propertyNames, "enabled", true);
         addProperty(properties, propertyNames, "visible", true);
         return properties;
     }
@@ -204,16 +216,17 @@ public class LinuxDbusMenu implements CanonicalDbusMenu {
         return nextItemId++;
     }
 
-    private MenuNode item(String label) {
-        return StandardMenuItem.item(nextId(), label);
-    }
-
     private MenuNode item(String label, Runnable action) {
         return StandardMenuItem.item(nextId(), label, action);
     }
 
-    private MenuNode checkbox(String label) {
-        return new CheckboxMenuItem(nextId(), label, true);
+    private MenuNode checkbox(String label, BooleanSupplier checked, Consumer<Boolean> action) {
+        return checkbox(label, checked, action, () -> true);
+    }
+
+    private MenuNode checkbox(String label, BooleanSupplier checked, Consumer<Boolean> action,
+                              BooleanSupplier enabled) {
+        return new CheckboxMenuItem(nextId(), label, checked, action, enabled);
     }
 
     private MenuNode separator() {

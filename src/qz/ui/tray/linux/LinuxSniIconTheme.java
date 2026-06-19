@@ -31,6 +31,17 @@ class LinuxSniIconTheme {
         return themePath.toString();
     }
 
+    static String getPngIconPath(String themePath) {
+        // xapp-sn-watcher accepts an absolute IconName path
+        // https://github.com/linuxmint/xapp/blob/master/xapp-sn-watcher/sn-item.c
+        return Path.of(themePath)
+                .resolve("hicolor")
+                .resolve("32x32")
+                .resolve("apps")
+                .resolve(ICON_NAME + ".png")
+                .toString();
+    }
+
     private static Path getThemePath() throws IOException {
         return FileUtilities.TEMP_DIR != null
                 ? FileUtilities.TEMP_DIR.resolve("sni-icons")

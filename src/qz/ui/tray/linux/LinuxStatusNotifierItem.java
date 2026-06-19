@@ -6,6 +6,7 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     private static final String OBJECT_PATH = "/StatusNotifierItem";
     private static final DBusPath MENU_PATH = new DBusPath("/MenuBar");
+    private static final LinuxSniPixmap[] NO_ICON_PIXMAPS = new LinuxSniPixmap[0];
     private static final String CATEGORY = "ApplicationStatus";
     private static final String ID = "qz-tray";
     private static final String TITLE = "QZ Tray";
@@ -52,8 +53,20 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     }
 
     @Override
+    public LinuxSniPixmap[] getIconPixmap() {
+        // IconName remains authoritative while satisfying hosts that query both properties
+        return NO_ICON_PIXMAPS;
+    }
+
+    @Override
     public String getIconThemePath() {
         return iconThemePath;
+    }
+
+    @Override
+    public boolean isMenu() {
+        // QZ exposes tray actions rather than a primary activation target
+        return true;
     }
 
     @Override

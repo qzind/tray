@@ -156,7 +156,7 @@ public class LinuxSniProbe {
 
     private boolean isVerifiedDesktop(String desktopName) {
         // End-to-end QZ Tray tests passed on Ubuntu GNOME with AppIndicator
-        // support, KDE Plasma, XFCE, and Ubuntu Budgie
+        // support, KDE Plasma, XFCE, Ubuntu Budgie, and Cinnamon
         //
         // Tested but not usable:
         // - COSMIC registered the item, but showed a gray placeholder and no menu
@@ -166,15 +166,15 @@ public class LinuxSniProbe {
         // - LXQt, whose panel has a plugin implementing the SNI specification
         // - MATE with mate-indicator-applet, which hosts Ayatana indicators
         //
-        // Cinnamon and other desktops should also be tested when their session
-        // exposes a watcher, but remain on the fallback until icon and menu
-        // behavior are verified end to end
+        // Cinnamon uses an absolute PNG path for xapp-sn-watcher compatibility
+        // Other desktops remain on the fallback until verified end to end
         String desktop = desktopName.toLowerCase(Locale.ENGLISH);
         return desktop.contains("gnome")
                 || desktop.contains("kde")
                 || desktop.contains("plasma")
                 || desktop.contains("xfce")
-                || desktop.contains("budgie");
+                || desktop.contains("budgie")
+                || desktop.contains("cinnamon");
     }
 
     @Override

@@ -60,7 +60,8 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     @Override
     public String getIconThemePath() {
-        return iconThemePath;
+        // Match KDE Connect while testing COSMIC system theme lookup
+        return "";
     }
 
     @Override
@@ -80,6 +81,9 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     @Override
     public void contextMenu(int x, int y) {}
+
+    @Override
+    public void provideXdgActivationToken(String token) {}
 
     @Override
     public void activate(int x, int y) {}

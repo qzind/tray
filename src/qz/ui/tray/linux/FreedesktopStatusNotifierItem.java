@@ -45,6 +45,9 @@ public interface FreedesktopStatusNotifierItem extends DBusInterface {
     @DBusMemberName("ContextMenu")
     void contextMenu(int x, int y);
 
+    @DBusMemberName("ProvideXdgActivationToken")
+    void provideXdgActivationToken(String token);
+
     @DBusMemberName("Activate")
     void activate(int x, int y);
 

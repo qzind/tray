@@ -22,6 +22,7 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
 
     public LinuxStatusNotifierTray(LinuxSniProbe probe, LinuxDbusMenu menu) throws Exception {
         String statusNotifierWatcher = probe.getStatusNotifierWatcher();
+        String itemService = getItemServicePrefix(statusNotifierWatcher) + ProcessHandle.current().pid();
         String iconThemePath = LinuxSniIconTheme.prepare();
         // Cinnamon's xapp-sn-watcher can fail to resolve a private icon theme
         // Use its supported absolute path handling for the generated PNG
@@ -46,11 +47,9 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
                 .connectionConfig()
                 .withShared(false)
                 .build();
-        // KDE registers the dedicated connection's unique bus name
-        // This also matches the form COSMIC stores for working notifier items
-        String itemService = newConnection.getUniqueName();
         AutoCloseable newWatcherRegistration = null;
         try {
+            newConnection.requestBusName(itemService);
             // LinuxDbusMenu owns signal creation while this connection owns delivery
             menu.setSignalEmitter(newConnection::sendMessage);
             newConnection.exportObject(item.getObjectPath(), item);
@@ -84,6 +83,14 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
 
         log.info("Registered StatusNotifier item {} at {}", itemService, item.getObjectPath());
         log.info("Published StatusNotifier icon theme path {}", iconThemePath);
+    }
+
+    private static String getItemServicePrefix(String watcher) {
+        // Most deployed hosts use org.kde.*, but this keeps registration
+        // aligned with a freedesktop watcher when one is present
+        return watcher.startsWith("org.freedesktop.")
+                ? "org.freedesktop.StatusNotifierItem-"
+                : "org.kde.StatusNotifierItem-";
     }
 
     private static void registerStatusNotifierItem(DBusConnection connection, String watcherService,

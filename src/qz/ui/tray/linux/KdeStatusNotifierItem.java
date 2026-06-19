@@ -40,14 +40,8 @@ public interface KdeStatusNotifierItem extends DBusInterface {
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconName")
     String getIconName();
 
-    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconPixmap")
-    LinuxSniPixmap[] getIconPixmap();
-
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconThemePath")
     String getIconThemePath();
-
-    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "ItemIsMenu")
-    boolean isMenu();
 
     // Ubuntu GNOME requires Menu before it retains a registered item
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "Menu")
@@ -55,9 +49,6 @@ public interface KdeStatusNotifierItem extends DBusInterface {
 
     @DBusMemberName("ContextMenu")
     void contextMenu(int x, int y);
-
-    @DBusMemberName("ProvideXdgActivationToken")
-    void provideXdgActivationToken(String token);
 
     @DBusMemberName("Activate")
     void activate(int x, int y);

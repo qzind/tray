@@ -6,13 +6,12 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     private static final String OBJECT_PATH = "/StatusNotifierItem";
     private static final DBusPath MENU_PATH = new DBusPath("/MenuBar");
-    private static final LinuxSniPixmap[] TEST_ICON_PIXMAPS = createTestIconPixmaps();
     private static final String CATEGORY = "ApplicationStatus";
     private static final String ID = "qz-tray";
     private static final String TITLE = "QZ Tray";
     private static final String STATUS = "Active";
     // This must match the generated icon theme name exactly
-    private static final String THEMED_ICON_NAME = "";
+    private static final String THEMED_ICON_NAME = "qz-tray-symbolic";
 
     private final String iconThemePath;
     private final String iconName;
@@ -53,21 +52,8 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     }
 
     @Override
-    public LinuxSniPixmap[] getIconPixmap() {
-        // An opaque test pixmap isolates COSMIC rendering from icon theme lookup
-        return TEST_ICON_PIXMAPS;
-    }
-
-    @Override
     public String getIconThemePath() {
-        // Match KDE Connect while testing COSMIC system theme lookup
-        return "";
-    }
-
-    @Override
-    public boolean isMenu() {
-        // Match KDE Connect while testing COSMIC item rendering
-        return false;
+        return iconThemePath;
     }
 
     @Override
@@ -83,9 +69,6 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     public void contextMenu(int x, int y) {}
 
     @Override
-    public void provideXdgActivationToken(String token) {}
-
-    @Override
     public void activate(int x, int y) {}
 
     @Override
@@ -96,17 +79,5 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     static String getThemedIconName() {
         return THEMED_ICON_NAME;
-    }
-
-    private static LinuxSniPixmap[] createTestIconPixmaps() {
-        int size = 32;
-        byte[] argb = new byte[size * size * 4];
-        for(int offset = 0; offset < argb.length; offset += 4) {
-            argb[offset] = (byte)0xff;
-            argb[offset + 1] = 0x59;
-            argb[offset + 2] = 0x72;
-            argb[offset + 3] = 0x39;
-        }
-        return new LinuxSniPixmap[] { new LinuxSniPixmap(size, size, argb) };
     }
 }

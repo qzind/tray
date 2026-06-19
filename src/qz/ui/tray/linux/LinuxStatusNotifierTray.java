@@ -31,6 +31,15 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         // The tray owns its bus name and exported objects, so use a dedicated
         // connection instead of sharing lifecycle with other future D-Bus callers
         DBusConnection newConnection = DBusConnectionBuilder.forSessionBus()
+                .receivingThreadConfig()
+                // IMPORTANT:
+                // libdbusmenu clients issue property requests in order
+                // Hence, Keep method dispatch ordered so submenu
+                // parents realize before their children
+                // without doing this, sub-submenus like the
+                // submenus of "Diagnostic" don't show on XFCE
+                .withMethodCallThreadCount(1)
+                .connectionConfig()
                 .withShared(false)
                 .build();
         AutoCloseable newWatcherRegistration = null;

@@ -65,8 +65,8 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     @Override
     public boolean isMenu() {
-        // QZ exposes tray actions rather than a primary activation target
-        return true;
+        // Match KDE Connect while testing COSMIC item rendering
+        return false;
     }
 
     @Override

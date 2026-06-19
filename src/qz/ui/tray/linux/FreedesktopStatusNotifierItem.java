@@ -29,14 +29,8 @@ public interface FreedesktopStatusNotifierItem extends DBusInterface {
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconName")
     String getIconName();
 
-    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconPixmap")
-    LinuxSniPixmap[] getIconPixmap();
-
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconThemePath")
     String getIconThemePath();
-
-    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "ItemIsMenu")
-    boolean isMenu();
 
     // Keep the freedesktop item surface compatible with the KDE item surface
     @DBusBoundProperty(access = DBusProperty.Access.READ, name = "Menu")
@@ -44,9 +38,6 @@ public interface FreedesktopStatusNotifierItem extends DBusInterface {
 
     @DBusMemberName("ContextMenu")
     void contextMenu(int x, int y);
-
-    @DBusMemberName("ProvideXdgActivationToken")
-    void provideXdgActivationToken(String token);
 
     @DBusMemberName("Activate")
     void activate(int x, int y);

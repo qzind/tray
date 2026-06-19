@@ -15,10 +15,12 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     private final String iconThemePath;
     private final String iconName;
+    private final LinuxSniPixmap[] iconPixmaps;
 
-    LinuxStatusNotifierItem(String iconThemePath, String iconName) {
+    LinuxStatusNotifierItem(String iconThemePath, String iconName, LinuxSniPixmap[] iconPixmaps) {
         this.iconThemePath = iconThemePath;
         this.iconName = iconName;
+        this.iconPixmaps = iconPixmaps;
     }
 
     @Override
@@ -49,6 +51,11 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     @Override
     public String getIconName() {
         return iconName;
+    }
+
+    @Override
+    public LinuxSniPixmap[] getIconPixmap() {
+        return iconPixmaps;
     }
 
     @Override

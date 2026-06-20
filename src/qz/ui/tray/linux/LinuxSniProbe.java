@@ -176,7 +176,8 @@ public class LinuxSniProbe {
         // support, KDE, XFCE, LXQt, Ubuntu Budgie, Cinnamon, and MATE
         //
         // Tested but not usable:
-        // - COSMIC registered the item, but showed a gray placeholder and no menu
+        // - COSMIC displays the icon and menu, but the nested Diagnostic submenu
+        //   does not open
         // - Pantheon/elementary OS 8.1 had no StatusNotifier watcher or panel host
         //
         // Cinnamon uses an absolute PNG path for xapp-sn-watcher compatibility

@@ -1,40 +1,25 @@
 package qz.ui.tray.linux;
 
 import org.freedesktop.dbus.DBusPath;
-import org.freedesktop.dbus.annotations.DBusBoundProperty;
 import org.freedesktop.dbus.annotations.DBusInterfaceName;
 import org.freedesktop.dbus.annotations.DBusMemberName;
 import org.freedesktop.dbus.annotations.DBusProperty;
 import org.freedesktop.dbus.interfaces.DBusInterface;
+import org.freedesktop.dbus.interfaces.Properties;
 
 /*
  * Mirrors KdeStatusNotifierItem for environments that expose the freedesktop
  * watcher namespace instead of the deployed KDE/AppIndicator namespace
  */
 @DBusInterfaceName("org.freedesktop.StatusNotifierItem")
-public interface FreedesktopStatusNotifierItem extends DBusInterface {
-
-    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "Category")
-    String getCategory();
-
-    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "Id")
-    String getId();
-
-    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "Title")
-    String getTitle();
-
-    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "Status")
-    String getStatus();
-
-    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconName")
-    String getIconName();
-
-    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "IconThemePath")
-    String getIconThemePath();
-
-    // Keep the freedesktop item surface compatible with the KDE item surface
-    @DBusBoundProperty(access = DBusProperty.Access.READ, name = "Menu")
-    DBusPath getMenu();
+@DBusProperty(access = DBusProperty.Access.READ, name = "Category", type = String.class)
+@DBusProperty(access = DBusProperty.Access.READ, name = "Id", type = String.class)
+@DBusProperty(access = DBusProperty.Access.READ, name = "Title", type = String.class)
+@DBusProperty(access = DBusProperty.Access.READ, name = "Status", type = String.class)
+@DBusProperty(access = DBusProperty.Access.READ, name = "IconName", type = String.class)
+@DBusProperty(access = DBusProperty.Access.READ, name = "IconThemePath", type = String.class)
+@DBusProperty(access = DBusProperty.Access.READ, name = "Menu", type = DBusPath.class)
+public interface FreedesktopStatusNotifierItem extends DBusInterface, Properties {
 
     @DBusMemberName("ContextMenu")
     void contextMenu(int x, int y);

@@ -151,6 +151,10 @@ public class LinuxSniProbe {
             return prefix +
                     "Install or enable XFCE StatusNotifier support (e.g. xfce4-statusnotifier-plugin).";
         }
+        if (desktop.contains("lxqt")) {
+            return prefix +
+                    "Verify the Status Notifier plugin is enabled in the LXQt panel.";
+        }
         if (desktop.contains("budgie")) {
             return prefix +
                     "Verify the Budgie System Tray applet is added to the panel and running.";
@@ -169,14 +173,11 @@ public class LinuxSniProbe {
 
     private boolean isVerifiedDesktop(String desktopName) {
         // End-to-end QZ Tray tests passed on Ubuntu GNOME with AppIndicator
-        // support, KDE, XFCE, Ubuntu Budgie, Cinnamon, and MATE
+        // support, KDE, XFCE, LXQt, Ubuntu Budgie, Cinnamon, and MATE
         //
         // Tested but not usable:
         // - COSMIC registered the item, but showed a gray placeholder and no menu
         // - Pantheon/elementary OS 8.1 had no StatusNotifier watcher or panel host
-        //
-        // Good candidates for future verification:
-        // - LXQt, whose panel has a plugin implementing the SNI specification
         //
         // Cinnamon uses an absolute PNG path for xapp-sn-watcher compatibility
         // Other desktops remain on the fallback until verified end to end
@@ -184,6 +185,7 @@ public class LinuxSniProbe {
         return desktop.contains("gnome")
                 || desktop.contains("kde")
                 || desktop.contains("xfce")
+                || desktop.contains("lxqt")
                 || desktop.contains("budgie")
                 || desktop.contains("cinnamon")
                 || desktop.contains("mate");

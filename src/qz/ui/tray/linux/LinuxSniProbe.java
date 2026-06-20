@@ -137,26 +137,39 @@ public class LinuxSniProbe {
 
     private String getMissingWatcherSuggestion() {
         String desktop = currentDesktop.toLowerCase(Locale.ENGLISH);
+        String prefix = "No StatusNotifier host detected. ";
 
         if (desktop.contains("gnome")) {
-            return "No StatusNotifier host detected. " +
+            return prefix +
                     "Install and enable GNOME AppIndicator support (e.g. gnome-shell-extension-appindicator).";
         }
-        if (desktop.contains("kde") || desktop.contains("plasma")) {
-            return "No StatusNotifier host detected. " +
-                    "Verify the Plasma system tray widget is enabled and running.";
+        if (desktop.contains("kde")) {
+            return prefix +
+                    "Verify the system tray widget is enabled and running.";
         }
         if (desktop.contains("xfce")) {
-            return "No StatusNotifier host detected. " +
+            return prefix +
                     "Install or enable XFCE StatusNotifier support (e.g. xfce4-statusnotifier-plugin).";
         }
-        return "No StatusNotifier host detected. " +
+        if (desktop.contains("budgie")) {
+            return prefix +
+                    "Verify the Budgie System Tray applet is added to the panel and running.";
+        }
+        if (desktop.contains("cinnamon")) {
+            return prefix +
+                    "Verify the XApp Status Applet is enabled and xapp-sn-watcher is running.";
+        }
+        if (desktop.contains("mate")) {
+            return prefix +
+                    "Verify the Notification Area applet is added to the MATE panel and running.";
+        }
+        return prefix +
                 "Install or enable AppIndicator/StatusNotifier support for your desktop environment.";
     }
 
     private boolean isVerifiedDesktop(String desktopName) {
         // End-to-end QZ Tray tests passed on Ubuntu GNOME with AppIndicator
-        // support, KDE Plasma, XFCE, Ubuntu Budgie, Cinnamon, and MATE
+        // support, KDE, XFCE, Ubuntu Budgie, Cinnamon, and MATE
         //
         // Tested but not usable:
         // - COSMIC registered the item, but showed a gray placeholder and no menu
@@ -170,7 +183,6 @@ public class LinuxSniProbe {
         String desktop = desktopName.toLowerCase(Locale.ENGLISH);
         return desktop.contains("gnome")
                 || desktop.contains("kde")
-                || desktop.contains("plasma")
                 || desktop.contains("xfce")
                 || desktop.contains("budgie")
                 || desktop.contains("cinnamon")

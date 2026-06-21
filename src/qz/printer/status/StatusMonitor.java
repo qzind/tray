@@ -9,13 +9,10 @@ import org.eclipse.jetty.util.MultiMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.websocket.api.Session;
-import qz.printer.PrintServiceMatcher;
-import qz.printer.info.NativePrinterMap;
 import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.*;
 
 import static qz.utils.SystemUtilities.isWindows;
@@ -217,14 +214,7 @@ public class StatusMonitor {
     }
 
     private static String macNameFix(String printerName) {
-        // Since 2.0: Mac printers use descriptions as printer names; Find CUPS ID by Description
-        String returnString = NativePrinterMap.getInstance().lookupPrinterId(printerName);
-        // Handle edge-case where printer was recently renamed/added
-        if (returnString == null) {
-            // Call PrintServiceLookup.lookupPrintServices again
-            PrintServiceMatcher.getNativePrinterList(true);
-            returnString = NativePrinterMap.getInstance().lookupPrinterId(printerName);
-        }
-        return returnString;
+        // Mac printers can use spaces in their names, but they are represented as underscores in CUPS.
+        return printerName.replace(" ", "_");
     }
 }

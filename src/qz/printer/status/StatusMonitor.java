@@ -9,13 +9,13 @@ import org.eclipse.jetty.util.MultiMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.websocket.api.Session;
+import qz.printer.NoSuchPrinterException;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.info.NativePrinterMap;
 import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.*;
 
 import static qz.utils.SystemUtilities.isWindows;
@@ -92,11 +92,16 @@ public class StatusMonitor {
         } else {  // listen to specific printer(s)
             for (int i = 0; i < printerNames.length(); i++) {
                 String printerName = printerNames.getString(i);
-                if (SystemUtilities.isMac()) printerName = macNameFix(printerName);
-
                 if (printerName == null || printerName.equals("")) {
                     throw new IllegalArgumentException();
                 }
+
+                if (SystemUtilities.isMac()) {
+                    String newName = macNameFix(printerName);
+                    if (newName == null) throw new NoSuchPrinterException(printerName);
+                    printerName = newName;
+                }
+
                 addClientPrinterConnection(printerName, connection, params);
             }
         }

@@ -41,7 +41,8 @@ public class CupsPrinterMap extends NativePrinterMap {
                 } else {
                     String match = "Description:";
                     if (printer.getDescription().isNull() && line.startsWith(match)) {
-                        printer.setDescription(line.substring(line.indexOf(match) + match.length()).trim());
+                        // Description must be exact per #1463
+                        printer.setDescription(line.substring(line.indexOf(match) + match.length() + 1));
                     }
                     match = "Interface:";
                     if (printer.getDriverFile().isNull() && line.startsWith(match)) {

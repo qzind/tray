@@ -9,13 +9,13 @@ import org.eclipse.jetty.util.MultiMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.websocket.api.Session;
+import qz.exception.NoSuchPrinterException;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.info.NativePrinterMap;
 import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.SocketConnection;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.*;
 
 import static qz.utils.SystemUtilities.isWindows;
@@ -92,11 +92,14 @@ public class StatusMonitor {
         } else {  // listen to specific printer(s)
             for (int i = 0; i < printerNames.length(); i++) {
                 String printerName = printerNames.getString(i);
-                if (SystemUtilities.isMac()) printerName = macNameFix(printerName);
-
                 if (printerName == null || printerName.equals("")) {
                     throw new IllegalArgumentException();
                 }
+
+                if (SystemUtilities.isMac()) {
+                    printerName = getPrinterNameFromDescription(printerName);
+                }
+
                 addClientPrinterConnection(printerName, connection, params);
             }
         }
@@ -216,15 +219,18 @@ public class StatusMonitor {
         return true;
     }
 
-    private static String macNameFix(String printerName) {
+    private static String getPrinterNameFromDescription(String description) {
         // Since 2.0: Mac printers use descriptions as printer names; Find CUPS ID by Description
-        String returnString = NativePrinterMap.getInstance().lookupPrinterId(printerName);
+        String printerName = NativePrinterMap.getInstance().lookupPrinterId(description);
         // Handle edge-case where printer was recently renamed/added
-        if (returnString == null) {
+        if (printerName == null) {
             // Call PrintServiceLookup.lookupPrintServices again
             PrintServiceMatcher.getNativePrinterList(true);
-            returnString = NativePrinterMap.getInstance().lookupPrinterId(printerName);
+            printerName = NativePrinterMap.getInstance().lookupPrinterId(description);
         }
-        return returnString;
+        if (printerName == null) {
+            throw new NoSuchPrinterException(String.format("Printer matching description '%s' was not found", description));
+        }
+        return printerName;
     }
 }

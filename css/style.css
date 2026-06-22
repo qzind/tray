@@ -405,6 +405,10 @@ code {
     background-color: #D9EDF7;
 }
 
+.preserve-space {
+    white-space: pre;
+}
+
 input[type='radio'] {
     margin-left: .5em;
 }

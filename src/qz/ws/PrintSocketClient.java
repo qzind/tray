@@ -10,8 +10,8 @@ import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
-import org.eclipse.jetty.websocket.api.exceptions.CloseException;
 import org.eclipse.jetty.websocket.api.exceptions.WebSocketException;
+import org.eclipse.jetty.websocket.api.exceptions.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
 import org.usb4java.LoaderException;
@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeoutException;
 
 
 @WebSocket
@@ -90,7 +89,7 @@ public class PrintSocketClient {
     public void onError(Session session, Throwable error) {
         if (error instanceof EOFException || error instanceof ClosedChannelException) { return; }
 
-        if (error instanceof CloseException && error.getCause() instanceof TimeoutException) {
+        if (error instanceof WebSocketTimeoutException) {
             log.error("Timeout error (Lost connection with client)", error);
             return;
         }

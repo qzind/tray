@@ -3,6 +3,7 @@ package qz.ws;
 import jssc.SerialPortException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.jetty.websocket.api.Session;
 import qz.auth.Certificate;
 import qz.communication.*;
 import qz.printer.status.StatusMonitor;
@@ -11,6 +12,10 @@ import qz.utils.FileWatcher;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class SocketConnection {
 
@@ -31,6 +36,9 @@ public class SocketConnection {
 
     // DeviceOptions -> open DeviceIO
     private final HashMap<DeviceOptions,DeviceIO> openDevices = new HashMap<>();
+
+    private static final ScheduledExecutorService keepAliveExecutor = Executors.newScheduledThreadPool(1);
+    private ScheduledFuture<?> keepAlive;
 
 
     public SocketConnection(Certificate cert) {
@@ -95,6 +103,27 @@ public class SocketConnection {
         return openFiles.get(absolute);
     }
 
+    public void startKeepAlive(Session session, int seconds) {
+        if (keepAlive != null && (!keepAlive.isCancelled() || !keepAlive.isDone())) {
+            stopKeepAlive();
+        }
+        //Sane fallback, this should never come up.
+        seconds = Math.max(seconds, 15);
+        keepAlive = keepAliveExecutor.scheduleAtFixedRate(() -> {
+            try {
+                session.getRemote().sendPing(null);
+            }
+            catch(IOException e) {
+                log.warn("Websocket keepalive failed. Stopping", e);
+                this.stopKeepAlive();
+            }
+        }, 0, seconds, TimeUnit.SECONDS);
+    }
+
+    public void stopKeepAlive() {
+        keepAlive.cancel(true);
+    }
+
     public void removeFileListener(Path absolute) {
         openFiles.remove(absolute);
     }
@@ -151,6 +180,7 @@ public class SocketConnection {
         }
         openDevices.clear();
 
+        stopKeepAlive();
         removeAllFileListeners();
         stopDeviceListening();
         StatusMonitor.stopListening(this);

@@ -162,6 +162,8 @@ public class PrintSocketServer {
 
                     // Disable SNI checks for easier print-server testing (replicates Jetty 9.x behavior)
                     HttpConfiguration httpsConfig = new HttpConfiguration();
+                    // Increase default 8192 -> 16384 per #1459
+                    httpsConfig.setRequestHeaderSize(16384);
                     SecureRequestCustomizer customizer = new SecureRequestCustomizer();
                     customizer.setSniHostCheck(sniStrict);
                     httpsConfig.addCustomizer(customizer);

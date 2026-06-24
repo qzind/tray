@@ -23,7 +23,7 @@ VIAddVersionKey "FileDescription" "${project.name}"
 VIAddVersionKey "ProductName" "${project.name}"
 VIAddVersionKey "ProductVersion" "${build.version}"
 VIAddVersionKey "CompanyName" "${vendor.company}"
-VIAddVersionKey "LegalCopyright" "Copyright © ${YEAR}"
+VIAddVersionKey "LegalCopyright" "Copyright ${U+A9} ${YEAR}"
 VIAddVersionKey "LegalTrademarks" "${vendor.company}"
 VIAddVersionKey "OriginalFilename" "${project.filename}.exe"
 

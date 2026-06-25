@@ -53,6 +53,7 @@ public class ByteUtilities {
     public static byte[] hexStringToByteArray(String hex) throws NumberFormatException {
         byte[] data = new byte[0];
         if (hex != null && !hex.isEmpty()) {
+            hex = hex.replaceAll("\\s+", ""); // Remove all whitespace
             String[] split;
             if (hex.length() > 2) {
                 if (hex.length() >= 3 && hex.contains("x")) {

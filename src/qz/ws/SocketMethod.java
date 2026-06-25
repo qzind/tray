@@ -55,8 +55,12 @@ public enum SocketMethod {
     NETWORKING_HOSTNAME("networking.hostname", true),
     NETWORKING_DEVICE_LEGACY("websocket.getNetworkInfo", true),
     GET_VERSION("getVersion", false),
-
     WEBSOCKET_STOP("websocket.stop", false),
+
+    SHTRIH_STATUS("shtrih.status", true, "access Shtrih-M scale status"),
+    SHTRIH_SYNC("shtrih.syncProducts", true, "sync products to Shtrih-M scale"),
+    SHTRIH_LIST("shtrih.listProducts", true, "list products from Shtrih-M scale"),
+    SHTRIH_CLEAR("shtrih.clearProducts", true, "clear products from Shtrih-M scale"),
 
     INVALID("", false);
 

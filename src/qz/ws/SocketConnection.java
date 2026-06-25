@@ -23,8 +23,8 @@ public class SocketConnection {
 
     // serial port -> open SerialIO
     private final HashMap<String,SerialIO> openSerialPorts = new HashMap<>();
-    // socket 'host:port' -> open ProtocolIO
-    private final HashMap<String,SocketIO> openNetworkSockets = new HashMap<>();
+    // socket 'host:port' -> open NetworkIO
+    private final HashMap<String,NetworkIO> openNetworkSockets = new HashMap<>();
 
     // absolute path -> open file listener
     private final HashMap<Path,FileIO> openFiles = new HashMap<>();
@@ -59,11 +59,11 @@ public class SocketConnection {
     }
 
 
-    public void addNetworkSocket(String location, SocketIO io) {
+    public void addNetworkSocket(String location, NetworkIO io) {
         openNetworkSockets.put(location, io);
     }
 
-    public SocketIO getNetworkSocket(String location) {
+    public NetworkIO getNetworkSocket(String location) {
         return openNetworkSockets.get(location);
     }
 
@@ -140,7 +140,7 @@ public class SocketConnection {
         }
         openSerialPorts.clear();
 
-        for(SocketIO pio : openNetworkSockets.values()) {
+        for(NetworkIO pio : openNetworkSockets.values()) {
             pio.close();
         }
         openNetworkSockets.clear();

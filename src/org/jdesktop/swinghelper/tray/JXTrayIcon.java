@@ -174,15 +174,13 @@ public class JXTrayIcon extends TrayIcon {
 
                 return new Dimension(iconSize.width * macScale, iconSize.height * macScale);
             case WINDOWS:
-                if(Constants.JAVA_VERSION.getMajorVersion() >= 9) {
-                    // JDK9+ required for HiDPI tray icons on Windows
-                    double winScale = WindowsUtilities.getScaleFactor();
+                // Required for HiDPI tray icons on Windows
+                double winScale = WindowsUtilities.getScaleFactor();
 
-                    // Handle undocumented HiDPI icon support
-                    // Requires TrayIcon.setImageAutoSize(true);
-                    iconSize.width *= winScale;
-                    iconSize.height *= winScale;
-                }
+                // Handle undocumented HiDPI icon support
+                // Requires TrayIcon.setImageAutoSize(true);
+                iconSize.width *= winScale;
+                iconSize.height *= winScale;
                 break;
         }
         return iconSize;

@@ -79,6 +79,7 @@ public class LinkLabel extends JButton implements Themeable {
     public void refresh() {
         setForeground(Constants.TRUSTED_COLOR);
         setBorderPainted(false);
+        setContentAreaFilled(false);
         setBorder(null);
         setOpaque(false);
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));

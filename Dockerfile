@@ -1,4 +1,4 @@
-FROM openjdk:11 as build
+FROM openjdk:25 as build
 RUN apt-get update
 RUN apt-get install -y ant nsis makeself
 COPY . /usr/src/tray

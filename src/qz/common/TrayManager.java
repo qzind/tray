@@ -70,6 +70,8 @@ public class TrayManager {
 
     // Need a class reference to this so we can set it from the request dialog window
     private JCheckBoxMenuItem anonymousItem;
+    private JCheckBoxMenuItem previewItem;
+    private JCheckBoxMenuItem monocleItem;
 
     // The name this UI component will use, i.e "QZ Print 1.9.0"
     private final String name;
@@ -118,7 +120,7 @@ public class TrayManager {
         shortcutCreator = ShortcutCreator.getInstance();
 
         SystemUtilities.setSystemLookAndFeel(headless);
-        iconCache = new IconCache();
+        iconCache = IconCache.getInstance();
 
         if (SystemUtilities.isSystemTraySupported(headless)) { // UI mode with tray
             switch(SystemUtilities.getOs()) {
@@ -292,7 +294,14 @@ public class TrayManager {
         notificationsItem.addActionListener(notificationsListener);
         diagnosticMenu.add(notificationsItem);
 
-        JCheckBoxMenuItem monocleItem = new JCheckBoxMenuItem("Use Monocle for HTML");
+        previewItem = new JCheckBoxMenuItem("Preview HTML Prints");
+        previewItem.setToolTipText("Preview all HTML prints and optionally resize the content.");
+        previewItem.setMnemonic(KeyEvent.VK_P);
+        previewItem.setState(getPref(TRAY_PREVIEW));
+        diagnosticMenu.add(previewItem);
+        previewItem.addActionListener(previewListener);
+
+        monocleItem = new JCheckBoxMenuItem("Use Monocle for HTML");
         monocleItem.setToolTipText("Use monocle platform for HTML printing (restart required)");
         monocleItem.setMnemonic(KeyEvent.VK_U);
         monocleItem.setState(getPref(TRAY_MONOCLE));
@@ -300,6 +309,10 @@ public class TrayManager {
             log.warn("Monocle engine is not available for this Java version");
             monocleItem.setEnabled(false);
             monocleItem.setToolTipText("Monocle HTML engine is not available.");
+        }
+        if (previewItem.getState() && monocleItem.isEnabled()) {
+            monocleItem.setEnabled(false);
+            monocleItem.setToolTipText("Disabled while Preview HTML Prints is enabled.");
         }
         monocleItem.addActionListener(monocleListener);
 
@@ -391,13 +404,66 @@ public class TrayManager {
         }
     };
 
+    private final ActionListener previewListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
+            boolean previewEnabled = j.getState();
+            prefs.setProperty(TRAY_PREVIEW, previewEnabled);
+            String warning = null;
+
+            // Owner policy: enabling preview must disable Monocle and lock the toggle.
+            if (previewEnabled && getPref(TRAY_MONOCLE)) {
+                prefs.setProperty(TRAY_MONOCLE, false);
+                if (monocleItem != null) {
+                    monocleItem.setState(false);
+                }
+                warning = String.format(
+                        "Preview HTML Prints requires Monocle to be disabled.%nA restart of %s is required to ensure this feature is disabled.",
+                        Constants.ABOUT_TITLE);
+            }
+
+            if (monocleItem != null) {
+                if (previewEnabled) {
+                    monocleItem.setEnabled(false);
+                    monocleItem.setToolTipText("Disabled while Preview HTML Prints is enabled.");
+                } else {
+                    monocleItem.setEnabled(true);
+                    monocleItem.setToolTipText("Use monocle platform for HTML printing (restart required)");
+                }
+            }
+
+            if (warning != null) {
+                displayWarningMessage(warning);
+            }
+        }
+    };
+
     private final ActionListener monocleListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
             JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
+            String warning = null;
+
+            // Owner policy: if Monocle is enabled, preview must be turned off.
+            if (j.getState() && getPref(TRAY_PREVIEW)) {
+                prefs.setProperty(TRAY_PREVIEW, false);
+                if (previewItem != null) {
+                    previewItem.setState(false);
+                }
+                warning = "Use Monocle for HTML disables Preview HTML Prints.";
+            }
+
             prefs.setProperty(TRAY_MONOCLE, j.getState());
-            displayWarningMessage(String.format("A restart of %s is required to ensure this feature is %sabled.",
-                                                Constants.ABOUT_TITLE, j.getState()? "en":"dis"));
+            String restart = String.format("A restart of %s is required to ensure this feature is %sabled.",
+                                           Constants.ABOUT_TITLE, j.getState()? "en":"dis");
+            if (warning != null) {
+                warning = warning + System.lineSeparator() + restart;
+            } else {
+                warning = restart;
+            }
+
+            displayWarningMessage(warning);
         }
     };
 
@@ -660,6 +726,10 @@ public class TrayManager {
 
     public boolean isMonoclePreferred() {
         return getPref(TRAY_MONOCLE);
+    }
+
+    public boolean isPreviewPreferred() {
+        return getPref(TRAY_PREVIEW);
     }
 
     public boolean isHeadless() {

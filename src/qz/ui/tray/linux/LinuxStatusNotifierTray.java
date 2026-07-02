@@ -7,6 +7,7 @@ import org.freedesktop.dbus.connections.impl.DBusConnectionBuilder;
 import org.freedesktop.dbus.interfaces.DBus;
 import qz.ui.tray.linux.menu.LinuxDbusMenu;
 
+import java.awt.TrayIcon;
 import java.io.IOException;
 
 public class LinuxStatusNotifierTray implements AutoCloseable {
@@ -14,6 +15,7 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
     private static final Logger log = LogManager.getLogger(LinuxStatusNotifierTray.class);
 
     private final DBusConnection connection;
+    private final LinuxNotifications notifications;
     // Closing this registration removes the NameOwnerChanged listener before disconnecting
     private final AutoCloseable watcherRegistration;
     // D-Bus signal handlers run outside the Swing thread
@@ -24,11 +26,15 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         String statusNotifierWatcher = probe.getStatusNotifierWatcher();
         String itemService = getItemServicePrefix(statusNotifierWatcher) + ProcessHandle.current().pid();
         String iconThemePath = LinuxSniIconTheme.prepare();
+        String pngIconPath = LinuxSniIconTheme.getPngIconPath(iconThemePath);
         // Cinnamon's xapp-sn-watcher can fail to resolve a private icon theme
         // Use its supported absolute path handling for the generated PNG
         String iconName = probe.isCinnamon()
-                ? LinuxSniIconTheme.getPngIconPath(iconThemePath)
+                ? pngIconPath
                 : LinuxStatusNotifierItem.getThemedIconName();
+        // Notification daemons such as xfce4-notifyd do not resolve the
+        // StatusNotifier IconThemePath, so use an absolute PNG for appIcon.
+        String notificationIcon = pngIconPath;
         LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath, iconName);
 
         // Export the complete item before registration so the watcher can
@@ -79,10 +85,17 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
             throw e;
         }
         connection = newConnection;
+        notifications = new LinuxNotifications(connection, notificationIcon);
         watcherRegistration = newWatcherRegistration;
 
         log.info("Registered StatusNotifier item {} at {}", itemService, item.getObjectPath());
         log.info("Published StatusNotifier icon theme path {}", iconThemePath);
+    }
+
+    public void displayMessage(String caption, String text, TrayIcon.MessageType level) {
+        if(!closed) {
+            notifications.displayMessage(caption, text, level);
+        }
     }
 
     private static String getItemServicePrefix(String watcher) {

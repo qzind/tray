@@ -66,7 +66,6 @@ public class TrayManager {
 
     // Custom swing pop-up menu
     private TrayType tray;
-    // Keep the Linux StatusNotifier D-Bus connection alive
     private LinuxStatusNotifierTray statusNotifierTray;
 
     private ConfirmDialog confirmDialog;
@@ -714,14 +713,21 @@ public class TrayManager {
      */
     private void displayMessage(final String caption, final String text, final TrayIcon.MessageType level) {
         if (!isHeadless()) {
-            if (tray != null) {
-                SwingUtilities.invokeLater(() -> {
-                    boolean showAllNotifications = getPref(TRAY_NOTIFICATIONS);
-                    if (showAllNotifications || level != TrayIcon.MessageType.INFO) {
+            SwingUtilities.invokeLater(() -> {
+                boolean showAllNotifications = getPref(TRAY_NOTIFICATIONS);
+                if (showAllNotifications || level != TrayIcon.MessageType.INFO) {
+                    if (tray != null) {
                         tray.displayMessage(caption, text, level);
+                    } else if(statusNotifierTray != null) {
+                        // QUESTION: Why not add SNI to TrayType?
+                        // REASONS:
+                        // 1) TrayType wraps AWT/Swing trays
+                        // 2) SNI owns d-bus objects and lifecycle separately
+                        // 3) This approach avoids a broader tray/menu refactor
+                        statusNotifierTray.displayMessage(caption, text, level);
                     }
-                });
-            }
+                }
+            });
         } else {
             log.info("{}: [{}] {}", caption, level, text);
         }

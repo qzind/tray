@@ -5,7 +5,7 @@ cd "$(dirname "$0")/../.."
 
 # Manual desktop smoke for native Linux notifications
 # This needs a live user session bus and notification daemon
-# Keep it out of automated tests because CI may be headless
+# Should be ideally kept out of automated tests because CI may be headless
 
 ANT_HOME="${ANT_HOME:-/usr/share/ant}"
 MONITOR_LOG="${MONITOR_LOG:-/tmp/qz-linux-notifications-smoke.log}"
@@ -14,9 +14,11 @@ MONITOR_LOG="${MONITOR_LOG:-/tmp/qz-linux-notifications-smoke.log}"
 # Override this when checking distro-specific icon behavior
 ICON_PATH="${ICON_PATH:-$(pwd)/src/qz/ui/resources/qz-default-32.png}"
 
-echo "== Compile checks =="
-"$ANT_HOME/bin/ant" compile-socket
-"$ANT_HOME/bin/ant" compile-tests
+# Compile checks are part of the work item, but not this smoke
+# This script talks to d-bus directly and does not load QZ classes
+# Commands left here so paired checks can be run if needed
+# "$ANT_HOME/bin/ant" compile-socket
+# "$ANT_HOME/bin/ant" compile-tests
 
 echo "== Notification service =="
 # Fail early when the desktop has no Freedesktop notification service

@@ -55,11 +55,13 @@ public class LinuxNotifications {
         }
         try {
             log.debug("Sending Linux desktop notification '{}' with level {}", caption, level);
+            // TrayManager caption includes VERSION for AWT tooltip/dialog use
+            // Native notifications should show the stable app title instead
             UInt32 notificationId = notifications.sendNotification(
                     Constants.ABOUT_TITLE,
                     NO_REPLACEMENT,
                     appIcon,
-                    caption,
+                    Constants.ABOUT_TITLE,
                     text,
                     NO_ACTIONS,
                     getHints(level),

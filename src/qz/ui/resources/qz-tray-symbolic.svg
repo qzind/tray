@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg id="svg4208" xmlns="http://www.w3.org/2000/svg" height="128" width="128" version="1.1" viewBox="0 0 128 128">
   <defs>
-    <style id="current-color-scheme" type="text/css">
-      .ColorScheme-Text { color: #2e3436; }
-      @media (prefers-color-scheme: dark) {
-        .ColorScheme-Text { color: #eeeeec; }
-      }
-    </style>
+    <style id="current-color-scheme" type="text/css">.ColorScheme-Text { color: #2e3436; }</style>
   </defs>
   <path id="rect3864" class="ColorScheme-Text" fill="currentColor" d="M 127.82 59.536 L 127.031 63.48 L 121.51 95.818 L 56.045 126.579 L 56.045 85.565 C 56.045 85.387 56.043 85.209 56.038 85.03 C 56.039 85.106 56.039 85.182 56.039 85.259 L 56.04 85.26 L 56.04 126.58 L 12.063 92.411 L 0.069 24.074 L 1.364 25.279 L 0.045 24.044 L 73.397 1.959 L 121.51 42.185 L 122.299 42.974 C 125.454 46.129 127.82 50.861 127.82 57.171 Z M 56.83 54.801 C 56.83 54.801 56.83 54.8 56.83 54.8 L 56.83 54.8 Z M 93.901 41.392 C 93.901 41.392 93.901 19.307 71.816 6.688 L 35.534 17.73 C 36.323 17.73 58.406 31.927 56.83 54.8 Z"/>
 </svg>

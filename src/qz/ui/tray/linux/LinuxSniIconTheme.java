@@ -42,6 +42,15 @@ class LinuxSniIconTheme {
                 .toString();
     }
 
+    static String getSvgIconPath(String themePath) {
+        return Path.of(themePath)
+                .resolve("hicolor")
+                .resolve("scalable")
+                .resolve("apps")
+                .resolve(SYMBOLIC_ICON_NAME + ".svg")
+                .toString();
+    }
+
     private static Path getThemePath() throws IOException {
         return FileUtilities.TEMP_DIR != null
                 ? FileUtilities.TEMP_DIR.resolve("sni-icons")

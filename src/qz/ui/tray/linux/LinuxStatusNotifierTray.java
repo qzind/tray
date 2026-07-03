@@ -32,9 +32,9 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         String iconName = probe.isCinnamon()
                 ? pngIconPath
                 : LinuxStatusNotifierItem.getThemedIconName();
-        // Notification daemons such as xfce4-notifyd do not resolve the
-        // StatusNotifier IconThemePath, so use an absolute PNG for appIcon.
-        String notificationIcon = pngIconPath;
+        // Notification daemons do not resolve the StatusNotifier IconThemePath
+        // Use the generated SVG path directly while testing appIcon behavior
+        String notificationIcon = LinuxSniIconTheme.getSvgIconPath(iconThemePath);
         LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath, iconName);
 
         // Export the complete item before registration so the watcher can

@@ -33,8 +33,8 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
                 ? pngIconPath
                 : LinuxStatusNotifierItem.getThemedIconName();
         // Notification daemons do not resolve the StatusNotifier IconThemePath
-        // Use the generated PNG path for predictable cross-desktop rendering
-        String notificationIcon = pngIconPath;
+        // Freedesktop Notifications expects file:// URIs or themed names
+        String notificationIcon = LinuxSniIconTheme.getPngIconUri(iconThemePath);
         LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath, iconName);
 
         // Export the complete item before registration so the watcher can

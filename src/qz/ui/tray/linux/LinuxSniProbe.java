@@ -135,6 +135,10 @@ public class LinuxSniProbe {
         return currentDesktop.toLowerCase(Locale.ENGLISH).contains("cinnamon");
     }
 
+    boolean isLxqt() {
+        return currentDesktop.toLowerCase(Locale.ENGLISH).contains("lxqt");
+    }
+
     private String getMissingWatcherSuggestion() {
         String desktop = currentDesktop.toLowerCase(Locale.ENGLISH);
         String prefix = "No StatusNotifier host detected. ";

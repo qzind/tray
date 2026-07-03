@@ -9,7 +9,6 @@ import qz.ui.tray.linux.menu.LinuxDbusMenu;
 
 import java.awt.TrayIcon;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class LinuxStatusNotifierTray implements AutoCloseable {
 
@@ -17,7 +16,6 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
 
     private final DBusConnection connection;
     private final LinuxNotifications notifications;
-    private final LinuxColorScheme colorScheme;
     // Closing this registration removes the NameOwnerChanged listener before disconnecting
     private final AutoCloseable watcherRegistration;
     // D-Bus signal handlers run outside the Swing thread
@@ -29,15 +27,14 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         String itemService = getItemServicePrefix(statusNotifierWatcher) + ProcessHandle.current().pid();
         String iconThemePath = LinuxSniIconTheme.prepare();
         String pngIconPath = LinuxSniIconTheme.getPngIconPath(iconThemePath);
-        String symbolicNotificationIcon = LinuxSniIconTheme.getSvgIconPath(iconThemePath);
-        String lightThemeNotificationIcon = LinuxSniIconTheme.getDarkNotificationIconPath(iconThemePath);
-        String darkThemeNotificationIcon = LinuxSniIconTheme.getLightNotificationIconPath(iconThemePath);
-        AtomicReference<String> notificationIcon = new AtomicReference<>(pngIconPath);
         // Cinnamon's xapp-sn-watcher can fail to resolve a private icon theme
         // Use its supported absolute path handling for the generated PNG
         String iconName = probe.isCinnamon()
                 ? pngIconPath
                 : LinuxStatusNotifierItem.getThemedIconName();
+        // Notification daemons do not resolve the StatusNotifier IconThemePath
+        // Use the generated PNG path for predictable cross-desktop rendering
+        String notificationIcon = pngIconPath;
         LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath, iconName);
 
         // Export the complete item before registration so the watcher can
@@ -57,11 +54,7 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
                 .withShared(false)
                 .build();
         AutoCloseable newWatcherRegistration = null;
-        LinuxColorScheme newColorScheme = null;
         try {
-            newColorScheme = LinuxColorScheme.watch(newConnection, preference ->
-                    notificationIcon.set(getNotificationIcon(preference, pngIconPath,
-                            symbolicNotificationIcon, lightThemeNotificationIcon, darkThemeNotificationIcon)));
             newConnection.requestBusName(itemService);
             // LinuxDbusMenu owns signal creation while this connection owns delivery
             menu.setSignalEmitter(newConnection::sendMessage);
@@ -87,14 +80,12 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
             registerStatusNotifierItem(newConnection, statusNotifierWatcher, itemService);
         }
         catch(Exception e) {
-            closeColorScheme(newColorScheme);
             closeWatcherRegistration(newWatcherRegistration);
             newConnection.close();
             throw e;
         }
         connection = newConnection;
-        colorScheme = newColorScheme;
-        notifications = new LinuxNotifications(connection, notificationIcon::get);
+        notifications = new LinuxNotifications(connection, notificationIcon);
         watcherRegistration = newWatcherRegistration;
 
         log.info("Registered StatusNotifier item {} at {}", itemService, item.getObjectPath());
@@ -113,23 +104,6 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         return watcher.startsWith("org.freedesktop.")
                 ? "org.freedesktop.StatusNotifierItem-"
                 : "org.kde.StatusNotifierItem-";
-    }
-
-    private static String getNotificationIcon(LinuxColorScheme.Preference preference, String pngIconPath,
-                                              String symbolicNotificationIcon, String lightThemeNotificationIcon,
-                                              String darkThemeNotificationIcon) {
-        // Portal values describe the preferred UI color scheme
-        // Choose the opposite icon color for notification contrast
-        if(preference == LinuxColorScheme.Preference.PREFER_DARK) {
-            return darkThemeNotificationIcon;
-        }
-        if(preference == LinuxColorScheme.Preference.PREFER_LIGHT) {
-            return lightThemeNotificationIcon;
-        }
-        if(preference == LinuxColorScheme.Preference.NO_PREFERENCE) {
-            return symbolicNotificationIcon;
-        }
-        return pngIconPath;
     }
 
     private static void registerStatusNotifierItem(DBusConnection connection, String watcherService,
@@ -163,19 +137,7 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         closed = true;
         // Remove the callback first so a watcher change cannot race with disconnection
         closeWatcherRegistration(watcherRegistration);
-        closeColorScheme(colorScheme);
         connection.close();
-    }
-
-    private void closeColorScheme(AutoCloseable registration) {
-        if(registration != null) {
-            try {
-                registration.close();
-            }
-            catch(Exception e) {
-                log.warn("Unable to close Linux color-scheme listener", e);
-            }
-        }
     }
 
     private void closeWatcherRegistration(AutoCloseable registration) {

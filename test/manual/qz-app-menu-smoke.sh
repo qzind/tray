@@ -14,8 +14,10 @@ LAUNCH_CMD="$ARTIFACT_DIR/launch-command.txt"
 SMOKE_SUMMARY="$ARTIFACT_DIR/summary.txt"
 CP="out/build/qz-tray:deps/ivy/*:deps/manual/*"
 
+# Keep the generated logs in tmp
 mkdir -p "$ARTIFACT_DIR"
 
+# Save the exact app command for review notes
 cat > "$LAUNCH_CMD" <<EOF
 java \\
   -Dtray.notifications=true \\
@@ -24,6 +26,7 @@ java \\
 EOF
 
 echo "== Launch qz.App =="
+# Use the real entry point and app-selected ports
 java \
   -Dtray.notifications=true \
   -cp "$CP" \
@@ -37,6 +40,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "== Wait for notification send =="
+# Wait until notification wiring has run
 for _ in $(seq 1 45); do
   if grep -q "Sent Linux desktop notification" "$APP_STDOUT"; then
     break
@@ -50,6 +54,7 @@ if ! grep -q "Sent Linux desktop notification" "$APP_STDOUT"; then
   exit 1
 fi
 
+# Extract the exported SNI service name from app logs
 service=$(sed -n 's/.*Registered StatusNotifier item \([^ ]*\) at.*/\1/p' "$APP_STDOUT" | tail -n 1)
 if [ -z "$service" ]; then
   echo "No StatusNotifier item service found"
@@ -58,11 +63,13 @@ if [ -z "$service" ]; then
 fi
 
 echo "== Introspect SNI menu =="
+# Prove DBusMenu is still exported after Notify
 busctl --user introspect "$service" /MenuBar com.canonical.dbusmenu > "$MENU_LOG"
 grep -F "GetLayout" "$MENU_LOG"
 grep -F "Event" "$MENU_LOG"
 grep -F "AboutToShow" "$MENU_LOG"
 
+# Summarize the review artifacts in one file
 {
   echo "Artifact directory: $ARTIFACT_DIR"
   echo "Launch command: $LAUNCH_CMD"

@@ -16,12 +16,15 @@ DBUS_SNIPPET="$ARTIFACT_DIR/dbus-notify-snippet.txt"
 SMOKE_SUMMARY="$ARTIFACT_DIR/summary.txt"
 CP="out/build/qz-tray:deps/ivy/*:deps/manual/*"
 
+# Keep the generated logs in tmp
 mkdir -p "$ARTIFACT_DIR"
 
 echo "== Linux SNI probe =="
+# Prove this desktop should take the SNI path
 java -cp "$CP" qz.ui.tray.linux.LinuxSniProbe > "$PROBE_LOG" 2>&1
 cat "$PROBE_LOG"
 
+# Save the exact app command for review notes
 cat > "$LAUNCH_CMD" <<EOF
 timeout 25s java \\
   -Dtray.notifications=true \\
@@ -30,6 +33,7 @@ timeout 25s java \\
 EOF
 
 echo "== Start D-Bus monitor =="
+# Capture the real app-generated Notify call
 timeout 30s dbus-monitor --session \
   "type='method_call',interface='org.freedesktop.Notifications',member='Notify'" \
   > "$MONITOR_LOG" 2>&1 &
@@ -44,6 +48,7 @@ trap cleanup EXIT
 sleep 1
 
 echo "== Launch qz.App =="
+# Use the real entry point and app-selected ports
 set +e
 timeout 25s java \
   -Dtray.notifications=true \
@@ -64,6 +69,7 @@ if [ "$app_status" -ne 124 ]; then
 fi
 
 echo "== Validate captured notification =="
+# Prove the payload came from the Java app path
 grep -F "member=Notify" "$MONITOR_LOG"
 grep -F 'string "QZ Tray"' "$MONITOR_LOG"
 grep -F "qz-tray.png" "$MONITOR_LOG"
@@ -81,9 +87,11 @@ if grep -E "Unable to (connect to|send) Linux desktop notifications" "$APP_STDOU
   exit 1
 fi
 
+# Keep a compact D-Bus excerpt for notes
 grep -E 'member=Notify|string "QZ Tray"|qz-tray.png|Server started on port\\(s\\)|int32 -1|byte 1' \
   "$MONITOR_LOG" > "$DBUS_SNIPPET"
 
+# Summarize the review artifacts in one file
 {
   echo "Artifact directory: $ARTIFACT_DIR"
   echo "qz.App timeout status: $app_status"

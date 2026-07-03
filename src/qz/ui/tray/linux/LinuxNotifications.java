@@ -26,9 +26,8 @@ public class LinuxNotifications {
     // 0 means this notification replaces nothing
     private static final UInt32 NO_REPLACEMENT = new UInt32(0);
     private final FreedesktopNotifications notifications;
-    // NOTE: It was noticed that callers should
-    // pass an absolute PNG (e.g. as tested for XFCE notifyd
-    // where SNI IconThemePath was not resolved by notification daemon)
+    // Notification daemons do not resolve SNI IconThemePath
+    // Pass a concrete icon path instead of qz-tray-symbolic
     private final String appIcon;
 
     public LinuxNotifications(DBusConnection connection, String appIcon) {

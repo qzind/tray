@@ -4,11 +4,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.freedesktop.dbus.connections.impl.DBusConnection;
 import org.freedesktop.dbus.exceptions.DBusException;
+import org.freedesktop.dbus.interfaces.DBus;
 import org.freedesktop.dbus.types.UInt32;
 import org.freedesktop.dbus.types.Variant;
 import qz.common.Constants;
 
 import java.awt.TrayIcon;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +21,8 @@ public class LinuxNotifications {
     // See: https://specifications.freedesktop.org/notification/latest/protocol.html
     private static final String NOTIFICATIONS_SERVICE = "org.freedesktop.Notifications";
     private static final String NOTIFICATIONS_PATH = "/org/freedesktop/Notifications";
+    private static final String DBUS_SERVICE = "org.freedesktop.DBus";
+    private static final String DBUS_PATH = "/org/freedesktop/DBus";
     // Actions are id/label pairs; QZ tray notices need none
     private static final String[] NO_ACTIONS = new String[0];
     // -1 lets the notification server choose expiry
@@ -33,12 +37,16 @@ public class LinuxNotifications {
     public LinuxNotifications(DBusConnection connection, String appIcon) {
         FreedesktopNotifications remoteNotifications = null;
         try {
-            remoteNotifications = connection.getRemoteObject(
-                    NOTIFICATIONS_SERVICE,
-                    NOTIFICATIONS_PATH,
-                    FreedesktopNotifications.class,
-                    false
-            );
+            if(hasNotificationServer(connection)) {
+                remoteNotifications = connection.getRemoteObject(
+                        NOTIFICATIONS_SERVICE,
+                        NOTIFICATIONS_PATH,
+                        FreedesktopNotifications.class,
+                        false
+                );
+            } else {
+                log.info("Linux desktop notifications unavailable");
+            }
         }
         catch(DBusException e) {
             // Missing notification service must not break tray startup
@@ -46,6 +54,14 @@ public class LinuxNotifications {
         }
         this.notifications = remoteNotifications;
         this.appIcon = appIcon;
+    }
+
+    private boolean hasNotificationServer(DBusConnection connection) throws DBusException {
+        DBus dbus = connection.getRemoteObject(DBUS_SERVICE, DBUS_PATH, DBus.class, false);
+        // getRemoteObject can return a proxy before the service exists
+        // MATE may expose notifyd only as a D-Bus activatable service
+        return dbus.NameHasOwner(NOTIFICATIONS_SERVICE) ||
+                Arrays.asList(dbus.ListActivatableNames()).contains(NOTIFICATIONS_SERVICE);
     }
 
     public void displayMessage(String caption, String text, TrayIcon.MessageType level) {

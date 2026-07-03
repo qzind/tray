@@ -27,9 +27,9 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         String itemService = getItemServicePrefix(statusNotifierWatcher) + ProcessHandle.current().pid();
         String iconThemePath = LinuxSniIconTheme.prepare();
         String pngIconPath = LinuxSniIconTheme.getPngIconPath(iconThemePath);
-        // Cinnamon's xapp-sn-watcher can fail to resolve a private icon theme
-        // Use its supported absolute path handling for the generated PNG
-        String iconName = probe.isCinnamon()
+        // Cinnamon and LXQt can fail to resolve private themed SVGs reliably
+        // Use their supported absolute path handling for the generated PNG
+        String iconName = (probe.isCinnamon() || probe.isLxqt())
                 ? pngIconPath
                 : LinuxStatusNotifierItem.getThemedIconName();
         // Notification daemons do not resolve the StatusNotifier IconThemePath

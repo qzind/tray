@@ -54,13 +54,11 @@ public class LinuxNotifications {
         }
         try {
             log.debug("Sending Linux desktop notification '{}' with level {}", caption, level);
-            // TrayManager caption includes VERSION for AWT tooltip/dialog use
-            // Native notifications should show the stable app title instead
             UInt32 notificationId = notifications.sendNotification(
                     Constants.ABOUT_TITLE,
                     NO_REPLACEMENT,
                     appIcon,
-                    Constants.ABOUT_TITLE,
+                    getSummary(caption, level),
                     text,
                     NO_ACTIONS,
                     getHints(level),
@@ -71,6 +69,23 @@ public class LinuxNotifications {
         catch(Exception e) {
             log.warn("Unable to send Linux desktop notification", e);
         }
+    }
+
+    private String getSummary(String caption, TrayIcon.MessageType level) {
+        // GNOME HIG asks titles to summarize the event
+        // Windows uses app attribution separately from text
+        // https://developer.gnome.org/hig/patterns/feedback/notifications.html
+        // https://learn.microsoft.com/en-us/windows/apps/develop/notifications/app-notifications/app-notifications-content
+        if(level == TrayIcon.MessageType.ERROR) {
+            return "Problem";
+        }
+        if(level == TrayIcon.MessageType.WARNING) {
+            return "Attention";
+        }
+        if(level == TrayIcon.MessageType.INFO) {
+            return "Update";
+        }
+        return caption;
     }
 
     private Map<String, Variant<?>> getHints(TrayIcon.MessageType level) {

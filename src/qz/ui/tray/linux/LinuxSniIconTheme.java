@@ -13,6 +13,10 @@ class LinuxSniIconTheme {
 
     private static final String ICON_NAME = "qz-tray";
     private static final String SYMBOLIC_ICON_NAME = "qz-tray-symbolic";
+    private static final String NOTIFICATION_DARK_ICON_NAME = "qz-tray-notification-dark";
+    private static final String NOTIFICATION_LIGHT_ICON_NAME = "qz-tray-notification-light";
+    private static final String DARK_ICON_COLOR = "#2e3436";
+    private static final String LIGHT_ICON_COLOR = "#eeeeec";
     // Tray hosts resolve the exported IconName exactly, so the resource
     // is named with the same stable freedesktop-style symbolic icon name.
     private static final String PNG_RESOURCE_PATH = "/qz/ui/resources/qz-default-%s.png";
@@ -27,6 +31,8 @@ class LinuxSniIconTheme {
             copyIcon(size, themePath);
         }
         copySymbolicIcons(themePath);
+        writeNotificationIcon(themePath, NOTIFICATION_DARK_ICON_NAME, DARK_ICON_COLOR);
+        writeNotificationIcon(themePath, NOTIFICATION_LIGHT_ICON_NAME, LIGHT_ICON_COLOR);
 
         return themePath.toString();
     }
@@ -49,6 +55,14 @@ class LinuxSniIconTheme {
                 .resolve("apps")
                 .resolve(SYMBOLIC_ICON_NAME + ".svg")
                 .toString();
+    }
+
+    static String getDarkNotificationIconPath(String themePath) {
+        return getNotificationIconPath(themePath, NOTIFICATION_DARK_ICON_NAME).toString();
+    }
+
+    static String getLightNotificationIconPath(String themePath) {
+        return getNotificationIconPath(themePath, NOTIFICATION_LIGHT_ICON_NAME).toString();
     }
 
     private static Path getThemePath() throws IOException {
@@ -130,6 +144,31 @@ class LinuxSniIconTheme {
 
             Files.createDirectories(iconPath.getParent());
             Files.copy(in, iconPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private static void writeNotificationIcon(Path themePath, String iconName, String color) throws IOException {
+        Path iconPath = getNotificationIconPath(themePath.toString(), iconName);
+        Files.createDirectories(iconPath.getParent());
+        Files.writeString(iconPath, getColorizedSymbolicSvg(color), StandardCharsets.UTF_8);
+    }
+
+    private static Path getNotificationIconPath(String themePath, String iconName) {
+        return Path.of(themePath)
+                .resolve("hicolor")
+                .resolve("scalable")
+                .resolve("apps")
+                .resolve(iconName + ".svg");
+    }
+
+    private static String getColorizedSymbolicSvg(String color) throws IOException {
+        try(InputStream in = LinuxSniIconTheme.class.getResourceAsStream(String.format(SVG_RESOURCE_PATH, SYMBOLIC_ICON_NAME))) {
+            if(in == null) {
+                throw new IOException(String.format("StatusNotifier SVG icon resource missing: %s", SYMBOLIC_ICON_NAME));
+            }
+            String svg = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            return svg.replaceFirst("(?s)<style id=\"current-color-scheme\" type=\"text/css\">.*?</style>",
+                    "<style id=\"current-color-scheme\" type=\"text/css\">.ColorScheme-Text { color: " + color + "; }</style>");
         }
     }
 

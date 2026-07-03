@@ -11,6 +11,7 @@ import qz.common.Constants;
 import java.awt.TrayIcon;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class LinuxNotifications {
 
@@ -28,9 +29,9 @@ public class LinuxNotifications {
     private final FreedesktopNotifications notifications;
     // Notification daemons do not resolve SNI IconThemePath
     // Pass a concrete icon path instead of qz-tray-symbolic
-    private final String appIcon;
+    private final Supplier<String> appIconSupplier;
 
-    public LinuxNotifications(DBusConnection connection, String appIcon) {
+    public LinuxNotifications(DBusConnection connection, Supplier<String> appIconSupplier) {
         FreedesktopNotifications remoteNotifications = null;
         try {
             remoteNotifications = connection.getRemoteObject(
@@ -45,7 +46,7 @@ public class LinuxNotifications {
             log.warn("Unable to connect to Linux desktop notifications", e);
         }
         this.notifications = remoteNotifications;
-        this.appIcon = appIcon;
+        this.appIconSupplier = appIconSupplier;
     }
 
     public void displayMessage(String caption, String text, TrayIcon.MessageType level) {
@@ -59,7 +60,7 @@ public class LinuxNotifications {
             UInt32 notificationId = notifications.sendNotification(
                     Constants.ABOUT_TITLE,
                     NO_REPLACEMENT,
-                    appIcon,
+                    appIconSupplier.get(),
                     Constants.ABOUT_TITLE,
                     text,
                     NO_ACTIONS,

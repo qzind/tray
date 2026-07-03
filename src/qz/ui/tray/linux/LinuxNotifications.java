@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.freedesktop.dbus.connections.impl.DBusConnection;
 import org.freedesktop.dbus.exceptions.DBusException;
+import org.freedesktop.dbus.exceptions.DBusExecutionException;
 import org.freedesktop.dbus.interfaces.DBus;
 import org.freedesktop.dbus.types.UInt32;
 import org.freedesktop.dbus.types.Variant;
@@ -30,6 +31,7 @@ public class LinuxNotifications {
     // 0 means this notification replaces nothing
     private static final UInt32 NO_REPLACEMENT = new UInt32(0);
     private final FreedesktopNotifications notifications;
+    private boolean unavailable;
     // Notification daemons do not resolve SNI IconThemePath
     // Pass a concrete icon path instead of qz-tray-symbolic
     private final String appIcon;
@@ -58,14 +60,19 @@ public class LinuxNotifications {
 
     private boolean hasNotificationServer(DBusConnection connection) throws DBusException {
         DBus dbus = connection.getRemoteObject(DBUS_SERVICE, DBUS_PATH, DBus.class, false);
-        // getRemoteObject can return a proxy before the service exists
-        // MATE may expose notifyd only as a D-Bus activatable service
-        return dbus.NameHasOwner(NOTIFICATIONS_SERVICE) ||
-                Arrays.asList(dbus.ListActivatableNames()).contains(NOTIFICATIONS_SERVICE);
+        if(dbus.NameHasOwner(NOTIFICATIONS_SERVICE)) {
+            return true;
+        }
+        if(Arrays.asList(dbus.ListActivatableNames()).contains(NOTIFICATIONS_SERVICE)) {
+            // MATE may expose notifyd only as activatable
+            dbus.StartServiceByName(NOTIFICATIONS_SERVICE, new UInt32(0));
+            return true;
+        }
+        return false;
     }
 
     public void displayMessage(String caption, String text, TrayIcon.MessageType level) {
-        if(notifications == null) {
+        if(notifications == null || unavailable) {
             return;
         }
         try {
@@ -82,9 +89,22 @@ public class LinuxNotifications {
             );
             log.debug("Sent Linux desktop notification {}", notificationId);
         }
+        catch(DBusExecutionException e) {
+            if(isMissingNotificationService(e)) {
+                unavailable = true;
+                log.warn("Linux desktop notifications unavailable: {}", e.getMessage());
+            } else {
+                log.warn("Unable to send Linux desktop notification", e);
+            }
+        }
         catch(Exception e) {
             log.warn("Unable to send Linux desktop notification", e);
         }
+    }
+
+    private boolean isMissingNotificationService(DBusExecutionException e) {
+        String message = e.getMessage();
+        return message != null && message.contains("Name \"" + NOTIFICATIONS_SERVICE + "\" does not exist");
     }
 
     private String getSummary(String caption, TrayIcon.MessageType level) {

@@ -42,6 +42,10 @@ class LinuxSniIconTheme {
                 .toString();
     }
 
+    static String getPngIconUri(String themePath) {
+        return Path.of(getPngIconPath(themePath)).toUri().toString();
+    }
+
     private static Path getThemePath() throws IOException {
         return FileUtilities.TEMP_DIR != null
                 ? FileUtilities.TEMP_DIR.resolve("sni-icons")

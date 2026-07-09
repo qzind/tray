@@ -38,6 +38,8 @@ public class IconCache {
     static final String ABOUT_LOGO_DARK_ID = "qz-logo-dark.png";
     // Reserved for generated inversion support
     static final String ABOUT_LOGO_INVERTED_ID = "qz-logo-inverted.png";
+    // Controls dark-mode About logo selection
+    static final String ABOUT_LOGO_DARK_MODE_PROPERTY = "qz.about.logo.darkMode";
     private static final int MAX_SINGLE_RESOURCE_SCALE = 3;
 
     /**
@@ -146,6 +148,25 @@ public class IconCache {
         }
     }
 
+    private enum AboutLogoDarkMode {
+        NONE,
+        ASSET,
+        INVERT,
+        AUTO;
+
+        private static AboutLogoDarkMode fromProperty() {
+            // Default to explicit assets so existing builds are unchanged
+            String value = System.getProperty(ABOUT_LOGO_DARK_MODE_PROPERTY, ASSET.name()).trim();
+            for(AboutLogoDarkMode mode : values()) {
+                if(mode.name().equalsIgnoreCase(value)) {
+                    return mode;
+                }
+            }
+            // Ignore unknown values and keep the safe default
+            return ASSET;
+        }
+    }
+
     private final HashMap<String,ImageIcon> imageIcons;
     private final HashMap<String,BufferedImage> images;
     private static final Color TRANSPARENT = new Color(0,0,0,0);
@@ -197,11 +218,25 @@ public class IconCache {
     }
 
     public ImageIcon getAboutLogo(boolean dark) {
-        // Prefer explicit dark asset when available
-        if(dark && imageIcons.containsKey(ABOUT_LOGO_DARK_ID)) {
-            return getIcon(ABOUT_LOGO_DARK_ID, true);
+        // Light mode always uses the normal About logo
+        if(!dark) {
+            return getIcon(Icon.LOGO_ICON);
         }
-        return getIcon(Icon.LOGO_ICON);
+
+        // Apply the configured dark-logo strategy
+        AboutLogoDarkMode mode = AboutLogoDarkMode.fromProperty();
+        switch(mode) {
+            case ASSET:
+                return getExplicitDarkAboutLogo();
+            case INVERT:
+                return getInvertedAboutLogo();
+            case AUTO:
+                // Prefer dark asset, otherwise generate inversion
+                return hasExplicitDarkAboutLogo() ? getExplicitDarkAboutLogo() : getInvertedAboutLogo();
+            case NONE:
+            default:
+                return getIcon(Icon.LOGO_ICON);
+        }
     }
 
     private ImageIcon getIcon(Icon i, boolean inferScale) {
@@ -228,6 +263,30 @@ public class IconCache {
         Dimension scaled = SystemUtilities.scaleWindowDimension(baseIcon.getIconWidth(), baseIcon.getIconHeight());
         ImageIcon scaledIcon = imageIcons.get(getScaledId(id, scaled.width));
         return scaledIcon == null ? baseIcon : scaledIcon;
+    }
+
+    private boolean hasExplicitDarkAboutLogo() {
+        return imageIcons.containsKey(ABOUT_LOGO_DARK_ID);
+    }
+
+    private ImageIcon getExplicitDarkAboutLogo() {
+        return hasExplicitDarkAboutLogo() ? getIcon(ABOUT_LOGO_DARK_ID, true) : getIcon(Icon.LOGO_ICON);
+    }
+
+    private ImageIcon getInvertedAboutLogo() {
+        // Generate once and reuse cached variants
+        if(!imageIcons.containsKey(ABOUT_LOGO_INVERTED_ID)) {
+            cacheInvertedAboutLogo();
+        }
+        return getIcon(ABOUT_LOGO_INVERTED_ID, true);
+    }
+
+    private void cacheInvertedAboutLogo() {
+        // Clone first so the normal logo cache is unchanged
+        BufferedImage inverted = ColorUtilities.invert(clone(images.get(Icon.LOGO_ICON.getId())));
+        imageIcons.put(ABOUT_LOGO_INVERTED_ID, new ImageIcon(inverted));
+        images.put(ABOUT_LOGO_INVERTED_ID, inverted);
+        cacheScaledImageVariants(ABOUT_LOGO_INVERTED_ID, inverted);
     }
 
     public ImageIcon getIcon(Icon i, Dimension size) {
@@ -310,7 +369,7 @@ public class IconCache {
         }
     }
 
-    // Mirror the existing 2x/3x cache behavior for generated resources
+    // 2x/3x cache behavior for generated resources
     private List<String> cacheScaledImageVariants(String id, BufferedImage bi) {
         List<String> cachedIds = new ArrayList<>();
         for(int scale = 2; scale <= MAX_SINGLE_RESOURCE_SCALE; scale++) {

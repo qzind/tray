@@ -189,6 +189,10 @@ public class IconCache {
         for(Icon i : Icon.values()) {
             for (String id : i.getIds()) {
                 BufferedImage bi = getImageResource(RESOURCES_DIR + id);
+                // Skip failed loads so null images never enter the cache
+                if (bi == null) {
+                    continue;
+                }
                 imageIcons.put(id, new ImageIcon(bi));
                 images.put(id, bi);
             }
@@ -276,20 +280,27 @@ public class IconCache {
 
     private ImageIcon getInvertedAboutLogo() {
         // Reuse the generated inverted logo after first request
-        if(!imageIcons.containsKey(ABOUT_LOGO_INVERTED_ID)) {
-            cacheInvertedAboutLogo();
+        if(!imageIcons.containsKey(ABOUT_LOGO_INVERTED_ID) && !tryCacheInvertedLogo()) {
+            return getIcon(Icon.LOGO_ICON);
         }
         return getIcon(ABOUT_LOGO_INVERTED_ID, true);
     }
 
-    private void cacheInvertedAboutLogo() {
+    private boolean tryCacheInvertedLogo() {
+        BufferedImage normalLogo = images.get(Icon.LOGO_ICON.getId());
+        if(normalLogo == null) {
+            log.warn("Unable to generate inverted About logo, normal logo is missing");
+            return false;
+        }
+
         // Clone before inversion because invert mutates the image
-        BufferedImage inverted = ColorUtilities.invert(clone(images.get(Icon.LOGO_ICON.getId())));
+        BufferedImage inverted = ColorUtilities.invert(clone(normalLogo));
         // Store inverted output separately from qz-logo.png
         imageIcons.put(ABOUT_LOGO_INVERTED_ID, new ImageIcon(inverted));
         images.put(ABOUT_LOGO_INVERTED_ID, inverted);
         // Scale from the generated image, not the normal logo
         cacheScaledImageVariants(ABOUT_LOGO_INVERTED_ID, inverted);
+        return true;
     }
 
     public ImageIcon getIcon(Icon i, Dimension size) {
@@ -337,7 +348,8 @@ public class IconCache {
      */
     private static BufferedImage getImageResource(String imagePath) {
         try {
-            InputStream is = IconCache.class.getResourceAsStream(imagePath.replaceAll("#", ""));
+            // Literal replacement, not regex
+            InputStream is = IconCache.class.getResourceAsStream(imagePath.replace("#", ""));
             if (is != null) {
                 return ImageIO.read(is);
             } else {
@@ -363,7 +375,8 @@ public class IconCache {
     }
 
     private static BufferedImage getOptionalImageResource(String imagePath) {
-        try(InputStream is = IconCache.class.getResourceAsStream(imagePath.replaceAll("#", ""))) {
+        // Literal replacement, not regex
+        try(InputStream is = IconCache.class.getResourceAsStream(imagePath.replace("#", ""))) {
             // Optional resources are allowed to be absent
             return is == null ? null : ImageIO.read(is);
         }
@@ -376,6 +389,10 @@ public class IconCache {
     // 2x/3x cache behavior for generated resources
     private List<String> cacheScaledImageVariants(String id, BufferedImage bi) {
         List<String> cachedIds = new ArrayList<>();
+        if(bi == null) {
+            return cachedIds;
+        }
+
         for(int scale = 2; scale <= MAX_SINGLE_RESOURCE_SCALE; scale++) {
             // Keep generated ids separate from enum-backed logo ids
             String newSize = getScaledId(id, bi.getWidth() * scale);
@@ -433,8 +450,9 @@ public class IconCache {
                 if (darkTaskbar) {
                     clone = ColorUtilities.invert(clone);
                 }
-                images.put(id.replaceAll("mask", "default"), clone);
-                imageIcons.put(id.replaceAll("mask", "default"), new ImageIcon(clone));
+                // Literal replacement, not regex
+                images.put(id.replace("mask", "default"), clone);
+                imageIcons.put(id.replace("mask", "default"), new ImageIcon(clone));
             }
         }
 

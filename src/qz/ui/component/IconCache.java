@@ -218,7 +218,7 @@ public class IconCache {
     }
 
     public ImageIcon getAboutLogo(boolean dark) {
-        // Light mode always uses the normal About logo
+        // Light mode never touches generated logo variants
         if(!dark) {
             return getIcon(Icon.LOGO_ICON);
         }
@@ -235,6 +235,7 @@ public class IconCache {
                 return hasExplicitDarkAboutLogo() ? getExplicitDarkAboutLogo() : getInvertedAboutLogo();
             case NONE:
             default:
+                // Fallback keeps the normal logo cache intact
                 return getIcon(Icon.LOGO_ICON);
         }
     }
@@ -274,7 +275,7 @@ public class IconCache {
     }
 
     private ImageIcon getInvertedAboutLogo() {
-        // Generate once and reuse cached variants
+        // Reuse the generated inverted logo after first request
         if(!imageIcons.containsKey(ABOUT_LOGO_INVERTED_ID)) {
             cacheInvertedAboutLogo();
         }
@@ -282,10 +283,12 @@ public class IconCache {
     }
 
     private void cacheInvertedAboutLogo() {
-        // Clone first so the normal logo cache is unchanged
+        // Clone before inversion because invert mutates the image
         BufferedImage inverted = ColorUtilities.invert(clone(images.get(Icon.LOGO_ICON.getId())));
+        // Store inverted output separately from qz-logo.png
         imageIcons.put(ABOUT_LOGO_INVERTED_ID, new ImageIcon(inverted));
         images.put(ABOUT_LOGO_INVERTED_ID, inverted);
+        // Scale from the generated image, not the normal logo
         cacheScaledImageVariants(ABOUT_LOGO_INVERTED_ID, inverted);
     }
 
@@ -355,6 +358,7 @@ public class IconCache {
 
         imageIcons.put(id, new ImageIcon(bi));
         images.put(id, bi);
+        // Add matching 2x/3x variants for optional dark assets
         cacheScaledImageVariants(id, bi);
     }
 
@@ -373,6 +377,7 @@ public class IconCache {
     private List<String> cacheScaledImageVariants(String id, BufferedImage bi) {
         List<String> cachedIds = new ArrayList<>();
         for(int scale = 2; scale <= MAX_SINGLE_RESOURCE_SCALE; scale++) {
+            // Keep generated ids separate from enum-backed logo ids
             String newSize = getScaledId(id, bi.getWidth() * scale);
             if (newSize != null && !images.containsKey(newSize)) {
                 BufferedImage newBi = clone(bi, scale);

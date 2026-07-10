@@ -58,14 +58,14 @@ public class CertificateTable extends FieldValueTable implements Themeable {
     @Override
     public void refresh() {
         refreshComponents();
-        // Fixes an exception that was being thrown when the
-        // renderer changes
+        // Avoid casting a renderer that LAF refresh may replace
         renderer.refresh();
     }
 
     @Override
     public void updateUI() {
         super.updateUI();
+        // LAF refresh can replace the default renderer
         setDefaultRenderer(Object.class, renderer);
     }
 

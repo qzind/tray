@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -220,8 +221,18 @@ public class UnixUtilities {
      * @return true if enabled, false if not
      */
     public static boolean isDarkMode() {
-        // Shouldn't be case-sensitive because some themes are named "*-Dark"
-        return !ShellUtilities.execute(new String[] { "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" }, new String[] { "dark" }, false, true).isEmpty();
+        // Read the full GTK theme name so exclusions can be applied
+        String themeName = ShellUtilities.execute(new String[] { "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" }, null, true, true);
+        return isDarkThemeName(themeName);
+    }
+
+    private static boolean isDarkThemeName(String themeName) {
+        if(themeName == null) {
+            return false;
+        }
+        String normalized = themeName.trim().toLowerCase(Locale.ENGLISH);
+        // Match "*-Dark" without treating "*-Darker" as dark
+        return normalized.contains("dark") && !normalized.contains("darker");
     }
 
     public static boolean isGtkAvailable() {

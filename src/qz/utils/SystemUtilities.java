@@ -379,14 +379,22 @@ public class SystemUtilities {
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
             boolean darculaThemeNeeded = true;
-            if(!isMac() && (isUnix() && UnixUtilities.isDarkMode())) {
+            boolean darkMode = UnixUtilities.isDarkMode();
+            if(!isMac() && (isUnix() && darkMode)) {
                 darculaThemeNeeded = false;
             }
             if(isDarkDesktop() && darculaThemeNeeded) {
                 UIManager.setLookAndFeel("com.formdev.flatlaf.FlatDarculaLaf");
+            } else if(isLinux() && UnixUtilities.isGtkAvailable()) {
+                // Swing can report Metal on Linux even when GTK is available
+                log.debug("Detected GTK, using Swing GTK Look and Feel");
+                UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
             } else {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                String systemLookAndFeel = UIManager.getSystemLookAndFeelClassName();
+                log.debug("Detected system Look and Feel: {}", systemLookAndFeel);
+                UIManager.setLookAndFeel(systemLookAndFeel);
             }
+            log.debug("Using Swing Look and Feel: {}", UIManager.getLookAndFeel().getClass().getName());
             adjustThemeColors();
             return true;
         } catch (Throwable t) {

@@ -220,7 +220,12 @@ public class UnixUtilities {
      * @return true if enabled, false if not
      */
     public static boolean isDarkMode() {
-        return !ShellUtilities.execute(new String[] { "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" }, new String[] { "dark" }, true, true).isEmpty();
+        // Shouldn't be case-sensitive because some themes are named "*-Dark"
+        return !ShellUtilities.execute(new String[] { "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" }, new String[] { "dark" }, false, true).isEmpty();
+    }
+
+    public static boolean isGtkAvailable() {
+        return GtkUtilities.isAvailable();
     }
 
     public static double getScaleFactor() {

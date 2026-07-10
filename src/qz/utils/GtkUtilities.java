@@ -32,6 +32,10 @@ public class GtkUtilities {
         return 1;
     }
 
+    public static boolean isAvailable() {
+        return getGtkInstance() != null;
+    }
+
     private static GTK getGtkInstance() {
         log.debug("Finding available Gtk version...");
         // Prefer GTK3 because modern Linux desktops expose monitor scaling there

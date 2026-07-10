@@ -38,8 +38,6 @@ public class IconCache {
     static final String ABOUT_LOGO_DARK_ID = "qz-logo-dark.png";
     // Reserved for generated inversion support
     static final String ABOUT_LOGO_INVERTED_ID = "qz-logo-inverted.png";
-    // Controls dark-mode About logo selection
-    static final String ABOUT_LOGO_DARK_MODE_PROPERTY = "qz.about.logo.darkMode";
     private static final int MAX_SINGLE_RESOURCE_SCALE = 3;
 
     /**
@@ -148,27 +146,6 @@ public class IconCache {
         }
     }
 
-    private enum AboutLogoDarkMode {
-        // Use qz-logo-dark.png when available, otherwise keep qz-logo.png
-        ASSET,
-        // Generate an inverted qz-logo.png for dark desktops
-        INVERT,
-        // Prefer qz-logo-dark.png, otherwise generate an inverted logo
-        AUTO;
-
-        private static AboutLogoDarkMode fromProperty() {
-            // Default to the most helpful dark-mode behavior
-            String value = System.getProperty(ABOUT_LOGO_DARK_MODE_PROPERTY, AUTO.name()).trim();
-            for(AboutLogoDarkMode mode : values()) {
-                if(mode.name().equalsIgnoreCase(value)) {
-                    return mode;
-                }
-            }
-            // Ignore unknown values and keep the default behavior
-            return AUTO;
-        }
-    }
-
     private final HashMap<String,ImageIcon> imageIcons;
     private final HashMap<String,BufferedImage> images;
     private static final Color TRANSPARENT = new Color(0,0,0,0);
@@ -228,19 +205,8 @@ public class IconCache {
         if(!dark) {
             return getIcon(Icon.LOGO_ICON);
         }
-
-        // Apply the configured dark-logo strategy
-        AboutLogoDarkMode mode = AboutLogoDarkMode.fromProperty();
-        switch(mode) {
-            case ASSET:
-                return getExplicitDarkAboutLogo();
-            case INVERT:
-                return getInvertedAboutLogo();
-            case AUTO:
-            default:
-                // Prefer dark asset, otherwise generate inversion
-                return hasExplicitDarkAboutLogo() ? getExplicitDarkAboutLogo() : getInvertedAboutLogo();
-        }
+        // Prefer qz-logo-dark.png when present, otherwise generate inversion
+        return hasExplicitDarkAboutLogo() ? getIcon(ABOUT_LOGO_DARK_ID, true) : getInvertedAboutLogo();
     }
 
     private ImageIcon getIcon(Icon i, boolean inferScale) {
@@ -271,10 +237,6 @@ public class IconCache {
 
     private boolean hasExplicitDarkAboutLogo() {
         return imageIcons.containsKey(ABOUT_LOGO_DARK_ID);
-    }
-
-    private ImageIcon getExplicitDarkAboutLogo() {
-        return hasExplicitDarkAboutLogo() ? getIcon(ABOUT_LOGO_DARK_ID, true) : getIcon(Icon.LOGO_ICON);
     }
 
     private ImageIcon getInvertedAboutLogo() {

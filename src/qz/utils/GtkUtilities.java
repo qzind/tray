@@ -6,8 +6,6 @@ import com.sun.jna.Pointer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.lang.reflect.Method;
-
 public class GtkUtilities {
     private static final Logger log = LogManager.getLogger(GtkUtilities.class);
 
@@ -35,36 +33,30 @@ public class GtkUtilities {
     }
 
     private static GTK getGtkInstance() {
-        log.debug("Finding preferred Gtk version...");
-        switch(getGtkMajorVersion()) {
-            case 2:
-                return GTK2.INSTANCE;
-            case 3:
-                return GTK3.INSTANCE;
-            default:
-                log.warn("Not a compatible Gtk version");
+        log.debug("Finding available Gtk version...");
+        // Prefer GTK3 because modern Linux desktops expose monitor scaling there
+        GTK gtk = loadGtk("gtk-3", GTK3.class);
+        if(gtk == null) {
+            // Fall back to GTK2 for older desktops and Java runtimes
+            gtk = loadGtk("gtk-x11-2.0", GTK2.class);
         }
-        return null;
+        if(gtk == null) {
+            log.warn("Not a compatible Gtk version");
+        }
+        return gtk;
     }
 
-    /**
-     * Get the major version of Gtk (e.g. 2, 3)
-     * UNIXToolkit is unavailable on Windows or Mac; reflection is required.
-     * @return Major version if found, zero if not.
-     */
-    private static int getGtkMajorVersion() {
+    private static <T extends GTK> T loadGtk(String library, Class<T> type) {
         try {
-            Class toolkitClass = Class.forName("sun.awt.UNIXToolkit");
-            Method versionMethod = toolkitClass.getDeclaredMethod("getGtkVersion");
-            Enum versionInfo = (Enum)versionMethod.invoke(toolkitClass);
-            Method numberMethod = versionInfo.getClass().getDeclaredMethod("getNumber");
-            int version = ((Integer)numberMethod.invoke(versionInfo)).intValue();
-            log.debug("Found Gtk{}", version);
-            return version;
+            // Without this approach sun.awt.UNIXToolkit is blocked
+            // by Java modules which then hides GTK identification
+            T gtk = Native.load(library, type);
+            log.debug("Found {}", library);
+            return gtk;
         } catch(Throwable t) {
-            log.warn("Could not obtain GtkVersion information from UNIXToolkit: {}", t.getMessage());
+            log.debug("Could not load {}: {}", library, t.getMessage());
         }
-        return 0;
+        return null;
     }
 
     private static double getGtk2ScaleFactor(GTK2 gtk2) {
@@ -102,8 +94,6 @@ public class GtkUtilities {
     }
 
     private interface GTK3 extends GTK {
-        GTK3 INSTANCE = Native.load("gtk-3", GTK3.class);
-
         // Gtk 3.0+
         int gtk_get_minor_version ();
 
@@ -116,8 +106,6 @@ public class GtkUtilities {
     }
 
     private interface GTK2 extends GTK {
-        GTK2 INSTANCE = Native.load("gtk-x11-2.0", GTK2.class);
-
         // Gtk 2.1-3.0
         double gdk_screen_get_resolution(Pointer screen);
     }

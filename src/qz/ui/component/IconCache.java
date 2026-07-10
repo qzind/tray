@@ -149,21 +149,23 @@ public class IconCache {
     }
 
     private enum AboutLogoDarkMode {
-        NONE,
+        // Use qz-logo-dark.png when available, otherwise keep qz-logo.png
         ASSET,
+        // Generate an inverted qz-logo.png for dark desktops
         INVERT,
+        // Prefer qz-logo-dark.png, otherwise generate an inverted logo
         AUTO;
 
         private static AboutLogoDarkMode fromProperty() {
-            // Default to explicit assets so existing builds are unchanged
-            String value = System.getProperty(ABOUT_LOGO_DARK_MODE_PROPERTY, ASSET.name()).trim();
+            // Default to the most helpful dark-mode behavior
+            String value = System.getProperty(ABOUT_LOGO_DARK_MODE_PROPERTY, AUTO.name()).trim();
             for(AboutLogoDarkMode mode : values()) {
                 if(mode.name().equalsIgnoreCase(value)) {
                     return mode;
                 }
             }
-            // Ignore unknown values and keep the safe default
-            return ASSET;
+            // Ignore unknown values and keep the default behavior
+            return AUTO;
         }
     }
 
@@ -235,12 +237,9 @@ public class IconCache {
             case INVERT:
                 return getInvertedAboutLogo();
             case AUTO:
+            default:
                 // Prefer dark asset, otherwise generate inversion
                 return hasExplicitDarkAboutLogo() ? getExplicitDarkAboutLogo() : getInvertedAboutLogo();
-            case NONE:
-            default:
-                // Fallback keeps the normal logo cache intact
-                return getIcon(Icon.LOGO_ICON);
         }
     }
 

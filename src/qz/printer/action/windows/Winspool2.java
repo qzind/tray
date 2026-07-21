@@ -7,13 +7,18 @@ import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.platform.win32.Winspool;
 import com.sun.jna.ptr.IntByReference;
 
-public interface Winspool2W extends Winspool {
-    Winspool2W INSTANCE = Native.load("winspool.drv", Winspool2W.class);
+/**
+ * Winspool clone that exposes the OpenPrinter2 API
+ */
+@SuppressWarnings("SpellCheckingInspection")
+public interface Winspool2 extends Winspool {
+    Winspool2 INSTANCE = Native.load("winspool.drv", Winspool2.class);
 
     int PRINTER_OPTION_NO_BATCHING = 0x00000001;
 
     @Structure.FieldOrder({"cbSize", "dwFlags"})
     class PRINTER_OPTIONS extends Structure {
+        @SuppressWarnings("unused")
         public int cbSize = this.size();
         public int dwFlags;
     }

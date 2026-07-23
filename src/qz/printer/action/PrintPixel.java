@@ -134,9 +134,11 @@ public abstract class PrintPixel {
 
         if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
             attributes.add(new Copies(pxlOpts.getCopies()));
+            // Linux Java printing may require cups-bsd lpr, see https://github.com/qzind/tray/issues/1393
             job.print(attributes);
         } else {
             for(int i = 0; i < pxlOpts.getCopies(); i++) {
+                // Linux Java printing may require cups-bsd lpr, see https://github.com/qzind/tray/issues/1341
                 job.print(attributes);
             }
         }

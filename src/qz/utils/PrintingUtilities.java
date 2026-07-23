@@ -174,8 +174,8 @@ public class PrintingUtilities {
                 "Install the \"cups-bsd\" package, not the standalone \"lpr\" package, then retry.";
     }
 
-    static PrinterException exceptionWithCupsBsdHint(PrinterException ex, boolean linux, boolean lprAvailable) {
-        if (!linux || !isLikelyCupsBsdMissing(ex, lprAvailable)) {
+    static PrinterException exceptionWithCupsBsdHint(PrinterException ex, boolean isLinux, boolean lprAvailable) {
+        if (!isLinux || !isLikelyCupsBsdMissing(ex, lprAvailable)) {
             return ex;
         }
 

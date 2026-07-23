@@ -72,10 +72,24 @@ public class PrintingUtilitiesTests {
     @Test
     public void unrelatedPrintErrorTests() {
         PrinterException ex = new PrinterException("Printer is offline");
+
+        Assert.assertFalse(PrintingUtilities.hasLprSignature(ex));
+        Assert.assertFalse(PrintingUtilities.hasPrinterIoWrapper(ex));
+        Assert.assertFalse(PrintingUtilities.isLikelyCupsBsdMissing(ex, false));
+
+        PrinterException actualException = PrintingUtilities.exceptionWithCupsBsdHint(ex, true, false);
+
+        Assert.assertSame(actualException, ex);
+    }
+
+    @Test
+    public void nonLinuxPrintErrorTests() {
+        // Alternate error surface noted in issue #1341
+        // see https://github.com/qzind/tray/issues/1341
         PrinterException nonLinux = new PrinterException("lpr: command not found");
 
-        Assert.assertFalse(PrintingUtilities.isLikelyCupsBsdMissing(ex, false));
-        Assert.assertSame(PrintingUtilities.exceptionWithCupsBsdHint(ex, true, false), ex);
-        Assert.assertSame(PrintingUtilities.exceptionWithCupsBsdHint(nonLinux, false, false), nonLinux);
+        PrinterException actualException = PrintingUtilities.exceptionWithCupsBsdHint(nonLinux, false, false);
+
+        Assert.assertSame(actualException, nonLinux);
     }
 }

@@ -166,25 +166,33 @@ public class PrintingUtilities {
     }
 
     public static PrinterException exceptionWithCupsBsdHint(PrinterException ex) {
-        if (!SystemUtilities.isLinux() || !isLikelyCupsBsdMissing(ex, isLprAvailable())) {
+        return exceptionWithCupsBsdHint(ex, SystemUtilities.isLinux(), isLprAvailable());
+    }
+
+    static String getLinuxLprMessage() {
+        return "Java printing on Linux requires the CUPS-compatible \"lpr\" command. " +
+                "Install the \"cups-bsd\" package, not the standalone \"lpr\" package, then retry.";
+    }
+
+    static PrinterException exceptionWithCupsBsdHint(PrinterException ex, boolean linux, boolean lprAvailable) {
+        if (!linux || !isLikelyCupsBsdMissing(ex, lprAvailable)) {
             return ex;
         }
 
-        PrinterException hinted = new PrinterException("Java printing on Linux requires the CUPS-compatible \"lpr\" command. " +
-                "Install the \"cups-bsd\" package, not the standalone \"lpr\" package, then retry.");
+        PrinterException hinted = new PrinterException(getLinuxLprMessage());
         hinted.initCause(ex);
         return hinted;
     }
 
-    private static boolean isLikelyCupsBsdMissing(Throwable t, boolean lprAvailable) {
+    static boolean isLikelyCupsBsdMissing(Throwable t, boolean lprAvailable) {
         return hasLprSignature(t) || (!lprAvailable && hasPrinterIoWrapper(t));
     }
 
-    private static boolean hasLprSignature(Throwable t) {
+    static boolean hasLprSignature(Throwable t) {
         return hasSignature(t, LPR_SIGNATURES);
     }
 
-    private static boolean hasPrinterIoWrapper(Throwable t) {
+    static boolean hasPrinterIoWrapper(Throwable t) {
         return hasSignature(t, PRINTER_IO_SIGNATURES);
     }
 

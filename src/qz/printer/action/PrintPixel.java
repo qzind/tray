@@ -132,15 +132,20 @@ public abstract class PrintPixel {
         CopiesSupported cSupport = (CopiesSupported)output.getPrintService()
                 .getSupportedAttributeValues(Copies.class, output.getPrintService().getSupportedDocFlavors()[0], attributes);
 
-        if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
-            attributes.add(new Copies(pxlOpts.getCopies()));
-            // Linux Java printing may require cups-bsd lpr, see https://github.com/qzind/tray/issues/1393
-            job.print(attributes);
-        } else {
-            for(int i = 0; i < pxlOpts.getCopies(); i++) {
-                // Linux Java printing may require cups-bsd lpr, see https://github.com/qzind/tray/issues/1341
+        try {
+            if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
+                attributes.add(new Copies(pxlOpts.getCopies()));
                 job.print(attributes);
+            } else {
+                for(int i = 0; i < pxlOpts.getCopies(); i++) {
+                    job.print(attributes);
+                }
             }
+        } catch(PrinterException e) {
+            // In Linux, printing may require cups-bsd lpr
+            // see https://github.com/qzind/tray/issues/1393
+            // If that's the case, append the necessary messages
+            throw PrintingUtilities.exceptionWithCupsBsdHint(e);
         }
     }
 

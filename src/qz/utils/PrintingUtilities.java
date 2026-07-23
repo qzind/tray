@@ -165,7 +165,7 @@ public class PrintingUtilities {
         }
     }
 
-    public static PrinterException withCupsBsdHint(PrinterException ex) {
+    public static PrinterException exceptionWithCupsBsdHint(PrinterException ex) {
         if (!SystemUtilities.isLinux() || !isLikelyCupsBsdMissing(ex, isLprAvailable())) {
             return ex;
         }

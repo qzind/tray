@@ -22,6 +22,7 @@ import qz.ws.PrintSocketClient;
 
 import javax.print.PrintException;
 import java.awt.print.PrinterAbortException;
+import java.awt.print.PrinterException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -32,6 +33,26 @@ import java.util.function.Supplier;
 public class PrintingUtilities {
 
     private static final Logger log = LogManager.getLogger(PrintingUtilities.class);
+    private static final String[] LPR_SIGNATURES = {
+            // Missing lpr examples from #1341
+            // and Raspberry Pi thread https://github.com/qzind/tray/issues/1341
+            "/usr/bin/lpr",
+            "lpr: command not found",
+            "cannot run program",
+            "error=2",
+            "no such file or directory",
+            // Wrong lpr examples from #642 https://github.com/qzind/tray/issues/642
+            "error=1 running",
+            "usage: lpr",
+            "-j qz tray pixel print"
+    };
+    private static final String[] PRINTER_IO_SIGNATURES = {
+            // Wrapped Java print stack from #1341 https://github.com/qzind/tray/issues/1341
+            "java.awt.print.printerioexception",
+            "javax.print.printexception",
+            "sun.print.rasterprinterjob.spooltoservice",
+            "sun.print.rasterprinterjob.print"
+    };
 
     private static GenericKeyedObjectPool<Format,PrintProcessor> processorPool;
 
@@ -142,6 +163,63 @@ public class PrintingUtilities {
         } else {
             return Format.valueOf(data.optString("format", "COMMAND").toUpperCase(Locale.ENGLISH));
         }
+    }
+
+    public static PrinterException withCupsBsdHint(PrinterException ex) {
+        if (!SystemUtilities.isLinux() || !isLikelyCupsBsdMissing(ex, isLprAvailable())) {
+            return ex;
+        }
+
+        PrinterException hinted = new PrinterException("Java printing on Linux requires the CUPS-compatible \"lpr\" command. " +
+                "Install the \"cups-bsd\" package, not the standalone \"lpr\" package, then retry.");
+        hinted.initCause(ex);
+        return hinted;
+    }
+
+    private static boolean isLikelyCupsBsdMissing(Throwable t, boolean lprAvailable) {
+        return hasLprSignature(t) || (!lprAvailable && hasPrinterIoWrapper(t));
+    }
+
+    private static boolean hasLprSignature(Throwable t) {
+        return hasSignature(t, LPR_SIGNATURES);
+    }
+
+    private static boolean hasPrinterIoWrapper(Throwable t) {
+        return hasSignature(t, PRINTER_IO_SIGNATURES);
+    }
+
+    private static boolean isLprAvailable() {
+        return ShellUtilities.execute("which", "lpr");
+    }
+
+    private static boolean hasSignature(Throwable t, String[] signatures) {
+        while(t != null) {
+            String text = throwableText(t);
+            for(String signature : signatures) {
+                if (text.contains(signature)) {
+                    return true;
+                }
+            }
+            t = t.getCause();
+        }
+        return false;
+    }
+
+    private static String throwableText(Throwable t) {
+        // Include the exception type:
+        // say something like PrinterIOException
+        StringBuilder text = new StringBuilder(t.getClass().getName());
+        if (t.getMessage() != null) {
+            // Include the exception error messages if included
+            text.append(" ").append(t.getMessage());
+        }
+        for(StackTraceElement element : t.getStackTrace()) {
+            // Include the print stack methods:
+            // something like say, RasterPrinterJob.spoolToService
+            text.append(" ").append(element.getClassName()).append(".").append(element.getMethodName());
+        }
+        // Standardize so that signature checks stay case-insensitive
+        return text.toString().toLowerCase();
     }
 
     public synchronized static PrintProcessor getPrintProcessor(Format format) {

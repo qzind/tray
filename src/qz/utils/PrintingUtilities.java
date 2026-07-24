@@ -33,16 +33,9 @@ import java.util.function.Supplier;
 public class PrintingUtilities {
 
     private static final Logger log = LogManager.getLogger(PrintingUtilities.class);
-    private static final String[] LPR_SIGNATURES = {
-            // Missing lpr examples from #1341
-            // and Raspberry Pi thread https://github.com/qzind/tray/issues/1341
+    private static final String[] LPR_DIRECT_SIGNATURES = {
             "/usr/bin/lpr",
             "lpr: command not found",
-            "cannot run program",
-            "error=2",
-            "no such file or directory",
-            // Wrong lpr examples from #642 https://github.com/qzind/tray/issues/642
-            "error=1 running",
             "usage: lpr",
             "-j qz tray pixel print"
     };
@@ -189,7 +182,16 @@ public class PrintingUtilities {
     }
 
     static boolean hasLprSignature(Throwable t) {
-        return hasSignature(t, LPR_SIGNATURES);
+        while(t != null) {
+            String text = throwableText(t);
+            if (hasAnySignature(text, LPR_DIRECT_SIGNATURES)
+                    || hasMissingLprCommandSignature(text)
+                    || hasWrongLprCommandSignature(text)) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
     }
 
     static boolean hasPrinterIoWrapper(Throwable t) {
@@ -202,15 +204,32 @@ public class PrintingUtilities {
 
     private static boolean hasSignature(Throwable t, String[] signatures) {
         while(t != null) {
-            String text = throwableText(t);
-            for(String signature : signatures) {
-                if (text.contains(signature)) {
-                    return true;
-                }
+            if (hasAnySignature(throwableText(t), signatures)) {
+                return true;
             }
             t = t.getCause();
         }
         return false;
+    }
+
+    private static boolean hasAnySignature(String text, String[] signatures) {
+        for(String signature : signatures) {
+            if (text.contains(signature)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasMissingLprCommandSignature(String text) {
+        // Missing /usr/bin/lpr shape from #1341 and linked Raspberry Pi thread
+        return text.contains("cannot run program") && text.contains("lpr")
+                && (text.contains("error=2") || text.contains("no such file or directory"));
+    }
+
+    private static boolean hasWrongLprCommandSignature(String text) {
+        // Incompatible lpr output reported in #642
+        return text.contains("error=1 running") && text.contains("lpr") && text.contains("usage: lpr");
     }
 
     private static String throwableText(Throwable t) {

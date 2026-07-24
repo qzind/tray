@@ -83,6 +83,18 @@ public class PrintingUtilitiesTests {
     }
 
     @Test
+    public void unrelatedMissingFilePrintErrorTests() {
+        PrinterException ex = new PrinterException("Cannot run program \"/usr/bin/filter\": error=2, No such file or directory");
+
+        Assert.assertFalse(PrintingUtilities.hasLprSignature(ex));
+        Assert.assertFalse(PrintingUtilities.isLikelyCupsBsdMissing(ex, false));
+
+        PrinterException actualException = PrintingUtilities.exceptionWithCupsBsdHint(ex, true, false);
+
+        Assert.assertSame(actualException, ex);
+    }
+
+    @Test
     public void nonLinuxPrintErrorTests() {
         // Alternate error surface noted in issue #1341
         // see https://github.com/qzind/tray/issues/1341

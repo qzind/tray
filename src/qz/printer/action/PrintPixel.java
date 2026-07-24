@@ -142,9 +142,8 @@ public abstract class PrintPixel {
                 }
             }
         } catch(PrinterException e) {
-            // In Linux, printing may require cups-bsd lpr
-            // see https://github.com/qzind/tray/issues/1393
-            // If that's the case, append the necessary messages
+            // Linux Java printing may require the cups-bsd lpr command.
+            // See https://github.com/qzind/tray/issues/1393
             throw PrintingUtilities.exceptionWithCupsBsdHint(e);
         }
     }

@@ -10,15 +10,17 @@
     <resolvers>
         <!-- Custom Repos here -->
         <ibiblio name="gluonhq" m2compatible="true" root="https://nexus.gluonhq.com/nexus/content/repositories/releases/"/>
-    </resolvers>
-    <chain name="default" returnFirst="true" checkmodified="true" changingPattern=".*SNAPSHOT">
-        <!-- These two are magic lines from the default conf -->
-        <resolver ref="local"/>
-        <resolver ref="main" />
+        <ibiblio name="apache-snapshots" m2compatible="true" root="https://repository.apache.org/content/groups/snapshots/"/>
 
-        <!-- Custom Repos here -->
-        <!-- <resolver ref="gluonhq" /> -->
-    </chain>
+        <chain name="default" returnFirst="true" checkmodified="true" changingPattern=".*SNAPSHOT">
+            <!-- These two are magic lines from the default conf -->
+            <resolver ref="local"/>
+            <resolver ref="main" />
+
+            <!-- Custom Repos here -->
+            <resolver ref="apache-snapshots"/>
+        </chain>
+    </resolvers>
     <modules>
         <!-- <module organisation="org.openjfx" name=".*" resolver="gluonhq"/> -->
     </modules>

@@ -195,7 +195,12 @@
             <filterchain><expandproperties/></filterchain>
         </copy>
 
-        <copy todir="${bundle.dir}/Contents/Resources/demo">
+        <!-- Copy demo if dist.minimal is false -->
+        <property description="suppress-property-warning" name="dist.minimal" value="false"/>
+        <condition property="dist.full">
+            <isfalse value="${dist.minimal}"/>
+        </condition>
+        <copy todir="${bundle.dir}/Contents/Resources/demo" failonerror="${dist.full}" quiet="${dist.minimal}">
             <fileset dir="${dist.dir}/demo" includes="**"/>
         </copy>
 

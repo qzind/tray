@@ -10,6 +10,7 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.apache.pdfbox.printing.Scaling;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.codehaus.jettison.json.JSONArray;
@@ -162,10 +163,25 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             case PLAIN:
                 // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
             case FILE:
-                return PDDocument.load(ConnectionUtilities.getInputStream(data, true));
+                return refreshAcroForm(PDDocument.load(ConnectionUtilities.getInputStream(data, true)));
             default:
-                return PDDocument.load(new ByteArrayInputStream(flavor.read(data)));
+                return refreshAcroForm(PDDocument.load(new ByteArrayInputStream(flavor.read(data))));
         }
+    }
+
+    /**
+     * Show annotations by forcing the refresh of acro forms per #1481
+     */
+    private static PDDocument refreshAcroForm(PDDocument doc) {
+        PDAcroForm acroForm = doc.getDocumentCatalog().getAcroForm();
+        if(acroForm != null && acroForm.getNeedAppearances()) {
+            try {
+                acroForm.refreshAppearances();
+            } catch(IOException e) {
+                log.warn("Unable to refresh acro form", e);
+            }
+        }
+        return doc;
     }
 
     /**

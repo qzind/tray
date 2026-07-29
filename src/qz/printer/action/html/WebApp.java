@@ -24,7 +24,13 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 import qz.common.Constants;
+import qz.printer.PrintOptions;
+import qz.utils.ArgValue;
+import qz.utils.PrefsSearch;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
 
@@ -51,8 +57,8 @@ public class WebApp extends Application {
 
     private static WebApp instance = null;
     private static Version webkitVersion = null;
-    private static int CAPTURE_FRAMES = 2;
-    private static int VECTOR_FRAMES = 1;
+    static int CAPTURE_FRAMES = 2;
+    static int VECTOR_FRAMES = 1;
     private static Stage stage;
     private static WebView webView;
     private static double pageWidth;
@@ -83,9 +89,7 @@ public class WebApp extends Application {
             unlatch(new IOException("Page load was cancelled for an unknown reason"));
         }
         if (newState == Worker.State.SUCCEEDED) {
-            boolean hasBody = (boolean)webView.getEngine().executeScript("document.body != null");
-            if (!hasBody) {
-                log.warn("Loaded page has no body - likely a redirect, skipping state");
+            if (!hasBody(webView)) {
                 return;
             }
 
@@ -222,6 +226,16 @@ public class WebApp extends Application {
         }
     }
 
+    static void initStateListeners(
+            Worker<Void> worker,
+            ChangeListener<Worker.State> state,
+            ChangeListener<Throwable> exception) {
+        worker.stateProperty().addListener(state);
+        worker.workDoneProperty().addListener(workDoneListener);
+        worker.exceptionProperty().addListener(exception);
+        worker.messageProperty().addListener(msgListener);
+    }
+
     @Override
     public void start(Stage st) throws Exception {
         startupLatch.countDown();
@@ -243,10 +257,7 @@ public class WebApp extends Application {
         stage.setHeight(1);
 
         Worker<Void> worker = webView.getEngine().getLoadWorker();
-        worker.stateProperty().addListener(stateListener);
-        worker.workDoneProperty().addListener(workDoneListener);
-        worker.exceptionProperty().addListener(exceptListener);
-        worker.messageProperty().addListener(msgListener);
+        initStateListeners(worker, stateListener, exceptListener);
 
         //prevents JavaFX from shutting down when hiding window
         Platform.setImplicitExit(false);
@@ -414,30 +425,64 @@ public class WebApp extends Application {
 
             printAction = action;
 
-            if (model.isPlainText()) {
-                webView.getEngine().loadContent(model.getSource(), "text/html");
-            } else {
-                webView.getEngine().load(model.getSource());
-            }
+            loadSource(webView, model);
         });
     }
 
+    static void loadSource(WebView view, WebAppModel model) {
+        if (model.isPlainText()) {
+            view.getEngine().loadContent(model.getSource(), "text/html");
+        } else {
+            view.getEngine().load(model.getSource());
+        }
+    }
+
     private static double findHeight() {
-        String heightText = webView.getEngine().executeScript("document.body.scrollHeight").toString();
+        return findHeight(webView);
+    }
+
+    static double findHeight(WebView view) {
+        String heightText = view.getEngine().executeScript("document.body.scrollHeight").toString();
         return Double.parseDouble(heightText);
     }
 
-    private static void adjustSize(double toWidth, double toHeight) {
-        webView.setMinSize(toWidth, toHeight);
-        webView.setPrefSize(toWidth, toHeight);
-        webView.setMaxSize(toWidth, toHeight);
-        doUpdatePeer();
+    static boolean hasBody(WebView view) {
+        boolean hasBody = (boolean)view.getEngine().executeScript("document.body != null");
+        if (!hasBody) {
+            log.warn("Loaded page has no body - likely a redirect, skipping state");
+        }
+        return hasBody;
     }
 
-    private static void doUpdatePeer() {
-        // Call updatePeer; fixes a bug with webView resizing
+    static void disableHtmlScrollbars(WebView view) {
+        //ensure html tag doesn't use scrollbars, clipping page instead
+        Document doc = view.getEngine().getDocument();
+        NodeList tags = doc.getElementsByTagName("html");
+        if (tags != null && tags.getLength() > 0) {
+            org.w3c.dom.Node base = tags.item(0);
+            Attr applied = (Attr)base.getAttributes().getNamedItem("style");
+            if (applied == null) {
+                applied = doc.createAttribute("style");
+            }
+            applied.setValue(applied.getValue() + "; overflow: hidden;");
+            base.getAttributes().setNamedItem(applied);
+        }
+    }
+
+    private static void adjustSize(double toWidth, double toHeight) {
+        adjustSize(webView, toWidth, toHeight);
+        doUpdatePeer(webView);
+    }
+
+    static void adjustSize(WebView view, double toWidth, double toHeight) {
+        view.setMinSize(toWidth, toHeight);
+        view.setPrefSize(toWidth, toHeight);
+        view.setMaxSize(toWidth, toHeight);
+    }
+
+    static void doUpdatePeer(WebView view) {
         SceneHelper.setAllowPGAccess(true);
-        NodeHelper.updatePeer(webView);
+        NodeHelper.updatePeer(view);
         SceneHelper.setAllowPGAccess(false);
     }
 
@@ -464,6 +509,46 @@ public class WebApp extends Application {
         stage.hide();
     }
 
+    /**
+     * Compatibility overload for preview integration.
+     */
+    public static synchronized void print(final PrinterJob job, final WebAppModel model, PrintOptions options) throws Throwable {
+        // Use live in-memory tray prefs when TrayManager is available;
+        // fall back to persisted preferences for contexts without TrayManager.
+        boolean monoclePreferred = PrintSocketServer.getTrayManager() != null
+                ? PrintSocketServer.getTrayManager().isMonoclePreferred()
+                : PrefsSearch.getBoolean(ArgValue.TRAY_MONOCLE);
+        // Use active tray state first, then read persisted default
+        // when no tray instance is present.
+        boolean previewEnabled = PrintSocketServer.getTrayManager() != null
+                ? PrintSocketServer.getTrayManager().isPreviewPreferred()
+                : PrefsSearch.getBoolean(ArgValue.TRAY_PREVIEW);
+
+        // TODO(#1357): Need clarification on expected behavior in headless/Monocle
+        // Current fallback: skip preview UI and print directly
+        // when running in non-interactive render modes.
+        if (headless || monoclePreferred) {
+            if (previewEnabled) {
+                log.warn("Preview enabled, but environment is non-interactive (headless/monocle). Printing directly.");
+            }
+            // skip preview UI and use direct print path
+            print(job, model);
+            return;
+        }
+
+        if (previewEnabled) {
+            PreviewHtmlInstance previewHtmlInstance = new PreviewHtmlInstance(stage);
+            previewHtmlInstance.show(model, options);
+            previewHtmlInstance.await();
+            if (!previewHtmlInstance.isCanceled()) {
+                print(job, model);
+            }
+        } else {
+            // Direct print
+            print(job, model);
+        }
+    }
+
     public static Version getWebkitVersion() {
         if(webkitVersion == null) {
             if(webView != null) {
@@ -486,5 +571,13 @@ public class WebApp extends Application {
             }
         }
         return webkitVersion;
+    }
+
+    public static boolean isHeadless() {
+        return headless;
+    }
+
+    public static boolean hasStarted() {
+        return startupLatch.getCount() > 0;
     }
 }

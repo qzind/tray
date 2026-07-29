@@ -284,13 +284,13 @@ public class PrintHTML extends PrintImage implements PrintProcessor {
             try {
                 if (cSupport != null && cSupport.contains(pxlOpts.getCopies())) {
                     for(WebAppModel model : models) {
-                        WebApp.print(job, model);
+                        WebApp.print(job, model, options);
                     }
                 } else {
                     settings.setCopies(1); //manually handle copies if they are not supported
                     for(int i = 0; i < pxlOpts.getCopies(); i++) {
                         for(WebAppModel model : models) {
-                            WebApp.print(job, model);
+                            WebApp.print(job, model, options);
                         }
                     }
                 }

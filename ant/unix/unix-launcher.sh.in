@@ -110,18 +110,10 @@ else
     echo -e "$SUCCESS Java $curver was detected"
 fi
 
-jigsaw=$(echo -e "9.0\n$curver")
-actual=$(echo "$jigsaw" |sort -t '.' -k 1,1 -k 2,2 -n)
-if [ "$jigsaw" != "$actual" ]; then
-    echo -e "$SUCCESS Java < 9.0, skipping jigsaw options"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    LAUNCH_OPTS="$LAUNCH_OPTS ${apple.launch.opts}"
 else
-    echo -e "$SUCCESS Java >= 9.0, adding jigsaw options"
-    LAUNCH_OPTS="$LAUNCH_OPTS ${launch.jigsaw}"
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        LAUNCH_OPTS="$LAUNCH_OPTS ${apple.launch.jigsaw}"
-    else
-        LAUNCH_OPTS="$LAUNCH_OPTS ${linux.launch.jigsaw}"
-    fi
+    LAUNCH_OPTS="$LAUNCH_OPTS ${linux.launch.opts}"
 fi
 
 if command -v java &>/dev/null; then

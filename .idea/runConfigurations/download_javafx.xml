@@ -1,6 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="download-javafx" type="AntRunConfiguration" activateToolWindowBeforeRun="false" singleton="false">
-    <antsettings antfile="file://$PROJECT_DIR$/build.xml" target="download-javafx" />
-    <method v="2" />
-  </configuration>
-</component>

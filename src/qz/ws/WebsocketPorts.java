@@ -21,15 +21,21 @@ public class WebsocketPorts {
     private List<Integer> insecurePorts;
 
     public List<Integer> getUnusedSecurePorts() {
-        List<Integer> unused = new ArrayList<>(securePorts);
-        unused.remove(securePortIndex.get());
-        return unused;
+        if(securePortIndex.get() > 0) {
+            List<Integer> unused = new ArrayList<>(securePorts);
+            unused.remove(securePortIndex.get());
+            return unused;
+        }
+        return new ArrayList<>();
     }
 
     public List<Integer> getUnusedInsecurePorts() {
-        List<Integer> unused = new ArrayList<>(insecurePorts);
-        unused.remove(insecurePortIndex.get());
-        return unused;
+        if(insecurePortIndex.get() > 0) {
+            List<Integer> unused = new ArrayList<>(insecurePorts);
+            unused.remove(insecurePortIndex.get());
+            return unused;
+        }
+        return new ArrayList<>();
     }
 
     public void setHttpsOnly(boolean httpsOnly) {

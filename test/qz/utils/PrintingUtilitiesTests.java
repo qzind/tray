@@ -13,8 +13,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 
 public class PrintingUtilitiesTests {

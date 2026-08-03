@@ -416,7 +416,9 @@
 
     <target name="unit-tests" depends="compile-tests">
         <property description="Pattern for TestNG classes" name="testng.pattern" value="**"/>
-        <testng suitename="ant" testname="ant" listeners="qz.testng.ConciseSkipListener" classpathref="unit.test.classpath" haltOnFailure="true" verbose="2" outputdir="${out.dir}/report/unit">
+        <testng suitename="ant" testname="ant" listeners="qz.testng.ConciseSkipListener" classpathref="unit.test.classpath" haltOnFailure="true" verbose="2" outputdir="${out.dir}/report/unit" forkJvm="true">
+            <!-- Allows unit tests to inspect JVM's Unix print command builder -->
+            <jvmarg line="--add-opens java.desktop/sun.print=ALL-UNNAMED"/>
             <classfileset dir="${build.dir}/test" includes="${testng.pattern}" excludes="**/integration/**/*.class"/>
         </testng>
     </target>

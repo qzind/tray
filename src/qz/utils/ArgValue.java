@@ -89,6 +89,8 @@ public enum ArgValue {
 
     SECURITY_DATA_PROTOCOLS(PREFERENCES, "URL protocols allowed for print, serial, hid, etc", null, "http,https",
         "security.data.protocols"),
+    SECURITY_PRINT_TOHOST(PREFERENCES, "Enable/disable printing directly to an HTTP host", null, true,
+        "security.print.tohost"),
     SECURITY_PRINT_TOFILE(PREFERENCES, "Enable/disable printing directly to file paths", null, false,
         "security.print.tofile"),
     SECURITY_PRINT_DEMOASSETS(PREFERENCES, "Enable/disable file exceptions for 'demo/assets'", null, true,

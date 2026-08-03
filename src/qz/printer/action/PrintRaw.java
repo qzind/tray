@@ -221,6 +221,12 @@ public class PrintRaw implements PrintProcessor {
      * This is printing "blind".
      */
     private void printToHost(String host, int port, byte[] cmds) throws IOException {
+        if(!PrefsSearch.getBoolean(ArgValue.SECURITY_PRINT_TOHOST)) {
+            log.error("Printing to host '{}' is not permitted.  Configure property '{}' to modify this behavior.",
+                      host, ArgValue.SECURITY_PRINT_TOHOST.getMatch());
+            throw new IOException(String.format("Printing to host '%s' is not permitted", host));
+        }
+
         log.debug("Printing to host {}:{}", host, port);
 
         //throws any exception and auto-closes socket and stream

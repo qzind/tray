@@ -91,6 +91,8 @@ public enum ArgValue {
         "security.data.protocols"),
     SECURITY_PRINT_TOFILE(PREFERENCES, "Enable/disable printing directly to file paths", null, false,
         "security.print.tofile"),
+    SECURITY_PRINT_DEMOASSETS(PREFERENCES, "Enable/disable file exceptions for 'demo/assets'", null, true,
+                              "security.print.demoassets"),
     SECURITY_WSS_SNISTRICT(PREFERENCES, "Enables strict http/websocket SNI checks", null, false,
                            "security.wss.snistrict"),
     SECURITY_WSS_HTTPSONLY(PREFERENCES, "Disables insecure http/websocket ports (e.g. '8182')", null, false,

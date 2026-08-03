@@ -79,7 +79,8 @@ public final class ConnectionUtilities {
             }
         }
         // Allow exception for file: demo/assets
-        if(urlProtocol.trim().toLowerCase(Locale.ENGLISH).equals("file")) {
+        if(PrefsSearch.getBoolean(ArgValue.SECURITY_PRINT_DEMOASSETS) &&
+                urlProtocol.trim().toLowerCase(Locale.ENGLISH).equals("file")) {
             try {
                 // Sanitize manipulative URLs
                 url = Paths.get(url.toURI()).normalize().toUri().toURL();

@@ -13,6 +13,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 public class PrintingUtilitiesTests {
@@ -122,7 +124,7 @@ public class PrintingUtilitiesTests {
             throw new SkipException("UnixPrintJob lpr command test is Linux-only");
         }
 
-        // This intentionally reflects into OpenJDK's Unix print command builder
+        // This intentionally reflects into JVM's Unix print command builder
         // QZ's cups-bsd hint depends on Java pixel printing using /usr/bin/lpr
         Class<?> unixPrintJobClass = Class.forName("sun.print.UnixPrintJob");
         Constructor<?> constructor = unixPrintJobClass.getDeclaredConstructor(PrintService.class);

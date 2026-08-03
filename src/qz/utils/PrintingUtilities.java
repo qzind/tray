@@ -25,6 +25,8 @@ import java.awt.print.PrinterAbortException;
 import java.awt.print.PrinterException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
@@ -198,8 +200,12 @@ public class PrintingUtilities {
         return hasSignature(t, PRINTER_IO_SIGNATURES);
     }
 
-    private static boolean isLprAvailable() {
-        return ShellUtilities.execute("which", "lpr");
+    static boolean isLprAvailable() {
+        // JVM Unix pixel printing calls this absolute path,
+        // not PATH-resolved lpr
+        // that was previously checked using
+        // ShellUtilities.execute("which", "lpr")
+        return Files.isExecutable(Paths.get("/usr/bin/lpr"));
     }
 
     private static boolean hasSignature(Throwable t, String[] signatures) {

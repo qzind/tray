@@ -37,6 +37,7 @@ import java.nio.file.*;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Semaphore;
 
@@ -845,18 +846,26 @@ public class PrintSocketClient {
      *
      * TODO: Revisit when specification is updated to include WebSockets https://wicg.github.io/private-network-access/#integration-websockets
      */
-    public static PrintSocketClient originFilterUpgrade(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp, Server server, String allowOrigin) {
-        if(!allowOrigin.equals("*")) {
-            String origin = req.getHeader("Origin");
-            if(!allowOrigin.equals(origin)) {
-                String message = String.format("Connection-supplied origin value '%s' does not match %s: '%s'; WebSocket connection will fail", origin, ArgValue.SECURITY_WSS_ALLOWORIGIN.getMatch(), allowOrigin);
-                log.error(message);
-                try {
-                    resp.sendError(HttpServletResponse.SC_FORBIDDEN, message);
-                } catch(IOException ignore) {}
-                return null;
+    public static PrintSocketClient originFilterUpgrade(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp, Server server, List<String> allowedOrigins) {
+        String origin = req.getHeader("Origin");
+        if(!originMatches(origin, allowedOrigins)) {
+            String message = String.format("Connection-supplied origin value '%s' does not match %s: '%s'; WebSocket connection will fail", origin, ArgValue.SECURITY_WSS_ALLOWORIGIN.getMatch(), allowedOrigins);
+            log.error(message);
+            try {
+                resp.sendError(HttpServletResponse.SC_FORBIDDEN, message);
             }
+            catch(IOException ignore) {}
+            return null;
         }
         return new PrintSocketClient(server);
+    }
+
+    private static boolean originMatches(String headerOrigin, List<String> allowedOrigins) {
+        for(String allowed : allowedOrigins) {
+            if(allowed.equals("*") || allowed.equalsIgnoreCase(headerOrigin)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

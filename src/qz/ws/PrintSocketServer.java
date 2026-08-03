@@ -50,7 +50,7 @@ public class PrintSocketServer {
     private static boolean httpsOnly;
     private static boolean sniStrict;
     private static String wssHost;
-    private static String wssAllowOrigin;
+    private static List<String> wssAllowedOrigins;
 
     public static void runServer(CertificateManager certManager, boolean headless) throws InterruptedException, InvocationTargetException {
         SwingUtilities.invokeAndWait(() -> {
@@ -58,7 +58,7 @@ public class PrintSocketServer {
         });
 
         wssHost = PrefsSearch.getString(ArgValue.SECURITY_WSS_HOST, certManager.getProperties());
-        wssAllowOrigin = PrefsSearch.getString(ArgValue.SECURITY_WSS_ALLOWORIGIN, certManager.getProperties());
+        wssAllowedOrigins = PrefsSearch.getStringArray(ArgValue.SECURITY_WSS_ALLOWORIGIN, certManager.getProperties());
         httpsOnly = PrefsSearch.getBoolean(ArgValue.SECURITY_WSS_HTTPSONLY, certManager.getProperties());
         sniStrict = PrefsSearch.getBoolean(ArgValue.SECURITY_WSS_SNISTRICT, certManager.getProperties());
         websocketPorts = WebsocketPorts.parseFromProperties();
@@ -90,19 +90,19 @@ public class PrintSocketServer {
 
                 ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
-                // Allow private-network access
-                context.addFilter(HttpAboutServlet.originFilter(wssAllowOrigin), "/*", null);
+                // Specify http origin filter (only one host allowed via header, we'll take the first)
+                context.addFilter(HttpAboutServlet.originFilter(wssAllowedOrigins.get(0)), "/*", null);
 
                 // Handle WebSocket connections
                 context.addFilter(WebSocketUpgradeFilter.class, "/", EnumSet.of(DispatcherType.REQUEST));
                 JettyWebSocketServletContainerInitializer.configure(context, (ctx, container) -> {
-                    container.addMapping("/*", (req, resp) -> PrintSocketClient.originFilterUpgrade(req, resp, server, wssAllowOrigin));
+                    container.addMapping("/*", (req, resp) -> PrintSocketClient.originFilterUpgrade(req, resp, server, wssAllowedOrigins));
                     container.setMaxTextMessageSize(MAX_MESSAGE_SIZE);
                     container.setIdleTimeout(Duration.ofMinutes(5));
                 });
 
                 // Handle HTTP landing page
-                ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet(certManager, wssAllowOrigin));
+                ServletHolder httpServlet = new ServletHolder(new HttpAboutServlet(certManager, wssAllowedOrigins.get(0)));
                 httpServlet.setInitParameter("resourceBase", "/");
 
                 context.addServlet(httpServlet, "/");

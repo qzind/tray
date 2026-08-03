@@ -96,6 +96,14 @@ public class PrefsSearch {
         return parseIntegerArray(getString(argValue, propsArray));
     }
 
+    public static List<String> getStringArray(ArgValue argValue, Properties ... propsArray) {
+        String toParse = getString(argValue, propsArray);
+        if(toParse == null || toParse.isBlank()) {
+            toParse = argValue.getDefaultValAsString();
+        }
+        return parseStringArray(toParse);
+    }
+
     public static List<Integer> parseIntegerArray(String commaSeparated) {
         List<Integer> parsed = new ArrayList<>();
         try {
@@ -107,6 +115,17 @@ public class PrefsSearch {
             }
         } catch(NumberFormatException nfe) {
             log.warn("Failed parsing {} as a valid integer array", commaSeparated, nfe);
+        }
+        return parsed;
+    }
+
+    public static List<String> parseStringArray(String commaSeparated) {
+        List<String> parsed = new ArrayList<>();
+        if (commaSeparated != null && !commaSeparated.isEmpty()) {
+            String[] split = commaSeparated.split(",");
+            for(String item : split) {
+                parsed.add(item.trim());
+            }
         }
         return parsed;
     }

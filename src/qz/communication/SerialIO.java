@@ -23,6 +23,13 @@ public class SerialIO implements DeviceListener {
 
     private static final Logger log = LogManager.getLogger(SerialIO.class);
 
+    private enum PortState {
+        CLOSED,
+        OPENING,
+        OPEN,
+        CLOSING
+    }
+
     // Timeout to wait before giving up on reading the specified amount of bytes
     private static final int TIMEOUT = 1200;
 
@@ -30,6 +37,7 @@ public class SerialIO implements DeviceListener {
     private SerialPortAdapter port;
     private SerialOptions serialOpts;
     private final SerialPortAdapterFactory portFactory;
+    private volatile PortState state = PortState.CLOSED;
 
     private ByteArrayBuilder data = new ByteArrayBuilder();
 
@@ -58,39 +66,72 @@ public class SerialIO implements DeviceListener {
      * @return Boolean indicating success.
      * @throws SerialPortException If the port fails to open.
      */
-    public boolean open(SerialOptions opts) throws SerialPortException {
-        if (isOpen()) {
-            log.warn("Serial port [{}] is already open", portName);
+    public synchronized boolean open(SerialOptions opts) throws SerialPortException {
+        if (state != PortState.CLOSED) {
+            log.warn("Serial port [{}] is not closed, current state is [{}]", portName, state);
             return false;
         }
 
-        port = portFactory.create(portName);
-        port.openPort();
+        state = PortState.OPENING;
 
-        serialOpts = new SerialOptions();
-        setOptions(opts);
+        try {
+            port = portFactory.create(portName);
+            port.openPort();
 
-        return port.isOpened();
+            serialOpts = new SerialOptions();
+            setOptions(opts, port);
+
+            if (port.isOpened()) {
+                state = PortState.OPEN;
+                return true;
+            }
+
+            state = PortState.CLOSED;
+            port = null;
+            return false;
+        }
+        catch(SerialPortException e) {
+            state = PortState.CLOSED;
+            port = null;
+            throw e;
+        }
     }
 
     public void applyPortListener(SerialPortEventListener listener) throws SerialPortException {
-        port.addEventListener(listener);
+        SerialPortAdapter activePort = port;
+        if (state != PortState.OPEN || activePort == null) {
+            throw new SerialPortException(portName, "addEventListener", "Port is not open");
+        }
+
+        activePort.addEventListener(listener);
     }
 
     /**
      * @return Boolean indicating if port is currently open.
      */
     public boolean isOpen() {
-        return port != null && port.isOpened();
+        SerialPortAdapter activePort = port;
+        return state == PortState.OPEN && activePort != null && activePort.isOpened();
     }
 
     public String processSerialEvent(SerialPortEvent event) {
+        SerialPortAdapter activePort = port;
+        if (state != PortState.OPEN || activePort == null) {
+            log.trace("Ignoring serial event for [{}] while state is [{}]", portName, state);
+            return null;
+        }
+
         SerialOptions.ResponseFormat format = serialOpts.getResponseFormat();
 
         try {
             // Receive data
             if (event.isRXCHAR()) {
-                data.append(port.readBytes(event.getEventValue(), TIMEOUT));
+                data.append(activePort.readBytes(event.getEventValue(), TIMEOUT));
+
+                if (state != PortState.OPEN) {
+                    log.trace("Ignoring serial response for [{}] while state is [{}]", portName, state);
+                    return null;
+                }
 
                 String response = null;
                 if (format.isBoundNewline()) {
@@ -237,14 +278,14 @@ public class SerialIO implements DeviceListener {
      *
      * @throws SerialPortException If the properties fail to set
      */
-    private void setOptions(SerialOptions opts) throws SerialPortException {
+    private void setOptions(SerialOptions opts, SerialPortAdapter activePort) throws SerialPortException {
         if (opts == null) { return; }
 
         SerialOptions.PortSettings ps = opts.getPortSettings();
         if (ps != null && !ps.equals(serialOpts.getPortSettings())) {
             log.debug("Applying new port settings");
-            port.setParams(ps.getBaudRate(), ps.getDataBits(), ps.getStopBits(), ps.getParity());
-            port.setFlowControlMode(ps.getFlowControl());
+            activePort.setParams(ps.getBaudRate(), ps.getDataBits(), ps.getStopBits(), ps.getParity());
+            activePort.setFlowControlMode(ps.getFlowControl());
             serialOpts.setPortSettings(ps);
         }
 
@@ -258,13 +299,22 @@ public class SerialIO implements DeviceListener {
     /**
      * Applies the port parameters and writes the buffered data to the serial port.
      */
-    public void sendData(JSONObject params, SerialOptions opts) throws JSONException, IOException, SerialPortException {
+    public synchronized void sendData(JSONObject params, SerialOptions opts) throws JSONException, IOException, SerialPortException {
+        SerialPortAdapter activePort = port;
+        if (state != PortState.OPEN || activePort == null) {
+            throw new SerialPortException(portName, "writeBytes", "Port is not open");
+        }
+
         if (opts != null) {
-            setOptions(opts);
+            setOptions(opts, activePort);
+        }
+
+        if (state != PortState.OPEN) {
+            throw new SerialPortException(portName, "writeBytes", "Port is closing");
         }
 
         log.debug("Sending data over [{}]", portName);
-        port.writeBytes(DeviceUtilities.getDataBytes(params, serialOpts.getPortSettings().getEncoding()));
+        activePort.writeBytes(DeviceUtilities.getDataBytes(params, serialOpts.getPortSettings().getEncoding()));
     }
 
     /**
@@ -273,13 +323,27 @@ public class SerialIO implements DeviceListener {
      * @throws SerialPortException If the port fails to close.
      */
     @Override
-    public void close() {
-        if (!isOpen()) {
+    public synchronized void close() {
+        if (state == PortState.CLOSED) {
             log.warn("Serial port [{}] is not open.", portName);
+            return;
+        }
+
+        if (state == PortState.CLOSING) {
+            log.debug("Serial port [{}] is already closing.", portName);
+            return;
+        }
+
+        state = PortState.CLOSING;
+        SerialPortAdapter activePort = port;
+        if (activePort == null) {
+            log.warn("Serial port [{}] has no active port to close.", portName);
+            state = PortState.CLOSED;
+            return;
         }
 
         try {
-            boolean closed = port.closePort();
+            boolean closed = activePort.closePort();
             if (closed) {
                 log.info("Serial port [{}] closed successfully.", portName);
             } else {
@@ -287,11 +351,11 @@ public class SerialIO implements DeviceListener {
                 throw new SerialPortException(portName, "closePort", "Port not closed");
             }
         } catch(SerialPortException e) {
-            log.warn("Serial port [{}] was not closed properly.", portName);
+            log.warn("Serial port [{}] was not closed properly.", portName, e);
+        } finally {
+            port = null;
+            state = PortState.CLOSED;
         }
-
-        port = null;
-        portName = null;
     }
 
     private Integer min(Integer a, Integer b) {

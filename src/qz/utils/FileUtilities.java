@@ -1021,6 +1021,13 @@ public class FileUtilities {
     }
 
     /**
+     * Quietly deletes a directory if it exists, without recursing into junctions or symlinks
+     */
+    public static void deleteDirectory(File file) throws IOException {
+        deleteDirectory(file.toPath());
+    }
+
+    /**
      * Combines the paths provided into a singular path and quietly deletes without recursing into
      * junctions or symlinks
      */

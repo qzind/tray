@@ -98,7 +98,7 @@ public class Fetcher {
         } else {
             tempExtracted = new File(rootDir.toString(), resourceName + "~tmp");
             if(tempExtracted.exists()) {
-                FileUtilities.deleteDirectory(tempExtracted.toPath());
+                FileUtilities.deleteDirectory(tempExtracted);
             }
             // temp directory to thwart partial extraction
             if(tempExtracted.mkdirs()) {

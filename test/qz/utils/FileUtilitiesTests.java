@@ -25,7 +25,7 @@ public class FileUtilitiesTests {
         tempDir = Files.createTempDirectory("test_dir_");
     }
 
-    //@AfterMethod
+    @AfterMethod
     public void tearDown() throws IOException {
         // Cleanup any remaining temporary files created during testing
         if (Files.exists(tempDir)) {
@@ -34,6 +34,7 @@ public class FileUtilitiesTests {
                     .map(Path::toFile)
                     .forEach(File::delete);
         }
+        FileUtilities.deleteDirectory(tempDir);
     }
 
     @Test
@@ -47,10 +48,12 @@ public class FileUtilitiesTests {
         );
 
         Properties props = new Properties();
-        props.load(new FileInputStream(tempFile));
-        Assert.assertEquals(props.get("about_title"), Constants.ABOUT_TITLE);
-        Assert.assertEquals(props.get("sample_data"), "7890");
-        Assert.assertEquals(props.get("static_data"), "Static data");
+        try(FileInputStream fis = new FileInputStream(tempFile)) {
+            props.load(fis);
+            Assert.assertEquals(props.get("about_title"), Constants.ABOUT_TITLE);
+            Assert.assertEquals(props.get("sample_data"), "7890");
+            Assert.assertEquals(props.get("static_data"), "Static data");
+        }
     }
 
     @Test

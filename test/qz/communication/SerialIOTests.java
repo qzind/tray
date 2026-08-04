@@ -9,7 +9,6 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -208,17 +207,14 @@ public class SerialIOTests {
         boolean opened;
         boolean closeResult = true;
         boolean throwOnClose;
-        boolean throwOnRead;
         boolean timeoutOnRead;
         boolean blockRead;
         byte[] readBytes = new byte[0];
-        byte[] writtenBytes;
         int openCalls;
         int closeCalls;
         int readCalls;
         int writeCalls;
         int lastReadTimeout;
-        SerialPortEventListener listener;
         CountDownLatch readStarted = new CountDownLatch(1);
         CountDownLatch releaseRead = new CountDownLatch(1);
 
@@ -246,9 +242,8 @@ public class SerialIOTests {
 
         @Override
         public void addEventListener(SerialPortEventListener listener) {
-            // Listener registration only proves
-            // SerialIO reached an open state
-            this.listener = listener;
+            // Listener behavior is not part of this lifecycle test
+            // accepting registration keeps open setup realistic
         }
 
         @Override
@@ -266,7 +261,6 @@ public class SerialIOTests {
         @Override
         public void writeBytes(byte[] data) {
             writeCalls++;
-            writtenBytes = Arrays.copyOf(data, data.length);
         }
 
         @Override
@@ -280,9 +274,6 @@ public class SerialIOTests {
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
-            }
-            if (throwOnRead) {
-                throw new SerialPortException(PORT_NAME, "readBytes", "test read failure");
             }
             if (timeoutOnRead) {
                 throw new SerialPortTimeoutException(PORT_NAME, "readBytes", timeout);

@@ -1,6 +1,9 @@
 package qz.communication;
 
-import jssc.*;
+import jssc.SerialPortEvent;
+import jssc.SerialPortEventListener;
+import jssc.SerialPortException;
+import jssc.SerialPortTimeoutException;
 import org.apache.commons.codec.binary.StringUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -24,8 +27,9 @@ public class SerialIO implements DeviceListener {
     private static final int TIMEOUT = 1200;
 
     private String portName;
-    private SerialPort port;
+    private SerialPortAdapter port;
     private SerialOptions serialOpts;
+    private final SerialPortAdapterFactory portFactory;
 
     private ByteArrayBuilder data = new ByteArrayBuilder();
 
@@ -38,8 +42,13 @@ public class SerialIO implements DeviceListener {
      * @param portName Port name to open, such as "COM1" or "/dev/tty0/"
      */
     public SerialIO(String portName, SocketConnection websocket) {
+        this(portName, websocket, JsscSerialPortAdapter::new);
+    }
+
+    SerialIO(String portName, SocketConnection websocket, SerialPortAdapterFactory portFactory) {
         this.portName = portName;
         this.websocket = websocket;
+        this.portFactory = portFactory;
     }
 
     /**
@@ -55,7 +64,7 @@ public class SerialIO implements DeviceListener {
             return false;
         }
 
-        port = new SerialPort(portName);
+        port = portFactory.create(portName);
         port.openPort();
 
         serialOpts = new SerialOptions();

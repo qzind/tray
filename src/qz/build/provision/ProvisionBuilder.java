@@ -232,7 +232,7 @@ public class ProvisionBuilder {
 
     private static void createProvisionDirectory(boolean cleanDirectory) throws IOException {
         if(cleanDirectory) {
-            FileUtils.deleteDirectory(BUILD_PROVISION_FOLDER.toFile());
+            FileUtilities.deleteDirectory(BUILD_PROVISION_FOLDER);
         }
         if(BUILD_PROVISION_FOLDER.toFile().isDirectory()) {
             return;

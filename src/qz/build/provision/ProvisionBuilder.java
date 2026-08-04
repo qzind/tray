@@ -233,7 +233,7 @@ public class ProvisionBuilder {
 
     private static void createProvisionDirectory(boolean cleanDirectory) throws IOException {
         if(cleanDirectory) {
-            PathUtils.deleteDirectory(BUILD_PROVISION_FOLDER);
+            FileUtilities.deleteDirectory(BUILD_PROVISION_FOLDER);
         }
         if(BUILD_PROVISION_FOLDER.toFile().isDirectory()) {
             return;

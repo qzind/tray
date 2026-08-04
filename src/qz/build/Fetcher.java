@@ -3,6 +3,7 @@ package qz.build;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.utils.FileUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
@@ -98,7 +99,7 @@ public class Fetcher {
         } else {
             tempExtracted = new File(rootDir.toString(), resourceName + "~tmp");
             if(tempExtracted.exists()) {
-                PathUtils.deleteDirectory(tempExtracted.toPath());
+                FileUtilities.deleteDirectory(tempExtracted.toPath());
             }
             // temp directory to thwart partial extraction
             if(tempExtracted.mkdirs()) {

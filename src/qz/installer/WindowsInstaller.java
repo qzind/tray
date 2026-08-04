@@ -18,6 +18,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.utils.FileUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 import qz.utils.WindowsUtilities;
@@ -103,7 +104,7 @@ public class WindowsInstaller extends Installer {
                 // Since 2.1, start menus use subfolder
                 if (folder.equals(COMMON_START_MENU) || folder.equals(START_MENU)) {
                     FileUtils.deleteQuietly(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE + ".lnk"));
-                    PathUtils.deleteDirectory(Path.of(folder.toString(), "Programs", ABOUT_TITLE));
+                    FileUtilities.deleteDirectory(folder.toString(), "Programs", ABOUT_TITLE);
                 }
             } catch(InvalidPathException | IOException | Win32Exception ignore) {}
         }

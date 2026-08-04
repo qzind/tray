@@ -146,7 +146,7 @@ public abstract class Installer {
         }
 
         // Delete the JDK blindly
-        PathUtils.deleteDirectory(dest.resolve(JRE_LOCATION));
+        FileUtilities.deleteDirectory(dest.resolve(JRE_LOCATION));
         // Note: preserveFileDate=false per https://github.com/qzind/tray/issues/1011
         FileUtils.copyDirectory(src.toFile(), dest.toFile(), false);
         FileUtilities.setPermissionsRecursively(dest, false);
@@ -205,7 +205,7 @@ public abstract class Installer {
         String[] dirs = { "libs" };
         for (String dir : dirs) {
             try {
-                PathUtils.deleteDirectory(Path.of(instance.getDestination(), dir));
+                FileUtilities.deleteDirectory(instance.getDestination(), dir);
             } catch(IOException ignore) {}
         }
         return this;
@@ -267,7 +267,7 @@ public abstract class Installer {
 
         dirs.forEach(dir -> {
             try {
-                PathUtils.deleteDirectory(Path.of(instance.getDestination(), dir));
+                FileUtilities.deleteDirectory(instance.getDestination(), dir);
             } catch(IOException ignore) {}
         });
 
@@ -303,7 +303,7 @@ public abstract class Installer {
 
     public Installer removeSharedDirectory() {
         try {
-            PathUtils.deleteDirectory(SHARED_DIR);
+            FileUtilities.deleteDirectory(SHARED_DIR);
             log.info("Deleted shared directory: {}", SHARED_DIR);
         } catch(IOException e) {
             log.warn("Could not delete shared directory: {}", SHARED_DIR);
@@ -423,7 +423,7 @@ public abstract class Installer {
             Path provisionPath = SystemUtilities.isMac() ?
                     Paths.get(getDestination()).resolve("Contents/Resources").resolve(PROVISION_DIR) :
                     Paths.get(getDestination()).resolve(PROVISION_DIR);
-            PathUtils.deleteDirectory(provisionPath);
+            FileUtilities.deleteDirectory(provisionPath);
         } catch(Exception e) {
             log.warn("An error occurred removing provision directory",  e);
         }

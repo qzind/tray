@@ -12,6 +12,7 @@ package qz.utils;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
 import org.codehaus.jettison.json.JSONException;
@@ -1008,6 +1009,23 @@ public class FileUtilities {
                 throw new IOException("Unable to set readable: " + location);
             }
         }
+    }
+
+    /**
+     * Quietly deletes a directory if it exists, without recursing into junctions or symlinks
+     */
+    public static void deleteDirectory(Path path) throws IOException {
+        if(path.toFile().exists() && path.toFile().isDirectory()) {
+            PathUtils.deleteDirectory(path);
+        }
+    }
+
+    /**
+     * Combines the paths provided into a singular path and quietly deletes without recursing into
+     * junctions or symlinks
+     */
+    public static void deleteDirectory(String ... paths) throws IOException {
+        deleteDirectory(Path.of(Arrays.toString(paths)));
     }
 
     /**

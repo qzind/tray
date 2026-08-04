@@ -15,6 +15,7 @@ import mslinks.ShellLink;
 import mslinks.ShellLinkException;
 import mslinks.ShellLinkHelper;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
@@ -98,11 +99,11 @@ public class WindowsInstaller extends Installer {
         // Cleanup launchers
         for(WindowsSpecialFolders folder : new WindowsSpecialFolders[] { START_MENU, COMMON_START_MENU, DESKTOP, PUBLIC_DESKTOP, COMMON_STARTUP, RECENT }) {
             try {
-                new File(folder + File.separator + ABOUT_TITLE + ".lnk").delete();
+                FileUtils.deleteQuietly(new File(folder + File.separator + ABOUT_TITLE + ".lnk"));
                 // Since 2.1, start menus use subfolder
                 if (folder.equals(COMMON_START_MENU) || folder.equals(START_MENU)) {
                     FileUtils.deleteQuietly(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE + ".lnk"));
-                    FileUtils.deleteDirectory(new File(folder + File.separator + "Programs" + File.separator + ABOUT_TITLE));
+                    PathUtils.deleteDirectory(Path.of(folder.toString(), "Programs", ABOUT_TITLE));
                 }
             } catch(InvalidPathException | IOException | Win32Exception ignore) {}
         }

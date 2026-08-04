@@ -2,6 +2,7 @@ package qz.build.provision;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
@@ -232,7 +233,7 @@ public class ProvisionBuilder {
 
     private static void createProvisionDirectory(boolean cleanDirectory) throws IOException {
         if(cleanDirectory) {
-            FileUtils.deleteDirectory(BUILD_PROVISION_FOLDER.toFile());
+            PathUtils.deleteDirectory(BUILD_PROVISION_FOLDER);
         }
         if(BUILD_PROVISION_FOLDER.toFile().isDirectory()) {
             return;

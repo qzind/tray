@@ -11,6 +11,7 @@
 package qz.installer;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.auth.Certificate;
@@ -18,8 +19,6 @@ import qz.build.provision.params.Phase;
 import qz.installer.apps.firefox.FirefoxCertificateInstaller;
 import qz.installer.apps.locator.ResolvedApp;
 import qz.installer.apps.locator.AppLocator;
-import qz.installer.apps.policy.PolicyState;
-import qz.installer.apps.policy.PolicyInstaller;
 import qz.installer.certificate.*;
 import qz.installer.provision.ProvisionInstaller;
 import qz.utils.FileUtilities;
@@ -147,7 +146,7 @@ public abstract class Installer {
         }
 
         // Delete the JDK blindly
-        FileUtils.deleteDirectory(dest.resolve(JRE_LOCATION).toFile());
+        PathUtils.deleteDirectory(dest.resolve(JRE_LOCATION));
         // Note: preserveFileDate=false per https://github.com/qzind/tray/issues/1011
         FileUtils.copyDirectory(src.toFile(), dest.toFile(), false);
         FileUtilities.setPermissionsRecursively(dest, false);
@@ -206,7 +205,7 @@ public abstract class Installer {
         String[] dirs = { "libs" };
         for (String dir : dirs) {
             try {
-                FileUtils.deleteDirectory(new File(instance.getDestination() + File.separator + dir));
+                PathUtils.deleteDirectory(Path.of(instance.getDestination(), dir));
             } catch(IOException ignore) {}
         }
         return this;
@@ -268,7 +267,7 @@ public abstract class Installer {
 
         dirs.forEach(dir -> {
             try {
-                FileUtils.deleteDirectory(new File(instance.getDestination() + File.separator + dir));
+                PathUtils.deleteDirectory(Path.of(instance.getDestination(), dir));
             } catch(IOException ignore) {}
         });
 
@@ -304,7 +303,7 @@ public abstract class Installer {
 
     public Installer removeSharedDirectory() {
         try {
-            FileUtils.deleteDirectory(SHARED_DIR.toFile());
+            PathUtils.deleteDirectory(SHARED_DIR);
             log.info("Deleted shared directory: {}", SHARED_DIR);
         } catch(IOException e) {
             log.warn("Could not delete shared directory: {}", SHARED_DIR);
@@ -424,7 +423,7 @@ public abstract class Installer {
             Path provisionPath = SystemUtilities.isMac() ?
                     Paths.get(getDestination()).resolve("Contents/Resources").resolve(PROVISION_DIR) :
                     Paths.get(getDestination()).resolve(PROVISION_DIR);
-            FileUtils.deleteDirectory(provisionPath.toFile());
+            PathUtils.deleteDirectory(provisionPath);
         } catch(Exception e) {
             log.warn("An error occurred removing provision directory",  e);
         }

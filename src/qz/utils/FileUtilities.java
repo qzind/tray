@@ -12,7 +12,6 @@ package qz.utils;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.commons.lang3.text.translate.CharSequenceTranslator;
 import org.apache.commons.lang3.text.translate.LookupTranslator;
 import org.codehaus.jettison.json.JSONException;
@@ -1014,10 +1013,41 @@ public class FileUtilities {
     /**
      * Quietly deletes a directory if it exists, without recursing into junctions or symlinks
      */
-    public static void deleteDirectory(Path path) throws IOException {
-        if(path.toFile().exists() && path.toFile().isDirectory()) {
-            PathUtils.deleteDirectory(path);
+    public static void deleteDirectory(Path directory) throws IOException {
+        if (!Files.exists(directory) || !Files.isDirectory(directory)) {
+            return;
         }
+
+        Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                if (dir.equals(directory)) {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                // If a subfolder is a Symlink OR Junction/Reparse Point, un-link it directly
+                if (isSymbolicLinkOrJunction(dir)) {
+                    Files.delete(dir); // Unlinks the junction point safely without touching target files
+                    return FileVisitResult.SKIP_SUBTREE; // Do NOT go inside this folder
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                if (exc != null) {
+                    throw exc;
+                }
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
     /**
@@ -1031,8 +1061,25 @@ public class FileUtilities {
      * Combines the paths provided into a singular path and quietly deletes without recursing into
      * junctions or symlinks
      */
-    public static void deleteDirectory(String ... paths) throws IOException {
-        deleteDirectory(Path.of(Arrays.toString(paths)));
+    public static void deleteDirectory(String first, String ... more) throws IOException {
+        deleteDirectory(Path.of(first, more));
+    }
+
+    /**
+     * Checks whether a Path is a standard Symbolic Link or a Windows Junction Point.
+     */
+    public static boolean isSymbolicLinkOrJunction(Path path) {
+        if (Files.isSymbolicLink(path)) {
+            return true;
+        }
+        try {
+            // Junction Detection:
+            // path.toRealPath() resolves to the actual target path on disk.
+            // path.toRealPath(LinkOption.NOFOLLOW_LINKS) resolves to the junction link path itself.
+            // If they differ, it is an NTFS Junction or Reparse Point.
+            return !path.toRealPath().equals(path.toRealPath(LinkOption.NOFOLLOW_LINKS));
+        } catch (IOException ignore) {}
+        return false;
     }
 
     /**

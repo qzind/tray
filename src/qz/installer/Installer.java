@@ -20,6 +20,7 @@ import qz.installer.apps.locator.ResolvedApp;
 import qz.installer.apps.locator.AppLocator;
 import qz.installer.certificate.*;
 import qz.installer.provision.ProvisionInstaller;
+import qz.utils.ArgParser;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 import qz.ws.WebsocketPorts;
@@ -387,9 +388,8 @@ public abstract class Installer {
             }
             for(File file : whiteListFiles) {
                 try {
-                    Certificate cert = new Certificate(FileUtilities.readLocalFile(file.getPath()));
-                    if (!cert.isSaved()) {
-                        FileUtilities.addToCertList(ALLOW_FILE, file);
+                    if(FileUtilities.addToCertList(ALLOW_FILE, file) != ArgParser.ExitStatus.SUCCESS) {
+                        throw new Exception("Certificate was not added");
                     }
                 } catch(Exception e) {
                     log.warn("Could not add {} to {}", file, ALLOW_FILE, e);

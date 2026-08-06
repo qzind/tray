@@ -711,9 +711,14 @@ public class FileUtilities {
     }
 
     public static ArgParser.ExitStatus addToCertList(String list, File certFile) throws Exception {
+        boolean local = !SystemUtilities.isAdmin();
         FileReader fr = new FileReader(certFile);
         Certificate cert = new Certificate(IOUtils.toString(fr));
-        if(FileUtilities.printLineToFile(list, cert.data(), !SystemUtilities.isAdmin())) {
+        if(cert.isSaved(local)) {
+            // Already saved
+            return ArgParser.ExitStatus.SUCCESS;
+        }
+        if(FileUtilities.printLineToFile(list, cert.data(), local)) {
             log.info("Successfully added {} to {} list", cert.getOrganization(), ALLOW_FILE);
             return ArgParser.ExitStatus.SUCCESS;
         }

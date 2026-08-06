@@ -6,8 +6,7 @@ import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 
 import static qz.utils.ArgParser.ExitStatus.*;
@@ -44,13 +43,17 @@ public class CertInvoker extends InvokableResource {
                 lines.add(line);
             }
         } catch(IOException e) {
-            log.error("Unable to read lines from file '{}'", file, e);
+            log.error("Unable to read file '{}'", file, e);
         }
-        if(!lines.isEmpty()) {
+
+        // Clear file before writing new values
+        try(FileOutputStream fos = new FileOutputStream(file, false)) {
             for(String line : lines) {
-                // TODO: Make more efficient; Opens and close the file on each write
-                FileUtilities.printLineToFile(Constants.ALLOW_FILE, line, local);
+                // "\r\n" is a holdover from FileUtilities.printLineToFile()
+                fos.write((line + "\r\n").getBytes(StandardCharsets.UTF_8));
             }
+        } catch(IOException e) {
+            log.error("Unable to write file '{}'", file, e);
         }
     }
 }

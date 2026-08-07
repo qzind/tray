@@ -22,8 +22,11 @@ import qz.ws.PrintSocketClient;
 
 import javax.print.PrintException;
 import java.awt.print.PrinterAbortException;
+import java.awt.print.PrinterException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
@@ -32,6 +35,19 @@ import java.util.function.Supplier;
 public class PrintingUtilities {
 
     private static final Logger log = LogManager.getLogger(PrintingUtilities.class);
+    private static final String[] LPR_DIRECT_SIGNATURES = {
+            "/usr/bin/lpr",
+            "lpr: command not found",
+            "usage: lpr",
+            "-j qz tray pixel print"
+    };
+    private static final String[] PRINTER_IO_SIGNATURES = {
+            // Wrapped Java print stack from #1341 https://github.com/qzind/tray/issues/1341
+            "java.awt.print.printerioexception",
+            "javax.print.printexception",
+            "sun.print.rasterprinterjob.spooltoservice",
+            "sun.print.rasterprinterjob.print"
+    };
 
     private static GenericKeyedObjectPool<Format,PrintProcessor> processorPool;
 
@@ -142,6 +158,101 @@ public class PrintingUtilities {
         } else {
             return Format.valueOf(data.optString("format", "COMMAND").toUpperCase(Locale.ENGLISH));
         }
+    }
+
+    public static PrinterException exceptionWithCupsBsdHint(PrinterException ex) {
+        return exceptionWithCupsBsdHint(ex, SystemUtilities.isLinux(), isLprAvailable());
+    }
+
+    static String getLinuxLprMessage() {
+        return "Java printing on Linux requires the CUPS-compatible \"lpr\" command. " +
+                "Install the \"cups-bsd\" package, not the standalone \"lpr\" package, then retry.";
+    }
+
+    static PrinterException exceptionWithCupsBsdHint(PrinterException ex, boolean isLinux, boolean lprAvailable) {
+        if (!isLinux || !isLikelyCupsBsdMissing(ex, lprAvailable)) {
+            return ex;
+        }
+
+        PrinterException hinted = new PrinterException(getLinuxLprMessage());
+        hinted.initCause(ex);
+        return hinted;
+    }
+
+    static boolean isLikelyCupsBsdMissing(Throwable t, boolean lprAvailable) {
+        return hasLprSignature(t) || (!lprAvailable && hasPrinterIoWrapper(t));
+    }
+
+    static boolean hasLprSignature(Throwable t) {
+        while(t != null) {
+            String text = throwableText(t);
+            if (hasAnySignature(text, LPR_DIRECT_SIGNATURES)
+                    || hasMissingLprCommandSignature(text)
+                    || hasWrongLprCommandSignature(text)) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
+    }
+
+    static boolean hasPrinterIoWrapper(Throwable t) {
+        return hasSignature(t, PRINTER_IO_SIGNATURES);
+    }
+
+    static boolean isLprAvailable() {
+        // JVM Unix pixel printing calls this absolute path,
+        // not PATH-resolved lpr
+        // that was previously checked using
+        // ShellUtilities.execute("which", "lpr")
+        return Files.isExecutable(Paths.get("/usr/bin/lpr"));
+    }
+
+    private static boolean hasSignature(Throwable t, String[] signatures) {
+        while(t != null) {
+            if (hasAnySignature(throwableText(t), signatures)) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
+    }
+
+    private static boolean hasAnySignature(String text, String[] signatures) {
+        for(String signature : signatures) {
+            if (text.contains(signature)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasMissingLprCommandSignature(String text) {
+        // Missing /usr/bin/lpr shape from #1341 and linked Raspberry Pi thread
+        return text.contains("cannot run program") && text.contains("lpr")
+                && (text.contains("error=2") || text.contains("no such file or directory"));
+    }
+
+    private static boolean hasWrongLprCommandSignature(String text) {
+        // Incompatible lpr output reported in #642
+        return text.contains("error=1 running") && text.contains("lpr") && text.contains("usage: lpr");
+    }
+
+    private static String throwableText(Throwable t) {
+        // Include the exception type:
+        // say something like PrinterIOException
+        StringBuilder text = new StringBuilder(t.getClass().getName());
+        if (t.getMessage() != null) {
+            // Include the exception error messages if included
+            text.append(" ").append(t.getMessage());
+        }
+        for(StackTraceElement element : t.getStackTrace()) {
+            // Include the print stack methods:
+            // something like say, RasterPrinterJob.spoolToService
+            text.append(" ").append(element.getClassName()).append(".").append(element.getMethodName());
+        }
+        // Standardize so that signature checks stay case-insensitive
+        return text.toString().toLowerCase();
     }
 
     public synchronized static PrintProcessor getPrintProcessor(Format format) {

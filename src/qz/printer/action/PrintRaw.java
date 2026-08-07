@@ -333,6 +333,7 @@ public class PrintRaw implements PrintProcessor {
             switch(backend) {
                 case CUPS_LPR:
                     // Use command line "lp" on Linux, BSD, Solaris, OSX, etc.
+                    // #1393 targets Java lpr printing, not this lp fallback https://github.com/qzind/tray/issues/1393
                     String[] lpCmd = new String[] {"lp", "-d", printer.getPrinterId(), "-o", "raw", tempFile.getAbsolutePath()};
                     if (!(success = ShellUtilities.execute(lpCmd))) {
                         log.debug(StringUtils.join(lpCmd, ' '));

@@ -7,19 +7,22 @@ import qz.ui.component.IconCache;
 import javax.swing.*;
 import java.awt.*;
 
-import static qz.ui.component.table.CertificateField.*;
-import static qz.ui.component.table.FieldStyle.*;
+import static qz.ui.component.table.CertificateField.Type;
+import static qz.ui.component.table.CertificateField.toggleTimeZone;
+import static qz.ui.component.table.FieldStyle.NORMAL;
 
 /**
  * Created by Tres on 2/22/2015.
  * Displays Certificate information in a JTable
  */
 public class CertificateTable extends FieldValueTable implements Themeable {
+    private final CertificateTableCellRenderer renderer;
     private Certificate cert;
 
     public CertificateTable(IconCache iconCache) {
         super(iconCache);
-        setDefaultRenderer(Object.class, new CertificateTableCellRenderer());
+        renderer = new CertificateTableCellRenderer();
+        setDefaultRenderer(Object.class, renderer);
 
         addMouseListener(new TableFocusBeforeClickListener<>(CertificateField.class, (certificateField) -> {
             if (certificateField.isDateField()) {
@@ -55,7 +58,15 @@ public class CertificateTable extends FieldValueTable implements Themeable {
     @Override
     public void refresh() {
         refreshComponents();
-        ((StyledTableCellRenderer)getDefaultRenderer(Object.class)).refresh();
+        // Avoid casting a renderer that LAF refresh may replace
+        renderer.refresh();
+    }
+
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        // LAF refresh can replace the default renderer
+        setDefaultRenderer(Object.class, renderer);
     }
 
     public void autoSize() {

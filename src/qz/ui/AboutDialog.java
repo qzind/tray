@@ -42,6 +42,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
     private Server server;
     private JLabel lblUpdate;
     private JButton updateButton;
+    private JLabel logoLabel;
 
     private JPanel contentPanel;
     private JToolBar headerBar;
@@ -77,9 +78,10 @@ public class AboutDialog extends BasicDialog implements Themeable {
         versionBox.add(new JLabel(String.format("%s (Java)", Constants.VERSION)));
 
         JPanel aboutPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JLabel logo = new JLabel(getIcon(IconCache.Icon.LOGO_ICON));
-        logo.setBorder(new EmptyBorder(0, 0, 0, limitedDisplay ? 0 : 20));
-        aboutPanel.add(logo);
+        logoLabel = new JLabel();
+        refreshLogo();
+        logoLabel.setBorder(new EmptyBorder(0, 0, 0, limitedDisplay ? 0 : 20));
+        aboutPanel.add(logoLabel);
 
         if (!limitedDisplay) {
             LinkLabel linkNew = new LinkLabel("What's New?");
@@ -108,7 +110,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
             infoPanel.add(new TextWrapLabel(String.format("If using %s commercially, please first reach out to the website publisher for support issues.", Constants.ABOUT_TITLE)));
             infoPanel.add(Box.createVerticalGlue());
             infoPanel.add(linkLibrary);
-            infoPanel.setPreferredSize(logo.getPreferredSize());
+            infoPanel.setPreferredSize(logoLabel.getPreferredSize());
         } else {
             LinkLabel linkLabel = new LinkLabel(Constants.ABOUT_URL);
             linkLabel.setLinkLocation(Constants.ABOUT_URL);
@@ -298,6 +300,12 @@ public class AboutDialog extends BasicDialog implements Themeable {
         pack();
     }
 
+    private void refreshLogo() {
+        if(logoLabel != null) {
+            logoLabel.setIcon(getAboutLogo(SystemUtilities.isDarkDesktop()));
+        }
+    }
+
 
     @Override
     public void setVisible(boolean visible) {
@@ -310,6 +318,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
 
     @Override
     public void refresh() {
+        refreshLogo();
         refreshHeader();
         super.refresh();
     }

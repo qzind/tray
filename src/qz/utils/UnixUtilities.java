@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -38,6 +39,7 @@ public class UnixUtilities {
     private static final String[] OS_VERSION_KEYS = {"VERSION", "DISTRIB_RELEASE"};
     private static final String[] KNOWN_ELEVATORS = {"pkexec", "gksu", "gksudo", "kdesudo" };
     private static final String[] OS_RELEASE_FILES = {"/etc/os-release", "/usr/lib/os-release", "/etc/lsb-release", "/etc/redhat-release"};
+    private static final String[] KDE_THEME_KEYS = {"ColorScheme", "LookAndFeelPackage", "widgetStyle"};
     private static String uname;
     private static String unixRelease;
     private static String unixVersion;
@@ -220,7 +222,50 @@ public class UnixUtilities {
      * @return true if enabled, false if not
      */
     public static boolean isDarkMode() {
-        return !ShellUtilities.execute(new String[] { "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" }, new String[] { "dark" }, true, true).isEmpty();
+        // Read the full GTK theme name so exclusions can be applied
+        String themeName = ShellUtilities.execute(new String[] { "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" }, null, true, true);
+        return isDarkThemeName(themeName) || isKdeDarkMode();
+    }
+
+    static boolean isDarkThemeName(String themeName) {
+        if(themeName == null) {
+            return false;
+        }
+        String normalized = themeName.trim().toLowerCase(Locale.ENGLISH);
+        // Match "*-Dark" without treating "*-Darker" as dark
+        return normalized.contains("dark") && !normalized.contains("darker");
+    }
+
+    private static boolean isKdeDarkMode() {
+        Path kdeGlobals = Paths.get(System.getProperty("user.home"), ".config", "kdeglobals");
+        if(!Files.isRegularFile(kdeGlobals)) {
+            return false;
+        }
+        try {
+            return isKdeGlobalsDarkMode(Files.readAllLines(kdeGlobals));
+        } catch(IOException e) {
+            log.warn("Could not read KDE theme configuration {}", kdeGlobals, e);
+        }
+        return false;
+    }
+
+    static boolean isKdeGlobalsDarkMode(Iterable<String> lines) {
+        for(String line : lines) {
+            String[] tokens = line.split("=", 2);
+            if(tokens.length != 2) {
+                continue;
+            }
+            for(String key : KDE_THEME_KEYS) {
+                if(key.equals(tokens[0].trim()) && isDarkThemeName(tokens[1])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static boolean isGtkAvailable() {
+        return GtkUtilities.isAvailable();
     }
 
     public static double getScaleFactor() {

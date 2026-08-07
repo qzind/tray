@@ -171,6 +171,13 @@ public class BasicDialog extends JDialog implements Themeable {
         return null;
     }
 
+    protected ImageIcon getAboutLogo(boolean dark) {
+        if (iconCache != null) {
+            return iconCache.getAboutLogo(dark);
+        }
+        return null;
+    }
+
     @Override
     public void setVisible(boolean b) {
         // fix window focus on macOS

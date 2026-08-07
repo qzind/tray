@@ -4,6 +4,7 @@ import qz.common.Constants;
 import qz.installer.Installer;
 import qz.installer.apps.locator.AppFamily;
 import qz.installer.apps.policy.PolicyInstaller;
+import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
 import java.nio.file.Path;
@@ -19,6 +20,9 @@ public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
     final static String FLATPAK_PREFIX_PATTERN = "%s/flatpak/extension/%s.Extension.%s/%s/1/";
     final static String FLATPAK_SYSTEM_PREFIX = "/var/lib/";
     final static String FLATPAK_USER_PREFIX = String.format("%s/.local/share", System.getProperty("user.home"));
+
+    // Per https://github.com/mozilla/policy-templates/discussions/1301
+    final static String FLATPAK_FIREFOX_SYSTEM_PREFIX_PATTERN = "%s/flatpak/extension/%s.systemconfig/%s/stable/";
 
     public static void main(String ... args) {
         LinuxPolicyLocator locator = new LinuxPolicyLocator();
@@ -53,10 +57,9 @@ public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
             case FIREFOX:
                 switch(appType) {
                     case SNAP: // identical path as default
-                    case NATIVE:
-                        // /etc/firefox/
+                    case NATIVE: // /etc/firefox/
+                    case FLATPAK: // /var/lib/...
                         return Paths.get(String.format(FIREFOX_POLICY_PATTERN, prefix));
-                    case FLATPAK: // see https://github.com/mozilla/policy-templates/discussions/1301
                     default:
                 }
         }
@@ -88,6 +91,9 @@ public class LinuxPolicyLocator implements PolicyInstaller.PolicyLocator {
                             case NATIVE:
                                 // /etc/firefox
                                 return DEFAULT_SYSTEM_PREFIX.resolve(appVariant.getSlug());
+                            case FLATPAK:
+                                String arch = ShellUtilities.executeRaw("uname", "-m").trim();
+                                return Paths.get(String.format(FLATPAK_FIREFOX_SYSTEM_PREFIX_PATTERN, FLATPAK_SYSTEM_PREFIX, appVariant.getBundleId(), arch));
                             default: // unsupported
                         }
                 }

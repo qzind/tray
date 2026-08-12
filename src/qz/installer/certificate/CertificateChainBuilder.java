@@ -13,11 +13,9 @@ package qz.installer.certificate;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.*;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
+import org.apache.commons.validator.routines.InetAddressValidator;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
@@ -60,24 +58,10 @@ public class CertificateChainBuilder {
 
         X509v3CertificateBuilder builder = createX509Cert(keyPair, CA_CERT_AGE, hostNames);
 
-        // Restrict CA to same hostNames as SSL cert
-        List<GeneralSubtree> permitted = new ArrayList<>();
-        for(String host : hostNames) {
-            if (isIp(host)) {
-                // IP constraints require CIDR notation
-                String cidrHost = host.contains(":") ? host + "/128" : host + "/32";
-                permitted.add(new GeneralSubtree(new GeneralName(GeneralName.iPAddress, cidrHost)));
-            } else {
-                permitted.add(new GeneralSubtree(new GeneralName(GeneralName.dNSName, host)));
-            }
-        }
-        NameConstraints nameConstraints = new NameConstraints(permitted.toArray(new GeneralSubtree[0]), null);
-
-
         builder.addExtension(Extension.basicConstraints, true, new BasicConstraints(1))
                 .addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.keyCertSign + KeyUsage.cRLSign))
                 .addExtension(Extension.subjectKeyIdentifier, false, new JcaX509ExtensionUtils().createSubjectKeyIdentifier(keyPair.getPublic()))
-                .addExtension(Extension.nameConstraints, true, nameConstraints);
+                .addExtension(Extension.nameConstraints, true, buildNameConstraints(hostNames));
 
         // Signing
         ContentSigner sign = new JcaContentSignerBuilder("SHA256withRSA").setProvider("BC").build(keyPair.getPrivate());
@@ -143,22 +127,28 @@ public class CertificateChainBuilder {
     private static GeneralNames buildSan(String ... hostNames) {
         GeneralName[] gn = new GeneralName[hostNames.length];
         for (int i = 0; i < hostNames.length; i++) {
-            int gnType = isIp(hostNames[i]) ? GeneralName.iPAddress : GeneralName.dNSName;
+            int gnType = InetAddressValidator.getInstance().isValid(hostNames[i])? GeneralName.iPAddress:GeneralName.dNSName;
             gn[i] = new GeneralName(gnType, hostNames[i]);
         }
         return GeneralNames.getInstance(new DERSequence(gn));
     }
 
-    private static boolean isIp(String ip) {
-        try {
-            String[] split = ip.split("\\.");
-            if (split.length != 4) return false;
-            for (int i = 0; i < 4; ++i) {
-                int p = Integer.parseInt(split[i]);
-                if (p > 255 || p < 0) return false;
+    /**
+     * Builds nameConstraints extension; iterates and detects IPv4 or hostname
+     */
+    private static NameConstraints buildNameConstraints(String... hostNames) {
+        // Restrict CA to same hostNames as SSL cert
+        GeneralSubtree[] subtree = new GeneralSubtree[hostNames.length];
+        for(int i = 0; i < hostNames.length; i++) {
+            String host = hostNames[i];
+            if (InetAddressValidator.getInstance().isValid(host)) {
+                // IP constraints require CIDR notation
+                String cidrHost = host.contains(":")? host + "/128":host + "/32";
+                subtree[i] = new GeneralSubtree(new GeneralName(GeneralName.iPAddress, cidrHost));
+            } else {
+                subtree[i] = new GeneralSubtree(new GeneralName(GeneralName.dNSName, host));
             }
-            return true;
-        } catch (Exception ignore) {}
-        return false;
+        }
+        return new NameConstraints(subtree, null);
     }
 }

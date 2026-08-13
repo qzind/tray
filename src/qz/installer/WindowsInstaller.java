@@ -17,7 +17,12 @@ import mslinks.ShellLinkHelper;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.utils.*;
+import qz.utils.FileUtilities;
+import qz.utils.ShellUtilities;
+import qz.utils.SystemUtilities;
+import qz.utils.WindowsUtilities;
+
+import javax.swing.*;
 
 import static qz.common.Constants.*;
 import static qz.installer.WindowsSpecialFolders.*;

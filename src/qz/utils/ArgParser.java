@@ -350,8 +350,8 @@ public class ArgParser {
         // Second, handle build or install commands
         ArgValue found = hasFlags(true, ArgValue.filter(ArgType.INSTALLER, ArgType.BUILD));
         if(found != null) {
-            if(hasFlag(RESTRICTED)) {
-                System.err.printf("WARNING: Skipping %s flag '%s' in restricted mode.%n", found.getType(), found.getMatch());
+            if(hasFlag(URI_LAUNCH)) {
+                System.err.printf("WARNING: Skipping %s flag '%s' in %s mode.%n", found.getType(), found.getMatch(), URI_LAUNCH.getMatch());
             } else {
                 switch(found.getType()) {
                     case BUILD:

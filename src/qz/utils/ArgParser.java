@@ -96,7 +96,14 @@ public class ArgParser {
     }
 
     public boolean hasFlag(ArgValue argValue) {
-        return hasFlag(argValue.getMatches());
+        if(hasFlag(argValue.getMatches())) {
+            if(isUri && argValue != STEAL) {
+                System.err.printf("WARNING: Skipping %s flag '%s' in URI mode.%n", argValue.getType(), argValue.getMatch());
+                return false;
+            }
+            return true;
+        }
+        return false;
     }
 
     public ArgValue hasFlags(boolean skipHelp, ArgValue ... argValues) {
@@ -352,19 +359,15 @@ public class ArgParser {
         // Second, handle build or install commands
         ArgValue found = hasFlags(true, ArgValue.filter(ArgType.INSTALLER, ArgType.BUILD));
         if(found != null) {
-            if(isUri) {
-                System.err.printf("WARNING: Skipping %s flag '%s' in URI mode.%n", found.getType(), found.getMatch());
-            } else {
-                switch(found.getType()) {
-                    case BUILD:
-                        // Handle build commands (e.g. jlink)
-                        exitStatus = processBuildArgs(found);
-                        return true;
-                    case INSTALLER:
-                        // Handle install commands (e.g. install, uninstall, certgen, etc)
-                        exitStatus = processInstallerArgs(found, args);
-                        return true;
-                }
+            switch(found.getType()) {
+                case BUILD:
+                    // Handle build commands (e.g. jlink)
+                    exitStatus = processBuildArgs(found);
+                    return true;
+                case INSTALLER:
+                    // Handle install commands (e.g. install, uninstall, certgen, etc)
+                    exitStatus = processInstallerArgs(found, args);
+                    return true;
             }
         }
 

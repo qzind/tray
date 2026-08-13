@@ -37,8 +37,6 @@ public enum ArgValue {
           "--steal", Constants.DATA_DIR + ":steal"),
     HEADLESS(OPTION, "Force startup \"headless\" without graphical interface or interactive components.", null, false,
              "--headless"),
-    URI_LAUNCH(OPTION, "Restrict the availability of certain command-line usage when launched via URI.", null, false,
-               "--uri-launch"),
 
     // Installer stubs
     PREINSTALL(INSTALLER, "Perform critical pre-installation steps: Stop instances, all other special considerations.", null, null,

@@ -62,7 +62,7 @@ public class LinuxInstaller extends Installer {
         fieldMap.put("%LINUX_ICON%", String.format("%s.svg", PROPS_FILE));
         fieldMap.put("%COMMAND%", String.format("%s/%s", destination, PROPS_FILE));
         fieldMap.put("%WM_CLASS%", getWmClass());
-        fieldMap.put("%PARAM%", isStartup ? ArgValue.AUTOSTART.getMatch() : ArgValue.URI_LAUNCH.getMatch() + " %u");
+        fieldMap.put("%PARAM%", isStartup ? ArgValue.AUTOSTART.getMatch() : "%u");
 
         File launcher = new File(location);
         try {

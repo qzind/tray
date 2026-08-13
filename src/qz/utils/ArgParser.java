@@ -54,6 +54,7 @@ public class ArgParser {
     private static final int DESCRIPTION_COLUMN = 35;
     private static final int INDENT_SIZE = 2;
 
+    private final boolean isUri;
     private List<String> args;
     private boolean headless;
     private ExitStatus exitStatus;
@@ -61,6 +62,7 @@ public class ArgParser {
     public ArgParser(String[] args) {
         this.exitStatus = SUCCESS;
         this.args = new ArrayList<>(Arrays.asList(args));
+        this.isUri = isUri();
 
         // Apple grossly allows adding weird flags
         // This can be removed when it's removed from unix-launcher.sh.in
@@ -350,8 +352,8 @@ public class ArgParser {
         // Second, handle build or install commands
         ArgValue found = hasFlags(true, ArgValue.filter(ArgType.INSTALLER, ArgType.BUILD));
         if(found != null) {
-            if(hasFlag(URI_LAUNCH)) {
-                System.err.printf("WARNING: Skipping %s flag '%s' in %s mode.%n", found.getType(), found.getMatch(), URI_LAUNCH.getMatch());
+            if(isUri) {
+                System.err.printf("WARNING: Skipping %s flag '%s' in URI mode.%n", found.getType(), found.getMatch());
             } else {
                 switch(found.getType()) {
                     case BUILD:
@@ -462,6 +464,18 @@ public class ArgParser {
             }
         }
         return opts;
+    }
+
+    /**
+     * Detects if any args match the pattern qz:foo to restrict what can be done further by command processing
+     */
+    private boolean isUri() {
+        for(String arg : args) {
+            if(arg.toLowerCase(Locale.ENGLISH).startsWith((Constants.DATA_DIR + ":").toLowerCase(Locale.ENGLISH))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void printHelp(String[] commands, String description, String usage, Object defaultVal, int indent) {

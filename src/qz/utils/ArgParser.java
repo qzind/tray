@@ -351,7 +351,7 @@ public class ArgParser {
         ArgValue found = hasFlags(true, ArgValue.filter(ArgType.INSTALLER, ArgType.BUILD));
         if(found != null) {
             if(hasFlag(RESTRICTED)) {
-                System.out.printf("Skipping '%s' flag in restricted mode.%n", found.getType());
+                System.err.printf("WARNING: Skipping %s flag '%s' in restricted mode.%n", found.getType(), found.getMatch());
             } else {
                 switch(found.getType()) {
                     case BUILD:

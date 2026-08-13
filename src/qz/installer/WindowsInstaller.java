@@ -17,10 +17,7 @@ import mslinks.ShellLinkHelper;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.utils.FileUtilities;
-import qz.utils.ShellUtilities;
-import qz.utils.SystemUtilities;
-import qz.utils.WindowsUtilities;
+import qz.utils.*;
 
 import javax.swing.*;
 
@@ -126,7 +123,7 @@ public class WindowsInstaller extends Installer {
         WindowsUtilities.addRegValue(HKEY_CLASSES_ROOT, DATA_DIR, "", String.format("URL:%s Protocol", ABOUT_TITLE));
         WindowsUtilities.addRegValue(HKEY_CLASSES_ROOT, DATA_DIR, "URL Protocol", "");
         WindowsUtilities.addRegValue(HKEY_CLASSES_ROOT, String.format("%s\\DefaultIcon", DATA_DIR), "",  String.format("\"%s\",1", destinationExe));
-        WindowsUtilities.addRegValue(HKEY_CLASSES_ROOT, String.format("%s\\shell\\open\\command", DATA_DIR), "",  String.format("\"%s\" \"%%1\"", destinationExe));
+        WindowsUtilities.addRegValue(HKEY_CLASSES_ROOT, String.format("%s\\shell\\open\\command", DATA_DIR), "",  String.format("\"%s\" %s \"%%1\"", destinationExe, ArgValue.RESTRICTED.getMatch()));
 
         /// Uninstall info
         String uninstallKey = String.format("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\%s", ABOUT_TITLE);

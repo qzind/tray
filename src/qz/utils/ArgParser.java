@@ -350,6 +350,9 @@ public class ArgParser {
         // Second, handle build or install commands
         ArgValue found = hasFlags(true, ArgValue.filter(ArgType.INSTALLER, ArgType.BUILD));
         if(found != null) {
+            if(hasFlag(RESTRICTED)) {
+                System.out.printf("Skipping '%s' flag in restricted mode.%n", found.getType());
+            }
             switch(found.getType()) {
                 case BUILD:
                     // Handle build commands (e.g. jlink)

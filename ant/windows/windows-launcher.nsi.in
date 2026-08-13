@@ -48,6 +48,8 @@ Section
     ; Get params to pass to jar
     Var /GLOBAL params
     ${GetParameters} $params
+    ; Guard parameterized double-quotes
+    ${StrRep} $params "$params" '"' '\"'
 
     ; Sets the $java variable
     Push "$EXEDIR"

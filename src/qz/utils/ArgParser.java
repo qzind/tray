@@ -97,9 +97,16 @@ public class ArgParser {
 
     public boolean hasFlag(ArgValue argValue) {
         if(hasFlag(argValue.getMatches())) {
-            if(isUri && argValue != STEAL) {
-                System.err.printf("WARNING: Skipping %s flag '%s' in URI mode.%n", argValue.getType(), argValue.getMatch());
-                return false;
+            if(isUri) {
+                // limit allowable flags in URI mode
+                switch(argValue) {
+                    case STEAL:
+                        return true;
+                    case SPAWN:
+                    default:
+                        System.err.printf("WARNING: Skipping %s flag '%s' in URI mode.%n", argValue.getType(), argValue.getMatch());
+                        return false;
+                }
             }
             return true;
         }

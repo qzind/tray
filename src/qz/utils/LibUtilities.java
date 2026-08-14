@@ -62,7 +62,8 @@ public class LibUtilities {
         if (externalized) {
             bindProperties("jna.boot.library.path", // jna
                     "jna.library.path", // hid4java
-                    "jssc.boot.library.path" // jssc
+                    "jssc.boot.library.path", // jssc
+                    "flatlaf.nativeLibraryPath" // flatlaf
             );
             bindUsb4Java();
         }

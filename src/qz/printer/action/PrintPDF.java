@@ -271,8 +271,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             }
 
             for(PDPage pd : doc.getPages()) {
-                if (pxlOpts.getRotation() % 360 != 0) {
-                    rotatePage(doc, pd, pxlOpts.getRotation());
+                double pageRotation = getPageRotation(pxlOpts.getRotation(), pxlOpts.getOrientation());
+                if (pageRotation % 360 != 0) {
+                    rotatePage(doc, pd, pageRotation);
                 }
 
                 if (pxlOpts.getOrientation() == null) {
@@ -281,7 +282,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                         log.info("Adjusting orientation to print landscape PDF source");
                         page.setOrientation(PrintOptions.Orientation.LANDSCAPE.getAsOrientFormat());
                     }
-                } else if (pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
+                } else if (isLandscapeOrientation(pxlOpts.getOrientation())) {
                     //flip imageable area dimensions when in landscape
                     Paper repap = page.getPaper();
                     repap.setImageableArea(repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());
@@ -318,6 +319,19 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
             printCopies(output, pxlOpts, job, attributes);
         }
+    }
+
+    static double getPageRotation(double rotation, PrintOptions.Orientation orientation) {
+        double pageRotation = rotation;
+        if (orientation == PrintOptions.Orientation.REVERSE_PORTRAIT) {
+            pageRotation += orientation.getDegreesRot();
+        }
+        return pageRotation;
+    }
+
+    static boolean isLandscapeOrientation(PrintOptions.Orientation orientation) {
+        return orientation == PrintOptions.Orientation.LANDSCAPE
+                || orientation == PrintOptions.Orientation.REVERSE_LANDSCAPE;
     }
 
     private void rotatePage(PDDocument doc, PDPage page, double rotation) {

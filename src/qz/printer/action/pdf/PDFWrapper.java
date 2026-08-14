@@ -10,7 +10,6 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import qz.printer.PrintOptions;
 import qz.utils.SystemUtilities;
 
-import javax.print.attribute.standard.OrientationRequested;
 import java.awt.*;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
@@ -22,7 +21,7 @@ public class PDFWrapper implements Printable {
 
     private PDDocument document;
     private Scaling scaling;
-    private OrientationRequested orientation = OrientationRequested.PORTRAIT;
+    private PrintOptions.Orientation orientation = PrintOptions.Orientation.PORTRAIT;
 
     private PDFPrintable printable;
 
@@ -30,7 +29,7 @@ public class PDFWrapper implements Printable {
         this.document = document;
         this.scaling = scaling;
         if (orientation != null) {
-            this.orientation = orientation.getAsOrientRequested();
+            this.orientation = orientation;
         }
 
         PDFRenderer renderer = new ParamPdfRenderer(document, useAlternateFontRendering, ignoreTransparency);
@@ -47,7 +46,7 @@ public class PDFWrapper implements Printable {
         graphics.drawString(" ", 0, 0);
 
         //reverse fix for OSX
-        if (SystemUtilities.isMac() && orientation == OrientationRequested.REVERSE_LANDSCAPE) {
+        if (SystemUtilities.isMac() && orientation == PrintOptions.Orientation.REVERSE_LANDSCAPE) {
             adjustPrintForOrientation(graphics, pageFormat, pageIndex);
         }
 

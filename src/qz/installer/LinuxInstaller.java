@@ -4,10 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.App;
-import qz.utils.FileUtilities;
-import qz.utils.ShellUtilities;
-import qz.utils.SystemUtilities;
-import qz.utils.UnixUtilities;
+import qz.utils.*;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -65,7 +62,7 @@ public class LinuxInstaller extends Installer {
         fieldMap.put("%LINUX_ICON%", String.format("%s.svg", PROPS_FILE));
         fieldMap.put("%COMMAND%", String.format("%s/%s", destination, PROPS_FILE));
         fieldMap.put("%WM_CLASS%", getWmClass());
-        fieldMap.put("%PARAM%", isStartup ? "--honorautostart" : "%u");
+        fieldMap.put("%PARAM%", isStartup ? ArgValue.AUTOSTART.getMatch() : "%u");
 
         File launcher = new File(location);
         try {

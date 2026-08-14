@@ -24,7 +24,7 @@ public class PrintImageTests {
     }
 
     @Test(dataProvider = "imageRotations")
-    public void imageRotationComposesOrientationFallback(double rotation, PrintOptions.Orientation orientation, boolean mac, double expected) {
+    public void imageRotationTests(double rotation, PrintOptions.Orientation orientation, boolean mac, double expected) {
         Assert.assertEquals(PrintImage.getImageRotation(rotation, orientation, mac), expected);
     }
 }

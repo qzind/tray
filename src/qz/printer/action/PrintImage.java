@@ -170,12 +170,11 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         scaleImage = pxlOpts.isScaleContent();
         dithering = pxlOpts.getDithering();
         interpolation = pxlOpts.getInterpolation();
-        imageRotation = pxlOpts.getRotation();
+        imageRotation = getImageRotation(pxlOpts.getRotation(), pxlOpts.getOrientation(), SystemUtilities.isMac());
 
         //reverse fix for OSX
         if (SystemUtilities.isMac() && pxlOpts.getOrientation() != null
                 && pxlOpts.getOrientation().getAsOrientRequested() == OrientationRequested.REVERSE_LANDSCAPE) {
-            imageRotation += 180;
             manualReverse = true;
         }
 
@@ -341,6 +340,17 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
     private BufferedImage rotate(BufferedImage image, double angle) {
         return rotate(image, angle, dithering, interpolation);
+    }
+
+    static double getImageRotation(double rotation, PrintOptions.Orientation orientation, boolean mac) {
+        double imageRotation = rotation;
+        if (orientation == PrintOptions.Orientation.REVERSE_PORTRAIT) {
+            imageRotation += orientation.getDegreesRot();
+        }
+        if (mac && orientation != null && orientation.getAsOrientRequested() == OrientationRequested.REVERSE_LANDSCAPE) {
+            imageRotation += 180;
+        }
+        return imageRotation;
     }
 
     @Override

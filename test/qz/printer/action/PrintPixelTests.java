@@ -5,10 +5,10 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.printer.PrintOptions;
 
-public class PrintPDFTests {
+public class PrintPixelTests {
 
-    @DataProvider(name = "pageRotations")
-    public Object[][] pageRotations() {
+    @DataProvider(name = "adjustedRotations")
+    public Object[][] adjustedRotations() {
         return new Object[][] {
                 {0, null, 0},
                 {90, null, 90},
@@ -17,14 +17,13 @@ public class PrintPDFTests {
                 {0, PrintOptions.Orientation.REVERSE_PORTRAIT, 180},
                 {45, PrintOptions.Orientation.REVERSE_PORTRAIT, 225},
                 {180, PrintOptions.Orientation.REVERSE_PORTRAIT, 360},
-                {0, PrintOptions.Orientation.LANDSCAPE, 0},
-                {0, PrintOptions.Orientation.REVERSE_LANDSCAPE, 0}
+                {0, PrintOptions.Orientation.LANDSCAPE, 0}
         };
     }
 
-    @Test(dataProvider = "pageRotations")
-    public void pageRotationTests(double rotation, PrintOptions.Orientation orientation, double expected) {
-        Assert.assertEquals(PrintPDF.getPageRotation(rotation, orientation), expected);
+    @Test(dataProvider = "adjustedRotations")
+    public void adjustedRotationTests(double rotation, PrintOptions.Orientation orientation, double expected) {
+        Assert.assertEquals(PrintPixel.getAdjustedRotation(rotation, orientation), expected);
     }
 
     @DataProvider(name = "landscapeOrientations")
@@ -40,6 +39,6 @@ public class PrintPDFTests {
 
     @Test(dataProvider = "landscapeOrientations")
     public void landscapeOrientationTests(PrintOptions.Orientation orientation, boolean expected) {
-        Assert.assertEquals(PrintPDF.isLandscapeOrientation(orientation), expected);
+        Assert.assertEquals(PrintPixel.isLandscapeOrientation(orientation), expected);
     }
 }

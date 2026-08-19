@@ -27,7 +27,6 @@ import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.ResolutionSyntax;
 import javax.print.attribute.standard.MediaPrintableArea;
-import javax.print.attribute.standard.OrientationRequested;
 import javax.print.attribute.standard.PrinterResolution;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
@@ -170,11 +169,9 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         scaleImage = pxlOpts.isScaleContent();
         dithering = pxlOpts.getDithering();
         interpolation = pxlOpts.getInterpolation();
-        imageRotation = getImageRotation(pxlOpts.getRotation(), pxlOpts.getOrientation(), SystemUtilities.isMac());
+        imageRotation = getAdjustedRotation(pxlOpts.getRotation(), pxlOpts.getOrientation());
 
-        //reverse fix for OSX
-        if (SystemUtilities.isMac() && pxlOpts.getOrientation() != null
-                && pxlOpts.getOrientation().getAsOrientRequested() == OrientationRequested.REVERSE_LANDSCAPE) {
+        if (isMacReverseLandscape(pxlOpts.getOrientation())) {
             manualReverse = true;
         }
 
@@ -340,17 +337,6 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
 
     private BufferedImage rotate(BufferedImage image, double angle) {
         return rotate(image, angle, dithering, interpolation);
-    }
-
-    static double getImageRotation(double rotation, PrintOptions.Orientation orientation, boolean mac) {
-        double imageRotation = rotation;
-        if (orientation == PrintOptions.Orientation.REVERSE_PORTRAIT) {
-            imageRotation += orientation.getDegreesRot();
-        }
-        if (mac && orientation != null && orientation.getAsOrientRequested() == OrientationRequested.REVERSE_LANDSCAPE) {
-            imageRotation += 180;
-        }
-        return imageRotation;
     }
 
     @Override

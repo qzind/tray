@@ -43,22 +43,18 @@ public class ReversePortraitTest {
     }
 
     private static void checkOptions() {
-        double image = PrintImage.getImageRotation(0, PrintOptions.Orientation.REVERSE_PORTRAIT, false);
-        double pdf = PrintPDF.getPageRotation(0, PrintOptions.Orientation.REVERSE_PORTRAIT);
+        double rotation = PrintPixel.getAdjustedRotation(0, PrintOptions.Orientation.REVERSE_PORTRAIT);
 
         // Issue #435 fallback
         // reverse portrait should become a 180-degree
         // content turn
-        if (image != 180) {
-            throw new IllegalStateException("Expected reverse-portrait image rotation to be 180, got " + image);
-        }
-        if (pdf != 180) {
-            throw new IllegalStateException("Expected reverse-portrait PDF rotation to be 180, got " + pdf);
+        if (rotation != 180) {
+            throw new IllegalStateException("Expected reverse-portrait rotation to be 180, got " + rotation);
         }
 
         // PDF reverse portrait should keep
         // portrait paper geometry, not landscape sizing
-        if (PrintPDF.isLandscapeOrientation(PrintOptions.Orientation.REVERSE_PORTRAIT)) {
+        if (PrintPixel.isLandscapeOrientation(PrintOptions.Orientation.REVERSE_PORTRAIT)) {
             throw new IllegalStateException("Reverse portrait should keep portrait page geometry");
         }
     }
@@ -79,7 +75,7 @@ public class ReversePortraitTest {
     private static BufferedImage rotate(BufferedImage image) {
         return PrintImage.rotate(
                 image,
-                PrintImage.getImageRotation(0, PrintOptions.Orientation.REVERSE_PORTRAIT, false),
+                PrintPixel.getAdjustedRotation(0, PrintOptions.Orientation.REVERSE_PORTRAIT),
                 RenderingHints.VALUE_DITHER_DEFAULT,
                 RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
     }

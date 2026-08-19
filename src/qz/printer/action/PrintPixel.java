@@ -188,6 +188,40 @@ public abstract class PrintPixel {
         return rhMap;
     }
 
+    protected static boolean isLandscapeOrientation(PrintOptions.Orientation orientation) {
+        return orientation == PrintOptions.Orientation.LANDSCAPE
+                || orientation == PrintOptions.Orientation.REVERSE_LANDSCAPE;
+    }
+
+    protected static boolean isMacReverseLandscape(PrintOptions.Orientation orientation) {
+        // macOS needs an extra reverse-landscape adjustment in these AWT print paths
+        // because its landscape origin differs from the Windows/PostScript convention
+        // See: https://github.com/qzind/tray/issues/197
+        //      https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/java/awt/print/PageFormat.html
+        return SystemUtilities.isMac() && orientation == PrintOptions.Orientation.REVERSE_LANDSCAPE;
+    }
+
+    protected static double getAdjustedRotation(double rotation, PrintOptions.Orientation orientation) {
+        if (orientation == null) {
+            return rotation;
+        }
+
+        // AWT PageFormat has no reverse-portrait value, so keep portrait geometry
+        // and apply the 180-degree rotation that OrientationRequested defines
+        // See: https://github.com/qzind/tray/issues/435
+        //      https://docs.oracle.com/javase/8/docs/api/javax/print/attribute/standard/OrientationRequested.html
+        //      https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/java/awt/print/PageFormat.html
+        if (orientation == PrintOptions.Orientation.REVERSE_PORTRAIT) {
+            rotation += orientation.getDegreesRot();
+        }
+
+        if (isMacReverseLandscape(orientation)) {
+            rotation += 180;
+        }
+
+        return rotation;
+    }
+
     protected Media findMediaTray(Media[] supportedMedia, String traySelection) {
         HashMap<String,Media> mediaTrays = new HashMap<>();
         for(Media m : supportedMedia) {

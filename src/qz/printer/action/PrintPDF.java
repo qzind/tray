@@ -329,7 +329,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         return pageRotation;
     }
 
-    static boolean isLandscapeOrientation(PrintOptions.Orientation orientation) {
+    protected static boolean isLandscapeOrientation(PrintOptions.Orientation orientation) {
         return orientation == PrintOptions.Orientation.LANDSCAPE
                 || orientation == PrintOptions.Orientation.REVERSE_LANDSCAPE;
     }

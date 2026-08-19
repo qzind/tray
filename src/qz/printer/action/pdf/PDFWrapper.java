@@ -7,8 +7,6 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.printing.PDFPrintable;
 import org.apache.pdfbox.printing.Scaling;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import qz.printer.PrintOptions;
-import qz.utils.SystemUtilities;
 
 import java.awt.*;
 import java.awt.print.PageFormat;
@@ -19,18 +17,16 @@ public class PDFWrapper implements Printable {
 
     private static final Logger log = LogManager.getLogger(PDFWrapper.class);
 
-    private PDDocument document;
-    private Scaling scaling;
-    private PrintOptions.Orientation orientation = PrintOptions.Orientation.PORTRAIT;
+    private final PDDocument document;
+    private final Scaling scaling;
+    private final boolean adjustForReverseLandscape;
 
     private PDFPrintable printable;
 
-    public PDFWrapper(PDDocument document, Scaling scaling, boolean showPageBorder, boolean ignoreTransparency, boolean useAlternateFontRendering, float dpi, boolean center, PrintOptions.Orientation orientation, RenderingHints hints) {
+    public PDFWrapper(PDDocument document, Scaling scaling, boolean showPageBorder, boolean ignoreTransparency, boolean useAlternateFontRendering, float dpi, boolean center, boolean adjustForReverseLandscape, RenderingHints hints) {
         this.document = document;
         this.scaling = scaling;
-        if (orientation != null) {
-            this.orientation = orientation;
-        }
+        this.adjustForReverseLandscape = adjustForReverseLandscape;
 
         PDFRenderer renderer = new ParamPdfRenderer(document, useAlternateFontRendering, ignoreTransparency);
         printable = new PDFPrintable(document, scaling, showPageBorder, dpi, center, renderer);
@@ -45,8 +41,7 @@ public class PDFWrapper implements Printable {
 
         graphics.drawString(" ", 0, 0);
 
-        //reverse fix for OSX
-        if (SystemUtilities.isMac() && orientation == PrintOptions.Orientation.REVERSE_LANDSCAPE) {
+        if (adjustForReverseLandscape) {
             adjustPrintForOrientation(graphics, pageFormat, pageIndex);
         }
 

@@ -296,7 +296,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
             PDFWrapper wrapper = new PDFWrapper(doc, scale, false, ignoreTransparency, altFontRendering,
                                                 (float)(useDensity * pxlOpts.getUnits().as1Inch()),
-                                                false, pxlOpts.getOrientation(), hints);
+                                                false, isMacReverseLandscape(pxlOpts.getOrientation()), hints);
 
             bundle.append(wrapper, page, doc.getNumberOfPages());
         }

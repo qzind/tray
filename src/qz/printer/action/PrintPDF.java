@@ -271,7 +271,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             }
 
             for(PDPage pd : doc.getPages()) {
-                double pageRotation = getPageRotation(pxlOpts.getRotation(), pxlOpts.getOrientation());
+                double pageRotation = getAdjustedRotation(pxlOpts.getRotation(), pxlOpts.getOrientation());
                 if (pageRotation % 360 != 0) {
                     rotatePage(doc, pd, pageRotation);
                 }
@@ -288,8 +288,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     repap.setImageableArea(repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());
                     page.setPaper(repap);
 
-                    //reverse fix for OSX
-                    if (SystemUtilities.isMac() && pxlOpts.getOrientation() == PrintOptions.Orientation.REVERSE_LANDSCAPE) {
+                    if (isMacReverseLandscape(pxlOpts.getOrientation())) {
                         pd.setRotation(pd.getRotation() + 180);
                     }
                 }
@@ -319,19 +318,6 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
             printCopies(output, pxlOpts, job, attributes);
         }
-    }
-
-    static double getPageRotation(double rotation, PrintOptions.Orientation orientation) {
-        double pageRotation = rotation;
-        if (orientation == PrintOptions.Orientation.REVERSE_PORTRAIT) {
-            pageRotation += orientation.getDegreesRot();
-        }
-        return pageRotation;
-    }
-
-    protected static boolean isLandscapeOrientation(PrintOptions.Orientation orientation) {
-        return orientation == PrintOptions.Orientation.LANDSCAPE
-                || orientation == PrintOptions.Orientation.REVERSE_LANDSCAPE;
     }
 
     private void rotatePage(PDDocument doc, PDPage page, double rotation) {

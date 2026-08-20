@@ -185,8 +185,9 @@ public class PrintSocketClient {
                     sendError(session, tUID, String.format("FileIO exception occurred: %s: %s", e.getClass().getSimpleName(), e.getMessage()));
                 }
                 catch(Exception e) {
-                    log.error("Problem processing message", e);
-                    sendError(session, tUID, e);
+                    Exception exception = MissingLprException.wrap(e);
+                    log.error("Problem processing message", exception);
+                    sendError(session, tUID, exception);
                 }
             }).start();
         }
@@ -195,8 +196,9 @@ public class PrintSocketClient {
             sendError(session, UID, e);
         }
         catch(Exception e) {
-            log.error("Problem processing message", e);
-            sendError(session, UID, e);
+            Exception exception = MissingLprException.wrap(e);
+            log.error("Problem processing message", exception);
+            sendError(session, UID, exception);
         }
     }
 

@@ -171,9 +171,7 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         interpolation = pxlOpts.getInterpolation();
         imageRotation = getAdjustedRotation(pxlOpts.getRotation(), pxlOpts.getOrientation());
 
-        if (isMacReverseLandscape(pxlOpts.getOrientation())) {
-            manualReverse = true;
-        }
+        manualReverse = shouldManuallyReverseImage(pxlOpts.getOrientation());
 
         if (!scaleImage) {
             //breakup large images to print across pages as needed

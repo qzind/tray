@@ -206,6 +206,49 @@ public abstract class PrintPixel {
             return rotation;
         }
 
+        return getAdjustedRotation(rotation, orientation, 0);
+    }
+
+    protected double getAdjustedRotation(double rotation, PrintOptions.Orientation orientation, double existingRotation) {
+        if (orientation == null) {
+            return rotation;
+        }
+
+        return switch(this) {
+            case PrintPDF ignored -> getPdfAdjustedRotation(rotation, orientation, existingRotation);
+            case PrintHTML ignored -> getDefaultAdjustedRotation(rotation, orientation);
+            case PrintImage ignored -> getImageAdjustedRotation(rotation, orientation);
+            default -> getDefaultAdjustedRotation(rotation, orientation);
+        };
+    }
+
+    protected boolean shouldAdjustPrintForOrientation(PrintOptions.Orientation orientation) {
+        return this instanceof PrintPDF && isMacReverseLandscape(orientation);
+    }
+
+    protected boolean shouldManuallyReverseImage(PrintOptions.Orientation orientation) {
+        return this instanceof PrintImage && !(this instanceof PrintHTML) && isMacReverseLandscape(orientation);
+    }
+
+    private double getPdfAdjustedRotation(double rotation, PrintOptions.Orientation orientation, double existingRotation) {
+        rotation = getDefaultAdjustedRotation(rotation, orientation);
+        if (isMacReverseLandscape(orientation)) {
+            rotation += existingRotation + 180;
+        }
+
+        return rotation;
+    }
+
+    private double getImageAdjustedRotation(double rotation, PrintOptions.Orientation orientation) {
+        rotation = getDefaultAdjustedRotation(rotation, orientation);
+        if (isMacReverseLandscape(orientation)) {
+            rotation += 180;
+        }
+
+        return rotation;
+    }
+
+    private double getDefaultAdjustedRotation(double rotation, PrintOptions.Orientation orientation) {
         // AWT PageFormat has no reverse-portrait value, so keep portrait geometry
         // and apply the 180-degree rotation that OrientationRequested defines
         // See: https://github.com/qzind/tray/issues/435
@@ -215,23 +258,7 @@ public abstract class PrintPixel {
             rotation += orientation.getDegreesRot();
         }
 
-        if (this instanceof PrintImage && !(this instanceof PrintHTML) && isMacReverseLandscape(orientation)) {
-            rotation += 180;
-        }
-
         return rotation;
-    }
-
-    protected double getAdjustedRotation(PrintOptions.Orientation orientation, double existingRotation) {
-        if (this instanceof PrintPDF && isMacReverseLandscape(orientation)) {
-            return existingRotation + 180;
-        }
-
-        return existingRotation;
-    }
-
-    protected boolean shouldAdjustPrintForOrientation(PrintOptions.Orientation orientation) {
-        return this instanceof PrintPDF && isMacReverseLandscape(orientation);
     }
 
     protected Media findMediaTray(Media[] supportedMedia, String traySelection) {

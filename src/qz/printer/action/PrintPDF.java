@@ -288,15 +288,16 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                     repap.setImageableArea(repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());
                     page.setPaper(repap);
 
-                    if (isMacReverseLandscape(pxlOpts.getOrientation())) {
-                        pd.setRotation(pd.getRotation() + 180);
+                    double adjustedRotation = getAdjustedRotation(0, pxlOpts.getOrientation(), pd.getRotation());
+                    if (adjustedRotation != pd.getRotation()) {
+                        pd.setRotation((int)adjustedRotation);
                     }
                 }
             }
 
             PDFWrapper wrapper = new PDFWrapper(doc, scale, false, ignoreTransparency, altFontRendering,
                                                 (float)(useDensity * pxlOpts.getUnits().as1Inch()),
-                                                false, isMacReverseLandscape(pxlOpts.getOrientation()), hints);
+                                                false, shouldAdjustPrintForOrientation(pxlOpts.getOrientation()), hints);
 
             bundle.append(wrapper, page, doc.getNumberOfPages());
         }

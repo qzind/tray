@@ -188,12 +188,7 @@ public abstract class PrintPixel {
         return rhMap;
     }
 
-    protected boolean isLandscapeOrientation(PrintOptions.Orientation orientation) {
-        return orientation == PrintOptions.Orientation.LANDSCAPE
-                || orientation == PrintOptions.Orientation.REVERSE_LANDSCAPE;
-    }
-
-    protected boolean isMacReverseLandscape(PrintOptions.Orientation orientation) {
+    private boolean isMacReverseLandscape(PrintOptions.Orientation orientation) {
         // macOS needs an extra reverse-landscape adjustment in these AWT print paths
         // because its landscape origin differs from the Windows/PostScript convention
         // See: https://github.com/qzind/tray/issues/197

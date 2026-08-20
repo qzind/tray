@@ -20,7 +20,6 @@ import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.ConnectionUtilities;
 import qz.utils.PrintingUtilities;
-import qz.utils.SystemUtilities;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;

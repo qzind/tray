@@ -55,7 +55,7 @@ public class ReversePortraitTest {
 
         // PDF reverse portrait should keep
         // portrait paper geometry, not landscape sizing
-        if (PIXEL.isLandscapeOrientation(PrintOptions.Orientation.REVERSE_PORTRAIT)) {
+        if (PrintOptions.Orientation.REVERSE_PORTRAIT.isLandscape()) {
             throw new IllegalStateException("Reverse portrait should keep portrait page geometry");
         }
     }

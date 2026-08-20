@@ -282,7 +282,7 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                         log.info("Adjusting orientation to print landscape PDF source");
                         page.setOrientation(PrintOptions.Orientation.LANDSCAPE.getAsOrientFormat());
                     }
-                } else if (isLandscapeOrientation(pxlOpts.getOrientation())) {
+                } else if (pxlOpts.getOrientation().isLandscape()) {
                     //flip imageable area dimensions when in landscape
                     Paper repap = page.getPaper();
                     repap.setImageableArea(repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());

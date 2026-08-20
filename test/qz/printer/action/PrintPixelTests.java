@@ -8,6 +8,7 @@ import qz.printer.PrintOptions;
 public class PrintPixelTests {
 
     private final PrintPixel image = new PrintImage();
+    private final PrintPixel pdf = new PrintPDF();
 
     @DataProvider(name = "adjustedRotations")
     public Object[][] adjustedRotations() {
@@ -41,6 +42,12 @@ public class PrintPixelTests {
 
     @Test(dataProvider = "landscapeOrientations")
     public void landscapeOrientationTests(PrintOptions.Orientation orientation, boolean expected) {
-        Assert.assertEquals(image.isLandscapeOrientation(orientation), expected);
+        Assert.assertEquals(orientation != null && orientation.isLandscape(), expected);
     }
+
+    @Test
+    public void pdfReversePortraitRotationTest() {
+        Assert.assertEquals(pdf.getAdjustedRotation(0, PrintOptions.Orientation.REVERSE_PORTRAIT, 90), 180);
+    }
+
 }

@@ -29,12 +29,23 @@ public class MissingLprException extends Exception {
         return e;
     }
 
+    static Exception wrap(Exception e, boolean isLinux, boolean lprAvailable) {
+        if(isLprSignature(e, isLinux, lprAvailable)) {
+            return new MissingLprException(e);
+        }
+        return e;
+    }
+
     static boolean isLprSignature(Exception e) {
-        if(!SystemUtilities.isLinux()) {
+        return isLprSignature(e, SystemUtilities.isLinux(), isLprAvailable());
+    }
+
+    static boolean isLprSignature(Exception e, boolean isLinux, boolean lprAvailable) {
+        if(!isLinux) {
             return false;
         }
         if(e instanceof PrinterException) {
-            return !isLprAvailable() && hasCauseChain(e, PrintException.class, PrinterIOException.class);
+            return !lprAvailable && hasCauseChain(e, PrintException.class, PrinterIOException.class);
         }
         if(e instanceof IOException) {
             return isMessageSignature((IOException)e);

@@ -24,6 +24,7 @@ public class ReversePortraitTest {
     private static final Path RES_DIR = Paths.get("./test/qz/printer/action/resources");
     private static final Path OUT_DIR = Paths.get("./out/issue-435-smoke");
     private static final String FORMAT = "png";
+    private static final PrintPixel PIXEL = new PrintImage();
 
     public static void main(String[] args) {
         try {
@@ -43,7 +44,7 @@ public class ReversePortraitTest {
     }
 
     private static void checkOptions() {
-        double rotation = PrintPixel.getAdjustedRotation(0, PrintOptions.Orientation.REVERSE_PORTRAIT);
+        double rotation = PIXEL.getAdjustedRotation(0, PrintOptions.Orientation.REVERSE_PORTRAIT);
 
         // Issue #435 fallback
         // reverse portrait should become a 180-degree
@@ -54,7 +55,7 @@ public class ReversePortraitTest {
 
         // PDF reverse portrait should keep
         // portrait paper geometry, not landscape sizing
-        if (PrintPixel.isLandscapeOrientation(PrintOptions.Orientation.REVERSE_PORTRAIT)) {
+        if (PIXEL.isLandscapeOrientation(PrintOptions.Orientation.REVERSE_PORTRAIT)) {
             throw new IllegalStateException("Reverse portrait should keep portrait page geometry");
         }
     }
@@ -75,7 +76,7 @@ public class ReversePortraitTest {
     private static BufferedImage rotate(BufferedImage image) {
         return PrintImage.rotate(
                 image,
-                PrintPixel.getAdjustedRotation(0, PrintOptions.Orientation.REVERSE_PORTRAIT),
+                PIXEL.getAdjustedRotation(0, PrintOptions.Orientation.REVERSE_PORTRAIT),
                 RenderingHints.VALUE_DITHER_DEFAULT,
                 RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
     }

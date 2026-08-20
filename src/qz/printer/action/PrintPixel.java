@@ -188,12 +188,12 @@ public abstract class PrintPixel {
         return rhMap;
     }
 
-    protected static boolean isLandscapeOrientation(PrintOptions.Orientation orientation) {
+    protected boolean isLandscapeOrientation(PrintOptions.Orientation orientation) {
         return orientation == PrintOptions.Orientation.LANDSCAPE
                 || orientation == PrintOptions.Orientation.REVERSE_LANDSCAPE;
     }
 
-    protected static boolean isMacReverseLandscape(PrintOptions.Orientation orientation) {
+    protected boolean isMacReverseLandscape(PrintOptions.Orientation orientation) {
         // macOS needs an extra reverse-landscape adjustment in these AWT print paths
         // because its landscape origin differs from the Windows/PostScript convention
         // See: https://github.com/qzind/tray/issues/197
@@ -201,7 +201,7 @@ public abstract class PrintPixel {
         return SystemUtilities.isMac() && orientation == PrintOptions.Orientation.REVERSE_LANDSCAPE;
     }
 
-    protected static double getAdjustedRotation(double rotation, PrintOptions.Orientation orientation) {
+    protected double getAdjustedRotation(double rotation, PrintOptions.Orientation orientation) {
         if (orientation == null) {
             return rotation;
         }
@@ -215,11 +215,23 @@ public abstract class PrintPixel {
             rotation += orientation.getDegreesRot();
         }
 
-        if (isMacReverseLandscape(orientation)) {
+        if (this instanceof PrintImage && !(this instanceof PrintHTML) && isMacReverseLandscape(orientation)) {
             rotation += 180;
         }
 
         return rotation;
+    }
+
+    protected double getAdjustedRotation(PrintOptions.Orientation orientation, double existingRotation) {
+        if (this instanceof PrintPDF && isMacReverseLandscape(orientation)) {
+            return existingRotation + 180;
+        }
+
+        return existingRotation;
+    }
+
+    protected boolean shouldAdjustPrintForOrientation(PrintOptions.Orientation orientation) {
+        return this instanceof PrintPDF && isMacReverseLandscape(orientation);
     }
 
     protected Media findMediaTray(Media[] supportedMedia, String traySelection) {

@@ -7,6 +7,8 @@ import qz.printer.PrintOptions;
 
 public class PrintPixelTests {
 
+    private final PrintPixel image = new PrintImage();
+
     @DataProvider(name = "adjustedRotations")
     public Object[][] adjustedRotations() {
         return new Object[][] {
@@ -23,7 +25,7 @@ public class PrintPixelTests {
 
     @Test(dataProvider = "adjustedRotations")
     public void adjustedRotationTests(double rotation, PrintOptions.Orientation orientation, double expected) {
-        Assert.assertEquals(PrintPixel.getAdjustedRotation(rotation, orientation), expected);
+        Assert.assertEquals(image.getAdjustedRotation(rotation, orientation), expected);
     }
 
     @DataProvider(name = "landscapeOrientations")
@@ -39,6 +41,6 @@ public class PrintPixelTests {
 
     @Test(dataProvider = "landscapeOrientations")
     public void landscapeOrientationTests(PrintOptions.Orientation orientation, boolean expected) {
-        Assert.assertEquals(PrintPixel.isLandscapeOrientation(orientation), expected);
+        Assert.assertEquals(image.isLandscapeOrientation(orientation), expected);
     }
 }

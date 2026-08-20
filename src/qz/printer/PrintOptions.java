@@ -749,6 +749,10 @@ public class PrintOptions {
             return degreesRot;
         }
 
+        public boolean isLandscape() {
+            return this == LANDSCAPE || this == REVERSE_LANDSCAPE;
+        }
+
         @Override
         public String slug() {
             return Sluggable.slugOf(this);

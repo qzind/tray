@@ -271,8 +271,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
             }
 
             for(PDPage pd : doc.getPages()) {
-                if (pxlOpts.getRotation() % 360 != 0) {
-                    rotatePage(doc, pd, pxlOpts.getRotation());
+                double pageRotation = getAdjustedRotation(pxlOpts.getRotation(), pxlOpts.getOrientation());
+                if (pageRotation % 360 != 0) {
+                    rotatePage(doc, pd, pageRotation);
                 }
 
                 if (pxlOpts.getOrientation() == null) {
@@ -281,22 +282,22 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
                         log.info("Adjusting orientation to print landscape PDF source");
                         page.setOrientation(PrintOptions.Orientation.LANDSCAPE.getAsOrientFormat());
                     }
-                } else if (pxlOpts.getOrientation() != PrintOptions.Orientation.PORTRAIT) {
+                } else if (pxlOpts.getOrientation().isLandscape()) {
                     //flip imageable area dimensions when in landscape
                     Paper repap = page.getPaper();
                     repap.setImageableArea(repap.getImageableX(), repap.getImageableY(), repap.getImageableHeight(), repap.getImageableWidth());
                     page.setPaper(repap);
 
-                    //reverse fix for OSX
-                    if (SystemUtilities.isMac() && pxlOpts.getOrientation() == PrintOptions.Orientation.REVERSE_LANDSCAPE) {
-                        pd.setRotation(pd.getRotation() + 180);
+                    double adjustedRotation = getAdjustedRotation(0, pxlOpts.getOrientation(), pd.getRotation());
+                    if (adjustedRotation != pd.getRotation()) {
+                        pd.setRotation((int)adjustedRotation);
                     }
                 }
             }
 
             PDFWrapper wrapper = new PDFWrapper(doc, scale, false, ignoreTransparency, altFontRendering,
                                                 (float)(useDensity * pxlOpts.getUnits().as1Inch()),
-                                                false, pxlOpts.getOrientation(), hints);
+                                                false, shouldAdjustPrintForOrientation(pxlOpts.getOrientation()), hints);
 
             bundle.append(wrapper, page, doc.getNumberOfPages());
         }

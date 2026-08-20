@@ -20,14 +20,12 @@ import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
 import qz.utils.ConnectionUtilities;
 import qz.utils.PrintingUtilities;
-import qz.utils.SystemUtilities;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.ResolutionSyntax;
 import javax.print.attribute.standard.MediaPrintableArea;
-import javax.print.attribute.standard.OrientationRequested;
 import javax.print.attribute.standard.PrinterResolution;
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
@@ -170,14 +168,9 @@ public class PrintImage extends PrintPixel implements PrintProcessor, Printable 
         scaleImage = pxlOpts.isScaleContent();
         dithering = pxlOpts.getDithering();
         interpolation = pxlOpts.getInterpolation();
-        imageRotation = pxlOpts.getRotation();
+        imageRotation = getAdjustedRotation(pxlOpts.getRotation(), pxlOpts.getOrientation());
 
-        //reverse fix for OSX
-        if (SystemUtilities.isMac() && pxlOpts.getOrientation() != null
-                && pxlOpts.getOrientation().getAsOrientRequested() == OrientationRequested.REVERSE_LANDSCAPE) {
-            imageRotation += 180;
-            manualReverse = true;
-        }
+        manualReverse = shouldManuallyReverseImage(pxlOpts.getOrientation());
 
         if (!scaleImage) {
             //breakup large images to print across pages as needed

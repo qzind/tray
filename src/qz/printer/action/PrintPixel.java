@@ -188,6 +188,74 @@ public abstract class PrintPixel {
         return rhMap;
     }
 
+    private boolean isMacReverseLandscape(PrintOptions.Orientation orientation) {
+        // macOS needs an extra reverse-landscape adjustment in these AWT print paths
+        // because its landscape origin differs from the Windows/PostScript convention
+        // See: https://github.com/qzind/tray/issues/197
+        //      https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/java/awt/print/PageFormat.html
+        return SystemUtilities.isMac() && orientation == PrintOptions.Orientation.REVERSE_LANDSCAPE;
+    }
+
+    protected double getAdjustedRotation(double rotation, PrintOptions.Orientation orientation) {
+        if (orientation == null) {
+            return rotation;
+        }
+
+        return getAdjustedRotation(rotation, orientation, 0);
+    }
+
+    protected double getAdjustedRotation(double rotation, PrintOptions.Orientation orientation, double existingRotation) {
+        if (orientation == null) {
+            return rotation;
+        }
+
+        return switch(this) {
+            case PrintPDF ignored -> getPdfAdjustedRotation(rotation, orientation, existingRotation);
+            case PrintHTML ignored -> getDefaultAdjustedRotation(rotation, orientation);
+            case PrintImage ignored -> getImageAdjustedRotation(rotation, orientation);
+            default -> getDefaultAdjustedRotation(rotation, orientation);
+        };
+    }
+
+    protected boolean shouldAdjustPrintForOrientation(PrintOptions.Orientation orientation) {
+        return this instanceof PrintPDF && isMacReverseLandscape(orientation);
+    }
+
+    protected boolean shouldManuallyReverseImage(PrintOptions.Orientation orientation) {
+        return this instanceof PrintImage && !(this instanceof PrintHTML) && isMacReverseLandscape(orientation);
+    }
+
+    private double getPdfAdjustedRotation(double rotation, PrintOptions.Orientation orientation, double existingRotation) {
+        rotation = getDefaultAdjustedRotation(rotation, orientation);
+        if (isMacReverseLandscape(orientation)) {
+            rotation += existingRotation + 180;
+        }
+
+        return rotation;
+    }
+
+    private double getImageAdjustedRotation(double rotation, PrintOptions.Orientation orientation) {
+        rotation = getDefaultAdjustedRotation(rotation, orientation);
+        if (isMacReverseLandscape(orientation)) {
+            rotation += 180;
+        }
+
+        return rotation;
+    }
+
+    private double getDefaultAdjustedRotation(double rotation, PrintOptions.Orientation orientation) {
+        // AWT PageFormat has no reverse-portrait value, so keep portrait geometry
+        // and apply the 180-degree rotation that OrientationRequested defines
+        // See: https://github.com/qzind/tray/issues/435
+        //      https://docs.oracle.com/javase/8/docs/api/javax/print/attribute/standard/OrientationRequested.html
+        //      https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/java/awt/print/PageFormat.html
+        if (orientation == PrintOptions.Orientation.REVERSE_PORTRAIT) {
+            rotation += orientation.getDegreesRot();
+        }
+
+        return rotation;
+    }
+
     protected Media findMediaTray(Media[] supportedMedia, String traySelection) {
         HashMap<String,Media> mediaTrays = new HashMap<>();
         for(Media m : supportedMedia) {

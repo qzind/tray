@@ -2899,12 +2899,14 @@ var qz = (function() {
             /**
              * Get version of connected QZ Tray application.
              *
+             * @param {Object} [options] Version options
+             *  @param {boolean} [options.details=false] Returns additional details such as <code>title</code>, <code>vendor</code>, <code>url</code> and <code>email</code>.
              * @returns {Promise<string|Error>} Version number of QZ Tray.
              *
              * @memberof qz.api
              */
-            getVersion: function() {
-                return _qz.websocket.dataPromise('getVersion');
+            getVersion: function(options) {
+                return _qz.websocket.dataPromise('getVersion', options);
             },
 
             /**

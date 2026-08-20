@@ -17,6 +17,7 @@ import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
 import org.usb4java.LoaderException;
 import qz.auth.Certificate;
 import qz.auth.Request;
+import qz.common.AboutInfo;
 import qz.common.Constants;
 import qz.common.TrayManager;
 import qz.communication.*;
@@ -661,7 +662,11 @@ public class PrintSocketClient {
                 sendResult(session, UID, SystemUtilities.getHostName());
                 break;
             case GET_VERSION:
-                sendResult(session, UID, Constants.VERSION);
+                if(!params.has("details") || !params.optBoolean("details", false)) {
+                    sendResult(session, UID, Constants.VERSION);
+                } else {
+                    sendResult(session, UID, AboutInfo.product());
+                }
                 break;
             case WEBSOCKET_STOP:
                 log.info("Another instance of {} is asking this to close", Constants.ABOUT_TITLE);

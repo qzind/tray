@@ -140,7 +140,15 @@ public class PolicyInstaller {
                     case NATIVE:
                         return !SystemUtilities.isLinux() || SystemUtilities.isAdmin();
                     case FLATPAK:
-                        return SystemUtilities.isLinux() && appFamily == AppFamily.CHROMIUM;
+                        if(!SystemUtilities.isLinux()) {
+                            return false;
+                        }
+                        if(SystemUtilities.isAdmin()) {
+                            // Firefox can ONLY do system-scoped installs
+                            return true;
+                        }
+                        // Chromium can do user-scoped or system-scoped installs
+                        return appFamily == AppFamily.CHROMIUM;
                     case SNAP:
                         return UnixUtilities.isUbuntu() && SystemUtilities.isAdmin();
                     default:

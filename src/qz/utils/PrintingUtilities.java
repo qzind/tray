@@ -24,6 +24,8 @@ import javax.print.PrintException;
 import java.awt.print.PrinterAbortException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
@@ -33,6 +35,8 @@ public class PrintingUtilities {
 
     private static final Logger log = LogManager.getLogger(PrintingUtilities.class);
 
+    public static final String JAVA_LPR_PATH = "/usr/bin/lpr";
+
     private static GenericKeyedObjectPool<Format,PrintProcessor> processorPool;
 
 
@@ -40,6 +44,10 @@ public class PrintingUtilities {
 
     public enum Type {
         PIXEL, RAW
+    }
+
+    public static boolean isJavaLprAvailable() {
+        return Files.isExecutable(Paths.get(JAVA_LPR_PATH));
     }
 
     public enum Format implements Sluggable {

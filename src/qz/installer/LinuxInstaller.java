@@ -6,11 +6,14 @@ import org.apache.logging.log4j.Logger;
 import qz.App;
 import qz.utils.*;
 
+import javax.swing.*;
+import java.awt.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import static qz.common.Constants.*;
@@ -103,6 +106,9 @@ public class LinuxInstaller extends Installer {
     }
 
     public Installer addSystemSettings() {
+        LinuxInstaller.findBinary("/usr/bin/lpr", "Most printing jobs will fail.",
+                                  "cups-bsd", "cups-client", "cups");
+
         // Legacy Ubuntu versions only: Patch Unity to show the System Tray
         if(UnixUtilities.isUbuntu()) {
             ShellUtilities.execute("gsettings", "set", "com.canonical.Unity.Panel", "systray", "-whitelist", "\"['all']\"");
@@ -356,6 +362,36 @@ public class LinuxInstaller extends Installer {
             }
         }
         return env;
+    }
+
+    private static boolean promptInstall(String binary) {
+        if (Installer.IS_SILENT || GraphicsEnvironment.isHeadless()) {
+            return true;
+        }
+        try {
+            SystemUtilities.setSystemLookAndFeel(false);
+            String message = String.format("A required component, \"%s\", wasn't found. Attempt to fetch it now?", binary);
+            return JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(null, message);
+        } catch (Throwable ignore) {}
+        return true;
+    }
+
+    public static void findBinary(String binary, String consequence, String debianPackage, String fedoraPackage, String archPackage) {
+        boolean installed = ShellUtilities.execute("which", binary);
+        if (!installed) {
+            if (SystemUtilities.isAdmin() && promptInstall(binary)) {
+                if(UnixUtilities.isUbuntu() || UnixUtilities.isDebian()) {
+                    installed = ShellUtilities.execute("apt-get", "install", "-y", debianPackage);
+                } else if(UnixUtilities.isFedora()) {
+                    installed =  ShellUtilities.execute("dnf", "install", "-y", fedoraPackage);
+                } else if(UnixUtilities.isArch()) {
+                    installed =  ShellUtilities.execute("pacman", "-S", archPackage);
+                }
+            }
+        }
+        if(!installed) {
+            log.warn("A critical component, \"{}\" wasn't found and cannot be installed automatically. {}", binary, consequence);
+        }
     }
 
 }

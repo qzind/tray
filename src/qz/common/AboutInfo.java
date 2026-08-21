@@ -56,14 +56,15 @@ public class AboutInfo {
         return about;
     }
 
-    private static JSONObject product() throws JSONException {
+    public static JSONObject product() throws JSONException {
         JSONObject product = new JSONObject();
 
         product
                 .put("title", Constants.ABOUT_TITLE)
                 .put("version", Constants.VERSION)
                 .put("vendor", Constants.ABOUT_COMPANY)
-                .put("url", Constants.ABOUT_URL);
+                .put("url", Constants.ABOUT_URL)
+                .put("email", Constants.ABOUT_EMAIL);
 
         return product;
     }

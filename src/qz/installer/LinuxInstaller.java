@@ -3,11 +3,8 @@ package qz.installer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.utils.FileUtilities;
-import qz.utils.PrintingUtilities;
-import qz.utils.ShellUtilities;
-import qz.utils.SystemUtilities;
-import qz.utils.UnixUtilities;
+import qz.App;
+import qz.utils.*;
 
 import javax.swing.JOptionPane;
 import java.awt.GraphicsEnvironment;
@@ -66,7 +63,8 @@ public class LinuxInstaller extends Installer {
         fieldMap.put("%DESTINATION%", destination);
         fieldMap.put("%LINUX_ICON%", String.format("%s.svg", PROPS_FILE));
         fieldMap.put("%COMMAND%", String.format("%s/%s", destination, PROPS_FILE));
-        fieldMap.put("%PARAM%", isStartup ? "--honorautostart" : "%u");
+        fieldMap.put("%WM_CLASS%", getWmClass());
+        fieldMap.put("%PARAM%", isStartup ? ArgValue.AUTOSTART.getMatch() : "%u");
 
         File launcher = new File(location);
         try {
@@ -241,6 +239,13 @@ public class LinuxInstaller extends Installer {
         // Spawn
         log.info("Executing: {}", Arrays.toString(argsList.toArray()));
         super.startProcess(argsList);
+    }
+
+    /**
+     * Get the value for Desktop file's StartupWMClass to fix Linux taskbar icon
+     */
+    private static String getWmClass() {
+        return App.class.getCanonicalName().replace(".", "-");
     }
 
     /**

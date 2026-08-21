@@ -5,4 +5,5 @@ Exec="%COMMAND%" %PARAM%
 Path=%DESTINATION%
 Icon=%DESTINATION%/%LINUX_ICON%
 MimeType=application/x-qz;x-scheme-handler/qz;
+StartupWMClass=%WM_CLASS%
 Terminal=false

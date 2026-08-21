@@ -39,6 +39,7 @@
         <dependency name="commons-codec" org="${commons-codec.org}" conf="*->default" rev="${commons-codec.rev}"/>
         <dependency name="commons-io" org="${commons-io.org}" conf="*->default" rev="${commons-io.rev}"/>
         <dependency name="commons-pool2" org="${commons-pool2.org}" conf="*->default" rev="${commons-pool2.rev}"/>
+        <dependency name="commons-validator" org="${commons-validator.org}" conf="*->default" rev="${commons-validator.rev}"/>
         <dependency name="not-going-to-be-commons-ssl" org="${commons-ssl.org}" conf="*->default" rev="${commons-ssl.rev}"/>
 
         <!--====== Communications ======-->

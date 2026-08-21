@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.utils.FileUtilities;
+import qz.utils.PrintingUtilities;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 import qz.utils.UnixUtilities;
@@ -104,6 +105,8 @@ public class LinuxInstaller extends Installer {
     }
 
     public Installer addSystemSettings() {
+        checkCupsBsdDependency();
+
         // Legacy Ubuntu versions only: Patch Unity to show the System Tray
         if(UnixUtilities.isUbuntu()) {
             ShellUtilities.execute("gsettings", "set", "com.canonical.Unity.Panel", "systray", "-whitelist", "\"['all']\"");
@@ -158,6 +161,35 @@ public class LinuxInstaller extends Installer {
         log.info("Cleaning up any remaining files...");
         new File(destination + File.separator + "install").delete();
         return this;
+    }
+
+    void checkCupsBsdDependency() {
+        LprState state = lprState(UnixUtilities.isUbuntu() || UnixUtilities.isDebian(), PrintingUtilities.isJavaLprAvailable());
+        String lprPath = PrintingUtilities.JAVA_LPR_PATH;
+        switch (state) {
+            case PRESENT -> {
+                log.info("Found {} for Java pixel printing.", lprPath);
+            }
+            case MISSING_DEBIAN -> {
+                log.warn("Missing {}; install \"cups-bsd\" for Java pixel printing.", lprPath);
+            }
+            case MISSING_UNSUPPORTED -> {
+                log.info("Missing {}; cups-bsd applies to Debian-family systems only.", lprPath);
+            }
+        }
+    }
+
+    static LprState lprState(boolean debianFamily, boolean lprAvailable) {
+        if(lprAvailable) {
+            return LprState.PRESENT;
+        }
+        return debianFamily ? LprState.MISSING_DEBIAN : LprState.MISSING_UNSUPPORTED;
+    }
+
+    enum LprState {
+        PRESENT,
+        MISSING_DEBIAN,
+        MISSING_UNSUPPORTED
     }
 
     public Installer removeSystemSettings() {

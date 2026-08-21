@@ -1,13 +1,12 @@
 package qz.ws;
 
+import qz.utils.PrintingUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.print.PrintException;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterIOException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Locale;
 
 /**
@@ -15,7 +14,6 @@ import java.util.Locale;
  */
 public class MissingLprException extends Exception {
     private static final String MESSAGE = "The 'lpr' command appears to be missing. Please install the 'cups-bsd' package and then try again.";
-    private static final String LPR_PATH = "/usr/bin/lpr";
 
     public MissingLprException(Exception e) {
         super(MESSAGE);
@@ -37,7 +35,7 @@ public class MissingLprException extends Exception {
     }
 
     static boolean isLprSignature(Exception e) {
-        return isLprSignature(e, SystemUtilities.isLinux(), isLprAvailable());
+        return isLprSignature(e, SystemUtilities.isLinux(), PrintingUtilities.isJavaLprAvailable());
     }
 
     static boolean isLprSignature(Exception e, boolean isLinux, boolean lprAvailable) {
@@ -79,7 +77,4 @@ public class MissingLprException extends Exception {
                 && normalized.contains("lpr");
     }
 
-    private static boolean isLprAvailable() {
-        return Files.isExecutable(Paths.get(LPR_PATH));
-    }
 }

@@ -9,6 +9,8 @@ import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 import qz.utils.UnixUtilities;
 
+import javax.swing.JOptionPane;
+import java.awt.GraphicsEnvironment;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -172,11 +174,30 @@ public class LinuxInstaller extends Installer {
             }
             case MISSING_DEBIAN -> {
                 log.warn("Missing {}; install \"cups-bsd\" for Java pixel printing.", lprPath);
+                promptCupsBsd(lprPath);
             }
             case MISSING_UNSUPPORTED -> {
                 log.info("Missing {}; cups-bsd applies to Debian-family systems only.", lprPath);
             }
         }
+    }
+
+    void promptCupsBsd(String lprPath) {
+        if(!shouldPromptLpr(LprState.MISSING_DEBIAN, Installer.IS_SILENT, GraphicsEnvironment.isHeadless())) {
+            return;
+        }
+        try {
+            SystemUtilities.setSystemLookAndFeel(true);
+            JOptionPane.showMessageDialog(
+                    null,
+                    String.format("Java pixel printing requires %s.\nPlease install the \"cups-bsd\" package and try again.", lprPath),
+                    "Missing cups-bsd",
+                    JOptionPane.WARNING_MESSAGE);
+        } catch(Throwable ignore) {}
+    }
+
+    static boolean shouldPromptLpr(LprState state, boolean silent, boolean headless) {
+        return state == LprState.MISSING_DEBIAN && !silent && !headless;
     }
 
     static LprState lprState(boolean debianFamily, boolean lprAvailable) {

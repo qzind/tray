@@ -20,6 +20,7 @@ import org.bouncycastle.util.encoders.Base64;
 import qz.auth.X509Constants;
 import qz.common.Constants;
 import qz.installer.Installer;
+import qz.installer.LinuxInstaller;
 import qz.installer.apps.locator.AppFamily;
 import qz.utils.*;
 
@@ -67,7 +68,8 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
 
     public LinuxCertificateInstaller(Installer.PrivilegeLevel scope) {
         setInstallType(scope);
-        findCertutil();
+        LinuxInstaller.findBinary("certutil", "HTTPS will fail on certain browsers which depend on it.",
+                                  "libnss3-tools", "nss-tools", "nss");
     }
 
     public Installer.PrivilegeLevel getInstallType() {
@@ -153,36 +155,6 @@ public class LinuxCertificateInstaller extends NativeCertificateInstaller {
         }
 
         return success;
-    }
-
-    @SuppressWarnings("UnusedReturnValue")
-    private boolean findCertutil() {
-        boolean installed = ShellUtilities.execute("which", "certutil");
-        if (!installed) {
-            if (scope == SYSTEM && promptCertutil()) {
-                if(UnixUtilities.isUbuntu() || UnixUtilities.isDebian()) {
-                    installed = ShellUtilities.execute("apt-get", "install", "-y", "libnss3-tools");
-                } else if(UnixUtilities.isFedora()) {
-                    installed =  ShellUtilities.execute("dnf", "install", "-y", "nss-tools");
-                }
-            }
-        }
-        if(!installed) {
-            log.warn("A critical component, \"certutil\" wasn't found and cannot be installed automatically. HTTPS will fail on certain browsers which depend on it.");
-        }
-        return installed;
-    }
-
-    private boolean promptCertutil() {
-        // Assume silent or headless installs want certutil
-        if(Installer.IS_SILENT || GraphicsEnvironment.isHeadless()) {
-            return true;
-        }
-        try {
-            SystemUtilities.setSystemLookAndFeel(true);
-            return JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(null, "A critical component, \"certutil\" wasn't found.  Attempt to fetch it now?");
-        } catch(Throwable ignore) {}
-        return true;
     }
 
     /**

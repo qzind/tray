@@ -88,19 +88,14 @@ public class UnixUtilities {
                 }
             } catch(IOException ignore) {}
             if(distroFamily == null) {
-                distroFamily = getDistroFamilyFallback();
-                log.warn("Unable to detect distribution family, falling back to calculated value from '{}'", distroFamily);
+                distroFamily = distroSlug(getDisplayName());
+                if(distroFamily.isEmpty()) {
+                    distroFamily = "unknown";
+                }
+                log.warn("Unable to detect distribution family, falling back to '{}' (calculated from '{}')", distroFamily, displayName);
             }
          }
         return distroFamily;
-    }
-
-    private static String getDistroFamilyFallback() {
-        String family = distroSlug(getOsDisplayName());
-        if(family.isEmpty()) {
-            family = "unknown";
-        }
-        return family;
     }
 
     private static String distroSlug(String name) {
@@ -118,7 +113,7 @@ public class UnixUtilities {
     /**
      * Returns the name of the OS, trying to obtain distro information if available
      */
-    public static String getOsDisplayName() {
+    public static String getDisplayName() {
         if (displayName == null) {
             try {
                 Map<String,String> map = getReleaseMap();
@@ -262,7 +257,7 @@ public class UnixUtilities {
      */
     public static boolean isUbuntu() {
         if(!SystemUtilities.isLinux()) return false;
-        return getOsDisplayName().toLowerCase().contains("ubuntu");
+        return getDisplayName().toLowerCase().contains("ubuntu");
     }
 
     /**

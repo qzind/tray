@@ -177,7 +177,7 @@ public class SystemUtilities {
             switch(OS_TYPE) {
                 case LINUX:
                     // "Linux" is too generic, get the flavor (e.g. Ubuntu, Fedora)
-                    osName = UnixUtilities.getOsDisplayName();
+                    osName = UnixUtilities.getDisplayName();
                     break;
                 default:
                     osName = System.getProperty("os.name", "Unknown");

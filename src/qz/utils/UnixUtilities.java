@@ -266,9 +266,4 @@ public class UnixUtilities {
         if(!SystemUtilities.isLinux()) return false;
         return getOsDisplayName() != null && getOsDisplayName().contains("Fedora");
     }
-
-    public static boolean isArch() {
-        // TODO
-        return false;
-    }
 }

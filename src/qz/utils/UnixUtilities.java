@@ -38,7 +38,7 @@ public class UnixUtilities {
 
     private static final String[] OS_FAMILY_KEYS = {"ID_LIKE", "ID" };
     private static final String[] OS_NAME_KEYS = {"NAME", "DISTRIB_ID"};
-    private static final String[] OS_VERSION_KEYS = { "VERSION", "VERSION_ID", "DISTRIB_RELEASE"};
+    private static final String[] OS_VERSION_KEYS = {"VERSION", "VERSION_ID", "DISTRIB_RELEASE"};
     private static final String[] KNOWN_ELEVATORS = {"pkexec", "gksu", "gksudo", "kdesudo" };
     private static final String[] OS_RELEASE_FILES = {"/etc/os-release", "/usr/lib/os-release", "/etc/lsb-release", "/etc/redhat-release"};
     private static String distroFamily; // "debian", "arch", etc

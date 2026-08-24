@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -34,13 +35,15 @@ import java.util.stream.Stream;
  */
 public class UnixUtilities {
     private static final Logger log = LogManager.getLogger(UnixUtilities.class);
+
+    private static final String[] OS_FAMILY_KEYS = {"ID_LIKE", "ID" };
     private static final String[] OS_NAME_KEYS = {"NAME", "DISTRIB_ID"};
-    private static final String[] OS_VERSION_KEYS = {"VERSION", "DISTRIB_RELEASE"};
+    private static final String[] OS_VERSION_KEYS = { "VERSION", "VERSION_ID", "DISTRIB_RELEASE"};
     private static final String[] KNOWN_ELEVATORS = {"pkexec", "gksu", "gksudo", "kdesudo" };
     private static final String[] OS_RELEASE_FILES = {"/etc/os-release", "/usr/lib/os-release", "/etc/lsb-release", "/etc/redhat-release"};
-    private static String uname;
-    private static String unixRelease;
-    private static String unixVersion;
+    private static String distroFamily; // "debian", "arch", etc
+    private static String displayName;
+    private static String displayVersion;
     private static Integer pid;
     private static String foundElevator;
 
@@ -73,56 +76,79 @@ public class UnixUtilities {
         int getpid();
     }
 
-    /**
-     * Returns the output of {@code uname -a} shell command, useful for parsing the Linux Version
-     *
-     * @return the output of {@code uname -a}, or null if not running Linux
-     */
-    public static String getUname() {
-        if (SystemUtilities.isUnix() && uname == null) {
-            uname = ShellUtilities.execute(
-                    new String[] {"uname", "-a"},
-                    (String[])null
-            );
-        }
+    public static String getDistroFamily() {
+        if(distroFamily == null) {
+            try {
+                Map<String,String> map = getReleaseMap();
+                for(String distroKey : OS_FAMILY_KEYS) {
+                    if (map.containsKey(distroKey)) {
+                        distroFamily = map.get(distroKey);
+                        break;
+                    }
+                }
+            } catch(IOException ignore) {}
+            if(distroFamily == null) {
+                distroFamily = getDistroFamilyFallback();
+                log.warn("Unable to detect distribution family, falling back to calculated value from '{}'", distroFamily);
+            }
+         }
+        return distroFamily;
+    }
 
-        return uname;
+    private static String getDistroFamilyFallback() {
+        String family = distroSlug(getOsDisplayName());
+        if(family.isEmpty()) {
+            family = "unknown";
+        }
+        return family;
+    }
+
+    private static String distroSlug(String name) {
+        if(name != null) {
+            String osLower = name.replace("\"", "").toLowerCase(Locale.ENGLISH);
+            if (osLower.startsWith("linux")) {
+                // Fix "linux" before the name
+                osLower = osLower.substring(5).trim();
+            }
+            return osLower.split("[\\s-]+")[0]; // return the first part of the name
+        }
+        return "";
     }
 
     /**
      * Returns the name of the OS, trying to obtain distro information if available
      */
     public static String getOsDisplayName() {
-        if (unixRelease == null) {
+        if (displayName == null) {
             try {
                 Map<String,String> map = getReleaseMap();
                 for (String nameKey: OS_NAME_KEYS) {
                     if (map.containsKey(nameKey)) {
-                        unixRelease = map.get(nameKey);
+                        displayName = map.get(nameKey);
                         break;
                     }
                 }
             } catch(IOException e) {
                 log.warn("Could not find a suitable os-release file {}", Arrays.toString(OS_RELEASE_FILES));
             }
-            if(unixRelease == null) {
+            if(displayName == null) {
                 log.warn("Could not find name key {} in files {}",  Arrays.toString(OS_NAME_KEYS), Arrays.toString(OS_RELEASE_FILES));
-                unixRelease = System.getProperty("os.name", "Unknown");
+                displayName = System.getProperty("os.name", "Unknown");
             }
         }
-        return unixRelease;
+        return displayName;
     }
 
     /**
      * The human-readable display version of the Linux/Unix OS
      */
     public static String getOsDisplayVersion() {
-        if (unixVersion == null) {
+        if (displayVersion == null) {
             try {
                 Map<String,String> map = getReleaseMap();
                 for(String versionKey : OS_VERSION_KEYS) {
                     if (map.containsKey(versionKey)) {
-                        unixVersion = map.get(versionKey);
+                        displayVersion = map.get(versionKey);
                         break;
                     }
                 }
@@ -130,18 +156,18 @@ public class UnixUtilities {
             catch(IOException e) {
                 log.warn("Could not find a suitable os-release file {}", Arrays.toString(OS_RELEASE_FILES));
             }
-            if(unixVersion == null) {
+            if(displayVersion == null) {
                 log.warn("Could not find version key {} in files {}",  Arrays.toString(OS_VERSION_KEYS), Arrays.toString(OS_RELEASE_FILES));
                 // If we can't get version info from a file, run the "lsb_release" command
                 String lsbRelease = ShellUtilities.executeRaw(new String[] {"lsb_release", "-ds"}).trim();
                 if(!lsbRelease.isEmpty()) {
-                    unixVersion = lsbRelease;
+                    displayVersion = lsbRelease.replace("\"", "");
                 } else {
-                    unixVersion = System.getProperty("os.version", "0.0.0");
+                    displayVersion = System.getProperty("os.version", "0.0.0");
                 }
             }
         }
-        return unixVersion;
+        return displayVersion;
     }
 
     private static Map<String, String> getReleaseMap() throws IOException {
@@ -231,44 +257,29 @@ public class UnixUtilities {
     }
 
     /**
-     * Returns whether the output of {@code uname -a} shell command contains "Ubuntu"
-     *
-     * @return {@code true} if this OS is Ubuntu
+     * Returns true only if the OS display name contains the word "ubuntu"
+     * TODO: This may cause improper assumptions for kubuntu, xubuntu, etc
      */
     public static boolean isUbuntu() {
-        if(!SystemUtilities.isLinux()) {
-            return false;
-        }
-        getUname();
-        return uname != null && uname.contains("Ubuntu");
+        if(!SystemUtilities.isLinux()) return false;
+        return getOsDisplayName().toLowerCase().contains("ubuntu");
     }
 
     /**
-     * Returns whether the output of {@code uname -a} shell command contains "Debian"
-     *
-     * @return {@code true} if this OS is Debian
+     * Returns true if detected OS family is Debian or Debian-like.
      */
     public static boolean isDebian() {
-        if(!SystemUtilities.isLinux()) {
-            return false;
-        }
-        getUname();
-        return uname != null && uname.contains("Debian");
+        if(!SystemUtilities.isLinux()) return false;
+        return getDistroFamily().equals("debian") || getDistroFamily().equals("ubuntu");
     }
 
-
-    /**
-     * Returns whether the output of <code>cat /etc/redhat-release/code> shell command contains "Fedora"
-     *
-     * @return {@code true} if this OS is Fedora
-     */
     public static boolean isFedora() {
         if(!SystemUtilities.isLinux()) return false;
-        return getOsDisplayName() != null && getOsDisplayName().contains("Fedora");
+        return getDistroFamily().equals("fedora");
     }
 
     public static boolean isArch() {
-        // TODO
-        return false;
+        if(!SystemUtilities.isLinux()) return false;
+        return getDistroFamily().equals("arch");
     }
 }

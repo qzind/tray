@@ -247,6 +247,8 @@ public final class ConnectionUtilities {
                 linuxOS += (linuxOS.isEmpty()? "" : "; ") + "Fedora";
             } else if(UnixUtilities.isDebian()) {
                 linuxOS += (linuxOS.isEmpty() ? "" : "; ") + "Debian";
+            } else if(UnixUtilities.isArch()) {
+                linuxOS += (linuxOS.isEmpty() ? "" : "; ") + "Arch";
             }
             return linuxOS;
         }

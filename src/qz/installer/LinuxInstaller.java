@@ -380,12 +380,12 @@ public class LinuxInstaller extends Installer {
         boolean installed = ShellUtilities.execute("which", binary);
         if (!installed) {
             if (SystemUtilities.isAdmin() && promptInstall(binary)) {
-                if(UnixUtilities.isUbuntu() || UnixUtilities.isDebian()) {
+                if(UnixUtilities.isDebian()) {
                     installed = ShellUtilities.execute("apt-get", "install", "-y", debianPackage);
                 } else if(UnixUtilities.isFedora()) {
                     installed =  ShellUtilities.execute("dnf", "install", "-y", fedoraPackage);
                 } else if(UnixUtilities.isArch()) {
-                    installed =  ShellUtilities.execute("pacman", "-S", archPackage);
+                    installed =  ShellUtilities.execute("pacman", "-S", "--noconfirm", archPackage);
                 }
             }
         }

@@ -245,9 +245,6 @@ public class UnixUtilities {
     }
 
     public static double getScaleFactor() {
-        if (Constants.JAVA_VERSION.lessThan(Version.valueOf("11.0.0"))) {
-            return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
-        }
         return GtkUtilities.getScaleFactor();
     }
 

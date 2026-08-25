@@ -11,7 +11,7 @@ public class GtkUtilities {
     private static final Logger log = LogManager.getLogger(GtkUtilities.class);
 
     public static double getScaleFactor() {
-        return GTK.isAvailable() ? GTK.getInstance().getScaleFactor() : 1.0;
+        return GTK.INSTANCE != null ? GTK.INSTANCE.getScaleFactor() : 1.0;
     }
 
     enum GtkType {
@@ -37,10 +37,6 @@ public class GtkUtilities {
         boolean gtk_init_check(int argc, String[] argv);
         Pointer gdk_display_get_default();
         Pointer gdk_display_get_default_screen (Pointer display);
-
-        static boolean isAvailable() {
-            return getInstance() != null;
-        }
 
         static GTK getInstance() {
             if(INSTANCE != null) {

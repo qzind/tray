@@ -8,6 +8,7 @@ import com.sun.jna.Pointer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+
 public class GtkUtilities {
     private static final Logger log = LogManager.getLogger(GtkUtilities.class);
     private static final GTK GTK_INSTANCE = GTK.getInstance();

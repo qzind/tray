@@ -3,6 +3,7 @@ package qz.utils;
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
+import com.sun.jna.NativeLibrary;
 import com.sun.jna.Pointer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -141,13 +142,14 @@ public class GtkUtilities {
 
     private interface GTK2 extends GTK {
         // Gtk 2.1-3.0
-        int gtk_major_version = 0;
-        int gtk_minor_version = 0;
-        int gtk_micro_version = 0;
         double gdk_screen_get_resolution(Pointer screen);
 
         default Version getVersion() {
-            return Version.of(gtk_major_version, gtk_minor_version, gtk_micro_version);
+            NativeLibrary lib = NativeLibrary.getInstance(GtkType.GTK2.lib);
+            return Version.of(
+                    lib.getGlobalVariableAddress("gtk_major_version").getInt(0),
+                    lib.getGlobalVariableAddress("gtk_minor_version").getInt(0),
+                    lib.getGlobalVariableAddress("gtk_micro_version").getInt(0));
         }
 
         @Override

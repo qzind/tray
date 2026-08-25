@@ -96,7 +96,7 @@ public class GtkUtilities {
             Pointer display = gdk_display_get_default();
             if (display != null) {
                 Pointer monitor = gdk_display_get_primary_monitor(display);
-                if (monitor == null && Pointer.nativeValue(monitor) == 0) {
+                if (monitor == null || Pointer.nativeValue(monitor) == 0) {
                     log.debug("Primary monitor is null, falling back to monitor index 0");
                     monitor = gdk_display_get_monitor(display, 0);
                 }
@@ -154,7 +154,10 @@ public class GtkUtilities {
         default double getScaleFactor() {
             Pointer screen = getScreen();
             if(screen != null) {
-                return gdk_screen_get_resolution(screen);
+                double dpi = gdk_screen_get_resolution(screen);
+                if(dpi > 0) {
+                    return dpi / 96.0d;
+                }
             }
             log.warn("Unable to detect GTK2 scale factor");
             return 1.0;

@@ -10,9 +10,9 @@ import org.apache.logging.log4j.Logger;
 
 public class GtkUtilities {
     private static final Logger log = LogManager.getLogger(GtkUtilities.class);
-    private static final GTK GTK_INSTANCE = GTK.getInstance();
+    static final GTK GTK_INSTANCE = GTK.getInstance();
 
-    public boolean isGtkAvailable() {
+    public static boolean isGtkAvailable() {
         return switch(SystemUtilities.getOs()) {
             case MAC, WINDOWS -> false;
             default -> GTK_INSTANCE != null;
@@ -39,7 +39,7 @@ public class GtkUtilities {
     /**
      * GTK2/GTK3 wrapper
      */
-    private interface GTK extends Library {
+    interface GTK extends Library {
         // Gtk2.0+
         boolean gtk_init_check(int argc, String[] argv);
         Pointer gdk_display_get_default();
@@ -112,6 +112,7 @@ public class GtkUtilities {
             return null;
         }
 
+        @Override
         default Version getVersion() {
             return Version.of(gtk_get_major_version(), gtk_get_minor_version(), gtk_get_micro_version());
         }

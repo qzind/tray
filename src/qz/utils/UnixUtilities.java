@@ -34,8 +34,8 @@ import java.util.stream.Stream;
  */
 public class UnixUtilities {
     public enum DesktopEnvironment {
+        KDE("kreadconfig5", "kreadconfig6"), // first
         GNOME("gsettings"),
-        KDE("kreadconfig5", "kreadconfig6"),
         UNKNOWN;
 
         public static String binaryFound = "false";

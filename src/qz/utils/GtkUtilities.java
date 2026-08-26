@@ -12,6 +12,13 @@ public class GtkUtilities {
     private static final Logger log = LogManager.getLogger(GtkUtilities.class);
     private static final GTK GTK_INSTANCE = GTK.getInstance();
 
+    public boolean isGtkAvailable() {
+        return switch(SystemUtilities.getOs()) {
+            case MAC, WINDOWS -> false;
+            default -> GTK_INSTANCE != null;
+        };
+    }
+
     public static double getScaleFactor() {
         return GTK_INSTANCE != null ? GTK_INSTANCE.getScaleFactor() : 1.0;
     }

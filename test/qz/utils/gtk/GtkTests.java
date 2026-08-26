@@ -39,6 +39,9 @@ public class GtkTests {
 
     @Test
     public void testGtkGetScaleFactor() {
+        if(!INIT_GTK) {
+            throw new SkipException("Skipping calculation of scale factor, GTK has not been initialized.");
+        }
         Assert.assertNotNull(GTK_INSTANCE);
         log.debug("GTK {} scale factor: {}", GTK_INSTANCE.getVersion(), GTK_INSTANCE.getScaleFactor());
         Assert.assertNotEquals(GTK_INSTANCE.getScaleFactor(), 0);

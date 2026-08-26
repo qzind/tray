@@ -65,6 +65,7 @@ public class GtkUtilities {
                             }
                         } else {
                             log.warn("Skipping initialization of GTK {} as '{}'.  This should only occur in unit tests.", found.getVersion(), type.lib);
+                            return found;
                         }
                     }
                 }

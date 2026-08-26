@@ -46,15 +46,25 @@ public class GtkUtilities {
         Pointer gdk_display_get_default_screen (Pointer display);
 
         static GTK getInstance() {
+            return getInstance(true);
+        }
+
+        static GTK getInstance(boolean init) {
             log.debug("Finding available GTK version...");
             for(GtkType type : GtkType.values()) {
                 try {
                     GTK found = Native.load(type.lib, type.type);
                     if(found != null) {
-                        log.debug("Found GTK lib '{}'", type.lib);
-                        if(found.gtk_init_check(0, null)) {
-                            log.debug("Initialized GTK {}", found.getVersion());
-                            return found;
+                        log.debug("Found GTK {} as '{}'", found.getVersion(), type.lib);
+                        if(init) {
+                            if (found.gtk_init_check(0, null)) {
+                                log.debug("Initialized GTK {}", found.getVersion());
+                                return found;
+                            } else {
+                                log.warn("Unable to initialize GTK {} as '{}'", found.getVersion(), type.lib);
+                            }
+                        } else {
+                            log.warn("Skipping initialization of GTK {} as '{}'.  This should only occur in unit tests.", found.getVersion(), type.lib);
                         }
                     }
                 }

@@ -64,9 +64,9 @@ public class GtkUtilities {
 
         default Pointer getScreen() {
             Pointer display = gdk_display_get_default();
-            if (display != null && Pointer.nativeValue(display) != 0) {
+            if (display != null) {
                 Pointer screen = gdk_display_get_default_screen(display);
-                if (screen != null && Pointer.nativeValue(screen) != 0) {
+                if (screen != null) {
                     return screen;
                 }
             }
@@ -93,11 +93,11 @@ public class GtkUtilities {
             Pointer display = gdk_display_get_default();
             if (display != null) {
                 Pointer monitor = gdk_display_get_primary_monitor(display);
-                if (monitor == null || Pointer.nativeValue(monitor) == 0) {
+                if (monitor == null) {
                     log.debug("Primary monitor is null, falling back to monitor index 0");
                     monitor = gdk_display_get_monitor(display, 0);
                 }
-                if (monitor != null && Pointer.nativeValue(monitor) != 0) {
+                if (monitor != null) {
                     return monitor;
                 }
             }

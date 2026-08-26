@@ -13,9 +13,9 @@ interface Gtk3 extends Gtk {
     int gdk_screen_get_monitor_scale_factor (Pointer screen, int monitor_num);
 
     // Gtk 3.22+
-    Pointer gdk_display_get_primary_monitor (Pointer display);
+    Pointer gdk_display_get_primary_monitor(Pointer display);
     Pointer gdk_display_get_monitor(Pointer display, int monitor_num);
-    int gdk_monitor_get_scale_factor (Pointer monitor);
+    int gdk_monitor_get_scale_factor(Pointer monitor);
 
     default Pointer getMonitor() {
         Pointer display = gdk_display_get_default();

@@ -15,8 +15,9 @@ import com.sun.jna.platform.unix.LibC;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.utils.gtk.GtkUtilities;
+import qz.utils.kde.KdeUtilities;
 
-import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -32,6 +33,29 @@ import java.util.stream.Stream;
  * Helper functions for both Linux and Unix
  */
 public class UnixUtilities {
+    public enum DesktopEnvironment {
+        GNOME("gsettings"),
+        KDE("kreadconfig5", "kreadconfig6"),
+        UNKNOWN;
+
+        public static String binaryFound = "false";
+
+        final String[] binaries;
+        DesktopEnvironment(String ... binaries) {
+            this.binaries = binaries;
+        }
+
+        boolean isLikely() {
+            for(String binary : binaries) {
+                if(ShellUtilities.execute("which", binary)) {
+                    binaryFound = binary;
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     private static final Logger log = LogManager.getLogger(UnixUtilities.class);
 
     private static final String[] OS_FAMILY_KEYS = {"ID_LIKE", "ID" };
@@ -44,6 +68,7 @@ public class UnixUtilities {
     private static String displayVersion;
     private static Integer pid;
     private static String foundElevator;
+    private static final DesktopEnvironment desktop = getDesktopEnvironment();
 
     static String getHostName() {
         String hostName = null;
@@ -59,7 +84,7 @@ public class UnixUtilities {
     static int getProcessId() {
         if(pid == null) {
             try {
-                pid = UnixUtilities.CLibrary.INSTANCE.getpid();
+                pid = CLibrary.INSTANCE.getpid();
             }
             catch(UnsatisfiedLinkError | NoClassDefFoundError e) {
                 log.warn("Could not obtain process ID.  This usually means JNA isn't working.  Returning -1.");
@@ -234,12 +259,19 @@ public class UnixUtilities {
         return false;
     }
 
-    /**
-     * Runs a shell command to determine if "Dark" desktop theme is enabled
-     * @return true if enabled, false if not
-     */
-    public static boolean isDarkMode() {
-        return !ShellUtilities.execute(new String[] { "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme" }, new String[] { "dark" }, true, true).isEmpty();
+    public static boolean isDarkDesktop() {
+        return switch(desktop) {
+            case GNOME -> GtkUtilities.isDarkDesktop();
+            case KDE -> KdeUtilities.isDarkDesktop();
+            default -> false;
+        };
+    }
+
+    private static DesktopEnvironment getDesktopEnvironment() {
+        return Arrays.stream(DesktopEnvironment.values())
+                .filter(DesktopEnvironment::isLikely)
+                .findFirst()
+                .orElse(DesktopEnvironment.UNKNOWN);
     }
 
     public static double getScaleFactor() {

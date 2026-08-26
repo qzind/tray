@@ -349,7 +349,7 @@ public class SystemUtilities {
             } else if (isWindows()) {
                 darkDesktop = WindowsUtilities.isDarkDesktop();
             } else {
-                darkDesktop = UnixUtilities.isDarkMode();
+                darkDesktop = UnixUtilities.isDarkDesktop();
             }
         }
         return darkDesktop.booleanValue();
@@ -379,7 +379,7 @@ public class SystemUtilities {
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
             boolean darculaThemeNeeded = true;
-            if(!isMac() && (isUnix() && UnixUtilities.isDarkMode())) {
+            if(!isMac() && (isUnix() && UnixUtilities.isDarkDesktop())) {
                 darculaThemeNeeded = false;
             }
             if(isDarkDesktop() && darculaThemeNeeded) {

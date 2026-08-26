@@ -9,14 +9,12 @@
  */
 package qz.utils;
 
-import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.platform.unix.LibC;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.common.Constants;
 
 import java.awt.*;
 import java.io.BufferedReader;

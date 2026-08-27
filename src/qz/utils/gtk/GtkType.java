@@ -1,7 +1,7 @@
 package qz.utils.gtk;
 
 enum GtkType {
-    GTK4("gtk-4", Gtk4.class),
+    // GTK4("gtk-4", Gtk4.class),
     GTK3("gtk-3", Gtk3.class),
     GTK2("gtk-x11-2.0", Gtk2.class);
 

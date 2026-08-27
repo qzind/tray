@@ -377,7 +377,8 @@ public class SystemUtilities {
     /**
      * Java historically provides adequate light mode themes for macOS, Windows and GTK
      * but Java's detection technique stopped working with the release of Gnome 3.3.x. so
-     * we'll use our own GTK detection method instead.
+     * we'll use our own GTK detection method instead and fallback on a sane theme for when
+     * GTK is not available.
      */
     private static String calculateLightLaf() {
         return switch(OS_TYPE) {
@@ -389,8 +390,9 @@ public class SystemUtilities {
     }
 
     /**
-     * Java historically only provides adequate dark-mode support for GTK.  In all other
-     * environments, fallback on a suitable dark-mode theme.
+     * Java historically provides adequate dark-mode support for GTK only.  In all other
+     * environments -- macOS, Windows or any OS without GTK available -- we'll
+     * fall back on a suitable dark-mode theme.
      */
     private static String calculateDarkLaf() {
         return GtkUtilities.isGtkAvailable() ?

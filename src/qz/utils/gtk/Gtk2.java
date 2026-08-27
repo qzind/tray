@@ -17,7 +17,7 @@ interface Gtk2 extends Gtk {
                     lib.getGlobalVariableAddress("gtk_minor_version").getInt(0),
                     lib.getGlobalVariableAddress("gtk_micro_version").getInt(0));
         } catch(Throwable t) {
-            log.debug("Failed to read Gtk2 version info", t);
+            log.debug("Failed to read GTK2 version info", t);
             return Version.of(0);
         }
     }
@@ -31,7 +31,7 @@ interface Gtk2 extends Gtk {
                 return dpi / 96.0d;
             }
         }
-        log.warn("Unable to detect Gtk2 scale factor");
+        log.warn("Unable to detect GTK2 scale factor");
         return 1.0;
     }
 }

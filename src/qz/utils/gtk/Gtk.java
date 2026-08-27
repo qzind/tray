@@ -16,37 +16,37 @@ public interface Gtk extends Library {
     // Gtk2.0+
     boolean gtk_init_check(int argc, String[] argv);
     Pointer gdk_display_get_default();
-    Pointer gdk_display_get_default_screen (Pointer display);
+    Pointer gdk_display_get_default_screen(Pointer display);
 
     static Gtk getInstance() {
         return getInstance(true);
     }
 
     static Gtk getInstance(boolean init) {
-        log.debug("Finding available Gtk version...");
+        log.debug("Finding available GTK version...");
         for(GtkType type : GtkType.values()) {
             try {
                 Gtk found = Native.load(type.lib, type.type);
                 if(found != null) {
-                    log.debug("Found Gtk {} as '{}'", found.getVersion(), type.lib);
+                    log.debug("Found GTK {} as '{}'", found.getVersion(), type.lib);
                     if(init) {
                         if (found.gtk_init_check(0, null)) {
-                            log.debug("Initialized Gtk {}", found.getVersion());
+                            log.debug("Initialized GTK {}", found.getVersion());
                             return found;
                         } else {
-                            log.warn("Unable to initialize Gtk {} as '{}'", found.getVersion(), type.lib);
+                            log.warn("Unable to initialize GTK {} as '{}'", found.getVersion(), type.lib);
                         }
                     } else {
-                        log.warn("Skipping initialization of Gtk {} as '{}'.  This should only occur in unit tests.", found.getVersion(), type.lib);
+                        log.warn("Skipping initialization of GTK {} as '{}'.  This should only occur in unit tests.", found.getVersion(), type.lib);
                         return found;
                     }
                 }
             }
             catch(Throwable t) {
-                log.debug("Could not load {}: {}", type.lib, t.getMessage());
+                log.debug("Could not load GTK as '{}'", type.lib);
             }
         }
-        log.warn("Could not find a compatible Gtk version");
+        log.warn("Could not find a compatible GTK version");
         return null;
     }
 

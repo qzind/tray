@@ -61,9 +61,9 @@ interface Gtk3 extends Gtk {
                 }
             }
         } else {
-            log.warn("Gtk 3.10+ is required to detect scaling factor, skipping.");
+            log.warn("GTK 3.10+ is required to detect scaling factor, skipping.");
         }
-        log.warn("Unable to detect Gtk3 scale factor");
+        log.warn("Unable to detect GTK scale factor");
         return 1.0;
     }
 }

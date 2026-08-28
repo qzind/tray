@@ -34,7 +34,7 @@ import java.util.stream.Stream;
  */
 public class UnixUtilities {
     public enum DesktopEnvironment {
-        KDE("kreadconfig5", "kreadconfig6"), // first
+        KDE("kreadconfig6", "kreadconfig5"), // keep before gsettings, keep descending
         GNOME("gsettings"),
         UNKNOWN;
 
@@ -117,7 +117,7 @@ public class UnixUtilities {
                 }
                 log.warn("Unable to detect distribution family, falling back to '{}' (calculated from '{}')", distroFamily, displayName);
             }
-         }
+        }
         return distroFamily;
     }
 

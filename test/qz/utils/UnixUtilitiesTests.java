@@ -4,13 +4,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
 import org.testng.SkipException;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import qz.utils.gtk.GtkUtilities;
 import qz.utils.kde.KdeUtilities;
 
+import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.util.Locale;
@@ -24,7 +24,7 @@ public class UnixUtilitiesTests {
     private static final String GTK_DEFAULT_LIGHT = "Adwaita";
     private static final String GTK_DEFAULT_DARK = "Adwaita-dark";
 
-    private static final String KDE_DEFAULT_LIGHT = "Breeze";
+    private static final String KDE_DEFAULT_LIGHT = "BreezeLight";
     private static final String KDE_DEFAULT_DARK = "BreezeDark";
 
     private DesktopEnvironment desktop;
@@ -33,7 +33,8 @@ public class UnixUtilitiesTests {
     @BeforeClass
     public void findDesktopEnvironment() {
         if(GraphicsEnvironment.isHeadless()) {
-            throw new SkipException("No DesktopEnvironment in headless");
+            log.warn("Skipping DesktopEnvironment tests");
+            throw new SkipException("DesktopEnvironment in headless");
         }
         desktop = getDesktopEnvironment();
     }
@@ -119,14 +120,7 @@ public class UnixUtilitiesTests {
     }
 
     void setKdeTheme(String themeName) throws IOException {
-String lookAndFeel = String.format("org.kde.%s.desktop", themeName.toLowerCase(Locale.ENGLISH));
-        String qdbus = String.format("qdbus%s", DesktopEnvironment.binaryFound.charAt(DesktopEnvironment.binaryFound.length() - 1));
-
-        boolean success =
-                ShellUtilities.execute(DesktopEnvironment.binaryFound, "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme", themeName) &&
-                        ShellUtilities.execute(DesktopEnvironment.binaryFound, "--file", "kdeglobals", "--group", "KDE", "--key", "LookAndFeelPackage", lookAndFeel) &&
-                        ShellUtilities.execute(qdbus, "org.kde.KWin", "/KWin", "reconfigure");
-
+        boolean success = ShellUtilities.execute("plasma-apply-colorscheme", themeName);
         if(!success) {
             throw new IOException("Fail to set KDE theme to " + themeName);
         }

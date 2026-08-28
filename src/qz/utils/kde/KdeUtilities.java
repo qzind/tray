@@ -3,6 +3,8 @@ package qz.utils.kde;
 import qz.utils.ShellUtilities;
 import qz.utils.UnixUtilities;
 
+import java.io.IOException;
+
 public class KdeUtilities {
     public static boolean isDarkDesktop() {
         // Get background color in r,g,b
@@ -21,5 +23,14 @@ public class KdeUtilities {
             } catch(Exception ignore) {}
         }
         return false;
+    }
+
+    public static String getTheme() throws IOException {
+        String theme = ShellUtilities.executeRaw(UnixUtilities.DesktopEnvironment.binaryFound, "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme");
+        if(theme.trim().isEmpty()) {
+            throw new IOException("Failed to get theme name");
+        }
+        // Strip quotes
+        return theme.replace("\"", "").replace("'", "").trim();
     }
 }

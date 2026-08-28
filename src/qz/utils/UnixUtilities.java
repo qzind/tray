@@ -267,7 +267,10 @@ public class UnixUtilities {
         };
     }
 
-    private static DesktopEnvironment getDesktopEnvironment() {
+    static DesktopEnvironment getDesktopEnvironment() {
+        if(desktop != null) {
+            return desktop;
+        }
         return Arrays.stream(DesktopEnvironment.values())
                 .filter(DesktopEnvironment::isLikely)
                 .findFirst()

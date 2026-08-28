@@ -13,7 +13,6 @@ import qz.utils.kde.KdeUtilities;
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
-import java.util.Locale;
 
 import static qz.utils.UnixUtilities.*;
 import static qz.utils.UnixUtilities.getDesktopEnvironment;

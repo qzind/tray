@@ -52,14 +52,14 @@ public class UnixUtilitiesTests {
     public void testSetDarkTheme() throws IOException {
         setTheme(true);
         Assert.assertTrue(isDarkDesktop());
-        log.info("Dark desktop status: '{}'", isDarkDesktop());
+        log.info("Dark desktop confirmed");
     }
 
     @Test
     public void testSetLightTheme() throws IOException {
         setTheme(false);
         Assert.assertFalse(isDarkDesktop());
-        log.info("Light desktop status: '{}'", !isDarkDesktop());
+        log.info("Light desktop confirmed");
     }
 
     @Test(priority = 99)

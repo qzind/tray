@@ -43,6 +43,13 @@ public class DeUtilsTests {
         log.info("Desktop detected '{}' via command '{}'", deType, getBinaryFound());
     }
 
+    @Test
+    public void testDeToThemeCoverage() {
+        for(DeType type : DeType.values()) {
+            Assert.assertNotNull(DeUtils.getDeTheme(type));
+        }
+    }
+
     @BeforeMethod
     public void cacheCurrentTheme() throws IOException {
         foundTheme = deTheme.getTheme();

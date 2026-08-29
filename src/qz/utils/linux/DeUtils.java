@@ -19,7 +19,11 @@ public class DeUtils {
     }
 
     public static DeTheme getDeTheme() {
-        return switch (getDeType()) {
+        return getDeTheme(getDeType());
+    }
+
+    static DeTheme getDeTheme(DeType deType) {
+        return switch (deType) {
             case KDE ->  new KdeTheme();
             case GNOME -> new GtkTheme();
             default -> null;

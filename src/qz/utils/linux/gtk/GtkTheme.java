@@ -26,7 +26,7 @@ public class GtkTheme implements DeTheme {
 
     @Override
     public String getTheme() throws IOException{
-        String theme = ShellUtilities.executeRaw(DeType.getBinaryFound(), "get", "org.gnome.desktop.interface", "gtk-theme");
+        String theme = ShellUtilities.executeRawSilently(DeType.getBinaryFound(), "get", "org.gnome.desktop.interface", "gtk-theme");
         if(theme.trim().isEmpty()) {
             throw new IOException("Failed to get theme name");
         }

@@ -10,7 +10,7 @@ public class KdeTheme implements DeTheme {
     @Override
     public boolean isDarkDesktop() {
         // Get background color in r,g,b
-        String raw = ShellUtilities.executeRaw(DeType.getBinaryFound(), "--file", "kdeglobals", "--group", "Colors:Window", "--key", "BackgroundNormal");
+        String raw = ShellUtilities.executeRawSilently(DeType.getBinaryFound(), "--file", "kdeglobals", "--group", "Colors:Window", "--key", "BackgroundNormal");
         String[] parts = raw.trim().split(",");
 
         // Apply luminance calculation

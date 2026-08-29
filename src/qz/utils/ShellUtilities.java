@@ -186,6 +186,10 @@ public class ShellUtilities {
         return "";
     }
 
+    public static String executeRawSilently(String... commandArray) {
+        return executeRaw(commandArray, true);
+    }
+
     public static String executeRaw(String ... commandArray) {
         return executeRaw(commandArray, false);
     }

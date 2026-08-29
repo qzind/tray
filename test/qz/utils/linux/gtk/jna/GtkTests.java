@@ -1,4 +1,4 @@
-package qz.utils.gtk;
+package qz.utils.linux.gtk.jna;
 
 import com.github.zafarkhaja.semver.Version;
 import org.apache.logging.log4j.LogManager;
@@ -15,7 +15,7 @@ public class GtkTests {
     private static final Logger log = LogManager.getLogger(GtkTests.class);
 
     static final boolean INIT_GTK = !GraphicsEnvironment.isHeadless();
-    static final Gtk GTK_INSTANCE = Gtk.getInstance(INIT_GTK);
+    static final Gtk GTK_INSTANCE = Gtk.newInstance(INIT_GTK);
 
     @BeforeClass
     public void filterOs() {

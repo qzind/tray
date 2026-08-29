@@ -1,4 +1,4 @@
-package qz.utils.gtk;
+package qz.utils.linux.gtk.jna;
 
 enum GtkType {
     // GTK4("gtk-4", Gtk4.class),

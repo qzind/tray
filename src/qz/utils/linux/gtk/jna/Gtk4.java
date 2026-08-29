@@ -1,4 +1,4 @@
-package qz.utils.gtk;
+package qz.utils.linux.gtk.jna;
 
 import com.sun.jna.Pointer;
 

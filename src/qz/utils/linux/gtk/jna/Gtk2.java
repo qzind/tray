@@ -1,4 +1,4 @@
-package qz.utils.gtk;
+package qz.utils.linux.gtk.jna;
 
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Native;

@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.installer.apps.AppVersionParser;
 import qz.utils.*;
+import qz.utils.linux.Distro;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -163,7 +164,7 @@ public class LinuxAppLocator extends AppLocator {
         try {
             String contentType = FileUtilities.probeContentType(exePath);
             if (contentType != null && contentType.endsWith("/x-shellscript")) {
-                if (UnixUtilities.isFedora()) {
+                if (Distro.isFedora()) {
                     // Firefox's script is full of variables and not parsable, fallback to /usr/lib64/$, etc
                     log.info("Found shell script at {}, but we're on Fedora, so we'll look in some known locations instead.", exePath);
                     // FIXME: continue;

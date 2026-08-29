@@ -28,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
+import qz.utils.linux.Distro;
 
 import javax.net.ssl.*;
 
@@ -241,18 +242,18 @@ public final class ConnectionUtilities {
             if (!GraphicsEnvironment.isHeadless() && parts != null && parts.length > 2) {
                 linuxOS = parts[2];
             }
-            if (UnixUtilities.isUbuntu()) {
+            if (Distro.isUbuntu()) {
                 linuxOS += (linuxOS.isEmpty() ? "" : "; ") + "Ubuntu";
-            } else if(UnixUtilities.isFedora()) {
+            } else if(Distro.isFedora()) {
                 linuxOS += (linuxOS.isEmpty()? "" : "; ") + "Fedora";
-            } else if(UnixUtilities.isDebian()) {
+            } else if(Distro.isDebian()) {
                 linuxOS += (linuxOS.isEmpty() ? "" : "; ") + "Debian";
-            } else if(UnixUtilities.isArch()) {
+            } else if(Distro.isArch()) {
                 linuxOS += (linuxOS.isEmpty() ? "" : "; ") + "Arch";
             }
             return linuxOS;
         }
-        return System.getProperty("os.name");
+        return SystemUtilities.OS_NAME;
     }
 
     private static String getPlatformVersion() {

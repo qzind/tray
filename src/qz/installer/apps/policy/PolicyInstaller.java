@@ -15,6 +15,7 @@ import qz.installer.apps.policy.locator.MacPolicyLocator;
 import qz.installer.apps.policy.locator.WindowsPolicyLocator;
 import qz.utils.SystemUtilities;
 import qz.utils.UnixUtilities;
+import qz.utils.linux.Distro;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -142,7 +143,7 @@ public class PolicyInstaller {
                     case FLATPAK:
                         return SystemUtilities.isLinux() && appFamily == AppFamily.CHROMIUM;
                     case SNAP:
-                        return UnixUtilities.isUbuntu() && SystemUtilities.isAdmin();
+                        return Distro.isUbuntu() && SystemUtilities.isAdmin();
                     default:
                         return false;
                 }

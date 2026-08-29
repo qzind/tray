@@ -1,4 +1,4 @@
-package qz.utils;
+package qz.utils.linux;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -7,18 +7,18 @@ import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import qz.utils.gtk.GtkUtilities;
-import qz.utils.kde.KdeUtilities;
+import qz.utils.ShellUtilities;
+import qz.utils.SystemUtilities;
+import qz.utils.linux.gtk.GtkTheme;
+import qz.utils.linux.kde.KdeTheme;
 
-import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 
-import static qz.utils.UnixUtilities.*;
-import static qz.utils.UnixUtilities.getDesktopEnvironment;
+import static qz.utils.linux.DeType.*;
 
-public class UnixUtilitiesTests {
-    static Logger log = LogManager.getLogger(UnixUtilitiesTests.class);
+public class DeUtilsTests {
+    static Logger log = LogManager.getLogger(DeUtilsTests.class);
 
     private static final String GTK_DEFAULT_LIGHT = "Adwaita";
     private static final String GTK_DEFAULT_DARK = "Adwaita-dark";
@@ -26,28 +26,28 @@ public class UnixUtilitiesTests {
     private static final String KDE_DEFAULT_LIGHT = "BreezeLight";
     private static final String KDE_DEFAULT_DARK = "BreezeDark";
 
-    private DesktopEnvironment desktop;
+    private DeType deType;
     private String foundTheme;
 
     @BeforeClass
-    public void findDesktopEnvironment() {
+    public void findDeType() {
         switch(SystemUtilities.getOs()) {
-            case WINDOWS:
-            case MAC:
-                throw new SkipException("DesktopEnvironment detection is assumed on this OS");
-            default:
-                // continue
+            case WINDOWS, MAC -> throw new SkipException("DeType detection is assumed on this OS");
+            default -> {
+                if(GraphicsEnvironment.isHeadless()) {
+                    log.warn("Skipping DeType tests in headless mode");
+                    throw new SkipException("Skipping DeType tests in headless mode");
+                }
+            }
         }
-        if(GraphicsEnvironment.isHeadless()) {
-            log.warn("Skipping DesktopEnvironment tests in headless mode");
-            throw new SkipException("Skipping DesktopEnvironment tests in headless mode");
-        }
-        desktop = getDesktopEnvironment();
+
+        deType = DeUtils.getDeType();
     }
 
     @Test
-    public void testHasDesktopEnvironment() {
-        log.info("Desktop detected '{}' via command '{}'", desktop, DesktopEnvironment.binaryFound);
+    public void testHasDe() {
+        Assert.assertNotEquals(deType, UNKNOWN);
+        log.info("Desktop detected '{}' via command '{}'", deType, getBinaryFound());
     }
 
     @BeforeMethod
@@ -58,14 +58,14 @@ public class UnixUtilitiesTests {
     @Test
     public void testSetDarkTheme() throws IOException {
         setTheme(true);
-        Assert.assertTrue(isDarkDesktop());
+        Assert.assertTrue(DeUtils.isDarkDesktop());
         log.info("Dark desktop confirmed");
     }
 
     @Test
     public void testSetLightTheme() throws IOException {
         setTheme(false);
-        Assert.assertFalse(isDarkDesktop());
+        Assert.assertFalse(DeUtils.isDarkDesktop());
         log.info("Light desktop confirmed");
     }
 
@@ -77,15 +77,15 @@ public class UnixUtilitiesTests {
     }
 
     String getTheme() throws IOException {
-        return switch(desktop) {
-            case GNOME -> GtkUtilities.getTheme();
-            case KDE -> KdeUtilities.getTheme();
+        return switch(deType) {
+            case GNOME -> GtkTheme.getTheme();
+            case KDE -> KdeTheme.getTheme();
             case UNKNOWN -> "Unknown";
         };
     }
 
     void setTheme(boolean isDark) throws IOException {
-        switch(desktop) {
+        switch(deType) {
             case GNOME:
                 setGtkTheme(isDark);
                 return;
@@ -98,7 +98,7 @@ public class UnixUtilitiesTests {
     }
 
     void setTheme(String themeName) throws IOException {
-        switch(desktop) {
+        switch(deType) {
             case GNOME:
                 setGtkTheme(themeName);
                 return;
@@ -115,7 +115,7 @@ public class UnixUtilitiesTests {
     }
 
     void setGtkTheme(String themeName) throws IOException {
-        boolean success = ShellUtilities.execute(DesktopEnvironment.binaryFound, "set", "org.gnome.desktop.interface", "gtk-theme", themeName);
+        boolean success = ShellUtilities.execute(getBinaryFound(), "set", "org.gnome.desktop.interface", "gtk-theme", themeName);
         if(!success) {
             throw new IOException("Fail to set GTK theme to " + themeName);
         }

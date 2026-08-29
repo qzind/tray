@@ -1,4 +1,4 @@
-package qz.utils.gtk;
+package qz.utils.linux.gtk.jna;
 
 import com.github.zafarkhaja.semver.Version;
 import com.sun.jna.Library;
@@ -18,11 +18,11 @@ public interface Gtk extends Library {
     Pointer gdk_display_get_default();
     Pointer gdk_display_get_default_screen(Pointer display);
 
-    static Gtk getInstance() {
-        return getInstance(true);
+    static Gtk newInstance() {
+        return newInstance(true);
     }
 
-    static Gtk getInstance(boolean init) {
+    static Gtk newInstance(boolean init) {
         log.debug("Finding available GTK version...");
         for(GtkType type : GtkType.values()) {
             try {

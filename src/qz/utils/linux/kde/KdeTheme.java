@@ -1,14 +1,14 @@
-package qz.utils.kde;
+package qz.utils.linux.kde;
 
 import qz.utils.ShellUtilities;
-import qz.utils.UnixUtilities;
+import qz.utils.linux.DeType;
 
 import java.io.IOException;
 
-public class KdeUtilities {
+public class KdeTheme {
     public static boolean isDarkDesktop() {
         // Get background color in r,g,b
-        String raw = ShellUtilities.executeRaw(UnixUtilities.DesktopEnvironment.binaryFound, "--file", "kdeglobals", "--group", "Colors:Window", "--key", "BackgroundNormal");
+        String raw = ShellUtilities.executeRaw(DeType.getBinaryFound(), "--file", "kdeglobals", "--group", "Colors:Window", "--key", "BackgroundNormal");
         String[] parts = raw.trim().split(",");
 
         // Apply luminance calculation
@@ -26,7 +26,7 @@ public class KdeUtilities {
     }
 
     public static String getTheme() throws IOException {
-        String theme = ShellUtilities.executeRaw(UnixUtilities.DesktopEnvironment.binaryFound, "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme");
+        String theme = ShellUtilities.executeRaw(DeType.getBinaryFound(), "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme");
         if(theme.trim().isEmpty()) {
             throw new IOException("Failed to get theme name");
         }

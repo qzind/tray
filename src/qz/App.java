@@ -33,7 +33,7 @@ public class App {
     private static final Logger log = LogManager.getLogger(App.class);
     private static Properties trayProperties = null;
 
-    private static PropertyHelper prefs = null;
+    private static PropertyHelper userPrefs = null;
     private static boolean headless = false;
 
     public static void main(String ... args) {
@@ -64,14 +64,18 @@ public class App {
         }
         Installer.getInstance().addUserSettings();
 
-        prefs = new PropertyHelper(FileUtilities.USER_DIR + File.separator + Constants.PREFS_FILE + ".properties");
-        prefs.remove(ArgValue.SECURITY_FILE_STRICT.getMatch()); // per https://github.com/qzind/tray/issues/1337
+        // Init user preferences
+        userPrefs = new PropertyHelper(FileUtilities.USER_DIR + File.separator + Constants.PREFS_FILE + ".properties");
+        userPrefs.remove(ArgValue.SECURITY_FILE_STRICT.getMatch()); // per https://github.com/qzind/tray/issues/1337
+
         // Headless if turned on by user or unsupported by environment
-        headless = parser.isHeadless() || getPref(ArgValue.HEADLESS) || GraphicsEnvironment.isHeadless();
+        headless = parser.isHeadless() ||
+                PrefsSearch.getBoolean(ArgValue.HEADLESS, userPrefs, trayProperties) ||
+                GraphicsEnvironment.isHeadless();
 
         // Load overridable preferences set in qz-tray.properties file
-        NetworkUtilities.setPreferences(certManager.getProperties());
-        SingleInstanceChecker.setPreferences(certManager.getProperties());
+        NetworkUtilities.setPreferences(trayProperties);
+        SingleInstanceChecker.setPreferences(trayProperties);
 
         // Linux needs the cert installed in user-space on every launch for Chrome SSL to work
         if(!SystemUtilities.isWindows() && !SystemUtilities.isMac()) {
@@ -137,15 +141,8 @@ public class App {
         LoggerUtilities.getRootLogger().addAppender(fileAppender);
     }
 
-    /**
-     * Get boolean user pref: Searching "user", "app" and <code>System.getProperty(...)</code>.
-     */
-    public static boolean getPref(ArgValue argValue) {
-        return PrefsSearch.getBoolean(argValue, prefs, App.getTrayProperties());
-    }
-
-    public static PropertyHelper getPrefs() {
-        return prefs;
+    public static PropertyHelper getUserPrefs() {
+        return userPrefs;
     }
 
     public static boolean isHeadless() {

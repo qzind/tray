@@ -155,7 +155,7 @@ public class TrayManager {
 
         if(isHeadless()) {
             // If isHeadless(), look for a location to forward message dialogs to
-            gatewayDialog.setEndpoint(PrefsSearch.getString(TRAY_DIALOG_ENDPOINT, getPrefs(), App.getTrayProperties()));
+            gatewayDialog.setEndpoint(PrefsSearch.getString(TRAY_DIALOG_ENDPOINT, getUserPrefs(), App.getTrayProperties()));
         } else {
             componentList = new ArrayList<>();
             componentList.add(gatewayDialog.getDialog());
@@ -248,7 +248,7 @@ public class TrayManager {
         JMenuItem sitesItem = new JMenuItem("Site Manager...", iconCache.getIcon(SAVED_ICON));
         sitesItem.setMnemonic(KeyEvent.VK_M);
         sitesItem.addActionListener(savedListener);
-        sitesDialog = new SiteManagerDialog(sitesItem, iconCache, getPrefs());
+        sitesDialog = new SiteManagerDialog(sitesItem, iconCache, getUserPrefs());
         componentList.add(sitesDialog);
 
         JMenuItem diagnosticMenu = new JMenu("Diagnostic");
@@ -301,7 +301,7 @@ public class TrayManager {
         logItem.setMnemonic(KeyEvent.VK_L);
         logItem.addActionListener(logListener);
         diagnosticMenu.add(logItem);
-        logDialog = new LogDialog(logItem, iconCache, getPrefs());
+        logDialog = new LogDialog(logItem, iconCache, getUserPrefs());
         componentList.add(logDialog);
 
         JMenuItem zipLogs = new JMenuItem("Zip logs (to Desktop)");
@@ -375,7 +375,7 @@ public class TrayManager {
     private final ActionListener notificationsListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            getPrefs().setProperty(TRAY_NOTIFICATIONS, ((JCheckBoxMenuItem)e.getSource()).getState());
+            getUserPrefs().setProperty(TRAY_NOTIFICATIONS, ((JCheckBoxMenuItem)e.getSource()).getState());
         }
     };
 
@@ -383,7 +383,7 @@ public class TrayManager {
         @Override
         public void actionPerformed(ActionEvent e) {
             JCheckBoxMenuItem j = (JCheckBoxMenuItem)e.getSource();
-            getPrefs().setProperty(TRAY_MONOCLE, j.getState());
+            getUserPrefs().setProperty(TRAY_MONOCLE, j.getState());
             displayWarningMessage(String.format("A restart of %s is required to ensure this feature is %sabled.",
                                                 Constants.ABOUT_TITLE, j.getState()? "en":"dis"));
         }
@@ -473,7 +473,7 @@ public class TrayManager {
     };
 
     public void exit(int returnCode) {
-        getPrefs().save();
+        getUserPrefs().save();
         FileUtilities.cleanup();
         System.exit(returnCode);
     }
@@ -648,6 +648,13 @@ public class TrayManager {
 
     public boolean isMonoclePreferred() {
         return getPref(TRAY_MONOCLE);
+    }
+
+    /**
+     * Get boolean user pref: Searching "user", "app" and <code>System.getProperty(...)</code>.
+     */
+    private static boolean getPref(ArgValue argValue) {
+        return PrefsSearch.getBoolean(argValue, getUserPrefs(), getTrayProperties()) ;
     }
 
     private void performIfIdle(int idleQualifier, ActionListener performer) {

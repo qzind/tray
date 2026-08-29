@@ -18,6 +18,7 @@ import org.joor.Reflect;
 import org.joor.ReflectException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.App;
 import qz.build.provision.params.Arch;
 import qz.build.provision.params.Os;
 import qz.common.Constants;
@@ -372,8 +373,8 @@ public class SystemUtilities {
         return false;
     }
 
-    public static boolean setSystemLookAndFeel(boolean headless) {
-        if(headless) {
+    public static boolean setSystemLookAndFeel() {
+        if(App.isHeadless()) {
             return false;
         }
         try {
@@ -781,8 +782,8 @@ public class SystemUtilities {
     /**
      * Cross-platform SystemTray detector
      */
-    public static boolean isSystemTraySupported(boolean headless) {
-        if(!headless) {
+    public static boolean isSystemTraySupported() {
+        if(!App.isHeadless()) {
             switch(getOs()) {
                 case WINDOWS:
                     if(WindowsUtilities.isHiddenSystemTray()) {

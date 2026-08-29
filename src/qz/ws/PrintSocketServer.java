@@ -52,9 +52,9 @@ public class PrintSocketServer {
     private static String wssHost;
     private static List<String> wssAllowedOrigins;
 
-    public static void runServer(CertificateManager certManager, boolean headless) throws InterruptedException, InvocationTargetException {
+    public static void runServer(CertificateManager certManager) throws InterruptedException, InvocationTargetException {
         SwingUtilities.invokeAndWait(() -> {
-            PrintSocketServer.setTrayManager(new TrayManager(headless));
+            PrintSocketServer.setTrayManager(new TrayManager());
         });
 
         wssHost = PrefsSearch.getString(ArgValue.SECURITY_WSS_HOST, certManager.getProperties());

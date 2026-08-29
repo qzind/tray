@@ -12,6 +12,7 @@ import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 import qz.build.provision.params.Phase;
 import qz.common.Constants;
+import qz.common.PropertyHelper;
 import qz.installer.Installer;
 import qz.installer.certificate.CertificateManager;
 import qz.installer.certificate.ExpiryTask;
@@ -23,6 +24,7 @@ import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
 import qz.ws.substitutions.Substitutions;
 
+import java.awt.*;
 import java.io.File;
 import java.security.cert.X509Certificate;
 import java.util.Properties;
@@ -30,6 +32,9 @@ import java.util.Properties;
 public class App {
     private static final Logger log = LogManager.getLogger(App.class);
     private static Properties trayProperties = null;
+
+    private static PropertyHelper prefs = null;
+    private static boolean headless = false;
 
     public static void main(String ... args) {
         ArgParser parser = new ArgParser(args);
@@ -59,6 +64,11 @@ public class App {
         }
         Installer.getInstance().addUserSettings();
 
+        prefs = new PropertyHelper(FileUtilities.USER_DIR + File.separator + Constants.PREFS_FILE + ".properties");
+        prefs.remove(ArgValue.SECURITY_FILE_STRICT.getMatch()); // per https://github.com/qzind/tray/issues/1337
+        // Headless if turned on by user or unsupported by environment
+        headless = parser.isHeadless() || getPref(ArgValue.HEADLESS) || GraphicsEnvironment.isHeadless();
+
         // Load overridable preferences set in qz-tray.properties file
         NetworkUtilities.setPreferences(certManager.getProperties());
         SingleInstanceChecker.setPreferences(certManager.getProperties());
@@ -83,7 +93,7 @@ public class App {
         try {
             log.info("Starting {} {}", Constants.ABOUT_TITLE, Constants.VERSION);
             // Start the WebSocket
-            PrintSocketServer.runServer(certManager, parser.isHeadless());
+            PrintSocketServer.runServer(certManager);
         }
         catch(Exception e) {
             log.error("Could not start tray manager", e);
@@ -126,4 +136,24 @@ public class App {
 
         LoggerUtilities.getRootLogger().addAppender(fileAppender);
     }
+
+    /**
+     * Get boolean user pref: Searching "user", "app" and <code>System.getProperty(...)</code>.
+     */
+    public static boolean getPref(ArgValue argValue) {
+        return PrefsSearch.getBoolean(argValue, prefs, App.getTrayProperties());
+    }
+
+    public static PropertyHelper getPrefs() {
+        return prefs;
+    }
+
+    public static boolean isHeadless() {
+        return headless;
+    }
+
+    public static void setHeadless(boolean headless) {
+        App.headless = headless;
+    }
+
 }

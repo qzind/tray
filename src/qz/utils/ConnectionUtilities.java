@@ -28,7 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
-import qz.utils.linux.DistroUtilities;
+import qz.utils.linux.LinuxUtilities;
 
 import javax.net.ssl.*;
 
@@ -242,13 +242,13 @@ public final class ConnectionUtilities {
             if (!GraphicsEnvironment.isHeadless() && parts != null && parts.length > 2) {
                 linuxOS = parts[2];
             }
-            if (DistroUtilities.isUbuntu()) {
+            if (LinuxUtilities.isUbuntu()) {
                 linuxOS += (linuxOS.isEmpty() ? "" : "; ") + "Ubuntu";
-            } else if(DistroUtilities.isFedora()) {
+            } else if(LinuxUtilities.isFedora()) {
                 linuxOS += (linuxOS.isEmpty()? "" : "; ") + "Fedora";
-            } else if(DistroUtilities.isDebian()) {
+            } else if(LinuxUtilities.isDebian()) {
                 linuxOS += (linuxOS.isEmpty() ? "" : "; ") + "Debian";
-            } else if(DistroUtilities.isArch()) {
+            } else if(LinuxUtilities.isArch()) {
                 linuxOS += (linuxOS.isEmpty() ? "" : "; ") + "Arch";
             }
             return linuxOS;

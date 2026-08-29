@@ -5,7 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.App;
 import qz.utils.*;
-import qz.utils.linux.DistroUtilities;
+import qz.utils.linux.LinuxUtilities;
 
 import javax.swing.*;
 import java.awt.*;
@@ -111,7 +111,7 @@ public class LinuxInstaller extends Installer {
                                   "cups-bsd", "cups-client", "cups");
 
         // Legacy Ubuntu versions only: Patch Unity to show the System Tray
-        if(DistroUtilities.isUbuntu()) {
+        if(LinuxUtilities.isUbuntu()) {
             ShellUtilities.execute("gsettings", "set", "com.canonical.Unity.Panel", "systray", "-whitelist", "\"['all']\"");
 
             if(ShellUtilities.execute("killall", "-w", "unity", "-panel")) {
@@ -381,11 +381,11 @@ public class LinuxInstaller extends Installer {
         boolean installed = ShellUtilities.execute("which", binary);
         if (!installed) {
             if (SystemUtilities.isAdmin() && promptInstall(binary)) {
-                if(DistroUtilities.isDebian()) {
+                if(LinuxUtilities.isDebian()) {
                     installed = ShellUtilities.execute("apt-get", "install", "-y", debianPackage);
-                } else if(DistroUtilities.isFedora()) {
+                } else if(LinuxUtilities.isFedora()) {
                     installed =  ShellUtilities.execute("dnf", "install", "-y", fedoraPackage);
-                } else if(DistroUtilities.isArch()) {
+                } else if(LinuxUtilities.isArch()) {
                     installed =  ShellUtilities.execute("pacman", "-S", "--noconfirm", archPackage);
                 }
             }

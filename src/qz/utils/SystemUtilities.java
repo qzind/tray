@@ -26,7 +26,7 @@ import qz.build.provision.params.Os;
 import qz.common.Constants;
 import qz.installer.Installer;
 import qz.utils.linux.DeUtils;
-import qz.utils.linux.DistroUtilities;
+import qz.utils.linux.LinuxUtilities;
 import qz.utils.linux.gtk.GtkScale;
 
 import javax.swing.*;
@@ -161,7 +161,7 @@ public class SystemUtilities {
             switch(OS_TYPE) {
                 case WINDOWS -> osDisplayVersion = WindowsUtilities.getOsDisplayVersion();
                 case MAC -> osDisplayVersion = MacUtilities.getOsDisplayVersion();
-                default -> osDisplayVersion = DistroUtilities.getOsDisplayVersion();
+                default -> osDisplayVersion = LinuxUtilities.getOsDisplayVersion();
             }
         }
         return osDisplayVersion;
@@ -174,7 +174,7 @@ public class SystemUtilities {
         if(osName == null) {
             switch(OS_TYPE) {
                 case WINDOWS, MAC -> osName = System.getProperty("os.name", "Unknown");
-                default -> osName = DistroUtilities.getDisplayName();
+                default -> osName = LinuxUtilities.getDisplayName();
             }
         }
         return osName;

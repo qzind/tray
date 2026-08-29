@@ -24,6 +24,7 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.App;
 import qz.common.Constants;
 import qz.utils.SystemUtilities;
 import qz.ws.PrintSocketServer;
@@ -165,7 +166,7 @@ public class WebApp extends Application {
                     // Honor user monocle override
                     useMonocle = PrintSocketServer.getTrayManager().isMonoclePreferred();
                     // Trust TrayManager's headless detection
-                    headless = PrintSocketServer.getTrayManager().isHeadless();
+                    headless = App.isHeadless();
                 } else {
                     // Fallback for JDK11+
                     headless = true;

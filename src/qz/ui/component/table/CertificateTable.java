@@ -58,6 +58,15 @@ public class CertificateTable extends FieldValueTable implements Themeable {
         ((StyledTableCellRenderer)getDefaultRenderer(Object.class)).refresh();
     }
 
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        if (!(getDefaultRenderer(Object.class) instanceof Themeable)) {
+            // Theme change may drop reference to cell renderer
+            setDefaultRenderer(Object.class, new CertificateTableCellRenderer());
+        }
+    }
+
     public void autoSize() {
         super.autoSize(Type.size(), 2);
     }

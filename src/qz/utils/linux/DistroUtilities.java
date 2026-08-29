@@ -19,8 +19,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
-public class Distro {
-    private static final Logger log = LogManager.getLogger(Distro.class);
+public class DistroUtilities {
+    private static final Logger log = LogManager.getLogger(DistroUtilities.class);
 
     private static final String[] OS_FAMILY_KEYS = {"ID_LIKE", "ID" };
     private static final String[] OS_NAME_KEYS = {"NAME", "DISTRIB_ID"};

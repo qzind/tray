@@ -23,11 +23,11 @@ public class DeUtilsTests {
     @BeforeClass
     public void findDeType() {
         switch(SystemUtilities.getOs()) {
-            //case WINDOWS, MAC -> throw new SkipException("DeType detection is assumed on this OS");
+            case WINDOWS, MAC -> throw new SkipException("Desktop environment is assumed on this OS");
             default -> {
                 if(GraphicsEnvironment.isHeadless()) {
-                    log.warn("Skipping DeType tests in headless mode");
-                    throw new SkipException("Skipping DeType tests in headless mode");
+                    log.warn("Skipping desktop environment tests in headless mode");
+                    throw new SkipException("Skipping desktop environment tests in headless mode");
                 }
             }
         }
@@ -42,7 +42,7 @@ public class DeUtilsTests {
             if(type == UNKNOWN) {
                 continue;
             }
-            log.info("Checking DeTheme coverage for '{}'", type);
+            log.info("Checking desktop environment coverage for '{}'", type);
             Assert.assertNotNull(DeUtils.getDeTheme(type));
         }
     }
@@ -50,7 +50,7 @@ public class DeUtilsTests {
     @Test
     public void testHasDe() {
         Assert.assertNotEquals(deType, UNKNOWN);
-        log.info("Desktop detected '{}' via command '{}'", deType, getBinaryFound());
+        log.info("Desktop environment detected '{}' via command '{}'", deType, getBinaryFound());
     }
 
     @Test

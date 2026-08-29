@@ -152,6 +152,13 @@ public class App {
         return headless;
     }
 
+    /**
+     * Sets headless to false as a reactive measure (such as the System Tray failing to attach).
+     * This is marked as @Deprecated because this should be controlled entire in App.java
+     * Furthermore, there are better fallback techniques to handle this behavior (see #1044) for
+     * when the System Tray is unavailable.
+     */
+    @Deprecated
     public static void setHeadless(boolean headless) {
         App.headless = headless;
     }

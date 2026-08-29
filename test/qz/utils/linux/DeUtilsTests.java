@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import qz.utils.SystemUtilities;
 
@@ -19,12 +18,12 @@ public class DeUtilsTests {
 
     private DeType deType;
     private DeTheme deTheme;
-    private String foundTheme;
+    private String currentTheme;
 
     @BeforeClass
     public void findDeType() {
         switch(SystemUtilities.getOs()) {
-            case WINDOWS, MAC -> throw new SkipException("DeType detection is assumed on this OS");
+            //case WINDOWS, MAC -> throw new SkipException("DeType detection is assumed on this OS");
             default -> {
                 if(GraphicsEnvironment.isHeadless()) {
                     log.warn("Skipping DeType tests in headless mode");
@@ -38,21 +37,25 @@ public class DeUtilsTests {
     }
 
     @Test
+    public void testDeToThemeCoverage() {
+        for(DeType type : DeType.values()) {
+            if(type == UNKNOWN) {
+                continue;
+            }
+            log.info("Checking DeTheme coverage for '{}'", type);
+            Assert.assertNotNull(DeUtils.getDeTheme(type));
+        }
+    }
+
+    @Test
     public void testHasDe() {
         Assert.assertNotEquals(deType, UNKNOWN);
         log.info("Desktop detected '{}' via command '{}'", deType, getBinaryFound());
     }
 
     @Test
-    public void testDeToThemeCoverage() {
-        for(DeType type : DeType.values()) {
-            Assert.assertNotNull(DeUtils.getDeTheme(type));
-        }
-    }
-
-    @BeforeMethod
-    public void cacheCurrentTheme() throws IOException {
-        foundTheme = deTheme.getTheme();
+    public void testSaveCurrentTheme() throws IOException {
+        currentTheme = deTheme.getTheme();
     }
 
     @Test
@@ -70,9 +73,9 @@ public class DeUtilsTests {
     }
 
     @Test(priority = 99)
-    public void restoreCurrentTheme() throws IOException{
-        deTheme.setTheme(foundTheme);
-        Assert.assertEquals(foundTheme, deTheme.getTheme());
-        log.info("Restored theme: '{}'", foundTheme);
+    public void testRestoreCurrentTheme() throws IOException{
+        deTheme.setTheme(currentTheme);
+        Assert.assertEquals(currentTheme, deTheme.getTheme());
+        log.info("Restored theme: '{}'", currentTheme);
     }
 }

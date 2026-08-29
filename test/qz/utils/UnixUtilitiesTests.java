@@ -31,9 +31,16 @@ public class UnixUtilitiesTests {
 
     @BeforeClass
     public void findDesktopEnvironment() {
+        switch(SystemUtilities.getOs()) {
+            case WINDOWS:
+            case MAC:
+                throw new SkipException("DesktopEnvironment detection is assumed on this OS");
+            default:
+                // continue
+        }
         if(GraphicsEnvironment.isHeadless()) {
-            log.warn("Skipping DesktopEnvironment tests");
-            throw new SkipException("DesktopEnvironment in headless");
+            log.warn("Skipping DesktopEnvironment tests in headless mode");
+            throw new SkipException("Skipping DesktopEnvironment tests in headless mode");
         }
         desktop = getDesktopEnvironment();
     }

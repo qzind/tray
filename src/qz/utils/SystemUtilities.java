@@ -10,6 +10,8 @@
 
 package qz.utils;
 
+import com.formdev.flatlaf.FlatDarculaLaf;
+import com.formdev.flatlaf.FlatIntelliJLaf;
 import com.github.zafarkhaja.semver.ParseException;
 import com.github.zafarkhaja.semver.Version;
 import org.apache.commons.lang3.StringUtils;
@@ -373,21 +375,39 @@ public class SystemUtilities {
         return false;
     }
 
+    /**
+     * Java historically provides adequate light mode themes for macOS, Windows and GTK
+     * but Java's detection technique stopped working with the release of Gnome 3.3.x. so
+     * we'll use our own GTK detection method instead and fallback on a sane theme for when
+     * GTK is not available.
+     */
+    private static String calculateLightLaf() {
+        return switch(OS_TYPE) {
+            case WINDOWS, MAC -> UIManager.getSystemLookAndFeelClassName();
+            default -> GtkUtilities.isGtkAvailable()?
+                    "com.sun.java.swing.plaf.gtk.GTKLookAndFeel":
+                    FlatIntelliJLaf.class.getCanonicalName();
+        };
+    }
+
+    /**
+     * Java historically provides adequate dark-mode support for GTK only.  In all other
+     * environments -- macOS, Windows or any OS without GTK available -- we'll
+     * fall back on a suitable dark-mode theme.
+     */
+    private static String calculateDarkLaf() {
+        return GtkUtilities.isGtkAvailable() ?
+                "com.sun.java.swing.plaf.gtk.GTKLookAndFeel" :
+                FlatDarculaLaf.class.getCanonicalName();
+    }
+
     public static boolean setSystemLookAndFeel() {
         if(App.isHeadless()) {
             return false;
         }
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
-            boolean darculaThemeNeeded = true;
-            if(!isMac() && (isUnix() && UnixUtilities.isDarkMode())) {
-                darculaThemeNeeded = false;
-            }
-            if(isDarkDesktop() && darculaThemeNeeded) {
-                UIManager.setLookAndFeel("com.formdev.flatlaf.FlatDarculaLaf");
-            } else {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            }
+            UIManager.setLookAndFeel(isDarkDesktop() ? calculateDarkLaf() : calculateLightLaf());
             adjustThemeColors();
             return true;
         } catch (Throwable t) {

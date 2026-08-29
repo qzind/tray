@@ -12,10 +12,17 @@ public class DeUtils {
      * Uses a live desktop-environment-specific technique determine if the Desktop is "dark mode".
      */
     public static boolean isDarkDesktop() {
-        return switch(deType) {
-            case GNOME -> GtkTheme.isDarkDesktop();
-            case KDE -> KdeTheme.isDarkDesktop();
-            default -> false;
+        if (getDeTheme() == null) {
+            return false;
+        }
+        return getDeTheme().isDarkDesktop();
+    }
+
+    public static DeTheme getDeTheme() {
+        return switch (getDeType()) {
+            case KDE ->  new KdeTheme();
+            case GNOME -> new GtkTheme();
+            default -> null;
         };
     }
 

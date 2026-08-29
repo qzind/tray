@@ -1,12 +1,14 @@
 package qz.utils.linux.kde;
 
 import qz.utils.ShellUtilities;
+import qz.utils.linux.DeTheme;
 import qz.utils.linux.DeType;
 
 import java.io.IOException;
 
-public class KdeTheme {
-    public static boolean isDarkDesktop() {
+public class KdeTheme implements DeTheme {
+    @Override
+    public boolean isDarkDesktop() {
         // Get background color in r,g,b
         String raw = ShellUtilities.executeRaw(DeType.getBinaryFound(), "--file", "kdeglobals", "--group", "Colors:Window", "--key", "BackgroundNormal");
         String[] parts = raw.trim().split(",");
@@ -25,12 +27,26 @@ public class KdeTheme {
         return false;
     }
 
-    public static String getTheme() throws IOException {
+    @Override
+    public String getTheme() throws IOException {
         String theme = ShellUtilities.executeRaw(DeType.getBinaryFound(), "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme");
         if(theme.trim().isEmpty()) {
             throw new IOException("Failed to get theme name");
         }
         // Strip quotes
         return theme.replace("\"", "").replace("'", "").trim();
+    }
+
+    @Override
+    public void setTheme(String themeName) throws IOException {
+        boolean success = ShellUtilities.execute("plasma-apply-colorscheme", themeName);
+        if(!success) {
+            throw new IOException("Fail to set KDE theme to " + themeName);
+        }
+    }
+
+    @Override
+    public void setTheme(boolean isDark) throws IOException {
+        setTheme(isDark ? "BreezeDark" : "BreezeLight");
     }
 }

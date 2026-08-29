@@ -268,11 +268,11 @@ public class UnixUtilities {
     }
 
     static DesktopEnvironment getDesktopEnvironment() {
-        if(SystemUtilities.isMac()) {
-            return DesktopEnvironment.UNKNOWN;
-        }
         if(desktop != null) {
             return desktop;
+        }
+        if(SystemUtilities.isMac()) {
+            return DesktopEnvironment.UNKNOWN;
         }
         return Arrays.stream(DesktopEnvironment.values())
                 .filter(DesktopEnvironment::isLikely)

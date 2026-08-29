@@ -105,7 +105,7 @@ public class TrayManager {
         // Set up the shortcut name so that the UI components can use it
         shortcutCreator = ShortcutCreator.getInstance();
 
-        SystemUtilities.setSystemLookAndFeel(isHeadless());
+        SystemUtilities.setSystemLookAndFeel();
         iconCache = new IconCache();
 
         if (SystemUtilities.isSystemTraySupported()) { // UI mode with tray
@@ -178,7 +178,7 @@ public class TrayManager {
                             iconCache.fixTrayIcons(darkTaskbarMode);
                             refreshIcon(null);
                             SwingUtilities.invokeLater(() -> {
-                                SystemUtilities.setSystemLookAndFeel(isHeadless());
+                                SystemUtilities.setSystemLookAndFeel();
                                 for(Component c : componentList) {
                                     SwingUtilities.updateComponentTreeUI(c);
                                     if (c instanceof Themeable) {

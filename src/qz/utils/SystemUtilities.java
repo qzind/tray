@@ -373,8 +373,8 @@ public class SystemUtilities {
         return false;
     }
 
-    public static boolean setSystemLookAndFeel(boolean headless) {
-        if(headless) {
+    public static boolean setSystemLookAndFeel() {
+        if(App.isHeadless()) {
             return false;
         }
         try {

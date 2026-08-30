@@ -287,17 +287,19 @@ public class Substitutions {
 
     /**
      * Returns a new instance of the <code>Substitutions</code> object from the provided
-     * <code>json</code> substitutions file, or <code>null</code> if an error occurred.
+     * <code>json</code> substitutions file, or <code>null</code> if the file can't be found
+     * or if an error occurred.
      */
     public static Substitutions newInstance(Path path) {
         Substitutions substitutions = null;
         try {
+            if(path == null || !path.toFile().exists()) {
+                return substitutions;
+            }
             substitutions = new Substitutions(path);
             log.info("Successfully parsed new substitutions file.");
-        } catch(JSONException e) {
-            log.warn("Unable to parse substitutions file, skipping", e);
-        } catch(IOException e) {
-            log.info("Substitutions file missing, skipping: {}", e.getMessage());
+        } catch(IOException | JSONException e) {
+            log.warn("Unable to read substitutions file, skipping", e);
         }
         return substitutions;
     }

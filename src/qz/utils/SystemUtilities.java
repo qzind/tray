@@ -158,11 +158,11 @@ public class SystemUtilities {
      */
     public static String getOsDisplayVersion() {
         if (osDisplayVersion == null) {
-            switch(OS_TYPE) {
-                case WINDOWS -> osDisplayVersion = WindowsUtilities.getOsDisplayVersion();
-                case MAC -> osDisplayVersion = MacUtilities.getOsDisplayVersion();
-                default -> osDisplayVersion = LinuxUtilities.getOsDisplayVersion();
-            }
+            osDisplayVersion = switch(OS_TYPE) {
+                case WINDOWS -> WindowsUtilities.getOsDisplayVersion();
+                case MAC -> MacUtilities.getOsDisplayVersion();
+                default -> LinuxUtilities.getOsDisplayVersion();
+            };
         }
         return osDisplayVersion;
     }

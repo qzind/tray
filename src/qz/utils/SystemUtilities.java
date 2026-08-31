@@ -172,10 +172,10 @@ public class SystemUtilities {
      */
     public static String getOsDisplayName() {
         if(osName == null) {
-            switch(OS_TYPE) {
-                case WINDOWS, MAC -> osName = System.getProperty("os.name", "Unknown");
-                default -> osName = LinuxUtilities.getDisplayName();
-            }
+            osName = switch(OS_TYPE) {
+                case WINDOWS, MAC -> System.getProperty("os.name", "Unknown");
+                default -> LinuxUtilities.getDisplayName();
+            };
         }
         return osName;
     }

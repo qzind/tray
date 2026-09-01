@@ -11,12 +11,12 @@ import qz.utils.SystemUtilities;
 import java.awt.*;
 import java.io.IOException;
 
-import static qz.utils.linux.DeType.*;
+import static qz.utils.linux.DisplayServerType.*;
 
 public class DeUtilsTests {
     static Logger log = LogManager.getLogger(DeUtilsTests.class);
 
-    private DeType deType;
+    private DisplayServerType displayServerType;
     private DeThemeHelper deThemeHelper;
     private String currentTheme;
 
@@ -32,16 +32,16 @@ public class DeUtilsTests {
             }
         }
 
-        deType = DeType.getDeType();
+        displayServerType = DisplayServerType.getDeType();
         deThemeHelper = DeThemeHelper.getDeThemeHelper();
     }
 
     @Test
     public void testDeToThemeCoverage() {
-        for(DeType type : DeType.values()) {
+        for(DisplayServerType type : DisplayServerType.values()) {
             switch(type) {
                 // Coverage is limited to GNOME, KDE for now
-                case GNOME, KDE -> {
+                case MUTTER, KWIN -> {
                     log.info("Checking desktop environment coverage for '{}'", type);
                     Assert.assertNotNull(DeThemeHelper.getDeThemeHelper(type));
                 }
@@ -52,8 +52,8 @@ public class DeUtilsTests {
 
     @Test
     public void testHasDe() {
-        Assert.assertNotEquals(deType, UNKNOWN);
-        log.info("Desktop environment detected '{}' via dbus or similar", deType);
+        Assert.assertNotEquals(displayServerType, UNKNOWN);
+        log.info("Desktop environment detected '{}' via dbus or similar", displayServerType);
     }
 
     @Test

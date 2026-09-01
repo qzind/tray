@@ -10,6 +10,7 @@ import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
 import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import qz.build.provision.params.Os;
 import qz.build.provision.params.Phase;
 import qz.common.Constants;
 import qz.common.PropertyHelper;
@@ -20,6 +21,7 @@ import qz.installer.certificate.KeyPairWrapper;
 import qz.installer.certificate.NativeCertificateInstaller;
 import qz.installer.provision.ProvisionInstaller;
 import qz.utils.*;
+import qz.utils.linux.LinuxUtilities;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
 import qz.ws.substitutions.Substitutions;
@@ -45,6 +47,7 @@ public class App {
         }
         SingleInstanceChecker.stealWebsocket = parser.hasFlag(ArgValue.STEAL);
         setupFileLogging();
+        setEnvironment();
         log.info(Constants.ABOUT_TITLE + " version: {}", Constants.VERSION);
         log.info(Constants.ABOUT_TITLE + " vendor: {}", Constants.ABOUT_COMPANY);
         log.info("Java version: {}", Constants.JAVA_VERSION.toString());
@@ -160,4 +163,15 @@ public class App {
         App.headless = headless;
     }
 
+    /**
+     * Properties to set before the app is started
+     */
+    public static void setEnvironment() {
+        if(!headless) {
+            switch(SystemUtilities.getOs()) {
+                case WINDOWS, MAC -> {}
+                default -> LinuxUtilities.setLinuxScaling();
+            }
+        }
+    }
 }

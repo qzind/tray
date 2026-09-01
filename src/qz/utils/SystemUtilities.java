@@ -386,9 +386,6 @@ public class SystemUtilities {
             return false;
         }
         try {
-            if(OS_TYPE != Os.WINDOWS && OS_TYPE != Os.MAC) {
-                LinuxUtilities.setLinuxScaling();
-            }
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
             UIManager.setLookAndFeel(isDarkDesktop() ? calculateDarkLaf() : calculateLightLaf());
             adjustThemeColors();

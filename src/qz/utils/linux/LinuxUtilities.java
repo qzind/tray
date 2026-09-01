@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -29,6 +30,7 @@ public class LinuxUtilities {
     private static String distroFamily; // "debian", "arch", etc
     private static String displayName;
     private static String displayVersion;
+    private static De desktopEnvironment;
 
     public static String getDistroFamily() {
         if(distroFamily == null) {
@@ -50,6 +52,22 @@ public class LinuxUtilities {
             }
         }
         return distroFamily;
+    }
+
+    public static De getDesktopEnvironment() {
+        if(desktopEnvironment == null) {
+            String detected = System.getenv("XDG_CURRENT_DESKTOP");
+            for(De desktop : De.values()) {
+                if(detected != null && detected.toLowerCase(Locale.ENGLISH).contains(desktop.name().toLowerCase(Locale.ENGLISH))) {
+                    log.info("Detected desktop environment: '{}'", desktop);
+                    desktopEnvironment = desktop;
+                }
+            }
+        }
+        if(desktopEnvironment == null) {
+            desktopEnvironment = De.UNKNOWN;
+        }
+        return desktopEnvironment;
     }
 
     /**
@@ -189,11 +207,12 @@ public class LinuxUtilities {
     }
 
     public static void setLinuxScaling() {
-        DeType deType = DeType.getDeType();
-        log.info("Desktop environment detected: {}", deType.toString());
-        if(deType != DeType.UNKNOWN && DeType.getScaleFactor() > 1.0) {
-            log.info("Setting scale factor to: {}x", DeType.getScaleFactor());
-            System.setProperty("sun.java2d.uiScale", String.valueOf(DeType.getScaleFactor()));
+        DisplayServerType display = DisplayServerType.getDeType();
+        double scale = display.getScaleFactor();
+        log.info("Desktop environment detected: {}", display.toString());
+        if(display != DisplayServerType.UNKNOWN && scale > 1.0) {
+            log.info("Setting scale factor to: {}x", scale);
+            System.setProperty("sun.java2d.uiScale", String.valueOf(scale));
         }
     }
 }

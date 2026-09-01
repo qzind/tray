@@ -11,17 +11,17 @@ import qz.utils.SystemUtilities;
 import java.awt.*;
 import java.io.IOException;
 
-import static qz.utils.linux.DisplayServerType.*;
+import static qz.utils.linux.CompositorType.*;
 
 public class DeUtilsTests {
     static Logger log = LogManager.getLogger(DeUtilsTests.class);
 
-    private DisplayServerType displayServerType;
+    private CompositorType compositorType;
     private DeThemeHelper deThemeHelper;
     private String currentTheme;
 
     @BeforeClass
-    public void findDeType() {
+    public void beforeFindDe() {
         switch(SystemUtilities.getOs()) {
             case WINDOWS, MAC -> throw new SkipException("Desktop environment is assumed on this OS");
             default -> {
@@ -32,20 +32,20 @@ public class DeUtilsTests {
             }
         }
 
-        displayServerType = DisplayServerType.getDeType();
+        compositorType = CompositorType.getDe();
         deThemeHelper = DeThemeHelper.getDeThemeHelper();
     }
 
     @Test(priority = -1)
     public void testGetScaleFactor() {
-        double scaleFactor = DisplayServerType.getDeType().getScaleFactor(false);
-        log.info("Detected scale factor {}x from {}", scaleFactor, DisplayServerType.getDeType());
+        double scaleFactor = CompositorType.getDe().getScaleFactor(false);
+        log.info("Detected scale factor {}x from {}", scaleFactor, CompositorType.getDe());
         Assert.assertNotEquals(scaleFactor, 0.0);
     }
 
     @Test
     public void testDeToThemeCoverage() {
-        for(DisplayServerType type : DisplayServerType.values()) {
+        for(CompositorType type : CompositorType.values()) {
             switch(type) {
                 // Coverage is limited to GNOME, KDE for now
                 case MUTTER, KWIN -> {
@@ -59,8 +59,8 @@ public class DeUtilsTests {
 
     @Test
     public void testHasDe() {
-        Assert.assertNotEquals(displayServerType, UNKNOWN);
-        log.info("Desktop environment detected '{}' via dbus or similar", displayServerType);
+        Assert.assertNotEquals(compositorType, UNKNOWN);
+        log.info("Desktop environment detected '{}' via dbus or similar", compositorType);
     }
 
     @Test

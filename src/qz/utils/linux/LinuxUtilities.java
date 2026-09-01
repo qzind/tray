@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
 
-import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -207,10 +206,10 @@ public class LinuxUtilities {
     }
 
     public static void setLinuxScaling() {
-        DisplayServerType display = DisplayServerType.getDeType();
+        CompositorType display = CompositorType.getDe();
         double scale = display.getScaleFactor();
         log.info("Desktop environment detected: {}", display.toString());
-        if(display != DisplayServerType.UNKNOWN || scale < 1) {
+        if(display != CompositorType.UNKNOWN || scale < 1) {
             log.warn("Could not determine scale factor; Some UI components may appear at incorrect sizes");
         } else if(scale == 1) {
             log.info("Detected a scale factor of 1x; Leaving UI components at default sizes");

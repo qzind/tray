@@ -4,11 +4,11 @@ import java.io.IOException;
 
 public interface DeThemeHelper {
     static DeThemeHelper getDeThemeHelper() {
-        return getDeThemeHelper(DisplayServerType.getDeType());
+        return getDeThemeHelper(CompositorType.getDe());
     }
 
-    static DeThemeHelper getDeThemeHelper(DisplayServerType displayServerType) {
-        return switch(displayServerType) {
+    static DeThemeHelper getDeThemeHelper(CompositorType compositorType) {
+        return switch(compositorType) {
             case KWIN -> new KdeThemeHelper();
             case MUTTER -> new GnomeThemeHelper();
             default -> null;

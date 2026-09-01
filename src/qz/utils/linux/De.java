@@ -1,9 +1,12 @@
 package qz.utils.linux;
 
 public enum De {
-    GNOME,
-    KDE,
-    XFCE,
     COSMIC,
+    CINNAMON,
+    GNOME,
+    HYPRLAND,
+    KDE,
+    MATE,
+    XFCE,
     UNKNOWN
 }

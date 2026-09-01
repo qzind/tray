@@ -209,7 +209,7 @@ public class LinuxUtilities {
         CompositorType display = CompositorType.getDe();
         double scale = display.getScaleFactor();
         log.info("Desktop environment detected: {}", display.toString());
-        if(display != CompositorType.UNKNOWN || scale < 1) {
+        if(display == CompositorType.UNKNOWN || scale < 1) {
             log.warn("Could not determine scale factor; Some UI components may appear at incorrect sizes");
         } else if(scale == 1) {
             log.info("Detected a scale factor of 1x; Leaving UI components at default sizes");

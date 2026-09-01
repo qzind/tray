@@ -49,7 +49,7 @@ public enum DisplayServerType {
                 catch(NumberFormatException ignore) {}
             }
         }
-        return 1.0;
+        return 0.0;
     }
 
     static DisplayServerType getDeType() {

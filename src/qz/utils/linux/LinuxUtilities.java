@@ -210,8 +210,12 @@ public class LinuxUtilities {
         DisplayServerType display = DisplayServerType.getDeType();
         double scale = display.getScaleFactor();
         log.info("Desktop environment detected: {}", display.toString());
-        if(display != DisplayServerType.UNKNOWN && scale > 1.0) {
-            log.info("Setting scale factor to: {}x", scale);
+        if(display != DisplayServerType.UNKNOWN || scale < 1) {
+            log.warn("Could not determine scale factor; Some UI components may appear at incorrect sizes");
+        } else if(scale == 1) {
+            log.info("Detected a scale factor of 1x; Leaving UI components at default sizes");
+        } else if (scale > 1.0) {
+            log.info("Detected a scale factor of {}x; Scaling UI components proportionally", scale);
             System.setProperty("sun.java2d.uiScale", String.valueOf(scale));
         }
     }

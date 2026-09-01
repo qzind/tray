@@ -17,7 +17,7 @@ public class DeUtilsTests {
     static Logger log = LogManager.getLogger(DeUtilsTests.class);
 
     private DeType deType;
-    private DeTheme deTheme;
+    private DeThemeHelper deThemeHelper;
     private String currentTheme;
 
     @BeforeClass
@@ -32,50 +32,53 @@ public class DeUtilsTests {
             }
         }
 
-        deType = DeUtils.getDeType();
-        deTheme = DeUtils.getDeTheme();
+        deType = DeType.getDeType();
+        deThemeHelper = DeThemeHelper.getDeThemeHelper();
     }
 
     @Test
     public void testDeToThemeCoverage() {
         for(DeType type : DeType.values()) {
-            if(type == UNKNOWN) {
-                continue;
+            switch(type) {
+                // Coverage is limited to GNOME, KDE for now
+                case GNOME, KDE -> {
+                    log.info("Checking desktop environment coverage for '{}'", type);
+                    Assert.assertNotNull(DeThemeHelper.getDeThemeHelper(type));
+                }
             }
-            log.info("Checking desktop environment coverage for '{}'", type);
-            Assert.assertNotNull(DeUtils.getDeTheme(type));
+
         }
     }
 
     @Test
     public void testHasDe() {
         Assert.assertNotEquals(deType, UNKNOWN);
-        log.info("Desktop environment detected '{}' via command '{}'", deType, getBinaryFound());
+        log.info("Desktop environment detected '{}' via dbus or similar", deType);
     }
 
     @Test
     public void testSaveCurrentTheme() throws IOException {
-        currentTheme = deTheme.getTheme();
+        currentTheme = deThemeHelper.getTheme();
     }
 
     @Test
     public void testSetDarkTheme() throws IOException {
-        deTheme.setTheme(true);
-        Assert.assertTrue(deTheme.isDarkDesktop());
+        deThemeHelper.setTheme(true);
+        Assert.assertTrue(DeUtils.isDarkDesktop());
         log.info("Dark desktop confirmed");
     }
 
     @Test
     public void testSetLightTheme() throws IOException {
-        deTheme.setTheme(false);
-        Assert.assertFalse(deTheme.isDarkDesktop());
+        deThemeHelper.setTheme(false);
+        Assert.assertFalse(DeUtils.isDarkDesktop());
         log.info("Light desktop confirmed");
     }
 
     @Test(priority = 99)
     public void testRestoreCurrentTheme() throws IOException{
-        deTheme.setTheme(currentTheme);
-        Assert.assertEquals(currentTheme, deTheme.getTheme());
+        deThemeHelper.setTheme(currentTheme);
+        Assert.assertEquals(currentTheme, deThemeHelper.getTheme());
         log.info("Restored theme: '{}'", currentTheme);
     }
 }

@@ -27,7 +27,6 @@ import qz.common.Constants;
 import qz.installer.Installer;
 import qz.utils.linux.DeUtils;
 import qz.utils.linux.LinuxUtilities;
-import qz.utils.linux.gtk.GtkScale;
 
 import javax.swing.*;
 import java.awt.*;
@@ -369,9 +368,7 @@ public class SystemUtilities {
     private static String calculateLightLaf() {
         return switch(OS_TYPE) {
             case WINDOWS, MAC -> UIManager.getSystemLookAndFeelClassName();
-            default -> GtkScale.isGtkAvailable()?
-                    "com.sun.java.swing.plaf.gtk.GTKLookAndFeel":
-                    FlatIntelliJLaf.class.getCanonicalName();
+            default -> FlatIntelliJLaf.class.getCanonicalName();
         };
     }
 
@@ -381,9 +378,7 @@ public class SystemUtilities {
      * fall back on a suitable dark-mode theme.
      */
     private static String calculateDarkLaf() {
-        return GtkScale.isGtkAvailable() ?
-                "com.sun.java.swing.plaf.gtk.GTKLookAndFeel" :
-                FlatDarculaLaf.class.getCanonicalName();
+        return FlatDarculaLaf.class.getCanonicalName();
     }
 
     public static boolean setSystemLookAndFeel() {
@@ -391,6 +386,9 @@ public class SystemUtilities {
             return false;
         }
         try {
+            if(OS_TYPE != Os.WINDOWS && OS_TYPE != Os.MAC) {
+                LinuxUtilities.setLinuxScaling();
+            }
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
             UIManager.setLookAndFeel(isDarkDesktop() ? calculateDarkLaf() : calculateLightLaf());
             adjustThemeColors();
@@ -462,13 +460,7 @@ public class SystemUtilities {
      * @return Logical dpi scale as dpi/96
      */
     private static double getWindowScaleFactor(boolean forceRefresh) {
-        if(windowScaleFactor == -1 || forceRefresh) {
-            switch(OS_TYPE) {
-                case MAC, WINDOWS -> windowScaleFactor = 1;
-                default -> windowScaleFactor = GtkScale.getScaleFactor();
-            }
-        }
-        return windowScaleFactor;
+        return 1;
     }
 
     public static double getWindowScaleFactor() {

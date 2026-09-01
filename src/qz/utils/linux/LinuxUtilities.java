@@ -187,4 +187,13 @@ public class LinuxUtilities {
         if(!SystemUtilities.isLinux()) return false;
         return getDistroFamily().equals("arch");
     }
+
+    public static void setLinuxScaling() {
+        DeType deType = DeType.getDeType();
+        log.info("Desktop environment detected: {}", deType.toString());
+        if(deType != DeType.UNKNOWN && DeType.getScaleFactor() > 1.0) {
+            log.info("Setting scale factor to: {}x", DeType.getScaleFactor());
+            System.setProperty("sun.java2d.uiScale", String.valueOf(DeType.getScaleFactor()));
+        }
+    }
 }

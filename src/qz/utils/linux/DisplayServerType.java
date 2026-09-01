@@ -39,9 +39,13 @@ public enum DisplayServerType {
     }
 
     public double getScaleFactor() {
-         if(this.pattern != null) {
-            Pattern pattern = Pattern.compile(this.pattern);
-            Matcher matcher = pattern.matcher(ShellUtilities.executeRawSilently(this.scaleFactorCalls));
+        return getScaleFactor(true);
+    }
+
+    double getScaleFactor(boolean isSilent) {
+        if(this.pattern != null) {
+            Pattern pattern = Pattern.compile(this.pattern, Pattern.DOTALL);
+            Matcher matcher = pattern.matcher(ShellUtilities.executeRaw(this.scaleFactorCalls, isSilent));
             if (matcher.find()) {
                 try {
                     return Double.parseDouble(matcher.group(1));

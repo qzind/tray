@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
  * querying dbus or other tools
  */
 public enum DisplayServerType {
-    KWIN("Enabled:\\s*1.*?\\bScale:\\s*(\\d+(?:\\.\\d+)?)",
+    KWIN("Enabled:\\s*1.*?Scale:\\s*(\\d+(?:\\.\\d+)?)",
          "gdbus", "call", "--session",
          "--dest" , "org.kde.KWin",
          "--object-path", "/KWin",

@@ -36,6 +36,13 @@ public class DeUtilsTests {
         deThemeHelper = DeThemeHelper.getDeThemeHelper();
     }
 
+    @Test(priority = -1)
+    public void testGetScaleFactor() {
+        double scaleFactor = DisplayServerType.getDeType().getScaleFactor(false);
+        log.info("Detected scale factor {}x from {}", scaleFactor, DisplayServerType.getDeType());
+        Assert.assertNotEquals(scaleFactor, 0.0);
+    }
+
     @Test
     public void testDeToThemeCoverage() {
         for(DisplayServerType type : DisplayServerType.values()) {

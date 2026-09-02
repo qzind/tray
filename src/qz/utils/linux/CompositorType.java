@@ -24,7 +24,7 @@ public enum CompositorType {
     KWIN5("^.*?(\\d+(?:\\.\\d+)?).*$",
           "kreadconfig5", "--file", "kdeglobals", "--group", "KScreen", "--key", "ScaleFactor"),
 
-    MATE(".*",
+    MATE("^.*?(\\d+(?:\\.\\d+)?).*$",
          "gsettings", "get", "org.mate.interface", "window-scaling-factor"),
 
     MUFFIN("\\(\\s*\\d+\\s*,\\s*\\d+\\s*,\\s*(\\d+(?:\\.\\d+)?)\\s*,\\s*uint32\\s+\\d+\\s*,\\s*true\\b",
@@ -36,7 +36,7 @@ public enum CompositorType {
     MUTTER("(?:uint32\\s+)?(\\d+(?:\\.\\d+)?)",
            "gsettings", "get", "org.gnome.desktop.interface", "scaling-factor"),
 
-    XFCE(".*", "xfconf-query", "-c", "xsettings", "-p", "/Gdk/WindowScalingFactor"),
+    XFCE("^.*?(\\d+(?:\\.\\d+)?).*$", "xfconf-query", "-c", "xsettings", "-p", "/Gdk/WindowScalingFactor"),
 
     UNKNOWN(null);
 

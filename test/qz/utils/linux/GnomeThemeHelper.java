@@ -1,14 +1,10 @@
 package qz.utils.linux;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
 
 import java.io.IOException;
 
 public class GnomeThemeHelper implements DeThemeHelper {
-    private static final Logger log = LogManager.getLogger(GnomeThemeHelper.class);
-
     @Override
     public String getTheme() throws IOException{
         String theme = ShellUtilities.executeRawSilently("gsettings", "get", "org.gnome.desktop.interface", "gtk-theme");

@@ -34,7 +34,7 @@ public class DeUtils {
             log.warn("Unable to parse color scheme from '{}': {}", colorScheme, nfe.getMessage());
         }
         darkDesktopDetectionFailed = true;
-        log.warn("Can't detect color scheme; We'll remaining on light mode until the app is restarted");
+        log.warn("Can't detect color scheme, defaulting to light; We won't try again until the app is restarted.");
         return false;
     }
 }

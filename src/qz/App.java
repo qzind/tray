@@ -170,7 +170,7 @@ public class App {
         if(!headless) {
             switch(SystemUtilities.getOs()) {
                 case WINDOWS, MAC -> {}
-                default -> LinuxUtilities.setLinuxScaling();
+                default -> LinuxUtilities.setJavaScaleFactor();
             }
         }
     }

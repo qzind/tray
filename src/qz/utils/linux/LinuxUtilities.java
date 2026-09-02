@@ -205,17 +205,18 @@ public class LinuxUtilities {
         return getDistroFamily().equals("arch");
     }
 
-    public static void setLinuxScaling() {
-        CompositorType display = CompositorType.getDe();
-        double scale = display.getScaleFactor();
-        log.info("Desktop environment detected: {}", display.toString());
-        if(display == CompositorType.UNKNOWN || scale < 1) {
+    public static void setJavaScaleFactor() {
+        setJavaScaleFactor(CompositorType.getBestScaleFactor(true));
+    }
+
+    static void setJavaScaleFactor(double scaleFactor) {
+        if (scaleFactor > 1.0) {
+            log.info("Detected a scale factor of {}x; Scaling UI components proportionally", scaleFactor);
+            System.setProperty("sun.java2d.uiScale", String.valueOf(scaleFactor));
+        } else if(scaleFactor < 1.0) {
             log.warn("Could not determine scale factor; Some UI components may appear at incorrect sizes");
-        } else if(scale == 1) {
+        } else {
             log.info("Detected a scale factor of 1x; Leaving UI components at default sizes");
-        } else if (scale > 1.0) {
-            log.info("Detected a scale factor of {}x; Scaling UI components proportionally", scale);
-            System.setProperty("sun.java2d.uiScale", String.valueOf(scale));
         }
     }
 }

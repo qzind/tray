@@ -1,5 +1,7 @@
 package qz.utils.linux;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
 
 import java.util.regex.Matcher;
@@ -16,11 +18,11 @@ public enum CompositorType {
     HYPRLAND("(?s)Monitor\\s+.*?\\bscale:\\s*([0-9.]+)",
             "hyprctl", "monitors"),
 
-    /*
-    // FIXME: Doesn't work on Debian + KDE
-    KWIN(".*",
+    KWIN6(".*",
          "kreadconfig6", "--file", "kdeglobals", "--group", "KScreen", "--key", "ScaleFactor"),
-     */
+
+    KWIN5(".*",
+          "kreadconfig5", "--file", "kdeglobals", "--group", "KScreen", "--key", "ScaleFactor"),
 
     MATE(".*",
          "gsettings", "get", "org.mate.interface", "window-scaling-factor"),
@@ -34,31 +36,33 @@ public enum CompositorType {
     MUTTER("(?:uint32\\\\s+)?(\\\\d+(?:\\\\.\\\\d+)?)",
            "gsettings", "get", "org.gnome.desktop.interface", "scaling-factor"),
 
-    KWIN(MUTTER), // fallback on gsettings for now
-
     XFCE(".*", "xfconf-query", "-c", "xsettings", "-p", "/Gdk/WindowScalingFactor"),
 
-    UNKNOWN((String)null);
+    UNKNOWN(null);
 
+    private static final Logger log = LogManager.getLogger(CompositorType.class);
     private final String pattern;
     private final String[] scaleFactorCalls;
-    private static CompositorType instance;
-
-    CompositorType(CompositorType toClone) {
-        this(toClone.pattern, toClone.scaleFactorCalls);
-    }
+    private static CompositorType[] compositors;
 
     CompositorType(String pattern, String ... scaleFactorCalls) {
         this.pattern = pattern;
         this.scaleFactorCalls = scaleFactorCalls;
     }
 
-    public double getScaleFactor() {
-        return getScaleFactor(true);
+    static double getBestScaleFactor(boolean isSilent) {
+        double scaleFactor = 0;
+        for(CompositorType compositorType : CompositorType.getCompositors()) {
+            log.info("Trying to get scale factor using {}", compositorType);
+            if((scaleFactor = compositorType.getScaleFactor(isSilent)) != 0) {
+                break;
+            }
+        }
+        return scaleFactor;
     }
 
-    double getScaleFactor(boolean isSilent) {
-        if(this.pattern != null) {
+    private double getScaleFactor(boolean isSilent) {
+        if(this != UNKNOWN && this.pattern != null) {
             Pattern pattern = Pattern.compile(this.pattern, Pattern.DOTALL);
             Matcher matcher = pattern.matcher(ShellUtilities.executeRaw(this.scaleFactorCalls, isSilent));
             if (matcher.find()) {
@@ -71,19 +75,22 @@ public enum CompositorType {
         return 0.0;
     }
 
-    static CompositorType getDe() {
-        if(instance == null) {
-            switch(LinuxUtilities.getDesktopEnvironment()) {
-                case CINNAMON -> instance = MUFFIN;
-                case COSMIC -> instance = COSMIC;
-                case GNOME ->  instance = MUTTER;
-                case HYPRLAND -> instance = HYPRLAND;
-                case KDE -> instance = KWIN;
-                case MATE ->  instance = MATE;
-                case XFCE -> instance = XFCE;
-                case UNKNOWN -> instance = UNKNOWN;
-            }
+    static CompositorType[] getCompositors() {
+        if(compositors == null) {
+            compositors = switch(LinuxUtilities.getDesktopEnvironment()) {
+                case CINNAMON -> setCompositors(MUFFIN);
+                case COSMIC -> setCompositors(COSMIC);
+                case HYPRLAND -> setCompositors(HYPRLAND);
+                case KDE -> setCompositors(KWIN6, KWIN5, MUTTER);
+                case MATE ->  setCompositors(MATE);
+                case XFCE -> setCompositors(XFCE);
+                default -> setCompositors(MUTTER); // always fallback to gsettings
+            };
         }
-        return instance == null ? UNKNOWN : instance;
+        return compositors;
+    }
+
+    static CompositorType[] setCompositors(CompositorType ... compositors) {
+        return CompositorType.compositors = compositors;
     }
 }

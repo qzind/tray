@@ -1,5 +1,6 @@
 package qz.utils.linux;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
@@ -16,7 +17,7 @@ import static qz.utils.linux.CompositorType.*;
 public class DeUtilsTests {
     static Logger log = LogManager.getLogger(DeUtilsTests.class);
 
-    private CompositorType compositorType;
+    private CompositorType[] compositorTypes;
     private DeThemeHelper deThemeHelper;
     private String currentTheme;
 
@@ -32,14 +33,20 @@ public class DeUtilsTests {
             }
         }
 
-        compositorType = CompositorType.getDe();
+        compositorTypes = CompositorType.getCompositors();
         deThemeHelper = DeThemeHelper.getDeThemeHelper();
+    }
+
+    @Test(priority = -2)
+    public void testHasCompositor() {
+        Assert.assertTrue(compositorTypes.length > 0);
+        log.info("Will try techniques from the following compositors for obtaining scale factor '{}'", StringUtils.join(", ", compositorTypes));
     }
 
     @Test(priority = -1)
     public void testGetScaleFactor() {
-        double scaleFactor = CompositorType.getDe().getScaleFactor(false);
-        log.info("Detected scale factor {}x from {}", scaleFactor, CompositorType.getDe());
+        double scaleFactor = CompositorType.getBestScaleFactor(false);
+        log.info("Detected scale factor {}x from {}", scaleFactor, CompositorType.getCompositors());
         Assert.assertNotEquals(scaleFactor, 0.0);
     }
 
@@ -48,19 +55,13 @@ public class DeUtilsTests {
         for(CompositorType type : CompositorType.values()) {
             switch(type) {
                 // Coverage is limited to GNOME, KDE for now
-                case MUTTER, KWIN -> {
+                case MUTTER, KWIN6, KWIN5 -> {
                     log.info("Checking desktop environment coverage for '{}'", type);
                     Assert.assertNotNull(DeThemeHelper.getDeThemeHelper(type));
                 }
             }
 
         }
-    }
-
-    @Test
-    public void testHasDe() {
-        Assert.assertNotEquals(compositorType, UNKNOWN);
-        log.info("Desktop environment detected '{}' via dbus or similar", compositorType);
     }
 
     @Test

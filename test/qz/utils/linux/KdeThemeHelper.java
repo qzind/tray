@@ -9,7 +9,7 @@ public class KdeThemeHelper implements DeThemeHelper {
     public String getTheme() throws IOException {
         String theme = ShellUtilities.executeRaw("kreadconfig6", "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme");
         if(theme.trim().isEmpty()) {
-            theme = ShellUtilities.executeRaw("kreadconfig6", "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme");
+            theme = ShellUtilities.executeRaw("kreadconfig5", "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme");
             if(theme.trim().isEmpty()) {
                 throw new IOException("Failed to get theme name");
             }

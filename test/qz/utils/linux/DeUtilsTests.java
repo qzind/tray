@@ -54,7 +54,7 @@ public class DeUtilsTests {
             switch(type) {
                 // Coverage is limited to GNOME, KDE for now
                 case MUTTER, KWIN6, KWIN5 -> {
-                    log.info("Checking desktop environment coverage for '{}'", type);
+                    log.info("Checking theme coverage for '{}'", type);
                     Assert.assertNotNull(DeThemeHelper.getDeThemeHelper(type));
                 }
             }

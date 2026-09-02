@@ -16,11 +16,11 @@ public enum CompositorType {
     HYPRLAND("(?s)Monitor\\s+.*?\\bscale:\\s*([0-9.]+)",
             "hyprctl", "monitors"),
 
-    KWIN("Enabled:\\s*1.*?Scale:\\s*(\\d+(?:\\.\\d+)?)",
-         "gdbus", "call", "--session",
-         "--dest" , "org.kde.KWin",
-         "--object-path", "/KWin",
-         "--method", "org.kde.KWin.supportInformation"),
+    /*
+    // FIXME: Doesn't work on Debian + KDE
+    KWIN(".*",
+         "kreadconfig6", "--file", "kdeglobals", "--group", "KScreen", "--key", "ScaleFactor"),
+     */
 
     MATE(".*",
          "gsettings", "get", "org.mate.interface", "window-scaling-factor"),
@@ -31,23 +31,22 @@ public enum CompositorType {
            "--object-path", "/org/cinnamon/Muffin/DisplayConfig",
            "--method", "org.cinnamon.Muffin.DisplayConfig.GetCurrentState"),
 
-    MUTTER("\\(\\s*\\d+\\s*,\\s*\\d+\\s*,\\s*(\\d+(?:\\.\\d+)?)\\s*,\\s*uint32\\s+\\d+\\s*,\\s*true\\b",
-           "gdbus", "call", "--session",
-           "--dest", "org.gnome.Mutter.DisplayConfig",
-           "--object-path", "/org/gnome/Mutter/DisplayConfig",
-           "--method", "org.gnome.Mutter.DisplayConfig.GetCurrentState"),
+    MUTTER("(?:uint32\\\\s+)?(\\\\d+(?:\\\\.\\\\d+)?)",
+           "gsettings", "get", "org.gnome.desktop.interface", "scaling-factor"),
 
-    XFCE("<(\\d+)>", "gdbus", "call", "--session",
-            "--dest", "org.xfce.Xfconf",
-            "--object-path", "/org/xfce/Xfconf",
-            "--method", "org.xfce.Xfconf.GetProperty",
-            "xsettings", "/Gdk/WindowScalingFactor"),
+    KWIN(MUTTER), // fallback on gsettings for now
 
-    UNKNOWN(null);
+    XFCE(".*", "xfconf-query", "-c", "xsettings", "-p", "/Gdk/WindowScalingFactor"),
+
+    UNKNOWN((String)null);
 
     private final String pattern;
     private final String[] scaleFactorCalls;
     private static CompositorType instance;
+
+    CompositorType(CompositorType toClone) {
+        this(toClone.pattern, toClone.scaleFactorCalls);
+    }
 
     CompositorType(String pattern, String ... scaleFactorCalls) {
         this.pattern = pattern;

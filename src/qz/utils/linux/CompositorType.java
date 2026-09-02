@@ -18,10 +18,10 @@ public enum CompositorType {
     HYPRLAND("(?s)Monitor\\s+.*?\\bscale:\\s*([0-9.]+)",
             "hyprctl", "monitors"),
 
-    KWIN6(".*",
+    KWIN6("^.*?(\\d+(?:\\.\\d+)?).*$",
          "kreadconfig6", "--file", "kdeglobals", "--group", "KScreen", "--key", "ScaleFactor"),
 
-    KWIN5(".*",
+    KWIN5("^.*?(\\d+(?:\\.\\d+)?).*$",
           "kreadconfig5", "--file", "kdeglobals", "--group", "KScreen", "--key", "ScaleFactor"),
 
     MATE(".*",

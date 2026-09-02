@@ -38,7 +38,7 @@ public class DeUtilsTests {
     @Test(priority = -2)
     public void testHasCompositor() {
         Assert.assertTrue(compositorTypes.length > 0);
-        log.info("Will try techniques from the following compositors for obtaining scale factor '{}'", StringUtils.join(compositorTypes, ","));
+        log.info("Will try techniques from the following compositors for obtaining scale factor: {}", StringUtils.join(compositorTypes, ", "));
     }
 
     @Test(priority = -1)

@@ -33,7 +33,7 @@ public enum CompositorType {
            "--object-path", "/org/cinnamon/Muffin/DisplayConfig",
            "--method", "org.cinnamon.Muffin.DisplayConfig.GetCurrentState"),
 
-    MUTTER("(?:uint32\\\\s+)?(\\\\d+(?:\\\\.\\\\d+)?)",
+    MUTTER("(?:uint32\\s+)?(\\d+(?:\\.\\d+)?)",
            "gsettings", "get", "org.gnome.desktop.interface", "scaling-factor"),
 
     XFCE(".*", "xfconf-query", "-c", "xsettings", "-p", "/Gdk/WindowScalingFactor"),
@@ -65,7 +65,7 @@ public enum CompositorType {
         if(this != UNKNOWN && this.pattern != null) {
             Pattern pattern = Pattern.compile(this.pattern, Pattern.DOTALL);
             Matcher matcher = pattern.matcher(ShellUtilities.executeRaw(this.scaleFactorCalls, isSilent));
-            if (matcher.find()) {
+            if (matcher.find() && matcher.groupCount() > 0) {
                 try {
                     return Double.parseDouble(matcher.group(1));
                 }

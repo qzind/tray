@@ -24,7 +24,9 @@ public class Elevator {
                     break;
                 }
             }
-            throw new IOException("Can't find an installed utility " + Arrays.toString(KNOWN_ELEVATORS) + " to elevate permissions.");
+            if(foundElevator == null) {
+                throw new IOException("Can't find an installed utility " + Arrays.toString(KNOWN_ELEVATORS) + " to elevate permissions.");
+            }
         }
         return foundElevator;
     }

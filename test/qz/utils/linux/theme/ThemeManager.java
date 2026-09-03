@@ -1,19 +1,20 @@
 package qz.utils.linux.theme;
 
-import qz.utils.linux.CompositorType;
+import qz.utils.linux.compositor.Compositor;
 
 import java.io.IOException;
 
+// TODO: Refactor by implementing / overriding the new dispatchers
 public interface ThemeManager {
     static ThemeManager getThemeManager() {
-        return getThemeManager(CompositorType.getCompositors());
+        return getThemeManager(Compositor.detectCompositor());
     }
 
-    static ThemeManager getThemeManager(CompositorType ... compositorTypes) {
-        for(CompositorType compositorType : compositorTypes) {
+    static ThemeManager getThemeManager(Compositor... compositors) {
+        for(Compositor compositor : compositors) {
             // Get first match
-            switch(compositorType) {
-                case KWIN6, KWIN5: return new KdeThemeManager();
+            switch(compositor) {
+                case KWIN: return new KdeThemeManager();
                 case MUTTER: return new GnomeThemeManager();
                 case XFCE: return new XfceThemeManager();
             };

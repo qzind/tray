@@ -1,6 +1,5 @@
 package qz.utils.linux;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
@@ -8,6 +7,7 @@ import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import qz.utils.SystemUtilities;
+import qz.utils.linux.compositor.Compositor;
 import qz.utils.linux.theme.ThemeManager;
 
 import java.awt.*;
@@ -16,7 +16,7 @@ import java.io.IOException;
 public class ThemeUtilitiesTests {
     static Logger log = LogManager.getLogger(ThemeUtilitiesTests.class);
 
-    private CompositorType[] compositorTypes;
+    private Compositor compositor;
     private ThemeManager themeManager;
     private String currentTheme;
 
@@ -32,14 +32,14 @@ public class ThemeUtilitiesTests {
             }
         }
 
-        compositorTypes = CompositorType.getCompositors();
+        compositor = Compositor.detectCompositor();
         themeManager = ThemeManager.getThemeManager();
     }
 
     @Test(priority = -2)
     public void testHasCompositor() {
-        Assert.assertTrue(compositorTypes.length > 0);
-        log.info("Will try techniques from the following compositors for obtaining scale factor: {}", StringUtils.join(compositorTypes, ", "));
+        Assert.assertNotNull(compositor);
+        log.info("Will try techniques from the '{}' compositor for obtaining scale factor", compositor);
     }
 
     @Test
@@ -50,14 +50,14 @@ public class ThemeUtilitiesTests {
     @Test
     public void testSetDarkTheme() throws IOException {
         themeManager.setTheme(true);
-        Assert.assertTrue(ThemeUtilities.isDarkDesktop());
+        Assert.assertTrue(LinuxUtilities.isDarkDesktop());
         log.info("Dark desktop confirmed");
     }
 
     @Test
     public void testSetLightTheme() throws IOException {
         themeManager.setTheme(false);
-        Assert.assertFalse(ThemeUtilities.isDarkDesktop());
+        Assert.assertFalse(LinuxUtilities.isDarkDesktop());
         log.info("Light desktop confirmed");
     }
 

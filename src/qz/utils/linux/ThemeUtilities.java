@@ -8,10 +8,11 @@ public class ThemeUtilities {
     private static final Logger log = LogManager.getLogger(ThemeUtilities.class);
     private static boolean darkDesktopDetectionFailed = false;
 
+
     /**
      * Uses a live desktop-environment-specific technique determine if the Desktop is "dark mode".
      */
-    public static boolean isDarkDesktop() {
+    public static boolean isDarkDesktopBack() {
         if(darkDesktopDetectionFailed) {
             return false;
         }

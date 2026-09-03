@@ -340,7 +340,7 @@ public class SystemUtilities {
             darkDesktop = switch(OS_TYPE) {
                 case MAC -> MacUtilities.isDarkDesktop();
                 case WINDOWS -> WindowsUtilities.isDarkDesktop();
-                default ->  ThemeUtilities.isDarkDesktop();
+                default ->  LinuxUtilities.isDarkDesktop();
             };
         }
         return darkDesktop;

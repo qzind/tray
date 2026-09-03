@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
+import qz.utils.linux.compositor.Compositor;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -30,6 +31,7 @@ public class LinuxUtilities {
     private static String displayName;
     private static String displayVersion;
     private static De desktopEnvironment;
+    private static boolean darkDesktopDetectionFailed = false;
 
     public static String getDistroFamily() {
         if(distroFamily == null) {
@@ -205,16 +207,33 @@ public class LinuxUtilities {
         return getDistroFamily().equals("arch");
     }
 
-    public static void setJavaScaleFactor() {
-        setJavaScaleFactor(CompositorType.getBestScaleFactor(true));
+    public static boolean isDarkDesktop() {
+        if(darkDesktopDetectionFailed) {
+            return false;
+        }
+        Boolean darkMode = Compositor.getDispatcher().isDarkMode();
+        if(darkMode != null) {
+            return darkMode;
+        }
+        darkDesktopDetectionFailed = true;
+        return false;
     }
 
-    static void setJavaScaleFactor(double scaleFactor) {
-        if (scaleFactor > 1.0) {
+    public static Double getScaleFactor() {
+        Double scaleFactor = Compositor.getDispatcher().getScaleFactor();
+        if(scaleFactor != null) {
+            return scaleFactor;
+        }
+        return null;
+    }
+
+    public static void setJavaScaleFactor() {
+        Double scaleFactor = getScaleFactor();
+        if(scaleFactor == null || scaleFactor < 1.0) {
+            log.warn("Could not determine scale factor; Some UI components may appear at incorrect sizes");
+        } else if (scaleFactor > 1.0) {
             log.info("Detected a scale factor of {}x; Scaling UI components proportionally", scaleFactor);
             System.setProperty("sun.java2d.uiScale", String.valueOf(scaleFactor));
-        } else if(scaleFactor < 1.0) {
-            log.warn("Could not determine scale factor; Some UI components may appear at incorrect sizes");
         } else {
             log.info("Detected a scale factor of 1x; Leaving UI components at default sizes");
         }

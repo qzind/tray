@@ -1,10 +1,10 @@
-package qz.utils.linux;
+package qz.utils.linux.theme;
 
 import qz.utils.ShellUtilities;
 
 import java.io.IOException;
 
-public class GnomeThemeHelper implements DeThemeHelper {
+public class GnomeThemeManager implements ThemeManager {
     @Override
     public String getTheme() throws IOException{
         String theme = ShellUtilities.executeRawSilently("gsettings", "get", "org.gnome.desktop.interface", "gtk-theme");

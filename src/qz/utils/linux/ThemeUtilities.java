@@ -4,8 +4,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
 
-public class DeUtils {
-    private static final Logger log = LogManager.getLogger(DeUtils.class);
+public class ThemeUtilities {
+    private static final Logger log = LogManager.getLogger(ThemeUtilities.class);
     private static boolean darkDesktopDetectionFailed = false;
 
     /**

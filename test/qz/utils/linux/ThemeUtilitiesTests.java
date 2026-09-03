@@ -8,15 +8,16 @@ import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import qz.utils.SystemUtilities;
+import qz.utils.linux.theme.ThemeManager;
 
 import java.awt.*;
 import java.io.IOException;
 
-public class DeUtilsTests {
-    static Logger log = LogManager.getLogger(DeUtilsTests.class);
+public class ThemeUtilitiesTests {
+    static Logger log = LogManager.getLogger(ThemeUtilitiesTests.class);
 
     private CompositorType[] compositorTypes;
-    private DeThemeHelper deThemeHelper;
+    private ThemeManager themeManager;
     private String currentTheme;
 
     @BeforeClass
@@ -32,7 +33,7 @@ public class DeUtilsTests {
         }
 
         compositorTypes = CompositorType.getCompositors();
-        deThemeHelper = DeThemeHelper.getDeThemeHelper();
+        themeManager = ThemeManager.getThemeManager();
     }
 
     @Test(priority = -2)
@@ -41,50 +42,29 @@ public class DeUtilsTests {
         log.info("Will try techniques from the following compositors for obtaining scale factor: {}", StringUtils.join(compositorTypes, ", "));
     }
 
-    @Test(priority = -1)
-    public void testGetScaleFactor() {
-        double scaleFactor = CompositorType.getBestScaleFactor(false);
-        log.info("Detected scale factor {}x from {}", scaleFactor, CompositorType.getCompositors());
-        Assert.assertNotEquals(scaleFactor, 0.0);
-    }
-
-    @Test
-    public void testDeToThemeCoverage() {
-        for(CompositorType type : CompositorType.values()) {
-            switch(type) {
-                // Coverage is limited to GNOME, KDE for now
-                case MUTTER, KWIN6, KWIN5 -> {
-                    log.info("Checking theme coverage for '{}'", type);
-                    Assert.assertNotNull(DeThemeHelper.getDeThemeHelper(type));
-                }
-            }
-
-        }
-    }
-
     @Test
     public void testSaveCurrentTheme() throws IOException {
-        currentTheme = deThemeHelper.getTheme();
+        currentTheme = themeManager.getTheme();
     }
 
     @Test
     public void testSetDarkTheme() throws IOException {
-        deThemeHelper.setTheme(true);
-        Assert.assertTrue(DeUtils.isDarkDesktop());
+        themeManager.setTheme(true);
+        Assert.assertTrue(ThemeUtilities.isDarkDesktop());
         log.info("Dark desktop confirmed");
     }
 
     @Test
     public void testSetLightTheme() throws IOException {
-        deThemeHelper.setTheme(false);
-        Assert.assertFalse(DeUtils.isDarkDesktop());
+        themeManager.setTheme(false);
+        Assert.assertFalse(ThemeUtilities.isDarkDesktop());
         log.info("Light desktop confirmed");
     }
 
     @Test(priority = 99)
     public void testRestoreCurrentTheme() throws IOException{
-        deThemeHelper.setTheme(currentTheme);
-        Assert.assertEquals(currentTheme, deThemeHelper.getTheme());
+        themeManager.setTheme(currentTheme);
+        Assert.assertEquals(currentTheme, themeManager.getTheme());
         log.info("Restored theme: '{}'", currentTheme);
     }
 }

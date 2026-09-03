@@ -1,10 +1,10 @@
-package qz.utils.linux;
+package qz.utils.linux.theme;
 
 import qz.utils.ShellUtilities;
 
 import java.io.IOException;
 
-public class KdeThemeHelper implements DeThemeHelper {
+public class KdeThemeManager implements ThemeManager {
     @Override
     public String getTheme() throws IOException {
         String theme = ShellUtilities.executeRaw("kreadconfig6", "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme");

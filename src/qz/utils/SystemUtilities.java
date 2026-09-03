@@ -25,7 +25,7 @@ import qz.build.provision.params.Arch;
 import qz.build.provision.params.Os;
 import qz.common.Constants;
 import qz.installer.Installer;
-import qz.utils.linux.DeUtils;
+import qz.utils.linux.ThemeUtilities;
 import qz.utils.linux.LinuxUtilities;
 
 import javax.swing.*;
@@ -340,7 +340,7 @@ public class SystemUtilities {
             darkDesktop = switch(OS_TYPE) {
                 case MAC -> MacUtilities.isDarkDesktop();
                 case WINDOWS -> WindowsUtilities.isDarkDesktop();
-                default ->  DeUtils.isDarkDesktop();
+                default ->  ThemeUtilities.isDarkDesktop();
             };
         }
         return darkDesktop;

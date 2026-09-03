@@ -75,7 +75,7 @@ public enum CompositorType {
         return 0.0;
     }
 
-    static CompositorType[] getCompositors() {
+    public static CompositorType[] getCompositors() {
         if(compositors == null) {
             compositors = switch(LinuxUtilities.getDesktopEnvironment()) {
                 case CINNAMON -> setCompositors(MUFFIN);

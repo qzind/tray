@@ -23,7 +23,8 @@ public abstract class Dispatcher {
             "dark",
             "mocha",
             "night",
-            "storm"
+            "storm",
+            "highcontrastinverse"
     };
 
     private static final String[] LIGHT_SUFFIXES = {

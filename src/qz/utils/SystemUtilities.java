@@ -358,26 +358,16 @@ public class SystemUtilities {
         };
     }
 
-    /**
-     * Java historically provides adequate light mode themes for macOS, Windows and GTK
-     * but Java's detection technique stopped working with the release of Gnome 3.3.x. so
-     * we'll use our own GTK detection method instead and fallback on a sane theme for when
-     * GTK is not available.
-     */
-    private static String calculateLightLaf() {
+    private static String calculateLaf() {
+        // Use Darcula l&F for all OSs
+        if(isDarkDesktop()) {
+            return FlatDarculaLaf.class.getCanonicalName();
+        }
+        // Use system l&f for everything except linux/unix
         return switch(OS_TYPE) {
             case WINDOWS, MAC -> UIManager.getSystemLookAndFeelClassName();
             default -> FlatIntelliJLaf.class.getCanonicalName();
         };
-    }
-
-    /**
-     * Java historically provides adequate dark-mode support for GTK only.  In all other
-     * environments -- macOS, Windows or any OS without GTK available -- we'll
-     * fall back on a suitable dark-mode theme.
-     */
-    private static String calculateDarkLaf() {
-        return FlatDarculaLaf.class.getCanonicalName();
     }
 
     public static boolean setSystemLookAndFeel() {
@@ -386,7 +376,7 @@ public class SystemUtilities {
         }
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
-            UIManager.setLookAndFeel(isDarkDesktop() ? calculateDarkLaf() : calculateLightLaf());
+            UIManager.setLookAndFeel(calculateLaf());
             adjustThemeColors();
             return true;
         } catch (Throwable t) {

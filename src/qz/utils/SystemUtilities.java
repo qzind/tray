@@ -388,9 +388,9 @@ public class SystemUtilities {
     /**
      * Attempts to center a dialog provided a center point from a web browser at 96-dpi
      * Useful for tracking a browser window on multiple-monitor setups
+     *
      * @param dialog A dialog whom's width and height are used for calculating center-fit position
      * @param position The center point of a screen as calculated from a web browser at 96-dpi
-     * @return <code>true</code> if the operation is successful
      */
     public static void centerDialog(Dialog dialog, Point position) {
         // Assume 0,0 are bad coordinates
@@ -400,15 +400,7 @@ public class SystemUtilities {
             return;
         }
 
-        //adjust for dpi scaling
-        double dpiScale = getWindowScaleFactor(true);
-        if (dpiScale == 0) {
-            log.debug("Invalid window scale value: {}, we'll center on the primary monitor instead", dpiScale);
-            dialog.setLocationRelativeTo(null);
-            return;
-        }
-
-        Rectangle rect = new Rectangle((int)(position.x * dpiScale), (int)(position.y * dpiScale), dialog.getWidth(), dialog.getHeight());
+        Rectangle rect = new Rectangle(position.x, position.y, dialog.getWidth(), dialog.getHeight());
         rect.translate(-dialog.getWidth() / 2, -dialog.getHeight() / 2);
         Point p = new Point((int)rect.getCenterX(), (int)rect.getCenterY());
         log.debug("Calculated dialog centered at: {}", p);
@@ -438,31 +430,6 @@ public class SystemUtilities {
             }
         }
         return area.contains(window);
-    }
-
-    /**
-     * Shim for detecting window screen-placement scaling
-     * See issues #284, #448
-     * @return Logical dpi scale as dpi/96
-     */
-    private static double getWindowScaleFactor(boolean forceRefresh) {
-        return 1;
-    }
-
-    public static double getWindowScaleFactor() {
-        return getWindowScaleFactor(false);
-    }
-
-    public static Dimension scaleWindowDimension(Dimension orig) {
-        return scaleWindowDimension(orig.getWidth(), orig.getHeight());
-    }
-
-    public static Dimension scaleWindowDimension(double width, double height) {
-        double scaleFactor = getWindowScaleFactor();
-        return new Dimension(
-                (int)(width * scaleFactor),
-                (int)(height * scaleFactor)
-        );
     }
 
     /**

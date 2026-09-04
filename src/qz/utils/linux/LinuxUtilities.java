@@ -216,10 +216,22 @@ public class LinuxUtilities {
         return false;
     }
 
+    /**
+     * Retrieve the OS's scaling factor based on the global settings or primary monitor
+     */
     public static Double getScaleFactor() {
         return Compositor.getDispatcher().getScaleFactor();
     }
 
+    /**
+     * Sets Java's UI scale factor to fix sizing issues on HIDPI displays
+     * <ul>
+     *     <li>MUST be called prior to starting the EDT (e.g. SwingUtilities, AWT, Swing)</li>
+     *     <li>Supports fractional scaling</li>
+     *     <li>Eliminates the need for special sizing logic in AWT/Swing components</li>
+     *     <li>Should only be used ONLY on desktop environments that don't do this automatically (e.g. Linux)</li>
+     * </ul>
+     */
     public static void setJavaScaleFactor() {
         Double scaleFactor = getScaleFactor();
         if(scaleFactor == null || scaleFactor < 1.0) {

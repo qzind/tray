@@ -36,7 +36,11 @@ public class Executor {
                 Matcher matcher = pattern.matcher(output);
                 if (matcher.find()) {
                     // If capturing groups are defined, return group 1; otherwise return full match
-                    return (matcher.groupCount() > 0 ? matcher.group(1).trim() : matcher.group(0).trim());
+                    String found = (matcher.groupCount() > 0 ? matcher.group(1).trim() : matcher.group(0).trim());
+                    if(debug) {
+                        log.debug("Found '{}' matching regex '{}'", found, regexPattern);
+                    }
+                    return found;
                 }
             }
         }

@@ -5,6 +5,12 @@ import static qz.utils.linux.compositor.dispatcher.ExecutorCache.*;
 public class Kwin extends Dispatcher {
     @Override
     protected void addMatchers() {
+        addMatcher(SCALE_FACTOR, "Enabled:\\s*1.*?Scale:\\s*(\\d+(?:\\.\\d+)?)",
+                   "gdbus", "call", "--session",
+                   "--dest" , "org.kde.KWin",
+                   "--object-path", "/KWin",
+                   "--method", "org.kde.KWin.supportInformation");
+
         addMatcher(SCALE_FACTOR,"^.*?(\\d+(?:\\.\\d+)?).*$",
               "kreadconfig6", "--file", "kdeglobals", "--group", "KScreen", "--key", "ScaleFactor");
 

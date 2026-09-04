@@ -19,15 +19,23 @@ public interface Themer {
         return null;
     }
 
-    default void setTheme(boolean isDark) {
+    default boolean setTheme(boolean isDark) {
+        boolean success = false;
         for(Executor executor : ExecutorCache.SET_THEME.getExecutors()) {
-            executor.executeWithParam(getThemeName(isDark, executor));
+            if(executor.executeWithParam(getThemeName(isDark, executor))) {
+                success = true;
+            }
         }
+        return success;
     }
 
-    default void setTheme(String themeName) {
+    default boolean setTheme(String themeName) {
+        boolean success = false;
         for(Executor executor : ExecutorCache.SET_THEME.getExecutors()) {
-            executor.executeWithParam(themeName);
+            if(executor.executeWithParam(themeName)) {
+                success = true;
+            }
         }
+        return success;
     }
 }

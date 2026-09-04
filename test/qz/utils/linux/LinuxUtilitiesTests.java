@@ -57,21 +57,21 @@ public class LinuxUtilitiesTests {
 
     @Test
     public void testSetDarkTheme() {
-        themer.setTheme(true);
+        Assert.assertTrue(themer.setTheme(true));
         Assert.assertTrue(LinuxUtilities.isDarkDesktop());
         log.info("Dark desktop confirmed");
     }
 
     @Test
     public void testSetLightTheme() {
-        themer.setTheme(false);
+        Assert.assertTrue(themer.setTheme(false));
         Assert.assertFalse(LinuxUtilities.isDarkDesktop());
         log.info("Light desktop confirmed");
     }
 
     @Test(priority = 99)
     public void testRestoreCurrentTheme() {
-        themer.setTheme(currentTheme);
+        Assert.assertTrue(themer.setTheme(currentTheme));
         Assert.assertEquals(currentTheme, themer.getTheme());
         log.info("Restored theme: '{}'", currentTheme);
     }

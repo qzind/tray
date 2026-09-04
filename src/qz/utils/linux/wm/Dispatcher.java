@@ -16,6 +16,8 @@ public abstract class Dispatcher {
         // Always try dbus freedesktop technique first
         addMatcher(ExecutorCache.DARK_MODE, "uint32\\s+(\\d+)", DBUS_COLOR_SCHEME);
 
+        addMatcher(ExecutorCache.DPI, "(?i)dpi:\\s*(\\d+)", XDB_QUERY);
+
         addMatchers();
     }
 
@@ -32,7 +34,11 @@ public abstract class Dispatcher {
             "latte"
     };
 
-    private final String[] DBUS_COLOR_SCHEME = {
+    private static final String[] XDB_QUERY = {
+            "xrdb", "-query"
+    };
+
+    private static final String[] DBUS_COLOR_SCHEME = {
             "gdbus", "call", "--session",
             "--dest", "org.freedesktop.portal.Desktop",
             "--object-path", "/org/freedesktop/portal/desktop",
@@ -44,7 +50,26 @@ public abstract class Dispatcher {
         type.add(new Executor(match, execute));
     }
 
+    public Integer getDpi() {
+        Executor executor = DPI.getExecutor();
+        if(executor != null) {
+            Integer dpi = executor.getInteger();
+            if(dpi != null) {
+                return dpi;
+            }
+        }
+
+        log.warn("Can't detect dpi, defaulting to 96");
+        return 96;
+    }
+
     public Double getScaleFactor() {
+        // x11 dpi is a good indicator of scale factor
+        int dpi = getDpi();
+        if (dpi > 0 && dpi != 96) {
+            return dpi / 96.0d;
+        }
+
         Executor executor = SCALE_FACTOR.getExecutor();
         if(executor != null) {
             Double scaleFactor = executor.getDouble();

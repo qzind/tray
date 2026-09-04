@@ -6,6 +6,7 @@ import java.util.List;
 public enum ExecutorCache {
     DARK_MODE,
     SCALE_FACTOR,
+    DPI,
     GET_THEME, // unit tests only
     SET_THEME; // unit tests only
 

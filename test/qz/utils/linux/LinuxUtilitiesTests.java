@@ -43,7 +43,7 @@ public class LinuxUtilitiesTests {
     @Test(priority = -2)
     public void testHasWm() {
         Assert.assertNotNull(wm);
-        log.info("Detected '{}' wm", wm);
+        log.info("Detected '{}' window manager", wm);
         Assert.assertNotNull(themer);
         log.info("Will use '{}' dispatcher for running tests", themer);
     }

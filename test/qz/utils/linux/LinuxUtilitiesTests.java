@@ -6,19 +6,18 @@ import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
-import qz.utils.linux.compositor.dispatcher.Executor;
+import qz.utils.linux.compositor.dispatcher.*;
 import qz.utils.linux.compositor.Compositor;
-import qz.utils.linux.theme.ThemeManager;
 
 import java.awt.*;
-import java.io.IOException;
 
 public class LinuxUtilitiesTests {
     static Logger log = LogManager.getLogger(LinuxUtilitiesTests.class);
 
     private Compositor compositor;
-    private ThemeManager themeManager;
+    private ThemeStrings themeStrings;
     private String currentTheme;
 
     @BeforeClass
@@ -36,7 +35,12 @@ public class LinuxUtilitiesTests {
         }
 
         compositor = Compositor.detectCompositor();
-        themeManager = ThemeManager.getThemeManager();
+        themeStrings = switch(compositor) {
+            case KWIN -> new KwinStrings();
+            case MUTTER -> new MutterStrings();
+            case XFCE -> new XfceStrings();
+            default -> new UnknownStrings();
+        };
     }
 
     @Test(priority = -2)
@@ -46,28 +50,28 @@ public class LinuxUtilitiesTests {
     }
 
     @Test
-    public void testSaveCurrentTheme() throws IOException {
-        currentTheme = themeManager.getTheme();
+    public void testSaveCurrentTheme() {
+        currentTheme = getTheme();
     }
 
     @Test
-    public void testSetDarkTheme() throws IOException {
-        themeManager.setTheme(true);
+    public void testSetDarkTheme() {
+        setTheme(true);
         Assert.assertTrue(LinuxUtilities.isDarkDesktop());
         log.info("Dark desktop confirmed");
     }
 
     @Test
-    public void testSetLightTheme() throws IOException {
-        themeManager.setTheme(false);
+    public void testSetLightTheme() {
+        setTheme(false);
         Assert.assertFalse(LinuxUtilities.isDarkDesktop());
         log.info("Light desktop confirmed");
     }
 
     @Test(priority = 99)
-    public void testRestoreCurrentTheme() throws IOException{
-        themeManager.setTheme(currentTheme);
-        Assert.assertEquals(currentTheme, themeManager.getTheme());
+    public void testRestoreCurrentTheme() {
+        setTheme(currentTheme);
+        Assert.assertEquals(currentTheme, getTheme());
         log.info("Restored theme: '{}'", currentTheme);
     }
 
@@ -78,4 +82,40 @@ public class LinuxUtilitiesTests {
         Assert.assertNotNull(scaleFactor);
         Assert.assertNotEquals(scaleFactor, 0.0);
     }
+
+    void setTheme(String themeName) {
+        boolean success = false;
+        for(String[] s : themeStrings.themeSetters(themeName)) {
+            if(ShellUtilities.execute(s)) {
+                success = true;
+            }
+        }
+        if(!success) {
+            log.warn("Failed to set {} theme", themeName);
+        }
+    }
+
+    void setTheme(boolean isDark) {
+        boolean success = false;
+        for(String[] s : themeStrings.themeSetters(isDark)) {
+            if(ShellUtilities.execute(s)) {
+                success = true;
+            }
+        }
+        if(!success) {
+            log.warn("Failed to set {} theme", isDark? "dark":"light");
+        }
+    }
+
+    String getTheme() {
+        for(String[] s : themeStrings.themeGetters()) {
+            String themeName = ShellUtilities.executeRaw(s);
+            if(!themeName.isBlank()) {
+                return themeName.replace("\"", "").replace("'", "").trim();
+            }
+        }
+        log.warn("Failed to get theme from {}", themeStrings.getClass().getName());
+        return null;
+    }
+
 }

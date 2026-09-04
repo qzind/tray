@@ -1,4 +1,4 @@
-package qz.utils.linux.wm.dispatcher;
+package qz.utils.linux;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -7,14 +7,15 @@ import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import qz.utils.SystemUtilities;
-import qz.utils.linux.LinuxUtilities;
-import qz.utils.linux.wm.WmAdjuster;
+import qz.utils.linux.wm.Executor;
+import qz.utils.linux.wm.Themer;
 import qz.utils.linux.wm.Wm;
+import qz.utils.linux.wm.WmAdjuster;
 
 import java.awt.*;
 
-public class ThemerTests {
-    static Logger log = LogManager.getLogger(ThemerTests.class);
+public class LinuxUtilitiesTests {
+    static Logger log = LogManager.getLogger(LinuxUtilitiesTests.class);
 
     private Wm wm;
     private Themer themer;

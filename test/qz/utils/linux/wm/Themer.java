@@ -1,6 +1,6 @@
-package qz.utils.linux.wm.dispatcher;
+package qz.utils.linux.wm;
 
-import static qz.utils.linux.wm.dispatcher.ExecutorCache.GET_THEME;
+import static qz.utils.linux.wm.ExecutorCache.GET_THEME;
 
 /**
  * Interface and utility class for getting and setting themes

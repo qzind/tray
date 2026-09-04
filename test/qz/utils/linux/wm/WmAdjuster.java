@@ -1,10 +1,5 @@
 package qz.utils.linux.wm;
 
-import qz.utils.linux.wm.dispatcher.Dispatcher;
-import qz.utils.linux.wm.dispatcher.KwinThemer;
-import qz.utils.linux.wm.dispatcher.MutterThemer;
-import qz.utils.linux.wm.dispatcher.XfceThemer;
-
 import java.util.function.Supplier;
 
 public enum WmAdjuster {

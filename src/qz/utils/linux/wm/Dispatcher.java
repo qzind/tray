@@ -1,11 +1,11 @@
-package qz.utils.linux.wm.dispatcher;
+package qz.utils.linux.wm;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
-import static qz.utils.linux.wm.dispatcher.ExecutorCache.*;
+import static qz.utils.linux.wm.ExecutorCache.*;
 
 public abstract class Dispatcher {
     private static final Logger log = LogManager.getLogger(Dispatcher.class);

@@ -1,6 +1,6 @@
-package qz.utils.linux.wm.dispatcher;
+package qz.utils.linux.wm;
 
-import static qz.utils.linux.wm.dispatcher.ExecutorCache.*;
+import static qz.utils.linux.wm.ExecutorCache.*;
 
 public class Cosmic extends Dispatcher {
     @Override

@@ -1,4 +1,4 @@
-package qz.utils.linux.wm.dispatcher;
+package qz.utils.linux.wm;
 
 public class XfceThemer extends Xfce implements Themer {
     @Override

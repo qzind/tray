@@ -1,4 +1,4 @@
-package qz.utils.linux.wm.dispatcher;
+package qz.utils.linux.wm;
 
 public class MutterThemer extends Mutter implements Themer {
     static final String GTK_THEME_KEY = "gtk-theme";

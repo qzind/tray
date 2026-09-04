@@ -1,4 +1,4 @@
-package qz.utils.linux.wm.dispatcher;
+package qz.utils.linux.wm;
 
 public class KwinThemer extends Kwin implements Themer {
     @Override

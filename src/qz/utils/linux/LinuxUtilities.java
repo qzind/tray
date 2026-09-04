@@ -14,10 +14,7 @@ import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class LinuxUtilities {
@@ -118,7 +115,7 @@ public class LinuxUtilities {
             while((line = reader.readLine()) != null) {
                 String[] tokens = line.split("=", 2);
                 if (tokens.length != 2) continue;
-                map.put(tokens[0], tokens[1].replaceAll("\"", ""));
+                map.put(tokens[0], tokens[1].replace("\"", ""));
             }
         } finally{
             if(reader != null) {
@@ -134,17 +131,17 @@ public class LinuxUtilities {
             Path path = Paths.get(release);
             if (Files.exists(path)) return path;
         }
-        Stream<Path> s;
-        try {
-            s = Files.find(
+
+        try (Stream<Path> s = Files.find(
                     // If that fails, try to find any *-release file
                     Paths.get("/etc/"),
                     1,
                     (path, basicFileAttributes) -> path.getFileName().toString().endsWith("-release"),
-                    FileVisitOption.FOLLOW_LINKS
-            );
-            // If no element is found this will throw a NoSuchElementException
-            return s.findFirst().get();
+                    FileVisitOption.FOLLOW_LINKS)) {
+            Optional<Path> optional = s.findFirst();
+            if(optional.isPresent()) {
+                return optional.get();
+            }
         } catch(Exception ignore) {}
         throw new FileNotFoundException("Could not find os-release file");
     }
@@ -220,11 +217,7 @@ public class LinuxUtilities {
     }
 
     public static Double getScaleFactor() {
-        Double scaleFactor = Compositor.getDispatcher().getScaleFactor();
-        if(scaleFactor != null) {
-            return scaleFactor;
-        }
-        return null;
+        return Compositor.getDispatcher().getScaleFactor();
     }
 
     public static void setJavaScaleFactor() {

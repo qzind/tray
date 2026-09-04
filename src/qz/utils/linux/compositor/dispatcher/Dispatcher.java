@@ -3,7 +3,7 @@ package qz.utils.linux.compositor.dispatcher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Locale;
+import java.util.*;
 
 import static qz.utils.linux.compositor.dispatcher.ExecutorCache.*;
 
@@ -59,7 +59,7 @@ public abstract class Dispatcher {
     public Boolean isDarkMode() {
         Executor executor = DARK_MODE.getExecutor();
         if(executor != null) {
-            if(executor.execute == DBUS_COLOR_SCHEME) {
+            if(Arrays.equals(executor.execute, DBUS_COLOR_SCHEME)) {
                 // dbus uses integer
                 return isDark(executor.getInteger());
             } else {
@@ -72,6 +72,43 @@ public abstract class Dispatcher {
         }
         log.warn("Can't detect dark mode, defaulting to light mode");
         return false;
+    }
+
+    String getThemeName() {
+        Executor executor = GET_THEME.getExecutor();
+        if(executor != null) {
+            String themeName = executor.getString();
+            if (themeName != null) {
+                return themeName;
+            }
+        }
+
+        log.warn("Unable to detect theme name");
+        return null;
+    }
+
+    /**
+     * Set the theme by executing the appropriate command
+     *
+     * @param themeName Theme name to set
+     * @param findBest Whether to use the "default" behavior to iterate and find the first succeeding command
+     *                 or blindly execute all commands
+     */
+    boolean setThemeName(String themeName, boolean findBest) {
+        List<Executor> executors = findBest ? Collections.singletonList(SET_THEME.getExecutor()) : SET_THEME.getExecutors();
+        boolean success = false;
+        for(Executor executor : executors) {
+            if(executor != null) {
+                if(executor.executeWithParam(themeName)) {
+                    success = true;
+                }
+            }
+        }
+        if(!success) {
+            log.warn("Unable to set theme name");
+        }
+
+        return success;
     }
 
     /**
@@ -102,5 +139,10 @@ public abstract class Dispatcher {
             }
         }
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
     }
 }

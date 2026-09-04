@@ -25,7 +25,6 @@ import qz.build.provision.params.Arch;
 import qz.build.provision.params.Os;
 import qz.common.Constants;
 import qz.installer.Installer;
-import qz.utils.linux.ThemeUtilities;
 import qz.utils.linux.LinuxUtilities;
 
 import javax.swing.*;

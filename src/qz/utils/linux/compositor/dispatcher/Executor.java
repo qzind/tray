@@ -4,6 +4,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,5 +66,15 @@ public class Executor {
             log.warn("Unable to parse double from '{}' {}", getString(), nfe.getMessage());
         }
         return null;
+    }
+
+    /**
+     * Appends the specified string to tne end of the params and returns
+     * if the command was successful
+     */
+    boolean executeWithParam(String input) {
+        List<String> execute = new ArrayList<>(Arrays.asList(this.execute));
+        execute.add(input);
+        return ShellUtilities.execute(execute.toArray(new String[0]), !debug);
     }
 }

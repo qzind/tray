@@ -5,7 +5,9 @@ import java.util.List;
 
 public enum ExecutorCache {
     DARK_MODE,
-    SCALE_FACTOR;
+    SCALE_FACTOR,
+    GET_THEME, // unit tests only
+    SET_THEME; // unit tests only
 
     final List<Executor> executorList;
     Executor executor;
@@ -30,6 +32,10 @@ public enum ExecutorCache {
             }
         }
         return null;
+    }
+
+    List<Executor> getExecutors() {
+        return executorList;
     }
 }
 

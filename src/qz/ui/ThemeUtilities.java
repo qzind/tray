@@ -58,7 +58,7 @@ public class ThemeUtilities {
                         }
                     }
                 } catch (Throwable t) {
-                    log.warn("An error occurred polling the light/dark theme");
+                    log.warn("An error occurred polling the light/dark theme: {}", t.getMessage());
                 }
             }, 0, intervalMs, TimeUnit.MILLISECONDS);
             return this;

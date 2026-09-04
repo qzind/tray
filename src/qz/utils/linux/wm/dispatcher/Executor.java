@@ -1,4 +1,4 @@
-package qz.utils.linux.compositor.dispatcher;
+package qz.utils.linux.wm.dispatcher;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

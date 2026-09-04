@@ -1,6 +1,6 @@
-package qz.utils.linux.compositor.dispatcher;
+package qz.utils.linux.wm.dispatcher;
 
-import static qz.utils.linux.compositor.dispatcher.ExecutorCache.*;
+import static qz.utils.linux.wm.dispatcher.ExecutorCache.*;
 
 public class Mate extends Dispatcher {
     @Override

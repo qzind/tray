@@ -1,4 +1,4 @@
-package qz.utils.linux.compositor.dispatcher;
+package qz.utils.linux.wm.dispatcher;
 
 import java.util.ArrayList;
 import java.util.List;

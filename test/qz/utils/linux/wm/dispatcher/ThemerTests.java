@@ -1,4 +1,4 @@
-package qz.utils.linux.compositor.dispatcher;
+package qz.utils.linux.wm.dispatcher;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -8,16 +8,17 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import qz.utils.SystemUtilities;
 import qz.utils.linux.LinuxUtilities;
-import qz.utils.linux.compositor.CompositorAdjuster;
-import qz.utils.linux.compositor.Compositor;
+import qz.utils.linux.wm.WmAdjuster;
+import qz.utils.linux.wm.Wm;
 
 import java.awt.*;
 
 public class ThemerTests {
     static Logger log = LogManager.getLogger(ThemerTests.class);
 
+    private Wm wm;
     private Themer themer;
-    private Compositor compositor;
+
     private String currentTheme;
 
     @BeforeClass
@@ -34,21 +35,21 @@ public class ThemerTests {
             }
         }
 
-        compositor = Compositor.detectCompositor();
-        themer = (Themer)CompositorAdjuster.getDispatcher();
+        wm = Wm.detectWm();
+        themer = (Themer)WmAdjuster.getDispatcher();
     }
 
     @Test(priority = -2)
-    public void testHasCompositor() {
-        Assert.assertNotNull(compositor);
-        log.info("Detected '{}' compositor", compositor);
+    public void testHasWm() {
+        Assert.assertNotNull(wm);
+        log.info("Detected '{}' wm", wm);
         Assert.assertNotNull(themer);
-        log.info("Will use '{}' dispatcher for running tests", themer.dispatcher());
+        log.info("Will use '{}' dispatcher for running tests", themer);
     }
 
     @Test
     public void testSaveCurrentTheme() {
-        currentTheme = themer.dispatcher().getThemeName();;
+        currentTheme = themer.getTheme();
         Assert.assertNotNull(currentTheme);
         log.info("Current theme saved '{}', we'll restore it after tests are done", currentTheme);
     }
@@ -70,14 +71,14 @@ public class ThemerTests {
     @Test(priority = 99)
     public void testRestoreCurrentTheme() {
         themer.setTheme(currentTheme);
-        Assert.assertEquals(currentTheme, themer.dispatcher().getThemeName());
+        Assert.assertEquals(currentTheme, themer.getTheme());
         log.info("Restored theme: '{}'", currentTheme);
     }
 
     @Test
     public void testGetScaleFactor() {
         Double scaleFactor = LinuxUtilities.getScaleFactor();
-        log.info("Detected scale factor {}x from {}", scaleFactor, compositor);
+        log.info("Detected scale factor {}x from {}", scaleFactor, wm);
         Assert.assertNotNull(scaleFactor);
         Assert.assertNotEquals(scaleFactor, 0.0);
     }

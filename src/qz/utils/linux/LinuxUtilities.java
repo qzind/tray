@@ -4,7 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.utils.ShellUtilities;
 import qz.utils.SystemUtilities;
-import qz.utils.linux.compositor.Compositor;
+import qz.utils.linux.wm.Wm;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -208,7 +208,7 @@ public class LinuxUtilities {
         if(darkDesktopDetectionFailed) {
             return false;
         }
-        Boolean darkMode = Compositor.getDispatcher().isDarkMode();
+        Boolean darkMode = Wm.getDispatcher().isDarkMode();
         if(darkMode != null) {
             return darkMode;
         }
@@ -220,7 +220,7 @@ public class LinuxUtilities {
      * Retrieve the OS's scaling factor based on the global settings or primary monitor
      */
     public static Double getScaleFactor() {
-        return Compositor.getDispatcher().getScaleFactor();
+        return Wm.getDispatcher().getScaleFactor();
     }
 
     /**

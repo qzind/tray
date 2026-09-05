@@ -202,17 +202,7 @@ public class IconCache {
      * @return the ImageIcon in the cache
      */
     public ImageIcon getIcon(Icon i) {
-        return SystemUtilities.getWindowScaleFactor() != 1 ?
-                getIcon(i, true) : imageIcons.get(i.getId());
-    }
-
-    private ImageIcon getIcon(Icon i, boolean inferScale) {
-        if(!inferScale) {
-            return imageIcons.get(i.getId());
-        }
-        ImageIcon baseIcon = imageIcons.get(i.getId());
-        Dimension scaled = SystemUtilities.scaleWindowDimension(baseIcon.getIconWidth(), baseIcon.getIconHeight());
-        return imageIcons.get(i.getId(scaled));
+        return imageIcons.get(i.getId());
     }
 
     private ImageIcon getIcon(String id) {

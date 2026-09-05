@@ -25,6 +25,7 @@ import qz.build.provision.params.Arch;
 import qz.build.provision.params.Os;
 import qz.common.Constants;
 import qz.installer.Installer;
+import qz.utils.linux.LinuxUtilities;
 
 import javax.swing.*;
 import java.awt.*;
@@ -155,19 +156,11 @@ public class SystemUtilities {
      */
     public static String getOsDisplayVersion() {
         if (osDisplayVersion == null) {
-            switch(OS_TYPE) {
-                case WINDOWS:
-                    osDisplayVersion = WindowsUtilities.getOsDisplayVersion();
-                    break;
-                case MAC:
-                    osDisplayVersion = MacUtilities.getOsDisplayVersion();
-                    break;
-                case LINUX:
-                    osDisplayVersion = UnixUtilities.getOsDisplayVersion();
-                    break;
-                default:
-                    osDisplayVersion = System.getProperty("os.version", "0.0.0");
-            }
+            osDisplayVersion = switch(OS_TYPE) {
+                case WINDOWS -> WindowsUtilities.getOsDisplayVersion();
+                case MAC -> MacUtilities.getOsDisplayVersion();
+                default -> LinuxUtilities.getOsDisplayVersion();
+            };
         }
         return osDisplayVersion;
     }
@@ -177,14 +170,10 @@ public class SystemUtilities {
      */
     public static String getOsDisplayName() {
         if(osName == null) {
-            switch(OS_TYPE) {
-                case LINUX:
-                    // "Linux" is too generic, get the flavor (e.g. Ubuntu, Fedora)
-                    osName = UnixUtilities.getDisplayName();
-                    break;
-                default:
-                    osName = System.getProperty("os.name", "Unknown");
-            }
+            osName = switch(OS_TYPE) {
+                case WINDOWS, MAC -> System.getProperty("os.name", "Unknown");
+                default -> LinuxUtilities.getDisplayName();
+            };
         }
         return osName;
     }
@@ -325,19 +314,20 @@ public class SystemUtilities {
         return isDarkTaskbar(false);
     }
 
+    /**
+     * Handle nuances of a taskbar that's themed differently than the rest of the desktop
+     * which is mostly a Windows-ism.  macOS and Linux both provide ways to use template
+     * icons/mask icons for the taskbar.
+     */
     public static boolean isDarkTaskbar(boolean recheck) {
         if(darkTaskbar == null || recheck) {
-            if (isWindows()) {
-                darkTaskbar = WindowsUtilities.isDarkTaskbar();
-            } else if(isMac()) {
-                // Ignore, we'll set the template flag using JNA
-                darkTaskbar = false;
-            } else {
-                // Linux doesn't differentiate; return the cached darkDesktop value
-                darkTaskbar = isDarkDesktop();
-            }
+            darkTaskbar = switch(OS_TYPE) {
+                case WINDOWS -> WindowsUtilities.isDarkTaskbar();
+                case MAC -> false; // ignore, we'll use template icons
+                default ->  isDarkDesktop(); // re-use desktop value TODO: revisit after #1456
+            };
         }
-        return darkTaskbar.booleanValue();
+        return darkTaskbar;
     }
 
     public static boolean isDarkDesktop() {
@@ -346,16 +336,13 @@ public class SystemUtilities {
 
     public static boolean isDarkDesktop(boolean recheck) {
         if (darkDesktop == null || recheck) {
-            // Check for Dark Mode on MacOS
-            if (isMac()) {
-                darkDesktop = MacUtilities.isDarkDesktop();
-            } else if (isWindows()) {
-                darkDesktop = WindowsUtilities.isDarkDesktop();
-            } else {
-                darkDesktop = UnixUtilities.isDarkMode();
-            }
+            darkDesktop = switch(OS_TYPE) {
+                case MAC -> MacUtilities.isDarkDesktop();
+                case WINDOWS -> WindowsUtilities.isDarkDesktop();
+                default ->  LinuxUtilities.isDarkDesktop();
+            };
         }
-        return darkDesktop.booleanValue();
+        return darkDesktop;
     }
 
     public static void adjustThemeColors() {
@@ -364,41 +351,23 @@ public class SystemUtilities {
     }
 
     public static boolean prefersMaskTrayIcon() {
-        if (Constants.MASK_TRAY_SUPPORTED) {
-            if (SystemUtilities.isMac()) {
-                // Assume a pid of -1 is a broken JNA
-                return getProcessId() != -1;
-            } else if (SystemUtilities.isWindows() && SystemUtilities.getOsVersion().getMajorVersion() >= 10) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Java historically provides adequate light mode themes for macOS, Windows and GTK
-     * but Java's detection technique stopped working with the release of Gnome 3.3.x. so
-     * we'll use our own GTK detection method instead and fallback on a sane theme for when
-     * GTK is not available.
-     */
-    private static String calculateLightLaf() {
-        return switch(OS_TYPE) {
-            case WINDOWS, MAC -> UIManager.getSystemLookAndFeelClassName();
-            default -> GtkUtilities.isGtkAvailable()?
-                    "com.sun.java.swing.plaf.gtk.GTKLookAndFeel":
-                    FlatIntelliJLaf.class.getCanonicalName();
+        return Constants.MASK_TRAY_SUPPORTED && switch(OS_TYPE) {
+            case MAC -> true;
+            case WINDOWS -> SystemUtilities.getOsVersion().majorVersion() >= 10;
+            default -> false;
         };
     }
 
-    /**
-     * Java historically provides adequate dark-mode support for GTK only.  In all other
-     * environments -- macOS, Windows or any OS without GTK available -- we'll
-     * fall back on a suitable dark-mode theme.
-     */
-    private static String calculateDarkLaf() {
-        return GtkUtilities.isGtkAvailable() ?
-                "com.sun.java.swing.plaf.gtk.GTKLookAndFeel" :
-                FlatDarculaLaf.class.getCanonicalName();
+    private static String calculateLaf() {
+        // Use Darcula l&F for all OSs
+        if(isDarkDesktop()) {
+            return FlatDarculaLaf.class.getCanonicalName();
+        }
+        // Use system l&f for everything except linux/unix
+        return switch(OS_TYPE) {
+            case WINDOWS, MAC -> UIManager.getSystemLookAndFeelClassName();
+            default -> FlatIntelliJLaf.class.getCanonicalName();
+        };
     }
 
     public static boolean setSystemLookAndFeel() {
@@ -407,7 +376,7 @@ public class SystemUtilities {
         }
         try {
             UIManager.getDefaults().put("Button.showMnemonics", Boolean.TRUE);
-            UIManager.setLookAndFeel(isDarkDesktop() ? calculateDarkLaf() : calculateLightLaf());
+            UIManager.setLookAndFeel(calculateLaf());
             adjustThemeColors();
             return true;
         } catch (Throwable t) {
@@ -421,7 +390,6 @@ public class SystemUtilities {
      * Useful for tracking a browser window on multiple-monitor setups
      * @param dialog A dialog whom's width and height are used for calculating center-fit position
      * @param position The center point of a screen as calculated from a web browser at 96-dpi
-     * @return <code>true</code> if the operation is successful
      */
     public static void centerDialog(Dialog dialog, Point position) {
         // Assume 0,0 are bad coordinates
@@ -431,15 +399,7 @@ public class SystemUtilities {
             return;
         }
 
-        //adjust for dpi scaling
-        double dpiScale = getWindowScaleFactor(true);
-        if (dpiScale == 0) {
-            log.debug("Invalid window scale value: {}, we'll center on the primary monitor instead", dpiScale);
-            dialog.setLocationRelativeTo(null);
-            return;
-        }
-
-        Rectangle rect = new Rectangle((int)(position.x * dpiScale), (int)(position.y * dpiScale), dialog.getWidth(), dialog.getHeight());
+        Rectangle rect = new Rectangle(position.x, position.y, dialog.getWidth(), dialog.getHeight());
         rect.translate(-dialog.getWidth() / 2, -dialog.getHeight() / 2);
         Point p = new Point((int)rect.getCenterX(), (int)rect.getCenterY());
         log.debug("Calculated dialog centered at: {}", p);
@@ -469,66 +429,6 @@ public class SystemUtilities {
             }
         }
         return area.contains(window);
-    }
-
-    /**
-     * Shim for detecting window screen-placement scaling
-     * See issues #284, #448
-     * @return Logical dpi scale as dpi/96
-     */
-    private static double getWindowScaleFactor(boolean forceRefresh) {
-        if(windowScaleFactor == -1 || forceRefresh) {
-            // MacOS is always 1
-            if (isMac()) {
-                return windowScaleFactor = 1;
-            }
-            // Windows/Linux on JDK8 honors scaling
-            if (Constants.JAVA_VERSION.lessThan(Version.valueOf("11.0.0"))) {
-                return windowScaleFactor = Toolkit.getDefaultToolkit().getScreenResolution() / 96.0;
-            }
-            // Windows on JDK11 is always 1
-            if (isWindows()) {
-                return windowScaleFactor = 1;
-            }
-            // Linux/Unix on JDK11 requires JNA calls to Gdk
-            return windowScaleFactor = UnixUtilities.getScaleFactor();
-        }
-        return windowScaleFactor;
-    }
-
-    public static double getWindowScaleFactor() {
-        return getWindowScaleFactor(false);
-    }
-
-    public static Dimension scaleWindowDimension(Dimension orig) {
-        return scaleWindowDimension(orig.getWidth(), orig.getHeight());
-    }
-
-    public static Dimension scaleWindowDimension(double width, double height) {
-        double scaleFactor = getWindowScaleFactor();
-        return new Dimension(
-                (int)(width * scaleFactor),
-                (int)(height * scaleFactor)
-        );
-    }
-
-    /**
-     * Detects if HiDPI is enabled
-     * Warning: Due to behavioral differences between OSs, JDKs and poor
-     * detection techniques this function should only be used to fix rare
-     * edge-case bugs.
-     *
-     * See also SystemUtilities.getWindowScaleFactor()
-     * @return true if HiDPI is detected
-     */
-    public static boolean isHiDPI() {
-        if(isMac()) {
-            return MacUtilities.getScaleFactor() > 1;
-        } else if(isWindows()) {
-            return WindowsUtilities.getScaleFactor() > 1;
-        }
-        // Fallback to a JNA Gdk technique
-        return UnixUtilities.getScaleFactor() > 1;
     }
 
     /**

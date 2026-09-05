@@ -8,13 +8,13 @@ public class MutterThemer extends Mutter implements Themer {
     protected void addMatchers() {
         super.addMatchers();
 
-        addMatcher(ExecutorCache.GET_THEME, "([A-Za-z0-9_-]+)",
+        addMatcher(ExecutorList.GET_THEME, "([A-Za-z0-9_-]+)",
                    "gsettings", "get", "org.gnome.desktop.interface", "gtk-theme");
 
-        addMatcher(ExecutorCache.SET_THEME, ".*",
+        addMatcher(ExecutorList.SET_THEME, ".*",
                    "gsettings", "set", "org.gnome.desktop.interface", GTK_THEME_KEY);
 
-        addMatcher(ExecutorCache.SET_THEME, ".*",
+        addMatcher(ExecutorList.SET_THEME, ".*",
                    "gsettings", "set", "org.gnome.desktop.interface", COLOR_SCHEME_KEY);
     }
 

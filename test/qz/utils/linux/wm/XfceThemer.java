@@ -5,10 +5,10 @@ public class XfceThemer extends Xfce implements Themer {
     protected void addMatchers() {
         super.addMatchers();
 
-        addMatcher(ExecutorCache.GET_THEME, "([A-Za-z0-9_-]+)",
+        addMatcher(ExecutorList.GET_THEME, "([A-Za-z0-9_-]+)",
                    "xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName");
 
-        addMatcher(ExecutorCache.SET_THEME, ".*",
+        addMatcher(ExecutorList.SET_THEME, ".*",
                    "xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName", "-s");
     }
 

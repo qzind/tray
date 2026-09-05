@@ -1,6 +1,6 @@
 package qz.utils.linux.wm;
 
-import static qz.utils.linux.wm.ExecutorCache.*;
+import static qz.utils.linux.wm.ExecutorList.*;
 
 public class Mutter extends Dispatcher {
     @Override

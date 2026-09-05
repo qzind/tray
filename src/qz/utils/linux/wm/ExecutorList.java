@@ -3,7 +3,7 @@ package qz.utils.linux.wm;
 import java.util.ArrayList;
 import java.util.List;
 
-public enum ExecutorCache {
+public enum ExecutorList {
     DARK_MODE,
     SCALE_FACTOR,
     DPI,
@@ -13,13 +13,13 @@ public enum ExecutorCache {
     final List<Executor> executorList;
     Executor executor;
 
-    ExecutorCache() {
+    ExecutorList() {
         executorList = new ArrayList<>();
         executor = null;
     }
 
-    void add(Executor match) {
-        executorList.add(match);
+    void add(Executor executor) {
+        executorList.add(executor);
     }
 
     Executor getExecutor() {
@@ -27,9 +27,9 @@ public enum ExecutorCache {
             return executor;
         }
 
-        for(Executor match : executorList) {
-            if(match.getString() != null) {
-                return executor = match;
+        for(Executor executor : executorList) {
+            if(executor.getString() != null) {
+                return this.executor = executor;
             }
         }
         return null;

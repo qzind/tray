@@ -5,7 +5,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
-import static qz.utils.linux.wm.ExecutorCache.*;
+import static qz.utils.linux.wm.ExecutorList.*;
 
 public abstract class Dispatcher {
     private static final Logger log = LogManager.getLogger(Dispatcher.class);
@@ -14,9 +14,9 @@ public abstract class Dispatcher {
 
     public Dispatcher() {
         // Always try dbus freedesktop technique first
-        addMatcher(ExecutorCache.DARK_MODE, "uint32\\s+(\\d+)", DBUS_COLOR_SCHEME);
+        addMatcher(ExecutorList.DARK_MODE, "uint32\\s+(\\d+)", DBUS_COLOR_SCHEME);
 
-        addMatcher(ExecutorCache.DPI, "(?i)dpi:\\s*(\\d+)", XDB_QUERY);
+        addMatcher(ExecutorList.DPI, "(?i)dpi:\\s*(\\d+)", XDB_QUERY);
 
         addMatchers();
     }
@@ -46,7 +46,7 @@ public abstract class Dispatcher {
             "org.freedesktop.appearance", "color-scheme"
     };
 
-    protected void addMatcher(ExecutorCache type, String match, String... execute) {
+    protected void addMatcher(ExecutorList type, String match, String... execute) {
         type.add(new Executor(match, execute));
     }
 

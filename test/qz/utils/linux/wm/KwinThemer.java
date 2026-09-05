@@ -5,13 +5,13 @@ public class KwinThemer extends Kwin implements Themer {
     protected void addMatchers() {
         super.addMatchers();
 
-        addMatcher(ExecutorCache.GET_THEME, "([A-Za-z0-9_-]+)",
+        addMatcher(ExecutorList.GET_THEME, "([A-Za-z0-9_-]+)",
                    "kreadconfig6", "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme");
 
-        addMatcher(ExecutorCache.GET_THEME, "([A-Za-z0-9_-]+)",
+        addMatcher(ExecutorList.GET_THEME, "([A-Za-z0-9_-]+)",
                    "kreadconfig5", "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme");
 
-        addMatcher(ExecutorCache.SET_THEME, ".*",
+        addMatcher(ExecutorList.SET_THEME, ".*",
                    "plasma-apply-colorscheme");
     }
 

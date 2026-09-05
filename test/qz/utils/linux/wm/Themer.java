@@ -1,6 +1,6 @@
 package qz.utils.linux.wm;
 
-import static qz.utils.linux.wm.ExecutorCache.GET_THEME;
+import static qz.utils.linux.wm.ExecutorList.GET_THEME;
 
 /**
  * Interface and utility class for getting and setting themes
@@ -21,7 +21,7 @@ public interface Themer {
 
     default boolean setTheme(boolean isDark) {
         boolean success = false;
-        for(Executor executor : ExecutorCache.SET_THEME.getExecutors()) {
+        for(Executor executor : ExecutorList.SET_THEME.getExecutors()) {
             if(executor.executeWithParam(getThemeName(isDark, executor))) {
                 success = true;
             }
@@ -31,7 +31,7 @@ public interface Themer {
 
     default boolean setTheme(String themeName) {
         boolean success = false;
-        for(Executor executor : ExecutorCache.SET_THEME.getExecutors()) {
+        for(Executor executor : ExecutorList.SET_THEME.getExecutors()) {
             if(executor.executeWithParam(themeName)) {
                 success = true;
             }

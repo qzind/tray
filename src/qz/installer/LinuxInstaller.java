@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import static qz.common.Constants.*;
@@ -370,6 +371,7 @@ public class LinuxInstaller extends Installer {
             return true;
         }
         try {
+            LinuxUtilities.setJavaScaleFactor();
             SystemUtilities.setSystemLookAndFeel();
             String message = String.format("A required component, \"%s\", wasn't found. Attempt to fetch it now?", binary);
             return JOptionPane.YES_OPTION == JOptionPane.showConfirmDialog(null, message);

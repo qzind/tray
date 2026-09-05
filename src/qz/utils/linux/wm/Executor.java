@@ -69,8 +69,8 @@ public class Executor {
     }
 
     /**
-     * Appends the specified string to tne end of the params and returns
-     * if the command was successful
+     * Appends the specified string to the end of the params and returns
+     * whether the command ran successfully
      */
     boolean executeWithParam(String input) {
         List<String> execute = new ArrayList<>(Arrays.asList(this.execute));

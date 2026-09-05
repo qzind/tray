@@ -18,7 +18,6 @@ public class MutterThemer extends Mutter implements Themer {
                    "gsettings", "set", "org.gnome.desktop.interface", COLOR_SCHEME_KEY);
     }
 
-
     @Override
     public String getThemeName(boolean isDark, Executor executor) {
         // Return the correct value depending on which shell command we're running

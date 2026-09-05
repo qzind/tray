@@ -21,7 +21,6 @@ import java.nio.file.*;
  * Helper functions for both Linux and Unix
  */
 public class UnixUtilities {
-
     private static final Logger log = LogManager.getLogger(UnixUtilities.class);
 
     private static Integer pid;

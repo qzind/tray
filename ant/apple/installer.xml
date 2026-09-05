@@ -245,6 +245,18 @@
             <filterchain><expandproperties/></filterchain>
         </copy>
 
+        <!-- Convert nfc-encoded filenames to nfd-encoded per #1511 -->
+        <exec executable="convmv" failonerror="false">
+            <arg value="-r"/>
+            <arg value="-f"/>
+            <arg value="utf-8"/>
+            <arg value="-t"/>
+            <arg value="utf-8"/>
+            <arg value="--nfd"/>
+            <arg value="${bundle.dir}"/>
+            <arg value="--notest"/>
+        </exec>
+
         <!-- use xargs to loop over and codesign all files-->
         <echo level="info" message="Signing ${bundle.dir} using ${codesign.activeid}"/>
         <!-- Find -X fails on spaces but doesn't failonerror, this may lead to overlooked errors. -->

@@ -246,7 +246,7 @@
         </copy>
 
         <!-- Convert nfc-encoded filenames to nfd-encoded per #1511 -->
-        <exec executable="convmv" failonerror="false">
+        <exec executable="convmv" failifexecutionfails="false">
             <arg value="-r"/>
             <arg value="-f"/>
             <arg value="utf-8"/>

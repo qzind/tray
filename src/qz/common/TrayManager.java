@@ -17,6 +17,7 @@ import org.eclipse.jetty.server.Server;
 import qz.App;
 import qz.auth.Certificate;
 import qz.auth.Request;
+import qz.build.provision.params.Os;
 import qz.installer.shortcut.ShortcutCreator;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.action.html.WebApp;
@@ -24,6 +25,7 @@ import qz.ui.*;
 import qz.ui.component.IconCache;
 import qz.ui.tray.TrayType;
 import qz.utils.*;
+import qz.utils.linux.LinuxUtilities;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
 import qz.ws.WebsocketPorts;
@@ -40,6 +42,7 @@ import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import static qz.ui.component.IconCache.Icon.*;
+import static qz.ui.ThemeUtilities.*;
 import static qz.utils.ArgValue.*;
 
 import static qz.App.*;
@@ -165,37 +168,7 @@ public class TrayManager {
             componentList.add(confirmDialog);
 
             // Detect theme changes
-            new Thread(() -> {
-                boolean darkDesktopMode = SystemUtilities.isDarkDesktop();
-                boolean darkTaskbarMode = SystemUtilities.isDarkTaskbar();
-                while(true) {
-                    try {
-                        Thread.sleep(1000);
-                        if (darkDesktopMode != SystemUtilities.isDarkDesktop(true) ||
-                                darkTaskbarMode != SystemUtilities.isDarkTaskbar(true)) {
-                            darkDesktopMode = SystemUtilities.isDarkDesktop();
-                            darkTaskbarMode = SystemUtilities.isDarkTaskbar();
-                            iconCache.fixTrayIcons(darkTaskbarMode);
-                            refreshIcon(null);
-                            SwingUtilities.invokeLater(() -> {
-                                SystemUtilities.setSystemLookAndFeel();
-                                for(Component c : componentList) {
-                                    SwingUtilities.updateComponentTreeUI(c);
-                                    if (c instanceof Themeable) {
-                                        ((Themeable)c).refresh();
-                                    }
-                                    if (c instanceof JDialog) {
-                                        ((JDialog)c).pack();
-                                    } else if (c instanceof JPopupMenu) {
-                                        ((JPopupMenu)c).pack();
-                                    }
-                                }
-                            });
-                        }
-                    }
-                    catch(InterruptedException ignore) {}
-                }
-            }).start();
+            new ThemeMonitor().startPolling(1000).onChange(this::refreshTheme);
         }
 
         if (tray != null) {
@@ -223,6 +196,26 @@ public class TrayManager {
                 PrintServiceMatcher.getNativePrinterList(false, true);
             });
         }
+    }
+
+    public void refreshTheme() {
+        iconCache.fixTrayIcons(SystemUtilities.isDarkTaskbar());
+        refreshIcon(null);
+        // TODO: Merge into ThemeUtilities
+        SwingUtilities.invokeLater(() -> {
+            SystemUtilities.setSystemLookAndFeel();
+            for(Component c : componentList) {
+                SwingUtilities.updateComponentTreeUI(c);
+                if (c instanceof Themeable) {
+                    ((Themeable)c).refresh();
+                }
+                if (c instanceof JDialog) {
+                    ((JDialog)c).pack();
+                } else if (c instanceof JPopupMenu) {
+                    ((JPopupMenu)c).pack();
+                }
+            }
+        });
     }
 
     /**

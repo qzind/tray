@@ -13,10 +13,10 @@ package qz.utils;
 import org.apache.commons.io.Charsets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.utils.linux.Elevator;
 
 import java.awt.*;
 import java.io.*;
-import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -70,7 +70,7 @@ public class ShellUtilities {
             return MacUtilities.nativeFileCopy(source, dest);
         } else {
             // No reliable JNA method; Use pkexec/gksu/etc
-            return UnixUtilities.elevatedFileCopy(source, dest);
+            return Elevator.elevatedFileCopy(source, dest);
         }
     }
 
@@ -184,6 +184,10 @@ public class ShellUtilities {
         }
 
         return "";
+    }
+
+    public static String executeRawSilently(String... commandArray) {
+        return executeRaw(commandArray, true);
     }
 
     public static String executeRaw(String ... commandArray) {

@@ -5,6 +5,7 @@ import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.util.Arrays;
 import java.util.List;
 
@@ -30,12 +31,6 @@ public class FieldValueTable extends JTable {
             public boolean isCellEditable(int x, int y) { return false; }
         };
         COLUMNS.forEach(column -> model.addColumn(column));
-
-        // Fix Linux row height
-        int origHeight = getRowHeight();
-        if(SystemUtilities.getWindowScaleFactor() > 1) {
-            setRowHeight((int)(origHeight * SystemUtilities.getWindowScaleFactor()));
-        }
 
         getTableHeader().setReorderingAllowed(false);
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -65,9 +60,10 @@ public class FieldValueTable extends JTable {
         }
 
         setPreferredScrollableViewportSize(
-                SystemUtilities.scaleWindowDimension(
-                        getPreferredScrollableViewportSize().getWidth(),
-                        getPreferredSize().getHeight())
+                new Dimension(
+                        (int)getPreferredScrollableViewportSize().getWidth(),
+                        (int)getPreferredSize().getHeight()
+                )
         );
         setFillsViewportHeight(true);
         refreshComponents();

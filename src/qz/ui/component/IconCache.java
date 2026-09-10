@@ -157,9 +157,18 @@ public class IconCache {
 
         public String[] getIds() { return getIds(false); }
 
+        private void addId(String id, boolean isDark) {
+            if(isDark) {
+                fileNamesDark = Arrays.copyOf(fileNamesDark, fileNamesDark.length + 1);
+                fileNamesDark[fileNamesDark.length - 1] = id;
+            } else {
+                fileNames = Arrays.copyOf(fileNames, fileNames.length + 1);
+                fileNames[fileNames.length - 1] = id;
+            }
+        }
+
         private void addId(String id) {
-            fileNames = Arrays.copyOf(fileNames, fileNames.length + 1);
-            fileNames[fileNames.length - 1] = id;
+            addId(id, false);
         }
     }
 
@@ -201,7 +210,7 @@ public class IconCache {
         // Stash scaled 2x, 3x versions if missing
         int maxScale = 3;
         for(Icon i : Icon.values()) {
-            // Assume single-resource icons are lonely and want scaled instances
+            // For now, only scale icons that have more than one fileName (tray and taskbar)
             if (i.fileNames.length != 1) {
                 continue;
             }
@@ -209,6 +218,7 @@ public class IconCache {
                 BufferedImage bi = images.get(i.getId());
                 // Assume square icon (filename is derived from width only)
                 String id = i.getId();
+                boolean isDark = getBaseName(id).endsWith(DARK_SUFFIX);
                 int loc = id.lastIndexOf(".");
                 if(loc == -1) {
                     continue;
@@ -217,7 +227,7 @@ public class IconCache {
                 String ext = id.substring(loc + 1);
                 String newSize = String.format("%s-%s.%s", name,  bi.getWidth() * scale, ext);
                 if (!images.containsKey(newSize)) {
-                    i.addId(newSize);
+                    i.addId(newSize, isDark);
                     BufferedImage newBi = clone(bi, scale);
                     imageIcons.put(newSize, new ImageIcon(newBi));
                     images.put(newSize, newBi);

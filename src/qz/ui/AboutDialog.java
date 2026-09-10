@@ -293,12 +293,19 @@ public class AboutDialog extends BasicDialog implements Themeable {
     }
 
     private void refreshHeader() {
-        headerBar.setBackground(SystemUtilities.isDarkDesktop() ?
-                                        Constants.TRUSTED_COLOR.darker().darker() : Constants.TRUSTED_COLOR_DARK);
-        headerBar.setVisible(Substitutions.areActive());
-        pack();
+        if(headerBar != null) {
+            headerBar.setBackground(SystemUtilities.isDarkDesktop()?
+                                            Constants.TRUSTED_COLOR.darker().darker():Constants.TRUSTED_COLOR_DARK);
+            headerBar.setVisible(Substitutions.areActive());
+            pack();
+        }
     }
 
+    private void refreshLogo() {
+        if(logo != null) {
+            logo.setIcon(getIcon(IconCache.Icon.LOGO_ICON, SystemUtilities.isDarkDesktop()));
+        }
+    }
 
     @Override
     public void setVisible(boolean visible) {
@@ -312,7 +319,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
     @Override
     public void refresh() {
         refreshHeader();
-        logo.setIcon(getIcon(IconCache.Icon.LOGO_ICON, SystemUtilities.isDarkDesktop()));
+        refreshLogo();
         super.refresh();
     }
 }

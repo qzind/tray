@@ -136,7 +136,7 @@ public class IconCache {
                     }
                 }
             }
-            return getId();
+            return getId(isDark);
         }
 
         public String getId(Dimension size) {

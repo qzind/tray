@@ -36,7 +36,7 @@ public class IconCache {
 
     // Internal Jar path containing the images
     static String RESOURCES_DIR = "/qz/ui/resources/";
-    static String DARK_SUFFIX_PATTERN = "%s-dark.%s";
+    static String DARK_SUFFIX = "-dark";
 
     /**
      * Stores Icon paths
@@ -91,7 +91,7 @@ public class IconCache {
             this.fileNames = fileNames;
             this.fileNamesDark = new String[fileNames.length];
             for(int i = 0; i < fileNames.length; i++) {
-                this.fileNamesDark[i] = String.format(DARK_SUFFIX_PATTERN, getBaseName(fileNames[i]), getExtension(fileNames[i]));
+                this.fileNamesDark[i] = String.format("%s" + DARK_SUFFIX + ".%s", getBaseName(fileNames[i]), getExtension(fileNames[i]));
             }
         }
 
@@ -299,9 +299,13 @@ public class IconCache {
      * @return The BufferedImage representing the data
      */
     private static BufferedImage getImageResource(String imagePath) {
-        try(InputStream is = IconCache.class.getResourceAsStream(imagePath.replace("#", ""))) {
+       try(InputStream is = IconCache.class.getResourceAsStream(imagePath.replace("#", ""))) {
             if (is != null) {
                 return ImageIO.read(is);
+            } else {
+                if(!getBaseName(imagePath).endsWith(DARK_SUFFIX)) {
+                    throw new IOException("InputStream is null");
+                }
             }
         }
         catch(IOException e) {

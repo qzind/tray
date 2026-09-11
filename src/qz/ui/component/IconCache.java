@@ -25,6 +25,8 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.List;
 
+import static org.apache.commons.io.FilenameUtils.*;
+
 /**
  * Created by Tres Finocchiaro on 12/12/2014.
  */
@@ -34,6 +36,7 @@ public class IconCache {
 
     // Internal Jar path containing the images
     static String RESOURCES_DIR = "/qz/ui/resources/";
+    static String DARK_SUFFIX = "-dark";
 
     /**
      * Stores Icon paths
@@ -77,13 +80,20 @@ public class IconCache {
 
         private boolean padded = false;
         private String[] fileNames;
+        private String[] fileNamesDark;
 
         /**
          * Default constructor
          *
          * @param fileNames path(s) to image
          */
-        Icon(String ... fileNames) { this.fileNames = fileNames; }
+        Icon(String ... fileNames) {
+            this.fileNames = fileNames;
+            this.fileNamesDark = new String[fileNames.length];
+            for(int i = 0; i < fileNames.length; i++) {
+                this.fileNamesDark[i] = String.format("%s" + DARK_SUFFIX + ".%s", getBaseName(fileNames[i]), getExtension(fileNames[i]));
+            }
+        }
 
         /**
          * Returns whether or not this icon is used for the SystemTray
@@ -118,26 +128,47 @@ public class IconCache {
          * @param size size of desired image
          * @return icon file name
          */
-        public String getId(Dimension size) {
+        public String getId(Dimension size, boolean isDark) {
             if (size != null) {
-                for(String fileName : fileNames) {
+                for(String fileName : isDark ? fileNamesDark : fileNames) {
                     if (fileName.endsWith("-" + size.width + ".png")) {
                         return fileName;
                     }
                 }
             }
-            return getId();
+            return getId(isDark);
+        }
+
+        public String getId(Dimension size) {
+            return getId(size, false);
+        }
+
+        public String getId(boolean isDark) {
+            return isDark ? fileNamesDark[0] : fileNames[0];
         }
 
         public String getId() {
-            return fileNames[0];
+            return getId(false);
         }
 
-        public String[] getIds() { return fileNames; }
+        public String[] getIds(boolean isDark) {
+            return isDark ? fileNamesDark : fileNames;
+        }
+
+        public String[] getIds() { return getIds(false); }
+
+        private void addId(String id, boolean isDark) {
+            if(isDark) {
+                fileNamesDark = Arrays.copyOf(fileNamesDark, fileNamesDark.length + 1);
+                fileNamesDark[fileNamesDark.length - 1] = id;
+            } else {
+                fileNames = Arrays.copyOf(fileNames, fileNames.length + 1);
+                fileNames[fileNames.length - 1] = id;
+            }
+        }
 
         private void addId(String id) {
-            fileNames = Arrays.copyOf(fileNames, fileNames.length + 1);
-            fileNames[fileNames.length - 1] = id;
+            addId(id, false);
         }
     }
 
@@ -161,16 +192,25 @@ public class IconCache {
      */
     private void buildIconCache() {
         for(Icon i : Icon.values()) {
-            for (String id : i.getIds()) {
-                BufferedImage bi = getImageResource(RESOURCES_DIR + id);
-                imageIcons.put(id, new ImageIcon(bi));
-                images.put(id, bi);
+            String[] lightIds = i.getIds(false);
+            String[] darkIds = i.getIds(true);
+            for(int j = 0; j < lightIds.length; j++) {
+                String lightId = lightIds[j];
+                String darkId = darkIds[j];
+                BufferedImage lightBi = getImageResource(RESOURCES_DIR + lightId);
+                BufferedImage darkBi = getImageResource(RESOURCES_DIR + darkId);
+                // Cache light icons
+                imageIcons.put(lightId, new ImageIcon(lightBi));
+                images.put(lightId, lightBi);
+                // Cache dark icons if present
+                imageIcons.put(darkId, new ImageIcon(darkBi != null ? darkBi : lightBi));
+                images.put(darkId, darkBi != null ? darkBi : lightBi);
             }
         }
         // Stash scaled 2x, 3x versions if missing
         int maxScale = 3;
         for(Icon i : Icon.values()) {
-            // Assume single-resource icons are lonely and want scaled instances
+            // For now, only scale icons that have more than one fileName (tray and taskbar)
             if (i.fileNames.length != 1) {
                 continue;
             }
@@ -178,6 +218,7 @@ public class IconCache {
                 BufferedImage bi = images.get(i.getId());
                 // Assume square icon (filename is derived from width only)
                 String id = i.getId();
+                boolean isDark = getBaseName(id).endsWith(DARK_SUFFIX);
                 int loc = id.lastIndexOf(".");
                 if(loc == -1) {
                     continue;
@@ -186,7 +227,7 @@ public class IconCache {
                 String ext = id.substring(loc + 1);
                 String newSize = String.format("%s-%s.%s", name,  bi.getWidth() * scale, ext);
                 if (!images.containsKey(newSize)) {
-                    i.addId(newSize);
+                    i.addId(newSize, isDark);
                     BufferedImage newBi = clone(bi, scale);
                     imageIcons.put(newSize, new ImageIcon(newBi));
                     images.put(newSize, newBi);
@@ -199,40 +240,55 @@ public class IconCache {
      * Returns the ImageIcon from cache
      *
      * @param i an IconCache.Icon
+     * @param isDark Whether to return the dark themed version of this resource
      * @return the ImageIcon in the cache
      */
-    public ImageIcon getIcon(Icon i) {
-        return imageIcons.get(i.getId());
+    public ImageIcon getIcon(Icon i, boolean isDark) {
+        return imageIcons.get(i.getId(isDark));
     }
+
+    public ImageIcon getIcon(Icon i) {
+        return imageIcons.get(i.getId(false));
+    }
+
 
     private ImageIcon getIcon(String id) {
         return imageIcons.get(id);
-    }
-
-    public ImageIcon getIcon(Icon i, Dimension size) {
-        return imageIcons.get(i.getId(size));
     }
 
     /**
      * Returns the Image from cache
      *
      * @param i an IconCache.Icon
+     * @param isDark Whether to return the dark themed version of this resource
      * @return the Image in the cache
      */
-    public BufferedImage getImage(Icon i) {
-        return images.get(i.getId());
+    public BufferedImage getImage(Icon i, boolean isDark) {
+        return images.get(i.getId(isDark));
     }
 
-    public List<BufferedImage> getImages(Icon i) {
+    public BufferedImage getImage(Icon i) {
+        return images.get(i.getId(false));
+    }
+
+    public List<BufferedImage> getImages(Icon i, boolean isDark) {
         ArrayList<BufferedImage> icons = new ArrayList<>();
-        for(String id : i.getIds()) {
+        for(String id : i.getIds(isDark)) {
             icons.add(images.get(id));
         }
         return icons;
     }
 
+    public List<BufferedImage> getImages(Icon i) {
+        return getImages(i, false);
+    }
+
+    public BufferedImage getImage(Icon i, Dimension size, boolean isDark) {
+        return images.get(i.getId(size, isDark));
+    }
+
     public BufferedImage getImage(Icon i, Dimension size) {
-        return images.get(i.getId(size));
+        return images.get(i.getId(size, false));
     }
 
     /**
@@ -253,16 +309,17 @@ public class IconCache {
      * @return The BufferedImage representing the data
      */
     private static BufferedImage getImageResource(String imagePath) {
-        try {
-            InputStream is = IconCache.class.getResourceAsStream(imagePath.replaceAll("#", ""));
+       try(InputStream is = IconCache.class.getResourceAsStream(imagePath.replace("#", ""))) {
             if (is != null) {
                 return ImageIO.read(is);
             } else {
-                log.warn("Cannot find {}", imagePath);
+                if(!getBaseName(imagePath).endsWith(DARK_SUFFIX)) {
+                    throw new IOException("InputStream is null");
+                }
             }
         }
         catch(IOException e) {
-            log.error("Cannot find {}", imagePath, e);
+            log.error("Cannot load {}", imagePath, e);
         }
         return null;
     }

@@ -165,8 +165,12 @@ public class BasicDialog extends JDialog implements Themeable {
     }
 
     public ImageIcon getIcon(IconCache.Icon icon) {
+        return getIcon(icon, false);
+    }
+
+    public ImageIcon getIcon(IconCache.Icon icon, boolean isDark) {
         if (iconCache != null) {
-            return iconCache.getIcon(icon);
+            return iconCache.getIcon(icon, isDark);
         }
         return null;
     }

@@ -40,6 +40,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
     private static final Logger log = LogManager.getLogger(AboutDialog.class);
     private final boolean limitedDisplay;
     private Server server;
+    private JLabel logo;
     private JLabel lblUpdate;
     private JButton updateButton;
 
@@ -77,7 +78,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
         versionBox.add(new JLabel(String.format("%s (Java)", Constants.VERSION)));
 
         JPanel aboutPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JLabel logo = new JLabel(getIcon(IconCache.Icon.LOGO_ICON));
+        logo = new JLabel(getIcon(IconCache.Icon.LOGO_ICON, SystemUtilities.isDarkDesktop()));
         logo.setBorder(new EmptyBorder(0, 0, 0, limitedDisplay ? 0 : 20));
         aboutPanel.add(logo);
 
@@ -292,12 +293,19 @@ public class AboutDialog extends BasicDialog implements Themeable {
     }
 
     private void refreshHeader() {
-        headerBar.setBackground(SystemUtilities.isDarkDesktop() ?
-                                        Constants.TRUSTED_COLOR.darker().darker() : Constants.TRUSTED_COLOR_DARK);
-        headerBar.setVisible(Substitutions.areActive());
-        pack();
+        if(headerBar != null) {
+            headerBar.setBackground(SystemUtilities.isDarkDesktop()?
+                                            Constants.TRUSTED_COLOR.darker().darker():Constants.TRUSTED_COLOR_DARK);
+            headerBar.setVisible(Substitutions.areActive());
+            pack();
+        }
     }
 
+    private void refreshLogo() {
+        if(logo != null) {
+            logo.setIcon(getIcon(IconCache.Icon.LOGO_ICON, SystemUtilities.isDarkDesktop()));
+        }
+    }
 
     @Override
     public void setVisible(boolean visible) {
@@ -311,6 +319,7 @@ public class AboutDialog extends BasicDialog implements Themeable {
     @Override
     public void refresh() {
         refreshHeader();
+        refreshLogo();
         super.refresh();
     }
 }

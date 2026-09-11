@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @version 2.2.6
+ * @version 2.3.0
  * @overview QZ Tray Connector
  * @license LGPL-2.1-only
  * <p/>

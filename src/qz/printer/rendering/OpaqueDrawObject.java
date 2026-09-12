@@ -29,7 +29,7 @@ public class OpaqueDrawObject extends GraphicsOperatorProcessor {
             if (base0 instanceof COSName) {
                 COSName objectName = (COSName)base0;
                 PDFGraphicsStreamEngine context = getGraphicsContext();
-                PDXObject xobject = getGraphicsContext().getResources().getXObject(objectName);
+                PDXObject xobject = context.getResources().getXObject(objectName);
 
                 if (xobject == null) {
                     throw new MissingResourceException("Missing XObject: " + objectName.getName());

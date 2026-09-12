@@ -23,11 +23,11 @@ import qz.printer.action.raw.ImageConverter;
 import qz.printer.action.raw.LanguageType;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.printer.action.windows.WindowsRawUtils;
 import qz.printer.info.NativePrinter;
 import qz.printer.status.CupsUtils;
 import qz.utils.*;
 
-import javax.imageio.ImageIO;
 import javax.print.*;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
@@ -178,10 +178,10 @@ public class PrintRaw implements PrintProcessor {
                             }
                             if(SystemUtilities.isWindows()) {
                                 // Placeholder only; not yet supported
-                                printToBackend(output.getNativePrinter(), tempFile, Backend.WIN32_WMI);
+                                printToBackend(output.getNativePrinter(), tempFile, options, Backend.WIN32_WMI);
                             } else {
                                 // Try CUPS backend first, fallback to LPR
-                                printToBackend(output.getNativePrinter(), tempFile, Backend.CUPS_RSS, Backend.CUPS_LPR);
+                                printToBackend(output.getNativePrinter(), tempFile, options, Backend.CUPS_RSS, Backend.CUPS_LPR);
                             }
                         } else {
                             printToPrinter(output.getPrintService(), bab.toByteArray(), rawOpts);
@@ -326,7 +326,7 @@ public class PrintRaw implements PrintProcessor {
     /**
      * Direct/backend printing modes for forced raw printing
      */
-    public void printToBackend(NativePrinter printer, File tempFile, Backend... backends) throws IOException, PrintException {
+    public void printToBackend(NativePrinter printer, File tempFile, PrintOptions options, Backend... backends) throws IOException, PrintException {
         boolean success = false;
 
         for(Backend backend : backends) {
@@ -343,6 +343,8 @@ public class PrintRaw implements PrintProcessor {
                     success = CupsUtils.sendRawFile(printer, tempFile);
                     break;
                 case WIN32_WMI:
+                    success = WindowsRawUtils.sendRawFile(printer, tempFile, options);
+                    break;
                 default:
                     throw new UnsupportedOperationException("Raw backend \"" + backend + "\" is not yet supported.");
             }

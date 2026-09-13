@@ -266,6 +266,9 @@ public class ByteUtilities {
     }
 
     public static String imageToBase64(IconCache.Icon icon, String format) {
+        if(icon.getPath().contains(".svg")) {
+            return imageToBase64(IconCache.getImageResourceFromSvg(icon.getPreferredHeight(), icon.getPath()), format);
+        }
         try(InputStream is = IconCache.class.getResourceAsStream(icon.getPath())) {
             if (is == null) throw new IOException(String.format("InputStream for '%s' is null", icon.getPath()));
             return imageToBase64(ImageIO.read(is), format);

@@ -2,6 +2,7 @@ package qz.ui.tray;
 
 import org.jdesktop.swinghelper.tray.JXTrayIcon;
 import qz.ui.component.IconCache;
+import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 import java.awt.*;
@@ -52,7 +53,7 @@ public enum TrayType {
 
     public void setIcon(IconCache.Icon icon) {
         if (isTray()) {
-            tray.setImage(iconCache.getImage(icon, tray.getSize()));
+            tray.setImage(iconCache.getImage(icon, tray.getSize(), SystemUtilities.isDarkTaskbar(false)));
         } else {
             taskbar.setIconImages(iconCache.getImages(icon));
         }

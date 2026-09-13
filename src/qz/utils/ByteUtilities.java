@@ -22,8 +22,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -266,17 +266,13 @@ public class ByteUtilities {
     }
 
     public static String imageToBase64(IconCache.Icon icon, String format) {
-        if(icon.getPath().contains(".svg")) {
-            return imageToBase64(IconCache.getImageResourceFromSvg(icon.getPreferredHeight(), icon.getPath()), format);
-        }
-        try(InputStream is = IconCache.class.getResourceAsStream(icon.getPath())) {
-            if (is == null) throw new IOException(String.format("InputStream for '%s' is null", icon.getPath()));
-            return imageToBase64(ImageIO.read(is), format);
-        }
-        catch(IOException e) {
-            log.warn("Unable to convert icon to base64 '{}'", icon, e);
-        }
-        return null;
+        int defaultSize = icon.getSize();
+        Path imagePath = icon.getPath(IconCache.Icon.Theme.LIGHT, defaultSize);
+
+        return switch(icon.getFormat()) {
+            case SVG -> imageToBase64(IconCache.getImageResourceFromSvg(defaultSize, imagePath), format);
+            case PNG -> imageToBase64(IconCache.getImageResource(imagePath), format);
+        };
     }
 
     public static int parseBytes(byte[] bytes, int startIndex, int length, Endian endian) {

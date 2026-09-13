@@ -125,11 +125,6 @@ public class TrayManager {
                     tray = TrayType.MODERN.init(iconCache);
             }
 
-            // OS-specific tray icon handling
-            if (SystemTray.isSupported()) {
-                iconCache.fixTrayIcons(SystemUtilities.isDarkTaskbar());
-            }
-
             // Iterates over all images denoted by IconCache.getTypes() and caches them
             tray.setIcon(DANGER_ICON);
             tray.setToolTip(name);
@@ -199,7 +194,6 @@ public class TrayManager {
     }
 
     public void refreshTheme() {
-        iconCache.fixTrayIcons(SystemUtilities.isDarkTaskbar());
         refreshIcon(null);
         // TODO: Merge into ThemeUtilities
         SwingUtilities.invokeLater(() -> {
@@ -557,12 +551,10 @@ public class TrayManager {
      * Thread safe method for setting the default icon
      */
     public void setDefaultIcon() {
-        // Workaround for JDK-8252015
-        if(SystemUtilities.isMac() && Constants.MASK_TRAY_SUPPORTED && !MacUtilities.jdkSupportsTemplateIcon()) {
-            setIcon(DEFAULT_ICON, () -> MacUtilities.toggleTemplateIcon(tray.tray()));
-        } else {
-            setIcon(DEFAULT_ICON);
-        }
+        setIcon(switch(SystemUtilities.getOs()) {
+            case MAC, WINDOWS -> MASK_ICON;
+            default -> DEFAULT_ICON; // TODO: Revisit when Linux Tray icon support is added
+        });
     }
 
     /** Thread safe method for setting the error status message */

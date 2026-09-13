@@ -213,7 +213,7 @@ public class IconCache {
                 BufferedImage darkBi;
                 if(lightId.contains(".svg")) {
                     lightBi = getImageResourceFromSvg(i.getPreferredHeight(), RESOURCES_DIR + lightId);
-                    darkBi = getImageResourceFromSvg(i.getPreferredHeight(), RESOURCES_DIR + lightId);
+                    darkBi = getImageResourceFromSvg(i.getPreferredHeight(), RESOURCES_DIR + darkId);
                 } else {
                     lightBi = getImageResource(RESOURCES_DIR + lightId);
                     darkBi = getImageResource(RESOURCES_DIR + darkId);

@@ -88,6 +88,7 @@
         <dependency name="imageio-core" org="com.twelvemonkeys.imageio" conf="*->default" rev="${twelvemonkeys.rev}"/>
         <dependency name="imageio-jpeg" org="com.twelvemonkeys.imageio" conf="*->default" rev="${twelvemonkeys.rev}"/>
         <dependency name="imageio-metadata" org="com.twelvemonkeys.imageio" conf="*->default" rev="${twelvemonkeys.rev}"/>
+        <dependency name="jsvg" org="${jsvg.org}" conf="*->default" rev="${jsvg.rev}"/>
 
         <dependency name="jai-imageio-core" org="${jai.org}" conf="*->default" rev="${jai.rev}"/>
         <dependency name="jai-imageio-jpeg2000" org="${jai.org}" conf="*->default" rev="${jai.rev}"/>

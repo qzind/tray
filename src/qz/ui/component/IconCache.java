@@ -10,6 +10,9 @@
 
 package qz.ui.component;
 
+import com.github.weisj.jsvg.SVGDocument;
+import com.github.weisj.jsvg.parser.SVGLoader;
+import com.github.weisj.jsvg.view.FloatSize;
 import com.github.zafarkhaja.semver.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,6 +25,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.*;
 import java.util.List;
 
@@ -75,9 +79,10 @@ public class IconCache {
         QUESTION_ICON("qz-question.png"),
 
         // Banner
-        LOGO_ICON("qz-logo.png"),
+        LOGO_ICON(260, "qz-logo.svg"),
         BANNER_ICON("qz-banner.png");
 
+        private Integer preferredHeight;
         private boolean padded = false;
         private String[] fileNames;
         private String[] fileNamesDark;
@@ -87,12 +92,17 @@ public class IconCache {
          *
          * @param fileNames path(s) to image
          */
-        Icon(String ... fileNames) {
+        Icon(Integer preferredHeight,  String ... fileNames) {
+            this.preferredHeight = preferredHeight;
             this.fileNames = fileNames;
             this.fileNamesDark = new String[fileNames.length];
             for(int i = 0; i < fileNames.length; i++) {
                 this.fileNamesDark[i] = String.format("%s" + DARK_SUFFIX + ".%s", getBaseName(fileNames[i]), getExtension(fileNames[i]));
             }
+        }
+
+        Icon(String ... fileNames) {
+            this(null, fileNames);
         }
 
         /**
@@ -157,6 +167,8 @@ public class IconCache {
 
         public String[] getIds() { return getIds(false); }
 
+        public Integer getPreferredHeight() { return preferredHeight; }
+
         private void addId(String id, boolean isDark) {
             if(isDark) {
                 fileNamesDark = Arrays.copyOf(fileNamesDark, fileNamesDark.length + 1);
@@ -197,8 +209,15 @@ public class IconCache {
             for(int j = 0; j < lightIds.length; j++) {
                 String lightId = lightIds[j];
                 String darkId = darkIds[j];
-                BufferedImage lightBi = getImageResource(RESOURCES_DIR + lightId);
-                BufferedImage darkBi = getImageResource(RESOURCES_DIR + darkId);
+                BufferedImage lightBi;
+                BufferedImage darkBi;
+                if(lightId.contains(".svg")) {
+                    lightBi = getImageResourceFromSvg(i.getPreferredHeight(), RESOURCES_DIR + lightId);
+                    darkBi = getImageResourceFromSvg(i.getPreferredHeight(), RESOURCES_DIR + lightId);
+                } else {
+                    lightBi = getImageResource(RESOURCES_DIR + lightId);
+                    darkBi = getImageResource(RESOURCES_DIR + darkId);
+                }
                 // Cache light icons
                 imageIcons.put(lightId, new ImageIcon(lightBi));
                 images.put(lightId, lightBi);
@@ -309,8 +328,8 @@ public class IconCache {
      * @return The BufferedImage representing the data
      */
     private static BufferedImage getImageResource(String imagePath) {
-       try(InputStream is = IconCache.class.getResourceAsStream(imagePath.replace("#", ""))) {
-            if (is != null) {
+        try(InputStream is = IconCache.class.getResourceAsStream(imagePath.replace("#", ""))) {
+           if (is != null) {
                 return ImageIO.read(is);
             } else {
                 if(!getBaseName(imagePath).endsWith(DARK_SUFFIX)) {
@@ -320,6 +339,41 @@ public class IconCache {
         }
         catch(IOException e) {
             log.error("Cannot load {}", imagePath, e);
+        }
+        return null;
+    }
+
+    public static BufferedImage getImageResourceFromSvg(Integer preferredHeight, String svgPath) {
+        URL url = IconCache.class.getResource(svgPath);
+        if (url != null) {
+            SVGLoader loader = new SVGLoader();
+            SVGDocument svgDocument = loader.load(url);
+            if(svgDocument != null) {
+                FloatSize svgSize = svgDocument.size();
+                float w = svgSize.width;
+                float h = svgSize.height;
+
+                // scale proportionally
+                if(preferredHeight != null) {
+                    w = svgSize.width * (preferredHeight / h);
+                    h = preferredHeight;
+                }
+
+                BufferedImage image = new BufferedImage((int)w, (int)h, BufferedImage.TYPE_INT_ARGB);
+                Graphics2D g = image.createGraphics();
+                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+                double scaleX = w / svgSize.width;
+                double scaleY = h / svgSize.height;
+                g.scale(scaleX, scaleY);
+                svgDocument.render(null, g);
+                g.dispose();
+                return image;
+            }
+        }
+        if(!getBaseName(svgPath).endsWith(DARK_SUFFIX)) {
+            log.warn("SVG '{}' could not be loaded", svgPath);
         }
         return null;
     }

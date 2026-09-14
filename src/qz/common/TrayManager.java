@@ -17,7 +17,6 @@ import org.eclipse.jetty.server.Server;
 import qz.App;
 import qz.auth.Certificate;
 import qz.auth.Request;
-import qz.build.provision.params.Os;
 import qz.installer.shortcut.ShortcutCreator;
 import qz.printer.PrintServiceMatcher;
 import qz.printer.action.html.WebApp;
@@ -25,7 +24,6 @@ import qz.ui.*;
 import qz.ui.component.IconCache;
 import qz.ui.tray.TrayType;
 import qz.utils.*;
-import qz.utils.linux.LinuxUtilities;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
 import qz.ws.WebsocketPorts;
@@ -109,7 +107,7 @@ public class TrayManager {
         shortcutCreator = ShortcutCreator.getInstance();
 
         SystemUtilities.setSystemLookAndFeel();
-        iconCache = new IconCache();
+        iconCache = IconCache.getInstance();
 
         if (SystemUtilities.isSystemTraySupported()) { // UI mode with tray
             switch(SystemUtilities.getOs()) {

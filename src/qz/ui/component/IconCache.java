@@ -1,7 +1,7 @@
 /**
  * @author Tres Finocchiaro
  *
- * Copyright (C) 2016 Tres Finocchiaro, QZ Industries, LLC
+ * Copyright (C) 2014 Tres Finocchiaro, QZ Industries, LLC
  *
  * LGPL 2.1 This is free software.  This software and source code are released under
  * the "LGPL 2.1 License".  A copy of this license should be distributed with
@@ -10,23 +10,19 @@
 
 package qz.ui.component;
 
-import com.github.weisj.jsvg.SVGDocument;
-import com.github.weisj.jsvg.parser.SVGLoader;
-import com.github.weisj.jsvg.view.FloatSize;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Sluggable;
 import qz.ui.component.IconCache.Icon.Theme;
 import qz.utils.ColorUtilities;
+import qz.utils.ImageUtilities;
 import qz.utils.SystemUtilities;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -35,16 +31,15 @@ import java.util.stream.Collectors;
 
 import static qz.ui.component.IconCache.Icon.Type.*;
 
-/**
- * Created by Tres Finocchiaro on 12/12/2014.
- */
 public class IconCache {
     private static final Logger log = LogManager.getLogger(IconCache.class);
 
     private static final Path RESOURCES_PATH = Paths.get("../resources");
 
+    private static IconCache instance;
+
     /**
-     * Stores Icon paths
+     * Enum for building and tracking icon keys for PNG (pre-rasterized) or SVG (runtime rasterized) images
      */
     public enum Icon implements Sluggable {
         // System tray
@@ -84,7 +79,7 @@ public class IconCache {
         // Banner
         LOGO_ICON(LOGO, "qz-logo");
 
-        public enum Type {
+        enum Type {
             SYSTEM_TRAY(20, 24, 32, 40, 48),
             TASK_BAR(20, 24, 32, 40, 48),
             DIALOG(45),
@@ -98,7 +93,7 @@ public class IconCache {
             }
         }
 
-        public enum Format implements Sluggable {
+        enum Format implements Sluggable {
             SVG, PNG; // order matters
 
             @Override
@@ -107,7 +102,7 @@ public class IconCache {
             }
         }
 
-        public enum Theme implements Sluggable {
+        enum Theme implements Sluggable {
             LIGHT, DARK; // order matters
 
             public static Theme get(boolean isDark) {
@@ -141,7 +136,7 @@ public class IconCache {
             return  String.format(theme == Theme.DARK ? "%s-dark.%s" : "%s.%s", file, format.slug());
         }
 
-        public Path getPath(Theme theme, int size) {
+        Path getPath(Theme theme, int size) {
             return RESOURCES_PATH.resolve(getFileName(theme, size));
         }
 
@@ -151,10 +146,6 @@ public class IconCache {
         /**
          * Hashable ids created by this resource in format name-theme[-size]
          */
-        String[] getIds() {
-            return getIds(Theme.values());
-        }
-
         String[] getIds(Theme ... themes) {
             List<String> ids = new ArrayList<>();
 
@@ -170,20 +161,20 @@ public class IconCache {
             return String.format("%s-%s-%s", slug, theme.slug(), size);
         }
 
-        String getId(Theme theme) {
-            return getId(theme, type.sizes[0]);
-        }
-
-        String getId(boolean isDark) {
-            return getId(Theme.get(isDark));
-        }
-
-        public Format getFormat() {
+        Format getFormat() {
             return format;
         }
 
+        Type getType() {
+            return type;
+        }
+
+        int[] getSizes() {
+            return type.sizes;
+        }
+
         public int getSize() {
-            return type.sizes[0];
+            return getSizes()[0];
         }
 
         @Override
@@ -194,7 +185,7 @@ public class IconCache {
         /**
          * Crawls resource path to predict the format based on a file matching
          */
-        public static Format findFormat(String name) {
+        static Format findFormat(String name) {
             for(Format format : Format.values()) {
                 Path file = RESOURCES_PATH.resolve(String.format("%s.%s", name, format.slug()));
                 try(InputStream is = IconCache.class.getResourceAsStream(file.toString())) {
@@ -207,9 +198,8 @@ public class IconCache {
         }
     }
 
-    private final Map<String,ImageIcon> imageIcons;
     private final Map<String,BufferedImage> images;
-    private static final Color TRANSPARENT = new Color(0,0,0,0);
+    private final Map<String,ImageIcon> imageIcons;
 
     /**
      * Builds a cache of Image and ImageIcon resources by iterating through all IconCache.Icon types
@@ -227,18 +217,18 @@ public class IconCache {
     Map<String, BufferedImage> buildImageCache() {
         Map<String, BufferedImage> images = new HashMap<>();
         for(Icon i : Icon.values()) {
-            for(int size : i.type.sizes) {
+            for(int size : i.getSizes()) {
                 BufferedImage lightImage = null;
                 for(Theme theme : Theme.values()) {
                     Path path = i.getPath(theme, size);
-                    BufferedImage image = switch(i.format) {
-                        case PNG -> getImageResource(path);
-                        case SVG -> getImageResourceFromSvg(size, path);
+                    BufferedImage image = switch(i.getFormat()) {
+                        case PNG -> ImageUtilities.imageFromResource(path, this);
+                        case SVG -> ImageUtilities.imageFromSvgResource(path, size, this);
                     };
 
                     // Handle undocumented macOS Sytem Tray padding
-                    if (SystemUtilities.isMac() && i.type == SYSTEM_TRAY) {
-                        image = padImage(image, 25);
+                    if (SystemUtilities.isMac() && i.getType() == SYSTEM_TRAY) {
+                        image = ImageUtilities.padImage(image, 25);
                     }
 
                     // Handle dark fallback
@@ -263,235 +253,55 @@ public class IconCache {
             }
         }
         return images;
-
-        // TODO: Decide how to handle upscaled Linux task bar icons
-        /*
-        // Stash scaled 2x, 3x versions if missing
-        int maxScale = 3;
-        for(Icon i : Icon.values()) {
-            // For now, only scale icons that have more than one fileName (tray and taskbar)
-            if (i.fileNames.length != 1) {
-                continue;
-            }
-            for(int scale = 2; scale <= maxScale; scale++) {
-                BufferedImage bi = images.get(i.getId());
-                // Assume square icon (filename is derived from width only)
-                String id = i.getId();
-                boolean isDark = getBaseName(id).endsWith(DARK_PNG_SUFFIX);
-                int loc = id.lastIndexOf(".");
-                if(loc == -1) {
-                    continue;
-                }
-                String name = id.substring(0, loc);
-                String ext = id.substring(loc + 1);
-                String newSize = String.format("%s-%s.%s", name,  bi.getWidth() * scale, ext);
-                if (!images.containsKey(newSize)) {
-                    i.addId(newSize, isDark);
-                    BufferedImage newBi = clone(bi, scale);
-                    imageIcons.put(newSize, new ImageIcon(newBi));
-                    images.put(newSize, newBi);
-                }
-            }
-        }*/
     }
 
     /**
      * Returns the ImageIcon from cache
      *
      * @param i an IconCache.Icon
-     * @param isDark Whether to return the dark themed version of this resource
+     * @param theme Theme.LIGHT or Theme.DARK
      * @return the ImageIcon in the cache
      */
+    ImageIcon getIcon(Icon i, Theme theme, int size) {
+        return imageIcons.get(i.getId(theme, size));
+    }
+
     public ImageIcon getIcon(Icon i, boolean isDark) {
-        return imageIcons.get(i.getId(isDark));
+        return getIcon(i, Theme.get(isDark), i.getSize());
     }
 
     public ImageIcon getIcon(Icon i) {
-        return imageIcons.get(i.getId(false));
+        return getIcon(i, false);
     }
 
-    private ImageIcon getIcon(String id) {
-        return imageIcons.get(id);
+    BufferedImage getImage(Icon i, Theme theme, int size) {
+        return images.get(i.getId(theme, size));
     }
 
-    public ImageIcon getIcon(Icon i, Dimension size, boolean isDark) {
-        return imageIcons.get(i.getId(Theme.get(isDark), (int)size.getWidth()));
-    }
-
-    /**
-     * Returns the Image from cache
-     *
-     * @param i an IconCache.Icon
-     * @param isDark Whether to return the dark themed version of this resource
-     * @return the Image in the cache
-     */
     public BufferedImage getImage(Icon i, boolean isDark) {
-        return images.get(i.getId(isDark));
+       return getImage(i, Theme.get(isDark), i.getSize());
     }
 
     public BufferedImage getImage(Icon i) {
-        return images.get(i.getId(false));
+        return  getImage(i, false);
+    }
+
+    List<BufferedImage> getImages(Icon i, Theme theme) {
+        return Arrays.stream(i.getIds(theme)).map(images::get).collect(Collectors.toCollection(ArrayList::new));
     }
 
     public List<BufferedImage> getImages(Icon i, boolean isDark) {
-        ArrayList<BufferedImage> icons = new ArrayList<>();
-        for(String id : i.getIds(Theme.get(isDark))) {
-            icons.add(images.get(id));
-        }
-        return icons;
+        return getImages(i, Theme.get(isDark));
     }
 
     public List<BufferedImage> getImages(Icon i) {
         return getImages(i, false);
     }
 
-    public BufferedImage getImage(Icon i, Dimension size, boolean isDark) {
-        return images.get(i.getId(Theme.get(isDark), (int)size.getWidth()));
-    }
-
-    public BufferedImage getImage(Icon i, Dimension size) {
-        return images.get(i.getId(Theme.DARK, (int)size.getWidth()));
-    }
-
-    /**
-     * Returns all IconCache.Icon's possible values
-     *
-     * @return the complete list of IconCache.Icon values
-     */
-    public static Icon[] getTypes() {
-        return Icon.values();
-    }
-
-    /**
-     * Returns a buffered image from the specified imagePath. The image must
-     * reside in the RESOURCES_PATH declared above. Images are assumed to be
-     * bundled into the jar resource.
-     *
-     * @param path The file name of the image to load
-     * @return The BufferedImage representing the data
-     */
-    public static BufferedImage getImageResource(Path path) {
-        try(InputStream is = IconCache.class.getResourceAsStream(path.toString())) {
-            if (is != null) {
-                return ImageIO.read(is);
-            }
-        } catch(IOException e) {
-            log.error("Cannot load {}", path, e);
+    public static IconCache getInstance() {
+        if(instance == null) {
+            instance = new IconCache();
         }
-        return null;
-    }
-
-    public static BufferedImage getImageResourceFromSvg(Integer size, Path path) {
-        URL url = IconCache.class.getResource(path.toString());
-        if (url != null) {
-            SVGLoader loader = new SVGLoader();
-            SVGDocument svgDocument = loader.load(url);
-            if(svgDocument != null) {
-                FloatSize svgSize = svgDocument.size();
-                float w = svgSize.width;
-                float h = svgSize.height;
-
-                // scale proportionally
-                if(size != null) {
-                    w = svgSize.width * (size / h);
-                    h = size;
-                }
-
-                BufferedImage image = new BufferedImage((int)w, (int)h, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g = image.createGraphics();
-                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-
-                double scaleX = w / svgSize.width;
-                double scaleY = h / svgSize.height;
-                g.scale(scaleX, scaleY);
-                svgDocument.render(null, g);
-                g.dispose();
-                return image;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Overwrites the specified IconCache.Icon's underlying ImageIcon and BufferedImage with an opaque version
-     *
-     * @param i       the IconCache.Icon
-     * @param bgColor the java Color used for the transparent pixels
-     */
-    public void setBgColor(Icon i, Color bgColor) {
-        for (String id : i.getIds()) {
-            ImageIcon imageIcon = new ImageIcon(toOpaqueImage(getIcon(id), bgColor));
-            images.put(id, toBufferedImage(imageIcon.getImage(), TRANSPARENT));
-            imageIcons.put(id, imageIcon);
-        }
-    }
-
-    /**
-     * Shrink and center an image the specified percentage
-     */
-    public BufferedImage padImage(BufferedImage image, float percent) {
-        if(image == null) {
-            return null;
-        }
-        int w = image.getWidth();
-        int h = image.getHeight();
-        int wPad = (int)((percent/100.0) * w);
-        int hPad = (int)((percent/100.0) * h);
-
-        BufferedImage padded = new BufferedImage(w + wPad, h + hPad, BufferedImage.TYPE_INT_ARGB);
-        Graphics g = padded.getGraphics();
-
-        g.drawImage(image, wPad/2, hPad/2, null);
-        g.dispose();
-
-        return padded;
-    }
-
-    /**
-     * Creates an opaque icon image by setting transparent pixels to the specified bgColor
-     *
-     * @param icon The original transparency-enabled image
-     * @return The image overlaid on the appropriate background color
-     */
-    public static BufferedImage toOpaqueImage(ImageIcon icon, Color bgColor) {
-        return toBufferedImage(icon.getImage(), bgColor);
-    }
-
-    /**
-     * Converts a given Image into a BufferedImage
-     *
-     * @param img The Image to be converted
-     * @return The converted BufferedImage
-     */
-    public static BufferedImage toBufferedImage(Image img, Color bgColor) {
-        if (img instanceof BufferedImage && bgColor == TRANSPARENT) {
-            return (BufferedImage)img;
-        }
-
-        // Create a buffered image with transparency
-        BufferedImage bi = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
-
-        // Draw the image on to the buffered image
-        Graphics2D bGr = bi.createGraphics();
-        bGr.drawImage(img, 0, 0, bgColor, null);
-        bGr.dispose();
-
-        // Return the buffered image
-        return bi;
-    }
-
-    /**
-     * For rebranded installs, calculates the "BRAND_COLOR" by inspecting the center of the specified <code>IconCache.Icon</code>.
-     * For "QZ" brained installs, returns Constants.BRAND_COLOR
-     * @return String value representing the brand color.
-     */
-    public static String getHtmlColorFromIcon(IconCache.Icon icon, String fallback) {
-        BufferedImage bi = new IconCache().getImage(icon); // FIXME:  Create IconCache instance instead
-        if(bi == null) {
-            return fallback;
-        }
-        int pixel = bi.getRGB(bi.getWidth() / 2, bi.getHeight() / 2);
-        return String.format("#%06X", (0xFFFFFF & pixel));
+        return instance;
     }
 }

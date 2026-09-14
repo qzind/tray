@@ -53,7 +53,7 @@ public enum TrayType {
 
     public void setIcon(IconCache.Icon icon) {
         if (isTray()) {
-            tray.setImage(iconCache.getImage(icon, tray.getSize(), SystemUtilities.isDarkTaskbar(false)));
+            tray.setImage(iconCache.getImage(icon, SystemUtilities.isDarkTaskbar(false)));
         } else {
             taskbar.setIconImages(iconCache.getImages(icon));
         }

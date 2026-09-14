@@ -19,7 +19,6 @@ import qz.utils.ImageUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,41 +42,41 @@ public class IconCache {
      */
     public enum Icon implements Sluggable {
         // System tray
-        DEFAULT_ICON(SYSTEM_TRAY, "qz-default"),
-        WARNING_ICON(SYSTEM_TRAY, "qz-warning"),
-        DANGER_ICON(SYSTEM_TRAY, "qz-danger"),
-        MASK_ICON(SYSTEM_TRAY, "qz-mask"),
+        DEFAULT_ICON(SYSTEM_TRAY, "tray-default", "qz-default"),
+        WARNING_ICON(SYSTEM_TRAY, "tray-warning", "qz-warning"),
+        DANGER_ICON(SYSTEM_TRAY, "tray-danger", "qz-danger"),
+        MASK_ICON(SYSTEM_TRAY, "tray-mask", "qz-mask"),
 
         // Task bar
-        TASK_BAR_ICON(TASK_BAR, "qz-default"),
+        TASK_BAR_ICON(TASK_BAR, "tray-default", "qz-default"),
 
         // Menus, buttons, fields
-        ABOUT_ICON(MENU,"qz-about"),
-        COPY_ICON(MENU,"qz-copy"),
-        DESKTOP_ICON(MENU,"qz-desktop"),
-        EXIT_ICON(MENU,"qz-exit"),
-        FOLDER_ICON(MENU,"qz-folder"),
-        LOG_ICON(MENU,"qz-log"),
-        RELOAD_ICON(MENU,"qz-reload"),
-        SAVED_ICON(MENU,"qz-saved"),
-        SETTINGS_ICON(MENU,"qz-settings"),
+        ABOUT_ICON(MENU,"about"),
+        COPY_ICON(MENU,"copy"),
+        DESKTOP_ICON(MENU,"desktop"),
+        EXIT_ICON(MENU,"exit"),
+        FOLDER_ICON(MENU,"folder"),
+        LOG_ICON(MENU,"log"),
+        RELOAD_ICON(MENU,"reload"),
+        SAVED_ICON(MENU,"saved"),
+        SETTINGS_ICON(MENU,"settings"),
 
-        ALLOW_ICON(MENU,"qz-allow"),
-        BLOCK_ICON(MENU,"qz-block"),
-        CANCEL_ICON(MENU,"qz-cancel"),
+        ALLOW_ICON(MENU,"allow"),
+        BLOCK_ICON(MENU,"block"),
+        CANCEL_ICON(MENU,"cancel"),
 
-        DELETE_ICON(MENU,"qz-delete"),
-        FIELD_ICON(MENU,"qz-field"),
+        DELETE_ICON(MENU,"delete"),
+        FIELD_ICON(MENU,"field"),
 
         // Dialogs
-        TRUST_VERIFIED_ICON(DIALOG, "qz-trust-verified"),
-        TRUST_SPONSORED_ICON(DIALOG,"qz-trust-sponsored"),
-        TRUST_ISSUE_ICON(DIALOG,"qz-trust-issue"),
-        TRUST_MISSING_ICON(DIALOG,"qz-trust-missing"),
-        QUESTION_ICON(DIALOG,"qz-question"),
+        TRUST_VERIFIED_ICON(DIALOG, "trust-verified"),
+        TRUST_SPONSORED_ICON(DIALOG,"trust-sponsored"),
+        TRUST_ISSUE_ICON(DIALOG,"trust-issue"),
+        TRUST_MISSING_ICON(DIALOG,"trust-missing"),
+        QUESTION_ICON(DIALOG,"question"),
 
-        // Banner
-        LOGO_ICON(LOGO, "qz-logo");
+        // Banner logo
+        LOGO_ICON(LOGO, "logo", "qz-logo");
 
         enum Type {
             SYSTEM_TRAY(20, 24, 32, 40, 48),
@@ -94,7 +93,16 @@ public class IconCache {
         }
 
         enum Format implements Sluggable {
-            SVG, PNG; // order matters
+            PNG, SVG; // order sets precedent
+
+            static Format parse(Path path) {
+                for(Format format : Format.values()) {
+                    if(path.toString().endsWith(String.format(".%s", format.slug()))) {
+                        return format;
+                    }
+                }
+                return PNG;
+            }
 
             @Override
             public String slug() {
@@ -103,7 +111,7 @@ public class IconCache {
         }
 
         enum Theme implements Sluggable {
-            LIGHT, DARK; // order matters
+            LIGHT, DARK; // order required for fallback
 
             public static Theme get(boolean isDark) {
                 return isDark ? DARK : LIGHT;
@@ -115,25 +123,26 @@ public class IconCache {
             }
         }
 
-        private final String file;
+        private final String name;
         private final Type type;
         private final Format format;
         private final String slug;
 
-        Icon(Type type, String file) {
-            this.file = file;
+        Icon(Type type, String ... names) {
             this.type = type;
-            this.format = findFormat(file);
+            Path path = findFile(names);
+            this.name = path.getFileName().toString().split("\\.", 2)[0];
+            this.format = Format.parse(path);
             this.slug = Sluggable.slugOf(this).replace("_icon", ""); // TODO: Remove "_ICON" suffix
         }
 
         String getFileName(Theme theme, int size) {
             if(format == Format.PNG && size != type.sizes[0]) {
                 // expect custom sizes to be appended to the filename
-                return String.format(theme == Theme.DARK ? "%s-%s-dark.%s" : "%s-%s.%s", file, size, format.slug());
+                return String.format(theme == Theme.DARK ? "%s-%s-dark.%s" : "%s-%s.%s", name, size, format.slug());
             }
             // one size fits all
-            return  String.format(theme == Theme.DARK ? "%s-dark.%s" : "%s.%s", file, format.slug());
+            return  String.format(theme == Theme.DARK ? "%s-dark.%s" : "%s.%s", name, format.slug());
         }
 
         Path getPath(Theme theme, int size) {
@@ -183,18 +192,23 @@ public class IconCache {
         }
 
         /**
-         * Crawls resource path to predict the format based on a file matching
+         * Crawls resource path to find the first file
          */
-        static Format findFormat(String name) {
+        static Path findFile(String ... names) {
+            ArrayList<String> attempted = new ArrayList<>();
             for(Format format : Format.values()) {
-                Path file = RESOURCES_PATH.resolve(String.format("%s.%s", name, format.slug()));
-                try(InputStream is = IconCache.class.getResourceAsStream(file.toString())) {
-                    if(is != null) {
-                        return format;
+                for(String name : names) {
+                    Path file = RESOURCES_PATH.resolve(String.format("%s.%s", name, format.slug()));
+                    attempted.add(file.toString());
+                    try(InputStream is = IconCache.class.getResourceAsStream(file.toString())) {
+                        if (is != null) {
+                            return file;
+                        }
                     }
-                } catch(IOException ignore) {}
+                    catch(IOException ignore) {}
+                }
             }
-            return Format.PNG;
+            throw new UnsupportedOperationException("Could not find a mandatory resource under any of the following names: '" + String.join("', '", attempted) + "'");
         }
     }
 
@@ -230,6 +244,8 @@ public class IconCache {
                     if (SystemUtilities.isMac() && i.getType() == SYSTEM_TRAY) {
                         image = ImageUtilities.padImage(image, 25);
                     }
+
+                    log.debug("Trying {}", path);
 
                     // Handle dark fallback
                     if(theme == Theme.LIGHT) {

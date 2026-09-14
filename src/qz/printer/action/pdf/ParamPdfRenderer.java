@@ -39,8 +39,8 @@ public class ParamPdfRenderer extends PDFRenderer {
             super(parameters);
 
             // Note:  These must match PdfFontPageDrawer's ignoreTransparency condition
-            addOperator(new OpaqueDrawObject());
-            addOperator(new OpaqueGraphicStateParameters());
+            addOperator(new OpaqueDrawObject(this));
+            addOperator(new OpaqueGraphicStateParameters(this));
         }
     }
 }

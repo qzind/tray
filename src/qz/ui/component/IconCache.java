@@ -19,6 +19,7 @@ import qz.utils.ImageUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -290,6 +291,10 @@ public class IconCache {
 
     BufferedImage getImage(Icon i, Theme theme, int size) {
         return images.get(i.getId(theme, size));
+    }
+
+    public BufferedImage getImage(Icon i, Dimension d, boolean isDark) {
+        return getImage(i, Theme.get(isDark), (int)d.getWidth());
     }
 
     public BufferedImage getImage(Icon i, boolean isDark) {

@@ -245,8 +245,6 @@ public class IconCache {
                         image = ImageUtilities.padImage(image, 25);
                     }
 
-                    log.debug("Trying {}", path);
-
                     // Handle dark fallback
                     if(theme == Theme.LIGHT) {
                         if(image != null) {

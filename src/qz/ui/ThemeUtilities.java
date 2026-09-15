@@ -3,6 +3,9 @@ package qz.ui;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.build.provision.params.Os;
+import qz.common.Constants;
+import qz.ui.component.IconCache;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
@@ -10,6 +13,9 @@ import java.awt.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import static qz.ui.component.IconCache.Icon.*;
+import static qz.utils.SystemUtilities.*;
 
 public class ThemeUtilities {
 
@@ -27,8 +33,8 @@ public class ThemeUtilities {
         private boolean isDarkTaskbar;
 
         public ThemeMonitor() {
-            this.isDarkDesktop = SystemUtilities.isDarkDesktop(false);
-            this.isDarkTaskbar = SystemUtilities.isDarkTaskbar(false);
+            this.isDarkDesktop = isDarkDesktop(false);
+            this.isDarkTaskbar = isDarkTaskbar(false);
         }
 
         public void onChange(Runnable refreshAction) {
@@ -38,8 +44,8 @@ public class ThemeUtilities {
         public ThemeMonitor startPolling(long intervalMs) {
             scheduler.scheduleAtFixedRate(() -> {
                 try {
-                    boolean isDarkDesktop = SystemUtilities.isDarkDesktop(true);
-                    boolean isDarkTaskbar = SystemUtilities.isDarkTaskbar(true);
+                    boolean isDarkDesktop = isDarkDesktop(true);
+                    boolean isDarkTaskbar = isDarkTaskbar(true);
 
                     if(this.isDarkDesktop != isDarkDesktop || this.isDarkTaskbar != isDarkTaskbar) {
                         String desktopMessage = format("Desktop", this.isDarkDesktop, isDarkDesktop);
@@ -103,5 +109,28 @@ public class ThemeUtilities {
             return recurseOrphanedComponents(c.getParent());
         }
         return null;
+    }
+
+    public static IconCache.Icon getTrayIcon(IconCache.Icon requestedIcon) {
+        if(!Constants.MASK_TRAY_SUPPORTED) {
+            return requestedIcon;
+        }
+
+        return switch(getOs()) {
+            case Os.MAC -> getTrayIcon(requestedIcon, true);
+            case Os.WINDOWS -> getTrayIcon(requestedIcon, getOsVersion().majorVersion() >= 10);
+            default -> requestedIcon; // TODO: Revisit after Linux System Tray support is added
+        };
+    }
+
+    private static IconCache.Icon getTrayIcon(IconCache.Icon requestedIcon, boolean maskIconsSupported) {
+        if(!maskIconsSupported) {
+            return requestedIcon;
+        }
+        return switch(requestedIcon) {
+            case DEFAULT_ICON -> DEFAULT_MASK_ICON;
+            case DANGER_ICON -> DANGER_MASK_ICON;
+            default -> requestedIcon;
+        };
     }
 }

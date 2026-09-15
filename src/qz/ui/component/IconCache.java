@@ -43,13 +43,14 @@ public class IconCache {
      */
     public enum Icon implements Sluggable {
         // System tray
-        DEFAULT_ICON(SYSTEM_TRAY, "tray-default", "qz-default"),
-        WARNING_ICON(SYSTEM_TRAY, "tray-warning", "qz-warning"),
-        DANGER_ICON(SYSTEM_TRAY, "tray-danger", "qz-danger"),
-        MASK_ICON(SYSTEM_TRAY, "tray-mask", "qz-mask"),
+        DEFAULT_ICON(SYSTEM_TRAY, "tray-ready", "qz-default"),
+        DANGER_ICON(SYSTEM_TRAY, "tray-loading", "qz-danger"),
+
+        DEFAULT_MASK_ICON(SYSTEM_TRAY, "tray-ready-mask", "qz-mask"),
+        DANGER_MASK_ICON(SYSTEM_TRAY, "tray-loading-mask", "qz-danger"),
 
         // Task bar
-        TASK_BAR_ICON(TASK_BAR, "tray-default", "qz-default"),
+        TASK_BAR_ICON(TASK_BAR, "tray-ready", "qz-default"),
 
         // Menus, buttons, fields
         ABOUT_ICON(MENU,"about"),
@@ -255,7 +256,7 @@ public class IconCache {
                         }
                     } else {
                         if(image == null) {
-                            if(i == Icon.MASK_ICON && lightImage != null) {
+                            if(i.slug().contains("mask") && lightImage != null) {
                                 // Duplicate and invert mask icons
                                 image = ColorUtilities.invert(lightImage);
                             } else {

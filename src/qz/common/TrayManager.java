@@ -549,10 +549,7 @@ public class TrayManager {
      * Thread safe method for setting the default icon
      */
     public void setDefaultIcon() {
-        setIcon(switch(SystemUtilities.getOs()) {
-            case MAC, WINDOWS -> MASK_ICON;
-            default -> DEFAULT_ICON; // TODO: Revisit when Linux Tray icon support is added
-        });
+        setIcon(DEFAULT_ICON);
     }
 
     /** Thread safe method for setting the error status message */
@@ -568,11 +565,6 @@ public class TrayManager {
     /** Thread safe method for setting the warning status message */
     public void displayWarningMessage(String text) {
         displayMessage(name, text, TrayIcon.MessageType.WARNING);
-    }
-
-    /** Thread safe method for setting the warning icon */
-    public void setWarningIcon() {
-        setIcon(WARNING_ICON);
     }
 
     /** Thread safe method for setting the specified icon */

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg id="svg4208" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" height="128" width="128" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="0 0 128.00001 128.00001">
+ <metadata id="metadata4213">
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <g id="layer1" transform="translate(-125.25 -253.66)">
+  <path id="XMLID_48_" d="m253.07 310.83v2.3662l-0.78875 3.9437-5.5211 32.338-65.465 30.761v-41.014c0-5.5212-2.3662-11.042-5.5212-14.197l-0.78873-0.78874-49.69-46.535 73.352-22.085 48.113 40.226 0.78875 0.78875c3.1549 3.1549 5.5211 7.8874 5.5211 14.197z" fill="#44aa53"/>
+  <path id="rect3864" d="m172.93 304.22 46.535-15.775 11.042 8.6761-46.535 17.352-11.042-10.254z" fill="#2a6831"/>
+  <path id="path3860" d="m161.58 270.6" fill="none"/>
+  <path id="XMLID_47_" d="m182.08 308.46 37.071-13.408s0-22.085-22.085-34.704l-36.282 11.042c0.78873 0 22.873 14.197 21.296 37.071z" fill="#fff"/>
+  <path id="XMLID_45_" d="m156.84 339.22" fill="#597239"/>
+  <path id="XMLID_37_" d="m181.29 338.92v41.32l-43.977-34.169-11.994-68.337 50.373 46.882 0.79958 0.79461c2.3987 2.3839 4.7974 7.9462 4.7974 13.508z" fill="#2a6831"/>
+  <path id="XMLID_35_" d="m181.29 380.24z" fill="#597239"/>
+  <polygon id="XMLID_5_" points="425.9 74 425.9 74" fill="#597239" transform="matrix(7.8874 0 0 7.8874 -3177.9 -203.43)"/>
+ </g>
+</svg>

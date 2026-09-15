@@ -11,7 +11,7 @@ LOG_FILE_LINK="${install.log}"
 
 # Attempt to symlink our log into /tmp so it's easier to find
 rm -f "$LOG_FILE_LINK"
-ln -s "$LOG_FILE" "$LOG_FILE_LINK" || true
+ln -sf "$LOG_FILE" "$LOG_FILE_LINK" || true
 
 # Log helper
 dbg () {

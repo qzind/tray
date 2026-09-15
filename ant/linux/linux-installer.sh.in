@@ -2,7 +2,6 @@
 
 # Halt on first error
 set -e
-set -o noclobber
 
 TARGET_DIR="/opt/"
 LOG_FILE="${install.log}"

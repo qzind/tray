@@ -3,6 +3,12 @@
 # Halt on first error
 set -e
 
+# Prevent tampering
+if [ -L "${install.log}" ]; then
+    echo "ERROR: '$log_file' file appears tampered, aborting."
+    exit 1
+fi
+
 # Clear the log for writing
 > "${install.log}"
 

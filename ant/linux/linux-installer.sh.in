@@ -6,6 +6,12 @@ set -e
 TARGET_DIR="/opt/"
 LOG_FILE="${install.log}"
 
+# Prevent tampering
+if [ -L "${install.log}" ]; then
+    echo "ERROR: '$log_file' file appears tampered, aborting."
+    exit 1
+fi
+
 if [ "$(id -u)" != "0" ]; then
     if [ "$1" == "--user" ]; then
         TARGET_DIR="$HOME/.local/opt/"

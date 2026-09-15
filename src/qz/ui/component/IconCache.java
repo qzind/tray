@@ -318,7 +318,7 @@ public class IconCache {
         return getImages(i, false);
     }
 
-    public static IconCache getInstance() {
+    public synchronized static IconCache getInstance() {
         if(instance == null) {
             instance = new IconCache();
         }

@@ -56,8 +56,8 @@
             <artifact name="libusb4java" type="jar" m:classifier="windows-x86"/>
         </dependency>
         <dependency name="libusb4java" org="${libusb4java-arm64.org}" rev="${libusb4java-arm64.rev}">
-            <artifact name="libusb4java" type="jar" m:classifier="darwin-aarch64"/>
-            <artifact name="libusb4java" type="jar" m:classifier="win-aarch64"/>
+            <artifact name="libusb4java" type="jar" m:classifier="darwin-aarch64-static"/>
+            <artifact name="libusb4java" type="jar" m:classifier="win-aarch64-static"/>
         </dependency>
 
         <dependency name="purejavahidapi" org="purejavahidapi.org" conf="*->default" rev="${purejavahidapi.rev}">

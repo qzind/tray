@@ -24,6 +24,7 @@ public class StringUtilities {
             if (SystemUtilities.isWindows()) {
                 Charset legacyCharset =  WindowsUtilities.LEGACY_CHARSET;
                 log.info("Selecting legacy charset '{}'", legacyCharset);
+                return legacyCharset;
             }
             Charset defaultCharset = Charset.defaultCharset();
             log.warn("Legacy charset is only available on Windows, using default charset '{}' instead", defaultCharset);

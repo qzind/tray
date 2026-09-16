@@ -763,7 +763,7 @@ public class WindowsUtilities {
         return false;
     }
 
-    public static Charset getCharsetFromCodePage(int codePage) {
+    static Charset getCharsetFromCodePage(int codePage) {
         // First try a quick look-up
         Charset charset = getCharsetFromMap(codePage);
         if(charset != null) {

@@ -1030,6 +1030,11 @@ var qz = (function() {
                         delete config.spool;
                     }
                 }
+                if(_qz.tools.versionCompare(2, 3, 0, 4) < 0) {
+                    if(config.encoding === 'legacy') {
+                        config.encoding = null;
+                    }
+                }
                 return config;
             },
 

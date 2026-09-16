@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import qz.common.Sluggable;
 import qz.utils.LoggerUtilities;
 import qz.utils.PrintingUtilities;
+import qz.utils.StringUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.print.attribute.ResolutionSyntax;
@@ -57,14 +58,14 @@ public class PrintOptions {
             if (encodings != null) {
                 // encoding may be a string or obj. Since optJSONObject didn't return null, it is an object
                 if (encodings.has("from")) {
-                    rawOptions.srcEncoding = Charset.forName(encodings.optString("from", Charset.defaultCharset().name()));
+                    rawOptions.srcEncoding = StringUtilities.getCharset(encodings.optString("from", Charset.defaultCharset().name()));
                 }
-                rawOptions.destEncoding = Charset.forName(encodings.optString("to", Charset.defaultCharset().name()));
+                rawOptions.destEncoding = StringUtilities.getCharset(encodings.optString("to", Charset.defaultCharset().name()));
             } else {
                 // String form, that means it is destination-encoded only
                 String encoding = configOpts.optString("encoding", Charset.defaultCharset().name());
                 if(!encoding.isBlank()) {
-                    rawOptions.destEncoding = Charset.forName(encoding);
+                    rawOptions.destEncoding = StringUtilities.getCharset(encoding);
                 }
             }
         }

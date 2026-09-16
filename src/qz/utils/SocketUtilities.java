@@ -34,16 +34,7 @@ public class SocketUtilities {
             JSONObject options = params.getJSONObject("options");
 
             if (!options.isNull("encoding")) {
-                String encodingName = options.getString("encoding");
-                if("legacy".equalsIgnoreCase(encodingName)) {
-                    if (SystemUtilities.isWindows()) {
-                        encoding = WindowsUtilities.LEGACY_CHARSET;
-                    } else {
-                        log.warn("Legacy encoding is only supported on Windows");
-                    }
-                } else {
-                    encoding = Charset.forName(encodingName);
-                }
+                encoding = StringUtilities.getCharset(options.getString("encoding"));
             }
         }
 

@@ -19,12 +19,7 @@ public class IconCacheTests {
     }
 
     @Test
-    public void testCacheBuilds() {
-        Assert.assertNotNull(iconCache);
-    }
-
-    @Test
-    public void testRepresentativeResourcesLoad() {
+    public void testResourcesLoad() {
         Assert.assertNotNull(iconCache.getImage(LOGO_ICON), "Logo icon should load");
         Assert.assertNotNull(iconCache.getImage(DEFAULT_ICON), "Tray icon should load");
         Assert.assertNotNull(iconCache.getImage(DEFAULT_MASK_ICON), "Tray mask icon should load");
@@ -33,7 +28,7 @@ public class IconCacheTests {
     }
 
     @Test
-    public void testRepresentativeImageSizes() {
+    public void testImageSizes() {
         assertSize(iconCache.getImage(LOGO_ICON), 260, 260, "Logo icon");
         assertSize(iconCache.getImage(ABOUT_ICON), 16, 16, "Menu icon");
         assertSize(iconCache.getImage(TRUST_VERIFIED_ICON), 45, 45, "Dialog icon");
@@ -49,7 +44,7 @@ public class IconCacheTests {
     }
 
     @Test
-    public void testDarkLogoLoadsDistinctResource() {
+    public void testDarkLogo() {
         BufferedImage lightLogo = iconCache.getImage(LOGO_ICON, false);
         BufferedImage darkLogo = iconCache.getImage(LOGO_ICON, true);
 
@@ -59,7 +54,7 @@ public class IconCacheTests {
     }
 
     @Test
-    public void testDarkFallbacksLoad() {
+    public void testDarkFallbacks() {
         BufferedImage lightMenuIcon = iconCache.getImage(ABOUT_ICON, false);
         BufferedImage darkMenuIcon = iconCache.getImage(ABOUT_ICON, true);
         BufferedImage lightMaskIcon = iconCache.getImage(DEFAULT_MASK_ICON, false);

@@ -12,7 +12,7 @@ import static qz.ui.component.IconCache.Icon.LOGO_ICON;
 
 public class ImageUtilitiesTests {
     @Test
-    public void testImageFromSvgResourceScalesToRequestedHeight() {
+    public void testSvgRasterSize() {
         BufferedImage image = ImageUtilities.imageFromSvgResource(
                 Paths.get("../resources/logo.svg"),
                 260,
@@ -25,7 +25,7 @@ public class ImageUtilitiesTests {
     }
 
     @Test
-    public void testImageToBase64PngOutput() {
+    public void testBase64PngOutput() {
         String base64 = ImageUtilities.imageToBase64(LOGO_ICON, "png");
         byte[] png = Base64.getDecoder().decode(base64);
 

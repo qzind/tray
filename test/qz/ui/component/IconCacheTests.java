@@ -3,6 +3,7 @@ package qz.ui.component;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import qz.utils.SystemUtilities;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -32,7 +33,9 @@ public class IconCacheTests {
         assertSize(iconCache.getImage(LOGO_ICON), 260, 260, "Logo icon");
         assertSize(iconCache.getImage(ABOUT_ICON), 16, 16, "Menu icon");
         assertSize(iconCache.getImage(TRUST_VERIFIED_ICON), 45, 45, "Dialog icon");
-        assertSize(iconCache.getImage(DEFAULT_ICON, new Dimension(20, 20), false), 20, 20, "Tray icon");
+
+        int trayIconSize = SystemUtilities.isMac() ? 25 : 20;
+        assertSize(iconCache.getImage(DEFAULT_ICON, new Dimension(20, 20), false), trayIconSize, trayIconSize, "Tray icon");
 
         List<BufferedImage> taskbarImages = iconCache.getImages(TASK_BAR_ICON);
         Assert.assertEquals(taskbarImages.size(), 5, "Taskbar icon size count");

@@ -769,8 +769,8 @@ public class WindowsUtilities {
             return StandardCharsets.UTF_8;  // should never get here
         }
 
-        // Lookup based on cpxxxx, windows-xxxx, ibmxxx format
-        for(String pattern : new String[] { "cp%s", "windows-%s", "ibm%s" }) {
+        // Lookup based on windows-xxxx, msxxxx, cpxxxx, ibmxxx format
+        for(String pattern : new String[] { "windows-%s", "ms%s", "cp%s", "ibm%s" }) {
             try {
                 return Charset.forName(String.format(pattern, codePage));
             } catch(IllegalCharsetNameException | UnsupportedCharsetException ignore) {}

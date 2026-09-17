@@ -33,10 +33,9 @@ import static qz.ui.component.IconCache.Icon.Type.*;
 
 public class IconCache {
     private static final Logger log = LogManager.getLogger(IconCache.class);
-
-    private static final Path RESOURCES_PATH = Paths.get("../resources");
-
     private static IconCache instance;
+
+    static Path RESOURCES_PATH = Paths.get("../resources");
 
     /**
      * Enum for building and tracking icon keys for PNG (pre-rasterized) or SVG (runtime rasterized) images

@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -764,38 +765,21 @@ public class WindowsUtilities {
     }
 
     static Charset getCharsetFromCodePage(int codePage) {
-        // First try a quick look-up
-        Charset charset = getCharsetFromMap(codePage);
-        if(charset != null) {
-            return charset;
+        if(codePage == 65001) {
+            return StandardCharsets.UTF_8;  // should never get here
         }
 
-        // Next lookup based on cpxxxx, windows-xxxx format
-        for(String pattern : new String[] { "cp%s", "windows-%s" }) {
+        // Lookup based on cpxxxx, windows-xxxx, ibmxxx format
+        for(String pattern : new String[] { "cp%s", "windows-%s", "ibm%s" }) {
             try {
                 return Charset.forName(String.format(pattern, codePage));
-            } catch(IllegalCharsetNameException | UnsupportedCharsetException ignore) {
-
-            }
+            } catch(IllegalCharsetNameException | UnsupportedCharsetException ignore) {}
         }
 
         // Fallback with warning
         Charset fallback = Charset.defaultCharset();
         log.warn("Could not determine legacy charset from '{}', will fallback to '{}'",  codePage, fallback);
         return fallback;
-    }
-
-    public static Charset getCharsetFromMap(int codePage) {
-        try {
-            return switch(codePage) {
-                case 932 -> Charset.forName("MS932");  // Japanese Shift-JIS
-                case 936 -> Charset.forName("GBK");    // Simplified Chinese
-                case 949 -> Charset.forName("MS949");  // Korean
-                case 950 -> Charset.forName("Big5");   // Traditional Chinese
-                default -> null;
-            };
-        }  catch(IllegalCharsetNameException | UnsupportedCharsetException ignore) {}
-        return null;
     }
 
     static int getSystemAnsiCodePage() {

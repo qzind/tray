@@ -1031,7 +1031,7 @@ var qz = (function() {
                     }
                 }
                 if(_qz.tools.versionCompare(2, 3, 0, 4) < 0) {
-                    if(config.encoding === 'legacy') {
+                    if(config.encoding && config.encoding.toUpperCase() === 'LEGACY') {
                         config.encoding = null;
                     }
                 }

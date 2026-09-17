@@ -48,6 +48,16 @@ public class IconCacheTests {
         assertSize(taskbarImages.get(4), 48, 48, "Taskbar icon 48");
     }
 
+    @Test
+    public void testDarkLogoLoadsDistinctResource() {
+        BufferedImage lightLogo = iconCache.getImage(LOGO_ICON, false);
+        BufferedImage darkLogo = iconCache.getImage(LOGO_ICON, true);
+
+        Assert.assertNotNull(lightLogo, "Light logo should load");
+        Assert.assertNotNull(darkLogo, "Dark logo should load");
+        Assert.assertNotSame(darkLogo, lightLogo, "Dark logo should use its own cached image");
+    }
+
     private static void assertSize(BufferedImage image, int width, int height, String message) {
         Assert.assertNotNull(image, message + " should load");
         Assert.assertEquals(image.getWidth(), width, message + " width");

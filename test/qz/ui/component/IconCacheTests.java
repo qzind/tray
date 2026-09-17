@@ -58,6 +58,19 @@ public class IconCacheTests {
         Assert.assertNotSame(darkLogo, lightLogo, "Dark logo should use its own cached image");
     }
 
+    @Test
+    public void testDarkFallbacksLoad() {
+        BufferedImage lightMenuIcon = iconCache.getImage(ABOUT_ICON, false);
+        BufferedImage darkMenuIcon = iconCache.getImage(ABOUT_ICON, true);
+        BufferedImage lightMaskIcon = iconCache.getImage(DEFAULT_MASK_ICON, false);
+        BufferedImage darkMaskIcon = iconCache.getImage(DEFAULT_MASK_ICON, true);
+
+        Assert.assertNotNull(darkMenuIcon, "Dark menu fallback should load");
+        Assert.assertSame(darkMenuIcon, lightMenuIcon, "Menu icon should fall back to light image");
+        Assert.assertNotNull(darkMaskIcon, "Dark mask fallback should load");
+        Assert.assertNotSame(darkMaskIcon, lightMaskIcon, "Mask icon should use an inverted fallback");
+    }
+
     private static void assertSize(BufferedImage image, int width, int height, String message) {
         Assert.assertNotNull(image, message + " should load");
         Assert.assertEquals(image.getWidth(), width, message + " width");

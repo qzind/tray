@@ -38,8 +38,8 @@ public class WindowsUtilitiesTests {
 
         // Ensure no fallback for good charsets
         Assert.assertEquals(getCharsetFromCodePage(932), Charset.forName("windows-932")); // Windows Japanese
-        Assert.assertNotEquals(getCharsetFromCodePage(950), Charset.forName("windows-950")); // Windows Traditional Chinese
-        Assert.assertNotEquals(getCharsetFromCodePage(1252), Charset.forName("cp1252")); // Windows Latin-1
-        Assert.assertNotEquals(getCharsetFromCodePage(1253), Charset.forName("cp1253")); // Windows Greek
+        Assert.assertEquals(getCharsetFromCodePage(950), Charset.forName("windows-950")); // Windows Traditional Chinese
+        Assert.assertEquals(getCharsetFromCodePage(1252), Charset.forName("cp1252")); // Windows Latin-1
+        Assert.assertEquals(getCharsetFromCodePage(1253), Charset.forName("cp1253")); // Windows Greek
     }
 }

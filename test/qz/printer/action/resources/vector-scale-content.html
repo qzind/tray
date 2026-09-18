@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Vector scaleContent proof</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 1000px;
+        height: 700px;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="1000" height="700" viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="1000" height="700" fill="white"/>
+      <rect x="0" y="0" width="1000" height="40" fill="red"/>
+      <rect x="0" y="660" width="1000" height="40" fill="blue"/>
+      <rect x="0" y="0" width="40" height="700" fill="lime"/>
+      <rect x="960" y="0" width="40" height="700" fill="black"/>
+      <circle cx="500" cy="350" r="115" fill="purple"/>
+      <text x="500" y="368" text-anchor="middle" font-family="Arial, sans-serif" font-size="70" fill="white">SCALE</text>
+    </svg>
+  </body>
+</html>

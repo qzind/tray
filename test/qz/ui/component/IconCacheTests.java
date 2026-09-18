@@ -36,8 +36,6 @@ public class IconCacheTests {
         // Ensure we actually loaded two different images
         BufferedImage svgImage = svgCache.getImage(DEFAULT_ICON);
         BufferedImage pngImage = mixedCache.getImage(DEFAULT_ICON);
-        JOptionPane.showMessageDialog(null, new ImageIcon(svgImage), "SVG Image", JOptionPane.INFORMATION_MESSAGE);
-        JOptionPane.showMessageDialog(null, new ImageIcon(svgImage), "PNG Image", JOptionPane.INFORMATION_MESSAGE);
         Assert.assertFalse(compareImages(svgImage, pngImage));
     }
 
@@ -52,6 +50,7 @@ public class IconCacheTests {
                              icon, icon.getId(theme, size), expectedSize,
                              imageIcon.getIconWidth(), imageIcon.getIconHeight());
 
+                    // FIXME:  Why are PNGs failing @ 125% ?
                     Assert.assertEquals(imageIcon.getIconHeight(), expectedSize);
                 }
             }

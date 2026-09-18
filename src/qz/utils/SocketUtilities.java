@@ -34,7 +34,7 @@ public class SocketUtilities {
             JSONObject options = params.getJSONObject("options");
 
             if (!options.isNull("encoding")) {
-                encoding = Charset.forName(options.getString("encoding"));
+                encoding = StringUtilities.getCharset(options.getString("encoding"));
             }
         }
 

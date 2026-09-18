@@ -10,11 +10,13 @@
 
 package qz.ui.component;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Sluggable;
 import qz.ui.component.IconCache.Icon.Theme;
 import qz.utils.ColorUtilities;
+import qz.utils.FileUtilities;
 import qz.utils.ImageUtilities;
 import qz.utils.SystemUtilities;
 
@@ -34,8 +36,7 @@ import static qz.ui.component.IconCache.Icon.Type.*;
 public class IconCache {
     private static final Logger log = LogManager.getLogger(IconCache.class);
     private static IconCache instance;
-
-    static Path RESOURCES_PATH = Paths.get("../resources");
+    private final Path resourcesPath;
 
     /**
      * Enum for building and tracking icon keys for PNG (pre-rasterized) or SVG (runtime rasterized) images
@@ -124,30 +125,14 @@ public class IconCache {
             }
         }
 
-        private final String name;
         private final Type type;
-        private final Format format;
         private final String slug;
+        private final String[] names;
 
         Icon(Type type, String ... names) {
             this.type = type;
-            Path path = findFile(names);
-            this.name = path.getFileName().toString().split("\\.", 2)[0];
-            this.format = Format.parse(path);
+            this.names = names;
             this.slug = Sluggable.slugOf(this).replace("_icon", ""); // TODO: Remove "_ICON" suffix
-        }
-
-        String getFileName(Theme theme, int size) {
-            if(format == Format.PNG && size != type.sizes[0]) {
-                // expect custom sizes to be appended to the filename
-                return String.format(theme == Theme.DARK ? "%s-%s-dark.%s" : "%s-%s.%s", name, size, format.slug());
-            }
-            // one size fits all
-            return  String.format(theme == Theme.DARK ? "%s-dark.%s" : "%s.%s", name, format.slug());
-        }
-
-        Path getPath(Theme theme, int size) {
-            return RESOURCES_PATH.resolve(getFileName(theme, size));
         }
 
         @Override
@@ -171,10 +156,6 @@ public class IconCache {
             return String.format("%s-%s-%s", slug, theme.slug(), size);
         }
 
-        Format getFormat() {
-            return format;
-        }
-
         Type getType() {
             return type;
         }
@@ -191,26 +172,6 @@ public class IconCache {
         public String slug() {
             return slug;
         }
-
-        /**
-         * Crawls resource path to find the first file
-         */
-        static Path findFile(String ... names) {
-            ArrayList<String> attempted = new ArrayList<>();
-            for(Format format : Format.values()) {
-                for(String name : names) {
-                    Path file = RESOURCES_PATH.resolve(String.format("%s.%s", name, format.slug()));
-                    attempted.add(file.toString());
-                    try(InputStream is = IconCache.class.getResourceAsStream(file.toString())) {
-                        if (is != null) {
-                            return file;
-                        }
-                    }
-                    catch(IOException ignore) {}
-                }
-            }
-            throw new UnsupportedOperationException("Could not find a mandatory resource under any of the following names: '" + String.join("', '", attempted) + "'");
-        }
     }
 
     private final Map<String,BufferedImage> images;
@@ -219,14 +180,19 @@ public class IconCache {
     /**
      * Builds a cache of Image and ImageIcon resources by iterating through all IconCache.Icon types
      */
-    public IconCache() {
-        images = buildImageCache();
-        imageIcons = images.entrySet().stream().collect(
+    public IconCache(Path resourcesPath) {
+        this.resourcesPath = resourcesPath;
+        this.images = buildImageCache();
+        this.imageIcons = this.images.entrySet().stream().collect(
                 Collectors.toMap(
                     Map.Entry::getKey,
                     entry -> new ImageIcon(entry.getValue())
                 )
         );
+    }
+
+    public IconCache() {
+        this(Paths.get("../resources"));
     }
 
     Map<String, BufferedImage> buildImageCache() {
@@ -235,10 +201,22 @@ public class IconCache {
             for(int size : i.getSizes()) {
                 BufferedImage lightImage = null;
                 for(Theme theme : Theme.values()) {
-                    Path path = i.getPath(theme, size);
-                    BufferedImage image = switch(i.getFormat()) {
-                        case PNG -> ImageUtilities.imageFromResource(path, this);
-                        case SVG -> ImageUtilities.imageFromSvgResource(path, size, this);
+                    Path found = findFile(i.names);
+                    Icon.Format format = Icon.Format.parse(found);
+
+                    String baseName = FilenameUtils.getBaseName(found.getFileName().toString());
+                    String quantifiedName;
+                    if(format == Icon.Format.PNG && size != i.getSizes()[0]) {
+                        // expect custom sizes to be appended to the filename
+                        quantifiedName = String.format(theme == Theme.DARK ? "%s-%s-dark.%s" : "%s-%s.%s", baseName, size, format.slug());
+                    } else {
+                        // one size fits all
+                        quantifiedName = String.format(theme == Theme.DARK? "%s-dark.%s":"%s.%s", baseName, format.slug());
+                    }
+                    Path path = resourcesPath.resolve(quantifiedName);
+                    BufferedImage image = switch(format) {
+                        case PNG -> ImageUtilities.imageFromResource(path, getClass());
+                        case SVG -> ImageUtilities.imageFromSvgResource(path, size, getClass());
                     };
 
                     // Handle undocumented macOS Sytem Tray padding
@@ -251,7 +229,7 @@ public class IconCache {
                         if(image != null) {
                             lightImage = image;
                         } else {
-                            log.warn("No image found at {}", path);
+                            log.warn("No image found in {} for {} {}", resourcesPath, Arrays.toString(i.names), Arrays.toString(Icon.Format.values()));
                         }
                     } else {
                         if(image == null) {
@@ -268,6 +246,26 @@ public class IconCache {
             }
         }
         return images;
+    }
+
+    /**
+     * Crawls resource path to find the first file
+     */
+    Path findFile(String ... names) {
+        ArrayList<String> attempted = new ArrayList<>();
+        for(Icon.Format format : Icon.Format.values()) {
+            for(String name : names) {
+                Path file = resourcesPath.resolve(String.format("%s.%s", name, format.slug()));
+                attempted.add(file.toString());
+                try(InputStream is = getClass().getResourceAsStream(file.toString())) {
+                    if (is != null) {
+                        return file;
+                    }
+                }
+                catch(IOException ignore) {}
+            }
+        }
+        throw new UnsupportedOperationException("Could not find a mandatory resource under any of the following names: '" + String.join("', '", attempted) + "'");
     }
 
     /**

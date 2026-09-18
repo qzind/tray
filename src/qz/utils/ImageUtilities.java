@@ -20,7 +20,7 @@ public class ImageUtilities {
     private static final Logger log = LogManager.getLogger(ImageUtilities.class);
 
     /**
-     * Shrink and center an image the specified percentage
+     * Center an image with the specified padding
      */
     public static BufferedImage padImage(BufferedImage image, float percent) {
         if(image == null) {
@@ -60,8 +60,8 @@ public class ImageUtilities {
      * @param path The file path of the image to load
      * @return The BufferedImage representing the data
      */
-    public static BufferedImage imageFromResource(Path path, Object relativeClass) {
-        try(InputStream is = relativeClass.getClass().getResourceAsStream(path.toString())) {
+    public static BufferedImage imageFromResource(Path path, Class<?> relativeClass) {
+        try(InputStream is = relativeClass.getResourceAsStream(path.toString())) {
             if (is != null) {
                 return ImageIO.read(is);
             }
@@ -80,8 +80,8 @@ public class ImageUtilities {
      * @param relativeClass Class used for looking up relative resources
      * @return The BufferedImage representing the data
      */
-    public static BufferedImage imageFromSvgResource(Path path, Integer size, Object relativeClass) {
-        URL url = relativeClass.getClass().getResource(path.toString());
+    public static BufferedImage imageFromSvgResource(Path path, Integer size, Class<?> relativeClass) {
+        URL url = relativeClass.getResource(path.toString());
         if (url != null) {
             SVGLoader loader = new SVGLoader();
             SVGDocument svgDocument = loader.load(url);

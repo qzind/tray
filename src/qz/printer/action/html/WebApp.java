@@ -273,10 +273,14 @@ public class WebApp extends Application {
         load(model, (int frames) -> {
             if(frames >= VECTOR_FRAMES) {
                 Platform.runLater(() -> {
-                    Exception possiblyThrown = null;
+                    Throwable possiblyThrown = null;
                     try {
+                        log.debug("Printing HTML through JavaFX WebEngine");
                         webView.getEngine().print(job);
-                    } catch(Exception e) {
+                        if (job.getJobStatus() == PrinterJob.JobStatus.ERROR) {
+                            possiblyThrown = new IOException("JavaFX WebEngine print failed");
+                        }
+                    } catch(Throwable e) {
                         possiblyThrown = e;
                     }
                     unlatch(possiblyThrown);

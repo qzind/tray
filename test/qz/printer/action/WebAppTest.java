@@ -29,6 +29,7 @@ public class WebAppTest {
     private static final String RASTER_OUTPUT_FORMAT = "png";
     private static final String VECTOR_BASIC_COLOR_FIXTURE = "resources/vector-basic-color.html";
     private static final String VECTOR_PAGE_SETUP_FIXTURE = "resources/vector-page-setup.html";
+    private static final String VECTOR_PAGE_BREAK_FIXTURE = "resources/vector-page-break.html";
     private static final String PRINT_MEDIA_FIXTURE = "resources/print-media-blue-green.html";
 
     public static void main(String[] args) {
@@ -67,6 +68,8 @@ public class WebAppTest {
                 log.error("Failed basic vector color proof");
             } else if (!testVectorPageSetup()) {
                 log.error("Failed vector page setup proof");
+            } else if (!testVectorPageBreak()) {
+                log.error("Failed vector page-break proof");
             } else if (!testVectorPrintMedia()) {
                 log.error("Failed vector print media proof");
             } else {
@@ -253,6 +256,28 @@ public class WebAppTest {
             log.info("Vector page setup proof completed. Render the generated PDF and expect landscape output with margins.");
         } else {
             log.error("Vector page setup proof failed with status {}", job.getJobStatus());
+        }
+        return passed;
+    }
+
+    public static boolean testVectorPageBreak() throws Throwable {
+        PrinterJob job = buildVectorJob("issue-55-page-break");
+        WebAppModel model = new WebAppModel(loadFixture(VECTOR_PAGE_BREAK_FIXTURE), true, 500, 500, false, 1);
+
+        WebApp.print(job, model);
+        boolean ended = job.endJob();
+
+        try {
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
+            Thread.sleep(SPOOLER_WAIT);
+        }
+        catch(InterruptedException ignore) {}
+
+        boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
+        if (passed) {
+            log.info("Vector page-break proof completed. Render the generated PDF and expect red then blue pages.");
+        } else {
+            log.error("Vector page-break proof failed with status {}", job.getJobStatus());
         }
         return passed;
     }

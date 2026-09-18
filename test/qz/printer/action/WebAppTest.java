@@ -25,6 +25,7 @@ public class WebAppTest {
     private static final int SPOOLER_WAIT = 2000; // millis
     private static final Path RASTER_OUTPUT_DIR = Paths.get("./out"); // see ant ${out.dir}
     private static final String RASTER_OUTPUT_FORMAT = "png";
+    private static final String VECTOR_BASIC_COLOR_FIXTURE = "resources/vector-basic-color.html";
     private static final String PRINT_MEDIA_FIXTURE = "resources/print-media-blue-green.html";
 
     public static void main(String[] args) {
@@ -59,6 +60,8 @@ public class WebAppTest {
                 log.error("Failed vector prints with defined heights");
             } else if (!testVectorFittedPrints(vectorFittedHeightPrints)) {
                 log.error("Failed vector prints with fit to height sizing");
+            } else if (!testVectorBasicColor()) {
+                log.error("Failed basic vector color proof");
             } else if (!testVectorPrintMedia()) {
                 log.error("Failed vector print media proof");
             } else {
@@ -205,9 +208,31 @@ public class WebAppTest {
         return job.getJobStatus() != PrinterJob.JobStatus.ERROR;
     }
 
+    public static boolean testVectorBasicColor() throws Throwable {
+        PrinterJob job = buildVectorJob("issue-55-basic-vector-color");
+        WebAppModel model = new WebAppModel(loadFixture(VECTOR_BASIC_COLOR_FIXTURE), true, 500, 500, false, 1);
+
+        WebApp.print(job, model);
+        boolean ended = job.endJob();
+
+        try {
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
+            Thread.sleep(SPOOLER_WAIT);
+        }
+        catch(InterruptedException ignore) {}
+
+        boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
+        if (passed) {
+            log.info("Basic vector color proof completed. Render the generated PDF and expect colored blocks.");
+        } else {
+            log.error("Basic vector color proof failed with status {}", job.getJobStatus());
+        }
+        return passed;
+    }
+
     public static boolean testVectorPrintMedia() throws Throwable {
         PrinterJob job = buildVectorJob("issue-55-print-media-vector");
-        WebAppModel model = new WebAppModel(loadPrintMediaFixture(), true, 500, 500, false, 1);
+        WebAppModel model = new WebAppModel(loadFixture(PRINT_MEDIA_FIXTURE), true, 500, 500, false, 1);
 
         WebApp.print(job, model);
         boolean ended = job.endJob();
@@ -281,10 +306,10 @@ public class WebAppTest {
         return job;
     }
 
-    private static String loadPrintMediaFixture() throws IOException {
-        try(InputStream is = WebAppTest.class.getResourceAsStream(PRINT_MEDIA_FIXTURE)) {
+    private static String loadFixture(String fixture) throws IOException {
+        try(InputStream is = WebAppTest.class.getResourceAsStream(fixture)) {
             if (is == null) {
-                throw new IOException("Missing print media fixture: " + PRINT_MEDIA_FIXTURE);
+                throw new IOException("Missing fixture: " + fixture);
             }
             return new String(is.readAllBytes(), StandardCharsets.UTF_8);
         }

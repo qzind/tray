@@ -12,14 +12,9 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.SwingFXUtils;
-import javafx.print.PageLayout;
 import javafx.print.PrinterJob;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.transform.Scale;
-import javafx.scene.transform.Transform;
-import javafx.scene.transform.Translate;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
@@ -277,62 +272,15 @@ public class WebApp extends Application {
 
         load(model, (int frames) -> {
             if(frames >= VECTOR_FRAMES) {
-                try {
-                    double printScale = 72d / 96d;
-                    webView.getTransforms().add(new Scale(printScale, printScale));
-
-                    PageLayout layout = job.getJobSettings().getPageLayout();
-                    if (model.isScaled()) {
-                        double viewWidth = webView.getWidth() * printScale;
-                        double viewHeight = webView.getHeight() * printScale;
-
-                        double scale;
-                        if ((viewWidth / viewHeight) >= (layout.getPrintableWidth() / layout.getPrintableHeight())) {
-                            scale = (layout.getPrintableWidth() / viewWidth);
-                        } else {
-                            scale = (layout.getPrintableHeight() / viewHeight);
-                        }
-                        webView.getTransforms().add(new Scale(scale, scale));
+                Platform.runLater(() -> {
+                    Exception possiblyThrown = null;
+                    try {
+                        webView.getEngine().print(job);
+                    } catch(Exception e) {
+                        possiblyThrown = e;
                     }
-
-                    Platform.runLater(() -> {
-                        Exception possiblyThrown = null;
-                        double useScale = 1;
-                        for(Transform t : webView.getTransforms()) {
-                            if (t instanceof Scale) { useScale *= ((Scale)t).getX(); }
-                        }
-
-                        PageLayout page = job.getJobSettings().getPageLayout();
-                        Rectangle printBounds = new Rectangle(0, 0, page.getPrintableWidth(), page.getPrintableHeight());
-                        log.debug("Paper area: {},{}:{},{}", (int)page.getLeftMargin(), (int)page.getTopMargin(),
-                                  (int)page.getPrintableWidth(), (int)page.getPrintableHeight());
-
-                        Translate activePage = new Translate();
-                        webView.getTransforms().add(activePage);
-
-                        int columnsNeed = Math.max(1, (int)Math.ceil(webView.getWidth() / printBounds.getWidth() * useScale - 0.1));
-                        int rowsNeed = Math.max(1, (int)Math.ceil(webView.getHeight() / printBounds.getHeight() * useScale - 0.1));
-                        log.debug("Document will be printed across {} pages", columnsNeed * rowsNeed);
-
-                        try {
-                            for(int row = 0; row < rowsNeed; row++) {
-                                for(int col = 0; col < columnsNeed; col++) {
-                                    activePage.setX((-col * printBounds.getWidth()) / useScale);
-                                    activePage.setY((-row * printBounds.getHeight()) / useScale);
-
-                                    job.printPage(webView);
-                                }
-                            }
-                        } catch(Exception e) {
-                            possiblyThrown = e;
-                        } finally {
-                            webView.getTransforms().clear();
-                        }
-                        unlatch(possiblyThrown);
-                    });
-                } catch(Exception e) {
-                    unlatch(e);
-                }
+                    unlatch(possiblyThrown);
+                });
             }
             return frames >= VECTOR_FRAMES;
         });

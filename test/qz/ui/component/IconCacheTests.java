@@ -50,7 +50,6 @@ public class IconCacheTests {
                              icon, icon.getId(theme, size), expectedSize,
                              imageIcon.getIconWidth(), imageIcon.getIconHeight());
 
-                    // FIXME:  Why are PNGs failing @ 125% ?
                     Assert.assertEquals(imageIcon.getIconHeight(), expectedSize);
                 }
             }

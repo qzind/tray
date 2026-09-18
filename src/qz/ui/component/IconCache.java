@@ -16,7 +16,6 @@ import org.apache.logging.log4j.Logger;
 import qz.common.Sluggable;
 import qz.ui.component.IconCache.Icon.Theme;
 import qz.utils.ColorUtilities;
-import qz.utils.FileUtilities;
 import qz.utils.ImageUtilities;
 import qz.utils.SystemUtilities;
 
@@ -81,8 +80,8 @@ public class IconCache {
         LOGO_ICON(LOGO, "logo", "qz-logo");
 
         enum Type {
-            SYSTEM_TRAY(20, 24, 32, 40, 48),
-            TASK_BAR(20, 24, 32, 40, 48),
+            SYSTEM_TRAY(16, 20, 24, 32, 40, 48),
+            TASK_BAR(16, 20, 24, 32, 40, 48),
             DIALOG(45),
             LOGO(260),
             MENU(16);

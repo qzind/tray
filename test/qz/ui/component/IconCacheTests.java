@@ -3,6 +3,7 @@ package qz.ui.component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import qz.ui.component.IconCache.Icon;
 import qz.utils.SystemUtilities;
@@ -11,6 +12,8 @@ import qz.utils.SystemUtilities;
 import javax.swing.*;
 
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static qz.ui.component.IconCache.Icon.*;
@@ -21,17 +24,50 @@ public class IconCacheTests {
     private IconCache svgCache;
     private IconCache mixedCache;
 
-    @Test(priority = -1)
+    @BeforeClass
+    public void setUp() {
+        svgCache = new IconCache();
+        mixedCache = new IconCache(Paths.get("./resources_mixed"));
+    }
+
+    @Test(priority = 1)
     public void testSvgAssets() {
-        checkIcons(svgCache = new IconCache());
+        checkIcons(svgCache);
     }
 
-    @Test
+    @Test(priority = 2)
+    public void testSvgPath() throws IOException {
+        Path darkSvg = svgCache.getSvgPath(DEFAULT_ICON, true);
+        log.info("{} (dark): {}", DEFAULT_ICON, darkSvg);
+        Assert.assertTrue(darkSvg.toFile().exists());
+        Assert.assertEquals(svgCache.extractedSvgs.size(), 1);
+
+        Path lightSvg =  svgCache.getSvgPath(DEFAULT_ICON, false);
+        log.info("{} (light): {}", DEFAULT_ICON, lightSvg);
+        Assert.assertTrue(lightSvg.toFile().exists());
+        Assert.assertEquals(svgCache.extractedSvgs.size(), 2);
+
+        Path darkMaskSvg = svgCache.getSvgPath(DEFAULT_MASK_ICON, true);
+        log.info("{} (dark): {}", DEFAULT_ICON, darkMaskSvg);
+        Assert.assertTrue(darkMaskSvg.toFile().exists());
+        Assert.assertEquals(svgCache.extractedSvgs.size(), 3);
+
+        Path lightMaskSvg =  svgCache.getSvgPath(DEFAULT_MASK_ICON, false);
+        log.info("{} (light): {}", DEFAULT_ICON, lightMaskSvg);
+        Assert.assertTrue(lightMaskSvg.toFile().exists());
+        Assert.assertEquals(svgCache.extractedSvgs.size(), 4);
+
+        // Ensure no dupes
+        svgCache.getSvgPath(DEFAULT_ICON, true);
+        Assert.assertEquals(svgCache.extractedSvgs.size(), 4);
+    }
+
+    @Test(priority = 3)
     public void testMixedAssets() {
-        checkIcons(mixedCache = new IconCache(Paths.get("./resources_mixed")));
+        checkIcons(mixedCache);
     }
 
-    @Test(priority = 99)
+    @Test(priority = 4)
     public void testImagesDiffer() {
         // Ensure we actually loaded two different images
         BufferedImage svgImage = svgCache.getImage(DEFAULT_ICON);

@@ -15,7 +15,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Sluggable;
 import qz.ui.component.IconCache.Icon.Theme;
-import qz.utils.ColorUtilities;
 import qz.utils.ImageUtilities;
 import qz.utils.SystemUtilities;
 
@@ -200,7 +199,20 @@ public class IconCache {
             for(int size : i.getSizes()) {
                 BufferedImage lightImage = null;
                 for(Theme theme : Theme.values()) {
-                    Path found = findFile(i.names);
+                    Path found;
+                    try {
+                        found = findFile(i.names);
+                    } catch(UnsupportedOperationException e) {
+                        if(i == Icon.DANGER_MASK_ICON) {
+                            // "tray-loading" is just "tray-ready" at 50% transparency
+                            images.put(i.getId(theme, size),
+                                       ImageUtilities.transparent(
+                                               images.get(Icon.DEFAULT_MASK_ICON.getId(theme, size)), 0.50f)
+                            );
+                            continue;
+                        }
+                        throw e;
+                    }
                     Icon.Format format = Icon.Format.parse(found);
 
                     String baseName = FilenameUtils.getBaseName(found.getFileName().toString());
@@ -234,7 +246,7 @@ public class IconCache {
                         if(image == null) {
                             if(i.slug().contains("mask") && lightImage != null) {
                                 // Duplicate and invert mask icons
-                                image = ColorUtilities.invert(lightImage);
+                                image = ImageUtilities.invert(lightImage);
                             } else {
                                 image = lightImage;
                             }

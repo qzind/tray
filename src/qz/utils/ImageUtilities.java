@@ -132,4 +132,35 @@ public class ImageUtilities {
     public static String imageToBase64(IconCache.Icon icon, String format) {
         return imageToBase64(IconCache.getInstance().getImage(icon, false), format);
     }
+
+    /**
+     * Inverts the color of all pixels in an image
+     */
+    public static BufferedImage invert(BufferedImage bi) {
+        BufferedImage inverted = new BufferedImage(bi.getWidth(), bi.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < bi.getHeight(); y++) {
+            for (int x = 0; x < bi.getWidth(); x++) {
+                int pixel = bi.getRGB(x, y);
+                int a = (pixel>>24)&0xFF;
+                int r = 0xFF ^ ((pixel>>16)&0xFF);
+                int g = 0xFF ^ ((pixel>>8)&0xFF);
+                int b = 0xFF ^ ((pixel>>0)&0xFF);
+                inverted.setRGB(x, y,  a << 24 | r  << 16 | g << 8 | b << 0);
+            }
+        }
+        return inverted;
+    }
+
+    /**
+     * Sets transparency of an image to the specified value
+     */
+    public static BufferedImage transparent(BufferedImage bi, float amount) {
+        BufferedImage transparentImage = new BufferedImage(bi.getWidth(), bi.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = transparentImage.createGraphics();
+        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, amount));
+        g2d.drawImage(bi, 0, 0, null);
+        g2d.dispose();
+
+        return transparentImage;
+    }
 }

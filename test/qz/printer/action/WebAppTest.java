@@ -1,5 +1,7 @@
 package qz.printer.action;
 
+import com.sun.javafx.print.PrintHelper;
+import com.sun.javafx.print.Units;
 import javafx.print.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,6 +28,7 @@ public class WebAppTest {
     private static final Path RASTER_OUTPUT_DIR = Paths.get("./out"); // see ant ${out.dir}
     private static final String RASTER_OUTPUT_FORMAT = "png";
     private static final String VECTOR_BASIC_COLOR_FIXTURE = "resources/vector-basic-color.html";
+    private static final String VECTOR_PAGE_SETUP_FIXTURE = "resources/vector-page-setup.html";
     private static final String PRINT_MEDIA_FIXTURE = "resources/print-media-blue-green.html";
 
     public static void main(String[] args) {
@@ -62,6 +65,8 @@ public class WebAppTest {
                 log.error("Failed vector prints with fit to height sizing");
             } else if (!testVectorBasicColor()) {
                 log.error("Failed basic vector color proof");
+            } else if (!testVectorPageSetup()) {
+                log.error("Failed vector page setup proof");
             } else if (!testVectorPrintMedia()) {
                 log.error("Failed vector print media proof");
             } else {
@@ -230,6 +235,28 @@ public class WebAppTest {
         return passed;
     }
 
+    public static boolean testVectorPageSetup() throws Throwable {
+        PrinterJob job = buildVectorJob("issue-55-page-setup", PageOrientation.LANDSCAPE, 432, 288, 36, 36, 54, 54);
+        WebAppModel model = new WebAppModel(loadFixture(VECTOR_PAGE_SETUP_FIXTURE), true, 700, 400, false, 1);
+
+        WebApp.print(job, model);
+        boolean ended = job.endJob();
+
+        try {
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
+            Thread.sleep(SPOOLER_WAIT);
+        }
+        catch(InterruptedException ignore) {}
+
+        boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
+        if (passed) {
+            log.info("Vector page setup proof completed. Render the generated PDF and expect landscape output with margins.");
+        } else {
+            log.error("Vector page setup proof failed with status {}", job.getJobStatus());
+        }
+        return passed;
+    }
+
     public static boolean testVectorPrintMedia() throws Throwable {
         PrinterJob job = buildVectorJob("issue-55-print-media-vector");
         WebAppModel model = new WebAppModel(loadFixture(PRINT_MEDIA_FIXTURE), true, 500, 500, false, 1);
@@ -284,6 +311,11 @@ public class WebAppTest {
     }
 
     private static PrinterJob buildVectorJob(String name) throws Throwable {
+        return buildVectorJob(name, PageOrientation.PORTRAIT, 0, 0, 0, 0, 0, 0);
+    }
+
+    private static PrinterJob buildVectorJob(String name, PageOrientation orientation, double paperWidth, double paperHeight,
+                                             double marginLeft, double marginRight, double marginTop, double marginBottom) throws Throwable {
         // Get "PDF" printer
         Printer defaultPrinter = Printer.getAllPrinters().stream().filter(printer -> printer.getName().contains("PDF")).findFirst().get();
         PrinterJob job = PrinterJob.createPrinterJob(defaultPrinter);
@@ -292,8 +324,10 @@ public class WebAppTest {
         Constructor<PageLayout> plCon = PageLayout.class.getDeclaredConstructor(Paper.class, PageOrientation.class, double.class, double.class, double.class, double.class);
         plCon.setAccessible(true);
 
-        Paper paper = defaultPrinter.getDefaultPageLayout().getPaper();
-        PageLayout layout = plCon.newInstance(paper, PageOrientation.PORTRAIT, 0, 0, 0, 0);
+        Paper paper = paperWidth > 0 && paperHeight > 0?
+                PrintHelper.createPaper("Custom", paperWidth, paperHeight, Units.POINT):
+                defaultPrinter.getDefaultPageLayout().getPaper();
+        PageLayout layout = plCon.newInstance(paper, orientation, marginLeft, marginRight, marginTop, marginBottom);
 
         Field field = defaultPrinter.getClass().getDeclaredField("defPageLayout");
         field.setAccessible(true);

@@ -11,6 +11,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
@@ -23,6 +25,7 @@ public class WebAppTest {
     private static final int SPOOLER_WAIT = 2000; // millis
     private static final Path RASTER_OUTPUT_DIR = Paths.get("./out"); // see ant ${out.dir}
     private static final String RASTER_OUTPUT_FORMAT = "png";
+    private static final String PRINT_MEDIA_FIXTURE = "resources/print-media-blue-green.html";
 
     public static void main(String[] args) {
         try {
@@ -56,6 +59,8 @@ public class WebAppTest {
                 log.error("Failed vector prints with defined heights");
             } else if (!testVectorFittedPrints(vectorFittedHeightPrints)) {
                 log.error("Failed vector prints with fit to height sizing");
+            } else if (!testVectorPrintMedia()) {
+                log.error("Failed vector print media proof");
             } else {
                 log.info("All vector prints completed");
             }
@@ -200,6 +205,28 @@ public class WebAppTest {
         return job.getJobStatus() != PrinterJob.JobStatus.ERROR;
     }
 
+    public static boolean testVectorPrintMedia() throws Throwable {
+        PrinterJob job = buildVectorJob("issue-55-print-media-vector");
+        WebAppModel model = new WebAppModel(loadPrintMediaFixture(), true, 500, 500, false, 1);
+
+        WebApp.print(job, model);
+        boolean ended = job.endJob();
+
+        try {
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
+            Thread.sleep(SPOOLER_WAIT);
+        }
+        catch(InterruptedException ignore) {}
+
+        boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
+        if (passed) {
+            log.info("Vector print media proof completed. Render the generated PDF and expect green output.");
+        } else {
+            log.error("Vector print media proof failed with status {}", job.getJobStatus());
+        }
+        return passed;
+    }
+
     private static WebAppModel buildModel(String index, double width, double height, double zoom, boolean scale, int hue) {
         int level = (int)(Math.random() * 50) + 25;
         WebAppModel model = new WebAppModel("<html>" +
@@ -252,6 +279,15 @@ public class WebAppTest {
         settings.setJobName(name);
 
         return job;
+    }
+
+    private static String loadPrintMediaFixture() throws IOException {
+        try(InputStream is = WebAppTest.class.getResourceAsStream(PRINT_MEDIA_FIXTURE)) {
+            if (is == null) {
+                throw new IOException("Missing print media fixture: " + PRINT_MEDIA_FIXTURE);
+            }
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 
     private static void cleanup() {

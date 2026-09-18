@@ -186,6 +186,17 @@ public class IconCache {
         public String slug() {
             return slug;
         }
+
+        /**
+         * Fetching a masked/templated/symbolic of the specified icon
+         */
+        public Icon getIcon(boolean wantsMask) {
+            return switch(this) {
+                case DEFAULT_ICON -> wantsMask ? DEFAULT_MASK_ICON : DEFAULT_ICON;
+                case DANGER_ICON -> wantsMask ? DANGER_MASK_ICON : DANGER_ICON;
+                default -> this;
+            };
+        }
     }
 
     private final Map<String,BufferedImage> images;

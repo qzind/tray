@@ -111,26 +111,15 @@ public class ThemeUtilities {
         return null;
     }
 
-    public static IconCache.Icon getTrayIcon(IconCache.Icon requestedIcon) {
+    public static boolean wantsMaskIcon() {
         if(!Constants.MASK_TRAY_SUPPORTED) {
-            return requestedIcon;
+            return false;
         }
 
         return switch(getOs()) {
-            case Os.MAC -> getTrayIcon(requestedIcon, true);
-            case Os.WINDOWS -> getTrayIcon(requestedIcon, getOsVersion().majorVersion() >= 10);
-            default -> requestedIcon; // TODO: Revisit after Linux System Tray support is added
-        };
-    }
-
-    private static IconCache.Icon getTrayIcon(IconCache.Icon requestedIcon, boolean maskIconsSupported) {
-        if(!maskIconsSupported) {
-            return requestedIcon;
-        }
-        return switch(requestedIcon) {
-            case DEFAULT_ICON -> DEFAULT_MASK_ICON;
-            case DANGER_ICON -> DANGER_MASK_ICON;
-            default -> requestedIcon;
+            case Os.MAC -> true;
+            case Os.WINDOWS -> getOsVersion().majorVersion() >= 10;
+            default -> false; // TODO: Revisit after Linux System Tray support is added
         };
     }
 }

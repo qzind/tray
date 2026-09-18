@@ -8,6 +8,7 @@ import qz.utils.SystemUtilities;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 
 /**
  * Wrapper class to allow popup menu on a tray-less OS
@@ -53,9 +54,11 @@ public enum TrayType {
     public boolean getTaskbar() { return taskbar != null; }
 
     public void setIcon(IconCache.Icon requestedIcon) {
-        IconCache.Icon icon = ThemeUtilities.getTrayIcon(requestedIcon);
+        IconCache.Icon icon = requestedIcon.getIcon(ThemeUtilities.wantsMaskIcon());
         if (isTray()) {
-            tray.setImage(iconCache.getImage(icon, tray.getSize(), SystemUtilities.isDarkTaskbar(false)));
+            boolean dark = SystemUtilities.isDarkTaskbar(false);
+            BufferedImage image = iconCache.getImage(icon, tray.getSize(), dark);
+            tray.setImage(image);
         } else {
             taskbar.setIconImages(iconCache.getImages(icon));
         }

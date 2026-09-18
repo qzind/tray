@@ -27,11 +27,11 @@ public class WebAppTest {
     private static final int SPOOLER_WAIT = 2000; // millis
     private static final Path RASTER_OUTPUT_DIR = Paths.get("./out"); // see ant ${out.dir}
     private static final String RASTER_OUTPUT_FORMAT = "png";
-    private static final String VECTOR_BASIC_COLOR_FIXTURE = "resources/vector-basic-color.html";
-    private static final String VECTOR_PAGE_SETUP_FIXTURE = "resources/vector-page-setup.html";
-    private static final String VECTOR_PAGE_BREAK_FIXTURE = "resources/vector-page-break.html";
-    private static final String VECTOR_SCALE_CONTENT_FIXTURE = "resources/vector-scale-content.html";
-    private static final String PRINT_MEDIA_FIXTURE = "resources/print-media-blue-green.html";
+    private static final String COLOR_FIXTURE = "resources/vector-basic-color.html";
+    private static final String LAYOUT_FIXTURE = "resources/vector-page-setup.html";
+    private static final String PAGE_BREAK_FIXTURE = "resources/vector-page-break.html";
+    private static final String SCALE_FIXTURE = "resources/vector-scale-content.html";
+    private static final String MEDIA_FIXTURE = "resources/print-media-blue-green.html";
 
     public static void main(String[] args) {
         try {
@@ -49,6 +49,8 @@ public class WebAppTest {
                 log.error("Testing well defined sizes failed");
             } else if (!testRasterFittedSize(rasterFittedHeightTests)) {
                 log.error("Testing fit to height sizing failed");
+            } else if (!testRasterMediaUnchanged()) {
+                log.error("Testing raster screen-media proof failed");
             } else {
                 log.info("All raster tests passed");
             }
@@ -65,16 +67,16 @@ public class WebAppTest {
                 log.error("Failed vector prints with defined heights");
             } else if (!testVectorFittedPrints(vectorFittedHeightPrints)) {
                 log.error("Failed vector prints with fit to height sizing");
-            } else if (!testVectorBasicColor()) {
-                log.error("Failed basic vector color proof");
-            } else if (!testVectorPageSetup()) {
-                log.error("Failed vector page setup proof");
-            } else if (!testVectorPageBreak()) {
+            } else if (!testVectorColor()) {
+                log.error("Failed vector color proof");
+            } else if (!testVectorLayout()) {
+                log.error("Failed vector layout proof");
+            } else if (!testVectorPageBreaks()) {
                 log.error("Failed vector page-break proof");
-            } else if (!testVectorScaleContent()) {
-                log.error("Failed vector scaleContent proof");
-            } else if (!testVectorPrintMedia()) {
-                log.error("Failed vector print media proof");
+            } else if (!testVectorScale()) {
+                log.error("Failed vector scale proof");
+            } else if (!testVectorMedia()) {
+                log.error("Failed vector media proof");
             } else {
                 log.info("All vector prints completed");
             }
@@ -174,6 +176,21 @@ public class WebAppTest {
         return true;
     }
 
+    public static boolean testRasterMediaUnchanged() throws Throwable {
+        WebAppModel model = new WebAppModel(loadFixture(MEDIA_FIXTURE), true, 500, 500, false, 1);
+        BufferedImage sample = WebApp.raster(model);
+
+        if (sample == null) {
+            log.error("Failed to create raster screen-media proof");
+            return false;
+        }
+
+        saveAudit("issue-55-raster-print-media", sample);
+        log.info("Raster screen-media proof completed. Inspect output and expect blue.");
+
+        return true;
+    }
+
     public static boolean testVectorKnownPrints(int trials) throws Throwable {
         PrinterJob job = buildVectorJob("vector-test-known");
         for(int i = 0; i < trials; i++) {
@@ -219,9 +236,9 @@ public class WebAppTest {
         return job.getJobStatus() != PrinterJob.JobStatus.ERROR;
     }
 
-    public static boolean testVectorBasicColor() throws Throwable {
+    public static boolean testVectorColor() throws Throwable {
         PrinterJob job = buildVectorJob("issue-55-basic-vector-color");
-        WebAppModel model = new WebAppModel(loadFixture(VECTOR_BASIC_COLOR_FIXTURE), true, 500, 500, false, 1);
+        WebAppModel model = new WebAppModel(loadFixture(COLOR_FIXTURE), true, 500, 500, false, 1);
 
         WebApp.print(job, model);
         boolean ended = job.endJob();
@@ -234,16 +251,16 @@ public class WebAppTest {
 
         boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
         if (passed) {
-            log.info("Basic vector color proof completed. Render the generated PDF and expect colored blocks.");
+            log.info("Vector color proof completed. Render the generated PDF and expect colored blocks.");
         } else {
-            log.error("Basic vector color proof failed with status {}", job.getJobStatus());
+            log.error("Vector color proof failed with status {}", job.getJobStatus());
         }
         return passed;
     }
 
-    public static boolean testVectorPageSetup() throws Throwable {
+    public static boolean testVectorLayout() throws Throwable {
         PrinterJob job = buildVectorJob("issue-55-page-setup", PageOrientation.LANDSCAPE, 432, 288, 36, 36, 54, 54);
-        WebAppModel model = new WebAppModel(loadFixture(VECTOR_PAGE_SETUP_FIXTURE), true, 700, 400, false, 1);
+        WebAppModel model = new WebAppModel(loadFixture(LAYOUT_FIXTURE), true, 700, 400, false, 1);
 
         WebApp.print(job, model);
         boolean ended = job.endJob();
@@ -256,16 +273,16 @@ public class WebAppTest {
 
         boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
         if (passed) {
-            log.info("Vector page setup proof completed. Render the generated PDF and expect landscape output with margins.");
+            log.info("Vector layout proof completed. Render the generated PDF and expect landscape output with margins.");
         } else {
-            log.error("Vector page setup proof failed with status {}", job.getJobStatus());
+            log.error("Vector layout proof failed with status {}", job.getJobStatus());
         }
         return passed;
     }
 
-    public static boolean testVectorPageBreak() throws Throwable {
+    public static boolean testVectorPageBreaks() throws Throwable {
         PrinterJob job = buildVectorJob("issue-55-page-break");
-        WebAppModel model = new WebAppModel(loadFixture(VECTOR_PAGE_BREAK_FIXTURE), true, 500, 500, false, 1);
+        WebAppModel model = new WebAppModel(loadFixture(PAGE_BREAK_FIXTURE), true, 500, 500, false, 1);
 
         WebApp.print(job, model);
         boolean ended = job.endJob();
@@ -285,9 +302,9 @@ public class WebAppTest {
         return passed;
     }
 
-    public static boolean testVectorScaleContent() throws Throwable {
+    public static boolean testVectorScale() throws Throwable {
         PrinterJob job = buildVectorJob("issue-55-scale-content");
-        WebAppModel model = new WebAppModel(loadFixture(VECTOR_SCALE_CONTENT_FIXTURE), true, 1000, 700, true, 1);
+        WebAppModel model = new WebAppModel(loadFixture(SCALE_FIXTURE), true, 1000, 700, true, 1);
 
         WebApp.print(job, model);
         boolean ended = job.endJob();
@@ -300,16 +317,16 @@ public class WebAppTest {
 
         boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
         if (passed) {
-            log.info("Vector scaleContent proof completed. Render the generated PDF and check for visible edge markers.");
+            log.info("Vector scale proof completed. Render the generated PDF and check for visible edge markers.");
         } else {
-            log.error("Vector scaleContent proof failed with status {}", job.getJobStatus());
+            log.error("Vector scale proof failed with status {}", job.getJobStatus());
         }
         return passed;
     }
 
-    public static boolean testVectorPrintMedia() throws Throwable {
+    public static boolean testVectorMedia() throws Throwable {
         PrinterJob job = buildVectorJob("issue-55-print-media-vector");
-        WebAppModel model = new WebAppModel(loadFixture(PRINT_MEDIA_FIXTURE), true, 500, 500, false, 1);
+        WebAppModel model = new WebAppModel(loadFixture(MEDIA_FIXTURE), true, 500, 500, false, 1);
 
         WebApp.print(job, model);
         boolean ended = job.endJob();
@@ -322,9 +339,9 @@ public class WebAppTest {
 
         boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
         if (passed) {
-            log.info("Vector print media proof completed. Render the generated PDF and expect green output.");
+            log.info("Vector media proof completed. Render the generated PDF and expect green output.");
         } else {
-            log.error("Vector print media proof failed with status {}", job.getJobStatus());
+            log.error("Vector media proof failed with status {}", job.getJobStatus());
         }
         return passed;
     }

@@ -14,7 +14,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static qz.ui.component.IconCache.Icon.*;
 import static qz.utils.SystemUtilities.*;
 
 public class ThemeUtilities {
@@ -111,15 +110,31 @@ public class ThemeUtilities {
         return null;
     }
 
-    public static boolean wantsMaskIcon() {
+    /**
+     * Some OSs don't have native-support for templated/masked
+     * icons and will need explicit inversion for theme compatibility
+     */
+    public static boolean needsInversion(IconCache.Icon icon) {
+        return switch(SystemUtilities.getOs()) {
+            case WINDOWS -> switch(icon) {
+                case DEFAULT_MASK_ICON, DANGER_MASK_ICON -> true;
+                default -> false;
+            };
+            case MAC -> false;
+            default -> false; // TODO: Revisit after Linux System Tray support is added
+        };
+    }
+
+    public static boolean needsColorTray() {
+        // Honor override via Constants
         if(!Constants.MASK_TRAY_SUPPORTED) {
-            return false;
+            return true;
         }
 
         return switch(getOs()) {
-            case Os.MAC -> true;
-            case Os.WINDOWS -> getOsVersion().majorVersion() >= 10;
-            default -> false; // TODO: Revisit after Linux System Tray support is added
+            case Os.MAC -> false;
+            case Os.WINDOWS -> getOsVersion().majorVersion() < 10;
+            default -> true; // TODO: Revisit after Linux System Tray support is added
         };
     }
 }

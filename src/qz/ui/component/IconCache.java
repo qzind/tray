@@ -14,6 +14,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.common.Sluggable;
+import qz.ui.ThemeUtilities;
 import qz.ui.component.IconCache.Icon.Theme;
 import qz.utils.FileUtilities;
 import qz.utils.ImageUtilities;
@@ -46,11 +47,12 @@ public class IconCache {
      */
     public enum Icon implements Sluggable {
         // System tray
-        DEFAULT_ICON(SYSTEM_TRAY, "tray-ready", "qz-default"),
-        DANGER_ICON(SYSTEM_TRAY, "tray-loading", "qz-danger"),
+        DEFAULT_MASK_ICON(SYSTEM_TRAY, "tray-ready", "qz-mask"),
+        DANGER_MASK_ICON(SYSTEM_TRAY, "tray-loading", "qz-danger"),
 
-        DEFAULT_MASK_ICON(SYSTEM_TRAY, "tray-ready-mask", "qz-mask"),
-        DANGER_MASK_ICON(SYSTEM_TRAY, "tray-loading-mask", "qz-danger"),
+        // System tray (legacy color fallback)
+        DEFAULT_ICON(SYSTEM_TRAY, "tray-ready-color", "qz-default"),
+        DANGER_ICON(SYSTEM_TRAY, "tray-loading-color", "qz-danger"),
 
         // Task bar
         TASK_BAR_ICON(TASK_BAR, "tray-ready", "qz-default"),
@@ -190,10 +192,10 @@ public class IconCache {
         /**
          * Fetching a masked/templated/symbolic of the specified icon
          */
-        public Icon getIcon(boolean wantsMask) {
+        public Icon getIcon(boolean wantsColor) {
             return switch(this) {
-                case DEFAULT_ICON -> wantsMask ? DEFAULT_MASK_ICON : DEFAULT_ICON;
-                case DANGER_ICON -> wantsMask ? DANGER_MASK_ICON : DANGER_ICON;
+                case DEFAULT_ICON -> wantsColor ? DEFAULT_ICON : DEFAULT_MASK_ICON;
+                case DANGER_ICON -> wantsColor ? DANGER_ICON : DANGER_MASK_ICON;
                 default -> this;
             };
         }
@@ -262,12 +264,8 @@ public class IconCache {
                         }
                     } else {
                         if(image == null) {
-                            if(i.slug().contains("mask") && lightImage != null) {
-                                // Duplicate and invert mask icons
-                                image = ImageUtilities.invert(lightImage);
-                            } else {
-                                image = lightImage;
-                            }
+                            // Duplicate and invert mask icons
+                            image = ThemeUtilities.needsInversion(i) ? ImageUtilities.invert(lightImage) : lightImage;
                         }
                     }
                     images.put(i.getId(theme, size), image);
@@ -387,7 +385,6 @@ public class IconCache {
         }
         // size is appended to the filename
         return String.format(theme == Theme.DARK ? "%s-%s-dark.%s" : "%s-%s.%s", baseName, size, format.slug());
-
     }
 
     public synchronized static IconCache getInstance() {

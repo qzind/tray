@@ -286,7 +286,7 @@ public class IconCache {
             } else {
                 file = resourcesPath.resolve(String.format("%s.%s", name, format.slug()));
             }
-            try(InputStream is = ThemeUtilities.class.getResourceAsStream(file.toString())) {
+            try(InputStream is = ImageUtilities.getResourceAsStream(file)) {
                 if (is != null) {
                     return file;
                 }

@@ -62,7 +62,7 @@ public class ImageUtilities {
      * @return The BufferedImage representing the data
      */
     public static BufferedImage imageFromResource(Path path) {
-        try(InputStream is = ThemeUtilities.class.getResourceAsStream(normalizePath(path))) {
+        try(InputStream is = getResourceAsStream(path)) {
             if (is != null) {
                 return ImageIO.read(is);
             }
@@ -80,7 +80,7 @@ public class ImageUtilities {
      * @return The BufferedImage representing the data
      */
     public static BufferedImage imageFromSvgResource(Path path, Integer size) {
-        URL url = ThemeUtilities.class.getResource(normalizePath(path));
+        URL url = getResource(path);
         if (url != null) {
             SVGLoader loader = new SVGLoader();
             SVGDocument svgDocument = loader.load(url);
@@ -175,5 +175,13 @@ public class ImageUtilities {
             return null;
         }
         return path.normalize().toString().replace('\\', '/');
+    }
+
+    public static InputStream getResourceAsStream(Path path) {
+        return ThemeUtilities.class.getResourceAsStream(normalizePath(path));
+    }
+
+    public static URL getResource(Path path) {
+        return ThemeUtilities.class.getResource(normalizePath(path));
     }
 }

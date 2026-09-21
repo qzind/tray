@@ -103,13 +103,24 @@
             <arg value="${out.dir}/distribution.xml"/>
         </exec>
 
+        <!-- Escape ampersand in project name -->
+        <loadresource property="project.name.escaped">
+            <string value="${project.name}"/>
+            <filterchain>
+                <tokenfilter>
+                    <replacestring from="&amp;" to="&amp;amp;"/>
+                </tokenfilter>
+            </filterchain>
+        </loadresource>
+        <property name="project.name.escaped" value="${project.name}" description="fallback value"/>
+
         <!-- Inject title, background -->
         <replace file="${out.dir}/distribution.xml" token="&lt;options customize">
             <replacevalue><![CDATA[<title>@project.name@ @build.version@</title>
 	<background file="background.tiff" mime-type="image/tiff" alignment="bottomleft" scaling="none"/>
 	<background-darkAqua file="background.tiff" mime-type="image/tiff" alignment="bottomleft" scaling="none"/>
 	<options customize]]></replacevalue>
-            <replacefilter token="@project.name@" value="${project.name}"/>
+            <replacefilter token="@project.name@" value="${project.name.escaped}"/>
             <replacefilter token="@build.version@" value="${build.version}"/>
         </replace>
 

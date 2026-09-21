@@ -7,10 +7,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.utils.ByteUtilities;
-import qz.utils.DeviceUtilities;
-import qz.utils.LoggerUtilities;
-import qz.utils.SerialUtilities;
+import qz.utils.*;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -70,7 +67,7 @@ public class SerialOptions {
             }
 
             if (!serialOpts.isNull("encoding") && !serialOpts.optString("encoding").isEmpty()) {
-                try { portSettings.encoding = Charset.forName(serialOpts.getString("encoding")); }
+                try { portSettings.encoding = StringUtilities.getCharset(serialOpts.getString("encoding")); }
                 catch(JSONException e) { LoggerUtilities.optionWarn(log, "string", "encoding", serialOpts.opt("encoding")); }
             }
         }
@@ -180,7 +177,7 @@ public class SerialOptions {
                 }
 
                 if (!respOpts.isNull("encoding") && !respOpts.optString("encoding").isEmpty()) {
-                    try { responseFormat.encoding = Charset.forName(respOpts.getString("encoding")); }
+                    try { responseFormat.encoding = StringUtilities.getCharset(respOpts.getString("encoding")); }
                     catch(JSONException | IllegalArgumentException e) { LoggerUtilities.optionWarn(log, "charset", "encoding", respOpts.opt("encoding")); }
                 }
             } else {

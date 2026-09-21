@@ -3,11 +3,13 @@
 # Halt on first error
 set -e
 
+LOG_FILE="${apple.install.log}"
+
 # Get working directory
 DIR=$(cd "$(dirname "$0")" && pwd)
 pushd "$DIR/payload/${project.name}.app/Contents/MacOS/"
 
-./"${project.name}" install >> "${install.log}" 2>&1
+./"${project.name}" install >> "$LOG_FILE" 2>&1
 popd
 
 # Use install target from pkgbuild, an undocumented feature; fallback on sane location
@@ -17,7 +19,7 @@ else
     pushd "/Applications/${project.name}.app/Contents/MacOS/"
 fi
 
-./"${project.name}" certgen >> "${install.log}" 2>&1
+./"${project.name}" certgen >> "$LOG_FILE" 2>&1
 
 # Start qz by calling open on the .app as an ordinary user
 su "$USER" -c "open ../../" || true

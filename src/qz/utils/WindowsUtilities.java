@@ -10,6 +10,7 @@
 package qz.utils;
 
 import com.github.zafarkhaja.semver.Version;
+import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.platform.win32.*;
 import com.sun.jna.platform.win32.COM.WbemcliUtil;
@@ -18,12 +19,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.build.provision.params.Arch;
 import qz.common.Constants;
+import qz.utils.windows.Kernel32Ex;
 
 import java.awt.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,6 +51,7 @@ public class WindowsUtilities {
     private static final String TRAY_REG_CHEVRON_KEY = "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\TrayNotify";
     private static final String TRAY_REG_POLICY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
+    public static final Charset LEGACY_CHARSET = getCharsetFromCodePage(getSystemAnsiCodePage());
 
     // Universal SIDs that represent elevated/system status
     private static final String[] ELEVATED_SIDS = {
@@ -712,7 +719,7 @@ public class WindowsUtilities {
     }
 
     public static boolean isWindowsXP() {
-        return isWindows() && OS_NAME.contains("xp");
+        return isWindows() && getOsDisplayName().contains("xp");
     }
 
 
@@ -755,5 +762,55 @@ public class WindowsUtilities {
             return true;
         }
         return false;
+    }
+
+    static Charset getCharsetFromCodePage(int codePage) {
+        if(codePage == 65001) {
+            return StandardCharsets.UTF_8;  // should never get here
+        }
+
+        // Lookup based on windows-xxxx, msxxxx, cpxxxx, ibmxxx format
+        for(String pattern : new String[] { "windows-%s", "ms%s", "cp%s", "ibm%s" }) {
+            try {
+                return Charset.forName(String.format(pattern, codePage));
+            } catch(IllegalCharsetNameException | UnsupportedCharsetException ignore) {}
+        }
+
+        // Fallback with warning
+        Charset fallback = Charset.defaultCharset();
+        log.warn("Could not determine legacy charset from '{}', will fallback to '{}'",  codePage, fallback);
+        return fallback;
+    }
+
+    static int getSystemAnsiCodePage() {
+        try {
+            char[] localeNameBuf = new char[85];
+            int len = Kernel32Ex.INSTANCE.GetSystemDefaultLocaleName(localeNameBuf, localeNameBuf.length);
+
+            if (len > 0) {
+                String localeName = new String(localeNameBuf, 0, len - 1);
+
+                // LOCALE_IDEFAULTANSICODEPAGE = 0x1004
+                // LOCALE_RETURN_NUMBER = 0x20000000
+                int lctype = 0x20000000 | 0x00001004;
+
+                Memory buffer = new Memory(4);
+                // cchData is 2 WCHARs (4 bytes) when LOCALE_RETURN_NUMBER is set
+                int ret = Kernel32Ex.INSTANCE.GetLocaleInfoEx(localeName, lctype, buffer, 2);
+
+                if (ret > 0) {
+                    return buffer.getInt(0);
+                }
+            }
+        } catch(UnsatisfiedLinkError | NoClassDefFoundError ignore) {}
+
+        // Fallback to PowerShell
+        String output = ShellUtilities.executeRaw("powershell.exe", "-Command", "(Get-WinSystemLocale).TextInfo.AnsiCodePage");
+        try {
+            return Integer.parseInt(output.trim());
+        } catch(NumberFormatException ignore) {}
+
+
+        return -1; // Fallback if API fails
     }
 }

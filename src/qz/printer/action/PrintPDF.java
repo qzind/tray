@@ -3,7 +3,9 @@ package qz.printer.action;
 import com.github.zafarkhaja.semver.Version;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -159,14 +161,11 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
     }
 
     public static PDDocument loadPdf(String data, PrintingUtilities.Flavor flavor) throws IOException {
-        switch(flavor) {
-            case PLAIN:
-                // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
-            case FILE:
-                return refreshAcroForm(PDDocument.load(ConnectionUtilities.getInputStream(data, true)));
-            default:
-                return refreshAcroForm(PDDocument.load(new ByteArrayInputStream(flavor.read(data))));
-        }
+        return switch(flavor) {
+            // There's really no such thing as a 'PLAIN' PDF, assume it's a URL
+            case PLAIN, FILE -> refreshAcroForm(Loader.loadPDF(new RandomAccessReadBuffer(ConnectionUtilities.getInputStream(data, true))));
+            default -> refreshAcroForm(Loader.loadPDF(new RandomAccessReadBuffer(new ByteArrayInputStream(flavor.read(data)))));
+        };
     }
 
     /**

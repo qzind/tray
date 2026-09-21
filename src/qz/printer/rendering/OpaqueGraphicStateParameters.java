@@ -39,6 +39,10 @@ public class OpaqueGraphicStateParameters extends OperatorProcessor
 {
     private static final Log LOG = LogFactory.getLog(OpaqueGraphicStateParameters.class);
 
+    public OpaqueGraphicStateParameters(PDFStreamEngine context) {
+        super(context);
+    }
+
     @Override
     public void process(Operator operator, List<COSBase> arguments) throws IOException
     {

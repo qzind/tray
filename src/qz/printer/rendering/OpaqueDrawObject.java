@@ -1,5 +1,6 @@
 package qz.printer.rendering;
 
+import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
 import org.apache.pdfbox.contentstream.operator.MissingOperandException;
 import org.apache.pdfbox.contentstream.operator.Operator;
 import org.apache.pdfbox.contentstream.operator.graphics.GraphicsOperatorProcessor;
@@ -16,7 +17,9 @@ import java.util.List;
 // override draw object to remove any calls to show transparency
 public class OpaqueDrawObject extends GraphicsOperatorProcessor {
 
-    public OpaqueDrawObject() { }
+    public OpaqueDrawObject(PDFGraphicsStreamEngine context) {
+        super(context);
+    }
 
     public void process(Operator operator, List<COSBase> operands) throws IOException {
         if (operands.isEmpty()) {
@@ -25,6 +28,7 @@ public class OpaqueDrawObject extends GraphicsOperatorProcessor {
             COSBase base0 = operands.get(0);
             if (base0 instanceof COSName) {
                 COSName objectName = (COSName)base0;
+                PDFGraphicsStreamEngine context = getGraphicsContext();
                 PDXObject xobject = context.getResources().getXObject(objectName);
 
                 if (xobject == null) {

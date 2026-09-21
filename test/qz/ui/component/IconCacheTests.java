@@ -27,7 +27,7 @@ public class IconCacheTests {
     @BeforeClass
     public void setUp() {
         svgCache = new IconCache();
-        mixedCache = new IconCache(Paths.get("./resources_mixed"));
+        mixedCache = new IconCache(Paths.get("resources_mixed"));
     }
 
     @Test(priority = 1)

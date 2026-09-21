@@ -100,7 +100,7 @@ public class IconCache {
         }
 
         enum Format implements Sluggable {
-            PNG, SVG; // order sets precedent
+            SVG, PNG; // order sets precedent
 
             static Format parse(Path path) {
                 for(Format format : Format.values()) {
@@ -220,7 +220,7 @@ public class IconCache {
     }
 
     public IconCache() {
-        this(Paths.get("../resources"));
+        this(Paths.get("resources"));
     }
 
     Map<String, BufferedImage> buildImageCache() {
@@ -246,8 +246,8 @@ public class IconCache {
                     Icon.Format format = Icon.Format.parse(found);
                     Path path = resourcesPath.resolve(quantifiedFileName(found.getFileName().toString(), i, theme, format, size));
                     BufferedImage image = switch(format) {
-                        case PNG -> ImageUtilities.imageFromResource(path, getClass());
-                        case SVG -> ImageUtilities.imageFromSvgResource(path, size, getClass());
+                        case PNG -> ImageUtilities.imageFromResource(path);
+                        case SVG -> ImageUtilities.imageFromSvgResource(path, size);
                     };
 
                     // Handle undocumented macOS Sytem Tray padding
@@ -286,7 +286,7 @@ public class IconCache {
             } else {
                 file = resourcesPath.resolve(String.format("%s.%s", name, format.slug()));
             }
-            try(InputStream is = getClass().getResourceAsStream(file.toString())) {
+            try(InputStream is = ThemeUtilities.class.getResourceAsStream(file.toString())) {
                 if (is != null) {
                     return file;
                 }
@@ -303,7 +303,7 @@ public class IconCache {
                 return found;
             }
         }
-        throw new IOException("Could not find a mandatory resource under any of the following names '" + String.join("', '", names) + "'" + Arrays.toString(Icon.Format.values()));
+        throw new IOException("Could not find a mandatory resource under any of the following names '" + String.join("', '", names) + "' " + Arrays.toString(Icon.Format.values()));
     }
 
     /**

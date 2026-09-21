@@ -5,6 +5,7 @@ import com.github.weisj.jsvg.parser.SVGLoader;
 import com.github.weisj.jsvg.view.FloatSize;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.ui.ThemeUtilities;
 import qz.ui.component.IconCache;
 
 import javax.imageio.ImageIO;
@@ -60,8 +61,8 @@ public class ImageUtilities {
      * @param path The file path of the image to load
      * @return The BufferedImage representing the data
      */
-    public static BufferedImage imageFromResource(Path path, Class<?> relativeClass) {
-        try(InputStream is = relativeClass.getResourceAsStream(path.toString())) {
+    public static BufferedImage imageFromResource(Path path) {
+        try(InputStream is = ThemeUtilities.class.getResourceAsStream(path.toString())) {
             if (is != null) {
                 return ImageIO.read(is);
             }
@@ -77,11 +78,10 @@ public class ImageUtilities {
      *
      * @param path The file path of the SVG to load
      * @param size The desired size to scale the SVG to, or the natural SVG size if <code>null</code>
-     * @param relativeClass Class used for looking up relative resources
      * @return The BufferedImage representing the data
      */
-    public static BufferedImage imageFromSvgResource(Path path, Integer size, Class<?> relativeClass) {
-        URL url = relativeClass.getResource(path.toString());
+    public static BufferedImage imageFromSvgResource(Path path, Integer size) {
+        URL url = ThemeUtilities.class.getResource(path.toString());
         if (url != null) {
             SVGLoader loader = new SVGLoader();
             SVGDocument svgDocument = loader.load(url);

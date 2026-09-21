@@ -6,9 +6,13 @@ import qz.ui.component.IconCache;
 
 public class IconResourcesTests {
     /**
-     * Relative paths (e.g. ../resources) can unobviously pass unit tests and then fail integration tests
-     * Class.getResourceAsStream() handles relative paths containing <code>..</code> differently inside a packaged
-     * JAR compared to an IDE.
+     * Try to detect unobvious pitfalls when dealing with embedded resources
+     * <ul>
+     *  <li>First, <code>Class.getResourceAsStream()</code> handles relative paths containing <code>..</code>
+     *  differently inside a JAR vs IDE.</li>
+     *  <li>Second, <code>Path</code> calculations on Windows will process as <code>resources\foo.svg</code>
+     *  instead of<code>resources/foo.svg</code></li>
+     * </ul>
      */
     @Test
     public void testIconCache() {

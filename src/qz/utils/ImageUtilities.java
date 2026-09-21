@@ -55,14 +55,14 @@ public class ImageUtilities {
     }
 
     /**
-     * Returns a buffered image from the specified <code>path</code> relative to the
-     * class specified.
+     * Returns a buffered image from the specified <code>path</code> relative
+     * to ui directory
      *
      * @param path The file path of the image to load
      * @return The BufferedImage representing the data
      */
     public static BufferedImage imageFromResource(Path path) {
-        try(InputStream is = ThemeUtilities.class.getResourceAsStream(path.toString())) {
+        try(InputStream is = ThemeUtilities.class.getResourceAsStream(normalizePath(path))) {
             if (is != null) {
                 return ImageIO.read(is);
             }
@@ -73,15 +73,14 @@ public class ImageUtilities {
     }
 
     /**
-     * Returns a buffered image from the specified <code>path</code> relative to the
-     * class specified.
+     * Returns a buffered image from the specified <code>path</code> relative to ui directory
      *
      * @param path The file path of the SVG to load
      * @param size The desired size to scale the SVG to, or the natural SVG size if <code>null</code>
      * @return The BufferedImage representing the data
      */
     public static BufferedImage imageFromSvgResource(Path path, Integer size) {
-        URL url = ThemeUtilities.class.getResource(path.toString());
+        URL url = ThemeUtilities.class.getResource(normalizePath(path));
         if (url != null) {
             SVGLoader loader = new SVGLoader();
             SVGDocument svgDocument = loader.load(url);
@@ -165,5 +164,16 @@ public class ImageUtilities {
         g2d.dispose();
 
         return transparentImage;
+    }
+
+    /**
+     * Normalize path for accessing the embedded resources directory
+     * Notably, Windows will use "\" instead of "/" and break things.
+     */
+    static String normalizePath(Path path) {
+        if(path == null) {
+            return null;
+        }
+        return path.normalize().toString().replace('\\', '/');
     }
 }

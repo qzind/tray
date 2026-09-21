@@ -369,7 +369,7 @@ public class IconCache {
 
         if(resource != null) {
             Path svgPath = Files.createTempFile(String.format("%s-", id), Icon.Format.SVG.extension());
-            FileUtilities.configureAssetToFile(getClass(), resource.toString(), new HashMap<>(), svgPath.toFile());
+            FileUtilities.configureAssetToFile(ThemeUtilities.class, resource.toString(), new HashMap<>(), svgPath.toFile());
             svgPath.toFile().deleteOnExit();
             extractedSvgs.put(id, svgPath);
             return svgPath;

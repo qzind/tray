@@ -48,7 +48,7 @@ public class IconCache {
     public enum Icon implements Sluggable {
         // System tray
         DEFAULT_MASK_ICON(SYSTEM_TRAY, "tray-ready", "qz-mask"),
-        DANGER_MASK_ICON(SYSTEM_TRAY, "tray-loading", "qz-danger"),
+        DANGER_MASK_ICON(SYSTEM_TRAY, "tray-loading"),
 
         // System tray (legacy color fallback)
         DEFAULT_ICON(SYSTEM_TRAY, "tray-ready-color", "qz-default"),

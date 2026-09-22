@@ -59,8 +59,6 @@ public class TrayManager {
 
     private static final Logger log = LogManager.getLogger(TrayManager.class);
 
-    private boolean headless;
-
     // The cached icons
     private final IconCache iconCache;
 

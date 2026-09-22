@@ -20,6 +20,7 @@ import qz.utils.FileUtilities;
 import qz.utils.ImageUtilities;
 import qz.utils.SystemUtilities;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -40,7 +41,7 @@ public class IconCache {
     private static IconCache instance;
     private final Path resourcesPath;
 
-    final ConcurrentHashMap<String, Path> extractedSvgs;
+    final ConcurrentHashMap<String, Path> extractedImages;
 
     /**
      * Enum for building and tracking icon keys for PNG (pre-rasterized) or SVG (runtime rasterized) images
@@ -216,7 +217,7 @@ public class IconCache {
                     entry -> new ImageIcon(entry.getValue())
                 )
         );
-        this.extractedSvgs = new ConcurrentHashMap<>();
+        this.extractedImages = new ConcurrentHashMap<>();
     }
 
     public IconCache() {
@@ -353,28 +354,41 @@ public class IconCache {
         return getImages(i, false);
     }
 
-    public Path getSvgPath(Icon i, boolean isDark) throws IOException {
-        String id = i.getId(Theme.get(isDark));
-        if(extractedSvgs.containsKey(id)) {
-            return extractedSvgs.get(id);
+    Path extractImage(Icon.Format format, Icon i, boolean isDark, int size) throws IOException {
+        String id = i.getId(Theme.get(isDark), size) + "-" + format.slug();
+        if(extractedImages.containsKey(id)) {
+            return extractedImages.get(id);
         }
 
-        Path resource = null;
-        if(isDark) {
-            resource = findFile(Icon.Format.SVG, Theme.DARK, i.names);
+        Theme theme = Theme.get(isDark);
+        if(format == Icon.Format.SVG) {
+            Path resource = findFile(format, theme, i.names);
+            resource = resource == null ? findFile(format, Theme.LIGHT, i.names) : resource; // fallback
+            if(resource != null) {
+                Path svgPath = Files.createTempFile(String.format("%s-", id), Icon.Format.SVG.extension());
+                svgPath.toFile().deleteOnExit();
+                FileUtilities.configureAssetToFile(ThemeUtilities.class, resource.toString(), new HashMap<>(), svgPath.toFile());
+                extractedImages.put(id, svgPath);
+                return svgPath;
+            }
+            throw new IOException("Unable to find or write svg resource file: '" + String.join("', '", i.names) + "'");
+        } else {
+            Path rasterPath = Files.createTempFile(String.format("%s-", id), format.extension());
+            rasterPath.toFile().deleteOnExit();
+            if (ImageIO.write(getImage(i, theme, size), format.slug(), rasterPath.toFile())) {
+                extractedImages.put(id, rasterPath);
+                return rasterPath;
+            }
+            throw new IOException("Unable to write png file: '" + rasterPath + "'");
         }
-        if(resource == null) {
-            resource = findFile(Icon.Format.SVG, Theme.LIGHT, i.names);
-        }
+    }
 
-        if(resource != null) {
-            Path svgPath = Files.createTempFile(String.format("%s-", id), Icon.Format.SVG.extension());
-            FileUtilities.configureAssetToFile(ThemeUtilities.class, resource.toString(), new HashMap<>(), svgPath.toFile());
-            svgPath.toFile().deleteOnExit();
-            extractedSvgs.put(id, svgPath);
-            return svgPath;
-        }
-        throw new IOException("Unable to find svg resource file: '" + String.join("', '", i.names) + "'");
+    public Path extractPng(Icon i, boolean isDark, int size) throws IOException {
+        return extractImage(Icon.Format.PNG, i, isDark, size);
+    }
+
+    public Path extractSvg(Icon i, boolean isDark) throws IOException {
+        return extractImage(Icon.Format.SVG, i,  isDark, 0);
     }
 
     private static String quantifiedFileName(String fileName, Icon i, Theme theme, Icon.Format format, int size) {

@@ -25,7 +25,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,6 +41,7 @@ public class IconCache {
     private static IconCache instance;
     private final Path resourcesPath;
 
+    final HashMap<String, Path> foundResources = new HashMap<>();
     final ConcurrentHashMap<String, Path> extractedImages;
 
     /**
@@ -133,6 +134,18 @@ public class IconCache {
             public String slug() {
                 return Sluggable.slugOf(this);
             }
+
+            public static Theme parse(String id) {
+                if(id == null) {
+                    return LIGHT;
+                }
+                if (id.equalsIgnoreCase(DARK.slug()) ||
+                        id.contains("-" + DARK.slug() + "-") ||
+                        id.endsWith("-" + DARK.slug())) {
+                    return DARK;
+                }
+                return LIGHT;
+            }
         }
 
         private final Type type;
@@ -162,8 +175,20 @@ public class IconCache {
             return ids.toArray(new String[0]);
         }
 
+        String[] getIds() {
+            return getIds(Theme.values());
+        }
+
         String getId(Theme theme) {
             return getId(theme, 0);
+        }
+
+        static String idSwap(String id, Theme from, Theme to) {
+            return id.replace("-" + from.slug(), "-" + to.slug());
+        }
+
+        static String idSwap(String id, Icon from, Icon to) {
+            return id.replace(from.slug(), to.slug());
         }
 
         String getId(Theme theme, int size) {
@@ -188,6 +213,17 @@ public class IconCache {
         @Override
         public String slug() {
             return slug;
+        }
+
+        public static Icon fromId(String toMatch) {
+            for(Icon icon : Icon.values()) {
+                for(String id : icon.getIds()) {
+                    if(id.equals(toMatch)) {
+                        return icon;
+                    }
+                }
+            }
+            return null;
         }
 
         /**
@@ -225,86 +261,72 @@ public class IconCache {
     }
 
     Map<String, BufferedImage> buildImageCache() {
-        Map<String, BufferedImage> images = new HashMap<>();
+        Map<String, BufferedImage> imageMap = new LinkedHashMap<>();
         for(Icon i : Icon.values()) {
             for(int size : i.getSizes()) {
-                BufferedImage lightImage = null;
+                theme:
                 for(Theme theme : Theme.values()) {
-                    Path found;
-                    try {
-                        found = findFile(i.names);
-                    } catch(IOException e) {
-                        if(i == Icon.DANGER_MASK_ICON) {
-                            // "tray-loading" is just "tray-ready" at 50% transparency
-                            images.put(i.getId(theme, size),
-                                       ImageUtilities.transparent(
-                                               images.get(Icon.DEFAULT_MASK_ICON.getId(theme, size)), 0.50f)
-                            );
-                            continue;
+                    String id = i.getId(theme, size);
+                    imageMap.put(id, null); // placeholder
+                    // for backwards-compat we have to support historical filenames too
+                    for(String name : i.names) {
+                        for(IconCache.Icon.Format format : IconCache.Icon.Format.values()) {
+                            String quantifiedResource = quantifiedResource(name, i, theme, format, size);
+                            Path imagePath = FileUtilities.resourcePath(resourcesPath.resolve(quantifiedResource));
+                            BufferedImage image = ImageUtilities.imageFromResource(imagePath, size);
+                            if(image != null) {
+                                imageMap.put(id, image);
+                                String cachedId = format == Icon.Format.SVG ? i.getId(theme, 0) : id;
+                                foundResources.putIfAbsent(cachedId, imagePath);
+                                continue theme;
+                            }
                         }
-                        throw new RuntimeException(e);
                     }
-                    Icon.Format format = Icon.Format.parse(found);
-                    Path path = resourcesPath.resolve(quantifiedFileName(found.getFileName().toString(), i, theme, format, size));
-                    BufferedImage image = switch(format) {
-                        case PNG -> ImageUtilities.imageFromResource(path);
-                        case SVG -> ImageUtilities.imageFromSvgResource(path, size);
-                    };
+                }
+            }
+        }
 
-                    // Handle undocumented macOS Sytem Tray padding
-                    if (SystemUtilities.isMac() && i.getType() == SYSTEM_TRAY) {
-                        image = ImageUtilities.padImage(image, 25);
-                    }
+        // Fixup our images
+        for(HashMap.Entry<String, BufferedImage> entry : imageMap.entrySet()) {
+            String key = entry.getKey();
+            BufferedImage value = imageMap.get(entry.getKey());
 
-                    // Handle dark fallback
-                    if(theme == Theme.LIGHT) {
-                        if(image != null) {
-                            lightImage = image;
-                        } else {
-                            log.warn("No image found in {} for {} {}", resourcesPath, Arrays.toString(i.names), Arrays.toString(Icon.Format.values()));
-                        }
+            // Ensure we can reverse-lookup by id
+            Icon icon = Icon.fromId(key);
+            if(icon == null) {
+                throw new UnsupportedOperationException("Icon " + entry.getKey() + " is unknown");
+            }
+
+            if(value == null) {
+                Theme theme = Theme.parse(key);
+                if(theme == Theme.LIGHT) {
+                    // Handle missing "light" images
+                    if (icon == Icon.DANGER_MASK_ICON) {
+                        // tray-loading-light-16 = tray-ready-light-16 @ 50%, etc
+                        String readyKey = Icon.idSwap(key, Icon.DANGER_MASK_ICON, Icon.DEFAULT_MASK_ICON);
+                        imageMap.put(key, ImageUtilities.addTransparency(imageMap.get(readyKey), 0.50f));
                     } else {
-                        if(image == null) {
-                            // Duplicate and invert mask icons
-                            image = ThemeUtilities.needsInversion(i) ? ImageUtilities.invert(lightImage) : lightImage;
-                        }
+                        throw new UnsupportedOperationException("Mandatory icon " + key + " cannot be null");
                     }
-                    images.put(i.getId(theme, size), image);
-                }
-            }
-        }
-        return images;
-    }
+                } else if(theme == Theme.DARK) {
+                    // Handle missing "dark" images
+                    // tray-ready-color-dark-16 = tray-ready-color-light-16
+                    String lightKey = Icon.idSwap(key, Theme.DARK, Theme.LIGHT);
 
-    /**
-     * Crawls resource path to find the first file
-     */
-    Path findFile(Icon.Format format, Theme theme, String ... names) {
-        for(String name : names) {
-            Path file;
-            if(theme == Theme.DARK) {
-                file = resourcesPath.resolve(String.format("%s-%s.%s", name, theme.slug(), format.slug()));
+                    BufferedImage darkImage = icon == Icon.DANGER_MASK_ICON && ThemeUtilities.needsInversion(icon) ?
+                            ImageUtilities.invert(imageMap.get(lightKey)) :  // mask icons require inverting
+                            imageMap.get(lightKey);
+                    imageMap.put(key, darkImage);
+                }
             } else {
-                file = resourcesPath.resolve(String.format("%s.%s", name, format.slug()));
-            }
-            try(InputStream is = ImageUtilities.getResourceAsStream(file)) {
-                if (is != null) {
-                    return file;
+                // Handle undocumented 25% padding for macOS system tray
+                if (SystemUtilities.isMac() && icon.getType() == SYSTEM_TRAY) {
+                    imageMap.put(key, ImageUtilities.padImage(value, 0.25f));
                 }
             }
-            catch(IOException ignore) {}
         }
-        return null;
-    }
 
-    Path findFile(String ... names) throws IOException {
-        Path found;
-        for(Icon.Format format : Icon.Format.values()) {
-            if((found = findFile(format, Theme.LIGHT, names)) != null) {
-                return found;
-            }
-        }
-        throw new IOException("Could not find a mandatory resource under any of the following names '" + String.join("', '", names) + "' " + Arrays.toString(Icon.Format.values()));
+        return imageMap;
     }
 
     /**
@@ -355,23 +377,43 @@ public class IconCache {
     }
 
     Path extractImage(Icon.Format format, Icon i, boolean isDark, int size) throws IOException {
-        String id = i.getId(Theme.get(isDark), size) + "-" + format.slug();
+        String id = i.getId(Theme.get(isDark), size);
         if(extractedImages.containsKey(id)) {
             return extractedImages.get(id);
         }
 
         Theme theme = Theme.get(isDark);
         if(format == Icon.Format.SVG) {
-            Path resource = findFile(format, theme, i.names);
-            resource = resource == null ? findFile(format, Theme.LIGHT, i.names) : resource; // fallback
-            if(resource != null) {
-                Path svgPath = Files.createTempFile(String.format("%s-", id), Icon.Format.SVG.extension());
-                svgPath.toFile().deleteOnExit();
-                FileUtilities.configureAssetToFile(ThemeUtilities.class, resource.toString(), new HashMap<>(), svgPath.toFile());
-                extractedImages.put(id, svgPath);
-                return svgPath;
+            Path imagePath = foundResources.get(id);
+
+            Path svgPath = Files.createTempFile(String.format("%s-", id), Icon.Format.SVG.extension());
+            svgPath.toFile().deleteOnExit();
+
+            if(imagePath == null) {
+                switch(i) {
+                    case DANGER_MASK_ICON:
+                        if(theme == Theme.DARK) {
+                            throw new UnsupportedOperationException("No way to convert " + format + " from light to dark");
+                        }
+                        // We don't require tray-loading; try making one on-the-fly instead
+                        id = Icon.idSwap(id, Icon.DANGER_MASK_ICON, Icon.DEFAULT_MASK_ICON);
+                        String xmlContent = ImageUtilities.addTransparency(foundResources.get(id), 0.5f);
+                        Files.writeString(svgPath, xmlContent);
+                        break;
+                    case DEFAULT_ICON:
+                    default:
+                        if(theme == Theme.DARK) {
+                            // Most dark icons can just fall back to their light equivalents
+                            return extractImage(format, i, false, size);
+                        }
+                        // We should never get here
+                        throw new UnsupportedEncodingException("No cached path stored for '" + id + "'");
+                }
+            } else {
+                FileUtilities.configureAssetToFile(ThemeUtilities.class, imagePath.toString(), new HashMap<>(), svgPath.toFile());
             }
-            throw new IOException("Unable to find or write svg resource file: '" + String.join("', '", i.names) + "'");
+            extractedImages.put(id, svgPath);
+            return svgPath;
         } else {
             Path rasterPath = Files.createTempFile(String.format("%s-", id), format.extension());
             rasterPath.toFile().deleteOnExit();
@@ -391,7 +433,7 @@ public class IconCache {
         return extractImage(Icon.Format.SVG, i,  isDark, 0);
     }
 
-    private static String quantifiedFileName(String fileName, Icon i, Theme theme, Icon.Format format, int size) {
+    private static String quantifiedResource(String fileName, Icon i, Theme theme, Icon.Format format, int size) {
         String baseName = FilenameUtils.getBaseName(fileName);
         if(format == Icon.Format.SVG || size == i.getSizes()[0]) {
             // size is not part of the filename

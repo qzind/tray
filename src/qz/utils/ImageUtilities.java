@@ -5,32 +5,44 @@ import com.github.weisj.jsvg.parser.SVGLoader;
 import com.github.weisj.jsvg.view.FloatSize;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.w3c.dom.*;
 import qz.ui.ThemeUtilities;
 import qz.ui.component.IconCache;
 
 import javax.imageio.ImageIO;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
+
+import static qz.utils.FileUtilities.*;
 
 public class ImageUtilities {
     private static final Logger log = LogManager.getLogger(ImageUtilities.class);
 
+    // TODO: Change this to IconCache.class after refactor
+    private static final Class<?> RELATIVE_CLASS = ThemeUtilities.class;
+
     /**
      * Center an image with the specified padding
      */
-    public static BufferedImage padImage(BufferedImage image, float percent) {
+    public static BufferedImage padImage(BufferedImage image, float amount) {
         if(image == null) {
             return null;
         }
         int w = image.getWidth();
         int h = image.getHeight();
-        int wPad = (int)((percent/100.0) * w);
-        int hPad = (int)((percent/100.0) * h);
+        int wPad = (int)(amount * w);
+        int hPad = (int)(amount * h);
 
         BufferedImage padded = new BufferedImage(w + wPad, h + hPad, BufferedImage.TYPE_INT_ARGB);
         Graphics g = padded.getGraphics();
@@ -61,8 +73,8 @@ public class ImageUtilities {
      * @param path The file path of the image to load
      * @return The BufferedImage representing the data
      */
-    public static BufferedImage imageFromResource(Path path) {
-        try(InputStream is = getResourceAsStream(path)) {
+    static BufferedImage imageFromResource(String path) {
+        try(InputStream is = RELATIVE_CLASS.getResourceAsStream(path)) {
             if (is != null) {
                 return ImageIO.read(is);
             }
@@ -72,6 +84,13 @@ public class ImageUtilities {
         return null;
     }
 
+    public static BufferedImage imageFromResource(Path path, Integer size) {
+        if(path.toString().endsWith(".svg")) {
+            return imageFromSvgResource(path, size);
+        }
+        return imageFromResource(path.toString());
+    }
+
     /**
      * Returns a buffered image from the specified <code>path</code> relative to ui directory
      *
@@ -79,33 +98,37 @@ public class ImageUtilities {
      * @param size The desired size to scale the SVG to, or the natural SVG size if <code>null</code>
      * @return The BufferedImage representing the data
      */
-    public static BufferedImage imageFromSvgResource(Path path, Integer size) {
-        URL url = getResource(path);
-        if (url != null) {
-            SVGLoader loader = new SVGLoader();
-            SVGDocument svgDocument = loader.load(url);
-            if(svgDocument != null) {
-                FloatSize svgSize = svgDocument.size();
-                double w = svgSize.getWidth();
-                double h = svgSize.getHeight();
-
-                // scale proportionally
-                if(size != null) {
-                    w = svgSize.getWidth() * (size / h);
-                    h = size;
-                }
-
-                BufferedImage image = new BufferedImage((int)w, (int)h, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g = image.createGraphics();
-                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-
-                g.scale(w / svgSize.getWidth(), h / svgSize.getHeight());
-                svgDocument.render(null, g);
-                g.dispose();
-                return image;
-            }
+    static BufferedImage imageFromSvgResource(Path path, Integer size) {
+        URL url = RELATIVE_CLASS.getResource(resourcePath(path).toString());
+        if(url == null) {
+            return null;
         }
+        SVGLoader loader = new SVGLoader();
+        SVGDocument svgDocument = loader.load(url);
+        if(svgDocument != null) {
+            FloatSize svgSize = svgDocument.size();
+            double w = svgSize.getWidth();
+            double h = svgSize.getHeight();
+
+            // scale proportionally
+            if(size != null) {
+                w = svgSize.getWidth() * (size / h);
+                h = size;
+            }
+
+            BufferedImage image = new BufferedImage((int)w, (int)h, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = image.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+            g.scale(w / svgSize.getWidth(), h / svgSize.getHeight());
+            svgDocument.render(null, g);
+            g.dispose();
+            return image;
+        } else {
+            log.warn("SVGDocument is null '{}'", path);
+        }
+
         return null;
     }
 
@@ -156,7 +179,7 @@ public class ImageUtilities {
     /**
      * Sets transparency of an image to the specified value
      */
-    public static BufferedImage transparent(BufferedImage bi, float amount) {
+    public static BufferedImage addTransparency(BufferedImage bi, float amount) {
         BufferedImage transparentImage = new BufferedImage(bi.getWidth(), bi.getHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = transparentImage.createGraphics();
         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, amount));
@@ -167,21 +190,51 @@ public class ImageUtilities {
     }
 
     /**
-     * Normalize path for accessing the embedded resources directory
-     * Notably, Windows will use "\" instead of "/" and break things.
+     * Reads the contents of the provided svg and returns the contents with transparency applied
+     * to the node's root <code>style="opacity: ..."</code> attribute.
      */
-    static String normalizePath(Path path) {
-        if(path == null) {
-            return null;
+    public static String addTransparency(Path svgPath, float amount) throws IOException {
+        try {
+            Document doc = XmlUtilities.createXmlDocument(RELATIVE_CLASS.getResourceAsStream(svgPath.toString()));
+            NodeList svgList = doc.getElementsByTagName("svg");
+            if (svgList.getLength() > 0) {
+                Element svgNode = (Element)svgList.item(0);
+
+                // Set style="opacity: ..." at root element
+                String existingStyle = svgNode.getAttribute("style").trim();
+                svgNode.setAttribute("style", existingStyle +
+                        (existingStyle.isEmpty()? "":";") + "opacity: " + amount + ";");
+
+                // Convert the updated XML Document back to a String
+                TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                Transformer transformer = transformerFactory.newTransformer();
+                StringWriter writer = new StringWriter();
+                transformer.transform(new DOMSource(doc), new StreamResult(writer));
+
+                return writer.toString();
+            }
+            throw new IOException("SVG '" + svgPath + "' is missing a root 'svg' node");
+        } catch(Exception e) {
+            throw new IOException(e);
         }
-        return path.normalize().toString().replace('\\', '/');
     }
 
-    public static InputStream getResourceAsStream(Path path) {
-        return ThemeUtilities.class.getResourceAsStream(normalizePath(path));
-    }
-
-    public static URL getResource(Path path) {
-        return ThemeUtilities.class.getResource(normalizePath(path));
+    /**
+     * Crawls basePath (relative to <code>RELATIVE_CLASS</code>) to find the first file or
+     * <code>null</code> if none is found
+     * e.g. "resources/tray-ready.svg", "resources/tray-ready-dark.png", etc
+     */
+    public static Path findImage(Path basePath, String extension, boolean isDark, String name) {
+        //for(String name : names) {
+            Path imagePath = basePath.resolve(String.format((isDark ? "%s-dark.%s" : "%s.%s"), name, extension));
+            imagePath = resourcePath(imagePath);
+            try(InputStream is = RELATIVE_CLASS.getResourceAsStream(imagePath.toString())) {
+                if (is != null) {
+                    return imagePath;
+                }
+            }
+            catch(IOException ignore) {}
+        //}
+        return null;
     }
 }

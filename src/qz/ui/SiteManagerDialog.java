@@ -305,19 +305,25 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                 if(targetComponent instanceof JTabbedPane) {
                     JTabbedPane tabbedPane = (JTabbedPane)targetComponent;
                     CertificateDisplay selectedCert = getSelectedCertificate();
+                    if(selectedCert == null) {
+                        e.rejectDrop();
+                        return;
+                    }
                     int targetIndex = tabbedPane.indexAtLocation(e.getLocation().x, e.getLocation().y);
                     ContainerList<CertificateDisplay> target = getDropListByIndex(targetIndex);
                     if(target == null) {
                         e.rejectDrop();
                         return;
                     }
-                    e.acceptDrop(DnDConstants.ACTION_MOVE);
                     ContainerList<CertificateDisplay> source = getSelectedList();
-                    if(source != target) {
-                        addCertificate(selectedCert, target, false);
-                        removeCertificate(selectedCert, source);
-                        clearSelection();
+                    if(source == null || source == target) {
+                        e.rejectDrop();
+                        return;
                     }
+                    e.acceptDrop(DnDConstants.ACTION_MOVE);
+                    addCertificate(selectedCert, target, false);
+                    removeCertificate(selectedCert, source);
+                    clearSelection();
                 }
             }
         });

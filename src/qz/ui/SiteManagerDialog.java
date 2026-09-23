@@ -296,13 +296,22 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                 }
                 catch(IOException | UnsupportedFlavorException ignore) {}
 
-                e.acceptDrop(DnDConstants.ACTION_MOVE);
+                if(!e.getTransferable().isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                    e.rejectDrop();
+                    return;
+                }
+
                 Component targetComponent = e.getDropTargetContext().getComponent();
                 if(targetComponent instanceof JTabbedPane) {
                     JTabbedPane tabbedPane = (JTabbedPane)targetComponent;
                     CertificateDisplay selectedCert = getSelectedCertificate();
                     int targetIndex = tabbedPane.indexAtLocation(e.getLocation().x, e.getLocation().y);
-                    ContainerList<CertificateDisplay> target = getListByIndex(targetIndex);
+                    ContainerList<CertificateDisplay> target = getDropListByIndex(targetIndex);
+                    if(target == null) {
+                        e.rejectDrop();
+                        return;
+                    }
+                    e.acceptDrop(DnDConstants.ACTION_MOVE);
                     ContainerList<CertificateDisplay> source = getSelectedList();
                     if(source != target) {
                         addCertificate(selectedCert, target, false);
@@ -488,6 +497,14 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         }
 
         return blockList;
+    }
+
+    private ContainerList<CertificateDisplay> getDropListByIndex(int index) {
+        if (index < 0 || index >= tabbedPane.getTabCount()) {
+            return null;
+        }
+
+        return getListByIndex(index);
     }
 
     private void clearSelection() {

@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -59,6 +60,8 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
     private ContainerList<CertificateDisplay> allowList;
     private ContainerList<CertificateDisplay> blockList;
+    private ContainerList<CertificateDisplay> dragSource;
+    private CertificateDisplay dragCertificate;
 
     private CertificateTable certTable;
     private IconCache iconCache;
@@ -265,50 +268,99 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                 for(DataFlavor flavor : e.getTransferable().getTransferDataFlavors()) {
                     if(flavor.equals(DataFlavor.javaFileListFlavor)) {
                         // Dragged from file system
+                        clearListDrag();
                         tabbedPane.setBorder(dragBorder);
                         e.acceptDrag(DnDConstants.ACTION_COPY);
                         return;
                     } else if(flavor.equals(DataFlavor.stringFlavor)) {
                         // Dragged from JList
-                        Component target = e.getDropTargetContext().getComponent();
-                        if(target instanceof JTabbedPane) {
-                            target.setBackground(Constants.TRUSTED_COLOR);
-                            e.acceptDrag(DnDConstants.ACTION_MOVE);
+                        dragSource = getSelectedList();
+                        dragCertificate = getSelectedCertificate();
+                        if(dragSource != null && dragCertificate != null) {
+                            // JList drags advertise copy here
+                            updateListDragStatus(e);
+                        } else {
+                            e.rejectDrag();
                         }
+                        return;
                     }
                 }
+                e.rejectDrag();
+            }
+
+            @Override
+            public synchronized void dragOver(DropTargetDragEvent e) {
+                if(e.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                    // Do not read file transfer data during hover
+                    e.acceptDrag(DnDConstants.ACTION_COPY);
+                    return;
+                }
+                if(e.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                    updateListDragStatus(e);
+                    return;
+                }
+                e.rejectDrag();
             }
 
             @Override
             public synchronized void dragExit(DropTargetEvent e) {
                 tabbedPane.setBorder(plainBorder);
                 tabbedPane.setBackground(plainBackground);
+                clearListDrag();
             }
 
             @Override
             public synchronized void drop(DropTargetDropEvent e) {
                 tabbedPane.setBorder(plainBorder);
                 tabbedPane.setBackground(plainBackground);
-                try {
-                    e.acceptDrop(DnDConstants.ACTION_COPY);
-                    addCertificates(e.getTransferable().getTransferData(DataFlavor.javaFileListFlavor), getSelectedList(), true);
+                if(e.getTransferable().isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                    try {
+                        // Read external file data only after accepting the drop
+                        e.acceptDrop(DnDConstants.ACTION_COPY);
+                        addCertificates(e.getTransferable().getTransferData(DataFlavor.javaFileListFlavor), getSelectedList(), true);
+                        e.dropComplete(true);
+                        return;
+                    }
+                    catch(IOException | UnsupportedFlavorException ignore) {
+                        e.dropComplete(false);
+                        return;
+                    }
+                }
+
+                if(!e.getTransferable().isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                    e.rejectDrop();
                     return;
                 }
-                catch(IOException | UnsupportedFlavorException ignore) {}
 
-                e.acceptDrop(DnDConstants.ACTION_MOVE);
                 Component targetComponent = e.getDropTargetContext().getComponent();
                 if(targetComponent instanceof JTabbedPane) {
                     JTabbedPane tabbedPane = (JTabbedPane)targetComponent;
-                    CertificateDisplay selectedCert = getSelectedCertificate();
-                    int targetIndex = tabbedPane.indexAtLocation(e.getLocation().x, e.getLocation().y);
-                    ContainerList<CertificateDisplay> target = getListByIndex(targetIndex);
-                    ContainerList<CertificateDisplay> source = getSelectedList();
-                    if(source != target) {
-                        addCertificate(selectedCert, target, false);
-                        removeCertificate(selectedCert, source);
-                        clearSelection();
+                    CertificateDisplay selectedCert = dragCertificate != null ? dragCertificate : getSelectedCertificate();
+                    if(selectedCert == null) {
+                        e.rejectDrop();
+                        clearListDrag();
+                        return;
                     }
+                    int targetIndex = tabbedPane.indexAtLocation(e.getLocation().x, e.getLocation().y);
+                    ContainerList<CertificateDisplay> target = getDropListByIndex(targetIndex);
+                    if(target == null) {
+                        e.rejectDrop();
+                        clearListDrag();
+                        return;
+                    }
+                    ContainerList<CertificateDisplay> source = dragSource != null ? dragSource : getSelectedList();
+                    if(source == null || source == target) {
+                        e.rejectDrop();
+                        clearListDrag();
+                        return;
+                    }
+                    // DnD copy, logical list move
+                    e.acceptDrop(DnDConstants.ACTION_COPY);
+                    addCertificate(selectedCert, target, false);
+                    removeCertificate(selectedCert, source);
+                    clearSelection();
+                    clearListDrag();
+                    e.dropComplete(true);
                 }
             }
         });
@@ -401,9 +453,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         if (list.contains(certDisplay)) {
             String saveFile = (list == allowList ? Constants.ALLOW_FILE : Constants.BLOCK_FILE);
             if(certDisplay != null && certDisplay.getCert() != null) {
-                boolean localOk = FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data(), true);
-                boolean sharedOk = FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data(), false);
-                if(localOk || sharedOk) {
+                if(FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data(), certDisplay.isLocal())) {
                     list.remove(certDisplay);
                     return;
                 }
@@ -423,19 +473,9 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     }
 
     private void addCertificates(Object dragged, ContainerList<CertificateDisplay> list, boolean selectWhenDone) {
-        if(dragged instanceof java.util.List) {
-            java.util.List certFiles = (java.util.List)dragged;
-            if(certFiles.size() > 0) {
-                if(certFiles.get(0) instanceof File) {
-                    addCertificates((File[])certFiles.toArray(new File[certFiles.size()]), list, selectWhenDone);
-                } else {
-                    System.out.println("Nope: " + certFiles.get(0).getClass().getName());
-                }
-
-            }
-
-        } else {
-            log.warn("Could not convert certificate to from unknown type: {}", dragged.getClass().getCanonicalName());
+        File[] certFiles = getCertificateFiles(dragged);
+        if(certFiles != null) {
+            addCertificates(certFiles, list, selectWhenDone);
         }
     }
 
@@ -444,11 +484,13 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             try {
                 Certificate importCert = new Certificate(file.toPath());
                 if (importCert.isValid()) {
-                    addCertificate(new CertificateDisplay(importCert, true), list, selectWhenDone);
+                    CertificateDisplay certDisplay = new CertificateDisplay(importCert, true);
+                    removeFromOppositeList(certDisplay, list);
+                    addCertificate(certDisplay, list, selectWhenDone);
                     continue;
                 }
                 // Warn of any invalid certs
-                showInvalidCertWarning(file, importCert);
+                showInvalidCertWarning(file, importCert, list);
             }
             catch(CertificateException | IOException e) {
                 log.warn("Unable to import cert {}", file, e);
@@ -457,7 +499,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         }
     }
 
-    private void showInvalidCertWarning(File file, Certificate cert) {
+    private void showInvalidCertWarning(File file, Certificate cert, ContainerList<CertificateDisplay> list) {
         Path override = SystemUtilities.getJarParentPath().resolve(Constants.OVERRIDE_CERT);
         String message = String.format(IMPORT_NEEDED,
                                        cert.getCommonName(),
@@ -470,12 +512,42 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             setCursor(backupCursor);
             if(copySuccess) {
                 Certificate.scanAdditionalCAs();
-                addCertificates(new File[] { file }, allowList, true);
+                // Preserve the original drop target after trust-store copy
+                addCertificates(new File[] { file }, list, true);
                 refreshStrictModeCheckbox();
             } else {
                 JOptionPane.showMessageDialog(this, String.format(IMPORT_FAILED), "Import failed", JOptionPane.WARNING_MESSAGE);
             }
         }
+    }
+
+    private void removeFromOppositeList(CertificateDisplay certDisplay, ContainerList<CertificateDisplay> list) {
+        // Keep imported certs mutually exclusive
+        ContainerList<CertificateDisplay> opposite = list == allowList ? blockList : allowList;
+        int existing = opposite.indexOf(certDisplay);
+        if(existing >= 0) {
+            removeCertificate(opposite.get(existing), opposite);
+        } else {
+            // Handles Certificate auto-save before UI refresh
+            String saveFile = opposite == allowList ? Constants.ALLOW_FILE : Constants.BLOCK_FILE;
+            FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data(), true);
+        }
+    }
+
+    private File[] getCertificateFiles(Object dragged) {
+        if(dragged instanceof List<?>) {
+            List<?> certFiles = (List<?>)dragged;
+            if(certFiles.isEmpty()) {
+                return null;
+            }
+            if(certFiles.get(0) instanceof File) {
+                return certFiles.toArray(new File[0]);
+            }
+            log.warn("Could not import certificate from unknown type: {}", certFiles.get(0).getClass().getCanonicalName());
+        } else {
+            log.warn("Could not import certificate from unknown type: {}", dragged.getClass().getCanonicalName());
+        }
+        return null;
     }
 
     private ContainerList<CertificateDisplay> getSelectedList() {
@@ -488,6 +560,31 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         }
 
         return blockList;
+    }
+
+    private ContainerList<CertificateDisplay> getDropListByIndex(int index) {
+        // Only tab headers are valid move targets
+        if (index < 0 || index >= tabbedPane.getTabCount()) {
+            return null;
+        }
+
+        return getListByIndex(index);
+    }
+
+    private void clearListDrag() {
+        dragSource = null;
+        dragCertificate = null;
+    }
+
+    private void updateListDragStatus(DropTargetDragEvent event) {
+        int targetIndex = tabbedPane.indexAtLocation(event.getLocation().x, event.getLocation().y);
+        ContainerList<CertificateDisplay> target = getDropListByIndex(targetIndex);
+        if(target != null && dragSource != null && dragSource != target) {
+            // Match the JList source action
+            event.acceptDrag(DnDConstants.ACTION_COPY);
+        } else {
+            event.rejectDrag();
+        }
     }
 
     private void clearSelection() {

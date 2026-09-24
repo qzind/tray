@@ -482,8 +482,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     private void addCertificates(File[] certFiles, ContainerList<CertificateDisplay> list, boolean selectWhenDone) {
         for(File file : certFiles) {
             try {
-                // Site Manager controls the target list
-                Certificate importCert = new Certificate(file.toPath(), false);
+                Certificate importCert = new Certificate(file.toPath());
                 if (importCert.isValid()) {
                     CertificateDisplay certDisplay = new CertificateDisplay(importCert, true);
                     removeFromOppositeList(certDisplay, list);

@@ -289,12 +289,14 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
             public synchronized void drop(DropTargetDropEvent e) {
                 tabbedPane.setBorder(plainBorder);
                 tabbedPane.setBackground(plainBackground);
-                try {
-                    e.acceptDrop(DnDConstants.ACTION_COPY);
-                    addCertificates(e.getTransferable().getTransferData(DataFlavor.javaFileListFlavor), getSelectedList(), true);
-                    return;
+                if(e.getTransferable().isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                    try {
+                        e.acceptDrop(DnDConstants.ACTION_COPY);
+                        addCertificates(e.getTransferable().getTransferData(DataFlavor.javaFileListFlavor), getSelectedList(), true);
+                        return;
+                    }
+                    catch(IOException | UnsupportedFlavorException ignore) {}
                 }
-                catch(IOException | UnsupportedFlavorException ignore) {}
 
                 if(!e.getTransferable().isDataFlavorSupported(DataFlavor.stringFlavor)) {
                     e.rejectDrop();
@@ -416,9 +418,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         if (list.contains(certDisplay)) {
             String saveFile = (list == allowList ? Constants.ALLOW_FILE : Constants.BLOCK_FILE);
             if(certDisplay != null && certDisplay.getCert() != null) {
-                boolean localOk = FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data(), true);
-                boolean sharedOk = FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data(), false);
-                if(localOk || sharedOk) {
+                if(FileUtilities.deleteFromFile(saveFile, certDisplay.getCert().data(), certDisplay.isLocal())) {
                     list.remove(certDisplay);
                     return;
                 }

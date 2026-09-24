@@ -170,11 +170,21 @@ public class Certificate {
     }
 
     public Certificate(Path path) throws IOException, CertificateException {
-        this(new String(Files.readAllBytes(path), Charsets.UTF_8));
+        this(path, true);
+    }
+
+    // Some UI flows need validation without auto-saving
+    public Certificate(Path path, boolean autoSaveTrusted) throws IOException, CertificateException {
+        this(new String(Files.readAllBytes(path), Charsets.UTF_8), autoSaveTrusted);
     }
 
     /** Decodes a certificate and intermediate certificate from the given string */
     public Certificate(String in) throws CertificateException {
+        this(in, true);
+    }
+
+    /** Decodes a certificate without necessarily saving trusted certs */
+    public Certificate(String in, boolean autoSaveTrusted) throws CertificateException {
         try {
             // Assume someone else's cert until proven otherwise
             thirdParty = true;
@@ -252,8 +262,8 @@ public class Certificate {
             while(allCerts.hasNext()) {
                 Certificate cert = allCerts.next();
                 if(cert.equals(this) || (cert.equals(foundRoot) && !cert.equals(builtIn))) {
-                    log.debug("Adding {} to {} list", cert.toString(), Constants.ALLOW_FILE);
-                    if(!isSaved()) {
+                    if(autoSaveTrusted && !isSaved()) {
+                        log.debug("Adding {} to {} list", cert.toString(), Constants.ALLOW_FILE);
                         FileUtilities.printLineToFile(Constants.ALLOW_FILE, data());
                     }
                     valid = true;

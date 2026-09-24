@@ -59,6 +59,8 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
     private ContainerList<CertificateDisplay> allowList;
     private ContainerList<CertificateDisplay> blockList;
+    private ContainerList<CertificateDisplay> dragSource;
+    private CertificateDisplay dragCertificate;
 
     private CertificateTable certTable;
     private IconCache iconCache;
@@ -265,24 +267,40 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                 for(DataFlavor flavor : e.getTransferable().getTransferDataFlavors()) {
                     if(flavor.equals(DataFlavor.javaFileListFlavor)) {
                         // Dragged from file system
+                        clearListDrag();
                         tabbedPane.setBorder(dragBorder);
                         e.acceptDrag(DnDConstants.ACTION_COPY);
                         return;
                     } else if(flavor.equals(DataFlavor.stringFlavor)) {
                         // Dragged from JList
-                        Component target = e.getDropTargetContext().getComponent();
-                        if(target instanceof JTabbedPane) {
-                            target.setBackground(Constants.TRUSTED_COLOR);
-                            e.acceptDrag(DnDConstants.ACTION_MOVE);
+                        dragSource = getSelectedList();
+                        dragCertificate = getSelectedCertificate();
+                        if(dragSource != null && dragCertificate != null) {
+                            // JList drags advertise copy here
+                            updateListDragStatus(e);
+                        } else {
+                            e.rejectDrag();
                         }
+                        return;
                     }
                 }
+                e.rejectDrag();
+            }
+
+            @Override
+            public synchronized void dragOver(DropTargetDragEvent e) {
+                if(e.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                    updateListDragStatus(e);
+                    return;
+                }
+                e.rejectDrag();
             }
 
             @Override
             public synchronized void dragExit(DropTargetEvent e) {
                 tabbedPane.setBorder(plainBorder);
                 tabbedPane.setBackground(plainBackground);
+                clearListDrag();
             }
 
             @Override
@@ -306,26 +324,31 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                 Component targetComponent = e.getDropTargetContext().getComponent();
                 if(targetComponent instanceof JTabbedPane) {
                     JTabbedPane tabbedPane = (JTabbedPane)targetComponent;
-                    CertificateDisplay selectedCert = getSelectedCertificate();
+                    CertificateDisplay selectedCert = dragCertificate != null ? dragCertificate : getSelectedCertificate();
                     if(selectedCert == null) {
                         e.rejectDrop();
+                        clearListDrag();
                         return;
                     }
                     int targetIndex = tabbedPane.indexAtLocation(e.getLocation().x, e.getLocation().y);
                     ContainerList<CertificateDisplay> target = getDropListByIndex(targetIndex);
                     if(target == null) {
                         e.rejectDrop();
+                        clearListDrag();
                         return;
                     }
-                    ContainerList<CertificateDisplay> source = getSelectedList();
+                    ContainerList<CertificateDisplay> source = dragSource != null ? dragSource : getSelectedList();
                     if(source == null || source == target) {
                         e.rejectDrop();
+                        clearListDrag();
                         return;
                     }
-                    e.acceptDrop(DnDConstants.ACTION_MOVE);
+                    // DnD copy, logical list move
+                    e.acceptDrop(DnDConstants.ACTION_COPY);
                     addCertificate(selectedCert, target, false);
                     removeCertificate(selectedCert, source);
                     clearSelection();
+                    clearListDrag();
                 }
             }
         });
@@ -506,11 +529,28 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     }
 
     private ContainerList<CertificateDisplay> getDropListByIndex(int index) {
+        // Only tab headers are valid move targets
         if (index < 0 || index >= tabbedPane.getTabCount()) {
             return null;
         }
 
         return getListByIndex(index);
+    }
+
+    private void clearListDrag() {
+        dragSource = null;
+        dragCertificate = null;
+    }
+
+    private void updateListDragStatus(DropTargetDragEvent event) {
+        int targetIndex = tabbedPane.indexAtLocation(event.getLocation().x, event.getLocation().y);
+        ContainerList<CertificateDisplay> target = getDropListByIndex(targetIndex);
+        if(target != null && dragSource != null && dragSource != target) {
+            // Match the JList source action
+            event.acceptDrag(DnDConstants.ACTION_COPY);
+        } else {
+            event.rejectDrag();
+        }
     }
 
     private void clearSelection() {

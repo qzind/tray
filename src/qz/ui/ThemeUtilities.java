@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import qz.build.provision.params.Os;
 import qz.common.Constants;
 import qz.ui.component.IconCache;
+import qz.ui.component.iconcache.Saturation;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
@@ -116,25 +117,22 @@ public class ThemeUtilities {
      */
     public static boolean needsInversion(IconCache.Icon icon) {
         return switch(SystemUtilities.getOs()) {
-            case WINDOWS -> switch(icon) {
-                case DEFAULT_MASK_ICON, DANGER_MASK_ICON -> true;
-                default -> false;
-            };
+            case WINDOWS -> icon.getSaturation() == Saturation.MASK;
             case MAC -> false;
             default -> false; // TODO: Revisit after Linux System Tray support is added
         };
     }
 
-    public static boolean needsColorTray() {
+    public static Saturation getTraySaturation() {
         // Honor override via Constants
         if(!Constants.MASK_TRAY_SUPPORTED) {
-            return true;
+            return Saturation.COLOR;
         }
 
         return switch(getOs()) {
-            case Os.MAC -> false;
-            case Os.WINDOWS -> getOsVersion().majorVersion() < 10;
-            default -> true; // TODO: Revisit after Linux System Tray support is added
+            case Os.MAC -> Saturation.MASK;
+            case Os.WINDOWS -> getOsVersion().majorVersion() < 10 ? Saturation.COLOR : Saturation.MASK;
+            default -> Saturation.COLOR; // TODO: Revisit after Linux System Tray support is added
         };
     }
 }

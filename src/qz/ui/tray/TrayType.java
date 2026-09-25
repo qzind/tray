@@ -54,7 +54,7 @@ public enum TrayType {
     public boolean getTaskbar() { return taskbar != null; }
 
     public void setIcon(IconCache.Icon requestedIcon) {
-        IconCache.Icon icon = requestedIcon.getIcon(ThemeUtilities.needsColorTray());
+        IconCache.Icon icon = requestedIcon.getIcon(ThemeUtilities.getTraySaturation());
         if (isTray()) {
             boolean dark = SystemUtilities.isDarkTaskbar(false);
             BufferedImage image = iconCache.getImage(icon, tray.getSize(), dark);

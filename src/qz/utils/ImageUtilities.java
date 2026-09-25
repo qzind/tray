@@ -20,7 +20,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 
@@ -35,7 +34,7 @@ public class ImageUtilities {
     /**
      * Center an image with the specified padding
      */
-    public static BufferedImage padImage(BufferedImage image, float amount) {
+    public static BufferedImage addPadding(BufferedImage image, float amount) {
         if(image == null) {
             return null;
         }

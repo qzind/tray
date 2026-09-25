@@ -1,16 +1,16 @@
 package qz.ui.component;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import qz.ui.ThemeUtilities;
 import qz.ui.component.IconCache.Icon;
 import qz.ui.component.iconcache.Theme;
 import qz.ui.component.iconcache.Type;
+import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
-
 
 import javax.swing.*;
 
@@ -62,9 +62,15 @@ public class IconCacheTests {
         Assert.assertTrue(darkMaskSvg.toFile().exists());
         Assert.assertEquals(svgCache.extractedImages.size(), 4);
 
+        if(ThemeUtilities.needsInversion(DEFAULT_MASK_ICON)) {
+            // look for "#ffffff" on systems that don't support template/symbolic icons
+            String darkMaskIconContent = FileUtilities.readLocalFile(darkMaskSvg);
+            Assert.assertTrue(darkMaskIconContent.contains("#ffffff"));
+        }
+
         // Our loading icon
         Path loadingMask = svgCache.extractSvg(DANGER_MASK_ICON, false);
-        log.info("{} (light): {}", DANGER_MASK_ICON, darkMaskSvg);
+        log.info("{} (light): {}", DANGER_MASK_ICON, loadingMask);
         Assert.assertTrue(loadingMask.toFile().exists());
         Assert.assertEquals(svgCache.extractedImages.size(), 5);
 

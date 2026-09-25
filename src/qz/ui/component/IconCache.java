@@ -291,7 +291,7 @@ public class IconCache {
                         // We don't require tray-loading; try making one on-the-fly instead
                         Path opaqueSvg = cacheMap.get(cache.swapedKey(Icon.DEFAULT_MASK_ICON)).getBasePath();
                         String xmlContent = ImageUtilities.addTransparency(opaqueSvg, 0.5f);
-                        Files.writeString(opaqueSvg, xmlContent);
+                        Files.writeString(extractLocation, xmlContent);
                         break;
                     case DEFAULT_ICON:
                     default:

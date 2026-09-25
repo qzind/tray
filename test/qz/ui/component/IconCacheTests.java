@@ -63,15 +63,21 @@ public class IconCacheTests {
         Assert.assertTrue(darkMaskSvg.toFile().exists());
         Assert.assertEquals(svgCache.extractedImages.size(), 4);
 
+        // Our loading icon
+        Path loadingMask = svgCache.extractSvg(DANGER_MASK_ICON, false);
+        log.info("{} (light): {}", DANGER_MASK_ICON, darkMaskSvg);
+        Assert.assertTrue(loadingMask.toFile().exists());
+        Assert.assertEquals(svgCache.extractedImages.size(), 5);
+
         // Ensure no dupes
         svgCache.extractSvg(DEFAULT_ICON, true);
-        Assert.assertEquals(svgCache.extractedImages.size(), 4);
+        Assert.assertEquals(svgCache.extractedImages.size(), 5);
 
         // Again, but for a PNG
         Path darkPng = svgCache.extractPng(DEFAULT_ICON, true, DEFAULT_ICON.getType().getSizes()[0]);
         log.info("{} (dark): {} size: {}", DEFAULT_ICON, darkPng, DEFAULT_ICON.getType().getSizes()[0]);
         Assert.assertTrue(darkPng.toFile().exists());
-        Assert.assertEquals(svgCache.extractedImages.size(), 5);
+        Assert.assertEquals(svgCache.extractedImages.size(), 6);
     }
 
     @Test(priority = 3)

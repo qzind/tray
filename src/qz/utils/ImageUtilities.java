@@ -194,7 +194,7 @@ public class ImageUtilities {
      */
     public static String addTransparency(Path svgPath, float amount) throws IOException {
         try {
-            Document doc = XmlUtilities.createXmlDocument(RELATIVE_CLASS.getResourceAsStream(svgPath.toString()));
+            Document doc = XmlUtilities.createXmlDocument(RELATIVE_CLASS.getResourceAsStream(svgPath.toString()), false);
             NodeList svgList = doc.getElementsByTagName("svg");
             if (svgList.getLength() > 0) {
                 Element svgNode = (Element)svgList.item(0);

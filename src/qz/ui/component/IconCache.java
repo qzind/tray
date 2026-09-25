@@ -24,7 +24,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -121,7 +120,11 @@ public class IconCache {
          * Fetching a masked/templated/symbolic of the specified icon
          */
         public Icon getMaskIcon() {
-            return maskFor != null ? maskFor : this;
+            return isMaskIcon() ? maskFor : this;
+        }
+
+        public boolean isMaskIcon() {
+            return maskFor != null;
         }
 
         public Type getType() {
@@ -265,6 +268,27 @@ public class IconCache {
         return getImages(i, false);
     }
 
+    /**
+     * Helper: Rewrite an SVG at 50% opacity
+     */
+    public void fadeExtractedSvg(Cache cache, Path extractLocation, Icon i) throws IOException{
+        if(i == Icon.DANGER_MASK_ICON) {
+            // We don't require tray-loading; try making one on-the-fly instead
+            String xmlContent = ImageUtilities.addSvgTransparency(extractLocation, 0.5f);
+            Files.writeString(extractLocation, xmlContent);
+        }
+    }
+
+
+    public void fillExtractedSvg(Theme theme, Path extractLocation, Icon i) throws IOException {
+        if (i.isMaskIcon() && theme == Theme.DARK && ThemeUtilities.needsInversion(i)) {
+            // try to fill this svg with white to work with a dark bg
+            String xmlContent = ImageUtilities.addSvgFill(extractLocation, theme.getFillColor());
+            Files.writeString(extractLocation, xmlContent);
+        }
+    }
+
+
     Path extractImage(Format format, Icon i, boolean isDark, int size) throws IOException {
         String key = Cache.getKey(i, Theme.get(isDark), size);
         String extractKey = key  + "-" + format.slug();
@@ -281,31 +305,11 @@ public class IconCache {
         if(format == Format.UNKNOWN) {
             throw new UnsupportedOperationException("No way to extract " + format + " to file");
         } else if(format == Format.SVG) {
-            Path imagePath = cache.getBasePath();
-            if(imagePath == null) {
-                switch(i) {
-                    case DANGER_MASK_ICON:
-                        if(theme == Theme.DARK) {
-                            throw new UnsupportedOperationException("No way to convert " + format + " from light to dark");
-                        }
-                        // We don't require tray-loading; try making one on-the-fly instead
-                        Path opaqueSvg = cacheMap.get(cache.swapedKey(Icon.DEFAULT_MASK_ICON)).getBasePath();
-                        String xmlContent = ImageUtilities.addTransparency(opaqueSvg, 0.5f);
-                        Files.writeString(extractLocation, xmlContent);
-                        break;
-                    case DEFAULT_ICON:
-                    default:
-                        if(theme == Theme.DARK) {
-                            // Recurse: Most dark icons can just fall back to their light equivalents
-                            extractLocation = extractImage(format, i, false, size);
-                            extractedImages.put(extractKey, extractLocation);
-                            return extractLocation;
-                        }
-                        // We should never get here
-                        throw new UnsupportedEncodingException(String.format("No file found for %s %s %s %s", format, i, Theme.get(isDark), size));
-                }
-            } else {
-                FileUtilities.configureAssetToFile(ThemeUtilities.class, imagePath.toString(), new HashMap<>(), extractLocation.toFile());
+            FileUtilities.configureAssetToFile(ThemeUtilities.class, cache.getBasePath().toString(), new HashMap<>(), extractLocation.toFile());
+            if(!cache.isReliableForExtraction()) {
+                // Handle transparency first
+                fadeExtractedSvg(cache, extractLocation, i);
+                fillExtractedSvg(theme, extractLocation, i);
             }
             extractedImages.put(extractKey, extractLocation);
             return extractLocation;

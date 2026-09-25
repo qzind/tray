@@ -20,11 +20,13 @@ public class Cache {
     BufferedImage bufferedImage;
     ImageIcon imageIcon;
     Format format;
+    public boolean reliableForExtraction;
 
     public Cache(IconCache.Icon icon, Theme theme, int size) {
         this.icon = icon;
         this.theme = theme;
         this.size = size;
+        this.reliableForExtraction = false;
     }
 
     public boolean load(Path resources) {
@@ -37,6 +39,7 @@ public class Cache {
                 BufferedImage bufferedImage = ImageUtilities.imageFromResource(basePath, size);
 
                 if (bufferedImage != null) {
+                    this.reliableForExtraction = true;
                     this.basePath = basePath;
                     this.format = format;
                     setImages(bufferedImage);
@@ -62,13 +65,11 @@ public class Cache {
     }
 
     public void invertImage() {
-        this.basePath = null; // can't trust origin after mutation
         setImages(ImageUtilities.invert(bufferedImage));
     }
 
     public void fadeImage(Cache cache, float amount) {
         setImages(cache);
-        this.basePath = null; // we have no basepath for cloned images :/
         setImages(addTransparency(bufferedImage, amount));
     }
 
@@ -129,5 +130,9 @@ public class Cache {
             size = icon.getType().getSizes()[0];
         }
         return String.format("%s-%s-%s", icon.slug(), theme.slug(), size);
+    }
+
+    public boolean isReliableForExtraction() {
+        return format != Format.SVG || reliableForExtraction;
     }
 }

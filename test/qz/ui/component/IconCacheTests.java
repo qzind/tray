@@ -53,13 +53,12 @@ public class IconCacheTests {
         Assert.assertEquals(svgCache.extractedImages.size(), 2);
 
         Path lightMaskSvg =  svgCache.extractSvg(DEFAULT_MASK_ICON, false);
-        log.info("{} (light): {}", DEFAULT_ICON, lightMaskSvg);
+        log.info("{} (light): {}", DEFAULT_MASK_ICON, lightMaskSvg);
         Assert.assertTrue(lightMaskSvg.toFile().exists());
         Assert.assertEquals(svgCache.extractedImages.size(), 3);
 
-        // SVG will re-use light icon
         Path darkMaskSvg = svgCache.extractSvg(DEFAULT_MASK_ICON, true);
-        log.info("{} (dark): {}", DEFAULT_ICON, darkMaskSvg);
+        log.info("{} (dark): {}", DEFAULT_MASK_ICON, darkMaskSvg);
         Assert.assertTrue(darkMaskSvg.toFile().exists());
         Assert.assertEquals(svgCache.extractedImages.size(), 4);
 

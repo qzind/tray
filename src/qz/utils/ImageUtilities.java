@@ -5,21 +5,15 @@ import com.github.weisj.jsvg.parser.SVGLoader;
 import com.github.weisj.jsvg.view.FloatSize;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.w3c.dom.*;
 import qz.ui.ThemeUtilities;
 import qz.ui.component.IconCache;
 
 import javax.imageio.ImageIO;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
 import java.net.URL;
 import java.nio.file.Path;
 
@@ -192,48 +186,15 @@ public class ImageUtilities {
      * Reads the contents of the provided svg and returns the contents with transparency applied
      * to the node's root <code>style="opacity: ..."</code> attribute.
      */
-    public static String addTransparency(Path svgPath, float amount) throws IOException {
-        try {
-            Document doc = XmlUtilities.createXmlDocument(RELATIVE_CLASS.getResourceAsStream(svgPath.toString()), false);
-            NodeList svgList = doc.getElementsByTagName("svg");
-            if (svgList.getLength() > 0) {
-                Element svgNode = (Element)svgList.item(0);
-
-                // Set style="opacity: ..." at root element
-                String existingStyle = svgNode.getAttribute("style").trim();
-                svgNode.setAttribute("style", existingStyle +
-                        (existingStyle.isEmpty()? "":";") + "opacity: " + amount + ";");
-
-                // Convert the updated XML Document back to a String
-                TransformerFactory transformerFactory = TransformerFactory.newInstance();
-                Transformer transformer = transformerFactory.newTransformer();
-                StringWriter writer = new StringWriter();
-                transformer.transform(new DOMSource(doc), new StreamResult(writer));
-
-                return writer.toString();
-            }
-            throw new IOException("SVG '" + svgPath + "' is missing a root 'svg' node");
-        } catch(Exception e) {
-            throw new IOException(e);
-        }
+    public static String addSvgTransparency(Path svgPath, float amount) throws IOException {
+       return XmlUtilities.setSvgAttribute(svgPath, "svg", "style", String.format("opacity: %s", amount));
     }
 
     /**
-     * Crawls basePath (relative to <code>RELATIVE_CLASS</code>) to find the first file or
-     * <code>null</code> if none is found
-     * e.g. "resources/tray-ready.svg", "resources/tray-ready-dark.png", etc
+     * Reads the contents of the provided svg and returns the contents with transparency applied
+     * to the node's root <code>fill="#..."</code> attribute.
      */
-    public static Path findImage(Path basePath, String extension, boolean isDark, String name) {
-        //for(String name : names) {
-            Path imagePath = basePath.resolve(String.format((isDark ? "%s-dark.%s" : "%s.%s"), name, extension));
-            imagePath = resourcePath(imagePath);
-            try(InputStream is = RELATIVE_CLASS.getResourceAsStream(imagePath.toString())) {
-                if (is != null) {
-                    return imagePath;
-                }
-            }
-            catch(IOException ignore) {}
-        //}
-        return null;
+    public static String addSvgFill(Path svgPath, Color color) throws IOException {
+        return XmlUtilities.setSvgAttribute(svgPath, "svg", "style", String.format("fill: #%06x", 0xFFFFFF & color.getRGB()));
     }
 }

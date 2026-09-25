@@ -1121,4 +1121,16 @@ public class FileUtilities {
         }
         return true;
     }
+
+    /**
+     * Normalize path for accessing the embedded resources directory
+     * Notably, Windows will use "\" instead of "/" and break file
+     * lookups inside a jar.
+     */
+    public static Path resourcePath(Path path) {
+        if(!SystemUtilities.isWindows() || path == null) {
+            return path;
+        }
+        return Paths.get(path.normalize().toString().replace('\\', '/'));
+    }
 }

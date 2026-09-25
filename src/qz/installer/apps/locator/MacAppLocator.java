@@ -13,6 +13,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import qz.utils.MacUtilities;
 import qz.utils.ShellUtilities;
+import qz.utils.XmlUtilities;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
@@ -64,7 +65,7 @@ public class MacAppLocator extends AppLocator {
         try {
             // system_profile benchmarks about 30% better than lsregister
             Process p = Runtime.getRuntime().exec(new String[] {"system_profiler", "SPApplicationsDataType", "-xml"}, ShellUtilities.envp);
-            List<Node> dicts = getApplicationDicts(MacUtilities.createXmlDocument(p.getInputStream()));
+            List<Node> dicts = getApplicationDicts(XmlUtilities.createXmlDocument(p.getInputStream()));
 
             for(Node dict : dicts) {
                 String name = getSiblingValue(dict, "_name");

@@ -10,12 +10,15 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import qz.common.AboutInfo;
 import qz.installer.apps.locator.AppFamily;
 import qz.installer.certificate.CertificateManager;
+import qz.ui.component.IconCache;
 import qz.utils.ByteUtilities;
 import qz.utils.FileUtilities;
+import qz.utils.ImageUtilities;
 import qz.utils.SystemUtilities;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -34,9 +37,9 @@ public class HttpAboutServlet extends DefaultServlet {
     private static final Logger log = LogManager.getLogger(HttpAboutServlet.class);
     private static final int JSON_INDENT = 2;
 
-    private static final String FAVICON = String.format("data:image/png;base64,%s", ByteUtilities.imageToBase64(LOGO_ICON, "png"));
+    private static final String FAVICON = String.format("data:image/png;base64,%s", ImageUtilities.imageToBase64(LOGO_ICON, "png"));
     // TODO: Remove when portal adds "BRAND_COLOR_HEX" value
-    private static final String BRAND_COLOR = IS_REBRANDED ? getHtmlColorFromIcon(ABOUT_ICON, BRAND_COLOR_HEX) : BRAND_COLOR_HEX;
+    private static final String BRAND_COLOR = IS_REBRANDED ? ImageUtilities.getHtmlColorFromImage(IconCache.getInstance().getImage(ABOUT_ICON), BRAND_COLOR_HEX) : BRAND_COLOR_HEX;
     private static final int SALT_LENGTH_RESTART = ThreadLocalRandom.current().nextInt(12, 31);
 
     private final CertificateManager certificateManager;

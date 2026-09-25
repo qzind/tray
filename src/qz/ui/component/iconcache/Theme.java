@@ -14,7 +14,7 @@ public enum Theme implements Sluggable {
         this.fillColor = fillColor;
     }
 
-    public static Theme get(boolean isDark) {
+    public static Theme parse(boolean isDark) {
         return isDark ? DARK : LIGHT;
     }
 
@@ -28,6 +28,10 @@ public enum Theme implements Sluggable {
             return DARK;
         }
         return LIGHT;
+    }
+
+    public boolean isDark() {
+        return this == DARK;
     }
 
     @Override

@@ -3,6 +3,7 @@ package qz.integration.resources;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import qz.ui.component.IconCache;
+import qz.ui.component.iconcache.Theme;
 
 public class IconResourcesTests {
     /**
@@ -18,8 +19,8 @@ public class IconResourcesTests {
     public void testIconCache() {
         try {
             for(IconCache.Icon icon : IconCache.Icon.values()) {
-                for(boolean isDark : new boolean[]{true, false}) {
-                    Assert.assertNotNull(IconCache.getInstance().getIcon(icon, isDark));
+                for(Theme theme : Theme.values()) {
+                    Assert.assertNotNull(IconCache.getInstance().getIcon(icon, theme.isDark()));
                 }
             }
         } catch(RuntimeException e) {

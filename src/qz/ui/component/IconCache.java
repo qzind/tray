@@ -229,7 +229,7 @@ public class IconCache {
     }
 
     public ImageIcon getIcon(Icon i, boolean isDark) {
-        return getCache(i, Theme.get(isDark)).getImageIcon();
+        return getCache(i, Theme.parse(isDark)).getImageIcon();
     }
 
     public ImageIcon getIcon(Icon i) {
@@ -241,11 +241,11 @@ public class IconCache {
     }
 
     public BufferedImage getImage(Icon i, Dimension d, boolean isDark) {
-        return getCache(i, Theme.get(isDark), (int)d.getHeight()).getBufferedImage();
+        return getCache(i, Theme.parse(isDark), (int)d.getHeight()).getBufferedImage();
     }
 
     public BufferedImage getImage(Icon i, boolean isDark) {
-       return getCache(i, Theme.get(isDark)).getBufferedImage();
+       return getCache(i, Theme.parse(isDark)).getBufferedImage();
     }
 
     public BufferedImage getImage(Icon i) {
@@ -259,7 +259,7 @@ public class IconCache {
     }
 
     public List<BufferedImage> getImages(Icon i, boolean isDark) {
-        return getImages(i, Theme.get(isDark));
+        return getImages(i, Theme.parse(isDark));
     }
 
     public List<BufferedImage> getImages(Icon i) {
@@ -288,7 +288,7 @@ public class IconCache {
 
 
     Path extractImage(Format format, Icon i, boolean isDark, int size) throws IOException {
-        String key = Cache.getKey(i, Theme.get(isDark), size);
+        String key = Cache.getKey(i, Theme.parse(isDark), size);
         String extractKey = key  + "-" + format.slug();
 
         if(extractedImages.containsKey(extractKey)) {

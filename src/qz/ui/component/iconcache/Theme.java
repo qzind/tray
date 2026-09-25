@@ -5,7 +5,8 @@ import qz.common.Sluggable;
 import java.awt.*;
 
 public enum Theme implements Sluggable {
-    LIGHT(Color.BLACK), DARK(Color.WHITE); // order required for fallback
+    LIGHT(Color.BLACK),
+    DARK(Color.WHITE);
 
     private final Color fillColor;
 

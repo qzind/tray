@@ -10,8 +10,6 @@
 
 package qz.ui.component;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import qz.common.Sluggable;
 import qz.ui.ThemeUtilities;
 import qz.ui.component.iconcache.*;
@@ -35,7 +33,6 @@ import java.util.stream.Collectors;
 import static qz.ui.component.iconcache.Type.*;
 
 public class IconCache {
-    private static final Logger log = LogManager.getLogger(IconCache.class);
     private static IconCache instance;
     private final Path resourcesPath;
 
@@ -201,6 +198,7 @@ public class IconCache {
         return this;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
     IconCache fixMacTrayIcons() {
         if(SystemUtilities.isMac()) {
             // Handle undocumented 25% padding for macOS system tray
@@ -271,7 +269,7 @@ public class IconCache {
     /**
      * Helper: Rewrite an SVG at 50% opacity
      */
-    public void fadeExtractedSvg(Cache cache, Path extractLocation, Icon i) throws IOException{
+    public void fadeExtractedSvg(Path extractLocation, Icon i) throws IOException{
         if(i == Icon.DANGER_MASK_ICON) {
             // We don't require tray-loading; try making one on-the-fly instead
             String xmlContent = ImageUtilities.addSvgTransparency(extractLocation, 0.5f);
@@ -308,7 +306,7 @@ public class IconCache {
             FileUtilities.configureAssetToFile(ThemeUtilities.class, cache.getBasePath().toString(), new HashMap<>(), extractLocation.toFile());
             if(!cache.isReliableForExtraction()) {
                 // Handle transparency first
-                fadeExtractedSvg(cache, extractLocation, i);
+                fadeExtractedSvg(extractLocation, i);
                 fillExtractedSvg(theme, extractLocation, i);
             }
             extractedImages.put(extractKey, extractLocation);

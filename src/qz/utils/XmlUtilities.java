@@ -50,10 +50,6 @@ public class XmlUtilities {
         return  createXmlDocument(is, true);
     }
 
-    public static Document createXmlDocument(Path absolutePath) throws ParserConfigurationException, IOException, SAXException {
-        return createXmlDocument(Files.newInputStream(absolutePath));
-    }
-
     public static Document createXmlDocument(Path absolutePath, boolean validating) throws ParserConfigurationException, IOException, SAXException {
         return createXmlDocument(Files.newInputStream(absolutePath), validating);
     }
@@ -68,11 +64,8 @@ public class XmlUtilities {
             if (svgList.getLength() > 0) {
                 Element svgNode = (Element)svgList.item(0);
 
-                // Some attributes (such as "style") are additive, most are not
-                String existingAttribute = switch(attribute) {
-                    case "style" -> svgNode.getAttribute(attribute).trim();
-                    default -> "";
-                };
+                // "style" attribute is additive
+                String existingAttribute = attribute.equals("style") ?  svgNode.getAttribute(attribute).trim() : "";
 
                 svgNode.setAttribute(attribute, existingAttribute +
                         (existingAttribute.isEmpty()? "":";") + value);

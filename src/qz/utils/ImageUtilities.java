@@ -66,8 +66,8 @@ public class ImageUtilities {
      * @param path The file path of the image to load
      * @return The BufferedImage representing the data
      */
-    static BufferedImage imageFromResource(String path) {
-        try(InputStream is = RELATIVE_CLASS.getResourceAsStream(path)) {
+    static BufferedImage imageFromResource(Path path) {
+        try(InputStream is = RELATIVE_CLASS.getResourceAsStream(resourcePath(path).toString())) {
             if (is != null) {
                 return ImageIO.read(is);
             }
@@ -81,7 +81,7 @@ public class ImageUtilities {
         if(path.toString().endsWith(".svg")) {
             return imageFromSvgResource(path, size);
         }
-        return imageFromResource(path.toString());
+        return imageFromResource(path);
     }
 
     /**

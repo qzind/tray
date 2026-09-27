@@ -133,7 +133,7 @@ public class IconCache {
         }
     }
 
-    private final HashMap<String, Cache> cacheMap;
+    public final HashMap<String, Cache> cacheMap;
 
     /**
      * Builds a cache of Image and ImageIcon resources by iterating through all IconCache.Icon types
@@ -220,11 +220,11 @@ public class IconCache {
         return getCache(i, theme, size).getImageIcon();
     }
 
-    Cache getCache(Icon i, Theme theme, int size) {
+    public Cache getCache(Icon i, Theme theme, int size) {
         return cacheMap.get(Cache.getKey(i, theme, size));
     }
 
-    Cache getCache(Icon i, Theme theme) {
+    public Cache getCache(Icon i, Theme theme) {
         return getCache(i, theme, i.getType().getSizes()[0]);
     }
 
@@ -303,7 +303,7 @@ public class IconCache {
         if(format == Format.UNKNOWN) {
             throw new UnsupportedOperationException("No way to extract " + format + " to file");
         } else if(format == Format.SVG) {
-            FileUtilities.configureAssetToFile(ThemeUtilities.class, cache.getBasePath().toString(), new HashMap<>(), extractLocation.toFile());
+            FileUtilities.configureAssetToFile(ThemeUtilities.class, cache.getBaseLocation().toString(), new HashMap<>(), extractLocation.toFile());
             if(!cache.isReliableForExtraction()) {
                 // Handle transparency first
                 fadeExtractedSvg(extractLocation, i);

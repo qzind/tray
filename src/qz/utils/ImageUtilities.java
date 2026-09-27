@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static qz.utils.FileUtilities.*;
 
@@ -66,8 +67,8 @@ public class ImageUtilities {
      * @param path The file path of the image to load
      * @return The BufferedImage representing the data
      */
-    static BufferedImage imageFromResource(Path path) {
-        try(InputStream is = RELATIVE_CLASS.getResourceAsStream(resourcePath(path).toString())) {
+    static BufferedImage imageFromResource(String path) {
+        try(InputStream is = RELATIVE_CLASS.getResourceAsStream(path)) {
             if (is != null) {
                 return ImageIO.read(is);
             }
@@ -77,7 +78,7 @@ public class ImageUtilities {
         return null;
     }
 
-    public static BufferedImage imageFromResource(Path path, Integer size) {
+    public static BufferedImage imageFromResource(String path, Integer size) {
         if(path.toString().endsWith(".svg")) {
             return imageFromSvgResource(path, size);
         }
@@ -91,8 +92,8 @@ public class ImageUtilities {
      * @param size The desired size to scale the SVG to, or the natural SVG size if <code>null</code>
      * @return The BufferedImage representing the data
      */
-    static BufferedImage imageFromSvgResource(Path path, Integer size) {
-        URL url = RELATIVE_CLASS.getResource(resourcePath(path).toString());
+    static BufferedImage imageFromSvgResource(String path, Integer size) {
+        URL url = RELATIVE_CLASS.getResource(path);
         if(url == null) {
             return null;
         }

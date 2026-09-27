@@ -1,8 +1,8 @@
 package qz.ui.component.iconcache;
 
 import qz.ui.component.IconCache;
-import qz.utils.FileUtilities;
 import qz.utils.ImageUtilities;
+import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 import java.awt.image.BufferedImage;
@@ -16,7 +16,7 @@ public class Cache {
     final Theme theme;
     final int size;
 
-    Path basePath;
+    String baseLoc;
     BufferedImage bufferedImage;
     ImageIcon imageIcon;
     Format format;
@@ -35,12 +35,21 @@ public class Cache {
                 if(!format.validExtension()) {
                     continue;
                 }
-                Path basePath = FileUtilities.resourcePath(resources.resolve(getBaseName(name, format)));
-                BufferedImage bufferedImage = ImageUtilities.imageFromResource(basePath, size);
+                String baseLoc = resources
+                        .resolve(getBaseName(name, format))
+                        .normalize()
+                        .toString();
+
+                if(SystemUtilities.isWindows()) {
+                    // Guard Windows forward slashes breaking resource loading
+                    baseLoc = baseLoc.replace('\\', '/');
+                }
+
+                BufferedImage bufferedImage = ImageUtilities.imageFromResource(baseLoc, size);
 
                 if (bufferedImage != null) {
                     this.reliableForExtraction = true;
-                    this.basePath = basePath;
+                    this.baseLoc = baseLoc;
                     this.format = format;
                     setImages(bufferedImage);
                     return true;
@@ -58,7 +67,7 @@ public class Cache {
 
     public void setImages(Cache cache) {
         Objects.requireNonNull(cache);
-        this.basePath = cache.basePath;
+        this.baseLoc = cache.baseLoc;
         this.bufferedImage = Objects.requireNonNull(cache.bufferedImage);
         this.imageIcon = Objects.requireNonNull(cache.imageIcon);
         this.format = Objects.requireNonNull(cache.format);
@@ -109,8 +118,8 @@ public class Cache {
         return bufferedImage;
     }
 
-    public Path getBasePath() {
-        return basePath;
+    public String getBaseLocation() {
+        return baseLoc;
     }
 
     public String getKey() {

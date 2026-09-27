@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.ui.ThemeUtilities;
 import qz.ui.component.IconCache.Icon;
@@ -14,11 +15,11 @@ import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 import static qz.ui.component.IconCache.Icon.*;
 
@@ -34,9 +35,27 @@ public class IconCacheTests {
         mixedCache = new IconCache(Paths.get("resources_mixed"));
     }
 
-    @Test(priority = 1)
-    public void testSvgAssets() {
-        checkIcons(svgCache);
+    @DataProvider
+    public static Object[][] iconSizeTheme() {
+        return Arrays.stream(Icon.values())
+                .flatMap(icon -> Arrays.stream(icon.getType().getSizes())
+                        .boxed() // Converts int to Integer if getSizes() returns int[]
+                        .flatMap(size -> {
+                            return Arrays.stream(Theme.values())
+                                    .map(theme -> new Object[]{icon, size, theme});
+                        }))
+                .toArray(Object[][]::new);
+    }
+
+    @Test(dataProvider = "iconSizeTheme", priority = 1)
+    public void testSvgAssetSizes(Icon icon, int size, Theme theme) {
+        ImageIcon imageIcon = mixedCache.getIcon(icon, theme, size);
+        int expectedSize = accountForPadding(icon, size);
+        log.info("Checking SVG IconCache entry for {}: Expected: '{}', Actual: '{}x{}'",
+                 icon,
+                 expectedSize, imageIcon.getIconWidth(), imageIcon.getIconHeight());
+
+        Assert.assertEquals(imageIcon.getIconHeight(), expectedSize);
     }
 
     @Test(priority = 2)
@@ -85,9 +104,15 @@ public class IconCacheTests {
         Assert.assertEquals(svgCache.extractedImages.size(), 6);
     }
 
-    @Test(priority = 3)
-    public void testMixedAssets() {
-        checkIcons(mixedCache);
+    @Test(dataProvider = "iconSizeTheme", priority = 3)
+    public void testMixedAssetSizes(Icon icon, int size, Theme theme) {
+        ImageIcon imageIcon = mixedCache.getIcon(icon, theme, size);
+        int expectedSize = accountForPadding(icon, size);
+        log.info("Checking mixed IconCache entry for {}: Expected: '{}', Actual: '{}x{}'",
+                 icon,
+                 expectedSize, imageIcon.getIconWidth(), imageIcon.getIconHeight());
+
+        Assert.assertEquals(imageIcon.getIconHeight(), expectedSize);
     }
 
     @Test(priority = 4)
@@ -96,22 +121,6 @@ public class IconCacheTests {
         BufferedImage svgImage = svgCache.getImage(DEFAULT_ICON);
         BufferedImage pngImage = mixedCache.getImage(DEFAULT_ICON);
         Assert.assertFalse(compareImages(svgImage, pngImage));
-    }
-
-    private static void checkIcons(IconCache iconCache) {
-        for(Icon icon : Icon.values()) {
-            for(int size : icon.getType().getSizes()) {
-                int expectedSize = accountForPadding(icon, size);
-                for(Theme theme : Theme.values()) {
-                    ImageIcon imageIcon = iconCache.getIcon(icon, theme, size);
-                    log.info("Checking IconCache entry for {}: Expected: '{}', Actual: '{}x{}'",
-                             icon, expectedSize,
-                             imageIcon.getIconWidth(), imageIcon.getIconHeight());
-
-                    Assert.assertEquals(imageIcon.getIconHeight(), expectedSize);
-                }
-            }
-        }
     }
 
     /**

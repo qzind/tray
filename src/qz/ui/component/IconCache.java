@@ -210,21 +210,9 @@ public class IconCache {
      * Returns the ImageIcon from cache
      *
      * @param i an IconCache.Icon
-     * @param theme Theme.LIGHT or Theme.DARK
+     * @param isDark Whether to return the dark themed version of this resource
      * @return the ImageIcon in the cache
      */
-    ImageIcon getIcon(Icon i, Theme theme, int size) {
-        return getCache(i, theme, size).getImageIcon();
-    }
-
-    public Cache getCache(Icon i, Theme theme, int size) {
-        return cacheMap.get(Cache.getKey(i, theme, size));
-    }
-
-    public Cache getCache(Icon i, Theme theme) {
-        return getCache(i, theme, i.getType().getSizes()[0]);
-    }
-
     public ImageIcon getIcon(Icon i, boolean isDark) {
         return getCache(i, Theme.parse(isDark)).getImageIcon();
     }
@@ -233,20 +221,31 @@ public class IconCache {
         return getIcon(i, false);
     }
 
-    BufferedImage getImage(Icon i, Theme theme, int size) {
-        return getCache(i, theme, size).getBufferedImage();
+    ImageIcon getIcon(Icon i, Theme theme, int size) {
+        return getCache(i, theme, size).getImageIcon();
     }
 
-    public BufferedImage getImage(Icon i, Dimension d, boolean isDark) {
-        return getCache(i, Theme.parse(isDark), (int)d.getHeight()).getBufferedImage();
-    }
-
+    /**
+     * Returns the Image from cache
+     *
+     * @param i an IconCache.Icon
+     * @param isDark isDark Whether to return the dark themed version of this resource
+     * @return the Image in the cache
+     */
     public BufferedImage getImage(Icon i, boolean isDark) {
-       return getCache(i, Theme.parse(isDark)).getBufferedImage();
+        return getCache(i, Theme.parse(isDark)).getBufferedImage();
     }
 
     public BufferedImage getImage(Icon i) {
         return getImage(i, false);
+    }
+
+    public BufferedImage getImage(Icon i, Dimension size, boolean isDark) {
+        return getCache(i, Theme.parse(isDark), (int)size.getHeight()).getBufferedImage();
+    }
+
+    BufferedImage getImage(Icon i, Theme theme, int size) {
+        return getCache(i, theme, size).getBufferedImage();
     }
 
     List<BufferedImage> getImages(Icon i, Theme theme) {
@@ -255,12 +254,20 @@ public class IconCache {
                 .collect(Collectors.toList());
     }
 
+    public List<BufferedImage> getImages(Icon i) {
+        return getImages(i, false);
+    }
+
     public List<BufferedImage> getImages(Icon i, boolean isDark) {
         return getImages(i, Theme.parse(isDark));
     }
 
-    public List<BufferedImage> getImages(Icon i) {
-        return getImages(i, false);
+    public Cache getCache(Icon i, Theme theme, int size) {
+        return cacheMap.get(Cache.getKey(i, theme, size));
+    }
+
+    public Cache getCache(Icon i, Theme theme) {
+        return getCache(i, theme, i.getType().getSizes()[0]);
     }
 
     Path extractImage(Format format, Icon i, Theme theme, int size) throws IOException {

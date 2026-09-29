@@ -229,7 +229,7 @@ public class IconCache {
      * Returns the Image from cache
      *
      * @param i an IconCache.Icon
-     * @param isDark isDark Whether to return the dark themed version of this resource
+     * @param isDark Whether to return the dark themed version of this resource
      * @return the Image in the cache
      */
     public BufferedImage getImage(Icon i, boolean isDark) {

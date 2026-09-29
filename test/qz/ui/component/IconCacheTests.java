@@ -88,12 +88,12 @@ public class IconCacheTests {
     @Test(priority = 3)
     public void testExtractDupes() throws IOException {
         // Ensure no dupes
-        svgCache.extractSvg(DEFAULT_ICON, Theme.DARK);
+        svgCache.extractSvg(TRAY_READY_COLOR, Theme.DARK);
         Assert.assertEquals(svgCache.extractedImages.size(), extractedImagesSize);
 
         // Again, but for a PNG
-        Path png = svgCache.extractPng(DEFAULT_ICON, Theme.DARK, DEFAULT_ICON.getType().getSizes()[0]);
-        log.info("{} (dark): {} size: {}", DEFAULT_ICON, png, DEFAULT_ICON.getType().getSizes()[0]);
+        Path png = svgCache.extractPng(TRAY_READY_COLOR, Theme.DARK, TRAY_READY_COLOR.getType().getSizes()[0]);
+        log.info("{} (dark): {} size: {}", TRAY_READY_COLOR, png, TRAY_READY_COLOR.getType().getSizes()[0]);
         Assert.assertTrue(png.toFile().exists());
         Assert.assertEquals(svgCache.extractedImages.size(), ++extractedImagesSize);
 
@@ -114,8 +114,8 @@ public class IconCacheTests {
     @Test(priority = 5)
     public void testImagesDiffer() {
         // Ensure we actually loaded two different images
-        BufferedImage svgImage = svgCache.getImage(DEFAULT_ICON);
-        BufferedImage pngImage = mixedCache.getImage(DEFAULT_ICON);
+        BufferedImage svgImage = svgCache.getImage(TRAY_READY_COLOR);
+        BufferedImage pngImage = mixedCache.getImage(TRAY_READY_COLOR);
         Assert.assertFalse(compareImages(svgImage, pngImage));
     }
 

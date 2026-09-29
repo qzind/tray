@@ -124,7 +124,7 @@ public class TrayManager {
             }
 
             // Iterates over all images denoted by IconCache.getTypes() and caches them
-            tray.setIcon(DANGER_ICON);
+            tray.setIcon(TRAY_LOADING);
             tray.setToolTip(name);
 
             try {
@@ -136,7 +136,7 @@ public class TrayManager {
             }
         } else if (!isHeadless()) { // UI mode without tray
             tray = TrayType.TASKBAR.init(exitListener, iconCache);
-            tray.setIcon(DANGER_ICON);
+            tray.setIcon(TRAY_LOADING);
             tray.setToolTip(name);
             tray.showTaskbar();
         }
@@ -549,7 +549,7 @@ public class TrayManager {
      * Thread safe method for setting the default icon
      */
     public void setDefaultIcon() {
-        setIcon(DEFAULT_ICON);
+        setIcon(TRAY_READY);
     }
 
     /** Thread safe method for setting the error status message */
@@ -557,9 +557,9 @@ public class TrayManager {
         displayMessage(name, text, TrayIcon.MessageType.ERROR);
     }
 
-    /** Thread safe method for setting the danger icon */
+    /** Thread safe method for setting the loading icon */
     public void setDangerIcon() {
-        setIcon(DANGER_ICON);
+        setIcon(TRAY_LOADING);
     }
 
     /** Thread safe method for setting the warning status message */

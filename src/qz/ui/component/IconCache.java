@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static qz.ui.component.iconcache.Type.*;
+import static qz.ui.component.iconcache.Saturation.*;
 
 public class IconCache {
     private static IconCache instance;
@@ -42,13 +43,13 @@ public class IconCache {
      * Enum for building and tracking icon keys for PNG (pre-rasterized) or SVG (runtime rasterized) images
      */
     public enum Icon implements Sluggable {
-        // System tray (color)
-        DEFAULT_ICON(SYSTEM_TRAY, "tray-ready-color", "qz-default"),
-        DANGER_ICON(SYSTEM_TRAY, "tray-loading-color", "qz-danger"),
+        // System tray (preferred)
+        TRAY_READY(SYSTEM_TRAY, MASK,"tray-ready", "qz-mask"),
+        TRAY_LOADING(SYSTEM_TRAY, MASK,"tray-loading"),
 
-        // System tray (mask)
-        DEFAULT_MASK_ICON(SYSTEM_TRAY, DEFAULT_ICON, "tray-ready", "qz-mask"),
-        DANGER_MASK_ICON(SYSTEM_TRAY, DANGER_ICON, "tray-loading"),
+        // System tray color (legacy)
+        TRAY_READY_COLOR(SYSTEM_TRAY, "tray-ready-color", "qz-default"),
+        TRAY_LOADING_COLOR(SYSTEM_TRAY, "tray-loading-color", "qz-danger"),
 
         // Task bar
         TASK_BAR_ICON(TASK_BAR, "tray-ready", "qz-default"),
@@ -82,19 +83,19 @@ public class IconCache {
         LOGO_ICON(LOGO, "logo", "qz-logo");
 
         private final Type type;
+        private final Saturation saturation;
         private final String slug;
         private final String[] names;
-        private final Icon maskFor;
 
-        Icon(Type type, Icon maskFor, String ... names) {
+        Icon(Type type, Saturation saturation, String ... names) {
             this.type = type;
-            this.maskFor = maskFor;
+            this.saturation = saturation;
             this.names = names;
             this.slug = Sluggable.slugOf(this).replace("_icon", ""); // TODO: Remove "_ICON" suffix
         }
 
         Icon(Type type, String ... names) {
-            this(type, null, names);
+            this(type, Saturation.COLOR, names);
         }
 
         @Override
@@ -105,23 +106,19 @@ public class IconCache {
             return slug;
         }
 
-        public Saturation getSaturation() {
-            return maskFor == null ? Saturation.COLOR : Saturation.MASK;
-        }
-
         public Icon getIcon(Saturation sat) {
-            return sat == Saturation.MASK ? getMaskIcon() : this;
-        }
-
-        /**
-         * Fetching a masked/templated/symbolic of the specified icon
-         */
-        public Icon getMaskIcon() {
-            return isMaskIcon() ? maskFor : this;
+            return switch(sat) {
+                case MASK -> this;
+                default -> switch(this) {
+                    case TRAY_READY -> TRAY_READY_COLOR;
+                    case TRAY_LOADING -> TRAY_LOADING_COLOR;
+                    default -> this;
+                };
+            };
         }
 
         public boolean isMaskIcon() {
-            return maskFor != null;
+            return saturation == Saturation.MASK;
         }
 
         public Type getType() {
@@ -181,9 +178,9 @@ public class IconCache {
         cacheMap.entrySet().stream()
                 .filter(e -> e.getValue().missing())
                 .filter(e -> e.getValue().getTheme() == Theme.LIGHT)
-                .filter(e -> e.getValue().getIcon() == Icon.DANGER_MASK_ICON)
+                .filter(e -> e.getValue().getIcon() == Icon.TRAY_LOADING)
                 .forEach(e -> e.getValue().fadeImage(
-                        cacheMap.get(e.getValue().swapedKey(Icon.DEFAULT_MASK_ICON)), 0.5f)
+                        cacheMap.get(e.getValue().swapedKey(Icon.TRAY_READY)), 0.5f)
                 );
         return this;
     }
@@ -285,7 +282,7 @@ public class IconCache {
             if(!cache.isReliableForExtraction()) {
                 if (i.isMaskIcon()) {
                     is = ImageUtilities.addSvgFill(is, theme.getFill()); // fill based on theme
-                    if (i == Icon.DANGER_MASK_ICON) {
+                    if (i == Icon.TRAY_LOADING) {
                         is = ImageUtilities.addSvgTransparency(is, 0.5f); // use svg at 50% opacity
                     }
                 }

@@ -3,11 +3,13 @@ package qz.ui.component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import qz.ui.component.IconCache.Icon;
 import qz.ui.component.iconcache.Cache;
+import qz.ui.component.iconcache.Format;
 import qz.ui.component.iconcache.Theme;
 import qz.ui.component.iconcache.Type;
 import qz.utils.FileUtilities;
@@ -29,6 +31,8 @@ public class IconCacheTests {
     private IconCache svgCache;
     private IconCache mixedCache;
 
+    static int extractedSvgCache = 0;
+
     @BeforeClass
     public void setUp() {
         svgCache = new IconCache();
@@ -36,7 +40,7 @@ public class IconCacheTests {
     }
 
     @DataProvider
-    public static Object[][] iconSizeTheme() {
+    public Object[][] iconSizeTheme() {
         return Arrays.stream(Icon.values())
                 .flatMap(icon -> Arrays.stream(icon.getType().getSizes())
                         .boxed() // Converts int to Integer if getSizes() returns int[]
@@ -59,14 +63,12 @@ public class IconCacheTests {
     }
 
     @DataProvider
-    public static Object[][] iconTheme() {
+    public Object[][] iconTheme() {
         return Arrays.stream(Icon.values())
                 .flatMap(icon -> Arrays.stream(Theme.values())
                         .map(theme -> new Object[]{icon, theme}))
                 .toArray(Object[][]::new);
     }
-
-    static int extractedImagesSize = 0;
 
     @Test(dataProvider = "iconTheme", priority = 2)
     public void testExtractSvg(Icon icon, Theme theme) throws IOException {
@@ -75,7 +77,7 @@ public class IconCacheTests {
 
         Path svg = svgCache.extractSvg(icon, theme);
         Assert.assertTrue(svg.toFile().exists());
-        Assert.assertEquals(svgCache.extractedImages.size(), ++extractedImagesSize);
+        Assert.assertEquals(svgCache.extractedImages.size(), ++extractedSvgCache);
 
         if(icon.isMaskIcon()) {
             // Look for "#000000" | "#ffffff"
@@ -89,18 +91,31 @@ public class IconCacheTests {
     public void testExtractDupes() throws IOException {
         // Ensure no dupes
         svgCache.extractSvg(TRAY_READY_COLOR, Theme.DARK);
-        Assert.assertEquals(svgCache.extractedImages.size(), extractedImagesSize);
+        Assert.assertEquals(svgCache.extractedImages.size(), extractedSvgCache);
+    }
 
-        // Again, but for a PNG
-        Path png = svgCache.extractPng(TRAY_READY_COLOR, Theme.DARK, TRAY_READY_COLOR.getType().getSizes()[0]);
-        log.info("{} (dark): {} size: {}", TRAY_READY_COLOR, png, TRAY_READY_COLOR.getType().getSizes()[0]);
+    @DataProvider
+    public Object[][] nameClashProvider() {
+        return new Object[][]{
+                { TRAY_READY_COLOR, Theme.DARK, },
+                { TRAY_LOADING_COLOR, Theme.LIGHT }
+        };
+    }
+
+    /**
+     * Ensure that extracting a PNG still increments the extracted count
+     */
+    @Test(dataProvider = "nameClashProvider", priority = 4)
+    public void testNameClash(Icon icon, Theme theme) throws IOException {
+        // We're extracting a PNG, but from the svgCache.  This is deliberate.
+        Path png = svgCache.extractPng(icon, theme, icon.getType().getSizes()[0]);
+        log.info("{} ({}}): {}", icon, theme, png);
         Assert.assertTrue(png.toFile().exists());
-        Assert.assertEquals(svgCache.extractedImages.size(), ++extractedImagesSize);
-
+        Assert.assertEquals(svgCache.extractedImages.size(), ++extractedSvgCache);
         log.info("Extracted PNG {}", png);
     }
 
-    @Test(dataProvider = "iconSizeTheme", priority = 4)
+    @Test(dataProvider = "iconSizeTheme", priority = 5)
     public void testMixedAssetSizes(Icon icon, int size, Theme theme) {
         ImageIcon imageIcon = mixedCache.getIcon(icon, theme, size);
         int expectedSize = accountForPadding(icon, size);
@@ -111,12 +126,21 @@ public class IconCacheTests {
         Assert.assertEquals(imageIcon.getIconHeight(), expectedSize);
     }
 
-    @Test(priority = 5)
-    public void testImagesDiffer() {
-        // Ensure we actually loaded two different images
-        BufferedImage svgImage = svgCache.getImage(TRAY_READY_COLOR);
-        BufferedImage pngImage = mixedCache.getImage(TRAY_READY_COLOR);
-        Assert.assertFalse(compareImages(svgImage, pngImage));
+    @Test(dataProvider = "iconTheme", priority = 6)
+    public void testImagesDiffer(Icon icon, Theme theme) {
+        Cache svg = svgCache.getCache(icon, theme);
+        Cache png = mixedCache.getCache(icon, theme);
+
+        // Compare svg to png
+        if(svg.getFormat() == Format.SVG && png.getFormat() == Format.PNG) {
+            BufferedImage svgImage = svgCache.getImage(icon);
+            BufferedImage pngImage = mixedCache.getImage(icon);
+
+            // Ensure we actually loaded two different images
+            Assert.assertFalse(compareImages(svgImage, pngImage));
+        } else {
+            throw new SkipException("Resources are identical formats, skipping");
+        }
     }
 
     /**

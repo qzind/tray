@@ -149,4 +149,8 @@ public class Cache {
     public boolean isReliableForExtraction() {
         return format != Format.SVG || reliableForExtraction;
     }
+
+    public Format getFormat() {
+        return format;
+    }
 }

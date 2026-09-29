@@ -39,7 +39,11 @@ public enum Theme implements Sluggable {
         return Sluggable.slugOf(this);
     }
 
-    public Color getFillColor() {
+    /**
+     * Returns the fill color (e.g. <code>Color.BLACK</code>, <code>Color.WHITE</code>) that
+     * this theme would generally need for maximum compatibility with the given theme.
+     */
+    public Color getFill() {
         return fillColor;
     }
 }

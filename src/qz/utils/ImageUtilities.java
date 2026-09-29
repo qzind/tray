@@ -11,14 +11,11 @@ import qz.ui.component.IconCache;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static qz.utils.FileUtilities.*;
 
 public class ImageUtilities {
     private static final Logger log = LogManager.getLogger(ImageUtilities.class);
@@ -68,18 +65,28 @@ public class ImageUtilities {
      * @return The BufferedImage representing the data
      */
     static BufferedImage imageFromResource(String path) {
-        try(InputStream is = RELATIVE_CLASS.getResourceAsStream(path)) {
-            if (is != null) {
-                return ImageIO.read(is);
-            }
+        try(InputStream is = getResourceStream(path)) {
+            return ImageIO.read(is);
         } catch(IOException e) {
             log.error("Cannot load {}", path, e);
         }
         return null;
     }
 
+    public static InputStream getResourceStream(String path) throws IOException {
+        InputStream is = RELATIVE_CLASS.getResourceAsStream(path);
+        if (is != null) {
+            return is;
+        }
+        throw new IOException("Cannot load resource " + path);
+    }
+
+    public static URL getResource(String path) {
+        return RELATIVE_CLASS.getResource(path);
+    }
+
     public static BufferedImage imageFromResource(String path, Integer size) {
-        if(path.toString().endsWith(".svg")) {
+        if(path.endsWith(".svg")) {
             return imageFromSvgResource(path, size);
         }
         return imageFromResource(path);
@@ -93,7 +100,7 @@ public class ImageUtilities {
      * @return The BufferedImage representing the data
      */
     static BufferedImage imageFromSvgResource(String path, Integer size) {
-        URL url = RELATIVE_CLASS.getResource(path);
+        URL url = getResource(path);
         if(url == null) {
             return null;
         }
@@ -187,15 +194,41 @@ public class ImageUtilities {
      * Reads the contents of the provided svg and returns the contents with transparency applied
      * to the node's root <code>style="opacity: ..."</code> attribute.
      */
-    public static String addSvgTransparency(Path svgPath, float amount) throws IOException {
-       return XmlUtilities.setSvgAttribute(svgPath, "svg", "style", String.format("opacity: %s", amount));
+    public static InputStream addSvgTransparency(InputStream is, float amount) throws IOException {
+       return XmlUtilities.setSvgAttribute(is, "svg", "style", String.format("opacity: %s", amount));
     }
 
     /**
      * Reads the contents of the provided svg and returns the contents with transparency applied
      * to the node's root <code>fill="#..."</code> attribute.
      */
-    public static String addSvgFill(Path svgPath, Color color) throws IOException {
-        return XmlUtilities.setSvgAttribute(svgPath, "svg", "style", String.format("fill: #%06x", 0xFFFFFF & color.getRGB()));
+    public static InputStream addSvgFill(InputStream is, Color color) throws IOException {
+        return XmlUtilities.setSvgAttribute(is, "svg", "style", String.format("fill: #%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue()));
+    }
+
+    public static BufferedImage toColor(BufferedImage bi, Color color) {
+        int width = bi.getWidth();
+        int height = bi.getHeight();
+
+        int colorNoAlpha = color.getRGB() & 0x00FFFFFF;
+
+        if (bi.getType() == BufferedImage.TYPE_INT_ARGB || bi.getType() == BufferedImage.TYPE_INT_ARGB_PRE) {
+            //  Array ARGB-backed images
+            int[] pixels = ((DataBufferInt) bi.getRaster().getDataBuffer()).getData();
+            for (int i = 0; i < pixels.length; i++) {
+                int alpha = pixels[i] & 0xFF000000;
+                pixels[i] = alpha | colorNoAlpha;
+            }
+        } else {
+            // Call setRGB() for all other image types
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    int p = bi.getRGB(x, y);
+                    int alpha = p & 0xFF000000;
+                    bi.setRGB(x, y, alpha | colorNoAlpha);
+                }
+            }
+        }
+        return bi;
     }
 }

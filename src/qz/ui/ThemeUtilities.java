@@ -111,18 +111,6 @@ public class ThemeUtilities {
         return null;
     }
 
-    /**
-     * Some OSs don't have native-support for templated/masked
-     * icons and will need explicit inversion for theme compatibility
-     */
-    public static boolean needsInversion(IconCache.Icon icon) {
-        return switch(SystemUtilities.getOs()) {
-            case WINDOWS -> icon.getSaturation() == Saturation.MASK;
-            case MAC -> false;
-            default -> false; // TODO: Revisit after Linux System Tray support is added
-        };
-    }
-
     public static Saturation getTraySaturation() {
         // Honor override via Constants
         if(!Constants.MASK_TRAY_SUPPORTED) {

@@ -48,7 +48,7 @@ public class Cache {
                 BufferedImage bufferedImage = ImageUtilities.imageFromResource(baseLoc, size);
 
                 if (bufferedImage != null) {
-                    this.reliableForExtraction = true;
+                    this.reliableForExtraction = !(format == Format.SVG && icon.isMaskIcon());
                     this.baseLoc = baseLoc;
                     this.format = format;
                     setImages(bufferedImage);
@@ -73,8 +73,13 @@ public class Cache {
         this.format = Objects.requireNonNull(cache.format);
     }
 
-    public void invertImage() {
-        setImages(ImageUtilities.invert(bufferedImage));
+    /**
+     * Sets the color of the mask/template image to maximum contrast with the given theme
+     * The effect isn't noticeable on platforms that natively support template themes however
+     * we do it everywhere for reproducibility.
+     */
+    public void setMaskColor() {
+        setImages(ImageUtilities.toColor(bufferedImage, theme.getFill()));
     }
 
     public void fadeImage(Cache cache, float amount) {

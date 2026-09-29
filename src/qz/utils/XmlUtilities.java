@@ -47,19 +47,15 @@ public class XmlUtilities {
     }
 
     public static Document createXmlDocument(InputStream is) throws ParserConfigurationException, IOException, SAXException {
-        return  createXmlDocument(is, true);
-    }
-
-    public static Document createXmlDocument(Path absolutePath, boolean validating) throws ParserConfigurationException, IOException, SAXException {
-        return createXmlDocument(Files.newInputStream(absolutePath), validating);
+        return createXmlDocument(is, true);
     }
 
     /**
      * Attempts to coerce the specified root xml attribute and return the mutated doc
      */
-    public static String setSvgAttribute(Path absolutePath, String rootNode, String attribute, String value) throws IOException {
+    public static InputStream setSvgAttribute(InputStream is, String rootNode, String attribute, String value) throws IOException {
         try {
-            Document doc = XmlUtilities.createXmlDocument(absolutePath, false);
+            Document doc = XmlUtilities.createXmlDocument(is, false);
             NodeList svgList = doc.getElementsByTagName("svg");
             if (svgList.getLength() > 0) {
                 Element svgNode = (Element)svgList.item(0);
@@ -70,13 +66,14 @@ public class XmlUtilities {
                 svgNode.setAttribute(attribute, existingAttribute +
                         (existingAttribute.isEmpty()? "":";") + value);
 
-                // Convert the updated XML Document back to a String
+                // Transform the updated XML Document directly to a byte array stream
                 TransformerFactory transformerFactory = TransformerFactory.newInstance();
                 Transformer transformer = transformerFactory.newTransformer();
-                StringWriter writer = new StringWriter();
-                transformer.transform(new DOMSource(doc), new StreamResult(writer));
 
-                return writer.toString();
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                transformer.transform(new DOMSource(doc), new StreamResult(os));
+
+                return new ByteArrayInputStream(os.toByteArray());
             }
             throw new IOException("XML is missing a root '" + rootNode + "' node");
         } catch(Exception e) {

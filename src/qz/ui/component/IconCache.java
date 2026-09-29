@@ -11,9 +11,7 @@
 package qz.ui.component;
 
 import qz.common.Sluggable;
-import qz.ui.ThemeUtilities;
 import qz.ui.component.iconcache.*;
-import qz.utils.FileUtilities;
 import qz.utils.ImageUtilities;
 import qz.utils.SystemUtilities;
 
@@ -22,9 +20,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -142,11 +142,19 @@ public class IconCache {
         this.resourcesPath = resourcesPath;
         this.cacheMap = initMap();
         this
-                .fixLoadingIcons()
-                .fixMissingDarkIcons()
-                .fixInvertedIcons()
-                .fixMacTrayIcons();
+                .addMissingLoadingIcons()
+                .addMissingThemeIcons()
+                .setMaskColor()
+                .padMacIcons();
         this.extractedImages = new ConcurrentHashMap<>();
+    }
+
+    private IconCache setMaskColor() {
+        // Ensure default mask/template icons are 100% black/white respectively
+        cacheMap.entrySet().stream()
+                .filter(e -> e.getValue().getIcon().isMaskIcon())
+                .forEach(e -> e.getValue().setMaskColor());
+        return this;
     }
 
     public IconCache() {
@@ -168,7 +176,7 @@ public class IconCache {
         return images;
     }
 
-    IconCache fixLoadingIcons() {
+    IconCache addMissingLoadingIcons() {
         // mask icons appear "loading" at 50% transparency
         cacheMap.entrySet().stream()
                 .filter(e -> e.getValue().missing())
@@ -180,7 +188,7 @@ public class IconCache {
         return this;
     }
 
-    IconCache fixMissingDarkIcons() {
+    IconCache addMissingThemeIcons() {
         cacheMap.entrySet().stream()
                 .filter(e -> e.getValue().missing())
                 .filter(e -> e.getValue().getTheme() == Theme.DARK)
@@ -190,16 +198,8 @@ public class IconCache {
         return this;
     }
 
-    IconCache fixInvertedIcons() {
-        // Handle dark icons on OSs that don't support template icons
-        cacheMap.entrySet().stream()
-                .filter(e -> ThemeUtilities.needsInversion(e.getValue().getIcon()))
-                .forEach(e -> e.getValue().invertImage());
-        return this;
-    }
-
     @SuppressWarnings("UnusedReturnValue")
-    IconCache fixMacTrayIcons() {
+    IconCache padMacIcons() {
         if(SystemUtilities.isMac()) {
             // Handle undocumented 25% padding for macOS system tray
             cacheMap.entrySet().stream()
@@ -266,29 +266,8 @@ public class IconCache {
         return getImages(i, false);
     }
 
-    /**
-     * Helper: Rewrite an SVG at 50% opacity
-     */
-    public void fadeExtractedSvg(Path extractLocation, Icon i) throws IOException{
-        if(i == Icon.DANGER_MASK_ICON) {
-            // We don't require tray-loading; try making one on-the-fly instead
-            String xmlContent = ImageUtilities.addSvgTransparency(extractLocation, 0.5f);
-            Files.writeString(extractLocation, xmlContent);
-        }
-    }
-
-
-    public void fillExtractedSvg(Theme theme, Path extractLocation, Icon i) throws IOException {
-        if (i.isMaskIcon() && theme == Theme.DARK && ThemeUtilities.needsInversion(i)) {
-            // try to fill this svg with white to work with a dark bg
-            String xmlContent = ImageUtilities.addSvgFill(extractLocation, theme.getFillColor());
-            Files.writeString(extractLocation, xmlContent);
-        }
-    }
-
-
-    Path extractImage(Format format, Icon i, boolean isDark, int size) throws IOException {
-        String key = Cache.getKey(i, Theme.parse(isDark), size);
+    Path extractImage(Format format, Icon i, Theme theme, int size) throws IOException {
+        String key = Cache.getKey(i, theme, size);
         String extractKey = key  + "-" + format.slug();
 
         if(extractedImages.containsKey(extractKey)) {
@@ -299,16 +278,19 @@ public class IconCache {
         extractLocation.toFile().deleteOnExit();
 
         Cache cache = cacheMap.get(key);
-        Theme theme = cache.getTheme();
         if(format == Format.UNKNOWN) {
             throw new UnsupportedOperationException("No way to extract " + format + " to file");
         } else if(format == Format.SVG) {
-            FileUtilities.configureAssetToFile(ThemeUtilities.class, cache.getBaseLocation().toString(), new HashMap<>(), extractLocation.toFile());
+            InputStream is = ImageUtilities.getResourceStream(cache.getBaseLocation());
             if(!cache.isReliableForExtraction()) {
-                // Handle transparency first
-                fadeExtractedSvg(extractLocation, i);
-                fillExtractedSvg(theme, extractLocation, i);
+                if (i.isMaskIcon()) {
+                    is = ImageUtilities.addSvgFill(is, theme.getFill()); // fill based on theme
+                    if (i == Icon.DANGER_MASK_ICON) {
+                        is = ImageUtilities.addSvgTransparency(is, 0.5f); // use svg at 50% opacity
+                    }
+                }
             }
+            Files.copy(is, extractLocation, StandardCopyOption.REPLACE_EXISTING);
             extractedImages.put(extractKey, extractLocation);
             return extractLocation;
         } else {
@@ -320,12 +302,12 @@ public class IconCache {
         }
     }
 
-    public Path extractPng(Icon i, boolean isDark, int size) throws IOException {
-        return extractImage(Format.PNG, i, isDark, size);
+    Path extractPng(Icon i, Theme theme, int size) throws IOException {
+        return extractImage(Format.PNG, i, theme, size);
     }
 
-    public Path extractSvg(Icon i, boolean isDark) throws IOException {
-        return extractImage(Format.SVG, i,  isDark, 0);
+    Path extractSvg(Icon i, Theme theme) throws IOException {
+        return extractImage(Format.SVG, i,  theme, 0);
     }
 
     public synchronized static IconCache getInstance() {

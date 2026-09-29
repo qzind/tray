@@ -6,8 +6,8 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import qz.ui.ThemeUtilities;
 import qz.ui.component.IconCache.Icon;
+import qz.ui.component.iconcache.Cache;
 import qz.ui.component.iconcache.Theme;
 import qz.ui.component.iconcache.Type;
 import qz.utils.FileUtilities;
@@ -58,53 +58,49 @@ public class IconCacheTests {
         Assert.assertEquals(imageIcon.getIconHeight(), expectedSize);
     }
 
-    @Test(priority = 2)
-    public void testExtractImages() throws IOException {
-        Path lightSvg =  svgCache.extractSvg(DEFAULT_ICON, false);
-        log.info("{} (light): {}", DEFAULT_ICON, lightSvg);
-        Assert.assertTrue(lightSvg.toFile().exists());
-        Assert.assertEquals(svgCache.extractedImages.size(), 1);
-
-        // SVG will re-use light icon
-        Path darkSvg = svgCache.extractSvg(DEFAULT_ICON, true);
-        log.info("{} (dark): {}", DEFAULT_ICON, darkSvg);
-        Assert.assertTrue(darkSvg.toFile().exists());
-        Assert.assertEquals(svgCache.extractedImages.size(), 2);
-
-        Path lightMaskSvg =  svgCache.extractSvg(DEFAULT_MASK_ICON, false);
-        log.info("{} (light): {}", DEFAULT_MASK_ICON, lightMaskSvg);
-        Assert.assertTrue(lightMaskSvg.toFile().exists());
-        Assert.assertEquals(svgCache.extractedImages.size(), 3);
-
-        Path darkMaskSvg = svgCache.extractSvg(DEFAULT_MASK_ICON, true);
-        log.info("{} (dark): {}", DEFAULT_MASK_ICON, darkMaskSvg);
-        Assert.assertTrue(darkMaskSvg.toFile().exists());
-        Assert.assertEquals(svgCache.extractedImages.size(), 4);
-
-        if(ThemeUtilities.needsInversion(DEFAULT_MASK_ICON)) {
-            // look for "#ffffff" on systems that don't support template/symbolic icons
-            String darkMaskIconContent = FileUtilities.readLocalFile(darkMaskSvg);
-            Assert.assertTrue(darkMaskIconContent.contains("#ffffff"));
-        }
-
-        // Our loading icon
-        Path loadingMask = svgCache.extractSvg(DANGER_MASK_ICON, false);
-        log.info("{} (light): {}", DANGER_MASK_ICON, loadingMask);
-        Assert.assertTrue(loadingMask.toFile().exists());
-        Assert.assertEquals(svgCache.extractedImages.size(), 5);
-
-        // Ensure no dupes
-        svgCache.extractSvg(DEFAULT_ICON, true);
-        Assert.assertEquals(svgCache.extractedImages.size(), 5);
-
-        // Again, but for a PNG
-        Path darkPng = svgCache.extractPng(DEFAULT_ICON, true, DEFAULT_ICON.getType().getSizes()[0]);
-        log.info("{} (dark): {} size: {}", DEFAULT_ICON, darkPng, DEFAULT_ICON.getType().getSizes()[0]);
-        Assert.assertTrue(darkPng.toFile().exists());
-        Assert.assertEquals(svgCache.extractedImages.size(), 6);
+    @DataProvider
+    public static Object[][] iconTheme() {
+        return Arrays.stream(Icon.values())
+                .flatMap(icon -> Arrays.stream(Theme.values())
+                        .map(theme -> new Object[]{icon, theme}))
+                .toArray(Object[][]::new);
     }
 
-    @Test(dataProvider = "iconSizeTheme", priority = 3)
+    static int extractedImagesSize = 0;
+
+    @Test(dataProvider = "iconTheme", priority = 2)
+    public void testExtractSvg(Icon icon, Theme theme) throws IOException {
+        Cache cache = svgCache.getCache(icon, theme);
+        log.info("{} ({}}): {}", icon, theme, cache.getBaseLocation());
+
+        Path svg = svgCache.extractSvg(icon, theme);
+        Assert.assertTrue(svg.toFile().exists());
+        Assert.assertEquals(svgCache.extractedImages.size(), ++extractedImagesSize);
+
+        if(icon.isMaskIcon()) {
+            // Look for "#000000" | "#ffffff"
+            String svgContent = FileUtilities.readLocalFile(svg);
+            Assert.assertTrue(svgContent.contains(theme.isDark()? "#ffffff":"#000000"), "Cannot find fill color in SVG: " + svgContent);
+        }
+        log.info("Extracted SVG {}", svg);
+    }
+
+    @Test(priority = 3)
+    public void testExtractDupes() throws IOException {
+        // Ensure no dupes
+        svgCache.extractSvg(DEFAULT_ICON, Theme.DARK);
+        Assert.assertEquals(svgCache.extractedImages.size(), extractedImagesSize);
+
+        // Again, but for a PNG
+        Path png = svgCache.extractPng(DEFAULT_ICON, Theme.DARK, DEFAULT_ICON.getType().getSizes()[0]);
+        log.info("{} (dark): {} size: {}", DEFAULT_ICON, png, DEFAULT_ICON.getType().getSizes()[0]);
+        Assert.assertTrue(png.toFile().exists());
+        Assert.assertEquals(svgCache.extractedImages.size(), ++extractedImagesSize);
+
+        log.info("Extracted PNG {}", png);
+    }
+
+    @Test(dataProvider = "iconSizeTheme", priority = 4)
     public void testMixedAssetSizes(Icon icon, int size, Theme theme) {
         ImageIcon imageIcon = mixedCache.getIcon(icon, theme, size);
         int expectedSize = accountForPadding(icon, size);
@@ -115,7 +111,7 @@ public class IconCacheTests {
         Assert.assertEquals(imageIcon.getIconHeight(), expectedSize);
     }
 
-    @Test(priority = 4)
+    @Test(priority = 5)
     public void testImagesDiffer() {
         // Ensure we actually loaded two different images
         BufferedImage svgImage = svgCache.getImage(DEFAULT_ICON);

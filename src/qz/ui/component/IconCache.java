@@ -1,7 +1,7 @@
 /**
  * @author Tres Finocchiaro
  *
- * Copyright (C) 2014 Tres Finocchiaro, QZ Industries, LLC
+ * Copyright (C) 2016 Tres Finocchiaro, QZ Industries, LLC
  *
  * LGPL 2.1 This is free software.  This software and source code are released under
  * the "LGPL 2.1 License".  A copy of this license should be distributed with

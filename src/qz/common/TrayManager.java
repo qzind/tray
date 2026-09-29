@@ -123,7 +123,6 @@ public class TrayManager {
                     tray = TrayType.MODERN.init(iconCache);
             }
 
-            // Iterates over all images denoted by IconCache.getTypes() and caches them
             tray.setIcon(TRAY_LOADING);
             tray.setToolTip(name);
 

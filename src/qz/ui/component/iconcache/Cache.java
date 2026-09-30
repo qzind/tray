@@ -4,9 +4,14 @@ import qz.ui.component.IconCache;
 import qz.utils.ImageUtilities;
 import qz.utils.SystemUtilities;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 import static qz.utils.ImageUtilities.*;
@@ -20,7 +25,9 @@ public class Cache {
     BufferedImage bufferedImage;
     ImageIcon imageIcon;
     Format format;
-    public boolean reliableForExtraction;
+    boolean reliableForExtraction;
+    Path extractedSvg;
+    Path extractedPng;
 
     public Cache(IconCache.Icon icon, Theme theme, int size) {
         this.icon = icon;
@@ -152,5 +159,54 @@ public class Cache {
 
     public Format getFormat() {
         return format;
+    }
+
+    Path createExtractionFile(Format format) throws IOException {
+        Path extractionFile = Files.createTempFile(getKey(), format.extension());
+        extractionFile.toFile().deleteOnExit();
+        return extractionFile;
+    }
+
+    public Path extract(Format format) throws IOException {
+        return switch(format) {
+            case SVG -> extractSvg();
+            case PNG -> extractPng();
+            default -> throw new UnsupportedOperationException("Unsupported file format " + format);
+        };
+    }
+
+    public Path extract() throws IOException {
+        return extract(format);
+    }
+
+    synchronized Path extractSvg() throws IOException {
+        if(extractedSvg != null) {
+            return extractedSvg;
+        }
+        InputStream is = ImageUtilities.getResourceStream(getBaseLocation());
+        if(!isReliableForExtraction()) {
+            // Some SVGs may be altered after loading; try to mimic
+            if (icon.isMaskIcon()) {
+                is = ImageUtilities.addSvgFill(is, theme.getFill()); // fill based on theme
+                if (icon == IconCache.Icon.TRAY_LOADING) {
+                    is = ImageUtilities.addSvgTransparency(is, 0.5f); // use svg at 50% opacity
+                }
+            }
+        }
+
+        extractedSvg = createExtractionFile(Format.SVG);
+        Files.copy(is, extractedSvg, StandardCopyOption.REPLACE_EXISTING);
+        return extractedSvg;
+    }
+
+    synchronized Path extractPng() throws IOException {
+        if(extractedPng != null) {
+            return extractedPng;
+        }
+        extractedPng = createExtractionFile(Format.PNG);
+        if (ImageIO.write(bufferedImage, Format.PNG.slug(), extractedPng.toFile())) {
+            return extractedPng;
+        }
+        throw new IOException("Unable to write png file: '" + extractedPng + "'");
     }
 }

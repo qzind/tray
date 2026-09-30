@@ -72,6 +72,7 @@ public class XmlUtilities {
 
                 ByteArrayOutputStream os = new ByteArrayOutputStream();
                 transformer.transform(new DOMSource(doc), new StreamResult(os));
+                is.close();
 
                 return new ByteArrayInputStream(os.toByteArray());
             }

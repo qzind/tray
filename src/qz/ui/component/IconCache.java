@@ -37,8 +37,6 @@ public class IconCache {
     private static IconCache instance;
     private final Path resourcesPath;
 
-    final ConcurrentHashMap<String, Path> extractedImages;
-
     /**
      * Enum for building and tracking icon keys for PNG (pre-rasterized) or SVG (runtime rasterized) images
      */
@@ -143,7 +141,6 @@ public class IconCache {
                 .addMissingThemeIcons()
                 .setMaskColor()
                 .padMacIcons();
-        this.extractedImages = new ConcurrentHashMap<>();
     }
 
     private IconCache setMaskColor() {
@@ -262,56 +259,16 @@ public class IconCache {
         return getImages(i, Theme.parse(isDark));
     }
 
+    public Path extract(Icon i, Theme theme) throws IOException {
+        return getCache(i, theme, i.getType().getSizes()[0]).extract();
+    }
+
     public Cache getCache(Icon i, Theme theme, int size) {
         return cacheMap.get(Cache.getKey(i, theme, size));
     }
 
     public Cache getCache(Icon i, Theme theme) {
         return getCache(i, theme, i.getType().getSizes()[0]);
-    }
-
-    Path extractImage(Format format, Icon i, Theme theme, int size) throws IOException {
-        String key = Cache.getKey(i, theme, size);
-        String extractKey = key  + "-" + format.slug();
-
-        if(extractedImages.containsKey(extractKey)) {
-            return extractedImages.get(extractKey);
-        }
-
-        Path extractLocation = Files.createTempFile(key, format.extension());
-        extractLocation.toFile().deleteOnExit();
-
-        Cache cache = cacheMap.get(key);
-        if(format == Format.UNKNOWN) {
-            throw new UnsupportedOperationException("No way to extract " + format + " to file");
-        } else if(format == Format.SVG) {
-            InputStream is = ImageUtilities.getResourceStream(cache.getBaseLocation());
-            if(!cache.isReliableForExtraction()) {
-                if (i.isMaskIcon()) {
-                    is = ImageUtilities.addSvgFill(is, theme.getFill()); // fill based on theme
-                    if (i == Icon.TRAY_LOADING) {
-                        is = ImageUtilities.addSvgTransparency(is, 0.5f); // use svg at 50% opacity
-                    }
-                }
-            }
-            Files.copy(is, extractLocation, StandardCopyOption.REPLACE_EXISTING);
-            extractedImages.put(extractKey, extractLocation);
-            return extractLocation;
-        } else {
-            if (ImageIO.write(getImage(i, theme, size), format.slug(), extractLocation.toFile())) {
-                extractedImages.put(extractKey, extractLocation);
-                return extractLocation;
-            }
-            throw new IOException("Unable to write png file: '" + extractLocation + "'");
-        }
-    }
-
-    Path extractPng(Icon i, Theme theme, int size) throws IOException {
-        return extractImage(Format.PNG, i, theme, size);
-    }
-
-    Path extractSvg(Icon i, Theme theme) throws IOException {
-        return extractImage(Format.SVG, i,  theme, 0);
     }
 
     public synchronized static IconCache getInstance() {

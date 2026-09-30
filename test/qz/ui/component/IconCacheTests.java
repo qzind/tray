@@ -73,11 +73,10 @@ public class IconCacheTests {
     @Test(dataProvider = "iconTheme", priority = 2)
     public void testExtractSvg(Icon icon, Theme theme) throws IOException {
         Cache cache = svgCache.getCache(icon, theme);
-        log.info("{} ({}}): {}", icon, theme, cache.getBaseLocation());
+        log.info("{} ({}): {}", icon, theme, cache.getBaseLocation());
 
-        Path svg = svgCache.extractSvg(icon, theme);
+        Path svg = svgCache.extract(icon, theme);
         Assert.assertTrue(svg.toFile().exists());
-        Assert.assertEquals(svgCache.extractedImages.size(), ++extractedSvgCache);
 
         if(icon.isMaskIcon()) {
             // Look for "#000000" | "#ffffff"
@@ -88,10 +87,11 @@ public class IconCacheTests {
     }
 
     @Test(priority = 3)
-    public void testExtractDupes() throws IOException {
-        // Ensure no dupes
-        svgCache.extractSvg(TRAY_READY_COLOR, Theme.DARK);
-        Assert.assertEquals(svgCache.extractedImages.size(), extractedSvgCache);
+    public void testExtractCache() throws IOException {
+        // Ensure path doesn't change
+        Path path1 = svgCache.extract(TRAY_READY_COLOR, Theme.DARK);
+        Path path2 = svgCache.extract(TRAY_READY_COLOR, Theme.DARK);
+        Assert.assertEquals(path1, path2);
     }
 
     @DataProvider
@@ -107,12 +107,16 @@ public class IconCacheTests {
      */
     @Test(dataProvider = "nameClashProvider", priority = 4)
     public void testNameClash(Icon icon, Theme theme) throws IOException {
-        // We're extracting a PNG, but from the svgCache.  This is deliberate.
-        Path png = svgCache.extractPng(icon, theme, icon.getType().getSizes()[0]);
-        log.info("{} ({}}): {}", icon, theme, png);
+        Cache cache = svgCache.getCache(icon, theme);
+        Path svg = cache.extract(Format.SVG);
+        log.info("{} ({}): {}", icon, theme, svg);
+        Assert.assertTrue(svg.toFile().exists());
+
+        Path png = cache.extract(Format.PNG); // PNG from the svgCache is deliberate.
+        log.info("{} ({}): {}", icon, theme, png);
         Assert.assertTrue(png.toFile().exists());
-        Assert.assertEquals(svgCache.extractedImages.size(), ++extractedSvgCache);
-        log.info("Extracted PNG {}", png);
+
+        Assert.assertNotEquals(svg, png);
     }
 
     @Test(dataProvider = "iconSizeTheme", priority = 5)

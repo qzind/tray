@@ -44,7 +44,7 @@ public class IconCache {
         TRAY_LOADING_COLOR(SYSTEM_TRAY, "tray-loading-color", "qz-danger"),
 
         // Task bar
-        TASK_BAR_ICON(TASK_BAR, "tray-ready", "qz-default"),
+        TASK_BAR_ICON(TASK_BAR, "tray-ready-color", "qz-default"),
 
         // Menus, buttons, fields
         ABOUT_ICON(MENU,"about"),

@@ -57,14 +57,18 @@ public enum TrayType {
     public void setIcon(IconCache.Icon icon) {
         if (isTray()) {
             tray.setImage(
-                    // System tray prefers TRAY_LOADING, TRAY_READY
+                    // Use TRAY_LOADING, TRAY_READY if the underlying system prefers it
                     iconCache.getImage(
                             icon.getIcon(ThemeUtilities.getTraySaturation()),
                             tray.getSize(),
                             SystemUtilities.isDarkTaskbar(false)));
         } else {
-            // Taskbar prefers TRAY_LOADING_COLOR, TRAY_READY_COLOR
-            taskbar.setIconImages(iconCache.getImages(icon.getIcon(Saturation.COLOR)));
+            // Try to swap out the taskbar icon if the tray is missing
+            IconCache.Icon fixed = switch(icon) {
+                case TRAY_READY, TRAY_READY_COLOR -> IconCache.Icon.TASK_BAR_ICON;
+                default -> icon.getIcon(Saturation.COLOR);
+            };
+            taskbar.setIconImages(iconCache.getImages(fixed));
         }
     }
 

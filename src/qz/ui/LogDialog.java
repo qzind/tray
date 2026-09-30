@@ -41,8 +41,8 @@ public class LogDialog extends BasicDialog {
     private AdjustmentListener scrollToEnd;
     private int logLines;
 
-    public LogDialog(JMenuItem caller, IconCache iconCache, PropertyHelper prefs) {
-        super(caller, iconCache);
+    public LogDialog(String title, IconCache iconCache, PropertyHelper prefs) {
+        super(title, iconCache);
         this.prefs = prefs;
         initComponents();
     }

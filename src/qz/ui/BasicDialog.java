@@ -29,8 +29,8 @@ public class BasicDialog extends JDialog implements Themeable {
 
     private int stockButtonCount = 0;
 
-    public BasicDialog(JMenuItem caller, IconCache iconCache) {
-        super((Frame)null, caller.getText().replaceAll("\\.+", ""), true);
+    public BasicDialog(String title, IconCache iconCache) {
+        super((Frame)null, title, true);
         this.iconCache = iconCache;
         initBasicComponents();
     }

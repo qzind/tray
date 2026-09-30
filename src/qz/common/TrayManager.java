@@ -71,6 +71,7 @@ public class TrayManager {
     private AboutDialog aboutDialog;
     private LogDialog logDialog;
     private SiteManagerDialog sitesDialog;
+
     private ArrayList<Component> componentList;
     private IconCache.Icon shownIcon;
 
@@ -165,6 +166,15 @@ public class TrayManager {
             // The ok/cancel dialog
             confirmDialog = new ConfirmDialog(null, "Please Confirm", iconCache);
             componentList.add(confirmDialog);
+
+            sitesDialog = new SiteManagerDialog("Site Manager", iconCache, getUserPrefs());
+            componentList.add(sitesDialog);
+
+            logDialog = new LogDialog("Log Viewer", iconCache, getUserPrefs());
+            componentList.add(logDialog);
+
+            aboutDialog = new AboutDialog("About", iconCache);
+            componentList.add(aboutDialog);
 
             // Detect theme changes
             new ThemeMonitor().startPolling(1000).onChange(this::refreshTheme);
@@ -263,8 +273,6 @@ public class TrayManager {
         JMenuItem sitesItem = new JMenuItem("Site Manager...", iconCache.getIcon(SAVED_ICON));
         sitesItem.setMnemonic(KeyEvent.VK_M);
         sitesItem.addActionListener(savedListener);
-        sitesDialog = new SiteManagerDialog(sitesItem, iconCache, getUserPrefs());
-        componentList.add(sitesDialog);
 
         JMenuItem diagnosticMenu = new JMenu("Diagnostic");
 
@@ -316,8 +324,6 @@ public class TrayManager {
         logItem.setMnemonic(KeyEvent.VK_L);
         logItem.addActionListener(logListener);
         diagnosticMenu.add(logItem);
-        logDialog = new LogDialog(logItem, iconCache, getUserPrefs());
-        componentList.add(logDialog);
 
         JMenuItem zipLogs = new JMenuItem("Zip logs (to Desktop)");
         zipLogs.setToolTipText("Zip diagnostic logs, place on Desktop");
@@ -351,8 +357,6 @@ public class TrayManager {
         JMenuItem aboutItem = new JMenuItem("About...", iconCache.getIcon(ABOUT_ICON));
         aboutItem.setMnemonic(KeyEvent.VK_B);
         aboutItem.addActionListener(aboutListener);
-        aboutDialog = new AboutDialog(aboutItem, iconCache);
-        componentList.add(aboutDialog);
 
         if (SystemUtilities.isMac()) {
             MacUtilities.registerAboutDialog(aboutDialog);

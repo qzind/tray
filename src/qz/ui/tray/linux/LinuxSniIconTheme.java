@@ -1,22 +1,22 @@
 package qz.ui.tray.linux;
 
+import qz.ui.component.IconCache;
+import qz.ui.component.iconcache.Format;
 import qz.utils.FileUtilities;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-class LinuxSniIconTheme {
+import static qz.ui.component.IconCache.Icon.*;
 
+class LinuxSniIconTheme {
     private static final String ICON_NAME = "qz-tray";
     private static final String SYMBOLIC_ICON_NAME = "qz-tray-symbolic";
     // Tray hosts resolve the exported IconName exactly, so the resource
     // is named with the same stable freedesktop-style symbolic icon name.
-    private static final String PNG_RESOURCE_PATH = "/qz/ui/resources/qz-default-%s.png";
-    private static final String SVG_RESOURCE_PATH = "/qz/ui/resources/%s.svg";
     private static final int[] ICON_SIZES = {32, 48};
 
     static String prepare() throws IOException {
@@ -87,9 +87,12 @@ class LinuxSniIconTheme {
     }
 
     private static void copyIcon(int size, Path themePath) throws IOException {
+        Path sizedPng = IconCache.getInstance().extract(Format.PNG, TRAY_READY_COLOR, size);
+
         // IconThemePath points to the theme parent
         // tray hosts then resolve IconName through
         // the standard hicolor/<size>/apps layout
+
         Path iconPath = themePath
                 .resolve("hicolor")
                 .resolve(size + "x" + size)
@@ -97,13 +100,7 @@ class LinuxSniIconTheme {
                 .resolve(ICON_NAME + ".png");
 
         Files.createDirectories(iconPath.getParent());
-
-        try(InputStream in = LinuxSniIconTheme.class.getResourceAsStream(String.format(PNG_RESOURCE_PATH, size))) {
-            if(in == null) {
-                throw new IOException(String.format("StatusNotifier icon resource missing for size %s", size));
-            }
-            Files.copy(in, iconPath, StandardCopyOption.REPLACE_EXISTING);
-        }
+        Files.copy(sizedPng, iconPath, StandardCopyOption.REPLACE_EXISTING);
     }
 
     private static void copySymbolicIcons(Path themePath) throws IOException {
@@ -112,20 +109,16 @@ class LinuxSniIconTheme {
     }
 
     private static void copySymbolicIcon(Path themePath, String context) throws IOException {
-        try(InputStream in = LinuxSniIconTheme.class.getResourceAsStream(String.format(SVG_RESOURCE_PATH, SYMBOLIC_ICON_NAME))) {
-            if(in == null) {
-                throw new IOException(String.format("StatusNotifier SVG icon resource missing: %s", SYMBOLIC_ICON_NAME));
-            }
+        Path svg = IconCache.getInstance().extract(Format.SVG, TRAY_READY);
 
-            Path iconPath = themePath
-                    .resolve("hicolor")
-                    .resolve("scalable")
-                    .resolve(context)
-                    .resolve(SYMBOLIC_ICON_NAME + ".svg");
+        Path iconPath = themePath
+                .resolve("hicolor")
+                .resolve("scalable")
+                .resolve(context)
+                .resolve(SYMBOLIC_ICON_NAME);
 
-            Files.createDirectories(iconPath.getParent());
-            Files.copy(in, iconPath, StandardCopyOption.REPLACE_EXISTING);
-        }
+        Files.createDirectories(iconPath.getParent());
+        Files.copy(svg, iconPath, StandardCopyOption.REPLACE_EXISTING);
     }
 
     private static void appendDirectory(StringBuilder directories, StringBuilder sections, String directory, String context) {

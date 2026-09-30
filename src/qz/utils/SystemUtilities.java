@@ -350,14 +350,6 @@ public class SystemUtilities {
         Constants.TRUSTED_COLOR = isDarkDesktop() ? Constants.TRUSTED_COLOR_DARK : Constants.TRUSTED_COLOR_LITE;
     }
 
-    public static boolean prefersMaskTrayIcon() {
-        return Constants.MASK_TRAY_SUPPORTED && switch(OS_TYPE) {
-            case MAC -> true;
-            case WINDOWS -> SystemUtilities.getOsVersion().majorVersion() >= 10;
-            default -> false;
-        };
-    }
-
     private static String calculateLaf() {
         // Use Darcula l&F for all OSs
         if(isDarkDesktop()) {

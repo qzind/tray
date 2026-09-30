@@ -14,6 +14,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.utils.FileUtilities;
 import qz.utils.ShellUtilities;
+import qz.utils.StringUtilities;
 import qz.utils.SystemUtilities;
 
 import java.io.File;
@@ -39,7 +40,10 @@ public class MacInstaller extends Installer {
         HashMap<String, String> fieldMap = new HashMap<>();
         // Dynamic fields
         fieldMap.put("%PACKAGE_NAME%", PACKAGE_NAME);
-        fieldMap.put("%COMMAND%", String.format("%s/Contents/MacOS/%s", destination, ABOUT_TITLE));
+        fieldMap.put("%COMMAND%", String.format("%s/Contents/MacOS/%s",
+                                                StringUtilities.escapeHtmlEntities(destination),
+                                                StringUtilities.escapeHtmlEntities(ABOUT_TITLE)
+        ));
         fieldMap.put("%PARAM%", "--honorautostart");
 
         try {

@@ -113,7 +113,7 @@ public class TrayManager {
         shortcutCreator = ShortcutCreator.getInstance();
 
         SystemUtilities.setSystemLookAndFeel();
-        iconCache = new IconCache();
+        iconCache = IconCache.getInstance();
 
         if (SystemUtilities.isSystemTraySupported()) { // UI mode with tray
             switch(SystemUtilities.getOs()) {
@@ -129,13 +129,7 @@ public class TrayManager {
                     tray = TrayType.MODERN.init(iconCache);
             }
 
-            // OS-specific tray icon handling
-            if (SystemTray.isSupported()) {
-                iconCache.fixTrayIcons(SystemUtilities.isDarkTaskbar());
-            }
-
-            // Iterates over all images denoted by IconCache.getTypes() and caches them
-            tray.setIcon(DANGER_ICON);
+            tray.setIcon(TRAY_LOADING);
             tray.setToolTip(name);
 
             try {
@@ -222,13 +216,12 @@ public class TrayManager {
 
     private void initTaskbarTray() {
         tray = TrayType.TASKBAR.init(exitListener, iconCache);
-        tray.setIcon(DANGER_ICON);
+        tray.setIcon(TRAY_LOADING);
         tray.setToolTip(name);
         tray.showTaskbar();
     }
 
     public void refreshTheme() {
-        iconCache.fixTrayIcons(SystemUtilities.isDarkTaskbar());
         refreshIcon(null);
         // TODO: Merge into ThemeUtilities
         SwingUtilities.invokeLater(() -> {
@@ -653,12 +646,7 @@ public class TrayManager {
      * Thread safe method for setting the default icon
      */
     public void setDefaultIcon() {
-        // Workaround for JDK-8252015
-        if(SystemUtilities.isMac() && Constants.MASK_TRAY_SUPPORTED && !MacUtilities.jdkSupportsTemplateIcon()) {
-            setIcon(DEFAULT_ICON, () -> MacUtilities.toggleTemplateIcon(tray.tray()));
-        } else {
-            setIcon(DEFAULT_ICON);
-        }
+        setIcon(TRAY_READY);
     }
 
     /** Thread safe method for setting the error status message */
@@ -666,19 +654,14 @@ public class TrayManager {
         displayMessage(name, text, TrayIcon.MessageType.ERROR);
     }
 
-    /** Thread safe method for setting the danger icon */
+    /** Thread safe method for setting the loading icon */
     public void setDangerIcon() {
-        setIcon(DANGER_ICON);
+        setIcon(TRAY_LOADING);
     }
 
     /** Thread safe method for setting the warning status message */
     public void displayWarningMessage(String text) {
         displayMessage(name, text, TrayIcon.MessageType.WARNING);
-    }
-
-    /** Thread safe method for setting the warning icon */
-    public void setWarningIcon() {
-        setIcon(WARNING_ICON);
     }
 
     /** Thread safe method for setting the specified icon */

@@ -10,230 +10,191 @@
 
 package qz.ui.component;
 
-import com.github.zafarkhaja.semver.Version;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import qz.utils.ColorUtilities;
+import qz.common.Sluggable;
+import qz.ui.component.iconcache.*;
 import qz.utils.SystemUtilities;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static org.apache.commons.io.FilenameUtils.*;
+import static qz.ui.component.iconcache.Type.*;
+import static qz.ui.component.iconcache.Saturation.*;
 
-/**
- * Created by Tres Finocchiaro on 12/12/2014.
- */
 public class IconCache {
-
-    private static final Logger log = LogManager.getLogger(IconCache.class);
-
-    // Internal Jar path containing the images
-    static String RESOURCES_DIR = "/qz/ui/resources/";
-    static String DARK_SUFFIX = "-dark";
+    private static IconCache instance;
+    private final Path resourcesPath;
 
     /**
-     * Stores Icon paths
+     * Enum for building and tracking icon keys for PNG (pre-rasterized) or SVG (runtime rasterized) images
      */
-    public enum Icon {
-        // Tray icons
-        DEFAULT_ICON("qz-default.png", "qz-default-20.png", "qz-default-24.png", "qz-default-32.png", "qz-default-40.png", "qz-default-48.png"),
-        WARNING_ICON("qz-warning.png", "qz-warning-20.png", "qz-warning-24.png", "qz-warning-32.png", "qz-warning-40.png", "qz-warning-48.png"),
-        DANGER_ICON("qz-danger.png", "qz-danger-20.png", "qz-danger-24.png", "qz-danger-32.png", "qz-danger-40.png", "qz-danger-48.png"),
-        MASK_ICON("qz-mask.png", "qz-mask-20.png", "qz-mask-24.png", "qz-mask-32.png", "qz-mask-40.png", "qz-mask-48.png"),
+    public enum Icon implements Sluggable {
+        // System tray (preferred)
+        TRAY_READY(SYSTEM_TRAY, MASK,"tray-ready", "qz-mask"),
+        TRAY_LOADING(SYSTEM_TRAY, MASK,"tray-loading"),
 
-        // Task bar icons - Appending "#" allows hashing under unique id
-        TASK_BAR_ICON("qz-default.png#", "qz-default-20.png#", "qz-default-24.png#", "qz-default-32.png#", "qz-default-40.png#", "qz-default-48.png#"),
+        // System tray color (legacy)
+        TRAY_READY_COLOR(SYSTEM_TRAY, "tray-ready-color", "qz-default"),
+        TRAY_LOADING_COLOR(SYSTEM_TRAY, "tray-loading-color", "qz-danger"),
 
-        // Menu Item icons
-        EXIT_ICON("qz-exit.png"),
-        RELOAD_ICON("qz-reload.png"),
-        ABOUT_ICON("qz-about.png"),
-        DESKTOP_ICON("qz-desktop.png"),
-        SAVED_ICON("qz-saved.png"),
-        LOG_ICON("qz-log.png"),
-        FOLDER_ICON("qz-folder.png"),
-        SETTINGS_ICON("qz-settings.png"),
-        COPY_ICON("qz-copy.png"),
+        // Task bar
+        TASK_BAR_ICON(TASK_BAR, "tray-ready-color", "qz-default"),
 
-        // Dialog icons
-        ALLOW_ICON("qz-allow.png"),
-        BLOCK_ICON("qz-block.png"),
-        CANCEL_ICON("qz-cancel.png"),
-        TRUST_VERIFIED_ICON("qz-trust-verified.png"),
-        TRUST_SPONSORED_ICON("qz-trust-sponsored.png"),
-        TRUST_ISSUE_ICON("qz-trust-issue.png"),
-        TRUST_MISSING_ICON("qz-trust-missing.png"),
-        FIELD_ICON("qz-field.png"),
-        DELETE_ICON("qz-delete.png"),
-        QUESTION_ICON("qz-question.png"),
+        // Menus, buttons, fields
+        ABOUT_ICON(MENU,"about"),
+        COPY_ICON(MENU,"copy"),
+        DESKTOP_ICON(MENU,"desktop"),
+        EXIT_ICON(MENU,"exit"),
+        FOLDER_ICON(MENU,"folder"),
+        LOG_ICON(MENU,"log"),
+        RELOAD_ICON(MENU,"reload"),
+        SAVED_ICON(MENU,"saved"),
+        SETTINGS_ICON(MENU,"settings"),
 
-        // Banner
-        LOGO_ICON("qz-logo.png"),
-        BANNER_ICON("qz-banner.png");
+        ALLOW_ICON(MENU,"allow"),
+        BLOCK_ICON(MENU,"block"),
+        CANCEL_ICON(MENU,"cancel"),
 
-        private boolean padded = false;
-        private String[] fileNames;
-        private String[] fileNamesDark;
+        DELETE_ICON(MENU,"delete"),
+        FIELD_ICON(MENU,"field"),
 
-        /**
-         * Default constructor
-         *
-         * @param fileNames path(s) to image
-         */
-        Icon(String ... fileNames) {
-            this.fileNames = fileNames;
-            this.fileNamesDark = new String[fileNames.length];
-            for(int i = 0; i < fileNames.length; i++) {
-                this.fileNamesDark[i] = String.format("%s" + DARK_SUFFIX + ".%s", getBaseName(fileNames[i]), getExtension(fileNames[i]));
-            }
+        // Dialogs
+        TRUST_VERIFIED_ICON(DIALOG, "trust-verified"),
+        TRUST_SPONSORED_ICON(DIALOG,"trust-sponsored"),
+        TRUST_ISSUE_ICON(DIALOG,"trust-issue"),
+        TRUST_MISSING_ICON(DIALOG,"trust-missing"),
+        QUESTION_ICON(DIALOG,"question"),
+
+        // Banner logo
+        LOGO_ICON(LOGO, "logo", "qz-logo");
+
+        private final Type type;
+        private final Saturation saturation;
+        private final String slug;
+        private final String[] names;
+
+        Icon(Type type, Saturation saturation, String ... names) {
+            this.type = type;
+            this.saturation = saturation;
+            this.names = names;
+            this.slug = Sluggable.slugOf(this).replace("_icon", ""); // TODO: Remove "_ICON" suffix
         }
 
-        /**
-         * Returns whether or not this icon is used for the SystemTray
-         *
-         * @return true if this icon is used for the SystemTray
-         */
-        public boolean isTrayIcon() {
-            switch(this) {
-                case DEFAULT_ICON:
-                case WARNING_ICON:
-                case DANGER_ICON:
-                    return true;
-                default:
-                    return false;
-            }
+        Icon(Type type, String ... names) {
+            this(type, Saturation.COLOR, names);
         }
 
         @Override
         public String toString() { return name(); }
 
-        /**
-         * Returns the full path to the Icon resource
-         *
-         * @return full path to Icon resource
-         */
-        public String getPath() { return RESOURCES_DIR + getId(); }
-
-        /**
-         * Returns the full path to the Icon resource with the specified width suffix.
-         * Width is determined solely by filename suffix.  e.g. foo-32.png
-         *
-         * @param size size of desired image
-         * @return icon file name
-         */
-        public String getId(Dimension size, boolean isDark) {
-            if (size != null) {
-                for(String fileName : isDark ? fileNamesDark : fileNames) {
-                    if (fileName.endsWith("-" + size.width + ".png")) {
-                        return fileName;
-                    }
-                }
-            }
-            return getId(isDark);
+        @Override
+        public String slug() {
+            return slug;
         }
 
-        public String getId(Dimension size) {
-            return getId(size, false);
+        public Icon getIcon(Saturation sat) {
+            return switch(sat) {
+                case MASK -> this;
+                default -> switch(this) {
+                    case TRAY_READY -> TRAY_READY_COLOR;
+                    case TRAY_LOADING -> TRAY_LOADING_COLOR;
+                    default -> this;
+                };
+            };
         }
 
-        public String getId(boolean isDark) {
-            return isDark ? fileNamesDark[0] : fileNames[0];
+        public boolean isMaskIcon() {
+            return saturation == Saturation.MASK;
         }
 
-        public String getId() {
-            return getId(false);
+        public Type getType() {
+            return type;
         }
 
-        public String[] getIds(boolean isDark) {
-            return isDark ? fileNamesDark : fileNames;
-        }
-
-        public String[] getIds() { return getIds(false); }
-
-        private void addId(String id, boolean isDark) {
-            if(isDark) {
-                fileNamesDark = Arrays.copyOf(fileNamesDark, fileNamesDark.length + 1);
-                fileNamesDark[fileNamesDark.length - 1] = id;
-            } else {
-                fileNames = Arrays.copyOf(fileNames, fileNames.length + 1);
-                fileNames[fileNames.length - 1] = id;
-            }
-        }
-
-        private void addId(String id) {
-            addId(id, false);
+        public String[] getNames() {
+            return names;
         }
     }
 
-    private final HashMap<String,ImageIcon> imageIcons;
-    private final HashMap<String,BufferedImage> images;
-    private static final Color TRANSPARENT = new Color(0,0,0,0);
+    public final HashMap<String, Cache> cacheMap;
 
     /**
-     * Default constructor.
      * Builds a cache of Image and ImageIcon resources by iterating through all IconCache.Icon types
      */
-    public IconCache() {
-        imageIcons = new HashMap<>();
-        images = new HashMap<>();
-        buildIconCache();
+    IconCache(Path resourcesPath) {
+        this.resourcesPath = resourcesPath;
+        this.cacheMap = initMap();
+        this
+                .addMissingLoadingIcons()
+                .addMissingThemeIcons()
+                .setMaskColor()
+                .padMacIcons();
     }
 
-    /**
-     * Populates the internal HashMaps containing the cache
-     * of ImageIcons and BufferedImages
-     */
-    private void buildIconCache() {
+    private IconCache setMaskColor() {
+        // Ensure default mask/template icons are 100% black/white respectively
+        cacheMap.entrySet().stream()
+                .filter(e -> e.getValue().getIcon().isMaskIcon())
+                .forEach(e -> e.getValue().setMaskColor());
+        return this;
+    }
+
+    public IconCache() {
+        this(Paths.get("resources"));
+    }
+
+    HashMap<String, Cache> initMap() {
+        HashMap<String, Cache> images = new LinkedHashMap<>();
         for(Icon i : Icon.values()) {
-            String[] lightIds = i.getIds(false);
-            String[] darkIds = i.getIds(true);
-            for(int j = 0; j < lightIds.length; j++) {
-                String lightId = lightIds[j];
-                String darkId = darkIds[j];
-                BufferedImage lightBi = getImageResource(RESOURCES_DIR + lightId);
-                BufferedImage darkBi = getImageResource(RESOURCES_DIR + darkId);
-                // Cache light icons
-                imageIcons.put(lightId, new ImageIcon(lightBi));
-                images.put(lightId, lightBi);
-                // Cache dark icons if present
-                imageIcons.put(darkId, new ImageIcon(darkBi != null ? darkBi : lightBi));
-                images.put(darkId, darkBi != null ? darkBi : lightBi);
-            }
-        }
-        // Stash scaled 2x, 3x versions if missing
-        int maxScale = 3;
-        for(Icon i : Icon.values()) {
-            // For now, only scale icons that have more than one fileName (tray and taskbar)
-            if (i.fileNames.length != 1) {
-                continue;
-            }
-            for(int scale = 2; scale <= maxScale; scale++) {
-                BufferedImage bi = images.get(i.getId());
-                // Assume square icon (filename is derived from width only)
-                String id = i.getId();
-                boolean isDark = getBaseName(id).endsWith(DARK_SUFFIX);
-                int loc = id.lastIndexOf(".");
-                if(loc == -1) {
-                    continue;
-                }
-                String name = id.substring(0, loc);
-                String ext = id.substring(loc + 1);
-                String newSize = String.format("%s-%s.%s", name,  bi.getWidth() * scale, ext);
-                if (!images.containsKey(newSize)) {
-                    i.addId(newSize, isDark);
-                    BufferedImage newBi = clone(bi, scale);
-                    imageIcons.put(newSize, new ImageIcon(newBi));
-                    images.put(newSize, newBi);
+            for(int size : i.getType().getSizes()) {
+                for(Theme theme : Theme.values()) {
+                    Cache cache = new Cache(i, theme, size);
+                    String key = cache.getKey();
+                    cache.load(resourcesPath);
+                    images.put(key, cache);
                 }
             }
         }
+        return images;
+    }
+
+    IconCache addMissingLoadingIcons() {
+        // mask icons appear "loading" at 50% transparency
+        cacheMap.entrySet().stream()
+                .filter(e -> e.getValue().missing())
+                .filter(e -> e.getValue().getTheme() == Theme.LIGHT)
+                .filter(e -> e.getValue().getIcon() == Icon.TRAY_LOADING)
+                .forEach(e -> e.getValue().fadeImage(
+                        cacheMap.get(e.getValue().swapedKey(Icon.TRAY_READY)), 0.5f)
+                );
+        return this;
+    }
+
+    IconCache addMissingThemeIcons() {
+        cacheMap.entrySet().stream()
+                .filter(e -> e.getValue().missing())
+                .filter(e -> e.getValue().getTheme() == Theme.DARK)
+                .forEach(e -> e.getValue().setImages(
+                        cacheMap.get(e.getValue().themedKey(Theme.LIGHT))
+                ));
+        return this;
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    IconCache padMacIcons() {
+        if(SystemUtilities.isMac()) {
+            // Handle undocumented 25% padding for macOS system tray
+            cacheMap.entrySet().stream()
+                    .filter(e -> e.getValue().getIcon().getType() == SYSTEM_TRAY)
+                    .forEach(e -> e.getValue().padImage(0.25f));
+        }
+        return this;
     }
 
     /**
@@ -244,16 +205,15 @@ public class IconCache {
      * @return the ImageIcon in the cache
      */
     public ImageIcon getIcon(Icon i, boolean isDark) {
-        return imageIcons.get(i.getId(isDark));
+        return getCache(i, Theme.parse(isDark)).getImageIcon();
     }
 
     public ImageIcon getIcon(Icon i) {
-        return imageIcons.get(i.getId(false));
+        return getIcon(i, false);
     }
 
-
-    private ImageIcon getIcon(String id) {
-        return imageIcons.get(id);
+    ImageIcon getIcon(Icon i, Theme theme, int size) {
+        return getCache(i, theme, size).getImageIcon();
     }
 
     /**
@@ -264,200 +224,51 @@ public class IconCache {
      * @return the Image in the cache
      */
     public BufferedImage getImage(Icon i, boolean isDark) {
-        return images.get(i.getId(isDark));
+        return getCache(i, Theme.parse(isDark)).getBufferedImage();
     }
 
     public BufferedImage getImage(Icon i) {
-        return images.get(i.getId(false));
+        return getImage(i, false);
     }
 
-    public List<BufferedImage> getImages(Icon i, boolean isDark) {
-        ArrayList<BufferedImage> icons = new ArrayList<>();
-        for(String id : i.getIds(isDark)) {
-            icons.add(images.get(id));
-        }
-        return icons;
+    public BufferedImage getImage(Icon i, Dimension size, boolean isDark) {
+        return getCache(i, Theme.parse(isDark), (int)size.getHeight()).getBufferedImage();
+    }
+
+    BufferedImage getImage(Icon i, Theme theme, int size) {
+        return getCache(i, theme, size).getBufferedImage();
+    }
+
+    List<BufferedImage> getImages(Icon i, Theme theme) {
+        return Arrays.stream(i.getType().getSizes())
+                .mapToObj(size -> getCache(i, theme, size).getBufferedImage())
+                .collect(Collectors.toList());
     }
 
     public List<BufferedImage> getImages(Icon i) {
         return getImages(i, false);
     }
 
-    public BufferedImage getImage(Icon i, Dimension size, boolean isDark) {
-        return images.get(i.getId(size, isDark));
+    public List<BufferedImage> getImages(Icon i, boolean isDark) {
+        return getImages(i, Theme.parse(isDark));
     }
 
-    public BufferedImage getImage(Icon i, Dimension size) {
-        return images.get(i.getId(size, false));
+    public Path extract(Icon i, Theme theme) throws IOException {
+        return getCache(i, theme, i.getType().getSizes()[0]).extract();
     }
 
-    /**
-     * Returns all IconCache.Icon's possible values
-     *
-     * @return the complete list of IconCache.Icon values
-     */
-    public static Icon[] getTypes() {
-        return Icon.values();
+    public Cache getCache(Icon i, Theme theme, int size) {
+        return cacheMap.get(Cache.getKey(i, theme, size));
     }
 
-    /**
-     * Returns a buffered image from the specified imagePath. The image must
-     * reside in the RESOURCES_DIR declared above. Images are assumed to be
-     * bundled into the jar resource.
-     *
-     * @param imagePath The file name of the image to load
-     * @return The BufferedImage representing the data
-     */
-    private static BufferedImage getImageResource(String imagePath) {
-       try(InputStream is = IconCache.class.getResourceAsStream(imagePath.replace("#", ""))) {
-            if (is != null) {
-                return ImageIO.read(is);
-            } else {
-                if(!getBaseName(imagePath).endsWith(DARK_SUFFIX)) {
-                    throw new IOException("InputStream is null");
-                }
-            }
+    public Cache getCache(Icon i, Theme theme) {
+        return getCache(i, theme, i.getType().getSizes()[0]);
+    }
+
+    public synchronized static IconCache getInstance() {
+        if(instance == null) {
+            instance = new IconCache();
         }
-        catch(IOException e) {
-            log.error("Cannot load {}", imagePath, e);
-        }
-        return null;
+        return instance;
     }
-
-    /**
-     * Overwrites the specified IconCache.Icon's underlying ImageIcon and BufferedImage with an opaque version
-     *
-     * @param i       the IconCache.Icon
-     * @param bgColor the java Color used for the transparent pixels
-     */
-    public void setBgColor(Icon i, Color bgColor) {
-        for (String id : i.getIds()) {
-            ImageIcon imageIcon = new ImageIcon(toOpaqueImage(getIcon(id), bgColor));
-            images.put(id, toBufferedImage(imageIcon.getImage(), TRANSPARENT));
-            imageIcons.put(id, imageIcon);
-        }
-    }
-
-    /**
-     * Replaces the cached tray icons with corrected versions if necessary
-     * e.g.
-     *  - Ubuntu transparency
-     *  - macOS masked icons
-     *  - macOS 10.14+ dark mode support
-     */
-    public void fixTrayIcons(boolean darkTaskbar) {
-        // Handle mask-style tray icons
-        if (SystemUtilities.prefersMaskTrayIcon()) {
-            // Clone the mask icon
-            for (String id : Icon.MASK_ICON.getIds()) {
-                BufferedImage clone = clone(images.get(id));
-                // Even on lite mode desktops, white tray icons were the norm until Windows 10 update 1903, (1903 is build 18362.X)
-                if (SystemUtilities.isWindows() && SystemUtilities.getOsVersion().lessThan(Version.valueOf("10.0.18362"))) {
-                    darkTaskbar = true;
-                }
-                if (darkTaskbar) {
-                    clone = ColorUtilities.invert(clone);
-                }
-                images.put(id.replaceAll("mask", "default"), clone);
-                imageIcons.put(id.replaceAll("mask", "default"), new ImageIcon(clone));
-            }
-        }
-
-        // Handle undocumented macOS tray icon padding
-        for(IconCache.Icon i : IconCache.getTypes()) {
-            // See also JXTrayIcon.getSize()
-            if (i.isTrayIcon() && SystemUtilities.isMac()) {
-                // Prevent padding from happening twice
-                if (!i.padded) {
-                    padIcon(i, 25);
-                }
-            }
-        }
-    }
-
-    public static BufferedImage clone(BufferedImage src) {
-        return clone(src, 1);
-    }
-
-    public static BufferedImage clone(BufferedImage src, int scaleFactor) {
-        Image tmp = src.getScaledInstance(src.getWidth() * scaleFactor, src.getHeight() * scaleFactor, src.getType());
-        BufferedImage dest = new BufferedImage(tmp.getWidth(null), tmp.getHeight(null), BufferedImage.TYPE_INT_ARGB);
-        Graphics g = dest.createGraphics();
-        g.drawImage(tmp, 0, 0, null);
-        g.dispose();
-        return dest;
-    }
-
-    public void padIcon(Icon icon, int percent) {
-        for (String id : icon.getIds()) {
-            // Calculate padding percentage
-            int w = images.get(id).getWidth();
-            int h = images.get(id).getHeight();
-            int wPad = (int)((percent/100.0) * w);
-            int hPad = (int)((percent/100.0) * h);
-
-            BufferedImage padded = new BufferedImage(w + wPad, h + hPad, BufferedImage.TYPE_INT_ARGB);
-            Graphics g = padded.getGraphics();
-
-            // Pad all sides (by half)
-            g.drawImage(images.get(id), wPad/2, hPad/2, null);
-            g.dispose();
-
-            images.put(id, padded);
-            imageIcons.put(id, new ImageIcon(padded));
-            icon.padded = true;
-        }
-    }
-
-    /**
-     * Creates an opaque icon image by setting transparent pixels to the specified bgColor
-     *
-     * @param icon The original transparency-enabled image
-     * @return The image overlaid on the appropriate background color
-     */
-    public static BufferedImage toOpaqueImage(ImageIcon icon, Color bgColor) {
-        return toBufferedImage(icon.getImage(), bgColor);
-    }
-
-    /**
-     * Converts a given Image into a BufferedImage
-     *
-     * @param img The Image to be converted
-     * @return The converted BufferedImage
-     */
-    public static BufferedImage toBufferedImage(Image img, Color bgColor) {
-        if (img instanceof BufferedImage && bgColor == TRANSPARENT) {
-            return (BufferedImage)img;
-        }
-
-        // Create a buffered image with transparency
-        BufferedImage bi = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
-
-        // Draw the image on to the buffered image
-        Graphics2D bGr = bi.createGraphics();
-        bGr.drawImage(img, 0, 0, bgColor, null);
-        bGr.dispose();
-
-        // Return the buffered image
-        return bi;
-    }
-
-    /**
-     * For rebranded installs, calculates the "BRAND_COLOR" by inspecting the center of the specified <code>IconCache.Icon</code>.
-     * For "QZ" brained installs, returns Constants.BRAND_COLOR
-     * @return String value representing the brand color.
-     */
-    public static String getHtmlColorFromIcon(IconCache.Icon icon, String fallback) {
-        try(InputStream is = IconCache.class.getResourceAsStream(icon.getPath())) {
-            if (is == null) throw new IOException(String.format("InputStream for '%s' is null", icon.getPath()));
-            BufferedImage bi = ImageIO.read(is);
-            int pixel = bi.getRGB(bi.getWidth() / 2, bi.getHeight() / 2);
-            return String.format("#%06X", (0xFFFFFF & pixel));
-        }
-        catch(IOException e) {
-            log.warn("Unable to calculate color from BufferedImage, falling back to '{}'", fallback, e);
-        }
-        return fallback;
-    }
-
 }

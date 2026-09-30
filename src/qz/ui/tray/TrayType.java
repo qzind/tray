@@ -1,11 +1,15 @@
 package qz.ui.tray;
 
 import org.jdesktop.swinghelper.tray.JXTrayIcon;
+import qz.ui.ThemeUtilities;
 import qz.ui.component.IconCache;
+import qz.ui.component.iconcache.Saturation;
+import qz.utils.SystemUtilities;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 
 /**
  * Wrapper class to allow popup menu on a tray-less OS
@@ -52,9 +56,19 @@ public enum TrayType {
 
     public void setIcon(IconCache.Icon icon) {
         if (isTray()) {
-            tray.setImage(iconCache.getImage(icon, tray.getSize()));
+            tray.setImage(
+                    // Use TRAY_LOADING, TRAY_READY if the underlying system prefers it
+                    iconCache.getImage(
+                            icon.getIcon(ThemeUtilities.getTraySaturation()),
+                            tray.getSize(),
+                            SystemUtilities.isDarkTaskbar(false)));
         } else {
-            taskbar.setIconImages(iconCache.getImages(icon));
+            // Try to swap out the taskbar icon if the tray is missing
+            IconCache.Icon fixed = switch(icon) {
+                case TRAY_READY, TRAY_READY_COLOR -> IconCache.Icon.TASK_BAR_ICON;
+                default -> icon.getIcon(Saturation.COLOR);
+            };
+            taskbar.setIconImages(iconCache.getImages(fixed));
         }
     }
 

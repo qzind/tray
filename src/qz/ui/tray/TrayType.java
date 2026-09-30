@@ -53,13 +53,16 @@ public enum TrayType {
 
     public boolean getTaskbar() { return taskbar != null; }
 
-    public void setIcon(IconCache.Icon requestedIcon) {
-        IconCache.Icon icon = requestedIcon.getIcon(ThemeUtilities.getTraySaturation());
+    public void setIcon(IconCache.Icon icon) {
         if (isTray()) {
-            boolean dark = SystemUtilities.isDarkTaskbar(false);
-            BufferedImage image = iconCache.getImage(icon, tray.getSize(), dark);
-            tray.setImage(image);
+            tray.setImage(
+                    // System tray prefers TRAY_LOADING, TRAY_READY
+                    iconCache.getImage(
+                            icon.getIcon(ThemeUtilities.getTraySaturation()),
+                            tray.getSize(),
+                            SystemUtilities.isDarkTaskbar(false)));
         } else {
+            // Taskbar prefers TRAY_LOADING_COLOR, TRAY_READY_COLOR
             taskbar.setIconImages(iconCache.getImages(icon));
         }
     }

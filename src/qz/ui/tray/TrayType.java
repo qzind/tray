@@ -3,6 +3,7 @@ package qz.ui.tray;
 import org.jdesktop.swinghelper.tray.JXTrayIcon;
 import qz.ui.ThemeUtilities;
 import qz.ui.component.IconCache;
+import qz.ui.component.iconcache.Saturation;
 import qz.utils.SystemUtilities;
 
 import javax.swing.*;
@@ -63,7 +64,7 @@ public enum TrayType {
                             SystemUtilities.isDarkTaskbar(false)));
         } else {
             // Taskbar prefers TRAY_LOADING_COLOR, TRAY_READY_COLOR
-            taskbar.setIconImages(iconCache.getImages(icon));
+            taskbar.setIconImages(iconCache.getImages(icon.getIcon(Saturation.COLOR)));
         }
     }
 

@@ -31,7 +31,7 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         // Use their supported absolute path handling for the generated PNG
         String iconName = (probe.isCinnamon() || probe.isLxqt())
                 ? pngIconPath
-                : LinuxStatusNotifierItem.getThemedIconName();
+                : LinuxSniIconTheme.SYMBOLIC_ICON_NAME;
         // Notification daemons do not resolve the StatusNotifier IconThemePath
         // Freedesktop Notifications expects file:// URIs or themed names
         String notificationIcon = LinuxSniIconTheme.getPngIconUri(iconThemePath);

@@ -5,6 +5,7 @@ import org.freedesktop.dbus.errors.PropertyReadOnly;
 import org.freedesktop.dbus.errors.UnknownInterface;
 import org.freedesktop.dbus.errors.UnknownProperty;
 import org.freedesktop.dbus.types.Variant;
+import qz.common.Constants;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -16,11 +17,9 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     private static final String OBJECT_PATH = "/StatusNotifierItem";
     private static final DBusPath MENU_PATH = new DBusPath("/MenuBar");
     private static final String CATEGORY = "ApplicationStatus";
-    private static final String ID = "qz-tray";
-    private static final String TITLE = "QZ Tray";
+    private static final String ID = LinuxSniIconTheme.ICON_NAME;
+    private static final String TITLE = Constants.ABOUT_TITLE;
     private static final String STATUS = "Active";
-    // This must match the generated icon theme name exactly
-    private static final String THEMED_ICON_NAME = "qz-tray-symbolic";
 
     private final String iconThemePath;
     private final String iconName;
@@ -70,10 +69,6 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
 
     @Override
     public void scroll(int delta, String orientation) {}
-
-    static String getThemedIconName() {
-        return THEMED_ICON_NAME;
-    }
 
     private Map<String, Variant<?>> getAllProperties(String interfaceName) {
         validateInterface(interfaceName);

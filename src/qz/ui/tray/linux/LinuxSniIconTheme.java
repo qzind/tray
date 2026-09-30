@@ -1,5 +1,6 @@
 package qz.ui.tray.linux;
 
+import qz.common.Constants;
 import qz.ui.component.IconCache;
 import qz.ui.component.iconcache.Format;
 import qz.utils.FileUtilities;
@@ -13,8 +14,8 @@ import java.nio.file.StandardCopyOption;
 import static qz.ui.component.IconCache.Icon.*;
 
 class LinuxSniIconTheme {
-    private static final String ICON_NAME = "qz-tray";
-    private static final String SYMBOLIC_ICON_NAME = "qz-tray-symbolic";
+    public static final String ICON_NAME = Constants.PROPS_FILE;
+    public static final String SYMBOLIC_ICON_NAME = String.format("%s-symbolic", ICON_NAME);
     // Tray hosts resolve the exported IconName exactly, so the resource
     // is named with the same stable freedesktop-style symbolic icon name.
     private static final int[] ICON_SIZES = {32, 48};
@@ -115,7 +116,7 @@ class LinuxSniIconTheme {
                 .resolve("hicolor")
                 .resolve("scalable")
                 .resolve(context)
-                .resolve(SYMBOLIC_ICON_NAME);
+                .resolve(SYMBOLIC_ICON_NAME + ".svg");
 
         Files.createDirectories(iconPath.getParent());
         Files.copy(svg, iconPath, StandardCopyOption.REPLACE_EXISTING);

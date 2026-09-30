@@ -1,0 +1,212 @@
+package qz.ui.component.iconcache;
+
+import qz.ui.component.IconCache;
+import qz.utils.ImageUtilities;
+import qz.utils.SystemUtilities;
+
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.*;
+
+import static qz.utils.ImageUtilities.*;
+
+public class Cache {
+    final IconCache.Icon icon;
+    final Theme theme;
+    final int size;
+
+    String baseLoc;
+    BufferedImage bufferedImage;
+    ImageIcon imageIcon;
+    Format format;
+    boolean reliableForExtraction;
+    Path extractedSvg;
+    Path extractedPng;
+
+    public Cache(IconCache.Icon icon, Theme theme, int size) {
+        this.icon = icon;
+        this.theme = theme;
+        this.size = size;
+        this.reliableForExtraction = false;
+    }
+
+    public boolean load(Path resources) {
+        for(String name : icon.getNames()) {
+            for(Format format : Format.values()) {
+                if(!format.validExtension()) {
+                    continue;
+                }
+                String baseLoc = resources
+                        .resolve(getBaseName(name, format))
+                        .normalize()
+                        .toString();
+
+                if(SystemUtilities.isWindows()) {
+                    // Guard Windows forward slashes breaking resource loading
+                    baseLoc = baseLoc.replace('\\', '/');
+                }
+
+                BufferedImage bufferedImage = ImageUtilities.imageFromResource(baseLoc, size);
+
+                if (bufferedImage != null) {
+                    this.reliableForExtraction = !(format == Format.SVG && icon.isMaskIcon());
+                    this.baseLoc = baseLoc;
+                    this.format = format;
+                    setImages(bufferedImage);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    void setImages(BufferedImage bufferedImage) {
+        Objects.requireNonNull(bufferedImage);
+        this.bufferedImage = bufferedImage;
+        this.imageIcon = new ImageIcon(bufferedImage);
+    }
+
+    public void setImages(Cache cache) {
+        Objects.requireNonNull(cache);
+        this.baseLoc = cache.baseLoc;
+        this.bufferedImage = Objects.requireNonNull(cache.bufferedImage);
+        this.imageIcon = Objects.requireNonNull(cache.imageIcon);
+        this.format = Objects.requireNonNull(cache.format);
+    }
+
+    /**
+     * Sets the color of the mask/template image to maximum contrast with the given theme
+     * The effect isn't noticeable on platforms that natively support template themes however
+     * we do it everywhere for reproducibility.
+     */
+    public void setMaskColor() {
+        setImages(ImageUtilities.toColor(bufferedImage, theme.getFill()));
+    }
+
+    public void fadeImage(Cache cache, float amount) {
+        setImages(cache);
+        setImages(addTransparency(bufferedImage, amount));
+    }
+
+    public void padImage(float amount) {
+        setImages(addPadding(bufferedImage, amount));
+    }
+
+    /**
+     * Get the expected filename
+     */
+    public String getBaseName(String name, Format format) {
+        if (format == Format.SVG || size == icon.getType().getSizes()[0]) {
+            // size is not part of filenames
+            return String.format(theme == Theme.DARK? "%s-dark.%s":"%s.%s", name, format.slug());
+        }
+        // size is part of png filenames
+        return String.format(theme == Theme.DARK? "%s-dark-%s.%s":"%s-%s.%s", name, size, format.slug());
+    }
+
+    public Theme getTheme() {
+        return theme;
+    }
+
+    public IconCache.Icon getIcon() {
+        return icon;
+    }
+
+    public boolean missing() {
+        return bufferedImage == null;
+    }
+
+    public ImageIcon getImageIcon() {
+        return imageIcon;
+    }
+
+    public BufferedImage getBufferedImage() {
+        return bufferedImage;
+    }
+
+    public String getBaseLocation() {
+        return baseLoc;
+    }
+
+    public String getKey() {
+        return getKey(icon, theme, size);
+    }
+
+    public String themedKey(Theme theme) {
+        return getKey(icon, theme, size);
+    }
+
+    public String swapedKey(IconCache.Icon icon) {
+        return getKey(icon, theme, size);
+    }
+
+    public static String getKey(IconCache.Icon icon, Theme theme, int size) {
+        if(size < 1) {
+            size = icon.getType().getSizes()[0];
+        }
+        return String.format("%s-%s-%s", icon.slug(), theme.slug(), size);
+    }
+
+    public boolean isReliableForExtraction() {
+        return format != Format.SVG || reliableForExtraction;
+    }
+
+    public Format getFormat() {
+        return format;
+    }
+
+    Path createExtractionFile(Format format) throws IOException {
+        Path extractionFile = Files.createTempFile(getKey(), format.extension());
+        extractionFile.toFile().deleteOnExit();
+        return extractionFile;
+    }
+
+    public synchronized Path extract(Format format) throws IOException {
+        return switch(format) {
+            case SVG -> extractSvg();
+            case PNG -> extractPng();
+            default -> throw new UnsupportedOperationException("Unsupported file format " + format);
+        };
+    }
+
+    public synchronized Path extract() throws IOException {
+        return extract(format);
+    }
+
+    private Path extractSvg() throws IOException {
+        if(extractedSvg != null) {
+            return extractedSvg;
+        }
+        InputStream is = ImageUtilities.getResourceStream(getBaseLocation());
+        if(!isReliableForExtraction()) {
+            // Some SVGs may be altered after loading; try to mimic
+            if (icon.isMaskIcon()) {
+                is = ImageUtilities.addSvgFill(is, theme.getFill()); // fill based on theme
+                if (icon == IconCache.Icon.TRAY_LOADING) {
+                    is = ImageUtilities.addSvgTransparency(is, 0.5f); // use svg at 50% opacity
+                }
+            }
+        }
+
+        extractedSvg = createExtractionFile(Format.SVG);
+        Files.copy(is, extractedSvg, StandardCopyOption.REPLACE_EXISTING);
+        return extractedSvg;
+    }
+
+    private Path extractPng() throws IOException {
+        if(extractedPng != null) {
+            return extractedPng;
+        }
+        extractedPng = createExtractionFile(Format.PNG);
+        if (ImageIO.write(bufferedImage, Format.PNG.slug(), extractedPng.toFile())) {
+            return extractedPng;
+        }
+        throw new IOException("Unable to write png file: '" + extractedPng + "'");
+    }
+}

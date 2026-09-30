@@ -168,7 +168,6 @@ public class JXTrayIcon extends TrayIcon {
                 int macScale = MacUtilities.getScaleFactor();
 
                 // Handle undocumented icon border (e.g. 20px has 16px icon)
-                // See also IconCache.fixTrayIcons()
                 iconSize.width -= iconSize.width / 5;
                 iconSize.height -= iconSize.height / 5;
 

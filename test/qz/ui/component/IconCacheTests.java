@@ -31,8 +31,6 @@ public class IconCacheTests {
     private IconCache svgCache;
     private IconCache mixedCache;
 
-    static int extractedSvgCache = 0;
-
     @BeforeClass
     public void setUp() {
         svgCache = new IconCache();

@@ -12,22 +12,16 @@ package qz.ui.component;
 
 import qz.common.Sluggable;
 import qz.ui.component.iconcache.*;
-import qz.utils.ImageUtilities;
 import qz.utils.SystemUtilities;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static qz.ui.component.iconcache.Type.*;

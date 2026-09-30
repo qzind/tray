@@ -167,7 +167,7 @@ public class Cache {
         return extractionFile;
     }
 
-    public Path extract(Format format) throws IOException {
+    public synchronized Path extract(Format format) throws IOException {
         return switch(format) {
             case SVG -> extractSvg();
             case PNG -> extractPng();
@@ -175,11 +175,11 @@ public class Cache {
         };
     }
 
-    public Path extract() throws IOException {
+    public synchronized Path extract() throws IOException {
         return extract(format);
     }
 
-    synchronized Path extractSvg() throws IOException {
+    private Path extractSvg() throws IOException {
         if(extractedSvg != null) {
             return extractedSvg;
         }
@@ -199,7 +199,7 @@ public class Cache {
         return extractedSvg;
     }
 
-    synchronized Path extractPng() throws IOException {
+    private Path extractPng() throws IOException {
         if(extractedPng != null) {
             return extractedPng;
         }

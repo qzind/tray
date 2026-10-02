@@ -22,8 +22,6 @@ class LinuxSniIconTheme {
     public static final String SYMBOLIC_ICON_NAME = String.format("%s-symbolic", ICON_NAME);
     private static final int[] ICON_SIZES = {32, 48};
     private static final int PNG_ICON_SIZE = 48;
-    private static final Theme PNG_ICON_THEME = Theme.DARK;
-    private static final Theme SYMBOLIC_ICON_THEME = Theme.LIGHT;
 
     static String prepare() throws IOException {
         Path themePath = getThemePath();
@@ -93,7 +91,7 @@ class LinuxSniIconTheme {
     }
 
     private static void copyIcon(int size, Path themePath) throws IOException {
-        Path sizedPng = IconCache.getInstance().extract(Format.PNG, TRAY_READY_COLOR, PNG_ICON_THEME, size);
+        Path sizedPng = IconCache.getInstance().extract(Format.PNG, TRAY_READY_COLOR, size);
 
         // IconThemePath points to the theme parent
         // tray hosts then resolve IconName through
@@ -115,7 +113,7 @@ class LinuxSniIconTheme {
     }
 
     private static void copySymbolicIcon(Path themePath, String context) throws IOException {
-        Path svg = IconCache.getInstance().extract(Format.SVG, TRAY_READY, SYMBOLIC_ICON_THEME);
+        Path svg = IconCache.getInstance().extract(Format.SVG, TRAY_READY);
 
         Path iconPath = themePath
                 .resolve("hicolor")

@@ -5,10 +5,14 @@ import org.apache.logging.log4j.Logger;
 import org.freedesktop.dbus.connections.impl.DBusConnection;
 import org.freedesktop.dbus.connections.impl.DBusConnectionBuilder;
 import org.freedesktop.dbus.interfaces.DBus;
+import qz.common.Constants;
 import qz.ui.tray.linux.menu.LinuxDbusMenu;
+import qz.ui.tray.linux.xdg.ThemeBuilder;
+import qz.utils.FileUtilities;
 
 import java.awt.TrayIcon;
 import java.io.IOException;
+import java.nio.file.Path;
 
 public class LinuxStatusNotifierTray implements AutoCloseable {
 
@@ -25,17 +29,28 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
     public LinuxStatusNotifierTray(LinuxSniProbe probe, LinuxDbusMenu menu) throws Exception {
         String statusNotifierWatcher = probe.getStatusNotifierWatcher();
         String itemService = getItemServicePrefix(statusNotifierWatcher) + ProcessHandle.current().pid();
-        String iconThemePath = LinuxSniIconTheme.prepare();
-        String pngIconPath = LinuxSniIconTheme.getPngIconPath(iconThemePath);
+
+
         // Cinnamon and LXQt can fail to resolve private themed SVGs reliably
         // Use their supported absolute path handling for the generated PNG
-        String iconName = (probe.isCinnamon() || probe.isLxqt())
-                ? pngIconPath
-                : LinuxSniIconTheme.SYMBOLIC_ICON_NAME;
-        // Notification daemons do not resolve the StatusNotifier IconThemePath
-        // Freedesktop Notifications expects file:// URIs or themed names
-        String notificationIcon = LinuxSniIconTheme.getPngIconUri(iconThemePath);
-        LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath, iconName);
+        assert FileUtilities.TEMP_DIR != null;
+        Path iconThemePath = ThemeBuilder.buildThemeLayout(FileUtilities.TEMP_DIR.resolve("xdg"));
+        LinuxStatusNotifierItem item;
+
+        // Color Icon has two uses:
+        //  1. Fallback for Cinnamon / LXQt (needs confirmation)
+        //  2. For notification daemon
+        Path colorPng = iconThemePath.resolve("hicolor/48x48/apps/%s.png", Constants.PROPS_FILE);
+        if((probe.isCinnamon() || probe.isLxqt())) {
+            // TODO: Is iconThemePath required here?
+            // xapp-sn-watcher accepts an absolute IconName path
+            // https://github.com/linuxmint/xapp/blob/master/xapp-sn-watcher/sn-item.c
+            // TODO: Should we check for MATE here too?
+            item = new LinuxStatusNotifierItem(iconThemePath, colorPng.toString());
+        } else {
+           String iconName = String.format("%s-symbolic", Constants.PROPS_FILE);
+           item = new LinuxStatusNotifierItem(iconThemePath, iconName);
+        }
 
         // Export the complete item before registration so the watcher can
         // resolve the service, item properties, and menu immediately
@@ -85,11 +100,12 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
             throw e;
         }
         connection = newConnection;
-        notifications = new LinuxNotifications(connection, notificationIcon);
+        // Notification daemons do not resolve the StatusNotifier IconThemePath
+        // Freedesktop Notifications expects file:// URIs or themed names
+        notifications = new LinuxNotifications(connection, colorPng.toUri().toString());
         watcherRegistration = newWatcherRegistration;
 
         log.info("Registered StatusNotifier item {} at {}", itemService, item.getObjectPath());
-        log.info("Published StatusNotifier icon theme path {}", iconThemePath);
     }
 
     public void displayMessage(String caption, String text, TrayIcon.MessageType level) {

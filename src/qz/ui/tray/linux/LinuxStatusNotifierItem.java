@@ -7,6 +7,8 @@ import org.freedesktop.dbus.errors.UnknownProperty;
 import org.freedesktop.dbus.types.Variant;
 import qz.common.Constants;
 
+import java.net.URI;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -17,14 +19,14 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
     private static final String OBJECT_PATH = "/StatusNotifierItem";
     private static final DBusPath MENU_PATH = new DBusPath("/MenuBar");
     private static final String CATEGORY = "ApplicationStatus";
-    private static final String ID = LinuxSniIconTheme.ICON_NAME;
+    private static final String ID = Constants.PROPS_FILE;
     private static final String TITLE = Constants.ABOUT_TITLE;
     private static final String STATUS = "Active";
 
-    private final String iconThemePath;
+    private final Path iconThemePath;
     private final String iconName;
 
-    LinuxStatusNotifierItem(String iconThemePath, String iconName) {
+    LinuxStatusNotifierItem(Path iconThemePath, String iconName) {
         this.iconThemePath = iconThemePath;
         this.iconName = iconName;
     }
@@ -79,7 +81,7 @@ public class LinuxStatusNotifierItem implements KdeStatusNotifierItem, Freedeskt
         properties.put("Title", new Variant<>(TITLE));
         properties.put("Status", new Variant<>(STATUS));
         properties.put("IconName", new Variant<>(iconName));
-        properties.put("IconThemePath", new Variant<>(iconThemePath));
+        properties.put("IconThemePath", new Variant<>(iconThemePath.toString()));
         // Ubuntu GNOME requires a non-empty Menu path before retaining the item
         properties.put("Menu", new Variant<>(MENU_PATH));
         return properties;

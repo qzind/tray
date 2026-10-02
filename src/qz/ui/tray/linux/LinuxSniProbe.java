@@ -6,12 +6,12 @@ import org.freedesktop.dbus.connections.impl.DBusConnection;
 import org.freedesktop.dbus.connections.impl.DBusConnectionBuilder;
 import org.freedesktop.dbus.interfaces.DBus;
 import qz.utils.SystemUtilities;
+import qz.utils.linux.De;
+import qz.utils.linux.LinuxUtilities;
 
 import java.awt.*;
-import java.util.Locale;
 
 public class LinuxSniProbe {
-
     private static final Logger log = LogManager.getLogger(LinuxSniProbe.class);
     // For probing runtime d-bus names
     // but remember different DEs advertise different names
@@ -23,7 +23,7 @@ public class LinuxSniProbe {
     private static final String ALLOW_UNVERIFIED_DESKTOP = "qz.sni.allowUnverifiedDesktop";
     private final boolean isLinux;
     private final boolean headless;
-    private final String currentDesktop;
+    private final De currentDesktop;
     private final String sessionType;
     private final String display;
     private final String waylandDisplay;
@@ -42,13 +42,13 @@ public class LinuxSniProbe {
     private LinuxSniProbe() {
         isLinux = SystemUtilities.isLinux();
         headless = GraphicsEnvironment.isHeadless();
-        currentDesktop = getEnv("XDG_CURRENT_DESKTOP");
+        currentDesktop = LinuxUtilities.getDesktopEnvironment();
         sessionType = getEnv("XDG_SESSION_TYPE");
         display = getEnv("DISPLAY");
         waylandDisplay = getEnv("WAYLAND_DISPLAY");
         dbusSessionBusAddress = getEnv("DBUS_SESSION_BUS_ADDRESS");
         xdgRuntimeDir = getEnv("XDG_RUNTIME_DIR");
-        verifiedDesktop = isVerifiedDesktop(currentDesktop);
+        verifiedDesktop = isSupported(currentDesktop);
         // This flag changes test eligibility only
         // It does not mark the desktop as verified
         allowUnverifiedDesktop = Boolean.getBoolean(ALLOW_UNVERIFIED_DESKTOP);
@@ -131,51 +131,22 @@ public class LinuxSniProbe {
         return statusNotifierWatcher;
     }
 
-    boolean isCinnamon() {
-        return currentDesktop.toLowerCase(Locale.ENGLISH).contains("cinnamon");
-    }
-
-    boolean isLxqt() {
-        return currentDesktop.toLowerCase(Locale.ENGLISH).contains("lxqt");
-    }
-
     private String getMissingWatcherSuggestion() {
-        String desktop = currentDesktop.toLowerCase(Locale.ENGLISH);
-        String prefix = "No StatusNotifier host detected. ";
+        String message = switch(currentDesktop) {
+            case BUDGIE -> "Budgie System Tray Applet";
+            case CINNAMON -> "XApp Status Applet (xapp-sn-watcher).";
+            case GNOME -> "GNOME AppIndicator support (e.g. gnome-shell-extension-appindicator).";
+            case KDE -> "System Tray Widget";
+            case LXQT -> "Status Notifier Plugin";
+            case MATE -> "Notification Area Applet";
+            case XFCE -> "XFCE StatusNotifier (e.g. xfce4-statusnotifier-plugin)";
+            default -> "AppIndicator/StatusNotifier support for your desktop environment";
+        };
 
-        if (desktop.contains("gnome")) {
-            return prefix +
-                    "Install and enable GNOME AppIndicator support (e.g. gnome-shell-extension-appindicator).";
-        }
-        if (desktop.contains("kde")) {
-            return prefix +
-                    "Verify the system tray widget is enabled and running.";
-        }
-        if (desktop.contains("xfce")) {
-            return prefix +
-                    "Install or enable XFCE StatusNotifier support (e.g. xfce4-statusnotifier-plugin).";
-        }
-        if (desktop.contains("lxqt")) {
-            return prefix +
-                    "Verify the Status Notifier plugin is enabled in the LXQt panel.";
-        }
-        if (desktop.contains("budgie")) {
-            return prefix +
-                    "Verify the Budgie System Tray applet is added to the panel and running.";
-        }
-        if (desktop.contains("cinnamon")) {
-            return prefix +
-                    "Verify the XApp Status Applet is enabled and xapp-sn-watcher is running.";
-        }
-        if (desktop.contains("mate")) {
-            return prefix +
-                    "Verify the Notification Area applet is added to the MATE panel and running.";
-        }
-        return prefix +
-                "Install or enable AppIndicator/StatusNotifier support for your desktop environment.";
+        return String.format("No StatusNotifier host detected. Please install/enable %s and added/enabled it in the %s panel", message, currentDesktop);
     }
 
-    private boolean isVerifiedDesktop(String desktopName) {
+    private boolean isSupported(De de) {
         // End-to-end QZ Tray tests passed on Ubuntu GNOME with AppIndicator
         // support, KDE, XFCE, LXQt, Ubuntu Budgie, Cinnamon, and MATE
         //
@@ -186,21 +157,17 @@ public class LinuxSniProbe {
         //
         // Cinnamon uses an absolute PNG path for xapp-sn-watcher compatibility
         // Other desktops remain on the fallback until verified end to end
-        String desktop = desktopName.toLowerCase(Locale.ENGLISH);
-        return desktop.contains("gnome")
-                || desktop.contains("kde")
-                || desktop.contains("xfce")
-                || desktop.contains("lxqt")
-                || desktop.contains("budgie")
-                || desktop.contains("cinnamon")
-                || desktop.contains("mate");
+        return switch(de) {
+            case CINNAMON, BUDGIE, GNOME, KDE, LXQT, MATE, XFCE -> true;
+            default -> false;
+        };
     }
 
     @Override
     public String toString() {
         String report = "Linux: " + isLinux + "\n"
                 + "Headless: " + headless + "\n"
-                + "XDG_CURRENT_DESKTOP: " + currentDesktop + "\n"
+                + "XDG_CURRENT_DESKTOP: " + getEnv("XDG_CURRENT_DESKTOP") + "\n"
                 + "Verified desktop: " + verifiedDesktop + "\n"
                 + "Allow unverified desktop: " + allowUnverifiedDesktop + "\n"
                 + "XDG_SESSION_TYPE: " + sessionType + "\n"

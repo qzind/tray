@@ -9,6 +9,8 @@ import qz.common.Constants;
 import qz.ui.tray.linux.menu.LinuxDbusMenu;
 import qz.ui.tray.linux.xdg.ThemeBuilder;
 import qz.utils.FileUtilities;
+import qz.utils.linux.De;
+import qz.utils.linux.LinuxUtilities;
 
 import java.awt.TrayIcon;
 import java.io.IOException;
@@ -35,24 +37,22 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         // Use their supported absolute path handling for the generated PNG
         assert FileUtilities.TEMP_DIR != null;
         Path iconThemePath = ThemeBuilder.buildThemeLayout(FileUtilities.TEMP_DIR.resolve("xdg"));
-        LinuxStatusNotifierItem item;
 
         // Color Icon has two uses:
         //  1. Fallback for Cinnamon / LXQt (needs confirmation)
         //  2. For notification daemon
         Path colorPng = iconThemePath.resolve("hicolor/48x48/apps/%s.png", Constants.PROPS_FILE);
-        if((probe.isCinnamon() || probe.isLxqt())) {
-            // TODO: Is iconThemePath required here?
-            // xapp-sn-watcher accepts an absolute IconName path
-            // https://github.com/linuxmint/xapp/blob/master/xapp-sn-watcher/sn-item.c
-            // TODO: Should we check for MATE here too?
-            item = new LinuxStatusNotifierItem(iconThemePath, colorPng.toString());
-        } else {
-           String iconName = String.format("%s-symbolic", Constants.PROPS_FILE);
-           item = new LinuxStatusNotifierItem(iconThemePath, iconName);
-        }
+        // TODO: Is iconThemePath required when the path is the PNG?
+        // xapp-sn-watcher accepts an absolute IconName path
+        // https://github.com/linuxmint/xapp/blob/master/xapp-sn-watcher/sn-item.c
+        // TODO: Should we check for MATE here too?
+        String iconName = switch(LinuxUtilities.getDesktopEnvironment()) {
+            case De.LXQT, De.CINNAMON -> colorPng.toString();
+            default -> String.format("%s-symbolic", Constants.PROPS_FILE);
+        };
+        LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath, iconName);
 
-        // Export the complete item before registration so the watcher can
+                // Export the complete item before registration so the watcher can
         // resolve the service, item properties, and menu immediately
         // The tray owns its bus name and exported objects, so use a dedicated
         // connection instead of sharing lifecycle with other future D-Bus callers

@@ -682,7 +682,11 @@ public class TrayManager {
 
     public void refreshIcon(final Runnable whenDone) {
         SwingUtilities.invokeLater(() -> {
-            tray.setIcon(shownIcon);
+            // SNI does not use the awt tray wrapper
+            // so tray may be null
+            if(tray != null) {
+                tray.setIcon(shownIcon);
+            }
             if(whenDone != null) {
                 whenDone.run();
             }

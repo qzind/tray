@@ -3,6 +3,7 @@ package qz.ui.tray.linux;
 import qz.common.Constants;
 import qz.ui.component.IconCache;
 import qz.ui.component.iconcache.Format;
+import qz.ui.component.iconcache.Theme;
 import qz.utils.FileUtilities;
 
 import java.io.IOException;
@@ -15,10 +16,14 @@ import static qz.ui.component.IconCache.Icon.*;
 
 class LinuxSniIconTheme {
     public static final String ICON_NAME = Constants.PROPS_FILE;
+    // Freedesktop app icon name, plus GNOME's symbolic suffix convention
+    // https://specifications.freedesktop.org/icon-naming-spec/latest
+    // https://developer.gnome.org/documentation/tutorials/themed-icons.html
     public static final String SYMBOLIC_ICON_NAME = String.format("%s-symbolic", ICON_NAME);
-    // Tray hosts resolve the exported IconName exactly, so the resource
-    // is named with the same stable freedesktop-style symbolic icon name.
     private static final int[] ICON_SIZES = {32, 48};
+    private static final int PNG_ICON_SIZE = 48;
+    private static final Theme PNG_ICON_THEME = Theme.DARK;
+    private static final Theme SYMBOLIC_ICON_THEME = Theme.LIGHT;
 
     static String prepare() throws IOException {
         Path themePath = getThemePath();
@@ -37,7 +42,7 @@ class LinuxSniIconTheme {
         // https://github.com/linuxmint/xapp/blob/master/xapp-sn-watcher/sn-item.c
         return Path.of(themePath)
                 .resolve("hicolor")
-                .resolve("48x48")
+                .resolve(PNG_ICON_SIZE + "x" + PNG_ICON_SIZE)
                 .resolve("apps")
                 .resolve(ICON_NAME + ".png")
                 .toString();
@@ -63,7 +68,7 @@ class LinuxSniIconTheme {
         StringBuilder sections = new StringBuilder();
 
         for(int size : ICON_SIZES) {
-            if(directories.length() > 0) {
+            if(!directories.isEmpty()) {
                 directories.append(',');
             }
             directories.append(size).append('x').append(size).append("/apps");
@@ -88,7 +93,7 @@ class LinuxSniIconTheme {
     }
 
     private static void copyIcon(int size, Path themePath) throws IOException {
-        Path sizedPng = IconCache.getInstance().extract(Format.PNG, TRAY_READY_COLOR, size);
+        Path sizedPng = IconCache.getInstance().extract(Format.PNG, TRAY_READY_COLOR, PNG_ICON_THEME, size);
 
         // IconThemePath points to the theme parent
         // tray hosts then resolve IconName through
@@ -110,7 +115,7 @@ class LinuxSniIconTheme {
     }
 
     private static void copySymbolicIcon(Path themePath, String context) throws IOException {
-        Path svg = IconCache.getInstance().extract(Format.SVG, TRAY_READY);
+        Path svg = IconCache.getInstance().extract(Format.SVG, TRAY_READY, SYMBOLIC_ICON_THEME);
 
         Path iconPath = themePath
                 .resolve("hicolor")
@@ -123,7 +128,7 @@ class LinuxSniIconTheme {
     }
 
     private static void appendDirectory(StringBuilder directories, StringBuilder sections, String directory, String context) {
-        if(directories.length() > 0) {
+        if(!directories.isEmpty()) {
             directories.append(',');
         }
         directories.append(directory);

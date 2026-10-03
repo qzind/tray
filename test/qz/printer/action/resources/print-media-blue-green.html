@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Print Media Blue Green Fixture</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .screen {
+      display: block;
+    }
+
+    .print {
+      display: none;
+    }
+
+    @media print {
+      .screen {
+        display: none;
+      }
+
+      .print {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <svg width="500" height="500" role="img" aria-label="screen media blue block">
+      <rect x="0" y="0" width="500" height="500" fill="blue"></rect>
+    </svg>
+  </div>
+
+  <div class="print">
+    <svg width="500" height="500" role="img" aria-label="print media green block">
+      <rect x="0" y="0" width="500" height="500" fill="lime"></rect>
+    </svg>
+  </div>
+</body>
+</html>

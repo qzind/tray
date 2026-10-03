@@ -1,5 +1,7 @@
 package qz.printer.action;
 
+import com.sun.javafx.print.PrintHelper;
+import com.sun.javafx.print.Units;
 import javafx.print.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,6 +13,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
@@ -23,6 +27,11 @@ public class WebAppTest {
     private static final int SPOOLER_WAIT = 2000; // millis
     private static final Path RASTER_OUTPUT_DIR = Paths.get("./out"); // see ant ${out.dir}
     private static final String RASTER_OUTPUT_FORMAT = "png";
+    private static final String COLOR_FIXTURE = "resources/vector-basic-color.html";
+    private static final String LAYOUT_FIXTURE = "resources/vector-page-setup.html";
+    private static final String PAGE_BREAK_FIXTURE = "resources/vector-page-break.html";
+    private static final String SCALE_FIXTURE = "resources/vector-scale-content.html";
+    private static final String MEDIA_FIXTURE = "resources/print-media-blue-green.html";
 
     public static void main(String[] args) {
         try {
@@ -40,6 +49,8 @@ public class WebAppTest {
                 log.error("Testing well defined sizes failed");
             } else if (!testRasterFittedSize(rasterFittedHeightTests)) {
                 log.error("Testing fit to height sizing failed");
+            } else if (!testRasterMediaUnchanged()) {
+                log.error("Testing raster screen-media proof failed");
             } else {
                 log.info("All raster tests passed");
             }
@@ -56,6 +67,16 @@ public class WebAppTest {
                 log.error("Failed vector prints with defined heights");
             } else if (!testVectorFittedPrints(vectorFittedHeightPrints)) {
                 log.error("Failed vector prints with fit to height sizing");
+            } else if (!testVectorColor()) {
+                log.error("Failed vector color proof");
+            } else if (!testVectorLayout()) {
+                log.error("Failed vector layout proof");
+            } else if (!testVectorPageBreaks()) {
+                log.error("Failed vector page-break proof");
+            } else if (!testVectorScale()) {
+                log.error("Failed vector scale proof");
+            } else if (!testVectorMedia()) {
+                log.error("Failed vector media proof");
             } else {
                 log.info("All vector prints completed");
             }
@@ -155,6 +176,21 @@ public class WebAppTest {
         return true;
     }
 
+    public static boolean testRasterMediaUnchanged() throws Throwable {
+        WebAppModel model = new WebAppModel(loadFixture(MEDIA_FIXTURE), true, 500, 500, false, 1);
+        BufferedImage sample = WebApp.raster(model);
+
+        if (sample == null) {
+            log.error("Failed to create raster screen-media proof");
+            return false;
+        }
+
+        saveAudit("issue-55-raster-print-media", sample);
+        log.info("Raster screen-media proof completed. Inspect output and expect blue.");
+
+        return true;
+    }
+
     public static boolean testVectorKnownPrints(int trials) throws Throwable {
         PrinterJob job = buildVectorJob("vector-test-known");
         for(int i = 0; i < trials; i++) {
@@ -200,6 +236,116 @@ public class WebAppTest {
         return job.getJobStatus() != PrinterJob.JobStatus.ERROR;
     }
 
+    public static boolean testVectorColor() throws Throwable {
+        PrinterJob job = buildVectorJob("issue-55-basic-vector-color");
+        WebAppModel model = new WebAppModel(loadFixture(COLOR_FIXTURE), true, 500, 500, false, 1);
+
+        WebApp.print(job, model);
+        boolean ended = job.endJob();
+
+        try {
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
+            Thread.sleep(SPOOLER_WAIT);
+        }
+        catch(InterruptedException ignore) {}
+
+        boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
+        if (passed) {
+            log.info("Vector color proof completed. Render the generated PDF and expect colored blocks.");
+        } else {
+            log.error("Vector color proof failed with status {}", job.getJobStatus());
+        }
+        return passed;
+    }
+
+    public static boolean testVectorLayout() throws Throwable {
+        PrinterJob job = buildVectorJob("issue-55-page-setup", PageOrientation.LANDSCAPE, 432, 288, 36, 36, 54, 54);
+        WebAppModel model = new WebAppModel(loadFixture(LAYOUT_FIXTURE), true, 700, 400, false, 1);
+
+        WebApp.print(job, model);
+        boolean ended = job.endJob();
+
+        try {
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
+            Thread.sleep(SPOOLER_WAIT);
+        }
+        catch(InterruptedException ignore) {}
+
+        boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
+        if (passed) {
+            log.info("Vector layout proof completed. Render the generated PDF and expect landscape output with margins.");
+        } else {
+            log.error("Vector layout proof failed with status {}", job.getJobStatus());
+        }
+        return passed;
+    }
+
+    public static boolean testVectorPageBreaks() throws Throwable {
+        PrinterJob job = buildVectorJob("issue-55-page-break");
+        WebAppModel model = new WebAppModel(loadFixture(PAGE_BREAK_FIXTURE), true, 500, 500, false, 1);
+
+        WebApp.print(job, model);
+        boolean ended = job.endJob();
+
+        try {
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
+            Thread.sleep(SPOOLER_WAIT);
+        }
+        catch(InterruptedException ignore) {}
+
+        boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
+        if (passed) {
+            log.info("Vector page-break proof completed. Render the generated PDF and expect red then blue pages.");
+        } else {
+            log.error("Vector page-break proof failed with status {}", job.getJobStatus());
+        }
+        return passed;
+    }
+
+    public static boolean testVectorScale() throws Throwable {
+        PrinterJob job = buildVectorJob("issue-55-scale-content");
+        WebAppModel model = new WebAppModel(loadFixture(SCALE_FIXTURE), true, 1000, 700, true, 1);
+
+        WebApp.print(job, model);
+        boolean ended = job.endJob();
+
+        try {
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
+            Thread.sleep(SPOOLER_WAIT);
+        }
+        catch(InterruptedException ignore) {}
+
+        boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
+        if (passed) {
+            log.info("Vector scale proof completed. Render the generated PDF and check for visible edge markers.");
+        } else {
+            log.error("Vector scale proof failed with status {}", job.getJobStatus());
+        }
+        return passed;
+    }
+
+    public static boolean testVectorMedia() throws Throwable {
+        PrinterJob job = buildVectorJob("issue-55-print-media-vector");
+        WebAppModel model = new WebAppModel(loadFixture(MEDIA_FIXTURE), true, 500, 500, false, 1);
+
+        WebApp.print(job, model);
+        boolean ended = job.endJob();
+
+        try {
+            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
+            Thread.sleep(SPOOLER_WAIT);
+        }
+        catch(InterruptedException ignore) {}
+
+        boolean passed = ended && job.getJobStatus() != PrinterJob.JobStatus.ERROR;
+        if (passed) {
+            log.info("Vector media proof completed. Render the generated PDF and expect green output.");
+        } else {
+            log.error("Vector media proof failed with status {}", job.getJobStatus());
+        }
+        return passed;
+    }
+
     private static WebAppModel buildModel(String index, double width, double height, double zoom, boolean scale, int hue) {
         int level = (int)(Math.random() * 50) + 25;
         WebAppModel model = new WebAppModel("<html>" +
@@ -232,6 +378,11 @@ public class WebAppTest {
     }
 
     private static PrinterJob buildVectorJob(String name) throws Throwable {
+        return buildVectorJob(name, PageOrientation.PORTRAIT, 0, 0, 0, 0, 0, 0);
+    }
+
+    private static PrinterJob buildVectorJob(String name, PageOrientation orientation, double paperWidth, double paperHeight,
+                                             double marginLeft, double marginRight, double marginTop, double marginBottom) throws Throwable {
         // Get "PDF" printer
         Printer defaultPrinter = Printer.getAllPrinters().stream().filter(printer -> printer.getName().contains("PDF")).findFirst().get();
         PrinterJob job = PrinterJob.createPrinterJob(defaultPrinter);
@@ -240,8 +391,10 @@ public class WebAppTest {
         Constructor<PageLayout> plCon = PageLayout.class.getDeclaredConstructor(Paper.class, PageOrientation.class, double.class, double.class, double.class, double.class);
         plCon.setAccessible(true);
 
-        Paper paper = defaultPrinter.getDefaultPageLayout().getPaper();
-        PageLayout layout = plCon.newInstance(paper, PageOrientation.PORTRAIT, 0, 0, 0, 0);
+        Paper paper = paperWidth > 0 && paperHeight > 0?
+                PrintHelper.createPaper("Custom", paperWidth, paperHeight, Units.POINT):
+                defaultPrinter.getDefaultPageLayout().getPaper();
+        PageLayout layout = plCon.newInstance(paper, orientation, marginLeft, marginRight, marginTop, marginBottom);
 
         Field field = defaultPrinter.getClass().getDeclaredField("defPageLayout");
         field.setAccessible(true);
@@ -252,6 +405,15 @@ public class WebAppTest {
         settings.setJobName(name);
 
         return job;
+    }
+
+    private static String loadFixture(String fixture) throws IOException {
+        try(InputStream is = WebAppTest.class.getResourceAsStream(fixture)) {
+            if (is == null) {
+                throw new IOException("Missing fixture: " + fixture);
+            }
+            return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 
     private static void cleanup() {

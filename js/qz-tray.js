@@ -754,7 +754,7 @@ var qz = (function() {
                 // Use `require` if available so that bundlers can detect the dependency
                 if (typeof require === 'function') {
                     try {
-                        return require('lna');
+                        return require('qz-lna');
                     } catch (e) {
                         _qz.log.warn("Unable to load LNA library", e);
                     }

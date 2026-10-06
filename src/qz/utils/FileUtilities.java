@@ -630,7 +630,7 @@ public class FileUtilities {
      */
     public static String readXMLFile(String url, String dataTag) throws DOMException, IOException, NullCommandException,
                                                                         ParserConfigurationException, SAXException {
-        Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(url);
+        Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(ConnectionUtilities.getInputStream(url, true));
         doc.getDocumentElement().normalize();
         log.info("Root element " + doc.getDocumentElement().getNodeName());
 

@@ -79,6 +79,9 @@
 
     <target name="build-exe" depends="get-version,platform-detect,sign-nsis-plugins">
         <!-- Get the os-preferred name for the target architecture -->
+        <condition property="windows.target.arch" value="x86">
+            <isset property="target.arch.x86"/>
+        </condition>
         <condition property="windows.target.arch" value="arm64">
             <isset property="target.arch.aarch64"/>
         </condition>
@@ -177,6 +180,10 @@
                 <include name="**/win32-aarch64/*" if="target.arch.aarch64"/> <!-- jna/hid4java -->
                 <include name="**/windows-aarch64/*" if="target.arch.aarch64"/> <!-- usb4java -->
                 <include name="**/windows_arm64/*" if="target.arch.aarch64"/> <!-- jssc -->
+                <!-- x86 -->
+                <include name="**/win32-x86/*" if="target.arch.x86"/> <!-- jna/hid4java/usb4java -->
+                <include name="**/windows-x86/*" if="target.arch.x86"/> <!-- unknown -->
+                <include name="**/windows_32/*" if="target.arch.x86"/> <!-- jssc -->
             </fileset>
         </copy>
     </target>

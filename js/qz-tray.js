@@ -53,7 +53,7 @@ var qz = (function() {
 
     var _qz = {
         TITLE: "QZ Tray",
-        VERSION: "2.2.6",                              //must match @version above
+        VERSION: "2.3.1-SNAPSHOT",                              //must match @version above
         DEBUG: false,
 
         log: {

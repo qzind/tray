@@ -32,7 +32,6 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         String statusNotifierWatcher = probe.getStatusNotifierWatcher();
         String itemService = getItemServicePrefix(statusNotifierWatcher) + ProcessHandle.current().pid();
 
-
         // Cinnamon and LXQt can fail to resolve private themed SVGs reliably
         // Use their supported absolute path handling for the generated PNG
         assert FileUtilities.TEMP_DIR != null;
@@ -41,7 +40,11 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         // Color Icon has two uses:
         //  1. Fallback for Cinnamon / LXQt (needs confirmation)
         //  2. For notification daemon
-        Path colorPng = iconThemePath.resolve("hicolor/48x48/apps/%s.png", Constants.PROPS_FILE);
+        Path colorPng = iconThemePath
+                .resolve("hicolor")
+                .resolve("48x48")
+                .resolve("apps")
+                .resolve(String.format("%s.png", Constants.PROPS_FILE));
         // TODO: Is iconThemePath required when the path is the PNG?
         // xapp-sn-watcher accepts an absolute IconName path
         // https://github.com/linuxmint/xapp/blob/master/xapp-sn-watcher/sn-item.c
@@ -52,7 +55,7 @@ public class LinuxStatusNotifierTray implements AutoCloseable {
         };
         LinuxStatusNotifierItem item = new LinuxStatusNotifierItem(iconThemePath, iconName);
 
-                // Export the complete item before registration so the watcher can
+        // Export the complete item before registration so the watcher can
         // resolve the service, item properties, and menu immediately
         // The tray owns its bus name and exported objects, so use a dedicated
         // connection instead of sharing lifecycle with other future D-Bus callers

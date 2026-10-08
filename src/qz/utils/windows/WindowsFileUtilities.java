@@ -38,7 +38,7 @@ public class WindowsFileUtilities {
      * Recursively walks and deletes all files
      * <ul>
      *     <li>If a regular file, use Java's <code>Files.delete(...)</code></li>
-     *     <li>If a regular file, use <code>WindowsFileUtilities.delete(...)</code>
+     *     <li>If a directory, use <code>WindowsFileUtilities.delete(...)</code>
      *     which uses a file lock to avoid carefully timed file swaps</li>
      * </ul>
      */

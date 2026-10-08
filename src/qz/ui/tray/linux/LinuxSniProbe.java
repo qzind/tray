@@ -143,7 +143,7 @@ public class LinuxSniProbe {
             default -> "AppIndicator/StatusNotifier support for your desktop environment";
         };
 
-        return String.format("No StatusNotifier host detected. Please install/enable %s and added/enabled it in the %s panel", message, currentDesktop);
+        return String.format("No StatusNotifier host detected. Please install/enable %s and add/enable it in the %s panel", message, currentDesktop);
     }
 
     private boolean isSupported(De de) {

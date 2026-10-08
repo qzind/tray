@@ -192,7 +192,7 @@ public class ThemeBuilder {
         }
 
         Files.writeString(root.resolve(BASE_DIR).resolve("index.theme"), builder.toString());
-        log.debug("Wrote '{}/index.theme' for Linux System Tray support", root);
+        log.debug("Wrote '{}/index.theme' for Linux System Tray support", BASE_DIR);
         return root;
     }
 }

@@ -35,8 +35,12 @@ public class WindowsFileUtilities {
     }
 
     /**
-     * Recursively walks and securely deletes all contents and subdirectories
-     * within the target shared directory using Java NIO for files and JNA handles for directories.
+     * Recursively walks and deletes all files
+     * <ul>
+     *     <li>If a regular file, use Java's <code>Files.delete(...)</code></li>
+     *     <li>If a regular file, use <code>WindowsFileUtilities.delete(...)</code>
+     *     which uses a file lock to avoid carefully timed file swaps</li>
+     * </ul>
      */
     public static void deleteDirectory(Path directory) throws IOException {
         if (!Files.exists(directory)) {

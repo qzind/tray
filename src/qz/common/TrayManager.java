@@ -22,7 +22,7 @@ import qz.printer.PrintServiceMatcher;
 import qz.printer.action.html.WebApp;
 import qz.ui.*;
 import qz.ui.component.IconCache;
-import qz.ui.tray.TrayType;
+import qz.ui.tray.TrayWrapper;
 import qz.utils.*;
 import qz.ws.PrintSocketServer;
 import qz.ws.SingleInstanceChecker;
@@ -58,7 +58,7 @@ public class TrayManager {
     private final IconCache iconCache;
 
     // Custom swing pop-up menu
-    private TrayType tray;
+    private TrayWrapper tray;
 
     private ConfirmDialog confirmDialog;
     private final GatewayDialog gatewayDialog;
@@ -109,35 +109,11 @@ public class TrayManager {
         SystemUtilities.setSystemLookAndFeel();
         iconCache = IconCache.getInstance();
 
-        if (SystemUtilities.isSystemTraySupported()) { // UI mode with tray
-            switch(SystemUtilities.getOs()) {
-                case WINDOWS:
-                    tray = TrayType.JX.init(iconCache);
-                    // Undocumented HiDPI behavior
-                    tray.setImageAutoSize(true);
-                    break;
-                case MAC:
-                    tray = TrayType.CLASSIC.init(iconCache);
-                    break;
-                default:
-                    tray = TrayType.MODERN.init(iconCache);
-            }
-
+        if(!isHeadless()) {
+            tray = new TrayWrapper();
             tray.setIcon(TRAY_LOADING);
             tray.setToolTip(name);
-
-            try {
-                SystemTray.getSystemTray().add(tray.tray());
-            }
-            catch(AWTException awt) {
-                log.error("Could not attach tray, forcing headless mode", awt);
-                setHeadless(true);
-            }
-        } else if (!isHeadless()) { // UI mode without tray
-            tray = TrayType.TASKBAR.init(exitListener, iconCache);
-            tray.setIcon(TRAY_LOADING);
-            tray.setToolTip(name);
-            tray.showTaskbar();
+            tray.activate();
         }
 
         // TODO: Remove when fixed upstream.  See issue #393

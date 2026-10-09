@@ -59,7 +59,6 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
 
     private ContainerList<CertificateDisplay> allowList;
     private ContainerList<CertificateDisplay> blockList;
-    private ContainerList<CertificateDisplay> dragSource;
 
     private CertificateTable certTable;
     private IconCache iconCache;
@@ -260,18 +259,6 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
         // Register drag/drop events
         allowList.getList().setDragEnabled(true);
         blockList.getList().setDragEnabled(true);
-        allowList.getList().addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                dragSource = allowList;
-            }
-        });
-        blockList.getList().addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                dragSource = blockList;
-            }
-        });
         tabbedPane.setDropTarget(new DropTarget() {
             @Override
             public synchronized void dragOver(DropTargetDragEvent e) {
@@ -286,7 +273,7 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                         Component target = e.getDropTargetContext().getComponent();
                         if(target instanceof JTabbedPane) {
                             int index = tabbedPane.indexAtLocation(e.getLocation().x, e.getLocation().y);
-                            if(index != -1 && dragSource != null && dragSource != getListByIndex(index)) {
+                            if(index != -1 && getSelectedList() != getListByIndex(index)) {
                                 target.setBackground(Constants.TRUSTED_COLOR);
                                 e.acceptDrag(DnDConstants.ACTION_COPY);
                             } else {
@@ -311,31 +298,26 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                 try {
                     e.acceptDrop(DnDConstants.ACTION_COPY);
                     addCertificates(e.getTransferable().getTransferData(DataFlavor.javaFileListFlavor), getSelectedList(), true);
-                    dragSource = null;
                     return;
                 }
                 catch(IOException | UnsupportedFlavorException ignore) {}
 
                 Component targetComponent = e.getDropTargetContext().getComponent();
                 if(targetComponent instanceof JTabbedPane) {
-                    JTabbedPane tabbedPane = (JTabbedPane)targetComponent;
-                    int targetIndex = tabbedPane.indexAtLocation(e.getLocation().x, e.getLocation().y);
-                    ContainerList<CertificateDisplay> source = dragSource;
-                    if(targetIndex == -1 || source == null || source == getListByIndex(targetIndex)) {
-                        dragSource = null;
+                    int index = tabbedPane.indexAtLocation(e.getLocation().x, e.getLocation().y);
+                    ContainerList<CertificateDisplay> source = getSelectedList();
+                    ContainerList<CertificateDisplay> target = getListByIndex(index);
+                    if(index == -1 || source == target) {
                         e.rejectDrop();
                         return;
                     }
                     CertificateDisplay selectedCert = (CertificateDisplay)source.getList().getSelectedValue();
                     if(selectedCert == null) {
-                        dragSource = null;
                         e.rejectDrop();
                         return;
                     }
-                    ContainerList<CertificateDisplay> target = getListByIndex(targetIndex);
                     if(source != target) {
                         e.acceptDrop(DnDConstants.ACTION_COPY);
-                        dragSource = null;
                         removeCertificate(selectedCert, source);
                         if(!source.contains(selectedCert)) {
                             addCertificate(selectedCert, target, false);

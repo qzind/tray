@@ -1,4 +1,4 @@
-package org.dyorgio.jna.platform.mac;
+package qz.utils.mac;
 
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;

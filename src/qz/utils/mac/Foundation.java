@@ -21,8 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.dyorgio.jna.platform.mac;
+package qz.utils.mac;
 
+import com.sun.jna.Library;
+import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 
@@ -30,21 +32,22 @@ import com.sun.jna.Pointer;
  *
  * @author dyorgio
  */
-public class NSUserDefaults extends NSObject {
+public interface Foundation extends Library {
 
-    private static final NativeLong userDefaultsClass = Foundation.INSTANCE.objc_getClass("NSUserDefaults");
-    private static final Pointer standardUserDefaultsdSel = Foundation.INSTANCE.sel_registerName("standardUserDefaults");
-    private static final Pointer stringForKeySel = Foundation.INSTANCE.sel_registerName("stringForKey:");
+    Foundation INSTANCE = Native.load("Foundation", Foundation.class);
 
-    public NSUserDefaults(NativeLong id) {
-        super(id);
-    }
+    NativeLong objc_getClass(String className);
 
-    public static NSUserDefaults standard() {
-        return new NSUserDefaults(Foundation.INSTANCE.objc_msgSend(userDefaultsClass, standardUserDefaultsdSel));
-    }
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector);
 
-    public NSString stringForKey(NSString key) {
-        return new NSString(FoundationUtil.invoke(id, stringForKeySel, key.id));
-    }
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, NativeLong objAddress);
+
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, boolean boolArg);
+
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, double doubleArg);
+
+    // Used by NSString.fromJavaString
+    NativeLong objc_msgSend(NativeLong receiver, Pointer selector, byte[] bytes, int len, long encoding);
+
+    Pointer sel_registerName(String selectorName);
 }

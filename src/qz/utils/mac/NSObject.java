@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.dyorgio.jna.platform.mac;
+package qz.utils.mac;
 
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
@@ -30,21 +30,28 @@ import com.sun.jna.Pointer;
  *
  * @author dyorgio
  */
-public class NSDictionary extends NSObject {
+public class NSObject {
+    protected static final Pointer allocSel = Foundation.INSTANCE.sel_registerName("alloc");
+    protected static final Pointer releaseSel = Foundation.INSTANCE.sel_registerName("release");
 
-    private static final NativeLong dictionaryClass = Foundation.INSTANCE.objc_getClass("NSDictionary");
-    private static final Pointer dictionaryWithContentsOfFileSel = Foundation.INSTANCE.sel_registerName("dictionaryWithContentsOfFile:");
-    private static final Pointer objectForKeySel = Foundation.INSTANCE.sel_registerName("objectForKey:");
+    final NativeLong id;
 
-    public NSDictionary(NativeLong id) {
-        super(id);
+    public NSObject(NativeLong id) {
+        this.id = id;
     }
 
-    public static NSDictionary dictionaryWithContentsOfFile(NSString file) {
-        return new NSDictionary(Foundation.INSTANCE.objc_msgSend(dictionaryClass, dictionaryWithContentsOfFileSel, file.id));
+    public final NativeLong getId() {
+        return id;
     }
 
-    public NSObject objectForKey(NSObject key) {
-        return new NSString(FoundationUtil.invoke(id, objectForKeySel, key.id));
+    public void release() {
+        Foundation.INSTANCE.objc_msgSend(id, releaseSel);
+    }
+
+    @Override
+    @SuppressWarnings({"FinalizeDeclaration", "removal"})
+    protected void finalize() throws Throwable {
+        release();
+        super.finalize();
     }
 }

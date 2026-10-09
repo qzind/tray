@@ -48,6 +48,7 @@ public class TrayWrapper {
             catch(AWTException awt) {
                 log.error("Could not attach tray, falling back to taskbar mode");
                 init(true);
+                activate(); // recurse
             }
         } else {
             showTaskbar();

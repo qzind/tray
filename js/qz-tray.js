@@ -53,7 +53,7 @@ var qz = (function() {
 
     var _qz = {
         TITLE: "QZ Tray",
-        VERSION: "2.2.6",                              //must match @version above
+        VERSION: "2.3.1-SNAPSHOT",                              //must match @version above
         DEBUG: false,
 
         log: {
@@ -754,7 +754,7 @@ var qz = (function() {
                 // Use `require` if available so that bundlers can detect the dependency
                 if (typeof require === 'function') {
                     try {
-                        return require('lna');
+                        return require('qz-lna');
                     } catch (e) {
                         _qz.log.warn("Unable to load LNA library", e);
                     }

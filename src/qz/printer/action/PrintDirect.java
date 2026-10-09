@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import qz.common.Constants;
 import qz.printer.PrintOptions;
 import qz.printer.PrintOutput;
+import qz.utils.ConnectionUtilities;
 import qz.utils.PrintingUtilities;
 
 import javax.print.DocFlavor;
@@ -19,10 +20,8 @@ import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
 import javax.print.attribute.standard.JobName;
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -65,7 +64,7 @@ public class PrintDirect extends PrintRaw {
                         stream = new Base64InputStream(new ByteArrayInputStream(prints.get(i).getBytes("UTF-8")));
                         break;
                     case FILE:
-                        stream = new DataInputStream(new URL(prints.get(i)).openStream());
+                        stream = ConnectionUtilities.getInputStream(prints.get(i), true);
                         break;
                     case PLAIN:
                     default:

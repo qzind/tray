@@ -329,6 +329,11 @@
             <arg value="-Z"/>
             <arg value="F7F10838412D9187042EE1EB018794094AFA189A"/>
         </exec>
+        <exec executable="security">
+            <arg value="delete-certificate"/>
+            <arg value="-Z"/>
+            <arg value="A9A79C6DB1C29CAD05F61F1384360AF2CEED4230"/>
+        </exec>
 
         <exec executable="security">
             <arg value="add-certificates"/>

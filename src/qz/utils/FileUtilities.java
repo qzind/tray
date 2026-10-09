@@ -729,9 +729,6 @@ public class FileUtilities {
     public static synchronized boolean deleteFromFile(String fileName, String deleteLine, boolean local) {
         File file = getFile(fileName, local);
         File temp = getFile(Constants.TEMP_FILE, local);
-        if(file == null || temp == null) {
-            return false;
-        }
 
         try(BufferedReader br = new BufferedReader(new FileReader(file)); BufferedWriter bw = new BufferedWriter(new FileWriter(temp))) {
             String line;

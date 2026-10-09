@@ -8,6 +8,8 @@
             <!-- Skip, needs testing -->
             <exclude name="*"/>
         </dependency>
+        <dependency name="${dbus-java-core.name}" org="${dbus-java.org}" conf="*->default" rev="${dbus-java.rev}"/>
+        <dependency name="${dbus-java-native-transport.name}" org="${dbus-java.org}" conf="*->default" rev="${dbus-java.rev}"/>
         <dependency name="jna" org="${jna.org}" conf="*->default" rev="${jna.rev}"/>
         <dependency name="jna-platform" org="${jna.org}" conf="*->default" rev="${jna.rev}"/>
         <dependency name="${semver.name}" org="${semver.org}" conf="*->default" rev="${semver.rev}"/>

@@ -21,12 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.dyorgio.jna.platform.mac;
+package qz.utils.mac;
 
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import com.sun.jna.platform.mac.CoreFoundation;
+
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  *
@@ -34,12 +36,12 @@ import java.nio.charset.Charset;
  */
 public class NSString extends NSObject {
 
-    public static final Charset UTF_16LE_CHARSET = Charset.forName("UTF-16LE");
+    public static final Charset UTF_16LE_CHARSET = StandardCharsets.UTF_16LE;
 
     private static final NativeLong stringCls = Foundation.INSTANCE.objc_getClass("NSString");
     private static final Pointer stringSel = Foundation.INSTANCE.sel_registerName("string");
     private static final Pointer initWithBytesLengthEncodingSel = Foundation.INSTANCE.sel_registerName("initWithBytes:length:encoding:");
-    private static final long NSUTF16LittleEndianStringEncoding = 0x94000100;
+    private static final long NSUTF16LittleEndianStringEncoding = 0x94000100L;
 
     public NSString(String string) {
         this(fromJavaString(string));

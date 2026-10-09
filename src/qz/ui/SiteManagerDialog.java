@@ -307,12 +307,8 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
                     int index = tabbedPane.indexAtLocation(e.getLocation().x, e.getLocation().y);
                     ContainerList<CertificateDisplay> source = getSelectedList();
                     ContainerList<CertificateDisplay> target = getListByIndex(index);
-                    if(index == -1 || source == target) {
-                        e.rejectDrop();
-                        return;
-                    }
-                    CertificateDisplay selectedCert = (CertificateDisplay)source.getList().getSelectedValue();
-                    if(selectedCert == null) {
+                    CertificateDisplay selectedCert = getSelectedCertificate();
+                    if(index == -1 || source == target || selectedCert == null) {
                         e.rejectDrop();
                         return;
                     }

@@ -756,7 +756,7 @@ var qz = (function() {
                     try {
                         return require('qz-lna');
                     } catch (e) {
-                        _qz.log.warn("Unable to load LNA library", e);
+                        _qz.log.allay("Unable to load LNA library", e);
                     }
                 }
             },

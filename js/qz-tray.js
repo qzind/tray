@@ -133,13 +133,13 @@ var qz = (function() {
                     _qz.log.trace("Attempting connection", address);
                     var wsPromise;
                     if (lna) {
-                        _qz.log.trace("Connecting with lna.js");
+                        _qz.log.trace("Connecting with qz-lna");
                         wsPromise = lna.detectLna(address, _qz.websocket.setup.webSocketPromise, {
                             isWebSocket: true,
                             defaultAddressSpace: 'public'
                         });
                     } else {
-                        _qz.log.trace("Connecting without lna.js");
+                        _qz.log.trace("Connecting without qz-lna");
                         wsPromise = _qz.websocket.setup.webSocketPromise(address);
                     }
                     return wsPromise.catch(function(evt) {

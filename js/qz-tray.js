@@ -840,6 +840,7 @@ var qz = (function() {
                     if (!source) { continue; }
 
                     for(var key in source) {
+                        if (key === '__proto__' || key === 'constructor' || key === 'prototype') { continue; }
                         if (source.hasOwnProperty(key)) {
                             if (target === source[key]) { continue; }
 

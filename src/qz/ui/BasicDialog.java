@@ -17,7 +17,7 @@ import java.awt.image.BufferedImage;
 /**
  * Created by Tres on 2/23/2015.
  */
-public class BasicDialog extends JDialog implements Themeable {
+public class BasicDialog extends JFrame implements Themeable {
     private JPanel mainPanel;
     private JComponent headerComponent;
     private JComponent contentComponent;
@@ -30,13 +30,13 @@ public class BasicDialog extends JDialog implements Themeable {
     private int stockButtonCount = 0;
 
     public BasicDialog(JMenuItem caller, IconCache iconCache) {
-        super((Frame)null, caller.getText().replaceAll("\\.+", ""), true);
+        super(caller.getText().replaceAll("\\.+", ""));
         this.iconCache = iconCache;
         initBasicComponents();
     }
 
-    public BasicDialog(Frame owner, String title, IconCache iconCache) {
-        super(owner, title, true);
+    public BasicDialog(String title, IconCache iconCache) {
+        super(title);
         this.iconCache = iconCache;
         initBasicComponents();
     }

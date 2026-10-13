@@ -35,6 +35,7 @@ public class TrayWrapper {
                 case WINDOWS -> new WindowsTrayIcon();
                 default -> null;
             };
+            return;
         }
 
         taskbar = new TaskBarIcon();
@@ -71,7 +72,7 @@ public class TrayWrapper {
                 case TRAY_READY, TRAY_READY_COLOR -> IconCache.Icon.TASK_BAR_ICON;
                 default -> icon.getIcon(Saturation.COLOR);
             };
-            taskbar.setIconImages(IconCache.getInstance().getImages(fixed));
+            taskbar.setIcon(fixed);
         }
     }
 

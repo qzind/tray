@@ -57,7 +57,7 @@ public class WebApp extends Application {
     private static Stage stage;
     private static WebView webView;
     private static double pageWidth;
-    private static double pageHeight;
+    static double pageHeight;
     private static double pageZoom;
     private static boolean headless;
 

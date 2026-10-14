@@ -10,23 +10,25 @@ import org.testng.annotations.Test;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 
 /**
  * Tests WebApp's ability to print a consistent height
  */
 public class HtmlVectorHeightTests {
     private static final Logger log = LogManager.getLogger(HtmlVectorHeightTests.class);
-    private static final int TEST_ATTEMPTS = 200;
+    private static final int TESTS_PER_SAMPLE = 100;
     private static final boolean SKIP_PRINTING = true;
     private static final int SPOOLER_WAIT = 2000; // millis
 
     @DataProvider
     public Object[][] getHtmlSamples() {
-        Object[][] data = new Object[TEST_ATTEMPTS][2];
-        for (int i = 0; i < TEST_ATTEMPTS; i++) {
-            data[i] = new Object[] { "resources/pbj-receipt.html", 525 };
+        ArrayList<Object[]> retMatrix = new ArrayList<>();
+        for (int i = 0; i <= TESTS_PER_SAMPLE; i++) {
+            retMatrix.add(new Object[] { "resources/pbj-receipt-525.html", 525 });
+            retMatrix.add(new Object[] { "resources/pbj-receipt-605.html", 605 });
         }
-        return data;
+        return retMatrix.toArray(new Object[0][]);
     }
 
     @Test(dataProvider = "getHtmlSamples")

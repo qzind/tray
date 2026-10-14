@@ -15,6 +15,7 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
+      - run: sudo apt-get update
       - run: sudo apt-get install makeself printer-driver-cups-pdf
       - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
       - uses: actions/upload-artifact@v7

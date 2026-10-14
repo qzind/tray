@@ -24,7 +24,7 @@ public class HtmlVectorHeightTests {
     @DataProvider
     public Object[][] getHtmlSamples() {
         ArrayList<Object[]> retMatrix = new ArrayList<>();
-        for (int i = 0; i <= TESTS_PER_SAMPLE; i++) {
+        for (int i = 0; i < TESTS_PER_SAMPLE; i++) {
             retMatrix.add(new Object[] { "resources/pbj-receipt-525.html", 525 });
             retMatrix.add(new Object[] { "resources/pbj-receipt-605.html", 605 });
         }

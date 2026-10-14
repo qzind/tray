@@ -16,13 +16,14 @@ import java.lang.reflect.Field;
  */
 public class HtmlVectorHeightTests {
     private static final Logger log = LogManager.getLogger(HtmlVectorHeightTests.class);
+    private static final int TEST_ATTEMPTS = 200;
+    private static final boolean SKIP_PRINTING = true;
     private static final int SPOOLER_WAIT = 2000; // millis
 
     @DataProvider
     public Object[][] getHtmlSamples() {
-        int attempts = 20;
-        Object[][] data = new Object[attempts][2];
-        for (int i = 0; i < attempts; i++) {
+        Object[][] data = new Object[TEST_ATTEMPTS][2];
+        for (int i = 0; i < TEST_ATTEMPTS; i++) {
             data[i] = new Object[] { "resources/pbj-receipt.html", 525 };
         }
         return data;
@@ -33,6 +34,7 @@ public class HtmlVectorHeightTests {
         WebApp.initialize();
         PrinterJob job = buildVectorJob("test-vector-height");
         WebAppModel model = new WebAppModel(getClass().getResource(resource).toString(), false, job.getPrinter().getDefaultPageLayout().getPrintableWidth(), 0, true, 1);
+        WebApp.skipPrinting.set(SKIP_PRINTING);
         WebApp.print(job, model);
         job.endJob();
 
@@ -41,11 +43,13 @@ public class HtmlVectorHeightTests {
 
     @AfterClass
     public void cleanUp() {
-        try {
-            log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
-            Thread.sleep(SPOOLER_WAIT);
+        if(!SKIP_PRINTING) {
+            try {
+                log.info("Waiting {} seconds for the spooler to catch up.", SPOOLER_WAIT / 1000);
+                Thread.sleep(SPOOLER_WAIT);
+            }
+            catch(InterruptedException ignore) {}
         }
-        catch(InterruptedException ignore) {}
     }
 
     private static PrinterJob buildVectorJob(String jobName) throws Throwable {

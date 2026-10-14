@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntPredicate;
 
@@ -57,9 +58,12 @@ public class WebApp extends Application {
     private static Stage stage;
     private static WebView webView;
     private static double pageWidth;
-    static double pageHeight;
     private static double pageZoom;
     private static boolean headless;
+
+    // For unit testing
+    static double pageHeight;
+    static AtomicBoolean skipPrinting =  new AtomicBoolean(false);
 
     private static CountDownLatch startupLatch;
     private static CountDownLatch captureLatch;
@@ -319,8 +323,7 @@ public class WebApp extends Application {
                                 for(int col = 0; col < columnsNeed; col++) {
                                     activePage.setX((-col * printBounds.getWidth()) / useScale);
                                     activePage.setY((-row * printBounds.getHeight()) / useScale);
-
-                                    job.printPage(webView);
+                                    printPage(job);
                                 }
                             }
                         } catch(Exception e) {
@@ -432,7 +435,24 @@ public class WebApp extends Application {
         webView.setMinSize(toWidth, toHeight);
         webView.setPrefSize(toWidth, toHeight);
         webView.setMaxSize(toWidth, toHeight);
-        doUpdatePeer();
+
+        // We can reasonably assume pageZoom of 1.0 is vector
+        // skip doUpdatePeer on vector prints per #1539
+        if(pageZoom != 1.0) doUpdatePeer();
+    }
+
+    /**
+     * Wrapper to avoid PG access warnings during print
+     */
+    private static void printPage(PrinterJob job) {
+        // Reset skipPrinting flag to false each time
+        if(skipPrinting.getAndSet(false)) {
+            log.debug("Skipping printing per request");
+            return;
+        }
+        SceneHelper.setAllowPGAccess(true);
+        job.printPage(webView);
+        SceneHelper.setAllowPGAccess(false);
     }
 
     private static void doUpdatePeer() {

@@ -15,7 +15,7 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
-      - run: sudo apt-get install makeself
+      - run: sudo apt-get install makeself printer-driver-cups-pdf
       - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
       - uses: actions/upload-artifact@v7
         with:
@@ -60,6 +60,7 @@ jobs:
           sudo installer -pkg out/qz-tray-*.pkg -target / || (cat /tmp/qz-install.log && false)
           "/Applications/QZ Tray.app/Contents/MacOS/QZ Tray" --version
           brew install nsis makeself
+          brew install --cask rwts-pdfwriter
           ant makeself
           ant nsis
 

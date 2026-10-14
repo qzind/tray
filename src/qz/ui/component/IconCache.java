@@ -253,6 +253,22 @@ public class IconCache {
         return getImages(i, Theme.parse(isDark));
     }
 
+    public Path extract(Format format, Icon i, int size) throws IOException {
+        return getCache(i, Theme.DARK, size).extract(format);
+    }
+
+    public Path extract(Format format, Icon i, Theme theme, int size) throws IOException {
+        return getCache(i, theme, size).extract(format);
+    }
+
+    public Path extract(Format format, Icon i, Theme theme) throws IOException {
+        return getCache(i, theme, i.getType().getSizes()[0]).extract(format);
+    }
+
+    public Path extract(Format format, Icon i) throws IOException {
+        return getCache(i, Theme.LIGHT).extract(format);
+    }
+
     public Path extract(Icon i, Theme theme) throws IOException {
         return getCache(i, theme, i.getType().getSizes()[0]).extract();
     }

@@ -1,6 +1,4 @@
-/**
- * @author Tres Finocchiaro
- *
+/*
  * Copyright (C) 2016 Tres Finocchiaro, QZ Industries, LLC
  *
  * LGPL 2.1 This is free software.  This software and source code are released under
@@ -10,17 +8,15 @@
 
 package qz.utils;
 
-import com.apple.OSXAdapterWrapper;
 import org.apache.commons.io.FileUtils;
-import org.dyorgio.jna.platform.mac.*;
-import com.github.zafarkhaja.semver.Version;
-import com.sun.jna.NativeLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 import qz.common.Constants;
-import qz.common.TrayManager;
+import qz.utils.mac.NSApplication;
+import qz.utils.mac.NSString;
+import qz.utils.mac.NSUserDefaults;
 
 import javax.swing.*;
 import javax.xml.parsers.ParserConfigurationException;
@@ -29,58 +25,47 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
-
 /**
- * Utility class for MacOS specific functions.
+ * Utility class for macOS specific functions.
  *
  * @author Tres Finocchiaro
  */
 public class MacUtilities {
     private static final Logger log = LogManager.getLogger(MacUtilities.class);
-    private static Dialog aboutDialog;
-    private static TrayManager trayManager;
+    private static final boolean sandboxed = System.getenv("APP_SANDBOX_CONTAINER_ID") != null;
+
     private static String bundleId;
-    private static Boolean jdkSupportsTemplateIcon;
-    private static boolean templateIconForced = false;
-    private static boolean sandboxed = System.getenv("APP_SANDBOX_CONTAINER_ID") != null;
 
-    public static void showAboutDialog() {
-        if (aboutDialog != null) { aboutDialog.setVisible(true); }
-    }
-
-    public static void showExitPrompt() {
-        if (trayManager != null) { trayManager.exit(0); }
-    }
-
-    /**
-     * Adds a listener to register the Apple "About" dialog to call {@code setVisible()} on the specified Dialog
-     */
-    public static void registerAboutDialog(Dialog aboutDialog) {
-        MacUtilities.aboutDialog = aboutDialog;
-
-        try {
-            OSXAdapterWrapper.setAboutHandler(MacUtilities.class, MacUtilities.class.getDeclaredMethod("showAboutDialog"));
-        }
-        catch(Exception e) {
-            e.printStackTrace();
+    public static void registerHandler(Desktop.Action action, ActionListener listener) {
+        if (Desktop.isDesktopSupported()) {
+            Desktop desktop = Desktop.getDesktop();
+            if (desktop.isSupported(action)) {
+                switch (action) {
+                    case APP_ABOUT -> desktop.setAboutHandler(e -> {
+                        listener.actionPerformed(new ActionEvent(e, ActionEvent.ACTION_PERFORMED, action.name()));
+                    });
+                    case APP_QUIT_HANDLER -> desktop.setQuitHandler((e, response) -> {
+                        listener.actionPerformed(new ActionEvent(e, ActionEvent.ACTION_PERFORMED, action.name()));
+                        response.performQuit();
+                    });
+                    default -> log.warn("Unsupported action {}", action.name());
+                }
+            }
         }
     }
 
     /**
      * Calculates CFBundleIdentifier for macOS
-     * @return
      */
     public static String getBundleId() {
         if(bundleId == null) {
-            ArrayList<String> parts = new ArrayList(Arrays.asList(Constants.ABOUT_URL.split("/")));
+            ArrayList<String> parts = new ArrayList<>(Arrays.asList(Constants.ABOUT_URL.split("/")));
             for(String part : parts) {
                 if(part.contains(".")) {
                     // Try to use this section as the .com, etc
@@ -105,22 +90,7 @@ public class MacUtilities {
     }
 
     /**
-     * Adds a listener to register the Apple "Quit" to call {@code trayManager.exit(0)}
-     */
-    public static void registerQuitHandler(TrayManager trayManager) {
-        MacUtilities.trayManager = trayManager;
-
-        try {
-            OSXAdapterWrapper.setQuitHandler(MacUtilities.class, MacUtilities.class.getDeclaredMethod("showExitPrompt"));
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * Runs a shell command to determine if "Dark" desktop theme is enabled
-     * @return true if enabled, false if not
      */
     public static boolean isDarkDesktop() {
         try {
@@ -132,54 +102,20 @@ public class MacUtilities {
     }
 
     public static int getScaleFactor() {
-        // Java 9+ per JDK-8172962
-        if (Constants.JAVA_VERSION.greaterThanOrEqualTo(Version.valueOf("9.0.0"))) {
-            GraphicsDevice graphicsDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-            GraphicsConfiguration graphicsConfig = graphicsDevice.getDefaultConfiguration();
-            return (int)graphicsConfig.getDefaultTransform().getScaleX();
-        }
-        // Java 7, 8
-        try {
-            // Use reflection to avoid compile errors on non-macOS environments
-            Object screen = Class.forName("sun.awt.CGraphicsDevice").cast(GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice());
-            Method getScaleFactor = screen.getClass().getDeclaredMethod("getScaleFactor");
-            Object obj = getScaleFactor.invoke(screen);
-            if (obj instanceof Integer) {
-                return ((Integer)obj).intValue();
-            }
-        } catch (Exception e) {
-            log.warn("Unable to determine screen scale factor.  Defaulting to 1.", e);
-        }
-        return 1;
-    }
-
-    /**
-     * Checks for presence of JDK-8252015 using reflection
-     */
-    public static boolean jdkSupportsTemplateIcon() {
-        if(jdkSupportsTemplateIcon == null) {
-            try {
-                // before JDK-8252015: setNativeImage(long, long, boolean)
-                // after  JDK-8252015: setNativeImage(long, long, boolean, boolean)
-                Class.forName("sun.lwawt.macosx.CTrayIcon").getDeclaredMethod("setNativeImage", long.class, long.class, boolean.class, boolean.class);
-                jdkSupportsTemplateIcon = true;
-            }
-            catch(ClassNotFoundException | NoSuchMethodException ignore) {
-                jdkSupportsTemplateIcon = false;
-            }
-        }
-        return jdkSupportsTemplateIcon;
+        GraphicsDevice graphicsDevice = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        GraphicsConfiguration graphicsConfig = graphicsDevice.getDefaultConfiguration();
+        return (int)graphicsConfig.getDefaultTransform().getScaleX();
     }
 
     /**
      * The human-readable display version of the Mac
      */
     public static String getOsDisplayVersion() {
-        String displayVersion;
-        String[] command = {"sw_vers"};
+        StringBuilder displayVersion;
+        String[] command = { "sw_vers" };
         String output = ShellUtilities.executeRaw(command);
         if(!output.trim().isEmpty()) {
-            displayVersion = "";
+            displayVersion = new StringBuilder();
             String[] lines = output.split("\\n");
             if (lines.length >= 3) {
                 for(int line = 0; line < 3; line++) {
@@ -187,86 +123,18 @@ public class MacUtilities {
                     String[] parts = lines[line].split(":", 2);
                     if (parts.length > 1) {
                         if (line < 2) {
-                            displayVersion += parts[1].trim() + " ";
+                            displayVersion.append(parts[1].trim()).append(" ");
                         } else {
-                            displayVersion += "(" + parts[1].trim() + ")";
+                            displayVersion.append("(").append(parts[1].trim()).append(")");
                         }
                     }
                 }
             }
         } else {
-            displayVersion = System.getProperty("os.version", "0.0.0");
+            displayVersion = new StringBuilder(System.getProperty("os.version", "0.0.0"));
         }
 
-        return displayVersion;
-    }
-
-    public static void toggleTemplateIcon(TrayIcon icon) {
-        // Check if icon has a menu
-        if (icon.getPopupMenu() == null) {
-            throw new IllegalStateException("PopupMenu needs to be set on TrayIcon first");
-        }
-        // Check if icon is on SystemTray
-        if (icon.getImage() == null) {
-            throw new IllegalStateException("TrayIcon needs to be added on SystemTray first");
-        }
-        // Check if icon is on SystemTray
-        if (!Arrays.asList(SystemTray.getSystemTray().getTrayIcons()).contains(icon)) {
-            throw new IllegalStateException("TrayIcon needs to be added on SystemTray first");
-        }
-
-        // Prevent second invocation; causes icon to disappear
-        if(templateIconForced) {
-            return;
-        } else {
-            templateIconForced = true;
-        }
-
-        try {
-            Field ptrField = Class.forName("sun.lwawt.macosx.CFRetainedResource").getDeclaredField("ptr");
-            ptrField.setAccessible(true);
-
-            Field field = TrayIcon.class.getDeclaredField("peer");
-            field.setAccessible(true);
-            long cTrayIconAddress = ptrField.getLong(field.get(icon));
-
-            long cPopupMenuAddressTmp = 0;
-            if (icon.getPopupMenu() != null) {
-                field = MenuComponent.class.getDeclaredField("peer");
-                field.setAccessible(true);
-                cPopupMenuAddressTmp = ptrField.getLong(field.get(icon.getPopupMenu()));
-            }
-            final long cPopupMenuAddress = cPopupMenuAddressTmp;
-
-            final NativeLong statusItem = FoundationUtil.invoke(new NativeLong(cTrayIconAddress), "theItem");
-            NativeLong awtView = FoundationUtil.invoke(statusItem, "view");
-            final NativeLong image = Foundation.INSTANCE.object_getIvar(awtView, Foundation.INSTANCE.class_getInstanceVariable(FoundationUtil.invoke(awtView, "class"), "image"));
-            FoundationUtil.invoke(image, "setTemplate:", true);
-            FoundationUtil.runOnMainThreadAndWait(() -> {
-                FoundationUtil.invoke(statusItem, "setView:", FoundationUtil.NULL);
-                NativeLong target;
-                if (SystemUtilities.getOsVersion().greaterThanOrEqualTo(Version.forIntegers(10, 10))) {
-                    target = FoundationUtil.invoke(statusItem, "button");
-                } else {
-                    target = statusItem;
-                }
-                FoundationUtil.invoke(target, "setImage:", image);
-                //FoundationUtil.invoke(statusItem, "setLength:", length);
-
-                if (cPopupMenuAddress != 0) {
-                    FoundationUtil.invoke(statusItem, "setMenu:", FoundationUtil.invoke(new NativeLong(cPopupMenuAddress), "menu"));
-                } else {
-                    new ActionCallback(() -> {
-                        final ActionListener[] listeners = icon.getActionListeners();
-                        final int now = (int) System.currentTimeMillis();
-                        for (int i = 0; i < listeners.length; i++) {
-                            final int iF = i;
-                            SwingUtilities.invokeLater(() -> listeners[iF].actionPerformed(new ActionEvent(icon, now + iF, null)));
-                        }
-                    }).installActionOnNSControl(target);
-                }
-            });
-        } catch (Throwable ignore) {}
+        return displayVersion.toString();
     }
 
     public static void setFocus() {

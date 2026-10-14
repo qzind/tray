@@ -324,8 +324,8 @@ public class TrayManager {
         componentList.add(aboutDialog);
 
         if (SystemUtilities.isMac()) {
-            MacUtilities.registerAboutDialog(aboutDialog);
-            MacUtilities.registerQuitHandler(this);
+            MacUtilities.registerHandler(Desktop.Action.APP_ABOUT, aboutListener);
+            MacUtilities.registerHandler(Desktop.Action.APP_QUIT_HANDLER, exitListener);
         }
 
         JSeparator separator = new JSeparator();

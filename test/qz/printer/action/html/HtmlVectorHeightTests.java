@@ -23,12 +23,12 @@ public class HtmlVectorHeightTests {
 
     @DataProvider
     public Object[][] getHtmlSamples() {
-        ArrayList<Object[]> retMatrix = new ArrayList<>();
+        ArrayList<Object[]> htmlSamples = new ArrayList<>();
         for (int i = 0; i < TESTS_PER_SAMPLE; i++) {
-            retMatrix.add(new Object[] { "resources/pbj-receipt-525.html", 525 });
-            retMatrix.add(new Object[] { "resources/pbj-receipt-605.html", 605 });
+            htmlSamples.add(new Object[] { "resources/pbj-receipt-525.html", 525 });
+            htmlSamples.add(new Object[] { "resources/pbj-receipt-605.html", 605 });
         }
-        return retMatrix.toArray(new Object[0][]);
+        return htmlSamples.toArray(new Object[0][]);
     }
 
     @Test(dataProvider = "getHtmlSamples")

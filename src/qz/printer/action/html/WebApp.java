@@ -118,6 +118,7 @@ public class WebApp extends Application {
             if (heightNeeded) {
                 fittedHeight = findHeight();
                 if (fittedHeight != pageHeight) {
+                    pageHeight = fittedHeight;
                     adjustSize(pageWidth * pageZoom, fittedHeight * pageZoom);
                 }
             }

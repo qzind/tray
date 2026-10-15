@@ -279,7 +279,6 @@ public class WebApp extends Application {
             stage.show();
             stage.toBack();
         });
-
         load(model, (int frames) -> {
             if(frames >= VECTOR_FRAMES) {
                 try {
@@ -427,7 +426,32 @@ public class WebApp extends Application {
         });
     }
 
+    private static void debugSize() {
+        String script =
+                "JSON.stringify((() => {" +
+                        "  const b = document.body;" +
+                        "  const e = document.documentElement;" +
+                        "  const s = getComputedStyle(document.body);" +
+                        "  return {" +
+                        "    bodyScroll: b.scrollWidth + 'x' + b.scrollHeight," +
+                        "    bodyOffset: b.offsetWidth + 'x' + b.offsetHeight," +
+                        "    bodyClient: b.clientWidth + 'x' + b.clientHeight," +
+                        "    htmlScroll: e.scrollWidth + 'x' + e.scrollHeight," +
+                        "    htmlOffset: e.offsetWidth + 'x' + e.offsetHeight," +
+                        "    htmlClient: e.clientWidth + 'x' + e.clientHeight," +
+                        "    bodyRect: b.getBoundingClientRect().width + 'x' + b.getBoundingClientRect().height," +
+                        "    marginTop: s.marginTop," +
+                        "    marginBottom: s.marginBottom," +
+                        "    overflowX: s.overflowX," +
+                        "    overflowY: s.overflowY," +
+                        "    readyState: document.readyState" +
+                        "  };" +
+                        "})(), null, 2)";
+        log.warn("\n{}", webView.getEngine().executeScript(script));
+    }
+
     private static double findHeight() {
+        debugSize(); // TODO: Why does this change the size reliability
         String heightText = webView.getEngine().executeScript("document.body.scrollHeight").toString();
         return Double.parseDouble(heightText);
     }
@@ -437,9 +461,7 @@ public class WebApp extends Application {
         webView.setPrefSize(toWidth, toHeight);
         webView.setMaxSize(toWidth, toHeight);
 
-        // We can reasonably assume pageZoom of 1.0 is vector
-        // skip doUpdatePeer on vector prints per #1539
-        if(pageZoom != 1.0) doUpdatePeer();
+        doUpdatePeer();
     }
 
     /**

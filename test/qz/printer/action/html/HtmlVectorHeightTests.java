@@ -15,9 +15,11 @@ import java.util.ArrayList;
 /**
  * Tests WebApp's ability to print a consistent height
  */
-public class HtmlVectorHeightTests {
+public class
+HtmlVectorHeightTests {
     private static final Logger log = LogManager.getLogger(HtmlVectorHeightTests.class);
-    private static final int TESTS_PER_SAMPLE = 100;
+    // TODO: Lower this value
+    private static final int TESTS_PER_SAMPLE = 10000;
     private static final boolean SKIP_PRINTING = true;
     private static final int SPOOLER_WAIT = 2000; // millis
 

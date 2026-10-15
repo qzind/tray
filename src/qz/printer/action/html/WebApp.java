@@ -64,6 +64,8 @@ public class WebApp extends Application {
     // For unit testing
     static double pageHeight;
     static AtomicBoolean skipPrinting =  new AtomicBoolean(false);
+    static volatile boolean captureHeightDiagnostics;
+    static volatile String heightDiagnostics;
 
     private static CountDownLatch startupLatch;
     private static CountDownLatch captureLatch;
@@ -96,7 +98,12 @@ public class WebApp extends Application {
 
             //width was resized earlier (for responsive html), then calculate the best fit height
             // FIXME: Should only be needed when height is unknown but fixes blank vector prints
-            double fittedHeight = findHeight();
+            double[] firstMetrics = captureHeightDiagnostics ? findHeightMetrics() : null;
+            double fittedHeight = firstMetrics == null ? findHeight() : firstMetrics[0];
+            double firstHeight = fittedHeight;
+            double firstBodyOffsetHeight = firstMetrics == null ? Double.NaN : firstMetrics[1];
+            double secondHeight = Double.NaN;
+            double secondBodyOffsetHeight = Double.NaN;
             boolean heightNeeded = pageHeight <= 0;
 
             if (heightNeeded) {
@@ -116,11 +123,24 @@ public class WebApp extends Application {
 
             //need to check for height again as resizing can cause partial results
             if (heightNeeded) {
-                fittedHeight = findHeight();
+                double[] secondMetrics = captureHeightDiagnostics ? findHeightMetrics() : null;
+                fittedHeight = secondMetrics == null ? findHeight() : secondMetrics[0];
+                secondHeight = fittedHeight;
+                secondBodyOffsetHeight = secondMetrics == null ? Double.NaN : secondMetrics[1];
                 if (fittedHeight != pageHeight) {
                     pageHeight = fittedHeight;
                     adjustSize(pageWidth * pageZoom, fittedHeight * pageZoom);
                 }
+            }
+
+            if (captureHeightDiagnostics) {
+                heightDiagnostics = "width=" + pageWidth +
+                        ", zoom=" + pageZoom +
+                        ", firstHeight=" + firstHeight +
+                        ", firstBodyOffsetHeight=" + firstBodyOffsetHeight +
+                        ", secondHeight=" + secondHeight +
+                        ", secondBodyOffsetHeight=" + secondBodyOffsetHeight +
+                        ", finalHeight=" + pageHeight;
             }
 
             log.trace("Set HTML page height to {}", pageHeight);
@@ -430,6 +450,15 @@ public class WebApp extends Application {
     private static double findHeight() {
         String heightText = webView.getEngine().executeScript("document.body.scrollHeight").toString();
         return Double.parseDouble(heightText);
+    }
+
+    private static double[] findHeightMetrics() {
+        String[] heights = webView.getEngine().executeScript(
+                "document.body.scrollHeight + ',' + document.body.offsetHeight").toString().split(",", -1);
+        return new double[] {
+                Double.parseDouble(heights[0]),
+                Double.parseDouble(heights[1])
+        };
     }
 
     private static void adjustSize(double toWidth, double toHeight) {

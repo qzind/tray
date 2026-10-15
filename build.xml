@@ -416,7 +416,9 @@
 
     <target name="unit-tests" depends="compile-tests">
         <property description="Pattern for TestNG classes" name="testng.pattern" value="**"/>
+        <property name="qz.test.htmlVectorHeight.repetitions" value="100"/>
         <testng suitename="ant" testname="ant" listeners="qz.testng.ConciseSkipListener" classpathref="unit.test.classpath" haltOnFailure="true" verbose="2" outputdir="${out.dir}/report/unit">
+            <sysproperty key="qz.test.htmlVectorHeight.repetitions" value="${qz.test.htmlVectorHeight.repetitions}"/>
             <classfileset dir="${build.dir}/test" includes="${testng.pattern}" excludes="**/integration/**/*.class"/>
         </testng>
     </target>

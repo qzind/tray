@@ -17,7 +17,8 @@ import java.util.ArrayList;
  */
 public class HtmlVectorHeightTests {
     private static final Logger log = LogManager.getLogger(HtmlVectorHeightTests.class);
-    private static final int TESTS_PER_SAMPLE = 100;
+    private static final String REPETITIONS_PROPERTY = "qz.test.htmlVectorHeight.repetitions";
+    private static final int TESTS_PER_SAMPLE = Math.max(1, Integer.getInteger(REPETITIONS_PROPERTY, 100));
     private static final boolean SKIP_PRINTING = true;
     private static final int SPOOLER_WAIT = 2000; // millis
 
@@ -25,22 +26,30 @@ public class HtmlVectorHeightTests {
     public Object[][] getHtmlSamples() {
         ArrayList<Object[]> htmlSamples = new ArrayList<>();
         for (int i = 0; i < TESTS_PER_SAMPLE; i++) {
-            htmlSamples.add(new Object[] { "resources/pbj-receipt-525.html", 525 });
-            htmlSamples.add(new Object[] { "resources/pbj-receipt-605.html", 605 });
+            htmlSamples.add(new Object[] { "resources/pbj-receipt-525.html", 525, i + 1 });
+            htmlSamples.add(new Object[] { "resources/pbj-receipt-605.html", 605, i + 1 });
         }
         return htmlSamples.toArray(new Object[0][]);
     }
 
     @Test(dataProvider = "getHtmlSamples")
-    public void testVectorHeight(String resource, double expectedSize) throws Throwable {
+    public void testVectorHeight(String resource, double expectedSize, int iteration) throws Throwable {
         WebApp.initialize();
         PrinterJob job = buildVectorJob("test-vector-height");
         WebAppModel model = new WebAppModel(getClass().getResource(resource).toString(), false, job.getPrinter().getDefaultPageLayout().getPrintableWidth(), 0, true, 1);
-        WebApp.skipPrinting.set(SKIP_PRINTING);
-        WebApp.print(job, model);
-        job.endJob();
+        WebApp.captureHeightDiagnostics = true;
+        WebApp.heightDiagnostics = null;
+        try {
+            WebApp.skipPrinting.set(SKIP_PRINTING);
+            WebApp.print(job, model);
+            job.endJob();
+        }
+        finally {
+            WebApp.captureHeightDiagnostics = false;
+        }
 
-        Assert.assertEquals(WebApp.pageHeight, expectedSize);
+        String failure = String.format("sample=%s, iteration=%d, %s", resource, iteration, WebApp.heightDiagnostics);
+        Assert.assertEquals(WebApp.pageHeight, expectedSize, failure);
     }
 
     @AfterClass

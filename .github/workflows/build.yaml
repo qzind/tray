@@ -54,14 +54,13 @@ jobs:
       - if: ${{ matrix.arch == 'aarch64' }}
         run: |
           # Only run tests on same arch
-          brew install --cask google-chrome firefox
+          brew install --cask google-chrome firefox rwts-pdfwriter
           ant testng
           # Run policy tests again, but as root
           sudo ant -Dtestng.pattern="**/policy/**" testng
           sudo installer -pkg out/qz-tray-*.pkg -target / || (cat /tmp/qz-install.log && false)
           "/Applications/QZ Tray.app/Contents/MacOS/QZ Tray" --version
           brew install nsis makeself
-          brew install --cask rwts-pdfwriter
           ant makeself
           ant nsis
 

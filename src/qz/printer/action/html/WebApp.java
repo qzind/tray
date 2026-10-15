@@ -66,6 +66,7 @@ public class WebApp extends Application {
     static AtomicBoolean skipPrinting =  new AtomicBoolean(false);
     static volatile boolean captureHeightDiagnostics;
     static volatile String heightDiagnostics;
+    private static boolean vectorPrint;
 
     private static CountDownLatch startupLatch;
     private static CountDownLatch captureLatch;
@@ -96,69 +97,99 @@ public class WebApp extends Application {
                 return;
             }
 
-            //width was resized earlier (for responsive html), then calculate the best fit height
-            // FIXME: Should only be needed when height is unknown but fixes blank vector prints
-            double[] firstMetrics = captureHeightDiagnostics ? findHeightMetrics() : null;
-            double fittedHeight = firstMetrics == null ? findHeight() : firstMetrics[0];
-            double firstHeight = fittedHeight;
-            double firstBodyOffsetHeight = firstMetrics == null ? Double.NaN : firstMetrics[1];
-            double secondHeight = Double.NaN;
-            double secondBodyOffsetHeight = Double.NaN;
-            boolean heightNeeded = pageHeight <= 0;
-
-            if (heightNeeded) {
-                pageHeight = fittedHeight;
+            if (vectorPrint) {
+                runAfterNextPulse(WebApp::prepareLoadedPage);
+            } else {
+                prepareLoadedPage();
             }
-
-            // find and set page zoom for increased quality
-            double usableZoom = calculateSupportedZoom(pageWidth, pageHeight);
-            if (usableZoom < pageZoom) {
-                log.warn("Zoom level {} decreased to {} due to physical memory limitations", pageZoom, usableZoom);
-                pageZoom = usableZoom;
-            }
-            webView.setZoom(pageZoom);
-            log.trace("Zooming in by x{} for increased quality", pageZoom);
-
-            adjustSize(pageWidth * pageZoom, pageHeight * pageZoom);
-
-            //need to check for height again as resizing can cause partial results
-            if (heightNeeded) {
-                double[] secondMetrics = captureHeightDiagnostics ? findHeightMetrics() : null;
-                fittedHeight = secondMetrics == null ? findHeight() : secondMetrics[0];
-                secondHeight = fittedHeight;
-                secondBodyOffsetHeight = secondMetrics == null ? Double.NaN : secondMetrics[1];
-                if (fittedHeight != pageHeight) {
-                    pageHeight = fittedHeight;
-                    adjustSize(pageWidth * pageZoom, fittedHeight * pageZoom);
-                }
-            }
-
-            if (captureHeightDiagnostics) {
-                heightDiagnostics = "width=" + pageWidth +
-                        ", zoom=" + pageZoom +
-                        ", firstHeight=" + firstHeight +
-                        ", firstBodyOffsetHeight=" + firstBodyOffsetHeight +
-                        ", secondHeight=" + secondHeight +
-                        ", secondBodyOffsetHeight=" + secondBodyOffsetHeight +
-                        ", finalHeight=" + pageHeight;
-            }
-
-            log.trace("Set HTML page height to {}", pageHeight);
-
-            webView.autosize();
-
-            Platform.runLater(() -> new AnimationTimer() {
-                int frames = 0;
-
-                @Override
-                public void handle(long l) {
-                    if (printAction.test(++frames)) {
-                        stop();
-                    }
-                }
-            }.start());
         }
     };
+
+    private static void prepareLoadedPage() {
+        //width was resized earlier (for responsive html), then calculate the best fit height
+        // FIXME: Should only be needed when height is unknown but fixes blank vector prints
+        double[] firstMetrics = captureHeightDiagnostics ? findLayoutMetrics() : null;
+        double fittedHeight = firstMetrics == null ? findHeight() : firstMetrics[0];
+        double firstHeight = fittedHeight;
+        double firstBodyOffsetHeight = firstMetrics == null ? Double.NaN : firstMetrics[1];
+        double firstViewportWidth = firstMetrics == null ? Double.NaN : firstMetrics[2];
+        double firstBodyWidth = firstMetrics == null ? Double.NaN : firstMetrics[3];
+        double secondHeight = Double.NaN;
+        double secondBodyOffsetHeight = Double.NaN;
+        double secondViewportWidth = Double.NaN;
+        double secondBodyWidth = Double.NaN;
+        boolean heightNeeded = pageHeight <= 0;
+
+        if (heightNeeded) {
+            pageHeight = fittedHeight;
+        }
+
+        // find and set page zoom for increased quality
+        double usableZoom = calculateSupportedZoom(pageWidth, pageHeight);
+        if (usableZoom < pageZoom) {
+            log.warn("Zoom level {} decreased to {} due to physical memory limitations", pageZoom, usableZoom);
+            pageZoom = usableZoom;
+        }
+        webView.setZoom(pageZoom);
+        log.trace("Zooming in by x{} for increased quality", pageZoom);
+
+        adjustSize(pageWidth * pageZoom, pageHeight * pageZoom);
+
+        //need to check for height again as resizing can cause partial results
+        if (heightNeeded) {
+            double[] secondMetrics = captureHeightDiagnostics ? findLayoutMetrics() : null;
+            fittedHeight = secondMetrics == null ? findHeight() : secondMetrics[0];
+            secondHeight = fittedHeight;
+            secondBodyOffsetHeight = secondMetrics == null ? Double.NaN : secondMetrics[1];
+            secondViewportWidth = secondMetrics == null ? Double.NaN : secondMetrics[2];
+            secondBodyWidth = secondMetrics == null ? Double.NaN : secondMetrics[3];
+            if (fittedHeight != pageHeight) {
+                pageHeight = fittedHeight;
+                adjustSize(pageWidth * pageZoom, fittedHeight * pageZoom);
+            }
+        }
+
+        if (captureHeightDiagnostics) {
+            heightDiagnostics = "width=" + pageWidth +
+                    ", webViewWidth=" + webView.getWidth() +
+                    ", zoom=" + pageZoom +
+                    ", firstHeight=" + firstHeight +
+                    ", firstBodyOffsetHeight=" + firstBodyOffsetHeight +
+                    ", firstViewportWidth=" + firstViewportWidth +
+                    ", firstBodyWidth=" + firstBodyWidth +
+                    ", secondHeight=" + secondHeight +
+                    ", secondBodyOffsetHeight=" + secondBodyOffsetHeight +
+                    ", secondViewportWidth=" + secondViewportWidth +
+                    ", secondBodyWidth=" + secondBodyWidth +
+                    ", finalHeight=" + pageHeight;
+        }
+
+        log.trace("Set HTML page height to {}", pageHeight);
+
+        webView.autosize();
+
+        Platform.runLater(() -> new AnimationTimer() {
+            int frames = 0;
+
+            @Override
+            public void handle(long l) {
+                if (printAction.test(++frames)) {
+                    stop();
+                }
+            }
+        }.start());
+    }
+
+    private static void runAfterNextPulse(Runnable action) {
+        Toolkit.getToolkit().addPostSceneTkPulseListener(new TKPulseListener() {
+            @Override
+            public void pulse() {
+                Toolkit.getToolkit().removePostSceneTkPulseListener(this);
+                action.run();
+            }
+        });
+        Toolkit.getToolkit().requestNextPulse();
+    }
 
     //listens for load progress
     private static ChangeListener<Number> workDoneListener = (ov, oldWork, newWork) -> log.trace("Done: {} > {}", oldWork, newWork);
@@ -359,7 +390,7 @@ public class WebApp extends Application {
                 }
             }
             return frames >= VECTOR_FRAMES;
-        });
+        }, true);
 
         log.trace("Waiting on print..");
         captureLatch.await(); //released when unlatch is called
@@ -406,7 +437,7 @@ public class WebApp extends Application {
             }
 
             return frames >= CAPTURE_FRAMES;
-        });
+        }, false);
 
         log.trace("Waiting on capture..");
         captureLatch.await(); //released when unlatch is called
@@ -419,12 +450,14 @@ public class WebApp extends Application {
     /**
      * Prints the loaded source specified in the passed {@code model}.
      *
-     * @param model  The model specifying the web page parameters.
-     * @param action EventHandler that will be ran when the WebView completes loading.
+     * @param model         The model specifying the web page parameters.
+     * @param action        EventHandler that will be ran when the WebView completes loading.
+     * @param isVectorPrint Whether height measurement should wait for the next JavaFX pulse.
      */
-    private static synchronized void load(WebAppModel model, IntPredicate action) {
+    private static synchronized void load(WebAppModel model, IntPredicate action, boolean isVectorPrint) {
         captureLatch = new CountDownLatch(1);
         thrown.set(null);
+        vectorPrint = isVectorPrint;
 
         Platform.runLater(() -> {
             //zoom should only be factored on raster prints
@@ -452,12 +485,15 @@ public class WebApp extends Application {
         return Double.parseDouble(heightText);
     }
 
-    private static double[] findHeightMetrics() {
-        String[] heights = webView.getEngine().executeScript(
-                "document.body.scrollHeight + ',' + document.body.offsetHeight").toString().split(",", -1);
+    private static double[] findLayoutMetrics() {
+        String[] metrics = webView.getEngine().executeScript(
+                "document.body.scrollHeight + ',' + document.body.offsetHeight + ',' + " +
+                        "window.innerWidth + ',' + document.body.offsetWidth").toString().split(",", -1);
         return new double[] {
-                Double.parseDouble(heights[0]),
-                Double.parseDouble(heights[1])
+                Double.parseDouble(metrics[0]),
+                Double.parseDouble(metrics[1]),
+                Double.parseDouble(metrics[2]),
+                Double.parseDouble(metrics[3])
         };
     }
 

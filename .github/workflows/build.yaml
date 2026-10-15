@@ -56,7 +56,7 @@ jobs:
           # Only run tests on same arch
           brew install --cask google-chrome firefox rwts-pdfwriter
           ant testng
-          ant -Dqz.test.htmlVectorHeight.repetitions=500 -Dtestng.pattern="**/HtmlVectorHeightTests.class" unit-tests
+          ant -Dqz.test.htmlVectorHeight.repetitions=1000 -Dtestng.pattern="**/HtmlVectorHeightTests.class" unit-tests
           # Run policy tests again, but as root
           sudo ant -Dtestng.pattern="**/policy/**" testng
           sudo installer -pkg out/qz-tray-*.pkg -target / || (cat /tmp/qz-install.log && false)
@@ -88,7 +88,6 @@ jobs:
           # Only run tests on same arch
           choco install firefox googlechrome
           ant testng
-          ant -Dqz.test.htmlVectorHeight.repetitions=500 -Dtestng.pattern="**/HtmlVectorHeightTests.class" unit-tests
+          ant "-Dqz.test.htmlVectorHeight.repetitions=500" "-Dtestng.pattern=**/HtmlVectorHeightTests.class" unit-tests
           Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
           "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"
-

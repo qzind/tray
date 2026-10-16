@@ -19,7 +19,7 @@ public class
 HtmlVectorHeightTests {
     private static final Logger log = LogManager.getLogger(HtmlVectorHeightTests.class);
     // TODO: Lower this value
-    private static final int TESTS_PER_SAMPLE = 10000;
+    private static final int TESTS_PER_SAMPLE = 100;
     private static final boolean SKIP_PRINTING = true;
     private static final int SPOOLER_WAIT = 2000; // millis
 

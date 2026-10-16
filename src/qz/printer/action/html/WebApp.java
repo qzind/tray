@@ -426,32 +426,9 @@ public class WebApp extends Application {
         });
     }
 
-    private static void debugSize() {
-        String script =
-                "JSON.stringify((() => {" +
-                        "  const b = document.body;" +
-                        "  const e = document.documentElement;" +
-                        "  const s = getComputedStyle(document.body);" +
-                        "  return {" +
-                        "    bodyScroll: b.scrollWidth + 'x' + b.scrollHeight," +
-                        "    bodyOffset: b.offsetWidth + 'x' + b.offsetHeight," +
-                        "    bodyClient: b.clientWidth + 'x' + b.clientHeight," +
-                        "    htmlScroll: e.scrollWidth + 'x' + e.scrollHeight," +
-                        "    htmlOffset: e.offsetWidth + 'x' + e.offsetHeight," +
-                        "    htmlClient: e.clientWidth + 'x' + e.clientHeight," +
-                        "    bodyRect: b.getBoundingClientRect().width + 'x' + b.getBoundingClientRect().height," +
-                        "    marginTop: s.marginTop," +
-                        "    marginBottom: s.marginBottom," +
-                        "    overflowX: s.overflowX," +
-                        "    overflowY: s.overflowY," +
-                        "    readyState: document.readyState" +
-                        "  };" +
-                        "})(), null, 2)";
-        log.warn("\n{}", webView.getEngine().executeScript(script));
-    }
-
     private static double findHeight() {
-        debugSize(); // TODO: Why does this change the size reliability
+        // Resolve computed width to trigger WebKit layout before measuring height.
+        webView.getEngine().executeScript("getComputedStyle(document.body).width");
         String heightText = webView.getEngine().executeScript("document.body.scrollHeight").toString();
         return Double.parseDouble(heightText);
     }

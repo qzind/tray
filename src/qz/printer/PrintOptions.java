@@ -482,7 +482,7 @@ public class PrintOptions {
         private double crossDensity = 0;                                            //Cross feed density
         private double density = 0;                                                 //Pixel density (DPI or DPMM), feed density if crossDensity is defined
         private Object dithering = RenderingHints.VALUE_DITHER_DEFAULT;             //Image dithering
-        private Sides duplex = null;                                                //Multi-siding
+        private Sides duplex = null;                                                //Multi-siding TODO: API should also default to null
         private Object interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC;  //Image interpolation
         private String jobName = null;                                              //Job name
         private boolean legacy = false;                                             //Legacy printing

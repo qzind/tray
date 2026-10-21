@@ -16,6 +16,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import qz.App;
+import qz.common.Sluggable;
 import qz.printer.info.CachedPrintServiceLookup;
 import qz.printer.info.NativePrinter;
 import qz.printer.info.NativePrinterMap;
@@ -254,6 +255,16 @@ public class PrintServiceMatcher {
                 }
                 if(sizes.length() > 0) {
                     jsonService.put("sizes", sizes);
+                }
+
+                JSONArray duplexes = new JSONArray();
+                for(Sides s : printer.getDuplexes()) {
+                    String slug = Sluggable.slugOf(s.toString());
+                    slug = slug.replace("two-sided-", "");
+                    duplexes.put(slug);
+                }
+                if(duplexes.length() > 0) {
+                    jsonService.put("duplexes", duplexes);
                 }
 
                 if(debug) log.debug("Fetching PrinterResolution for '{}'...", printer.getPrinterId());

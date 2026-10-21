@@ -235,18 +235,23 @@ public class PrintOptions {
             try {
                 if (configOpts.getBoolean("duplex")) {
                     psOptions.duplex = Sides.DUPLEX;
+                } else {
+                    //api default is "false"
+                    psOptions.duplex = Sides.ONE_SIDED;
                 }
             }
             catch(JSONException e) {
                 //not a boolean, try as a string
                 try {
                     String duplex = configOpts.getString("duplex").toLowerCase(Locale.ENGLISH);
-                    if (duplex.matches("^(duplex|(two.sided.)?long(.edge)?)$")) {
+                    if(duplex.matches("^(one.sided)$")) {
+                        psOptions.duplex = Sides.ONE_SIDED;
+                    } else if (duplex.matches("^(duplex|(two.sided.)?long(.edge)?)$")) {
                         psOptions.duplex = Sides.DUPLEX;
                     } else if (duplex.matches("^(tumble|(two.sided.)?short(.edge)?)$")) {
                         psOptions.duplex = Sides.TUMBLE;
                     }
-                    //else - one sided (default)
+                    //else - leave as null (will use the printer's default duplex setting)
                 }
                 catch(JSONException e2) { LoggerUtilities.optionWarn(log, "valid value", "duplex", configOpts.opt("duplex")); }
             }
@@ -477,7 +482,7 @@ public class PrintOptions {
         private double crossDensity = 0;                                            //Cross feed density
         private double density = 0;                                                 //Pixel density (DPI or DPMM), feed density if crossDensity is defined
         private Object dithering = RenderingHints.VALUE_DITHER_DEFAULT;             //Image dithering
-        private Sides duplex = Sides.ONE_SIDED;                                     //Multi-siding
+        private Sides duplex = null;                                                //Multi-siding
         private Object interpolation = RenderingHints.VALUE_INTERPOLATION_BICUBIC;  //Image interpolation
         private String jobName = null;                                              //Job name
         private boolean legacy = false;                                             //Legacy printing

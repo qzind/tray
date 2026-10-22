@@ -227,6 +227,11 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
         Scaling scale = (pxlOpts.isScaleContent()? Scaling.SCALE_TO_FIT:Scaling.ACTUAL_SIZE);
 
         PrintRequestAttributeSet attributes = applyDefaultSettings(pxlOpts, job.getPageFormat(null), (Media[])output.getPrintService().getSupportedAttributeValues(Media.class, null, null));
+        if (pxlOpts.isSizeInherited()) {
+            // A job-wide printable area would override
+            // the paper and margins assigned to each PDF page
+            attributes.remove(MediaPrintableArea.class);
+        }
 
         // Disable attributes per https://github.com/qzind/tray/issues/174
         if (SystemUtilities.isMac() && Constants.JAVA_VERSION.compareWithBuildsTo(Version.valueOf("1.8.0+202")) < 0) {
@@ -251,6 +256,9 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
         for(PDDocument doc : printables) {
             PageFormat page = job.getPageFormat(null);
+            if (pxlOpts.isSizeInherited()) {
+                applyInheritedSize(page, doc.getPage(0));
+            }
             applyDefaultSettings(pxlOpts, page, output.getSupportedMedia());
 
             //trick pdfbox into an alternate doc size if specified
@@ -317,6 +325,21 @@ public class PrintPDF extends PrintPixel implements PrintProcessor {
 
             printCopies(output, pxlOpts, job, attributes);
         }
+    }
+
+    static boolean applyInheritedSize(PageFormat format, PDPage page) {
+        PDRectangle mediaBox = page.getMediaBox();
+        double userUnit = page.getUserUnit();
+        double width = mediaBox.getWidth() * userUnit;
+        double height = mediaBox.getHeight() * userUnit;
+        if (!Double.isFinite(width) || !Double.isFinite(height) || width <= 0 || height <= 0) {
+            return false;
+        }
+
+        Paper paper = format.getPaper();
+        paper.setSize(width, height);
+        format.setPaper(paper);
+        return true;
     }
 
     private void rotatePage(PDDocument doc, PDPage page, double rotation) {

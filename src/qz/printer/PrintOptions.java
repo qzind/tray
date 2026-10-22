@@ -368,6 +368,8 @@ public class PrintOptions {
                 } else {
                     psOptions.size = s;
                 }
+            } else if (format == PrintingUtilities.Format.PDF && "inherit".equals(configOpts.optString("size"))) {
+                psOptions.sizeInherited = true;
             } else {
                 LoggerUtilities.optionWarn(log, "JSONObject", "size", configOpts.opt("size"));
             }
@@ -495,6 +497,7 @@ public class PrintOptions {
         private double rotation = 0;                                                //Image rotation
         private boolean scaleContent = true;                                        //Adjust paper size for best image fit
         private Size size = null;                                                   //Paper size
+        private boolean sizeInherited = false;                                      //Use PDF source page size
         private Unit units = Unit.INCH;                                             //Units for density, margins, size
 
 
@@ -572,6 +575,10 @@ public class PrintOptions {
 
         public Size getSize() {
             return size;
+        }
+
+        public boolean isSizeInherited() {
+            return sizeInherited;
         }
 
         public Unit getUnits() {

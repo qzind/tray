@@ -31,9 +31,9 @@ public class WebAppTest {
 
             // RASTER//
 
-            int rasterKnownHeightTests = 10000;
+            int rasterKnownHeightTests = 1000;
             if (args.length > 1) { rasterKnownHeightTests = Integer.parseInt(args[1]); }
-            int rasterFittedHeightTests = 10000;
+            int rasterFittedHeightTests = 1000;
             if (args.length > 2) { rasterFittedHeightTests = Integer.parseInt(args[2]); }
 
             if (!testRasterKnownSize(rasterKnownHeightTests)) {
@@ -47,9 +47,9 @@ public class WebAppTest {
 
             // VECTOR //
 
-            int vectorKnownHeightPrints = 0;
+            int vectorKnownHeightPrints = 100;
             if (args.length > 3) { vectorKnownHeightPrints = Integer.parseInt(args[3]); }
-            int vectorFittedHeightPrints = 0;
+            int vectorFittedHeightPrints = 100;
             if (args.length > 4) { vectorFittedHeightPrints = Integer.parseInt(args[4]); }
 
             if (!testVectorKnownPrints(vectorKnownHeightPrints)) {

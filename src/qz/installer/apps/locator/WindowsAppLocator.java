@@ -111,7 +111,6 @@ public class WindowsAppLocator extends AppLocator{
                         }
                     }
                 }
-                log.info(installPath);
 
                 // Allow installPath to fall back to parent of exeLocation
                 if ((installPath == null || installPath.toString().isEmpty()) && exeLocation != null) {

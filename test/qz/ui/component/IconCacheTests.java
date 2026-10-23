@@ -117,6 +117,13 @@ public class IconCacheTests {
         Assert.assertNotEquals(svg, png);
     }
 
+    @Test
+    public void testColorsDiffer() {
+        Cache dark = svgCache.getCache(TRAY_READY, Theme.DARK);
+        Cache light = svgCache.getCache(TRAY_READY, Theme.LIGHT);
+        Assert.assertFalse(compareImages(dark.getBufferedImage(), light.getBufferedImage()));
+    }
+
     @Test(dataProvider = "iconSizeTheme", priority = 5)
     public void testMixedAssetSizes(Icon icon, int size, Theme theme) {
         ImageIcon imageIcon = mixedCache.getIcon(icon, theme, size);

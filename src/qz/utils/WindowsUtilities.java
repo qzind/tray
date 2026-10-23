@@ -48,8 +48,6 @@ public class WindowsUtilities {
     protected static final Logger log = LogManager.getLogger(WindowsUtilities.class);
     private static final String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
     private static final String SPOOLER_REG_KEY = "Software\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers";
-    private static final String TRAY_REG_CHEVRON_KEY = "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\TrayNotify";
-    private static final String TRAY_REG_POLICY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
     public static final Charset LEGACY_CHARSET = getCharsetFromCodePage(getSystemAnsiCodePage());
 
@@ -154,34 +152,7 @@ public class WindowsUtilities {
         return "Unknown";
     }
 
-    /**
-     * Check known configurations which hide the Windows SystemTray area
-     */
-    public static boolean isHiddenSystemTray() {
-        // Windows 11 22H2+: Check chevron is visible (assume "1" if key is missing)
-        Integer chevronVisibility = getRegInt(HKEY_CURRENT_USER, TRAY_REG_CHEVRON_KEY, "SystemTrayChevronVisibility");
-        if(chevronVisibility == null) chevronVisibility = 1;
-
-        // Windows 2003+: Check user policy (assume "0" if key is missing)
-        Integer explorerPolicy = getRegInt(HKEY_CURRENT_USER, TRAY_REG_POLICY_KEY, "NoTrayItemsDisplay");
-        if(explorerPolicy == null) explorerPolicy = 0;
-
-        // Return true if either flag is set
-        return chevronVisibility == 0 || explorerPolicy == 1;
-    }
-
     public static double getScaleFactor() {
-        if (Constants.JAVA_VERSION.lessThan(Version.valueOf("9.0.0"))) {
-            WinDef.HDC hdc = GDI32.INSTANCE.CreateCompatibleDC(null);
-            if (hdc != null) {
-                int actual = GDI32.INSTANCE.GetDeviceCaps(hdc, 10 /* VERTRES */);
-                int logical = GDI32.INSTANCE.GetDeviceCaps(hdc, 117 /* DESKTOPVERTRES */);
-                GDI32.INSTANCE.DeleteDC(hdc);
-                if (logical != 0 && logical/actual > 1) {
-                    return (double)logical/actual;
-                }
-            }
-        }
         return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0d;
     }
 

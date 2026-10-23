@@ -75,6 +75,16 @@ public class WindowsAppLocator extends AppLocator{
                         keyExists = true;
                     }
                 }
+
+                // Lastly, scan GUID-based keys too
+                if (!keyExists) {
+                    String firstMatch = firstKeyWithDisplayName(hive, basePath, appName);
+                    if (firstMatch != null) {
+                        regPath = String.format(basePath, firstMatch);
+                        keyExists = true;
+                    }
+                }
+
                 if(!keyExists) {
                     continue;
                 }
@@ -119,6 +129,25 @@ public class WindowsAppLocator extends AppLocator{
         return found;
     }
 
+    /**
+     * Loop over all subkeys looking for the specified <code>appName</code> as DisplayName
+     * @return registry path where value was found
+     */
+
+    private String firstKeyWithDisplayName(WinReg.HKEY hive, String basePath, String appName) {
+        String[] keys = WindowsUtilities.getRegistryKeys(hive, String.format(basePath, ""));
+        if(keys == null) {
+            return null;
+        }
+
+        for(String key : keys) {
+            if (appName.equals(WindowsUtilities.getRegString(hive, String.format(basePath, key), "DisplayName"))) {
+                return key;
+            }
+        }
+
+        return null;
+    }
 
     private String firstKeyStartsWith(WinReg.HKEY hive, String basePath, String appName) {
         String[] keys = WindowsUtilities.getRegistryKeys(hive, basePath);
@@ -194,8 +223,8 @@ public class WindowsAppLocator extends AppLocator{
 
             Kernel32.INSTANCE.CloseHandle(hProcess);
             pathMap.put(pid, Paths.get(Native.WCHAR_SIZE == 1 ?
-                                        buffer.getString(0) :
-                                        buffer.getWideString(0)));
+                                               buffer.getString(0) :
+                                               buffer.getWideString(0)));
         }
         return pathMap;
     }

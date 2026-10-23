@@ -48,8 +48,6 @@ public class WindowsUtilities {
     protected static final Logger log = LogManager.getLogger(WindowsUtilities.class);
     private static final String THEME_REG_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
     private static final String SPOOLER_REG_KEY = "Software\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers";
-    private static final String TRAY_REG_CHEVRON_KEY = "Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\TrayNotify";
-    private static final String TRAY_REG_POLICY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer";
     private static final String AUTHENTICATED_USERS_SID = "S-1-5-11";
     public static final Charset LEGACY_CHARSET = getCharsetFromCodePage(getSystemAnsiCodePage());
 

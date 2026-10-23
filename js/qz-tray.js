@@ -133,13 +133,13 @@ var qz = (function() {
                     _qz.log.trace("Attempting connection", address);
                     var wsPromise;
                     if (lna) {
-                        _qz.log.trace("Connecting with lna.js");
+                        _qz.log.trace("Connecting with qz-lna");
                         wsPromise = lna.detectLna(address, _qz.websocket.setup.webSocketPromise, {
                             isWebSocket: true,
                             defaultAddressSpace: 'public'
                         });
                     } else {
-                        _qz.log.trace("Connecting without lna.js");
+                        _qz.log.trace("Connecting without qz-lna");
                         wsPromise = _qz.websocket.setup.webSocketPromise(address);
                     }
                     return wsPromise.catch(function(evt) {
@@ -756,7 +756,7 @@ var qz = (function() {
                     try {
                         return require('qz-lna');
                     } catch (e) {
-                        _qz.log.warn("Unable to load LNA library", e);
+                        _qz.log.allay("Unable to load LNA library", e);
                     }
                 }
             },
@@ -840,6 +840,7 @@ var qz = (function() {
                     if (!source) { continue; }
 
                     for(var key in source) {
+                        if (key === '__proto__' || key === 'constructor' || key === 'prototype') { continue; }
                         if (source.hasOwnProperty(key)) {
                             if (target === source[key]) { continue; }
 
@@ -1639,7 +1640,8 @@ var qz = (function() {
              *      If provided as a string, valid values are <code>[best | draft]</code>, corresponding to highest or lowest reported density respectively.
              *  @param {number} [options.density.cross=0] Asymmetric pixel density for the cross feed direction.
              *  @param {number} [options.density.feed=0] Asymmetric pixel density for the feed direction.
-             *  @param {boolean|string} [options.duplex=false] Double sided printing, Can specify duplex style by passing a string value: <code>[one-sided | duplex | long-edge | tumble | short-edge]</code>
+             *  @param {boolean|string} [options.duplex=false] Double sided printing, Can specify duplex style by passing a string value: <code>[one-sided | duplex | long-edge | tumble | short-edge | null]</code>
+             *                                                 If set to <code>null</code>, duplex will be determined automatically.
              *  @param {number} [options.fallbackDensity=null] Value used when default density value cannot be read, or in cases where reported as "Normal" by the driver, (in DPI, DPMM, or DPCM depending on <code>[options.units]</code>).
              *  @param {string} [options.interpolation='bicubic'] Valid values <code>[bicubic | bilinear | nearest-neighbor]</code>. Controls how images are handled when resized.
              *  @param {string} [options.jobName=null] Name to display in print queue.

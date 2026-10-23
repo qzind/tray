@@ -15,7 +15,8 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: 'liberica'
-      - run: sudo apt-get install makeself
+      - run: sudo apt-get update
+      - run: sudo apt-get install makeself printer-driver-cups-pdf
       - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
       - uses: actions/upload-artifact@v7
         with:
@@ -24,7 +25,6 @@ jobs:
       - if: ${{ matrix.arch == 'x86_64' }}
         run: |
           # Only run tests on same arch
-          sudo apt-get install firefox chromium
           ant testng
           # Run policy tests again, but as root
           sudo JAVA_HOME="$JAVA_HOME" JAVACMD="$JAVA_HOME/bin/java" ant -Dtestng.pattern="**/policy/**" testng
@@ -53,7 +53,7 @@ jobs:
       - if: ${{ matrix.arch == 'aarch64' }}
         run: |
           # Only run tests on same arch
-          brew install --cask google-chrome firefox
+          brew install --cask rwts-pdfwriter
           ant testng
           # Run policy tests again, but as root
           sudo ant -Dtestng.pattern="**/policy/**" testng
@@ -84,7 +84,6 @@ jobs:
       - if: ${{ matrix.arch == 'x86_64' }}
         run: |
           # Only run tests on same arch
-          choco install firefox googlechrome
           ant testng
           Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
           "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"

@@ -13,7 +13,6 @@ package qz.installer;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.auth.Certificate;
 import qz.build.provision.params.Phase;
 import qz.installer.apps.firefox.FirefoxCertificateInstaller;
 import qz.installer.apps.locator.ResolvedApp;
@@ -23,6 +22,7 @@ import qz.installer.provision.ProvisionInstaller;
 import qz.utils.ArgParser;
 import qz.utils.FileUtilities;
 import qz.utils.SystemUtilities;
+import qz.utils.windows.WindowsFileUtilities;
 import qz.ws.WebsocketPorts;
 
 import java.io.*;
@@ -303,7 +303,11 @@ public abstract class Installer {
 
     public Installer removeSharedDirectory() {
         try {
-            FileUtilities.deleteDirectory(SHARED_DIR);
+            if(SystemUtilities.isWindows()) {
+                WindowsFileUtilities.deleteDirectory(SHARED_DIR);
+            } else {
+                FileUtilities.deleteDirectory(SHARED_DIR);
+            }
             log.info("Deleted shared directory: {}", SHARED_DIR);
         } catch(IOException e) {
             log.warn("Could not delete shared directory: {}", SHARED_DIR);

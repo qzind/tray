@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntPredicate;
 
@@ -57,9 +58,12 @@ public class WebApp extends Application {
     private static Stage stage;
     private static WebView webView;
     private static double pageWidth;
-    private static double pageHeight;
     private static double pageZoom;
     private static boolean headless;
+
+    // For unit testing
+    static double pageHeight;
+    static AtomicBoolean skipPrinting =  new AtomicBoolean(false);
 
     private static CountDownLatch startupLatch;
     private static CountDownLatch captureLatch;
@@ -114,6 +118,7 @@ public class WebApp extends Application {
             if (heightNeeded) {
                 fittedHeight = findHeight();
                 if (fittedHeight != pageHeight) {
+                    pageHeight = fittedHeight;
                     adjustSize(pageWidth * pageZoom, fittedHeight * pageZoom);
                 }
             }
@@ -274,7 +279,6 @@ public class WebApp extends Application {
             stage.show();
             stage.toBack();
         });
-
         load(model, (int frames) -> {
             if(frames >= VECTOR_FRAMES) {
                 try {
@@ -319,8 +323,7 @@ public class WebApp extends Application {
                                 for(int col = 0; col < columnsNeed; col++) {
                                     activePage.setX((-col * printBounds.getWidth()) / useScale);
                                     activePage.setY((-row * printBounds.getHeight()) / useScale);
-
-                                    job.printPage(webView);
+                                    printPage(job);
                                 }
                             }
                         } catch(Exception e) {
@@ -424,6 +427,9 @@ public class WebApp extends Application {
     }
 
     private static double findHeight() {
+        // Quirk: Fixes incorrect height calculations (see #1539)
+        webView.getEngine().executeScript("document.documentElement.scrollHeight;");
+
         String heightText = webView.getEngine().executeScript("document.body.scrollHeight").toString();
         return Double.parseDouble(heightText);
     }
@@ -432,7 +438,22 @@ public class WebApp extends Application {
         webView.setMinSize(toWidth, toHeight);
         webView.setPrefSize(toWidth, toHeight);
         webView.setMaxSize(toWidth, toHeight);
+
         doUpdatePeer();
+    }
+
+    /**
+     * Wrapper to avoid PG access warnings during print
+     */
+    private static void printPage(PrinterJob job) {
+        // Reset skipPrinting flag to false each time
+        if(skipPrinting.getAndSet(false)) {
+            log.debug("Skipping printing per request");
+            return;
+        }
+        SceneHelper.setAllowPGAccess(true);
+        job.printPage(webView);
+        SceneHelper.setAllowPGAccess(false);
     }
 
     private static void doUpdatePeer() {

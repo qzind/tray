@@ -2,12 +2,13 @@ package qz.printer.info;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import qz.utils.SystemUtilities;
 
 import javax.print.PrintService;
 import javax.print.attribute.standard.Media;
 import javax.print.attribute.standard.PrinterName;
 import javax.print.attribute.standard.PrinterResolution;
+import javax.print.attribute.standard.Sides;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -168,6 +169,15 @@ public class NativePrinter {
         }
 
         return resolution;
+    }
+
+    public List<Sides> getDuplexes() {
+        PrintService ps = getPrintService().value();
+        Object values = ps.getSupportedAttributeValues(Sides.class, null, null);
+        if (values instanceof Sides[]) {
+            return Arrays.asList((Sides[])values);
+        }
+        return new ArrayList<>();
     }
 
     public List<PrinterResolution> getResolutions() {

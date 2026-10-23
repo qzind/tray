@@ -48,7 +48,9 @@ public abstract class PrintPixel {
         if (pxlOpts.getColorType() != PrintOptions.ColorType.DEFAULT) {
             attributes.add(pxlOpts.getColorType().getAsChromaticity());
         }
-        attributes.add(pxlOpts.getDuplex());
+        if(pxlOpts.getDuplex() != null) {
+            attributes.add(pxlOpts.getDuplex());
+        }
         if (pxlOpts.getOrientation() != null) {
             attributes.add(pxlOpts.getOrientation().getAsOrientRequested());
         }

@@ -440,7 +440,8 @@
                                             <div class="form-group form-inline">
                                                 <label for="pxlDuplex"> Duplex</label>
                                                 <select id="pxlDuplex" class="form-control pull-right">
-                                                    <option value="">Single Sided</option>
+                                                    <option value="">Default</option>
+                                                    <option value="one-sided">Single Sided</option>
                                                     <option value="duplex">Double Sided</option>
                                                     <option value="long-edge">Two Sided (Long Edge)</option>
                                                     <option value="short-edge">Two Sided (Short Edge)</option>
@@ -1650,6 +1651,7 @@
                     "<li><strong>Density:</strong> " + data[i].density + "dpi</li>" +
                     "<li><strong>Connection:</strong> " + data[i].connection + "</li>" +
                     (data[i].trays ? "<li><strong>Trays:</strong> " + data[i].trays + "</li>" : "") +
+                    (data[i].duplexes ? "<li><strong>Duplex Sides:</strong> " + data[i].duplexes + "</li>" : "") +
                     accumulateSizes(data[i]) +
                     "</ul></li>";
             }

@@ -52,7 +52,6 @@ public class TaskBarIcon extends BasicDialog implements Themeable {
         });
     }
 
-
     private void initComponents() {
         trayIcon = new JLabel(String.format("%s %s", Constants.ABOUT_TITLE, Constants.VERSION));
         trayIcon.setBackground(UIManager.getColor("MenuItem.selectionBackground"));

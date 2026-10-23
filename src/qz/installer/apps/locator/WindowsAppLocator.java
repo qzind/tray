@@ -223,8 +223,8 @@ public class WindowsAppLocator extends AppLocator{
 
             Kernel32.INSTANCE.CloseHandle(hProcess);
             pathMap.put(pid, Paths.get(Native.WCHAR_SIZE == 1 ?
-                                               buffer.getString(0) :
-                                               buffer.getWideString(0)));
+                                        buffer.getString(0) :
+                                        buffer.getWideString(0)));
         }
         return pathMap;
     }

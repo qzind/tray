@@ -3,42 +3,90 @@ name: build
 on: [push, pull_request]
 
 jobs:
+  ubuntu:
+    runs-on: [ubuntu-latest]
+    strategy:
+      matrix:
+        java: [25]
+        arch: [x86_64, aarch64, riscv64]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'liberica'
+      - run: sudo apt-get update
+      - run: sudo apt-get install makeself printer-driver-cups-pdf
+      - run: ant -Dtarget.arch=${{ matrix.arch }} makeself
+      - uses: actions/upload-artifact@v7
+        with:
+          name: qz-tray-linux-${{ matrix.arch }}
+          path: out/qz-tray-*.run
+      - if: ${{ matrix.arch == 'x86_64' }}
+        run: |
+          # Only run tests on same arch
+          sudo apt-get install firefox chromium
+          ant testng
+          # Run policy tests again, but as root
+          sudo JAVA_HOME="$JAVA_HOME" JAVACMD="$JAVA_HOME/bin/java" ant -Dtestng.pattern="**/policy/**" testng
+          sudo DEBUG=true out/qz-tray-*.run
+          /opt/qz-tray/qz-tray --version
+          sudo apt-get install nsis
+          ant nsis
+
+  macos:
+    runs-on: [macos-latest]
+    strategy:
+      matrix:
+        java: [25]
+        arch: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'liberica'
+      - run: ant -Dtarget.arch=${{ matrix.arch }} pkgbuild
+      - uses: actions/upload-artifact@v7
+        with:
+          name: qz-tray-macos-${{ matrix.arch }}
+          path: out/qz-tray-*.pkg
+      - if: ${{ matrix.arch == 'aarch64' }}
+        run: |
+          # Only run tests on same arch
+          brew install --cask google-chrome firefox rwts-pdfwriter
+          ant testng
+          # Run policy tests again, but as root
+          sudo ant -Dtestng.pattern="**/policy/**" testng
+          sudo installer -pkg out/qz-tray-*.pkg -target / || (cat /tmp/qz-install.log && false)
+          "/Applications/QZ Tray.app/Contents/MacOS/QZ Tray" --version
+          brew install nsis makeself
+          ant makeself
+          ant nsis
+
   windows:
     runs-on: [windows-latest]
     strategy:
       matrix:
         java: [25]
-        arch: [x86_64]
+        arch: [x86_64, aarch64]
     steps:
-      - name: Dump Exact Chrome Registry Paths
-        shell: pwsh
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'liberica'
+      - run: choco install nsis
+      - run: ant "-Dtarget.arch=${{ matrix.arch }}" nsis
+      - uses: actions/upload-artifact@v7
+        with:
+          name: qz-tray-windows-${{ matrix.arch }}
+          path: out/qz-tray-*.exe
+      - if: ${{ matrix.arch == 'x86_64' }}
         run: |
-          Write-Host "=== 1. Searching Uninstall Subkeys (Registry Path + DisplayName) ==="
-          $uninstallPaths = @(
-              "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
-              "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*",
-              "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*"
-          )
-          foreach ($path in $uninstallPaths) {
-              Get-ItemProperty $path -ErrorAction SilentlyContinue | 
-                  Where-Object { $_.DisplayName -like "*Chrome*" } | 
-                  Select-Object PSPath, DisplayName, DisplayVersion, UninstallString
-          }
-
-          Write-Host "=== 2. Searching StartMenuInternet Clients ==="
-          $clientPaths = @(
-              "HKLM:\SOFTWARE\Clients\StartMenuInternet\*",
-              "HKLM:\SOFTWARE\WOW6432Node\Clients\StartMenuInternet\*",
-              "HKCU:\SOFTWARE\Clients\StartMenuInternet\*"
-          )
-          foreach ($path in $clientPaths) {
-              Get-Item $path -ErrorAction SilentlyContinue | 
-                  Where-Object { $_.PSChildName -like "*Chrome*" } | 
-                  Select-Object PSPath
-          }
-
-          Write-Host "=== 3. Searching App Paths ==="
-          Get-Item "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe" -ErrorAction SilentlyContinue | Select-Object PSPath
-          Get-Item "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe" -ErrorAction SilentlyContinue | Select-Object PSPath
-
+          # Only run tests on same arch
+          choco install firefox googlechrome
+          ant testng
+          Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
+          "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"
 

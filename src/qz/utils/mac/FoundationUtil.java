@@ -21,13 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.dyorgio.jna.platform.mac;
+package qz.utils.mac;
 
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
 
 /**
  *
@@ -37,10 +34,7 @@ public final class FoundationUtil {
 
     private static final Foundation FOUNDATION = Foundation.INSTANCE;
 
-    public static final NativeLong NULL = new NativeLong(0l);
-
-    private FoundationUtil() {
-    }
+    public static final NativeLong NULL = new NativeLong(0L);
 
     public static boolean isNull(NativeLong id) {
         return NULL.equals(id);
@@ -48,14 +42,6 @@ public final class FoundationUtil {
 
     public static boolean isNull(NSObject object) {
         return NULL.equals(object.id);
-    }
-
-    public static boolean isFalse(NativeLong id) {
-        return NULL.equals(id);
-    }
-
-    public static boolean isTrue(NativeLong id) {
-        return !NULL.equals(id);
     }
 
     public static NativeLong invoke(NativeLong id, String selector) {
@@ -80,25 +66,5 @@ public final class FoundationUtil {
 
     public static NativeLong invoke(NativeLong id, Pointer selectorPointer, NativeLong objAddress) {
         return FOUNDATION.objc_msgSend(id, selectorPointer, objAddress);
-    }
-
-    public static void runOnMainThreadAndWait(Runnable runnable) throws InterruptedException, ExecutionException {
-        runOnMainThread(runnable, true);
-    }
-
-    public static FutureTask runOnMainThread(Runnable runnable, boolean waitUntilDone) {
-        FutureTask futureTask = new FutureTask(runnable, null);
-        FutureTaskCallback.performOnMainThread(futureTask, waitUntilDone);
-        return futureTask;
-    }
-
-    public static <T> T callOnMainThreadAndWait(Callable<T> callable) throws InterruptedException, ExecutionException {
-        return callOnMainThread(callable, true).get();
-    }
-
-    public static <T> FutureTask<T> callOnMainThread(Callable<T> callable, boolean waitUntilDone) {
-        FutureTask<T> futureTask = new FutureTask(callable);
-        FutureTaskCallback.performOnMainThread(futureTask, waitUntilDone);
-        return futureTask;
     }
 }

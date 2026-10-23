@@ -199,6 +199,9 @@ public class TrayManager {
      * Builds the swing pop-up menu with the specified items
      */
     private void addMenuItems() {
+        if(tray != null && tray.getTaskbar() != null) {
+            componentList.add(tray.getTaskbar());
+        }
         JPopupMenu popup = new JPopupMenu();
         componentList.add(popup);
 

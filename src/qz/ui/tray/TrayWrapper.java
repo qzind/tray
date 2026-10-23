@@ -3,6 +3,7 @@ package qz.ui.tray;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import qz.ui.ThemeUtilities;
+import qz.ui.Themeable;
 import qz.ui.component.IconCache;
 import qz.ui.component.iconcache.Saturation;
 import qz.ui.tray.fallback.TaskBarIcon;
@@ -17,7 +18,7 @@ import java.awt.*;
  * Wrapper class to allow popup menu on a tray-less OS
  * @author Tres Finocchiaro
  */
-public class TrayWrapper {
+public class TrayWrapper implements Themeable {
     private static final Logger log = LogManager.getLogger(TrayWrapper.class);
 
     private AbstractSwingTrayIcon tray = null;
@@ -31,7 +32,7 @@ public class TrayWrapper {
     void init(boolean traySupported) {
         if(traySupported) {
             tray = switch(SystemUtilities.getOs()) {
-                case MAC -> new MacTrayIcon();
+                //case MAC -> new MacTrayIcon();
                 case WINDOWS -> new WindowsTrayIcon();
                 default -> null;
             };
@@ -56,7 +57,7 @@ public class TrayWrapper {
         }
     }
 
-    public boolean getTaskbar() { return taskbar != null; }
+    public TaskBarIcon getTaskbar() { return taskbar; }
 
     public void setIcon(IconCache.Icon icon) {
         if (tray != null) {
@@ -67,12 +68,7 @@ public class TrayWrapper {
                             tray.getSize(),
                             SystemUtilities.isDarkTaskbar(false)));
         } else {
-            // Try to swap out the taskbar icon if the tray is missing
-            IconCache.Icon fixed = switch(icon) {
-                case TRAY_READY, TRAY_READY_COLOR -> IconCache.Icon.TASK_BAR_ICON;
-                default -> icon.getIcon(Saturation.COLOR);
-            };
-            taskbar.setIcon(fixed);
+            taskbar.setIcon(icon);
         }
     }
 
@@ -111,9 +107,16 @@ public class TrayWrapper {
     }
 
     public void showTaskbar() {
-        if (getTaskbar()) {
+        if (getTaskbar() != null) {
             taskbar.setVisible(true);
             taskbar.setState(Frame.ICONIFIED);
+        }
+    }
+
+    @Override
+    public void refresh() {
+        if(taskbar != null) {
+            taskbar.refresh();
         }
     }
 }

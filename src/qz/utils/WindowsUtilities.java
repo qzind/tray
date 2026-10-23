@@ -154,22 +154,6 @@ public class WindowsUtilities {
         return "Unknown";
     }
 
-    /**
-     * Check known configurations which hide the Windows SystemTray area
-     */
-    public static boolean isHiddenSystemTray() {
-        // Windows 11 22H2+: Check chevron is visible (assume "1" if key is missing)
-        Integer chevronVisibility = getRegInt(HKEY_CURRENT_USER, TRAY_REG_CHEVRON_KEY, "SystemTrayChevronVisibility");
-        if(chevronVisibility == null) chevronVisibility = 1;
-
-        // Windows 2003+: Check user policy (assume "0" if key is missing)
-        Integer explorerPolicy = getRegInt(HKEY_CURRENT_USER, TRAY_REG_POLICY_KEY, "NoTrayItemsDisplay");
-        if(explorerPolicy == null) explorerPolicy = 0;
-
-        // Return true if either flag is set
-        return chevronVisibility == 0 || explorerPolicy == 1;
-    }
-
     public static double getScaleFactor() {
         return Toolkit.getDefaultToolkit().getScreenResolution() / 96.0d;
     }

@@ -19,9 +19,8 @@ import java.awt.event.*;
  * A container for all the System Tray menu items
  */
 public class TaskBarIcon extends BasicDialog implements Themeable {
-    private boolean persistent = false;
-
     private JLabel trayIcon;
+    IconCache.Icon icon;
 
     public TaskBarIcon() {
         super(Constants.ABOUT_TITLE, IconCache.getInstance());
@@ -55,19 +54,17 @@ public class TaskBarIcon extends BasicDialog implements Themeable {
     private void initComponents() {
         trayIcon = new JLabel(String.format("%s %s", Constants.ABOUT_TITLE, Constants.VERSION));
         trayIcon.setBackground(UIManager.getColor("MenuItem.selectionBackground"));
-        trayIcon.setForeground(UIManager.getColor("MenuItem.selectionForeground"));
         trayIcon.setOpaque(false);
-        trayIcon.setBorder(new LineBorder(UIManager.getColor("MenuItem.selectionBorder")));
+        trayIcon.setBorder(new EmptyBorder(10, 10, 10, 10));
         setContent(trayIcon, false);
 
-        if(persistent) {
-            addWindowListener(new WindowAdapter() {
-                @Override
-                public void windowClosing(WindowEvent e) {
-                    TaskBarIcon.this.setExtendedState(JFrame.ICONIFIED);
-                }
-            });
-        }
+        // Only allow minimizing, never closing
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                TaskBarIcon.this.setExtendedState(JFrame.ICONIFIED);
+            }
+        });
 
         setResizable(false);
         pack();
@@ -77,21 +74,27 @@ public class TaskBarIcon extends BasicDialog implements Themeable {
     @Override
     public void setVisible(boolean b) {
         // Prevent closing if persistent mode is enabled
-        if(!b && persistent) {
+        if(!b) {
             setExtendedState(JFrame.ICONIFIED);
         } else {
             super.setVisible(b);
+            setExtendedState(JFrame.NORMAL);
         }
     }
 
     @Override
     public void refresh() {
+        if(icon != null) {
+            setIcon(icon);
+        }
         ThemeUtilities.refreshAll(this);
     }
 
     public void setIcon(IconCache.Icon icon) {
+        this.icon = icon;
         setIconImages(IconCache.getInstance().getImages(icon));
         switch(icon) {
+            // FIXME:  Why does macOS always show the white icon?
             case TRAY_LOADING, TRAY_LOADING_COLOR -> {
                 trayIcon.setIcon(IconCache.getInstance().getIcon(IconCache.Icon.TRAY_LOADING, SystemUtilities.isDarkDesktop()));
             }
@@ -102,12 +105,7 @@ public class TaskBarIcon extends BasicDialog implements Themeable {
                 trayIcon.setForeground(Color.RED);
             }
         }
-    }
-
-    /**
-     * Sets persistent mode, window can't be closed unless shutdown
-     */
-    public void setPersistent(boolean persistent) {
-        this.persistent = persistent;
+        trayIcon.repaint();
+        pack();
     }
 }

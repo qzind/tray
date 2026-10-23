@@ -31,6 +31,7 @@ import qz.ws.substitutions.Substitutions;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.desktop.QuitResponse;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -452,7 +453,13 @@ public class TrayManager {
     private final ActionListener exitListener = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
             boolean showAllNotifications = getPref(TRAY_NOTIFICATIONS);
-            if (!showAllNotifications || confirmDialog.prompt("Exit " + name + "?")) { exit(0); }
+            if (!showAllNotifications || confirmDialog.prompt("Exit " + name + "?")) {
+                exit(0);
+            } else {
+                if(e instanceof MacUtilities.QuitActionEvent event) {
+                    event.cancel();
+                }
+            }
         }
     };
 

@@ -18,9 +18,9 @@ import qz.utils.mac.NSApplication;
 import qz.utils.mac.NSString;
 import qz.utils.mac.NSUserDefaults;
 
-import javax.swing.*;
 import javax.xml.parsers.ParserConfigurationException;
 import java.awt.*;
+import java.awt.desktop.QuitResponse;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.ByteArrayInputStream;
@@ -51,12 +51,23 @@ public class MacUtilities {
                         listener.actionPerformed(new ActionEvent(e, ActionEvent.ACTION_PERFORMED, action.name()));
                     });
                     case APP_QUIT_HANDLER -> desktop.setQuitHandler((e, response) -> {
-                        listener.actionPerformed(new ActionEvent(e, ActionEvent.ACTION_PERFORMED, action.name()));
-                        response.performQuit();
+                        listener.actionPerformed(new QuitActionEvent(e, ActionEvent.ACTION_PERFORMED, action.name(), response));
                     });
                     default -> log.warn("Unsupported action {}", action.name());
                 }
             }
+        }
+    }
+
+    public static class QuitActionEvent extends ActionEvent {
+        private final QuitResponse response;
+
+        public QuitActionEvent(Object source, int id, String command, QuitResponse response) {
+            super(source, id, command);
+            this.response = response;
+        }
+        public void cancel() {
+            response.cancelQuit();
         }
     }
 

@@ -8,26 +8,25 @@ jobs:
     strategy:
       matrix:
         java: [25]
-        arch: [x86_64, aarch64]
+        arch: [x86_64]
     steps:
-      - name: Diagnose Chrome Registry and Files
-        shell: pwsh
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'liberica'
+      - run: choco install nsis
+      - run: ant "-Dtarget.arch=${{ matrix.arch }}" nsis
+      - uses: actions/upload-artifact@v7
+        with:
+          name: qz-tray-windows-${{ matrix.arch }}
+          path: out/qz-tray-*.exe
+      - if: ${{ matrix.arch == 'x86_64' }}
         run: |
-          Write-Host "=== 1. Check App Paths ==="
-          Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe" -ErrorAction SilentlyContinue
-          Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe" -ErrorAction SilentlyContinue
-
-          Write-Host "=== 2. Check StartMenuInternet Clients ==="
-          Get-ChildItem "HKLM:\SOFTWARE\Clients\StartMenuInternet" -ErrorAction SilentlyContinue | Select-Object Name
-          Get-ChildItem "HKLM:\SOFTWARE\WOW6432Node\Clients\StartMenuInternet" -ErrorAction SilentlyContinue | Select-Object Name
-
-          Write-Host "=== 3. Check Uninstall Keys ==="
-          Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like "*Chrome*" } | Select-Object DisplayName, UninstallString, InstallLocation
-          Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like "*Chrome*" } | Select-Object DisplayName, UninstallString, InstallLocation
-
-          Write-Host "=== 4. Check File System Path ==="
-          Get-Command chrome.exe -ErrorAction SilentlyContinue | Select-Object Source
-          Get-ChildItem "C:\Program Files\Google\Chrome\Application" -ErrorAction SilentlyContinue
-          Get-ChildItem "C:\Program Files (x86)\Google\\Chrome\Application" -ErrorAction SilentlyContinue
+          # Only run tests on same arch
+          choco install firefox
+          ant testng
+          Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
+          "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"
 
 

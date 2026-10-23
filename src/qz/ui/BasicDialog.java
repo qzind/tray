@@ -9,9 +9,7 @@ import qz.utils.SystemUtilities;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 
 /**
@@ -68,6 +66,7 @@ public class BasicDialog extends JDialog implements Themeable {
         mainPanel.add(buttonPanel, BorderLayout.PAGE_END);
 
         addKeyListener(KeyEvent.VK_ESCAPE, closeButton);
+        addKeyListener(SystemUtilities.isMac() ? KeyEvent.META_DOWN_MASK : KeyEvent.CTRL_DOWN_MASK, KeyEvent.VK_W, closeButton);
 
         getContentPane().add(mainPanel);
         setResizable(false);
@@ -137,8 +136,14 @@ public class BasicDialog extends JDialog implements Themeable {
     }
 
     public void addKeyListener(int virtualKey, final AbstractButton actionButton) {
-        getRootPane().getInputMap(JRootPane.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(virtualKey, 0), actionButton.toString());
-        getRootPane().getActionMap().put(actionButton.toString(), new AbstractAction() {
+        addKeyListener(0, virtualKey, actionButton);
+    }
+
+    @SuppressWarnings("MagicConstant")
+    public void addKeyListener(int modifiers, int virtualKey, final AbstractButton actionButton) {
+        String key = actionButton.toString() + modifiers;
+        getRootPane().getInputMap(JRootPane.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(virtualKey, modifiers), key);
+        getRootPane().getActionMap().put(key, new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 actionButton.doClick();

@@ -184,7 +184,7 @@ public class LinuxAppLocator extends AppLocator {
      */
     private Path toRealPath(Path exePath) throws IOException {
         Path realExePath = exePath.toRealPath();
-        if (realExePath.endsWith("snap")) {
+        if (realExePath.endsWith("snap") || realExePath.endsWith("snapd")) {
             log.info("Resolving '{}' points to the 'snap' command, we'll use the original value of '{}' instead...", realExePath, exePath);
             return exePath;
         }

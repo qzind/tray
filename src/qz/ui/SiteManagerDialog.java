@@ -75,8 +75,8 @@ public class SiteManagerDialog extends BasicDialog implements Runnable {
     private long blockTick = -1;
 
 
-    public SiteManagerDialog(JMenuItem caller, IconCache iconCache, PropertyHelper prefs) {
-        super(caller, iconCache);
+    public SiteManagerDialog(String title, IconCache iconCache, PropertyHelper prefs) {
+        super(title, iconCache);
         this.iconCache = iconCache;
         this.prefs = prefs;
         certTable = new CertificateTable(iconCache);

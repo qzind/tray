@@ -55,8 +55,8 @@ public class AboutDialog extends BasicDialog implements Themeable {
         }
     }
 
-    public AboutDialog(JMenuItem menuItem, IconCache iconCache) {
-        super(menuItem, iconCache);
+    public AboutDialog(String title, IconCache iconCache) {
+        super(title, iconCache);
         limitedDisplay = Constants.IS_REBRANDED;
     }
 

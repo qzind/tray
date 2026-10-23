@@ -90,3 +90,4 @@ jobs:
           Start-Process -Wait ./out/qz-tray-*.exe -ArgumentList "/S"
           "&'C:/Program Files/QZ Tray/qz-tray.exe' --wait --version|Out-Null"
 
+

@@ -141,7 +141,6 @@ public class WindowsAppLocator extends AppLocator{
      * Loop over all subkeys looking for the specified <code>appName</code> as DisplayName
      * @return registry path where value was found
      */
-
     private String firstKeyWithDisplayName(WinReg.HKEY hive, String basePath, String appName) {
         String[] keys = WindowsUtilities.getRegistryKeys(hive, String.format(basePath, ""));
         if(keys == null) {

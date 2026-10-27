@@ -8,6 +8,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
 import org.eclipse.jetty.websocket.api.exceptions.WebSocketException;
@@ -832,10 +833,13 @@ public class PrintSocketClient {
      * @param session WebSocket session
      * @param reply   JSON Object of reply to web API
      */
-    private static synchronized void send(Session session, JSONObject reply) throws WebSocketException, ClosedChannelException {
+    private static void send(Session session, JSONObject reply) throws WebSocketException, ClosedChannelException {
         try {
             if(session.isOpen()) {
-                session.getRemote().sendString(reply.toString());
+                RemoteEndpoint remote = session.getRemote();
+                synchronized(remote) {
+                    remote.sendString(reply.toString());
+                }
             } else {
                 throw new ClosedSocketException("Channel was closed before message could be sent");
             }

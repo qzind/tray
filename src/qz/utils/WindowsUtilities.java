@@ -776,8 +776,8 @@ public class WindowsUtilities {
         } catch(UnsatisfiedLinkError | NoClassDefFoundError ignore) {}
 
         // Fallback to PowerShell
-        String output = ShellUtilities.executeRaw("powershell.exe", "-Command", "(Get-WinSystemLocale).TextInfo.AnsiCodePage");
         try {
+            String output = ShellUtilities.executeRaw("powershell.exe", "-Command", "(Get-WinSystemLocale).TextInfo.AnsiCodePage");
             return Integer.parseInt(output.trim());
         } catch(NumberFormatException ignore) {}
 

@@ -26,13 +26,13 @@ public class TrayWrapper implements Themeable {
     public AbstractSwingTrayIcon tray() { return tray; }
 
     public TrayWrapper() {
-        init(false);
+        init(isTraySupported());
     }
 
     void init(boolean traySupported) {
         if(traySupported) {
             tray = switch(SystemUtilities.getOs()) {
-                //case MAC -> new MacTrayIcon();
+                case MAC -> new MacTrayIcon();
                 case WINDOWS -> new WindowsTrayIcon();
                 default -> null;
             };
@@ -49,7 +49,7 @@ public class TrayWrapper implements Themeable {
             }
             catch(AWTException awt) {
                 log.error("Could not attach tray, falling back to taskbar mode");
-                init(true);
+                init(false);
                 activate(); // recurse
             }
         } else {
@@ -118,5 +118,12 @@ public class TrayWrapper implements Themeable {
         if(taskbar != null) {
             taskbar.refresh();
         }
+    }
+
+    public boolean isTraySupported() {
+        return switch(SystemUtilities.getOs()) {
+            case  MAC, WINDOWS -> SystemTray.isSupported();
+            default -> false; // TODO: Linux: Leverage D-Bus detection
+        };
     }
 }

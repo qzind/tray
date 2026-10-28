@@ -68,8 +68,8 @@ public class Cache {
 
     void setImages(BufferedImage bufferedImage) {
         Objects.requireNonNull(bufferedImage);
-        this.bufferedImage = bufferedImage;
-        this.imageIcon = new ImageIcon(bufferedImage);
+        this.bufferedImage = ImageUtilities.addPadding(bufferedImage, 0); // clone
+        this.imageIcon = new ImageIcon(this.bufferedImage);
     }
 
     public void setImages(Cache cache) {

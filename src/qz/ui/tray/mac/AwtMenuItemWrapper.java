@@ -1,6 +1,4 @@
-/**
- * @author Tres Finocchiaro
- *
+/*
  * Copyright (C) 2016 Tres Finocchiaro, QZ Industries, LLC
  *
  * LGPL 2.1 This is free software.  This software and source code are released under
@@ -8,7 +6,7 @@
  * this software. http://www.gnu.org/licenses/lgpl-2.1.html
  */
 
-package qz.ui.tray;
+package qz.ui.tray.mac;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,10 +18,10 @@ import java.awt.event.ActionListener;
  *
  * @author Tres Finocchiaro
  */
-public class AWTMenuWrapper {
-    private MenuItem item;
+public class AwtMenuItemWrapper {
+    private final MenuItem item;
 
-    private AWTMenuWrapper(JCheckBoxMenuItem item) {
+    private AwtMenuItemWrapper(JCheckBoxMenuItem item) {
         this.item = new CheckboxMenuItem(item.getText());
         wrapState(item);
         wrapEnabled(item);
@@ -31,21 +29,21 @@ public class AWTMenuWrapper {
         wrapItemListeners(item);
     }
 
-    private AWTMenuWrapper(JMenuItem item) {
+    private AwtMenuItemWrapper(JMenuItem item) {
         this.item = new MenuItem(item.getText());
         wrapEnabled(item);
         wrapShortcut(item);
         wrapActionListeners(item);
     }
 
-    private AWTMenuWrapper(JMenu menu) {
+    private AwtMenuItemWrapper(JMenu menu) {
         this.item = new Menu(menu.getText());
         wrapEnabled(menu);
         wrapShortcut(menu);
     }
 
     @SuppressWarnings("unused")
-    private AWTMenuWrapper(JSeparator ignore) {
+    private AwtMenuItemWrapper(JSeparator ignore) {
         this.item = new MenuItem("-");
     }
 
@@ -67,7 +65,7 @@ public class AWTMenuWrapper {
     private void wrapItemListeners(final JMenuItem item) {
         for (final ActionListener l : item.getActionListeners()) {
             ((CheckboxMenuItem)this.item).addItemListener(e -> {
-                ((JCheckBoxMenuItem)item).setState(((CheckboxMenuItem)AWTMenuWrapper.this.item).getState());
+                ((JCheckBoxMenuItem)item).setState(((CheckboxMenuItem)AwtMenuItemWrapper.this.item).getState());
                 l.actionPerformed(new ActionEvent(item, e.getID(), item.getActionCommand()));
             });
         }
@@ -92,16 +90,12 @@ public class AWTMenuWrapper {
     }
 
     public static MenuItem wrap(Component c) {
-        if (c instanceof JCheckBoxMenuItem) {
-            return new AWTMenuWrapper((JCheckBoxMenuItem)c).getMenuItem();
-        } else if (c instanceof JMenu) {
-            return new AWTMenuWrapper((JMenu)c).getMenuItem();
-        } else if (c instanceof JSeparator) {
-            return new AWTMenuWrapper((JSeparator)c).getMenuItem();
-        } else if (c instanceof JMenuItem) {
-            return new AWTMenuWrapper((JMenuItem)c).getMenuItem();
-        } else {
-            return new MenuItem("Error");
-        }
+        return switch(c) {
+            case JCheckBoxMenuItem j -> new AwtMenuItemWrapper(j).getMenuItem();
+            case JMenu j -> new AwtMenuItemWrapper(j).getMenuItem();
+            case JSeparator j -> new AwtMenuItemWrapper(j).getMenuItem();
+            case JMenuItem j -> new AwtMenuItemWrapper(j).getMenuItem();
+            case null, default -> new MenuItem("Error");
+        };
     }
 }

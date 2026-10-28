@@ -75,8 +75,9 @@ public class Cache {
     public void setImages(Cache cache) {
         Objects.requireNonNull(cache);
         this.baseLoc = cache.baseLoc;
-        this.bufferedImage = Objects.requireNonNull(cache.bufferedImage);
-        this.imageIcon = Objects.requireNonNull(cache.imageIcon);
+        BufferedImage image = Objects.requireNonNull(cache.bufferedImage);
+        setImages(new BufferedImage(image.getColorModel(),
+                image.copyData(null), image.isAlphaPremultiplied(), null));
         this.format = Objects.requireNonNull(cache.format);
     }
 

@@ -117,11 +117,22 @@ public class IconCacheTests {
         Assert.assertNotEquals(svg, png);
     }
 
-    @Test
-    public void testColorsDiffer() {
-        Cache dark = svgCache.getCache(TRAY_READY, Theme.DARK);
-        Cache light = svgCache.getCache(TRAY_READY, Theme.LIGHT);
-        Assert.assertFalse(compareImages(dark.getBufferedImage(), light.getBufferedImage()));
+    @DataProvider
+    public Object[][] maskIconSize() {
+        return Arrays.stream(new Icon[]{TRAY_READY, TRAY_LOADING})
+                .flatMap(icon -> Arrays.stream(icon.getType().getSizes())
+                        .mapToObj(size -> new Object[]{icon, size}))
+                .toArray(Object[][]::new);
+    }
+
+    @Test(dataProvider = "maskIconSize")
+    public void testThemesDiffer(Icon icon, int size) {
+        Cache light = svgCache.getCache(icon, Theme.LIGHT, size);
+        Cache dark = svgCache.getCache(icon, Theme.DARK, size);
+        String message = String.format("%s %s", icon, size);
+
+        Assert.assertNotSame(light.getBufferedImage(), dark.getBufferedImage(), message);
+        Assert.assertFalse(compareImages(light.getBufferedImage(), dark.getBufferedImage()), message);
     }
 
     @Test(dataProvider = "iconSizeTheme", priority = 5)

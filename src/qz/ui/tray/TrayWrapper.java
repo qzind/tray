@@ -2,12 +2,11 @@ package qz.ui.tray;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import qz.build.provision.params.Os;
 import qz.ui.ThemeUtilities;
 import qz.ui.Themeable;
 import qz.ui.component.IconCache;
-import qz.ui.component.iconcache.Saturation;
 import qz.ui.tray.fallback.TaskBarIcon;
-import qz.ui.tray.mac.MacTrayIcon;
 import qz.ui.tray.windows.WindowsTrayIcon;
 import qz.utils.SystemUtilities;
 
@@ -26,20 +25,22 @@ public class TrayWrapper implements Themeable {
     public AbstractSwingTrayIcon tray() { return tray; }
 
     public TrayWrapper() {
-        init(false);
+        init(SystemTray.isSupported());
     }
 
     void init(boolean traySupported) {
-        if(traySupported) {
-            tray = switch(SystemUtilities.getOs()) {
-                //case MAC -> new MacTrayIcon();
-                case WINDOWS -> new WindowsTrayIcon();
-                default -> null;
-            };
-            return;
-        }
+        tray = null;
+        taskbar = null;
 
-        taskbar = new TaskBarIcon();
+        if(useSystemTray(traySupported, SystemUtilities.getOs())) {
+            tray = new WindowsTrayIcon();
+        } else {
+            taskbar = new TaskBarIcon();
+        }
+    }
+
+    static boolean useSystemTray(boolean traySupported, Os os) {
+        return traySupported && os == Os.WINDOWS;
     }
 
     public void activate() {
@@ -49,8 +50,8 @@ public class TrayWrapper implements Themeable {
             }
             catch(AWTException awt) {
                 log.error("Could not attach tray, falling back to taskbar mode");
-                init(true);
-                activate(); // recurse
+                init(false);
+                showTaskbar();
             }
         } else {
             showTaskbar();

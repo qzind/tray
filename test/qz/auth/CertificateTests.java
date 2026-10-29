@@ -58,6 +58,17 @@ public class CertificateTests {
         Assert.assertFalse(row.contains("QZ Test Intermediate Two"));
         Assert.assertFalse(row.contains("Root CA"));
         Assert.assertEquals(load(row).getCommonName(), "QZ Test Multi Intermediate Leaf");
+        assertTrust(read("standard-chain-with-root.pem"),
+                "unrelated-ca.pem", "QZ Test Multi Intermediate Leaf", false);
+    }
+
+    @Test
+    public void testExpired() throws Exception {
+        Certificate certificate = new Certificate(
+                readResource("/qz/installer/provision/resources/cert1.crt"));
+
+        Assert.assertTrue(certificate.isExpired());
+        Assert.assertFalse(certificate.isTrusted());
     }
 
     @Test
@@ -182,7 +193,11 @@ public class CertificateTests {
     }
 
     private String read(String resource) throws IOException {
-        try(InputStream input = getClass().getResourceAsStream("resources/certificate-chain/" + resource)) {
+        return readResource("resources/certificate-chain/" + resource);
+    }
+
+    private String readResource(String resource) throws IOException {
+        try(InputStream input = getClass().getResourceAsStream(resource)) {
             Assert.assertNotNull(input, "Missing certificate fixture " + resource);
             return new String(input.readAllBytes(), StandardCharsets.UTF_8);
         }

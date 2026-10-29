@@ -8,6 +8,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,16 +62,60 @@ public class CertificateTests {
 
     @Test
     public void testTrustedChains() throws Exception {
-        assertTrust(read("direct-leaf.pem"), "root-ca.pem", true);
-        assertTrust(read("legacy-leaf.pem") + read("intermediate-one.pem"), "root-ca.pem", true);
-        assertTrust(read("standard-chain.pem"), "root-ca.pem", true);
+        assertTrust(read("direct-leaf.pem"), "root-ca.pem", "QZ Test Direct Leaf", true);
+        assertTrust(read("legacy-leaf.pem") + read("intermediate-one.pem"),
+                "root-ca.pem", "QZ Test Legacy Leaf", true);
+        assertTrust(read("standard-chain.pem"), "root-ca.pem", "QZ Test Multi Intermediate Leaf", true);
     }
 
     @Test
     public void testUntrustedChains() throws Exception {
-        assertTrust(read("direct-leaf.pem"), "unrelated-ca.pem", false);
-        assertTrust(read("legacy-leaf.pem") + read("intermediate-one.pem"), "unrelated-ca.pem", false);
-        assertTrust(read("standard-chain.pem"), "unrelated-ca.pem", false);
+        assertTrust(read("direct-leaf.pem"), "unrelated-ca.pem", "QZ Test Direct Leaf", false);
+        assertTrust(read("legacy-leaf.pem") + read("intermediate-one.pem"),
+                "unrelated-ca.pem", "QZ Test Legacy Leaf", false);
+        assertTrust(read("standard-chain.pem"),
+                "unrelated-ca.pem", "QZ Test Multi Intermediate Leaf", false);
+    }
+
+    @Test
+    public void testMalformed() {
+        String malformed = "-----BEGIN CERTIFICATE-----\ninvalid\n-----END CERTIFICATE-----\n";
+        Assert.expectThrows(CertificateException.class, () -> new Certificate(malformed));
+    }
+
+    @Test
+    public void testDuplicate() throws Exception {
+        String bundle = read("standard-chain.pem") + read("intermediate-two.pem");
+
+        Assert.assertEquals(Certificate.parseCertificates(bundle).size(), 4);
+        assertTrust(bundle, "root-ca.pem", "QZ Test Multi Intermediate Leaf", true);
+    }
+
+    @Test
+    public void testReversed() throws Exception {
+        String bundle = read("intermediate-one.pem") + read("intermediate-two.pem") + read("leaf.pem");
+
+        assertTrust(bundle, "root-ca.pem", "QZ Test Intermediate One", true);
+    }
+
+    @Test
+    public void testIncomplete() throws Exception {
+        assertTrust(read("leaf.pem") + read("intermediate-two.pem"),
+                "root-ca.pem", "QZ Test Multi Intermediate Leaf", false);
+    }
+
+    @Test
+    public void testSelfSigned() throws Exception {
+        assertTrust(read("self-signed.pem"),
+                "root-ca.pem", "QZ Test Self Signed Leaf", false);
+    }
+
+    @Test
+    public void testUnrelated() throws Exception {
+        assertTrust(read("leaf.pem") + read("unrelated-ca.pem"),
+                "root-ca.pem", "QZ Test Multi Intermediate Leaf", false);
+        assertTrust(read("standard-chain.pem") + read("unrelated-ca.pem"),
+                "root-ca.pem", "QZ Test Multi Intermediate Leaf", true);
     }
 
     private void assertNames(String resource, String... expected) throws Exception {
@@ -100,7 +145,8 @@ public class CertificateTests {
         Assert.assertEquals(actual.getValidTo(), expected.getValidTo());
     }
 
-    private void assertTrust(String certificateData, String rootResource, boolean trusted) throws Exception {
+    private void assertTrust(String certificateData, String rootResource,
+                             String commonName, boolean trusted) throws Exception {
         List<Certificate> previousRoots = new ArrayList<>(Certificate.rootCAs);
         Certificate previousBuiltIn = Certificate.builtIn;
 
@@ -112,6 +158,7 @@ public class CertificateTests {
 
             Certificate certificate = new Certificate(certificateData);
 
+            Assert.assertEquals(certificate.getCommonName(), commonName);
             Assert.assertEquals(certificate.isTrusted(), trusted);
             Assert.assertEquals(Certificate.rootCAs.size(), 1);
             Assert.assertSame(Certificate.rootCAs.get(0), root);
